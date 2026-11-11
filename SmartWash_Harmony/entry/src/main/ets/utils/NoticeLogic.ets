@@ -13,6 +13,7 @@
  */
 
 /** 站内信类型枚举（与后端 NoticeType 枚举名一一对应） */
+import { resString } from '../utils/ResourceString'
 export enum NoticeType {
   /** 系统通知（维护/版本/安全类） */
   SYSTEM = 'SYSTEM',
@@ -36,38 +37,38 @@ export function noticeTypeFromRaw(raw: string | null | undefined): NoticeType {
 /** 文案表（对齐安卓 notice_* 字符串；纯逻辑层持有中文文案，UI 不拼字符串） */
 export class NoticeText {
   // 页面标题与页头动作
-  static readonly notice_title: string = '消息中心'
-  static readonly notice_unread_count_format: string = '%d 条未读'
-  static readonly notice_read_all: string = '全部已读'
-  static readonly notice_read_all_confirm_title: string = '全部标为已读？'
-  static readonly notice_read_all_confirm_message: string = '将所有消息标记为已读，该操作不可撤销。'
-  static readonly notice_read_all_success: string = '已全部标记为已读'
-  static readonly notice_read_all_failed: string = '操作失败，请重试'
+  static get notice_title(): string { return resString('notice_title') }
+  static get notice_unread_count_format(): string { return resString('notice_unread_count_format') }
+  static get notice_read_all(): string { return resString('notice_read_all') }
+  static get notice_read_all_confirm_title(): string { return resString('notice_read_all_confirm_title') }
+  static get notice_read_all_confirm_message(): string { return resString('notice_read_all_confirm_message') }
+  static get notice_read_all_success(): string { return resString('notice_read_all_success') }
+  static get notice_read_all_failed(): string { return resString('notice_text_notice_read_all_failed') }
 
   // 类型 tag
-  static readonly notice_type_system: string = '系统通知'
-  static readonly notice_type_announcement: string = '运营公告'
-  static readonly notice_type_unknown: string = '通知'
+  static get notice_type_system(): string { return resString('notice_type_system') }
+  static get notice_type_announcement(): string { return resString('notice_type_announcement') }
+  static get notice_type_unknown(): string { return resString('notice_type_unknown') }
 
   // 时间展示
-  static readonly notice_time_today_format: string = '今天 %s'
-  static readonly notice_time_yesterday_format: string = '昨天 %s'
-  static readonly notice_time_this_year_format: string = '%d月%d日'
+  static get notice_time_today_format(): string { return resString('notice_time_today_format') }
+  static get notice_time_yesterday_format(): string { return resString('notice_time_yesterday_format') }
+  static get notice_time_this_year_format(): string { return resString('notice_text_notice_time_this_year_format') }
   static readonly notice_time_older_format: string = '%d-%02d-%02d'
 
   // 加载更多
-  static readonly notice_load_more: string = '加载更多'
-  static readonly notice_load_more_failed: string = '加载失败，点击重试'
+  static get notice_load_more(): string { return resString('notice_load_more') }
+  static get notice_load_more_failed(): string { return resString('notice_load_more_failed') }
 
   // 空态 / 错误态（说明发生了什么 + 怎么解决，规范 §3.6）
-  static readonly notice_inbox_empty: string = '暂无消息，有新通知会第一时间送达'
-  static readonly notice_load_failed: string = '消息加载失败，请检查网络后重试'
-  static readonly notice_action_retry: string = '重试'
+  static get notice_inbox_empty(): string { return resString('notice_inbox_empty') }
+  static get notice_load_failed(): string { return resString('notice_load_failed') }
+  static get notice_action_retry(): string { return resString('retry') }
 
   // 读屏状态（对齐安卓 strings.xml notice_state_unread/read：未读色点纯装饰，
   // 颜色不是唯一信息载体，规范 §10）
-  static readonly notice_state_unread: string = '未读'
-  static readonly notice_state_read: string = '已读'
+  static get notice_state_unread(): string { return resString('notice_state_unread') }
+  static get notice_state_read(): string { return resString('notice_state_read') }
 }
 
 /** 类型 → 展示文案 */

@@ -1,6 +1,8 @@
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../constant/DesignSystem'
 import { OrderVo } from '../network/vo/OrderVo'
 import { OrderStatusEnum, getOrderStatusDescription } from '../constant/OrderStatus'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 /**
  * 首页 Hero 状态卡 —— 对齐安卓 IndexPage.kt:288-453 `StatusHeroCard`（PR #47 后新形态）。
@@ -15,7 +17,7 @@ import { OrderStatusEnum, getOrderStatusDescription } from '../constant/OrderSta
  */
 
 /** Hero 步骤标签（对齐安卓 IndexPage.kt:370-375 step_received/washing/dried/pickup） */
-const HERO_STEPS: string[] = ['已接单', '清洗中', '烘干中', '待取件']
+function HERO_STEPS(): string[] { return [resString('step_received'), resString('step_washing'), resString('step_dried'), resString('step_pickup')] }
 
 /** 滚筒圆（Hero 专用，进度可驱动重绘）——几何基准 64，对齐安卓 DrumMark.kt */
 @ComponentV2
@@ -110,7 +112,7 @@ export struct HeroCard {
   @Local hasOrder: boolean = false
   @Local orderId: number = 0
   @Local orderNo: string = ''
-  @Local statusText: string = '暂无订单'
+  @Local statusText: string = resString('home_hero_no_order')
   @Local heroProgress: number = 0
   @Local currentStep: number = 0
 
@@ -173,7 +175,7 @@ export struct HeroCard {
     } else {
       this.orderId = 0
       this.orderNo = ''
-      this.statusText = '暂无订单'
+      this.statusText = resString('home_hero_no_order')
       this.currentStep = 0
     }
     const target: number = order !== null ? this.progressOf(order.status) : 0
@@ -202,7 +204,7 @@ export struct HeroCard {
                 .fontColor(Color.White)
                 .maxLines(1)
 
-              Text(this.hasOrder ? `订单号 ${this.orderNo}` : '从下方快捷服务开始预约')
+              Text(this.hasOrder ? `订单号 ${this.orderNo}` : resString('home_hero_no_order_hint'))
                 .fontSize(DesignFontSize.CAPTION)
                 .fontColor(Color.White)
                 .fontFeature(DesignFontFeature.TNUM)
@@ -218,18 +220,18 @@ export struct HeroCard {
           if (this.hasOrder) {
             // 步骤点行 —— 激活白 / 未激活 outline（绿渐变底上 primary 不可见）
             Row() {
-              ForEach(HERO_STEPS, (_label: string, index: number) => {
+              ForEach(HERO_STEPS(), (_label: string, index: number) => {
                 Circle()
                   .width(8)
                   .height(8)
-                  .backgroundColor(index <= this.currentStep ? Color.White : DesignColor.OUTLINE)
+                  .backgroundColor(index <= this.currentStep ? Color.White : resColor('OUTLINE'))
                   .animation(MotionTiming.ENTER)
 
-                if (index < HERO_STEPS.length - 1) {
+                if (index < HERO_STEPS().length - 1) {
                   Row()
                     .layoutWeight(1)
                     .height(2)
-                    .backgroundColor(index < this.currentStep ? Color.White : DesignColor.OUTLINE)
+                    .backgroundColor(index < this.currentStep ? Color.White : resColor('OUTLINE'))
                     .animation(MotionTiming.ENTER)
                 }
               }, (label: string) => label)
@@ -240,12 +242,12 @@ export struct HeroCard {
 
             // 步骤标签行 —— 首尾贴边、中间居中
             Row() {
-              ForEach(HERO_STEPS, (label: string, index: number) => {
+              ForEach(HERO_STEPS(), (label: string, index: number) => {
                 Text(label)
                   .fontSize(DesignFontSize.CAPTION)
                   .fontColor(Color.White)
                   .layoutWeight(1)
-                  .textAlign(index === 0 ? TextAlign.Start : (index === HERO_STEPS.length - 1 ? TextAlign.End : TextAlign.Center))
+                  .textAlign(index === 0 ? TextAlign.Start : (index === HERO_STEPS().length - 1 ? TextAlign.End : TextAlign.Center))
               }, (label: string) => label)
             }
             .width('100%')
@@ -254,12 +256,12 @@ export struct HeroCard {
             // 空态 CTA —— 规范 §3.1 Hero 卡变体「白色 CTA 胶囊」：白底 + 品牌深绿字。
             // 对齐安卓 U-102：16sp/600（§10 绿色文字红线：绿色文字仅限 ≥16sp 且 weight ≥600），
             // 上下 padding 12 → 行高 24 + 24 = 48 高（≥44 触控）；左对齐（安卓 Column 默认 Start）。
-            Text('预约洗衣')
+            Text($r('app.string.service_booking'))
               .fontSize(DesignFontSize.BODY)
               // 行盒对齐安卓 bodyLarge 16/24：上下 padding 12 + 行高 24 = 48 高（对齐安卓 U-102）
               .lineHeight(DesignFontSize.BODY + 8)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.PRIMARY_DARK)
+              .fontColor(resColor('PRIMARY_DARK'))
               .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
               .borderRadius(DesignDimens.RADIUS_FULL)
               .backgroundColor(Color.White)
@@ -277,7 +279,7 @@ export struct HeroCard {
         // 透明端必须用 Color.Transparent：数值 0x00000000 在渐变 stop 上会被当作不透明黑。
         .linearGradient({
           angle: 135,
-          colors: [[DesignColor.SCRIM_BLACK_20, 0], [Color.Transparent, 1]]
+          colors: [[resColor('SCRIM_BLACK_20'), 0], [Color.Transparent, 1]]
         })
       }
       .width('100%')
@@ -286,7 +288,7 @@ export struct HeroCard {
       .clip(true)
       .linearGradient({
         angle: 135,
-        colors: [[DesignColor.PRIMARY, 0], [DesignColor.PRIMARY_DARK, 1]]
+        colors: [[resColor('PRIMARY'), 0], [resColor('PRIMARY_DARK'), 1]]
       })
       .onClick(() => {
         if (this.hasOrder) {

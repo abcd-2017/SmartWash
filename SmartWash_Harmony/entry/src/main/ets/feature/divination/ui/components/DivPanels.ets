@@ -20,6 +20,7 @@ import {
   DivSerifText,
   divReduceMotion
 } from './DivComponents'
+import { resString } from '../../../../utils/ResourceString'
 
 @Builder
 @Builder
@@ -30,15 +31,15 @@ function emptyContent() {
 const DISPLAY_INDEXES: number[] = [5, 4, 3, 2, 1, 0]
 
 /** 三传标签 */
-const CHUAN_LABELS: string[] = ['初传', '中传', '末传']
+function CHUAN_LABELS(): string[] { return [resString('div_panels_1'), resString('div_panels_2'), resString('div_panels_3')] }
 
 /** 九宫布局（巽四 离九 坤二 / 震三 中五 兑七 / 艮八 坎一 乾六） */
 const LAYOUT_GONG: number[][] = [[4, 9, 2], [3, 5, 7], [8, 1, 6]]
 
 /** 九宫名（奇门口径） */
 const GONG_NAMES: Record<number, string> = {
-  1: '坎一', 2: '坤二', 3: '震三', 4: '巽四',
-  5: '中五', 6: '乾六', 7: '兑七', 8: '艮八', 9: '离九',
+  1: resString('div_panels_4'), 2: resString('div_panels_5'), 3: resString('div_panels_6'), 4: resString('div_panels_7'),
+  5: resString('div_panels_8'), 6: resString('div_panels_9'), 7: resString('div_panels_10'), 8: resString('div_panels_11'), 9: resString('div_panels_12'),
 }
 
 /** 梅花单卡展示数据 */
@@ -341,7 +342,7 @@ export struct MeiHuaTripleCards {
     }
     return [
       {
-        label: '本卦 · 体',
+        label: resString('div_panels_13'),
         name: chart.benName,
         mark: chart.benMark,
         barColor: DivPalette.gold,
@@ -349,7 +350,7 @@ export struct MeiHuaTripleCards {
         chipGold: true
       },
       {
-        label: '互卦 · 过程',
+        label: resString('div_panels_14'),
         name: chart.huName,
         mark: chart.huMark,
         barColor: DivPalette.textTertiary,
@@ -357,7 +358,7 @@ export struct MeiHuaTripleCards {
         chipGold: false
       },
       {
-        label: '变卦 · 结局',
+        label: resString('div_panels_15'),
         name: chart.bianName,
         mark: chart.bianMark,
         barColor: DivPalette.jade,
@@ -471,10 +472,10 @@ export struct QimenGrid {
     }
     const badges: string[] = []
     if (chart.kongWangGong.indexOf(gong) >= 0) {
-      badges.push('空亡')
+      badges.push(resString('div_panels_16'))
     }
     if (chart.maGong === gong) {
-      badges.push('驿马')
+      badges.push(resString('div_panels_17'))
     }
     return badges.join('·')
   }
@@ -485,9 +486,9 @@ export struct QimenGrid {
       Column() {
         if (gong === 5) {
           Column() {
-            DivSerifText({ text: '二 · 五', textSize: 17, weight: 600, spacing: 3, color: DivPalette.gold })
+            DivSerifText({ text: resString('div_panels_18'), textSize: 17, weight: 600, spacing: 3, color: DivPalette.gold })
             Column().height(6)
-            DivSerifText({ text: '寄 坤 二 宫', textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
+            DivSerifText({ text: resString('div_panels_19'), textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
           }
           .width('100%')
           .height('100%')
@@ -597,7 +598,7 @@ export struct QimenGrid {
 
 // ========== 大六壬式盘（天地盘双环） ==========
 
-const LIUREN_ZHI: string[] = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
+function LIUREN_ZHI(): string[] { return [resString('div_panels_20'), resString('div_panels_21'), resString('div_panels_22'), resString('div_panels_23'), resString('div_panels_24'), resString('div_panels_25'), resString('div_panels_26'), resString('div_panels_27'), resString('div_panels_28'), resString('div_panels_29'), resString('div_panels_30'), resString('div_panels_31')] }
 const LIUREN_SIZE: number = 228
 
 @ComponentV2
@@ -650,13 +651,13 @@ export struct LiurenPan {
     this.ctx.fill()
 
     // 外环（天盘支）：由地盘支逆映射定位
-    for (let index = 0; index < LIUREN_ZHI.length; index++) {
-      const label = LIUREN_ZHI[index]
+    for (let index = 0; index < LIUREN_ZHI().length; index++) {
+      const label = LIUREN_ZHI()[index]
       const diLabel = this.diOfTian(chart, label)
       if (diLabel === null) {
         continue
       }
-      const diIndex = LIUREN_ZHI.indexOf(diLabel)
+      const diIndex = LIUREN_ZHI().indexOf(diLabel)
       const angle = (diIndex * 30 - 90) * Math.PI / 180
       const posX = cx + rOuter * 0.84 * Math.cos(angle)
       const posY = cy + rOuter * 0.84 * Math.sin(angle)
@@ -664,11 +665,11 @@ export struct LiurenPan {
     }
 
     // 内环（地盘支，固定）
-    for (let index = 0; index < LIUREN_ZHI.length; index++) {
+    for (let index = 0; index < LIUREN_ZHI().length; index++) {
       const angle = (index * 30 - 90) * Math.PI / 180
       const posX = cx + rInner * 0.72 * Math.cos(angle)
       const posY = cy + rInner * 0.72 * Math.sin(angle)
-      this.drawCenterText(LIUREN_ZHI[index], posX, posY, 12, DivPalette.textTertiary)
+      this.drawCenterText(LIUREN_ZHI()[index], posX, posY, 12, DivPalette.textTertiary)
     }
 
     // 四正刻线
@@ -789,7 +790,7 @@ export struct LiurenCourses {
         // 三传（或暂不支持说明）
         if (this.hasSanChuan()) {
           Row({ space: 10 }) {
-            ForEach(CHUAN_LABELS, (label: string, index: number) => {
+            ForEach(CHUAN_LABELS(), (label: string, index: number) => {
               Column() {
                 this.ChuanCard(label, this.chuanAt(index), this.chuanJiangAt(index))
               }

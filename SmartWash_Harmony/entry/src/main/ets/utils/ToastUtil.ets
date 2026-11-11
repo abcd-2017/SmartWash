@@ -1,4 +1,5 @@
 import { promptAction } from '@kit.ArkUI'
+import { resString } from '../utils/ResourceString'
 
 /**
  * 统一 toast 兜底封装（评审 #13）：
@@ -10,7 +11,7 @@ import { promptAction } from '@kit.ArkUI'
  * @param duration 显示时长 ms，默认 1500（系统默认短时长）；错误类提示按规范 §8 传 3500
  *                 （对齐安卓 Toast.LENGTH_LONG，3–5s），成功类保持默认
  */
-export function showToastSafety(message: string | null | undefined, fallback: string = "操作失败",
+export function showToastSafety(message: string | null | undefined, fallback: string = resString('error_operation_failed'),
   duration: number = 1500): void {
   const text = message ?? ""
   promptAction.showToast({ message: text.length > 0 ? text : fallback, duration: duration })

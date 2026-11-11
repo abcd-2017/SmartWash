@@ -16,6 +16,7 @@
  */
 
 /** 行内富文本片段（bold=**包裹** / code=`包裹` / link=[文本](url)） */
+import { resString } from '../../../utils/ResourceString'
 export interface DivRichSpan {
   text: string
   bold: boolean
@@ -131,11 +132,11 @@ function makeLine(line: string, bullet: boolean): DivRichLine {
 
 /** 免责行剥壳：去掉 `免责声明：` / `免责声明:` 前缀（映射免责条样式） */
 function stripDisclaimerPrefix(text: string): string {
-  if (text.startsWith('免责声明：')) {
-    return text.substring('免责声明：'.length)
+  if (text.startsWith(resString('div_markdown_1'))) {
+    return text.substring(resString('div_markdown_1').length)
   }
-  if (text.startsWith('免责声明:')) {
-    return text.substring('免责声明:'.length)
+  if (text.startsWith(resString('div_markdown_2'))) {
+    return text.substring(resString('div_markdown_2').length)
   }
   return text
 }

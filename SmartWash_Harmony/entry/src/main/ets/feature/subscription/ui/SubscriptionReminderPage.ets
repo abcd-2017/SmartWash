@@ -6,7 +6,7 @@
 //
 // 已知坑遵守：条目内容依赖状态 → @ComponentV2 + @Param/@Event。
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import { ReminderVo, SubscriptionText, listReminders, markReminderRead } from '../api'
 import {
@@ -29,6 +29,7 @@ import { bumpSubscriptionRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'subscriptionReminderPage'
@@ -116,7 +117,7 @@ struct SubscriptionReminderPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -154,7 +155,7 @@ struct SubscriptionReminderPage {
           Row() {
             Text(SubscriptionText.subscription_reminder_error_load)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.ERROR)
+              .fontColor(resColor('ERROR'))
               .layoutWeight(1)
             AppButton({
               small: true,
@@ -238,7 +239,7 @@ struct SubscriptionReminderPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -278,7 +279,7 @@ export struct ReminderRow {
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
             // 已读弱化止步 textSecondary（on 白卡 4.90:1）：textTertiary 2.25:1 禁作可读正文（§10，audit-16 #2）
-            .fontColor(this.isUnread() ? DesignColor.TEXT_PRIMARY : DesignColor.TEXT_SECONDARY)
+            .fontColor(this.isUnread() ? resColor('TEXT_PRIMARY') : resColor('TEXT_SECONDARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
@@ -289,7 +290,7 @@ export struct ReminderRow {
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
             .fontFeature(DesignFontFeature.TNUM)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .margin({ top: DesignDimens.SPACE_XXS })
         }
         .alignItems(HorizontalAlign.Start)
@@ -307,7 +308,7 @@ export struct ReminderRow {
             // 未读差异不能只靠颜色点：红点补读屏描述（DESIGN-SPEC §8/§10，audit-16 #6），
             // 已读卡由「已读」文本标签承担同一对语义
             SubscriptionStatusDot({
-              color: DesignColor.DANGER,
+              color: resColor('DANGER'),
               accessibilityLabel: SubscriptionText.subscription_reminder_unread_dot
             })
               .margin({ top: DesignDimens.SPACE_XXS })
@@ -316,7 +317,7 @@ export struct ReminderRow {
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
               // 「已读」为可读状态标签，与主文案同口径收敛 textSecondary（audit-16 #3）
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .margin({ top: DesignDimens.SPACE_XXS })
           }
         }
@@ -329,13 +330,13 @@ export struct ReminderRow {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })

@@ -27,9 +27,11 @@ import {
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignColor } from '../../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation } from '../../../../../constant/DesignSystem'
 import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
 import { logger } from '../../../../../utils/Logger'
+import { resColor } from '../../../../../utils/ResourceColor'
+import { resString } from '../../../../../utils/ResourceString'
 
 @Builder
 export function DivFollowUpBuilder() {
@@ -109,7 +111,7 @@ struct ChatBubbleView {
         .shadow({
           // 回复气泡卡面阴影 blur 12（对齐安卓 softCardShadow，compare-15 #52）
           radius: DesignElevation.CARD_SHADOW_RADIUS,
-          color: DesignColor.SHADOW_COLOR_CARD,
+          color: resColor('SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: 2
         })
@@ -224,7 +226,7 @@ struct DivFollowUpPage {
     try {
       const serverId = await this.ensureServerRecordId(record)
       if (serverId === 0) {
-        this.streamingError = '追问通道不可用，请稍后重试'
+        this.streamingError = resString('div_follow_up_page_1')
         this.sending = false
         return
       }
@@ -263,7 +265,7 @@ struct DivFollowUpPage {
       })
     } catch (err) {
       this.streamingErrorCode = 0
-      this.streamingError = '追问通道不可用，请稍后重试'
+      this.streamingError = resString('div_follow_up_page_1')
       this.streamInterrupted = true
       this.sending = false
       logger.error('divFollowUpPage', `追问发起异常 localId=${record.id}, ` +

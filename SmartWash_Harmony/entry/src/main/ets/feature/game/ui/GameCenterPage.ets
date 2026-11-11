@@ -16,13 +16,7 @@ import { RouteNames } from '../../../constant/RouteNames'
 import { logger } from '../../../utils/Logger'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { common } from '@kit.AbilityKit'
-import {
-  DesignColor,
-  DesignDimens,
-  DesignElevation,
-  DesignFontSize,
-  DesignFontWeight
-} from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { Debouncer } from '../../../utils/DebounceUtil'
@@ -40,6 +34,8 @@ import {
   withUniqueKeys
 } from '../network/GameApi'
 import { ThemeRefreshV2 } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
+import { resString } from '../../../utils/ResourceString'
 
 /** 网格列数（对齐安卓 GRID_COLUMNS = 2） */
 const GRID_COLUMNS: number = 2
@@ -49,27 +45,27 @@ const GRID_SPACING: number = DesignDimens.CARD_SPACING
 
 /** 页面文案（对齐安卓 feature/game/values/strings.xml） */
 class GameText {
-  static readonly title: string = '游戏中心'
-  static readonly categoryAll: string = '全部'
+  static get title(): string { return resString('game_center_title') }
+  static get categoryAll(): string { return resString('game_category_all') }
   // 全量空态文案走资源文件 game_empty_message（「游戏整理中，先去洗件衣服吧」——
   // 安卓已认定「去后台上传」是运营视角文案，普通用户不可执行，故改面向 C 端可执行文案）
-  static readonly emptyCategory: string = '该分类暂无游戏，看看全部吧'
-  static readonly errorLoad: string = '游戏加载失败，请检查网络后重试'
-  static readonly actionRetry: string = '重试'
-  static readonly unavailable: string = '游戏暂未开放，请稍后再试'
+  static get emptyCategory(): string { return resString('game_empty_category') }
+  static get errorLoad(): string { return resString('game_error_load') }
+  static get actionRetry(): string { return resString('game_action_retry') }
+  static get unavailable(): string { return resString('game_unavailable') }
 }
 
 /** 分类 chip 文案（全部之外的固定四类映射；OTHER 无 chip 无文案） */
 function categoryChipLabel(category: GameCategory): string {
   switch (category) {
     case GameCategory.PUZZLE:
-      return '益智'
+      return resString('game_category_puzzle')
     case GameCategory.ARCADE:
-      return '街机'
+      return resString('game_category_arcade')
     case GameCategory.WORD:
-      return '文字'
+      return resString('game_category_word')
     case GameCategory.BOARD:
-      return '桌版'
+      return resString('game_category_board')
     default:
       return ''
   }
@@ -223,43 +219,43 @@ struct GameCard {
     this.debouncer.cancel()
   }
 
-  /** 图标容器浅底色（后端 color 白名单 → DesignColor.ICON_CONTAINER_*，未知兜底 GREEN） */
+  /** 图标容器浅底色（后端 color 白名单 → 资源色 ICON_CONTAINER_*，未知兜底 GREEN） */
   private containerColor(tint: GameTint): number {
     switch (tint) {
       case GameTint.GREEN:
-        return DesignColor.ICON_CONTAINER_GREEN
+        return resColor('ICON_CONTAINER_GREEN')
       case GameTint.BLUE:
-        return DesignColor.ICON_CONTAINER_BLUE
+        return resColor('ICON_CONTAINER_BLUE')
       case GameTint.ORANGE:
-        return DesignColor.ICON_CONTAINER_ORANGE
+        return resColor('ICON_CONTAINER_ORANGE')
       case GameTint.PINK:
-        return DesignColor.ICON_CONTAINER_PINK
+        return resColor('ICON_CONTAINER_PINK')
       case GameTint.TEAL:
-        return DesignColor.ICON_CONTAINER_TEAL
+        return resColor('ICON_CONTAINER_TEAL')
       case GameTint.PURPLE:
-        return DesignColor.ICON_CONTAINER_PURPLE
+        return resColor('ICON_CONTAINER_PURPLE')
       default:
-        return DesignColor.ICON_CONTAINER_GREEN
+        return resColor('ICON_CONTAINER_GREEN')
     }
   }
 
-  /** 图标前景色（后端 color 白名单 → DesignColor.ICON_FOREGROUND_*，未知兜底 GREEN） */
+  /** 图标前景色（后端 color 白名单 → 资源色 ICON_FOREGROUND_*，未知兜底 GREEN） */
   private iconColor(tint: GameTint): number {
     switch (tint) {
       case GameTint.GREEN:
-        return DesignColor.ICON_FOREGROUND_GREEN
+        return resColor('ICON_FOREGROUND_GREEN')
       case GameTint.BLUE:
-        return DesignColor.ICON_FOREGROUND_BLUE
+        return resColor('ICON_FOREGROUND_BLUE')
       case GameTint.ORANGE:
-        return DesignColor.ICON_FOREGROUND_ORANGE
+        return resColor('ICON_FOREGROUND_ORANGE')
       case GameTint.PINK:
-        return DesignColor.ICON_FOREGROUND_PINK
+        return resColor('ICON_FOREGROUND_PINK')
       case GameTint.TEAL:
-        return DesignColor.ICON_FOREGROUND_TEAL
+        return resColor('ICON_FOREGROUND_TEAL')
       case GameTint.PURPLE:
-        return DesignColor.ICON_FOREGROUND_PURPLE
+        return resColor('ICON_FOREGROUND_PURPLE')
       default:
-        return DesignColor.ICON_FOREGROUND_GREEN
+        return resColor('ICON_FOREGROUND_GREEN')
     }
   }
 
@@ -277,7 +273,7 @@ struct GameCard {
               .objectFit(ImageFit.Cover)
               // 加载中占位底（对齐安卓 placeholder = surfaceVariant 灰档）：弱网下封面区不留白板；
               // 深浅色档随主题切换（DARK_SURFACE_VARIANT）
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               .onError(() => {
                 this.onServerCoverError(this.game.gameKey)
               })
@@ -294,11 +290,11 @@ struct GameCard {
             Text(this.game.badge)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_PRIMARY)
-              .backgroundColor(DesignColor.SURFACE)
+              .fontColor(resColor('TEXT_PRIMARY'))
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.RADIUS_FULL)
               // 1px outline 描边与卡片描边同语言：封面接近白色时胶囊轮廓不消失（对齐安卓）
-              .border({ width: 1, color: DesignColor.OUTLINE })
+              .border({ width: 1, color: resColor('OUTLINE') })
               .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
               .margin({ top: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
           }
@@ -311,7 +307,7 @@ struct GameCard {
         Column() {
           Text(this.game.title)
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
@@ -319,7 +315,7 @@ struct GameCard {
             Text(this.game.description)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .maxLines(2)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .width('100%')
@@ -343,7 +339,7 @@ struct GameCard {
           })
           Text(this.game.title)
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
@@ -352,7 +348,7 @@ struct GameCard {
             Text(this.game.description)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .maxLines(2)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .width('100%')
@@ -364,8 +360,8 @@ struct GameCard {
             Text(this.game.badge)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_GREEN_ON_TINT)
-              .backgroundColor(DesignColor.PRIMARY_LIGHT)
+              .fontColor(resColor('TEXT_GREEN_ON_TINT'))
+              .backgroundColor(resColor('PRIMARY_LIGHT'))
               .borderRadius(DesignDimens.RADIUS_FULL)
               .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
               .margin({ top: DesignDimens.SPACE_XXS })
@@ -378,13 +374,13 @@ struct GameCard {
     }
     .width('100%')
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: DesignColor.OUTLINE })
-    .backgroundColor(DesignColor.SURFACE)
+    .border({ width: 1, color: resColor('OUTLINE') })
+    .backgroundColor(resColor('SURFACE'))
     // 卡片阴影档（规范 §2.4：0 2px 12px）——blur 取 CARD_SHADOW_RADIUS(12)，非海拔档位号 LEVEL_1
     // （1vp 模糊不可见，与 AppCard 统一口径）；阴影色随主题切深色档 rgba(0,0,0,0.28)
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -564,7 +560,7 @@ export struct GameCenterPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefreshV2() {
       Column() {
@@ -611,7 +607,7 @@ export struct GameCenterPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

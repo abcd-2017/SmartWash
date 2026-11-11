@@ -3,7 +3,6 @@ import { display, window, KeyboardAvoidMode } from '@kit.ArkUI';
 import { logger } from '../utils/Logger';
 import { initPreferences } from '../utils/StorageUtil';
 import { initPickupReminder } from '../utils/ReminderService';
-import { applyDesignTheme } from '../constant/DesignSystem';
 import { DarkModeStore } from '../constant/DarkModeStore';
 import { ServerConfig } from '../config/ServerConfig'
 
@@ -48,7 +47,7 @@ export default class EntryAbility extends UIAbility {
     // 全局兜底最先注册：让后续初始化阶段的未捕获异常也能留下 error 日志
     errorManager.on('error', new CrashLogObserver());
     // 深浅色跟随系统（问题17）：不再强制 COLOR_MODE_LIGHT。
-    // 系统色模式检测值写入 AppStorage('darkMode')，DesignColor 的每个令牌据此返回深/浅值。
+    // 系统色模式检测值写入 AppStorage('darkMode'，供旧 V1 链路读取)；颜色本身走资源限定符自动切换。
     this.syncDarkMode();
     // 冷启动深链：onCreate 先于 loadContent 执行，此处暂存 uri，待 Home 页挂载后消费
     this.savePendingDeepLink(want);
@@ -71,8 +70,8 @@ export default class EntryAbility extends UIAbility {
 
   /**
    * 读取系统色模式（-1 未指定 / 0 亮 / 1 暗）：写入 AppStorage('darkMode') 与
-   * DarkModeStore 单例（V2 组件消费链，见 constant/DarkModeStore.ets），并调用
-   * applyDesignTheme 刷新 DesignColor 的全部可变令牌值。
+   * DarkModeStore 单例（旧 V1/V2 组件消费链，见 constant/DarkModeStore.ets）。
+   * 颜色不再手动回写：UI 侧一律读 base/dark 资源限定符，随系统配置自动切换。
    * @param config 优先用调用方传入的 Configuration（onConfigurationUpdate 的 newConfig
    *               是最新值）；缺省时回落 this.context.config（onCreate 路径，冷启动最新）
    * 健壮性：config 缺失或 colorMode 取值意外（-1 未指定等）一律按 LIGHT 兜底，不崩溃；
@@ -87,7 +86,6 @@ export default class EntryAbility extends UIAbility {
       AppStorage.setOrCreate('darkMode', dark);
       // V2 消费链双写：@Trace 赋值驱动 ThemeRefreshV2 等订阅方刷新
       DarkModeStore.getInstance().dark = dark;
-      applyDesignTheme(dark);
     } catch (err) {
       logger.error('EntryAbility', '读取系统色模式失败', err instanceof Error ? err.message : '');
     }

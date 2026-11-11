@@ -41,6 +41,7 @@ import { pathStack, getStringParam } from '../../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
 import { logger } from '../../../../../utils/Logger'
 import { DivChartParam } from '../../DivChartParam'
+import { resString } from '../../../../../utils/ResourceString'
 
 /** 六爻起卦方式 */
 const LIU_YAO_MODE_SHAKE: string = 'shake'
@@ -55,19 +56,19 @@ const MEI_HUA_MODE_NUMBERS: string = 'numbers'
  * 医疗 / 生死 / 胎儿性别 / 失踪 —— 直接分流现实求助，不排盘不解读。
  */
 const HIGH_RISK_KEYWORDS: string[] = [
-  '病', '癌', '瘤', '医', '药', '手术', '诊断', '抑郁', '怀孕', '妊',
-  '死', '自杀', '轻生', '寿命', '阳寿',
-  '胎儿', '性别', '男孩', '女孩',
-  '失踪', '走失', '寻人',
+  resString('div_ask_page_1'), resString('div_ask_page_2'), resString('div_ask_page_3'), resString('div_ask_page_4'), resString('div_ask_page_5'), resString('div_ask_page_6'), resString('div_ask_page_7'), resString('div_ask_page_8'), resString('div_ask_page_9'), resString('div_ask_page_10'),
+  resString('div_ask_page_11'), resString('div_ask_page_12'), resString('div_ask_page_13'), resString('div_ask_page_14'), resString('div_ask_page_15'),
+  resString('div_ask_page_16'), resString('div_ask_page_17'), resString('div_ask_page_18'), resString('div_ask_page_19'),
+  resString('div_ask_page_20'), resString('div_ask_page_21'), resString('div_ask_page_22'),
 ]
 
 /** 领域关键词自动预选映射（对齐安卓 DivAskViewModel.CATEGORY_KEYWORDS） */
 const CATEGORY_KEYWORDS: Array<[string, string[]]> = [
-  ['career', ['工作', '事业', 'offer', '面试', '升职', '跳槽', '岗位', '实习', '转正']],
-  ['wealth', ['财', '钱', '收入', '工资', '回款', '生意', '投资', '欠', '借款']],
-  ['love', ['感情', '恋', '婚', '表白', '对象', '心动', '分手', '复合']],
-  ['study', ['学', '考试', '考研', '绩点', '论文', '毕业', '保研', '四六级', '考证']],
-  ['travel', ['出行', '旅行', '搬家', '出差', '车票', '远行', '返校']],
+  ['career', [resString('div_ask_page_23'), resString('div_category_career'), 'offer', resString('div_ask_page_24'), resString('div_ask_page_25'), resString('div_ask_page_26'), resString('div_ask_page_27'), resString('div_ask_page_28'), resString('div_ask_page_29')]],
+  ['wealth', [resString('div_ask_page_30'), resString('div_ask_page_31'), resString('div_ask_page_32'), resString('div_ask_page_33'), resString('div_ask_page_34'), resString('div_ask_page_35'), resString('div_ask_page_36'), resString('div_ask_page_37'), resString('div_ask_page_38')]],
+  ['love', [resString('div_category_love'), resString('div_ask_page_39'), resString('div_ask_page_40'), resString('div_ask_page_41'), resString('div_ask_page_42'), resString('div_ask_page_43'), resString('div_ask_page_44'), resString('div_ask_page_45')]],
+  ['study', [resString('div_ask_page_46'), resString('div_ask_page_47'), resString('div_ask_page_48'), resString('div_ask_page_49'), resString('div_ask_page_50'), resString('div_ask_page_51'), resString('div_ask_page_52'), resString('div_ask_page_53'), resString('div_ask_page_54')]],
+  ['travel', [resString('div_category_travel'), resString('div_ask_page_55'), resString('div_ask_page_56'), resString('div_ask_page_57'), resString('div_ask_page_58'), resString('div_ask_page_59'), resString('div_ask_page_60')]],
 ]
 
 /** 所问领域 chips（对齐安卓 DivCategory.ALL） */
@@ -177,7 +178,7 @@ struct DivAskPage {
       this.saved([], DivMethod.QI_MEN.id, chart)
     } catch (err) {
       logger.error('divAskPage', '奇门起局失败', err instanceof Error ? err.message : '')
-      showToastSafety('起局失败，请稍后重试')
+      showToastSafety(resString('div_ask_page_61'))
     }
   }
 
@@ -194,7 +195,7 @@ struct DivAskPage {
       this.saved([], DivMethod.LIU_REN.id, chart)
     } catch (err) {
       // 六壬九宗门未实现宗门（伏吟/返吟/遥克等）抛异常，按 UI 口径提示「暂不支持」
-      const note = err instanceof Error && err.message.length > 0 ? err.message : '起课暂不支持，敬请期待'
+      const note = err instanceof Error && err.message.length > 0 ? err.message : resString('div_ask_page_62')
       logger.warn('divAskPage', `六壬起课受限 note=${note}`)
       showToastSafety(note)
     }
@@ -228,7 +229,7 @@ struct DivAskPage {
     } catch (err) {
       this.saving = false
       logger.error('divAskPage', '排盘入库失败', err instanceof Error ? err.message : '')
-      showToastSafety('起卦失败，请稍后重试')
+      showToastSafety(resString('div_ask_page_63'))
     }
   }
 
@@ -284,16 +285,16 @@ struct DivAskPage {
 
   private methodTail(): string {
     if (this.method === DivMethod.LIU_YAO.id) {
-      return '六爻 · 摇卦'
+      return resString('div_method_tail_liuyao')
     }
     if (this.method === DivMethod.MEI_HUA.id) {
-      return '梅花 · 心易'
+      return resString('div_method_tail_meihua')
     }
     if (this.method === DivMethod.QI_MEN.id) {
-      return '奇门 · 起局'
+      return resString('div_method_tail_qimen')
     }
     if (this.method === DivMethod.LIU_REN.id) {
-      return '六壬 · 起课'
+      return resString('div_method_tail_liuren')
     }
     return ''
   }

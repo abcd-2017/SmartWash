@@ -14,14 +14,7 @@ import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { HttpStatusCode } from '@ohos/axios'
 import { RouteNames } from '../../../../constant/RouteNames'
-import {
-  DesignColor,
-  DesignDimens,
-  DesignElevation,
-  DesignFontSize,
-  DesignFontFeature,
-  DesignFontWeight
-} from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
 import {
   AddDeliveryTextForm,
   closeDeliverySession,
@@ -51,6 +44,8 @@ import { getStringParam, pathStack } from '../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../../view/common/ThemeRefresh'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'deliverySession'
@@ -89,7 +84,7 @@ struct DeliverySessionPage {
       title: DeliveryText.toolbox_delivery_confirm_close_title,
       message: DeliveryText.toolbox_delivery_confirm_close_message,
       confirmText: DeliveryText.toolbox_delivery_action_close,
-      cancelText: '取消',
+      cancelText: resString('cancel'),
       isDanger: true,
       onConfirm: () => {
         this.closeSession()
@@ -380,7 +375,7 @@ struct DeliverySessionPage {
         title: DeliveryText.toolbox_delivery_kind_text,
         message: previewText.length > 0 ? previewText : DeliveryText.toolbox_delivery_preview_error,
         confirmText: DeliveryText.toolbox_delivery_action_copy_take,
-        cancelText: '关闭',
+        cancelText: resString('lab_soundscape_timer_off'),
         onConfirm: () => {
           this.copyTextAndTake(itemId, text)
         },
@@ -403,7 +398,7 @@ struct DeliverySessionPage {
         title: DeliveryText.toolbox_delivery_confirm_take_title,
         message: DeliveryText.toolbox_delivery_confirm_take_message,
         confirmText: DeliveryText.toolbox_delivery_action_take,
-        cancelText: '取消',
+        cancelText: resString('cancel'),
         onConfirm: () => {
           this.takeItem(itemId)
         },
@@ -554,12 +549,12 @@ struct DeliverySessionPage {
         Column() {
             SymbolGlyph($r('sys.symbol.computer'))
             .fontSize(20)
-            .fontColor([DesignColor.ICON_FOREGROUND_BLUE])
+            .fontColor([resColor('ICON_FOREGROUND_BLUE')])
         }
         .width(36)
         .height(36)
         .borderRadius(DesignDimens.RADIUS_MD)
-        .backgroundColor(DesignColor.ICON_CONTAINER_BLUE)
+        .backgroundColor(resColor('ICON_CONTAINER_BLUE'))
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
 
@@ -567,7 +562,7 @@ struct DeliverySessionPage {
           Text(this.session?.code ?? '')
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -575,7 +570,7 @@ struct DeliverySessionPage {
             : DeliveryText.toolbox_delivery_url_fallback)
             .fontSize(DesignFontSize.CAPTION)
             // URL 是二维码扫不出来时的唯一手动入口，可读内容不用 textTertiary（compare-07 #5）
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -593,7 +588,7 @@ struct DeliverySessionPage {
         Text(DeliveryText.toolbox_delivery_action_close_session)
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.DANGER_INK)
+          .fontColor(resColor('DANGER_INK'))
           .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
           .onClick(() => {
             // ArkUI onClick 走手势竞争、内层优先消费，无需显式阻断冒泡（compare-07 #9；
@@ -610,7 +605,7 @@ struct DeliverySessionPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -619,7 +614,7 @@ struct DeliverySessionPage {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([DesignColor.TEXT_PRIMARY])
+              .fontColor([resColor('TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -632,7 +627,7 @@ struct DeliverySessionPage {
           Text(DeliveryText.toolbox_delivery_session_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
 
           Blank()
 
@@ -641,7 +636,7 @@ struct DeliverySessionPage {
           Text(this.headerCountdown())
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(this.isCountdownUrgent() ? DesignColor.DANGER_INK : DesignColor.ON_WARNING_CONTAINER)
+            .fontColor(this.isCountdownUrgent() ? resColor('DANGER_INK') : resColor('ON_WARNING_CONTAINER'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ right: DesignDimens.SPACE_XS })
         }
@@ -655,12 +650,12 @@ struct DeliverySessionPage {
           this.SessionStrip()
         }
         .width('100%')
-        .backgroundColor(DesignColor.SURFACE)
+        .backgroundColor(resColor('SURFACE'))
         .borderRadius(DesignDimens.CARD_RADIUS)
-        .border({ width: 1, color: DesignColor.OUTLINE })
+        .border({ width: 1, color: resColor('OUTLINE') })
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: DesignColor.SHADOW_COLOR_CARD,
+          color: resColor('SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: 2
         })
@@ -670,7 +665,7 @@ struct DeliverySessionPage {
         if (this.pollFailed && this.items.length > 0) {
           Text(DeliveryText.toolbox_delivery_poll_error)
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.DANGER_INK)
+            .fontColor(resColor('DANGER_INK'))
             .width('100%')
             .padding({
               left: DesignDimens.PAGE_PADDING,
@@ -729,7 +724,7 @@ struct DeliverySessionPage {
                       // ArkUI List.divider 不支持行内缩进，改为行间手绘近似）
                       Divider()
                         .strokeWidth(0.5)
-                        .color(DesignColor.HAIRLINE)
+                        .color(resColor('HAIRLINE'))
                         .margin({ left: DesignDimens.SPACE_XXL + DesignDimens.SPACE_SM })
                     }
                   }
@@ -742,12 +737,12 @@ struct DeliverySessionPage {
           .width('100%')
           .layoutWeight(1)
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-          .backgroundColor(DesignColor.SURFACE)
+          .backgroundColor(resColor('SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: DesignColor.OUTLINE })
+          .border({ width: 1, color: resColor('OUTLINE') })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: DesignColor.SHADOW_COLOR_CARD,
+            color: resColor('SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: 2
           })
@@ -762,14 +757,14 @@ struct DeliverySessionPage {
         // ---------- 发送区（浮层：顶线 + 选取入口 + 文本输入 + 发送） ----------
         Column() {
           Divider()
-            .color(DesignColor.HAIRLINE)
+            .color(resColor('HAIRLINE'))
             .strokeWidth(0.5)
 
           if (this.sending) {
             Text(DeliveryText.toolbox_delivery_sending)
               .fontSize(DesignFontSize.CAPTION)
               // 传输状态为可读内容，不用 textTertiary（compare-07 #5）
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .width('100%')
               // 状态行独立留白：横向 24 不贴屏幕左缘（compare-07 #8，对齐安卓 horizontal pagePadding）
               .padding({
@@ -781,7 +776,7 @@ struct DeliverySessionPage {
           } else if (this.sendError.length > 0) {
             Text(this.sendError)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.ERROR)
+              .fontColor(resColor('ERROR'))
               .width('100%')
               .padding({
                 left: DesignDimens.PAGE_PADDING,
@@ -797,12 +792,12 @@ struct DeliverySessionPage {
               Column() {
                 SymbolGlyph($r('sys.symbol.shutter_photo'))
                   .fontSize(20)
-                  .fontColor([DesignColor.ICON_FOREGROUND_BLUE])
+                  .fontColor([resColor('ICON_FOREGROUND_BLUE')])
               }
               .width(36)
               .height(36)
               .borderRadius(DesignDimens.RADIUS_MD)
-              .backgroundColor(DesignColor.ICON_CONTAINER_BLUE)
+              .backgroundColor(resColor('ICON_CONTAINER_BLUE'))
               .justifyContent(FlexAlign.Center)
               .alignItems(HorizontalAlign.Center)
             }
@@ -819,12 +814,12 @@ struct DeliverySessionPage {
               Column() {
                 SymbolGlyph($r('sys.symbol.doc'))
                   .fontSize(20)
-                  .fontColor([DesignColor.ICON_FOREGROUND_BLUE])
+                  .fontColor([resColor('ICON_FOREGROUND_BLUE')])
               }
               .width(36)
               .height(36)
               .borderRadius(DesignDimens.RADIUS_MD)
-              .backgroundColor(DesignColor.ICON_CONTAINER_BLUE)
+              .backgroundColor(resColor('ICON_CONTAINER_BLUE'))
               .justifyContent(FlexAlign.Center)
               .alignItems(HorizontalAlign.Center)
             }
@@ -840,11 +835,11 @@ struct DeliverySessionPage {
             TextInput({ text: this.draft, placeholder: DeliveryText.toolbox_delivery_send_hint })
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               .borderRadius(DesignDimens.INPUT_RADIUS)
               .borderWidth(1)
-              .borderColor(this.draftFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-              .placeholderColor(DesignColor.TEXT_TERTIARY)
+              .borderColor(this.draftFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
+              .placeholderColor(resColor('TEXT_TERTIARY'))
               .placeholderFont({ size: DesignFontSize.CAPTION })
               .layoutWeight(1)
               .margin({ left: DesignDimens.SPACE_XS })
@@ -865,12 +860,12 @@ struct DeliverySessionPage {
             Column() {
               SymbolGlyph($r('sys.symbol.paperplane_fill'))
                 .fontSize(20)
-                .fontColor([DesignColor.ON_PRIMARY])
+                .fontColor([resColor('ON_PRIMARY')])
             }
             .width(44)
             .height(44)
             .borderRadius(22)
-            .backgroundColor(DesignColor.PRIMARY)
+            .backgroundColor(resColor('PRIMARY'))
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             .opacity(this.draft.trim().length > 0 && !this.sending ? 1 : 0.5)
@@ -886,10 +881,10 @@ struct DeliverySessionPage {
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_SM + safeBottomVp() })
         }
         .width('100%')
-        .backgroundColor(DesignColor.SURFACE)
+        .backgroundColor(resColor('SURFACE'))
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: DesignColor.SHADOW_COLOR_CARD,
+          color: resColor('SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: 2
         })
@@ -897,7 +892,7 @@ struct DeliverySessionPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

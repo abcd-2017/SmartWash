@@ -17,6 +17,7 @@
 import { OrderStatusEnum, getOrderStatusDescription } from "../constant/OrderStatus"
 import { formatOrderTime } from "../utils/TimeUtil"
 import { OrderInfo } from "../network/vo/OrderInfo"
+import { resString } from '../utils/ResourceString'
 
 /** 在途状态优先级表：越靠前越优先展示（用户视角「越接近可取件越优先」） */
 const PROGRESS_PRIORITY: string[] = [
@@ -112,9 +113,9 @@ const URI_ORDER_DETAIL_PREFIX: string = 'smartwash://order-detail/'
 const URI_ORDER_LIST: string = 'smartwash://order?tab=0'
 
 /** 引导态主文案（无进行中订单） */
-export const WIDGET_EMPTY_TITLE: string = '暂无进行中的洗衣单'
+export function WIDGET_EMPTY_TITLE(): string { return resString('widget_order_model_1') }
 /** 引导态副文案（提示可点击） */
-export const WIDGET_EMPTY_HINT: string = '点击查看订单'
+export function WIDGET_EMPTY_HINT(): string { return resString('widget_order_model_2') }
 
 /** 实付金额展示（元）；null 兜底「--」 */
 function payPriceText(payPrice: number | null): string {
@@ -178,9 +179,9 @@ export function buildEmptyBinding(): WidgetBinding {
   return {
     cardWide: false,
     hasOrder: false,
-    statusText: WIDGET_EMPTY_TITLE,
+    statusText: WIDGET_EMPTY_TITLE(),
     statusColor: WIDGET_STATUS_COLOR_ACTIVE,
-    infoText: WIDGET_EMPTY_HINT,
+    infoText: WIDGET_EMPTY_HINT(),
     summaryText: '',
     targetUri: URI_ORDER_LIST
   }
@@ -191,7 +192,7 @@ export function buildLoadingBinding(): WidgetBinding {
   return {
     cardWide: false,
     hasOrder: false,
-    statusText: '正在加载…',
+    statusText: resString('widget_order_model_3'),
     statusColor: WIDGET_STATUS_COLOR_ACTIVE,
     infoText: '',
     summaryText: '',

@@ -6,13 +6,15 @@ import { getObjectParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { BaseResponse } from "../network/BaseResponse"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { cancelPickupReminderForOrder } from "../utils/ReminderService"
 import vibrator from "@ohos.vibrator"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
 import { InfoRow } from '../view/common/InfoRow'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 /**
  * PickupDelivery 路由入参：显式指定取件/寄件类型（差异分析 02 §8.3）。
@@ -89,13 +91,13 @@ struct PickupDelivery {
             `code=${detailRes.code} message=${detailRes.message ?? ""}`)
           this.orderInfo = null
           this.loadFailed = true
-          showToastSafety(detailRes.message, "订单信息加载失败")
+          showToastSafety(detailRes.message, resString('pickup_delivery_1'))
         }
       } catch (err) {
         // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
         this.orderInfo = null
         this.loadFailed = true
-        showToastSafety("网络异常，请稍后重试")
+        showToastSafety(resString('pickup_delivery_2'))
       } finally {
         this.isLoading = false
       }
@@ -132,12 +134,12 @@ struct PickupDelivery {
         this.qrCode = res.data ?? ""
       } else {
         logger.warn('pickupDelivery', `二维码生成失败 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "取件码生成失败")
+        showToastSafety(res.message, resString('pickup_delivery_3'))
         this.qrFailed = true
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 qrLoading 卡死骨架常驻
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('pickup_delivery_2'))
       this.qrFailed = true
     } finally {
       this.qrLoading = false
@@ -169,7 +171,7 @@ struct PickupDelivery {
       // 不能只看 code=200 就弹「操作成功」（对齐 AddSchool 对 getUserByStudentId 的判法）
       if (res.code === HttpStatusCode.Ok && res.data === true) {
         logger.info('pickupDelivery',
-          `${this.isPickup ? "取件" : "寄件"}确认成功 orderId=${this.orderInfo?.orderId ?? -1}`)
+          `${this.isPickup ? resString('service_pickup') : resString('delivery_type')}确认成功 orderId=${this.orderInfo?.orderId ?? -1}`)
         // 取件成功：撤销该订单的取件提醒（订单转已完成，提醒已无意义；
         // fire-and-forget，撤销内部全量容错不影响确认主流程）
         if (this.isPickup) {
@@ -184,17 +186,17 @@ struct PickupDelivery {
         } catch (err) {
           // 忽略不支持的设备
         }
-        showToastSafety("操作成功")
+        showToastSafety(resString('pickup_delivery_4'))
         pathStack.pop()
       } else {
-        showToastSafety(res.message, "操作失败，订单状态可能已变更")
+        showToastSafety(res.message, resString('pickup_delivery_5'))
         logger.warn('pickupDelivery',
-          `${this.isPickup ? "取件" : "寄件"}确认被拒 orderId=${this.orderInfo?.orderId ?? -1} ` +
+          `${this.isPickup ? resString('service_pickup') : resString('delivery_type')}确认被拒 orderId=${this.orderInfo?.orderId ?? -1} ` +
           `code=${res.code} message=${res.message ?? ""}`)
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并提示，避免 confirming/submitting 卡死
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('pickup_delivery_2'))
     } finally {
       this.confirming = false
       this.submitting = false
@@ -211,19 +213,19 @@ struct PickupDelivery {
       Column() {
         Text(`${i}`)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.ON_PRIMARY_CONTAINER)
+          .fontColor(resColor('ON_PRIMARY_CONTAINER'))
           .fontWeight(DesignFontWeight.NORMAL)
       }
       .width(20)
       .height(20)
       .borderRadius(10)
       .justifyContent(FlexAlign.Center)
-      .backgroundColor(DesignColor.ICON_CONTAINER_GREEN)
+      .backgroundColor(resColor('ICON_CONTAINER_GREEN'))
       .margin({ right: DesignDimens.SPACE_XS })
 
       Text(content)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .layoutWeight(1)
     }.width("100%")
     .alignItems(VerticalAlign.Center)
@@ -246,20 +248,20 @@ struct PickupDelivery {
             LoadingProgress()
               .width(28)
               .height(28)
-              .color(DesignColor.PRIMARY)
-            Text("加载中…")
+              .color(resColor('PRIMARY'))
+            Text($r('app.string.loading'))
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .margin({ top: 8 })
           } else {
-            Text(this.qrFailed ? "二维码生成失败" : "暂无二维码")
+            Text(this.qrFailed ? resString('pickup_delivery_6') : resString('pickup_delivery_7'))
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
             if (this.qrFailed) {
-              Text("点击重试")
+              Text($r('app.string.pickup_delivery_8'))
                 .fontSize(DesignFontSize.BODY_SMALL)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(DesignColor.PRIMARY)
+                .fontColor(resColor('PRIMARY'))
                 .margin({ top: 8 })
             }
           }
@@ -267,7 +269,7 @@ struct PickupDelivery {
         .size({ width: 80, height: 80 })
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
-        .backgroundColor(DesignColor.SURFACE)
+        .backgroundColor(resColor('SURFACE'))
         .borderRadius(DesignDimens.CARD_RADIUS)
         .transition(TransitionEffect.OPACITY)
         .onClick(() => {
@@ -293,20 +295,20 @@ struct PickupDelivery {
           icon: $r('sys.symbol.exclamationmark_triangle_fill'),
           sizeValue: 36,
           iconSize: 20,
-          containerColor: DesignColor.ICON_CONTAINER_ORANGE,
-          iconColor: DesignColor.ICON_FOREGROUND_ORANGE
+          containerColor: resColor('ICON_CONTAINER_ORANGE'),
+          iconColor: resColor('ICON_FOREGROUND_ORANGE')
         })
         Column() {
           // 标题 titleSmall 14/500（BODY_SMALL + MEDIUM）；正文 bodySmall 12/400 无顶部间距
-          Text("注意事项")
+          Text($r('app.string.notes'))
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.ON_WARNING_CONTAINER)
-          Text("• 请确保在30分钟内完成操作\n" +
-            "• 如遇问题请联系客服\n" +
-            "• 请勿将贵重物品放入寄存柜")
+            .fontColor(resColor('ON_WARNING_CONTAINER'))
+          Text($r('app.string.pickup_delivery_9') +
+            resString('pickup_delivery_10') +
+            resString('pickup_delivery_11'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.ON_WARNING_CONTAINER)
+            .fontColor(resColor('ON_WARNING_CONTAINER'))
             .lineHeight(16)
         }
         .alignItems(HorizontalAlign.Start)
@@ -319,13 +321,13 @@ struct PickupDelivery {
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.WARNING_CONTAINER)
+    .backgroundColor(resColor('WARNING_CONTAINER'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: resColor('OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -338,10 +340,10 @@ struct PickupDelivery {
     Column() {
       this.QrCodeArea()
 
-      Text(`${this.isPickup ? "取件码" : "寄件码"}`)
+      Text(`${this.isPickup ? resString('pickup_code') : resString('delivery_code')}`)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontSize(DesignFontSize.SECTION_TITLE)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         // 字距 0（对齐安卓 U-116：v0.4 字阶已废字距，原 0.3 已删）
         .margin({ top: 20 })
 
@@ -350,19 +352,19 @@ struct PickupDelivery {
         // DATA_LARGE（36）属 font.display 档（DESIGN-SPEC §2：寄件码 700 + tnum），字重保持 BOLD；
         // 由裸 FontWeight 枚举收敛为设计令牌，与全站一致
         .fontWeight(DesignFontWeight.BOLD)
-        .fontColor(DesignColor.PRIMARY_DARK)
+        .fontColor(resColor('PRIMARY_DARK'))
         .fontFeature(DesignFontFeature.TNUM)
         .maxLines(1)
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: resColor('OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -379,13 +381,13 @@ struct PickupDelivery {
           icon: $r('sys.symbol.company'),
           sizeValue: 36,
           iconSize: 20,
-          containerColor: DesignColor.PRIMARY_LIGHT,
-          iconColor: DesignColor.PRIMARY
+          containerColor: resColor('PRIMARY_LIGHT'),
+          iconColor: resColor('PRIMARY')
         })
-        Text("寄存柜信息")
+        Text($r('app.string.locker_info'))
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           // 图标与标题间距 12（对齐安卓 InfoSection 的 Spacer(12)）
           .margin({ left: DesignDimens.SPACE_SM })
       }
@@ -394,21 +396,21 @@ struct PickupDelivery {
       .margin({ bottom: 4 })
 
       Column({ space: 14 }) {
-        InfoRow({ label: "学校名称", value: `${this.orderInfo?.schoolsVo?.schoolName ?? ""}` })
-        InfoRow({ label: "地址", value: `${this.orderInfo?.schoolsVo?.location ?? ""}` })
+        InfoRow({ label: resString('school_name'), value: `${this.orderInfo?.schoolsVo?.schoolName ?? ""}` })
+        InfoRow({ label: resString('address'), value: `${this.orderInfo?.schoolsVo?.location ?? ""}` })
         // 柜号是编号类数字，开 tnum（对齐安卓 InfoRow valueStyle = bodySmall.copy(tnum)）
-        InfoRow({ label: "寄存柜柜号", value: `${this.orderInfo?.lockersVo?.lockerNumber ?? ""}`, valueTnum: true })
+        InfoRow({ label: resString('locker_number_label'), value: `${this.orderInfo?.lockersVo?.lockerNumber ?? ""}`, valueTnum: true })
       }
       .width("100%")
     }
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: resColor('OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -419,10 +421,10 @@ struct PickupDelivery {
   GuideCard() {
     Column() {
       Row() {
-        Text("操作指引")
+        Text($r('app.string.operation_guide'))
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
       }
       .justifyContent(FlexAlign.Start)
       .width("100%")
@@ -430,20 +432,20 @@ struct PickupDelivery {
 
       Column({ space: 4 }) {
         this.InstructionRow("1", `找到寄存柜 ${this.orderInfo?.lockersVo?.lockerNumber ?? ""}`)
-        this.InstructionRow("2", `点击屏幕上的" ${this.isPickup ? "取件" : "寄件"} "按钮`)
-        this.InstructionRow("3", `输入${this.isPickup ? "取件码" : "寄件码"}：${this.pickCode}`)
-        this.InstructionRow("4", this.isPickup ? "等待柜门打开，取出衣物" : "等待柜门打开，放入衣物")
+        this.InstructionRow("2", `点击屏幕上的" ${this.isPickup ? resString('service_pickup') : resString('delivery_type')} "按钮`)
+        this.InstructionRow("3", `输入${this.isPickup ? resString('pickup_code') : resString('delivery_code')}：${this.pickCode}`)
+        this.InstructionRow("4", this.isPickup ? resString('wait_and_take_clothes') : resString('wait_and_put_clothes'))
       }
       .width("100%")
     }
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: resColor('OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -460,16 +462,16 @@ struct PickupDelivery {
       // 次按钮 — 联系客服：透明底 + 1dp outline 描边
       Column() {
         // 文字 titleMedium 18/600（对齐安卓 PickupDeliveryActionBar：MaterialTheme.titleMedium）
-        Text("联系客服")
+        Text($r('app.string.contact_service'))
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.PRIMARY_DARK)
+          .fontColor(resColor('PRIMARY_DARK'))
       }
       .layoutWeight(1)
       .height(48)
       .justifyContent(FlexAlign.Center)
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .border({ width: 1, color: DesignColor.OUTLINE })
+      .border({ width: 1, color: resColor('OUTLINE') })
       .scale({ x: this.contactPressed ? 0.97 : 1, y: this.contactPressed ? 0.97 : 1 })
       .animation({ duration: 100, curve: Curve.EaseOut })
       .onTouch((event: TouchEvent) => {
@@ -481,7 +483,7 @@ struct PickupDelivery {
       })
       .onClick(() => {
         // 客服功能未立项，先以 Toast 兜底（与安卓 contact_service_unavailable 约定一致）
-        showToastSafety("客服暂未开通，请稍后再试")
+        showToastSafety(resString('contact_service_unavailable'))
       })
 
       // 主按钮 — 确认已取件/确认已寄件：请求在途转菊花且不再响应点击
@@ -490,20 +492,20 @@ struct PickupDelivery {
           LoadingProgress()
             .width(20)
             .height(20)
-            .color(DesignColor.ON_PRIMARY)
+            .color(resColor('ON_PRIMARY'))
         } else {
           // 文字 titleMedium 18/600（对齐安卓 PickupDeliveryActionBar：MaterialTheme.titleMedium）
-          Text(this.isPickup ? "确认已取件" : "确认已寄件")
+          Text(this.isPickup ? resString('confirm_picked_up') : resString('confirm_delivered'))
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.ON_PRIMARY)
+            .fontColor(resColor('ON_PRIMARY'))
         }
       }
       .layoutWeight(1)
       .height(48)
       .justifyContent(FlexAlign.Center)
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(DesignColor.PRIMARY)
+      .backgroundColor(resColor('PRIMARY'))
       .margin({ left: DesignDimens.SPACE_SM })
       .scale({ x: this.primaryPressed ? 0.97 : 1, y: this.primaryPressed ? 0.97 : 1 })
       .animation({ duration: 100, curve: Curve.EaseOut })
@@ -519,7 +521,7 @@ struct PickupDelivery {
           return
         }
         // 确认弹窗文案按类型区分（recap §9-T1：对齐安卓「衣服」）
-        this.confirmMessage = this.isPickup ? "确认已取出衣服" : "确认已将衣服放入寄存柜"
+        this.confirmMessage = this.isPickup ? resString('confirm_taken_clothes') : resString('confirm_put_clothes')
         this.confirmDialogController.open()
       })
     }
@@ -535,12 +537,12 @@ struct PickupDelivery {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 页头（recap G4：22/600 + 48 返回热区，复用公共 PageHeader）
-        PageHeader({ title: this.isPickup ? "取件" : "寄件" })
+        PageHeader({ title: this.isPickup ? resString('service_pickup') : resString('delivery_type') })
 
         // 页头下 8dp 间距（对齐安卓 PickupDeliveryPage 的 Spacer(8)）
         Blank().height(DesignDimens.SPACE_XS)
@@ -555,11 +557,11 @@ struct PickupDelivery {
           // 失败态：EmptyState 母题 + 重试按钮（对齐安卓 ERROR 态）
           Column() {
             EmptyState({
-              message: "请求失败",
+              message: resString('error_network_fail'),
               action: () => {
                 AppButton({
                   small: true,
-                  text: "重试",
+                  text: resString('retry'),
                   variant: AppButtonVariant.SECONDARY,
                   click: () => {
                     this.initPage()
@@ -616,7 +618,7 @@ struct PickupDelivery {
       .height("100%")
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

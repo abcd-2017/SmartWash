@@ -6,13 +6,15 @@
 // - 输入内容仅在本地暂存，不上传。
 // 待后端提供对话接口后，按四端联动规则补 network/api/AiApi.ets 与真实消息流。
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../constant/DesignSystem'
 import { DrumMark, PageHeader } from '../view/common/AppComponents'
 import { logger } from '../utils/Logger'
 import { pathStack } from '../utils/PathStackUtil'
 import { showToastSafety } from '../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../utils/SafeArea'
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'aiWork'
@@ -22,18 +24,18 @@ const TAG: string = 'aiWork'
  * 值与安卓 app strings.xml 的 ai_* 键逐条对齐；AI 属壳层页面，暂随页面存放。
  */
 export class AiText {
-  static readonly ai_workbench_title: string = "智能助手"
-  static readonly ai_quick_tasks: string = "快捷任务"
-  static readonly ai_task_choose_package: string = "洗护咨询"
-  static readonly ai_task_check_order: string = "订单查询"
-  static readonly ai_task_use_coupon: string = "优惠券"
-  static readonly ai_task_recharge: string = "费用估算"
-  static readonly ai_recent_work: string = "最近工作"
-  static readonly ai_empty_recent: string = "还没有对话记录，从上面选一个任务开始"
-  static readonly ai_start_asking: string = "开始提问"
-  static readonly ai_input_placeholder: string = "有什么可以帮你的？"
+  static get ai_workbench_title(): string { return resString('ai_workbench_title') }
+  static get ai_quick_tasks(): string { return resString('ai_quick_tasks') }
+  static get ai_task_choose_package(): string { return resString('ai_task_choose_package') }
+  static get ai_task_check_order(): string { return resString('ai_task_check_order') }
+  static get ai_task_use_coupon(): string { return resString('service_coupon') }
+  static get ai_task_recharge(): string { return resString('ai_task_recharge') }
+  static get ai_recent_work(): string { return resString('ai_recent_work') }
+  static get ai_empty_recent(): string { return resString('ai_empty_recent') }
+  static get ai_start_asking(): string { return resString('ai_start_asking') }
+  static get ai_input_placeholder(): string { return resString('ai_input_placeholder') }
   // 发送钮为图标语义（安卓侧作 contentDescription），端上暂无文字位，键保留备查
-  static readonly ai_send: string = "发送"
+  static get ai_send(): string { return resString('ai_send') }
 }
 
 /** 快捷任务（对齐安卓 AiWorkPage 的 QuickTaskCard 四项） */
@@ -44,35 +46,41 @@ interface QuickTask {
   iconColor: number
 }
 
-const QUICK_TASKS: QuickTask[] = [
-  {
-    label: AiText.ai_task_choose_package,
-    icon: $r('sys.symbol.laundry'),
-    containerColor: DesignColor.ICON_CONTAINER_GREEN,
-    iconColor: DesignColor.ICON_FOREGROUND_GREEN
-  },
-  {
-    label: AiText.ai_task_check_order,
-    icon: $r('sys.symbol.list_square_bill'),
-    containerColor: DesignColor.ICON_CONTAINER_BLUE,
-    iconColor: DesignColor.ICON_FOREGROUND_BLUE
-  },
-  {
-    label: AiText.ai_task_use_coupon,
-    icon: $r('sys.symbol.label'),
-    containerColor: DesignColor.ICON_CONTAINER_ORANGE,
-    iconColor: DesignColor.ICON_FOREGROUND_ORANGE
-  },
-  {
-    label: AiText.ai_task_recharge,
-    icon: $r('sys.symbol.calculator'),
-    containerColor: DesignColor.ICON_CONTAINER_PURPLE,
-    iconColor: DesignColor.ICON_FOREGROUND_PURPLE
-  }
-]
+/**
+ * 快捷任务（对齐安卓 AiWorkPage 的 QuickTaskCard 四项）。
+ * 函数式：build 内即时取资源色，深浅色切换后重算（模块级 const 会冻结令牌值）。
+ */
+function quickTasks(): QuickTask[] {
+  return [
+    {
+      label: AiText.ai_task_choose_package,
+      icon: $r('sys.symbol.laundry'),
+      containerColor: resColor('ICON_CONTAINER_GREEN'),
+      iconColor: resColor('ICON_FOREGROUND_GREEN')
+    },
+    {
+      label: AiText.ai_task_check_order,
+      icon: $r('sys.symbol.list_square_bill'),
+      containerColor: resColor('ICON_CONTAINER_BLUE'),
+      iconColor: resColor('ICON_FOREGROUND_BLUE')
+    },
+    {
+      label: AiText.ai_task_use_coupon,
+      icon: $r('sys.symbol.label'),
+      containerColor: resColor('ICON_CONTAINER_ORANGE'),
+      iconColor: resColor('ICON_FOREGROUND_ORANGE')
+    },
+    {
+      label: AiText.ai_task_recharge,
+      icon: $r('sys.symbol.calculator'),
+      containerColor: resColor('ICON_CONTAINER_PURPLE'),
+      iconColor: resColor('ICON_FOREGROUND_PURPLE')
+    }
+  ]
+}
 
 /** 能力未接入的统一提示文案 */
-const AI_PENDING_TIP: string = 'AI 能力正在接入中，当前为界面预览'
+function AI_PENDING_TIP(): string { return resString('ai_work_page_1') }
 
 @Builder
 export function AiWorkBuilder() {
@@ -91,7 +99,7 @@ struct AiWorkPage {
   /** 快捷任务点击：占位提示（不发起请求） */
   private onQuickTask(index: number): void {
     logger.debug(TAG, `快捷任务点击 index=${index}（占位，不发起请求）`)
-    showToastSafety(AI_PENDING_TIP)
+    showToastSafety(AI_PENDING_TIP())
   }
 
   /** 发送：占位提示（不发起请求） */
@@ -100,7 +108,7 @@ struct AiWorkPage {
       return
     }
     logger.debug(TAG, '发送点击（占位，不发起请求）')
-    showToastSafety(AI_PENDING_TIP)
+    showToastSafety(AI_PENDING_TIP())
     this.inputText = ''
   }
 
@@ -122,19 +130,19 @@ struct AiWorkPage {
 
       Text(task.label)
         .fontSize(DesignFontSize.BODY_SMALL)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .margin({ left: DesignDimens.SPACE_XS })
     }
     .layoutWeight(1)
     .padding({ left: 20, right: 20, top: 16, bottom: 16 })
     .alignItems(VerticalAlign.Center)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: resColor('OUTLINE') })
     // 卡片阴影唯一画法（规范 §2.4）：blur 取 CARD_SHADOW_RADIUS(12)，非海拔档位号 LEVEL_1
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -154,7 +162,7 @@ struct AiWorkPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -174,20 +182,20 @@ struct AiWorkPage {
             Text(AiText.ai_quick_tasks)
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .width('100%')
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
 
             // 快捷任务 2×2 网格（对齐安卓 AiWorkPage 的两行两列 QuickTaskCard）
             Column({ space: 16 }) {
               Row({ space: 16 }) {
-                ForEach(QUICK_TASKS.slice(0, 2), (task: QuickTask, index: number) => {
+                ForEach(quickTasks().slice(0, 2), (task: QuickTask, index: number) => {
                   this.QuickTaskCard(task, index)
                 }, (task: QuickTask, index: number) => `${index}`)
               }
               .width('100%')
               Row({ space: 16 }) {
-                ForEach(QUICK_TASKS.slice(2, 4), (task: QuickTask, index: number) => {
+                ForEach(quickTasks().slice(2, 4), (task: QuickTask, index: number) => {
                   this.QuickTaskCard(task, index + 2)
                 }, (task: QuickTask, index: number) => `${index + 2}`)
               }
@@ -202,7 +210,7 @@ struct AiWorkPage {
             Text(AiText.ai_recent_work)
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .width('100%')
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.SPACE_SM })
 
@@ -211,10 +219,10 @@ struct AiWorkPage {
             Column() {
               Column() {
                 Column() {
-                  DrumMark({ sizeValue: 60, tint: DesignColor.TEXT_TERTIARY })
+                  DrumMark({ sizeValue: 60, tint: resColor('TEXT_TERTIARY') })
                   Text(AiText.ai_empty_recent)
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(DesignColor.TEXT_SECONDARY)
+                    .fontColor(resColor('TEXT_SECONDARY'))
                     .margin({ top: DesignDimens.SPACE_MD })
                   // 「开始提问」对齐安卓 AiWorkPage 的 Surface：wrap-content（约 84dp 宽，
                   // 原 AppButton 通栏 314.9vp）、radiusButton 14、高 52（[P08] 2026-11-05
@@ -223,8 +231,8 @@ struct AiWorkPage {
                     .type(ButtonType.Normal)
                     .height(52)
                     .borderRadius(DesignDimens.BUTTON_RADIUS)
-                    .backgroundColor(DesignColor.PRIMARY_CONTAINER)
-                    .fontColor(DesignColor.ON_PRIMARY_CONTAINER)
+                    .backgroundColor(resColor('PRIMARY_CONTAINER'))
+                    .fontColor(resColor('ON_PRIMARY_CONTAINER'))
                     .fontSize(DesignFontSize.CAPTION)
                     .fontWeight(DesignFontWeight.MEDIUM)
                     .padding({ left: 18, right: 18, top: 16, bottom: 16 })
@@ -234,7 +242,7 @@ struct AiWorkPage {
                       // focusControl 模块 SDK 17 无独立 d.ts；UIContext.requestFocus @since 22
                       // 超出本工程 API 17——改走 FocusController.requestFocus（@since 12）
                       this.getUIContext().getFocusController().requestFocus('aiInput')
-                      showToastSafety(AI_PENDING_TIP)
+                      showToastSafety(AI_PENDING_TIP())
                     })
                     .margin({ top: DesignDimens.SPACE_SM })
                 }
@@ -243,12 +251,12 @@ struct AiWorkPage {
                 .alignItems(HorizontalAlign.Center)
               }
               .width('100%')
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
-              .border({ width: 1, color: DesignColor.OUTLINE })
+              .border({ width: 1, color: resColor('OUTLINE') })
               .shadow({
                 radius: DesignElevation.CARD_SHADOW_RADIUS,
-                color: DesignColor.SHADOW_COLOR_CARD,
+                color: resColor('SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: DesignElevation.CARD_SHADOW_OFFSET
               })
@@ -268,7 +276,7 @@ struct AiWorkPage {
         Column() {
           // 顶线 1px outline（对齐安卓「顶线」画法；原 HAIRLINE 0.5 更细且更浅一档，白底上近不可见）
           Divider()
-            .color(DesignColor.OUTLINE)
+            .color(resColor('OUTLINE'))
             .strokeWidth(1)
 
           Row() {
@@ -276,15 +284,15 @@ struct AiWorkPage {
               .id('aiInput')
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .fontColor(DesignColor.TEXT_PRIMARY)
-              .caretColor(DesignColor.PRIMARY)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .fontColor(resColor('TEXT_PRIMARY'))
+              .caretColor(resColor('PRIMARY'))
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               .borderRadius(DesignDimens.INPUT_RADIUS)
               .borderWidth(1)
-              .borderColor(this.inputFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE)
+              .borderColor(this.inputFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
               // 占位符 textSecondary + 与正文同字号 16（对齐安卓 audit-10 P1-4：textTertiary
               // 双主题 1.99/3.76:1 触 DESIGN-SPEC §10 可读文本红线）
-              .placeholderColor(DesignColor.TEXT_SECONDARY)
+              .placeholderColor(resColor('TEXT_SECONDARY'))
               .placeholderFont({ size: DesignFontSize.BODY })
               .layoutWeight(1)
               .onFocus(() => {
@@ -300,12 +308,12 @@ struct AiWorkPage {
             Column() {
               SymbolGlyph($r('sys.symbol.paperplane_fill'))
                 .fontSize(20)
-                .fontColor([DesignColor.ON_PRIMARY])
+                .fontColor([resColor('ON_PRIMARY')])
             }
             .width(48)
             .height(48)
             .borderRadius(24)
-            .backgroundColor(DesignColor.PRIMARY)
+            .backgroundColor(resColor('PRIMARY'))
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             .opacity(this.inputText.trim().length > 0 ? 1 : 0.5)
@@ -335,10 +343,10 @@ struct AiWorkPage {
           })
         }
         .width('100%')
-        .backgroundColor(DesignColor.SURFACE)
+        .backgroundColor(resColor('SURFACE'))
         .shadow({
           radius: DesignElevation.CARD_SHADOW_RADIUS,
-          color: DesignColor.SHADOW_COLOR_CARD,
+          color: resColor('SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: DesignElevation.CARD_SHADOW_OFFSET
         })
@@ -346,7 +354,7 @@ struct AiWorkPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

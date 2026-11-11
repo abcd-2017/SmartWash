@@ -13,14 +13,7 @@ import { image } from '@kit.ImageKit'
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { HttpStatusCode } from '@ohos/axios'
 import { RouteNames } from '../../../../constant/RouteNames'
-import {
-  DesignColor,
-  DesignDimens,
-  DesignElevation,
-  DesignFontSize,
-  DesignFontFeature,
-  DesignFontWeight
-} from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
 import {
   AddDeliverySessionForm,
   createDeliverySession,
@@ -41,6 +34,8 @@ import { pathStack } from '../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../../view/common/ThemeRefresh'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'deliveryCreate'
@@ -74,7 +69,7 @@ struct DeliveryCreatePage {
       title: DeliveryText.toolbox_delivery_confirm_close_title,
       message: DeliveryText.toolbox_delivery_confirm_close_message,
       confirmText: DeliveryText.toolbox_delivery_action_close,
-      cancelText: '取消',
+      cancelText: resString('cancel'),
       isDanger: true,
       onConfirm: () => {
         this.closeSession()
@@ -231,7 +226,7 @@ struct DeliveryCreatePage {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(DesignColor.TEXT_SECONDARY)
+      .fontColor(resColor('TEXT_SECONDARY'))
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
@@ -260,12 +255,12 @@ struct DeliveryCreatePage {
     Column() {
       Text(DeliveryText.toolbox_delivery_code_label)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
 
       Text(session.code ?? '')
         .fontSize(DesignFontSize.DATA_LARGE)
         .fontWeight(DesignFontWeight.BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .margin({ top: DesignDimens.SPACE_XXS })
 
@@ -275,7 +270,7 @@ struct DeliveryCreatePage {
 
       Text(session.enterUrl ?? '')
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .textAlign(TextAlign.Center)
         .maxLines(2)
@@ -288,27 +283,27 @@ struct DeliveryCreatePage {
           Text(DeliveryText.toolbox_delivery_session_expired)
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.DANGER_INK)
+            .fontColor(resColor('DANGER_INK'))
         } else {
           // 倒计时常态色不用 ongoingInk（白卡 2.76:1 违反 §10 红线，compare-07 #1），
           // ≤60s 切 dangerInk 紧迫档（#2，对齐安卓 DeliveryCountdown.kt 两档逻辑）
           Text(`${DeliveryText.toolbox_delivery_countdown_prefix}${this.remainSeconds !== null ? formatRemain(this.remainSeconds) : '--:--'}`)
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(this.isCountdownUrgent() ? DesignColor.DANGER_INK : DesignColor.ON_WARNING_CONTAINER)
+            .fontColor(this.isCountdownUrgent() ? resColor('DANGER_INK') : resColor('ON_WARNING_CONTAINER'))
             .fontFeature(DesignFontFeature.TNUM)
         }
         if (session.hasPassword === true) {
           // 12fp 文字不用图标前景令牌（#3F9D78 on #F0FBF4 仅 3.14:1，compare-07 #4）
           DeliveryTagChip({ text: DeliveryText.toolbox_delivery_has_password,
-            containerColor: DesignColor.ICON_CONTAINER_TEAL,
-            contentColor: DesignColor.TEXT_GREEN_ON_TINT })
+            containerColor: resColor('ICON_CONTAINER_TEAL'),
+            contentColor: resColor('TEXT_GREEN_ON_TINT') })
         }
         Blank()
         if (this.clickCountOf(session) > 0) {
           Text(clicksFormat(this.clickCountOf(session)))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
         }
       }
@@ -348,7 +343,7 @@ struct DeliveryCreatePage {
         AppButton({
           text: DeliveryText.toolbox_delivery_action_close,
           variant: AppButtonVariant.SECONDARY,
-          contentColor: DesignColor.DANGER_INK,
+          contentColor: resColor('DANGER_INK'),
           loading: this.closing,
           click: () => {
             this.closeDialogController.open()
@@ -364,7 +359,7 @@ struct DeliveryCreatePage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Scroll() {
@@ -374,7 +369,7 @@ struct DeliveryCreatePage {
             Column() {
               SymbolGlyph($r('sys.symbol.chevron_left'))
                 .fontSize(24)
-                .fontColor([DesignColor.TEXT_PRIMARY])
+                .fontColor([resColor('TEXT_PRIMARY')])
             }
             .width(DesignDimens.BACK_HIT_AREA)
             .height(DesignDimens.BACK_HIT_AREA)
@@ -387,7 +382,7 @@ struct DeliveryCreatePage {
             Text(DeliveryText.toolbox_delivery_title)
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
           }
           .width('100%')
           .height(56)
@@ -425,7 +420,7 @@ struct DeliveryCreatePage {
               Text(DeliveryText.durationDesc(this.durationMinutes))
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
                 .margin({ top: DesignDimens.SPACE_XS })
 
               Column()
@@ -441,13 +436,13 @@ struct DeliveryCreatePage {
                   .type(this.showPassword ? InputType.Normal : InputType.Password)
                   .height(48)
                   .fontSize(DesignFontSize.BODY)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .borderWidth(1)
                   // 描边三态：字段校验错误 error > 聚焦 primary > 常态 outline（对齐安卓 isError，compare-07 #6）
-                  .borderColor(this.passwordError ? DesignColor.ERROR
-                    : (this.passwordFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .borderColor(this.passwordError ? resColor('ERROR')
+                    : (this.passwordFocused ? resColor('PRIMARY') : resColor('OUTLINE')))
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.CAPTION })
                   .showPasswordIcon(false)
                   .layoutWeight(1)
@@ -469,12 +464,12 @@ struct DeliveryCreatePage {
                 Stack({ alignContent: Alignment.Center }) {
                   SymbolGlyph(this.showPassword ? $r('sys.symbol.eye_slash') : $r('sys.symbol.eye'))
                     .fontSize(20)
-                    .fontColor([DesignColor.TEXT_SECONDARY])
+                    .fontColor([resColor('TEXT_SECONDARY')])
                 }
                 .width(DesignDimens.BACK_HIT_AREA)
                 .height(DesignDimens.BACK_HIT_AREA)
                 // 无障碍：密码可见性切换补语义（原仅图形，读屏无标签；accessibilityRole 需 SDK 18+，目标 API 17 不用）
-                .accessibilityDescription(this.showPassword ? '隐藏密码' : '显示密码')
+                .accessibilityDescription(this.showPassword ? resString('hide_password') : resString('show_password'))
                 .onClick(() => {
                   this.showPassword = !this.showPassword
                 })
@@ -487,7 +482,7 @@ struct DeliveryCreatePage {
                 : DeliveryText.toolbox_delivery_password_helper)
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(this.passwordError ? DesignColor.ERROR : DesignColor.TEXT_TERTIARY)
+                .fontColor(this.passwordError ? resColor('ERROR') : resColor('TEXT_TERTIARY'))
                 .margin({ top: DesignDimens.SPACE_XS })
 
               Column()
@@ -497,23 +492,23 @@ struct DeliveryCreatePage {
               Column() {
                 Text(DeliveryText.toolbox_delivery_privacy_notice)
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .fontColor(resColor('TEXT_SECONDARY'))
               }
               .width('100%')
               .alignItems(HorizontalAlign.Start)
               .padding(DesignDimens.SPACE_MD)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               .borderRadius(DesignDimens.RADIUS_MD)
             }
             .width('100%')
             .alignItems(HorizontalAlign.Start)
             .padding(DesignDimens.CARD_PADDING)
-            .backgroundColor(DesignColor.SURFACE)
+            .backgroundColor(resColor('SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
-            .border({ width: 1, color: DesignColor.OUTLINE })
+            .border({ width: 1, color: resColor('OUTLINE') })
             .shadow({
               radius: DesignElevation.LEVEL_1,
-              color: DesignColor.SHADOW_COLOR_CARD,
+              color: resColor('SHADOW_COLOR_CARD'),
               offsetX: 0,
               offsetY: 2
             })
@@ -522,7 +517,7 @@ struct DeliveryCreatePage {
             if (this.errorMessage.length > 0) {
               Text(this.errorMessage)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.ERROR)
+                .fontColor(resColor('ERROR'))
                 .width('100%')
                 .margin({ top: DesignDimens.SPACE_SM })
             }
@@ -545,12 +540,12 @@ struct DeliveryCreatePage {
             .width('100%')
             .alignItems(HorizontalAlign.Start)
             .padding(DesignDimens.CARD_PADDING)
-            .backgroundColor(DesignColor.SURFACE)
+            .backgroundColor(resColor('SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
-            .border({ width: 1, color: DesignColor.OUTLINE })
+            .border({ width: 1, color: resColor('OUTLINE') })
             .shadow({
               radius: DesignElevation.LEVEL_1,
-              color: DesignColor.SHADOW_COLOR_CARD,
+              color: resColor('SHADOW_COLOR_CARD'),
               offsetX: 0,
               offsetY: 2
             })
@@ -568,7 +563,7 @@ struct DeliveryCreatePage {
       .height('100%')
       .align(Alignment.TopStart)
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -596,12 +591,12 @@ struct DeliveryDurationChip {
         .fontSize(DesignFontSize.CAPTION)
         // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(this.selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+        .fontColor(this.selected ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
         // 上下 6 为视觉内边距（无独立令牌，对齐安卓视觉 h16/v6）
         .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 6, bottom: 6 })
-        .backgroundColor(this.selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
+        .backgroundColor(this.selected ? resColor('PRIMARY') : resColor('SURFACE'))
         .borderWidth(1)
-        .borderColor(this.selected ? DesignColor.PRIMARY : DesignColor.OUTLINE)
+        .borderColor(this.selected ? resColor('PRIMARY') : resColor('OUTLINE'))
         .borderRadius(DesignDimens.RADIUS_FULL)
     }
     .justifyContent(FlexAlign.Center)
@@ -715,7 +710,7 @@ struct DeliveryQrImage {
         Column()
           .width('100%')
           .height('100%')
-          .backgroundColor(DesignColor.SURFACE_VARIANT)
+          .backgroundColor(resColor('SURFACE_VARIANT'))
           .borderRadius(DesignDimens.RADIUS_MD)
       }
     }

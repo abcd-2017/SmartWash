@@ -1,6 +1,6 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { RouteNames } from "../constant/RouteNames"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
 import { getUserInfo, uploadAvatar } from "../network/api/UserApi"
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { promptAction } from '@kit.ArkUI'
@@ -13,6 +13,8 @@ import { logger } from "../utils/Logger"
 import { AppButton, AppButtonVariant, EmptyState, LoadingState } from "./common/AppComponents"
 import { safeTopVp } from "../utils/SafeArea"
 import { NOTICE_TICK_KEY, USER_INFO_TICK_KEY } from "../utils/RefreshSignal"
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 /**
  * 手机号掩码（3+****+4，对齐安卓 UserInfoPage.kt:623-624 maskPhone）：
@@ -95,7 +97,7 @@ export struct UserInfo {
       } else {
         logger.warn('userInfo', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
         this.loadFailed = true
-        showToastSafety(res.message, "用户信息加载失败")
+        showToastSafety(res.message, resString('user_info_1'))
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：置失败态由 UI 出重试，不再让骨架常驻
@@ -130,11 +132,11 @@ export struct UserInfo {
           await this.refreshUserInfo()
           // 低频关键动作成功：头像上传成功
           logger.info('userInfo', '头像上传成功')
-          showToastSafety("头像上传成功")
+          showToastSafety(resString('user_info_2'))
         } else {
           // 上传被服务端拒绝
           logger.warn('userInfo', `头像上传被拒绝 code=${res.code} message=${res.message ?? ""}`)
-          showToastSafety(res.message, "头像上传失败")
+          showToastSafety(res.message, resString('avatar_upload_failed'))
         }
         this.isUploading = false
       }
@@ -142,7 +144,7 @@ export struct UserInfo {
       this.isUploading = false
       // 外部调用失败（选图/上传异常）：error 留痕，只记 message 摘要，不序列化完整 error
       logger.error('userInfo', '头像上传流程异常', err instanceof Error ? err.message : "")
-      showToastSafety("头像上传失败")
+      showToastSafety(resString('avatar_upload_failed'))
     }
   }
 
@@ -184,12 +186,12 @@ export struct UserInfo {
         LoadingProgress()
           .width(24)
           .height(24)
-          .color(DesignColor.PRIMARY)
+          .color(resColor('PRIMARY'))
       }
       .width(56)
       .height(56)
       .borderRadius(28)
-      .backgroundColor(DesignColor.PRIMARY_LIGHT)
+      .backgroundColor(resColor('PRIMARY_LIGHT'))
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
     } else if (this.avatarUrl !== null && this.avatarUrl !== "") {
@@ -203,7 +205,7 @@ export struct UserInfo {
         Text(this.avatarInitial())
           .fontSize(DesignFontSize.CARD_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.ON_PRIMARY)
+          .fontColor(resColor('ON_PRIMARY'))
       }
       .width(56)
       .height(56)
@@ -212,7 +214,7 @@ export struct UserInfo {
       .alignItems(HorizontalAlign.Center)
       .linearGradient({
         angle: 135,
-        colors: [[DesignColor.PRIMARY, 0], [DesignColor.PRIMARY_DARK, 1]]
+        colors: [[resColor('PRIMARY'), 0], [resColor('PRIMARY_DARK'), 1]]
       })
     }
   }
@@ -241,7 +243,7 @@ export struct UserInfo {
       Text(title)
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.NORMAL)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .layoutWeight(1)
         .margin({ left: 12 })
 
@@ -256,7 +258,7 @@ export struct UserInfo {
 
       SymbolGlyph($r('sys.symbol.chevron_right'))
         .fontSize(20)
-        .fontColor([DesignColor.TEXT_TERTIARY])
+        .fontColor([resColor('TEXT_TERTIARY')])
     }
     .width("100%")
     .height(64)
@@ -273,10 +275,10 @@ export struct UserInfo {
           if (this.loadFailed) {
             // 首载失败（网络异常/401）：EmptyState + 重试，替代无限骨架（对齐规范 §3.6）
             Column() {
-              EmptyState({ message: "用户信息加载失败" }) {
+              EmptyState({ message: resString('user_info_1') }) {
                 AppButton({
                   small: true,
-                  text: "重试",
+                  text: resString('retry'),
                   variant: AppButtonVariant.SECONDARY,
                   click: () => {
                     this.refreshUserInfo()
@@ -295,25 +297,25 @@ export struct UserInfo {
         } else {
           // ========== 标题行（对齐安卓 UserInfoPage.kt:202-240） ==========
           Row() {
-            Text("我的")
+            Text($r('app.string.tab_mine'))
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
 
             // 设置入口：48dp 圆形青底容器 + 齿轮 20（对齐安卓 UserInfoPage.kt:220-239，PR #47 由 surfaceVariant 改青）
             Column() {
               SymbolGlyph($r('sys.symbol.gearshape'))
                 .fontSize(20)
-                .fontColor([DesignColor.ICON_FOREGROUND_TEAL])
+                .fontColor([resColor('ICON_FOREGROUND_TEAL')])
             }
             .width(48)
             .height(48)
             .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(DesignColor.ICON_CONTAINER_TEAL)
+            .backgroundColor(resColor('ICON_CONTAINER_TEAL'))
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             // 无障碍：设置齿轮补语义（原仅图形，读屏无标签；accessibilityRole 需 SDK 18+，目标 API 17 不用）
-            .accessibilityDescription('设置')
+            .accessibilityDescription(resString('settings'))
             .onClick(() => {
               pathStack.pushPathByName(RouteNames.SETTING, null)
             })
@@ -338,12 +340,12 @@ export struct UserInfo {
               Text(maskPhone(this.userInfo?.phoneNumber ?? null))
                 .fontSize(DesignFontSize.CARD_TITLE)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
 
               // 学校名（对齐安卓 UserInfoPage.kt:343-348；无学校时显示空串）
               Text(this.userInfo?.schoolVo?.schoolName ?? "")
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
                 .margin({ top: 4 })
             }
             .layoutWeight(1)
@@ -352,7 +354,7 @@ export struct UserInfo {
 
             SymbolGlyph($r('sys.symbol.chevron_right'))
               .fontSize(20)
-              .fontColor([DesignColor.TEXT_TERTIARY])
+              .fontColor([resColor('TEXT_TERTIARY')])
           }
           .width("100%")
           .alignItems(VerticalAlign.Center)
@@ -363,17 +365,17 @@ export struct UserInfo {
             // 余额通栏在上（点击去充值）
             Column() {
               // 显式行盒对齐安卓 Type.kt（D4）：bodySmall 12/16
-              Text("钱包余额")
+              Text($r('app.string.wallet_balance'))
                 .fontSize(DesignFontSize.CAPTION)
                 .lineHeight(DesignFontSize.CAPTION + 4)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
               // 显式行盒对齐安卓 DataLarge 36/44；字重保持 BOLD（font.display 档，规范允许 700）
               Text(`¥${this.formatBalance()}`)
                 .fontSize(DesignFontSize.DATA_LARGE)
                 .lineHeight(DesignFontSize.DATA_LARGE + 8)
                 .fontWeight(DesignFontWeight.BOLD)
                 .fontFeature(DesignFontFeature.TNUM)
-                .fontColor(DesignColor.PRIMARY_DARK)
+                .fontColor(resColor('PRIMARY_DARK'))
                 .margin({ top: 4 })
             }
             .alignItems(HorizontalAlign.Start)
@@ -391,11 +393,11 @@ export struct UserInfo {
                   .lineHeight(DesignFontSize.AMOUNT_MEDIUM + 6)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
                   .fontFeature(DesignFontFeature.TNUM)
-                  .fontColor(DesignColor.TEXT_PRIMARY)
-                Text("优惠券")
+                  .fontColor(resColor('TEXT_PRIMARY'))
+                Text($r('app.string.service_coupon'))
                   .fontSize(DesignFontSize.CAPTION)
                   .lineHeight(DesignFontSize.CAPTION + 4)
-                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .fontColor(resColor('TEXT_SECONDARY'))
                   .margin({ top: 4 })
               }
               .layoutWeight(1)
@@ -409,7 +411,7 @@ export struct UserInfo {
               Column()
                 .width(1)
                 .height(40)
-                .backgroundColor(DesignColor.HAIRLINE)
+                .backgroundColor(resColor('HAIRLINE'))
 
               Column() {
                 // 行盒对齐安卓 Type.kt（D4）：AmountMedium 18/24、bodySmall 12/16
@@ -418,11 +420,11 @@ export struct UserInfo {
                   .lineHeight(DesignFontSize.AMOUNT_MEDIUM + 6)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
                   .fontFeature(DesignFontFeature.TNUM)
-                  .fontColor(DesignColor.TEXT_PRIMARY)
-                Text("累计订单")
+                  .fontColor(resColor('TEXT_PRIMARY'))
+                Text($r('app.string.home_total_orders'))
                   .fontSize(DesignFontSize.CAPTION)
                   .lineHeight(DesignFontSize.CAPTION + 4)
-                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .fontColor(resColor('TEXT_SECONDARY'))
                   .margin({ top: 4 })
               }
               .layoutWeight(1)
@@ -435,12 +437,12 @@ export struct UserInfo {
           }
           .width("100%")
           .padding(DesignDimens.CARD_PADDING)
-          .backgroundColor(DesignColor.SURFACE)
+          .backgroundColor(resColor('SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: DesignColor.OUTLINE })
+          .border({ width: 1, color: resColor('OUTLINE') })
           .shadow({
             radius: DesignElevation.CARD_SHADOW_RADIUS,
-            color: DesignColor.SHADOW_COLOR_CARD,
+            color: resColor('SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: DesignElevation.CARD_SHADOW_OFFSET
           })
@@ -450,19 +452,19 @@ export struct UserInfo {
             // 校园卡行尾状态不能走 @Builder 按值参数（已知坑：参数首帧定格，绑定/解绑后不刷新）；
             // 用 if 分支包住使 userInfo 变更时分支重跑、以新字面量重新调用 settingRow
             if (this.isCampusCardBound()) {
-              this.settingRow($r('sys.symbol.creditcard'), "校园卡",
-                DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
+              this.settingRow($r('sys.symbol.creditcard'), resString('campus_card'),
+                resColor('ICON_CONTAINER_GREEN'), resColor('ICON_FOREGROUND_GREEN'),
                 // U-103：「已绑定」绿字 on 白仅 3.50:1（绿字红线禁小号文字）→ 统一 textSecondary
-                "已绑定", DesignColor.TEXT_SECONDARY,
+                resString('bound'), resColor('TEXT_SECONDARY'),
                 () => {
                   pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
                     this.refreshUserInfo()
                   }, false)
                 })
             } else {
-              this.settingRow($r('sys.symbol.creditcard'), "校园卡",
-                DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
-                "未绑定", DesignColor.TEXT_SECONDARY,
+              this.settingRow($r('sys.symbol.creditcard'), resString('campus_card'),
+                resColor('ICON_CONTAINER_GREEN'), resColor('ICON_FOREGROUND_GREEN'),
+                resString('not_bound'), resColor('TEXT_SECONDARY'),
                 () => {
                   pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
                     this.refreshUserInfo()
@@ -472,36 +474,36 @@ export struct UserInfo {
 
             Divider()
               .strokeWidth(0.5)
-              .color(DesignColor.HAIRLINE)
+              .color(resColor('HAIRLINE'))
 
-            this.settingRow($r('sys.symbol.pin_fill'), "收货地址",
-              DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
-              "", DesignColor.TEXT_SECONDARY,
+            this.settingRow($r('sys.symbol.pin_fill'), resString('shipping_address'),
+              resColor('ICON_CONTAINER_ORANGE'), resColor('ICON_FOREGROUND_ORANGE'),
+              "", resColor('TEXT_SECONDARY'),
               () => {
                 // 文案对齐安卓 shipping_address_unavailable
-                promptAction.showToast({ message: "收货地址功能暂未开放" })
+                promptAction.showToast({ message: resString('shipping_address_unavailable') })
               })
 
             Divider()
               .strokeWidth(0.5)
-              .color(DesignColor.HAIRLINE)
+              .color(resColor('HAIRLINE'))
 
             // 钱包流水入口（充值/消费合并明细，对齐安卓 WalletTransactionsPage 语义）
-            this.settingRow($r('sys.symbol.doc_text'), "钱包流水",
-              DesignColor.ICON_CONTAINER_TEAL, DesignColor.ICON_FOREGROUND_TEAL,
-              "", DesignColor.TEXT_SECONDARY,
+            this.settingRow($r('sys.symbol.doc_text'), resString('wallet_transactions'),
+              resColor('ICON_CONTAINER_TEAL'), resColor('ICON_FOREGROUND_TEAL'),
+              "", resColor('TEXT_SECONDARY'),
               () => {
                 pathStack.pushPathByName(RouteNames.WALLET_TRANSACTIONS, null)
               })
           }
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-          .backgroundColor(DesignColor.SURFACE)
+          .backgroundColor(resColor('SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: DesignColor.OUTLINE })
+          .border({ width: 1, color: resColor('OUTLINE') })
           .shadow({
             radius: DesignElevation.CARD_SHADOW_RADIUS,
-            color: DesignColor.SHADOW_COLOR_CARD,
+            color: resColor('SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: DesignElevation.CARD_SHADOW_OFFSET
           })
@@ -509,22 +511,22 @@ export struct UserInfo {
 
           // ========== 功能卡 GroupCard（对齐安卓 UserInfoPage.kt:492-535） ==========
           Column() {
-            this.settingRow($r('sys.symbol.list_square_bill'), "我的订单",
-              DesignColor.ICON_CONTAINER_BLUE, DesignColor.ICON_FOREGROUND_BLUE,
-              `${this.userInfo?.orderCount ?? 0} 单`, DesignColor.TEXT_SECONDARY,
+            this.settingRow($r('sys.symbol.list_square_bill'), resString('my_orders'),
+              resColor('ICON_CONTAINER_BLUE'), resColor('ICON_FOREGROUND_BLUE'),
+              `${this.userInfo?.orderCount ?? 0} 单`, resColor('TEXT_SECONDARY'),
               () => {
                 this.jumpToOrderList(0)
               })
 
             Divider()
               .strokeWidth(0.5)
-              .color(DesignColor.HAIRLINE)
+              .color(resColor('HAIRLINE'))
 
             // 签到有礼（扩展提案功能 17/18 双端闭环；橙容器 = 通知/待办/营销奖励语义，
             // 对齐安卓 UserInfoPage 功能卡「我的订单」与「设置」之间的 SettingRow 位置）
-            this.settingRow($r('sys.symbol.gift'), "签到有礼",
-              DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
-              "", DesignColor.TEXT_SECONDARY,
+            this.settingRow($r('sys.symbol.gift'), resString('points_title'),
+              resColor('ICON_CONTAINER_ORANGE'), resColor('ICON_FOREGROUND_ORANGE'),
+              "", resColor('TEXT_SECONDARY'),
               () => {
                 pathStack.pushPathByName(RouteNames.POINTS, null)
               })
@@ -536,19 +538,19 @@ export struct UserInfo {
               Column() {
                 SymbolGlyph($r('sys.symbol.bell'))
                   .fontSize(20)
-                  .fontColor([DesignColor.ICON_FOREGROUND_ORANGE])
+                  .fontColor([resColor('ICON_FOREGROUND_ORANGE')])
               }
               .width(32)
               .height(32)
               .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-              .backgroundColor(DesignColor.ICON_CONTAINER_ORANGE)
+              .backgroundColor(resColor('ICON_CONTAINER_ORANGE'))
               .justifyContent(FlexAlign.Center)
               .alignItems(HorizontalAlign.Center)
 
               Text(NoticeText.notice_title)
                 .fontSize(DesignFontSize.BODY_SMALL)
                 .fontWeight(DesignFontWeight.NORMAL)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
                 .layoutWeight(1)
                 .margin({ left: 12 })
 
@@ -557,17 +559,17 @@ export struct UserInfo {
                 Text(this.unreadBadgeText())
                   .fontSize(DesignFontSize.CAPTION)
                   .fontWeight(DesignFontWeight.MEDIUM)
-                  .fontColor(DesignColor.ICON_FOREGROUND_PINK)
+                  .fontColor(resColor('ICON_FOREGROUND_PINK'))
                   .fontFeature(DesignFontFeature.TNUM)
                   .padding({ left: 5, right: 5, top: 1, bottom: 1 })
-                  .backgroundColor(DesignColor.ICON_CONTAINER_PINK)
+                  .backgroundColor(resColor('ICON_CONTAINER_PINK'))
                   .borderRadius(DesignDimens.RADIUS_FULL)
                   .margin({ right: DesignDimens.SPACE_XXS })
               }
 
               SymbolGlyph($r('sys.symbol.chevron_right'))
                 .fontSize(20)
-                .fontColor([DesignColor.TEXT_TERTIARY])
+                .fontColor([resColor('TEXT_TERTIARY')])
             }
             .width("100%")
             .height(64)
@@ -578,23 +580,23 @@ export struct UserInfo {
 
             Divider()
               .strokeWidth(0.5)
-              .color(DesignColor.HAIRLINE)
+              .color(resColor('HAIRLINE'))
 
-            this.settingRow($r('sys.symbol.gearshape'), "设置",
-              DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
-              "", DesignColor.TEXT_SECONDARY,
+            this.settingRow($r('sys.symbol.gearshape'), resString('settings'),
+              resColor('ICON_CONTAINER_GREEN'), resColor('ICON_FOREGROUND_GREEN'),
+              "", resColor('TEXT_SECONDARY'),
               () => {
                 pathStack.pushPathByName(RouteNames.SETTING, null)
               })
           }
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-          .backgroundColor(DesignColor.SURFACE)
+          .backgroundColor(resColor('SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: DesignColor.OUTLINE })
+          .border({ width: 1, color: resColor('OUTLINE') })
           .shadow({
             radius: DesignElevation.CARD_SHADOW_RADIUS,
-            color: DesignColor.SHADOW_COLOR_CARD,
+            color: resColor('SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: DesignElevation.CARD_SHADOW_OFFSET
           })
@@ -618,6 +620,6 @@ export struct UserInfo {
     })
     .width("100%")
     .height("100%")
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
   }
 }

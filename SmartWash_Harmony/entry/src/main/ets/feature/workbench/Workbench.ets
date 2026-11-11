@@ -13,7 +13,7 @@
 import { BizCode } from "../../network/HttpUtil"
 import { WorkbenchEntryVo, getWorkbenchEntries } from "../../network/api/workbench"
 import { RouteNames } from "../../constant/RouteNames"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../../constant/DesignSystem"
 import { DivColor } from "../../constant/DivTheme"
 import { pathStack } from "../../utils/PathStackUtil"
 import { showToastSafety } from "../../utils/ToastUtil"
@@ -27,6 +27,7 @@ import { safeBottomVp, safeTopVp } from "../../utils/SafeArea"
 import { parse, DeepLinkKind } from "../../utils/deeplink/DeepLinkParser"
 import { lookup } from "../../utils/deeplink/DeepLinkRegistry"
 import { AppButton, AppButtonVariant, EmptyState, IconBox, SkeletonBlock } from "../../view/common/AppComponents"
+import { resColor } from '../../utils/ResourceColor'
 import {
   WorkbenchBlock,
   WorkbenchBlockKind,
@@ -277,43 +278,43 @@ export struct Workbench {
     return rows
   }
 
-  /** 图标容器浅底色（后端 color 白名单 → DesignColor.ICON_CONTAINER_*，未知兜底 GREEN） */
+  /** 图标容器浅底色（后端 color 白名单 → 资源色 ICON_CONTAINER_*，未知兜底 GREEN） */
   private containerColor(tint: WorkbenchTint): number {
     switch (tint) {
       case WorkbenchTint.GREEN:
-        return DesignColor.ICON_CONTAINER_GREEN
+        return resColor('ICON_CONTAINER_GREEN')
       case WorkbenchTint.BLUE:
-        return DesignColor.ICON_CONTAINER_BLUE
+        return resColor('ICON_CONTAINER_BLUE')
       case WorkbenchTint.ORANGE:
-        return DesignColor.ICON_CONTAINER_ORANGE
+        return resColor('ICON_CONTAINER_ORANGE')
       case WorkbenchTint.PINK:
-        return DesignColor.ICON_CONTAINER_PINK
+        return resColor('ICON_CONTAINER_PINK')
       case WorkbenchTint.TEAL:
-        return DesignColor.ICON_CONTAINER_TEAL
+        return resColor('ICON_CONTAINER_TEAL')
       case WorkbenchTint.PURPLE:
-        return DesignColor.ICON_CONTAINER_PURPLE
+        return resColor('ICON_CONTAINER_PURPLE')
       default:
-        return DesignColor.ICON_CONTAINER_GREEN
+        return resColor('ICON_CONTAINER_GREEN')
     }
   }
 
-  /** 图标前景色（后端 color 白名单 → DesignColor.ICON_FOREGROUND_*，未知兜底 GREEN） */
+  /** 图标前景色（后端 color 白名单 → 资源色 ICON_FOREGROUND_*，未知兜底 GREEN） */
   private iconColor(tint: WorkbenchTint): number {
     switch (tint) {
       case WorkbenchTint.GREEN:
-        return DesignColor.ICON_FOREGROUND_GREEN
+        return resColor('ICON_FOREGROUND_GREEN')
       case WorkbenchTint.BLUE:
-        return DesignColor.ICON_FOREGROUND_BLUE
+        return resColor('ICON_FOREGROUND_BLUE')
       case WorkbenchTint.ORANGE:
-        return DesignColor.ICON_FOREGROUND_ORANGE
+        return resColor('ICON_FOREGROUND_ORANGE')
       case WorkbenchTint.PINK:
-        return DesignColor.ICON_FOREGROUND_PINK
+        return resColor('ICON_FOREGROUND_PINK')
       case WorkbenchTint.TEAL:
-        return DesignColor.ICON_FOREGROUND_TEAL
+        return resColor('ICON_FOREGROUND_TEAL')
       case WorkbenchTint.PURPLE:
-        return DesignColor.ICON_FOREGROUND_PURPLE
+        return resColor('ICON_FOREGROUND_PURPLE')
       default:
-        return DesignColor.ICON_FOREGROUND_GREEN
+        return resColor('ICON_FOREGROUND_GREEN')
     }
   }
 
@@ -325,11 +326,11 @@ export struct Workbench {
   @Styles
   cardChrome() {
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: DesignColor.OUTLINE })
-    .backgroundColor(DesignColor.SURFACE)
+    .border({ width: 1, color: resColor('OUTLINE') })
+    .backgroundColor(resColor('SURFACE'))
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -391,7 +392,7 @@ export struct Workbench {
     Text(title)
       .fontSize(DesignFontSize.SECTION_TITLE)
       .fontWeight(DesignFontWeight.SEMI_BOLD)
-      .fontColor(DesignColor.TEXT_PRIMARY)
+      .fontColor(resColor('TEXT_PRIMARY'))
       .width('100%')
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
       .margin({ top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.SPACE_SM })
@@ -503,7 +504,7 @@ export struct Workbench {
     // 圆角对齐安卓 radiusLg 16（卡片唯一档，原 20 不在规范五档内）
     .borderRadius(DesignDimens.CARD_RADIUS)
     // 描边 = 主题 outline（2026-11-05 P07 画板复裁弃鎏金，对齐安卓 1px 实线随主题换色）
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: resColor('OUTLINE') })
     // 渐变三段色标 0 / 0.55 / 1 = 规范 §1.5 divination.ink：#201D18→#1A1917@55%→#151412
     //（对齐安卓 DivBgTop/Mid/BottomDark；140deg ≈ 左上→右下，ArkUI RightBottom）
     .linearGradient({
@@ -540,7 +541,7 @@ export struct Workbench {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(DesignColor.SURFACE_VARIANT)
+    .backgroundColor(resColor('SURFACE_VARIANT'))
   }
 
   /**
@@ -557,14 +558,14 @@ export struct Workbench {
         icon: tool.icon,
         sizeValue: 32,
         iconSize: 20,
-        containerColor: DesignColor.SURFACE,
-        iconColor: DesignColor.PRIMARY
+        containerColor: resColor('SURFACE'),
+        iconColor: resColor('PRIMARY')
       })
 
       Text(tool.title)
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.ON_PRIMARY_SOFT)
+        .fontColor(resColor('ON_PRIMARY_SOFT'))
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .layoutWeight(1)
@@ -573,7 +574,7 @@ export struct Workbench {
         // alpha 0.7 对齐安卓 onPrimarySoft.copy(alpha = 0.7)
         SymbolGlyph($r('sys.symbol.chevron_right'))
           .fontSize(16)
-          .fontColor([DesignColor.ON_PRIMARY_SOFT])
+          .fontColor([resColor('ON_PRIMARY_SOFT')])
           .opacity(0.7)
       }
 
@@ -582,7 +583,7 @@ export struct Workbench {
         // alpha 0.8 对齐安卓（原 0.6 对比不足，0.8 合成后约 7:1）
         SymbolGlyph($r('sys.symbol.xmark'))
           .fontSize(16)
-          .fontColor([DesignColor.ON_PRIMARY_SOFT])
+          .fontColor([resColor('ON_PRIMARY_SOFT')])
           .opacity(0.8)
       }
       .width(48)
@@ -598,7 +599,7 @@ export struct Workbench {
     .alignItems(VerticalAlign.Center)
     .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_XS })
     .borderRadius(DesignDimens.RADIUS_MD)
-    .backgroundColor(DesignColor.PRIMARY_SOFT)
+    .backgroundColor(resColor('PRIMARY_SOFT'))
     // 按压反馈仅整条可点时生效（对齐安卓 pressable 条件包裹）
     .scale({
       x: tool.target.length > 0 && this.pressedKey === `notice_${tool.entryKey}` ? 0.97 : 1,
@@ -642,12 +643,12 @@ export struct Workbench {
           Text(tool.title)
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
           if (tool.description.length > 0) {
             Text(tool.description)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .margin({ top: DesignDimens.SPACE_XXS })
           }
         }
@@ -656,7 +657,7 @@ export struct Workbench {
 
         SymbolGlyph($r('sys.symbol.chevron_right'))
           .fontSize(20)
-          .fontColor([DesignColor.TEXT_TERTIARY])
+          .fontColor([resColor('TEXT_TERTIARY')])
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -759,7 +760,7 @@ export struct Workbench {
       Text(tool.title)
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .layoutWeight(1)
         .margin({ left: DesignDimens.SPACE_SM })
 
@@ -769,8 +770,8 @@ export struct Workbench {
         Text(tool.badge)
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-          .backgroundColor(DesignColor.PRIMARY_LIGHT)
+          .fontColor(resColor('TEXT_PRIMARY'))
+          .backgroundColor(resColor('PRIMARY_LIGHT'))
           .borderRadius(DesignDimens.RADIUS_FULL)
           .padding({
             left: DesignDimens.SPACE_SM,
@@ -782,7 +783,7 @@ export struct Workbench {
 
       SymbolGlyph($r('sys.symbol.chevron_right'))
         .fontSize(16)
-        .fontColor([DesignColor.TEXT_TERTIARY])
+        .fontColor([resColor('TEXT_TERTIARY')])
         .margin({ left: DesignDimens.SPACE_SM })
     }
     .width('100%')
@@ -814,7 +815,7 @@ export struct Workbench {
         if (index > 0) {
           // 发丝线只出现在同一容器内部（§1.3/§3.4）
           Divider()
-            .color(DesignColor.HAIRLINE)
+            .color(resColor('HAIRLINE'))
             .strokeWidth(0.5)
             .margin({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
         }
@@ -857,20 +858,20 @@ export struct Workbench {
             Text(tool.title)
               .fontSize(DesignFontSize.BODY_SMALL)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .margin({ top: DesignDimens.SPACE_SM })
           } else {
             Text(tool.title)
               .fontSize(DesignFontSize.BODY_SMALL)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
           }
 
           if (tool.description.length > 0) {
             Text(tool.description)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .maxLines(2)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .margin({ top: DesignDimens.SPACE_XXS })
@@ -889,8 +890,8 @@ export struct Workbench {
         Text(tool.badge)
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-          .backgroundColor(DesignColor.PRIMARY_LIGHT)
+          .fontColor(resColor('TEXT_PRIMARY'))
+          .backgroundColor(resColor('PRIMARY_LIGHT'))
           .borderRadius(DesignDimens.RADIUS_FULL)
           .padding({
             left: DesignDimens.SPACE_SM,
@@ -923,7 +924,7 @@ export struct Workbench {
       Text(tool.title)
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .margin({ left: DesignDimens.SPACE_SM })
     }
     .alignItems(VerticalAlign.Center)
@@ -934,8 +935,8 @@ export struct Workbench {
       bottom: DesignDimens.SPACE_XS
     })
     .borderRadius(DesignDimens.RADIUS_FULL)
-    .border({ width: 1, color: DesignColor.OUTLINE })
-    .backgroundColor(DesignColor.SURFACE)
+    .border({ width: 1, color: resColor('OUTLINE') })
+    .backgroundColor(resColor('SURFACE'))
     .scale({
       x: this.pressedKey === `chip_${tool.entryKey}` ? 0.97 : 1,
       y: this.pressedKey === `chip_${tool.entryKey}` ? 0.97 : 1
@@ -962,11 +963,11 @@ export struct Workbench {
         Text(WorkbenchText.workbench_title)
           .fontSize(DesignFontSize.ROOT_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
         // 大标题→副标题 4（对齐安卓 spaceXxs，原 8 偏大）
         Text(WorkbenchText.workbench_subtitle)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .margin({ top: DesignDimens.SPACE_XXS })
       }
       .width('100%')
@@ -997,9 +998,9 @@ export struct Workbench {
           })
           .width('100%')
           .height(48)
-          .backgroundColor(DesignColor.SURFACE_VARIANT)
+          .backgroundColor(resColor('SURFACE_VARIANT'))
           .borderRadius(DesignDimens.INPUT_RADIUS)
-          .placeholderColor(DesignColor.TEXT_SECONDARY)
+          .placeholderColor(resColor('TEXT_SECONDARY'))
           .placeholderFont({ size: DesignFontSize.BODY })
           .textFont({ size: DesignFontSize.BODY })
           // SearchAttribute 无 caretColor 属性（SDK 17 编译核实），光标色不可自定义
@@ -1044,7 +1045,7 @@ export struct Workbench {
       Text(WorkbenchText.workbench_footer)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .textAlign(TextAlign.Center)
         .width('100%')
         .padding({
@@ -1078,7 +1079,7 @@ export struct Workbench {
           Text(WorkbenchText.workbench_recent_title)
             .fontSize(DesignFontSize.SECTION_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
           Scroll() {
@@ -1154,7 +1155,7 @@ export struct Workbench {
         Text(WorkbenchText.workbench_all_tools)
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .width('100%')
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
           .margin({ top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.SPACE_SM })
@@ -1267,7 +1268,7 @@ export struct Workbench {
     })
     .width('100%')
     .height('100%')
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
   }
 }
 

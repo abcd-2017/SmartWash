@@ -12,10 +12,12 @@
 // - 弹窗「先关窗再回调」；颜色一律取 Design* 令牌（深色模式自动生效）。
 
 import { pasteboard } from '@kit.BasicServicesKit'
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
 import { SubscriptionCycleType, SubscriptionReminderType, SubscriptionStatus, SubscriptionText, SubscriptionVo, subscriptionCycleTypeFromRaw, subscriptionReminderTypeFromRawOrDefault, subscriptionStatusFromRawOrDefault, subscriptionStatusIsTerminal } from '../api'
 import { formatAmount, formatDate, renewProgressFraction } from '../logic/SubscriptionRules'
 import { pathStack } from '../../../utils/PathStackUtil'
+import { resColor } from '../../../utils/ResourceColor'
+import { resString } from '../../../utils/ResourceString'
 
 /** 试用角标配色（容器底 + 文字色） */
 export interface SubscriptionBadgeColors {
@@ -36,7 +38,7 @@ export struct SubscriptionPageHeader {
   @Param action1Text: string = ''
   @Param action2Text: string = ''
   /** 动作 2 语义色（默认主色；危险动作传 DANGER_INK，对齐安卓页头「删除」dangerInk） */
-  @Param action2Color: number = DesignColor.PRIMARY_DARK
+  @Param action2Color: number = resColor('PRIMARY_DARK')
   @Event onAction1: () => void = () => {
   }
   @Event onAction2: () => void = () => {
@@ -48,7 +50,7 @@ export struct SubscriptionPageHeader {
         Column() {
           SymbolGlyph($r('sys.symbol.chevron_left'))
             .fontSize(24)
-            .fontColor([DesignColor.TEXT_PRIMARY])
+            .fontColor([resColor('TEXT_PRIMARY')])
         }
         .width(DesignDimens.BACK_HIT_AREA)
         .height(DesignDimens.BACK_HIT_AREA)
@@ -62,7 +64,7 @@ export struct SubscriptionPageHeader {
       Text(this.title)
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
 
       Blank()
 
@@ -71,7 +73,7 @@ export struct SubscriptionPageHeader {
           // 文字按钮 13sp/600 规格经 v0.4 字阶迁移落 labelMedium 12（对齐安卓 audit-15 #14）
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.PRIMARY_DARK)
+          .fontColor(resColor('PRIMARY_DARK'))
           .padding({ left: 12, right: 12, top: 12, bottom: 12 })
           // 相邻触控目标间距 ≥8（DESIGN-SPEC §3）：两个动作热区边界原先彼此贴合
           .margin({ right: DesignDimens.SPACE_XS })
@@ -104,8 +106,8 @@ export struct SubscriptionPageHeader {
 @ComponentV2
 export struct SubscriptionTagChip {
   @Param text: string = ''
-  @Param containerColor: number = DesignColor.SURFACE_VARIANT
-  @Param contentColor: number = DesignColor.TEXT_SECONDARY
+  @Param containerColor: number = resColor('SURFACE_VARIANT')
+  @Param contentColor: number = resColor('TEXT_SECONDARY')
 
   build() {
     Text(this.text)
@@ -143,7 +145,7 @@ export struct SubscriptionSelectableChip {
         .fontSize(DesignFontSize.CAPTION)
         // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变，兄弟 chip 连续位移观感更差
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(this.selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+        .fontColor(this.selected ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
         .padding({
           left: DesignDimens.SPACE_MD,
           right: DesignDimens.SPACE_MD,
@@ -151,11 +153,11 @@ export struct SubscriptionSelectableChip {
           bottom: DesignDimens.SPACE_XS
         })
         .borderRadius(DesignDimens.RADIUS_FULL)
-        .backgroundColor(this.selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
+        .backgroundColor(this.selected ? resColor('PRIMARY') : resColor('SURFACE'))
         // 描边常驻 1dp、选中切换在 outline ↔ 透明间过渡（对齐安卓，选中不再多一层同色描边）
         .border({
           width: 1,
-          color: this.selected ? Color.Transparent : DesignColor.OUTLINE
+          color: this.selected ? Color.Transparent : resColor('OUTLINE')
         })
         .animation(MotionTiming.ENTER)
     }
@@ -187,7 +189,7 @@ export struct SubscriptionToggle {
           .width(20)
           .height(20)
           .borderRadius(10)
-          .backgroundColor(DesignColor.SURFACE)
+          .backgroundColor(resColor('SURFACE'))
           .margin({ left: this.checked ? 22 : 2 })
       }
       .width(44)
@@ -195,7 +197,7 @@ export struct SubscriptionToggle {
       .borderRadius(DesignDimens.RADIUS_FULL)
       // 未选中轨道从装饰档 textTertiary 收敛 textSecondary（#A9AEA9 on 白 2.25:1 低于
       // 图形控件 3:1 非文本对比下限，DESIGN-SPEC §10；thumb 白色在次文本色轨道上辨识足够）
-      .backgroundColor(this.checked ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
+      .backgroundColor(this.checked ? resColor('PRIMARY') : resColor('TEXT_SECONDARY'))
       .justifyContent(FlexAlign.Start)
       .alignItems(VerticalAlign.Center)
       .animation(MotionTiming.ENTER)
@@ -222,9 +224,9 @@ export struct SubscriptionToggle {
 export struct RenewProgressRing {
   @Param fraction: number = 0
   @Param daysLeft: number = 0
-  @Param ringColor: number = DesignColor.PRIMARY
-  @Param trackColor: number = DesignColor.OUTLINE
-  @Param centerTextColor: number = DesignColor.TEXT_GREEN
+  @Param ringColor: number = resColor('PRIMARY')
+  @Param trackColor: number = resColor('OUTLINE')
+  @Param centerTextColor: number = resColor('TEXT_GREEN')
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
   /** 弧线插值显示值（@Param fraction 不可变，逐帧过渡经此字段重绘） */
   private displayedFraction: number = 0
@@ -327,14 +329,14 @@ export struct SubscriptionSectionTitle {
     Text(this.text)
       .fontSize(DesignFontSize.SECTION_TITLE)
       .fontWeight(DesignFontWeight.SEMI_BOLD)
-      .fontColor(DesignColor.TEXT_PRIMARY)
+      .fontColor(resColor('TEXT_PRIMARY'))
   }
 }
 
 /** 状态小圆点（未读提醒/今日打卡标记；颜色随语义给定） */
 @ComponentV2
 export struct SubscriptionStatusDot {
-  @Param color: number = DesignColor.DANGER
+  @Param color: number = resColor('DANGER')
   @Param sizeValue: number = 8
   /** 读屏语义文案（空串 = 无语义）：如「N 条未读提醒」（§10 颜色不是唯一信息载体） */
   @Param accessibilityLabel: string = ''
@@ -362,7 +364,7 @@ export struct SubscriptionDatePickerDialog {
   controller: CustomDialogController
   /** 已选日期「yyyy-MM-dd」，空串表示未选（默认今天） */
   @Prop initialDate: string = ''
-  @Prop title: string = '选择日期'
+  @Prop title: string = resString('subscription_form_pick_date')
   @State selected: Date = new Date()
   @State entered: boolean = false
   onConfirm: (date: string) => void = () => {
@@ -395,7 +397,7 @@ export struct SubscriptionDatePickerDialog {
         Text(this.title)
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .width('100%')
           .margin({ bottom: 12 })
 
@@ -412,7 +414,7 @@ export struct SubscriptionDatePickerDialog {
             .layoutWeight(1)
             .height(44)
             .backgroundColor(Color.Transparent)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontSize(DesignFontSize.BODY)
             .borderRadius(0)
             .onClick(() => {
@@ -422,7 +424,7 @@ export struct SubscriptionDatePickerDialog {
 
           Divider()
             .vertical(true)
-            .color(DesignColor.DIVIDER)
+            .color(resColor('DIVIDER'))
             .strokeWidth(0.5)
             .height(44)
 
@@ -431,7 +433,7 @@ export struct SubscriptionDatePickerDialog {
             .layoutWeight(1)
             .height(44)
             .backgroundColor(Color.Transparent)
-            .fontColor(DesignColor.PRIMARY)
+            .fontColor(resColor('PRIMARY'))
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .borderRadius(0)
@@ -446,11 +448,11 @@ export struct SubscriptionDatePickerDialog {
       }
       .width('100%')
       .padding({ top: 20, bottom: 20 })
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: DesignColor.SHADOW_COLOR_FLOAT,
+        color: resColor('SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
@@ -533,32 +535,32 @@ export function subscriptionRenewRelativeColor(vo: SubscriptionVo): number {
   const status = subscriptionStatusFromRawOrDefault(vo.status)
   // 终态弱化止步 textSecondary（on 白卡 4.9:1）：装饰档 textTertiary 禁作可读正文（DESIGN-SPEC §10）
   if (subscriptionStatusIsTerminal(status)) {
-    return DesignColor.TEXT_SECONDARY
+    return resColor('TEXT_SECONDARY')
   }
   const daysLeft = vo.daysUntilRenew ?? 1
   if (daysLeft < 0) {
-    return DesignColor.DANGER_INK
+    return resColor('DANGER_INK')
   }
   if (daysLeft === 0) {
-    return DesignColor.ONGOING_INK
+    return resColor('ONGOING_INK')
   }
-  return DesignColor.TEXT_SECONDARY
+  return resColor('TEXT_SECONDARY')
 }
 
 /** 进度环配色：暂停弱化、逾期 danger、临近（≤3 天）ongoing、其余主色 */
 export function subscriptionRenewRingColor(vo: SubscriptionVo): number {
   const status = subscriptionStatusFromRawOrDefault(vo.status)
   if (status === SubscriptionStatus.PAUSED) {
-    return DesignColor.TEXT_TERTIARY
+    return resColor('TEXT_TERTIARY')
   }
   const daysLeft = vo.daysUntilRenew ?? 0
   if (daysLeft < 0) {
-    return DesignColor.DANGER
+    return resColor('DANGER')
   }
   if (daysLeft <= 3) {
-    return DesignColor.ONGOING
+    return resColor('ONGOING')
   }
-  return DesignColor.PRIMARY
+  return resColor('PRIMARY')
 }
 
 /**
@@ -569,16 +571,16 @@ export function subscriptionRenewRingColor(vo: SubscriptionVo): number {
 export function subscriptionRenewCenterTextColor(vo: SubscriptionVo): number {
   const status = subscriptionStatusFromRawOrDefault(vo.status)
   if (status === SubscriptionStatus.PAUSED) {
-    return DesignColor.TEXT_SECONDARY
+    return resColor('TEXT_SECONDARY')
   }
   const daysLeft = vo.daysUntilRenew ?? 0
   if (daysLeft < 0) {
-    return DesignColor.DANGER_INK
+    return resColor('DANGER_INK')
   }
   if (daysLeft <= 3) {
-    return DesignColor.ON_WARNING_CONTAINER
+    return resColor('ON_WARNING_CONTAINER')
   }
-  return DesignColor.TEXT_GREEN
+  return resColor('TEXT_GREEN')
 }
 
 /** 进度环填充度（不可解析返回 null，UI 隐藏环） */
@@ -605,13 +607,13 @@ export function subscriptionStatusIcon(status: SubscriptionStatus): Resource {
 export function subscriptionStatusContainerColor(status: SubscriptionStatus): number {
   switch (status) {
     case SubscriptionStatus.PAUSED:
-      return DesignColor.ICON_CONTAINER_ORANGE
+      return resColor('ICON_CONTAINER_ORANGE')
     case SubscriptionStatus.CANCELED:
-      return DesignColor.ICON_CONTAINER_PINK
+      return resColor('ICON_CONTAINER_PINK')
     case SubscriptionStatus.FINISHED:
-      return DesignColor.ICON_CONTAINER_GREEN
+      return resColor('ICON_CONTAINER_GREEN')
     default:
-      return DesignColor.ICON_CONTAINER_TEAL
+      return resColor('ICON_CONTAINER_TEAL')
   }
 }
 
@@ -619,13 +621,13 @@ export function subscriptionStatusContainerColor(status: SubscriptionStatus): nu
 export function subscriptionStatusIconColor(status: SubscriptionStatus): number {
   switch (status) {
     case SubscriptionStatus.PAUSED:
-      return DesignColor.ICON_FOREGROUND_ORANGE
+      return resColor('ICON_FOREGROUND_ORANGE')
     case SubscriptionStatus.CANCELED:
-      return DesignColor.ICON_FOREGROUND_PINK
+      return resColor('ICON_FOREGROUND_PINK')
     case SubscriptionStatus.FINISHED:
-      return DesignColor.ICON_FOREGROUND_GREEN
+      return resColor('ICON_FOREGROUND_GREEN')
     default:
-      return DesignColor.ICON_FOREGROUND_TEAL
+      return resColor('ICON_FOREGROUND_TEAL')
   }
 }
 
@@ -633,11 +635,11 @@ export function subscriptionStatusIconColor(status: SubscriptionStatus): number 
 export function subscriptionStatusChipContainer(status: SubscriptionStatus): number {
   switch (status) {
     case SubscriptionStatus.PAUSED:
-      return DesignColor.WARNING_CONTAINER
+      return resColor('WARNING_CONTAINER')
     case SubscriptionStatus.CANCELED:
-      return DesignColor.ICON_CONTAINER_PINK
+      return resColor('ICON_CONTAINER_PINK')
     default:
-      return DesignColor.SURFACE_VARIANT
+      return resColor('SURFACE_VARIANT')
   }
 }
 
@@ -646,12 +648,12 @@ export function subscriptionStatusChipContent(status: SubscriptionStatus): numbe
   switch (status) {
     // PAUSED：onWarningContainer 与 warningContainer 成对（6.47:1）；ongoingInk 压橙浅底仅 2.52:1（§10 红线）
     case SubscriptionStatus.PAUSED:
-      return DesignColor.ON_WARNING_CONTAINER
+      return resColor('ON_WARNING_CONTAINER')
     case SubscriptionStatus.CANCELED:
-      return DesignColor.DANGER_INK
+      return resColor('DANGER_INK')
     // FINISHED（default）：textSecondary on surfaceVariant 4.51:1；textTertiary 禁作可读标签（DESIGN-SPEC §10）
     default:
-      return DesignColor.TEXT_SECONDARY
+      return resColor('TEXT_SECONDARY')
   }
 }
 
@@ -672,31 +674,31 @@ export function subscriptionReminderIcon(type: SubscriptionReminderType): Resour
 /** 提醒类型图标盒浅底色 */
 export function subscriptionReminderContainerColor(type: SubscriptionReminderType): number {
   return type === SubscriptionReminderType.TRIAL_END
-    ? DesignColor.ICON_CONTAINER_PINK
-    : DesignColor.ICON_CONTAINER_ORANGE
+    ? resColor('ICON_CONTAINER_PINK')
+    : resColor('ICON_CONTAINER_ORANGE')
 }
 
 /** 提醒类型图标前景色 */
 export function subscriptionReminderIconColor(type: SubscriptionReminderType): number {
   return type === SubscriptionReminderType.TRIAL_END
-    ? DesignColor.ICON_FOREGROUND_PINK
-    : DesignColor.ICON_FOREGROUND_ORANGE
+    ? resColor('ICON_FOREGROUND_PINK')
+    : resColor('ICON_FOREGROUND_ORANGE')
 }
 
 /** 提醒类型 chip 底色 */
 export function subscriptionReminderChipContainer(type: SubscriptionReminderType): number {
   return type === SubscriptionReminderType.TRIAL_END
-    ? DesignColor.ICON_CONTAINER_PINK
-    : DesignColor.WARNING_CONTAINER
+    ? resColor('ICON_CONTAINER_PINK')
+    : resColor('WARNING_CONTAINER')
 }
 
 /** 提醒类型 chip 文字色 */
 export function subscriptionReminderChipContent(type: SubscriptionReminderType): number {
   return type === SubscriptionReminderType.TRIAL_END
-    ? DesignColor.DANGER_INK
+    ? resColor('DANGER_INK')
     // RENEW 与 statusChipContent(PAUSED) 同源裁定：onWarningContainer 成对令牌
     // （浅 #92400E 6.47:1）；ongoingInk 压 warningContainer 仅 2.51:1，禁作 12sp 标签色（§10）
-    : DesignColor.ON_WARNING_CONTAINER
+    : resColor('ON_WARNING_CONTAINER')
 }
 
 /** 试用倒计时角标文案（无试用/已过期返回空串，UI 不渲染） */
@@ -714,13 +716,13 @@ export function subscriptionTrialBadgeText(vo: SubscriptionVo): string {
 export function subscriptionTrialBadgeColors(vo: SubscriptionVo): SubscriptionBadgeColors {
   const daysLeft = vo.trialDaysLeft
   if (daysLeft === null || daysLeft === undefined || daysLeft < 0) {
-    return { container: DesignColor.SURFACE_VARIANT, content: DesignColor.TEXT_SECONDARY }
+    return { container: resColor('SURFACE_VARIANT'), content: resColor('TEXT_SECONDARY') }
   }
   return daysLeft <= 3
-    ? { container: DesignColor.ICON_CONTAINER_PINK, content: DesignColor.DANGER_INK }
+    ? { container: resColor('ICON_CONTAINER_PINK'), content: resColor('DANGER_INK') }
     // 非紧急分支换 onWarningContainer（容器/内容成对令牌，6.47:1）：
     // ongoingInk v0.4 与 ongoing 同值 #D98A26，压橙浅底仅 2.52:1，不达正文红线（§10）
-    : { container: DesignColor.WARNING_CONTAINER, content: DesignColor.ON_WARNING_CONTAINER }
+    : { container: resColor('WARNING_CONTAINER'), content: resColor('ON_WARNING_CONTAINER') }
 }
 
 /** 每期金额展示（¥xx.xx/期） */

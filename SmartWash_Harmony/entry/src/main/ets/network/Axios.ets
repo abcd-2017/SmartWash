@@ -24,6 +24,7 @@ import {
 import { CommonConstants } from '../constant/CommonConstants'
 import { BaseResponse } from './BaseResponse'
 import BuildProfile from 'entry/BuildProfile'
+import { resString } from '../utils/ResourceString'
 
 /**
  * 服务端地址配置（差异分析 01 §3.3 环境红线修复）：
@@ -37,8 +38,8 @@ const BASE_URL: string = BuildProfile.BASE_URL
 
 if (BASE_URL === "") {
   logger.error("axios", "BASE_URL 未注入",
-    "release 构建必须在 entry/build-profile.json5 buildOptionSet[release]" +
-    ".arkOptions.buildProfileFields 注入生产 HTTPS 域名后重新出包")
+    resString('axios_1') +
+    resString('axios_2'))
 }
 
 // 请求超时（毫秒）：与 Android 端 30s 基准对齐（评审 #9 / 跨端 #3），原 100s 过长
@@ -48,7 +49,7 @@ const REQUEST_TIMEOUT: number = 30000
 const UNAUTHORIZED_DEBOUNCE_MS: number = 1500
 
 // 401 统一文案（业务码 401 / HTTP 401 / 续签失败三处合流，避免文案漂移）
-const UNAUTHORIZED_MESSAGE: string = "登录失效，请重新登录！"
+function UNAUTHORIZED_MESSAGE(): string { return resString('axios_3') }
 
 // 错误类 toast 去重窗口（毫秒）：轮询等高频请求持续失败时，相同文案不重复弹（评审 #4）
 const ERROR_TOAST_DEDUPE_MS: number = 10000
@@ -323,7 +324,7 @@ async function handleUnauthorizedResponse(response: AxiosResponse): Promise<Axio
       return retried
     }
   }
-  handleUnauthorized(UNAUTHORIZED_MESSAGE)
+  handleUnauthorized(UNAUTHORIZED_MESSAGE())
   return response
 }
 
@@ -340,7 +341,7 @@ async function handleUnauthorizedError(error: AxiosError): Promise<AxiosResponse
       return retried
     }
   }
-  handleUnauthorized(UNAUTHORIZED_MESSAGE)
+  handleUnauthorized(UNAUTHORIZED_MESSAGE())
   // 仅记录错误摘要，不序列化完整 error（可能携带请求体/手机号等敏感信息，评审 #25）
   logger.error("axios", "请求异常", error.message ?? "")
   return Promise.reject(error)
@@ -364,9 +365,9 @@ instance.interceptors.request.use(async (config: InternalAxiosRequestConfig): Pr
       // 已确认未登录（退出登录 / 首次 401 之后）静默拒绝，避免轮询持续弹 toast、
       // 重复跳页替换掉用户正在输入的登录页（问题 2）
       if (AppStorage.get<boolean>("isLoggedIn") === true) {
-        handleUnauthorized("请先登录")
+        handleUnauthorized(resString('axios_4'))
       }
-      return Promise.reject(new Error("未登录"))
+      return Promise.reject(new Error(resString('axios_5')))
     }
   }
   return config
@@ -395,10 +396,10 @@ instance.interceptors.response.use((response: AxiosResponse): AxiosResponse | Pr
 }, (error: AxiosError): Promise<AxiosResponse> => {
   const message = error.message ?? ""
   if (message.indexOf("timeout") !== -1) {
-    showErrorToast("请求超时！请您稍后重试")
+    showErrorToast(resString('axios_6'))
   }
   if (message.indexOf("Network Error") !== -1) {
-    showErrorToast("网络错误！请您稍后重试")
+    showErrorToast(resString('axios_7'))
   }
   const status = error.response?.status
   if (status !== undefined) {

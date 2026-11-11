@@ -5,12 +5,12 @@ import { logger } from '../utils/Logger';
 import { pathStack } from '../utils/PathStackUtil';
 import { getValue } from '../utils/StorageUtil';
 import { bumpHomeTabBack, bumpOrderRefresh, bumpUserInfoRefresh } from '../utils/RefreshSignal';
-import { DesignColor } from '../constant/DesignSystem';
 import { ThemeRefresh } from '../view/common/ThemeRefresh';
 import { handleDeepLink, isPublicDeepLink } from '../utils/deeplink/DeepLinkHandler';
 import { AddSchoolBuilder } from './AddSchool';
 import { HomeBuilder, HOME_TAB_INDEX_KEY } from './Home';
 import { LoginBuilder } from './Login';
+import { resColor } from '../utils/ResourceColor'
 
 @Entry
 @Component
@@ -40,34 +40,41 @@ struct Index {
   // （侧滑能回首页、重登停在旧 tab、轮询持续 401、反复替换掉正在输入的登录页）。
   @StorageLink('isLoggedIn') @Watch("onLoginStateChanged") isLoggedIn: boolean = false
 
-  // 系统深浅色（问题17）：build 内读取以建立依赖，色模式变更时整页重建、DesignColor 令牌刷新
-  @StorageLink('darkMode') darkMode: boolean = false
-
   // 待消费深链（P-2001）：Home 挂载后由 Home 消费；登出态 Home 未挂载，由本页兜底消费公开 host
   @StorageLink('pendingDeepLinkUri') @Watch('onPendingDeepLinkChange') pendingDeepLinkUri: string = ''
 
   async aboutToAppear() {
-    this.token = await getValue(CommonConstants.USER_TOKEN, "") as string
-    if (this.token !== "") {
-      // 启动分流过程留痕（debug：一次性低频路径，不打 token 内容）
-      logger.debug('index', '冷启动检测到本地 token，校验学校信息')
-      let res = await getUserSchoolId()
-      if (res.code === HttpStatusCode.Ok) {
-        this.showPageType = res.data === null ? 1 : 2
-      } else {
-        // 接口异常（含 401，网络层已统一清理并跳登录）时回退登录页
-        // 降级留痕：启动分流回退登录页
-        logger.warn('index', `启动分流学校信息校验失败，回退登录页 code=${res.code}`)
-        this.showPageType = 0
+    try {
+      this.token = await getValue(CommonConstants.USER_TOKEN, "") as string
+      if (this.token !== "") {
+        // 启动分流过程留痕（debug：一次性低频路径，不打 token 内容）
+        logger.debug('index', '冷启动检测到本地 token，校验学校信息')
+        try {
+          let res = await getUserSchoolId()
+          if (res.code === HttpStatusCode.Ok) {
+            this.showPageType = res.data === null ? 1 : 2
+          } else {
+            // 接口异常（含 401，网络层已统一清理并跳登录）时回退登录页
+            // 降级留痕：启动分流回退登录页
+            logger.warn('index', `启动分流学校信息校验失败，回退登录页 code=${res.code}`)
+            this.showPageType = 0
+          }
+        } catch (e) {
+          // 请求被网络层 reject（401 已清登录态 / 网络异常 / 超时）：必须兜底回退登录页，
+          // 不能任其抛出——否则外层 finally 之前的清理被跳过，页面永久卡在 loading
+          logger.warn('index', `启动分流学校信息请求异常，回退登录页 ${e instanceof Error ? e.message : ''}`)
+          this.showPageType = 0
+        }
       }
+    } finally {
+      this.isLoading = false
+      // 冷启动会话态：只有真正分流到首页才算已登录（避免脏 isLoggedIn 误切登录页）
+      AppStorage.setOrCreate('isLoggedIn', this.showPageType === 2)
+      // 分流结果：0=登录页 1=完善学校信息 2=首页
+      logger.debug('index', `启动分流完成 showPageType=${this.showPageType}`)
+      // 登出态深链兜底消费（P-2001）：Home 未挂载时公开 host 立即放行，受保护 host 落登录页
+      this.consumeLoggedOutDeepLink()
     }
-    this.isLoading = false
-    // 冷启动会话态：只有真正分流到首页才算已登录（避免脏 isLoggedIn 误切登录页）
-    AppStorage.setOrCreate('isLoggedIn', this.showPageType === 2)
-    // 分流结果：0=登录页 1=完善学校信息 2=首页
-    logger.debug('index', `启动分流完成 showPageType=${this.showPageType}`)
-    // 登出态深链兜底消费（P-2001）：Home 未挂载时公开 host 立即放行，受保护 host 落登录页
-    this.consumeLoggedOutDeepLink()
   }
 
   /** @Watch 回调：热启动深链暂存变化（登出态由本页消费，已登录交给 Home） */
@@ -174,7 +181,7 @@ struct Index {
     Column() {
       Navigation(pathStack) {
         // 深浅色实时跟随（深色模式审计）：根内容（Login/AddSchool/Home）包主题重建宿主，
-        // 色模式翻转时 if 双分支重建子树重读 DesignColor 令牌（栈内 NavDestination 页面
+        // 色模式翻转时 if 双分支重建子树重读资源色（栈内 NavDestination 页面
         // 各自的 ThemeRefresh 覆盖，本层只管 Navigation 默认内容）
         ThemeRefresh() {
         if (this.isLoading) {
@@ -183,7 +190,7 @@ struct Index {
             LoadingProgress()
               .width(48)
               .height(48)
-              .color(DesignColor.PRIMARY)
+              .color(resColor('PRIMARY'))
           }
           .width('100%')
           .height('100%')
@@ -196,7 +203,7 @@ struct Index {
           HomeBuilder()
         }
         }
-      }.backgroundColor(this.darkMode ? DesignColor.DARK_BACKGROUND : DesignColor.BACKGROUND)
+      }.backgroundColor(resColor('BACKGROUND'))
       .hideTitleBar(true)
       .mode(NavigationMode.Stack)
     }.height('100%')

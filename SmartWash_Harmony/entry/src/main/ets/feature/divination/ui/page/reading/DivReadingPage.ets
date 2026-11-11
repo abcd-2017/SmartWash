@@ -36,6 +36,7 @@ import { DesignDimens } from '../../../../../constant/DesignSystem'
 import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
 import { logger } from '../../../../../utils/Logger'
+import { resString } from '../../../../../utils/ResourceString'
 
 /** 解读正文状态（对齐安卓 RequestState） */
 type ReadingState = 'idle' | 'loading' | 'success' | 'error'
@@ -170,15 +171,15 @@ struct DivReadingPage {
   /** 页头卦印文字（对齐安卓 readingSealText：六爻/梅花取卦名末字，兜底「六」/「梅」，compare-15 #24） */
   private resolveSeal(method: string, name: string): string {
     if (method === 'liuyao') {
-      return name.length > 0 ? name.charAt(name.length - 1) : '六'
+      return name.length > 0 ? name.charAt(name.length - 1) : resString('div_seal_liuyao')
     }
     if (method === 'meihua') {
-      return name.length > 0 ? name.charAt(name.length - 1) : '梅'
+      return name.length > 0 ? name.charAt(name.length - 1) : resString('div_seal_meihua')
     }
     if (method === 'qimen') {
-      return '奇'
+      return resString('div_seal_qimen')
     }
-    return '壬'
+    return resString('div_seal_liuren')
   }
 
   /** 解读正文 Markdown 切段（onAccumulated 时调用，结果缓存到 @Local parsed） */

@@ -20,6 +20,7 @@
 import { BaseResponse } from '../../network/BaseResponse'
 import { httpUtil } from '../../network/HttpUtil'
 import { jsonNum, jsonStr, mapArray } from '../../network/vo/JsonParse'
+import { resString } from '../../utils/ResourceString'
 
 // ==================== 常量（对齐安卓 ReviewConstant） ====================
 
@@ -271,81 +272,81 @@ export function reviewPageDataFromJSON<T>(raw: Object | null | undefined,
 
 export class ReviewText {
   // 页面标题
-  static readonly review_queue_title: string = "今日复习"
-  static readonly review_study_title: string = "复习"
-  static readonly review_material_title: string = "复习资料"
+  static get review_queue_title(): string { return resString('review_queue_title') }
+  static get review_study_title(): string { return resString('review_study_title') }
+  static get review_material_title(): string { return resString('review_material_title') }
 
   // 今日队列页
-  static readonly review_queue_count_format: string = "今日 %d 张"
-  static readonly review_queue_breakdown_format: string = "到期 %d 张 · 新卡 %d 张"
-  static readonly review_queue_action_start: string = "开始复习"
-  static readonly review_queue_empty_message: string = "今日没有需要复习的卡片，先去资料页建卡吧"
-  static readonly review_queue_empty_action: string = "去资料页建卡"
-  static readonly review_card_new: string = "新卡"
-  static readonly review_due_badge_minute: string = "分钟级"
-  static readonly review_due_badge_daily: string = "天级"
-  static readonly review_due_now: string = "已到期"
-  static readonly review_due_in_minutes: string = "%d 分钟后到期"
-  static readonly review_due_in_hours: string = "%d 小时后到期"
-  static readonly review_due_in_days: string = "%d 天后到期"
-  static readonly review_material_chip_none: string = "未归资料"
+  static get review_queue_count_format(): string { return resString('review_text_review_queue_count_format') }
+  static get review_queue_breakdown_format(): string { return resString('review_text_review_queue_breakdown_format') }
+  static get review_queue_action_start(): string { return resString('review_queue_action_start') }
+  static get review_queue_empty_message(): string { return resString('review_queue_empty_message') }
+  static get review_queue_empty_action(): string { return resString('review_queue_empty_action') }
+  static get review_card_new(): string { return resString('review_card_new') }
+  static get review_due_badge_minute(): string { return resString('review_due_badge_minute') }
+  static get review_due_badge_daily(): string { return resString('review_due_badge_daily') }
+  static get review_due_now(): string { return resString('review_due_now') }
+  static get review_due_in_minutes(): string { return resString('review_text_review_due_in_minutes') }
+  static get review_due_in_hours(): string { return resString('review_text_review_due_in_hours') }
+  static get review_due_in_days(): string { return resString('review_text_review_due_in_days') }
+  static get review_material_chip_none(): string { return resString('review_material_chip_none') }
 
   // 卡片状态（py-fsrs State）
-  static readonly review_state_learning: string = "学习中"
-  static readonly review_state_review: string = "复习中"
-  static readonly review_state_relearning: string = "重学中"
+  static get review_state_learning(): string { return resString('review_state_learning') }
+  static get review_state_review(): string { return resString('review_state_review') }
+  static get review_state_relearning(): string { return resString('review_state_relearning') }
 
   // 复习页
-  static readonly review_study_progress_format: string = "第 %d / %d 张"
-  static readonly review_study_question_hint: string = "点击卡片查看答案"
-  static readonly review_study_answer_label: string = "答案"
+  static get review_study_progress_format(): string { return resString('review_text_review_study_progress_format') }
+  static get review_study_question_hint(): string { return resString('review_study_question_hint') }
+  static get review_study_answer_label(): string { return resString('review_study_answer_label') }
   static readonly review_rating_again: string = "Again"
   static readonly review_rating_hard: string = "Hard"
   static readonly review_rating_good: string = "Good"
   static readonly review_rating_easy: string = "Easy"
-  static readonly review_rating_again_semantic: string = "想不起来"
-  static readonly review_rating_hard_semantic: string = "有点费劲"
-  static readonly review_rating_good_semantic: string = "正常想起"
-  static readonly review_rating_easy_semantic: string = "轻松秒答"
-  static readonly review_study_completed_message: string = "今日复习完成，休息一下吧"
-  static readonly review_action_back: string = "返 回"
-  static readonly review_error_answer: string = "评分提交失败，请重试"
+  static get review_rating_again_semantic(): string { return resString('review_rating_again_semantic') }
+  static get review_rating_hard_semantic(): string { return resString('review_rating_hard_semantic') }
+  static get review_rating_good_semantic(): string { return resString('review_rating_good_semantic') }
+  static get review_rating_easy_semantic(): string { return resString('review_rating_easy_semantic') }
+  static get review_study_completed_message(): string { return resString('review_study_completed_message') }
+  static get review_action_back(): string { return resString('review_action_back') }
+  static get review_error_answer(): string { return resString('review_error_answer') }
 
   // 资料页
-  static readonly review_material_empty: string = "还没有复习资料，粘贴一段文本开始建卡吧"
-  static readonly review_material_action_new: string = "新建"
-  static readonly review_material_form_title_label: string = "资料标题"
-  static readonly review_material_form_title_hint: string = "例如：操作系统期中考点"
-  static readonly review_material_form_raw_label: string = "原文粘贴（可选）"
-  static readonly review_material_form_raw_hint: string = "粘贴教材或笔记原文，便于回顾上下文"
-  static readonly review_material_action_create: string = "创建资料"
-  static readonly review_toast_material_created: string = "资料已创建"
-  static readonly review_material_expand: string = "展开"
-  static readonly review_material_collapse: string = "收起"
-  static readonly review_material_cards_header_format: string = "问答卡（%d）"
-  static readonly review_material_add_card: string = "添加卡片"
-  static readonly review_material_cards_empty: string = "还没有卡片，添加第一张吧"
-  static readonly review_material_load_more: string = "加载更多"
-  static readonly review_error_load_more: string = "加载更多失败，点击重试"
-  static readonly review_card_dialog_title: string = "添加问答卡"
-  static readonly review_card_dialog_question_label: string = "问题"
-  static readonly review_card_dialog_question_hint: string = "例如：进程与线程的区别？"
-  static readonly review_card_dialog_answer_label: string = "答案"
-  static readonly review_card_dialog_answer_hint: string = "例如：进程是资源分配单位，线程是调度单位"
-  static readonly review_dialog_action_confirm: string = "确认"
-  static readonly review_dialog_action_cancel: string = "取消"
-  static readonly review_toast_card_created: string = "卡片已创建"
+  static get review_material_empty(): string { return resString('review_material_empty') }
+  static get review_material_action_new(): string { return resString('review_material_action_new') }
+  static get review_material_form_title_label(): string { return resString('review_material_form_title_label') }
+  static get review_material_form_title_hint(): string { return resString('review_material_form_title_hint') }
+  static get review_material_form_raw_label(): string { return resString('review_material_form_raw_label') }
+  static get review_material_form_raw_hint(): string { return resString('review_material_form_raw_hint') }
+  static get review_material_action_create(): string { return resString('review_material_action_create') }
+  static get review_toast_material_created(): string { return resString('review_toast_material_created') }
+  static get review_material_expand(): string { return resString('review_material_expand') }
+  static get review_material_collapse(): string { return resString('review_material_collapse') }
+  static get review_material_cards_header_format(): string { return resString('review_text_review_material_cards_header_format') }
+  static get review_material_add_card(): string { return resString('review_material_add_card') }
+  static get review_material_cards_empty(): string { return resString('review_material_cards_empty') }
+  static get review_material_load_more(): string { return resString('review_material_load_more') }
+  static get review_error_load_more(): string { return resString('review_error_load_more') }
+  static get review_card_dialog_title(): string { return resString('review_card_dialog_title') }
+  static get review_card_dialog_question_label(): string { return resString('review_card_dialog_question_label') }
+  static get review_card_dialog_question_hint(): string { return resString('review_card_dialog_question_hint') }
+  static get review_card_dialog_answer_label(): string { return resString('review_study_answer_label') }
+  static get review_card_dialog_answer_hint(): string { return resString('review_card_dialog_answer_hint') }
+  static get review_dialog_action_confirm(): string { return resString('review_dialog_action_confirm') }
+  static get review_dialog_action_cancel(): string { return resString('review_dialog_action_cancel') }
+  static get review_toast_card_created(): string { return resString('review_toast_card_created') }
 
   // 校验与通用错误
-  static readonly review_action_retry: string = "重试"
-  static readonly review_error_load: string = "加载失败，请重试"
-  static readonly review_error_title_required: string = "请输入资料标题"
-  static readonly review_error_title_too_long: string = "资料标题最长 100 字"
-  static readonly review_error_raw_too_long: string = "资料原文过长"
-  static readonly review_error_question_required: string = "请输入问题"
-  static readonly review_error_answer_required: string = "请输入答案"
-  static readonly review_error_question_too_long: string = "问题最长 1000 字"
-  static readonly review_error_answer_too_long: string = "答案最长 2000 字"
+  static get review_action_retry(): string { return resString('review_action_retry') }
+  static get review_error_load(): string { return resString('review_error_load') }
+  static get review_error_title_required(): string { return resString('review_error_title_required') }
+  static get review_error_title_too_long(): string { return resString('review_error_title_too_long') }
+  static get review_error_raw_too_long(): string { return resString('review_error_raw_too_long') }
+  static get review_error_question_required(): string { return resString('review_error_question_required') }
+  static get review_error_answer_required(): string { return resString('review_error_answer_required') }
+  static get review_error_question_too_long(): string { return resString('review_error_question_too_long') }
+  static get review_error_answer_too_long(): string { return resString('review_error_answer_too_long') }
 }
 
 // ==================== 七接口封装 ====================

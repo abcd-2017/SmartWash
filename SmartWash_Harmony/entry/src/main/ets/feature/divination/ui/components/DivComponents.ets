@@ -10,188 +10,184 @@
 
 import vibrator from '@ohos.vibrator'
 import { DivColor } from '../../../../constant/DivTheme'
-import { DesignDimens, DesignElevation, DesignColor } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation } from '../../../../constant/DesignSystem'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 // ========== 文案（对齐安卓 res/values/strings.xml 的 div_* 键；纯中文 demo 暂用字面量） ==========
 
 export class DivText {
   // 首页
-  static readonly title: string = '观象台'
-  static readonly homeXunKongFormat: string = '旬空 %s'
-  static readonly homeLedger: string = '案 卷'
-  static readonly homeLedgerMore: string = '卦历 ›'
-  static readonly disclaimerFooter: string = '内容基于玄学体系生成，仅供文化参考 · 不构成决策建议'
-  static readonly signSeal: string = '签'
-  static readonly signCardTitle: string = '今日一签 · %s'
-  static readonly signCardSource: string = '梅花时间卦'
+  static get title(): string { return resString('div_title') }
+  static get homeXunKongFormat(): string { return resString('div_text_home_xun_kong_format') }
+  static get homeLedger(): string { return resString('div_home_ledger') }
+  static get homeLedgerMore(): string { return resString('div_home_ledger_more') }
+  static get disclaimerFooter(): string { return resString('div_disclaimer_footer') }
+  static get signSeal(): string { return resString('div_sign_seal') }
+  static get signCardTitle(): string { return resString('div_text_sign_card_title') }
+  static get signCardSource(): string { return resString('div_sign_card_source') }
   // 保存中尾缀（audit-11 #6 / compare-10 #1，安卓 div_sign_saving：保存中禁点期间的轻量 loading 反馈）
   static readonly signSaving: string = '…'
   // 案卷空态行动按钮（audit-11 #5 / compare-10 #2，安卓 div_home_ledger_go_ask：跳问卦，与「卦历 ›」双出口）
-  static readonly ledgerGoAsk: string = '去起卦'
-  static readonly methodLiuyaoName: string = '六爻'
-  static readonly methodLiuyaoDesc: string = '摇铜钱问一事\n装卦最全 · 应期可推'
-  static readonly methodLiuyaoUseFor: string = '日常决疑 · 具体事件'
-  static readonly methodLiuyaoTag: string = '推 荐'
-  static readonly methodMeihuaName: string = '梅花'
-  static readonly methodMeihuaDesc: string = '时间数字起卦\n体用生克 · 快占一事'
-  static readonly methodMeihuaUseFor: string = '见物占数 · 随机应变'
-  static readonly methodQimenName: string = '奇门'
-  static readonly methodQimenDesc: string = '九宫排局\n择时择方 · 趋避有道'
-  static readonly methodQimenUseFor: string = '趋吉避凶 · 方位选择'
-  static readonly methodLiurenName: string = '六壬'
-  static readonly methodLiurenDesc: string = '月将加时 · 三传定机\n人事占验最精'
-  static readonly methodLiurenUseFor: string = '精细推算 · 复杂事务'
-  static readonly historyEmpty: string = '案卷尚空，且去起一卦'
-  static readonly historyTitle: string = '卦历 · 案卷'
-  static readonly historyNote: string = '复盘沿用原盘原时刻 · 不因当前日期重算'
-  static readonly filterAll: string = '全部'
-  static readonly historySynced: string = '已建档'
+  static get ledgerGoAsk(): string { return resString('div_home_ledger_go_ask') }
+  static get methodLiuyaoName(): string { return resString('div_method_liuyao_name') }
+  static get methodLiuyaoDesc(): string { return resString('div_method_liuyao_desc') }
+  static get methodLiuyaoUseFor(): string { return resString('div_method_liuyao_use_for') }
+  static get methodLiuyaoTag(): string { return resString('div_method_liuyao_tag') }
+  static get methodMeihuaName(): string { return resString('div_method_meihua_name') }
+  static get methodMeihuaDesc(): string { return resString('div_method_meihua_desc') }
+  static get methodMeihuaUseFor(): string { return resString('div_method_meihua_use_for') }
+  static get methodQimenName(): string { return resString('div_method_qimen_name') }
+  static get methodQimenDesc(): string { return resString('div_method_qimen_desc') }
+  static get methodQimenUseFor(): string { return resString('div_method_qimen_use_for') }
+  static get methodLiurenName(): string { return resString('div_method_liuren_name') }
+  static get methodLiurenDesc(): string { return resString('div_method_liuren_desc') }
+  static get methodLiurenUseFor(): string { return resString('div_method_liuren_use_for') }
+  static get historyEmpty(): string { return resString('div_history_empty') }
+  static get historyTitle(): string { return resString('div_history_title') }
+  static get historyNote(): string { return resString('div_history_note') }
+  static get filterAll(): string { return resString('div_filter_all') }
+  static get historySynced(): string { return resString('div_text_history_synced') }
 
   // 问事页
-  static readonly askTitle: string = '心中所问'
-  static readonly askHint: string = '默念所问之事，一事一占'
-  static readonly questionExample: string = '例：未来三个月能否找到合适工作？'
-  static readonly askCategoryLabel: string = '所问领域'
-  static readonly askCategoryAuto: string = '自动识别，可修改'
-  static readonly askCategoryManual: string = '已手动选择'
-  static readonly categoryCareer: string = '事业'
-  static readonly categoryWealth: string = '财运'
-  static readonly categoryLove: string = '感情'
-  static readonly categoryStudy: string = '学业'
-  static readonly categoryTravel: string = '出行'
-  static readonly categoryOther: string = '其他'
-  static readonly askCastMethodLabel: string = '起卦方式'
-  static readonly castMethodShake: string = '静心摇卦'
-  static readonly castMethodShakeSub: string = '三枚铜钱 · 六掷成卦'
-  static readonly castMethodLines: string = '直接输入爻值'
-  static readonly castMethodLinesSub: string = '逐爻录入单拆重交'
-  static readonly castMethodTime: string = '梅花时间卦'
-  static readonly castMethodTimeSub: string = '以此时此刻起卦'
-  static readonly castMethodNumber: string = '随口报数'
-  static readonly castMethodNumberSub: string = '心中默念两数'
-  static readonly castMethodNowJu: string = '立即起局'
-  static readonly castMethodNowJuSub: string = '按当前时辰拆补转盘'
-  static readonly castMethodNowKe: string = '立即起课'
-  static readonly castMethodNowKeSub: string = '月将加时 · 四课三传'
-  static readonly askGo: string = '静 心 · 起 卦'
+  static get askTitle(): string { return resString('div_ask_title') }
+  static get askHint(): string { return resString('div_ask_hint') }
+  static get questionExample(): string { return resString('div_question_example') }
+  static get askCategoryLabel(): string { return resString('div_ask_category_label') }
+  static get askCategoryAuto(): string { return resString('div_ask_category_auto') }
+  static get askCategoryManual(): string { return resString('div_ask_category_manual') }
+  static get categoryCareer(): string { return resString('div_category_career') }
+  static get categoryWealth(): string { return resString('div_category_wealth') }
+  static get categoryLove(): string { return resString('div_category_love') }
+  static get categoryStudy(): string { return resString('div_category_study') }
+  static get categoryTravel(): string { return resString('div_category_travel') }
+  static get categoryOther(): string { return resString('div_category_other') }
+  static get askCastMethodLabel(): string { return resString('div_ask_cast_method_label') }
+  static get castMethodShake(): string { return resString('div_cast_method_shake') }
+  static get castMethodShakeSub(): string { return resString('div_cast_method_shake_sub') }
+  static get castMethodLines(): string { return resString('div_cast_method_lines') }
+  static get castMethodLinesSub(): string { return resString('div_cast_method_lines_sub') }
+  static get castMethodTime(): string { return resString('div_sign_card_source') }
+  static get castMethodTimeSub(): string { return resString('div_cast_method_time_sub') }
+  static get castMethodNumber(): string { return resString('div_cast_method_number') }
+  static get castMethodNumberSub(): string { return resString('div_cast_method_number_sub') }
+  static get castMethodNowJu(): string { return resString('div_cast_method_now_ju') }
+  static get castMethodNowJuSub(): string { return resString('div_cast_method_now_ju_sub') }
+  static get castMethodNowKe(): string { return resString('div_cast_method_now_ke') }
+  static get castMethodNowKeSub(): string { return resString('div_cast_method_now_ke_sub') }
+  static get askGo(): string { return resString('div_ask_go') }
   // 提交中尾缀（对齐安卓 div_ask_casting：排盘入库期间的轻量 loading 反馈）
-  static readonly askCasting: string = '推演中…'
-  static readonly askSafetyHint: string = '涉及医疗 / 安全等问题请寻求现实帮助'
-  static readonly manualTitle: string = '直接输入爻值'
-  static readonly manualConfirm: string = '装 卦'
-  static readonly numbersTitle: string = '随口报数'
-  static readonly numbersHint: string = '心中默念两个 1–999 的数'
-  static readonly lineNames: string[] = ['初爻', '二爻', '三爻', '四爻', '五爻', '上爻']
-  static readonly manualOptionLabels: string[] = ['单 · 阳', '拆 · 阴', '重 ○ 动', '交 × 动']
+  static get askCasting(): string { return resString('div_ask_casting') }
+  static get askSafetyHint(): string { return resString('div_ask_safety_hint') }
+  static get manualTitle(): string { return resString('div_cast_method_lines') }
+  static get manualConfirm(): string { return resString('div_manual_confirm') }
+  static get numbersTitle(): string { return resString('div_cast_method_number') }
+  static get numbersHint(): string { return resString('div_numbers_hint') }
+  static get lineNames(): string[] { return [resString('div_yao_position_1'), resString('div_yao_position_2'), resString('div_yao_position_3'), resString('div_yao_position_4'), resString('div_yao_position_5'), resString('div_yao_position_6')] }
+  static get manualOptionLabels(): string[] { return [resString('div_manual_option_yang'), resString('div_manual_option_yin'), resString('div_manual_option_lao_yang'), resString('div_manual_option_lao_yin')] }
 
   // 高风险分流
-  static readonly safetySeal: string = '止'
-  static readonly safetyTitle: string = '这个问题，请寻求现实帮助'
+  static get safetySeal(): string { return resString('div_safety_seal') }
+  static get safetyTitle(): string { return resString('div_safety_title') }
   static readonly safetyBody: string =
-    '医疗与身心健康请咨询医生或专业机构；涉及人身安全请立即联系警方（110）或校园保卫处；' +
-    '寻找失踪亲友请报警处理。占卜不适用于这些问题。'
-  static readonly safetyBack: string = '我知道了 · 返回'
+    resString('div_components_1') +
+    resString('div_components_2')
+  static get safetyBack(): string { return resString('div_safety_back') }
 
   // 卦盘页
-  static readonly chartTitle: string = '卦盘'
-  static readonly chartLoading: string = '正在起盘…'
-  static readonly chartMissing: string = '未找到卦盘记录'
-  static readonly chartInterpret: string = '解 读'
-  static readonly chartSaved: string = '已 保 存'
-  static readonly chartBuilding: string = '正在建档…'
-  static readonly chartBuildFailed: string = '解读建档失败，请稍后重试'
+  static get chartTitle(): string { return resString('div_chart_title') }
+  static get chartLoading(): string { return resString('div_chart_loading') }
+  static get chartMissing(): string { return resString('div_chart_missing') }
+  static get chartInterpret(): string { return resString('div_chart_interpret') }
+  static get chartSaved(): string { return resString('div_chart_saved') }
+  static get chartBuilding(): string { return resString('div_text_chart_building') }
+  static get chartBuildFailed(): string { return resString('div_error_create_record') }
   // 观星台零兜底拦截文案（求解读前置检查；无平台默认模型，未配置一律引导去设置页）
-  static readonly chartDivUseClosed: string = '观星台 AI 解读暂未开放'
-  static readonly chartModelMissing: string = '请先配置解读模型'
-  static readonly chartConfigCheckFailed: string = '解读配置获取失败，请稍后重试'
-  static readonly liuyaoYongshen: string = '用神'
-  static readonly liuyaoFacts: string = '规则事实'
-  static readonly meihuaTiyong: string = '体用生克（规则层）'
-  static readonly qimenYongshen: string = '用神宫'
-  static readonly qimenFacts: string = '宫位事实'
+  static get chartDivUseClosed(): string { return resString('div_interpret_platform_disabled') }
+  static get chartModelMissing(): string { return resString('div_interpret_need_config') }
+  static get chartConfigCheckFailed(): string { return resString('div_text_chart_config_check_failed') }
+  static get liuyaoYongshen(): string { return resString('div_liuyao_yongshen') }
+  static get liuyaoFacts(): string { return resString('div_liuyao_facts') }
+  static get meihuaTiyong(): string { return resString('div_meihua_tiyong') }
+  static get qimenYongshen(): string { return resString('div_qimen_yongshen') }
+  static get qimenFacts(): string { return resString('div_qimen_facts') }
 
   // 解读页
-  static readonly readingTitle: string = '解 读'
-  static readonly readingAction: string = '总结与行动'
-  static readonly readingFollowup: string = '继 续 追 问'
-  static readonly readingShare: string = '分 享'
-  static readonly readingLoading: string = '正在推演解读…'
-  static readonly readingError: string = '解读暂不可用，请稍后重试'
-  static readonly readingRetry: string = '重 新 解 读'
+  static get readingTitle(): string { return resString('div_chart_interpret') }
+  static get readingAction(): string { return resString('div_reading_action') }
+  static get readingFollowup(): string { return resString('div_reading_followup') }
+  static get readingShare(): string { return resString('div_reading_share') }
+  static get readingLoading(): string { return resString('div_reading_loading') }
+  static get readingError(): string { return resString('div_reading_error') }
+  static get readingRetry(): string { return resString('div_text_reading_retry') }
   // SSE error 帧 code=428（未配置解读模型）专属引导：跳设置页配置模型
-  static readonly readingGoConfig: string = '去 配 置 模 型'
-  static readonly readingEndseal: string = '观'
+  static get readingGoConfig(): string { return resString('div_text_reading_go_config') }
+  static get readingEndseal(): string { return resString('div_reading_endseal') }
   static readonly disclaimerReading: string =
-    '本内容基于玄学体系生成，仅供文化爱好与思维参考，不构成任何重大人生决策的专业建议。'
-  static readonly feedbackTitle: string = '应验反馈'
-  static readonly ratingLabel: string = '解读评分'
-  static readonly outcomeLabel: string = '应验回填'
-  static readonly outcomeYing: string = '应验'
-  static readonly outcomeWei: string = '未验'
-  static readonly outcomeNan: string = '难说'
-  static readonly feedbackSubmit: string = '提 交 反 馈'
-  static readonly feedbackDone: string = '反馈已提交'
-  static readonly ratingScores: string[] = ['一', '二', '三', '四', '五']
+    resString('div_disclaimer_reading')
+  static get feedbackTitle(): string { return resString('div_feedback_title') }
+  static get ratingLabel(): string { return resString('div_text_rating_label') }
+  static get outcomeLabel(): string { return resString('div_text_outcome_label') }
+  static get outcomeYing(): string { return resString('div_text_outcome_ying') }
+  static get outcomeWei(): string { return resString('div_text_outcome_wei') }
+  static get outcomeNan(): string { return resString('div_text_outcome_nan') }
+  static get feedbackSubmit(): string { return resString('div_text_feedback_submit') }
+  static get feedbackDone(): string { return resString('div_feedback_done') }
+  static get ratingScores(): string[] { return [resString('mood_week_mon'), resString('mood_week_tue'), resString('mood_week_wed'), resString('mood_week_thu'), resString('mood_week_fri')] }
 
   // 追问页
-  static readonly followupTitle: string = '继续追问'
-  static readonly followupSubtitle: string = '沿用原盘 · 不重算'
-  static readonly followupInputHint: string = '基于本卦继续追问…'
-  static readonly followupSend: string = '发 送'
-  static readonly followupEmpty: string = '还没有追问，输入你的问题吧'
-  static readonly followupThinking: string = '正在推演…'
-  static readonly followupInterrupted: string = '生成中断'
-  static readonly followupRetry: string = '重 试'
-  static readonly followupFooter: string = '—— 继续追问将沿用本卦盘推演 ——'
+  static get followupTitle(): string { return resString('div_followup_title') }
+  static get followupSubtitle(): string { return resString('div_followup_subtitle') }
+  static get followupInputHint(): string { return resString('div_followup_input_hint') }
+  static get followupSend(): string { return resString('div_followup_send') }
+  static get followupEmpty(): string { return resString('div_followup_empty') }
+  static get followupThinking(): string { return resString('div_followup_thinking') }
+  static get followupInterrupted(): string { return resString('div_followup_interrupted') }
+  static get followupRetry(): string { return resString('div_followup_retry') }
+  static get followupFooter(): string { return resString('div_followup_footer') }
 
   // 摇卦页
-  static readonly castTitle: string = '静 心 · 问 事'
-  static readonly castProgress: string = '第 %d 掷 · 共 6 掷'
-  static readonly castToss: string = '掷 爻'
-  static readonly castDone: string = '成 卦 · 进入卦盘'
-  static readonly castQuitTitle: string = '丢弃本次摇卦？'
-  static readonly castQuitBody: string = '爻盘未满六掷，离开将丢弃本次摇卦结果。'
+  static get castTitle(): string { return resString('div_cast_title') }
+  static get castProgress(): string { return resString('div_text_cast_progress') }
+  static get castToss(): string { return resString('div_cast_toss') }
+  static get castDone(): string { return resString('div_cast_done') }
+  static get castQuitTitle(): string { return resString('div_cast_quit_title') }
+  static get castQuitBody(): string { return resString('div_cast_quit_body') }
   // 六掷完成未入库态的弃局文案（对齐安卓 div_cast_quit_done_body）
-  static readonly castQuitDoneBody: string = '卦已摇成，离开将不入卦历。'
+  static get castQuitDoneBody(): string { return resString('div_cast_quit_done_body') }
   // 成卦入库中尾缀（对齐安卓 div_cast_saving）
-  static readonly castSaving: string = '装 卦 中…'
+  static get castSaving(): string { return resString('div_cast_saving') }
 }
 
 /** 观象台子主题色快捷访问（避免每处写 DivColor.XXX，语义与安卓 DivColors.current 对齐）
  *
- * TODO(主题断层，compare-08 #12)：当前全部取 *_LIGHT 固定宣纸，而应用已随系统深浅色
- * （EntryAbility 问题 17 写 AppStorage('darkMode')），系统深色下清氧域转暗、观象台域仍亮。
- * 待办：本类改为读取 darkMode 的取值函数（或消费侧 @Computed 按 *_DARK/*_LIGHT 分支），
- * DivinationScreen 渐变双分支（玄墨中段停靠 0.55 / 宣纸 0.50），对齐安卓
- * DivinationScreen.kt isSystemInDarkTheme() 双主题；属域级重构，另起专项。 */
+ * 全部经 resColor 读 base 资源（域级固定宣纸/玄墨双档，不随系统主题切换）：
+ * 系统深色下清氧域转暗、观象台域仍固定宣纸，为已知域级主题断层（compare-08 #12）。
+ */
 export class DivPalette {
-  static readonly textPrimary: number = DivColor.TEXT_PRIMARY_LIGHT
-  static readonly textSecondary: number = DivColor.TEXT_SECONDARY_LIGHT
-  static readonly textTertiary: number = DivColor.TEXT_TERTIARY_LIGHT
-  static readonly gold: number = DivColor.GOLD_LIGHT
-  static readonly goldHi: number = DivColor.GOLD_HI_LIGHT
-  static readonly goldLine: number = DivColor.GOLD_LINE_LIGHT
-  static readonly goldHair: number = DivColor.GOLD_HAIR_LIGHT
-  static readonly goldSoft: number = DivColor.GOLD_SOFT_LIGHT
-  static readonly gold14: number = DivColor.GOLD_14_LIGHT
-  static readonly surface: number = DivColor.SURFACE_LIGHT
-  static readonly surface2: number = DivColor.SURFACE_2_LIGHT
-  static readonly seal: number = DivColor.SEAL_LIGHT
-  static readonly sealHi: number = DivColor.SEAL_HI_LIGHT
-  static readonly jade: number = DivColor.JADE_LIGHT
-  static readonly hair: number = DivColor.HAIR_LIGHT
-  static readonly line: number = DivColor.LINE_LIGHT
-  static readonly yaoTop: number = DivColor.YAO_TOP_LIGHT
-  static readonly yaoBottom: number = DivColor.YAO_BOTTOM_LIGHT
-  // 文字级金强调（对齐安卓 c.goldText：宣纸画板反转为墨，保对比 §10）
-  static readonly goldText: number = DivColor.TEXT_PRIMARY_LIGHT
-  // 金底墨字（对齐安卓 c.onGold 0xFF151412，问卦双板一致）
-  static readonly onGold: number = 0xFF151412
-  // 平涂深朱印（对齐安卓 c.sealDeep 0xFFA63A30）
-  static readonly sealDeep: number = 0xFFA63A30
-  // 金按钮渐变（宣纸侧 300→500：安卓 goldGradient = [DivGoldHiDark, DivGoldDark]）
-  static readonly goldGradientStart: number = 0xFFD4B878
-  static readonly goldGradientEnd: number = 0xFFC9A961
+  static get textPrimary(): number { return resColor('DIV_TEXT_PRIMARY_LIGHT') }
+  static get textSecondary(): number { return resColor('DIV_TEXT_SECONDARY_LIGHT') }
+  static get textTertiary(): number { return resColor('DIV_TEXT_TERTIARY_LIGHT') }
+  static get gold(): number { return resColor('DIV_GOLD_LIGHT') }
+  static get goldHi(): number { return resColor('DIV_GOLD_HI_LIGHT') }
+  static get goldLine(): number { return resColor('DIV_GOLD_LINE_LIGHT') }
+  static get goldHair(): number { return resColor('DIV_GOLD_HAIR_LIGHT') }
+  static get goldSoft(): number { return resColor('DIV_GOLD_SOFT_LIGHT') }
+  static get gold14(): number { return resColor('DIV_GOLD_14_LIGHT') }
+  static get surface(): number { return resColor('DIV_SURFACE_LIGHT') }
+  static get surface2(): number { return resColor('DIV_SURFACE_2_LIGHT') }
+  static get seal(): number { return resColor('DIV_SEAL_LIGHT') }
+  static get sealHi(): number { return resColor('DIV_SEAL_HI_LIGHT') }
+  static get jade(): number { return resColor('DIV_JADE_LIGHT') }
+  static get hair(): number { return resColor('DIV_HAIR_LIGHT') }
+  static get line(): number { return resColor('DIV_LINE_LIGHT') }
+  static get yaoTop(): number { return resColor('DIV_YAO_TOP_LIGHT') }
+  static get yaoBottom(): number { return resColor('DIV_YAO_BOTTOM_LIGHT') }
+  static get goldText(): number { return resColor('DIV_TEXT_PRIMARY_LIGHT') }
+  static get onGold(): number { return resColor('DIV_ON_GOLD') }
+  static get sealDeep(): number { return resColor('DIV_SEAL_DEEP') }
+  static get goldGradientStart(): number { return resColor('DIV_GOLD_GRADIENT_START') }
+  static get goldGradientEnd(): number { return resColor('DIV_GOLD_GRADIENT_END') }
 }
 
 // 画板：观象台域页面水平边距 20（compare-08 #10；勿改全局 DesignDimens.PAGE_PADDING=24，清氧域仍用 24）
@@ -199,11 +195,11 @@ export const DIV_PAGE_PADDING: number = 20
 
 
 /** 六神顺序（对齐安卓 LiuYaoRow 的 listOf("青龙","朱雀","勾陈","螣蛇","白虎","玄武")） */
-const SPIRIT6: string[] = ['青龙', '朱雀', '勾陈', '螣蛇', '白虎', '玄武']
+function SPIRIT6(): string[] { return [resString('div_components_3'), resString('div_components_4'), resString('div_components_5'), resString('div_components_6'), resString('div_components_7'), resString('div_components_8')] }
 
 /** 六神色点（青/赤/白/黑/黄/紫，对齐安卓 DivColors.spirits） */
 export function divSpiritColor(liuShen: string): number {
-  const index = SPIRIT6.indexOf(liuShen)
+  const index = SPIRIT6().indexOf(liuShen)
   if (index === 0) {
     return DivColor.SPIRIT_QING
   }
@@ -771,7 +767,7 @@ export struct DivCard {
     // 全仓唯一的玄墨深色卡是 Workbench 的观象台特色卡，不经 DivCard，本身即无投影。
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -1004,11 +1000,11 @@ export struct DivWaveIcon {
 const COMPASS_DEFAULT_SIZE: number = 112
 const COMPASS_SPIN_PERIOD_MS: number = 140000
 const COMPASS_TICK_MS: number = 50
-const ZHI_LABELS: string[] = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
+function ZHI_LABELS(): string[] { return [resString('div_components_9'), resString('div_components_10'), resString('div_components_11'), resString('div_components_12'), resString('div_components_13'), resString('div_components_14'), resString('div_components_15'), resString('div_components_16'), resString('div_components_17'), resString('div_components_18'), resString('div_components_19'), resString('div_components_20')] }
 
 @ComponentV2
 export struct CompassDial {
-  @Param dialText: string = '卜'
+  @Param dialText: string = resString('div_components_21')
   // 尺寸参数化（首页 104，对齐安卓 CompassDial(modifier = Modifier.size(104.dp))）
   @Param dialSize: number = COMPASS_DEFAULT_SIZE
   @Local rotation: number = 0
@@ -1072,12 +1068,12 @@ export struct CompassDial {
     // audit-11 #3 / compare-10 #7 提至 0.75 双主题达标）
     this.ctx.font = `${12 * size / 104}px serif`
     this.ctx.fillStyle = 0xBF1C1C1E
-    for (let index = 0; index < ZHI_LABELS.length; index++) {
+    for (let index = 0; index < ZHI_LABELS().length; index++) {
       const angle: number = (index * 30 - 90) * Math.PI / 180
       const posX: number = cx + radius * 0.92 * Math.cos(angle)
       const posY: number = cy + radius * 0.92 * Math.sin(angle)
-      const metrics = this.ctx.measureText(ZHI_LABELS[index])
-      this.ctx.fillText(ZHI_LABELS[index], posX - metrics.width / 2, posY + metrics.actualBoundingBoxAscent / 2)
+      const metrics = this.ctx.measureText(ZHI_LABELS()[index])
+      this.ctx.fillText(ZHI_LABELS()[index], posX - metrics.width / 2, posY + metrics.actualBoundingBoxAscent / 2)
     }
     this.ctx.restore()
 

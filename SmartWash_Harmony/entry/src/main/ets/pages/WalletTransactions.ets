@@ -1,5 +1,5 @@
 import { AppButton, AppButtonVariant, EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { getTransactions } from "../network/api/UserApi"
 import { TransactionVo } from "../network/vo/TransactionVo"
@@ -11,6 +11,8 @@ import { PagingController } from "../utils/PagingUtil"
 import { pathStack } from "../utils/PathStackUtil"
 import { RouteNames } from "../constant/RouteNames"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // 分页每页条数（后端 pageSize 上限 50，常规列表沿用 10）
 const PAGE_SIZE: number = 10
@@ -71,7 +73,7 @@ struct WalletTransactions {
 
   /** 状态文案：后端当前仅产出 success，未知值原样兜底展示不吞数据 */
   private statusText(status: string): string {
-    return status === STATUS_SUCCESS ? "成功" : status
+    return status === STATUS_SUCCESS ? resString('transaction_status_success') : status
   }
 
   /**
@@ -86,7 +88,7 @@ struct WalletTransactions {
   /** 金额色：充值 = primaryDark（22 大字豁免内取更优档 4.23:1）/ 消费 = textPrimary
    *  （金额正负已有 +/− 符号双通道，负金额非「错误」警示语义；均对齐安卓 audit-21 修后值） */
   private amountColor(item: TransactionVo): number {
-    return item.type === TYPE_RECHARGE ? DesignColor.PRIMARY_DARK : DesignColor.TEXT_PRIMARY
+    return item.type === TYPE_RECHARGE ? resColor('PRIMARY_DARK') : resColor('TEXT_PRIMARY')
   }
 
   /**
@@ -136,7 +138,7 @@ struct WalletTransactions {
       }
       logger.warn('walletTransactions', `钱包流水加载失败 page=${page} ` +
         `code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "钱包流水加载失败")
+      showToastSafety(res.message, resString('wallet_transactions_1'))
       if (page === 1) {
         if (this.recordList.length === 0) {
           this.isFirstError = true
@@ -145,18 +147,18 @@ struct WalletTransactions {
       }
       // 追加失败置失败态并 reject（throw 落入下方 catch 重抛，toast 不重复）
       this.appendError = true
-      throw new Error("加载更多失败")
+      throw new Error(resString('wallet_transactions_2'))
     } catch (err) {
       if (page === 1) {
         // 网络异常/401 拒绝时 promise 会 throw：兜住进错误态，避免 isLoadingFirst 卡死永久骨架
-        showToastSafety("网络异常，请稍后重试")
+        showToastSafety(resString('wallet_transactions_3'))
         if (this.recordList.length === 0) {
           this.isFirstError = true
         }
         return false
       }
       this.appendError = true
-      throw new Error("加载更多失败")
+      throw new Error(resString('wallet_transactions_2'))
     }
   }
 
@@ -171,11 +173,11 @@ struct WalletTransactions {
       IconBox({
         icon: item.type === TYPE_RECHARGE ? $r('sys.symbol.creditcard') : $r('sys.symbol.laundry'),
         containerColor: item.type === TYPE_RECHARGE
-          ? DesignColor.ICON_CONTAINER_TEAL
-          : DesignColor.ICON_CONTAINER_GREEN,
+          ? resColor('ICON_CONTAINER_TEAL')
+          : resColor('ICON_CONTAINER_GREEN'),
         iconColor: item.type === TYPE_RECHARGE
-          ? DesignColor.ICON_FOREGROUND_TEAL
-          : DesignColor.ICON_FOREGROUND_GREEN
+          ? resColor('ICON_FOREGROUND_TEAL')
+          : resColor('ICON_FOREGROUND_GREEN')
       })
 
       // 中间：描述 + 时间
@@ -183,13 +185,13 @@ struct WalletTransactions {
         Text(item.description ?? "")
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.NORMAL)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
 
         Text(this.formatTransactionTime(item.transactionTime ?? ""))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .margin({ top: 4 })
@@ -212,7 +214,7 @@ struct WalletTransactions {
         Text(this.statusText(item.status ?? ""))
           .fontSize(DesignFontSize.CAPTION)
           // 状态是决策所需可读信息（textTertiary 浅色 2.25:1 击穿 §10 红线，audit-21 #1）
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .margin({ top: 4 })
       }
       .alignItems(HorizontalAlign.End)
@@ -220,13 +222,13 @@ struct WalletTransactions {
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC §3.1 唯一卡片画法：1px outline 描边 + 卡片档阴影（对齐充值记录页）
-    .border({ width: 1, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+    .border({ width: 1, color: resColor('OUTLINE'), radius: DesignDimens.CARD_RADIUS })
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -235,12 +237,12 @@ struct WalletTransactions {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 页头（公共 PageHeader：22/600 标题 + 48dp 返回热区）
-        PageHeader({ title: "钱包流水" })
+        PageHeader({ title: resString('wallet_transactions') })
 
         if (this.isLoadingFirst) {
           // 首屏加载态（骨架屏，§3.6 禁转圈）
@@ -262,9 +264,9 @@ struct WalletTransactions {
                 // 追加失败：整行可点重试（主文案 DANGER_INK 14，热区 ≥48，
                 // 对齐安卓 AppendErrorFooter / audit-21 #3；重试重拉同一失败页）
                 Column() {
-                  Text("加载更多失败，点击重试")
+                  Text($r('app.string.record_append_failed'))
                     .fontSize(DesignFontSize.BODY_SMALL)
-                    .fontColor(DesignColor.DANGER_INK)
+                    .fontColor(resColor('DANGER_INK'))
                 }
                 .width("100%")
                 .constraintSize({ minHeight: 48 })
@@ -302,11 +304,11 @@ struct WalletTransactions {
           // 不得伪装成「暂无交易记录」）。trailing builder 后不可续链式属性，
           // 尺寸/过渡挂在包裹 Column 上
           Column() {
-            EmptyState({ message: "流水加载失败" }) {
+            EmptyState({ message: resString('wallet_load_failed') }) {
               Column() {
                 AppButton({
                   small: true,
-                  text: "重试",
+                  text: resString('retry'),
                   variant: AppButtonVariant.SECONDARY,
                   click: (): void => {
                     this.retryFirstLoad()
@@ -324,11 +326,11 @@ struct WalletTransactions {
           // 空状态（规范 §3.6 空态三件套：母题 + 引导文案 + 行动按钮「去充值」，
           // 文案对齐安卓 no_wallet_transactions 修后值）
           Column() {
-            EmptyState({ message: "还没有流水，去充值或下单一笔试试" }) {
+            EmptyState({ message: resString('no_wallet_transactions') }) {
               Column() {
                 AppButton({
                   small: true,
-                  text: "去充值",
+                  text: resString('go_recharge'),
                   click: (): void => {
                     pathStack.pushPathByName(RouteNames.RECHARGE, null)
                   }
@@ -350,7 +352,7 @@ struct WalletTransactions {
     .width("100%")
     .height("100%")
     .align(Alignment.Top)
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
     .hideTitleBar(true)
   }
 }

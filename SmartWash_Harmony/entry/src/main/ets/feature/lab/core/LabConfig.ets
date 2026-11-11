@@ -8,10 +8,11 @@
  *
  * 六色容器/前景对不在此固化（跨端对比 04 #1 P0 修复）：构造期数值快照会让
  * 页面存活期间切深浅色后卡片颜色停留旧主题——UI 层按 kind 实时读
- * DesignColor 双主题令牌（对齐安卓 ToyEntryCard 每次 composition 读 scheme）。
+ * 资源色令牌（base/dark 限定符）（对齐安卓 ToyEntryCard 每次 composition 读 scheme）。
  */
 
 import { RouteNames } from '../../../constant/RouteNames'
+import { resString } from '../../../utils/ResourceString'
 
 /** 实验舱玩具入口枚举（顺序即首页展示序，对齐安卓 LabToy） */
 export enum LabEntryKind {
@@ -50,25 +51,25 @@ export class LabEntry {
  */
 export function labEntries(): LabEntry[] {
   return [
-    new LabEntry(LabEntryKind.BUBBLE_WRAP, RouteNames.LAB_BUBBLE, '泡泡纸', '一戳一个，噼里啪啦',
+    new LabEntry(LabEntryKind.BUBBLE_WRAP, RouteNames.LAB_BUBBLE, resString('lab_toy_bubble_wrap'), resString('lab_toy_bubble_wrap_desc'),
       $r('sys.symbol.ellipsis_bubble')),
-    new LabEntry(LabEntryKind.BREATH, RouteNames.LAB_BREATH, '呼吸引导', '跟着圆环，一呼一吸',
+    new LabEntry(LabEntryKind.BREATH, RouteNames.LAB_BREATH, resString('lab_toy_breath'), resString('lab_toy_breath_desc'),
       $r('sys.symbol.ohos_lungs')),
-    new LabEntry(LabEntryKind.FISH, RouteNames.LAB_FISH, '指尖鱼群', '鱼群随指尖游走',
+    new LabEntry(LabEntryKind.FISH, RouteNames.LAB_FISH, resString('lab_toy_fish'), resString('lab_toy_fish_desc'),
       $r('sys.symbol.water_waves')),
-    new LabEntry(LabEntryKind.SAND, RouteNames.LAB_SAND, '落沙实验室', '倒水撒沙，看元素互相反应',
+    new LabEntry(LabEntryKind.SAND, RouteNames.LAB_SAND, resString('lab_toy_sand'), resString('lab_toy_sand_desc'),
       $r('sys.symbol.wind_sand')),
-    new LabEntry(LabEntryKind.FLUID, RouteNames.LAB_FLUID, '指尖流体', '手指划过，搅出彩色漩涡',
+    new LabEntry(LabEntryKind.FLUID, RouteNames.LAB_FLUID, resString('lab_toy_fluid'), resString('lab_toy_fluid_desc'),
       $r('sys.symbol.drop_fill')),
-    new LabEntry(LabEntryKind.DRUM, RouteNames.LAB_DRUM, '滚筒节拍机', '8 音色 × 16 步，排出洗衣节奏',
+    new LabEntry(LabEntryKind.DRUM, RouteNames.LAB_DRUM, resString('lab_toy_drum'), resString('lab_toy_drum_desc'),
       $r('sys.symbol.music')),
-    new LabEntry(LabEntryKind.PAINTING, RouteNames.LAB_PAINTING, '今日一画', '每天一幅水墨山水',
+    new LabEntry(LabEntryKind.PAINTING, RouteNames.LAB_PAINTING, resString('lab_toy_painting'), resString('lab_toy_painting_desc'),
       $r('sys.symbol.paintpalette')),
-    new LabEntry(LabEntryKind.SOUNDSCAPE, RouteNames.LAB_SOUNDSCAPE, '声景混音器', '雨声风声，自由叠混',
+    new LabEntry(LabEntryKind.SOUNDSCAPE, RouteNames.LAB_SOUNDSCAPE, resString('lab_toy_soundscape'), resString('lab_toy_soundscape_desc'),
       $r('sys.symbol.waveform')),
-    new LabEntry(LabEntryKind.PET, RouteNames.LAB_PET, '泡泡精灵', '养一只住在洗衣机里的泡泡精灵',
+    new LabEntry(LabEntryKind.PET, RouteNames.LAB_PET, resString('lab_toy_pet'), resString('lab_toy_pet_desc'),
       $r('sys.symbol.pawprint')),
-    new LabEntry(LabEntryKind.STAR_MAP, RouteNames.LAB_STARMAP, '掌上星图', '举起手机，看头顶的星空',
+    new LabEntry(LabEntryKind.STAR_MAP, RouteNames.LAB_STARMAP, resString('lab_toy_star_map'), resString('lab_toy_star_map_desc'),
       $r('sys.symbol.ohos_star')),
   ]
 }

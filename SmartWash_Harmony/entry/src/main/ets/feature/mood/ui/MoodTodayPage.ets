@@ -8,7 +8,7 @@
 
 import { BusinessError } from '@kit.BasicServicesKit'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BaseResponse } from '../../../network/BaseResponse'
 import { BizCode } from '../../../network/HttpUtil'
 import {
@@ -38,6 +38,7 @@ import { bumpMoodRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'moodTodayPage'
@@ -186,7 +187,7 @@ struct MoodTodayPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -195,7 +196,7 @@ struct MoodTodayPage {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([DesignColor.TEXT_PRIMARY])
+              .fontColor([resColor('TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -208,7 +209,7 @@ struct MoodTodayPage {
           Text(MoodText.mood_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
 
           Blank()
 
@@ -248,14 +249,14 @@ struct MoodTodayPage {
                     Row() {
                       Text(MoodText.mood_error_load)
                         .fontSize(DesignFontSize.BODY_SMALL)
-                        .fontColor(DesignColor.ERROR)
+                        .fontColor(resColor('ERROR'))
                         .layoutWeight(1)
 
                       MoodSmallAction({
                         text: MoodText.mood_action_retry,
                         // 小号绿字走 TEXT_GREEN_ON_TINT 深档（对齐安卓审查 #3：PRIMARY on
                         // SURFACE_VARIANT 浅底仅 3.08:1 跌破 AA；深色随主题切 #5BC894）
-                        contentColor: DesignColor.TEXT_GREEN_ON_TINT,
+                        contentColor: resColor('TEXT_GREEN_ON_TINT'),
                         onAction: (): void => {
                           this.load()
                         }
@@ -274,11 +275,11 @@ struct MoodTodayPage {
                 Text(MoodText.mood_today_question)
                   .fontSize(DesignFontSize.SECTION_TITLE)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor(DesignColor.TEXT_PRIMARY)
+                  .fontColor(resColor('TEXT_PRIMARY'))
 
                 Text(formatTodayText())
                   .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .fontColor(resColor('TEXT_SECONDARY'))
                   .margin({ top: DesignDimens.SPACE_XXS })
               }
               .width('100%')
@@ -299,14 +300,14 @@ struct MoodTodayPage {
                   Text(this.hasRecord ? MoodText.mood_today_recorded : MoodText.mood_today_hint)
                     .fontSize(DesignFontSize.CAPTION)
                     .fontWeight(DesignFontWeight.MEDIUM)
-                    .fontColor(DesignColor.TEXT_SECONDARY)
+                    .fontColor(resColor('TEXT_SECONDARY'))
                     .margin({ top: DesignDimens.SPACE_SM })
 
                   if (this.saveError.length > 0) {
                     // 错误行 = caption 12 档（对齐安卓 bodySmall 12/400，报告 #39 口径映射）
                     Text(this.saveError)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(DesignColor.ERROR)
+                      .fontColor(resColor('ERROR'))
                       .margin({ top: DesignDimens.SPACE_XS })
                   }
                 }
@@ -321,7 +322,7 @@ struct MoodTodayPage {
                   Text(MoodText.mood_word_section_title)
                     .fontSize(DesignFontSize.CARD_TITLE)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(DesignColor.TEXT_PRIMARY)
+                    .fontColor(resColor('TEXT_PRIMARY'))
 
                   Flex({ wrap: FlexWrap.Wrap }) {
                     ForEach(MOOD_WORDS, (word: string) => {
@@ -348,16 +349,16 @@ struct MoodTodayPage {
                   Text(MoodText.mood_note_section_title)
                     .fontSize(DesignFontSize.CARD_TITLE)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(DesignColor.TEXT_PRIMARY)
+                    .fontColor(resColor('TEXT_PRIMARY'))
 
                   TextInput({ text: this.note, placeholder: MoodText.mood_note_hint })
                     .height(48)
                     .fontSize(DesignFontSize.BODY)
-                    .backgroundColor(DesignColor.SURFACE_VARIANT)
+                    .backgroundColor(resColor('SURFACE_VARIANT'))
                     .borderRadius(DesignDimens.INPUT_RADIUS)
                     .borderWidth(1)
-                    .borderColor(this.noteFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-                    .placeholderColor(DesignColor.TEXT_TERTIARY)
+                    .borderColor(this.noteFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
+                    .placeholderColor(resColor('TEXT_TERTIARY'))
                     .placeholderFont({ size: DesignFontSize.BODY })
                     .maxLength(MOOD_NOTE_MAX_LENGTH)
                     .margin({ top: DesignDimens.SPACE_SM })
@@ -397,7 +398,7 @@ struct MoodTodayPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

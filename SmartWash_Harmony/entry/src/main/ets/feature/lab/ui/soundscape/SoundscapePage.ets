@@ -10,8 +10,7 @@
  * aboutToDisappear 释放引擎（对齐安卓 onCleared → engine.release()）。
  */
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight }
-  from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
@@ -22,39 +21,41 @@ import {
   SoundscapeEngine,
 } from '../../core/SoundscapeEngine'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 页面文案（对齐安卓 strings_soundscape.xml） */
 class SoundscapeText {
-  static readonly title: string = '声景混音器'
-  static readonly playing: string = '正在播放'
-  static readonly stopped: string = '已停止'
-  static readonly play: string = '播放'
-  static readonly stop: string = '停止'
-  static readonly presetsLabel: string = '预设场景'
-  static readonly presetStudy: string = '自习室'
-  static readonly presetSleep: string = '睡前'
-  static readonly presetDorm: string = '宿舍夜'
-  static readonly presetCampfire: string = '篝火夜话'
-  static readonly presetOcean: string = '海边'
-  static readonly groupNoise: string = '底噪'
-  static readonly groupNature: string = '自然'
-  static readonly groupIndoor: string = '室内'
-  static readonly channelWhite: string = '白噪音'
-  static readonly channelPink: string = '粉噪音'
-  static readonly channelBrown: string = '棕噪音'
-  static readonly channelRain: string = '雨声'
-  static readonly channelWind: string = '风声'
-  static readonly channelOcean: string = '海浪'
-  static readonly channelCampfire: string = '篝火'
-  static readonly channelPage: string = '翻书'
-  static readonly channelKeyboard: string = '键盘'
-  static readonly channelMurmur: string = '远处交谈'
-  static readonly timerLabel: string = '睡眠定时'
-  static readonly timerOff: string = '关闭'
-  static readonly timerHint: string = '先开始播放，再设定定时器'
-  static readonly volumeLabel: string = '音量'
-  static readonly onLabel: string = '已开启'
-  static readonly offLabel: string = '已关闭'
+  static get title(): string { return resString('lab_toy_soundscape') }
+  static get playing(): string { return resString('lab_soundscape_playing') }
+  static get stopped(): string { return resString('lab_soundscape_stopped') }
+  static get play(): string { return resString('lab_fish_play') }
+  static get stop(): string { return resString('lab_breath_stop') }
+  static get presetsLabel(): string { return resString('lab_soundscape_presets_label') }
+  static get presetStudy(): string { return resString('lab_soundscape_preset_study') }
+  static get presetSleep(): string { return resString('lab_soundscape_preset_sleep') }
+  static get presetDorm(): string { return resString('lab_soundscape_preset_dorm') }
+  static get presetCampfire(): string { return resString('lab_soundscape_preset_campfire') }
+  static get presetOcean(): string { return resString('lab_soundscape_preset_ocean') }
+  static get groupNoise(): string { return resString('lab_soundscape_group_noise') }
+  static get groupNature(): string { return resString('lab_soundscape_group_nature') }
+  static get groupIndoor(): string { return resString('lab_soundscape_group_indoor') }
+  static get channelWhite(): string { return resString('lab_soundscape_channel_white') }
+  static get channelPink(): string { return resString('lab_soundscape_channel_pink') }
+  static get channelBrown(): string { return resString('lab_soundscape_channel_brown') }
+  static get channelRain(): string { return resString('lab_soundscape_channel_rain') }
+  static get channelWind(): string { return resString('lab_soundscape_channel_wind') }
+  static get channelOcean(): string { return resString('lab_soundscape_channel_ocean') }
+  static get channelCampfire(): string { return resString('lab_soundscape_channel_campfire') }
+  static get channelPage(): string { return resString('lab_soundscape_channel_page') }
+  static get channelKeyboard(): string { return resString('lab_soundscape_channel_keyboard') }
+  static get channelMurmur(): string { return resString('lab_soundscape_channel_murmur') }
+  static get timerLabel(): string { return resString('lab_soundscape_timer_label') }
+  static get timerOff(): string { return resString('lab_soundscape_timer_off') }
+  static get timerHint(): string { return resString('lab_soundscape_timer_hint') }
+  static get volumeLabel(): string { return resString('soundscape_text_volume_label') }
+  static get onLabel(): string { return resString('lab_drum_cell_on') }
+  static get offLabel(): string { return resString('lab_drum_cell_off') }
 }
 
 /** 预设配方：每路音量（-1 = 关闭），下标即声道序号（对齐安卓 SoundscapePreset） */
@@ -324,7 +325,7 @@ export struct SoundscapePage {
     const count: number = 5
     const barWidth: number = width / (count * 2 - 1)
     const gap: number = barWidth
-    ctx.fillStyle = DesignColor.ON_PRIMARY
+    ctx.fillStyle = resColor('ON_PRIMARY')
     for (let i: number = 0; i < count; i++) {
       const center: number = i / (count - 1)
       const wave: number = Math.sin((center * 1.6 + this.barPhase * 2) * Math.PI) * 0.5 + 0.5
@@ -404,17 +405,17 @@ export struct SoundscapePage {
     switch (channel) {
       case SoundChannel.PINK_NOISE:
       case SoundChannel.PAGE_FLIP:
-        return DesignColor.ICON_CONTAINER_PURPLE
+        return resColor('ICON_CONTAINER_PURPLE')
       case SoundChannel.BROWN_NOISE:
       case SoundChannel.CAMPFIRE:
-        return DesignColor.ICON_CONTAINER_ORANGE
+        return resColor('ICON_CONTAINER_ORANGE')
       case SoundChannel.WIND:
       case SoundChannel.KEYBOARD:
-        return DesignColor.ICON_CONTAINER_TEAL
+        return resColor('ICON_CONTAINER_TEAL')
       case SoundChannel.MURMUR:
-        return DesignColor.ICON_CONTAINER_PINK
+        return resColor('ICON_CONTAINER_PINK')
       default:
-        return DesignColor.ICON_CONTAINER_BLUE
+        return resColor('ICON_CONTAINER_BLUE')
     }
   }
 
@@ -422,17 +423,17 @@ export struct SoundscapePage {
     switch (channel) {
       case SoundChannel.PINK_NOISE:
       case SoundChannel.PAGE_FLIP:
-        return DesignColor.ICON_FOREGROUND_PURPLE
+        return resColor('ICON_FOREGROUND_PURPLE')
       case SoundChannel.BROWN_NOISE:
       case SoundChannel.CAMPFIRE:
-        return DesignColor.ICON_FOREGROUND_ORANGE
+        return resColor('ICON_FOREGROUND_ORANGE')
       case SoundChannel.WIND:
       case SoundChannel.KEYBOARD:
-        return DesignColor.ICON_FOREGROUND_TEAL
+        return resColor('ICON_FOREGROUND_TEAL')
       case SoundChannel.MURMUR:
-        return DesignColor.ICON_FOREGROUND_PINK
+        return resColor('ICON_FOREGROUND_PINK')
       default:
-        return DesignColor.ICON_FOREGROUND_BLUE
+        return resColor('ICON_FOREGROUND_BLUE')
     }
   }
 
@@ -458,7 +459,7 @@ export struct SoundscapePage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值，
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值，
       // 子树内滑杆等画布经重建后的 onReady/onAreaChange 以新令牌重绘
       // （机制见 view/common/ThemeRefresh.ets；播放启停保持在宿主之外不受重建影响）
       ThemeRefreshV2() {
@@ -484,7 +485,7 @@ export struct SoundscapePage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -503,12 +504,12 @@ export struct SoundscapePage {
           Text(this.playing ? SoundscapeText.playing : SoundscapeText.stopped)
             .fontSize(DesignFontSize.HEADLINE)
             .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(DesignColor.ON_PRIMARY)
+            .fontColor(resColor('ON_PRIMARY'))
 
           if (this.activePresetIndex >= 0) {
             Text(PRESETS[this.activePresetIndex].label)
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.ON_PRIMARY)
+              .fontColor(resColor('ON_PRIMARY'))
               .margin({ top: DesignDimens.SPACE_XXS })
           }
         }
@@ -531,13 +532,13 @@ export struct SoundscapePage {
           Text(this.playing ? SoundscapeText.stop : SoundscapeText.play)
             .fontSize(DesignFontSize.BUTTON)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.PRIMARY_DARK)
+            .fontColor(resColor('PRIMARY_DARK'))
         }
         .width('100%')
         .height(48)
         .justifyContent(FlexAlign.Center)
         .borderRadius(DesignDimens.RADIUS_FULL)
-        .backgroundColor(DesignColor.ON_PRIMARY)
+        .backgroundColor(resColor('ON_PRIMARY'))
         .onClick(() => {
           this.togglePlay()
         })
@@ -552,8 +553,8 @@ export struct SoundscapePage {
     .linearGradient({
       angle: 135,
       colors: [
-        [DesignColor.HERO_GRADIENT_START, 0],
-        [DesignColor.PRIMARY_DARK, 1],
+        [resColor('HERO_GRADIENT_START'), 0],
+        [resColor('PRIMARY_DARK'), 1],
       ],
     })
   }
@@ -565,7 +566,7 @@ export struct SoundscapePage {
       Text(SoundscapeText.presetsLabel)
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
 
       Scroll() {
         Row() {
@@ -574,16 +575,16 @@ export struct SoundscapePage {
             Column() {
               Text(preset.label)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(this.activePresetIndex === index ? DesignColor.ON_PRIMARY
-                  : DesignColor.TEXT_PRIMARY)
+                .fontColor(this.activePresetIndex === index ? resColor('ON_PRIMARY')
+                  : resColor('TEXT_PRIMARY'))
                 .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
                   top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
                 .borderRadius(DesignDimens.RADIUS_FULL)
-                .backgroundColor(this.activePresetIndex === index ? DesignColor.PRIMARY
-                  : DesignColor.SURFACE_VARIANT)
+                .backgroundColor(this.activePresetIndex === index ? resColor('PRIMARY')
+                  : resColor('SURFACE_VARIANT'))
                 .borderWidth(1)
-                .borderColor(this.activePresetIndex === index ? DesignColor.PRIMARY
-                  : DesignColor.OUTLINE)
+                .borderColor(this.activePresetIndex === index ? resColor('PRIMARY')
+                  : resColor('OUTLINE'))
             }
             .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             .margin({ right: DesignDimens.SPACE_XS })
@@ -621,13 +622,13 @@ export struct SoundscapePage {
       Text(title)
         .fontSize(DesignFontSize.CARD_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
 
       ForEach(groupChannels, (channel: number, index: number) => {
         if (index > 0) {
           Divider()
             .strokeWidth(0.5)
-            .color(DesignColor.DIVIDER)
+            .color(resColor('DIVIDER'))
             .width('100%')
             .margin({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
         }
@@ -649,13 +650,13 @@ export struct SoundscapePage {
     .alignItems(HorizontalAlign.Start)
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .shadow({
       radius: 12,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -668,7 +669,7 @@ export struct SoundscapePage {
       Text(SoundscapeText.timerLabel)
         .fontSize(DesignFontSize.CARD_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
 
       Row({ space: DesignDimens.SPACE_XS }) {
         ForEach(TIMER_OPTIONS, (minutes: number) => {
@@ -682,10 +683,10 @@ export struct SoundscapePage {
             .height(36)
             .justifyContent(FlexAlign.Center)
             .borderRadius(DesignDimens.RADIUS_MD)
-            .backgroundColor(minutes === this.timerMinutes ? DesignColor.PRIMARY_SOFT
-              : DesignColor.SURFACE_VARIANT)
+            .backgroundColor(minutes === this.timerMinutes ? resColor('PRIMARY_SOFT')
+              : resColor('SURFACE_VARIANT'))
             .borderWidth(1)
-            .borderColor(minutes === this.timerMinutes ? DesignColor.PRIMARY
+            .borderColor(minutes === this.timerMinutes ? resColor('PRIMARY')
               : Color.Transparent)
           }
           .layoutWeight(1)
@@ -705,26 +706,26 @@ export struct SoundscapePage {
         Text(this.timerRemainingLabel())
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ top: DesignDimens.SPACE_SM })
       } else if (!this.playing) {
         Text(SoundscapeText.timerHint)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .margin({ top: DesignDimens.SPACE_XS })
       }
     }
     .alignItems(HorizontalAlign.Start)
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .shadow({
       radius: 12,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -733,12 +734,12 @@ export struct SoundscapePage {
   /** 定时档位文字色：选中 = onPrimarySoft；可选 = textSecondary；禁用 = textTertiary */
   private timerOptionColor(minutes: number): number {
     if (minutes === this.timerMinutes) {
-      return DesignColor.ON_PRIMARY_SOFT
+      return resColor('ON_PRIMARY_SOFT')
     }
     if (this.playing || minutes === 0) {
-      return DesignColor.TEXT_SECONDARY
+      return resColor('TEXT_SECONDARY')
     }
-    return DesignColor.TEXT_TERTIARY
+    return resColor('TEXT_TERTIARY')
   }
 }
 
@@ -751,8 +752,8 @@ struct ChannelRow {
   @Param ui: SoundChannelUi = new SoundChannelUi(SoundChannel.WHITE_NOISE)
   @Param label: string = ''
   @Param icon: Resource = $r('sys.symbol.waveform')
-  @Param containerColor: number = DesignColor.ICON_CONTAINER_BLUE
-  @Param iconTint: number = DesignColor.ICON_FOREGROUND_BLUE
+  @Param containerColor: number = resColor('ICON_CONTAINER_BLUE')
+  @Param iconTint: number = resColor('ICON_FOREGROUND_BLUE')
   @Event onToggle: () => void = () => {
   }
   @Event onVolumeChange: (volume: number) => void = (volume: number) => {
@@ -776,7 +777,7 @@ struct ChannelRow {
         Text(this.label)
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .margin({ left: DesignDimens.SPACE_SM })
           .layoutWeight(1)
 
@@ -805,7 +806,7 @@ struct ChannelRow {
           Text(this.ui.volume.toString())
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ left: DesignDimens.SPACE_SM })
             .width(24)
@@ -838,8 +839,8 @@ struct SoundToggle {
           Circle()
             .width(20)
             .height(20)
-            .fill(DesignColor.SURFACE)
-            .stroke(DesignColor.OUTLINE)
+            .fill(resColor('SURFACE'))
+            .stroke(resColor('OUTLINE'))
             .strokeWidth(1)
             .translate({ x: this.checked ? 20 : 0 })
             .animation({ duration: 180, curve: Curve.EaseInOut })
@@ -853,9 +854,9 @@ struct SoundToggle {
       .width(48)
       .height(28)
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(this.checked ? DesignColor.PRIMARY : DesignColor.SURFACE_VARIANT)
+      .backgroundColor(this.checked ? resColor('PRIMARY') : resColor('SURFACE_VARIANT'))
       .borderWidth(1)
-      .borderColor(this.checked ? DesignColor.PRIMARY : DesignColor.OUTLINE)
+      .borderColor(this.checked ? resColor('PRIMARY') : resColor('OUTLINE'))
     }
     .width(48)
     .constraintSize({ minHeight: 52 })
@@ -919,22 +920,22 @@ struct VolumeSlider {
     const ctx: CanvasRenderingContext2D = this.ctx
     ctx.clearRect(0, 0, width, height)
     // 轨道
-    ctx.fillStyle = DesignColor.SURFACE_VARIANT
+    ctx.fillStyle = resColor('SURFACE_VARIANT')
     this.roundRect(0, trackY - trackHeight / 2, width, trackHeight, trackHeight / 2)
     ctx.fill()
     // 已填充
-    ctx.fillStyle = DesignColor.PRIMARY
+    ctx.fillStyle = resColor('PRIMARY')
     this.roundRect(0, trackY - trackHeight / 2, width * fraction, trackHeight, trackHeight / 2)
     ctx.fill()
     // 拇指
     const thumbX: number = width * fraction
     const thumbR: number = 8
-    ctx.fillStyle = DesignColor.SURFACE
+    ctx.fillStyle = resColor('SURFACE')
     ctx.beginPath()
     ctx.arc(thumbX, trackY, thumbR, 0, Math.PI * 2, false)
     ctx.fill()
     ctx.lineWidth = 2
-    ctx.strokeStyle = DesignColor.PRIMARY
+    ctx.strokeStyle = resColor('PRIMARY')
     ctx.beginPath()
     ctx.arc(thumbX, trackY, thumbR, 0, Math.PI * 2, false)
     ctx.stroke()

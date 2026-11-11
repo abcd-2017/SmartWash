@@ -9,7 +9,7 @@
 
 import { common, Want } from '@kit.AbilityKit'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BaseResponse } from '../../../network/BaseResponse'
 import { BizCode } from '../../../network/HttpUtil'
 import {
@@ -45,6 +45,7 @@ import { bumpSubscriptionRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 输入框描边样式（width + color） */
 interface SubscriptionBorderStyle {
@@ -352,19 +353,19 @@ struct SubscriptionEditPage {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(DesignColor.TEXT_SECONDARY)
+      .fontColor(resColor('TEXT_SECONDARY'))
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
   /** 输入框通用样式（surfaceVariant 底 + outline 描边 + 聚焦主色） */
   private inputBorder(focused: boolean): SubscriptionBorderStyle {
-    return { width: 1, color: focused ? DesignColor.PRIMARY : DesignColor.OUTLINE }
+    return { width: 1, color: focused ? resColor('PRIMARY') : resColor('OUTLINE') }
   }
 
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -405,10 +406,10 @@ struct SubscriptionEditPage {
                 TextInput({ text: this.name, placeholder: SubscriptionText.subscription_form_name_hint })
                   .height(48)
                   .fontSize(DesignFontSize.BODY)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.nameFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.nameFocused = true
@@ -430,10 +431,10 @@ struct SubscriptionEditPage {
                   // 数字等宽（对齐安卓 fontFeatureSettings="tnum"，audit-14 同款）
                   .fontFeature(DesignFontFeature.TNUM)
                   .type(InputType.NUMBER_DECIMAL)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.amountFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.amountFocused = true
@@ -475,10 +476,10 @@ struct SubscriptionEditPage {
                   .fontSize(DesignFontSize.BODY)
                   .fontFeature(DesignFontFeature.TNUM)
                   .type(InputType.Number)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.intervalFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.intervalFocused = true
@@ -494,7 +495,7 @@ struct SubscriptionEditPage {
                 Text(SubscriptionText.subscription_form_interval_helper)
                   .fontSize(DesignFontSize.CAPTION)
                   .fontWeight(DesignFontWeight.MEDIUM)
-                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .fontColor(resColor('TEXT_SECONDARY'))
                   .margin({ top: DesignDimens.SPACE_XS })
 
                 Column().height(DesignDimens.SPACE_LG)
@@ -534,7 +535,7 @@ struct SubscriptionEditPage {
                       Text(SubscriptionText.subscription_form_trial_clear)
                         .fontSize(DesignFontSize.BUTTON_TEXT)
                         .fontWeight(DesignFontWeight.SEMI_BOLD)
-                        .fontColor(DesignColor.TEXT_GREEN)
+                        .fontColor(resColor('TEXT_GREEN'))
                     }
                     .constraintSize({ minWidth: 48, minHeight: 48 })
                     .justifyContent(FlexAlign.Center)
@@ -553,11 +554,11 @@ struct SubscriptionEditPage {
                   Column() {
                     Text(SubscriptionText.subscription_form_auto_renew_label)
                       .fontSize(DesignFontSize.BODY)
-                      .fontColor(DesignColor.TEXT_PRIMARY)
+                      .fontColor(resColor('TEXT_PRIMARY'))
                     Text(SubscriptionText.subscription_form_auto_renew_helper)
                       .fontSize(DesignFontSize.CAPTION)
                       .fontWeight(DesignFontWeight.MEDIUM)
-                      .fontColor(DesignColor.TEXT_SECONDARY)
+                      .fontColor(resColor('TEXT_SECONDARY'))
                       .margin({ top: DesignDimens.SPACE_XXS })
                   }
                   .alignItems(HorizontalAlign.Start)
@@ -582,10 +583,10 @@ struct SubscriptionEditPage {
                   .fontSize(DesignFontSize.BODY)
                   .fontFeature(DesignFontFeature.TNUM)
                   .type(InputType.Number)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.remindDaysFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.remindDaysFocused = true
@@ -599,7 +600,7 @@ struct SubscriptionEditPage {
                 Text(SubscriptionText.subscription_form_remind_helper)
                   .fontSize(DesignFontSize.CAPTION)
                   .fontWeight(DesignFontWeight.MEDIUM)
-                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .fontColor(resColor('TEXT_SECONDARY'))
                   .margin({ top: DesignDimens.SPACE_XS })
 
                 Column().height(DesignDimens.SPACE_LG)
@@ -610,10 +611,10 @@ struct SubscriptionEditPage {
                   .height(48)
                   .fontSize(DesignFontSize.BODY)
                   .fontFeature(DesignFontFeature.TNUM)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.cancelUrlFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.cancelUrlFocused = true
@@ -627,7 +628,7 @@ struct SubscriptionEditPage {
                 Text(SubscriptionText.subscription_form_cancel_url_helper)
                   .fontSize(DesignFontSize.CAPTION)
                   .fontWeight(DesignFontWeight.MEDIUM)
-                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .fontColor(resColor('TEXT_SECONDARY'))
                   .margin({ top: DesignDimens.SPACE_XS })
                 if (this.cancelUrl.trim().length > 0) {
                   // 行内动作 48×48 最小热区（对齐安卓 InlineTextAction heightIn/widthIn(min=48)），
@@ -637,7 +638,7 @@ struct SubscriptionEditPage {
                       Text(SubscriptionText.subscription_action_open_browser)
                         .fontSize(DesignFontSize.BUTTON_TEXT)
                         .fontWeight(DesignFontWeight.SEMI_BOLD)
-                        .fontColor(DesignColor.TEXT_GREEN)
+                        .fontColor(resColor('TEXT_GREEN'))
                     }
                     .constraintSize({ minWidth: 48, minHeight: 48 })
                     .justifyContent(FlexAlign.Center)
@@ -649,7 +650,7 @@ struct SubscriptionEditPage {
                       Text(SubscriptionText.subscription_action_copy)
                         .fontSize(DesignFontSize.BUTTON_TEXT)
                         .fontWeight(DesignFontWeight.SEMI_BOLD)
-                        .fontColor(DesignColor.TEXT_GREEN)
+                        .fontColor(resColor('TEXT_GREEN'))
                     }
                     .constraintSize({ minWidth: 48, minHeight: 48 })
                     .justifyContent(FlexAlign.Center)
@@ -672,10 +673,10 @@ struct SubscriptionEditPage {
                   .maxLines(5)
                   .constraintSize({ minHeight: 96 })
                   .fontSize(DesignFontSize.BODY)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.cancelStepsFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.cancelStepsFocused = true
@@ -696,10 +697,10 @@ struct SubscriptionEditPage {
                   .maxLines(5)
                   .constraintSize({ minHeight: 96 })
                   .fontSize(DesignFontSize.BODY)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.noteFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.noteFocused = true
@@ -714,16 +715,16 @@ struct SubscriptionEditPage {
               .width('100%')
               .alignItems(HorizontalAlign.Start)
               .padding(DesignDimens.CARD_PADDING)
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
               .borderWidth(1)
-              .borderColor(DesignColor.OUTLINE)
+              .borderColor(resColor('OUTLINE'))
 
               if (this.submitError.length > 0) {
                 // 错误文案 12fp（对齐安卓 bodySmall，与短链创建页 CAPTION 同口径）
                 Text(this.submitError)
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.ERROR)
+                  .fontColor(resColor('ERROR'))
                   .margin({ top: DesignDimens.SPACE_SM })
               }
 
@@ -760,7 +761,7 @@ struct SubscriptionEditPage {
       .height('100%')
       // 沉浸式：内容避让状态栏与底部手势条（背景延伸），保证提交按钮完整落在安全区内
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

@@ -1,6 +1,6 @@
 import { RouteNames } from "../constant/RouteNames"
 import { clearLoginState } from "../network/Axios"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { getValue, setValue } from "../utils/StorageUtil"
 import { pathStack } from "../utils/PathStackUtil"
 import { logger } from "../utils/Logger"
@@ -26,48 +26,50 @@ import {
 } from "../feature/divination/network/DivSettingsApi"
 import vibrator from "@ohos.vibrator"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // 触感反馈开关持久化 key（对齐安卓 HapticSettings.STORAGE_KEY 语义）
 const HAPTIC_PREF_KEY: string = "haptic_enabled"
 
 // 隐私与免责声明全文（对齐安卓 privacy_disclaimer_content）
 const PRIVACY_DISCLAIMER: string =
-  "本应用收集的信息与用途：\n\n" +
-  "· 手机号与学号：仅用于账号注册、登录与校内身份识别；\n" +
-  "· 学校与校园卡信息：用于寄存柜投递、取件与计费；\n" +
-  "· 订单与余额数据：用于洗衣服务履约，余额仅存于平台账户；\n" +
-  "· 观象台占卜记录：默认保存在本机数据库，解读请求经平台网关转发大模型，不含个人身份信息；\n" +
-  "· 设备标识与崩溃日志：仅用于问题排查与热更新。\n\n" +
-  "以上数据均传输与存储于平台自有服务器，不向任何第三方共享，不用于广告。你可在系统设置中随时撤回通知等权限，或联系客服注销账号并删除数据。\n\n" +
-  "免责声明：观象台提供的卦象解读属传统文化娱乐内容，不构成任何现实决策建议，请理性看待。"
+  resString('setting_1') +
+  resString('setting_2') +
+  resString('setting_3') +
+  resString('setting_4') +
+  resString('setting_5') +
+  resString('setting_6') +
+  resString('setting_7') +
+  resString('setting_8')
 
 // 解读模型说明文案（观星台零兜底口径：无平台默认模型，解读由用户配置的模型完成；
 // 与上方隐私声明「解读请求经平台网关转发大模型」口径一致）
 const BYOK_NOTICE: string =
-  "API Key 经平台网关加密存储，仅用于后端转发解读请求；解读由你配置的模型完成，费用经你自己的 API Key 计费；" +
-  "可从平台模型目录选择，也可接入自定义 OpenAI 兼容端点。"
+  resString('setting_9') +
+  resString('setting_10')
 
 // 平台总开关关闭（GET settings/api 下发 divUseEnabled=0）的入口行提示（入口置灰展示）
-const BYOK_DISABLED_NOTICE: string = "观星台 AI 解读暂未开放"
+function BYOK_DISABLED_NOTICE(): string { return resString('div_interpret_platform_disabled') }
 
 // 未配置引导文案（零兜底：未配置模型不能 AI 解读，替代旧「未配置，使用平台默认模型」）
-const BYOK_UNCONFIGURED_NOTICE: string = "未配置，解读前请先配置模型"
+function BYOK_UNCONFIGURED_NOTICE(): string { return resString('setting_11') }
 
 // 删除配置确认弹窗文案（零兜底：删除后无默认模型可回落，需重新配置才能 AI 解读）
 const BYOK_DELETE_CONFIRM: string =
-  "删除后需重新配置模型才能使用 AI 解读，已保存的密钥将从服务端清除。"
+  resString('setting_12')
 
 // 编辑层「选择模式」分段文案（目录模式默认）
-const BYOK_MODE_CATALOG: string = "平台模型目录"
-const BYOK_MODE_CUSTOM: string = "自定义接入"
+function BYOK_MODE_CATALOG(): string { return resString('api_config_mode_catalog') }
+function BYOK_MODE_CUSTOM(): string { return resString('api_config_mode_custom') }
 
 // 目录模式分步选择文案（第一步选厂商 → 第二步在该厂商内选模型；目录树一次拉取、第二步本地过滤）
-const BYOK_STEP_VENDOR: string = "第一步：选择厂商"
-const BYOK_STEP_VENDOR_HINT: string = "选择厂商后进入下一步，仅显示该厂商的模型"
-const BYOK_STEP_MODEL: string = "第二步：选择模型"
-const BYOK_STEP_CURRENT_VENDOR: string = "当前厂商："
-const BYOK_STEP_BACK: string = "上一步"
-const BYOK_SELECT_MODEL_REQUIRED: string = "请先选择厂商与模型"
+function BYOK_STEP_VENDOR(): string { return resString('api_config_catalog_step_vendor') }
+function BYOK_STEP_VENDOR_HINT(): string { return resString('setting_13') }
+function BYOK_STEP_MODEL(): string { return resString('setting_14') }
+function BYOK_STEP_CURRENT_VENDOR(): string { return resString('setting_15') }
+function BYOK_STEP_BACK(): string { return resString('api_config_catalog_back') }
+function BYOK_SELECT_MODEL_REQUIRED(): string { return resString('setting_16') }
 
 // ========== 设置页面（对齐安卓 SettingPage.kt）==========
 @Builder
@@ -150,10 +152,10 @@ struct Setting {
   // 退出登录弹窗（对齐安卓 AppConfirmDialog isDanger，统一使用 #23 产出的通用组件）
   private logoutDialogController: CustomDialogController = new CustomDialogController({
     builder: AppConfirmDialog({
-      title: "提示",
-      message: "是否要退出登录？",
-      confirmText: "确认",
-      cancelText: "取消",
+      title: resString('tip'),
+      message: resString('confirm_logout'),
+      confirmText: resString('confirm'),
+      cancelText: resString('cancel'),
       // 退出登录是不可逆操作 → 确认键走 dangerInk（对齐安卓 AppConfirmDialog(isDanger = true)）
       isDanger: true,
       onConfirm: () => {
@@ -177,7 +179,7 @@ struct Setting {
   // 关于我们弹窗（对齐安卓 AppInfoDialog，版本号动态读取）
   private aboutDialogController: CustomDialogController = new CustomDialogController({
     builder: AppInfoDialog({
-      title: "关于 SmartWash",
+      title: resString('about_smartwash'),
       message: `版本号：${getAppVersionName()}`
     }),
     autoCancel: true,
@@ -188,7 +190,7 @@ struct Setting {
   // 隐私与免责声明弹窗（对齐安卓 AppInfoDialog + privacy_disclaimer_content 全文）
   private privacyDialogController: CustomDialogController = new CustomDialogController({
     builder: AppInfoDialog({
-      title: "隐私与免责声明",
+      title: resString('privacy_disclaimer'),
       message: PRIVACY_DISCLAIMER
     }),
     autoCancel: true,
@@ -199,10 +201,10 @@ struct Setting {
   // 删除解读模型配置二次确认弹窗（对齐安卓「删除配置」需确认；不可逆操作走 dangerInk）
   private deleteConfigDialogController: CustomDialogController = new CustomDialogController({
     builder: AppConfirmDialog({
-      title: "删除解读模型配置？",
+      title: resString('api_config_confirm_delete_title'),
       message: BYOK_DELETE_CONFIRM,
-      confirmText: "删除",
-      cancelText: "取消",
+      confirmText: resString('subscription_action_delete'),
+      cancelText: resString('cancel'),
       isDanger: true,
       onConfirm: () => {
         // 不可逆确认操作：先给中触再执行（对齐退出登录弹窗）
@@ -218,7 +220,7 @@ struct Setting {
   // 「发现新版本」弹窗（对齐安卓手动检查更新的版本提示；内容由检查结果动态注入）
   private updateDialogController: CustomDialogController = new CustomDialogController({
     builder: AppInfoDialog({
-      title: "发现新版本",
+      title: resString('new_version_available'),
       message: this.updateDialogMessage
     }),
     autoCancel: true,
@@ -291,7 +293,7 @@ struct Setting {
     }).catch(() => {
       // 外部调用失败留痕：toast 已兜底，此处仅补摘要（不序列化 error）
       logger.warn('setting', '打开系统通知设置失败，已 toast 兜底')
-      promptAction.showToast({ message: "无法打开系统设置" })
+      promptAction.showToast({ message: resString('setting_17') })
     })
   }
 
@@ -318,17 +320,17 @@ struct Setting {
           logger.info('setting', `检查更新发现新版本 versionName=${versionText}`)
           this.updateDialogController.open()
         } else {
-          showToastSafety("当前已是最新版本")
+          showToastSafety(resString('already_latest'))
         }
       } else {
         // 业务拒绝留痕：版本信息缺失/读取失败（仅记 code/message 摘要）
         logger.warn('setting', `检查更新失败 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "检查更新失败")
+        showToastSafety(res.message, resString('update_check_failed'))
       }
     } catch (err) {
       // 外部调用失败（网络异常）：error 留痕，只记 message 摘要，不序列化完整 error
       logger.error('setting', '检查更新请求异常', err instanceof Error ? err.message : "")
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('setting_18'))
     } finally {
       this.checkingUpdate = false
     }
@@ -544,21 +546,21 @@ struct Setting {
   private validateForm(): string {
     if (this.editModeCatalog) {
       if (this.editSelectedModelId <= 0) {
-        return BYOK_SELECT_MODEL_REQUIRED
+        return BYOK_SELECT_MODEL_REQUIRED()
       }
     } else {
       if (this.editBaseUrl.trim() === "") {
-        return "请输入接入点地址"
+        return resString('api_config_error_base_url_empty')
       }
       if (!this.editBaseUrl.trim().startsWith("https://")) {
-        return "接入点必须以 https:// 开头"
+        return resString('api_config_error_base_url_https')
       }
       if (this.editModel.trim() === "") {
-        return "请输入模型名称"
+        return resString('api_config_error_model_empty')
       }
     }
     if (this.editApiKey.trim() === "") {
-      return "请输入 API Key"
+      return resString('api_config_error_key_empty')
     }
     return ""
   }
@@ -600,17 +602,17 @@ struct Setting {
         const ok = res.data === true
         this.testFeedbackOk = ok
         // 文案对齐安卓 api_config_test_ok / api_config_test_fail
-        this.testFeedback = ok ? "连通性正常，可保存使用" : "连通性测试未通过，请检查接入点、模型名称与 API Key"
+        this.testFeedback = ok ? resString('api_config_test_ok') : resString('setting_19')
         logger.debug('setting', `BYOK 试呼完成 ok=${ok}`)
       } else {
         this.testFeedbackOk = false
-        this.testFeedback = res.message ?? "测试失败"
+        this.testFeedback = res.message ?? resString('setting_20')
       }
     } catch (err) {
       logger.error('setting', 'BYOK 试呼异常', err instanceof Error ? err.message : "")
       if (this.isSessionActive()) {
         this.testFeedbackOk = false
-        this.testFeedback = "网络异常，请稍后重试"
+        this.testFeedback = resString('setting_18')
       }
     } finally {
       this.testing = false
@@ -634,18 +636,18 @@ struct Setting {
         // 低频关键动作成功留 info（不含 baseUrl/model/key）
         logger.info('setting', '解读模型配置已保存')
         // 文案对齐安卓 api_config_save_success
-        showToastSafety("保存成功，解读将使用你的模型")
+        showToastSafety(resString('api_config_save_success'))
         this.showModelSheet = false
         this.loadApiConfig()
       } else {
         // 服务端连通校验等业务失败文案（decode 已按 data 字符串优先转译）
         logger.warn('setting', `解读模型配置保存失败 code=${res.code}`)
-        showToastSafety(res.message, "保存失败")
+        showToastSafety(res.message, resString('setting_21'))
       }
     } catch (err) {
       logger.error('setting', '解读模型配置保存异常', err instanceof Error ? err.message : "")
       if (this.isSessionActive()) {
-        showToastSafety("网络异常，请稍后重试")
+        showToastSafety(resString('setting_18'))
       }
     } finally {
       this.saving = false
@@ -663,17 +665,17 @@ struct Setting {
       if (res.code === HttpStatusCode.Ok) {
         logger.info('setting', '解读模型配置已删除，需重新配置模型才能使用 AI 解读')
         // 文案对齐安卓 api_config_delete_success
-        showToastSafety("已删除配置")
+        showToastSafety(resString('api_config_delete_success'))
         this.showModelSheet = false
         this.loadApiConfig()
       } else {
         logger.warn('setting', `解读模型配置删除失败 code=${res.code}`)
-        showToastSafety(res.message, "删除失败")
+        showToastSafety(res.message, resString('setting_22'))
       }
     } catch (err) {
       logger.error('setting', '解读模型配置删除异常', err instanceof Error ? err.message : "")
       if (this.isSessionActive()) {
-        showToastSafety("网络异常，请稍后重试")
+        showToastSafety(resString('setting_18'))
       }
     } finally {
       this.deleting = false
@@ -682,7 +684,7 @@ struct Setting {
 
   /** 输入框通用描边（surfaceVariant 底 + outline 描边 + 聚焦主色，SubscriptionEditPage 同款） */
   private inputBorder(focused: boolean): SettingBorderStyle {
-    return { width: 1, color: focused ? DesignColor.PRIMARY : DesignColor.OUTLINE }
+    return { width: 1, color: focused ? resColor('PRIMARY') : resColor('OUTLINE') }
   }
 
   /** 表单字段标签（SubscriptionEditPage FormLabel 同款视觉） */
@@ -691,7 +693,7 @@ struct Setting {
     Text(title)
       .fontSize(DesignFontSize.BODY_SMALL)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(DesignColor.TEXT_SECONDARY)
+      .fontColor(resColor('TEXT_SECONDARY'))
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
@@ -700,11 +702,11 @@ struct Setting {
   ModelChip(model: DivModelVo) {
     Text(model.modelId ?? "")
       .fontSize(DesignFontSize.CAPTION)
-      .fontColor(DesignColor.TEXT_SECONDARY)
+      .fontColor(resColor('TEXT_SECONDARY'))
       .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 8, bottom: 8 })
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(DesignColor.SURFACE_VARIANT)
-      .border({ width: 1, color: DesignColor.OUTLINE })
+      .backgroundColor(resColor('SURFACE_VARIANT'))
+      .border({ width: 1, color: resColor('OUTLINE') })
       .margin({ right: DesignDimens.SPACE_XS })
       .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
       .onClick(() => {
@@ -720,12 +722,12 @@ struct Setting {
     Text(label)
       .fontSize(DesignFontSize.BODY_SMALL)
       .fontWeight(selected ? DesignFontWeight.MEDIUM : DesignFontWeight.NORMAL)
-      .fontColor(selected ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
+      .fontColor(selected ? resColor('PRIMARY') : resColor('TEXT_SECONDARY'))
       .textAlign(TextAlign.Center)
       .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 8, bottom: 8 })
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(selected ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE_VARIANT)
-      .border({ width: 1, color: selected ? DesignColor.PRIMARY : DesignColor.OUTLINE })
+      .backgroundColor(selected ? resColor('PRIMARY_LIGHT') : resColor('SURFACE_VARIANT'))
+      .border({ width: 1, color: selected ? resColor('PRIMARY') : resColor('OUTLINE') })
       .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
       .onClick(() => {
         onSelect()
@@ -741,34 +743,34 @@ struct Setting {
     Column({ space: DesignDimens.SPACE_XS }) {
       if (!this.modelsLoaded) {
         if (this.modelsLoadFailed) {
-          Text("模型目录加载失败，点击重试")
+          Text($r('app.string.setting_23'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.PRIMARY)
+            .fontColor(resColor('PRIMARY'))
             // 上下 14 + 行高 16 = 44 触控热区（规范 §2.3）
             .padding({ top: 14, bottom: 14 })
             .onClick(() => {
               this.fetchModelSuggestions(true)
             })
         } else {
-          Text("模型目录加载中…")
+          Text($r('app.string.setting_24'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_TERTIARY)
+            .fontColor(resColor('TEXT_TERTIARY'))
             .padding({ top: 14, bottom: 14 })
         }
       } else if (this.modelsEmpty) {
-        Text("暂无平台模型目录，可切换自定义接入")
+        Text($r('app.string.setting_25'))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontColor(resColor('TEXT_TERTIARY'))
           .padding({ top: 14, bottom: 14 })
       } else if (this.catalogStep === 1) {
         // ---- 第一步：选择厂商 ----
-        this.FormLabel(BYOK_STEP_VENDOR)
+        this.FormLabel(BYOK_STEP_VENDOR())
         ForEach(this.platformModels, (group: DivVendorGroupVo) => {
           this.VendorStepRow(group)
         }, (group: DivVendorGroupVo) => `vendor-${group.vendor ?? ""}`)
-        Text(BYOK_STEP_VENDOR_HINT)
+        Text(BYOK_STEP_VENDOR_HINT())
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontColor(resColor('TEXT_TERTIARY'))
           .margin({ top: DesignDimens.SPACE_XS })
       } else {
         // ---- 第二步：选择该厂商的模型 ----
@@ -776,27 +778,27 @@ struct Setting {
           Row({ space: DesignDimens.SPACE_XXS }) {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(16)
-              .fontColor([DesignColor.PRIMARY])
-            Text(BYOK_STEP_BACK)
+              .fontColor([resColor('PRIMARY')])
+            Text(BYOK_STEP_BACK())
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.PRIMARY)
+              .fontColor(resColor('PRIMARY'))
           }
           .padding({ top: 12, bottom: 12 })
           .onClick(() => {
             this.backToVendorStep()
           })
-          Text(BYOK_STEP_MODEL)
+          Text(BYOK_STEP_MODEL())
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .margin({ left: DesignDimens.SPACE_SM })
         }
         .width("100%")
         .alignItems(VerticalAlign.Center)
 
-        Text(`${BYOK_STEP_CURRENT_VENDOR}${this.selectedVendor}`)
+        Text(`${BYOK_STEP_CURRENT_VENDOR()}${this.selectedVendor}`)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontColor(resColor('TEXT_TERTIARY'))
           .margin({ top: DesignDimens.SPACE_XXS })
 
         ForEach(this.selectedVendorGroup()?.models ?? [], (model: DivModelVo) => {
@@ -816,12 +818,12 @@ struct Setting {
         Text(group.vendor ?? "")
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
         Text(group.baseUrl ?? "")
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontColor(resColor('TEXT_TERTIARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
       }
@@ -831,12 +833,12 @@ struct Setting {
 
       Text(`${group.models.length} 个模型`)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_TERTIARY)
+        .fontColor(resColor('TEXT_TERTIARY'))
 
       if (this.selectedVendor === (group.vendor ?? "")) {
         SymbolGlyph($r('sys.symbol.checkmark'))
           .fontSize(16)
-          .fontColor([DesignColor.PRIMARY])
+          .fontColor([resColor('PRIMARY')])
           .margin({ left: DesignDimens.SPACE_XS })
       }
     }
@@ -844,10 +846,10 @@ struct Setting {
     .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
     .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 10, bottom: 10 })
     .borderRadius(DesignDimens.INPUT_RADIUS)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .border({
       width: 1,
-      color: this.selectedVendor === (group.vendor ?? "") ? DesignColor.PRIMARY : DesignColor.OUTLINE
+      color: this.selectedVendor === (group.vendor ?? "") ? resColor('PRIMARY') : resColor('OUTLINE')
     })
     .onClick(() => {
       this.selectVendor(group.vendor ?? "")
@@ -861,12 +863,12 @@ struct Setting {
       Column({ space: 2 }) {
         Text(model.name ?? "")
           .fontSize(DesignFontSize.BODY)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
         Text(model.modelId ?? "")
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontColor(resColor('TEXT_TERTIARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
       }
@@ -875,18 +877,18 @@ struct Setting {
       .margin({ right: DesignDimens.SPACE_SM })
 
       if (model.active) {
-        Text("使用中")
+        Text($r('app.string.setting_26'))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.ON_SUCCESS_CONTAINER)
+          .fontColor(resColor('ON_SUCCESS_CONTAINER'))
           .padding({ left: 6, right: 6, top: 2, bottom: 2 })
           .borderRadius(DesignDimens.RADIUS_FULL)
-          .backgroundColor(DesignColor.SUCCESS_CONTAINER)
+          .backgroundColor(resColor('SUCCESS_CONTAINER'))
       }
 
       if (this.editSelectedModelId === (model.id ?? 0)) {
         SymbolGlyph($r('sys.symbol.checkmark'))
           .fontSize(16)
-          .fontColor([DesignColor.PRIMARY])
+          .fontColor([resColor('PRIMARY')])
           .margin({ left: DesignDimens.SPACE_XS })
       }
     }
@@ -899,10 +901,10 @@ struct Setting {
       bottom: 10
     })
     .borderRadius(DesignDimens.INPUT_RADIUS)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .border({
       width: 1,
-      color: this.editSelectedModelId === (model.id ?? 0) ? DesignColor.PRIMARY : DesignColor.OUTLINE
+      color: this.editSelectedModelId === (model.id ?? 0) ? resColor('PRIMARY') : resColor('OUTLINE')
     })
     .onClick(() => {
       this.selectCatalogModel(model)
@@ -923,20 +925,20 @@ struct Setting {
         .width(32)
         .height(4)
         .borderRadius(DesignDimens.RADIUS_FULL)
-        .backgroundColor(DesignColor.OUTLINE)
+        .backgroundColor(resColor('OUTLINE'))
         .margin({ top: DesignDimens.SPACE_SM })
 
       // 标题 + 说明文案（与隐私声明口径一致）
       Column({ space: DesignDimens.SPACE_XXS }) {
-        Text("解读模型")
+        Text($r('app.string.api_config_title'))
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .margin({ top: DesignDimens.SPACE_MD })
 
         Text(BYOK_NOTICE)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontColor(resColor('TEXT_TERTIARY'))
           .lineHeight(18)
       }
       .width("100%")
@@ -947,12 +949,12 @@ struct Setting {
       Scroll() {
         Column() {
           // ---- 选择模式（目录模式默认：分步选择厂商/模型免输 url；自定义接入保留三输入现状交互）----
-          this.FormLabel("选择模式")
+          this.FormLabel(resString('api_config_mode_label'))
           Row({ space: DesignDimens.SPACE_SM }) {
-            this.EditModeChip(BYOK_MODE_CATALOG, this.editModeCatalog, (): void => {
+            this.EditModeChip(BYOK_MODE_CATALOG(), this.editModeCatalog, (): void => {
               this.switchMode(true)
             })
-            this.EditModeChip(BYOK_MODE_CUSTOM, !this.editModeCatalog, (): void => {
+            this.EditModeChip(BYOK_MODE_CUSTOM(), !this.editModeCatalog, (): void => {
               this.switchMode(false)
             })
           }
@@ -961,20 +963,20 @@ struct Setting {
           if (this.editModeCatalog) {
             // ---- 目录模式：分步选择厂商 → 模型（接入点/模型名服务端从目录取，不显示 url 输入）----
             this.CatalogSelector()
-            Text("接入点与模型名由平台目录提供，无需填写")
+            Text($r('app.string.setting_27'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_TERTIARY)
+              .fontColor(resColor('TEXT_TERTIARY'))
               .margin({ top: DesignDimens.SPACE_XS })
           } else {
             // ---- 自定义接入（现状交互保留）：接入点 + 模型名（label/hint 对齐安卓 api_config_base_url_label/hint）----
-            this.FormLabel("接入点地址")
+            this.FormLabel(resString('api_config_base_url_label'))
             TextInput({ text: this.editBaseUrl, placeholder: "https://api.example.com" })
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               .borderRadius(DesignDimens.INPUT_RADIUS)
               .border(this.inputBorder(this.baseUrlFocused))
-              .placeholderColor(DesignColor.TEXT_TERTIARY)
+              .placeholderColor(resColor('TEXT_TERTIARY'))
               .placeholderFont({ size: DesignFontSize.BODY })
               .onFocus(() => {
                 this.baseUrlFocused = true
@@ -986,22 +988,22 @@ struct Setting {
                 this.editBaseUrl = value
               })
 
-            Text("支持任意 OpenAI 兼容接入点，需 HTTPS")
+            Text($r('app.string.setting_28'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_TERTIARY)
+              .fontColor(resColor('TEXT_TERTIARY'))
               .margin({ top: DesignDimens.SPACE_XS })
 
             Column().height(DesignDimens.SPACE_LG)
 
             // ---- 模型名称 ----
-            this.FormLabel("模型名称")
-            TextInput({ text: this.editModel, placeholder: "如 deepseek-chat" })
+            this.FormLabel(resString('api_config_model_label'))
+            TextInput({ text: this.editModel, placeholder: resString('api_config_model_hint') })
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               .borderRadius(DesignDimens.INPUT_RADIUS)
               .border(this.inputBorder(this.modelFocused))
-              .placeholderColor(DesignColor.TEXT_TERTIARY)
+              .placeholderColor(resColor('TEXT_TERTIARY'))
               .placeholderFont({ size: DesignFontSize.BODY })
               .onFocus(() => {
                 this.modelFocused = true
@@ -1015,9 +1017,9 @@ struct Setting {
 
             // ---- 平台目录建议（现状交互保留：折叠展开，点击回填模型名；目录为树形，先扁平化）----
             if (this.modelsLoaded && this.flattenPlatformModels().length > 0) {
-              Text(this.modelsExpanded ? "收起平台模型目录" : "从平台模型目录选择")
+              Text(this.modelsExpanded ? resString('setting_29') : resString('setting_30'))
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.PRIMARY)
+                .fontColor(resColor('PRIMARY'))
                 // 上下 14 + 行高 16 = 44 触控热区（规范 §2.3，Payment「去领取」同款处理）
                 .padding({ top: 14, bottom: 14 })
                 .margin({ top: 4 })
@@ -1041,9 +1043,9 @@ struct Setting {
               }
             } else if (this.modelsLoaded && this.modelsEmpty) {
               // 目录拉取成功但为空（对齐安卓 api_config_model_catalog_empty）
-              Text("暂无平台模型目录")
+              Text($r('app.string.setting_31'))
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_TERTIARY)
+                .fontColor(resColor('TEXT_TERTIARY'))
                 .margin({ top: DesignDimens.SPACE_XS })
             }
           }
@@ -1055,15 +1057,15 @@ struct Setting {
           Row() {
             TextInput({
               text: this.editApiKey,
-              placeholder: this.hasApiConfig ? "重新输入 API Key" : "输入 API Key"
+              placeholder: this.hasApiConfig ? resString('api_config_key_hint_edit') : resString('api_config_key_hint_new')
             })
               .type(this.showApiKeyPlain ? InputType.Normal : InputType.Password)
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               .borderRadius(DesignDimens.INPUT_RADIUS)
               .border(this.inputBorder(this.apiKeyFocused))
-              .placeholderColor(DesignColor.TEXT_TERTIARY)
+              .placeholderColor(resColor('TEXT_TERTIARY'))
               .placeholderFont({ size: DesignFontSize.BODY_SMALL })
               .showPasswordIcon(false)
               .layoutWeight(1)
@@ -1080,11 +1082,11 @@ struct Setting {
             Stack({ alignContent: Alignment.Center }) {
               SymbolGlyph(this.showApiKeyPlain ? $r('sys.symbol.eye_slash') : $r('sys.symbol.eye'))
                 .fontSize(20)
-                .fontColor([DesignColor.TEXT_SECONDARY])
+                .fontColor([resColor('TEXT_SECONDARY')])
             }
             .width(DesignDimens.BACK_HIT_AREA)
             .height(DesignDimens.BACK_HIT_AREA)
-            .accessibilityDescription(this.showApiKeyPlain ? '隐藏 API Key' : '显示 API Key')
+            .accessibilityDescription(this.showApiKeyPlain ? resString('api_config_key_hide') : resString('api_config_key_show'))
             .onClick(() => {
               this.showApiKeyPlain = !this.showApiKeyPlain
             })
@@ -1092,9 +1094,9 @@ struct Setting {
           .width('100%')
           .alignItems(VerticalAlign.Center)
 
-          Text("Key 仅提交后端加密存储，端上不保存；已配置时更换任何字段都需重新输入 Key")
+          Text($r('app.string.setting_32'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_TERTIARY)
+            .fontColor(resColor('TEXT_TERTIARY'))
             .margin({ top: DesignDimens.SPACE_XS })
 
           // ---- 测试连接即时反馈 ----
@@ -1104,10 +1106,10 @@ struct Setting {
                 ? $r('sys.symbol.checkmark')
                 : $r('sys.symbol.exclamationmark_triangle_fill'))
                 .fontSize(14)
-                .fontColor([this.testFeedbackOk ? DesignColor.SUCCESS : DesignColor.DANGER])
+                .fontColor([this.testFeedbackOk ? resColor('SUCCESS') : resColor('DANGER')])
               Text(this.testFeedback)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(this.testFeedbackOk ? DesignColor.SUCCESS : DesignColor.DANGER)
+                .fontColor(this.testFeedbackOk ? resColor('SUCCESS') : resColor('DANGER'))
                 .layoutWeight(1)
             }
             .width("100%")
@@ -1118,7 +1120,7 @@ struct Setting {
           // ---- 操作按钮：测试连接 + 保存（DeliveryCreatePage 并排 AppButton 同款）----
           Row({ space: DesignDimens.SPACE_SM }) {
             AppButton({
-              text: "测试连接",
+              text: resString('api_config_test'),
               variant: AppButtonVariant.SECONDARY,
               loading: this.testing,
               click: () => {
@@ -1127,7 +1129,7 @@ struct Setting {
             })
               .layoutWeight(1)
             AppButton({
-              text: "保存",
+              text: resString('subscription_submit_save'),
               loading: this.saving,
               click: () => {
                 this.saveConfig()
@@ -1141,9 +1143,9 @@ struct Setting {
           // ---- 删除配置（仅已配置时；二次确认见 deleteConfigDialogController）----
           if (this.hasApiConfig) {
             AppButton({
-              text: "删除配置",
+              text: resString('api_config_delete'),
               variant: AppButtonVariant.SECONDARY,
-              contentColor: DesignColor.DANGER_INK,
+              contentColor: resColor('DANGER_INK'),
               loading: this.deleting,
               click: () => {
                 this.deleteConfigDialogController.open()
@@ -1171,21 +1173,21 @@ struct Setting {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 公共页头 — 22/600 标题 + 48dp 返回热区 + 内置连击防抖（对齐安卓 PageHeader）
-        PageHeader({ title: "设置" })
+        PageHeader({ title: resString('settings') })
 
         // 滚动内容
         Scroll(this.scroller) {
           Column() {
             // ===== 通用 =====
-            Text("通用")
+            Text($r('app.string.general'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .width("100%")
               .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
 
@@ -1195,43 +1197,43 @@ struct Setting {
               // 返回后由 onShown 重查刷新行内状态，不再进权限管理页）
               SettingRow({
                 icon: $r('sys.symbol.bell'),
-                containerColor: DesignColor.ICON_CONTAINER_ORANGE,
-                iconColor: DesignColor.ICON_FOREGROUND_ORANGE,
-                title: "消息通知",
-                trailingValue: this.notificationGranted ? "已开启" : "未授权",
+                containerColor: resColor('ICON_CONTAINER_ORANGE'),
+                iconColor: resColor('ICON_FOREGROUND_ORANGE'),
+                title: resString('push_notification'),
+                trailingValue: this.notificationGranted ? resString('lab_drum_cell_on') : resString('permission_denied'),
                 onRowClick: () => {
                   this.openNotificationSettings()
                 }
               })
 
               Divider()
-                .color(DesignColor.HAIRLINE)
+                .color(resColor('HAIRLINE'))
                 .strokeWidth(0.5)
 
               // 触感反馈（真实开关，内存态即时生效 + 异步落盘）
               SettingRow({
                 icon: $r('sys.symbol.hand_tap'),
-                containerColor: DesignColor.ICON_CONTAINER_TEAL,
-                iconColor: DesignColor.ICON_FOREGROUND_TEAL,
-                title: "触感反馈",
-                trailingValue: this.hapticEnabled ? "已开启" : "已关闭",
+                containerColor: resColor('ICON_CONTAINER_TEAL'),
+                iconColor: resColor('ICON_FOREGROUND_TEAL'),
+                title: resString('haptic_feedback'),
+                trailingValue: this.hapticEnabled ? resString('lab_drum_cell_on') : resString('lab_drum_cell_off'),
                 onRowClick: () => {
                   this.toggleHaptic()
                 }
               })
 
               Divider()
-                .color(DesignColor.HAIRLINE)
+                .color(resColor('HAIRLINE'))
                 .strokeWidth(0.5)
 
               // 取件提醒（真实开关，调研候选 2）：订单进入待取件后 30 分钟本地提醒取件；
               // 关闭即撤销全部未触发提醒，重新开启后列表/详情同步自动补登记
               SettingRow({
                 icon: $r('sys.symbol.hourglass'),
-                containerColor: DesignColor.ICON_CONTAINER_BLUE,
-                iconColor: DesignColor.ICON_FOREGROUND_BLUE,
-                title: "取件提醒",
-                trailingValue: this.pickupReminderEnabled ? "已开启" : "已关闭",
+                containerColor: resColor('ICON_CONTAINER_BLUE'),
+                iconColor: resColor('ICON_FOREGROUND_BLUE'),
+                title: resString('setting_33'),
+                trailingValue: this.pickupReminderEnabled ? resString('lab_drum_cell_on') : resString('lab_drum_cell_off'),
                 onRowClick: () => {
                   this.togglePickupReminder()
                 }
@@ -1239,10 +1241,10 @@ struct Setting {
             }
 
             // ===== 观象台 =====
-            Text("观象台")
+            Text($r('app.string.workbench_divination_name'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .width("100%")
               .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
 
@@ -1255,9 +1257,9 @@ struct Setting {
                 // 配置仅从后端 GET 回显，端上不持久化 key。
                 ModelConfigRow({
                   icon: $r('sys.symbol.key'),
-                  containerColor: DesignColor.ICON_CONTAINER_PURPLE,
-                  iconColor: DesignColor.ICON_FOREGROUND_PURPLE,
-                  title: "解读模型",
+                  containerColor: resColor('ICON_CONTAINER_PURPLE'),
+                  iconColor: resColor('ICON_FOREGROUND_PURPLE'),
+                  title: resString('api_config_title'),
                   hasConfig: this.configLoaded && this.hasApiConfig,
                   modelText: this.configModel,
                   maskText: this.configMask,
@@ -1270,14 +1272,14 @@ struct Setting {
                 })
 
                 Divider()
-                  .color(DesignColor.HAIRLINE)
+                  .color(resColor('HAIRLINE'))
                   .strokeWidth(0.5)
 
                 SettingRow({
                   icon: $r('sys.symbol.questionmark_circle'),
-                  containerColor: DesignColor.ICON_CONTAINER_PURPLE,
-                  iconColor: DesignColor.ICON_FOREGROUND_PURPLE,
-                  title: "隐私与免责声明",
+                  containerColor: resColor('ICON_CONTAINER_PURPLE'),
+                  iconColor: resColor('ICON_FOREGROUND_PURPLE'),
+                  title: resString('privacy_disclaimer'),
                   trailingValue: "",
                   onRowClick: () => {
                     this.privacyDialogController.open()
@@ -1290,16 +1292,16 @@ struct Setting {
               // 近 3/4 高表单浮层（Payment 选券浮层同款参数口径）；
               // dragBar:false + 自绘 handle，容器色对齐 Android surface
               height: "72%",
-              backgroundColor: DesignColor.SURFACE,
+              backgroundColor: resColor('SURFACE'),
               showClose: false,
               dragBar: false
             })
 
             // ===== 其他 =====
-            Text("其他")
+            Text($r('app.string.div_category_other'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .width("100%")
               .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
 
@@ -1308,9 +1310,9 @@ struct Setting {
               // 图标对齐安卓 Icons.Default.SystemUpdate（下载/更新语义）取 sys.symbol.download
               SettingRow({
                 icon: $r('sys.symbol.download'),
-                containerColor: DesignColor.ICON_CONTAINER_TEAL,
-                iconColor: DesignColor.ICON_FOREGROUND_TEAL,
-                title: "检查更新",
+                containerColor: resColor('ICON_CONTAINER_TEAL'),
+                iconColor: resColor('ICON_FOREGROUND_TEAL'),
+                title: resString('check_update'),
                 trailingValue: `v${getAppVersionName()}`,
                 // 检查中显示行尾 spinner（checkingUpdate 同时拦截连点，见 checkUpdate 首行）
                 loading: this.checkingUpdate,
@@ -1320,15 +1322,15 @@ struct Setting {
               })
 
               Divider()
-                .color(DesignColor.HAIRLINE)
+                .color(resColor('HAIRLINE'))
                 .strokeWidth(0.5)
 
               // 修改密码（验证原密码后改密，成功后登出重登，账号安全域入口）
               SettingRow({
                 icon: $r('sys.symbol.lock'),
-                containerColor: DesignColor.ICON_CONTAINER_TEAL,
-                iconColor: DesignColor.ICON_FOREGROUND_TEAL,
-                title: "修改密码",
+                containerColor: resColor('ICON_CONTAINER_TEAL'),
+                iconColor: resColor('ICON_FOREGROUND_TEAL'),
+                title: resString('change_password'),
                 trailingValue: "",
                 onRowClick: () => {
                   pathStack.pushPathByName(RouteNames.CHANGE_PASSWORD, null)
@@ -1336,16 +1338,16 @@ struct Setting {
               })
 
               Divider()
-                .color(DesignColor.HAIRLINE)
+                .color(resColor('HAIRLINE'))
                 .strokeWidth(0.5)
 
               // 权限管理入口（申请 / 跳系统设置都在权限页收口）
               // 图标对齐安卓 SettingPage 的 AdminPanelSettings（盾牌 + 用户徽标）取 sys.symbol.person_shield
               SettingRow({
                 icon: $r('sys.symbol.person_shield'),
-                containerColor: DesignColor.ICON_CONTAINER_TEAL,
-                iconColor: DesignColor.ICON_FOREGROUND_TEAL,
-                title: "权限管理",
+                containerColor: resColor('ICON_CONTAINER_TEAL'),
+                iconColor: resColor('ICON_FOREGROUND_TEAL'),
+                title: resString('permission_management'),
                 trailingValue: "",
                 onRowClick: () => {
                   pathStack.pushPathByName(RouteNames.PERMISSION_MANAGEMENT, null)
@@ -1353,15 +1355,15 @@ struct Setting {
               })
 
               Divider()
-                .color(DesignColor.HAIRLINE)
+                .color(resColor('HAIRLINE'))
                 .strokeWidth(0.5)
 
               // 关于 SmartWash（行尾版本号 tnum，与关于弹窗同源）
               SettingRow({
                 icon: $r('sys.symbol.info_circle'),
-                containerColor: DesignColor.ICON_CONTAINER_TEAL,
-                iconColor: DesignColor.ICON_FOREGROUND_TEAL,
-                title: "关于 SmartWash",
+                containerColor: resColor('ICON_CONTAINER_TEAL'),
+                iconColor: resColor('ICON_FOREGROUND_TEAL'),
+                title: resString('about_smartwash'),
                 trailingValue: `v${getAppVersionName()}`,
                 onRowClick: () => {
                   this.aboutDialogController.open()
@@ -1371,9 +1373,9 @@ struct Setting {
 
             // 退出登录 — 规范 §2.1 唯一按钮例外：次按钮变体（对齐安卓 AppButton(SECONDARY) + dangerInk）
             AppButton({
-              text: "退出登录",
+              text: resString('logout'),
               variant: AppButtonVariant.SECONDARY,
-              contentColor: DesignColor.DANGER_INK,
+              contentColor: resColor('DANGER_INK'),
               click: () => {
                 this.logoutDialogController.open()
               }
@@ -1392,7 +1394,7 @@ struct Setting {
       .width("100%")
       .height("100%")
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     // 补齐：隐藏系统标题栏，避免与自绘 PageHeader 出现双返回按钮（问题6）
@@ -1414,8 +1416,8 @@ struct Setting {
 @Component
 struct SettingRow {
   @Prop icon: Resource = $r('sys.symbol.info_circle')
-  @Prop containerColor: number = DesignColor.PRIMARY_LIGHT
-  @Prop iconColor: number = DesignColor.PRIMARY
+  @Prop containerColor: number = resColor('PRIMARY_LIGHT')
+  @Prop iconColor: number = resColor('PRIMARY')
   @Prop title: string = ""
   @Prop trailingValue: string = ""
   // 行尾加载态（检查更新等）：为 true 时以 spinner 替代行尾文案（对齐安卓）
@@ -1442,7 +1444,7 @@ struct SettingRow {
       Text(this.title)
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.NORMAL)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .layoutWeight(1)
         .margin({ left: 12 })
 
@@ -1451,11 +1453,11 @@ struct SettingRow {
         LoadingProgress()
           .width(16)
           .height(16)
-          .color(DesignColor.TEXT_SECONDARY)
+          .color(resColor('TEXT_SECONDARY'))
       } else if (this.trailingValue !== "") {
         Text(this.trailingValue)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           // 单行截断防溢出（标题有 layoutWeight(1) 优先收缩）
           .maxLines(1)
@@ -1465,13 +1467,13 @@ struct SettingRow {
 
       SymbolGlyph($r('sys.symbol.chevron_right'))
         .fontSize(20)
-        .fontColor([DesignColor.TEXT_TERTIARY])
+        .fontColor([resColor('TEXT_TERTIARY')])
         .margin({ left: 4 })
     }
     .width("100%")
     .height(64)
     .alignItems(VerticalAlign.Center)
-    .backgroundColor(this.pressed ? DesignColor.SURFACE_VARIANT : Color.Transparent)
+    .backgroundColor(this.pressed ? resColor('SURFACE_VARIANT') : Color.Transparent)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressed = true
@@ -1496,8 +1498,8 @@ struct SettingRow {
 @Component
 struct ModelConfigRow {
   @Prop icon: Resource = $r('sys.symbol.info_circle')
-  @Prop containerColor: number = DesignColor.PRIMARY_LIGHT
-  @Prop iconColor: number = DesignColor.PRIMARY
+  @Prop containerColor: number = resColor('PRIMARY_LIGHT')
+  @Prop iconColor: number = resColor('PRIMARY')
   @Prop title: string = ""
   @Prop hasConfig: boolean = false
   @Prop modelText: string = ""
@@ -1529,7 +1531,7 @@ struct ModelConfigRow {
       Text(this.title)
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.NORMAL)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .layoutWeight(1)
         .margin({ left: 12 })
 
@@ -1538,19 +1540,19 @@ struct ModelConfigRow {
         LoadingProgress()
           .width(16)
           .height(16)
-          .color(DesignColor.TEXT_SECONDARY)
+          .color(resColor('TEXT_SECONDARY'))
       } else if (this.disabled) {
         // 平台总开关关闭：提示文案（入口置灰分支）
-        Text(BYOK_DISABLED_NOTICE)
+        Text(BYOK_DISABLED_NOTICE())
           .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
       } else if (this.hasConfig) {
         // 已配置：右对齐两行摘要（对齐安卓 Column(horizontalAlignment = End)）
         Column({ space: 2 }) {
           Row({ space: 4 }) {
             Text(this.modelText)
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .constraintSize({ maxWidth: 150 })
@@ -1559,14 +1561,14 @@ struct ModelConfigRow {
               Row({ space: 2 }) {
                 SymbolGlyph($r('sys.symbol.checkmark'))
                   .fontSize(10)
-                  .fontColor([DesignColor.ON_SUCCESS_CONTAINER])
-                Text("已验证")
+                  .fontColor([resColor('ON_SUCCESS_CONTAINER')])
+                Text($r('app.string.api_config_verified'))
                   .fontSize(10)
-                  .fontColor(DesignColor.ON_SUCCESS_CONTAINER)
+                  .fontColor(resColor('ON_SUCCESS_CONTAINER'))
               }
               .padding({ left: 6, right: 6, top: 2, bottom: 2 })
               .borderRadius(DesignDimens.RADIUS_FULL)
-              .backgroundColor(DesignColor.SUCCESS_CONTAINER)
+              .backgroundColor(resColor('SUCCESS_CONTAINER'))
             }
           }
           .alignItems(VerticalAlign.Center)
@@ -1574,7 +1576,7 @@ struct ModelConfigRow {
           if (this.maskText !== "") {
             Text(this.maskText)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_TERTIARY)
+              .fontColor(resColor('TEXT_TERTIARY'))
               .fontFeature(DesignFontFeature.TNUM)
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -1584,16 +1586,16 @@ struct ModelConfigRow {
         .alignItems(HorizontalAlign.End)
       } else {
         // 未配置引导文案（零兜底口径：无平台默认模型，需配置后才能 AI 解读）
-        Text(BYOK_UNCONFIGURED_NOTICE)
+        Text(BYOK_UNCONFIGURED_NOTICE())
           .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
       }
 
       // chevron 是「可进入」的视觉信号：置灰态不渲染
       if (!this.disabled) {
         SymbolGlyph($r('sys.symbol.chevron_right'))
           .fontSize(20)
-          .fontColor([DesignColor.TEXT_TERTIARY])
+          .fontColor([resColor('TEXT_TERTIARY')])
           .margin({ left: 4 })
       }
     }
@@ -1602,7 +1604,7 @@ struct ModelConfigRow {
     .alignItems(VerticalAlign.Center)
     // 置灰：整行降透明（对齐 AppButton 禁用降透明惯例），内容灰化弱化可点预期
     .opacity(this.disabled ? 0.5 : 1)
-    .backgroundColor(this.pressed ? DesignColor.SURFACE_VARIANT : Color.Transparent)
+    .backgroundColor(this.pressed ? resColor('SURFACE_VARIANT') : Color.Transparent)
     .onTouch((event: TouchEvent) => {
       // 置灰行不播按压反馈
       if (this.disabled) {

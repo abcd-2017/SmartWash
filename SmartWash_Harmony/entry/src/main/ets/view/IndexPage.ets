@@ -5,7 +5,7 @@ import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { pathStack } from "../utils/PathStackUtil"
 import { OrderVo } from "../network/vo/OrderVo"
 import { getWashingOrder } from "../network/api/OrderApi"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { getOrderStatusDescription } from "../constant/OrderStatus"
 import { OrderStatusEnum } from "../constant/OrderStatus"
 import { showToastSafety } from "../utils/ToastUtil"
@@ -14,6 +14,8 @@ import { IconBox } from "./common/AppComponents"
 import { HeroCard } from "./HeroCard"
 import { BizCode } from "../network/HttpUtil"
 import { safeTopVp } from "../utils/SafeArea"
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // 连续轮询失败达到该次数才提示一次（评审 #4：避免每 5s 弹 toast）
 const POLLING_FAILURE_THRESHOLD: number = 3
@@ -107,7 +109,7 @@ export struct IndexPage {
         // 401 已由 Axios 拦截器统一处理（清 token → 清登录态 → replace 登录页），此处不重复弹 toast
         // 业务失败 warn 留痕（低频：仅挂载/重进 Tab 时调用，非 5s 轮询路径）
         logger.warn('indexPage', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "用户信息加载失败")
+        showToastSafety(res.message, resString('index_page_1'))
       }
     } catch (e) {
       // 401/网络异常均由 Axios 拦截器统一提示并处理，页面不再重复弹 toast
@@ -138,7 +140,7 @@ export struct IndexPage {
     if (this.pollingFailureCount === POLLING_FAILURE_THRESHOLD) {
       // 达到阈值提示用户属低频降级事件：warn 留痕
       logger.warn('indexPage', `订单轮询连续失败 ${POLLING_FAILURE_THRESHOLD} 次，已提示用户`)
-      showToastSafety(message, "订单状态刷新失败")
+      showToastSafety(message, resString('index_page_2'))
     }
   }
 
@@ -152,15 +154,15 @@ export struct IndexPage {
       Column() {
         // 余额（可点进充值）—— 按可用宽度分档缩字号，窄屏不折行不溢出
         Column() {
-          Text("账户余额")
+          Text($r('app.string.account_balance_label'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
 
           Text(`¥${(this.userInfo?.balance ?? 0).toFixed(2)}`)
             .fontSize(this.balanceFontSize)
             // 数据大字恒为 Bold（对齐安卓 AppTextStyles.DataLarge = 36/700；D5）
             .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(DesignColor.PRIMARY_DARK)
+            .fontColor(resColor('PRIMARY_DARK'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .margin({ top: 4 })
@@ -191,13 +193,13 @@ export struct IndexPage {
             Text(`${this.userInfo?.couponCount ?? 0}`)
               .fontSize(DesignFontSize.AMOUNT_MEDIUM)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .fontFeature(DesignFontFeature.TNUM)
               .maxLines(1)
 
-            Text("可用优惠券")
+            Text($r('app.string.home_available_coupons'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .maxLines(1)
           }
           .layoutWeight(1)
@@ -206,19 +208,19 @@ export struct IndexPage {
           Row()
             .width(1)
             .height(40)
-            .backgroundColor(DesignColor.HAIRLINE)
+            .backgroundColor(resColor('HAIRLINE'))
 
           Column() {
             Text(`${this.userInfo?.orderCount ?? 0}`)
               .fontSize(DesignFontSize.AMOUNT_MEDIUM)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .fontFeature(DesignFontFeature.TNUM)
               .maxLines(1)
 
-            Text("累计订单")
+            Text($r('app.string.home_total_orders'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .maxLines(1)
           }
           .layoutWeight(1)
@@ -232,12 +234,12 @@ export struct IndexPage {
           .height(DesignDimens.SPACE_MD)
       }
       .width('100%')
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
-      .border({ width: 1, color: DesignColor.OUTLINE })
+      .border({ width: 1, color: resColor('OUTLINE') })
       .shadow({
         radius: DesignElevation.LEVEL_1,
-        color: DesignColor.SHADOW_COLOR_CARD,
+        color: resColor('SHADOW_COLOR_CARD'),
         offsetX: 0,
         offsetY: 2
       })
@@ -254,23 +256,23 @@ export struct IndexPage {
   ServiceGrid() {
     Row({ space: DesignDimens.SPACE_SM }) {
       // 预约洗衣 = 绿（对齐安卓 IndexPage.kt:569-576）
-      this.ServiceEntry($r('sys.symbol.laundry'), "预约洗衣",
-        DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN, () => {
+      this.ServiceEntry($r('sys.symbol.laundry'), resString('service_booking'),
+        resColor('ICON_CONTAINER_GREEN'), resColor('ICON_FOREGROUND_GREEN'), () => {
           pathStack.pushPathByName(RouteNames.LAUNDRY, null)
         })
       // 取件 = 橙（对齐安卓 IndexPage.kt:577-584）
-      this.ServiceEntry($r('sys.symbol.book_pages'), "取件",
-        DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE, () => {
+      this.ServiceEntry($r('sys.symbol.book_pages'), resString('service_pickup'),
+        resColor('ICON_CONTAINER_ORANGE'), resColor('ICON_FOREGROUND_ORANGE'), () => {
           pathStack.pushPathByName(RouteNames.PICK_UP, null)
         })
       // 充值 = 绿（对齐安卓 IndexPage.kt:585-593，与预约洗衣同 primaryContainer 底）
-      this.ServiceEntry($r('sys.symbol.creditcard'), "充值",
-        DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN, () => {
+      this.ServiceEntry($r('sys.symbol.creditcard'), resString('service_recharge'),
+        resColor('ICON_CONTAINER_GREEN'), resColor('ICON_FOREGROUND_GREEN'), () => {
           pathStack.pushPathByName(RouteNames.RECHARGE, null)
         })
       // 优惠券 = 蓝（对齐安卓 IndexPage.kt:594-601）
-      this.ServiceEntry($r('sys.symbol.label'), "优惠券",
-        DesignColor.ICON_CONTAINER_BLUE, DesignColor.ICON_FOREGROUND_BLUE, () => {
+      this.ServiceEntry($r('sys.symbol.label'), resString('service_coupon'),
+        resColor('ICON_CONTAINER_BLUE'), resColor('ICON_FOREGROUND_BLUE'), () => {
           pathStack.pushPathByName(RouteNames.COUPON, null)
         })
     }
@@ -291,7 +293,7 @@ export struct IndexPage {
 
       Text(title)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .margin({ top: DesignDimens.SPACE_XS })
     }
     .layoutWeight(1)
@@ -316,7 +318,7 @@ export struct IndexPage {
             Row()
               .width('100%')
               .height(1)
-              .backgroundColor(DesignColor.HAIRLINE)
+              .backgroundColor(resColor('HAIRLINE'))
           }
           .width('100%')
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
@@ -324,12 +326,12 @@ export struct IndexPage {
       })
     }
     .width('100%')
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: resColor('OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -345,9 +347,9 @@ export struct IndexPage {
         sizeValue: 36,
         iconSize: 20,
         containerColor: order.status === OrderStatusEnum.WASHING ?
-          DesignColor.ICON_CONTAINER_BLUE : DesignColor.ICON_CONTAINER_ORANGE,
+          resColor('ICON_CONTAINER_BLUE') : resColor('ICON_CONTAINER_ORANGE'),
         iconColor: order.status === OrderStatusEnum.WASHING ?
-          DesignColor.WATER : DesignColor.ICON_FOREGROUND_ORANGE
+          resColor('WATER') : resColor('ICON_FOREGROUND_ORANGE')
       })
       .margin({ right: DesignDimens.SPACE_SM })
 
@@ -355,12 +357,12 @@ export struct IndexPage {
         Text(getOrderStatusDescription(order.status))
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.NORMAL)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .maxLines(1)
 
         Text(`订单号: ${order.orderNo ?? ""}`)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .maxLines(1)
           .margin({ top: 4 })
@@ -371,7 +373,7 @@ export struct IndexPage {
       Text(`¥${(order.payPrice ?? 0).toFixed(2)}`)
         .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.PRIMARY_DARK)
+        .fontColor(resColor('PRIMARY_DARK'))
         .fontFeature(DesignFontFeature.TNUM)
     }
     .width('100%')
@@ -387,9 +389,9 @@ export struct IndexPage {
    */
   @Builder
   ServiceTips() {
-    Text("服务时间 07:00 – 22:00 · 节假日正常营业")
+    Text($r('app.string.service_tips'))
       .fontSize(DesignFontSize.CAPTION)
-      .fontColor(DesignColor.TEXT_SECONDARY)
+      .fontColor(resColor('TEXT_SECONDARY'))
       .width('100%')
       .textAlign(TextAlign.Center)
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
@@ -413,10 +415,10 @@ export struct IndexPage {
         this.AccountDataCard()
 
         // 3. 洗衣服务 + 服务网格
-        Text("洗衣服务")
+        Text($r('app.string.laundry_service'))
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .width('100%')
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
           .margin({ top: DesignDimens.SPACE_MD })
@@ -425,20 +427,20 @@ export struct IndexPage {
 
         // 4. 进行中订单（标题 + 查看全部）
         Row() {
-          Text("进行中订单")
+          Text($r('app.string.in_progress_orders'))
             .fontSize(DesignFontSize.SECTION_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
 
           Blank()
 
           // 「查看全部 ›」16/600 primaryDark + 48dp 热区
           // 落点必须是「全部订单」tab 0（对齐安卓 IndexPage.kt:285-294 OrderRoute.Order(0)，
           // 原传 3 落「清洗中」tab，与「查看全部」语义不符）
-          Text("查看全部 ›")
+          Text($r('app.string.view_all'))
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.PRIMARY_DARK)
+            .fontColor(resColor('PRIMARY_DARK'))
             .padding({ left: DesignDimens.SPACE_SM, top: 16, bottom: 16 })
             .onClick(() => {
               pathStack.pushPathByName(RouteNames.ORDER_LIST, 0)
@@ -454,9 +456,9 @@ export struct IndexPage {
           if ((this.orderList?.length ?? 0) > 0) {
             this.OrderListCard()
           } else {
-            Text("暂无进行中的订单")
+            Text($r('app.string.no_ongoing_orders'))
               .fontSize(DesignFontSize.BODY)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .padding({ top: 32, bottom: 32 })
           }
         }
@@ -483,6 +485,6 @@ export struct IndexPage {
     .align(Alignment.TopStart)
     // 沉浸式：内容避让状态栏（背景延伸）
     .padding({ top: safeTopVp() })
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
   }
 }

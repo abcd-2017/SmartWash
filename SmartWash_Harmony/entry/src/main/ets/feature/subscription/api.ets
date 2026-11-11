@@ -26,6 +26,7 @@
 import { BaseResponse } from '../../network/BaseResponse'
 import { httpUtil } from '../../network/HttpUtil'
 import { jsonNum, jsonStr, mapArray } from '../../network/vo/JsonParse'
+import { resString } from '../../utils/ResourceString'
 
 // ==================== 常量（对齐安卓 SubscriptionConstant） ====================
 
@@ -352,163 +353,163 @@ export function subscriptionPageDataFromJSON<T>(raw: Object | null | undefined,
 
 export class SubscriptionText {
   // 页面标题与页头动作
-  static readonly subscription_title: string = "订阅管理"
-  static readonly subscription_edit_title_new: string = "新建订阅"
-  static readonly subscription_edit_title_edit: string = "编辑订阅"
-  static readonly subscription_detail_title: string = "订阅详情"
-  static readonly subscription_reminder_title: string = "续费提醒"
-  static readonly subscription_action_new: string = "新建"
-  static readonly subscription_action_reminders: string = "提醒"
+  static get subscription_title(): string { return resString('subscription_title') }
+  static get subscription_edit_title_new(): string { return resString('subscription_edit_title_new') }
+  static get subscription_edit_title_edit(): string { return resString('subscription_edit_title_edit') }
+  static get subscription_detail_title(): string { return resString('subscription_detail_title') }
+  static get subscription_reminder_title(): string { return resString('subscription_reminder_title') }
+  static get subscription_action_new(): string { return resString('subscription_action_new') }
+  static get subscription_action_reminders(): string { return resString('subscription_action_reminders') }
 
   // 列表页
-  static readonly subscription_filter_all: string = "全部"
-  static readonly subscription_filter_active: string = "进行中"
-  static readonly subscription_filter_paused: string = "已暂停"
-  static readonly subscription_filter_canceled: string = "已取消"
-  static readonly subscription_filter_finished: string = "已结束"
-  static readonly subscription_empty_message: string = "还没有订阅，把正在按期扣费的服务登记进来吧"
-  static readonly subscription_empty_action: string = "新建订阅"
-  static readonly subscription_error_load: string = "订阅加载失败"
-  static readonly subscription_action_retry: string = "重试"
-  static readonly subscription_amount_per_period: string = "¥%s/期"
-  static readonly subscription_cycle_monthly: string = "每月"
-  static readonly subscription_cycle_every_n_months: string = "每 %d 个月"
-  static readonly subscription_cycle_yearly: string = "每年"
-  static readonly subscription_cycle_every_n_years: string = "每 %d 年"
-  static readonly subscription_renew_date_value: string = "下次续费 %s"
-  static readonly subscription_renew_in_days_format: string = "%d 天后续费"
-  static readonly subscription_renew_today: string = "今日续费"
-  static readonly subscription_renew_overdue_format: string = "已逾期 %d 天"
-  static readonly subscription_renew_days_compact: string = "%d天"
-  static readonly subscription_trial_left_format: string = "试用剩 %d 天"
-  static readonly subscription_trial_last_day: string = "试用今日截止"
-  static readonly subscription_unread_reminders_format: string = "%d 条未读提醒"
+  static get subscription_filter_all(): string { return resString('subscription_filter_all') }
+  static get subscription_filter_active(): string { return resString('subscription_filter_active') }
+  static get subscription_filter_paused(): string { return resString('subscription_filter_paused') }
+  static get subscription_filter_canceled(): string { return resString('subscription_filter_canceled') }
+  static get subscription_filter_finished(): string { return resString('subscription_filter_finished') }
+  static get subscription_empty_message(): string { return resString('subscription_empty_message') }
+  static get subscription_empty_action(): string { return resString('subscription_edit_title_new') }
+  static get subscription_error_load(): string { return resString('subscription_error_load') }
+  static get subscription_action_retry(): string { return resString('subscription_action_retry') }
+  static get subscription_amount_per_period(): string { return resString('subscription_text_subscription_amount_per_period') }
+  static get subscription_cycle_monthly(): string { return resString('subscription_cycle_monthly') }
+  static get subscription_cycle_every_n_months(): string { return resString('subscription_text_subscription_cycle_every_n_months') }
+  static get subscription_cycle_yearly(): string { return resString('subscription_cycle_yearly') }
+  static get subscription_cycle_every_n_years(): string { return resString('subscription_text_subscription_cycle_every_n_years') }
+  static get subscription_renew_date_value(): string { return resString('subscription_text_subscription_renew_date_value') }
+  static get subscription_renew_in_days_format(): string { return resString('subscription_text_subscription_renew_in_days_format') }
+  static get subscription_renew_today(): string { return resString('subscription_renew_today') }
+  static get subscription_renew_overdue_format(): string { return resString('subscription_text_subscription_renew_overdue_format') }
+  static get subscription_renew_days_compact(): string { return resString('subscription_text_subscription_renew_days_compact') }
+  static get subscription_trial_left_format(): string { return resString('subscription_text_subscription_trial_left_format') }
+  static get subscription_trial_last_day(): string { return resString('subscription_trial_last_day') }
+  static get subscription_unread_reminders_format(): string { return resString('subscription_text_subscription_unread_reminders_format') }
 
   // 状态文案
-  static readonly subscription_status_active: string = "进行中"
-  static readonly subscription_status_paused: string = "已暂停"
-  static readonly subscription_status_canceled: string = "已取消"
-  static readonly subscription_status_finished: string = "已结束"
+  static get subscription_status_active(): string { return resString('subscription_filter_active') }
+  static get subscription_status_paused(): string { return resString('subscription_filter_paused') }
+  static get subscription_status_canceled(): string { return resString('subscription_filter_canceled') }
+  static get subscription_status_finished(): string { return resString('subscription_filter_finished') }
 
   // 添加/编辑表单
-  static readonly subscription_form_name_label: string = "名称"
-  static readonly subscription_form_name_hint: string = "如 iCloud+、健身房年卡"
-  static readonly subscription_form_amount_label: string = "每期金额（元）"
+  static get subscription_form_name_label(): string { return resString('subscription_form_name_label') }
+  static get subscription_form_name_hint(): string { return resString('subscription_form_name_hint') }
+  static get subscription_form_amount_label(): string { return resString('subscription_form_amount_label') }
   static readonly subscription_form_amount_hint: string = "21.00"
-  static readonly subscription_form_cycle_label: string = "计费周期"
-  static readonly subscription_form_cycle_month: string = "月付"
-  static readonly subscription_form_cycle_year: string = "年付"
-  static readonly subscription_form_interval_label: string = "间隔期数"
-  static readonly subscription_form_interval_helper: string = "1-36，填 3 表示每 3 期扣一次"
-  static readonly subscription_form_next_renew_label: string = "下次续费日"
-  static readonly subscription_form_pick_date: string = "选择日期"
-  static readonly subscription_form_trial_label: string = "试用截止（可选）"
-  static readonly subscription_form_trial_none: string = "未设置"
-  static readonly subscription_form_trial_clear: string = "清除"
-  static readonly subscription_form_auto_renew_label: string = "自动续费"
-  static readonly subscription_form_auto_renew_helper: string = "开启后到期自动顺延续费日"
-  static readonly subscription_form_remind_label: string = "提醒提前天数"
-  static readonly subscription_form_remind_helper: string = "0-60 天，0 表示仅到期当天提醒"
-  static readonly subscription_form_cancel_url_label: string = "取消网址（可选）"
+  static get subscription_form_cycle_label(): string { return resString('subscription_form_cycle_label') }
+  static get subscription_form_cycle_month(): string { return resString('subscription_form_cycle_month') }
+  static get subscription_form_cycle_year(): string { return resString('subscription_form_cycle_year') }
+  static get subscription_form_interval_label(): string { return resString('subscription_form_interval_label') }
+  static get subscription_form_interval_helper(): string { return resString('subscription_form_interval_helper') }
+  static get subscription_form_next_renew_label(): string { return resString('subscription_form_next_renew_label') }
+  static get subscription_form_pick_date(): string { return resString('subscription_form_pick_date') }
+  static get subscription_form_trial_label(): string { return resString('subscription_form_trial_label') }
+  static get subscription_form_trial_none(): string { return resString('subscription_form_trial_none') }
+  static get subscription_form_trial_clear(): string { return resString('subscription_form_trial_clear') }
+  static get subscription_form_auto_renew_label(): string { return resString('subscription_form_auto_renew_label') }
+  static get subscription_form_auto_renew_helper(): string { return resString('subscription_form_auto_renew_helper') }
+  static get subscription_form_remind_label(): string { return resString('subscription_form_remind_label') }
+  static get subscription_form_remind_helper(): string { return resString('subscription_form_remind_helper') }
+  static get subscription_form_cancel_url_label(): string { return resString('subscription_form_cancel_url_label') }
   static readonly subscription_form_cancel_url_hint: string = "https://…"
-  static readonly subscription_form_cancel_url_helper: string = "须以 http:// 或 https:// 开头"
-  static readonly subscription_action_open_browser: string = "打开"
-  static readonly subscription_action_copy: string = "复制"
-  static readonly subscription_copy_success: string = "已复制"
-  static readonly subscription_open_failed: string = "未找到可打开链接的应用"
-  static readonly subscription_form_cancel_steps_label: string = "取消步骤备忘（可选）"
-  static readonly subscription_form_cancel_steps_hint: string = "如：设置 → Apple ID → 订阅 → iCloud+ → 取消"
-  static readonly subscription_form_note_label: string = "备注（可选）"
-  static readonly subscription_form_note_hint: string = "如：与家人共享"
-  static readonly subscription_submit_create: string = "创建"
-  static readonly subscription_submit_save: string = "保存"
-  static readonly subscription_toast_create_success: string = "创建成功"
-  static readonly subscription_toast_save_success: string = "已保存"
-  static readonly subscription_error_name_required: string = "请填写订阅名称"
-  static readonly subscription_error_name_too_long: string = "名称不能超过 100 字"
-  static readonly subscription_error_amount_invalid: string = "金额须为大于 0 的数字"
-  static readonly subscription_error_next_renew_required: string = "请选择下次续费日"
-  static readonly subscription_error_interval_invalid: string = "间隔期数须为 1-36 的整数"
-  static readonly subscription_error_remind_days_invalid: string = "提醒提前天数须为 0-60 的整数"
-  static readonly subscription_error_cancel_url_invalid: string = "取消网址须以 http:// 或 https:// 开头"
-  static readonly subscription_error_cancel_steps_too_long: string = "取消步骤不能超过 1000 字"
-  static readonly subscription_error_note_too_long: string = "备注不能超过 500 字"
-  static readonly subscription_error_load_detail: string = "详情加载失败"
-  static readonly subscription_error_submit: string = "提交失败，请重试"
+  static get subscription_form_cancel_url_helper(): string { return resString('subscription_form_cancel_url_helper') }
+  static get subscription_action_open_browser(): string { return resString('subscription_action_open_browser') }
+  static get subscription_action_copy(): string { return resString('subscription_action_copy') }
+  static get subscription_copy_success(): string { return resString('subscription_copy_success') }
+  static get subscription_open_failed(): string { return resString('subscription_open_failed') }
+  static get subscription_form_cancel_steps_label(): string { return resString('subscription_form_cancel_steps_label') }
+  static get subscription_form_cancel_steps_hint(): string { return resString('subscription_form_cancel_steps_hint') }
+  static get subscription_form_note_label(): string { return resString('subscription_form_note_label') }
+  static get subscription_form_note_hint(): string { return resString('subscription_form_note_hint') }
+  static get subscription_submit_create(): string { return resString('subscription_submit_create') }
+  static get subscription_submit_save(): string { return resString('subscription_submit_save') }
+  static get subscription_toast_create_success(): string { return resString('subscription_toast_create_success') }
+  static get subscription_toast_save_success(): string { return resString('subscription_toast_save_success') }
+  static get subscription_error_name_required(): string { return resString('subscription_error_name_required') }
+  static get subscription_error_name_too_long(): string { return resString('subscription_error_name_too_long') }
+  static get subscription_error_amount_invalid(): string { return resString('subscription_error_amount_invalid') }
+  static get subscription_error_next_renew_required(): string { return resString('subscription_error_next_renew_required') }
+  static get subscription_error_interval_invalid(): string { return resString('subscription_error_interval_invalid') }
+  static get subscription_error_remind_days_invalid(): string { return resString('subscription_error_remind_days_invalid') }
+  static get subscription_error_cancel_url_invalid(): string { return resString('subscription_error_cancel_url_invalid') }
+  static get subscription_error_cancel_steps_too_long(): string { return resString('subscription_error_cancel_steps_too_long') }
+  static get subscription_error_note_too_long(): string { return resString('subscription_error_note_too_long') }
+  static get subscription_error_load_detail(): string { return resString('subscription_error_load_detail') }
+  static get subscription_error_submit(): string { return resString('subscription_error_submit') }
 
   // 详情页
-  static readonly subscription_detail_amount: string = "每期金额"
-  static readonly subscription_detail_cycle: string = "计费周期"
-  static readonly subscription_detail_next_renew: string = "下次续费日"
-  static readonly subscription_detail_trial_end: string = "试用截止"
-  static readonly subscription_detail_auto_renew: string = "自动续费"
-  static readonly subscription_detail_auto_renew_on: string = "开启"
-  static readonly subscription_detail_auto_renew_off: string = "关闭"
-  static readonly subscription_detail_status: string = "状态"
-  static readonly subscription_detail_remind_days: string = "提前提醒"
-  static readonly subscription_detail_remind_days_format: string = "提前 %d 天"
-  static readonly subscription_detail_remind_days_zero: string = "仅当天提醒"
-  static readonly subscription_detail_note: string = "备注"
+  static get subscription_detail_amount(): string { return resString('subscription_detail_amount') }
+  static get subscription_detail_cycle(): string { return resString('subscription_form_cycle_label') }
+  static get subscription_detail_next_renew(): string { return resString('subscription_form_next_renew_label') }
+  static get subscription_detail_trial_end(): string { return resString('subscription_detail_trial_end') }
+  static get subscription_detail_auto_renew(): string { return resString('subscription_form_auto_renew_label') }
+  static get subscription_detail_auto_renew_on(): string { return resString('subscription_detail_auto_renew_on') }
+  static get subscription_detail_auto_renew_off(): string { return resString('subscription_detail_auto_renew_off') }
+  static get subscription_detail_status(): string { return resString('subscription_detail_status') }
+  static get subscription_detail_remind_days(): string { return resString('subscription_detail_remind_days') }
+  static get subscription_detail_remind_days_format(): string { return resString('subscription_text_subscription_detail_remind_days_format') }
+  static get subscription_detail_remind_days_zero(): string { return resString('subscription_detail_remind_days_zero') }
+  static get subscription_detail_note(): string { return resString('subscription_detail_note') }
   static readonly subscription_value_none: string = "—"
-  static readonly subscription_action_edit: string = "编辑"
-  static readonly subscription_action_pause: string = "暂停"
-  static readonly subscription_action_resume: string = "恢复"
-  static readonly subscription_action_cancel_sub: string = "取消订阅"
-  static readonly subscription_action_finish: string = "结束使用"
-  static readonly subscription_action_delete: string = "删除"
-  static readonly subscription_confirm_cancel_title: string = "取消订阅"
-  static readonly subscription_confirm_cancel_message: string = "取消后不再续费且不可恢复为进行中（数据保留），确定取消「%s」？"
-  static readonly subscription_confirm_finish_title: string = "结束使用"
-  static readonly subscription_confirm_finish_message: string = "标记为结束后该订阅只读、不可再打卡，确定结束「%s」？"
-  static readonly subscription_confirm_delete_title: string = "删除订阅"
-  static readonly subscription_confirm_delete_message: string = "删除将同时清空打卡记录与提醒，且不可恢复，确定删除「%s」？"
-  static readonly subscription_confirm_delete_usage_title: string = "撤销打卡"
-  static readonly subscription_confirm_delete_usage_message: string = "确定撤销 %s 的使用打卡？"
-  static readonly subscription_terminal_readonly: string = "订阅已结束，信息仅供查看"
-  static readonly subscription_toast_status_updated: string = "状态已更新"
-  static readonly subscription_toast_delete_success: string = "已删除"
-  static readonly subscription_detail_retry: string = "重新加载"
+  static get subscription_action_edit(): string { return resString('subscription_action_edit') }
+  static get subscription_action_pause(): string { return resString('subscription_action_pause') }
+  static get subscription_action_resume(): string { return resString('subscription_action_resume') }
+  static get subscription_action_cancel_sub(): string { return resString('subscription_action_cancel_sub') }
+  static get subscription_action_finish(): string { return resString('subscription_action_finish') }
+  static get subscription_action_delete(): string { return resString('subscription_action_delete') }
+  static get subscription_confirm_cancel_title(): string { return resString('subscription_action_cancel_sub') }
+  static get subscription_confirm_cancel_message(): string { return resString('subscription_text_subscription_confirm_cancel_message') }
+  static get subscription_confirm_finish_title(): string { return resString('subscription_action_finish') }
+  static get subscription_confirm_finish_message(): string { return resString('subscription_text_subscription_confirm_finish_message') }
+  static get subscription_confirm_delete_title(): string { return resString('subscription_confirm_delete_title') }
+  static get subscription_confirm_delete_message(): string { return resString('subscription_text_subscription_confirm_delete_message') }
+  static get subscription_confirm_delete_usage_title(): string { return resString('subscription_confirm_delete_usage_title') }
+  static get subscription_confirm_delete_usage_message(): string { return resString('subscription_text_subscription_confirm_delete_usage_message') }
+  static get subscription_terminal_readonly(): string { return resString('subscription_terminal_readonly') }
+  static get subscription_toast_status_updated(): string { return resString('subscription_toast_status_updated') }
+  static get subscription_toast_delete_success(): string { return resString('subscription_toast_delete_success') }
+  static get subscription_detail_retry(): string { return resString('subscription_detail_retry') }
 
   // 使用统计
-  static readonly subscription_stats_title: string = "使用统计（近 90 天）"
-  static readonly subscription_stats_usage_format: string = "近 90 天使用 %d 次"
-  static readonly subscription_stats_per_use_format: string = "单次折算 ¥%s"
-  static readonly subscription_stats_per_use_none: string = "窗口内暂无使用，暂无单次成本"
-  static readonly subscription_stats_monthly_format: string = "月度折算 ¥%s"
-  static readonly subscription_stats_error: string = "统计加载失败"
+  static get subscription_stats_title(): string { return resString('subscription_stats_title') }
+  static get subscription_stats_usage_format(): string { return resString('subscription_text_subscription_stats_usage_format') }
+  static get subscription_stats_per_use_format(): string { return resString('subscription_text_subscription_stats_per_use_format') }
+  static get subscription_stats_per_use_none(): string { return resString('subscription_stats_per_use_none') }
+  static get subscription_stats_monthly_format(): string { return resString('subscription_text_subscription_stats_monthly_format') }
+  static get subscription_stats_error(): string { return resString('subscription_stats_error') }
 
   // 使用打卡
-  static readonly subscription_usage_title: string = "使用打卡"
-  static readonly subscription_usage_check_in: string = "今日打卡"
-  static readonly subscription_usage_check_in_done: string = "已打卡"
-  static readonly subscription_usage_empty: string = "还没有使用记录，用一次打一次卡"
-  static readonly subscription_usage_error_load: string = "记录加载失败"
-  static readonly subscription_usage_undo: string = "撤销"
-  static readonly subscription_usage_today: string = "今天"
-  static readonly subscription_toast_undo_success: string = "已撤销"
+  static get subscription_usage_title(): string { return resString('subscription_usage_title') }
+  static get subscription_usage_check_in(): string { return resString('subscription_usage_check_in') }
+  static get subscription_usage_check_in_done(): string { return resString('subscription_usage_check_in_done') }
+  static get subscription_usage_empty(): string { return resString('subscription_usage_empty') }
+  static get subscription_usage_error_load(): string { return resString('subscription_usage_error_load') }
+  static get subscription_usage_undo(): string { return resString('subscription_usage_undo') }
+  static get subscription_usage_today(): string { return resString('subscription_usage_today') }
+  static get subscription_toast_undo_success(): string { return resString('subscription_toast_undo_success') }
 
   // 取消路径
-  static readonly subscription_cancel_path_title: string = "取消路径"
-  static readonly subscription_cancel_path_url: string = "取消网址"
-  static readonly subscription_cancel_path_steps: string = "取消步骤"
-  static readonly subscription_cancel_path_empty: string = "未填写取消路径"
+  static get subscription_cancel_path_title(): string { return resString('subscription_cancel_path_title') }
+  static get subscription_cancel_path_url(): string { return resString('subscription_cancel_path_url') }
+  static get subscription_cancel_path_steps(): string { return resString('subscription_cancel_path_steps') }
+  static get subscription_cancel_path_empty(): string { return resString('subscription_cancel_path_empty') }
 
   // 提醒列表
-  static readonly subscription_reminder_filter_unread: string = "未读"
-  static readonly subscription_reminder_filter_all: string = "全部"
-  static readonly subscription_reminder_empty_unread: string = "没有未读提醒"
-  static readonly subscription_reminder_empty_all: string = "暂无提醒"
-  static readonly subscription_reminder_error_load: string = "提醒加载失败"
-  static readonly subscription_reminder_type_renew: string = "续费提醒"
-  static readonly subscription_reminder_type_trial_end: string = "试用截止"
-  static readonly subscription_reminder_date_format: string = "应提醒 %s"
-  static readonly subscription_reminder_read_tag: string = "已读"
+  static get subscription_reminder_filter_unread(): string { return resString('subscription_reminder_filter_unread') }
+  static get subscription_reminder_filter_all(): string { return resString('subscription_filter_all') }
+  static get subscription_reminder_empty_unread(): string { return resString('subscription_reminder_empty_unread') }
+  static get subscription_reminder_empty_all(): string { return resString('subscription_reminder_empty_all') }
+  static get subscription_reminder_error_load(): string { return resString('subscription_reminder_error_load') }
+  static get subscription_reminder_type_renew(): string { return resString('subscription_reminder_title') }
+  static get subscription_reminder_type_trial_end(): string { return resString('subscription_detail_trial_end') }
+  static get subscription_reminder_date_format(): string { return resString('subscription_text_subscription_reminder_date_format') }
+  static get subscription_reminder_read_tag(): string { return resString('subscription_reminder_read_tag') }
   /** 未读红点读屏描述（颜色不是唯一信息载体，§10；对齐安卓 subscription_reminder_unread_dot） */
-  static readonly subscription_reminder_unread_dot: string = "未读提醒"
+  static get subscription_reminder_unread_dot(): string { return resString('subscription_reminder_unread_dot') }
 
   // 日期弹窗
-  static readonly subscription_date_confirm: string = "确定"
-  static readonly subscription_date_cancel: string = "取消"
+  static get subscription_date_confirm(): string { return resString('subscription_date_confirm') }
+  static get subscription_date_cancel(): string { return resString('subscription_date_cancel') }
 }
 
 // ==================== 接口封装 ====================

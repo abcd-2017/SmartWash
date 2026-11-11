@@ -11,7 +11,7 @@
 // - 内容依赖状态的组件一律 @ComponentV2 + @Param/@Event（@Builder 按值传参不响应更新）；
 // - 弹窗「先关窗再回调」；弹窗内输入态由弹窗自持，避免父页状态注入不同步。
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
 import {
   REVIEW_MATERIAL_TITLE_MAX_PAGES,
   REVIEW_PAGE_SIZE,
@@ -25,6 +25,7 @@ import {
 import { AppButton, AppButtonVariant, EmptyState } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
 import { pathStack } from '../../../utils/PathStackUtil'
+import { resColor } from '../../../utils/ResourceColor'
 
 // ==================== 静态标签 chip ====================
 
@@ -32,8 +33,8 @@ import { pathStack } from '../../../utils/PathStackUtil'
 @ComponentV2
 export struct ReviewTagChip {
   @Param text: string = ''
-  @Param containerColor: number = DesignColor.SURFACE_VARIANT
-  @Param contentColor: number = DesignColor.TEXT_SECONDARY
+  @Param containerColor: number = resColor('SURFACE_VARIANT')
+  @Param contentColor: number = resColor('TEXT_SECONDARY')
 
   build() {
     Text(this.text)
@@ -58,8 +59,8 @@ export struct NewCardChip {
   build() {
     ReviewTagChip({
       text: ReviewText.review_card_new,
-      containerColor: DesignColor.PRIMARY_CONTAINER,
-      contentColor: DesignColor.ON_PRIMARY_CONTAINER
+      containerColor: resColor('PRIMARY_CONTAINER'),
+      contentColor: resColor('ON_PRIMARY_CONTAINER')
     })
   }
 }
@@ -84,10 +85,10 @@ export struct DueTypeChip {
     } else {
       ReviewTagChip({
         text: this.isDaily() ? ReviewText.review_due_badge_daily : ReviewText.review_due_badge_minute,
-        containerColor: this.isDaily() ? DesignColor.ICON_CONTAINER_BLUE : DesignColor.WARNING_CONTAINER,
+        containerColor: this.isDaily() ? resColor('ICON_CONTAINER_BLUE') : resColor('WARNING_CONTAINER'),
         // 分钟级角标小字：WARNING 橙 on WARNING_CONTAINER 浅色仅 2.51:1 破线（跨端矩阵 #2），
         // 改成对 ink 档 ON_WARNING_CONTAINER（浅 #92400E ≈5.9:1 / 深 #ECB36A ≈7.6:1，双主题达标）
-        contentColor: this.isDaily() ? DesignColor.ICON_FOREGROUND_BLUE : DesignColor.ON_WARNING_CONTAINER
+        contentColor: this.isDaily() ? resColor('ICON_FOREGROUND_BLUE') : resColor('ON_WARNING_CONTAINER')
       })
     }
   }
@@ -101,8 +102,8 @@ export struct CardStateChip {
   build() {
     ReviewTagChip({
       text: reviewCardStateLabel(this.state),
-      containerColor: DesignColor.SURFACE_VARIANT,
-      contentColor: DesignColor.TEXT_SECONDARY
+      containerColor: resColor('SURFACE_VARIANT'),
+      contentColor: resColor('TEXT_SECONDARY')
     })
   }
 }
@@ -116,18 +117,18 @@ const RATING_DISABLED_ALPHA: number = 0.38
  * 评分按钮容器色 — 各语义色浅底容器档（粉=Again / 橙=Hard / 绿=Good / 蓝=Easy）。
  * 原语义实底 + ON_PRIMARY 白字在浅色模式低于 4.5:1 红线（HARD 2.76:1 / EASY 2.92:1 /
  * GOOD 3.49:1，跨端矩阵 #3），对齐安卓改「语义浅底 + ink 深字」成对令牌；
- * 主题切换自动跟随（深色取各令牌 Dark 档，applyDesignTheme 已回写双主题）。
+ * 主题切换自动跟随（深色取各令牌 Dark 档，资源限定符已自动切换双主题）。
  */
 export function reviewRatingColor(rating: ReviewRating): number {
   switch (rating) {
     case ReviewRating.AGAIN:
-      return DesignColor.ICON_CONTAINER_PINK
+      return resColor('ICON_CONTAINER_PINK')
     case ReviewRating.HARD:
-      return DesignColor.WARNING_CONTAINER
+      return resColor('WARNING_CONTAINER')
     case ReviewRating.GOOD:
-      return DesignColor.ICON_CONTAINER_GREEN
+      return resColor('ICON_CONTAINER_GREEN')
     default:
-      return DesignColor.WATER_SOFT
+      return resColor('WATER_SOFT')
   }
 }
 
@@ -135,13 +136,13 @@ export function reviewRatingColor(rating: ReviewRating): number {
 export function reviewRatingContentColor(rating: ReviewRating): number {
   switch (rating) {
     case ReviewRating.AGAIN:
-      return DesignColor.DANGER_INK
+      return resColor('DANGER_INK')
     case ReviewRating.HARD:
-      return DesignColor.ON_WARNING_CONTAINER
+      return resColor('ON_WARNING_CONTAINER')
     case ReviewRating.GOOD:
-      return DesignColor.TEXT_GREEN_ON_TINT
+      return resColor('TEXT_GREEN_ON_TINT')
     default:
-      return DesignColor.TEXT_PRIMARY
+      return resColor('TEXT_PRIMARY')
   }
 }
 
@@ -232,12 +233,12 @@ export struct StudyProgressBar {
       Column()
         .width('100%')
         .height(4)
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
+        .backgroundColor(resColor('SURFACE_VARIANT'))
 
       Column()
         .width(`${Math.min(100, Math.max(0, this.fraction * 100))}%`)
         .height(4)
-        .backgroundColor(DesignColor.PRIMARY)
+        .backgroundColor(resColor('PRIMARY'))
         .animation({ curve: MotionTiming.SPRING })
     }
     .width('100%')
@@ -265,7 +266,7 @@ export struct ReviewPageHeader {
       Column() {
         SymbolGlyph($r('sys.symbol.chevron_left'))
           .fontSize(24)
-          .fontColor([DesignColor.TEXT_PRIMARY])
+          .fontColor([resColor('TEXT_PRIMARY')])
       }
       .width(DesignDimens.BACK_HIT_AREA)
       .height(DesignDimens.BACK_HIT_AREA)
@@ -278,7 +279,7 @@ export struct ReviewPageHeader {
       Text(this.title)
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
 
       Blank()
 
@@ -287,7 +288,7 @@ export struct ReviewPageHeader {
         Text(this.actionText)
           .fontSize(DesignFontSize.BUTTON_TEXT)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_GREEN)
+          .fontColor(resColor('TEXT_GREEN'))
           .padding({ left: 12, right: 12, top: 12, bottom: 12 })
           .constraintSize({ minHeight: 48 })
           .onClick(() => {
@@ -410,7 +411,7 @@ export struct ReviewCardDialog {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(DesignColor.TEXT_SECONDARY)
+      .fontColor(resColor('TEXT_SECONDARY'))
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
@@ -423,13 +424,13 @@ export struct ReviewCardDialog {
             Text(ReviewText.review_card_dialog_title)
               .fontSize(DesignFontSize.STATUS_LARGE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
 
             if (this.materialTitle.length > 0) {
               // 可读上下文信息（非装饰）：TEXT_TERTIARY 双主题均破 4.5:1（M3）
               Text(this.materialTitle)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
                 .maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .margin({ top: DesignDimens.SPACE_XXS })
@@ -440,11 +441,11 @@ export struct ReviewCardDialog {
               // 多行 TextArea：单行 TextInput 内长文本无法换行回看（对齐安卓 minLines=2，M9）
               TextArea({ text: this.question, placeholder: ReviewText.review_card_dialog_question_hint })
                 .fontSize(DesignFontSize.BODY)
-                .backgroundColor(DesignColor.SURFACE_VARIANT)
+                .backgroundColor(resColor('SURFACE_VARIANT'))
                 .borderRadius(DesignDimens.INPUT_RADIUS)
                 .borderWidth(1)
-                .borderColor(DesignColor.OUTLINE)
-                .placeholderColor(DesignColor.TEXT_TERTIARY)
+                .borderColor(resColor('OUTLINE'))
+                .placeholderColor(resColor('TEXT_TERTIARY'))
                 .placeholderFont({ size: DesignFontSize.BODY })
                 .maxLength(1000)
                 .constraintSize({ minHeight: 48 })
@@ -461,11 +462,11 @@ export struct ReviewCardDialog {
               // 多行 TextArea（对齐安卓 minLines=3，M9）
               TextArea({ text: this.answer, placeholder: ReviewText.review_card_dialog_answer_hint })
                 .fontSize(DesignFontSize.BODY)
-                .backgroundColor(DesignColor.SURFACE_VARIANT)
+                .backgroundColor(resColor('SURFACE_VARIANT'))
                 .borderRadius(DesignDimens.INPUT_RADIUS)
                 .borderWidth(1)
-                .borderColor(DesignColor.OUTLINE)
-                .placeholderColor(DesignColor.TEXT_TERTIARY)
+                .borderColor(resColor('OUTLINE'))
+                .placeholderColor(resColor('TEXT_TERTIARY'))
                 .placeholderFont({ size: DesignFontSize.BODY })
                 .maxLength(2000)
                 .constraintSize({ minHeight: 72 })
@@ -481,7 +482,7 @@ export struct ReviewCardDialog {
               Text(this.errorMessage)
                 .fontSize(DesignFontSize.CAPTION)
                 .lineHeight(DesignFontSize.CAPTION + 4)
-                .fontColor(DesignColor.ERROR)
+                .fontColor(resColor('ERROR'))
                 .margin({ top: DesignDimens.SPACE_SM })
             }
           }
@@ -529,11 +530,11 @@ export struct ReviewCardDialog {
         })
       }
       .width('100%')
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: DesignColor.SHADOW_COLOR_FLOAT,
+        color: resColor('SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })

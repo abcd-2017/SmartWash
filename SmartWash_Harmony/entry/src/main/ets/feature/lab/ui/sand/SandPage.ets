@@ -7,30 +7,32 @@
  * reduced motion：默认暂停（静帧）+ 用户主动「播放」（当前 SDK 无等价 API，常量 false）。
  */
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { SandElement, SandSimulator } from '../../core/SandSimulator'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 页面文案 */
 class SandText {
-  static readonly title: string = '落沙实验室'
-  static readonly hint: string = '拖动手指涂抹，看元素互相反应'
-  static readonly currentFormat: string = '当前：%s'
-  static readonly clear: string = '清除'
-  static readonly play: string = '播放'
-  static readonly pause: string = '暂停'
-  static readonly elementEmpty: string = '橡皮'
-  static readonly elementSand: string = '沙'
-  static readonly elementWater: string = '水'
-  static readonly elementDetergent: string = '洗衣粉'
-  static readonly elementFoam: string = '泡沫'
-  static readonly elementStain: string = '污渍'
-  static readonly elementFabric: string = '织物'
-  static readonly elementFire: string = '火'
-  static readonly elementSteam: string = '蒸汽'
+  static get title(): string { return resString('lab_toy_sand') }
+  static get hint(): string { return resString('lab_sand_hint') }
+  static get currentFormat(): string { return resString('sand_text_current_format') }
+  static get clear(): string { return resString('lab_sand_clear') }
+  static get play(): string { return resString('lab_fish_play') }
+  static get pause(): string { return resString('lab_breath_pause') }
+  static get elementEmpty(): string { return resString('lab_sand_element_empty') }
+  static get elementSand(): string { return resString('lab_sand_element_sand') }
+  static get elementWater(): string { return resString('lab_sand_element_water') }
+  static get elementDetergent(): string { return resString('lab_sand_element_detergent') }
+  static get elementFoam(): string { return resString('lab_sand_element_foam') }
+  static get elementStain(): string { return resString('lab_sand_element_stain') }
+  static get elementFabric(): string { return resString('lab_sand_element_fabric') }
+  static get elementFire(): string { return resString('lab_sand_element_fire') }
+  static get elementSteam(): string { return resString('lab_sand_element_steam') }
 }
 
 /** 目标格距（vp）：按屏宽自适应约 100 列 */
@@ -76,15 +78,15 @@ export struct SandPage {
   // drawSand/swatchColor 重读新令牌（原快照导致实时切换停留旧色）
   private paletteColors(): number[] {
     return [
-      DesignColor.SURFACE_VARIANT,
-      DesignColor.WARNING,
-      DesignColor.WATER,
-      DesignColor.ICON_FOREGROUND_BLUE,
-      DesignColor.ICON_FOREGROUND_PURPLE,
-      DesignColor.ICON_FOREGROUND_PINK,
-      DesignColor.PRIMARY,
-      DesignColor.ERROR,
-      DesignColor.TEXT_SECONDARY,
+      resColor('SURFACE_VARIANT'),
+      resColor('WARNING'),
+      resColor('WATER'),
+      resColor('ICON_FOREGROUND_BLUE'),
+      resColor('ICON_FOREGROUND_PURPLE'),
+      resColor('ICON_FOREGROUND_PINK'),
+      resColor('PRIMARY'),
+      resColor('ERROR'),
+      resColor('TEXT_SECONDARY'),
     ]
   }
 
@@ -189,7 +191,7 @@ export struct SandPage {
     // 调色板每帧即时求值（深浅色切换后下一帧即取新令牌）
     const palette: number[] = this.paletteColors()
     ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = DesignColor.SURFACE_VARIANT
+    ctx.fillStyle = resColor('SURFACE_VARIANT')
     ctx.fillRect(0, 0, width, height)
     const cellW: number = width / this.gridCols
     const cellH: number = height / this.gridRows
@@ -239,7 +241,7 @@ export struct SandPage {
   /** 调色板色块色 */
   private swatchColor(element: SandElement): number {
     if (element === SandElement.EMPTY) {
-      return DesignColor.SURFACE_VARIANT
+      return resColor('SURFACE_VARIANT')
     }
     return this.paletteColors()[Number(element)]
   }
@@ -264,13 +266,13 @@ export struct SandPage {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .shadow({
       radius: 12,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -295,7 +297,7 @@ export struct SandPage {
       .borderRadius(24)
       .backgroundColor(this.swatchColor(element))
       .borderWidth(this.selected === element ? 3 : 1)
-      .borderColor(this.selected === element ? DesignColor.PRIMARY : DesignColor.OUTLINE)
+      .borderColor(this.selected === element ? resColor('PRIMARY') : resColor('OUTLINE'))
       .accessibilityText(this.elementLabel(element))
       .onClick(() => {
         this.selected = element
@@ -317,7 +319,7 @@ export struct SandPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点与调色板
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点与调色板
       // 即时求值点重读新值（静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets；
       // 页面级引擎循环（aboutToAppear/startLoop）保持在宿主之外，页面组件本体不在子树内）
       ThemeRefreshV2() {
@@ -326,7 +328,7 @@ export struct SandPage {
 
         Text(SandText.hint)
           .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
             top: DesignDimens.SPACE_XS })
 
@@ -337,7 +339,7 @@ export struct SandPage {
             .borderRadius(DesignDimens.CARD_RADIUS)
             .clip(true)
             .borderWidth(1)
-            .borderColor(DesignColor.OUTLINE)
+            .borderColor(resColor('OUTLINE'))
             .onAreaChange((oldValue: Area, newValue: Area) => {
               this.onCanvasAreaChange(oldValue, newValue)
             })
@@ -364,7 +366,7 @@ export struct SandPage {
           Text(SandText.currentFormat.replace('%s', this.elementLabel(this.selected)))
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .layoutWeight(1)
 
           SandTextButton({
@@ -396,7 +398,7 @@ export struct SandPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -417,13 +419,13 @@ struct SandTextButton {
     Text(this.text)
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(DesignColor.TEXT_PRIMARY)
+      .fontColor(resColor('TEXT_PRIMARY'))
       // 视觉胶囊不变，热区抬到 48dp 下限（对齐安卓 heightIn(min=48)）
       .constraintSize({ minHeight: 48 })
       .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
         top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
       .borderRadius(DesignDimens.RADIUS_MD)
-      .backgroundColor(DesignColor.SURFACE_VARIANT)
+      .backgroundColor(resColor('SURFACE_VARIANT'))
       .onClick(() => {
         this.click()
       })

@@ -9,10 +9,12 @@ import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { AppButton, AppButtonVariant, AppInfoDialog, EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from '@ohos.vibrator'
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 @Builder
 export function LaundryBuilder() {
@@ -39,14 +41,14 @@ struct Laundry {
   private defaultItemId: number = -1
   // 未选套餐提示弹窗（对齐安卓 AppInfoDialog，替代 toast 形态）
   private selectDialogController: CustomDialogController = new CustomDialogController({
-    builder: AppInfoDialog({ message: "请选择套餐" }),
+    builder: AppInfoDialog({ message: resString('please_select_package') }),
     autoCancel: true,
     alignment: DialogAlignment.Center,
     customStyle: true
   })
   // 更换学校提示弹窗（对齐安卓「更换学校信息请联系客服！」）
   private changeSchoolDialogController: CustomDialogController = new CustomDialogController({
-    builder: AppInfoDialog({ message: "更换学校信息请联系客服！" }),
+    builder: AppInfoDialog({ message: resString('change_school_contact_service') }),
     autoCancel: true,
     alignment: DialogAlignment.Center,
     customStyle: true
@@ -70,7 +72,7 @@ struct Laundry {
       if (res.code === HttpStatusCode.Ok) {
         this.userInfo = res.data
       } else {
-        showToastSafety(res.message, "用户信息加载失败")
+        showToastSafety(res.message, resString('laundry_1'))
       }
       if (itemRes.code === HttpStatusCode.Ok) {
         this.laundryItemList = itemRes.data
@@ -78,12 +80,12 @@ struct Laundry {
       } else {
         logger.warn('laundry', `套餐列表加载失败 code=${itemRes.code} message=${itemRes.message ?? ""}`)
         logger.warn('laundry', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(itemRes.message, "套餐加载失败")
+        showToastSafety(itemRes.message, resString('laundry_2'))
         this.loadFailed = true
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 pageLoading 卡死永久骨架
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('laundry_3'))
       this.loadFailed = true
     } finally {
       this.pageLoading = false
@@ -118,12 +120,12 @@ struct Laundry {
         this.applyRoutePreselection()
       } else {
         logger.warn('laundry', `套餐重试仍失败 code=${itemRes.code} message=${itemRes.message ?? ""}`)
-        showToastSafety(itemRes.message, "套餐加载失败")
+        showToastSafety(itemRes.message, resString('laundry_2'))
         this.loadFailed = true
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 pageLoading 卡死永久骨架
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('laundry_3'))
       this.loadFailed = true
     } finally {
       this.pageLoading = false
@@ -167,11 +169,11 @@ struct Laundry {
           pathStack.pushPathByName(RouteNames.PAYMENT, res.data)
         } else {
           logger.warn('laundry', `下单成功但未返回订单号 code=${res.code} message=${res.message ?? ""}`)
-          showToastSafety(res.message, "下单失败，请稍后重试")
+          showToastSafety(res.message, resString('laundry_4'))
         }
       } else {
         logger.warn('laundry', `预约被拒绝 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "下单失败，请稍后重试")
+        showToastSafety(res.message, resString('laundry_4'))
       }
     } finally {
       this.reserving = false
@@ -190,7 +192,7 @@ struct Laundry {
           .width(36)
           .height(36)
           .borderRadius(DesignDimens.RADIUS_SMALL)
-          .backgroundColor(this.selectItemId === item.itemId ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE_VARIANT)
+          .backgroundColor(this.selectItemId === item.itemId ? resColor('PRIMARY_LIGHT') : resColor('SURFACE_VARIANT'))
           .animation(MotionTiming.ENTER)
 
         // 空心环：选中 primary / 未选 outline
@@ -200,14 +202,14 @@ struct Laundry {
           .borderRadius(10)
           .border({
             width: 1.5,
-            color: this.selectItemId === item.itemId ? DesignColor.PRIMARY : DesignColor.OUTLINE
+            color: this.selectItemId === item.itemId ? resColor('PRIMARY') : resColor('OUTLINE')
           })
           .animation(MotionTiming.ENTER)
 
         // 勾：选中时自圆心弹簧长出（尺寸恒定，仅内容显现/隐去）
         SymbolGlyph($r('sys.symbol.checkmark'))
           .fontSize(12)
-          .fontColor([DesignColor.PRIMARY])
+          .fontColor([resColor('PRIMARY')])
           .scale({ x: this.selectItemId === item.itemId ? 1 : 0, y: this.selectItemId === item.itemId ? 1 : 0 })
           .animation(MotionTiming.ENTER)
       }
@@ -220,11 +222,11 @@ struct Laundry {
         Text(`${item.itemName}`)
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
 
         Text(`${item.description}`)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .margin({ top: 4 })
       }
       .alignItems(HorizontalAlign.Start)
@@ -235,25 +237,25 @@ struct Laundry {
         .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontFeature(DesignFontFeature.TNUM)
-        .fontColor(DesignColor.PRIMARY_DARK)
+        .fontColor(resColor('PRIMARY_DARK'))
         .maxLines(1)
         .margin({ left: 18 })
     }
     .width("100%")
     .alignItems(VerticalAlign.Center)
-    .backgroundColor(this.selectItemId === item.itemId ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE)
+    .backgroundColor(this.selectItemId === item.itemId ? resColor('PRIMARY_LIGHT') : resColor('SURFACE'))
     .padding(DesignDimens.CARD_PADDING)
     // 卡片唯一画法（规范 §3.1）：1px 描边 + level1 卡片阴影；
     // 描边宽度不再随选中变化（对齐安卓 v0.4），选中强调由 primaryLight 底 + primary 描边承担
     .border({
       width: 1,
-      color: this.selectItemId === item.itemId ? DesignColor.PRIMARY : DesignColor.OUTLINE,
+      color: this.selectItemId === item.itemId ? resColor('PRIMARY') : resColor('OUTLINE'),
       radius: DesignDimens.CARD_RADIUS
     })
     .borderRadius(DesignDimens.CARD_RADIUS)
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -285,20 +287,20 @@ struct Laundry {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack({ alignContent: Alignment.Bottom }) {
         Scroll() {
           Column() {
             // 页头（V1：公共 PageHeader —— 22/600 标题 + 48dp 返回热区 + 内置连击防抖）
-            PageHeader({ title: "预约寄存" })
+            PageHeader({ title: resString('book_locker') })
 
             // 投递柜标题（T1：对齐安卓 delivery_locker）
-            Text("投递柜")
+            Text($r('app.string.delivery_locker'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .width("100%")
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
@@ -314,19 +316,19 @@ struct Laundry {
                   icon: $r('sys.symbol.circle_below_local_filled'),
                   sizeValue: 44,
                   iconSize: 24,
-                  containerColor: DesignColor.PRIMARY_LIGHT,
-                  iconColor: DesignColor.PRIMARY_DARK
+                  containerColor: resColor('PRIMARY_LIGHT'),
+                  iconColor: resColor('PRIMARY_DARK')
                 })
 
                 Column() {
                   Text(`${this.userInfo?.schoolVo?.schoolName}`)
                     .fontSize(DesignFontSize.CARD_TITLE)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(DesignColor.TEXT_PRIMARY)
+                    .fontColor(resColor('TEXT_PRIMARY'))
 
                   Text(`${this.userInfo?.schoolVo?.location}`)
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(DesignColor.TEXT_SECONDARY)
+                    .fontColor(resColor('TEXT_SECONDARY'))
                     .maxLines(1)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                 }
@@ -337,10 +339,10 @@ struct Laundry {
                 // 「更换」动作（V7）：16/600 primaryDark + 12/12 热区，弹「联系客服」提示弹窗
                 // 垂直内边距 12 → 16：把触控热区从 42.9vp 抬到 ≥48vp
                 Column() {
-                  Text("更换")
+                  Text($r('app.string.change'))
                     .fontSize(DesignFontSize.BODY)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(DesignColor.PRIMARY_DARK)
+                    .fontColor(resColor('PRIMARY_DARK'))
                     .padding({ left: 12, right: 12, top: 16, bottom: 16 })
                 }
                 .scale({ x: this.changePressed ? 0.97 : 1, y: this.changePressed ? 0.97 : 1 })
@@ -358,12 +360,12 @@ struct Laundry {
               .width("100%")
               .alignItems(VerticalAlign.Center)
               .borderRadius(DesignDimens.CARD_RADIUS)
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
-              .border({ width: 1, color: DesignColor.OUTLINE })
+              .border({ width: 1, color: resColor('OUTLINE') })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: DesignColor.SHADOW_COLOR_CARD,
+                color: resColor('SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: 2
               })
@@ -376,10 +378,10 @@ struct Laundry {
               .height(DesignDimens.SECTION_SPACING)
 
             // 洗护套餐标题
-            Text("洗护套餐")
+            Text($r('app.string.laundry_package'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .width("100%")
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
@@ -409,18 +411,18 @@ struct Laundry {
         .align(Alignment.Top)
         // 沉浸式：内容避让状态栏（背景延伸，问题5/1）
         .padding({ top: safeTopVp() })
-        .backgroundColor(DesignColor.BACKGROUND)
+        .backgroundColor(resColor('BACKGROUND'))
 
         // 底部操作栏（V2/V3：0.5dp 分隔 + 全宽按钮 + 金额内嵌文案，移除左置「预估费用」）
         Column() {
           Divider()
             .strokeWidth(0.5)
-            .color(DesignColor.OUTLINE)
+            .color(resColor('OUTLINE'))
 
           // AppButton 自带 loading 防重（请求中禁点），配合 reserving 拦截连点
           AppButton({
             text: this.selectItemId === null
-              ? "确认预约"
+              ? resString('confirm_booking')
               // 金额统一走 ¥ 前缀（对齐安卓 currency_format ¥%s，避免按钮只显示「确认预约 · 29.90」）
               : `确认预约 · ¥${this.totalPrice?.toFixed(2) ?? "0.00"}`,
             loading: this.reserving,
@@ -436,7 +438,7 @@ struct Laundry {
           })
         }
         .width("100%")
-        .backgroundColor(DesignColor.SURFACE)
+        .backgroundColor(resColor('SURFACE'))
         .zIndex(1)
         .align(Alignment.Bottom)
 
@@ -446,7 +448,7 @@ struct Laundry {
           LoadingState()
           .width("100%")
           .height("100%")
-          .backgroundColor(DesignColor.BACKGROUND)
+          .backgroundColor(resColor('BACKGROUND'))
           .zIndex(2)
         }
 
@@ -454,11 +456,11 @@ struct Laundry {
         if (!this.pageLoading && this.loadFailed) {
           Column() {
             EmptyState({
-              message: "套餐加载失败",
+              message: resString('laundry_2'),
               action: () => {
                 AppButton({
                   small: true,
-                  text: "重试",
+                  text: resString('retry'),
                   variant: AppButtonVariant.SECONDARY,
                   click: () => {
                     this.retryFetchItems()
@@ -470,7 +472,7 @@ struct Laundry {
           }
           .width("100%")
           .height("100%")
-          .backgroundColor(DesignColor.BACKGROUND)
+          .backgroundColor(resColor('BACKGROUND'))
           .justifyContent(FlexAlign.Center)
           .zIndex(3)
         }

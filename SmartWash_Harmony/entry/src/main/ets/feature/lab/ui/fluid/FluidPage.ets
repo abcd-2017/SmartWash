@@ -13,25 +13,27 @@
  */
 
 import { image } from '@kit.ImageKit'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
 import { DarkModeStore } from '../../../../constant/DarkModeStore'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppPillTabRow, PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { FluidSimulator } from '../../core/FluidSimulator'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 页面文案（对齐安卓 strings_fluid.xml） */
 class FluidText {
-  static readonly title: string = '指尖流体'
-  static readonly hint: string = '手指划过，搅出彩色漩涡'
-  static readonly presetOxygen: string = '清氧水色'
-  static readonly presetFoam: string = '泡沫白'
-  static readonly presetSand: string = '落沙暖色'
-  static readonly reset: string = '清空重来'
-  static readonly play: string = '播放'
-  static readonly pause: string = '暂停'
-  static readonly unsupported: string = '当前设备不支持流体渲染'
+  static get title(): string { return resString('lab_toy_fluid') }
+  static get hint(): string { return resString('lab_toy_fluid_desc') }
+  static get presetOxygen(): string { return resString('lab_fluid_preset_oxygen') }
+  static get presetFoam(): string { return resString('lab_fluid_preset_foam') }
+  static get presetSand(): string { return resString('lab_fluid_preset_sand') }
+  static get reset(): string { return resString('lab_fluid_reset') }
+  static get play(): string { return resString('lab_fish_play') }
+  static get pause(): string { return resString('lab_breath_pause') }
+  static get unsupported(): string { return resString('lab_fluid_unsupported') }
 }
 
 /** 首次进入顶部提示停留时长（ms） */
@@ -46,7 +48,7 @@ const FRAME_INTERVAL_MS: number = 33
  * 必须使用点即时求值——模块级 const 会在加载时冻结令牌值，深浅色切换后模拟循环仍拿旧色。
  */
 function canvasBaseColor(isDark: boolean): number {
-  return isDark ? DesignColor.SURFACE_VARIANT : DesignColor.ON_PRIMARY_SOFT
+  return isDark ? resColor('SURFACE_VARIANT') : resColor('ON_PRIMARY_SOFT')
 }
 
 /** ARGB 令牌色 → [r,g,b] 0..1（渲染层只认 0..1 通道） */
@@ -68,23 +70,23 @@ function paletteOf(isDark: boolean, presetIndex: number): number[][] {
     case 1:
       // 泡沫白：浅板白 + 水色浅底 + 浅绿；深板近白前景 + 水色 + 亮绿
       return [
-        rgbOf(isDark ? DesignColor.TEXT_PRIMARY : DesignColor.SURFACE),
-        rgbOf(isDark ? DesignColor.WATER : DesignColor.WATER_SOFT),
-        rgbOf(isDark ? DesignColor.ON_PRIMARY_SOFT : DesignColor.PRIMARY_SOFT),
+        rgbOf(isDark ? resColor('TEXT_PRIMARY') : resColor('SURFACE')),
+        rgbOf(isDark ? resColor('WATER') : resColor('WATER_SOFT')),
+        rgbOf(isDark ? resColor('ON_PRIMARY_SOFT') : resColor('PRIMARY_SOFT')),
       ]
     case 2:
       // 落沙暖色：暖橙 + 朱红 + 暖沙浅底；深板第三槽改亮暖橙前景
       return [
-        rgbOf(DesignColor.ONGOING),
-        rgbOf(DesignColor.DANGER),
-        rgbOf(isDark ? DesignColor.ON_WARNING_CONTAINER : DesignColor.WARNING_CONTAINER),
+        rgbOf(resColor('ONGOING')),
+        rgbOf(resColor('DANGER')),
+        rgbOf(isDark ? resColor('ON_WARNING_CONTAINER') : resColor('WARNING_CONTAINER')),
       ]
     default:
       // 清氧水色：水蓝 + 自然绿 + 水色浅底；深板第三槽改亮绿前景
       return [
-        rgbOf(DesignColor.WATER),
-        rgbOf(DesignColor.PRIMARY),
-        rgbOf(isDark ? DesignColor.ON_PRIMARY_SOFT : DesignColor.WATER_SOFT),
+        rgbOf(resColor('WATER')),
+        rgbOf(resColor('PRIMARY')),
+        rgbOf(isDark ? resColor('ON_PRIMARY_SOFT') : resColor('WATER_SOFT')),
       ]
   }
 }
@@ -305,7 +307,7 @@ export struct FluidPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefreshV2() {
       Column() {
@@ -329,11 +331,11 @@ export struct FluidPage {
               Text(FluidText.hint)
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(DesignColor.TEXT_PRIMARY)
-                .backgroundColor(DesignColor.SURFACE)
+                .fontColor(resColor('TEXT_PRIMARY'))
+                .backgroundColor(resColor('SURFACE'))
                 .borderRadius(DesignDimens.RADIUS_FULL)
                 .borderWidth(1)
-                .borderColor(DesignColor.OUTLINE)
+                .borderColor(resColor('OUTLINE'))
                 .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
                   top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             }
@@ -346,11 +348,11 @@ export struct FluidPage {
           if (this.pixelMapFailed) {
             Text(FluidText.unsupported)
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.TEXT_PRIMARY)
-              .backgroundColor(DesignColor.SURFACE)
+              .fontColor(resColor('TEXT_PRIMARY'))
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.RADIUS_FULL)
               .borderWidth(1)
-              .borderColor(DesignColor.OUTLINE)
+              .borderColor(resColor('OUTLINE'))
               .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
                 top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
           }
@@ -374,15 +376,15 @@ export struct FluidPage {
             Column() {
               Text(FluidText.reset)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
             }
             .layoutWeight(1)
             .justifyContent(FlexAlign.Center)
             .constraintSize({ minHeight: 48 })
             .borderRadius(DesignDimens.BUTTON_RADIUS)
-            .backgroundColor(DesignColor.SURFACE)
+            .backgroundColor(resColor('SURFACE'))
             .borderWidth(1)
-            .borderColor(DesignColor.OUTLINE)
+            .borderColor(resColor('OUTLINE'))
             .onClick(() => {
               this.sim.reset()
               this.drawFluid()
@@ -393,15 +395,15 @@ export struct FluidPage {
               Column() {
                 Text(this.playing ? FluidText.pause : FluidText.play)
                   .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(DesignColor.TEXT_PRIMARY)
+                  .fontColor(resColor('TEXT_PRIMARY'))
               }
               .layoutWeight(1)
               .justifyContent(FlexAlign.Center)
               .constraintSize({ minHeight: 48 })
               .borderRadius(DesignDimens.BUTTON_RADIUS)
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               .borderWidth(1)
-              .borderColor(DesignColor.OUTLINE)
+              .borderColor(resColor('OUTLINE'))
               .margin({ left: DesignDimens.SPACE_MD })
               .onClick(() => {
                 this.togglePlay()
@@ -419,7 +421,7 @@ export struct FluidPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

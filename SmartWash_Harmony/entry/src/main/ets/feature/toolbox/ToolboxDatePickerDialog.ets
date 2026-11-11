@@ -7,10 +7,12 @@
 // 选中结果以「yyyy-MM-dd」本地日期串回传（Android 侧 DatePicker 按 UTC 取整日、这里按本地时间取整日，
 // 二者对「用户选中的那一天」语义一致；短链过期时刻由 ShortCodeRules.expireAtFor 补 23:59:59）。
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
 import { ToolboxText } from './api'
 import { formatDate } from './ShortCodeRules'
 import { showToastSafety } from '../../utils/ToastUtil'
+import { resColor } from '../../utils/ResourceColor'
+import { resString } from '../../utils/ResourceString'
 
 /** 可选下限：今日 00:00（本地时区）。短链过期日不允许选过去日期（对齐安卓 selectableDates 语义）。 */
 function minSelectableDate(): Date {
@@ -24,7 +26,7 @@ export struct ToolboxDatePickerDialog {
   controller: CustomDialogController
   /** 已选日期「yyyy-MM-dd」，空串表示未选（默认今天） */
   @Prop initialDate: string = ""
-  @Prop title: string = "选择过期日期"
+  @Prop title: string = resString('toolbox_expiry_custom_pick')
   @State selected: Date = new Date()
   @State entered: boolean = false
   onConfirm: (date: string) => void = () => {
@@ -62,7 +64,7 @@ export struct ToolboxDatePickerDialog {
         Text(this.title)
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .width('100%')
         .margin({ bottom: 12 })
 
@@ -83,7 +85,7 @@ export struct ToolboxDatePickerDialog {
           .layoutWeight(1)
           .height(44)
           .backgroundColor(Color.Transparent)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .fontSize(DesignFontSize.BODY)
           .borderRadius(0)
           .onClick(() => {
@@ -93,7 +95,7 @@ export struct ToolboxDatePickerDialog {
 
         Divider()
           .vertical(true)
-          .color(DesignColor.DIVIDER)
+          .color(resColor('DIVIDER'))
           .strokeWidth(0.5)
           .height(44)
 
@@ -102,14 +104,14 @@ export struct ToolboxDatePickerDialog {
           .layoutWeight(1)
           .height(44)
           .backgroundColor(Color.Transparent)
-          .fontColor(DesignColor.PRIMARY)
+          .fontColor(resColor('PRIMARY'))
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .borderRadius(0)
           .onClick(() => {
             // 提交前兜底拦截（双保险）：选择器已限选今日起，这里再挡一次越界日期
             if (this.selected.getTime() < minSelectableDate().getTime()) {
-              showToastSafety("过期日期不能早于今天")
+              showToastSafety(resString('toolbox_date_picker_dialog_1'))
               return
             }
             // 先关窗再执行回调：回调内可能导航，导航后弹窗内容实例已销毁、
@@ -124,12 +126,12 @@ export struct ToolboxDatePickerDialog {
       .width('100%')
       // 横向留白由外层容器统一给出，卡片只保留纵向内边距（问题16）
       .padding({ top: 20, bottom: 20 })
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
       .borderRadius(DesignDimens.CARD_RADIUS)
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: DesignColor.SHADOW_COLOR_FLOAT,
+        color: resColor('SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })

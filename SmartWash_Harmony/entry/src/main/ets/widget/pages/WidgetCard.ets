@@ -19,6 +19,7 @@
  *   WidgetBinding 字段一一对应（提供方 EntryFormAbility 装配，卡片页只渲染不加工）。
  */
 
+import { resString } from '../../utils/ResourceString'
 let storage: LocalStorage = new LocalStorage();
 
 @Entry(storage)
@@ -29,7 +30,7 @@ struct WidgetCard {
   /** 是否有进行中订单（false = 引导态文案） */
   @LocalStorageProp('hasOrder') hasOrder: boolean = false;
   /** 状态文案（统一枚举口径：清洗中/待取件等；引导态为「暂无进行中的洗衣单」） */
-  @LocalStorageProp('statusText') statusText: string = '正在加载…';
+  @LocalStorageProp('statusText') statusText: string = resString('widget_card_1');
   /** 状态色（8 位 ARGB hex） */
   @LocalStorageProp('statusColor') statusColor: string = '#FF2D9B6A';
   /** 副行：待取件 → 取件码；清洗中 → 更新于 xx；引导态 → 点击查看订单 */
@@ -76,7 +77,7 @@ struct WidgetCard {
           .margin({ left: 10, right: 10 })
 
         Column() {
-          Text('订单摘要')
+          Text($r('app.string.widget_card_2'))
             .fontSize(12)
             .fontColor('#FF8E8E93')
             .maxLines(1)
@@ -89,7 +90,7 @@ struct WidgetCard {
             .minFontSize(11)
             .maxFontSize(15)
           Blank()
-          Text('查看详情 ›')
+          Text($r('app.string.widget_card_3'))
             .fontSize(12)
             .fontColor('#FF2D9B6A')
             .maxLines(1)
@@ -125,7 +126,7 @@ struct WidgetCard {
   @Builder
   headerRow() {
     Row() {
-      Text('洗衣进度')
+      Text($r('app.string.widget_card_4'))
         .fontSize(12)
         .fontColor('#FF8E8E93')
         .maxLines(1)

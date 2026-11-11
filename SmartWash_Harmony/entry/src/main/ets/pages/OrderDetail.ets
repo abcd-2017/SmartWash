@@ -2,7 +2,7 @@ import { HttpStatusCode } from "@ohos/axios"
 import { BusinessError, pasteboard } from "@kit.BasicServicesKit"
 import vibrator from '@ohos.vibrator'
 import { RouteNames } from "../constant/RouteNames"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
 import { getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
@@ -15,6 +15,8 @@ import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
 import { ReminderSyncOrder, syncPickupReminderForOrder } from "../utils/ReminderService"
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 @Builder
 export function OrderDetailBuilder() {
@@ -29,7 +31,7 @@ export function OrderDetailBuilder() {
  */
 class StatusMeta {
   text: string = ""
-  color: number = DesignColor.PRIMARY
+  color: number = resColor('PRIMARY')
   description: string = ""
 }
 
@@ -70,11 +72,11 @@ struct OrderDetail {
   })
   // 时间线节点（按订单流程顺序，保持 5 个状态不变）
   private nodes: Array<TimelineNode> = [
-    new TimelineNode(OrderStatusEnum.PENDING_PAYMENT, "待支付"),
-    new TimelineNode(OrderStatusEnum.PENDING_SHIPMENT, "待寄件"),
-    new TimelineNode(OrderStatusEnum.WASHING, "清洗中"),
-    new TimelineNode(OrderStatusEnum.READY_FOR_PICKUP, "待取件"),
-    new TimelineNode(OrderStatusEnum.COMPLETED, "已完成")
+    new TimelineNode(OrderStatusEnum.PENDING_PAYMENT, resString('pending_payment')),
+    new TimelineNode(OrderStatusEnum.PENDING_SHIPMENT, resString('pending_shipment')),
+    new TimelineNode(OrderStatusEnum.WASHING, resString('step_washing')),
+    new TimelineNode(OrderStatusEnum.READY_FOR_PICKUP, resString('step_pickup')),
+    new TimelineNode(OrderStatusEnum.COMPLETED, resString('completed'))
   ]
 
   async aboutToAppear() {
@@ -93,7 +95,7 @@ struct OrderDetail {
     if (this.orderId === null) {
       // 参数缺失（异常路由进入）：提示后停留空态，不发起无效请求（鸿蒙更优，保留）
       logger.warn('orderDetail', '订单详情缺少路由参数 orderId，停留空态不发起请求')
-      showToastSafety("订单信息加载失败")
+      showToastSafety(resString('order_detail_1'))
       this.isLoading = false
       return
     }
@@ -122,12 +124,12 @@ struct OrderDetail {
         logger.warn('orderDetail', `订单详情加载失败 orderId=${this.orderId} ` +
           `code=${res.code} message=${res.message ?? ""}`)
         this.loadFailed = true
-        showToastSafety(res.message, "订单详情加载失败")
+        showToastSafety(res.message, resString('order_detail_2'))
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
       this.loadFailed = true
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('order_detail_3'))
     } finally {
       this.isLoading = false
     }
@@ -155,61 +157,61 @@ struct OrderDetail {
     const meta: StatusMeta = new StatusMeta()
     switch (this.orderInfo?.status) {
       case OrderStatusEnum.PENDING_PAYMENT:
-        meta.text = "待支付"
-        meta.color = DesignColor.WARNING
-        meta.description = "请尽快支付"
+        meta.text = resString('pending_payment')
+        meta.color = resColor('WARNING')
+        meta.description = resString('please_pay_soon')
         break
       case OrderStatusEnum.PENDING_SHIPMENT:
-        meta.text = "待寄件"
-        meta.color = DesignColor.PRIMARY_DARK
-        meta.description = "请尽快去寄件"
+        meta.text = resString('pending_shipment')
+        meta.color = resColor('PRIMARY_DARK')
+        meta.description = resString('please_ship_soon')
         break
       // 中间态（对齐安卓 OrderDetailPage.kt:539-550）：已收取/已烘干/配送中归入清洗→取件阶段，
       // 安卓均有提示语；鸿蒙原落 default 显示「-」
       case OrderStatusEnum.RECEIVED:
-        meta.text = "已收取"
-        meta.color = DesignColor.PRIMARY_DARK
-        meta.description = "衣物已收取，即将清洗"
+        meta.text = resString('order_status_received')
+        meta.color = resColor('PRIMARY_DARK')
+        meta.description = resString('received_hint')
         break
       case OrderStatusEnum.WASHING:
-        meta.text = "清洗中"
-        meta.color = DesignColor.PRIMARY_DARK
-        meta.description = "衣物正在清洗，完成后将通知您取件"
+        meta.text = resString('step_washing')
+        meta.color = resColor('PRIMARY_DARK')
+        meta.description = resString('washing_in_progress_hint')
         break
       case OrderStatusEnum.DRIED:
-        meta.text = "已烘干"
-        meta.color = DesignColor.PRIMARY_DARK
-        meta.description = "衣物已烘干，即将配送"
+        meta.text = resString('order_status_dried')
+        meta.color = resColor('PRIMARY_DARK')
+        meta.description = resString('dried_hint')
         break
       case OrderStatusEnum.IN_DELIVERY:
-        meta.text = "配送中"
-        meta.color = DesignColor.PRIMARY_DARK
-        meta.description = "衣物配送中，请留意取件通知"
+        meta.text = resString('order_status_in_delivery')
+        meta.color = resColor('PRIMARY_DARK')
+        meta.description = resString('in_delivery_hint')
         break
       case OrderStatusEnum.READY_FOR_PICKUP:
-        meta.text = "待取件"
-        meta.color = DesignColor.PRIMARY_DARK
-        meta.description = "衣物已到寄存柜"
+        meta.text = resString('step_pickup')
+        meta.color = resColor('PRIMARY_DARK')
+        meta.description = resString('clothes_in_locker')
         break
       case OrderStatusEnum.COMPLETED:
-        meta.text = "已完成"
-        meta.color = DesignColor.PRIMARY_DARK
+        meta.text = resString('completed')
+        meta.color = resColor('PRIMARY_DARK')
         // 安卓此处为 completion_time「完成时间」（疑似占位文案），保留语义化文案
-        meta.description = "订单已完成"
+        meta.description = resString('order_detail_4')
         break
       case OrderStatusEnum.CANCELED:
-        meta.text = "已取消"
-        meta.color = DesignColor.DANGER
-        meta.description = "已取消"
+        meta.text = resString('cancelled')
+        meta.color = resColor('DANGER')
+        meta.description = resString('cancelled')
         break
       case OrderStatusEnum.REFUNDED:
-        meta.text = "已退款"
-        meta.color = DesignColor.DANGER
-        meta.description = "订单已退款"
+        meta.text = resString('order_status_refunded')
+        meta.color = resColor('DANGER')
+        meta.description = resString('refunded_hint')
         break
       default:
         meta.text = getOrderStatusDescription(this.orderInfo?.status)
-        meta.color = DesignColor.TEXT_SECONDARY
+        meta.color = resColor('TEXT_SECONDARY')
         meta.description = "-"
         break
     }
@@ -278,7 +280,7 @@ struct OrderDetail {
       if (this.statusMeta().description !== "") {
         Text(this.statusMeta().description)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .margin({ top: 6 })
       }
     }
@@ -295,10 +297,10 @@ struct OrderDetail {
   @Builder
   ProgressTimelineCard() {
     Column() {
-      Text("进度时间线")
+      Text($r('app.string.progress_timeline'))
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .letterSpacing(0.3)
         .margin({ bottom: 6 })
 
@@ -312,7 +314,7 @@ struct OrderDetail {
               // 避免相邻段首尾相接成一条通线
               .padding({ left: 6, right: 6 })
               .height(2)
-              .backgroundColor(index < this.currentIndex() ? DesignColor.PRIMARY : DesignColor.HAIRLINE)
+              .backgroundColor(index < this.currentIndex() ? resColor('PRIMARY') : resColor('HAIRLINE'))
           }, (index: number) => index.toString())
         }
         .width("100%")
@@ -331,20 +333,20 @@ struct OrderDetail {
                     .width(20)
                     .height(20)
                     .borderRadius(10)
-                    .backgroundColor(DesignColor.WATER)
+                    .backgroundColor(resColor('WATER'))
                     .opacity(0.12)
                   Column()
                     .width(12)
                     .height(12)
                     .borderRadius(6)
-                    .backgroundColor(DesignColor.WATER)
+                    .backgroundColor(resColor('WATER'))
                 } else {
                   // done → primary 实心；未完成 → outline 实心
                   Column()
                     .width(12)
                     .height(12)
                     .borderRadius(6)
-                    .backgroundColor(index < this.currentIndex() ? DesignColor.PRIMARY : DesignColor.OUTLINE)
+                    .backgroundColor(index < this.currentIndex() ? resColor('PRIMARY') : resColor('OUTLINE'))
                 }
               }
               .width(20)
@@ -353,8 +355,8 @@ struct OrderDetail {
               Text(node.label)
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(index === this.currentIndex() ? DesignFontWeight.SEMI_BOLD : DesignFontWeight.NORMAL)
-                .fontColor(index === this.currentIndex() ? DesignColor.ON_PRIMARY_CONTAINER :
-                  (index < this.currentIndex() ? DesignColor.TEXT_PRIMARY : DesignColor.TEXT_TERTIARY))
+                .fontColor(index === this.currentIndex() ? resColor('ON_PRIMARY_CONTAINER') :
+                  (index < this.currentIndex() ? resColor('TEXT_PRIMARY') : resColor('TEXT_TERTIARY')))
                 .textAlign(TextAlign.Center)
                 .maxLines(1)
                 .margin({ top: 6 })
@@ -363,7 +365,7 @@ struct OrderDetail {
               if (index === 0 && this.firstNodeTime() !== "") {
                 Text(this.firstNodeTime())
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .fontColor(resColor('TEXT_SECONDARY'))
                   .fontFeature(DesignFontFeature.TNUM)
                   .textAlign(TextAlign.Center)
                   .margin({ top: 2 })
@@ -382,12 +384,12 @@ struct OrderDetail {
     .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: resColor('OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -406,14 +408,14 @@ struct OrderDetail {
           icon: $r('sys.symbol.list_square_bill'),
           sizeValue: 36,
           iconSize: 20,
-          containerColor: DesignColor.ICON_CONTAINER_BLUE,
-          iconColor: DesignColor.ICON_FOREGROUND_BLUE
+          containerColor: resColor('ICON_CONTAINER_BLUE'),
+          iconColor: resColor('ICON_FOREGROUND_BLUE')
         })
 
-        Text("订单信息")
+        Text($r('app.string.order_info'))
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .margin({ left: 12 })
       }
       .width("100%")
@@ -422,39 +424,39 @@ struct OrderDetail {
       // 二级信息行：行高 40 自身承担节奏，行间不加距（对齐安卓 InfoRow 行间 0）
       Column() {
         InfoRow({
-          label: "订单编号",
+          label: resString('order_number'),
           value: `${this.orderInfo?.orderNo ?? ""}`,
           valueSize: DesignFontSize.CAPTION,
           valueWeight: DesignFontWeight.MEDIUM,
           valueTnum: true
         })
-        InfoRow({ label: "套餐类型", value: `${this.orderInfo?.laundryPackageVo?.itemName ?? ""}` })
+        InfoRow({ label: resString('package_type'), value: `${this.orderInfo?.laundryPackageVo?.itemName ?? ""}` })
         InfoRow({
-          label: "价格",
+          label: resString('price'),
           value: `¥${(this.orderInfo?.totalPrice ?? 0).toFixed(2)}`,
           valueTnum: true
         })
         InfoRow({
-          label: "实付款",
+          label: resString('actual_payment'),
           value: `¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}`,
-          valueColor: DesignColor.PRIMARY_DARK,
+          valueColor: resColor('PRIMARY_DARK'),
           valueSize: DesignFontSize.AMOUNT_MEDIUM,
           // 对齐安卓 OrderDetailPage.kt:215：AmountMedium.copy(fontWeight = Bold)
           valueWeight: DesignFontWeight.BOLD,
           valueTnum: true
         })
-        InfoRow({ label: "学校名称", value: `${this.orderInfo?.schoolsVo?.schoolName ?? ""}` })
-        InfoRow({ label: "地址", value: `${this.orderInfo?.schoolsVo?.location ?? ""}` })
+        InfoRow({ label: resString('school_name'), value: `${this.orderInfo?.schoolsVo?.schoolName ?? ""}` })
+        InfoRow({ label: resString('address'), value: `${this.orderInfo?.schoolsVo?.location ?? ""}` })
       }
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .backgroundColor(DesignColor.SURFACE)
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .backgroundColor(resColor('SURFACE'))
+    .border({ width: 1, color: resColor('OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -465,21 +467,21 @@ struct OrderDetail {
     Column() {
       Divider()
         .strokeWidth(1)
-        .color(DesignColor.OUTLINE)
+        .color(resColor('OUTLINE'))
 
       Row() {
         // 联系客服（次按钮：透明底 + 1dp outline 描边 + primaryDark 字，D-OD12 先以 toast 兜底）
         Column() {
-          Text("联系客服")
+          Text($r('app.string.contact_service'))
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.PRIMARY_DARK)
+            .fontColor(resColor('PRIMARY_DARK'))
         }
         .layoutWeight(1)
         .height(48)
         .justifyContent(FlexAlign.Center)
         .borderRadius(DesignDimens.RADIUS_FULL)
-        .border({ width: 1, color: DesignColor.OUTLINE })
+        .border({ width: 1, color: resColor('OUTLINE') })
         .scale({ x: this.contactPressed ? 0.97 : 1, y: this.contactPressed ? 0.97 : 1 })
         .animation({ duration: 100, curve: Curve.EaseOut })
         .onTouch((event: TouchEvent) => {
@@ -490,24 +492,24 @@ struct OrderDetail {
           }
         })
         .onClick(() => {
-          showToastSafety("客服暂未开通，请稍后再试")
+          showToastSafety(resString('contact_service_unavailable'))
         })
 
         // 查看取件码（主按钮）：仅在待寄件/待取件态渲染（对齐安卓 P-901：取件码语义只存在于
         // 这两态，已取消/已完成/待支付/清洗中等隐藏该键，仅保留联系客服）
         if (this.showPickupCode()) {
           Column() {
-            Text("查看取件码")
+            Text($r('app.string.view_pickup_code'))
               .fontSize(DesignFontSize.AMOUNT_MEDIUM)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.ON_PRIMARY)
+              .fontColor(resColor('ON_PRIMARY'))
               .letterSpacing(1)
           }
           .layoutWeight(1)
           .height(48)
           .justifyContent(FlexAlign.Center)
           .borderRadius(DesignDimens.RADIUS_FULL)
-          .backgroundColor(DesignColor.PRIMARY)
+          .backgroundColor(resColor('PRIMARY'))
           .margin({ left: 12 })
           .scale({ x: this.pickupPressed ? 0.97 : 1, y: this.pickupPressed ? 0.97 : 1 })
           .animation({ duration: 100, curve: Curve.EaseOut })
@@ -529,7 +531,7 @@ struct OrderDetail {
               this.pickupCodeDialogController.open()
             } else {
               logger.debug('orderDetail', `取件码暂不可用 orderId=${this.orderId}`)
-              showToastSafety("暂无取件码，请稍后再试")
+              showToastSafety(resString('no_pickup_code'))
             }
           })
         }
@@ -543,13 +545,13 @@ struct OrderDetail {
       })
     }
     .width("100%")
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
   }
 
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack({ alignContent: Alignment.TopStart }) {
@@ -561,7 +563,7 @@ struct OrderDetail {
                 Column() {
                   SymbolGlyph($r('sys.symbol.chevron_left'))
                     .fontSize(24)
-                    .fontColor([DesignColor.TEXT_PRIMARY])
+                    .fontColor([resColor('TEXT_PRIMARY')])
                 }
                 .width(48)
                 .height(48)
@@ -571,10 +573,10 @@ struct OrderDetail {
                   pathStack.pop()
                 })
 
-                Text("订单详情")
+                Text($r('app.string.order_detail'))
                   .fontSize(DesignFontSize.ROOT_TITLE)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor(DesignColor.TEXT_PRIMARY)
+                  .fontColor(resColor('TEXT_PRIMARY'))
               }
               .width("100%")
               .padding({ left: 12, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
@@ -619,7 +621,7 @@ struct OrderDetail {
         .height("100%")
         // 沉浸式：内容避让状态栏（背景延伸）
         .padding({ top: safeTopVp() })
-        .backgroundColor(DesignColor.BACKGROUND)
+        .backgroundColor(resColor('BACKGROUND'))
         // 骨架↔内容 Crossfade 近似（对齐安卓 Crossfade 300ms）：加载态整列淡隐 + 禁命中，
         // 骨架层以 TransitionEffect.OPACITY 淡入淡出（§2-I2）
         .opacity(this.isLoading ? 0 : 1)
@@ -632,7 +634,7 @@ struct OrderDetail {
           LoadingState()
             .width("100%")
             .height("100%")
-            .backgroundColor(DesignColor.BACKGROUND)
+            .backgroundColor(resColor('BACKGROUND'))
             .zIndex(2)
             .transition(TransitionEffect.OPACITY)
         }
@@ -641,11 +643,11 @@ struct OrderDetail {
         if (!this.isLoading && this.loadFailed) {
           Column() {
             EmptyState({
-              message: "订单详情加载失败",
+              message: resString('order_detail_2'),
               action: () => {
                 AppButton({
                   small: true,
-                  text: "重试",
+                  text: resString('retry'),
                   variant: AppButtonVariant.SECONDARY,
                   click: () => {
                     this.loadOrderDetail()
@@ -657,7 +659,7 @@ struct OrderDetail {
           }
           .width("100%")
           .height("100%")
-          .backgroundColor(DesignColor.BACKGROUND)
+          .backgroundColor(resColor('BACKGROUND'))
           .justifyContent(FlexAlign.Center)
           .zIndex(3)
           .transition(TransitionEffect.OPACITY)
@@ -708,10 +710,10 @@ export struct PickupCodeDialog {
     }
     const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, this.pickupCode)
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
-      showToastSafety("取件码已复制")
+      showToastSafety(resString('copy_success'))
     }).catch((err: BusinessError) => {
       logger.error('orderDetail', '取件码复制到剪贴板失败', `${err.code} ${err.message}`)
-      showToastSafety("复制失败")
+      showToastSafety(resString('order_detail_5'))
     })
     this.onDismiss()
     this.controller.close()
@@ -723,15 +725,15 @@ export struct PickupCodeDialog {
       Column() {
         // 内容区
         Column() {
-          Text("取件码")
+          Text($r('app.string.pickup_code'))
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
 
           Text(`寄存柜: ${this.lockerNumber}`)
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ top: 4 })
 
@@ -740,14 +742,14 @@ export struct PickupCodeDialog {
             Text(this.pickupCode)
               .fontSize(DesignFontSize.DATA_LARGE)
               .fontWeight(DesignFontWeight.BOLD)
-              .fontColor(DesignColor.PRIMARY_DARK)
+              .fontColor(resColor('PRIMARY_DARK'))
               .fontFeature(DesignFontFeature.TNUM)
               .maxLines(1)
               .margin({ top: 12 })
           } else {
-            Text("暂无取件码，请稍后再试")
+            Text($r('app.string.no_pickup_code'))
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .margin({ top: 12 })
           }
         }
@@ -762,15 +764,15 @@ export struct PickupCodeDialog {
 
         // 分隔线（0.5dp，切动作区）
         Divider()
-          .color(DesignColor.DIVIDER)
+          .color(resColor('DIVIDER'))
           .strokeWidth(0.5)
 
         // 底部分区动作（对齐安卓 DialogAction：48 高 / bodyLarge 16/500）
         Row() {
-          Text("取消")
+          Text($r('app.string.cancel'))
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .layoutWeight(1)
             .height(48)
             .textAlign(TextAlign.Center)
@@ -781,14 +783,14 @@ export struct PickupCodeDialog {
 
           Divider()
             .vertical(true)
-            .color(DesignColor.DIVIDER)
+            .color(resColor('DIVIDER'))
             .strokeWidth(0.5)
             .height(48)
 
-          Text("复制取件码")
+          Text($r('app.string.copy_pickup_code'))
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.PRIMARY)
+            .fontColor(resColor('PRIMARY'))
             .layoutWeight(1)
             .height(48)
             .textAlign(TextAlign.Center)
@@ -799,12 +801,12 @@ export struct PickupCodeDialog {
         .width("100%")
       }
       .width("100%")
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: DesignColor.SHADOW_COLOR_FLOAT,
+        color: resColor('SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })

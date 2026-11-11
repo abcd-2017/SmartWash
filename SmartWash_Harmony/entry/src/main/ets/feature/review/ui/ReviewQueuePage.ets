@@ -9,7 +9,7 @@
 // 已知坑遵守：列表条目内容依赖状态 → 队列条目卡用 @ComponentV2 + @Param/@Event。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import { ReviewCardVo, ReviewQueueVo, ReviewText, getReviewQueue } from '../api'
 import {
@@ -28,6 +28,7 @@ import { REVIEW_TICK_KEY } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'reviewQueuePage'
@@ -143,7 +144,7 @@ struct ReviewQueuePage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -193,14 +194,14 @@ struct ReviewQueuePage {
                         .fontSize(DesignFontSize.DATA_LARGE)
                         .fontWeight(DesignFontWeight.BOLD)
                         .fontFeature(DesignFontFeature.TNUM)
-                        .fontColor(DesignColor.TEXT_PRIMARY)
+                        .fontColor(resColor('TEXT_PRIMARY'))
 
                       Text(ReviewText.review_queue_breakdown_format
                         .replace('%d', `${this.queue?.dueCount ?? 0}`)
                         .replace('%d', `${this.queue?.newCount ?? 0}`))
                         .fontSize(DesignFontSize.BODY_SMALL)
                         .fontFeature(DesignFontFeature.TNUM)
-                        .fontColor(DesignColor.TEXT_SECONDARY)
+                        .fontColor(resColor('TEXT_SECONDARY'))
                         .margin({ top: DesignDimens.SPACE_XS })
 
                       AppButton({
@@ -245,7 +246,7 @@ struct ReviewQueuePage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -274,7 +275,7 @@ struct QueueCard {
           Text(this.card.question ?? '')
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .lineHeight(DesignFontSize.BODY_SMALL + 6)
             .maxLines(2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -283,8 +284,8 @@ struct QueueCard {
           Row({ space: DesignDimens.SPACE_XXS }) {
             ReviewTagChip({
               text: this.materialTitle,
-              containerColor: DesignColor.SURFACE_VARIANT,
-              contentColor: DesignColor.TEXT_SECONDARY
+              containerColor: resColor('SURFACE_VARIANT'),
+              contentColor: resColor('TEXT_SECONDARY')
             })
             DueTypeChip({
               isNew: reviewIsNewCard(this.card),
@@ -302,7 +303,7 @@ struct QueueCard {
         Text(reviewDueTextOf(this.card.dueAt, this.now))
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .lineHeight(DesignFontSize.CAPTION + 4)
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ left: DesignDimens.SPACE_SM })
@@ -312,10 +313,10 @@ struct QueueCard {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .alignItems(HorizontalAlign.Start)
     .onClick(() => {
       this.onCardClick()

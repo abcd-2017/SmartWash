@@ -6,11 +6,13 @@
  * reduced motion 下直接消失态（触觉保留）。
  */
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, toColorString } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, toColorString } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppButton, PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 单个泡泡：网格坐标 + 大小档 */
 class Bubble {
@@ -29,9 +31,9 @@ class Bubble {
 
 /** 页面文案 */
 class BubbleText {
-  static readonly title: string = '泡泡纸'
-  static readonly poppedFormat: string = '已戳 %d / %d'
-  static readonly reset: string = '再铺一张'
+  static get title(): string { return resString('lab_toy_bubble_wrap') }
+  static get poppedFormat(): string { return resString('bubble_text_popped_format') }
+  static get reset(): string { return resString('lab_bubble_reset') }
 }
 
 /** 目标格距（vp）：屏宽自适应约 8 列 */
@@ -247,9 +249,9 @@ export struct BubbleWrapPage {
   private drawBulge(cx: number, cy: number, radius: number, alpha: number): void {
     const ctx: CanvasRenderingContext2D = this.ctx
     ctx.globalAlpha = alpha
-    const highlight: string = toColorString(DesignColor.SURFACE)
-    const soft: string = toColorString(DesignColor.WATER_SOFT)
-    const edge: string = toColorString(0x99000000 | (DesignColor.WATER & 0xFFFFFF))
+    const highlight: string = toColorString(resColor('SURFACE'))
+    const soft: string = toColorString(resColor('WATER_SOFT'))
+    const edge: string = toColorString(0x99000000 | (resColor('WATER') & 0xFFFFFF))
     const gradient: CanvasGradient = ctx.createRadialGradient(
       cx - radius * HIGHLIGHT_SHIFT, cy - radius * HIGHLIGHT_SHIFT, radius * 0.1,
       cx, cy, radius * 1.7)
@@ -261,7 +263,7 @@ export struct BubbleWrapPage {
     ctx.arc(cx, cy, radius, 0, Math.PI * 2, false)
     ctx.fill()
     ctx.lineWidth = 1
-    ctx.strokeStyle = toColorString(0x59000000 | (DesignColor.WATER & 0xFFFFFF))
+    ctx.strokeStyle = toColorString(0x59000000 | (resColor('WATER') & 0xFFFFFF))
     ctx.beginPath()
     ctx.arc(cx, cy, radius, 0, Math.PI * 2, false)
     ctx.stroke()
@@ -277,7 +279,7 @@ export struct BubbleWrapPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，画布 onReady 重绘与 DesignColor 静态令牌直读点
+      // 色模式翻转时 if 双分支重建子树，画布 onReady 重绘与 资源色直读点
       // 重读新值（静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets；
       // 戳破动画帧循环 startAnimLoop 保持在宿主之外，页面组件本体不在子树内）
       ThemeRefreshV2() {
@@ -287,7 +289,7 @@ export struct BubbleWrapPage {
         Text(this.poppedText())
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
@@ -323,7 +325,7 @@ export struct BubbleWrapPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

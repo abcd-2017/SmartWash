@@ -5,7 +5,7 @@
 // 校验只在提交时内联展示（规范 §3.7 基线⑤）；成功后 toast + 置变更信号 + 返回列表（列表 onShown 重拉）。
 
 import { HttpStatusCode } from '@ohos/axios'
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
 import {
   AddShortCodeForm,
   createShortCode,
@@ -22,6 +22,7 @@ import { pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../utils/SafeArea'
 import { ThemeRefresh } from '../../view/common/ThemeRefresh'
+import { resColor } from '../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'toolboxShortCodeCreate'
@@ -139,7 +140,7 @@ struct ToolboxShortCodeCreate {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(DesignColor.TEXT_SECONDARY)
+      .fontColor(resColor('TEXT_SECONDARY'))
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
@@ -156,12 +157,12 @@ struct ToolboxShortCodeCreate {
         .fontSize(DesignFontSize.CAPTION)
         // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+        .fontColor(selected ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 6, bottom: 6 })
-        .backgroundColor(selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
+        .backgroundColor(selected ? resColor('PRIMARY') : resColor('SURFACE'))
         .borderWidth(1)
-        .borderColor(selected ? DesignColor.PRIMARY : DesignColor.OUTLINE)
+        .borderColor(selected ? resColor('PRIMARY') : resColor('OUTLINE'))
         .borderRadius(DesignDimens.RADIUS_FULL)
         // 200ms 颜色过渡（对齐安卓 selectedColor）
         .animation({ duration: 200, curve: Curve.EaseInOut })
@@ -203,7 +204,7 @@ struct ToolboxShortCodeCreate {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Scroll() {
@@ -213,7 +214,7 @@ struct ToolboxShortCodeCreate {
             Column() {
               SymbolGlyph($r('sys.symbol.chevron_left'))
                 .fontSize(24)
-                .fontColor([DesignColor.TEXT_PRIMARY])
+                .fontColor([resColor('TEXT_PRIMARY')])
             }
             .width(DesignDimens.BACK_HIT_AREA)
             .height(DesignDimens.BACK_HIT_AREA)
@@ -226,7 +227,7 @@ struct ToolboxShortCodeCreate {
             Text(ToolboxText.toolbox_create_title)
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
           }
           .width('100%')
           .height(56)
@@ -242,12 +243,12 @@ struct ToolboxShortCodeCreate {
               .fontSize(DesignFontSize.BODY)
               // URL 键盘（「/」「.com」便捷键，对齐安卓 KeyboardType.Uri，audit-17 #11）
               .type(InputType.URL)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               // 输入档圆角对齐安卓 ShortCodeCreatePage 的 radiusMd 12（规范 §3 radius.input）
               .borderRadius(DesignDimens.RADIUS_MD)
               .borderWidth(1)
-              .borderColor(this.targetFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-              .placeholderColor(DesignColor.TEXT_TERTIARY)
+              .borderColor(this.targetFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
+              .placeholderColor(resColor('TEXT_TERTIARY'))
               .placeholderFont({ size: DesignFontSize.BODY_SMALL })
               .onFocus(() => {
                 this.targetFocused = true
@@ -262,7 +263,7 @@ struct ToolboxShortCodeCreate {
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
               // helper 为用户必读说明文字：textTertiary ≈2.3:1 破 §10 红线，收敛 textSecondary（audit-17 #1）
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .margin({ top: DesignDimens.SPACE_XXS })
 
             Column()
@@ -273,12 +274,12 @@ struct ToolboxShortCodeCreate {
             TextInput({ text: this.customCode, placeholder: ToolboxText.toolbox_custom_code_hint })
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               // 输入档圆角对齐安卓 ShortCodeCreatePage 的 radiusMd 12（规范 §3 radius.input）
               .borderRadius(DesignDimens.RADIUS_MD)
               .borderWidth(1)
-              .borderColor(this.customCodeFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-              .placeholderColor(DesignColor.TEXT_TERTIARY)
+              .borderColor(this.customCodeFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
+              .placeholderColor(resColor('TEXT_TERTIARY'))
               .placeholderFont({ size: DesignFontSize.BODY_SMALL })
               .onFocus(() => {
                 this.customCodeFocused = true
@@ -304,7 +305,7 @@ struct ToolboxShortCodeCreate {
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
               // 可见性说明是用户必读语义：与 helper 同口径收敛 textSecondary（audit-17 #2）
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .margin({ top: DesignDimens.SPACE_XXS })
 
             Column()
@@ -346,14 +347,14 @@ struct ToolboxShortCodeCreate {
           .width('100%')
           .alignItems(HorizontalAlign.Start)
           .padding(DesignDimens.CARD_PADDING)
-          .backgroundColor(DesignColor.SURFACE)
+          .backgroundColor(resColor('SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
           // 表单卡同标准卡画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
           // （卡内输入框/预设 chip 的 1px 描边属控件自身规格，不受此规则约束）
-          .border({ width: 1, color: DesignColor.OUTLINE })
+          .border({ width: 1, color: resColor('OUTLINE') })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: DesignColor.SHADOW_COLOR_CARD,
+            color: resColor('SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: 2
           })
@@ -362,7 +363,7 @@ struct ToolboxShortCodeCreate {
           if (this.errorMessage.length > 0) {
             Text(this.errorMessage)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.ERROR)
+              .fontColor(resColor('ERROR'))
               .width('100%')
               .margin({ top: DesignDimens.SPACE_SM })
           }
@@ -395,7 +396,7 @@ struct ToolboxShortCodeCreate {
       .align(Alignment.TopStart)
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       // 键盘避让走窗口级 KeyboardAvoidMode.RESIZE（EntryAbility 统一设置）；
       // 原 expandSafeArea(KEYBOARD, BOTTOM) 是反向语义（把内容伸进键盘区），已移除
       }

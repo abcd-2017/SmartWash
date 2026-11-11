@@ -7,7 +7,7 @@
 // 已知坑遵守：内容依赖状态的卡片用 @ComponentV2 + @Param/@Event；输入态由表单自身持有；
 // 列表骨架/错误/空态齐备（规范 §3.6）。
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   AddCardForm,
@@ -41,6 +41,7 @@ import { bumpReviewRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'reviewMaterialList'
@@ -344,18 +345,18 @@ struct MaterialListPage {
       Text(ReviewText.review_material_form_title_label)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .margin({ bottom: DesignDimens.SPACE_XS })
 
       // 弹性下限 48：130% 字体缩放时不裁切（对齐安卓 heightIn(min=48)，M12）
       TextInput({ text: this.formTitle, placeholder: ReviewText.review_material_form_title_hint })
         .constraintSize({ minHeight: 48 })
         .fontSize(DesignFontSize.BODY)
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
+        .backgroundColor(resColor('SURFACE_VARIANT'))
         .borderRadius(DesignDimens.INPUT_RADIUS)
         .borderWidth(1)
-        .borderColor(DesignColor.OUTLINE)
-        .placeholderColor(DesignColor.TEXT_TERTIARY)
+        .borderColor(resColor('OUTLINE'))
+        .placeholderColor(resColor('TEXT_TERTIARY'))
         .placeholderFont({ size: DesignFontSize.BODY })
         .maxLength(REVIEW_TITLE_MAX)
         .onChange((value: string) => {
@@ -365,17 +366,17 @@ struct MaterialListPage {
       Text(ReviewText.review_material_form_raw_label)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .margin({ top: DesignDimens.SPACE_LG, bottom: DesignDimens.SPACE_XS })
 
       // 原文粘贴改多行 TextArea：单行 TextInput 内长文本无法换行回看（对齐安卓 minLines=4 弹性多行，M9）
       TextArea({ text: this.formRawText, placeholder: ReviewText.review_material_form_raw_hint })
         .fontSize(DesignFontSize.BODY)
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
+        .backgroundColor(resColor('SURFACE_VARIANT'))
         .borderRadius(DesignDimens.INPUT_RADIUS)
         .borderWidth(1)
-        .borderColor(DesignColor.OUTLINE)
-        .placeholderColor(DesignColor.TEXT_TERTIARY)
+        .borderColor(resColor('OUTLINE'))
+        .placeholderColor(resColor('TEXT_TERTIARY'))
         .placeholderFont({ size: DesignFontSize.BODY })
         .maxLength(REVIEW_RAW_TEXT_MAX)
         .constraintSize({ minHeight: 96 })
@@ -387,7 +388,7 @@ struct MaterialListPage {
         Text(this.createError)
           .fontSize(DesignFontSize.CAPTION)
           .lineHeight(DesignFontSize.CAPTION + 4)
-          .fontColor(DesignColor.ERROR)
+          .fontColor(resColor('ERROR'))
           .margin({ top: DesignDimens.SPACE_SM })
       }
 
@@ -402,14 +403,14 @@ struct MaterialListPage {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     // 表单容器补卡片档阴影（对齐安卓 GroupCard softCardShadow，M11）
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -450,14 +451,14 @@ struct MaterialListPage {
         Text(ReviewText.review_error_load_more)
           .fontSize(DesignFontSize.BUTTON_TEXT)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.DANGER_INK)
+          .fontColor(resColor('DANGER_INK'))
           .textAlign(TextAlign.Center)
       } else {
         // 小号绿字走 TEXT_GREEN（PRIMARY 在页面底仅 3.22:1 破线，M4）
         Text(ReviewText.review_material_load_more)
           .fontSize(DesignFontSize.BUTTON_TEXT)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_GREEN)
+          .fontColor(resColor('TEXT_GREEN'))
       }
     }
     .width('100%')
@@ -475,7 +476,7 @@ struct MaterialListPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -566,7 +567,7 @@ struct MaterialListPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -607,14 +608,14 @@ struct MaterialCard {
           Text(this.material.title ?? '')
             .fontSize(DesignFontSize.CARD_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
           // 创建日期是可读信息（非装饰角标）：TEXT_TERTIARY 双主题均破 4.5:1（M1）
           Text(reviewCreatedDateOf(this.material.createdAt, '—'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ top: DesignDimens.SPACE_XXS })
         }
@@ -625,7 +626,7 @@ struct MaterialCard {
         Text(this.expanded ? ReviewText.review_material_collapse : ReviewText.review_material_expand)
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_GREEN)
+          .fontColor(resColor('TEXT_GREEN'))
       }
       .width('100%')
       .constraintSize({ minHeight: 48 })
@@ -639,7 +640,7 @@ struct MaterialCard {
         Text(this.material.rawText ?? '')
           .fontSize(DesignFontSize.CAPTION)
           .lineHeight(DesignFontSize.CAPTION + 4)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -651,7 +652,7 @@ struct MaterialCard {
         Column() {
           Divider()
             .strokeWidth(0.5)
-            .color(DesignColor.DIVIDER)
+            .color(resColor('DIVIDER'))
             .width('100%')
             .margin({ top: DesignDimens.SPACE_SM })
 
@@ -659,14 +660,14 @@ struct MaterialCard {
             Text(ReviewText.review_material_cards_header_format.replace('%d', `${this.cardsTotal}`))
               .fontSize(DesignFontSize.CAPTION)
               .lineHeight(DesignFontSize.CAPTION + 4)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .fontFeature(DesignFontFeature.TNUM)
               .layoutWeight(1)
 
             Text(ReviewText.review_material_add_card)
               .fontSize(DesignFontSize.BUTTON_TEXT)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_GREEN)
+              .fontColor(resColor('TEXT_GREEN'))
               .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: DesignDimens.SPACE_XXS, bottom: DesignDimens.SPACE_XXS })
               .constraintSize({ minHeight: 48 })
               .onClick(() => {
@@ -685,14 +686,14 @@ struct MaterialCard {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     // 资料卡补卡片档阴影（对齐安卓 AppCard softCardShadow，M11）
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -720,12 +721,12 @@ struct MaterialCard {
           Text(ReviewText.review_error_load)
             .fontSize(DesignFontSize.CAPTION)
             .lineHeight(DesignFontSize.CAPTION + 4)
-            .fontColor(DesignColor.DANGER_INK)
+            .fontColor(resColor('DANGER_INK'))
             .layoutWeight(1)
           Text(ReviewText.review_action_retry)
             .fontSize(DesignFontSize.BUTTON_TEXT)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_GREEN)
+            .fontColor(resColor('TEXT_GREEN'))
             .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: DesignDimens.SPACE_XXS, bottom: DesignDimens.SPACE_XXS })
             .constraintSize({ minHeight: 48 })
             .onClick(() => {
@@ -740,7 +741,7 @@ struct MaterialCard {
         Text(ReviewText.review_material_cards_empty)
           .fontSize(DesignFontSize.CAPTION)
           .lineHeight(DesignFontSize.CAPTION + 4)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
       } else {
         ForEach(this.cards, (card: ReviewCardVo, index: number) => {
@@ -749,14 +750,14 @@ struct MaterialCard {
               Text(card.question ?? '')
                 .fontSize(DesignFontSize.BODY_SMALL)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
                 .maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .width('100%')
 
               Text(card.answer ?? '')
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
                 .maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .width('100%')
@@ -775,7 +776,7 @@ struct MaterialCard {
             if (index < this.cards.length - 1) {
               Divider()
                 .strokeWidth(0.5)
-                .color(DesignColor.DIVIDER)
+                .color(resColor('DIVIDER'))
                 .width('100%')
             }
           }
@@ -792,12 +793,12 @@ struct MaterialCard {
             } else if (this.cardsAppendError) {
               Text(ReviewText.review_error_load_more)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.DANGER_INK)
+                .fontColor(resColor('DANGER_INK'))
             } else {
               Text(ReviewText.review_material_load_more)
                 .fontSize(DesignFontSize.BUTTON_TEXT)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(DesignColor.TEXT_GREEN)
+                .fontColor(resColor('TEXT_GREEN'))
             }
           }
           .width('100%')

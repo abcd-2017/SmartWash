@@ -31,11 +31,13 @@ import {
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignColor } from '../../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation } from '../../../../../constant/DesignSystem'
 import { pathStack } from '../../../../../utils/PathStackUtil'
 import { Debouncer } from '../../../../../utils/DebounceUtil'
 import { logger } from '../../../../../utils/Logger'
 import { DivChartParam } from '../../DivChartParam'
+import { resColor } from '../../../../../utils/ResourceColor'
+import { resString } from '../../../../../utils/ResourceString'
 
 /** 四术玉牌展示元数据（对齐安卓 DivHomePage.kt:101-106 的 Quad 列表） */
 const METHOD_LABELS: Record<string, string> = {
@@ -138,7 +140,7 @@ struct DivHomePage {
   private async ensureTodaySignSaved(): Promise<void> {
     const solar = Solar.fromDate(new Date())
     const chart = MeiHuaChart.timeChart(solar)
-    const question = '今日一签'
+    const question = resString('div_home_page_1')
 
     const existing = await DivRecordRepository.findTodaySign('meihua', question)
     let id: number
@@ -349,7 +351,7 @@ struct DivHomePage {
     // 规范 §2.4/§3.1 卡片唯一画法：1px 描边 + blur 12 轻阴影（compare-10 #12 对齐安卓 softCardShadow）
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -405,7 +407,7 @@ struct DivHomePage {
 
         // 3. 罗盘（画板 104dp）
         Column() {
-          CompassDial({ dialText: '卜', dialSize: 104 })
+          CompassDial({ dialText: resString('div_home_page_2'), dialSize: 104 })
         }
         .width('100%')
         .padding({ top: 8, bottom: 12 })

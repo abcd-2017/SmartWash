@@ -16,10 +16,11 @@
 //   点日期按钮经 onPickDate 把「选中回填回调」交给父组件，父组件在日期弹窗确定时回调本弹窗，
 //   更新内部 @State（可见回填）并经 onDatePicked 回写父组件（供 doRenew 读取）。
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
 import { ExpiryPreset } from './ShortCodeRules'
 import { ToolboxText } from './api'
 import { AppButton, AppButtonVariant } from '../../view/common/AppComponents'
+import { resColor } from '../../utils/ResourceColor'
 
 /**
  * 续期预设 chip（选中 = 品牌底白字，未选中 = 白底描边；对齐安卓 ToolboxSelectableChip）。
@@ -40,13 +41,13 @@ export struct RenewPresetChip {
       .fontSize(DesignFontSize.CAPTION)
       // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
       .fontWeight(DesignFontWeight.SEMI_BOLD)
-      .fontColor(this.selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+      .fontColor(this.selected ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
       // chip 内含数字（「7 天」等）：tnum 数字等宽（规范 §2.2，与创建页 chip 同款）
       .fontFeature(DesignFontFeature.TNUM)
       .padding({ left: 16, right: 16, top: 17, bottom: 17 })
-      .backgroundColor(this.selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
+      .backgroundColor(this.selected ? resColor('PRIMARY') : resColor('SURFACE'))
       .borderWidth(1)
-      .borderColor(this.selected ? DesignColor.PRIMARY : DesignColor.OUTLINE)
+      .borderColor(this.selected ? resColor('PRIMARY') : resColor('OUTLINE'))
       .borderRadius(DesignDimens.RADIUS_FULL)
       .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
       .onTouch((event: TouchEvent) => {
@@ -120,7 +121,7 @@ export struct ToolboxRenewDialog {
         Text(ToolboxText.toolbox_renew_title)
           .fontSize(DesignFontSize.STATUS_LARGE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .width('100%')
           .margin({ bottom: DesignDimens.SPACE_MD })
 
@@ -173,7 +174,7 @@ export struct ToolboxRenewDialog {
 
         Divider()
           .strokeWidth(0.5)
-          .color(DesignColor.DIVIDER)
+          .color(resColor('DIVIDER'))
           .width('100%')
           .margin({ top: DesignDimens.SPACE_MD })
 
@@ -183,7 +184,7 @@ export struct ToolboxRenewDialog {
             .layoutWeight(1)
             .height(48)
             .backgroundColor(Color.Transparent)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontSize(DesignFontSize.BODY)
             .borderRadius(0)
             .onClick(() => {
@@ -193,7 +194,7 @@ export struct ToolboxRenewDialog {
 
           Divider()
             .vertical(true)
-            .color(DesignColor.DIVIDER)
+            .color(resColor('DIVIDER'))
             .strokeWidth(0.5)
             .height(48)
 
@@ -203,7 +204,7 @@ export struct ToolboxRenewDialog {
             .height(48)
             .backgroundColor(Color.Transparent)
             // 确认键小字绿走 TEXT_GREEN 深档（PRIMARY 3.4:1 不达标，§10，对齐安卓 DialogAction）
-            .fontColor(DesignColor.TEXT_GREEN)
+            .fontColor(resColor('TEXT_GREEN'))
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .borderRadius(0)
@@ -220,12 +221,12 @@ export struct ToolboxRenewDialog {
       .width('100%')
       // 对齐安卓 RenewDialog（vertical spaceLg 20）；横向留白由外层容器统一给出
       .padding({ top: DesignDimens.SPACE_LG, bottom: DesignDimens.SPACE_LG })
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
       .borderRadius(DesignDimens.CARD_RADIUS)
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: DesignColor.SHADOW_COLOR_FLOAT,
+        color: resColor('SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })

@@ -1,4 +1,4 @@
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { logger } from "../utils/Logger"
 import { AppConfirmDialog, AppCard, PageHeader } from "../view/common/AppComponents"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
@@ -6,6 +6,8 @@ import { notificationManager } from "@kit.NotificationKit"
 import { abilityAccessCtrl, bundleManager, common } from "@kit.AbilityKit"
 import { promptAction } from "@kit.ArkUI"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // ========== 权限管理页（对齐安卓 PermissionManagementPage.kt）==========
 //
@@ -27,10 +29,10 @@ struct PermissionManagement {
   // 通知权限被拒且系统弹窗无法再拉起时，引导去系统设置
   private settingsDialogController: CustomDialogController = new CustomDialogController({
     builder: AppConfirmDialog({
-      title: "提示",
-      message: "通知权限未开启，是否前往系统设置开启？",
-      confirmText: "去设置",
-      cancelText: "取消",
+      title: resString('tip'),
+      message: resString('permission_management_1'),
+      confirmText: resString('permission_management_2'),
+      cancelText: resString('cancel'),
       onConfirm: () => {
         this.openNotificationSettings()
       }
@@ -96,26 +98,26 @@ struct PermissionManagement {
     }).catch(() => {
       // 外部调用失败留痕：toast 已兜底，此处仅补摘要（不序列化 error）
       logger.warn('permissionManagement', '打开系统通知设置失败，已 toast 兜底')
-      promptAction.showToast({ message: "无法打开系统设置" })
+      promptAction.showToast({ message: resString('permission_management_3') })
     })
   }
 
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       // 沉浸式：根容器避让状态栏（内容位置不变，背景延伸）
       Column() {
-        PageHeader({ title: "权限管理" })
+        PageHeader({ title: resString('permission_management') })
 
         Scroll() {
           Column() {
-            Text("通用")
+            Text($r('app.string.general'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .width('100%')
               // 分组标题顶部间距对齐安卓 Spacer(24dp)（D15）
               .margin({ top: DesignDimens.SPACE_XL, bottom: 8 })
@@ -125,11 +127,11 @@ struct PermissionManagement {
               Column() {
                 PermissionRow({
                   icon: $r('sys.symbol.bell'),
-                  containerColor: DesignColor.ICON_CONTAINER_ORANGE,
-                  iconColor: DesignColor.ICON_FOREGROUND_ORANGE,
-                  title: "通知权限",
+                  containerColor: resColor('ICON_CONTAINER_ORANGE'),
+                  iconColor: resColor('ICON_FOREGROUND_ORANGE'),
+                  title: resString('permission_notification'),
                   // 鸿蒙语义文案（去掉安卓专属的 APK 下载 / Android 13+ 表述）
-                  description: "接收订单进度、投递与系统通知提醒",
+                  description: resString('permission_management_4'),
                   granted: this.notificationGranted,
                   showAction: true,
                   onRowClick: () => {
@@ -140,15 +142,15 @@ struct PermissionManagement {
                 })
 
                 Divider()
-                  .color(DesignColor.HAIRLINE)
+                  .color(resColor('HAIRLINE'))
                   .strokeWidth(0.5)
 
                 PermissionRow({
                   icon: $r('sys.symbol.wifi'),
-                  containerColor: DesignColor.ICON_CONTAINER_BLUE,
-                  iconColor: DesignColor.ICON_FOREGROUND_BLUE,
-                  title: "网络访问",
-                  description: "与服务端同步订单、余额与洗衣项目（安装即授予）",
+                  containerColor: resColor('ICON_CONTAINER_BLUE'),
+                  iconColor: resColor('ICON_FOREGROUND_BLUE'),
+                  title: resString('permission_internet'),
+                  description: resString('permission_internet_desc'),
                   granted: this.internetGranted,
                   showAction: false,
                   onRowClick: () => {
@@ -159,9 +161,9 @@ struct PermissionManagement {
               .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
             }
 
-            Text("权限仅用于上述功能所需的最小场景；拒绝某项权限只会影响对应功能，不影响应用正常使用。")
+            Text($r('app.string.permission_footer'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .width('100%')
               .margin({ top: 16, bottom: 24 })
           }
@@ -177,7 +179,7 @@ struct PermissionManagement {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -197,8 +199,8 @@ struct PermissionManagement {
 @Component
 struct PermissionRow {
   @Prop icon: Resource = $r('sys.symbol.bell')
-  @Prop containerColor: number = DesignColor.ICON_CONTAINER_ORANGE
-  @Prop iconColor: number = DesignColor.ICON_FOREGROUND_ORANGE
+  @Prop containerColor: number = resColor('ICON_CONTAINER_ORANGE')
+  @Prop iconColor: number = resColor('ICON_FOREGROUND_ORANGE')
   @Prop title: string = ''
   @Prop description: string = ''
   @Prop granted: boolean = false
@@ -224,12 +226,12 @@ struct PermissionRow {
         Text(this.title)
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.NORMAL)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
 
         // 标题→描述无额外间距（对齐安卓：靠 bodySmall 行盒，D18）
         Text(this.description)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
       }
       .layoutWeight(1)
       .margin({ left: 12 })
@@ -237,14 +239,14 @@ struct PermissionRow {
 
       // 非操作行状态文字贴内容右缘 0（对齐安卓，D17）；
       // 操作行的 4dp 间距由 chevron 左间距承载（对齐安卓 Spacer(4.dp)）
-      Text(this.granted ? "已授权" : "去授权")
+      Text(this.granted ? resString('permission_granted') : resString('permission_action_request'))
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(this.granted ? DesignColor.SUCCESS : DesignColor.PRIMARY)
+        .fontColor(this.granted ? resColor('SUCCESS') : resColor('PRIMARY'))
 
       if (this.showAction) {
         SymbolGlyph($r('sys.symbol.chevron_right'))
           .fontSize(20)
-          .fontColor([DesignColor.TEXT_TERTIARY])
+          .fontColor([resColor('TEXT_TERTIARY')])
           .margin({ left: 4 })
       }
     }

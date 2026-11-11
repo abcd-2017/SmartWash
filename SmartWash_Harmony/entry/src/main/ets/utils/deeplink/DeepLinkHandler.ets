@@ -19,12 +19,13 @@ import { WebPageParam } from '../../pages/WebPage'
 import { clearLoginState } from '../../network/Axios'
 import { DeepLinkKind, DeepLinkResult, parse } from './DeepLinkParser'
 import { lookup } from './DeepLinkRegistry'
+import { resString } from '../../utils/ResourceString'
 
 /**
  * 深链 toast 文案（键名对齐安卓 strings.xml 的 deeplink_unsupported）。
  */
 export class DeepLinkText {
-  static readonly deeplink_unsupported: string = '暂不支持该链接'
+  static get deeplink_unsupported(): string { return resString('deeplink_unsupported') }
 }
 
 /**
@@ -135,8 +136,8 @@ async function handleUnknown(uri: string, result: DeepLinkResult): Promise<void>
   if (result.host.length > 0) {
     const hostKnown = await isHostKnownToBackend(result.host)
     logger.info('deeplink',
-      `deeplink 本地未命中：host=${result.host} 后端字典合法=${hostKnown ? '是' : '否'} ` +
-      '（合法属端上未注册能力缺口，仍按暂不支持提示）')
+      `deeplink 本地未命中：host=${result.host} 后端字典合法=${hostKnown ? resString('deep_link_handler_1') : resString('deep_link_handler_2')} ` +
+      resString('deep_link_handler_3'))
   }
   showToastSafety(DeepLinkText.deeplink_unsupported)
 }

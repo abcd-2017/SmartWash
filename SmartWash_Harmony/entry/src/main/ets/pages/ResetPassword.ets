@@ -5,9 +5,11 @@ import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { Debouncer } from "../utils/DebounceUtil"
 import { logger } from "../utils/Logger"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // ================= 页面级设计常量（对齐认证页玻璃风格，与 Login/Register 同源，DesignSystem.ets 暂无对应 token）=================
 const BUTTON_FONT_SIZE: number = 15
@@ -114,11 +116,11 @@ struct ResetPassword {
       if (res.code === HttpStatusCode.Ok) {
         // 低频关键动作成功：验证码已发出（不打验证码值与手机号）
         logger.info('resetPassword', '重置密码验证码发送成功')
-        showToastSafety(res.data, "验证码已发送，请查看短信")
+        showToastSafety(res.data, resString('captcha_sent'))
       } else {
         // 发送被拒（频控/服务端拒绝）：回滚倒计时允许立即重试
         logger.warn('resetPassword', `验证码发送被拒 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "验证码获取失败")
+        showToastSafety(res.message, resString('error_get_captcha_failed'))
         this.resetCountDown()
       }
     } finally {
@@ -138,7 +140,7 @@ struct ResetPassword {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack({ alignContent: Alignment.Top }) {
@@ -149,9 +151,9 @@ struct ResetPassword {
           .linearGradient({
             direction: GradientDirection.Bottom,
             colors: [
-              [DesignColor.AUTH_GRADIENT_TOP, 0.0],
-              [DesignColor.AUTH_GRADIENT_MID, 0.5],
-              [DesignColor.AUTH_GRADIENT_BOTTOM, 1.0]
+              [resColor('AUTH_GRADIENT_TOP'), 0.0],
+              [resColor('AUTH_GRADIENT_MID'), 0.5],
+              [resColor('AUTH_GRADIENT_BOTTOM'), 1.0]
             ]
           })
 
@@ -167,7 +169,7 @@ struct ResetPassword {
             }
             .width(48)
             .height(48)
-            .accessibilityDescription('返回')
+            .accessibilityDescription(resString('back'))
             .onClick(() => {
               // 防抖：转场残影期连点 pop 会弹空导航栈导致黑屏（对齐 Register）
               this.navDebouncer.throttle(() => {
@@ -175,7 +177,7 @@ struct ResetPassword {
               }, NAV_THROTTLE_MS)
             })
 
-            Text("重置密码")
+            Text($r('app.string.reset_password'))
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(Color.White)
@@ -201,21 +203,21 @@ struct ResetPassword {
             .width(92)
             .height(92)
             .borderRadius(46)
-            .backgroundColor(DesignColor.GLASS_BG_SUBTLE)
+            .backgroundColor(resColor('GLASS_BG_SUBTLE'))
             .border({
               width: 1,
-              color: DesignColor.GLASS_BORDER_SUBTLE,
+              color: resColor('GLASS_BORDER_SUBTLE'),
               style: BorderStyle.Solid
             })
 
-            Text("找回账号密码")
+            Text($r('app.string.reset_password_1'))
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(Color.White)
               .lineHeight(28)
               .margin({ top: 12 })
 
-            Text("输入注册手机号，通过短信验证码设置新密码")
+            Text($r('app.string.reset_password_2'))
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.NORMAL)
               .fontColor(Color.White)
@@ -233,7 +235,7 @@ struct ResetPassword {
               SymbolGlyph($r('sys.symbol.phone'))
                 .fontSize(16)
                 .fontColor([this.checkPhoneNumber ? AUTH_ERROR : GLASS_PREFIX])
-              TextInput({ placeholder: "手机号" })
+              TextInput({ placeholder: resString('phone_number') })
                 .type(InputType.PhoneNumber)
                 .maxLength(11)
                 .fontSize(DesignFontSize.BODY)
@@ -242,7 +244,7 @@ struct ResetPassword {
                 .backgroundColor(Color.Transparent)
                 .layoutWeight(1)
                 .margin({ left: 12 })
-                .accessibilityText('手机号')
+                .accessibilityText($r('app.string.phone_number'))
                 .key("resetPhoneInput")
                 .onChange((it: string) => {
                   this.phoneNumber = it
@@ -259,7 +261,7 @@ struct ResetPassword {
             .alignItems(VerticalAlign.Center)
 
             if (this.checkPhoneNumber) {
-              Text("请输入正确的手机号")
+              Text($r('app.string.invalid_phone'))
                 .fontColor(AUTH_ERROR)
                 .fontSize(DesignFontSize.CAPTION)
                 .lineHeight(16)
@@ -278,7 +280,7 @@ struct ResetPassword {
               SymbolGlyph($r('sys.symbol.key'))
                 .fontSize(16)
                 .fontColor([this.checkCode ? AUTH_ERROR : GLASS_PREFIX])
-              TextInput({ placeholder: "验证码" })
+              TextInput({ placeholder: resString('verification_code') })
                 .type(InputType.Number)
                 .maxLength(6)
                 .fontSize(DesignFontSize.BODY)
@@ -303,7 +305,7 @@ struct ResetPassword {
 
               // 发送按钮 — 1dp 白30% 描边 + r12 + h40（对齐 Register 发送按钮）
               Stack({ alignContent: Alignment.Center }) {
-                Text(this.countDown > 0 ? `重新发送(${this.countDown}s)` : "获取验证码")
+                Text(this.countDown > 0 ? `重新发送(${this.countDown}s)` : resString('get_verification_code'))
                   .fontSize(DesignFontSize.CAPTION)
                   .fontWeight(DesignFontWeight.MEDIUM)
                   .fontColor(this.sendEnabled() ? GLASS_ICON_ACTIVE : GLASS_SEND_TEXT_DISABLED)
@@ -313,7 +315,7 @@ struct ResetPassword {
               .borderRadius(DesignDimens.RADIUS_MD)
               .border({
                 width: 1,
-                color: this.sendEnabled() ? DesignColor.GLASS_INPUT : GLASS_SEND_BORDER_DISABLED
+                color: this.sendEnabled() ? resColor('GLASS_INPUT') : GLASS_SEND_BORDER_DISABLED
               })
               .onClick(() => {
                 this.sendCaptcha()
@@ -324,7 +326,7 @@ struct ResetPassword {
             .alignItems(VerticalAlign.Center)
 
             if (this.checkCode) {
-              Text("请输入正确的验证码")
+              Text($r('app.string.invalid_verification_code'))
                 .fontColor(AUTH_ERROR)
                 .fontSize(DesignFontSize.CAPTION)
                 .lineHeight(16)
@@ -343,7 +345,7 @@ struct ResetPassword {
               SymbolGlyph($r('sys.symbol.lock'))
                 .fontSize(16)
                 .fontColor([this.checkPassword ? AUTH_ERROR : GLASS_PREFIX])
-              TextInput({ placeholder: "设置新密码" })
+              TextInput({ placeholder: resString('reset_password_3') })
                 .type(this.showPassword ? InputType.Normal : InputType.Password)
                 .maxLength(16)
                 .fontSize(DesignFontSize.BODY)
@@ -367,7 +369,7 @@ struct ResetPassword {
               }
               .width(48)
               .height(48)
-              .accessibilityDescription(this.showPassword ? '隐藏密码' : '显示密码')
+              .accessibilityDescription(this.showPassword ? resString('hide_password') : resString('show_password'))
               .onClick(() => {
                 this.showPassword = !this.showPassword
               })
@@ -377,7 +379,7 @@ struct ResetPassword {
             .alignItems(VerticalAlign.Center)
 
             if (this.checkPassword) {
-              Text("密码必须为6-16位")
+              Text($r('app.string.invalid_password'))
                 .fontColor(AUTH_ERROR)
                 .fontSize(DesignFontSize.CAPTION)
                 .lineHeight(16)
@@ -393,7 +395,7 @@ struct ResetPassword {
                   .height(22)
                   .color(Color.White)
               } else {
-                Text("重置密码")
+                Text($r('app.string.reset_password'))
                   .fontSize(BUTTON_FONT_SIZE)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
                   .fontColor(Color.White)
@@ -403,7 +405,7 @@ struct ResetPassword {
             .width("100%")
             .height(48)
             .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(DesignColor.PRIMARY)
+            .backgroundColor(resColor('PRIMARY'))
             .opacity(this.submitting ? 0.38 : 1)
             .onClick(() => {
               // 防连点：请求进行中直接忽略
@@ -426,7 +428,7 @@ struct ResetPassword {
           .backgroundColor(GLASS_CARD_BG)
           .border({
             width: 1,
-            color: DesignColor.GLASS_BORDER_SUBTLE,
+            color: resColor('GLASS_BORDER_SUBTLE'),
             style: BorderStyle.Solid
           })
           .padding({ left: 16, right: 16, top: 20, bottom: 20 })
@@ -434,11 +436,11 @@ struct ResetPassword {
 
           // 返回登录入口 — 仅「返回登录」可点（13sp + 48dp 热区 + 800ms 节流，对齐 Register 登录入口）
           Row() {
-            Text("想起密码了？")
+            Text($r('app.string.reset_password_4'))
               .fontSize(DesignFontSize.CAPTION)
               .lineHeight(16)
               .fontColor(Color.White)
-            Text("返回登录")
+            Text($r('app.string.reset_password_5'))
               .fontSize(DesignFontSize.CAPTION)
               .lineHeight(16)
               .fontWeight(DesignFontWeight.MEDIUM)
@@ -478,13 +480,13 @@ struct ResetPassword {
       if (res.code === HttpStatusCode.Ok) {
         // 低频关键动作成功：密码重置成功
         logger.info('resetPassword', '密码重置成功，引导回登录页')
-        showToastSafety("密码重置成功，请使用新密码登录")
+        showToastSafety(resString('reset_password_6'))
         // 重置成功回登录页：本页由登录页 push 而来，pop 即回（不 replace，保留登录页栈位）
         pathStack.pop()
       } else {
         // 业务拒绝（验证码错误/已过期等）：留在本页便于修正重试
         logger.warn('resetPassword', `密码重置被拒 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "密码重置失败")
+        showToastSafety(res.message, resString('reset_password_7'))
       }
     } finally {
       this.submitting = false

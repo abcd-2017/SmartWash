@@ -7,7 +7,7 @@
 // （今日 → 趋势空态 → 去记录 → 保存 → 返回趋势，趋势需反映新记录）。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import { MOOD_LEVEL_MAX, MOOD_LEVEL_MIN, MoodLevelCountVo, MoodText, moodMonthStats } from '../api'
 import {
@@ -29,6 +29,7 @@ import { MOOD_TICK_KEY } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'moodTrendPage'
@@ -148,7 +149,7 @@ struct MoodTrendPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -157,7 +158,7 @@ struct MoodTrendPage {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([DesignColor.TEXT_PRIMARY])
+              .fontColor([resColor('TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -170,7 +171,7 @@ struct MoodTrendPage {
           Text(MoodText.mood_trend_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
         }
         .width('100%')
         .height(56)
@@ -207,10 +208,10 @@ struct MoodTrendPage {
               Column() {
                 MoodSmallAction({
                   text: MoodText.mood_trend_empty_action,
-                  containerColor: DesignColor.PRIMARY_LIGHT,
+                  containerColor: resColor('PRIMARY_LIGHT'),
                   // 行动绿字走 TEXT_GREEN_ON_TINT 深档（对齐安卓审查 #27：PRIMARY on
                   // PRIMARY_LIGHT 仅 3.29:1 跌破 AA；#146841 on #F0FBF4 6.41:1 达标）
-                  contentColor: DesignColor.TEXT_GREEN_ON_TINT,
+                  contentColor: resColor('TEXT_GREEN_ON_TINT'),
                   onAction: (): void => {
                     pathStack.pushPathByName(RouteNames.MOOD_TODAY, null)
                   }
@@ -267,7 +268,7 @@ struct MoodTrendPage {
                 Text(MoodText.mood_trend_distribution_title)
                   .fontSize(DesignFontSize.BODY)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor(DesignColor.TEXT_PRIMARY)
+                  .fontColor(resColor('TEXT_PRIMARY'))
 
                 Column({ space: DesignDimens.SPACE_SM }) {
                   ForEach(this.barModels(), (model: MoodBarModel) => {
@@ -300,7 +301,7 @@ struct MoodTrendPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

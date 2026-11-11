@@ -6,11 +6,13 @@
  * 相位状态机在本页（对齐安卓 BreathViewModel 的 tick 推进），周期 50ms。
  */
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, toColorString } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, toColorString } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppButton, AppButtonVariant, AppPillTabRow, PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 呼吸相位类型 */
 enum BreathPhaseType {
@@ -56,20 +58,20 @@ function phasesOf(mode: BreathMode): BreathPhase[] {
 
 /** 页面文案 */
 class BreathText {
-  static readonly title: string = '呼吸引导'
-  static readonly modeSleep: string = '4-7-8 睡眠'
-  static readonly modeBox: string = '4-4-4-4 专注'
-  static readonly modeSleepHint: string = '吸 4 秒 · 屏 7 秒 · 呼 8 秒'
-  static readonly modeBoxHint: string = '四相位各 4 秒'
-  static readonly start: string = '开始'
-  static readonly pause: string = '暂停'
-  static readonly resume: string = '继续'
-  static readonly stop: string = '停止'
-  static readonly phaseInhale: string = '吸气'
-  static readonly phaseHold: string = '屏息'
-  static readonly phaseExhale: string = '呼气'
-  static readonly phaseKeep: string = '保持'
-  static readonly cyclesFormat: string = '已完成 %d 轮'
+  static get title(): string { return resString('lab_toy_breath') }
+  static get modeSleep(): string { return resString('lab_breath_mode_sleep') }
+  static get modeBox(): string { return resString('lab_breath_mode_box') }
+  static get modeSleepHint(): string { return resString('lab_breath_mode_sleep_hint') }
+  static get modeBoxHint(): string { return resString('lab_breath_mode_box_hint') }
+  static get start(): string { return resString('lab_breath_start') }
+  static get pause(): string { return resString('lab_breath_pause') }
+  static get resume(): string { return resString('lab_breath_resume') }
+  static get stop(): string { return resString('lab_breath_stop') }
+  static get phaseInhale(): string { return resString('lab_breath_phase_inhale') }
+  static get phaseHold(): string { return resString('lab_breath_phase_hold') }
+  static get phaseExhale(): string { return resString('lab_breath_phase_exhale') }
+  static get phaseKeep(): string { return resString('lab_breath_phase_keep') }
+  static get cyclesFormat(): string { return resString('breath_text_cycles_format') }
 }
 
 /** 圆环画布边长（vp） */
@@ -239,23 +241,23 @@ export struct BreathPage {
     ctx.clearRect(0, 0, size, size)
     // 轨道环
     ctx.lineWidth = 2
-    ctx.strokeStyle = DesignColor.WATER_SOFT
+    ctx.strokeStyle = resColor('WATER_SOFT')
     ctx.beginPath()
     ctx.arc(cx, cy, baseR * SCALE_INHALED + 4, 0, Math.PI * 2, false)
     ctx.stroke()
     // 呼吸圆（水 → 水浅径向渐变）
     const radius: number = baseR * this.scaleValue
     const gradient: CanvasGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseR * SCALE_INHALED)
-    gradient.addColorStop(0, toColorString(DesignColor.WATER))
-    gradient.addColorStop(1, toColorString(DesignColor.WATER_SOFT))
+    gradient.addColorStop(0, toColorString(resColor('WATER')))
+    gradient.addColorStop(1, toColorString(resColor('WATER_SOFT')))
     ctx.fillStyle = gradient
     ctx.beginPath()
     ctx.arc(cx, cy, radius, 0, Math.PI * 2, false)
     ctx.fill()
     // 圆心文字底衬（水色晕）：呼吸圆后叠加同尺寸 waterSoft 径向渐变，
     // 0→0.75 纯色平台、1→全透明，把文字区背景固定到 waterSoft（深浅板均达标）
-    const plateSoft: string = toColorString(DesignColor.WATER_SOFT)
-    const plateTransparent: string = toColorString(DesignColor.WATER_SOFT & 0xFFFFFF)
+    const plateSoft: string = toColorString(resColor('WATER_SOFT'))
+    const plateTransparent: string = toColorString(resColor('WATER_SOFT') & 0xFFFFFF)
     const plate: CanvasGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseR)
     plate.addColorStop(0, plateSoft)
     plate.addColorStop(TEXT_PLATE_SOLID_RATIO, plateSoft)
@@ -304,7 +306,7 @@ export struct BreathPage {
 
       Text(this.mode === BreathMode.SLEEP ? BreathText.modeSleepHint : BreathText.modeBoxHint)
         .fontSize(DesignFontSize.BODY_SMALL)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
           top: DesignDimens.SPACE_XS })
 
@@ -342,12 +344,12 @@ export struct BreathPage {
           Text(this.phaseLabel(phasesOf(this.mode)[this.phaseIndex].type))
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
 
           Text(this.countdownText())
             .fontSize(DesignFontSize.STATUS_LARGE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ top: DesignDimens.SPACE_XXS })
         }
@@ -359,7 +361,7 @@ export struct BreathPage {
       Text(this.cyclesText())
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .margin({ top: DesignDimens.SPACE_MD })
 
@@ -399,7 +401,7 @@ export struct BreathPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，画布 onReady 重绘与 DesignColor 静态令牌直读点
+      // 色模式翻转时 if 双分支重建子树，画布 onReady 重绘与 资源色直读点
       // 重读新值（静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets；
       // 相位状态机节拍器（setInterval onTick）保持在宿主之外，页面组件本体不在子树内）
       ThemeRefreshV2() {
@@ -422,7 +424,7 @@ export struct BreathPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

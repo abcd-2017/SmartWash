@@ -44,14 +44,15 @@ import { RouteNames } from '../../../../../constant/RouteNames'
 import { DesignDimens } from '../../../../../constant/DesignSystem'
 import { getObjectParam, getNumberParam, getBooleanParam, pathStack } from '../../../../../utils/PathStackUtil'
 import { logger } from '../../../../../utils/Logger'
+import { resString } from '../../../../../utils/ResourceString'
 
 /** 爻位名（自初爻到上爻，索引 0..5） */
-const POSITION_NAMES: string[] = ['初', '二', '三', '四', '五', '上']
+function POSITION_NAMES(): string[] { return [resString('div_chart_page_1'), resString('mood_week_tue'), resString('mood_week_wed'), resString('mood_week_thu'), resString('mood_week_fri'), resString('div_chart_page_2')] }
 
 /** 九宫名（奇门口径，与 DivPanels.GONG_NAMES 同值） */
 const GONG_NAMES: Record<number, string> = {
-  1: '坎一', 2: '坤二', 3: '震三', 4: '巽四',
-  5: '中五', 6: '乾六', 7: '兑七', 8: '艮八', 9: '离九',
+  1: resString('div_chart_page_3'), 2: resString('div_chart_page_4'), 3: resString('div_chart_page_5'), 4: resString('div_chart_page_6'),
+  5: resString('div_chart_page_7'), 6: resString('div_chart_page_8'), 7: resString('div_chart_page_9'), 8: resString('div_chart_page_10'), 9: resString('div_chart_page_11'),
 }
 
 @Builder
@@ -134,34 +135,34 @@ struct DivChartPage {
     if (this.method === 'liuyao') {
       const name = this.liuYao?.name ?? ''
       // 六爻取本卦名末字（对齐安卓 divSealText takeLast(1)，compare-15 #24）
-      return name.length > 0 ? name.charAt(name.length - 1) : '六'
+      return name.length > 0 ? name.charAt(name.length - 1) : resString('div_seal_liuyao')
     }
     if (this.method === 'meihua') {
       const name = this.meiHua?.benName ?? ''
-      return name.length > 0 ? name.charAt(name.length - 1) : '梅'
+      return name.length > 0 ? name.charAt(name.length - 1) : resString('div_seal_meihua')
     }
     if (this.method === 'qimen') {
-      return '奇'
+      return resString('div_seal_qimen')
     }
-    return '壬'
+    return resString('div_seal_liuren')
   }
 
   private titleText(): string {
     if (this.method === 'liuyao') {
       const chart = this.liuYao
       if (chart === null) {
-        return '六爻'
+        return resString('div_method_liuyao_name')
       }
       return chart.bianName !== null ? `${chart.name} 之 ${chart.bianName}` : chart.name
     }
     if (this.method === 'meihua') {
       const chart = this.meiHua
-      return chart !== null ? `${chart.benName} · ${chart.movingYao}爻动` : '梅花'
+      return chart !== null ? `${chart.benName} · ${chart.movingYao}爻动` : resString('div_method_meihua_name')
     }
     if (this.method === 'qimen') {
-      return '奇门遁甲'
+      return resString('div_chart_page_12')
     }
-    return '大六壬'
+    return resString('div_chart_page_13')
   }
 
   private declarationText(): string {
@@ -187,7 +188,7 @@ struct DivChartPage {
       return ''
     }
     return `${chart.dayGanZhi}日 ${chart.hourGanZhi}时 · 月将 ${chart.yueJiang}（${chart.yueJiangName}）· ` +
-      `${chart.isDay ? '昼占' : '夜占'}贵${chart.guiRen}`
+      `${chart.isDay ? resString('div_chart_page_14') : resString('div_chart_page_15')}贵${chart.guiRen}`
   }
 
   private juDeclaration(): string {
@@ -321,7 +322,7 @@ struct DivChartPage {
       lines.push(`${pos}爻${rel}`)
     })
     if (lines.length === 0) {
-      return '未见动变冲空之象'
+      return resString('div_chart_page_16')
     }
     return lines.join('\n')
   }
@@ -354,7 +355,7 @@ struct DivChartPage {
     }
     if (facts.yongShenPosition !== null) {
       const pos = facts.yongShenPosition
-      lines.push(`${facts.strength.get(pos) ?? ''} · ${POSITION_NAMES[pos - 1]}爻`)
+      lines.push(`${facts.strength.get(pos) ?? ''} · ${POSITION_NAMES()[pos - 1]}爻`)
     }
     return lines.join('\n')
   }
@@ -717,15 +718,15 @@ struct DivChartPage {
 /** 局数中文数字（1..9 → 一..九） */
 function cnJuNumber(n: number): string {
   switch (n) {
-    case 1: return '一'
-    case 2: return '二'
-    case 3: return '三'
-    case 4: return '四'
-    case 5: return '五'
-    case 6: return '六'
-    case 7: return '七'
-    case 8: return '八'
-    case 9: return '九'
+    case 1: return resString('mood_week_mon')
+    case 2: return resString('mood_week_tue')
+    case 3: return resString('mood_week_wed')
+    case 4: return resString('mood_week_thu')
+    case 5: return resString('mood_week_fri')
+    case 6: return resString('div_seal_liuyao')
+    case 7: return resString('div_chart_page_17')
+    case 8: return resString('div_chart_page_18')
+    case 9: return resString('div_chart_page_19')
     default: return `${n}`
   }
 }

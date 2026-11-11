@@ -3,6 +3,7 @@
  * 差异分析 02 §10：删除原 Enum+Map 双重定义冗余，描述文案统一由
  * getOrderStatusDescription 提供（对应安卓 descriptionRes 单一事实来源）。
  */
+import { resString } from '../utils/ResourceString'
 export enum OrderStatusEnum {
   CANCELED = "-2",
   REFUNDED = "-1",
@@ -20,25 +21,25 @@ export enum OrderStatusEnum {
 export function getOrderStatusDescription(status: string | null | undefined): string {
   switch (status) {
     case OrderStatusEnum.CANCELED:
-      return "已取消"
+      return resString('cancelled')
     case OrderStatusEnum.REFUNDED:
-      return "已退款"
+      return resString('order_status_refunded')
     case OrderStatusEnum.PENDING_PAYMENT:
-      return "待支付"
+      return resString('pending_payment')
     case OrderStatusEnum.PENDING_SHIPMENT:
-      return "待寄件"
+      return resString('pending_shipment')
     case OrderStatusEnum.RECEIVED:
-      return "已收取"
+      return resString('order_status_received')
     case OrderStatusEnum.WASHING:
-      return "清洗中"
+      return resString('step_washing')
     case OrderStatusEnum.DRIED:
-      return "已烘干"
+      return resString('order_status_dried')
     case OrderStatusEnum.IN_DELIVERY:
-      return "配送中"
+      return resString('order_status_in_delivery')
     case OrderStatusEnum.READY_FOR_PICKUP:
-      return "待取件"
+      return resString('step_pickup')
     case OrderStatusEnum.COMPLETED:
-      return "已完成"
+      return resString('completed')
     default:
       return status ?? ""
   }

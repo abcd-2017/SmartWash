@@ -10,6 +10,7 @@
 
 import { WorkbenchEntryVo } from '../../network/api/workbench'
 import { DEEPLINK_SCHEME } from '../../utils/deeplink/DeepLinkParser'
+import { resString } from '../../utils/ResourceString'
 
 /**
  * 工具卡图标容器语义色组（规范 §2.1 六色浅底，与后端 color 白名单 key 一一对应，
@@ -281,35 +282,35 @@ export function buildWorkbenchBlocks(tools: Array<WorkbenchTool>): Array<Workben
  * 便于跨端文案核对（安卓 workbench_title / workbench_subtitle / workbench_divination_name ...）。
  */
 export class WorkbenchText {
-  static readonly workbench_title: string = "工作台"
-  static readonly workbench_subtitle: string = "小工具，慢慢加"
-  static readonly workbench_divination_name: string = "观象台"
-  static readonly workbench_divination_subtitle: string = "六爻 · 梅花 · 奇门 · 大六壬"
-  static readonly workbench_all_tools: string = "全部工具"
-  static readonly workbench_tool_calendar: string = "洗衣黄历"
-  static readonly workbench_tool_calendar_desc: string = "今天宜洗什么颜色"
-  static readonly workbench_tool_stain: string = "渍迹识别"
-  static readonly workbench_tool_stain_desc: string = "拍照认污渍类型"
-  static readonly workbench_tool_fabric: string = "面料百科"
-  static readonly workbench_tool_fabric_desc: string = "什么面料怎么洗"
-  static readonly workbench_tool_estimate: string = "费用估算"
-  static readonly workbench_tool_estimate_desc: string = "洗之前先算个账"
-  static readonly workbench_tool_history: string = "我的卦历"
-  static readonly workbench_tool_history_desc: string = "起过的卦都在这里"
-  static readonly workbench_tool_ai: string = "AI 助手"
-  static readonly workbench_tool_ai_desc: string = "洗护问题随口问"
-  static readonly workbench_tool_short_code: string = "短链管理"
-  static readonly workbench_tool_short_code_desc: string = "生成并管理跳转短链"
-  static readonly workbench_footer: string = "工具会陆续加进来"
-  static readonly workbench_coming_soon: string = "功能建设中，敬请期待"
+  static get workbench_title(): string { return resString('workbench_title') }
+  static get workbench_subtitle(): string { return resString('workbench_subtitle') }
+  static get workbench_divination_name(): string { return resString('workbench_divination_name') }
+  static get workbench_divination_subtitle(): string { return resString('workbench_divination_subtitle') }
+  static get workbench_all_tools(): string { return resString('workbench_all_tools') }
+  static get workbench_tool_calendar(): string { return resString('workbench_text_workbench_tool_calendar') }
+  static get workbench_tool_calendar_desc(): string { return resString('workbench_text_workbench_tool_calendar_desc') }
+  static get workbench_tool_stain(): string { return resString('workbench_text_workbench_tool_stain') }
+  static get workbench_tool_stain_desc(): string { return resString('workbench_text_workbench_tool_stain_desc') }
+  static get workbench_tool_fabric(): string { return resString('workbench_text_workbench_tool_fabric') }
+  static get workbench_tool_fabric_desc(): string { return resString('workbench_text_workbench_tool_fabric_desc') }
+  static get workbench_tool_estimate(): string { return resString('ai_task_recharge') }
+  static get workbench_tool_estimate_desc(): string { return resString('workbench_text_workbench_tool_estimate_desc') }
+  static get workbench_tool_history(): string { return resString('workbench_text_workbench_tool_history') }
+  static get workbench_tool_history_desc(): string { return resString('workbench_text_workbench_tool_history_desc') }
+  static get workbench_tool_ai(): string { return resString('workbench_text_workbench_tool_ai') }
+  static get workbench_tool_ai_desc(): string { return resString('workbench_text_workbench_tool_ai_desc') }
+  static get workbench_tool_short_code(): string { return resString('toolbox_title') }
+  static get workbench_tool_short_code_desc(): string { return resString('workbench_text_workbench_tool_short_code_desc') }
+  static get workbench_footer(): string { return resString('workbench_footer') }
+  static get workbench_coming_soon(): string { return resString('workbench_coming_soon') }
   // 搜索 / 最近使用 / 公告条 / 真实错误空态（2026-11-04 类型化组件批，键名对齐安卓 strings.xml）
-  static readonly workbench_entries_error: string = "工具列表加载失败，请检查网络后重试"
-  static readonly workbench_entries_empty: string = "工具还在准备中，稍后再来看看"
-  static readonly workbench_retry: string = "重试"
-  static readonly workbench_search_hint: string = "搜索工具"
-  static readonly workbench_search_empty: string = "没有找到相关工具，换个关键词试试"
-  static readonly workbench_recent_title: string = "最近使用"
-  static readonly workbench_notice_dismiss: string = "关闭公告"
+  static get workbench_entries_error(): string { return resString('workbench_entries_error') }
+  static get workbench_entries_empty(): string { return resString('workbench_entries_empty') }
+  static get workbench_retry(): string { return resString('workbench_retry') }
+  static get workbench_search_hint(): string { return resString('workbench_search_hint') }
+  static get workbench_search_empty(): string { return resString('workbench_search_empty') }
+  static get workbench_recent_title(): string { return resString('workbench_recent_title') }
+  static get workbench_notice_dismiss(): string { return resString('workbench_notice_dismiss') }
 }
 
 /**

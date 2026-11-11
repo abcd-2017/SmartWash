@@ -20,6 +20,7 @@ import { QiMenChart } from '../core/qimen/QiMenChart'
 import { LiuRenChart, LiuRenCourse } from '../core/liuren/LiuRenChart'
 import { decodeChartJson } from './DivChartCodec'
 import { logger } from '../../../utils/Logger'
+import { resString } from '../../../utils/ResourceString'
 
 /** 解码产物的键值容器（JSON 解析结果，键为字符串） */
 type Raw = Record<string, Object>
@@ -184,7 +185,7 @@ function ganZhiField(raw: Object, key: string): GanZhi {
 function siZhuOf(raw: Object): SiZhu {
   const siZhuRaw = get(raw, 'siZhu')
   if (siZhuRaw === null) {
-    throw new Error('卦盘字段缺失: siZhu')
+    throw new Error(resString('div_chart_reader_1'))
   }
   return new SiZhu(
     ganZhiField(siZhuRaw, 'year'),
@@ -222,7 +223,7 @@ function tiYongField(raw: Object, key: string): TiYongRelation {
 function liuYaoLineOf(raw: Object): LiuYaoLine {
   const yaoRaw = get(raw, 'yao')
   if (yaoRaw === null) {
-    throw new Error('六爻行缺 yao 字段')
+    throw new Error(resString('div_chart_reader_2'))
   }
   return new LiuYaoLine(
     mustNumber(raw, 'position'),
@@ -405,16 +406,16 @@ export function readLiuRenChart(chartJson: string): LiuRenChart {
 /** 术数名（兜底） */
 export function divMethodName(method: string): string {
   if (method === 'liuyao') {
-    return '六爻'
+    return resString('div_method_liuyao_name')
   }
   if (method === 'meihua') {
-    return '梅花'
+    return resString('div_method_meihua_name')
   }
   if (method === 'qimen') {
-    return '奇门'
+    return resString('div_method_qimen_name')
   }
   if (method === 'liuren') {
-    return '六壬'
+    return resString('div_method_liuren_name')
   }
   return method
 }
@@ -433,10 +434,10 @@ export function chartNameOf(method: string, chartJson: string): string {
       return readMeiHuaChart(chartJson).benName
     }
     if (method === 'qimen') {
-      return '奇门遁甲'
+      return resString('div_chart_reader_3')
     }
     if (method === 'liuren') {
-      return '大六壬'
+      return resString('div_chart_reader_4')
     }
   } catch (err) {
     // 解码失败回退术数名（降级留痕；仅解读页加载时低频调用，chartJson 不打全文）

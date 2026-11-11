@@ -10,7 +10,7 @@
 // 已知坑遵守：翻面/评分态为页面自持状态；评分失败 toast 后保留当前卡重试。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   AnswerForm,
@@ -37,6 +37,7 @@ import { bumpReviewRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'reviewStudyPage'
@@ -177,7 +178,7 @@ struct ReviewStudyPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -223,7 +224,7 @@ struct ReviewStudyPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -240,7 +241,7 @@ struct ReviewStudyPage {
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
         .lineHeight(DesignFontSize.CAPTION + 4)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .margin({ top: DesignDimens.SPACE_XS })
 
@@ -257,8 +258,8 @@ struct ReviewStudyPage {
                 Row({ space: DesignDimens.SPACE_XXS }) {
                   ReviewTagChip({
                     text: this.currentMaterialTitle(),
-                    containerColor: DesignColor.SURFACE_VARIANT,
-                    contentColor: DesignColor.TEXT_SECONDARY
+                    containerColor: resColor('SURFACE_VARIANT'),
+                    contentColor: resColor('TEXT_SECONDARY')
                   })
                   CardStateChip({ state: this.currentCard()?.state ?? 1 })
                 }
@@ -267,21 +268,21 @@ struct ReviewStudyPage {
                   Text(this.currentCard()?.question ?? '')
                     .fontSize(DesignFontSize.AMOUNT_MEDIUM)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(DesignColor.TEXT_PRIMARY)
+                    .fontColor(resColor('TEXT_PRIMARY'))
                     .width('100%')
                     .margin({ top: DesignDimens.SPACE_MD })
 
                   // 引导操作的可读正文（非装饰）：TEXT_TERTIARY 双主题均破 4.5:1（S1）
                   Text(ReviewText.review_study_question_hint)
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(DesignColor.TEXT_SECONDARY)
+                    .fontColor(resColor('TEXT_SECONDARY'))
                     .width('100%')
                     .margin({ top: DesignDimens.SPACE_LG })
                 } else {
                   // 背面问题放宽到 4 行便于长问题回看全文（S3）
                   Text(this.currentCard()?.question ?? '')
                     .fontSize(DesignFontSize.BODY_SMALL)
-                    .fontColor(DesignColor.TEXT_SECONDARY)
+                    .fontColor(resColor('TEXT_SECONDARY'))
                     .maxLines(4)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                     .width('100%')
@@ -291,13 +292,13 @@ struct ReviewStudyPage {
                   Text(ReviewText.review_study_answer_label)
                     .fontSize(DesignFontSize.CAPTION)
                     .fontWeight(DesignFontWeight.MEDIUM)
-                    .fontColor(DesignColor.TEXT_GREEN)
+                    .fontColor(resColor('TEXT_GREEN'))
                     .width('100%')
                     .margin({ top: DesignDimens.SPACE_MD })
 
                   Text(this.currentCard()?.answer ?? '')
                     .fontSize(DesignFontSize.BODY)
-                    .fontColor(DesignColor.TEXT_PRIMARY)
+                    .fontColor(resColor('TEXT_PRIMARY'))
                     .width('100%')
                     .margin({ top: DesignDimens.SPACE_XS })
                 }

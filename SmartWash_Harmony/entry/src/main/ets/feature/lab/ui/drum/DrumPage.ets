@@ -6,7 +6,7 @@
  * （视觉播放头仍推进）。reduced motion：默认停止、用户主动播放（当前常量 false）。
  */
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppButton, AppButtonVariant, PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
@@ -20,6 +20,8 @@ import {
   DrumVoice,
 } from '../../core/DrumEngine'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 预设节奏：BPM + 8 行 × 16 步谱面（'x' 触发 / '.' 空） */
 class DrumPreset {
@@ -62,31 +64,31 @@ const DRUM_PRESETS: DrumPreset[] = [
 
 /** 页面文案 */
 class DrumText {
-  static readonly title: string = '滚筒节拍机'
+  static get title(): string { return resString('lab_toy_drum') }
   static readonly bpmLabel: string = 'BPM'
-  static readonly patternLabel: string = '节奏型'
-  static readonly presetsLabel: string = '预设节奏'
-  static readonly play: string = '播放'
-  static readonly stop: string = '停止'
+  static get patternLabel(): string { return resString('lab_drum_pattern_label') }
+  static get presetsLabel(): string { return resString('lab_drum_presets_label') }
+  static get play(): string { return resString('lab_fish_play') }
+  static get stop(): string { return resString('lab_breath_stop') }
   static readonly patternA: string = 'A'
   static readonly patternB: string = 'B'
   static readonly patternC: string = 'C'
   static readonly patternD: string = 'D'
   // 预设名对齐安卓 strings_drum.xml（基础四四/机械/洗衣节奏）
-  static readonly presetBasic: string = '基础四四'
-  static readonly presetGroove: string = '律动'
-  static readonly presetBreakbeat: string = '碎拍'
-  static readonly presetLatin: string = '拉丁'
-  static readonly presetRobot: string = '机械'
-  static readonly presetLaundry: string = '洗衣节奏'
-  static readonly voiceKick: string = '底鼓'
-  static readonly voiceSnare: string = '军鼓'
-  static readonly voiceHihat: string = '踩镲'
-  static readonly voiceClap: string = '拍手'
-  static readonly voiceTom: string = '通鼓'
-  static readonly voiceCowbell: string = '牛铃'
-  static readonly voiceRim: string = '边击'
-  static readonly voiceCymbal: string = '镲片'
+  static get presetBasic(): string { return resString('lab_drum_preset_basic') }
+  static get presetGroove(): string { return resString('lab_drum_preset_groove') }
+  static get presetBreakbeat(): string { return resString('lab_drum_preset_breakbeat') }
+  static get presetLatin(): string { return resString('lab_drum_preset_latin') }
+  static get presetRobot(): string { return resString('lab_drum_preset_robot') }
+  static get presetLaundry(): string { return resString('lab_drum_preset_laundry') }
+  static get voiceKick(): string { return resString('lab_drum_voice_kick') }
+  static get voiceSnare(): string { return resString('lab_drum_voice_snare') }
+  static get voiceHihat(): string { return resString('lab_drum_voice_hihat') }
+  static get voiceClap(): string { return resString('lab_drum_voice_clap') }
+  static get voiceTom(): string { return resString('lab_drum_voice_tom') }
+  static get voiceCowbell(): string { return resString('lab_drum_voice_cowbell') }
+  static get voiceRim(): string { return resString('lab_drum_voice_rim') }
+  static get voiceCymbal(): string { return resString('lab_drum_voice_cymbal') }
 }
 
 /** 节奏型数量 */
@@ -253,22 +255,22 @@ export struct DrumPage {
     const fraction: number = Math.min(1, Math.max(0, (this.bpm - minBpm) / (maxBpm - minBpm)))
     ctx.clearRect(0, 0, width, height)
     // 轨道
-    ctx.fillStyle = DesignColor.SURFACE_VARIANT
+    ctx.fillStyle = resColor('SURFACE_VARIANT')
     this.roundRect(0, trackY - trackHeight / 2, width, trackHeight, trackHeight / 2)
     ctx.fill()
     // 已填充
-    ctx.fillStyle = DesignColor.PRIMARY
+    ctx.fillStyle = resColor('PRIMARY')
     this.roundRect(0, trackY - trackHeight / 2, width * fraction, trackHeight, trackHeight / 2)
     ctx.fill()
     // 拇指
     const thumbX: number = width * fraction
     const thumbR: number = 10
-    ctx.fillStyle = DesignColor.SURFACE
+    ctx.fillStyle = resColor('SURFACE')
     ctx.beginPath()
     ctx.arc(thumbX, trackY, thumbR, 0, Math.PI * 2, false)
     ctx.fill()
     ctx.lineWidth = 2
-    ctx.strokeStyle = DesignColor.PRIMARY
+    ctx.strokeStyle = resColor('PRIMARY')
     ctx.beginPath()
     ctx.arc(thumbX, trackY, thumbR, 0, Math.PI * 2, false)
     ctx.stroke()
@@ -311,12 +313,12 @@ export struct DrumPage {
           Text(DrumText.bpmLabel)
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
 
           Text(this.bpm.toString())
             .fontSize(DesignFontSize.DATA_LARGE)
             .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .fontFeature(DesignFontFeature.TNUM)
         }
         .alignItems(HorizontalAlign.Start)
@@ -356,20 +358,20 @@ export struct DrumPage {
       Text(DrumText.patternLabel)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .margin({ top: DesignDimens.SPACE_MD })
 
       Row({ space: DesignDimens.SPACE_XS }) {
         ForEach([0, 1, 2, 3], (index: number) => {
           Text(this.patternLabel(index))
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(this.activePattern === index ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+            .fontColor(this.activePattern === index ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
             .width(36)
             .height(36)
             .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(this.activePattern === index ? DesignColor.PRIMARY : DesignColor.SURFACE)
+            .backgroundColor(this.activePattern === index ? resColor('PRIMARY') : resColor('SURFACE'))
             .borderWidth(1)
-            .borderColor(this.activePattern === index ? DesignColor.PRIMARY : DesignColor.OUTLINE)
+            .borderColor(this.activePattern === index ? resColor('PRIMARY') : resColor('OUTLINE'))
             .textAlign(TextAlign.Center)
             .onClick(() => {
               this.selectPattern(index)
@@ -381,13 +383,13 @@ export struct DrumPage {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .shadow({
       radius: 12,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -404,7 +406,7 @@ export struct DrumPage {
       Text(DrumText.presetsLabel)
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
 
       Scroll() {
         Row() {
@@ -414,13 +416,13 @@ export struct DrumPage {
               Text(this.presetLabel(index))
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
                 .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
                   top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
                 .borderRadius(DesignDimens.RADIUS_FULL)
-                .backgroundColor(DesignColor.SURFACE_VARIANT)
+                .backgroundColor(resColor('SURFACE_VARIANT'))
                 .borderWidth(1)
-                .borderColor(DesignColor.OUTLINE)
+                .borderColor(resColor('OUTLINE'))
             }
             .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             .margin({ right: DesignDimens.SPACE_XS })
@@ -450,7 +452,7 @@ export struct DrumPage {
           Column() {
             Text(this.voiceLabel(voice))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .width(CELL_LABEL_WIDTH)
               .maxLines(1)
               .textAlign(TextAlign.End)
@@ -480,13 +482,13 @@ export struct DrumPage {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .shadow({
       radius: 12,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -514,17 +516,17 @@ export struct DrumPage {
     const active: boolean = pattern !== undefined && pattern.isEnabled(voice, step)
     const isCurrent: boolean = step === this.currentStep
     if (active && isCurrent) {
-      return DesignColor.WATER
+      return resColor('WATER')
     }
     if (active) {
-      return DesignColor.PRIMARY
+      return resColor('PRIMARY')
     }
     // 空格播放头不再染 primarySoft（对空格底仅 1.02/1.07:1 不可辨），
     // 底色保持空格原色，由 primary 描边环承担指示
     if (step % 4 === 0) {
-      return DesignColor.OUTLINE
+      return resColor('OUTLINE')
     }
-    return DesignColor.SURFACE_VARIANT
+    return resColor('SURFACE_VARIANT')
   }
 
   private stepCellActive(voice: number, step: number): boolean {
@@ -558,7 +560,7 @@ export struct DrumPage {
           .borderRadius(DesignDimens.RADIUS_SMALL)
           .backgroundColor(this.stepCellColor(voice, step))
           .borderWidth(this.stepCellBorderWidth(voice, step))
-          .borderColor(DesignColor.PRIMARY)
+          .borderColor(resColor('PRIMARY'))
       }
       .scale({ x: this.stepCellScale(voice, step), y: this.stepCellScale(voice, step) })
       .animation({ duration: 200, curve: Curve.EaseOut })
@@ -575,7 +577,7 @@ export struct DrumPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，滑杆画布 onAreaChange/onReady 重绘与 DesignColor
+      // 色模式翻转时 if 双分支重建子树，滑杆画布 onAreaChange/onReady 重绘与资源色直读点
       // 静态令牌直读点重读新值（静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets；
       // 音频引擎（aboutToAppear 初始化 + setStepListener）保持在宿主之外，页面组件本体不在子树内）
       ThemeRefreshV2() {
@@ -600,7 +602,7 @@ export struct DrumPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

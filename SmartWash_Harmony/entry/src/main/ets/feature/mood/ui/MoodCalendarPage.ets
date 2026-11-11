@@ -7,7 +7,7 @@
 // 跨页刷新：保存今日心情后 bump 情绪 tick，本页 @StorageLink + @Watch 消费重拉。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import { MoodCalendarDayVo, MoodText, moodMonthCalendar, moodRecordedDaysFormat } from '../api'
 import {
@@ -33,6 +33,8 @@ import { MOOD_TICK_KEY } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
+import { resString } from '../../../utils/ResourceString'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'moodCalendarPage'
@@ -91,12 +93,12 @@ struct MoodCalendarPage {
         logger.warn(TAG, `月历加载失败 ym=${ym} code=${res.code ?? 0} msg=${res.message ?? ''}`)
         this.isError = true
         // 文案对齐安卓基线「月历加载失败」（勿用 mood_error_load 的「心情记录加载失败」）
-        showToastSafety(res.message, '月历加载失败')
+        showToastSafety(res.message, resString('mood_calendar_page_1'))
       }
     } catch (err) {
       logger.error(TAG, '月历加载异常', err instanceof Error ? err.message : '')
       this.isError = true
-      showToastSafety('', '月历加载失败')
+      showToastSafety('', resString('mood_calendar_page_1'))
     } finally {
       this.isLoading = false
     }
@@ -174,7 +176,7 @@ struct MoodCalendarPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -183,7 +185,7 @@ struct MoodCalendarPage {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([DesignColor.TEXT_PRIMARY])
+              .fontColor([resColor('TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -196,7 +198,7 @@ struct MoodCalendarPage {
           Text(MoodText.mood_calendar_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
         }
         .width('100%')
         .height(56)
@@ -209,7 +211,7 @@ struct MoodCalendarPage {
             .layoutWeight(1)
         } else if (this.isError) {
           MoodErrorState({
-            message: '月历加载失败',
+            message: resString('mood_calendar_page_1'),
             onRetry: (): void => {
               this.load(this.ym)
             }
@@ -236,7 +238,7 @@ struct MoodCalendarPage {
                   ForEach(WEEK_LABELS, (label: string) => {
                     Text(label)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(DesignColor.TEXT_SECONDARY)
+                      .fontColor(resColor('TEXT_SECONDARY'))
                       .textAlign(TextAlign.Center)
                       .layoutWeight(1)
                   }, (label: string) => label)
@@ -287,11 +289,11 @@ struct MoodCalendarPage {
             Column() {
               Text(moodRecordedDaysFormat(this.dayRecords.size))
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
 
               Text(MoodText.mood_calendar_day_empty_hint)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
                 .margin({ top: DesignDimens.SPACE_XXS })
             }
             .width('100%')
@@ -312,7 +314,7 @@ struct MoodCalendarPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

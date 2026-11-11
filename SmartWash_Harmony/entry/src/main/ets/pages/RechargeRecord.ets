@@ -1,5 +1,5 @@
 import { EmptyState, LoadingState, PageHeader } from "../view/common/AppComponents"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { RechargeType } from "../constant/RechargeType"
 import { getRechargeRecordList } from "../network/api/ReChargeApi"
@@ -10,6 +10,8 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { PagingController } from "../utils/PagingUtil"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -74,7 +76,7 @@ struct RechargeRecord {
         if (records === null || records.length === 0) {
           if (this.recordList.length > 0) {
             logger.debug('rechargeRecord', `已到末页 page=${page} 已加载=${this.recordList.length} 条`)
-            showToastSafety("没有更多数据了")
+            showToastSafety(resString('recharge_record_1'))
           }
           return false
         }
@@ -90,14 +92,14 @@ struct RechargeRecord {
       }
       logger.warn('rechargeRecord', `充值记录加载失败 page=${page} ` +
         `code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "充值记录加载失败")
+      showToastSafety(res.message, resString('recharge_record_2'))
       return false
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并按失败页返回，避免 isLoadingFirst 卡死永久骨架
       if (page === 1) {
         this.recordList = []
       }
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('recharge_record_3'))
       return false
     }
   }
@@ -118,29 +120,29 @@ struct RechargeRecord {
         } else {
           SymbolGlyph($r('sys.symbol.creditcard'))
             .fontSize(24)
-            .fontColor([DesignColor.PRIMARY])
+            .fontColor([resColor('PRIMARY')])
         }
       }
       .width(44)
       .height(44)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
       // 微信/余额 = primaryContainer(#F0FBF4)、支付宝 = iconContainerBlue(#EEF2FB)（对齐安卓 RechargeRecordCard）
-      .backgroundColor(record.rechargeType === RechargeType.WECHAT ? DesignColor.ICON_CONTAINER_GREEN :
-        record.rechargeType === RechargeType.ALIPAY ? DesignColor.ICON_CONTAINER_BLUE : DesignColor.ICON_CONTAINER_GREEN)
+      .backgroundColor(record.rechargeType === RechargeType.WECHAT ? resColor('ICON_CONTAINER_GREEN') :
+        record.rechargeType === RechargeType.ALIPAY ? resColor('ICON_CONTAINER_BLUE') : resColor('ICON_CONTAINER_GREEN'))
       .justifyContent(FlexAlign.Center)
       .alignItems(VerticalAlign.Center)
 
       // 中间：支付方式名称 + 充值时间
       Column() {
-        Text(record.rechargeType === RechargeType.WECHAT ? "微信支付" :
-          record.rechargeType === RechargeType.ALIPAY ? "支付宝" : "充值")
+        Text(record.rechargeType === RechargeType.WECHAT ? resString('weixin_pay') :
+          record.rechargeType === RechargeType.ALIPAY ? resString('alipay') : resString('service_recharge'))
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.NORMAL)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
 
         Text(this.formatRechargeTime(record.rechargeTime ?? ""))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .margin({ top: 4 })
@@ -155,20 +157,20 @@ struct RechargeRecord {
         .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontFeature(DesignFontFeature.TNUM)
-        .fontColor(DesignColor.PRIMARY_DARK)
+        .fontColor(resColor('PRIMARY_DARK'))
         .margin({ left: 12 })
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Clip })
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+    .border({ width: 1, color: resColor('OUTLINE'), radius: DesignDimens.CARD_RADIUS })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -177,12 +179,12 @@ struct RechargeRecord {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 页头（公共 PageHeader：22/600 标题 + 48dp 返回热区，对齐安卓 PageHeader / recap G4）
-        PageHeader({ title: "充值记录" })
+        PageHeader({ title: resString('recharge_record') })
 
         if (this.isLoadingFirst) {
           // 首屏加载态（对齐安卓 LoadingState：骨架屏，§3.6 禁转圈）
@@ -217,7 +219,7 @@ struct RechargeRecord {
           .animation({ duration: 200, curve: Curve.EaseOut })
         } else {
           // 空状态（对齐安卓 EmptyState：滚筒圆母题 + 引导文案，§3.6 禁灰色 Material 图标）
-          EmptyState({ message: "暂无充值记录" })
+          EmptyState({ message: resString('no_recharge_records') })
           .width("100%")
           .layoutWeight(1)
         }
@@ -231,7 +233,7 @@ struct RechargeRecord {
     .width("100%")
     .height("100%")
     .align(Alignment.Top)
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
     .hideTitleBar(true)
   }
 }

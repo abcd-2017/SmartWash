@@ -31,6 +31,7 @@ import { httpUtil } from '../../../network/HttpUtil'
 import { logger } from '../../../utils/Logger'
 import { decodeBundle, decodeBundleFromJson, DivRecordRow } from '../data/DivinationStore'
 import { DivSseCallbacks, divSsePost } from './DivSseClient'
+import { resString } from '../../../utils/ResourceString'
 // 平台模型目录与 BYOK 设置同属 /web/auth/div 域，已由 #81 在 DivSettingsApi 实现，此处转发复用（勿重复定义）
 export { getDivModels, DivModelVo, DivVendorGroupVo } from './DivSettingsApi'
 
@@ -234,7 +235,7 @@ function inferCastMethod(method: string): string {
 /** 建档问题防御：trim + 空白兜底「未记所问」（后端 @NotBlank，本地历史脏数据防建档 400，对齐安卓） */
 function normalizeQuestion(question: string): string {
   const trimmed = question.trim()
-  return trimmed.length > 0 ? trimmed : '未记所问'
+  return trimmed.length > 0 ? trimmed : resString('divination_api_1')
 }
 
 /**

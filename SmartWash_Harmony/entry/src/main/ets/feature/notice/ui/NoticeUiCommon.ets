@@ -7,10 +7,12 @@
 //
 // 已知坑遵守：内容依赖状态的组件一律 @ComponentV2 + @Param/@Event；颜色一律取 Design* 令牌。
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { NoticeText } from '../../../utils/NoticeLogic'
 import { AppButton, AppButtonVariant, EmptyState } from '../../../view/common/AppComponents'
 import { pathStack } from '../../../utils/PathStackUtil'
+import { resColor } from '../../../utils/ResourceColor'
+import { resString } from '../../../utils/ResourceString'
 
 /**
  * 页面头（对齐安卓 NoticeInboxPage 的 PageHeader）：返回箭头 48 热区 + 标题 22/600 +
@@ -32,13 +34,13 @@ export struct NoticePageHeader {
       Column() {
         SymbolGlyph($r('sys.symbol.chevron_left'))
           .fontSize(24)
-          .fontColor([DesignColor.TEXT_PRIMARY])
+          .fontColor([resColor('TEXT_PRIMARY')])
       }
       .width(DesignDimens.BACK_HIT_AREA)
       .height(DesignDimens.BACK_HIT_AREA)
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
-      .accessibilityDescription('返回')
+      .accessibilityDescription(resString('back'))
       .onClick(() => {
         this.onBack()
       })
@@ -46,14 +48,14 @@ export struct NoticePageHeader {
       Text(this.title)
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
 
       Blank()
 
       // 未读数是数量，开 tabular numbers（规范 §2.2 硬规则，避免数字变化左右跳）
       Text(this.unreadText)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .fontFeature(DesignFontFeature.TNUM)
 
       AppButton({
@@ -79,8 +81,8 @@ export struct NoticePageHeader {
 @ComponentV2
 export struct NoticeTagChip {
   @Param text: string = ''
-  @Param containerColor: number = DesignColor.SURFACE_VARIANT
-  @Param contentColor: number = DesignColor.TEXT_SECONDARY
+  @Param containerColor: number = resColor('SURFACE_VARIANT')
+  @Param contentColor: number = resColor('TEXT_SECONDARY')
 
   build() {
     Text(this.text)

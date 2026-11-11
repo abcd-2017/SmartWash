@@ -28,41 +28,36 @@ import {
   formatLedgerTime,
   overviewAfterSignIn
 } from '../utils/PointsLogic'
-import {
-  DesignColor,
-  DesignDimens,
-  DesignElevation,
-  DesignFontSize,
-  DesignFontFeature,
-  DesignFontWeight
-} from '../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../utils/SafeArea'
 import { showToastSafety } from '../utils/ToastUtil'
 import { logger } from '../utils/Logger'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { AppButton, AppButtonVariant, DrumMark, EmptyState, LoadingState, PageHeader, SkeletonBlock } from '../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 /** 页面文案（对齐安卓 feature/points/impl res/values/strings.xml） */
 class PointsText {
-  static readonly title: string = '签到有礼'
-  static readonly balanceLabel: string = '当前积分'
-  static readonly totalEarnedFormat: string = '累计获得 {0} 积分'
-  static readonly signIn: string = '签到'
-  static readonly signedToday: string = '已签到'
-  static readonly signInSuccess: string = '签到成功 +{0} 积分'
-  static readonly signInAlready: string = '今日已签到，明天再来吧'
-  static readonly signInFail: string = '签到失败'
-  static readonly leaderboardTitle: string = '本月排行榜'
-  static readonly leaderboardLoadFailed: string = '排行榜加载失败，请检查网络后重试'
-  static readonly leaderboardEmpty: string = '本月还没有人上榜，签到赢积分'
-  static readonly myRankFormat: string = '我的排名 #{0} · {1} 积分'
-  static readonly myRankNone: string = '本月暂未上榜，签到赢积分'
-  static readonly ledgerTitle: string = '积分明细'
-  static readonly ledgerEmpty: string = '暂无积分记录，签到得积分'
-  static readonly loadFailed: string = '积分信息加载失败'
-  static readonly actionRetry: string = '重试'
-  static readonly unit: string = '积分'
+  static get title(): string { return resString('points_title') }
+  static get balanceLabel(): string { return resString('points_balance_label') }
+  static get totalEarnedFormat(): string { return resString('points_text_total_earned_format') }
+  static get signIn(): string { return resString('points_sign_in') }
+  static get signedToday(): string { return resString('points_signed_today') }
+  static get signInSuccess(): string { return resString('points_text_sign_in_success') }
+  static get signInAlready(): string { return resString('points_sign_in_already') }
+  static get signInFail(): string { return resString('points_text_sign_in_fail') }
+  static get leaderboardTitle(): string { return resString('points_leaderboard_title') }
+  static get leaderboardLoadFailed(): string { return resString('points_leaderboard_load_failed') }
+  static get leaderboardEmpty(): string { return resString('points_leaderboard_empty') }
+  static get myRankFormat(): string { return resString('points_text_my_rank_format') }
+  static get myRankNone(): string { return resString('points_my_rank_none') }
+  static get ledgerTitle(): string { return resString('points_ledger_title') }
+  static get ledgerEmpty(): string { return resString('points_ledger_empty') }
+  static get loadFailed(): string { return resString('points_load_failed') }
+  static get actionRetry(): string { return resString('retry') }
+  static get unit(): string { return resString('points_unit') }
 }
 
 /** 文案占位替换（0/1 双占位版，避免 ArkTS 模板方法限制） */
@@ -90,7 +85,7 @@ struct LeaderboardRow {
   /** 名次色：TOP3 品牌深绿强调（PRIMARY_DARK 与右侧积分值同色档，对齐安卓 audit-20 #9），其余中性 */
   private rankColor(): number {
     const tier: RankTier = rankTier(this.entry.rank ?? null)
-    return tier === RankTier.NORMAL ? DesignColor.TEXT_SECONDARY : DesignColor.PRIMARY_DARK
+    return tier === RankTier.NORMAL ? resColor('TEXT_SECONDARY') : resColor('PRIMARY_DARK')
   }
 
   /** 头像是否走网络图（后端下发非空即用，加载失败回退母题占位） */
@@ -115,12 +110,12 @@ struct LeaderboardRow {
           .margin({ left: DesignDimens.SPACE_SM })
       } else {
         Column() {
-          DrumMark({ sizeValue: 16, tint: DesignColor.PRIMARY_DARK })
+          DrumMark({ sizeValue: 16, tint: resColor('PRIMARY_DARK') })
         }
         .width(28)
         .height(28)
         .borderRadius(14)
-        .backgroundColor(DesignColor.PRIMARY_LIGHT)
+        .backgroundColor(resColor('PRIMARY_LIGHT'))
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
         .margin({ left: DesignDimens.SPACE_SM })
@@ -129,7 +124,7 @@ struct LeaderboardRow {
       Text(this.entry.maskedPhone ?? '')
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .layoutWeight(1)
@@ -139,14 +134,14 @@ struct LeaderboardRow {
         .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontFeature(DesignFontFeature.TNUM)
-        .fontColor(DesignColor.PRIMARY_DARK)
+        .fontColor(resColor('PRIMARY_DARK'))
 
       Text(PointsText.unit)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
         // 单位是数值读数的一部分（可读内容非装饰），textTertiary 压白卡仅 2.25:1 触 §10 红线，
         // 改 textSecondary（对齐安卓 audit-20 #3）+ labelMedium 12/500
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .margin({ left: DesignDimens.SPACE_XXS })
     }
     .width('100%')
@@ -173,11 +168,11 @@ struct MyRankRow {
           // 14 行内文案字重对齐安卓 titleSmall 14/500（SEMI_BOLD 是 titleLarge/SectionTitle 档）
           .fontWeight(DesignFontWeight.MEDIUM)
           .fontFeature(DesignFontFeature.TNUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
       } else {
         Text(PointsText.myRankNone)
           .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
       }
       Blank()
     }
@@ -207,12 +202,12 @@ struct LedgerRow {
    *  负 = DANGER_INK / 0 = 次文本 */
   private deltaColor(): number {
     if (this.delta > 0) {
-      return DesignColor.TEXT_GREEN
+      return resColor('TEXT_GREEN')
     }
     if (this.delta < 0) {
-      return DesignColor.DANGER_INK
+      return resColor('DANGER_INK')
     }
-    return DesignColor.TEXT_SECONDARY
+    return resColor('TEXT_SECONDARY')
   }
 
   build() {
@@ -222,7 +217,7 @@ struct LedgerRow {
           .fontSize(DesignFontSize.BODY_SMALL)
           // 列表行主文案 14/500（对齐安卓 titleSmall，§3.4 特许配 MEDIUM）
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
 
@@ -232,7 +227,7 @@ struct LedgerRow {
             .fontFeature(DesignFontFeature.TNUM)
             // 时间戳是流水行唯一时序信息（可读正文），textTertiary 双板均 <4.5:1 触 §10 红线，
             // 改 textSecondary（对齐安卓 audit-20 #4）
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .margin({ top: DesignDimens.SPACE_XXS })
         }
       }
@@ -465,7 +460,7 @@ export struct PointsPage {
       LoadingProgress()
         .width(14)
         .height(14)
-        .color(DesignColor.TEXT_GREEN)
+        .color(resColor('TEXT_GREEN'))
         .opacity(this.signingIn ? 1 : 0)
         .animation({ duration: 180, curve: Curve.EaseOut })
 
@@ -473,14 +468,14 @@ export struct PointsPage {
         .fontSize(DesignFontSize.BUTTON)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontFeature(DesignFontFeature.TNUM)
-        .fontColor(this.signedToday() ? DesignColor.GLASS_TEXT_ACTIVE : DesignColor.TEXT_GREEN)
+        .fontColor(this.signedToday() ? resColor('GLASS_TEXT_ACTIVE') : resColor('TEXT_GREEN'))
         .opacity(this.signingIn ? 0 : 1)
         .animation({ duration: 180, curve: Curve.EaseOut })
     }
     .width('100%')
     .height(48)
     .borderRadius(DesignDimens.RADIUS_FULL)
-    .backgroundColor(this.signedToday() ? DesignColor.GLASS_INPUT : Color.White)
+    .backgroundColor(this.signedToday() ? resColor('GLASS_INPUT') : Color.White)
     // CTA 上间距 16（对齐安卓 Spacer(spaceMd)，无连签块时为累计获得行与 CTA 的间隔）
     .margin({ top: DesignDimens.SPACE_MD })
     .onClick(() => {
@@ -532,7 +527,7 @@ export struct PointsPage {
               .width('100%')
               .height(6)
               .borderRadius(DesignDimens.RADIUS_FULL)
-              .backgroundColor(DesignColor.SCRIM_BLACK_18)
+              .backgroundColor(resColor('SCRIM_BLACK_18'))
             // 填充：白（静态，无动画负担）
             Row()
               .width(`${Math.round(this.cycleProgressRatio() * 100)}%`)
@@ -553,7 +548,7 @@ export struct PointsPage {
       // 纱与渐变同对角线，浅板文字区 5.13–8.10:1 / 深板 4.62–5.13:1 全达标
       .linearGradient({
         angle: 135,
-        colors: [[DesignColor.SCRIM_BLACK_20, 0], [DesignColor.SCRIM_BLACK_35, 1]]
+        colors: [[resColor('SCRIM_BLACK_20'), 0], [resColor('SCRIM_BLACK_35'), 1]]
       })
     }
     .width('100%')
@@ -564,7 +559,7 @@ export struct PointsPage {
     // #5BC894，与安卓深色 heroGradientEnd 一致
     .linearGradient({
       angle: 135,
-      colors: [[DesignColor.HERO_GRADIENT_START, 0], [DesignColor.PRIMARY_DARK, 1]]
+      colors: [[resColor('HERO_GRADIENT_START'), 0], [resColor('PRIMARY_DARK'), 1]]
     })
   }
 
@@ -573,7 +568,7 @@ export struct PointsPage {
   RowDivider() {
     Divider()
       .strokeWidth(0.5)
-      .color(DesignColor.HAIRLINE)
+      .color(resColor('HAIRLINE'))
   }
 
   @Builder
@@ -585,7 +580,7 @@ export struct PointsPage {
         Text(PointsText.leaderboardTitle)
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
         Blank()
         if (this.monthLabel() !== '') {
           Text(this.monthLabel())
@@ -593,7 +588,7 @@ export struct PointsPage {
             // 月份是榜单口径信息非装饰角标，textTertiary 压页面底仅 2.08:1 触 §10 红线，
             // 改 textSecondary（对齐安卓 audit-20 #2）+ labelMedium 12/500
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
         }
       }
       .width('100%')
@@ -632,7 +627,7 @@ export struct PointsPage {
           Column() {
             Text(PointsText.leaderboardLoadFailed)
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
             AppButton({
               text: PointsText.actionRetry,
               variant: AppButtonVariant.SECONDARY,
@@ -668,12 +663,12 @@ export struct PointsPage {
       // 行内容距描边 20（对齐安卓 GroupCard contentPadding horizontal cardPadding）：
       // 名次/reason 文字不得贴 1px 描边；发丝线随 padding 收窄至卡内容宽
       .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
-      .border({ width: 1, color: DesignColor.OUTLINE })
+      .border({ width: 1, color: resColor('OUTLINE') })
       .shadow({
         radius: DesignElevation.CARD_SHADOW_RADIUS,
-        color: DesignColor.SHADOW_COLOR_CARD,
+        color: resColor('SHADOW_COLOR_CARD'),
         offsetX: 0,
         offsetY: DesignElevation.CARD_SHADOW_OFFSET
       })
@@ -694,7 +689,7 @@ export struct PointsPage {
         Text(PointsText.ledgerTitle)
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
         Blank()
       }
       .width('100%')
@@ -722,12 +717,12 @@ export struct PointsPage {
       .margin({ top: DesignDimens.SPACE_XS })
       // 行内容距描边 20（对齐安卓 GroupCard contentPadding horizontal cardPadding）
       .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
-      .border({ width: 1, color: DesignColor.OUTLINE })
+      .border({ width: 1, color: resColor('OUTLINE') })
       .shadow({
         radius: DesignElevation.CARD_SHADOW_RADIUS,
-        color: DesignColor.SHADOW_COLOR_CARD,
+        color: resColor('SHADOW_COLOR_CARD'),
         offsetX: 0,
         offsetY: DesignElevation.CARD_SHADOW_OFFSET
       })
@@ -798,13 +793,13 @@ export struct PointsPage {
         .height('100%')
         // 沉浸式：内容避让状态栏（背景延伸）
         .padding({ top: safeTopVp() })
-        .backgroundColor(DesignColor.BACKGROUND)
+        .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .width('100%')
     .height('100%')
     .align(Alignment.Top)
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
     .hideTitleBar(true)
   }
 }

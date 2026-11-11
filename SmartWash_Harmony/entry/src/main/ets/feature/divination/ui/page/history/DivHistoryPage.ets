@@ -26,6 +26,7 @@ import { RouteNames } from '../../../../../constant/RouteNames'
 import { DesignDimens } from '../../../../../constant/DesignSystem'
 import { pathStack } from '../../../../../utils/PathStackUtil'
 import { logger } from '../../../../../utils/Logger'
+import { resString } from '../../../../../utils/ResourceString'
 
 /** 术数筛选选项（「全部」+ 四术） */
 const FILTER_ALL = 'all'
@@ -108,15 +109,15 @@ export struct DivHistoryPage {
   private sealOf(method: string): string {
     if (method === 'liuyao') {
       // 画板：六爻印取「六」（2026-11-06 画板改版，compare-08 #5）
-      return '六'
+      return resString('div_seal_liuyao')
     }
     if (method === 'meihua') {
-      return '梅'
+      return resString('div_seal_meihua')
     }
     if (method === 'qimen') {
-      return '奇'
+      return resString('div_seal_qimen')
     }
-    return '壬'
+    return resString('div_seal_liuren')
   }
 
   private openChart(row: DivRecordRow): void {
@@ -213,7 +214,7 @@ export struct DivHistoryPage {
           // 空态层（仅在首载完成且筛选结果为空时呈现，加载期不再以空态冒充首帧）
           Column() {
             // 卦历画板 = flat 平涂深朱口径（DivSeal 组件契约），印文对比 5.31:1 达标（compare-08 #1）
-            DivSeal({ text: '空', sealSize: 44, fontSize: 22, flat: true })
+            DivSeal({ text: resString('div_history_page_1'), sealSize: 44, fontSize: 22, flat: true })
             Text(DivText.historyEmpty)
               .fontSize(12)
               .fontColor(DivPalette.textTertiary)

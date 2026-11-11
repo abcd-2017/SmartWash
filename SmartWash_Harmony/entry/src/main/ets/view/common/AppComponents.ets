@@ -1,9 +1,11 @@
 // 清氧设计系统 — 通用 UI 组件
 // 参考 Android 端 AppComponents.kt
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming, toColorString } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming, toColorString } from '../../constant/DesignSystem'
 import { pathStack } from '../../utils/PathStackUtil'
 import vibrator from '@ohos.vibrator'
+import { resColor } from '../../utils/ResourceColor'
+import { resString } from '../../utils/ResourceString'
 
 // @BuilderParam 的默认空插槽（ArkTS 要求默认值必须是 @Builder 函数，不能用内联箭头函数）
 @Builder
@@ -27,7 +29,7 @@ export struct PageHeader {
         Column() {
           SymbolGlyph($r('sys.symbol.chevron_left'))
             .fontSize(24)
-            .fontColor([DesignColor.ON_BACKGROUND])
+            .fontColor([resColor('ON_BACKGROUND')])
         }
         .width(DesignDimens.BACK_HIT_AREA)
         .height(DesignDimens.BACK_HIT_AREA)
@@ -35,7 +37,7 @@ export struct PageHeader {
         .alignItems(HorizontalAlign.Center)
         // 无障碍：返回箭头补语义（原仅图形，读屏无标签）
         // 注：accessibilityRole 需 SDK 18+，本项目目标 API 17，仅用 description
-        .accessibilityDescription('返回')
+        .accessibilityDescription(resString('back'))
         .onClick(() => {
           this.backClick()
         })
@@ -45,7 +47,7 @@ export struct PageHeader {
       Text(this.title)
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.ON_BACKGROUND)
+        .fontColor(resColor('ON_BACKGROUND'))
 
       Blank()
 
@@ -63,15 +65,15 @@ export struct PageHeader {
 
 /**
  * 方形图标容器 — 浅底 + 语义色前景图标，默认 44vp 容器 / 24fp 图标 / 12vp 圆角。
- * 六色浅底/前景令牌见 DesignColor.ICON_CONTAINER_* / ICON_FOREGROUND_*。
+ * 六色浅底/前景令牌见资源色 ICON_CONTAINER_* / ICON_FOREGROUND_*。
  */
 @ComponentV2
 export struct IconBox {
   @Require @Param icon: Resource
   @Param sizeValue: number = 44
   @Param iconSize: number = 24
-  @Param containerColor: number = DesignColor.PRIMARY_LIGHT
-  @Param iconColor: number = DesignColor.PRIMARY
+  @Param containerColor: number = resColor('PRIMARY_LIGHT')
+  @Param iconColor: number = resColor('PRIMARY')
   @Param radius: number = DesignDimens.ICON_CONTAINER_RADIUS
   // 无障碍语义（图标按钮调用点传入，如「设置」「充值记录」；纯展示场景留空）
   // 命名避开基类内置 accessibilityText 属性方法（同 sizeValue 约定）
@@ -101,8 +103,8 @@ export struct CircleIconBox {
   @Require @Param icon: Resource
   @Param sizeValue: number = 40
   @Param iconSize: number = 20
-  @Param containerColor: number = DesignColor.PRIMARY_LIGHT
-  @Param iconColor: number = DesignColor.PRIMARY
+  @Param containerColor: number = resColor('PRIMARY_LIGHT')
+  @Param iconColor: number = resColor('PRIMARY')
 
   build() {
     Column() {
@@ -142,14 +144,14 @@ export struct AppCard {
       this.content()
     }
     .width('100%')
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(this.cardRadius)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .padding(this.paddingValue)
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -203,13 +205,13 @@ export struct AppButton {
   /** 文字/spinner 色 — 主=onPrimary；次=contentColor ?? textPrimary；文字态=textGreen */
   private contentTint(): number {
     if (this.variant === AppButtonVariant.PRIMARY) {
-      return DesignColor.ON_PRIMARY
+      return resColor('ON_PRIMARY')
     }
     if (this.variant === AppButtonVariant.SECONDARY) {
-      return this.contentColor ?? DesignColor.TEXT_PRIMARY
+      return this.contentColor ?? resColor('TEXT_PRIMARY')
     }
     // TEXT 变体：primary 绿字在页面底仅 3.22:1 触红线，改文字级 TEXT_GREEN（深色档随主题回写）
-    return DesignColor.TEXT_GREEN
+    return resColor('TEXT_GREEN')
   }
 
   private triggerClick(): void {
@@ -273,12 +275,12 @@ export struct AppButton {
       // 次 = surfaceVariant 底；主 = 135° 品牌渐变（对齐安卓 Brush.linearGradient(primary→primaryDark)）；
       // solid = 纯色 primary 底（对齐安卓 AuthCtaButton 认证页 CTA 形态）
       .backgroundColor(this.variant === AppButtonVariant.SECONDARY
-        ? DesignColor.SURFACE_VARIANT
-        : (this.solid ? DesignColor.PRIMARY : Color.Transparent))
+        ? resColor('SURFACE_VARIANT')
+        : (this.solid ? resColor('PRIMARY') : Color.Transparent))
       .linearGradient({
         angle: 135,
         colors: this.variant === AppButtonVariant.PRIMARY && !this.solid
-          ? [[DesignColor.PRIMARY, 0], [DesignColor.PRIMARY_DARK, 1]]
+          ? [[resColor('PRIMARY'), 0], [resColor('PRIMARY_DARK'), 1]]
           : [[Color.Transparent, 0], [Color.Transparent, 1]]
       })
       .opacity(this.isActive() ? 1 : 0.5)
@@ -311,7 +313,7 @@ export struct AppInfoDialog {
   controller: CustomDialogController
   @Prop title: string = ''
   @Prop message: string = ''
-  @Prop buttonText: string = '确认'
+  @Prop buttonText: string = resString('confirm')
   @State entered: boolean = false
   onDismiss: () => void = () => {
   }
@@ -337,13 +339,13 @@ export struct AppInfoDialog {
             Text(this.title)
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .margin({ bottom: 12 })
           }
 
           Text(this.message)
             .fontSize(DesignFontSize.BODY)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
         }
         .width('100%')
         .padding({
@@ -354,7 +356,7 @@ export struct AppInfoDialog {
         })
 
         Divider()
-          .color(DesignColor.DIVIDER)
+          .color(resColor('DIVIDER'))
           .strokeWidth(0.5)
 
         Button(this.buttonText)
@@ -362,7 +364,7 @@ export struct AppInfoDialog {
           .width('100%')
           .height(48)
           .backgroundColor(Color.Transparent)
-          .fontColor(DesignColor.PRIMARY)
+          .fontColor(resColor('PRIMARY'))
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .borderRadius(0)
@@ -372,12 +374,12 @@ export struct AppInfoDialog {
           })
       }
       .width('100%')
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）；原 #33000000 黑 20% 不符
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: DesignColor.SHADOW_COLOR_FLOAT,
+        color: resColor('SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
@@ -414,7 +416,7 @@ export struct AppTabBar {
           Text(title)
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
+            .fontColor(this.selectedIndex === index ? resColor('PRIMARY') : resColor('TEXT_SECONDARY'))
             .padding({ left: 12, right: 12, top: 8, bottom: 8 })
             .animation(MotionTiming.ENTER)
 
@@ -423,7 +425,7 @@ export struct AppTabBar {
             .width(this.selectedIndex === index ? 20 : 0)
             .height(3)
             .borderRadius(1.5)
-            .backgroundColor(DesignColor.PRIMARY)
+            .backgroundColor(resColor('PRIMARY'))
             .animation(MotionTiming.ENTER)
         }
         .alignItems(HorizontalAlign.Center)
@@ -468,17 +470,17 @@ export struct AppPillTabRow {
             Text(title)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(this.selectedIndex === index ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+              .fontColor(this.selectedIndex === index ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
           }
           .justifyContent(FlexAlign.Center)
           // 垂直 9 → 14 → 16 把触控热区从 43.7vp 抬到 48vp（规范 §2.3；
           // padding 在 background/border 之后只扩热区，不改胶囊视觉高 34）
           .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 16, bottom: 16 })
           .borderRadius(DesignDimens.RADIUS_FULL)
-          .backgroundColor(this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.SURFACE)
+          .backgroundColor(this.selectedIndex === index ? resColor('PRIMARY') : resColor('SURFACE'))
           .border({
             width: 1,
-            color: this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.OUTLINE
+            color: this.selectedIndex === index ? resColor('PRIMARY') : resColor('OUTLINE')
           })
           .margin({ right: DesignDimens.SPACE_XS })
           .animation(MotionTiming.ENTER)
@@ -527,7 +529,7 @@ export struct SelectionDot {
         .borderRadius(this.dotSize / 2)
         .border({
           width: 1,
-          color: this.selected ? DesignColor.PRIMARY : DesignColor.OUTLINE,
+          color: this.selected ? resColor('PRIMARY') : resColor('OUTLINE'),
           style: BorderStyle.Solid
         })
         .animation(MotionTiming.ENTER)
@@ -537,7 +539,7 @@ export struct SelectionDot {
         .width(this.dotSize / 2)
         .height(this.dotSize / 2)
         .borderRadius(this.dotSize / 4)
-        .backgroundColor(DesignColor.PRIMARY)
+        .backgroundColor(resColor('PRIMARY'))
         .scale({ x: this.selected ? 1 : 0, y: this.selected ? 1 : 0 })
         .animation(MotionTiming.ENTER)
     }
@@ -563,7 +565,7 @@ export struct SkeletonBlock {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
+        .backgroundColor(resColor('SURFACE_VARIANT'))
 
       Column()
         .width('100%')
@@ -571,7 +573,7 @@ export struct SkeletonBlock {
         .linearGradient({
           angle: 90,
           // 高光端点透明色色相跟随 SURFACE（& 0x00FFFFFF 清 alpha 位）：暗色下高光带不再泛白边
-          colors: [[toColorString(DesignColor.SURFACE & 0x00FFFFFF), 0], [DesignColor.SURFACE, 0.5], [toColorString(DesignColor.SURFACE & 0x00FFFFFF), 1]]
+          colors: [[toColorString(resColor('SURFACE') & 0x00FFFFFF), 0], [resColor('SURFACE'), 0.5], [toColorString(resColor('SURFACE') & 0x00FFFFFF), 1]]
         })
         .opacity(this.glow ? 1 : 0.3)
         .animation({
@@ -661,17 +663,17 @@ export struct LoadingDots {
         .width(5)
         .height(5)
         .borderRadius(2.5)
-        .backgroundColor(DesignColor.OUTLINE)
+        .backgroundColor(resColor('OUTLINE'))
       Column()
         .width(5)
         .height(5)
         .borderRadius(2.5)
-        .backgroundColor(DesignColor.OUTLINE)
+        .backgroundColor(resColor('OUTLINE'))
       Column()
         .width(5)
         .height(5)
         .borderRadius(2.5)
-        .backgroundColor(DesignColor.OUTLINE)
+        .backgroundColor(resColor('OUTLINE'))
     }
     .justifyContent(FlexAlign.Center)
     .alignItems(VerticalAlign.Center)
@@ -695,7 +697,7 @@ export struct LoadingDots {
 @ComponentV2
 export struct DrumMark {
   @Param sizeValue: number = 48
-  @Param tint: number = DesignColor.PRIMARY
+  @Param tint: number = resColor('PRIMARY')
   @Param trackTint: number | null = null
   @Param innerRingTint: number | null = null
   @Param progress: number | null = null
@@ -792,7 +794,7 @@ export struct DrumMark {
  */
 @ComponentV2
 export struct EmptyState {
-  @Param message: string = '暂无数据'
+  @Param message: string = resString('app_components_1')
   @Param icon: Resource = $r('sys.symbol.square_slash')
   // 行动按钮插槽（规范 §3.6：空态 = 滚筒圆母题 + 引导文案 + 行动按钮）。
   // 默认走空插槽 emptyContent，不渲染任何内容，故既有只传 message 的调用点视觉不变。
@@ -806,14 +808,14 @@ export struct EmptyState {
       // 母题 — 滚筒圆（DrumMark）静止态；48vp + primary（规范 §3.6 母题色）
       DrumMark({
         sizeValue: 48,
-        tint: DesignColor.PRIMARY
+        tint: resColor('PRIMARY')
       })
         .margin({ bottom: DesignDimens.SPACE_MD })
 
       // 引导文案 — 空态主文案档 bodyLarge(16)
       Text(this.message)
         .fontSize(DesignFontSize.BODY)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
 
       // 行动按钮（可选；间距由调用方在插槽内自行给出，未传时零占位）。
       // 安卓 EmptyState 的行动按钮通栏无水平 padding（问题14 修复回退，以安卓为准）：
@@ -865,8 +867,8 @@ export struct AppConfirmDialog {
   controller: CustomDialogController
   @Prop title: string = ''
   @Prop message: string = ''
-  @Prop confirmText: string = '确认'
-  @Prop cancelText: string = '取消'
+  @Prop confirmText: string = resString('confirm')
+  @Prop cancelText: string = resString('cancel')
   // 危险操作（退出登录/解绑等）：确认按钮走 dangerInk，与安卓 AppConfirmDialog(isDanger = true) 对齐
   @Prop isDanger: boolean = false
   @State entered: boolean = false
@@ -897,14 +899,14 @@ export struct AppConfirmDialog {
             Text(this.title)
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .margin({ bottom: 12 })
           }
 
           // 内容
           Text(this.message)
             .fontSize(DesignFontSize.BODY)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .margin({ bottom: 20 })
         }
         .width("100%")
@@ -917,7 +919,7 @@ export struct AppConfirmDialog {
 
         // 分隔线
         Divider()
-          .color(DesignColor.DIVIDER)
+          .color(resColor('DIVIDER'))
           .strokeWidth(0.5)
 
         // 按钮行
@@ -927,7 +929,7 @@ export struct AppConfirmDialog {
             .layoutWeight(1)
             .height(48)
             .backgroundColor(Color.Transparent)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontSize(DesignFontSize.BODY)
             .borderRadius(0)
             .onClick(() => {
@@ -937,7 +939,7 @@ export struct AppConfirmDialog {
 
           Divider()
             .vertical(true)
-            .color(DesignColor.DIVIDER)
+            .color(resColor('DIVIDER'))
             .strokeWidth(0.5)
             .height(48)
 
@@ -947,7 +949,7 @@ export struct AppConfirmDialog {
             .height(48)
             .backgroundColor(Color.Transparent)
             // 危险操作确认键用 dangerInk（#A8435A），普通确认用品牌绿
-            .fontColor(this.isDanger ? DesignColor.DANGER_INK : DesignColor.PRIMARY)
+            .fontColor(this.isDanger ? resColor('DANGER_INK') : resColor('PRIMARY'))
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .borderRadius(0)
@@ -961,12 +963,12 @@ export struct AppConfirmDialog {
         .width("100%")
       }
       .width("100%")
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）；原 #33000000 黑 20% 不符
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: DesignColor.SHADOW_COLOR_FLOAT,
+        color: resColor('SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
