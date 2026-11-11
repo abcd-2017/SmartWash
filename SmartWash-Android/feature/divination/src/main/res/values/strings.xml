@@ -17,6 +17,12 @@
     <string name="div_seal_qimen">奇</string>
     <string name="div_seal_liuren">壬</string>
 
+    <!-- 卦历空态印面字（空案卷） -->
+    <string name="div_seal_empty">空</string>
+
+    <!-- 读屏文案：页头返回按钮 -->
+    <string name="div_action_back">返回</string>
+
     <!-- 四术玉牌 -->
     <string name="div_method_liuyao_name">六爻</string>
     <string name="div_method_liuyao_desc">摇铜钱问一事\n装卦最全 · 应期可推</string>

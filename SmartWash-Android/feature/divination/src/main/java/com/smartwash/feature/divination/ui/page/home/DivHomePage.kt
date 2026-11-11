@@ -1,7 +1,6 @@
 package com.smartwash.feature.divination.ui.page.home
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -55,8 +54,10 @@ import com.smartwash.feature.divination.ui.components.TianXiangHeader
 import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.DivColors
-import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
@@ -216,9 +217,11 @@ fun DivHomePage(
         DivCard(Modifier.padding(horizontal = 20.dp)) {
             Column(Modifier.padding(horizontal = 14.dp)) {
                 // 空态与记录列表互相替换时做交叉淡入淡出，避免 0ms 硬切
+                // （常态走 micro 档 enterTween；CROSSFADE_ALT_MS 是 reduced motion 降级专用档，
+                // 经 motionSpec 自动落 180ms——口径与 DivAskPage/DivReadingPage 的 Crossfade 一致）
                 Crossfade(
                     targetState = records.isEmpty(),
-                    animationSpec = tween(CROSSFADE_ALT_MS),
+                    animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
                     label = "ledgerEmpty",
                 ) { empty ->
                     if (empty) {
