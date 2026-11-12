@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
@@ -36,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -51,7 +54,10 @@ import com.smartwash.common.ui.components.ButtonSpinner
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.ClickDebouncer
+import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.update.event.UpdateEvent
@@ -67,13 +73,18 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import java.io.File
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.withContext
+
+/** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+private const val TAG = "UpdateFlow"
 
 /**
  * 更新流程（T8.1 自 MainActivity 抽出，职责仍归壳层）：事件收集 → 下载调度 →
  * 弹窗展示。启动静默检查已移至 UpdateInitTask（App.onCreate 经 InitEngine 调度，
- * 非阻塞低优先级），本流程只消费其广播的「发现新版本」事件。
+ * 非阻塞低优先级），本流程只消费其广播的「发现新版本」/「自动下载」事件。
  */
 @Composable
 internal fun UpdateFlow(
@@ -85,6 +96,9 @@ internal fun UpdateFlow(
     val updateState by updateViewModel.state.collectAsState()
     // 「后台下载」标记：Downloaded/Error 等其余状态由 VM 复位，弹窗自然回弹
     val backgroundDownload by updateViewModel.backgroundDownload.collectAsState()
+    // 「自动下载」标记（2026-11-12）：下载中不弹进度窗（用户未主动点击，静默下载），
+    // 完成时仍弹「安装包已就位」窗；失败时清除标记让错误弹窗正常显示
+    val autoDownload by updateViewModel.autoDownload.collectAsState()
 
     // 通知权限 launcher：用户点击「立即更新」时，若无权限则弹出系统授权请求
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -133,17 +147,23 @@ internal fun UpdateFlow(
         true
     }
 
-    // 壳层只收集事件总线广播的「发现新版本」事件驱动弹窗状态；
+    // 壳层只收集事件总线广播的「发现新版本」/「自动下载」事件驱动弹窗状态；
     // 事件可能早于本订阅发出（总线 replay 兜底），重放已由 ViewModel 防重挡下
     LaunchedEffect(updateEventBus) {
         updateEventBus.events.collect { event ->
             when (event) {
                 is UpdateEvent.UpdateAvailable -> updateViewModel.onUpdateAvailable(event.version)
+                is UpdateEvent.AutoDownload -> {
+                    // 用户已开启自动更新：不弹说明弹窗，直接取预签名地址下载。
+                    // 仍走 combine(downloadUrl, isResumed) 入队，规避 Android 12+ 前台服务启动被拒
+                    updateViewModel.onAutoDownload(event.version)
+                    updateViewModel.startDownload(context)
+                }
             }
         }
     }
 
-    // 下载中的 WorkManager 进度监听（用户点「立即更新」后由 enqueueApkDownload 入队）
+    // 下载中的 WorkManager 进度监听（手动「立即更新」或自动下载由 scheduleApkDownload 入队）
     // 声明必须早于下方 LaunchedEffect(updateViewModel) 的首次使用
     val currentDownloadWorkId = remember { mutableStateOf<String?>(null) }
 
@@ -155,7 +175,17 @@ internal fun UpdateFlow(
             .collect { (url, resumed) ->
                 if (url != null && resumed) {
                     val version = updateViewModel.getLatestVersion() ?: return@collect
-                    enqueueApkDownload(context, workManager, url, version, currentDownloadWorkId)
+                    val alreadyDownloaded = scheduleApkDownload(
+                        context = context,
+                        workManager = workManager,
+                        downloadUrl = url,
+                        version = version,
+                        currentDownloadWorkId = currentDownloadWorkId,
+                    )
+                    // 本地已有完整安装包：直接进完成态弹「安装包已就位」，不再走下载
+                    if (alreadyDownloaded != null) {
+                        updateViewModel.onDownloadComplete(alreadyDownloaded)
+                    }
                     updateViewModel.consumeDownloadUrl()
                 }
             }
@@ -229,7 +259,12 @@ internal fun UpdateFlow(
                             }
                         )
                     },
-                    onUpdateLater = { updateViewModel.reset() }
+                    onUpdateLater = { updateViewModel.reset() },
+                    // 勾选「不再提醒此版本」：记录 versionCode 后关闭，启动静默检查不再弹此版本
+                    onIgnoreVersion = {
+                        updateViewModel.ignoreVersion(version.versionCode)
+                        updateViewModel.reset()
+                    },
                 )
             }
         }
@@ -240,8 +275,10 @@ internal fun UpdateFlow(
         is UpdateState.Downloading -> {
             // 「后台下载」（2026-11-01 用户反馈）：用户选择后台后弹窗隐藏但 WorkManager 下载
             // 继续（本组合的进度收集不中断），完成/失败时状态机自动回弹对应弹窗；
-            // 标记存 VM，旋转重建不丢
-            if (!backgroundDownload) {
+            // 标记存 VM，旋转重建不丢。
+            // 「自动下载」（2026-11-12）同理静默：用户没有主动点击，进度交给通知栏，
+            // 完成时弹「安装包已就位」。
+            if (!backgroundDownload && !autoDownload) {
                 DownloadProgressDialog(
                     progress = currentState.progress,
                     downloadedBytes = currentState.downloadedBytes,
@@ -300,6 +337,72 @@ private fun handleUpdateClick(
         // Android 12 及以下无需运行时权限
         onGranted()
     }
+}
+
+/**
+ * 设置页「自动更新」开关行（2026-11-12）：开启后启动静默检查发现新版本即自动下载，
+ * 不再弹更新说明弹窗（强制更新除外），下载完成弹「安装包已就位」。
+ *
+ * 交互形态对齐设置页「触感反馈」行（SettingPage）：整行点击切换 + 右侧状态文案，
+ * 不引入新的开关控件形态；开启瞬间给一次确认触感（规范 §7.7，因果明确的时刻）。
+ */
+@Composable
+internal fun AutoUpdateSettingRow(updateViewModel: UpdateViewModel) {
+    val view = LocalView.current
+    val autoUpdateEnabled by updateViewModel.autoUpdateEnabled.collectAsState()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .pressable(
+                onClick = {
+                    val newValue = !autoUpdateEnabled
+                    updateViewModel.setAutoUpdateEnabled(newValue)
+                    if (newValue) view.performHaptic(HapticEffect.LIGHT)
+                }
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconBox(
+            icon = Icons.Default.DownloadDone,
+            size = 32.dp,
+            iconSize = 20.dp,
+            containerColor = AppColors.colorScheme.iconContainerTeal,
+            iconTint = AppColors.colorScheme.iconForegroundTeal,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.auto_update),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.colorScheme.textPrimary,
+            )
+            Text(
+                text = stringResource(R.string.auto_update_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.colorScheme.textSecondary,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        Text(
+            text = stringResource(
+                if (autoUpdateEnabled) R.string.auto_update_enabled else R.string.auto_update_disabled
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.colorScheme.textSecondary,
+        )
+    }
+}
+
+/**
+ * 设置页更新区块（自动更新开关 + 检查更新行），经 checkUpdateContent 插槽注入。
+ * 两行之间的分隔线与设置页其他行一致（hairline 0.5dp）。
+ */
+@Composable
+internal fun UpdateSettingRows(updateViewModel: UpdateViewModel) {
+    AutoUpdateSettingRow(updateViewModel)
+    HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
+    CheckUpdateSettingRow(updateViewModel)
 }
 
 /**
@@ -393,21 +496,58 @@ internal fun CheckUpdateSettingRow(updateViewModel: UpdateViewModel) {
 }
 
 /**
- * 入队 APK 下载 Worker，并将 workId 写入 state 触发 LaunchedEffect 监听进度
+ * 调度 APK 下载：本地已有完整安装包或同版本任务在进行时直接复用，不重复下载。
+ *
+ * 用户反馈（2026-11-12）：「点击更新下载了一个安装包，关闭弹窗再次点击更新又重复下载了」。
+ * 根因是原实现每次点击都重新取预签名地址并以 [ExistingWorkPolicy.REPLACE] 入队，
+ * Worker 每次运行还会先删除同名文件。现按 versionCode 命名安装包并做两级复用：
+ * 1. 本地文件存在且大小与服务端 fileSize 一致 → 直接返回该文件，调用方进「安装包已就位」态；
+ * 2. 同版本唯一任务在进行中（排队/运行/阻塞）→ 复用其 workId 挂监听，不再入队。
+ *
  * @param downloadUrl 预签名下载地址（从后端 /web/app/download 获取）
- * @param version 版本信息（用于 fileSize、sha256 校验与 workName 唯一标识）
+ * @param version 版本信息（用于 fileSize、sha256 校验、versionCode 命名与 workName 唯一标识）
+ * @return 非空 = 本地已有可用安装包（调用方直接进完成态）；null = 已入队或已复用既有任务
  */
-private fun enqueueApkDownload(
+private suspend fun scheduleApkDownload(
     context: Context,
     workManager: WorkManager,
     downloadUrl: String,
     version: AppVersionVo,
     currentDownloadWorkId: androidx.compose.runtime.MutableState<String?>,
-) {
+): File? = withContext(Dispatchers.IO) {
+    val uniqueName = "apk_download_${version.versionCode}"
+    val apkFile = ApkDownloadWorker.apkFile(context, version.versionCode)
+
+    // 复用 1：本地已有完整安装包
+    if (isApkUsable(apkFile, version)) {
+        AppLogger.info(TAG, "命中本地已下载的安装包，跳过重复下载：${apkFile.absolutePath}")
+        return@withContext apkFile
+    }
+
+    // 复用 2：同版本任务在进行中 → 复用其 workId 挂监听，不重复入队
+    val existing = runCatching {
+        workManager.getWorkInfosForUniqueWork(uniqueName).get().firstOrNull()
+    }.getOrNull()
+
+    if (existing != null) {
+        val inProgress = existing.state == WorkInfo.State.ENQUEUED ||
+            existing.state == WorkInfo.State.RUNNING ||
+            existing.state == WorkInfo.State.BLOCKED
+        if (inProgress) {
+            AppLogger.info(TAG, "同版本下载任务已存在（state=${existing.state}），复用不重下")
+            currentDownloadWorkId.value = existing.id.toString()
+            return@withContext null
+        }
+        // 终态（成功但文件不可用 / 失败 / 取消）：清掉旧记录后重新下载
+        AppLogger.info(TAG, "同版本下载任务已是终态（state=${existing.state}）且安装包不可用，重新下载")
+        runCatching { workManager.cancelWorkById(existing.id) }
+    }
+
     val inputData = workDataOf(
         ApkDownloadWorker.KEY_APK_URL to downloadUrl,
         ApkDownloadWorker.KEY_SHA256 to version.sha256,
         ApkDownloadWorker.KEY_VERSION_NAME to version.versionName,
+        ApkDownloadWorker.KEY_VERSION_CODE to version.versionCode,
     )
 
     val downloadRequest = OneTimeWorkRequestBuilder<ApkDownloadWorker>()
@@ -419,14 +559,20 @@ private fun enqueueApkDownload(
         )
         .build()
 
-    workManager.enqueueUniqueWork(
-        "apk_download_${version.versionCode}",
-        ExistingWorkPolicy.REPLACE,
-        downloadRequest
-    )
+    workManager.enqueueUniqueWork(uniqueName, ExistingWorkPolicy.REPLACE, downloadRequest)
 
     // 记录 workId，触发 LaunchedEffect 收集进度
     currentDownloadWorkId.value = downloadRequest.id.toString()
+    null
+}
+
+/**
+ * 本地安装包是否可复用：存在且非空，大小与服务端声明一致。
+ * 服务端未给 fileSize（≤0）时无法校验，只要文件非空即视为可用。
+ */
+private fun isApkUsable(file: File, version: AppVersionVo): Boolean {
+    if (!file.exists() || file.length() <= 0) return false
+    return version.fileSize <= 0 || file.length() == version.fileSize
 }
 
 /**

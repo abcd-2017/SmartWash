@@ -27,11 +27,11 @@ enum class HapticEffect {
 private const val DOUBLE_TICK_GAP_MS = 70L
 
 /**
- * 触感反馈全局开关（设置页「触感反馈」行持久化，默认开启）。
+ * 触感反馈全局开关（权限管理页「触感反馈」行持久化，默认开启）。
  *
  * 内存态供 [View.performHaptic] 同步热路径读取——点击时刻无法挂起读 DataStore，
  * 持久化初值由 user:impl 的 HapticSettingsInitTask 启动异步加载，
- * 设置页切换时同步改内存 + 异步落盘。
+ * 权限管理页切换时同步改内存 + 落盘（NonCancellable，避免页面销毁取消写入）。
  */
 object HapticSettings {
     /** DataStore 存储键（非用户可见常量，归本对象持有） */

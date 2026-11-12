@@ -32,15 +32,6 @@ export function bumpHomeTabBack(): void {
 }
 
 /**
- * 情绪气象站数据（今日/月历/趋势）需要刷新。
- * 今日页保存成功后 bump，月历/趋势页经 @StorageLink + @Watch 消费重拉。
- */
-export function bumpMoodRefresh(): void {
-  const current = AppStorage.get<number>(MOOD_TICK_KEY) ?? 0
-  AppStorage.setOrCreate(MOOD_TICK_KEY, current + 1)
-}
-
-/**
  * 记忆复习数据（今日队列）需要刷新。
  * 资料页建资料/建卡、复习页每次评分成功后 bump，队列页经 @StorageLink + @Watch 消费重拉
  * （对齐安卓 ReviewRoute.CHANGED_KEY）。
@@ -73,7 +64,6 @@ export function bumpNoticeRefresh(): void {
 export const USER_INFO_TICK_KEY: string = 'refreshUserInfoTick'
 export const ORDER_TICK_KEY: string = 'refreshOrderCountTick'
 export const HOME_TAB_BACK_TICK_KEY: string = 'homeTabBackTick'
-export const MOOD_TICK_KEY: string = 'refreshMoodTick'
 export const REVIEW_TICK_KEY: string = 'refreshReviewTick'
 export const SUBSCRIPTION_TICK_KEY: string = 'refreshSubscriptionTick'
 export const NOTICE_TICK_KEY: string = 'refreshNoticeTick'

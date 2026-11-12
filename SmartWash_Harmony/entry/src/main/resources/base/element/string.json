@@ -557,26 +557,6 @@
       "value": "反馈已提交"
     },
     {
-      "name": "mood_week_mon",
-      "value": "一"
-    },
-    {
-      "name": "mood_week_tue",
-      "value": "二"
-    },
-    {
-      "name": "mood_week_wed",
-      "value": "三"
-    },
-    {
-      "name": "mood_week_thu",
-      "value": "四"
-    },
-    {
-      "name": "mood_week_fri",
-      "value": "五"
-    },
-    {
       "name": "div_followup_title",
       "value": "继续追问"
     },
@@ -1155,6 +1135,26 @@
     {
       "name": "div_chart_page_2",
       "value": "上"
+    },
+    {
+      "name": "div_cn_num_1",
+      "value": "一"
+    },
+    {
+      "name": "div_cn_num_2",
+      "value": "二"
+    },
+    {
+      "name": "div_cn_num_3",
+      "value": "三"
+    },
+    {
+      "name": "div_cn_num_4",
+      "value": "四"
+    },
+    {
+      "name": "div_cn_num_5",
+      "value": "五"
     },
     {
       "name": "div_chart_page_3",
@@ -1831,186 +1831,6 @@
     {
       "name": "lab_star_map_back",
       "value": "返回"
-    },
-    {
-      "name": "mood_title",
-      "value": "情绪气象站"
-    },
-    {
-      "name": "mood_calendar_title",
-      "value": "月历热图"
-    },
-    {
-      "name": "mood_trend_title",
-      "value": "月度趋势"
-    },
-    {
-      "name": "mood_action_calendar",
-      "value": "月历"
-    },
-    {
-      "name": "mood_action_trend",
-      "value": "趋势"
-    },
-    {
-      "name": "mood_level_rainstorm",
-      "value": "暴雨"
-    },
-    {
-      "name": "mood_level_overcast",
-      "value": "阴"
-    },
-    {
-      "name": "mood_level_cloudy",
-      "value": "多云"
-    },
-    {
-      "name": "mood_level_sunny",
-      "value": "晴"
-    },
-    {
-      "name": "mood_level_shining",
-      "value": "大晴"
-    },
-    {
-      "name": "mood_today_question",
-      "value": "今天心情如何？"
-    },
-    {
-      "name": "mood_today_hint",
-      "value": "点一个色块即记录，随时可覆盖"
-    },
-    {
-      "name": "mood_today_recorded",
-      "value": "今天已记录 · 换个心情可覆盖"
-    },
-    {
-      "name": "mood_word_section_title",
-      "value": "一个词（可选）"
-    },
-    {
-      "name": "mood_note_section_title",
-      "value": "一句话（可选）"
-    },
-    {
-      "name": "mood_note_hint",
-      "value": "写下今天的一句话…"
-    },
-    {
-      "name": "mood_error_load",
-      "value": "心情记录加载失败"
-    },
-    {
-      "name": "mood_error_save",
-      "value": "保存失败，请重试"
-    },
-    {
-      "name": "mood_action_retry",
-      "value": "重试"
-    },
-    {
-      "name": "mood_word_tired",
-      "value": "累"
-    },
-    {
-      "name": "mood_word_smooth",
-      "value": "顺"
-    },
-    {
-      "name": "mood_word_quiet",
-      "value": "静"
-    },
-    {
-      "name": "mood_word_restless",
-      "value": "燥"
-    },
-    {
-      "name": "mood_word_burning",
-      "value": "燃"
-    },
-    {
-      "name": "mood_prev_month",
-      "value": "上一个月"
-    },
-    {
-      "name": "mood_next_month",
-      "value": "下一个月"
-    },
-    {
-      "name": "mood_week_sat",
-      "value": "六"
-    },
-    {
-      "name": "mood_week_sun",
-      "value": "日"
-    },
-    {
-      "name": "mood_calendar_day_empty_hint",
-      "value": "灰格 = 无记录，点色块看当天"
-    },
-    {
-      "name": "mood_day_dialog_word_empty",
-      "value": "这天没有留下词"
-    },
-    {
-      "name": "mood_trend_stats_days",
-      "value": "记录天数"
-    },
-    {
-      "name": "mood_trend_stats_average",
-      "value": "月均值"
-    },
-    {
-      "name": "mood_trend_distribution_title",
-      "value": "等级分布"
-    },
-    {
-      "name": "mood_trend_days_unit",
-      "value": "天"
-    },
-    {
-      "name": "mood_trend_empty_message",
-      "value": "本月还没有记录"
-    },
-    {
-      "name": "mood_trend_empty_action",
-      "value": "去记录今天"
-    },
-    {
-      "name": "mood_trend_error_load",
-      "value": "趋势数据加载失败"
-    },
-    {
-      "name": "mood_calendar_page_1",
-      "value": "月历加载失败"
-    },
-    {
-      "name": "mood_widgets_1",
-      "value": "星期日"
-    },
-    {
-      "name": "mood_widgets_2",
-      "value": "星期一"
-    },
-    {
-      "name": "mood_widgets_3",
-      "value": "星期二"
-    },
-    {
-      "name": "mood_widgets_4",
-      "value": "星期三"
-    },
-    {
-      "name": "mood_widgets_5",
-      "value": "星期四"
-    },
-    {
-      "name": "mood_widgets_6",
-      "value": "星期五"
-    },
-    {
-      "name": "mood_widgets_7",
-      "value": "星期六"
     },
     {
       "name": "back",
@@ -4017,16 +3837,16 @@
       "value": "接收订单进度、投递与系统通知提醒"
     },
     {
-      "name": "permission_internet",
-      "value": "网络访问"
+      "name": "permission_haptic",
+      "value": "触感反馈"
     },
     {
-      "name": "permission_internet_desc",
-      "value": "与服务端同步订单、余额与洗衣项目（安装即授予）"
+      "name": "permission_haptic_desc",
+      "value": "全局交互震动开关（点击、切换等操作的触觉反馈）"
     },
     {
       "name": "permission_footer",
-      "value": "权限仅用于上述功能所需的最小场景；拒绝某项权限只会影响对应功能，不影响应用正常使用。"
+      "value": "这里只列出你可以随时开关的权限与设置；未列出的系统权限为安装即授予，用于应用正常运行。"
     },
     {
       "name": "permission_granted",
@@ -4501,10 +4321,6 @@
       "value": "发现新版本"
     },
     {
-      "name": "setting_17",
-      "value": "无法打开系统设置"
-    },
-    {
       "name": "already_latest",
       "value": "当前已是最新版本"
     },
@@ -4647,14 +4463,6 @@
     {
       "name": "settings",
       "value": "设置"
-    },
-    {
-      "name": "push_notification",
-      "value": "消息通知"
-    },
-    {
-      "name": "permission_denied",
-      "value": "未授权"
     },
     {
       "name": "haptic_feedback",
@@ -5011,14 +4819,6 @@
     {
       "name": "not_bound",
       "value": "未绑定"
-    },
-    {
-      "name": "shipping_address",
-      "value": "收货地址"
-    },
-    {
-      "name": "shipping_address_unavailable",
-      "value": "收货地址功能暂未开放"
     },
     {
       "name": "app_components_1",

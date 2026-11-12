@@ -45,6 +45,9 @@ com.smartwash.feature.user.impl
     ├── setting/
     │   ├── SettingPage.kt        # 设置页 Composable（登出入口）
     │   └── SettingViewModel.kt   # 设置页 ViewModel
+    ├── permission/
+    │   ├── PermissionManagementPage.kt        # 权限管理页 Composable
+    │   └── PermissionManagementViewModel.kt   # 触感反馈开关（DataStore 持久化）
     ├── update_userinfo/
     │   ├── UpdateUserInfoPage.kt  # 资料编辑页 Composable
     │   └── UpdateUserInfoViewModel.kt

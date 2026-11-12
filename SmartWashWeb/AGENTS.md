@@ -1,6 +1,6 @@
 # AGENTS.md — SmartWashWeb 管理后台指南
 
-> SmartWash 智能洗衣系统的 Vue 3 管理后台。洗衣主航道：学校、学生、洗护套餐、寄存柜、订单、支付/充值记录、优惠券、角色与管理员账号。平台模块运营台：站内信、订阅、心情报表、操作审计、游戏库、工作台入口、跳转路由、短链管理；另有观象台管理（Prompt/语料/审计/用量/拦截/模型/设置）与设备投递公开页。
+> SmartWash 智能洗衣系统的 Vue 3 管理后台。洗衣主航道：学校、学生、洗护套餐、寄存柜、订单、支付/充值记录、优惠券、角色与管理员账号。平台模块运营台：站内信、订阅、操作审计、游戏库、工作台入口、跳转路由、短链管理；另有观象台管理（Prompt/语料/审计/用量/拦截/模型/设置）与设备投递公开页。
 >
 > 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [.claude/agents/](.claude/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
 
@@ -33,7 +33,7 @@ src/
 │   ├── adminUser.js  auth.js  captcha.js  coupon.js  dashboard.js  divination.js
 │   │   laundry.js  locker.js  order.js  payment.js  recharge.js  role.js  school.js
 │   │   user.js  userCoupon.js  game.js  toolbox.js  workbench.js  deeplink.js
-│   │   notice.js  subscription.js  mood.js  audit.js  delivery.js
+│   │   notice.js  subscription.js  audit.js  delivery.js
 ├── utils/
 │   ├── http.js             # http（管理端）+ envelopeHttp（公开信封）：Bearer 注入、响应解包、401 单飞续签
 │   ├── format.js           # formatTime/formatAmount/formatThousands/formatFileSize
@@ -42,14 +42,14 @@ src/
 │   └── optionCache.js      # 下拉全量缓存（school/laundry/role）
 ├── stores/auth.js          # Pinia useAuthStore（token/refreshToken/role）
 ├── router/index.js         # 管理页为 Layout 子路由；/login 与 /d/:code? 免认证
-├── constants/dict.js       # 68 个枚举/字典导出（订单/支付/充值/券/短码/观象台/工作台/游戏/深链/情绪/订阅/站内信）
+├── constants/dict.js       # 66 个枚举/字典导出（订单/支付/充值/券/短码/观象台/工作台/游戏/深链/订阅/站内信）
 ├── components/             # Layout/（Layout+Sidebar+Navbar）、AmapPicker、RegionCascader、TrendChart
 ├── composables/            # useTableList、useTimeRange、useConfirm、useAnimatedNumber
 ├── views/
 │   ├── LoginPage.vue  Home.vue  NotFound.vue
-│   ├── system/             # 16 个管理页（UserList、OrderList、SchoolList、LockerList、
+│   ├── system/             # 15 个管理页（UserList、OrderList、SchoolList、LockerList、
 │   │                       #   RechargeList、PaymentList、AdminUserList、AuditLogList、
-│   │                       #   NoticeList、SubscriptionList、MoodReport、CaptchaQuery 等）
+│   │                       #   NoticeList、SubscriptionList、CaptchaQuery 等）
 │   ├── divination/         # 7 个观象台管理页
 │   ├── game/               # 游戏库（GameList + BatchUploadDialog + gameDirectory.js）
 │   ├── toolbox/            # 短链管理
@@ -71,8 +71,8 @@ src/
 
 ## 四、路由与权限
 
-- 所有管理页面挂 `Layout`（`/`）下；`/login` 与 `/d/:code?`（设备投递公开页）免认证；通配路由 `/:pathMatch(.*)*` 渲染 404 页。共 31 条路由。
-- 菜单、面包屑、图标由路由 `meta` 驱动（`title`/`showInMenu`/icon），新增页面必须配齐 meta；侧边栏按 `MENU_GROUP_CONFIG` 分组（业务管理/基础数据/用户与权限/营销/观象台/工具箱/工作台/情绪与订阅/系统与安全/消息中心）。
+- 所有管理页面挂 `Layout`（`/`）下；`/login` 与 `/d/:code?`（设备投递公开页）免认证；通配路由 `/:pathMatch(.*)*` 渲染 404 页。共 30 条路由。
+- 菜单、面包屑、图标由路由 `meta` 驱动（`title`/`showInMenu`/icon），新增页面必须配齐 meta；侧边栏按 `MENU_GROUP_CONFIG` 分组（业务管理/基础数据/用户与权限/营销/观象台/工具箱/工作台/订阅/系统与安全/消息中心）。
 - **权限现状**：守卫从 `useAuthStore` 检查 token/角色，角色由后端登录接口返回（中文展示名），具体接口权限由后端 `/admin/**` 的 ROLE_ADMIN 强校验兜底。权限必须以后端接口鉴权为准，前端只做展示控制。
 - 路由已全部懒加载（`component: () => import(...)`）；新增页面保持此模式。
 

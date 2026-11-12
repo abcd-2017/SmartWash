@@ -1,7 +1,7 @@
 // :feature:points:impl —— 积分域实现（扩展提案功能 17，按域嵌套结构 feature/points/{api,impl}；
 // 包名/namespace 保持 com.smartwash.feature.points，与模块路径解耦，同 coupon 先例）。
 // 积分网络消费（PointsServiceApi 契约在 api 模块）+ 积分仓库 + 签到有礼页
-// （签到 / 余额 / 月榜 / 最近流水单页）；深链 host "points"（di @IntoSet 贡献，模式同 coupon/mood）。
+// （签到 / 余额 / 月榜 / 最近流水单页）；深链 host "points"（di @IntoSet 贡献，模式同 coupon）。
 // 依赖方向：points:api / common（禁止依赖 app 壳与其他 feature-impl）。
 apply from: "$rootDir/config/android-library.gradle"
 apply from: "$rootDir/config/compose.gradle"

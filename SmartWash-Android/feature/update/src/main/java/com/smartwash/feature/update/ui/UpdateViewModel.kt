@@ -8,11 +8,14 @@ import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.update.R
 import com.smartwash.feature.update.model.AppVersionVo
 import com.smartwash.feature.update.repository.AppUpdateRepository
+import com.smartwash.feature.update.settings.UpdateSettingsStore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
@@ -52,10 +55,40 @@ sealed interface UpdateState {
 @HiltViewModel
 class UpdateViewModel @Inject constructor(
     private val repository: AppUpdateRepository,
+    private val settings: UpdateSettingsStore,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val state: StateFlow<UpdateState> = _state.asStateFlow()
+
+    /** 设置页「自动更新」开关（数据源为 [UpdateSettingsStore] 的内存态） */
+    private val _autoUpdateEnabled = MutableStateFlow(false)
+    val autoUpdateEnabled: StateFlow<Boolean> = _autoUpdateEnabled.asStateFlow()
+
+    /**
+     * 自动下载标记（2026-11-12）：为 true 时下载中不弹进度窗（用户未主动点击，
+     * 静默下载，进度交给系统通知栏），完成时仍弹「安装包已就位」窗。
+     */
+    private val _autoDownload = MutableStateFlow(false)
+    val autoDownload: StateFlow<Boolean> = _autoDownload.asStateFlow()
+
+    /** 用户是否已手动切换过自动更新：为真后初值补读不再覆盖内存态 */
+    private var userToggled = false
+
+    init {
+        // 设置载入与启动任务（UpdateInitTask）各自幂等 load；失败按默认值（不自动更新）
+        viewModelScope.launch {
+            runCatching { settings.load() }
+                .onSuccess {
+                    // 守卫：用户已手动切换过就不再用初读值盖回（DataStore 首读异步，
+                    // 否则用户在初读完成前切换会被旧值覆盖——同设置页触感开关的历史缺陷）
+                    if (!userToggled) {
+                        _autoUpdateEnabled.value = settings.autoUpdateEnabled
+                    }
+                }
+                .onFailure { AppLogger.warn(TAG, "更新设置载入失败，按默认值（不自动更新）", it) }
+        }
+    }
 
     /** 预签名下载地址，由 startDownload 获取后暴露给 UI 层调度 Worker */
     private val _downloadUrl = MutableStateFlow<String?>(null)
@@ -141,7 +174,69 @@ class UpdateViewModel @Inject constructor(
             return
         }
         latestVersion = version
+        // 说明弹窗路径：清掉可能残留的自动下载标记，避免完成窗被静默态压制
+        _autoDownload.value = false
         _state.value = UpdateState.UpdateAvailable(version)
+    }
+
+    /**
+     * 自动下载入口（壳层收到 UpdateEvent.AutoDownload 后调用）：记录版本信息并进入
+     * 准备下载态，不弹更新说明弹窗（用户已在设置页授权自动更新）。
+     * 下载中不弹进度窗（见 [_autoDownload]）。
+     */
+    fun onAutoDownload(version: AppVersionVo) {
+        val current = _state.value
+        if (current is UpdateState.Downloading ||
+            current is UpdateState.Downloaded ||
+            current is UpdateState.Installing
+        ) {
+            AppLogger.debug(TAG, "自动下载事件在下载/安装流程中到达（state=${current::class.simpleName}），忽略以不打断进度")
+            return
+        }
+        latestVersion = version
+        _autoDownload.value = true
+        _state.value = UpdateState.Preparing
+    }
+
+    /**
+     * 设置页「自动更新」开关：先改内存态（UI 与启动检查即时生效），再异步落盘。
+     * 落盘失败回滚内存态与 UI（本次会话内生效，重启后丢失）。
+     */
+    fun setAutoUpdateEnabled(enabled: Boolean) {
+        userToggled = true
+        val previous = settings.autoUpdateEnabled
+        settings.autoUpdateEnabled = enabled
+        _autoUpdateEnabled.value = enabled
+        viewModelScope.launch {
+            // NonCancellable：本开关在设置页，用户切换后一切走即清空 VM、取消写盘协程，
+            // 会导致开关静默回滚、重启丢失；包在 NonCancellable 中保证写入做完
+            withContext(NonCancellable) {
+                runCatching { settings.persistAutoUpdateEnabled(enabled) }
+                    .onFailure {
+                        AppLogger.warn(TAG, "自动更新开关落盘失败，已回滚内存态", it)
+                        settings.autoUpdateEnabled = previous
+                        _autoUpdateEnabled.value = previous
+                    }
+            }
+        }
+    }
+
+    /**
+     * 「不再提醒此版本」：记录 versionCode，启动静默检查跳过该版本（手动检查不受影响）。
+     * 内存态即时生效，落盘失败仅记日志——下次冷启动恢复为未忽略（可接受的弱一致）。
+     */
+    fun ignoreVersion(versionCode: Int) {
+        // 单调递增：低版本值不得覆盖已忽略的高版本（服务端版本号只增不减）
+        if (versionCode <= settings.ignoredVersionCode) return
+        val previous = settings.ignoredVersionCode
+        settings.ignoredVersionCode = versionCode
+        viewModelScope.launch {
+            runCatching { settings.persistIgnoredVersion(versionCode) }
+                .onFailure {
+                    AppLogger.warn(TAG, "忽略版本落盘失败，已回滚内存态", it)
+                    settings.ignoredVersionCode = previous
+                }
+        }
     }
 
     /**
@@ -202,6 +297,8 @@ class UpdateViewModel @Inject constructor(
      */
     fun onDownloadComplete(file: File) {
         _backgroundDownload.value = false
+        // 自动下载完成：清标记让「安装包已就位」窗正常弹出
+        _autoDownload.value = false
         _state.value = UpdateState.Downloaded(file)
     }
 
@@ -215,6 +312,8 @@ class UpdateViewModel @Inject constructor(
      */
     fun onDownloadFailed(message: String) {
         _backgroundDownload.value = false
+        // 失败要让用户看到错误弹窗（含重试），不能被静默态压制
+        _autoDownload.value = false
         _state.value = UpdateState.Error(message, ErrorSource.Download)
     }
 
@@ -234,6 +333,7 @@ class UpdateViewModel @Inject constructor(
         _state.value = UpdateState.Idle
         _downloadUrl.value = null
         _backgroundDownload.value = false
+        _autoDownload.value = false
         isChecking = false
     }
 

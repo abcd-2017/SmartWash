@@ -46,7 +46,6 @@ src/main/java/com/smartwash/
 ├── vo/              # 视图对象 {实体}Vo
 ├── divination/      # 观象台（四算法 core / llm SSE / prompt / rag / 审计 / 用量聚合）
 ├── game/            # 游戏库 / 关卡 / 存档 / 成绩 / 排行榜 + MinIO 对象存储
-├── mood/            # 情绪记录 / 月历 / 统计
 ├── notice/          # 站内信与已读记录
 ├── points/          # 积分账户 / 签到 / 流水 / 月榜
 ├── review/          # 记忆复习（FSRS-6 调度器 + 资料/卡片/队列）

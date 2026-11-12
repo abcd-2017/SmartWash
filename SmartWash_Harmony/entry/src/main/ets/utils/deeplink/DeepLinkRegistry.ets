@@ -8,13 +8,13 @@
 //   login / register / setting / recharge / recharge-record / coupon / order(query tab) /
 //   order-detail/{orderId}（鸿蒙端内：桌面洗衣卡片点击直达详情，安卓无此入口） /
 //   laundry / pickup / divination / divination-history / toolbox-short-code / delivery /
-//   t/{code} / game-center / lab / mood / review / subscription / ai-work / points / messages / web(内建)
+//   t/{code} / game-center / lab / review / subscription / ai-work / points / messages / web(内建)
 //
 // 未实现域的兜底（对齐「先兜底实现」排期）：
 //   后端 workbench_entry 种子对全部端统一下发这些卡片（无 platform 过滤），未落地域注册到
 //   ComingSoon 占位页（pages/ComingSoon.ets）——卡片点击有明确落点而非裸 toast；
 //   各域页面落地后把对应 host 的 routeName 换成真实路由即可，ComingSoon 保留通用兜底。
-//   （lab 已落地为 LabRoute.Home、mood 已落地为 MoodRoute.Today、review 已落地为
+//   （lab 已落地为 LabRoute.Home、review 已落地为
 //    ReviewRoute.Queue、subscription 已落地为 SubscriptionRoute.List、
 //    delivery 已落地为 ToolboxRoute.Delivery、ai-work 已落地为壳层 AiWorkPage，均不再走兜底。）
 //
@@ -70,8 +70,6 @@ function buildHostRoutes(): Map<string, DeepLinkRouteTarget> {
   // 统一落到 ComingSoon 占位页，保证后端下发的工作台卡片点击有明确落点）
   // lab 已落地（对齐安卓 LabDeepLinkModule：lab → LabRoute.Home）
   routes.set('lab', { routeName: RouteNames.LAB_HOME, param: null })
-  // mood 已落地（对齐安卓 MoodDeepLinkModule：mood → MoodRoute.Today）
-  routes.set('mood', { routeName: RouteNames.MOOD_TODAY, param: null })
   // review 已落地（对齐安卓 ReviewDeepLinkModule：review → ReviewRoute.Queue 今日队列页）
   routes.set('review', { routeName: RouteNames.REVIEW_QUEUE, param: null })
   // subscription 已落地（对齐安卓 SubscriptionDeepLinkModule：subscription → SubscriptionRoute.List）

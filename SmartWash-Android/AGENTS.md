@@ -31,7 +31,7 @@
 
 ## 二、模块结构
 
-项目已从单模块重构为 **27 个 Gradle 模块**（1 app + 5 common + 21 feature 子模块），采用 api/impl 分离与单模块域混合模式。
+项目已从单模块重构为 **26 个 Gradle 模块**（1 app + 5 common + 20 feature 子模块），采用 api/impl 分离与单模块域混合模式。
 
 ### 模块地图
 
@@ -46,7 +46,6 @@
 :feature:divination             观象台占卜子系统（四套算法内核 + 卦历库 + SSE 解读网关 + BYOK + 7 页面 + 独立库）
 :feature:game                   游戏中心（封面网格 + WebView 承载，单模块）
 :feature:lab                    解压实验舱（10 个纯本地玩具，单模块，零网络/零存储）
-:feature:mood                   情绪气象站（今日/日历/趋势，单模块）
 :feature:review                 记忆复习（FSRS 队列/学习/资料，单模块）
 :feature:subscription           订阅逃生舱（列表/编辑/详情/提醒，单模块）
 :feature:toolbox                工具箱（短链 + 设备投递会话，单模块）
@@ -98,7 +97,6 @@ build-logic                     convention plugin（smartwash.android.library / 
 | `:feature:divination` | [feature/divination/AGENTS.md](feature/divination/AGENTS.md) |
 | `:feature:game` | [feature/game/AGENTS.md](feature/game/AGENTS.md) |
 | `:feature:lab` | [feature/lab/AGENTS.md](feature/lab/AGENTS.md) |
-| `:feature:mood` | [feature/mood/AGENTS.md](feature/mood/AGENTS.md) |
 | `:feature:review` | [feature/review/AGENTS.md](feature/review/AGENTS.md) |
 | `:feature:subscription` | [feature/subscription/AGENTS.md](feature/subscription/AGENTS.md) |
 | `:feature:toolbox` | [feature/toolbox/AGENTS.md](feature/toolbox/AGENTS.md) |
@@ -482,26 +480,6 @@ com.smartwash.feature.lab/
 
 > 纯本地模块：零网络、零存储、零 Api/Repository；玩具状态会话内即弃。
 
-#### `:feature:mood`
-
-```
-com.smartwash.feature.mood/
-├── MoodRoute.kt                   # Today / Calendar / Trend
-├── MoodConstant.kt
-├── di/
-│   ├── MoodModule.kt
-│   └── MoodDeepLinkModule.kt      # host "mood" → MoodRoute.Today
-├── network/MoodApi.kt             # PUT web/auth/mood/today、GET calendar、GET stats
-├── repository/
-│   ├── MoodRepository.kt
-│   └── MoodRepositoryImpl.kt
-└── ui/
-    ├── MoodGraph.kt  MoodLevel.kt  MoodWidgets.kt
-    ├── today/                     # 今日打卡
-    ├── calendar/                  # 月历
-    └── trend/                     # 趋势
-```
-
 #### `:feature:review`
 
 ```
@@ -598,7 +576,6 @@ com.smartwash.feature.toolbox/
 | 观象台 | `DivRoute` | `:feature:divination` |
 | 游戏 | `GameRoute` | `:feature:game` |
 | 实验舱 | `LabRoute` | `:feature:lab` |
-| 情绪 | `MoodRoute` | `:feature:mood` |
 | 复习 | `ReviewRoute` | `:feature:review` |
 | 订阅 | `SubscriptionRoute` | `:feature:subscription` |
 | 工具箱 | `ToolboxRoute` | `:feature:toolbox` |
@@ -637,7 +614,6 @@ com.smartwash.feature.toolbox/
 | `DivRoute.History` | `"DivHistory"` | — | divination | 卦历案卷 |
 | `GameRoute.Center` | `"GameCenter"` | — | game | 游戏中心 |
 | `LabRoute.Home` | `"LabHome"` | — | lab | 实验舱首页（另有 10 个玩具路由） |
-| `MoodRoute.Today` | `"MoodToday"` | — | mood | 今日情绪 |
 | `ReviewRoute.Queue` | `"ReviewQueue"` | — | review | 今日复习队列 |
 | `SubscriptionRoute.List` | `"SubscriptionList"` | — | subscription | 订阅列表 |
 | `ToolboxRoute.List` | `"ToolboxShortCodeList"` | — | toolbox | 短链列表 |
@@ -951,16 +927,6 @@ object XxxInitModule {
 | POST | `web/auth/game/score` | 是 | 上报成绩 |
 | GET | `web/auth/game/leaderboard` | 是 | 排行榜 |
 | GET | `web/auth/game/levels` | 是 | 关卡列表 |
-
-### 情绪模块（MoodApi）— 3 个端点
-
-> 接口类位置：`:feature:mood/network/MoodApi.kt`
-
-| 方法 | 端点 | 鉴权 | 说明 |
-|------|------|------|------|
-| PUT | `web/auth/mood/today` | 是 | 今日情绪 upsert |
-| GET | `web/auth/mood/calendar?ym=` | 是 | 月历 |
-| GET | `web/auth/mood/stats?ym=` | 是 | 月统计 |
 
 ### 复习模块（ReviewApi）— 7 个端点
 

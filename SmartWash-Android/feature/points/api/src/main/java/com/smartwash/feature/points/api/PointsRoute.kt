@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * 积分域类型安全路由（模块内单一事实来源，模式对齐 CouponRoute/MoodRoute）。
+ * 积分域类型安全路由（模块内单一事实来源，模式对齐 CouponRoute）。
  *
  * 页面取舍（单页 vs 两页）：签到 + 余额 + 排行榜 + 最近流水合并单页——后端
  * GET /web/auth/points/me 一次返回签到/余额/最近流水三块数据，月榜为独立小数据接口

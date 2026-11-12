@@ -133,7 +133,7 @@ export class DivText {
   static get outcomeNan(): string { return resString('div_text_outcome_nan') }
   static get feedbackSubmit(): string { return resString('div_text_feedback_submit') }
   static get feedbackDone(): string { return resString('div_feedback_done') }
-  static get ratingScores(): string[] { return [resString('mood_week_mon'), resString('mood_week_tue'), resString('mood_week_wed'), resString('mood_week_thu'), resString('mood_week_fri')] }
+  static get ratingScores(): string[] { return [resString('div_cn_num_1'), resString('div_cn_num_2'), resString('div_cn_num_3'), resString('div_cn_num_4'), resString('div_cn_num_5')] }
 
   // 追问页
   static get followupTitle(): string { return resString('div_followup_title') }

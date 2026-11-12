@@ -3,7 +3,6 @@ import { RouteNames } from "../constant/RouteNames"
 import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
 import { getUserInfo, uploadAvatar } from "../network/api/UserApi"
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
-import { promptAction } from '@kit.ArkUI'
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { getUnreadCount } from "../network/api/NoticeApi"
 import { NoticeText, formatUnreadBadge } from "../utils/NoticeLogic"
@@ -471,18 +470,6 @@ export struct UserInfo {
                   }, false)
                 })
             }
-
-            Divider()
-              .strokeWidth(0.5)
-              .color($r('app.color.HAIRLINE'))
-
-            this.settingRow($r('sys.symbol.pin_fill'), resString('shipping_address'),
-              $r('app.color.ICON_CONTAINER_ORANGE'), $r('app.color.ICON_FOREGROUND_ORANGE'),
-              "", $r('app.color.TEXT_SECONDARY'),
-              () => {
-                // 文案对齐安卓 shipping_address_unavailable
-                promptAction.showToast({ message: resString('shipping_address_unavailable') })
-              })
 
             Divider()
               .strokeWidth(0.5)

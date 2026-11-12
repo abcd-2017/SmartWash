@@ -3,17 +3,19 @@ import { logger } from "../utils/Logger"
 import { AppConfirmDialog, AppCard, PageHeader } from "../view/common/AppComponents"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { notificationManager } from "@kit.NotificationKit"
-import { abilityAccessCtrl, bundleManager, common } from "@kit.AbilityKit"
+import { common } from "@kit.AbilityKit"
 import { promptAction } from "@kit.ArkUI"
+import vibrator from "@ohos.vibrator"
+import { getValue, setValue } from "../utils/StorageUtil"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
 import { resColor } from '../utils/ResourceColor'
 import { resString } from '../utils/ResourceString'
 
 // ========== 权限管理页（对齐安卓 PermissionManagementPage.kt）==========
 //
-// 安卓页列「通知 / 安装未知应用 / 网络访问 / 后台下载服务」四行；鸿蒙端权限模型不同：
-// 无 APK 热更新（无「安装未知应用」）、无前台下载服务，故只列两项——
-// 通知（用户可关、可拉起系统授权）与网络（normal 权限、安装即授予）。
+// 本页只归集「用户可随时开关的权限与设置」：通知权限（未授权→申请；已授权→去系统设置关闭）
+// 与触感反馈（端内开关，自设置页迁入）。鸿蒙无 APK 热更新（无「安装未知应用」）、无前台下载服务，
+// 安装即授予的 normal 权限（网络访问等）不再列出，避免「展示当前授予状态」的误读。
 // 授权态变更无任何回调，只能靠页面可见性兜底重查（对齐安卓 ON_RESUME）。
 
 @Builder
@@ -21,10 +23,14 @@ export function PermissionManagementBuilder() {
   PermissionManagement()
 }
 
+// 触感反馈开关持久化 key（对齐安卓 HapticSettings.STORAGE_KEY 语义，自设置页迁入）
+const HAPTIC_PREF_KEY: string = "haptic_enabled"
+
 @Component
 struct PermissionManagement {
   @State notificationGranted: boolean = false
-  @State internetGranted: boolean = true
+  // 触感反馈开关（内存态即时生效 + preferences 异步落盘）
+  @State hapticEnabled: boolean = true
 
   // 通知权限被拒且系统弹窗无法再拉起时，引导去系统设置
   private settingsDialogController: CustomDialogController = new CustomDialogController({
@@ -42,8 +48,11 @@ struct PermissionManagement {
     customStyle: true
   })
 
-  aboutToAppear(): void {
+  async aboutToAppear(): Promise<void> {
     this.refreshGranted()
+    // 触感反馈开关回显（读取失败/未初始化按默认开启）
+    const stored = await getValue(HAPTIC_PREF_KEY, true)
+    this.hapticEnabled = stored === null ? true : stored === true
   }
 
   /** 全量重查授予态（页面可见性兜底，权限变更无回调） */
@@ -53,19 +62,21 @@ struct PermissionManagement {
     } catch (err) {
       this.notificationGranted = false
     }
-    this.internetGranted = this.checkInternetGranted()
   }
 
-  /** 网络访问为 normal 权限：经 accessToken 校验真实授予态（查询失败按已授予处理） */
-  private checkInternetGranted(): boolean {
-    try {
-      const bundleInfo = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_DEFAULT)
-      const tokenId = bundleInfo.appInfo.accessTokenId
-      const atManager = abilityAccessCtrl.createAtManager()
-      return atManager.checkAccessTokenSync(tokenId, 'ohos.permission.INTERNET') ===
-        abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED
-    } catch (err) {
-      return true
+  /** 触感反馈开关：先改内存态（热路径即时生效），再异步落盘；开启瞬间给一次确认触感 */
+  private toggleHaptic(): void {
+    const newValue = !this.hapticEnabled
+    this.hapticEnabled = newValue
+    // 偏好开关切换（低频非关键动作，记 debug）
+    logger.debug('permissionManagement', `触感反馈开关切换为 ${newValue ? "开" : "关"}`)
+    setValue(HAPTIC_PREF_KEY, newValue)
+    if (newValue) {
+      try {
+        vibrator.startVibration({ type: "time", duration: 30 }, { id: 0, usage: "unknown" })
+      } catch (err) {
+        // 忽略不支持的设备
+      }
     }
   }
 
@@ -92,7 +103,7 @@ struct PermissionManagement {
   private openNotificationSettings(): void {
     const context = getContext(this) as common.UIAbilityContext
     notificationManager.openNotificationSettings(context).then(() => {
-      // 系统设置半模态关闭回调：重查通知 / 网络授予态
+      // 系统设置半模态关闭回调：重查通知授权态
       logger.debug('permissionManagement', '系统通知设置已关闭，重查授权态')
       this.refreshGranted()
     }).catch(() => {
@@ -132,11 +143,15 @@ struct PermissionManagement {
                   title: resString('permission_notification'),
                   // 鸿蒙语义文案（去掉安卓专属的 APK 下载 / Android 13+ 表述）
                   description: resString('permission_management_4'),
-                  granted: this.notificationGranted,
+                  trailingValue: this.notificationGranted ? resString('permission_granted') : resString('permission_action_request'),
+                  trailingColor: this.notificationGranted ? $r('app.color.SUCCESS') : $r('app.color.PRIMARY'),
                   showAction: true,
                   onRowClick: () => {
+                    // 双向可达：未授权 → 拉起系统授权；已授权 → 去系统设置关闭（对齐安卓）
                     if (!this.notificationGranted) {
                       this.requestNotification()
+                    } else {
+                      this.openNotificationSettings()
                     }
                   }
                 })
@@ -145,15 +160,18 @@ struct PermissionManagement {
                   .color($r('app.color.HAIRLINE'))
                   .strokeWidth(0.5)
 
+                // 触感反馈（端内开关，非系统权限；自设置页迁入，与通知同页归集）
                 PermissionRow({
-                  icon: $r('sys.symbol.wifi'),
-                  containerColor: $r('app.color.ICON_CONTAINER_BLUE'),
-                  iconColor: $r('app.color.ICON_FOREGROUND_BLUE'),
-                  title: resString('permission_internet'),
-                  description: resString('permission_internet_desc'),
-                  granted: this.internetGranted,
-                  showAction: false,
+                  icon: $r('sys.symbol.hand_tap'),
+                  containerColor: $r('app.color.ICON_CONTAINER_TEAL'),
+                  iconColor: $r('app.color.ICON_FOREGROUND_TEAL'),
+                  title: resString('permission_haptic'),
+                  description: resString('permission_haptic_desc'),
+                  trailingValue: this.hapticEnabled ? resString('lab_drum_cell_on') : resString('lab_drum_cell_off'),
+                  trailingColor: $r('app.color.TEXT_SECONDARY'),
+                  showAction: true,
                   onRowClick: () => {
+                    this.toggleHaptic()
                   }
                 })
               }
@@ -191,9 +209,9 @@ struct PermissionManagement {
 }
 
 /**
- * 权限行（对齐安卓 PermissionRow：72dp 高 / ib32 / 标题+描述 / 行尾状态+箭头）。
+ * 权限/设置行（对齐安卓 PermissionRow：72dp 高 / ib32 / 标题+描述 / 行尾状态+箭头）。
  * 用 @Component + @Prop 而非 @Builder：@Builder 按值参数首帧定格，
- * 系统设置返回后 granted 变更不刷新（同 UserInfo 校园卡行已知坑）。
+ * 系统设置返回后行尾状态变更不刷新（同 UserInfo 校园卡行已知坑）。
  * 行自身零水平 padding，水平缩进由分组卡内边距统一承载。
  */
 @Component
@@ -203,7 +221,10 @@ struct PermissionRow {
   @Prop iconColor: ResourceColor = $r('app.color.ICON_FOREGROUND_ORANGE')
   @Prop title: string = ''
   @Prop description: string = ''
-  @Prop granted: boolean = false
+  // 行尾状态/动作文案与颜色由调用方按条目语义给定（对齐安卓 trailingText/trailingColor：
+  // 权限用「已授权/去授权」，端内开关用「已开启/已关闭」）
+  @Prop trailingValue: string = ''
+  @Prop trailingColor: ResourceColor = $r('app.color.TEXT_SECONDARY')
   @Prop showAction: boolean = true
   onRowClick: () => void = () => {
   }
@@ -239,9 +260,9 @@ struct PermissionRow {
 
       // 非操作行状态文字贴内容右缘 0（对齐安卓，D17）；
       // 操作行的 4dp 间距由 chevron 左间距承载（对齐安卓 Spacer(4.dp)）
-      Text(this.granted ? resString('permission_granted') : resString('permission_action_request'))
+      Text(this.trailingValue)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(this.granted ? $r('app.color.SUCCESS') : $r('app.color.PRIMARY'))
+        .fontColor(this.trailingColor)
 
       if (this.showAction) {
         SymbolGlyph($r('sys.symbol.chevron_right'))

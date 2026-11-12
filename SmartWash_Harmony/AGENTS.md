@@ -1,6 +1,6 @@
 # AGENTS.md — SmartWash 鸿蒙端指南
 
-> 智慧校园洗衣服务 App（HarmonyOS NEXT）：与 Android 端功能对齐——注册登录、洗衣套餐选购下单、订单状态追踪、优惠券、钱包充值、储物柜取寄件；并承载平台实验模块（观象台、游戏中心、实验舱、情绪气象站、消息中心、记忆复习、订阅逃生舱、工具箱/短链/设备投递、工作台）。接口与 Android 端逐接口对齐。
+> 智慧校园洗衣服务 App（HarmonyOS NEXT）：与 Android 端功能对齐——注册登录、洗衣套餐选购下单、订单状态追踪、优惠券、钱包充值、储物柜取寄件；并承载平台实验模块（观象台、游戏中心、实验舱、消息中心、记忆复习、订阅逃生舱、工具箱/短链/设备投递、工作台）。接口与 Android 端逐接口对齐。
 >
 > 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [.claude/agents/](.claude/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
 
@@ -35,11 +35,10 @@ entry/src/main/ets/
 │   ├── PickUp / PickupDelivery / Recharge / RechargeRecord / WalletTransactions
 │   ├── Coupon / Points / Setting / PermissionManagement / BingCampusCardAlert
 │   ├── WebPage / AiWorkPage / ComingSoon
-├── feature/                        # 9 个业务域（目录即模块，页面禁绕 api.ets 契约）
+├── feature/                        # 8 个业务域（目录即模块，页面禁绕 api.ets 契约）
 │   ├── divination/                 # 观象台（四术排盘 + 卦例 RDB + SSE 解读 + BYOK）
 │   ├── game/                       # 游戏中心
 │   ├── lab/                        # 解压实验舱（10 个纯本地玩具）
-│   ├── mood/                       # 情绪气象站
 │   ├── notice/                     # 消息中心
 │   ├── review/                     # 记忆复习（FSRS）
 │   ├── subscription/               # 订阅逃生舱
@@ -92,7 +91,7 @@ entry/src/main/ets/
 - **声明**：`module.json5` EntryAbility skills 独立对象声明 `scheme: "smartwash"`（`ohos.want.action.viewData` + `entity.system.browsable`），host 省略即通配。
 - **消费时序**：`onCreate` / `onNewWant` 把 `want.uri` 暂存 `AppStorage('pendingDeepLinkUri')`；`pages/Home.ets` 挂载后（aboutToAppear）与热更新时（@StorageLink + @Watch）消费。未登录时暂存不丢，登录后补消费；消费点不做登录前置判断，由 401 统一兜底（对齐 Android）。
 - **新页面接入**：router_map 注册路由 + `RouteNames` 加常量 + `DeepLinkRegistry.lookup` 加映射（带参 host 仿 `order` / `t` 自行解析校验），三处同步。
-- **host 表**（22 个，含内建 `web`）：login/register/setting/recharge/recharge-record/coupon/order(query tab)/pickup/laundry/divination/divination-history/toolbox-short-code/game-center/delivery/lab/mood/review/subscription/ai-work/points/messages/order-detail/{orderId}/t/{code}/web(内建)；`user-info`/`service`（tab 页非独立路由）不注册。
+- **host 表**（21 个，含内建 `web`）：login/register/setting/recharge/recharge-record/coupon/order(query tab)/pickup/laundry/divination/divination-history/toolbox-short-code/game-center/delivery/lab/review/subscription/ai-work/points/messages/order-detail/{orderId}/t/{code}/web(内建)；`user-info`/`service`（tab 页非独立路由）不注册。
 - **公开白名单** `PUBLIC_DEEP_LINK_HOSTS = ['web','login','register','lab']`（未登录可放行，其余 host 未登录由壳层拦截）。
 
 ---

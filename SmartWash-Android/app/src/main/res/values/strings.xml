@@ -150,6 +150,15 @@
 
     <!-- ==================== 应用更新（弹窗 UI 留壳层，T3.1） ==================== -->
     <string name="check_update">检查更新</string>
+    <!-- 设置页「自动更新」开关（2026-11-12）：开启后启动静默检查发现新版本即自动下载，
+         下载完成弹「安装包已就位」；强制更新仍走说明弹窗 -->
+    <string name="auto_update">自动更新</string>
+    <string name="auto_update_desc">检测到新版本时自动下载</string>
+    <string name="auto_update_enabled">已开启</string>
+    <string name="auto_update_disabled">已关闭</string>
+    <!-- 更新弹窗「不再提醒此版本」勾选项：勾选后启动静默检查不再弹该版本，
+         手动「检查更新」仍如实提示 -->
+    <string name="do_not_remind_version">不再提醒此版本</string>
     <string name="version_short">v%s</string>
     <string name="already_latest">当前已是最新版本</string>
     <string name="new_version_available">发现新版本</string>

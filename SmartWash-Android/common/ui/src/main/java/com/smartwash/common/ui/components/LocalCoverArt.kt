@@ -18,7 +18,6 @@ object LocalCoverArt {
     /** 工作台入口 key → 本地配图（与 workbench_entry.entry_key 对齐） */
     private val workbench: Map<String, Int> = mapOf(
         "game-center" to R.drawable.wb_wide_game_center,
-        "mood" to R.drawable.wb_tile_mood,
         "lab" to R.drawable.wb_tile_lab,
         "toolbox-short-code" to R.drawable.wb_tile_short_code,
         "ai-assistant" to R.drawable.wb_tile_ai_assistant,

@@ -344,21 +344,6 @@ export const deeplinkPlatformText = (platform) => DEEPLINK_PLATFORM_TEXT[platfor
 export const deeplinkPlatformTagType = (platform) =>
   dictValue(DEEPLINK_PLATFORM_TAG_TYPES, platform);
 
-// ---------- 情绪气象站（与后端 mood_record.mood_level 对齐：1暴雨 2阴 3多云 4晴 5大晴） ----------
-
-/** 情绪等级 → 文案 */
-export const MOOD_LEVEL_TEXT = {
-  1: '暴雨',
-  2: '阴',
-  3: '多云',
-  4: '晴',
-  5: '大晴',
-};
-
-/** 情绪等级文案（未知值回显原值，空值占位 "-"；联调以实际下发为准） */
-export const moodLevelText = (level) =>
-  MOOD_LEVEL_TEXT[level] ?? (level === null || level === undefined ? '-' : String(level));
-
 // ---------- 订阅逃生舱（与后端 user_subscription.status 对齐） ----------
 
 /** 订阅状态选项（筛选下拉用） */

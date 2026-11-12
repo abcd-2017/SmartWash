@@ -99,7 +99,7 @@ class DeepLinkHandler @Inject constructor(
      *   拦截即循环跳登录）与 lab（解压实验舱，纯本地玩具零网络请求）。
      *
      * 其余 host（pickup / ai-work / order / coupon / laundry / recharge / recharge-record /
-     * divination / divination-history / game-center / mood / review / subscription /
+     * divination / divination-history / game-center / review / subscription /
      * toolbox-short-code / t / delivery / setting）对应页面入口均消费 /web/auth 鉴权接口
      * 或依赖会话语义，未登录不放行，由壳层落登录页。
      *

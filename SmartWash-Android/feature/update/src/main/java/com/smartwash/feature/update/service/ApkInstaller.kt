@@ -101,13 +101,13 @@ object ApkInstaller {
     }
 
     /**
-     * 删除本地缓存的 APK 文件
+     * 删除本地指定版本的 APK 文件（filesDir/update，见 [ApkDownloadWorker.apkFile]）
      */
-    fun deleteLocalApk(context: Context) {
-        val apkFile = File(context.cacheDir, ApkDownloadWorker.APK_FILE_NAME)
+    fun deleteLocalApk(context: Context, versionCode: Int) {
+        val apkFile = ApkDownloadWorker.apkFile(context, versionCode)
         if (apkFile.exists()) {
             apkFile.delete()
-            AppLogger.debug(TAG, "已删除本地缓存 APK：${apkFile.absolutePath}")
+            AppLogger.debug(TAG, "已删除本地 APK：${apkFile.absolutePath}")
         }
     }
 }

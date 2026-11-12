@@ -11,8 +11,6 @@
     <string name="other">其他</string>
     <string name="clear">清除</string>
     <string name="feature_in_development">功能开发中，敬请期待</string>
-    <!-- 收货地址功能四端均未立项（后端无地址表/接口），走查 P-501：先以 Toast 兜底，待立项后接入 -->
-    <string name="shipping_address_unavailable">收货地址功能暂未开放</string>
     <string name="currency_format">¥%s</string>
 
     <!-- 登录 -->
@@ -94,8 +92,6 @@
 
     <!-- 设置 -->
     <string name="notification">通知</string>
-    <string name="push_notification">消息通知</string>
-    <string name="push_notification_desc">订单状态、活动提醒等</string>
     <string name="email_notification">邮件通知</string>
     <string name="email_notification_desc">账单、优惠信息等</string>
     <string name="privacy_security">隐私与安全</string>
@@ -121,10 +117,6 @@
     <string name="privacy_disclaimer">隐私与免责声明</string>
     <string name="privacy_disclaimer_content">本应用收集的信息与用途：\n\n· 手机号与学号：仅用于账号注册、登录与校内身份识别；\n· 学校与校园卡信息：用于寄存柜投递、取件与计费；\n· 订单与余额数据：用于洗衣服务履约，余额仅存于平台账户；\n· 观象台占卜记录：默认保存在本机数据库，解读请求经平台网关转发大模型，不含个人身份信息；\n· 设备标识与崩溃日志：仅用于问题排查与热更新。\n\n以上数据均传输与存储于平台自有服务器，不向任何第三方共享，不用于广告。你可在系统设置中随时撤回通知等权限，或联系客服注销账号并删除数据。\n\n免责声明：观象台提供的卦象解读属传统文化娱乐内容，不构成任何现实决策建议，请理性看待。</string>
     <string name="about_smartwash">关于 SmartWash</string>
-    <string name="enabled">已开启</string>
-    <string name="on">开</string>
-    <string name="off">关</string>
-    <string name="disabled">已关闭</string>
 
     <!-- 解读模型（issue #79：设置页观象台分组，模型密钥经平台网关加密中转；
          2026-11-11 双模式契约：目录模式两级选择 / 自定义模式自输接入点，平台零兜底） -->
@@ -167,30 +159,29 @@
     <string name="api_config_error_model_empty">请输入模型名称</string>
     <string name="api_config_error_key_empty">请输入 API Key</string>
 
-    <!-- 权限管理页（2026-11-01 缺陷 5c 新增） -->
+    <!-- 权限管理页（2026-11-01 缺陷 5c 新增；2026-11-12 重构：
+         只保留「向用户申请的、用户可随时开关」的权限与设置，
+         移除安装即授予、用户无法随时开关的网络访问/后台下载服务说明行） -->
     <string name="permission_management">权限管理</string>
     <string name="permission_notification">通知权限</string>
     <string name="permission_notification_desc">APK 下载进度与更新提醒（Android 13+ 需授权）</string>
     <string name="permission_install">安装未知应用</string>
     <string name="permission_install_desc">应用内热更新安装 APK 包（需在系统页允许）</string>
-    <string name="permission_internet">网络访问</string>
-    <string name="permission_internet_desc">与服务端同步订单、余额与洗衣项目（安装即授予）</string>
-    <string name="permission_foreground_service">后台下载服务</string>
-    <string name="permission_foreground_service_desc">更新包下载期间保持前台传输（安装即授予）</string>
+    <string name="permission_haptic">触感反馈</string>
+    <string name="permission_haptic_desc">全局交互震动开关（点击、切换等操作的触觉反馈）</string>
     <string name="permission_granted">已授权</string>
-    <string name="permission_denied">未授权</string>
     <string name="permission_action_request">去授权</string>
-    <string name="permission_action_system_settings">去系统设置</string>
+    <!-- 触感反馈行状态（自设置页迁入后成为本页唯一的端内开关行） -->
+    <string name="enabled">已开启</string>
+    <string name="disabled">已关闭</string>
     <string name="permission_request_denied_hint">授权被拒绝且不再询问，请到系统设置中手动开启</string>
-    <string name="permission_footer">权限仅用于上述功能所需的最小场景；拒绝某项权限只会影响对应功能，不影响应用正常使用。</string>
-    <string name="permission_notification_rationale">通知权限用于接收更新下载进度，是否现在授权？</string>
+    <string name="permission_footer">这里只列出你可以随时开关的权限与设置；未列出的系统权限为安装即授予，用于应用正常运行。</string>
 
     <!-- 用户中心 v3 新增 -->
     <string name="wallet_balance">钱包余额</string>
     <string name="total_orders">累计订单</string>
     <string name="bound">已绑定</string>
     <string name="school_dorm_info">学校与宿舍信息</string>
-    <string name="shipping_address">收货地址</string>
     <string name="my_orders">我的订单</string>
     <string name="my_orders_count_format">%d 单</string>
     <!-- 消息中心入口（扩展提案 #4；与 notice 域 notice_title 同义，模块资源各自独立） -->
