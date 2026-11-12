@@ -250,16 +250,21 @@ fun DivHomePage(
                             }
                         }
                     } else {
-                        records.take(3).forEachIndexed { index, record ->
-                            LedgerRow(record)
-                            if (index != 2 && index != records.take(3).lastIndex) {
-                                Box(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        // 行间发丝线 0.5dp（规范 §3.4，audit-11 #8）
-                                        .height(0.5.dp)
-                                        .background(c.hair)
-                                )
+                        // 案卷行必须包一层 Column：Crossfade 内部是 Stack（同一坐标叠放
+                        // 当前/目标两路内容），直接 emit 多个 LedgerRow 会全部落在 (0,0)
+                        // 互相重叠（2026-11-12 缺陷：多条记录时案卷叠在一起）
+                        Column(Modifier.padding(vertical = 4.dp)) {
+                            records.take(3).forEachIndexed { index, record ->
+                                LedgerRow(record)
+                                if (index != 2 && index != records.take(3).lastIndex) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            // 行间发丝线 0.5dp（规范 §3.4，audit-11 #8）
+                                            .height(0.5.dp)
+                                            .background(c.hair)
+                                    )
+                                }
                             }
                         }
                     }
