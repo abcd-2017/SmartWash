@@ -1294,7 +1294,11 @@ struct Setting {
               height: "72%",
               backgroundColor: $r('app.color.SURFACE'),
               showClose: false,
-              dragBar: false
+              dragBar: false,
+              // 键盘避让（实测修复）：默认 TRANSLATE_AND_SCROLL 下 Key 输入聚焦后窗口被压缩、
+              // 弹层按压缩后窗口重算导致 Key 区被挤出可视区（输入内容看不见）。
+              // 改 TRANSLATE_AND_RESIZE：弹层上移并收缩到键盘上沿，保证输入框始终可见。
+              keyboardAvoidMode: SheetKeyboardAvoidMode.TRANSLATE_AND_RESIZE
             })
 
             // ===== 其他 =====
