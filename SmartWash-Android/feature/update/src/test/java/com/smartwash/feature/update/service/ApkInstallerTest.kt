@@ -29,6 +29,11 @@ class ApkInstallerTest {
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
+    private companion object {
+        /** 测试用版本号（安装包按 versionCode 命名，见 ApkDownloadWorker.apkFile） */
+        const val TEST_VERSION_CODE = 1
+    }
+
     @Before
     fun setUp() {
         Shadows.shadowOf(context.packageManager).setCanRequestPackageInstalls(true)
@@ -40,7 +45,8 @@ class ApkInstallerTest {
     }
 
     private fun createCachedApk(): File =
-        File(context.cacheDir, ApkDownloadWorker.APK_FILE_NAME).apply {
+        ApkDownloadWorker.apkFile(context, TEST_VERSION_CODE).apply {
+            parentFile?.mkdirs()
             writeBytes(byteArrayOf(0x50, 0x4B))
         }
 
@@ -51,8 +57,8 @@ class ApkInstallerTest {
     @Ignore(
         "Robolectric 4.14.1 的 getXml 对 AGP 8.8 生成的 .ap_ 二进制 XML 解析产出空文档，" +
             "FileProvider strategy 拿不到任何 root，JVM 环境无法完成 content URI 生成。" +
-            "生产逻辑已由 file_paths.xml 省略 path 修复（root=cacheDir 精确匹配，" +
-            "见 2026-11-11 修复），需真机/集成测试覆盖。"
+            "生产逻辑已由 file_paths.xml 的 files-path 指向 filesDir/update 修复" +
+            "（见 2026-11-11/11-12 修复），需真机/集成测试覆盖。"
     )
     fun `有权限时安装发起后 APK 必须保留供安装器异步读取`() {
         val apkFile = createCachedApk()

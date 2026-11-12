@@ -31,7 +31,7 @@ import javax.inject.Named
 
 /**
  * APK 后台下载 Worker
- * 通过 WorkManager 调度，下载更新包到 cacheDir，每 5% 回调进度。
+ * 通过 WorkManager 调度，下载更新包到 filesDir/update（按 versionCode 命名），每 5% 回调进度。
  * 前台服务通知：经 setForeground 提升为前台服务在通知栏展示下载进度，防止下载被系统杀死；
  * targetSdk 34+ 前台服务必须带类型启动，类型统一由 buildForegroundInfo 注入
  * （清单侧 SystemForegroundService 的 foregroundServiceType=dataSync 声明见 :feature:update Manifest）。
@@ -60,11 +60,42 @@ class ApkDownloadWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
-        const val APK_FILE_NAME = "smartwash_update.apk"
+        /** APK 落盘目录（filesDir 下，非 cacheDir：避免系统「清理缓存」误删用户已下载的安装包） */
+        const val APK_DIR_NAME = "update"
+
         const val KEY_APK_URL = "apk_url"
         const val KEY_SHA256 = "sha256"
         const val KEY_VERSION_NAME = "versionName"
+        const val KEY_VERSION_CODE = "versionCode"
         const val KEY_PROGRESS = "progress"
+
+        /**
+         * 安装包文件：按 versionCode 命名，同版本复用同一文件。
+         *
+         * 固定文件名时「关掉弹窗再次点更新」会命中同一文件、无法判断是否已下载完成；
+         * 按版本命名 + 壳层入队前的本地复用检查（UpdateFlow.scheduleApkDownload）
+         * 才能让用户重复点击直接进安装态，而不是重新下载。
+         */
+        fun apkFile(context: Context, versionCode: Int): File =
+            File(apkDir(context), "smartwash_update_$versionCode.apk")
+
+        fun apkDir(context: Context): File = File(context.filesDir, APK_DIR_NAME)
+
+        /**
+         * 清理旧版本安装包（保留当前版本）：安装包单文件常数十 MB，
+         * 每次下载都留会导致 filesDir 无限增长。当前版本文件由调用方按需删除。
+         */
+        fun cleanupOldApks(context: Context, keepVersionCode: Int) {
+            val dir = apkDir(context)
+            val keepName = "smartwash_update_$keepVersionCode.apk"
+            dir.listFiles()?.forEach { file ->
+                if (file.isFile && file.name != keepName) {
+                    if (file.delete()) {
+                        AppLogger.debug(TAG, "已清理旧版本安装包：${file.name}")
+                    }
+                }
+            }
+        }
         const val KEY_DOWNLOADED_BYTES = "downloaded_bytes"
         const val KEY_TOTAL_BYTES = "total_bytes"
         const val KEY_APK_PATH = "apk_path"
@@ -146,6 +177,7 @@ class ApkDownloadWorker @AssistedInject constructor(
         }
         val expectedSha256 = inputData.getString(KEY_SHA256)?.takeIf { it.isNotBlank() }
         val versionName = inputData.getString(KEY_VERSION_NAME) ?: ""
+        val versionCode = inputData.getInt(KEY_VERSION_CODE, 0)
 
         // 下载开始（低频关键动作）：URL 为 MinIO 预签名链接，查询参数含签名凭证，剥离后仅记 host+path
         AppLogger.info(
@@ -156,10 +188,11 @@ class ApkDownloadWorker @AssistedInject constructor(
             AppLogger.warn(TAG, "APK 下载任务第 $runAttemptCount 次重跑（进程死亡后重投递），继续下载")
         }
 
-        val apkFile = File(applicationContext.cacheDir, APK_FILE_NAME)
+        val apkFile = apkFile(applicationContext, versionCode)
 
         try {
-            // 清理旧文件
+            // 清理旧版本安装包，并删掉当前版本可能残留的不完整文件（上次下载失败/被杀）
+            cleanupOldApks(applicationContext, versionCode)
             if (apkFile.exists()) apkFile.delete()
 
             // 创建通知渠道 + 提升为前台服务

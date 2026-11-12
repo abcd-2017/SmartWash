@@ -70,8 +70,8 @@ import com.smartwash.feature.user.impl.ui.userGraph
 import com.smartwash.ui.navigation.shellEnterTransition
 import com.smartwash.ui.navigation.shellExitTransition
 import com.smartwash.ui.navigation.shellGraph
-import com.smartwash.ui.page.update.CheckUpdateSettingRow
 import com.smartwash.ui.page.update.UpdateFlow
+import com.smartwash.ui.page.update.UpdateSettingRows
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -272,7 +272,7 @@ class MainActivity : ComponentActivity() {
                             userGraph(
                                 navController,
                                 reduceMotion,
-                                checkUpdateContent = { CheckUpdateSettingRow(updateViewModel) }
+                                checkUpdateContent = { UpdateSettingRows(updateViewModel) }
                             )
                             orderGraph(navController)
                             paymentGraph(navController, reduceMotion)

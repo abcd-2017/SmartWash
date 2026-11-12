@@ -3,9 +3,9 @@ package com.smartwash.feature.update.service
 import androidx.core.content.FileProvider
 
 /**
- * FileProvider 的路径策略按 authority 静态缓存，且绑定首次解析时的 cacheDir；
- * Robolectric 每个测试方法使用不同的临时目录，跨方法残留会让后续测试抛
- * 「Failed to find configured root」。测试间统一清空。
+ * FileProvider 的路径策略按 authority 静态缓存，且绑定首次解析时的落盘目录
+ * （现为 filesDir/update，见 file_paths.xml）；Robolectric 每个测试方法使用不同的
+ * 临时目录，跨方法残留会让后续测试抛「Failed to find configured root」。测试间统一清空。
  */
 internal object FileProviderCacheResetter {
     fun reset() {

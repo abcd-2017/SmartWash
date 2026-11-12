@@ -12,7 +12,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.io.File
 
 /**
  * 下载完成通知契约：下载期间用户可能已划掉 App，完成通知的「点击安装」
@@ -29,6 +28,11 @@ class ApkDownloadWorkerNotificationTest {
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
+    private companion object {
+        /** 测试用版本号（安装包按 versionCode 命名，见 ApkDownloadWorker.apkFile） */
+        const val TEST_VERSION_CODE = 1
+    }
+
     @After
     fun tearDown() {
         FileProviderCacheResetter.reset()
@@ -38,11 +42,12 @@ class ApkDownloadWorkerNotificationTest {
     @Ignore(
         "Robolectric 4.14.1 的 getXml 对 AGP 8.8 生成的 .ap_ 二进制 XML 解析产出空文档，" +
             "FileProvider strategy 拿不到任何 root，本用例在 JVM 环境无法验证真实路径匹配。" +
-            "生产逻辑已由 file_paths.xml 省略 path 修复（root=cacheDir 精确匹配，" +
-            "见 2026-11-11 修复），需真机/集成测试覆盖。"
+            "生产逻辑已由 file_paths.xml 的 files-path 指向 filesDir/update 修复" +
+            "（见 2026-11-11/11-12 修复），需真机/集成测试覆盖。"
     )
     fun `完成通知必须携带安装 contentIntent`() {
-        val apkFile = File(context.cacheDir, ApkDownloadWorker.APK_FILE_NAME).apply {
+        val apkFile = ApkDownloadWorker.apkFile(context, TEST_VERSION_CODE).apply {
+            parentFile?.mkdirs()
             writeBytes(byteArrayOf(0x50, 0x4B))
         }
 

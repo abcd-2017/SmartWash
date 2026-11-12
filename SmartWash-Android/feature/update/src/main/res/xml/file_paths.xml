@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <!--
-    不写 path 属性（而非 path="."）：FileProvider.SimplePathStrategy 用 root.getPath()
-    与文件 canonicalPath 做前缀匹配——`path="."` 生成尾部 "/." 的 root 路径导致
-    「Failed to find configured root」，生产环境点击通知安装入口随之失效
-    （用户反馈「点后台下载后通知栏没动静」的根因）。省略 path 时 androidx buildPath
-    跳过 null 段，root 即 cacheDir 本身，任意层级 APK 均匹配；同时规避
-    Robolectric AXML 解析器对空字符串属性产出空文档的限制。
+    APK 安装包落盘在 filesDir/update（见 ApkDownloadWorker.apkDir），
+    故此处用 files-path 精确指向 update/ 子目录，不再沿用 cacheDir。
+
+    path 写成 "update/"（而非省略）：省略时 root = filesDir 本身，虽然仍能匹配
+    update/ 下的文件，但会把整个 filesDir 都暴露给 FileProvider 授权范围；
+    收窄到 update/ 子目录可减小 URI 授权面。不要用 "."——尾部 "/." 会导致
+    「Failed to find configured root」，使点击通知安装入口失效。
     -->
-    <cache-path name="update_apks" />
+    <files-path name="update_apks" path="update/" />
 </paths>

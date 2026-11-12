@@ -16,8 +16,14 @@ import javax.inject.Singleton
  * 壳层沿用既有 4 态弹窗分流。
  */
 sealed class UpdateEvent {
-    /** 发现新版本（version.forceUpdate = true 时为强制更新） */
+    /** 发现新版本（version.forceUpdate = true 时为强制更新），壳层弹更新说明弹窗 */
     data class UpdateAvailable(val version: AppVersionVo) : UpdateEvent()
+
+    /**
+     * 自动下载（用户已开启「自动更新」且非强制更新）：壳层不弹说明弹窗，
+     * 直接取预签名地址下载，完成后弹「安装包已就位」窗口。
+     */
+    data class AutoDownload(val version: AppVersionVo) : UpdateEvent()
 }
 
 /**
@@ -38,8 +44,13 @@ class UpdateEventBus @Inject constructor() {
     )
     val events: SharedFlow<UpdateEvent> = _events.asSharedFlow()
 
-    /** 广播「发现新版本」 */
+    /** 广播「发现新版本」（弹更新说明弹窗） */
     fun notifyUpdateAvailable(version: AppVersionVo) {
         _events.tryEmit(UpdateEvent.UpdateAvailable(version))
+    }
+
+    /** 广播「自动下载」（用户已开启自动更新，直接下载不弹说明弹窗） */
+    fun notifyAutoDownload(version: AppVersionVo) {
+        _events.tryEmit(UpdateEvent.AutoDownload(version))
     }
 }

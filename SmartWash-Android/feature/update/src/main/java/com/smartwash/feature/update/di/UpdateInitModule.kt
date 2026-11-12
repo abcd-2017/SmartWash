@@ -4,6 +4,7 @@ import com.smartwash.common.init.InitTask
 import com.smartwash.feature.update.event.UpdateEventBus
 import com.smartwash.feature.update.init.UpdateInitTask
 import com.smartwash.feature.update.repository.AppUpdateRepository
+import com.smartwash.feature.update.settings.UpdateSettingsStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,5 +25,6 @@ object UpdateInitModule {
     fun provideUpdateInitTask(
         repository: AppUpdateRepository,
         eventBus: UpdateEventBus,
-    ): InitTask = UpdateInitTask(repository, eventBus)
+        settings: UpdateSettingsStore,
+    ): InitTask = UpdateInitTask(repository, eventBus, settings)
 }

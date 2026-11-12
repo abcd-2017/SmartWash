@@ -12,17 +12,23 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -54,10 +60,17 @@ fun UpdateAvailableDialog(
     version: AppVersionVo,
     onUpdateNow: () -> Unit,
     onUpdateLater: () -> Unit,
+    onIgnoreVersion: () -> Unit,
 ) {
     val isForce = version.forceUpdate
+    // 「不再提醒此版本」勾选态（仅非强制更新展示）：勾选后点「稍后更新」或关闭弹窗
+    // 都会记录该 versionCode，启动静默检查不再弹此版本（手动检查更新不受影响）
+    var doNotRemind by remember { mutableStateOf(false) }
+    val handleLater = {
+        if (doNotRemind) onIgnoreVersion() else onUpdateLater()
+    }
     Dialog(
-        onDismissRequest = { if (!isForce) onUpdateLater() },
+        onDismissRequest = { if (!isForce) handleLater() },
         properties = DialogProperties(
             dismissOnClickOutside = !isForce,
             dismissOnBackPress = !isForce,
@@ -122,6 +135,34 @@ fun UpdateAvailableDialog(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 「不再提醒此版本」：整行可点（toggleable 承接 Checkbox 点击，触控热区
+                // 覆盖整行而非 48dp 图标；Checkbox onCheckedChange=null 避免双重点击）
+                if (!isForce) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = doNotRemind,
+                                role = Role.Checkbox,
+                                onValueChange = { doNotRemind = it },
+                            ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(
+                            checked = doNotRemind,
+                            onCheckedChange = null,
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.do_not_remind_version),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.colorScheme.textSecondary,
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // 按钮区
@@ -136,7 +177,7 @@ fun UpdateAvailableDialog(
                     Row(modifier = Modifier.fillMaxWidth()) {
                         AppButton(
                             text = stringResource(R.string.update_later),
-                            onClick = onUpdateLater,
+                            onClick = handleLater,
                             modifier = Modifier.weight(1f),
                             variant = AppButtonVariant.SECONDARY,
                         )
