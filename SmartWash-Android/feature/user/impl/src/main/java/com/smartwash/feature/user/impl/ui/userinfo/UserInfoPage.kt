@@ -31,7 +31,6 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Redeem
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
@@ -289,7 +288,7 @@ fun UserInfoPage(
                                 .clip(RoundedCornerShape(AppDimens.radiusFull))
                                 .background(AppColors.colorScheme.iconContainerTeal)
                                 .pressable(
-                                    onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting()) },
+                                    onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting) },
                                     debounce = false,
                                 ),
                             contentAlignment = Alignment.Center
@@ -586,24 +585,6 @@ fun UserInfoPage(
                             }
                         )
                         HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
-                        SettingRow(
-                            icon = Icons.Default.LocationOn,
-                            containerColor = AppColors.colorScheme.iconContainerOrange,
-                            iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
-                            label = stringResource(R.string.shipping_address),
-                            trailing = {
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = AppColors.colorScheme.textTertiary
-                                )
-                            },
-                            // 待收货地址功能立项后接入（走查 P-501；全工程无地址页面/路由、后端无地址表，
-                            // 四端均未立项；对齐 OrderDetailPage D-OD12 约定：先以 Toast 兜底给用户明确反馈）
-                            onClick = { Toast.makeText(context, context.getString(R.string.shipping_address_unavailable), Toast.LENGTH_SHORT).show() }
-                        )
-                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
                         // 钱包流水（充值/消费分页列表，GET /web/auth/user/transactions）
                         SettingRow(
                             icon = Icons.Default.AccountBalanceWallet,
@@ -711,7 +692,7 @@ fun UserInfoPage(
                                     tint = AppColors.colorScheme.textTertiary
                                 )
                             },
-                            onClick = { navController.navigate(UserRoute.Setting()) }
+                            onClick = { navController.navigate(UserRoute.Setting) }
                         )
                     }
 

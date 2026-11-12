@@ -5,8 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.common.utils.AppLogger
-import com.smartwash.common.utils.HapticSettings
-import com.smartwash.common.utils.SharePreferenceUtils
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.user.impl.R
 import com.smartwash.feature.user.impl.network.entity.div.SaveUserApiConfig
@@ -56,8 +54,9 @@ data class ApiConfigFieldError(
  * app 壳因此被迫触碰用户域实现类型。现依赖改为模块内 Hilt 自取，页面签名不再
  * 暴露 impl 类型，宿主只传导航与插槽。
  *
- * 2026-11-01 设置页接真实数据：新增触感反馈开关状态（内存态直读 [HapticSettings]
- * 保证热路径即时生效 + DataStore 异步落盘；启动初值由 HapticSettingsInitTask 预热）。
+ * 2026-11-12 触感反馈开关迁至权限管理页（PermissionManagementViewModel）：
+ * 设置页不再承载该开关，原「同步内存 + viewModelScope 异步落盘」写法存在
+ * 离开页面即丢落盘、初值补读覆盖用户切换两处缺陷，随迁移一并修复。
  *
  * 2026-11-07 观象台 BYOK（issue #79）：新增「解读模型」配置的查/存/删/试呼状态。
  * 配置与明文密钥端上零持久化（只存服务端，列表仅回掩码），表单输入为内存态。
@@ -66,12 +65,8 @@ data class ApiConfigFieldError(
 class SettingViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val sessionEventBus: SessionEventBus,
-    private val prefs: SharePreferenceUtils,
     private val divSettingRepository: DivSettingRepository,
 ) : ViewModel() {
-
-    private val _hapticEnabled = MutableStateFlow(HapticSettings.enabled)
-    val hapticEnabled = _hapticEnabled.asStateFlow()
 
     // ==================== 观象台 BYOK（解读模型，issue #79） ====================
 
@@ -104,16 +99,6 @@ class SettingViewModel @Inject constructor(
     val apiFieldError = _apiFieldError.asStateFlow()
 
     init {
-        // 初值补读：覆盖启动预热任务（HapticSettingsInitTask）尚未跑完就进设置页的窗口
-        viewModelScope.launch {
-            runCatching { prefs.getData(HapticSettings.STORAGE_KEY, true) }
-                .onSuccess {
-                    HapticSettings.enabled = it
-                    _hapticEnabled.value = it
-                }
-                // 降级：读取失败保持默认值（开启）
-                .onFailure { AppLogger.warn(TAG, "触感反馈开关初值读取失败，使用默认值", it) }
-        }
         // 首进即拉解读模型配置（2026-11-07 双轴审查 B1）：原先仅在弹层打开/保存/删除后刷新，
         // 已配置用户首进看不到掩码回显、divUseEnabled=0 的行内置灰也不生效
         refreshApiConfig()
@@ -129,20 +114,6 @@ class SettingViewModel @Inject constructor(
         AppLogger.info(TAG, "用户主动登出")
         sessionManager.clearToken()
         sessionEventBus.notifyLoggedOut()
-    }
-
-    /** 切换触感反馈：先改内存态（热路径即时生效），再异步落盘（失败回滚内存态） */
-    fun setHapticEnabled(enabled: Boolean) {
-        HapticSettings.enabled = enabled
-        _hapticEnabled.value = enabled
-        viewModelScope.launch {
-            runCatching { prefs.saveData(HapticSettings.STORAGE_KEY, enabled) }
-                .onFailure {
-                    // 降级：落盘失败回滚内存态（本次会话内生效，重启后丢失）
-                    AppLogger.warn(TAG, "触感反馈开关落盘失败，已回滚内存态", it)
-                    HapticSettings.enabled = !enabled; _hapticEnabled.value = !enabled
-                }
-        }
     }
 
     // -------------------- BYOK：查询与建议目录 --------------------

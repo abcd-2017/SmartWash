@@ -1,11 +1,7 @@
 package com.smartwash.feature.user.impl.ui.setting
 
-import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
-import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
@@ -30,15 +26,12 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,13 +42,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -107,32 +96,6 @@ fun SettingPage(
     var showPrivacyDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val view = currentView()
-    // 消息通知行真实授权态（2026-11-01 缺陷 5b）：组合期查一次 + ON_RESUME 重查
-    // （用户从系统通知设置返回后刷新；P-1501 起行点击直达系统通知设置，不再进权限管理页）
-    var notificationGranted by remember {
-        mutableStateOf(
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                ContextCompat.checkSelfPermission(
-                    context, Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED
-        )
-    }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                notificationGranted =
-                    Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                        ContextCompat.checkSelfPermission(
-                            context, Manifest.permission.POST_NOTIFICATIONS
-                        ) == PackageManager.PERMISSION_GRANTED
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-    // 触感反馈真实开关（SettingViewModel 持久化 + HapticSettings 内存态）
-    val hapticEnabled by settingViewModel.hapticEnabled.collectAsState()
     // 解读模型 BYOK 配置（null = 未配置，行尾显示引导文案；仅掩码回显，issue #79）
     val apiConfig by settingViewModel.apiConfig.collectAsState()
     // 平台级 AI 解读总开关（契约更名 divUseEnabled 0/1，替代原 byokEnabled）：仅响应明确
@@ -160,63 +123,6 @@ fun SettingPage(
                 .verticalScroll(rememberScrollState())
         ) {
             PageHeader(title = stringResource(R.string.settings), onBack = { navController.navigateUp() })
-
-            // 通用
-            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-            Text(
-                text = stringResource(R.string.general),
-                // v0.4 字阶 SectionTitle 即 18/24/600 无字距，不再叠加 copy(letterSpacing)
-                style = AppTextStyles.SectionTitle,
-                color = AppColors.colorScheme.textSecondary,
-                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
-                // 消息通知（真实授权态，2026-11-01 缺陷 5b）：行尾显示系统实际授予情况，
-                // 点击直达系统应用通知设置（P-1501：对齐触感反馈行的行内切换语义——
-                // 授权 / 去关闭都在系统页完成，返回后由 ON_RESUME 重查刷新，不再进权限管理页）
-                SettingRow(
-                    icon = Icons.Default.Notifications,
-                    containerColor = AppColors.colorScheme.iconContainerOrange,
-                    iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
-                    title = stringResource(R.string.push_notification),
-                    trailing = {
-                        Text(
-                            text = stringResource(
-                                if (notificationGranted) R.string.enabled else R.string.disabled
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.colorScheme.textSecondary
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        IconChevron()
-                    },
-                    onClick = { openSystemNotificationSettings(context) }
-                )
-                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
-                // 触感反馈（真实开关，2026-11-01 缺陷 5b）：内存态即时生效 + DataStore 异步落盘
-                SettingRow(
-                    icon = Icons.Default.TouchApp,
-                    containerColor = AppColors.colorScheme.iconContainerTeal,
-                    iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
-                    title = stringResource(R.string.haptic_feedback),
-                    trailing = {
-                        Text(
-                            text = stringResource(if (hapticEnabled) R.string.enabled else R.string.disabled),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.colorScheme.textSecondary
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        IconChevron()
-                    },
-                    onClick = {
-                        val newValue = !hapticEnabled
-                        settingViewModel.setHapticEnabled(newValue)
-                        // 开启瞬间给一次确认触感（因果明确的时刻，规范 §7.7）
-                        if (newValue) view.performHaptic(HapticEffect.LIGHT)
-                    }
-                )
-            }
 
             // 观象台
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
@@ -500,20 +406,5 @@ private fun IconChevron() {
         contentDescription = null,
         modifier = Modifier.size(20.dp),
         tint = AppColors.colorScheme.textTertiary
-    )
-}
-
-/**
- * 跳系统应用通知设置页（P-1501）：未授权时引导去系统授权、已授权时可在系统关闭，
- * 返回后由设置页 ON_RESUME 重查刷新行内状态（本行状态完全由系统权限驱动，端上无
- * app 内开关存储，故统一跳系统设置）。
- * minSdk 30 高于 ACTION_APP_NOTIFICATION_SETTINGS 的 API 26，无需应用详情页兜底。
- */
-private fun openSystemNotificationSettings(context: Context) {
-    context.startActivity(
-        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
     )
 }

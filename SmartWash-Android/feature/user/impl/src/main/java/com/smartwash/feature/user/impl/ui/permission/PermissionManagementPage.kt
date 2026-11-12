@@ -8,14 +8,15 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,9 +26,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.SystemUpdate
-import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
@@ -44,37 +45,44 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.user.impl.R
 
 /**
- * 权限管理页（2026-11-01 缺陷 5c 新增，设置页跳入）：
- * 集中展示本应用声明的全部权限与当前授予状态，点击可申请（运行时权限）或跳转
- * 系统设置对应页（特殊权限）。
+ * 权限管理页（2026-11-01 缺陷 5c 新增，设置页跳入；2026-11-12 重构）：
+ * 只归集「向用户申请的、用户可随时开关」的权限与设置——通知权限 / 安装未知应用 /
+ * 触感反馈。安装即授予、用户无法随时开关的系统权限（网络访问、前台下载服务）
+ * 不再列出，避免「展示当前授予状态」的误读。
  *
- * 为什么没有 ViewModel：本页数据全部来自系统 PackageManager / 权限 API 的同步查询，
- * 无任何网络 / 本地数据层参与，MVVM 的 Page+VM 分层在此只有转发成本；状态在组合内
- * 以 remember 持有并在 ON_RESUME 重新核查（从系统设置返回后刷新授予态）。
- * 权限清单与 AndroidManifest 严格对应（合并宿主后）：通知 / 安装未知应用 / 网络 /
- * 后台下载服务。跳系统设置的模板取自 feature:update 的 ApkInstaller（同款 Intent）。
+ * 为什么有自己的 ViewModel：触感开关是端内持久化状态（DataStore），需要
+ * [PermissionManagementViewModel] 承载；权限授予态仍来自系统 PackageManager 的
+ * 同步查询，在组合内以 remember 持有并在 ON_RESUME 重新核查（从系统设置返回后刷新）。
+ * 跳系统设置的 Intent 模板取自 feature:update 的 ApkInstaller（同款）。
  */
 @Composable
-fun PermissionManagementPage(navController: NavController) {
+fun PermissionManagementPage(
+    navController: NavController,
+    permissionManagementViewModel: PermissionManagementViewModel = hiltViewModel(),
+) {
     val context = LocalContext.current
+    val view = currentView()
 
     // 权限授予态：key = 条目标识，ON_RESUME 全量重查（从系统设置返回后刷新）
     val granted = remember { mutableStateMapOf(Perm.NOTIFICATION to false, Perm.INSTALL to false) }
@@ -108,6 +116,9 @@ fun PermissionManagementPage(navController: NavController) {
         }
     }
 
+    // 触感反馈开关（自设置页迁入，2026-11-12）：与权限同页，都是用户可随时开关的项
+    val hapticEnabled by permissionManagementViewModel.hapticEnabled.collectAsState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -133,21 +144,33 @@ fun PermissionManagementPage(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             PermissionGroupCard {
-                // 通知权限（运行时权限：可直接弹系统申请）
+                // 通知权限（运行时权限：未授权 → 弹系统申请；已授权 → 去系统设置关闭，
+                // 保证「用户能够随时开关」双向可达）
                 PermissionRow(
                     icon = Icons.Default.Notifications,
                     containerColor = AppColors.colorScheme.iconContainerOrange,
                     iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
                     title = stringResource(R.string.permission_notification),
                     description = stringResource(R.string.permission_notification_desc),
-                    granted = granted[Perm.NOTIFICATION] == true,
+                    trailingText = stringResource(
+                        if (granted[Perm.NOTIFICATION] == true) {
+                            R.string.permission_granted
+                        } else {
+                            R.string.permission_action_request
+                        }
+                    ),
+                    trailingColor = if (granted[Perm.NOTIFICATION] == true) {
+                        AppColors.colorScheme.success
+                    } else {
+                        AppColors.colorScheme.textGreen
+                    },
                     onClick = {
-                        if (granted[Perm.NOTIFICATION] != true) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                notificationLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                openAppDetails(context)
-                            }
+                        if (granted[Perm.NOTIFICATION] == true) {
+                            openNotificationSettings(context)
+                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            notificationLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            openNotificationSettings(context)
                         }
                     }
                 )
@@ -159,30 +182,38 @@ fun PermissionManagementPage(navController: NavController) {
                     iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
                     title = stringResource(R.string.permission_install),
                     description = stringResource(R.string.permission_install_desc),
-                    granted = granted[Perm.INSTALL] == true,
+                    trailingText = stringResource(
+                        if (granted[Perm.INSTALL] == true) {
+                            R.string.permission_granted
+                        } else {
+                            R.string.permission_action_request
+                        }
+                    ),
+                    trailingColor = if (granted[Perm.INSTALL] == true) {
+                        AppColors.colorScheme.success
+                    } else {
+                        AppColors.colorScheme.textGreen
+                    },
                     onClick = { openUnknownAppSources(context) }
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
-                // 网络访问（normal 权限：安装即授予，仅展示 + 说明）
+                // 触感反馈（端内开关，非系统权限；与上面两项同页归集，2026-11-12 自设置页迁入）
                 PermissionRow(
-                    icon = Icons.Default.Wifi,
-                    containerColor = AppColors.colorScheme.iconContainerBlue,
-                    iconForegroundColor = AppColors.colorScheme.iconForegroundBlue,
-                    title = stringResource(R.string.permission_internet),
-                    description = stringResource(R.string.permission_internet_desc),
-                    granted = isInternetGranted(context),
-                    showAction = false
-                )
-                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
-                // 前台下载服务（normal 权限：安装即授予，仅展示）
-                PermissionRow(
-                    icon = Icons.Default.Sync,
-                    containerColor = AppColors.colorScheme.iconContainerGreen,
-                    iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
-                    title = stringResource(R.string.permission_foreground_service),
-                    description = stringResource(R.string.permission_foreground_service_desc),
-                    granted = true,
-                    showAction = false
+                    icon = Icons.Default.TouchApp,
+                    containerColor = AppColors.colorScheme.iconContainerTeal,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
+                    title = stringResource(R.string.permission_haptic),
+                    description = stringResource(R.string.permission_haptic_desc),
+                    trailingText = stringResource(
+                        if (hapticEnabled) R.string.enabled else R.string.disabled
+                    ),
+                    trailingColor = AppColors.colorScheme.textSecondary,
+                    onClick = {
+                        val newValue = !hapticEnabled
+                        permissionManagementViewModel.setHapticEnabled(newValue)
+                        // 开启瞬间给一次确认触感（因果明确的时刻，规范 §7.7）
+                        if (newValue) view.performHaptic(HapticEffect.LIGHT)
+                    }
                 )
             }
 
@@ -214,7 +245,7 @@ private fun PermissionGroupCard(
             .padding(horizontal = AppDimens.pagePadding).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
     ) {
         Column(modifier = Modifier.padding(horizontal = AppDimens.cardPadding)) {
             content()
@@ -223,8 +254,9 @@ private fun PermissionGroupCard(
 }
 
 /**
- * 权限行 — 口径对齐设置页私有 SettingRow（64dp 高 / 32dp 图标盒 / 行自身零水平 padding），
- * 增加描述行；状态与动作收在行尾。
+ * 权限/设置行 — 口径对齐设置页私有 SettingRow（64dp 高 / 32dp 图标盒 / 行自身零水平 padding），
+ * 增加描述行；行尾状态与动作文案由调用方按条目语义给定（权限用「已授权/去授权」，
+ * 端内开关用「已开启/已关闭」）。
  */
 @Composable
 private fun PermissionRow(
@@ -233,16 +265,16 @@ private fun PermissionRow(
     iconForegroundColor: Color,
     title: String,
     description: String,
-    granted: Boolean,
-    showAction: Boolean = true,
-    onClick: () -> Unit = {},
+    trailingText: String,
+    trailingColor: Color,
+    onClick: () -> Unit,
 ) {
-    // pressable 自绘按压反馈（§7 禁 Material 交互组件）；normal 权限行无动作，仅静态展示
+    // pressable 自绘按压反馈（§7 禁 Material 交互组件）
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(72.dp)
-            .then(if (showAction) Modifier.pressable(onClick = onClick) else Modifier),
+            .pressable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -263,28 +295,18 @@ private fun PermissionRow(
                 color = AppColors.colorScheme.textSecondary
             )
         }
-        if (showAction) {
-            Text(
-                text = stringResource(
-                    if (granted) R.string.permission_granted else R.string.permission_action_request
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (granted) AppColors.colorScheme.success else AppColors.colorScheme.textGreen
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = AppColors.colorScheme.textTertiary
-            )
-        } else {
-            Text(
-                text = stringResource(R.string.permission_granted),
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.success
-            )
-        }
+        Text(
+            text = trailingText,
+            style = MaterialTheme.typography.bodySmall,
+            color = trailingColor
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = AppColors.colorScheme.textTertiary
+        )
     }
 }
 
@@ -294,11 +316,6 @@ private fun isNotificationGranted(context: Context): Boolean =
             context, android.Manifest.permission.POST_NOTIFICATIONS
         ) == PackageManager.PERMISSION_GRANTED
 
-private fun isInternetGranted(context: Context): Boolean =
-    ContextCompat.checkSelfPermission(
-        context, android.Manifest.permission.INTERNET
-    ) == PackageManager.PERMISSION_GRANTED
-
 private fun shouldShowNotificationRationale(context: Context): Boolean =
     (context as? androidx.activity.ComponentActivity)?.let { activity ->
         ActivityCompat.shouldShowRequestPermissionRationale(
@@ -306,11 +323,11 @@ private fun shouldShowNotificationRationale(context: Context): Boolean =
         )
     } ?: true
 
-/** 跳应用详情设置页（权限被永久拒绝后的兜底入口） */
-private fun openAppDetails(context: Context) {
+/** 跳系统应用通知设置页（已授权时供用户关闭；minSdk 30 高于 API 26，无需应用详情页兜底） */
+private fun openNotificationSettings(context: Context) {
     context.startActivity(
-        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = Uri.parse("package:${context.packageName}")
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     )
