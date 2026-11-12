@@ -4,6 +4,9 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Layout from '@/components/Layout/Layout.vue';
 import { useAuthStore } from '@/stores/auth';
 
+// 子路由声明顺序与侧边栏 MENU_GROUP_CONFIG 的六组一一对应：
+// 基础数据（campus/）→ 业务管理（operations/）→ 用户运营（users/）
+// → 平台模块（platform/）→ 观象台（divination/）→ 系统与安全（system/）
 const routes = [
   {
     path: '/login',
@@ -39,10 +42,11 @@ const routes = [
           requiresAuth: true,
         },
       },
+      // ===== 基础数据 =====
       {
         path: '/schools',
         name: 'SchoolList',
-        component: () => import('@/views/system/SchoolList.vue'),
+        component: () => import('@/views/campus/SchoolList.vue'),
         meta: {
           title: '学校管理',
           showInMenu: true,
@@ -51,64 +55,9 @@ const routes = [
         },
       },
       {
-        path: '/users',
-        name: 'Users',
-        component: () => import('@/views/system/UserList.vue'),
-        meta: {
-          title: '学生管理',
-          showInMenu: true,
-          icon: 'UserFilled',
-          requiresAuth: true,
-        },
-      },
-      {
-        path: '/recharge',
-        name: 'RechargeList',
-        component: () => import('@/views/system/RechargeList.vue'),
-        meta: {
-          title: '充值记录',
-          showInMenu: true,
-          icon: 'Coin',
-          requiresAuth: true,
-        },
-      },
-      {
-        path: '/laundry',
-        name: 'LaundryList',
-        component: () => import('@/views/system/LaundryList.vue'),
-        meta: {
-          title: '洗护套餐',
-          showInMenu: true,
-          icon: 'ShoppingBag',
-          requiresAuth: true,
-        },
-      },
-      {
-        path: '/roles',
-        name: 'RoleList',
-        component: () => import('@/views/system/RoleList.vue'),
-        meta: {
-          title: '角色管理',
-          showInMenu: true,
-          icon: 'Key',
-          requiresAuth: true,
-        },
-      },
-      {
-        path: '/adminUsers',
-        name: 'AdminUserList',
-        component: () => import('@/views/system/AdminUserList.vue'),
-        meta: {
-          title: '管理员角色管理',
-          showInMenu: true,
-          icon: 'Avatar',
-          requiresAuth: true,
-        },
-      },
-      {
         path: '/lockers',
         name: 'LockerList',
-        component: () => import('@/views/system/LockerList.vue'),
+        component: () => import('@/views/campus/LockerList.vue'),
         meta: {
           title: '寄存柜管理',
           showInMenu: true,
@@ -117,20 +66,21 @@ const routes = [
         },
       },
       {
-        path: '/payment',
-        name: 'PaymentList',
-        component: () => import('@/views/system/PaymentList.vue'),
+        path: '/laundry',
+        name: 'LaundryList',
+        component: () => import('@/views/campus/LaundryList.vue'),
         meta: {
-          title: '支付记录',
+          title: '洗护套餐',
           showInMenu: true,
-          icon: 'CreditCard',
+          icon: 'ShoppingBag',
           requiresAuth: true,
         },
       },
+      // ===== 业务管理 =====
       {
         path: '/orders',
         name: 'OrderList',
-        component: () => import('@/views/system/OrderList.vue'),
+        component: () => import('@/views/operations/OrderList.vue'),
         meta: {
           title: '订单管理',
           showInMenu: true,
@@ -139,9 +89,43 @@ const routes = [
         },
       },
       {
+        path: '/payment',
+        name: 'PaymentList',
+        component: () => import('@/views/operations/PaymentList.vue'),
+        meta: {
+          title: '支付记录',
+          showInMenu: true,
+          icon: 'CreditCard',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/recharge',
+        name: 'RechargeList',
+        component: () => import('@/views/operations/RechargeList.vue'),
+        meta: {
+          title: '充值记录',
+          showInMenu: true,
+          icon: 'Coin',
+          requiresAuth: true,
+        },
+      },
+      // ===== 用户运营 =====
+      {
+        path: '/users',
+        name: 'Users',
+        component: () => import('@/views/users/UserList.vue'),
+        meta: {
+          title: '学生管理',
+          showInMenu: true,
+          icon: 'UserFilled',
+          requiresAuth: true,
+        },
+      },
+      {
         path: '/coupon',
         name: 'CouponList',
-        component: () => import('@/views/system/CouponList.vue'),
+        component: () => import('@/views/users/CouponList.vue'),
         meta: {
           title: '优惠券管理',
           showInMenu: true,
@@ -152,7 +136,7 @@ const routes = [
       {
         path: '/userCoupon',
         name: 'UserCouponList',
-        component: () => import('@/views/system/UserCouponList.vue'),
+        component: () => import('@/views/users/UserCouponList.vue'),
         meta: {
           title: '用户优惠券领取管理',
           showInMenu: true,
@@ -160,35 +144,23 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 系统与安全 =====
       {
-        path: '/audit-logs',
-        name: 'AuditLogList',
-        component: () => import('@/views/system/AuditLogList.vue'),
+        // 站内信：用户触达工具，与优惠券同属用户运营（不再单独成组）
+        path: '/notices',
+        name: 'NoticeList',
+        component: () => import('@/views/users/NoticeList.vue'),
         meta: {
-          title: '操作审计',
+          title: '站内信管理',
           showInMenu: true,
-          icon: 'DocumentChecked',
+          icon: 'Bell',
           requiresAuth: true,
         },
       },
-      // ===== 演示工具 =====
-      {
-        path: '/captcha',
-        name: 'CaptchaQuery',
-        component: () => import('@/views/system/CaptchaQuery.vue'),
-        meta: {
-          title: '验证码查询',
-          showInMenu: true,
-          icon: 'Message',
-          requiresAuth: true,
-        },
-      },
-      // ===== 工具箱管理 =====
+      // ===== 平台模块 =====
       {
         path: '/toolbox/short-codes',
         name: 'ShortCodeList',
-        component: () => import('@/views/toolbox/ShortCodeList.vue'),
+        component: () => import('@/views/platform/toolbox/ShortCodeList.vue'),
         meta: {
           title: '短链管理',
           showInMenu: true,
@@ -196,11 +168,10 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 工作台配置 =====
       {
         path: '/workbench/entries',
         name: 'WorkbenchEntryList',
-        component: () => import('@/views/workbench/WorkbenchEntryList.vue'),
+        component: () => import('@/views/platform/workbench/WorkbenchEntryList.vue'),
         meta: {
           title: '工作台入口',
           showInMenu: true,
@@ -211,7 +182,7 @@ const routes = [
       {
         path: '/workbench/deeplink-routes',
         name: 'DeeplinkRouteList',
-        component: () => import('@/views/workbench/DeeplinkRouteList.vue'),
+        component: () => import('@/views/platform/workbench/DeeplinkRouteList.vue'),
         meta: {
           title: '跳转路由',
           showInMenu: true,
@@ -219,11 +190,10 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 游戏库（与工作台配置同组） =====
       {
         path: '/game/list',
         name: 'GameList',
-        component: () => import('@/views/game/GameList.vue'),
+        component: () => import('@/views/platform/game/GameList.vue'),
         meta: {
           title: '游戏库',
           showInMenu: true,
@@ -235,11 +205,22 @@ const routes = [
         // 游戏运行期数据管理：关卡维护（热更新，不重传游戏包）+ 存档/成绩查看
         path: '/game/data',
         name: 'GameData',
-        component: () => import('@/views/game/GameData.vue'),
+        component: () => import('@/views/platform/game/GameData.vue'),
         meta: {
           title: '游戏数据',
           showInMenu: true,
           icon: 'DataAnalysis',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/subscriptions',
+        name: 'SubscriptionList',
+        component: () => import('@/views/platform/SubscriptionList.vue'),
+        meta: {
+          title: '订阅管理',
+          showInMenu: true,
+          icon: 'AlarmClock',
           requiresAuth: true,
         },
       },
@@ -321,27 +302,49 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 订阅（用户生活模块） =====
+      // ===== 系统与安全 =====
       {
-        path: '/subscriptions',
-        name: 'SubscriptionList',
-        component: () => import('@/views/system/SubscriptionList.vue'),
+        path: '/roles',
+        name: 'RoleList',
+        component: () => import('@/views/system/RoleList.vue'),
         meta: {
-          title: '订阅管理',
+          title: '角色管理',
           showInMenu: true,
-          icon: 'AlarmClock',
+          icon: 'Key',
           requiresAuth: true,
         },
       },
-      // ===== 消息中心（站内信）=====
       {
-        path: '/notices',
-        name: 'NoticeList',
-        component: () => import('@/views/system/NoticeList.vue'),
+        path: '/adminUsers',
+        name: 'AdminUserList',
+        component: () => import('@/views/system/AdminUserList.vue'),
         meta: {
-          title: '站内信管理',
+          title: '管理员角色管理',
           showInMenu: true,
-          icon: 'Bell',
+          icon: 'Avatar',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/audit-logs',
+        name: 'AuditLogList',
+        component: () => import('@/views/system/AuditLogList.vue'),
+        meta: {
+          title: '操作审计',
+          showInMenu: true,
+          icon: 'DocumentChecked',
+          requiresAuth: true,
+        },
+      },
+      {
+        // 演示工具：验证码查询，仅供演示环境快速取码，生产应考虑下线
+        path: '/captcha',
+        name: 'CaptchaQuery',
+        component: () => import('@/views/system/CaptchaQuery.vue'),
+        meta: {
+          title: '验证码查询',
+          showInMenu: true,
+          icon: 'Message',
           requiresAuth: true,
         },
       },

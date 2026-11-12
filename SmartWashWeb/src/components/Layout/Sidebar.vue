@@ -49,14 +49,13 @@ import {
   Cpu,
   Setting,
   Message,
+  // 情绪与订阅
   AlarmClock,
   // 树形分组表头图标 + 短链管理
   Files,
   OfficeBuilding,
   User,
-  Present,
   MagicStick,
-  Suitcase,
   Link,
   Grid,
   // 工作台配置
@@ -100,15 +99,14 @@ const iconRegistry = {
   Cpu: markRaw(Cpu),
   Setting: markRaw(Setting),
   Message: markRaw(Message),
+  // 情绪与订阅
   AlarmClock: markRaw(AlarmClock),
   // 工具箱与分组表头
   Link: markRaw(Link),
   Files: markRaw(Files),
   OfficeBuilding: markRaw(OfficeBuilding),
   User: markRaw(User),
-  Present: markRaw(Present),
   MagicStick: markRaw(MagicStick),
-  Suitcase: markRaw(Suitcase),
   Grid: markRaw(Grid),
   // 工作台配置
   Guide: markRaw(Guide),
@@ -135,11 +133,26 @@ const menuRoutes = computed(() => {
 // 树形分组配置：paths 引用路由 path，item 的标题/图标仍取自路由 meta。
 // 未被任何分组覆盖的 showInMenu 路由会兜底进「其他」组，
 // 保证将来新增路由即使忘了登记分组，菜单也不会消失。
+// 六组信息架构：基础数据 → 业务管理 → 用户运营 → 平台模块 → 观象台 → 系统与安全，
+// 与 src/views/ 的目录划分一一对应；组间顺序即侧边栏展示顺序
 const MENU_GROUP_CONFIG = [
-  { title: '业务管理', icon: 'Files', paths: ['/orders', '/payment', '/recharge'] },
   { title: '基础数据', icon: 'OfficeBuilding', paths: ['/schools', '/lockers', '/laundry'] },
-  { title: '用户与权限', icon: 'User', paths: ['/users', '/adminUsers', '/roles'] },
-  { title: '营销', icon: 'Present', paths: ['/coupon', '/userCoupon'] },
+  { title: '业务管理', icon: 'Files', paths: ['/orders', '/payment', '/recharge'] },
+  // 用户触达（站内信）与营销发券同属用户运营，不再各自成组
+  { title: '用户运营', icon: 'User', paths: ['/users', '/coupon', '/userCoupon', '/notices'] },
+  {
+    // 短链/工作台/游戏/订阅等平台实验模块统一归口
+    title: '平台模块',
+    icon: 'Grid',
+    paths: [
+      '/toolbox/short-codes',
+      '/workbench/entries',
+      '/workbench/deeplink-routes',
+      '/game/list',
+      '/game/data',
+      '/subscriptions',
+    ],
+  },
   {
     title: '观象台',
     icon: 'MagicStick',
@@ -153,7 +166,7 @@ const MENU_GROUP_CONFIG = [
       '/divination/settings',
     ],
   },
-  { title: '工具箱', icon: 'Suitcase', paths: ['/captcha', '/toolbox/short-codes'] },
+    { title: '系统与安全', icon: 'Lock', paths: ['/roles', '/adminUsers', '/audit-logs', '/captcha'] },
   {
     title: '工作台',
     icon: 'Grid',

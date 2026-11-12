@@ -1,4 +1,4 @@
-// src/views/game/gameDirectory.js
+// src/views/platform/game/gameDirectory.js
 // games-library 游戏目录规范共享逻辑：目录结构校验 + README 解析。
 // 单目录导入（GameList）与父目录批量导入（BatchUploadDialog）共用同一套规范，避免两处漂移。
 // 规范：游戏目录根层只允许 index.html（必须入口）+ README.md（可选元数据）+ 封面图（可选），
