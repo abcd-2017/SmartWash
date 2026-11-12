@@ -39,6 +39,13 @@
     @androidx.annotation.Keep *;
 }
 
+# 观象台排盘 Gson 模型（DivChartCodec 序列化 Room chartJson）：
+# 混淆会抹掉字段名与字段泛型 Signature（rows: List<LiuYaoLine> 退化为裸 ArrayList），
+# Gson 反序列化把 rows 变成 List<LinkedTreeMap>，卦盘页渲染时 ClassCastException 闪退；
+# 同时字段名混淆会让存量 chartJson 在版本升级后键名对不上，故整包保留（含未来新增模型）
+-keep class com.smartwash.feature.divination.core.** { *; }
+-keep class com.smartwash.feature.divination.data.** { *; }
+
 # OkHttp
 -keep class okhttp3.** { *; }
 -dontwarn okhttp3.**

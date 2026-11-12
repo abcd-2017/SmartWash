@@ -26,5 +26,20 @@ object DivChartCodec {
 
     fun decode(json: String): DivChartBundle? = runCatching {
         gson.fromJson(json, DivChartBundle::class.java)
-    }.getOrNull()
+    }.getOrNull()?.takeIf { it.isUsable() }
+
+    /**
+     * 可用性校验：混淆键名失配 / 旧版本存量 chartJson 会让 Gson 留下空字段
+     * （如 rows 为 null），渲染期直接 NPE——此处按无效丢弃，由调用方走空态兜底。
+     * 字段声明为非空，缺失时读取即 NPE，故整体包进 runCatching。
+     */
+    private fun DivChartBundle.isUsable(): Boolean = runCatching {
+        when {
+            liuyao != null -> liuyao.rows.isNotEmpty()
+            meihua != null -> meihua.lines.isNotEmpty()
+            qimen != null -> qimen.diPan.isNotEmpty()
+            liuren != null -> liuren.courses.isNotEmpty()
+            else -> false
+        }
+    }.getOrDefault(false)
 }
