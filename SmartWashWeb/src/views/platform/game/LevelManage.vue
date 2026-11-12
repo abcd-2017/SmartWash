@@ -23,6 +23,9 @@
           <el-button type="primary" :disabled="!levelGameKey" @click="handleCreateLevel">
             新建关卡
           </el-button>
+          <el-button :disabled="!levelGameKey" @click="importDialogVisible = true">
+            批量导入
+          </el-button>
           <el-button :disabled="!levelGameKey" @click="fetchLevels">刷新</el-button>
         </el-form-item>
       </el-form>
@@ -126,16 +129,34 @@
         <el-button type="primary" :loading="levelSubmitting" @click="submitLevel">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 批量导入弹窗（双兼容 JSON 文件 → 解析预览 → 整批事务提交） -->
+    <LevelImportDialog
+      v-model="importDialogVisible"
+      :game-key="levelGameKey"
+      :game-title="currentGameTitle"
+      :level-list="levelList"
+      @success="fetchLevels"
+    />
   </div>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getGameList } from '@/api/game';
 import { getGameLevels, saveGameLevel, deleteGameLevel } from '@/api/gameData';
+import LevelImportDialog from './components/LevelImportDialog.vue';
 
 defineOptions({ name: 'LevelManage' });
+
+// ==================== 批量导入 ====================
+
+const importDialogVisible = ref(false);
+// 弹窗标题展示用：取当前选中游戏的标题（未选中时兜底 gameKey）
+const currentGameTitle = computed(
+  () => gameOptions.value.find((g) => g.gameKey === levelGameKey.value)?.title || levelGameKey.value
+);
 
 // ==================== 游戏选项 ====================
 
