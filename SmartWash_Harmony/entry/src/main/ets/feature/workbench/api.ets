@@ -134,6 +134,8 @@ export interface WorkbenchTool {
   sectionTitle: string
   /** 配图直链（服务端下发），空串 = 纯文字卡片 */
   imageUrl: string
+  /** 本地自绘封面（对齐安卓 LocalCoverArt.workbenchCover；未知 key 回落通用封面） */
+  cover: Resource
 }
 
 /**
@@ -152,7 +154,8 @@ export function workbenchEntryVoToTool(vo: WorkbenchEntryVo, index: number): Wor
     badge: vo.badge ?? '',
     layout: workbenchLayoutFromKey(vo.type),
     sectionTitle: vo.sectionTitle ?? '',
-    imageUrl: vo.imageUrl ?? ''
+    imageUrl: vo.imageUrl ?? '',
+    cover: workbenchCover(entryKey) ?? $r('app.media.wb_tile_mood')
   }
 }
 
@@ -175,6 +178,7 @@ export function withUniqueKeys(tools: Array<WorkbenchTool>): Array<WorkbenchTool
       icon: tool.icon,
       tint: tool.tint,
       target: tool.target,
+      cover: tool.cover,
       badge: tool.badge,
       layout: tool.layout,
       sectionTitle: tool.sectionTitle,
@@ -188,6 +192,28 @@ export function withUniqueKeys(tools: Array<WorkbenchTool>): Array<WorkbenchTool
  * 按 sort 顺序把条目折成块——sectionTitle 变化处插区块标题，连续 row 归并进一张白卡，
  * 连续 tile 两列成行，wide/notice 各占一行。
  */
+/**
+ * 运营配图本地兜底（对齐安卓 LocalCoverArt.workbenchCover）。
+ * 服务端未下发 imageUrl 时用本地自绘封面（media/wb_*.png），避免退化为纯文字卡；
+ * 后续切云端图后本映射保留作为「无网络/无下发」时的降级资产。
+ */
+export function workbenchCover(entryKey: string): Resource | null {
+  switch (entryKey) {
+    case 'game-center':
+      return $r('app.media.wb_wide_game_center')
+    case 'mood':
+      return $r('app.media.wb_tile_mood')
+    case 'lab':
+      return $r('app.media.wb_tile_lab')
+    case 'toolbox-short-code':
+      return $r('app.media.wb_tile_short_code')
+    case 'ai-assistant':
+      return $r('app.media.wb_tile_ai_assistant')
+    default:
+      return null
+  }
+}
+
 export enum WorkbenchBlockKind {
   SECTION,
   NOTICE,
@@ -330,7 +356,8 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     badge: "",
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
-    imageUrl: ""
+    imageUrl: "",
+    cover: $r('app.media.wb_tile_mood')
   },
   {
     entryKey: "stain_recognition",
@@ -342,7 +369,8 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     badge: "",
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
-    imageUrl: ""
+    imageUrl: "",
+    cover: $r('app.media.wb_tile_mood')
   },
   {
     entryKey: "fabric_encyclopedia",
@@ -354,7 +382,8 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     badge: "",
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
-    imageUrl: ""
+    imageUrl: "",
+    cover: $r('app.media.wb_tile_mood')
   },
   {
     entryKey: "cost_estimate",
@@ -366,7 +395,8 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     badge: "",
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
-    imageUrl: ""
+    imageUrl: "",
+    cover: $r('app.media.wb_tile_mood')
   },
   {
     entryKey: "my_history",
@@ -378,7 +408,8 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     badge: "",
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
-    imageUrl: ""
+    imageUrl: "",
+    cover: $r('app.media.wb_tile_mood')
   },
   {
     entryKey: "ai_assistant",
@@ -392,7 +423,8 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     badge: "",
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
-    imageUrl: ""
+    imageUrl: "",
+    cover: $r('app.media.wb_tile_mood')
   },
   // 与安卓的历史差异说明：安卓工作台此前为 6 项假数据、无短链入口；
   // 本项为鸿蒙侧先行追加的第 7 格，安卓工作台服务端下发版已按 entryKey（toolbox_short_code）对齐。
@@ -406,7 +438,8 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     badge: "",
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
-    imageUrl: ""
+    imageUrl: "",
+    cover: $r('app.media.wb_tile_mood')
   }
 ]
 

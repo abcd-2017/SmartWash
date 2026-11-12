@@ -10,6 +10,7 @@
 //
 // 域目录约定（feature/README.md）：本文件为域内实现，仅经 api.ets 对外暴露契约。
 
+import { workbenchCover } from './api'
 import { BizCode } from "../../network/HttpUtil"
 import { WorkbenchEntryVo, getWorkbenchEntries } from "../../network/api/workbench"
 import { RouteNames } from "../../constant/RouteNames"
@@ -544,6 +545,21 @@ export struct Workbench {
     .backgroundColor($r('app.color.SURFACE_VARIANT'))
   }
 
+  /** 配图（本地自绘封面兜底，对齐安卓 LocalCoverArt）：无服务端下发/无网络时占位，避免退化为纯文字卡 */
+  @Builder
+  WorkbenchCoverImage(image: Resource) {
+    Stack() {
+      Image(image)
+        .width('100%')
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+        .draggable(false)
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('app.color.SURFACE_VARIANT'))
+  }
+
   /**
    * 公告条（type=notice）：PRIMARY_SOFT 浅绿底（对齐安卓 scheme.primarySoft，非 SUCCESS_CONTAINER）
    * + 白色小图标容器 + 可选跳转箭头 + 48vp 关闭钮；内部节奏统一 12（Row space spaceSm）。
@@ -628,6 +644,12 @@ export struct Workbench {
       if (tool.imageUrl.length > 0) {
         Stack() {
           this.WorkbenchImage(tool.imageUrl)
+        }
+        .width('100%')
+        .aspectRatio(1.78)
+      } else {
+        Stack() {
+          this.WorkbenchCoverImage(tool.cover)
         }
         .width('100%')
         .aspectRatio(1.78)
@@ -839,33 +861,26 @@ export struct Workbench {
   ToolTile(tool: WorkbenchTool) {
     Stack({ alignContent: Alignment.TopEnd }) {
       Column() {
-        if (tool.imageUrl.length > 0) {
+          if (tool.imageUrl.length > 0) {
           Stack() {
             this.WorkbenchImage(tool.imageUrl)
+          }
+          .width('100%')
+          .height(96)
+        } else {
+          Stack() {
+            this.WorkbenchCoverImage(tool.cover)
           }
           .width('100%')
           .height(96)
         }
 
         Column() {
-          if (tool.imageUrl.length === 0) {
-            IconBox({
-              icon: tool.icon,
-              containerColor: this.containerColor(tool.tint),
-              iconColor: this.iconColor(tool.tint)
-            })
-
-            Text(tool.title)
-              .fontSize(DesignFontSize.BODY_SMALL)
-              .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor($r('app.color.TEXT_PRIMARY'))
-              .margin({ top: DesignDimens.SPACE_SM })
-          } else {
-            Text(tool.title)
-              .fontSize(DesignFontSize.BODY_SMALL)
-              .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor($r('app.color.TEXT_PRIMARY'))
-          }
+          // 有封面（网络图或本地兜底）时不再叠图标容器，仅标题（对齐安卓 TileCard hasCover 分支）
+          Text(tool.title)
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontWeight(DesignFontWeight.MEDIUM)
+            .fontColor($r('app.color.TEXT_PRIMARY'))
 
           if (tool.description.length > 0) {
             Text(tool.description)
