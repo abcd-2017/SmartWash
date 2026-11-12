@@ -182,10 +182,6 @@ dependencies {
     //app 壳仅剩 NavHost 页面注册与 HomePage 服务 tab 内嵌（T8.1 拆聚合后摘除）
     implementation project(":feature:laundry:impl")
 
-    //情绪气象站子系统：今日记录/月历热图/月度趋势三页独立路由，Hilt 模块随依赖聚合；
-    //入口未接线（宿主后续一行 moodGraph 聚合，见 feature/mood/ui/MoodGraph.kt）
-    implementation project(":feature:mood")
-
     //优惠券域对外契约（T7.2，按域嵌套 feature/coupon/{api,impl}）：CouponRoute 路由常量
     //（PageConstant 优惠券路由委托本模块）+ CouponApi 服务契约（payment-impl 支付页选券消费）
     implementation project(":feature:coupon:api")

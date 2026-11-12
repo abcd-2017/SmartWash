@@ -47,7 +47,7 @@ import { logger } from '../../../../../utils/Logger'
 import { resString } from '../../../../../utils/ResourceString'
 
 /** 爻位名（自初爻到上爻，索引 0..5） */
-function POSITION_NAMES(): string[] { return [resString('div_chart_page_1'), resString('mood_week_tue'), resString('mood_week_wed'), resString('mood_week_thu'), resString('mood_week_fri'), resString('div_chart_page_2')] }
+function POSITION_NAMES(): string[] { return [resString('div_chart_page_1'), resString('div_cn_num_2'), resString('div_cn_num_3'), resString('div_cn_num_4'), resString('div_cn_num_5'), resString('div_chart_page_2')] }
 
 /** 九宫名（奇门口径，与 DivPanels.GONG_NAMES 同值） */
 const GONG_NAMES: Record<number, string> = {
@@ -718,11 +718,11 @@ struct DivChartPage {
 /** 局数中文数字（1..9 → 一..九） */
 function cnJuNumber(n: number): string {
   switch (n) {
-    case 1: return resString('mood_week_mon')
-    case 2: return resString('mood_week_tue')
-    case 3: return resString('mood_week_wed')
-    case 4: return resString('mood_week_thu')
-    case 5: return resString('mood_week_fri')
+    case 1: return resString('div_cn_num_1')
+    case 2: return resString('div_cn_num_2')
+    case 3: return resString('div_cn_num_3')
+    case 4: return resString('div_cn_num_4')
+    case 5: return resString('div_cn_num_5')
     case 6: return resString('div_seal_liuyao')
     case 7: return resString('div_chart_page_17')
     case 8: return resString('div_chart_page_18')

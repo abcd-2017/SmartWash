@@ -36,12 +36,12 @@
 
 ## 项目架构
 
-智慧校园洗衣服务 App，**多模块 Gradle 项目**，MVVM + Jetpack Compose + Hilt。模块化重构后共 **27 个 Gradle 模块**（1 app + 5 common + 21 feature 子模块）。
+智慧校园洗衣服务 App，**多模块 Gradle 项目**，MVVM + Jetpack Compose + Hilt。模块化重构后共 **26 个 Gradle 模块**（1 app + 5 common + 20 feature 子模块）。
 
 ### 模块地图
 
 ```
-:app                             壳：Application + MainActivity(NavHost 聚合 16 个 graph) + 首页/订单详情/取件/内置浏览器/工作台/更新弹窗 + 深链注册表 + InitEngine 调度
+:app                             壳：Application + MainActivity(NavHost 聚合 15 个 graph) + 首页/订单详情/取件/内置浏览器/工作台/更新弹窗 + 深链注册表 + InitEngine 调度
 :common:database                Room 主缓存库(AppDatabase v3)：洗衣项目/学校/优惠券三表（共库，T8.2 决策不拆）
 :common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / 401 单飞续签 / SSE 客户端 / @RequireAuthorization / NetworkException
 :common:utils                    跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState / DataStore 封装(SharePreferenceUtils) / 深链解析契约 / 动效触感 / 二维码 / pagingFlow
@@ -54,7 +54,6 @@
 :feature:lab                    解压实验舱（10 个纯本地玩具，零网络/零存储）
 :feature:laundry:api            LaundryRoute + 学校搜索最小契约（SchoolSearchSource）
 :feature:laundry:impl           Laundry/School Repository + EntityMappers + SchoolSearchSourceImpl + SchoolApi/LaundryItemsApi + 洗衣预约/服务页（内存→Room→网络 缓存降级）
-:feature:mood                   情绪气象站（今日打卡/日历/趋势）
 :feature:notice:api             NoticeApi 契约 + 站内信模型 + NoticeRoute + NoticeServiceApi
 :feature:notice:impl            消息中心收件箱（未读高亮/全部已读/深链 messages）
 :feature:order:api              OrderApi 契约 + 订单模型 + OrderRoute（含寄件取件路由常量）
@@ -103,7 +102,7 @@ abstract class XxxInitModule {
 
 **鉴权流程** — API 方法加 `@RequireAuthorization`，`RequestInterceptor` 经 `retrofit2.Invocation` tag 检测后从 `TokenProvider`（user:impl 的 SessionManager `@Binds`）取 token 注入 `Bearer <token>`。`ResponseInterceptor` 遇 401 清 token 并经 `SessionEventNotifier`（user:impl 的 SessionEventBus `@Binds`）通知 UI 跳登录。
 
-**路由** — 单 Activity + NavHost。各域暴露 `NavGraphBuilder.xxxGraph` 扩展函数，壳层 `MainActivity` 聚合 16 个 graph（shell/user/order/payment/laundry/coupon/notice/divination/toolbox/game/lab/mood/review/subscription/points/delivery）；路由常量单一事实来源在各域 `*Route`。壳层路由契约 `ShellRoute`（common:ui）。
+**路由** — 单 Activity + NavHost。各域暴露 `NavGraphBuilder.xxxGraph` 扩展函数，壳层 `MainActivity` 聚合 15 个 graph（shell/user/order/payment/laundry/coupon/notice/divination/toolbox/game/lab/review/subscription/points/delivery）；路由常量单一事实来源在各域 `*Route`。壳层路由契约 `ShellRoute`（common:ui）。
 
 **深链** — `smartwash://{host}` scheme。解析契约 `DeepLinkParser`/`DeepLinkAction`/`DeepLinkContributor` 在 common:utils；各域 impl（或单模块域）经 `@IntoSet` 贡献 host 路由工厂；壳层 `DeepLinkRegistry` 合并、`DeepLinkHandler` 分发（未命中查后端 `/web/deeplink/routes` 字典兜底）。host 清单与贡献者对照表见 [app/AGENTS.md](app/AGENTS.md) 深链章节。
 

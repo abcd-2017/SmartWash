@@ -1376,7 +1376,6 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
   ('web',                '内置 WebView', 3, 0, 'scheme 说明：smartwash://web?url= 打开内置 WebView', 1),
   ('t',                  '短码跳转',    3, 0, 'scheme 说明：smartwash://t/{code} 打开短码', 1),
   ('game-center',        '游戏中心',    3, 1, 'smartwash://game-center 打开游戏中心列表页', 1),
-  ('mood',               '情绪气象站',  3, 1, 'smartwash://mood 打开情绪气象站今日记录页', 1),
   ('review',             '记忆复习',    3, 1, 'smartwash://review 打开记忆复习今日队列页', 1),
   ('subscription',       '订阅逃生舱',  3, 1, 'smartwash://subscription 打开订阅列表页', 1),
   ('delivery',           '设备投递',    3, 0, 'smartwash://delivery 打开设备投递发起页', 1),
@@ -1389,7 +1388,6 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
 -- ----------------------------
 INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `color`, `type`, `section_title`, `target`, `badge`, `enabled`, `sort`, `remark`) VALUES
   ('game-center',        '游戏中心',   'H5 小游戏合集',                 'gamepad', 'teal',   'wide',  NULL,      'smartwash://game-center',        NULL, 1, 1, NULL),
-  ('mood',               '情绪气象站', '记录每天的心情',               'chat',    'purple', 'tile',  '趣味实验', 'smartwash://mood',               '新', 1, 2, NULL),
   ('lab',                '解压实验舱', '泡泡纸 · 呼吸引导 · 指尖鱼群', 'science', 'purple', 'tile',  '趣味实验', 'smartwash://lab',                '新', 1, 3, NULL),
   ('review',             '记忆复习',   'FSRS 复习卡片',                'book',    'blue',   'row',   '日常管理', 'smartwash://review',             '新', 1, 4, NULL),
   ('subscription',       '订阅逃生舱', '管理订阅与续费',               'link',    'orange', 'row',   '日常管理', 'smartwash://subscription',       '新', 1, 5, NULL),
@@ -1535,29 +1533,6 @@ UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='胜场',       `met
 UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高关卡',   `metric_order`='desc' WHERE `game_key`='billiards';
 UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='breakout';
 UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='snake';
-
--- =====================================================================
--- 情绪气象站 —— 1 张业务表
--- =====================================================================
-
--- ----------------------------
--- Table structure for mood_record（每日情绪记录,一天一条,重复提交覆盖）
--- ----------------------------
-DROP TABLE IF EXISTS `mood_record`;
-CREATE TABLE `mood_record` (
-  `id`         BIGINT       NOT NULL AUTO_INCREMENT,
-  `user_id`    BIGINT       NOT NULL COMMENT 'users.id',
-  `mood_date`  DATE         NOT NULL COMMENT '记录日期(自然日,与user_id组成uk一天一条)',
-  `mood_level` TINYINT      NOT NULL COMMENT '1暴雨 2阴 3多云 4晴 5大晴',
-  `color`      VARCHAR(9)   NULL COMMENT '快照当日颜色(#RRGGBB/#RRGGBBAA),改词典不改史',
-  `word`       VARCHAR(20)  NULL COMMENT '一个词(累/顺/静/燥/燃等),可空',
-  `note`       VARCHAR(200) NULL COMMENT '一句话备注,可空',
-  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_user_date` (`user_id`, `mood_date`),
-  CONSTRAINT `chk_mood_level` CHECK (`mood_level` BETWEEN 1 AND 5)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='情绪气象站-每日情绪记录';
 
 -- =====================================================================
 -- 记忆复习接力（FSRS-6 调度）—— 3 张业务表

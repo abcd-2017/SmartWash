@@ -50,7 +50,7 @@ entry/src/main/ets/
   entryformability/   → EntryFormAbility（桌面卡片提供方，OrderStatusCard）
   entrybackupability/ → EntryBackupAbility（备份占位）
   pages/              → 页面组件（26 个；每个页面暴露 @Builder 函数；Index 为唯一 @Entry）
-  feature/            → 9 个业务域（divination/game/lab/mood/notice/review/subscription/toolbox/workbench）
+  feature/            → 8 个业务域（divination/game/lab/notice/review/subscription/toolbox/workbench）
                        每个域目录即模块，页面禁绕 api.ets 契约
   view/               → 可复用 UI 组件（IndexPage/Service/UserInfo 首页三 tab、BottomNavBar、
                         OrderCard/OrderItemRow/LoadingFooter、common/AppComponents 等）
@@ -70,7 +70,7 @@ entry/src/main/ets/
 
 ### 核心设计模式
 
-**Stage 模型 + NavPathStack 路由** — `EntryAbility` 加载 `pages/Index`；`Index` 根据 token 和学校信息决定初始页（Login / AddSchool / Home）。`router_map.json` 注册 60 条命名路由（与 `RouteNames` 一一对应），页面经全局 `pathStack` 跳转。
+**Stage 模型 + NavPathStack 路由** — `EntryAbility` 加载 `pages/Index`；`Index` 根据 token 和学校信息决定初始页（Login / AddSchool / Home）。`router_map.json` 注册 57 条命名路由（与 `RouteNames` 一一对应），页面经全局 `pathStack` 跳转。
 
 **鉴权流程** — Axios 请求拦截器检测 URL 以 `/web` 开头时，从 preferences 读取 token 注入 `Authorization: Bearer <token>`；响应拦截器统一处理 401 和网络错误。401 已统一为「清 token → 清内存登录态 → replace 到登录页」+ 1.5s 防抖。
 

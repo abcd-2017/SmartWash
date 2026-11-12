@@ -57,8 +57,6 @@ import {
   Cpu,
   Setting,
   Message,
-  // 情绪与订阅
-  MostlyCloudy,
   AlarmClock,
   // 树形分组表头图标 + 短链管理
   Files,
@@ -107,8 +105,6 @@ const iconRegistry = {
   Cpu: markRaw(Cpu),
   Setting: markRaw(Setting),
   Message: markRaw(Message),
-  // 情绪与订阅
-  MostlyCloudy: markRaw(MostlyCloudy),
   AlarmClock: markRaw(AlarmClock),
   // 工具箱与分组表头
   Link: markRaw(Link),
@@ -165,7 +161,7 @@ const MENU_GROUP_CONFIG = [
     icon: 'Grid',
     paths: ['/workbench/entries', '/workbench/deeplink-routes', '/game/list'],
   },
-  { title: '情绪与订阅', icon: 'MostlyCloudy', paths: ['/moodReport', '/subscriptions'] },
+  { title: '订阅', icon: 'AlarmClock', paths: ['/subscriptions'] },
   { title: '系统与安全', icon: 'Lock', paths: ['/audit-logs'] },
   // 站内信为触达类工具，独立成组（不并入业务管理，避免与订单/支付混排）
   { title: '消息中心', icon: 'Bell', paths: ['/notices'] },

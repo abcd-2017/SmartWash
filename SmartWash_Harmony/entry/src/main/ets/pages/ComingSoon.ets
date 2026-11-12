@@ -1,6 +1,6 @@
 // 「建设中」占位页 — 深链兜底落点（对齐安卓各域 DeepLinkModule 的 host 注册形态）
 //
-// 背景：安卓新增域（lab/mood/review/subscription/delivery/ai-work）在鸿蒙端页面未实现
+// 背景：安卓新增域（lab/review/subscription/delivery/ai-work）在鸿蒙端页面未实现
 // （P1-P3 排期），但后端 workbench_entry 种子对这些域统一下发（无 platform 过滤），
 // 工作台卡片 target（如 smartwash://lab）经 DeepLinkRegistry 注册到本页，
 // 避免「点击卡片只弹 toast」的死路——用户得到一个明确的落点页面。

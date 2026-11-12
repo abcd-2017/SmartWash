@@ -51,7 +51,6 @@ import com.smartwash.feature.divination.ui.divinationGraph
 import com.smartwash.feature.game.ui.gameGraph
 import com.smartwash.feature.lab.ui.labGraph
 import com.smartwash.feature.laundry.ui.laundryGraph
-import com.smartwash.feature.mood.ui.moodGraph
 import com.smartwash.feature.notice.ui.noticeGraph
 import com.smartwash.feature.order.impl.ui.orderGraph
 import com.smartwash.feature.payment.impl.ui.paymentGraph
@@ -289,8 +288,6 @@ class MainActivity : ComponentActivity() {
                             // 解压实验舱（纯本地玩具：泡泡纸/呼吸引导/指尖鱼群；入口走深链
                             // smartwash://lab 与后端 workbench_entry 配置的工作台卡片，无底栏入口）
                             labGraph(navController)
-                            // 情绪气象站（入口走深链 smartwash://mood 与工作台卡片，无底栏入口）
-                            moodGraph(navController)
                             // 记忆复习（入口走深链 smartwash://review 与工作台卡片，无底栏入口）
                             reviewGraph(navController)
                             // 订阅逃生舱（入口走深链 smartwash://subscription 与工作台卡片，无底栏入口）

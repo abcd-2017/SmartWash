@@ -155,7 +155,7 @@ export function workbenchEntryVoToTool(vo: WorkbenchEntryVo, index: number): Wor
     layout: workbenchLayoutFromKey(vo.type),
     sectionTitle: vo.sectionTitle ?? '',
     imageUrl: vo.imageUrl ?? '',
-    cover: workbenchCover(entryKey) ?? $r('app.media.wb_tile_mood')
+    cover: workbenchCover(entryKey) ?? $r('app.media.wb_tile_placeholder')
   }
 }
 
@@ -201,8 +201,6 @@ export function workbenchCover(entryKey: string): Resource | null {
   switch (entryKey) {
     case 'game-center':
       return $r('app.media.wb_wide_game_center')
-    case 'mood':
-      return $r('app.media.wb_tile_mood')
     case 'lab':
       return $r('app.media.wb_tile_lab')
     case 'toolbox-short-code':
@@ -357,7 +355,7 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
     imageUrl: "",
-    cover: $r('app.media.wb_tile_mood')
+    cover: $r('app.media.wb_tile_placeholder')
   },
   {
     entryKey: "stain_recognition",
@@ -370,7 +368,7 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
     imageUrl: "",
-    cover: $r('app.media.wb_tile_mood')
+    cover: $r('app.media.wb_tile_placeholder')
   },
   {
     entryKey: "fabric_encyclopedia",
@@ -383,7 +381,7 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
     imageUrl: "",
-    cover: $r('app.media.wb_tile_mood')
+    cover: $r('app.media.wb_tile_placeholder')
   },
   {
     entryKey: "cost_estimate",
@@ -396,7 +394,7 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
     imageUrl: "",
-    cover: $r('app.media.wb_tile_mood')
+    cover: $r('app.media.wb_tile_placeholder')
   },
   {
     entryKey: "my_history",
@@ -409,7 +407,7 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
     imageUrl: "",
-    cover: $r('app.media.wb_tile_mood')
+    cover: $r('app.media.wb_tile_placeholder')
   },
   {
     entryKey: "ai_assistant",
@@ -424,7 +422,7 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
     imageUrl: "",
-    cover: $r('app.media.wb_tile_mood')
+    cover: $r('app.media.wb_tile_placeholder')
   },
   // 与安卓的历史差异说明：安卓工作台此前为 6 项假数据、无短链入口；
   // 本项为鸿蒙侧先行追加的第 7 格，安卓工作台服务端下发版已按 entryKey（toolbox_short_code）对齐。
@@ -439,7 +437,7 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     layout: WorkbenchLayout.TILE,
     sectionTitle: "",
     imageUrl: "",
-    cover: $r('app.media.wb_tile_mood')
+    cover: $r('app.media.wb_tile_placeholder')
   }
 ]
 

@@ -321,18 +321,7 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 情绪与订阅（用户生活模块） =====
-      {
-        path: '/moodReport',
-        name: 'MoodReport',
-        component: () => import('@/views/system/MoodReport.vue'),
-        meta: {
-          title: '心情报表',
-          showInMenu: true,
-          icon: 'MostlyCloudy',
-          requiresAuth: true,
-        },
-      },
+      // ===== 订阅（用户生活模块） =====
       {
         path: '/subscriptions',
         name: 'SubscriptionList',

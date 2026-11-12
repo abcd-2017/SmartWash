@@ -60,7 +60,6 @@ mvn clean package -DskipTests  # 打包
 | `task/` | `OrderTimeoutManager`（动态 TaskScheduler，30 分钟未支付自动取消，非 `@Scheduled`） |
 | `divination/` | 「观象台」占卜子系统（controller / core 四算法 / llm SSE 网关 / prompt / rag / entity / mapper / service / vo / from / task 用量聚合） |
 | `game/` | 游戏中心：游戏库 / 关卡 / 存档 / 成绩 / 排行榜，MinIO 对象存储与上传包校验 |
-| `mood/` | 情绪记录、月历、统计 |
 | `notice/` | 站内信公告与已读记录 |
 | `points/` | 积分账户、签到、流水、月榜 |
 | `review/` | 记忆复习（FSRS-6 纯函数调度器 + 资料/卡片/队列/统计） |

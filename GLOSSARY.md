@@ -596,18 +596,7 @@
   - Web：`views/system/SubscriptionList.vue` + `api/subscription.js`（只读汇总/列表）。
 - **易混淆点**：状态流转动作由后端裁定，端上只做按钮可见性；提醒已读在后端幂等。
 
-### 10.4 情绪（mood_record / MoodLevel）
-
-- **代码标识**：`mood_record`、`MoodLevel`（1 暴雨 / 2 阴 / 3 多云 / 4 晴 / 5 大晴）
-- **定义**：今日情绪 upsert（同用户同月内覆盖）、月历视图、月统计（记录数 / 用户数 / 等级分布）。
-- **四端对应物**：
-  - 后端：`mood/`（`MoodController` + `MoodAdminController`）。
-  - Android：`:feature:mood`（3 个端点 + 今日/日历/趋势页）。
-  - 鸿蒙：`feature/mood/`（`api.ets` + 3 个页面）。
-  - Web：`views/system/MoodReport.vue` + `api/mood.js`。
-- **易混淆点**：`ym` 统一 `yyyy-MM` 字符串；统计口径为「记录数 / 用户数」两个维度。
-
-### 10.5 记忆复习（review_card / study_material / FSRS）
+### 10.4 记忆复习（review_card / study_material / FSRS）
 
 - **代码标识**：`review_card`、`study_material`、`review_log`、`FsrsScheduler`、`ReviewRating`
 - **定义**：资料 → 卡片；FSRS-6 调度（后端 `review/scheduler/FsrsScheduler` 纯函数，移植自 py-fsrs）；端上只传 `(cardId, rating 1..4)`，不参与调度计算。
@@ -618,7 +607,7 @@
   - Web：无管理页。
 - **易混淆点**：rating 语义 1=Again / 2=Hard / 3=Good / 4=Easy（Anki 惯例）；新卡 `stability/difficulty` 为 null；`durationMs` 由端上以自身时钟折算，服务端以自身时钟为准。
 
-### 10.6 操作审计（admin_audit_log / @Audited / HMAC 链）
+### 10.5 操作审计（admin_audit_log / @Audited / HMAC 链）
 
 - **代码标识**：`admin_audit_log`、`@Audited`、`AdminAuditLogController`、`audit.hmac-secret`
 - **定义**：管理端写操作留痕，HMAC 链防篡改；`/admin/audit-logs` 分页查询，`/admin/audit-logs/verify` 校验链完整性。`@Audited` 已覆盖角色/储物柜/订单/用户券/优惠券/支付/用户/学校/管理员/洗衣项目等管理端写接口。
@@ -628,7 +617,7 @@
   - Android / 鸿蒙：无对应实现。
 - **易混淆点**：`audit.hmac-secret` 生产 profile 无默认值（围栏），未配置则审计链无法校验；新增管理端写接口必须加 `@Audited`。
 
-### 10.7 限流与请求追踪（@RateLimit / TraceId / AccessLog）
+### 10.6 限流与请求追踪（@RateLimit / TraceId / AccessLog）
 
 - **代码标识**：`@RateLimit`、`RateLimitConfig`、`TraceIdFilter`、`AccessLogFilter`、`X-Request-Id`
 - **定义**：`@RateLimit` 用 Redis Lua 做分布式限流（登录/注册/验证码/短链跳转/占卜解读按 IP 或用户限流，超限 429）；`TraceIdFilter` 生成/复用 `X-Request-Id` 写入 MDC；`AccessLogFilter` 每请求一行日志（方法/路径/状态/耗时/用户）+ 敏感字段脱敏。
@@ -637,7 +626,7 @@
   - Android / 鸿蒙 / Web：无感知（Web 经响应头可观测 request_id）。
 - **易混淆点**：`application.yaml` 中 `request-log` 缩进在 `toolbox:` 下（实际生效 `toolbox.request-log.*`），而绑定前缀是 `smartwash.request-log`——配置未生效，需统一。
 
-### 10.8 深链主机缺口
+### 10.7 深链主机缺口
 
 - **代码标识**：`order-detail/{orderId}`
 - **定义**：鸿蒙 `DeepLinkRegistry` 已注册 `order-detail/{orderId}` → `OrderDetail`；Android 尚未注册（只有 `order` 带 tab）。两端 host 清单需逐字对齐。
@@ -664,7 +653,6 @@
 | 深链平台 | `platform`（1/2/3） | `DeeplinkRouteDict` | `DeeplinkRouteDict` | `DEEPLINK_PLATFORM_OPTIONS` |
 | 站内信类型 | `NoticeType`（SYSTEM/ANNOUNCEMENT） | `NoticeVo.type` | `feature/notice` | `NOTICE_TYPE_OPTIONS` |
 | 订阅状态 | `SubscriptionStatus`（active/paused/canceled/finished） | `SubscriptionEnums.kt` | `feature/subscription` | `SUBSCRIPTION_STATUS_OPTIONS` |
-| 情绪等级 | `MoodLevel`（1 暴雨 / 2 阴 / 3 多云 / 4 晴 / 5 大晴） | `MoodLevel.kt` | `feature/mood` | `MOOD_LEVEL_TEXT` |
 | 复习评分 | `ReviewRating`（1 Again / 2 Hard / 3 Good / 4 Easy） | `ReviewModels.kt` | `feature/review` | — |
 | 游戏存档/成绩 | `gameKey` + `state` / `score` | `GameBridgeApi` | 无对应实现 | `views/game/GameData.vue` |
 
@@ -680,5 +668,5 @@
 | 观象台 BYOK 与 SSRF 边界 | ADR-0006 |
 | JWT 黑名单与 `/auth/refresh` | ADR-0007 |
 | 游戏数据平台（存档 / 排行榜 / 关卡热更新） | 待补 ADR |
-| 站内信 / 积分 / 订阅 / 情绪 / 复习 | 待补 ADR |
+| 站内信 / 积分 / 订阅 / 复习 | 待补 ADR |
 | 操作审计 HMAC 链 / 分布式限流 / TraceId | 待补 ADR |

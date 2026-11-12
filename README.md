@@ -54,7 +54,6 @@ com.smartwash/
 ├── exception/                # 全局异常定义
 ├── divination/               # 「观象台」AI 占卜子系统（四算法 core / LLM SSE / prompt / rag / 用量聚合）
 ├── game/                     # 游戏中心（游戏库 / 关卡 / 存档 / 成绩 / 排行榜 + MinIO 对象存储）
-├── mood/                     # 情绪记录 / 月历 / 统计
 ├── notice/                   # 站内信与已读记录
 ├── points/                   # 积分账户 / 签到 / 流水 / 月榜
 ├── review/                   # 记忆复习（FSRS-6 调度器 + 资料/卡片/队列）
@@ -154,7 +153,6 @@ com.smartwash/
 | 消息中心 | 站内信收件箱、未读角标、全部已读 |
 | 签到有礼 | 积分余额、连签进度、月排行榜、积分流水 |
 | 订阅逃生舱 | 订阅列表 / 编辑 / 详情 / 用量打卡 / 到期提醒 |
-| 情绪气象站 | 今日情绪打卡、月历、月趋势 |
 | 记忆复习 | FSRS 今日队列、翻面复习、资料与建卡 |
 | 工具箱 | 短链创建 / 列表 / 详情 / 访问统计；设备投递会话 |
 | 游戏中心 | H5 游戏列表（封面网格）+ 存档 / 排行榜 / 关卡 |
@@ -181,7 +179,6 @@ com.smartwash/
 | 操作审计 | 管理端敏感操作留痕 + 审计链完整性校验 |
 | 站内信管理 | 发送公告、已发列表、送达统计 |
 | 订阅管理 | 订阅汇总与列表 |
-| 心情报表 | 情绪记录汇总与趋势 |
 | 游戏库 | 游戏上传 / 封面 / 上下架 / 关卡 / 存档 / 成绩管理 |
 | 工作台入口 | 入口卡片配置（target 支持下拉深链） |
 | 跳转路由字典 | deeplink host 配置 |
@@ -216,7 +213,6 @@ com.smartwash/
 |------|------|
 | `notice` / `notice_read` | 站内信公告 / 已读记录 |
 | `point_account` / `point_ledger` / `point_sign_in` | 积分账户 / 流水 / 签到 |
-| `mood_record` | 情绪记录 |
 | `review_card` / `review_log` / `study_material` | 复习卡片 / 复习日志 / 学习资料 |
 | `user_subscription` / `user_subscription_usage_log` / `subscription_reminder_log` | 订阅 / 用量 / 提醒 |
 | `game_config` / `game_level` / `game_user_save` / `game_score_entry` | 游戏配置 / 关卡 / 账号存档 / 成绩 |
@@ -278,7 +274,6 @@ JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
 | `POST /web/auth/userCoupon/receiveCoupon/{id}` | 领取优惠券 |
 | `GET /web/auth/notices` / `unread-count` | 站内信收件箱 / 未读数 |
 | `GET /web/auth/points/me` / `POST /sign-in` / `GET /leaderboard` | 积分概览 / 签到 / 月榜 |
-| `PUT /web/auth/mood/today` / `GET /calendar` / `GET /stats` | 情绪打卡 / 月历 / 统计 |
 | `/web/auth/review/**` | 记忆复习（资料/卡片/队列/评分/统计） |
 | `/web/auth/subscription/**` | 订阅（CRUD/状态流转/用量/提醒/统计） |
 | `/web/auth/toolbox/short-codes/**` | 短链 CRUD / 统计 / 解析 |
@@ -301,7 +296,6 @@ JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
 | `/admin/audit-logs` / `verify` | 操作审计查询 / 链完整性校验 |
 | `/admin/notices` | 站内信发送 / 列表 / 送达统计 |
 | `/admin/subscription/summary` / `list` | 订阅汇总 / 列表 |
-| `/admin/mood/summary` | 心情报表 |
 | `/admin/game/**` | 游戏库 / 关卡 / 存档 / 成绩管理 |
 | `/admin/workbench/entries/**` | 工作台入口配置 |
 | `/admin/deeplink/routes/**` | 跳转路由字典 |
@@ -342,7 +336,7 @@ JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
 
 ### Android
 
-`local.properties` 配置 SDK 路径；`applicationId = "com.smartwash"`；BASE_URL 通过 Gradle 属性 `baseUrl` 注入（生产 `-PbaseUrl=https://your-domain.com/`）。项目共 27 个 Gradle 模块（app 壳 + 5 common + 21 feature 子模块），api/impl 分离与单模块域混合。
+`local.properties` 配置 SDK 路径；`applicationId = "com.smartwash"`；BASE_URL 通过 Gradle 属性 `baseUrl` 注入（生产 `-PbaseUrl=https://your-domain.com/`）。项目共 26 个 Gradle 模块（app 壳 + 5 common + 20 feature 子模块），api/impl 分离与单模块域混合。
 
 ### 鸿蒙
 
