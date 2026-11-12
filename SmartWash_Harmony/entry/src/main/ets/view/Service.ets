@@ -170,9 +170,15 @@ export struct Service {
           .fontColor($r('app.color.PRIMARY_DARK'))
           .fontFeature(DesignFontFeature.TNUM)
 
-        SymbolGlyph($r('sys.symbol.chevron_right'))
-          .fontSize(20)
-          .fontColor([$r('app.color.TEXT_TERTIARY')])
+        // 「预约 ›」胶囊（对齐安卓 ServicePage 行尾 60×24 r999 胶囊）：
+        // primaryContainer 底 + onPrimaryContainer 字，整行仍可点（胶囊不单独拦截）
+        Text($r('app.string.service_row_reserve'))
+          .fontSize(DesignFontSize.CAPTION)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor($r('app.color.ON_PRIMARY_CONTAINER'))
+          .backgroundColor($r('app.color.PRIMARY_CONTAINER'))
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .padding({ left: 10, right: 10, top: 3, bottom: 3 })
           .margin({ top: 4 })
       }
       .alignItems(HorizontalAlign.End)

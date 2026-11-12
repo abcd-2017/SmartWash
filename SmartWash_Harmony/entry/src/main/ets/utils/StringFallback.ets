@@ -8,6 +8,7 @@
  * 注意：值变动请改 string.json 后重新生成本文件，勿手改。
  */
 export const STRING_FALLBACK: Record<string, string> = {
+  'service_row_reserve': '预约 ›',
   'cancelled': '已取消',
   'order_status_refunded': '已退款',
   'pending_payment': '待支付',

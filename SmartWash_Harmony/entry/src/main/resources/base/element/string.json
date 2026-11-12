@@ -5111,6 +5111,10 @@
     {
       "name": "game_empty_message",
       "value": "游戏整理中，先去洗件衣服吧"
+    },
+    {
+      "name": "service_row_reserve",
+      "value": "预约 ›"
     }
   ]
 }
