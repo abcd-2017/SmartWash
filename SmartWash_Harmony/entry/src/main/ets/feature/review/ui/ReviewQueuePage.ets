@@ -194,14 +194,14 @@ struct ReviewQueuePage {
                         .fontSize(DesignFontSize.DATA_LARGE)
                         .fontWeight(DesignFontWeight.BOLD)
                         .fontFeature(DesignFontFeature.TNUM)
-                        .fontColor(resColor('TEXT_PRIMARY'))
+                        .fontColor($r('app.color.TEXT_PRIMARY'))
 
                       Text(ReviewText.review_queue_breakdown_format
                         .replace('%d', `${this.queue?.dueCount ?? 0}`)
                         .replace('%d', `${this.queue?.newCount ?? 0}`))
                         .fontSize(DesignFontSize.BODY_SMALL)
                         .fontFeature(DesignFontFeature.TNUM)
-                        .fontColor(resColor('TEXT_SECONDARY'))
+                        .fontColor($r('app.color.TEXT_SECONDARY'))
                         .margin({ top: DesignDimens.SPACE_XS })
 
                       AppButton({
@@ -246,7 +246,7 @@ struct ReviewQueuePage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -275,7 +275,7 @@ struct QueueCard {
           Text(this.card.question ?? '')
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .lineHeight(DesignFontSize.BODY_SMALL + 6)
             .maxLines(2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -284,8 +284,8 @@ struct QueueCard {
           Row({ space: DesignDimens.SPACE_XXS }) {
             ReviewTagChip({
               text: this.materialTitle,
-              containerColor: resColor('SURFACE_VARIANT'),
-              contentColor: resColor('TEXT_SECONDARY')
+              containerColor: $r('app.color.SURFACE_VARIANT'),
+              contentColor: $r('app.color.TEXT_SECONDARY')
             })
             DueTypeChip({
               isNew: reviewIsNewCard(this.card),
@@ -303,7 +303,7 @@ struct QueueCard {
         Text(reviewDueTextOf(this.card.dueAt, this.now))
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .lineHeight(DesignFontSize.CAPTION + 4)
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ left: DesignDimens.SPACE_SM })
@@ -313,10 +313,10 @@ struct QueueCard {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     .alignItems(HorizontalAlign.Start)
     .onClick(() => {
       this.onCardClick()

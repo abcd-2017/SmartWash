@@ -185,7 +185,7 @@ struct MoodCalendarPage {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([resColor('TEXT_PRIMARY')])
+              .fontColor([$r('app.color.TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -198,7 +198,7 @@ struct MoodCalendarPage {
           Text(MoodText.mood_calendar_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
         }
         .width('100%')
         .height(56)
@@ -238,7 +238,7 @@ struct MoodCalendarPage {
                   ForEach(WEEK_LABELS, (label: string) => {
                     Text(label)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(resColor('TEXT_SECONDARY'))
+                      .fontColor($r('app.color.TEXT_SECONDARY'))
                       .textAlign(TextAlign.Center)
                       .layoutWeight(1)
                   }, (label: string) => label)
@@ -289,11 +289,11 @@ struct MoodCalendarPage {
             Column() {
               Text(moodRecordedDaysFormat(this.dayRecords.size))
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
 
               Text(MoodText.mood_calendar_day_empty_hint)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
                 .margin({ top: DesignDimens.SPACE_XXS })
             }
             .width('100%')
@@ -314,7 +314,7 @@ struct MoodCalendarPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

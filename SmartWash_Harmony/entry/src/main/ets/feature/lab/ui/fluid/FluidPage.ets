@@ -331,11 +331,11 @@ export struct FluidPage {
               Text(FluidText.hint)
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(resColor('TEXT_PRIMARY'))
-                .backgroundColor(resColor('SURFACE'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
+                .backgroundColor($r('app.color.SURFACE'))
                 .borderRadius(DesignDimens.RADIUS_FULL)
                 .borderWidth(1)
-                .borderColor(resColor('OUTLINE'))
+                .borderColor($r('app.color.OUTLINE'))
                 .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
                   top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             }
@@ -348,11 +348,11 @@ export struct FluidPage {
           if (this.pixelMapFailed) {
             Text(FluidText.unsupported)
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(resColor('TEXT_PRIMARY'))
-              .backgroundColor(resColor('SURFACE'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
+              .backgroundColor($r('app.color.SURFACE'))
               .borderRadius(DesignDimens.RADIUS_FULL)
               .borderWidth(1)
-              .borderColor(resColor('OUTLINE'))
+              .borderColor($r('app.color.OUTLINE'))
               .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
                 top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
           }
@@ -376,15 +376,15 @@ export struct FluidPage {
             Column() {
               Text(FluidText.reset)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
             }
             .layoutWeight(1)
             .justifyContent(FlexAlign.Center)
             .constraintSize({ minHeight: 48 })
             .borderRadius(DesignDimens.BUTTON_RADIUS)
-            .backgroundColor(resColor('SURFACE'))
+            .backgroundColor($r('app.color.SURFACE'))
             .borderWidth(1)
-            .borderColor(resColor('OUTLINE'))
+            .borderColor($r('app.color.OUTLINE'))
             .onClick(() => {
               this.sim.reset()
               this.drawFluid()
@@ -395,15 +395,15 @@ export struct FluidPage {
               Column() {
                 Text(this.playing ? FluidText.pause : FluidText.play)
                   .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(resColor('TEXT_PRIMARY'))
+                  .fontColor($r('app.color.TEXT_PRIMARY'))
               }
               .layoutWeight(1)
               .justifyContent(FlexAlign.Center)
               .constraintSize({ minHeight: 48 })
               .borderRadius(DesignDimens.BUTTON_RADIUS)
-              .backgroundColor(resColor('SURFACE'))
+              .backgroundColor($r('app.color.SURFACE'))
               .borderWidth(1)
-              .borderColor(resColor('OUTLINE'))
+              .borderColor($r('app.color.OUTLINE'))
               .margin({ left: DesignDimens.SPACE_MD })
               .onClick(() => {
                 this.togglePlay()
@@ -421,7 +421,7 @@ export struct FluidPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

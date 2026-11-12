@@ -186,12 +186,12 @@ export struct UserInfo {
         LoadingProgress()
           .width(24)
           .height(24)
-          .color(resColor('PRIMARY'))
+          .color($r('app.color.PRIMARY'))
       }
       .width(56)
       .height(56)
       .borderRadius(28)
-      .backgroundColor(resColor('PRIMARY_LIGHT'))
+      .backgroundColor($r('app.color.PRIMARY_LIGHT'))
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
     } else if (this.avatarUrl !== null && this.avatarUrl !== "") {
@@ -205,7 +205,7 @@ export struct UserInfo {
         Text(this.avatarInitial())
           .fontSize(DesignFontSize.CARD_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('ON_PRIMARY'))
+          .fontColor($r('app.color.ON_PRIMARY'))
       }
       .width(56)
       .height(56)
@@ -214,7 +214,7 @@ export struct UserInfo {
       .alignItems(HorizontalAlign.Center)
       .linearGradient({
         angle: 135,
-        colors: [[resColor('PRIMARY'), 0], [resColor('PRIMARY_DARK'), 1]]
+        colors: [[$r('app.color.PRIMARY'), 0], [$r('app.color.PRIMARY_DARK'), 1]]
       })
     }
   }
@@ -225,8 +225,8 @@ export struct UserInfo {
    * 行间 0.5dp 发丝线由调用方在卡内补充。
    */
   @Builder
-  settingRow(icon: Resource, title: string, containerColor: number, iconColor: number,
-             trailingText: string, trailingColor: number, onClick: () => void) {
+  settingRow(icon: Resource, title: string, containerColor: ResourceColor, iconColor: ResourceColor,
+             trailingText: string, trailingColor: ResourceColor, onClick: () => void) {
     Row() {
       Column() {
         SymbolGlyph(icon)
@@ -243,7 +243,7 @@ export struct UserInfo {
       Text(title)
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.NORMAL)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
         .layoutWeight(1)
         .margin({ left: 12 })
 
@@ -258,7 +258,7 @@ export struct UserInfo {
 
       SymbolGlyph($r('sys.symbol.chevron_right'))
         .fontSize(20)
-        .fontColor([resColor('TEXT_TERTIARY')])
+        .fontColor([$r('app.color.TEXT_TERTIARY')])
     }
     .width("100%")
     .height(64)
@@ -300,18 +300,18 @@ export struct UserInfo {
             Text($r('app.string.tab_mine'))
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
 
             // 设置入口：48dp 圆形青底容器 + 齿轮 20（对齐安卓 UserInfoPage.kt:220-239，PR #47 由 surfaceVariant 改青）
             Column() {
               SymbolGlyph($r('sys.symbol.gearshape'))
                 .fontSize(20)
-                .fontColor([resColor('ICON_FOREGROUND_TEAL')])
+                .fontColor([$r('app.color.ICON_FOREGROUND_TEAL')])
             }
             .width(48)
             .height(48)
             .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(resColor('ICON_CONTAINER_TEAL'))
+            .backgroundColor($r('app.color.ICON_CONTAINER_TEAL'))
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             // 无障碍：设置齿轮补语义（原仅图形，读屏无标签；accessibilityRole 需 SDK 18+，目标 API 17 不用）
@@ -340,12 +340,12 @@ export struct UserInfo {
               Text(maskPhone(this.userInfo?.phoneNumber ?? null))
                 .fontSize(DesignFontSize.CARD_TITLE)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
 
               // 学校名（对齐安卓 UserInfoPage.kt:343-348；无学校时显示空串）
               Text(this.userInfo?.schoolVo?.schoolName ?? "")
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
                 .margin({ top: 4 })
             }
             .layoutWeight(1)
@@ -354,7 +354,7 @@ export struct UserInfo {
 
             SymbolGlyph($r('sys.symbol.chevron_right'))
               .fontSize(20)
-              .fontColor([resColor('TEXT_TERTIARY')])
+              .fontColor([$r('app.color.TEXT_TERTIARY')])
           }
           .width("100%")
           .alignItems(VerticalAlign.Center)
@@ -368,14 +368,14 @@ export struct UserInfo {
               Text($r('app.string.wallet_balance'))
                 .fontSize(DesignFontSize.CAPTION)
                 .lineHeight(DesignFontSize.CAPTION + 4)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
               // 显式行盒对齐安卓 DataLarge 36/44；字重保持 BOLD（font.display 档，规范允许 700）
               Text(`¥${this.formatBalance()}`)
                 .fontSize(DesignFontSize.DATA_LARGE)
                 .lineHeight(DesignFontSize.DATA_LARGE + 8)
                 .fontWeight(DesignFontWeight.BOLD)
                 .fontFeature(DesignFontFeature.TNUM)
-                .fontColor(resColor('PRIMARY_DARK'))
+                .fontColor($r('app.color.PRIMARY_DARK'))
                 .margin({ top: 4 })
             }
             .alignItems(HorizontalAlign.Start)
@@ -393,11 +393,11 @@ export struct UserInfo {
                   .lineHeight(DesignFontSize.AMOUNT_MEDIUM + 6)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
                   .fontFeature(DesignFontFeature.TNUM)
-                  .fontColor(resColor('TEXT_PRIMARY'))
+                  .fontColor($r('app.color.TEXT_PRIMARY'))
                 Text($r('app.string.service_coupon'))
                   .fontSize(DesignFontSize.CAPTION)
                   .lineHeight(DesignFontSize.CAPTION + 4)
-                  .fontColor(resColor('TEXT_SECONDARY'))
+                  .fontColor($r('app.color.TEXT_SECONDARY'))
                   .margin({ top: 4 })
               }
               .layoutWeight(1)
@@ -411,7 +411,7 @@ export struct UserInfo {
               Column()
                 .width(1)
                 .height(40)
-                .backgroundColor(resColor('HAIRLINE'))
+                .backgroundColor($r('app.color.HAIRLINE'))
 
               Column() {
                 // 行盒对齐安卓 Type.kt（D4）：AmountMedium 18/24、bodySmall 12/16
@@ -420,11 +420,11 @@ export struct UserInfo {
                   .lineHeight(DesignFontSize.AMOUNT_MEDIUM + 6)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
                   .fontFeature(DesignFontFeature.TNUM)
-                  .fontColor(resColor('TEXT_PRIMARY'))
+                  .fontColor($r('app.color.TEXT_PRIMARY'))
                 Text($r('app.string.home_total_orders'))
                   .fontSize(DesignFontSize.CAPTION)
                   .lineHeight(DesignFontSize.CAPTION + 4)
-                  .fontColor(resColor('TEXT_SECONDARY'))
+                  .fontColor($r('app.color.TEXT_SECONDARY'))
                   .margin({ top: 4 })
               }
               .layoutWeight(1)
@@ -437,12 +437,12 @@ export struct UserInfo {
           }
           .width("100%")
           .padding(DesignDimens.CARD_PADDING)
-          .backgroundColor(resColor('SURFACE'))
+          .backgroundColor($r('app.color.SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: resColor('OUTLINE') })
+          .border({ width: 1, color: $r('app.color.OUTLINE') })
           .shadow({
             radius: DesignElevation.CARD_SHADOW_RADIUS,
-            color: resColor('SHADOW_COLOR_CARD'),
+            color: $r('app.color.SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: DesignElevation.CARD_SHADOW_OFFSET
           })
@@ -453,9 +453,9 @@ export struct UserInfo {
             // 用 if 分支包住使 userInfo 变更时分支重跑、以新字面量重新调用 settingRow
             if (this.isCampusCardBound()) {
               this.settingRow($r('sys.symbol.creditcard'), resString('campus_card'),
-                resColor('ICON_CONTAINER_GREEN'), resColor('ICON_FOREGROUND_GREEN'),
+                $r('app.color.ICON_CONTAINER_GREEN'), $r('app.color.ICON_FOREGROUND_GREEN'),
                 // U-103：「已绑定」绿字 on 白仅 3.50:1（绿字红线禁小号文字）→ 统一 textSecondary
-                resString('bound'), resColor('TEXT_SECONDARY'),
+                resString('bound'), $r('app.color.TEXT_SECONDARY'),
                 () => {
                   pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
                     this.refreshUserInfo()
@@ -463,8 +463,8 @@ export struct UserInfo {
                 })
             } else {
               this.settingRow($r('sys.symbol.creditcard'), resString('campus_card'),
-                resColor('ICON_CONTAINER_GREEN'), resColor('ICON_FOREGROUND_GREEN'),
-                resString('not_bound'), resColor('TEXT_SECONDARY'),
+                $r('app.color.ICON_CONTAINER_GREEN'), $r('app.color.ICON_FOREGROUND_GREEN'),
+                resString('not_bound'), $r('app.color.TEXT_SECONDARY'),
                 () => {
                   pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
                     this.refreshUserInfo()
@@ -474,11 +474,11 @@ export struct UserInfo {
 
             Divider()
               .strokeWidth(0.5)
-              .color(resColor('HAIRLINE'))
+              .color($r('app.color.HAIRLINE'))
 
             this.settingRow($r('sys.symbol.pin_fill'), resString('shipping_address'),
-              resColor('ICON_CONTAINER_ORANGE'), resColor('ICON_FOREGROUND_ORANGE'),
-              "", resColor('TEXT_SECONDARY'),
+              $r('app.color.ICON_CONTAINER_ORANGE'), $r('app.color.ICON_FOREGROUND_ORANGE'),
+              "", $r('app.color.TEXT_SECONDARY'),
               () => {
                 // 文案对齐安卓 shipping_address_unavailable
                 promptAction.showToast({ message: resString('shipping_address_unavailable') })
@@ -486,24 +486,24 @@ export struct UserInfo {
 
             Divider()
               .strokeWidth(0.5)
-              .color(resColor('HAIRLINE'))
+              .color($r('app.color.HAIRLINE'))
 
             // 钱包流水入口（充值/消费合并明细，对齐安卓 WalletTransactionsPage 语义）
             this.settingRow($r('sys.symbol.doc_text'), resString('wallet_transactions'),
-              resColor('ICON_CONTAINER_TEAL'), resColor('ICON_FOREGROUND_TEAL'),
-              "", resColor('TEXT_SECONDARY'),
+              $r('app.color.ICON_CONTAINER_TEAL'), $r('app.color.ICON_FOREGROUND_TEAL'),
+              "", $r('app.color.TEXT_SECONDARY'),
               () => {
                 pathStack.pushPathByName(RouteNames.WALLET_TRANSACTIONS, null)
               })
           }
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-          .backgroundColor(resColor('SURFACE'))
+          .backgroundColor($r('app.color.SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: resColor('OUTLINE') })
+          .border({ width: 1, color: $r('app.color.OUTLINE') })
           .shadow({
             radius: DesignElevation.CARD_SHADOW_RADIUS,
-            color: resColor('SHADOW_COLOR_CARD'),
+            color: $r('app.color.SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: DesignElevation.CARD_SHADOW_OFFSET
           })
@@ -512,21 +512,21 @@ export struct UserInfo {
           // ========== 功能卡 GroupCard（对齐安卓 UserInfoPage.kt:492-535） ==========
           Column() {
             this.settingRow($r('sys.symbol.list_square_bill'), resString('my_orders'),
-              resColor('ICON_CONTAINER_BLUE'), resColor('ICON_FOREGROUND_BLUE'),
-              `${this.userInfo?.orderCount ?? 0} 单`, resColor('TEXT_SECONDARY'),
+              $r('app.color.ICON_CONTAINER_BLUE'), $r('app.color.ICON_FOREGROUND_BLUE'),
+              `${this.userInfo?.orderCount ?? 0} 单`, $r('app.color.TEXT_SECONDARY'),
               () => {
                 this.jumpToOrderList(0)
               })
 
             Divider()
               .strokeWidth(0.5)
-              .color(resColor('HAIRLINE'))
+              .color($r('app.color.HAIRLINE'))
 
             // 签到有礼（扩展提案功能 17/18 双端闭环；橙容器 = 通知/待办/营销奖励语义，
             // 对齐安卓 UserInfoPage 功能卡「我的订单」与「设置」之间的 SettingRow 位置）
             this.settingRow($r('sys.symbol.gift'), resString('points_title'),
-              resColor('ICON_CONTAINER_ORANGE'), resColor('ICON_FOREGROUND_ORANGE'),
-              "", resColor('TEXT_SECONDARY'),
+              $r('app.color.ICON_CONTAINER_ORANGE'), $r('app.color.ICON_FOREGROUND_ORANGE'),
+              "", $r('app.color.TEXT_SECONDARY'),
               () => {
                 pathStack.pushPathByName(RouteNames.POINTS, null)
               })
@@ -538,19 +538,19 @@ export struct UserInfo {
               Column() {
                 SymbolGlyph($r('sys.symbol.bell'))
                   .fontSize(20)
-                  .fontColor([resColor('ICON_FOREGROUND_ORANGE')])
+                  .fontColor([$r('app.color.ICON_FOREGROUND_ORANGE')])
               }
               .width(32)
               .height(32)
               .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-              .backgroundColor(resColor('ICON_CONTAINER_ORANGE'))
+              .backgroundColor($r('app.color.ICON_CONTAINER_ORANGE'))
               .justifyContent(FlexAlign.Center)
               .alignItems(HorizontalAlign.Center)
 
               Text(NoticeText.notice_title)
                 .fontSize(DesignFontSize.BODY_SMALL)
                 .fontWeight(DesignFontWeight.NORMAL)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
                 .layoutWeight(1)
                 .margin({ left: 12 })
 
@@ -559,17 +559,17 @@ export struct UserInfo {
                 Text(this.unreadBadgeText())
                   .fontSize(DesignFontSize.CAPTION)
                   .fontWeight(DesignFontWeight.MEDIUM)
-                  .fontColor(resColor('ICON_FOREGROUND_PINK'))
+                  .fontColor($r('app.color.ICON_FOREGROUND_PINK'))
                   .fontFeature(DesignFontFeature.TNUM)
                   .padding({ left: 5, right: 5, top: 1, bottom: 1 })
-                  .backgroundColor(resColor('ICON_CONTAINER_PINK'))
+                  .backgroundColor($r('app.color.ICON_CONTAINER_PINK'))
                   .borderRadius(DesignDimens.RADIUS_FULL)
                   .margin({ right: DesignDimens.SPACE_XXS })
               }
 
               SymbolGlyph($r('sys.symbol.chevron_right'))
                 .fontSize(20)
-                .fontColor([resColor('TEXT_TERTIARY')])
+                .fontColor([$r('app.color.TEXT_TERTIARY')])
             }
             .width("100%")
             .height(64)
@@ -580,23 +580,23 @@ export struct UserInfo {
 
             Divider()
               .strokeWidth(0.5)
-              .color(resColor('HAIRLINE'))
+              .color($r('app.color.HAIRLINE'))
 
             this.settingRow($r('sys.symbol.gearshape'), resString('settings'),
-              resColor('ICON_CONTAINER_GREEN'), resColor('ICON_FOREGROUND_GREEN'),
-              "", resColor('TEXT_SECONDARY'),
+              $r('app.color.ICON_CONTAINER_GREEN'), $r('app.color.ICON_FOREGROUND_GREEN'),
+              "", $r('app.color.TEXT_SECONDARY'),
               () => {
                 pathStack.pushPathByName(RouteNames.SETTING, null)
               })
           }
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-          .backgroundColor(resColor('SURFACE'))
+          .backgroundColor($r('app.color.SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: resColor('OUTLINE') })
+          .border({ width: 1, color: $r('app.color.OUTLINE') })
           .shadow({
             radius: DesignElevation.CARD_SHADOW_RADIUS,
-            color: resColor('SHADOW_COLOR_CARD'),
+            color: $r('app.color.SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: DesignElevation.CARD_SHADOW_OFFSET
           })
@@ -620,6 +620,6 @@ export struct UserInfo {
     })
     .width("100%")
     .height("100%")
-    .backgroundColor(resColor('BACKGROUND'))
+    .backgroundColor($r('app.color.BACKGROUND'))
   }
 }

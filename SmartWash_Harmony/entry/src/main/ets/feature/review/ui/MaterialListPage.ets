@@ -345,18 +345,18 @@ struct MaterialListPage {
       Text(ReviewText.review_material_form_title_label)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .margin({ bottom: DesignDimens.SPACE_XS })
 
       // 弹性下限 48：130% 字体缩放时不裁切（对齐安卓 heightIn(min=48)，M12）
       TextInput({ text: this.formTitle, placeholder: ReviewText.review_material_form_title_hint })
         .constraintSize({ minHeight: 48 })
         .fontSize(DesignFontSize.BODY)
-        .backgroundColor(resColor('SURFACE_VARIANT'))
+        .backgroundColor($r('app.color.SURFACE_VARIANT'))
         .borderRadius(DesignDimens.INPUT_RADIUS)
         .borderWidth(1)
-        .borderColor(resColor('OUTLINE'))
-        .placeholderColor(resColor('TEXT_TERTIARY'))
+        .borderColor($r('app.color.OUTLINE'))
+        .placeholderColor($r('app.color.TEXT_TERTIARY'))
         .placeholderFont({ size: DesignFontSize.BODY })
         .maxLength(REVIEW_TITLE_MAX)
         .onChange((value: string) => {
@@ -366,17 +366,17 @@ struct MaterialListPage {
       Text(ReviewText.review_material_form_raw_label)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .margin({ top: DesignDimens.SPACE_LG, bottom: DesignDimens.SPACE_XS })
 
       // 原文粘贴改多行 TextArea：单行 TextInput 内长文本无法换行回看（对齐安卓 minLines=4 弹性多行，M9）
       TextArea({ text: this.formRawText, placeholder: ReviewText.review_material_form_raw_hint })
         .fontSize(DesignFontSize.BODY)
-        .backgroundColor(resColor('SURFACE_VARIANT'))
+        .backgroundColor($r('app.color.SURFACE_VARIANT'))
         .borderRadius(DesignDimens.INPUT_RADIUS)
         .borderWidth(1)
-        .borderColor(resColor('OUTLINE'))
-        .placeholderColor(resColor('TEXT_TERTIARY'))
+        .borderColor($r('app.color.OUTLINE'))
+        .placeholderColor($r('app.color.TEXT_TERTIARY'))
         .placeholderFont({ size: DesignFontSize.BODY })
         .maxLength(REVIEW_RAW_TEXT_MAX)
         .constraintSize({ minHeight: 96 })
@@ -388,7 +388,7 @@ struct MaterialListPage {
         Text(this.createError)
           .fontSize(DesignFontSize.CAPTION)
           .lineHeight(DesignFontSize.CAPTION + 4)
-          .fontColor(resColor('ERROR'))
+          .fontColor($r('app.color.ERROR'))
           .margin({ top: DesignDimens.SPACE_SM })
       }
 
@@ -403,14 +403,14 @@ struct MaterialListPage {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     // 表单容器补卡片档阴影（对齐安卓 GroupCard softCardShadow，M11）
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -451,14 +451,14 @@ struct MaterialListPage {
         Text(ReviewText.review_error_load_more)
           .fontSize(DesignFontSize.BUTTON_TEXT)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('DANGER_INK'))
+          .fontColor($r('app.color.DANGER_INK'))
           .textAlign(TextAlign.Center)
       } else {
         // 小号绿字走 TEXT_GREEN（PRIMARY 在页面底仅 3.22:1 破线，M4）
         Text(ReviewText.review_material_load_more)
           .fontSize(DesignFontSize.BUTTON_TEXT)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('TEXT_GREEN'))
+          .fontColor($r('app.color.TEXT_GREEN'))
       }
     }
     .width('100%')
@@ -567,7 +567,7 @@ struct MaterialListPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -608,14 +608,14 @@ struct MaterialCard {
           Text(this.material.title ?? '')
             .fontSize(DesignFontSize.CARD_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
           // 创建日期是可读信息（非装饰角标）：TEXT_TERTIARY 双主题均破 4.5:1（M1）
           Text(reviewCreatedDateOf(this.material.createdAt, '—'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ top: DesignDimens.SPACE_XXS })
         }
@@ -626,7 +626,7 @@ struct MaterialCard {
         Text(this.expanded ? ReviewText.review_material_collapse : ReviewText.review_material_expand)
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(resColor('TEXT_GREEN'))
+          .fontColor($r('app.color.TEXT_GREEN'))
       }
       .width('100%')
       .constraintSize({ minHeight: 48 })
@@ -640,7 +640,7 @@ struct MaterialCard {
         Text(this.material.rawText ?? '')
           .fontSize(DesignFontSize.CAPTION)
           .lineHeight(DesignFontSize.CAPTION + 4)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -652,7 +652,7 @@ struct MaterialCard {
         Column() {
           Divider()
             .strokeWidth(0.5)
-            .color(resColor('DIVIDER'))
+            .color($r('app.color.DIVIDER'))
             .width('100%')
             .margin({ top: DesignDimens.SPACE_SM })
 
@@ -660,14 +660,14 @@ struct MaterialCard {
             Text(ReviewText.review_material_cards_header_format.replace('%d', `${this.cardsTotal}`))
               .fontSize(DesignFontSize.CAPTION)
               .lineHeight(DesignFontSize.CAPTION + 4)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .fontFeature(DesignFontFeature.TNUM)
               .layoutWeight(1)
 
             Text(ReviewText.review_material_add_card)
               .fontSize(DesignFontSize.BUTTON_TEXT)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_GREEN'))
+              .fontColor($r('app.color.TEXT_GREEN'))
               .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: DesignDimens.SPACE_XXS, bottom: DesignDimens.SPACE_XXS })
               .constraintSize({ minHeight: 48 })
               .onClick(() => {
@@ -686,14 +686,14 @@ struct MaterialCard {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     // 资料卡补卡片档阴影（对齐安卓 AppCard softCardShadow，M11）
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -721,12 +721,12 @@ struct MaterialCard {
           Text(ReviewText.review_error_load)
             .fontSize(DesignFontSize.CAPTION)
             .lineHeight(DesignFontSize.CAPTION + 4)
-            .fontColor(resColor('DANGER_INK'))
+            .fontColor($r('app.color.DANGER_INK'))
             .layoutWeight(1)
           Text(ReviewText.review_action_retry)
             .fontSize(DesignFontSize.BUTTON_TEXT)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_GREEN'))
+            .fontColor($r('app.color.TEXT_GREEN'))
             .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: DesignDimens.SPACE_XXS, bottom: DesignDimens.SPACE_XXS })
             .constraintSize({ minHeight: 48 })
             .onClick(() => {
@@ -741,7 +741,7 @@ struct MaterialCard {
         Text(ReviewText.review_material_cards_empty)
           .fontSize(DesignFontSize.CAPTION)
           .lineHeight(DesignFontSize.CAPTION + 4)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
       } else {
         ForEach(this.cards, (card: ReviewCardVo, index: number) => {
@@ -750,14 +750,14 @@ struct MaterialCard {
               Text(card.question ?? '')
                 .fontSize(DesignFontSize.BODY_SMALL)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
                 .maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .width('100%')
 
               Text(card.answer ?? '')
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
                 .maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .width('100%')
@@ -776,7 +776,7 @@ struct MaterialCard {
             if (index < this.cards.length - 1) {
               Divider()
                 .strokeWidth(0.5)
-                .color(resColor('DIVIDER'))
+                .color($r('app.color.DIVIDER'))
                 .width('100%')
             }
           }
@@ -793,12 +793,12 @@ struct MaterialCard {
             } else if (this.cardsAppendError) {
               Text(ReviewText.review_error_load_more)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(resColor('DANGER_INK'))
+                .fontColor($r('app.color.DANGER_INK'))
             } else {
               Text(ReviewText.review_material_load_more)
                 .fontSize(DesignFontSize.BUTTON_TEXT)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(resColor('TEXT_GREEN'))
+                .fontColor($r('app.color.TEXT_GREEN'))
             }
           }
           .width('100%')

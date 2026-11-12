@@ -239,9 +239,9 @@ export struct SandPage {
   }
 
   /** 调色板色块色 */
-  private swatchColor(element: SandElement): number {
+  private swatchColor(element: SandElement): ResourceColor {
     if (element === SandElement.EMPTY) {
-      return resColor('SURFACE_VARIANT')
+      return $r('app.color.SURFACE_VARIANT')
     }
     return this.paletteColors()[Number(element)]
   }
@@ -266,13 +266,13 @@ export struct SandPage {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     .shadow({
       radius: 12,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -297,7 +297,7 @@ export struct SandPage {
       .borderRadius(24)
       .backgroundColor(this.swatchColor(element))
       .borderWidth(this.selected === element ? 3 : 1)
-      .borderColor(this.selected === element ? resColor('PRIMARY') : resColor('OUTLINE'))
+      .borderColor(this.selected === element ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
       .accessibilityText(this.elementLabel(element))
       .onClick(() => {
         this.selected = element
@@ -328,7 +328,7 @@ export struct SandPage {
 
         Text(SandText.hint)
           .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
             top: DesignDimens.SPACE_XS })
 
@@ -339,7 +339,7 @@ export struct SandPage {
             .borderRadius(DesignDimens.CARD_RADIUS)
             .clip(true)
             .borderWidth(1)
-            .borderColor(resColor('OUTLINE'))
+            .borderColor($r('app.color.OUTLINE'))
             .onAreaChange((oldValue: Area, newValue: Area) => {
               this.onCanvasAreaChange(oldValue, newValue)
             })
@@ -366,7 +366,7 @@ export struct SandPage {
           Text(SandText.currentFormat.replace('%s', this.elementLabel(this.selected)))
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .layoutWeight(1)
 
           SandTextButton({
@@ -398,7 +398,7 @@ export struct SandPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -419,13 +419,13 @@ struct SandTextButton {
     Text(this.text)
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(resColor('TEXT_PRIMARY'))
+      .fontColor($r('app.color.TEXT_PRIMARY'))
       // 视觉胶囊不变，热区抬到 48dp 下限（对齐安卓 heightIn(min=48)）
       .constraintSize({ minHeight: 48 })
       .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
         top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
       .borderRadius(DesignDimens.RADIUS_MD)
-      .backgroundColor(resColor('SURFACE_VARIANT'))
+      .backgroundColor($r('app.color.SURFACE_VARIANT'))
       .onClick(() => {
         this.click()
       })

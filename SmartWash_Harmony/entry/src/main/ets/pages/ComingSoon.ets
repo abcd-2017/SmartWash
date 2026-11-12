@@ -40,7 +40,7 @@ struct ComingSoon {
       .height("100%")
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

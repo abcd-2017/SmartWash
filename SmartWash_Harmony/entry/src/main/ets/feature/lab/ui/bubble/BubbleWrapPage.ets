@@ -289,7 +289,7 @@ export struct BubbleWrapPage {
         Text(this.poppedText())
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
@@ -325,7 +325,7 @@ export struct BubbleWrapPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

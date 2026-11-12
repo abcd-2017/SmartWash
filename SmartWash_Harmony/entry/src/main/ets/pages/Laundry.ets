@@ -192,7 +192,7 @@ struct Laundry {
           .width(36)
           .height(36)
           .borderRadius(DesignDimens.RADIUS_SMALL)
-          .backgroundColor(this.selectItemId === item.itemId ? resColor('PRIMARY_LIGHT') : resColor('SURFACE_VARIANT'))
+          .backgroundColor(this.selectItemId === item.itemId ? $r('app.color.PRIMARY_LIGHT') : $r('app.color.SURFACE_VARIANT'))
           .animation(MotionTiming.ENTER)
 
         // 空心环：选中 primary / 未选 outline
@@ -202,14 +202,14 @@ struct Laundry {
           .borderRadius(10)
           .border({
             width: 1.5,
-            color: this.selectItemId === item.itemId ? resColor('PRIMARY') : resColor('OUTLINE')
+            color: this.selectItemId === item.itemId ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE')
           })
           .animation(MotionTiming.ENTER)
 
         // 勾：选中时自圆心弹簧长出（尺寸恒定，仅内容显现/隐去）
         SymbolGlyph($r('sys.symbol.checkmark'))
           .fontSize(12)
-          .fontColor([resColor('PRIMARY')])
+          .fontColor([$r('app.color.PRIMARY')])
           .scale({ x: this.selectItemId === item.itemId ? 1 : 0, y: this.selectItemId === item.itemId ? 1 : 0 })
           .animation(MotionTiming.ENTER)
       }
@@ -222,11 +222,11 @@ struct Laundry {
         Text(`${item.itemName}`)
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
 
         Text(`${item.description}`)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .margin({ top: 4 })
       }
       .alignItems(HorizontalAlign.Start)
@@ -237,25 +237,25 @@ struct Laundry {
         .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontFeature(DesignFontFeature.TNUM)
-        .fontColor(resColor('PRIMARY_DARK'))
+        .fontColor($r('app.color.PRIMARY_DARK'))
         .maxLines(1)
         .margin({ left: 18 })
     }
     .width("100%")
     .alignItems(VerticalAlign.Center)
-    .backgroundColor(this.selectItemId === item.itemId ? resColor('PRIMARY_LIGHT') : resColor('SURFACE'))
+    .backgroundColor(this.selectItemId === item.itemId ? $r('app.color.PRIMARY_LIGHT') : $r('app.color.SURFACE'))
     .padding(DesignDimens.CARD_PADDING)
     // 卡片唯一画法（规范 §3.1）：1px 描边 + level1 卡片阴影；
     // 描边宽度不再随选中变化（对齐安卓 v0.4），选中强调由 primaryLight 底 + primary 描边承担
     .border({
       width: 1,
-      color: this.selectItemId === item.itemId ? resColor('PRIMARY') : resColor('OUTLINE'),
+      color: this.selectItemId === item.itemId ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'),
       radius: DesignDimens.CARD_RADIUS
     })
     .borderRadius(DesignDimens.CARD_RADIUS)
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -300,7 +300,7 @@ struct Laundry {
             Text($r('app.string.delivery_locker'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
               .width("100%")
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
@@ -316,19 +316,19 @@ struct Laundry {
                   icon: $r('sys.symbol.circle_below_local_filled'),
                   sizeValue: 44,
                   iconSize: 24,
-                  containerColor: resColor('PRIMARY_LIGHT'),
-                  iconColor: resColor('PRIMARY_DARK')
+                  containerColor: $r('app.color.PRIMARY_LIGHT'),
+                  iconColor: $r('app.color.PRIMARY_DARK')
                 })
 
                 Column() {
                   Text(`${this.userInfo?.schoolVo?.schoolName}`)
                     .fontSize(DesignFontSize.CARD_TITLE)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(resColor('TEXT_PRIMARY'))
+                    .fontColor($r('app.color.TEXT_PRIMARY'))
 
                   Text(`${this.userInfo?.schoolVo?.location}`)
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(resColor('TEXT_SECONDARY'))
+                    .fontColor($r('app.color.TEXT_SECONDARY'))
                     .maxLines(1)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                 }
@@ -342,7 +342,7 @@ struct Laundry {
                   Text($r('app.string.change'))
                     .fontSize(DesignFontSize.BODY)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(resColor('PRIMARY_DARK'))
+                    .fontColor($r('app.color.PRIMARY_DARK'))
                     .padding({ left: 12, right: 12, top: 16, bottom: 16 })
                 }
                 .scale({ x: this.changePressed ? 0.97 : 1, y: this.changePressed ? 0.97 : 1 })
@@ -360,12 +360,12 @@ struct Laundry {
               .width("100%")
               .alignItems(VerticalAlign.Center)
               .borderRadius(DesignDimens.CARD_RADIUS)
-              .backgroundColor(resColor('SURFACE'))
+              .backgroundColor($r('app.color.SURFACE'))
               // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
-              .border({ width: 1, color: resColor('OUTLINE') })
+              .border({ width: 1, color: $r('app.color.OUTLINE') })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: resColor('SHADOW_COLOR_CARD'),
+                color: $r('app.color.SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: 2
               })
@@ -381,7 +381,7 @@ struct Laundry {
             Text($r('app.string.laundry_package'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
               .width("100%")
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
@@ -411,13 +411,13 @@ struct Laundry {
         .align(Alignment.Top)
         // 沉浸式：内容避让状态栏（背景延伸，问题5/1）
         .padding({ top: safeTopVp() })
-        .backgroundColor(resColor('BACKGROUND'))
+        .backgroundColor($r('app.color.BACKGROUND'))
 
         // 底部操作栏（V2/V3：0.5dp 分隔 + 全宽按钮 + 金额内嵌文案，移除左置「预估费用」）
         Column() {
           Divider()
             .strokeWidth(0.5)
-            .color(resColor('OUTLINE'))
+            .color($r('app.color.OUTLINE'))
 
           // AppButton 自带 loading 防重（请求中禁点），配合 reserving 拦截连点
           AppButton({
@@ -438,7 +438,7 @@ struct Laundry {
           })
         }
         .width("100%")
-        .backgroundColor(resColor('SURFACE'))
+        .backgroundColor($r('app.color.SURFACE'))
         .zIndex(1)
         .align(Alignment.Bottom)
 
@@ -448,7 +448,7 @@ struct Laundry {
           LoadingState()
           .width("100%")
           .height("100%")
-          .backgroundColor(resColor('BACKGROUND'))
+          .backgroundColor($r('app.color.BACKGROUND'))
           .zIndex(2)
         }
 
@@ -472,7 +472,7 @@ struct Laundry {
           }
           .width("100%")
           .height("100%")
-          .backgroundColor(resColor('BACKGROUND'))
+          .backgroundColor($r('app.color.BACKGROUND'))
           .justifyContent(FlexAlign.Center)
           .zIndex(3)
         }

@@ -312,13 +312,13 @@ struct Coupon {
       .height("100%")
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)
     .width("100%")
     .height("100%")
-    .backgroundColor(resColor('BACKGROUND'))
+    .backgroundColor($r('app.color.BACKGROUND'))
   }
 }
 
@@ -398,7 +398,7 @@ struct AvailableCouponCard {
       }
       .height(36)
       .borderRadius(DesignDimens.RADIUS_MD)
-      .backgroundColor(this.isReceived() ? resColor('TEXT_SECONDARY') : resColor('PRIMARY'))
+      .backgroundColor(this.isReceived() ? $r('app.color.TEXT_SECONDARY') : $r('app.color.PRIMARY'))
       // wrap-content：宽度随文字自适应（对齐安卓 ClaimAction，无最小宽度）
       .padding({ left: 16, right: 16 })
     }
@@ -430,11 +430,11 @@ struct AvailableCouponCard {
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontFeature(DesignFontFeature.TNUM)
-            .fontColor(resColor('PRIMARY_DARK'))
+            .fontColor($r('app.color.PRIMARY_DARK'))
           Text($r('app.string.service_coupon'))
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('PRIMARY'))
+            .fontColor($r('app.color.PRIMARY'))
             .margin({ top: 4 })
         }
         .width(this.amountWidth)
@@ -443,26 +443,26 @@ struct AvailableCouponCard {
         .alignSelf(ItemAlign.Stretch)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
-        .backgroundColor(resColor('PRIMARY_CONTAINER'))
+        .backgroundColor($r('app.color.PRIMARY_CONTAINER'))
 
         // 右侧两行结构（对齐安卓 2026-11-01 实机修正）：上 = 标题/日期/门槛；下 = 领取按钮右对齐
         Column() {
           Text(this.coupon?.title ?? "")
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
           Text(this.dateText())
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .margin({ top: 4 })
 
           Text(this.thresholdText())
             .fontSize(DesignFontSize.CAPTION)
             .fontFeature(DesignFontFeature.TNUM)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .margin({ top: 2 })
 
           Row() {
@@ -478,13 +478,13 @@ struct AvailableCouponCard {
       }
       .width("100%")
       .alignItems(VerticalAlign.Center)
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影（0 2px 12px rgba(20,40,30,.05)）
-      .border({ width: 1, color: resColor('OUTLINE') })
+      .border({ width: 1, color: $r('app.color.OUTLINE') })
       .shadow({
         radius: DesignElevation.LEVEL_1,
-        color: resColor('SHADOW_COLOR_CARD'),
+        color: $r('app.color.SHADOW_COLOR_CARD'),
         offsetX: 0,
         offsetY: 2
       })
@@ -493,7 +493,7 @@ struct AvailableCouponCard {
       // 中间虚线撕裂线（段 6 / 隔 4 / 上下留 12，对齐安卓 CouponPage.kt:250-266）
       // 卡高为 wrap-content，实高由 onAreaChange 捕获后再渲染（首帧 cardHeight=0 不绘制）
       if (this.cardHeight > 0) {
-        TicketDashedLine({ dashHeight: this.cardHeight - 24, dashColor: resColor('OUTLINE') })
+        TicketDashedLine({ dashHeight: this.cardHeight - 24, dashColor: $r('app.color.OUTLINE') })
           .position({ x: this.amountWidth - 0.5, y: 12 })
       }
 
@@ -524,20 +524,20 @@ struct CouponTicketCard {
   // 票券卡片高度（安卓 88dp）
   private cardHeight: number = 88
 
-  private amountColor(): number {
-    return this.isHistorical ? resColor('TEXT_TERTIARY') : resColor('PRIMARY_DARK')
+  private amountColor(): ResourceColor {
+    return this.isHistorical ? $r('app.color.TEXT_TERTIARY') : $r('app.color.PRIMARY_DARK')
   }
 
-  private unitColor(): number {
-    return this.isHistorical ? resColor('TEXT_TERTIARY') : resColor('PRIMARY')
+  private unitColor(): ResourceColor {
+    return this.isHistorical ? $r('app.color.TEXT_TERTIARY') : $r('app.color.PRIMARY')
   }
 
-  private titleColor(): number {
-    return this.isHistorical ? resColor('TEXT_SECONDARY') : resColor('TEXT_PRIMARY')
+  private titleColor(): ResourceColor {
+    return this.isHistorical ? $r('app.color.TEXT_SECONDARY') : $r('app.color.TEXT_PRIMARY')
   }
 
-  private statusColor(): number {
-    return this.isHistorical ? resColor('TEXT_TERTIARY') : resColor('PRIMARY')
+  private statusColor(): ResourceColor {
+    return this.isHistorical ? $r('app.color.TEXT_TERTIARY') : $r('app.color.PRIMARY')
   }
 
   private statusText(): string {
@@ -572,7 +572,7 @@ struct CouponTicketCard {
         .height(this.cardHeight)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
-        .backgroundColor(this.isHistorical ? resColor('SURFACE_VARIANT') : resColor('PRIMARY_CONTAINER'))
+        .backgroundColor(this.isHistorical ? $r('app.color.SURFACE_VARIANT') : $r('app.color.PRIMARY_CONTAINER'))
 
         // 右侧内容区
         Column() {
@@ -586,13 +586,13 @@ struct CouponTicketCard {
           Text(this.thresholdText())
             .fontSize(DesignFontSize.CAPTION)
             .fontFeature(DesignFontFeature.TNUM)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .margin({ top: 4 })
 
           // 有效期文案对齐安卓 valid_until「有效期至：%s」（含全角冒号）
           Text(`有效期至：${this.userCoupon?.expiredAt ?? ""}`)
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .margin({ top: 4 })
         }
         .layoutWeight(1)
@@ -610,13 +610,13 @@ struct CouponTicketCard {
       .width("100%")
       .height(this.cardHeight)
       .alignItems(VerticalAlign.Center)
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       // 票券卡同标准卡画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
-      .border({ width: 1, color: resColor('OUTLINE') })
+      .border({ width: 1, color: $r('app.color.OUTLINE') })
       .shadow({
         radius: DesignElevation.LEVEL_1,
-        color: resColor('SHADOW_COLOR_CARD'),
+        color: $r('app.color.SHADOW_COLOR_CARD'),
         offsetX: 0,
         offsetY: 2
       })
@@ -624,7 +624,7 @@ struct CouponTicketCard {
       .opacity(this.isHistorical ? 0.55 : 1.0)
 
       // 中间虚线撕裂线（段 6 / 隔 4 / 上下留 12）
-      TicketDashedLine({ dashHeight: this.cardHeight - 24, dashColor: resColor('OUTLINE') })
+      TicketDashedLine({ dashHeight: this.cardHeight - 24, dashColor: $r('app.color.OUTLINE') })
         .position({ x: this.amountWidth - 0.5, y: 12 })
 
       // 左右缘中点打孔（φ14，对齐安卓 TicketShape）

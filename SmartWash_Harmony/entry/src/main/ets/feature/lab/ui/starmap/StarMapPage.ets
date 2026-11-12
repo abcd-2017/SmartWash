@@ -339,7 +339,7 @@ export struct StarMapPage {
   }
 
   /** 顶栏内容色：夜视模式整体转深红 */
-  private headerColor(): number {
+  private headerColor(): ResourceColor {
     return this.nightVision ? resColor('DARK_ERROR') : resColor('DARK_TEXT_PRIMARY')
   }
 

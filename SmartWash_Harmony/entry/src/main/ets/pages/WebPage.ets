@@ -414,11 +414,11 @@ struct WebPage {
                 Row()
                   .width('100%')
                   .height(2)
-                  .backgroundColor(resColor('BACKGROUND'))
+                  .backgroundColor($r('app.color.BACKGROUND'))
                 Row()
                   .width(`${this.progress}%`)
                   .height(2)
-                  .backgroundColor(resColor('PRIMARY'))
+                  .backgroundColor($r('app.color.PRIMARY'))
               }
               .width('100%')
               .height(2)
@@ -441,7 +441,7 @@ struct WebPage {
               }
               .width('100%')
               .height('100%')
-              .backgroundColor(resColor('BACKGROUND'))
+              .backgroundColor($r('app.color.BACKGROUND'))
               .justifyContent(FlexAlign.Center)
             }
           }
@@ -464,7 +464,7 @@ struct WebPage {
         top: this.shouldShowHeader() ? safeTopVp() : 0,
         bottom: this.shouldShowHeader() ? safeBottomVp() : 0
       })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
     }
     .hideTitleBar(true)
     .onBackPressed(() => {

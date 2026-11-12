@@ -57,11 +57,11 @@ struct BingCampusCardAlert {
   }
 
   /** 输入框描边色：错误 > 聚焦 > 常规（对齐安卓 OutlinedTextField 三态） */
-  private inputBorderColor(): number {
+  private inputBorderColor(): ResourceColor {
     if (this.errorMessage !== "") {
-      return resColor('ERROR')
+      return $r('app.color.ERROR')
     }
-    return this.isFocused ? resColor('PRIMARY') : resColor('OUTLINE')
+    return this.isFocused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE')
   }
 
   /** 确认绑定/解绑（防重：请求进行中忽略后续点击） */
@@ -115,7 +115,7 @@ struct BingCampusCardAlert {
           Text(`${this.isBingFlag ? resString('bind_campus_card') : resString('unbind_campus_card')}`)
             .fontSize(DesignFontSize.STATUS_LARGE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .margin({ bottom: 16 })
 
           if (this.isBingFlag) {
@@ -125,8 +125,8 @@ struct BingCampusCardAlert {
               .height(48)
               .type(InputType.Number)
               .fontSize(DesignFontSize.BODY)
-              .fontColor(resColor('TEXT_PRIMARY'))
-              .placeholderColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
+              .placeholderColor($r('app.color.TEXT_SECONDARY'))
               .placeholderFont({ size: DesignFontSize.BODY })
               .backgroundColor(Color.Transparent)
               .borderRadius(DesignDimens.INPUT_RADIUS)
@@ -152,14 +152,14 @@ struct BingCampusCardAlert {
             if (this.errorMessage !== "") {
               Text(this.errorMessage)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(resColor('ERROR'))
+                .fontColor($r('app.color.ERROR'))
                 .alignSelf(ItemAlign.Start)
                 .margin({ top: 4 })
             }
           } else {
             Text($r('app.string.confirm_unbind_question'))
               .fontSize(DesignFontSize.BODY)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
           }
 
           // 按钮行（对齐安卓 DialogAction：48dp 热区，左右贴合边缘）
@@ -167,7 +167,7 @@ struct BingCampusCardAlert {
             Row() {
               Text($r('app.string.cancel'))
                 .fontSize(DesignFontSize.BODY)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
             }
             .layoutWeight(1)
             .height(48)
@@ -179,7 +179,7 @@ struct BingCampusCardAlert {
 
             Divider()
               .vertical(true)
-              .color(resColor('DIVIDER'))
+              .color($r('app.color.DIVIDER'))
               .strokeWidth(0.5)
               .height(48)
 
@@ -187,7 +187,7 @@ struct BingCampusCardAlert {
               Text(this.isBingFlag ? resString('confirm') : resString('confirm_unbind'))
                 .fontSize(DesignFontSize.BODY)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(this.isBingFlag ? resColor('PRIMARY') : resColor('DANGER_INK'))
+                .fontColor(this.isBingFlag ? $r('app.color.PRIMARY') : $r('app.color.DANGER_INK'))
             }
             .layoutWeight(1)
             .height(48)
@@ -202,12 +202,12 @@ struct BingCampusCardAlert {
         }
         .width("80%")
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 20, bottom: 20 })
-        .backgroundColor(resColor('SURFACE'))
+        .backgroundColor($r('app.color.SURFACE'))
         .borderRadius(DesignDimens.CARD_RADIUS)
         // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）
         .shadow({
           radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-          color: resColor('SHADOW_COLOR_FLOAT'),
+          color: $r('app.color.SHADOW_COLOR_FLOAT'),
           offsetX: 0,
           offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
         })
@@ -225,7 +225,7 @@ struct BingCampusCardAlert {
       pathStack.pop()
     })
     // 点击遮罩（DIALOG 蒙层）：令牌化（深浅色同值，遮罩语义不随主题）
-    .backgroundColor(resColor('SCRIM_BLACK_50'))
+    .backgroundColor($r('app.color.SCRIM_BLACK_50'))
     .hideTitleBar(true)
     .mode(NavDestinationMode.DIALOG)
   }

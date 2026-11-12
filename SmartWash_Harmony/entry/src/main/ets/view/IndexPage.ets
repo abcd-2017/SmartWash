@@ -156,13 +156,13 @@ export struct IndexPage {
         Column() {
           Text($r('app.string.account_balance_label'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
 
           Text(`¥${(this.userInfo?.balance ?? 0).toFixed(2)}`)
             .fontSize(this.balanceFontSize)
             // 数据大字恒为 Bold（对齐安卓 AppTextStyles.DataLarge = 36/700；D5）
             .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(resColor('PRIMARY_DARK'))
+            .fontColor($r('app.color.PRIMARY_DARK'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .margin({ top: 4 })
@@ -193,13 +193,13 @@ export struct IndexPage {
             Text(`${this.userInfo?.couponCount ?? 0}`)
               .fontSize(DesignFontSize.AMOUNT_MEDIUM)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
               .fontFeature(DesignFontFeature.TNUM)
               .maxLines(1)
 
             Text($r('app.string.home_available_coupons'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .maxLines(1)
           }
           .layoutWeight(1)
@@ -208,19 +208,19 @@ export struct IndexPage {
           Row()
             .width(1)
             .height(40)
-            .backgroundColor(resColor('HAIRLINE'))
+            .backgroundColor($r('app.color.HAIRLINE'))
 
           Column() {
             Text(`${this.userInfo?.orderCount ?? 0}`)
               .fontSize(DesignFontSize.AMOUNT_MEDIUM)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
               .fontFeature(DesignFontFeature.TNUM)
               .maxLines(1)
 
             Text($r('app.string.home_total_orders'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .maxLines(1)
           }
           .layoutWeight(1)
@@ -234,12 +234,12 @@ export struct IndexPage {
           .height(DesignDimens.SPACE_MD)
       }
       .width('100%')
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
-      .border({ width: 1, color: resColor('OUTLINE') })
+      .border({ width: 1, color: $r('app.color.OUTLINE') })
       .shadow({
         radius: DesignElevation.LEVEL_1,
-        color: resColor('SHADOW_COLOR_CARD'),
+        color: $r('app.color.SHADOW_COLOR_CARD'),
         offsetX: 0,
         offsetY: 2
       })
@@ -257,22 +257,22 @@ export struct IndexPage {
     Row({ space: DesignDimens.SPACE_SM }) {
       // 预约洗衣 = 绿（对齐安卓 IndexPage.kt:569-576）
       this.ServiceEntry($r('sys.symbol.laundry'), resString('service_booking'),
-        resColor('ICON_CONTAINER_GREEN'), resColor('ICON_FOREGROUND_GREEN'), () => {
+        $r('app.color.ICON_CONTAINER_GREEN'), $r('app.color.ICON_FOREGROUND_GREEN'), () => {
           pathStack.pushPathByName(RouteNames.LAUNDRY, null)
         })
       // 取件 = 橙（对齐安卓 IndexPage.kt:577-584）
       this.ServiceEntry($r('sys.symbol.book_pages'), resString('service_pickup'),
-        resColor('ICON_CONTAINER_ORANGE'), resColor('ICON_FOREGROUND_ORANGE'), () => {
+        $r('app.color.ICON_CONTAINER_ORANGE'), $r('app.color.ICON_FOREGROUND_ORANGE'), () => {
           pathStack.pushPathByName(RouteNames.PICK_UP, null)
         })
       // 充值 = 绿（对齐安卓 IndexPage.kt:585-593，与预约洗衣同 primaryContainer 底）
       this.ServiceEntry($r('sys.symbol.creditcard'), resString('service_recharge'),
-        resColor('ICON_CONTAINER_GREEN'), resColor('ICON_FOREGROUND_GREEN'), () => {
+        $r('app.color.ICON_CONTAINER_GREEN'), $r('app.color.ICON_FOREGROUND_GREEN'), () => {
           pathStack.pushPathByName(RouteNames.RECHARGE, null)
         })
       // 优惠券 = 蓝（对齐安卓 IndexPage.kt:594-601）
       this.ServiceEntry($r('sys.symbol.label'), resString('service_coupon'),
-        resColor('ICON_CONTAINER_BLUE'), resColor('ICON_FOREGROUND_BLUE'), () => {
+        $r('app.color.ICON_CONTAINER_BLUE'), $r('app.color.ICON_FOREGROUND_BLUE'), () => {
           pathStack.pushPathByName(RouteNames.COUPON, null)
         })
     }
@@ -283,7 +283,7 @@ export struct IndexPage {
 
   /** 服务入口 —— IconBox 44/24 + 标签 12/400 textSecondary，居中（对齐安卓 ServiceEntry） */
   @Builder
-  ServiceEntry(icon: Resource, title: string, containerColor: number, iconColor: number, itemClick: () => void) {
+  ServiceEntry(icon: Resource, title: string, containerColor: ResourceColor, iconColor: ResourceColor, itemClick: () => void) {
     Column() {
       IconBox({
         icon: icon,
@@ -293,7 +293,7 @@ export struct IndexPage {
 
       Text(title)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .margin({ top: DesignDimens.SPACE_XS })
     }
     .layoutWeight(1)
@@ -318,7 +318,7 @@ export struct IndexPage {
             Row()
               .width('100%')
               .height(1)
-              .backgroundColor(resColor('HAIRLINE'))
+              .backgroundColor($r('app.color.HAIRLINE'))
           }
           .width('100%')
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
@@ -326,12 +326,12 @@ export struct IndexPage {
       })
     }
     .width('100%')
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -347,9 +347,9 @@ export struct IndexPage {
         sizeValue: 36,
         iconSize: 20,
         containerColor: order.status === OrderStatusEnum.WASHING ?
-          resColor('ICON_CONTAINER_BLUE') : resColor('ICON_CONTAINER_ORANGE'),
+          $r('app.color.ICON_CONTAINER_BLUE') : $r('app.color.ICON_CONTAINER_ORANGE'),
         iconColor: order.status === OrderStatusEnum.WASHING ?
-          resColor('WATER') : resColor('ICON_FOREGROUND_ORANGE')
+          $r('app.color.WATER') : $r('app.color.ICON_FOREGROUND_ORANGE')
       })
       .margin({ right: DesignDimens.SPACE_SM })
 
@@ -357,13 +357,12 @@ export struct IndexPage {
         Text(getOrderStatusDescription(order.status))
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.NORMAL)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
           .maxLines(1)
 
         Text(`订单号: ${order.orderNo ?? ""}`)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
-          .fontFeature(DesignFontFeature.TNUM)
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .maxLines(1)
           .margin({ top: 4 })
       }
@@ -373,7 +372,7 @@ export struct IndexPage {
       Text(`¥${(order.payPrice ?? 0).toFixed(2)}`)
         .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('PRIMARY_DARK'))
+        .fontColor($r('app.color.PRIMARY_DARK'))
         .fontFeature(DesignFontFeature.TNUM)
     }
     .width('100%')
@@ -391,7 +390,7 @@ export struct IndexPage {
   ServiceTips() {
     Text($r('app.string.service_tips'))
       .fontSize(DesignFontSize.CAPTION)
-      .fontColor(resColor('TEXT_SECONDARY'))
+      .fontColor($r('app.color.TEXT_SECONDARY'))
       .width('100%')
       .textAlign(TextAlign.Center)
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
@@ -418,7 +417,7 @@ export struct IndexPage {
         Text($r('app.string.laundry_service'))
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
           .width('100%')
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
           .margin({ top: DesignDimens.SPACE_MD })
@@ -430,7 +429,7 @@ export struct IndexPage {
           Text($r('app.string.in_progress_orders'))
             .fontSize(DesignFontSize.SECTION_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
 
           Blank()
 
@@ -440,7 +439,7 @@ export struct IndexPage {
           Text($r('app.string.view_all'))
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('PRIMARY_DARK'))
+            .fontColor($r('app.color.PRIMARY_DARK'))
             .padding({ left: DesignDimens.SPACE_SM, top: 16, bottom: 16 })
             .onClick(() => {
               pathStack.pushPathByName(RouteNames.ORDER_LIST, 0)
@@ -458,7 +457,7 @@ export struct IndexPage {
           } else {
             Text($r('app.string.no_ongoing_orders'))
               .fontSize(DesignFontSize.BODY)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .padding({ top: 32, bottom: 32 })
           }
         }
@@ -485,6 +484,6 @@ export struct IndexPage {
     .align(Alignment.TopStart)
     // 沉浸式：内容避让状态栏（背景延伸）
     .padding({ top: safeTopVp() })
-    .backgroundColor(resColor('BACKGROUND'))
+    .backgroundColor($r('app.color.BACKGROUND'))
   }
 }

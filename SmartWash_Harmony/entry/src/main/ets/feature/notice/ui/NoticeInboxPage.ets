@@ -42,8 +42,8 @@ const TAG: string = 'noticeInboxPage'
 
 /** 类型 tag 配色（容器底 + 文字色） */
 interface NoticeTagColors {
-  container: number
-  content: number
+  container: ResourceColor
+  content: ResourceColor
 }
 
 @Builder
@@ -398,7 +398,7 @@ struct NoticeInboxPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -430,12 +430,12 @@ struct NoticeCard {
     if (type === NoticeType.SYSTEM) {
       // 文字级深档 onWarningContainer：iconForegroundOrange 是图标档（非文字 3:1 豁免），
       // 作 12fp 文字色 on 橙浅底仅 2.50:1 触红线（对齐安卓 SYSTEM tag 修复，深色档随主题回写）
-      return { container: resColor('ICON_CONTAINER_ORANGE'), content: resColor('ON_WARNING_CONTAINER') }
+      return { container: $r('app.color.ICON_CONTAINER_ORANGE'), content: $r('app.color.ON_WARNING_CONTAINER') }
     }
     if (type === NoticeType.ANNOUNCEMENT) {
-      return { container: resColor('ICON_CONTAINER_BLUE'), content: resColor('ICON_FOREGROUND_BLUE') }
+      return { container: $r('app.color.ICON_CONTAINER_BLUE'), content: $r('app.color.ICON_FOREGROUND_BLUE') }
     }
-    return { container: resColor('SURFACE_VARIANT'), content: resColor('TEXT_SECONDARY') }
+    return { container: $r('app.color.SURFACE_VARIANT'), content: $r('app.color.TEXT_SECONDARY') }
   }
 
   /** 相对时间文案（解析失败返回空串，UI 隐藏时间） */
@@ -462,7 +462,7 @@ struct NoticeCard {
             .width(8)
             .height(8)
             .borderRadius(4)
-            .backgroundColor(resColor('ICON_FOREGROUND_PINK'))
+            .backgroundColor($r('app.color.ICON_FOREGROUND_PINK'))
             .margin({ right: DesignDimens.SPACE_XS })
         }
 
@@ -470,7 +470,7 @@ struct NoticeCard {
           Text(this.timeLabel())
             .fontSize(DesignFontSize.CAPTION)
             // 时间戳是信息性元数据：textTertiary on 白 2.25:1 触红线，对齐安卓改 textSecondary
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             // tnum 防日期/时分抖动：鸿蒙增强（安卓时间戳未开 tnum），有意保留
             .fontFeature(DesignFontFeature.TNUM)
         }
@@ -483,7 +483,7 @@ struct NoticeCard {
           // 未读/已读同字号 14（字阶八档无夹档），层级靠字重 500/400 与颜色区分（对齐安卓 titleSmall/bodyMedium）
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(this.vo.isRead ? DesignFontWeight.NORMAL : DesignFontWeight.MEDIUM)
-          .fontColor(this.vo.isRead ? resColor('TEXT_SECONDARY') : resColor('TEXT_PRIMARY'))
+          .fontColor(this.vo.isRead ? $r('app.color.TEXT_SECONDARY') : $r('app.color.TEXT_PRIMARY'))
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .layoutWeight(1)
@@ -500,7 +500,7 @@ struct NoticeCard {
           .fontSize(DesignFontSize.BODY_SMALL)
           // 摘要正文是核心可读内容：已读 textTertiary on 白 2.25:1 触红线，两态统一
           // TEXT_SECONDARY（4.90:1，对齐安卓），层级靠标题字重/颜色区分
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -510,13 +510,13 @@ struct NoticeCard {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })

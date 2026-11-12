@@ -138,14 +138,14 @@ struct PickUp {
         Column() {
           Text(`订单号: ${order.orderNo ?? ""}`)
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
           Text(`寄存柜: ${order.lockersVo?.lockerNumber ?? ""}`)
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -158,7 +158,7 @@ struct PickUp {
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontFeature(DesignFontFeature.TNUM)
-          .fontColor(resColor('PRIMARY_DARK'))
+          .fontColor($r('app.color.PRIMARY_DARK'))
           .maxLines(1)
       }.width("100%")
       .alignItems(VerticalAlign.Center)
@@ -167,18 +167,18 @@ struct PickUp {
       Row()
         .width("100%")
         .height(0.5)
-        .backgroundColor(resColor('DIVIDER'))
+        .backgroundColor($r('app.color.DIVIDER'))
         .margin({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
 
       // 取件码（recap §8-V3：标签 12sp + DataLarge 36 tnum 大字，对齐安卓）
       Row() {
         Text($r('app.string.pickup_code'))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
         Blank()
         Text(this.parsePickupCode(order))
           .fontSize(DesignFontSize.DATA_LARGE)
-          .fontColor(resColor('PRIMARY_DARK'))
+          .fontColor($r('app.color.PRIMARY_DARK'))
           // DATA_LARGE（36）属 font.display 档（DESIGN-SPEC §2：取件码 700 + tnum），字重保持 BOLD；
           // 由裸 FontWeight 枚举收敛为设计令牌，与全站一致
           .fontWeight(DesignFontWeight.BOLD)
@@ -195,13 +195,13 @@ struct PickUp {
             Text($r('app.string.copy_pickup_code'))
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
               .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD })
           }
           .height(36)
           .justifyContent(FlexAlign.Center)
           .borderRadius(DesignDimens.RADIUS_MD)
-          .backgroundColor(resColor('SURFACE_VARIANT'))
+          .backgroundColor($r('app.color.SURFACE_VARIANT'))
           .onTouch((event: TouchEvent) => {
             if (event.type === TouchType.Down) {
               this.actionPressed = true
@@ -221,13 +221,13 @@ struct PickUp {
     .width("100%")
     .alignItems(HorizontalAlign.Center)
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -266,13 +266,13 @@ struct PickUp {
         Text($r('app.string.contact_service'))
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('PRIMARY_DARK'))
+          .fontColor($r('app.color.PRIMARY_DARK'))
       }
       .layoutWeight(1)
       .height(48)
       .justifyContent(FlexAlign.Center)
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .border({ width: 1, color: resColor('OUTLINE') })
+      .border({ width: 1, color: $r('app.color.OUTLINE') })
       .scale({ x: this.contactPressed ? 0.97 : 1, y: this.contactPressed ? 0.97 : 1 })
       .animation({ duration: 100, curve: Curve.EaseOut })
       .onTouch((event: TouchEvent) => {
@@ -292,13 +292,13 @@ struct PickUp {
         Text($r('app.string.copy_pickup_code'))
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('ON_PRIMARY'))
+          .fontColor($r('app.color.ON_PRIMARY'))
       }
       .layoutWeight(1)
       .height(48)
       .justifyContent(FlexAlign.Center)
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(resColor('PRIMARY'))
+      .backgroundColor($r('app.color.PRIMARY'))
       .margin({ left: DesignDimens.SPACE_SM })
       .scale({ x: this.copyPressed ? 0.97 : 1, y: this.copyPressed ? 0.97 : 1 })
       .animation({ duration: 100, curve: Curve.EaseOut })
@@ -346,12 +346,12 @@ struct PickUp {
                 icon: $r('sys.symbol.company'),
                 sizeValue: 32,
                 iconSize: 20,
-                containerColor: resColor('ICON_CONTAINER_BLUE'),
-                iconColor: resColor('ICON_FOREGROUND_BLUE')
+                containerColor: $r('app.color.ICON_CONTAINER_BLUE'),
+                iconColor: $r('app.color.ICON_FOREGROUND_BLUE')
               })
               Text(`${this.orderList[0]?.schoolsVo?.schoolName ?? ""}`)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
                 .margin({ left: DesignDimens.SPACE_XS })
             }
             .justifyContent(FlexAlign.Start)
@@ -410,7 +410,7 @@ struct PickUp {
       .height("100%")
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

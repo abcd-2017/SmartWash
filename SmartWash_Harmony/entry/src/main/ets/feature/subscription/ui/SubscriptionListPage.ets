@@ -330,7 +330,7 @@ struct SubscriptionListPage {
                   Text(SubscriptionText.subscription_error_load)
                     .fontSize(DesignFontSize.CAPTION)
                     .fontWeight(DesignFontWeight.MEDIUM)
-                    .fontColor(resColor('DANGER_INK'))
+                    .fontColor($r('app.color.DANGER_INK'))
                     .width('100%')
                     .textAlign(TextAlign.Center)
                     .padding({
@@ -364,7 +364,7 @@ struct SubscriptionListPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -441,7 +441,7 @@ export struct SubscriptionCard {
             Text(this.vo.name)
               .fontSize(DesignFontSize.CARD_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(this.isTerminal() ? resColor('TEXT_SECONDARY') : resColor('TEXT_PRIMARY'))
+              .fontColor(this.isTerminal() ? $r('app.color.TEXT_SECONDARY') : $r('app.color.TEXT_PRIMARY'))
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .flexShrink(1)
@@ -449,7 +449,7 @@ export struct SubscriptionCard {
             if (this.vo.unreadReminderCount > 0) {
               // 未读红点补读屏语义（§10 颜色不是唯一信息载体）：朗读「N 条未读提醒」
               SubscriptionStatusDot({
-                color: resColor('DANGER'),
+                color: $r('app.color.DANGER'),
                 accessibilityLabel: subscriptionFormat(SubscriptionText.subscription_unread_reminders_format,
                   this.vo.unreadReminderCount)
               })
@@ -463,7 +463,7 @@ export struct SubscriptionCard {
 
           Text(subscriptionCycleDescription(subscriptionCycleTypeFromRaw(this.vo.cycleType), this.vo.cycleInterval))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ top: DesignDimens.SPACE_XXS })
         }
@@ -490,7 +490,7 @@ export struct SubscriptionCard {
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           // 终态弱化止步 textSecondary（on 白卡 4.9:1）：装饰档 textTertiary 禁作可读正文（DESIGN-SPEC §10）
-          .fontColor(this.isTerminal() ? resColor('TEXT_SECONDARY') : resColor('PRIMARY_DARK'))
+          .fontColor(this.isTerminal() ? $r('app.color.TEXT_SECONDARY') : $r('app.color.PRIMARY_DARK'))
           .fontFeature(DesignFontFeature.TNUM)
 
         if (this.trialBadgeText().length > 0) {
@@ -527,13 +527,13 @@ export struct SubscriptionCard {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })

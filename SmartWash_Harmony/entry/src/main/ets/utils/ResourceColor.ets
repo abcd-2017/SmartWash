@@ -23,3 +23,22 @@ export function resColor(name: string): number {
   }
   return context.resourceManager.getColorSync(res)
 }
+
+/**
+ * ResourceColor → 数值 ARGB（Canvas 绘制专用）。
+ *
+ * 组件颜色入参用 @Param + ResourceColor 声明（父组件 $r 直绑，随系统深浅色自动切换），
+ * 但 Canvas 的 fillStyle/strokeStyle 不接受 Resource，绘制前经此方法按值解析：
+ * number 原样返回；Resource 走资源管理器按当前配置解析。
+ * 注意：解析发生在调用瞬间，画布重绘依赖 @Monitor/生命周期触发（ThemeRefresh 重建）。
+ */
+export function resolveArgb(color: ResourceColor): number {
+  if (typeof color === 'number') {
+    return color
+  }
+  const context: common.UIAbilityContext | undefined = getContext() as common.UIAbilityContext | undefined
+  if (context === undefined) {
+    return 0xFF000000
+  }
+  return context.resourceManager.getColorSync(color as Resource)
+}

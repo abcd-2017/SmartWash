@@ -516,10 +516,10 @@ export struct PetPage {
               Text(this.stageLabel(this.snapshot.stage))
                 .fontSize(DesignFontSize.CARD_TITLE)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
               Text(this.absenceLabel(this.absence))
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
                 .margin({ top: DesignDimens.SPACE_XXS })
 
               Column() {
@@ -536,7 +536,7 @@ export struct PetPage {
               }
               .width('100%')
               .borderRadius(DesignDimens.RADIUS_MD)
-              .backgroundColor(resColor('SURFACE_VARIANT'))
+              .backgroundColor($r('app.color.SURFACE_VARIANT'))
               .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
               .alignItems(HorizontalAlign.Center)
               .margin({ top: DesignDimens.SPACE_MD })
@@ -544,19 +544,19 @@ export struct PetPage {
               Text(`互动 ${this.snapshot.interactionCount} 次`)
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
                 .fontFeature(DesignFontFeature.TNUM)
                 .margin({ top: DesignDimens.SPACE_MD })
             }
             .width('100%')
             .padding(DesignDimens.CARD_PADDING)
-            .backgroundColor(resColor('SURFACE'))
+            .backgroundColor($r('app.color.SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
             .borderWidth(1)
-            .borderColor(resColor('OUTLINE'))
+            .borderColor($r('app.color.OUTLINE'))
             .shadow({
               radius: 12,
-              color: resColor('SHADOW_COLOR_CARD'),
+              color: $r('app.color.SHADOW_COLOR_CARD'),
               offsetX: 0,
               offsetY: 2
             })
@@ -588,7 +588,7 @@ export struct PetPage {
 
             Text(PetText.petHint)
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .textAlign(TextAlign.Center)
               .width('100%')
           }
@@ -604,7 +604,7 @@ export struct PetPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

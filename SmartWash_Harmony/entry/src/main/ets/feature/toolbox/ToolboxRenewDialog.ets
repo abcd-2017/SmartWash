@@ -41,13 +41,13 @@ export struct RenewPresetChip {
       .fontSize(DesignFontSize.CAPTION)
       // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
       .fontWeight(DesignFontWeight.SEMI_BOLD)
-      .fontColor(this.selected ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
+      .fontColor(this.selected ? $r('app.color.ON_PRIMARY') : $r('app.color.TEXT_SECONDARY'))
       // chip 内含数字（「7 天」等）：tnum 数字等宽（规范 §2.2，与创建页 chip 同款）
       .fontFeature(DesignFontFeature.TNUM)
       .padding({ left: 16, right: 16, top: 17, bottom: 17 })
-      .backgroundColor(this.selected ? resColor('PRIMARY') : resColor('SURFACE'))
+      .backgroundColor(this.selected ? $r('app.color.PRIMARY') : $r('app.color.SURFACE'))
       .borderWidth(1)
-      .borderColor(this.selected ? resColor('PRIMARY') : resColor('OUTLINE'))
+      .borderColor(this.selected ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
       .borderRadius(DesignDimens.RADIUS_FULL)
       .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
       .onTouch((event: TouchEvent) => {
@@ -121,7 +121,7 @@ export struct ToolboxRenewDialog {
         Text(ToolboxText.toolbox_renew_title)
           .fontSize(DesignFontSize.STATUS_LARGE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
           .width('100%')
           .margin({ bottom: DesignDimens.SPACE_MD })
 
@@ -174,7 +174,7 @@ export struct ToolboxRenewDialog {
 
         Divider()
           .strokeWidth(0.5)
-          .color(resColor('DIVIDER'))
+          .color($r('app.color.DIVIDER'))
           .width('100%')
           .margin({ top: DesignDimens.SPACE_MD })
 
@@ -184,7 +184,7 @@ export struct ToolboxRenewDialog {
             .layoutWeight(1)
             .height(48)
             .backgroundColor(Color.Transparent)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .fontSize(DesignFontSize.BODY)
             .borderRadius(0)
             .onClick(() => {
@@ -194,7 +194,7 @@ export struct ToolboxRenewDialog {
 
           Divider()
             .vertical(true)
-            .color(resColor('DIVIDER'))
+            .color($r('app.color.DIVIDER'))
             .strokeWidth(0.5)
             .height(48)
 
@@ -204,7 +204,7 @@ export struct ToolboxRenewDialog {
             .height(48)
             .backgroundColor(Color.Transparent)
             // 确认键小字绿走 TEXT_GREEN 深档（PRIMARY 3.4:1 不达标，§10，对齐安卓 DialogAction）
-            .fontColor(resColor('TEXT_GREEN'))
+            .fontColor($r('app.color.TEXT_GREEN'))
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .borderRadius(0)
@@ -221,12 +221,12 @@ export struct ToolboxRenewDialog {
       .width('100%')
       // 对齐安卓 RenewDialog（vertical spaceLg 20）；横向留白由外层容器统一给出
       .padding({ top: DesignDimens.SPACE_LG, bottom: DesignDimens.SPACE_LG })
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
       .borderRadius(DesignDimens.CARD_RADIUS)
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: resColor('SHADOW_COLOR_FLOAT'),
+        color: $r('app.color.SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })

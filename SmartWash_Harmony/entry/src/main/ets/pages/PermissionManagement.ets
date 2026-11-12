@@ -117,7 +117,7 @@ struct PermissionManagement {
             Text($r('app.string.general'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .width('100%')
               // 分组标题顶部间距对齐安卓 Spacer(24dp)（D15）
               .margin({ top: DesignDimens.SPACE_XL, bottom: 8 })
@@ -127,8 +127,8 @@ struct PermissionManagement {
               Column() {
                 PermissionRow({
                   icon: $r('sys.symbol.bell'),
-                  containerColor: resColor('ICON_CONTAINER_ORANGE'),
-                  iconColor: resColor('ICON_FOREGROUND_ORANGE'),
+                  containerColor: $r('app.color.ICON_CONTAINER_ORANGE'),
+                  iconColor: $r('app.color.ICON_FOREGROUND_ORANGE'),
                   title: resString('permission_notification'),
                   // 鸿蒙语义文案（去掉安卓专属的 APK 下载 / Android 13+ 表述）
                   description: resString('permission_management_4'),
@@ -142,13 +142,13 @@ struct PermissionManagement {
                 })
 
                 Divider()
-                  .color(resColor('HAIRLINE'))
+                  .color($r('app.color.HAIRLINE'))
                   .strokeWidth(0.5)
 
                 PermissionRow({
                   icon: $r('sys.symbol.wifi'),
-                  containerColor: resColor('ICON_CONTAINER_BLUE'),
-                  iconColor: resColor('ICON_FOREGROUND_BLUE'),
+                  containerColor: $r('app.color.ICON_CONTAINER_BLUE'),
+                  iconColor: $r('app.color.ICON_FOREGROUND_BLUE'),
                   title: resString('permission_internet'),
                   description: resString('permission_internet_desc'),
                   granted: this.internetGranted,
@@ -163,7 +163,7 @@ struct PermissionManagement {
 
             Text($r('app.string.permission_footer'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .width('100%')
               .margin({ top: 16, bottom: 24 })
           }
@@ -179,7 +179,7 @@ struct PermissionManagement {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -199,8 +199,8 @@ struct PermissionManagement {
 @Component
 struct PermissionRow {
   @Prop icon: Resource = $r('sys.symbol.bell')
-  @Prop containerColor: number = resColor('ICON_CONTAINER_ORANGE')
-  @Prop iconColor: number = resColor('ICON_FOREGROUND_ORANGE')
+  @Prop containerColor: ResourceColor = $r('app.color.ICON_CONTAINER_ORANGE')
+  @Prop iconColor: ResourceColor = $r('app.color.ICON_FOREGROUND_ORANGE')
   @Prop title: string = ''
   @Prop description: string = ''
   @Prop granted: boolean = false
@@ -226,12 +226,12 @@ struct PermissionRow {
         Text(this.title)
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.NORMAL)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
 
         // 标题→描述无额外间距（对齐安卓：靠 bodySmall 行盒，D18）
         Text(this.description)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
       }
       .layoutWeight(1)
       .margin({ left: 12 })
@@ -241,12 +241,12 @@ struct PermissionRow {
       // 操作行的 4dp 间距由 chevron 左间距承载（对齐安卓 Spacer(4.dp)）
       Text(this.granted ? resString('permission_granted') : resString('permission_action_request'))
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(this.granted ? resColor('SUCCESS') : resColor('PRIMARY'))
+        .fontColor(this.granted ? $r('app.color.SUCCESS') : $r('app.color.PRIMARY'))
 
       if (this.showAction) {
         SymbolGlyph($r('sys.symbol.chevron_right'))
           .fontSize(20)
-          .fontColor([resColor('TEXT_TERTIARY')])
+          .fontColor([$r('app.color.TEXT_TERTIARY')])
           .margin({ left: 4 })
       }
     }

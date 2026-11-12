@@ -31,7 +31,7 @@ export struct BottomNav {
       Divider()
         .width('100%')
         .strokeWidth(0.5)
-        .color(resColor('OUTLINE'))
+        .color($r('app.color.OUTLINE'))
 
       Row() {
         ForEach(this.tabs, (tab: BottomNavTab, index: number) => {
@@ -48,13 +48,13 @@ export struct BottomNav {
       }
       .width('100%')
       .height(68)
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       // SpaceAround：4 项未铺满宽度时均分剩余空间（对齐安卓 Arrangement.SpaceAround）
       .justifyContent(FlexAlign.SpaceAround)
       .alignItems(VerticalAlign.Center)
     }
     .width('100%')
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
   }
 }
 
@@ -84,7 +84,7 @@ export struct BottomNavItem {
   @Local normalOpacity: number = 1
   @Local selectedOpacity: number = 0
   @Local iconScale: number = 1
-  @Local labelColor: number = resColor('TEXT_TERTIARY')
+  @Local labelColor: ResourceColor = $r('app.color.TEXT_TERTIARY')
 
   aboutToAppear(): void {
     this.applyState(false)
@@ -106,13 +106,13 @@ export struct BottomNavItem {
         this.iconScale = this.isSelected ? 1.06 : 1
       })
       animateTo({ duration: 200, curve: Curve.Linear }, () => {
-        this.labelColor = this.isSelected ? resColor('PRIMARY') : resColor('TEXT_TERTIARY')
+        this.labelColor = this.isSelected ? $r('app.color.PRIMARY') : $r('app.color.TEXT_TERTIARY')
       })
     } else {
       this.normalOpacity = this.isSelected ? 0 : 1
       this.selectedOpacity = this.isSelected ? 1 : 0
       this.iconScale = this.isSelected ? 1.06 : 1
-      this.labelColor = this.isSelected ? resColor('PRIMARY') : resColor('TEXT_TERTIARY')
+      this.labelColor = this.isSelected ? $r('app.color.PRIMARY') : $r('app.color.TEXT_TERTIARY')
     }
   }
 
@@ -132,12 +132,12 @@ export struct BottomNavItem {
       Stack() {
         SymbolGlyph(this.normalIcon)
           .fontSize(24)
-          .fontColor([resColor('TEXT_TERTIARY')])
+          .fontColor([$r('app.color.TEXT_TERTIARY')])
           .opacity(this.normalOpacity)
 
         SymbolGlyph(this.selectedIcon)
           .fontSize(24)
-          .fontColor([resColor('PRIMARY')])
+          .fontColor([$r('app.color.PRIMARY')])
           .opacity(this.selectedOpacity)
       }
       .width(26)

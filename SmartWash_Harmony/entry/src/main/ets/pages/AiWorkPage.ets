@@ -42,8 +42,8 @@ export class AiText {
 interface QuickTask {
   label: string
   icon: Resource
-  containerColor: number
-  iconColor: number
+  containerColor: ResourceColor
+  iconColor: ResourceColor
 }
 
 /**
@@ -55,26 +55,26 @@ function quickTasks(): QuickTask[] {
     {
       label: AiText.ai_task_choose_package,
       icon: $r('sys.symbol.laundry'),
-      containerColor: resColor('ICON_CONTAINER_GREEN'),
-      iconColor: resColor('ICON_FOREGROUND_GREEN')
+      containerColor: $r('app.color.ICON_CONTAINER_GREEN'),
+      iconColor: $r('app.color.ICON_FOREGROUND_GREEN')
     },
     {
       label: AiText.ai_task_check_order,
       icon: $r('sys.symbol.list_square_bill'),
-      containerColor: resColor('ICON_CONTAINER_BLUE'),
-      iconColor: resColor('ICON_FOREGROUND_BLUE')
+      containerColor: $r('app.color.ICON_CONTAINER_BLUE'),
+      iconColor: $r('app.color.ICON_FOREGROUND_BLUE')
     },
     {
       label: AiText.ai_task_use_coupon,
       icon: $r('sys.symbol.label'),
-      containerColor: resColor('ICON_CONTAINER_ORANGE'),
-      iconColor: resColor('ICON_FOREGROUND_ORANGE')
+      containerColor: $r('app.color.ICON_CONTAINER_ORANGE'),
+      iconColor: $r('app.color.ICON_FOREGROUND_ORANGE')
     },
     {
       label: AiText.ai_task_recharge,
       icon: $r('sys.symbol.calculator'),
-      containerColor: resColor('ICON_CONTAINER_PURPLE'),
-      iconColor: resColor('ICON_FOREGROUND_PURPLE')
+      containerColor: $r('app.color.ICON_CONTAINER_PURPLE'),
+      iconColor: $r('app.color.ICON_FOREGROUND_PURPLE')
     }
   ]
 }
@@ -130,19 +130,19 @@ struct AiWorkPage {
 
       Text(task.label)
         .fontSize(DesignFontSize.BODY_SMALL)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
         .margin({ left: DesignDimens.SPACE_XS })
     }
     .layoutWeight(1)
     .padding({ left: 20, right: 20, top: 16, bottom: 16 })
     .alignItems(VerticalAlign.Center)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     // 卡片阴影唯一画法（规范 §2.4）：blur 取 CARD_SHADOW_RADIUS(12)，非海拔档位号 LEVEL_1
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -182,7 +182,7 @@ struct AiWorkPage {
             Text(AiText.ai_quick_tasks)
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
               .width('100%')
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
 
@@ -210,7 +210,7 @@ struct AiWorkPage {
             Text(AiText.ai_recent_work)
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
               .width('100%')
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.SPACE_SM })
 
@@ -219,10 +219,10 @@ struct AiWorkPage {
             Column() {
               Column() {
                 Column() {
-                  DrumMark({ sizeValue: 60, tint: resColor('TEXT_TERTIARY') })
+                  DrumMark({ sizeValue: 60, tint: $r('app.color.TEXT_TERTIARY') })
                   Text(AiText.ai_empty_recent)
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(resColor('TEXT_SECONDARY'))
+                    .fontColor($r('app.color.TEXT_SECONDARY'))
                     .margin({ top: DesignDimens.SPACE_MD })
                   // 「开始提问」对齐安卓 AiWorkPage 的 Surface：wrap-content（约 84dp 宽，
                   // 原 AppButton 通栏 314.9vp）、radiusButton 14、高 52（[P08] 2026-11-05
@@ -231,8 +231,8 @@ struct AiWorkPage {
                     .type(ButtonType.Normal)
                     .height(52)
                     .borderRadius(DesignDimens.BUTTON_RADIUS)
-                    .backgroundColor(resColor('PRIMARY_CONTAINER'))
-                    .fontColor(resColor('ON_PRIMARY_CONTAINER'))
+                    .backgroundColor($r('app.color.PRIMARY_CONTAINER'))
+                    .fontColor($r('app.color.ON_PRIMARY_CONTAINER'))
                     .fontSize(DesignFontSize.CAPTION)
                     .fontWeight(DesignFontWeight.MEDIUM)
                     .padding({ left: 18, right: 18, top: 16, bottom: 16 })
@@ -251,12 +251,12 @@ struct AiWorkPage {
                 .alignItems(HorizontalAlign.Center)
               }
               .width('100%')
-              .backgroundColor(resColor('SURFACE'))
+              .backgroundColor($r('app.color.SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
-              .border({ width: 1, color: resColor('OUTLINE') })
+              .border({ width: 1, color: $r('app.color.OUTLINE') })
               .shadow({
                 radius: DesignElevation.CARD_SHADOW_RADIUS,
-                color: resColor('SHADOW_COLOR_CARD'),
+                color: $r('app.color.SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: DesignElevation.CARD_SHADOW_OFFSET
               })
@@ -276,7 +276,7 @@ struct AiWorkPage {
         Column() {
           // 顶线 1px outline（对齐安卓「顶线」画法；原 HAIRLINE 0.5 更细且更浅一档，白底上近不可见）
           Divider()
-            .color(resColor('OUTLINE'))
+            .color($r('app.color.OUTLINE'))
             .strokeWidth(1)
 
           Row() {
@@ -284,15 +284,15 @@ struct AiWorkPage {
               .id('aiInput')
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .fontColor(resColor('TEXT_PRIMARY'))
-              .caretColor(resColor('PRIMARY'))
-              .backgroundColor(resColor('SURFACE_VARIANT'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
+              .caretColor($r('app.color.PRIMARY'))
+              .backgroundColor($r('app.color.SURFACE_VARIANT'))
               .borderRadius(DesignDimens.INPUT_RADIUS)
               .borderWidth(1)
-              .borderColor(this.inputFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
+              .borderColor(this.inputFocused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
               // 占位符 textSecondary + 与正文同字号 16（对齐安卓 audit-10 P1-4：textTertiary
               // 双主题 1.99/3.76:1 触 DESIGN-SPEC §10 可读文本红线）
-              .placeholderColor(resColor('TEXT_SECONDARY'))
+              .placeholderColor($r('app.color.TEXT_SECONDARY'))
               .placeholderFont({ size: DesignFontSize.BODY })
               .layoutWeight(1)
               .onFocus(() => {
@@ -308,12 +308,12 @@ struct AiWorkPage {
             Column() {
               SymbolGlyph($r('sys.symbol.paperplane_fill'))
                 .fontSize(20)
-                .fontColor([resColor('ON_PRIMARY')])
+                .fontColor([$r('app.color.ON_PRIMARY')])
             }
             .width(48)
             .height(48)
             .borderRadius(24)
-            .backgroundColor(resColor('PRIMARY'))
+            .backgroundColor($r('app.color.PRIMARY'))
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             .opacity(this.inputText.trim().length > 0 ? 1 : 0.5)
@@ -343,10 +343,10 @@ struct AiWorkPage {
           })
         }
         .width('100%')
-        .backgroundColor(resColor('SURFACE'))
+        .backgroundColor($r('app.color.SURFACE'))
         .shadow({
           radius: DesignElevation.CARD_SHADOW_RADIUS,
-          color: resColor('SHADOW_COLOR_CARD'),
+          color: $r('app.color.SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: DesignElevation.CARD_SHADOW_OFFSET
         })
@@ -354,7 +354,7 @@ struct AiWorkPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

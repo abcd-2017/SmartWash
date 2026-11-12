@@ -549,12 +549,12 @@ struct DeliverySessionPage {
         Column() {
             SymbolGlyph($r('sys.symbol.computer'))
             .fontSize(20)
-            .fontColor([resColor('ICON_FOREGROUND_BLUE')])
+            .fontColor([$r('app.color.ICON_FOREGROUND_BLUE')])
         }
         .width(36)
         .height(36)
         .borderRadius(DesignDimens.RADIUS_MD)
-        .backgroundColor(resColor('ICON_CONTAINER_BLUE'))
+        .backgroundColor($r('app.color.ICON_CONTAINER_BLUE'))
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
 
@@ -562,7 +562,7 @@ struct DeliverySessionPage {
           Text(this.session?.code ?? '')
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -570,7 +570,7 @@ struct DeliverySessionPage {
             : DeliveryText.toolbox_delivery_url_fallback)
             .fontSize(DesignFontSize.CAPTION)
             // URL 是二维码扫不出来时的唯一手动入口，可读内容不用 textTertiary（compare-07 #5）
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -588,7 +588,7 @@ struct DeliverySessionPage {
         Text(DeliveryText.toolbox_delivery_action_close_session)
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('DANGER_INK'))
+          .fontColor($r('app.color.DANGER_INK'))
           .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
           .onClick(() => {
             // ArkUI onClick 走手势竞争、内层优先消费，无需显式阻断冒泡（compare-07 #9；
@@ -614,7 +614,7 @@ struct DeliverySessionPage {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([resColor('TEXT_PRIMARY')])
+              .fontColor([$r('app.color.TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -627,7 +627,7 @@ struct DeliverySessionPage {
           Text(DeliveryText.toolbox_delivery_session_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
 
           Blank()
 
@@ -636,7 +636,7 @@ struct DeliverySessionPage {
           Text(this.headerCountdown())
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(this.isCountdownUrgent() ? resColor('DANGER_INK') : resColor('ON_WARNING_CONTAINER'))
+            .fontColor(this.isCountdownUrgent() ? $r('app.color.DANGER_INK') : $r('app.color.ON_WARNING_CONTAINER'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ right: DesignDimens.SPACE_XS })
         }
@@ -650,12 +650,12 @@ struct DeliverySessionPage {
           this.SessionStrip()
         }
         .width('100%')
-        .backgroundColor(resColor('SURFACE'))
+        .backgroundColor($r('app.color.SURFACE'))
         .borderRadius(DesignDimens.CARD_RADIUS)
-        .border({ width: 1, color: resColor('OUTLINE') })
+        .border({ width: 1, color: $r('app.color.OUTLINE') })
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: resColor('SHADOW_COLOR_CARD'),
+          color: $r('app.color.SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: 2
         })
@@ -665,7 +665,7 @@ struct DeliverySessionPage {
         if (this.pollFailed && this.items.length > 0) {
           Text(DeliveryText.toolbox_delivery_poll_error)
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('DANGER_INK'))
+            .fontColor($r('app.color.DANGER_INK'))
             .width('100%')
             .padding({
               left: DesignDimens.PAGE_PADDING,
@@ -724,7 +724,7 @@ struct DeliverySessionPage {
                       // ArkUI List.divider 不支持行内缩进，改为行间手绘近似）
                       Divider()
                         .strokeWidth(0.5)
-                        .color(resColor('HAIRLINE'))
+                        .color($r('app.color.HAIRLINE'))
                         .margin({ left: DesignDimens.SPACE_XXL + DesignDimens.SPACE_SM })
                     }
                   }
@@ -737,12 +737,12 @@ struct DeliverySessionPage {
           .width('100%')
           .layoutWeight(1)
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-          .backgroundColor(resColor('SURFACE'))
+          .backgroundColor($r('app.color.SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: resColor('OUTLINE') })
+          .border({ width: 1, color: $r('app.color.OUTLINE') })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: resColor('SHADOW_COLOR_CARD'),
+            color: $r('app.color.SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: 2
           })
@@ -757,14 +757,14 @@ struct DeliverySessionPage {
         // ---------- 发送区（浮层：顶线 + 选取入口 + 文本输入 + 发送） ----------
         Column() {
           Divider()
-            .color(resColor('HAIRLINE'))
+            .color($r('app.color.HAIRLINE'))
             .strokeWidth(0.5)
 
           if (this.sending) {
             Text(DeliveryText.toolbox_delivery_sending)
               .fontSize(DesignFontSize.CAPTION)
               // 传输状态为可读内容，不用 textTertiary（compare-07 #5）
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .width('100%')
               // 状态行独立留白：横向 24 不贴屏幕左缘（compare-07 #8，对齐安卓 horizontal pagePadding）
               .padding({
@@ -776,7 +776,7 @@ struct DeliverySessionPage {
           } else if (this.sendError.length > 0) {
             Text(this.sendError)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(resColor('ERROR'))
+              .fontColor($r('app.color.ERROR'))
               .width('100%')
               .padding({
                 left: DesignDimens.PAGE_PADDING,
@@ -792,12 +792,12 @@ struct DeliverySessionPage {
               Column() {
                 SymbolGlyph($r('sys.symbol.shutter_photo'))
                   .fontSize(20)
-                  .fontColor([resColor('ICON_FOREGROUND_BLUE')])
+                  .fontColor([$r('app.color.ICON_FOREGROUND_BLUE')])
               }
               .width(36)
               .height(36)
               .borderRadius(DesignDimens.RADIUS_MD)
-              .backgroundColor(resColor('ICON_CONTAINER_BLUE'))
+              .backgroundColor($r('app.color.ICON_CONTAINER_BLUE'))
               .justifyContent(FlexAlign.Center)
               .alignItems(HorizontalAlign.Center)
             }
@@ -814,12 +814,12 @@ struct DeliverySessionPage {
               Column() {
                 SymbolGlyph($r('sys.symbol.doc'))
                   .fontSize(20)
-                  .fontColor([resColor('ICON_FOREGROUND_BLUE')])
+                  .fontColor([$r('app.color.ICON_FOREGROUND_BLUE')])
               }
               .width(36)
               .height(36)
               .borderRadius(DesignDimens.RADIUS_MD)
-              .backgroundColor(resColor('ICON_CONTAINER_BLUE'))
+              .backgroundColor($r('app.color.ICON_CONTAINER_BLUE'))
               .justifyContent(FlexAlign.Center)
               .alignItems(HorizontalAlign.Center)
             }
@@ -835,11 +835,11 @@ struct DeliverySessionPage {
             TextInput({ text: this.draft, placeholder: DeliveryText.toolbox_delivery_send_hint })
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .backgroundColor(resColor('SURFACE_VARIANT'))
+              .backgroundColor($r('app.color.SURFACE_VARIANT'))
               .borderRadius(DesignDimens.INPUT_RADIUS)
               .borderWidth(1)
-              .borderColor(this.draftFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
-              .placeholderColor(resColor('TEXT_TERTIARY'))
+              .borderColor(this.draftFocused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
+              .placeholderColor($r('app.color.TEXT_TERTIARY'))
               .placeholderFont({ size: DesignFontSize.CAPTION })
               .layoutWeight(1)
               .margin({ left: DesignDimens.SPACE_XS })
@@ -860,12 +860,12 @@ struct DeliverySessionPage {
             Column() {
               SymbolGlyph($r('sys.symbol.paperplane_fill'))
                 .fontSize(20)
-                .fontColor([resColor('ON_PRIMARY')])
+                .fontColor([$r('app.color.ON_PRIMARY')])
             }
             .width(44)
             .height(44)
             .borderRadius(22)
-            .backgroundColor(resColor('PRIMARY'))
+            .backgroundColor($r('app.color.PRIMARY'))
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             .opacity(this.draft.trim().length > 0 && !this.sending ? 1 : 0.5)
@@ -881,10 +881,10 @@ struct DeliverySessionPage {
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_SM + safeBottomVp() })
         }
         .width('100%')
-        .backgroundColor(resColor('SURFACE'))
+        .backgroundColor($r('app.color.SURFACE'))
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: resColor('SHADOW_COLOR_CARD'),
+          color: $r('app.color.SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: 2
         })
@@ -892,7 +892,7 @@ struct DeliverySessionPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

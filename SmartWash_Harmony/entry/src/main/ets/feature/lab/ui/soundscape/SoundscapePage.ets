@@ -401,39 +401,39 @@ export struct SoundscapePage {
   }
 
   /** 图标容器浅底（对齐安卓 channelContainerColor：白/雨/海浪蓝、粉/翻书紫、棕/篝火橙、风/键盘青、交谈粉） */
-  private channelContainerColor(channel: SoundChannel): number {
+  private channelContainerColor(channel: SoundChannel): ResourceColor {
     switch (channel) {
       case SoundChannel.PINK_NOISE:
       case SoundChannel.PAGE_FLIP:
-        return resColor('ICON_CONTAINER_PURPLE')
+        return $r('app.color.ICON_CONTAINER_PURPLE')
       case SoundChannel.BROWN_NOISE:
       case SoundChannel.CAMPFIRE:
-        return resColor('ICON_CONTAINER_ORANGE')
+        return $r('app.color.ICON_CONTAINER_ORANGE')
       case SoundChannel.WIND:
       case SoundChannel.KEYBOARD:
-        return resColor('ICON_CONTAINER_TEAL')
+        return $r('app.color.ICON_CONTAINER_TEAL')
       case SoundChannel.MURMUR:
-        return resColor('ICON_CONTAINER_PINK')
+        return $r('app.color.ICON_CONTAINER_PINK')
       default:
-        return resColor('ICON_CONTAINER_BLUE')
+        return $r('app.color.ICON_CONTAINER_BLUE')
     }
   }
 
-  private channelIconTint(channel: SoundChannel): number {
+  private channelIconTint(channel: SoundChannel): ResourceColor {
     switch (channel) {
       case SoundChannel.PINK_NOISE:
       case SoundChannel.PAGE_FLIP:
-        return resColor('ICON_FOREGROUND_PURPLE')
+        return $r('app.color.ICON_FOREGROUND_PURPLE')
       case SoundChannel.BROWN_NOISE:
       case SoundChannel.CAMPFIRE:
-        return resColor('ICON_FOREGROUND_ORANGE')
+        return $r('app.color.ICON_FOREGROUND_ORANGE')
       case SoundChannel.WIND:
       case SoundChannel.KEYBOARD:
-        return resColor('ICON_FOREGROUND_TEAL')
+        return $r('app.color.ICON_FOREGROUND_TEAL')
       case SoundChannel.MURMUR:
-        return resColor('ICON_FOREGROUND_PINK')
+        return $r('app.color.ICON_FOREGROUND_PINK')
       default:
-        return resColor('ICON_FOREGROUND_BLUE')
+        return $r('app.color.ICON_FOREGROUND_BLUE')
     }
   }
 
@@ -485,7 +485,7 @@ export struct SoundscapePage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -504,12 +504,12 @@ export struct SoundscapePage {
           Text(this.playing ? SoundscapeText.playing : SoundscapeText.stopped)
             .fontSize(DesignFontSize.HEADLINE)
             .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(resColor('ON_PRIMARY'))
+            .fontColor($r('app.color.ON_PRIMARY'))
 
           if (this.activePresetIndex >= 0) {
             Text(PRESETS[this.activePresetIndex].label)
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(resColor('ON_PRIMARY'))
+              .fontColor($r('app.color.ON_PRIMARY'))
               .margin({ top: DesignDimens.SPACE_XXS })
           }
         }
@@ -532,13 +532,13 @@ export struct SoundscapePage {
           Text(this.playing ? SoundscapeText.stop : SoundscapeText.play)
             .fontSize(DesignFontSize.BUTTON)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('PRIMARY_DARK'))
+            .fontColor($r('app.color.PRIMARY_DARK'))
         }
         .width('100%')
         .height(48)
         .justifyContent(FlexAlign.Center)
         .borderRadius(DesignDimens.RADIUS_FULL)
-        .backgroundColor(resColor('ON_PRIMARY'))
+        .backgroundColor($r('app.color.ON_PRIMARY'))
         .onClick(() => {
           this.togglePlay()
         })
@@ -553,8 +553,8 @@ export struct SoundscapePage {
     .linearGradient({
       angle: 135,
       colors: [
-        [resColor('HERO_GRADIENT_START'), 0],
-        [resColor('PRIMARY_DARK'), 1],
+        [$r('app.color.HERO_GRADIENT_START'), 0],
+        [$r('app.color.PRIMARY_DARK'), 1],
       ],
     })
   }
@@ -566,7 +566,7 @@ export struct SoundscapePage {
       Text(SoundscapeText.presetsLabel)
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
 
       Scroll() {
         Row() {
@@ -575,16 +575,16 @@ export struct SoundscapePage {
             Column() {
               Text(preset.label)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(this.activePresetIndex === index ? resColor('ON_PRIMARY')
-                  : resColor('TEXT_PRIMARY'))
+                .fontColor(this.activePresetIndex === index ? $r('app.color.ON_PRIMARY')
+                  : $r('app.color.TEXT_PRIMARY'))
                 .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
                   top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
                 .borderRadius(DesignDimens.RADIUS_FULL)
-                .backgroundColor(this.activePresetIndex === index ? resColor('PRIMARY')
-                  : resColor('SURFACE_VARIANT'))
+                .backgroundColor(this.activePresetIndex === index ? $r('app.color.PRIMARY')
+                  : $r('app.color.SURFACE_VARIANT'))
                 .borderWidth(1)
-                .borderColor(this.activePresetIndex === index ? resColor('PRIMARY')
-                  : resColor('OUTLINE'))
+                .borderColor(this.activePresetIndex === index ? $r('app.color.PRIMARY')
+                  : $r('app.color.OUTLINE'))
             }
             .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             .margin({ right: DesignDimens.SPACE_XS })
@@ -622,13 +622,13 @@ export struct SoundscapePage {
       Text(title)
         .fontSize(DesignFontSize.CARD_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
 
       ForEach(groupChannels, (channel: number, index: number) => {
         if (index > 0) {
           Divider()
             .strokeWidth(0.5)
-            .color(resColor('DIVIDER'))
+            .color($r('app.color.DIVIDER'))
             .width('100%')
             .margin({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
         }
@@ -650,13 +650,13 @@ export struct SoundscapePage {
     .alignItems(HorizontalAlign.Start)
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     .shadow({
       radius: 12,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -669,7 +669,7 @@ export struct SoundscapePage {
       Text(SoundscapeText.timerLabel)
         .fontSize(DesignFontSize.CARD_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
 
       Row({ space: DesignDimens.SPACE_XS }) {
         ForEach(TIMER_OPTIONS, (minutes: number) => {
@@ -683,10 +683,10 @@ export struct SoundscapePage {
             .height(36)
             .justifyContent(FlexAlign.Center)
             .borderRadius(DesignDimens.RADIUS_MD)
-            .backgroundColor(minutes === this.timerMinutes ? resColor('PRIMARY_SOFT')
-              : resColor('SURFACE_VARIANT'))
+            .backgroundColor(minutes === this.timerMinutes ? $r('app.color.PRIMARY_SOFT')
+              : $r('app.color.SURFACE_VARIANT'))
             .borderWidth(1)
-            .borderColor(minutes === this.timerMinutes ? resColor('PRIMARY')
+            .borderColor(minutes === this.timerMinutes ? $r('app.color.PRIMARY')
               : Color.Transparent)
           }
           .layoutWeight(1)
@@ -706,40 +706,40 @@ export struct SoundscapePage {
         Text(this.timerRemainingLabel())
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ top: DesignDimens.SPACE_SM })
       } else if (!this.playing) {
         Text(SoundscapeText.timerHint)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .margin({ top: DesignDimens.SPACE_XS })
       }
     }
     .alignItems(HorizontalAlign.Start)
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     .shadow({
       radius: 12,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
   }
 
   /** 定时档位文字色：选中 = onPrimarySoft；可选 = textSecondary；禁用 = textTertiary */
-  private timerOptionColor(minutes: number): number {
+  private timerOptionColor(minutes: number): ResourceColor {
     if (minutes === this.timerMinutes) {
-      return resColor('ON_PRIMARY_SOFT')
+      return $r('app.color.ON_PRIMARY_SOFT')
     }
     if (this.playing || minutes === 0) {
-      return resColor('TEXT_SECONDARY')
+      return $r('app.color.TEXT_SECONDARY')
     }
-    return resColor('TEXT_TERTIARY')
+    return $r('app.color.TEXT_TERTIARY')
   }
 }
 
@@ -752,8 +752,8 @@ struct ChannelRow {
   @Param ui: SoundChannelUi = new SoundChannelUi(SoundChannel.WHITE_NOISE)
   @Param label: string = ''
   @Param icon: Resource = $r('sys.symbol.waveform')
-  @Param containerColor: number = resColor('ICON_CONTAINER_BLUE')
-  @Param iconTint: number = resColor('ICON_FOREGROUND_BLUE')
+  @Param containerColor: ResourceColor = $r('app.color.ICON_CONTAINER_BLUE')
+  @Param iconTint: ResourceColor = $r('app.color.ICON_FOREGROUND_BLUE')
   @Event onToggle: () => void = () => {
   }
   @Event onVolumeChange: (volume: number) => void = (volume: number) => {
@@ -777,7 +777,7 @@ struct ChannelRow {
         Text(this.label)
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
           .margin({ left: DesignDimens.SPACE_SM })
           .layoutWeight(1)
 
@@ -806,7 +806,7 @@ struct ChannelRow {
           Text(this.ui.volume.toString())
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ left: DesignDimens.SPACE_SM })
             .width(24)
@@ -839,8 +839,8 @@ struct SoundToggle {
           Circle()
             .width(20)
             .height(20)
-            .fill(resColor('SURFACE'))
-            .stroke(resColor('OUTLINE'))
+            .fill($r('app.color.SURFACE'))
+            .stroke($r('app.color.OUTLINE'))
             .strokeWidth(1)
             .translate({ x: this.checked ? 20 : 0 })
             .animation({ duration: 180, curve: Curve.EaseInOut })
@@ -854,9 +854,9 @@ struct SoundToggle {
       .width(48)
       .height(28)
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(this.checked ? resColor('PRIMARY') : resColor('SURFACE_VARIANT'))
+      .backgroundColor(this.checked ? $r('app.color.PRIMARY') : $r('app.color.SURFACE_VARIANT'))
       .borderWidth(1)
-      .borderColor(this.checked ? resColor('PRIMARY') : resColor('OUTLINE'))
+      .borderColor(this.checked ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
     }
     .width(48)
     .constraintSize({ minHeight: 52 })

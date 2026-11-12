@@ -562,7 +562,7 @@ export struct PaintingPage {
               .aspectRatio(0.75)
               .borderRadius(DesignDimens.RADIUS_XL)
               .clip(true)
-              .backgroundColor(resColor('SURFACE_VARIANT'))
+              .backgroundColor($r('app.color.SURFACE_VARIANT'))
               .accessibilityDescription(resString('painting_page_1'))
               .onAreaChange((oldValue: Area, newValue: Area) => {
                 this.onCanvasAreaChange(oldValue, newValue)
@@ -572,11 +572,11 @@ export struct PaintingPage {
               Text(`${PaintingText.seedFormat}${this.seed}`)
                 .fontSize(DesignFontSize.AMOUNT_MEDIUM)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
                 .fontFeature(DesignFontFeature.TNUM)
               Text(this.isToday ? this.dateLabel() : PaintingText.randomLabel)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
                 .margin({ top: DesignDimens.SPACE_XXS })
 
               Row({ space: DesignDimens.SPACE_SM }) {
@@ -610,7 +610,7 @@ export struct PaintingPage {
               Row() {
                 Text(PaintingText.backToday)
                   .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(resColor('TEXT_GREEN'))
+                  .fontColor($r('app.color.TEXT_GREEN'))
                   .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM,
                     top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
                   .visibility(this.isToday ? Visibility.None : Visibility.Visible)
@@ -629,7 +629,7 @@ export struct PaintingPage {
                   .height(48)
                   .fontSize(DesignFontSize.BODY_SMALL)
                   .borderRadius(DesignDimens.INPUT_RADIUS)
-                  .backgroundColor(resColor('SURFACE_VARIANT'))
+                  .backgroundColor($r('app.color.SURFACE_VARIANT'))
                   .onChange((value: string) => {
                     this.seedInput = value
                   })
@@ -637,7 +637,7 @@ export struct PaintingPage {
                 Column() {
                   Text(PaintingText.applySeed)
                     .fontSize(DesignFontSize.BODY_SMALL)
-                    .fontColor(resColor('TEXT_GREEN'))
+                    .fontColor($r('app.color.TEXT_GREEN'))
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
                     .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
                 }
@@ -653,19 +653,19 @@ export struct PaintingPage {
 
               Text(PaintingText.hint)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
                 .margin({ top: DesignDimens.SPACE_XS })
             }
             .width('100%')
             .padding(DesignDimens.CARD_PADDING)
             .margin({ top: DesignDimens.SPACE_XXL })
-            .backgroundColor(resColor('SURFACE'))
+            .backgroundColor($r('app.color.SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
             .borderWidth(1)
-            .borderColor(resColor('OUTLINE'))
+            .borderColor($r('app.color.OUTLINE'))
             .shadow({
               radius: 12,
-              color: resColor('SHADOW_COLOR_CARD'),
+              color: $r('app.color.SHADOW_COLOR_CARD'),
               offsetX: 0,
               offsetY: 2
             })
@@ -683,7 +683,7 @@ export struct PaintingPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

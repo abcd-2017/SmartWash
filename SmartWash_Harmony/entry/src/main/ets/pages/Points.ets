@@ -83,9 +83,9 @@ struct LeaderboardRow {
   @Require @Param entry: LeaderboardEntryVo
 
   /** 名次色：TOP3 品牌深绿强调（PRIMARY_DARK 与右侧积分值同色档，对齐安卓 audit-20 #9），其余中性 */
-  private rankColor(): number {
+  private rankColor(): ResourceColor {
     const tier: RankTier = rankTier(this.entry.rank ?? null)
-    return tier === RankTier.NORMAL ? resColor('TEXT_SECONDARY') : resColor('PRIMARY_DARK')
+    return tier === RankTier.NORMAL ? $r('app.color.TEXT_SECONDARY') : $r('app.color.PRIMARY_DARK')
   }
 
   /** 头像是否走网络图（后端下发非空即用，加载失败回退母题占位） */
@@ -110,12 +110,12 @@ struct LeaderboardRow {
           .margin({ left: DesignDimens.SPACE_SM })
       } else {
         Column() {
-          DrumMark({ sizeValue: 16, tint: resColor('PRIMARY_DARK') })
+          DrumMark({ sizeValue: 16, tint: $r('app.color.PRIMARY_DARK') })
         }
         .width(28)
         .height(28)
         .borderRadius(14)
-        .backgroundColor(resColor('PRIMARY_LIGHT'))
+        .backgroundColor($r('app.color.PRIMARY_LIGHT'))
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
         .margin({ left: DesignDimens.SPACE_SM })
@@ -124,7 +124,7 @@ struct LeaderboardRow {
       Text(this.entry.maskedPhone ?? '')
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .layoutWeight(1)
@@ -134,14 +134,14 @@ struct LeaderboardRow {
         .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontFeature(DesignFontFeature.TNUM)
-        .fontColor(resColor('PRIMARY_DARK'))
+        .fontColor($r('app.color.PRIMARY_DARK'))
 
       Text(PointsText.unit)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
         // 单位是数值读数的一部分（可读内容非装饰），textTertiary 压白卡仅 2.25:1 触 §10 红线，
         // 改 textSecondary（对齐安卓 audit-20 #3）+ labelMedium 12/500
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .margin({ left: DesignDimens.SPACE_XXS })
     }
     .width('100%')
@@ -168,11 +168,11 @@ struct MyRankRow {
           // 14 行内文案字重对齐安卓 titleSmall 14/500（SEMI_BOLD 是 titleLarge/SectionTitle 档）
           .fontWeight(DesignFontWeight.MEDIUM)
           .fontFeature(DesignFontFeature.TNUM)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
       } else {
         Text(PointsText.myRankNone)
           .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
       }
       Blank()
     }
@@ -200,14 +200,14 @@ struct LedgerRow {
 
   /** delta 色：正 = TEXT_GREEN 文字绿深档（白底 5.1:1 达 AA，对齐安卓 textGreen）/
    *  负 = DANGER_INK / 0 = 次文本 */
-  private deltaColor(): number {
+  private deltaColor(): ResourceColor {
     if (this.delta > 0) {
-      return resColor('TEXT_GREEN')
+      return $r('app.color.TEXT_GREEN')
     }
     if (this.delta < 0) {
-      return resColor('DANGER_INK')
+      return $r('app.color.DANGER_INK')
     }
-    return resColor('TEXT_SECONDARY')
+    return $r('app.color.TEXT_SECONDARY')
   }
 
   build() {
@@ -217,7 +217,7 @@ struct LedgerRow {
           .fontSize(DesignFontSize.BODY_SMALL)
           // 列表行主文案 14/500（对齐安卓 titleSmall，§3.4 特许配 MEDIUM）
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
 
@@ -227,7 +227,7 @@ struct LedgerRow {
             .fontFeature(DesignFontFeature.TNUM)
             // 时间戳是流水行唯一时序信息（可读正文），textTertiary 双板均 <4.5:1 触 §10 红线，
             // 改 textSecondary（对齐安卓 audit-20 #4）
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .margin({ top: DesignDimens.SPACE_XXS })
         }
       }
@@ -460,7 +460,7 @@ export struct PointsPage {
       LoadingProgress()
         .width(14)
         .height(14)
-        .color(resColor('TEXT_GREEN'))
+        .color($r('app.color.TEXT_GREEN'))
         .opacity(this.signingIn ? 1 : 0)
         .animation({ duration: 180, curve: Curve.EaseOut })
 
@@ -468,14 +468,14 @@ export struct PointsPage {
         .fontSize(DesignFontSize.BUTTON)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontFeature(DesignFontFeature.TNUM)
-        .fontColor(this.signedToday() ? resColor('GLASS_TEXT_ACTIVE') : resColor('TEXT_GREEN'))
+        .fontColor(this.signedToday() ? $r('app.color.GLASS_TEXT_ACTIVE') : $r('app.color.TEXT_GREEN'))
         .opacity(this.signingIn ? 0 : 1)
         .animation({ duration: 180, curve: Curve.EaseOut })
     }
     .width('100%')
     .height(48)
     .borderRadius(DesignDimens.RADIUS_FULL)
-    .backgroundColor(this.signedToday() ? resColor('GLASS_INPUT') : Color.White)
+    .backgroundColor(this.signedToday() ? $r('app.color.GLASS_INPUT') : Color.White)
     // CTA 上间距 16（对齐安卓 Spacer(spaceMd)，无连签块时为累计获得行与 CTA 的间隔）
     .margin({ top: DesignDimens.SPACE_MD })
     .onClick(() => {
@@ -527,7 +527,7 @@ export struct PointsPage {
               .width('100%')
               .height(6)
               .borderRadius(DesignDimens.RADIUS_FULL)
-              .backgroundColor(resColor('SCRIM_BLACK_18'))
+              .backgroundColor($r('app.color.SCRIM_BLACK_18'))
             // 填充：白（静态，无动画负担）
             Row()
               .width(`${Math.round(this.cycleProgressRatio() * 100)}%`)
@@ -548,7 +548,7 @@ export struct PointsPage {
       // 纱与渐变同对角线，浅板文字区 5.13–8.10:1 / 深板 4.62–5.13:1 全达标
       .linearGradient({
         angle: 135,
-        colors: [[resColor('SCRIM_BLACK_20'), 0], [resColor('SCRIM_BLACK_35'), 1]]
+        colors: [[$r('app.color.SCRIM_BLACK_20'), 0], [$r('app.color.SCRIM_BLACK_35'), 1]]
       })
     }
     .width('100%')
@@ -559,7 +559,7 @@ export struct PointsPage {
     // #5BC894，与安卓深色 heroGradientEnd 一致
     .linearGradient({
       angle: 135,
-      colors: [[resColor('HERO_GRADIENT_START'), 0], [resColor('PRIMARY_DARK'), 1]]
+      colors: [[$r('app.color.HERO_GRADIENT_START'), 0], [$r('app.color.PRIMARY_DARK'), 1]]
     })
   }
 
@@ -568,7 +568,7 @@ export struct PointsPage {
   RowDivider() {
     Divider()
       .strokeWidth(0.5)
-      .color(resColor('HAIRLINE'))
+      .color($r('app.color.HAIRLINE'))
   }
 
   @Builder
@@ -580,7 +580,7 @@ export struct PointsPage {
         Text(PointsText.leaderboardTitle)
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
         Blank()
         if (this.monthLabel() !== '') {
           Text(this.monthLabel())
@@ -588,7 +588,7 @@ export struct PointsPage {
             // 月份是榜单口径信息非装饰角标，textTertiary 压页面底仅 2.08:1 触 §10 红线，
             // 改 textSecondary（对齐安卓 audit-20 #2）+ labelMedium 12/500
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
         }
       }
       .width('100%')
@@ -627,7 +627,7 @@ export struct PointsPage {
           Column() {
             Text(PointsText.leaderboardLoadFailed)
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
             AppButton({
               text: PointsText.actionRetry,
               variant: AppButtonVariant.SECONDARY,
@@ -663,12 +663,12 @@ export struct PointsPage {
       // 行内容距描边 20（对齐安卓 GroupCard contentPadding horizontal cardPadding）：
       // 名次/reason 文字不得贴 1px 描边；发丝线随 padding 收窄至卡内容宽
       .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
-      .border({ width: 1, color: resColor('OUTLINE') })
+      .border({ width: 1, color: $r('app.color.OUTLINE') })
       .shadow({
         radius: DesignElevation.CARD_SHADOW_RADIUS,
-        color: resColor('SHADOW_COLOR_CARD'),
+        color: $r('app.color.SHADOW_COLOR_CARD'),
         offsetX: 0,
         offsetY: DesignElevation.CARD_SHADOW_OFFSET
       })
@@ -689,7 +689,7 @@ export struct PointsPage {
         Text(PointsText.ledgerTitle)
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
         Blank()
       }
       .width('100%')
@@ -717,12 +717,12 @@ export struct PointsPage {
       .margin({ top: DesignDimens.SPACE_XS })
       // 行内容距描边 20（对齐安卓 GroupCard contentPadding horizontal cardPadding）
       .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
-      .border({ width: 1, color: resColor('OUTLINE') })
+      .border({ width: 1, color: $r('app.color.OUTLINE') })
       .shadow({
         radius: DesignElevation.CARD_SHADOW_RADIUS,
-        color: resColor('SHADOW_COLOR_CARD'),
+        color: $r('app.color.SHADOW_COLOR_CARD'),
         offsetX: 0,
         offsetY: DesignElevation.CARD_SHADOW_OFFSET
       })
@@ -793,13 +793,13 @@ export struct PointsPage {
         .height('100%')
         // 沉浸式：内容避让状态栏（背景延伸）
         .padding({ top: safeTopVp() })
-        .backgroundColor(resColor('BACKGROUND'))
+        .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .width('100%')
     .height('100%')
     .align(Alignment.Top)
-    .backgroundColor(resColor('BACKGROUND'))
+    .backgroundColor($r('app.color.BACKGROUND'))
     .hideTitleBar(true)
   }
 }

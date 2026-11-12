@@ -28,7 +28,7 @@ const DASH_SEGMENT_GAP: number = 4
 @ComponentV2
 export struct TicketNotch {
   @Param notchRadius: number = 7
-  @Param notchColor: number = resColor('BACKGROUND')
+  @Param notchColor: ResourceColor = $r('app.color.BACKGROUND')
   // 覆盖层高度（vp）：0 = 撑满父容器（'100%'）。
   // wrap-content 卡片（可用券）必须传实高——'100%' 在 wrap-content Stack 内会解析到
   // 父约束上限（列表视口高），把卡撑成整屏高。
@@ -74,7 +74,7 @@ export struct TicketNotch {
 @ComponentV2
 export struct TicketDashedLine {
   @Param dashHeight: number = 64
-  @Param dashColor: number = resColor('OUTLINE')
+  @Param dashColor: ResourceColor = $r('app.color.OUTLINE')
 
   /** 依高度计算段数（ArkTS build 内不允许循环语句，收敛为方法） */
   private dashKeys(): number[] {

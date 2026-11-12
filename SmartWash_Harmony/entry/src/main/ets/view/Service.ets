@@ -19,8 +19,8 @@ import { resString } from '../utils/ResourceString'
  * 按任务规则以安卓代码为准（裁决见 docs/design/harmony-align/refix-02-service-laundry.md）。
  */
 interface ServiceTileColors {
-  container: number
-  foreground: number
+  container: ResourceColor
+  foreground: ResourceColor
 }
 
 @Component
@@ -93,26 +93,26 @@ export struct Service {
   private serviceTileColors(item: LaundryItem): ServiceTileColors {
     const name = item.itemName ?? ""
     if (name.includes(resString('service_3'))) {
-      return { container: resColor('ICON_CONTAINER_BLUE'), foreground: resColor('ICON_FOREGROUND_BLUE') }
+      return { container: $r('app.color.ICON_CONTAINER_BLUE'), foreground: $r('app.color.ICON_FOREGROUND_BLUE') }
     }
     if (name.includes(resString('service_4')) || name.includes(resString('service_5')) || name.includes(resString('service_6'))) {
-      return { container: resColor('ICON_CONTAINER_PURPLE'), foreground: resColor('ICON_FOREGROUND_PURPLE') }
+      return { container: $r('app.color.ICON_CONTAINER_PURPLE'), foreground: $r('app.color.ICON_FOREGROUND_PURPLE') }
     }
     if (name.includes(resString('service_7'))) {
-      return { container: resColor('ICON_CONTAINER_ORANGE'), foreground: resColor('ICON_FOREGROUND_ORANGE') }
+      return { container: $r('app.color.ICON_CONTAINER_ORANGE'), foreground: $r('app.color.ICON_FOREGROUND_ORANGE') }
     }
     if (name.includes(resString('service_8')) || name.includes(resString('service_9'))) {
-      return { container: resColor('PRIMARY_LIGHT'), foreground: resColor('PRIMARY_DARK') }
+      return { container: $r('app.color.PRIMARY_LIGHT'), foreground: $r('app.color.PRIMARY_DARK') }
     }
     switch ((item.itemId ?? 0) % 4) {
       case 1:
-        return { container: resColor('ICON_CONTAINER_BLUE'), foreground: resColor('ICON_FOREGROUND_BLUE') }
+        return { container: $r('app.color.ICON_CONTAINER_BLUE'), foreground: $r('app.color.ICON_FOREGROUND_BLUE') }
       case 2:
-        return { container: resColor('ICON_CONTAINER_PURPLE'), foreground: resColor('ICON_FOREGROUND_PURPLE') }
+        return { container: $r('app.color.ICON_CONTAINER_PURPLE'), foreground: $r('app.color.ICON_FOREGROUND_PURPLE') }
       case 3:
-        return { container: resColor('ICON_CONTAINER_ORANGE'), foreground: resColor('ICON_FOREGROUND_ORANGE') }
+        return { container: $r('app.color.ICON_CONTAINER_ORANGE'), foreground: $r('app.color.ICON_FOREGROUND_ORANGE') }
       default:
-        return { container: resColor('PRIMARY_LIGHT'), foreground: resColor('PRIMARY_DARK') }
+        return { container: $r('app.color.PRIMARY_LIGHT'), foreground: $r('app.color.PRIMARY_DARK') }
     }
   }
 
@@ -150,12 +150,12 @@ export struct Service {
         Text(item.itemName)
           .fontSize(DesignFontSize.CARD_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
 
         // 描述不限行（对齐安卓 ServiceItemRow：可换行，无 maxLines/Ellipsis 约束）
         Text(item.description)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .margin({ top: 4 })
       }
       .layoutWeight(1)
@@ -167,12 +167,18 @@ export struct Service {
         Text(`¥${item.basePrice?.toFixed(2)}`)
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('PRIMARY_DARK'))
+          .fontColor($r('app.color.PRIMARY_DARK'))
           .fontFeature(DesignFontFeature.TNUM)
 
-        SymbolGlyph($r('sys.symbol.chevron_right'))
-          .fontSize(20)
-          .fontColor([resColor('TEXT_TERTIARY')])
+        // 「预约 ›」胶囊（对齐安卓 ServicePage 行尾 60×24 r999 胶囊）：
+        // primaryContainer 底 + onPrimaryContainer 字，整行仍可点（胶囊不单独拦截）
+        Text($r('app.string.service_row_reserve'))
+          .fontSize(DesignFontSize.CAPTION)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor($r('app.color.ON_PRIMARY_CONTAINER'))
+          .backgroundColor($r('app.color.PRIMARY_CONTAINER'))
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .padding({ left: 10, right: 10, top: 3, bottom: 3 })
           .margin({ top: 4 })
       }
       .alignItems(HorizontalAlign.End)
@@ -215,20 +221,20 @@ export struct Service {
           if (index < (this.laundryItem?.length ?? 0) - 1) {
             Divider()
               .strokeWidth(1)
-              .color(resColor('HAIRLINE'))
+              .color($r('app.color.HAIRLINE'))
               .margin({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
           }
         }, (item: LaundryItem) => item.itemId?.toString())
       }
     }
     .width("100%")
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // 规范 §2.4 卡片：1px OUTLINE 描边 + 0 2px 12px rgba(20,40,30,.05) 阴影（对齐安卓 v0.4）
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -246,7 +252,7 @@ export struct Service {
             Text($r('app.string.laundry_service'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
               .width("100%")
               .margin({ top: 8 })
 
@@ -260,7 +266,7 @@ export struct Service {
             // 底部服务提示文案（对齐安卓 service_tips）
             Text($r('app.string.service_tips'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .textAlign(TextAlign.Center)
               .width("100%")
               .margin({ top: 24 })
@@ -290,7 +296,7 @@ export struct Service {
         LoadingState()
           .width("100%")
           .height("100%")
-          .backgroundColor(resColor('BACKGROUND'))
+          .backgroundColor($r('app.color.BACKGROUND'))
       }
 
       // 失败态（无数据且加载失败）：EmptyState + 重试按钮，不留空白页（F3/T3）
@@ -313,12 +319,12 @@ export struct Service {
         }
         .width("100%")
         .height("100%")
-        .backgroundColor(resColor('BACKGROUND'))
+        .backgroundColor($r('app.color.BACKGROUND'))
         .justifyContent(FlexAlign.Center)
       }
     }
     .width("100%")
     .height("100%")
-    .backgroundColor(resColor('BACKGROUND'))
+    .backgroundColor($r('app.color.BACKGROUND'))
   }
 }
