@@ -4017,16 +4017,16 @@
       "value": "接收订单进度、投递与系统通知提醒"
     },
     {
-      "name": "permission_internet",
-      "value": "网络访问"
+      "name": "permission_haptic",
+      "value": "触感反馈"
     },
     {
-      "name": "permission_internet_desc",
-      "value": "与服务端同步订单、余额与洗衣项目（安装即授予）"
+      "name": "permission_haptic_desc",
+      "value": "全局交互震动开关（点击、切换等操作的触觉反馈）"
     },
     {
       "name": "permission_footer",
-      "value": "权限仅用于上述功能所需的最小场景；拒绝某项权限只会影响对应功能，不影响应用正常使用。"
+      "value": "这里只列出你可以随时开关的权限与设置；未列出的系统权限为安装即授予，用于应用正常运行。"
     },
     {
       "name": "permission_granted",
@@ -4501,10 +4501,6 @@
       "value": "发现新版本"
     },
     {
-      "name": "setting_17",
-      "value": "无法打开系统设置"
-    },
-    {
       "name": "already_latest",
       "value": "当前已是最新版本"
     },
@@ -4647,14 +4643,6 @@
     {
       "name": "settings",
       "value": "设置"
-    },
-    {
-      "name": "push_notification",
-      "value": "消息通知"
-    },
-    {
-      "name": "permission_denied",
-      "value": "未授权"
     },
     {
       "name": "haptic_feedback",
@@ -5011,14 +4999,6 @@
     {
       "name": "not_bound",
       "value": "未绑定"
-    },
-    {
-      "name": "shipping_address",
-      "value": "收货地址"
-    },
-    {
-      "name": "shipping_address_unavailable",
-      "value": "收货地址功能暂未开放"
     },
     {
       "name": "app_components_1",

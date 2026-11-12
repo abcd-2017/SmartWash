@@ -1,16 +1,12 @@
 import { RouteNames } from "../constant/RouteNames"
 import { clearLoginState } from "../network/Axios"
 import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
-import { getValue, setValue } from "../utils/StorageUtil"
 import { pathStack } from "../utils/PathStackUtil"
 import { logger } from "../utils/Logger"
 import { AppButton, AppButtonVariant, AppCard, AppConfirmDialog, AppInfoDialog, PageHeader } from "../view/common/AppComponents"
 import { getAppVersionCode, getAppVersionName } from "../utils/AppInfoUtil"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { isPickupReminderEnabled, setPickupReminderEnabled } from "../utils/ReminderService"
-import { notificationManager } from "@kit.NotificationKit"
-import { common } from "@kit.AbilityKit"
-import { promptAction } from "@kit.ArkUI"
 import { HttpStatusCode } from "@ohos/axios"
 import { getAppVersion } from "../network/api/AppVersionApi"
 import { showToastSafety } from "../utils/ToastUtil"
@@ -28,9 +24,6 @@ import vibrator from "@ohos.vibrator"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
 import { resColor } from '../utils/ResourceColor'
 import { resString } from '../utils/ResourceString'
-
-// 触感反馈开关持久化 key（对齐安卓 HapticSettings.STORAGE_KEY 语义）
-const HAPTIC_PREF_KEY: string = "haptic_enabled"
 
 // 隐私与免责声明全文（对齐安卓 privacy_disclaimer_content）
 const PRIVACY_DISCLAIMER: string =
@@ -81,11 +74,7 @@ export function SettingBuilder() {
 struct Setting {
   private scroller = new Scroller()
 
-  // 消息通知真实授权态（对齐安卓 SettingPage.kt:100-124：组合期查一次 + ON_RESUME 重查）
-  @State notificationGranted: boolean = false
-  // 触感反馈开关（内存态即时生效 + preferences 异步落盘，对齐安卓 SettingViewModel）
-  @State hapticEnabled: boolean = true
-  // 取件提醒开关（同 haptic 模式：内存态即时生效 + ReminderService 异步落盘；关闭即全量撤销未触发提醒）
+  // 取件提醒开关（内存态即时生效 + ReminderService 异步落盘；关闭即全量撤销未触发提醒）
   @State pickupReminderEnabled: boolean = true
   // 检查更新进行中标记：拦截连点，避免重复拉取版本接口
   @State checkingUpdate: boolean = false
@@ -229,35 +218,10 @@ struct Setting {
   })
 
   async aboutToAppear() {
-    this.refreshNotification()
     // 解读模型配置拉取：端上不持久化，进页即从后端回显掩码态（#81）
     this.loadApiConfig()
-    // 触感反馈启动补读：覆盖冷启动后未预热就进设置页的窗口（对齐安卓 SettingViewModel.init）
-    const stored = await getValue(HAPTIC_PREF_KEY, true) as boolean
-    this.hapticEnabled = stored
     // 取件提醒开关回显（读取失败/未初始化按默认开启，见 ReminderService.isPickupReminderEnabled）
     this.pickupReminderEnabled = await isPickupReminderEnabled()
-  }
-
-  /** 消息通知真实授权态（系统通知开关） */
-  private refreshNotification(): void {
-    try {
-      this.notificationGranted = notificationManager.isNotificationEnabledSync()
-    } catch (err) {
-      this.notificationGranted = false
-    }
-  }
-
-  /** 触感反馈开关：先改内存态（热路径即时生效），再异步落盘；开启瞬间给一次确认触感 */
-  private toggleHaptic(): void {
-    const newValue = !this.hapticEnabled
-    this.hapticEnabled = newValue
-    // 偏好开关切换（低频非关键动作，记 debug）
-    logger.debug('setting', `触感反馈开关切换为 ${newValue ? "开" : "关"}`)
-    setValue(HAPTIC_PREF_KEY, newValue)
-    if (newValue) {
-      this.performHaptic()
-    }
   }
 
   /**
@@ -278,23 +242,6 @@ struct Setting {
     } catch (err) {
       // 忽略不支持的设备
     }
-  }
-
-  /**
-   * 打开系统应用通知设置（对齐安卓 SettingPage.kt openSystemNotificationSettings，P-1501）：
-   * 授权 / 去关闭都在系统页完成，返回后由 onShown 重查刷新行内状态，不再进权限管理页。
-   */
-  private openNotificationSettings(): void {
-    const context = getContext(this) as common.UIAbilityContext
-    notificationManager.openNotificationSettings(context).then(() => {
-      // 系统设置半模态关闭回调：重查通知授权态（半模态不触发 NavDestination onShown）
-      logger.debug('setting', '系统通知设置已关闭，重查授权态')
-      this.refreshNotification()
-    }).catch(() => {
-      // 外部调用失败留痕：toast 已兜底，此处仅补摘要（不序列化 error）
-      logger.warn('setting', '打开系统通知设置失败，已 toast 兜底')
-      promptAction.showToast({ message: resString('setting_17') })
-    })
   }
 
   /**
@@ -1192,40 +1139,6 @@ struct Setting {
               .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
 
             SettingGroupCard() {
-              // 消息通知（真实授权态，行尾显示系统实际授予情况）
-              // 点击直达系统应用通知设置（对齐安卓 P-1501：授权 / 去关闭都在系统页完成，
-              // 返回后由 onShown 重查刷新行内状态，不再进权限管理页）
-              SettingRow({
-                icon: $r('sys.symbol.bell'),
-                containerColor: $r('app.color.ICON_CONTAINER_ORANGE'),
-                iconColor: $r('app.color.ICON_FOREGROUND_ORANGE'),
-                title: resString('push_notification'),
-                trailingValue: this.notificationGranted ? resString('lab_drum_cell_on') : resString('permission_denied'),
-                onRowClick: () => {
-                  this.openNotificationSettings()
-                }
-              })
-
-              Divider()
-                .color($r('app.color.HAIRLINE'))
-                .strokeWidth(0.5)
-
-              // 触感反馈（真实开关，内存态即时生效 + 异步落盘）
-              SettingRow({
-                icon: $r('sys.symbol.hand_tap'),
-                containerColor: $r('app.color.ICON_CONTAINER_TEAL'),
-                iconColor: $r('app.color.ICON_FOREGROUND_TEAL'),
-                title: resString('haptic_feedback'),
-                trailingValue: this.hapticEnabled ? resString('lab_drum_cell_on') : resString('lab_drum_cell_off'),
-                onRowClick: () => {
-                  this.toggleHaptic()
-                }
-              })
-
-              Divider()
-                .color($r('app.color.HAIRLINE'))
-                .strokeWidth(0.5)
-
               // 取件提醒（真实开关，调研候选 2）：订单进入待取件后 30 分钟本地提醒取件；
               // 关闭即撤销全部未触发提醒，重新开启后列表/详情同步自动补登记
               SettingRow({
@@ -1404,8 +1317,6 @@ struct Setting {
     // 补齐：隐藏系统标题栏，避免与自绘 PageHeader 出现双返回按钮（问题6）
     .hideTitleBar(true)
     .onShown(() => {
-      // 从权限页 / 系统设置返回后重查授权态（对齐安卓 ON_RESUME）
-      this.refreshNotification()
       // 返回本页时重拉解读模型配置（在别的入口改动后回显保持新鲜；loadingConfig 挡并发）
       this.loadApiConfig()
     })
