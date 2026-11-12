@@ -149,6 +149,7 @@ const MENU_GROUP_CONFIG = [
       '/workbench/entries',
       '/workbench/deeplink-routes',
       '/game/list',
+      '/game/levels',
       '/game/data',
       '/subscriptions',
     ],
