@@ -59,6 +59,31 @@
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-decelerate: cubic-bezier(0, 0, 0.2, 1); /* 进场 */
   --ease-accelerate: cubic-bezier(0.4, 0, 1, 1); /* 离场 */
+
+  /* 淡彩底配套深字 —— 淡彩底规则的另一半：底（--*-tint）与深字成对进 token，
+     皮肤层与页面一律取 var，禁止再抄 #065f46 等色值 */
+  --primary-tint-text: #4338ca;
+  --success-tint-text: #065f46;
+  --danger-tint-text: #991b1b;
+  --warning-tint-text: #92400e;
+
+  /* 语义色辅助阶 —— 按钮 hover 提亮 / active 加深专用（与主 token 同源成对） */
+  --success-light: #34d399;
+  --success-dark: #059669;
+  --danger-light: #f87171;
+  --danger-dark: #dc2626;
+  --warning-light: #fbbf24;
+  --warning-dark: #d97706;
+
+  /* 统计卡图标容器淡底（语义色 10% 透明底 + 实色图标，DESIGN.md · 签名组件） */
+  --primary-soft-bg: rgba(99, 102, 241, 0.1);
+  --info-soft-bg: rgba(59, 130, 246, 0.1);
+  --success-soft-bg: rgba(16, 185, 129, 0.1);
+  --warning-soft-bg: rgba(245, 158, 11, 0.1);
+  --danger-soft-bg: rgba(239, 68, 68, 0.1);
+
+  /* 主操作字色（实心按钮/主色底上的白字） */
+  --color-on-primary: #ffffff;
 }
 
 *,

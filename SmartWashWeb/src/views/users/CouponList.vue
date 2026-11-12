@@ -40,7 +40,7 @@
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="filter-end">
           <el-button type="primary" @click="handleCreate">新增优惠券</el-button>
           <el-button
             type="danger"

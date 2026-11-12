@@ -65,8 +65,10 @@
   background-color: var(--bg-subtle);
 }
 
-/* 按钮组 — 始终靠右 */
-.filter-container .el-form-item:last-child {
+/* 动作区（新增/批量等终点按钮）恒靠右：由页面在该 form-item 上显式挂
+   class="filter-end"，不再依赖 last-child 自动右贴——否则无创建按钮的页面
+   「搜索/重置」会被推到右侧，跨页肌肉记忆失效 */
+.filter-container .el-form-item.filter-end {
   margin-left: auto;
 }
 
