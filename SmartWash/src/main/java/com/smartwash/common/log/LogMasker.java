@@ -43,7 +43,9 @@ public final class LogMasker {
             // 验证码/取件码类（SmartWash 验证码请求字段名为 code；取件码同属敏感凭证）
             "captcha", "verificationcode", "smscode", "code", "pickupcode",
             // 其他
-            "sessionkey", "privatekey");
+            "sessionkey", "privatekey",
+            // 私密文本正文（阅后即焚 content，明文/密文均不入日志）
+            "content");
 
     /** JSON 形态："字段名":值（值支持带引号字符串/数字/字面量，容忍转义与空白） */
     private static final Pattern JSON_PAIR = Pattern.compile(

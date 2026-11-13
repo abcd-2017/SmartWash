@@ -114,6 +114,10 @@ toolbox:
   # 留空 = 按当前请求的 scheme + Host 推导，短链默认落在后端自身对外地址上，直连/反代部署均无需配置；
   # 仅当短链域名与 API 域名不一致（如 API 在 api.x.com、短链在 s.x.com）时才需显式注入。
   public-base-url: ${TOOLBOX_PUBLIC_BASE_URL:}
+  # Web 前端对外地址（拼私密文本分享链接 {base}/s/{code}）。
+  # Web SPA 与后端不同源、无法按请求推导，只认显式配置；留空 = secretUrl 为空串（端上降级仅展示短码）。
+  # 生产必须 https（环境红线：生产禁明文 HTTP）。
+  web-base-url: ${TOOLBOX_WEB_BASE_URL:}
 
 # 游戏中心：可玩地址 = MinIO 对象直链（minio.endpoint/bucket/对象键/入口，与头像 uploadFile 同一构造方式），
 # 无独立域名配置；生产环境必须将 MINIO_ENDPOINT 配置为 https 公网地址（环境红线：生产禁明文 HTTP）

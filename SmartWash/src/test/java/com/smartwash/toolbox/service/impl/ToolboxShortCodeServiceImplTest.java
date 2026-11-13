@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.entity.Users;
 import com.smartwash.exception.CustomExceptions;
+import com.smartwash.common.crypto.ToolboxGcmCipher;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.toolbox.entity.ToolboxShortCode;
 import com.smartwash.toolbox.entity.ToolboxShortVisit;
@@ -17,6 +18,7 @@ import com.smartwash.toolbox.mapper.ToolboxShortCodeMapper;
 import com.smartwash.toolbox.service.ToolboxShortCodeService.ResolveResult;
 import com.smartwash.toolbox.service.ToolboxShortVisitService;
 import com.smartwash.toolbox.toolkit.PublicBaseUrlResolver;
+import com.smartwash.toolbox.toolkit.WebBaseUrlResolver;
 import com.smartwash.toolbox.toolkit.ShortCodeGenerator;
 import com.smartwash.toolbox.vo.AdminShortCodeVo;
 import com.smartwash.toolbox.vo.ShortCodeVo;
@@ -33,6 +35,7 @@ import org.mockito.quality.Strictness;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -85,6 +88,12 @@ class ToolboxShortCodeServiceImplTest {
     private ValueOperations<String, String> valueOperations;
     @Mock
     private PublicBaseUrlResolver publicBaseUrlResolver;
+    @Mock
+    private WebBaseUrlResolver webBaseUrlResolver;
+    @Mock
+    private ToolboxGcmCipher toolboxGcmCipher;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     /** 模拟 Redis 的字符串存储，还原真实 get/set/hasKey/delete 语义 */
     private final Map<String, String> cache = new ConcurrentHashMap<>();
@@ -103,7 +112,8 @@ class ToolboxShortCodeServiceImplTest {
     @BeforeEach
     void setUp() {
         cache.clear();
-        service = new ToolboxShortCodeServiceImpl(generator, visitService, stringRedisTemplate, usersMapper, publicBaseUrlResolver);
+        service = new ToolboxShortCodeServiceImpl(generator, visitService, stringRedisTemplate, usersMapper,
+                publicBaseUrlResolver, webBaseUrlResolver, toolboxGcmCipher, passwordEncoder);
         // ServiceImpl 的 save/getById 等内置方法走父类 baseMapper 字段，需手动注入同一 mock
         ReflectionTestUtils.setField(service, "baseMapper", shortCodeMapper);
         // 对外域名解析器：本测试只关心拼接逻辑，统一返回固定前缀

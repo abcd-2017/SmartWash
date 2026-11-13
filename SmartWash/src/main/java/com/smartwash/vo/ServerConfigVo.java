@@ -21,4 +21,10 @@ public class ServerConfigVo {
      * 短链对外跳转域名（后端拼 shortUrl 用；端上仅展示，不拼接——后端返回的 shortUrl 即完整地址）。
      */
     private String shortLinkBaseUrl;
+
+    /**
+     * Web 前端对外地址（后端拼私密文本分享链接 secretUrl 用；未配置返回空串，端上降级仅展示短码）。
+     * 与短链域名不同源（Web SPA 独立部署），只认显式配置，无法按请求推导；生产必须 HTTPS。
+     */
+    private String webBaseUrl;
 }

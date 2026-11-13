@@ -47,6 +47,9 @@ public class SecurityConfig {
                             "/web/app/version",
                             "/web/app/download",
                             "/web/t/**", // 工具箱短码跳转（匿名扫码流量）
+                            "/web/s/**", // 工具箱私密文本（阅后即焚）公开查看，凭码匿名
+                            "/web/locker-tags/**", // 工具箱柜码公开解析（一物一码扫码落地页数据源）
+                            "/web/tag/**", // 工具箱物品标签公开解析（寻物页数据源，码即凭证）
                             "/web/deeplink/routes", // deeplink 字典，端上冷启动解析兜底
                             "/web/config", // 服务端公开配置（MinIO 端点等），端上启动拉取
                             "/web/delivery/**" // 工具箱设备投递对端接口（凭投递码匿名进入，码即凭证）

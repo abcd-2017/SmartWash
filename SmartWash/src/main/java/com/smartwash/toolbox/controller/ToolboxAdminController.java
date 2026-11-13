@@ -2,6 +2,7 @@ package com.smartwash.toolbox.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import com.smartwash.toolbox.from.SearchShortCodeFrom;
 import com.smartwash.toolbox.service.ToolboxShortCodeService;
 import com.smartwash.toolbox.vo.AdminShortCodeVo;
@@ -39,6 +40,7 @@ public class ToolboxAdminController {
     }
 
     @Operation(summary = "删除短码", description = "治理用途：物理删除并清对应缓存")
+    @Audited(action = "TOOLBOX_SHORT_CODE_DELETE", targetType = "toolbox_short_code", targetIdSpEL = "#id")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable("id") Long id) {
         toolboxShortCodeService.adminDelete(id);

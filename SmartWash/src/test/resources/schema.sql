@@ -183,6 +183,7 @@ CREATE TABLE IF NOT EXISTS toolbox_short_code (
     is_public       tinyint DEFAULT 1,
     password_hash   varchar(64) DEFAULT NULL,
     burn_after_read tinyint DEFAULT 0,
+    burned_at       datetime DEFAULT NULL,
     unlock_at       datetime DEFAULT NULL,
     expire_at       datetime DEFAULT NULL,
     max_visits      bigint DEFAULT NULL,
@@ -323,4 +324,19 @@ CREATE TABLE IF NOT EXISTS notice_read (
     read_at   timestamp NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT uk_user_notice UNIQUE (user_id, notice_id)
+);
+
+-- 物品标签明细表（一物一码 M2，主记录复用 toolbox_short_code content_type=8）
+CREATE TABLE IF NOT EXISTS toolbox_asset_tag (
+    id              bigint NOT NULL AUTO_INCREMENT,
+    code            varchar(16) NOT NULL,
+    item_name       varchar(64) NOT NULL,
+    item_desc       varchar(256) DEFAULT NULL,
+    contact_cipher  varchar(512) DEFAULT NULL,
+    status          tinyint DEFAULT 0,
+    last_scanned_at datetime DEFAULT NULL,
+    created_at      timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at      timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_tag_code UNIQUE (code)
 );
