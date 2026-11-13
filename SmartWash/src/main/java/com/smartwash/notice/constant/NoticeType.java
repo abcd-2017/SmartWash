@@ -18,10 +18,10 @@ public enum NoticeType {
     /** 运营公告（活动/规则类） */
     ANNOUNCEMENT("ANNOUNCEMENT", "运营公告"),
 
-    /** 家庭点单：有人加入点单订单（定向通知发起者） */
+    /** 吃啥：有人加入点单订单（定向通知发起者） */
     DINING_JOIN("DINING_JOIN", "点单加入通知"),
 
-    /** 家庭点单：发起者结束点单、购买清单定稿（定向通知参与者） */
+    /** 吃啥：发起者结束点单、购买清单定稿（定向通知参与者） */
     DINING_FINISH("DINING_FINISH", "点单结束通知");
 
     private final String type;

@@ -4,7 +4,7 @@
 
 - **Gradle 坐标**: `:feature:dining:api`
 - **包名**: `com.smartwash.feature.dining.api`
-- **职责**: 家庭点单域对外契约——`DiningRoute` 类型安全路由 + 模型（与后端 `dining/vo`/`dining/from` 一一对应）+ `DiningServiceApi` 网络接口 + `DiningApi` 跨域服务契约。04 号票落菜谱竖切；07 号票落订单发起链路（订单列表/创建/分享）。
+- **职责**: 吃啥域对外契约——`DiningRoute` 类型安全路由 + 模型（与后端 `dining/vo`/`dining/from` 一一对应）+ `DiningServiceApi` 网络接口 + `DiningApi` 跨域服务契约。04 号票落菜谱竖切；07 号票落订单发起链路（订单列表/创建/分享）。
 
 ## 包结构
 

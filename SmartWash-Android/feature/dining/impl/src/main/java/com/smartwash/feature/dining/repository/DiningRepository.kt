@@ -26,7 +26,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * 家庭点单菜谱仓库：菜谱网络链路的唯一出口（ViewModel 不直接持有 API，MVVM 硬规则）。
+ * 吃啥菜谱仓库：菜谱网络链路的唯一出口（ViewModel 不直接持有 API，MVVM 硬规则）。
  *
  * data 为 null 统一按失败处理上抛 [NetworkException]（对齐 coupon/points/notice 仓库模式）——
  * code=200 信封但 data 缺失是异常响应，让上层能区分「无数据」与「请求失败」。

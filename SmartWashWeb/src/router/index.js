@@ -404,7 +404,7 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 家庭点单（dining 域）=====
+      // ===== 吃啥（dining 域）=====
       {
         path: '/dining/categories',
         name: 'DiningCategoryList',

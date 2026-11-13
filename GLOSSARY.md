@@ -657,14 +657,15 @@
 - **四端对应物**：鸿蒙 `utils/deeplink/DeepLinkRegistry.ets`；Android `DeepLinkRegistry`（缺该 host）。
 - **易混淆点**：同链接在鸿蒙可直达订单详情、在 Android 回 `Unknown`；补注册时注意 Android 订单详情页留壳、路由常量归 `OrderRoute`。
 
-### 10.9 家庭点单（dining_category / 菜谱分类）
+### 10.9 吃啥（dining_category / 菜谱分类）
 
+- **命名**：产品显示名「吃啥」（2026-11-14 由曾用名「家庭点单」更名；代码标识 `dining` 不变）。扫码加入链路上移为壳层全局扫一扫（工作台常驻入口），dining 域经 `DiningApi.normalizeScanToDeepLink` 归一加入链接。
 - **代码标识**：`dining_category`、`DiningCategory`、`/admin/dining/categories`
 - **定义**：平台公共菜谱库的分类目录（name 唯一 / sort 升序 / 物理删除），运营在 Web 后台增删改查；菜谱按 `dining_recipe.category_id` 挂靠（可空=未分类），用户端按分类组织点单菜单左侧分类栏。点单订单 / 本单菜单 / 选菜记录 / 购买清单 / join_token 见 10.11，同步通道与复用入口见 10.12。
 - **四端对应物**：
   - 后端：`dining/`（管理端 `DiningCategoryAdminController`，ROLE_ADMIN，写接口 @Audited；用户端只读目录 `WebDiningCategoryController` `/web/auth/dining/categories/all`，ROLE_USER）。
   - Android：`:feature:dining:{api,impl}`（`DiningServiceApi.categories`，菜谱库分类筛选 chips；04 号票）。鸿蒙：本期不做（Out of Scope，spec 决策），契约以 `WebDiningCategoryController` 为源。
-  - Web：`views/dining/DiningCategoryList.vue` + `api/dining.js`（菜单组「家庭点单」）。
+  - Web：`views/dining/DiningCategoryList.vue` + `api/dining.js`（菜单组「吃啥」）。
 - **易混淆点**：dining 是独立业务域（避开既有洗护 `orders` 域）；删除分类为物理删除且无级联——**被菜谱引用时服务层拒绝删除**（按 category_id 计数，提示引用数量），先校验后删保证批量整体拒绝。
 
 ### 10.10 菜谱（dining_recipe）

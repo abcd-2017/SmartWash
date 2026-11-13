@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 家庭点单-菜谱分类。
+ * 吃啥-菜谱分类。
  * Web 管理后台维护平台公共菜谱库的分类目录，菜谱（dining_recipe，02 号票）按分类挂靠，
  * 用户端按分类组织点单菜单左侧分类栏。
  */

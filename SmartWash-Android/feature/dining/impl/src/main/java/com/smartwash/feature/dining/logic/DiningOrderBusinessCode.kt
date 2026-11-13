@@ -3,7 +3,7 @@ package com.smartwash.feature.dining.logic
 import java.io.IOException
 
 /**
- * 家庭点单业务码（信封 `code` 字段，非 HTTP 状态码）——契约源后端
+ * 吃啥业务码（信封 `code` 字段，非 HTTP 状态码）——契约源后端
  * `WebDiningOrderItemController` / `DiningOrderItemServiceImpl`。
  *
  * `:common:network` 的 ResponseInterceptor 只特判信封 401（登出）与 201（通用失败转

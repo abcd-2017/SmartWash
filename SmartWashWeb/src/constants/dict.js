@@ -495,7 +495,7 @@ export const noticeReadRateTagType = (rateText) => {
   return 'warning';
 };
 
-// ---------- 家庭点单菜谱（与后端 dining_recipe.status/source 对齐：1/0 + ADMIN/USER） ----------
+// ---------- 吃啥菜谱（与后端 dining_recipe.status/source 对齐：1/0 + ADMIN/USER） ----------
 
 /** 菜谱上下架选项（列表筛选 + 表单共用） */
 export const DINING_RECIPE_STATUS_OPTIONS = [

@@ -20,7 +20,7 @@ import retrofit2.Retrofit
 import javax.inject.Singleton
 
 /**
- * 家庭点单域服务契约绑定（模式同 notice 的 NoticeModule）：
+ * 吃啥域服务契约绑定（模式同 notice 的 NoticeModule）：
  * - [DiningApi] → [DiningApiImpl]：跨模块消费方（后续订单域创建订单页）经接口访问；
  * - [DiningServiceApi] 实例由本域提供（Retrofit 实例由 common:network 的 NetworkModule 提供）。
  */
@@ -41,7 +41,7 @@ abstract class DiningModule {
     abstract fun bindDiningOrderSyncChannel(impl: PollingDiningOrderSyncChannel): DiningOrderSyncChannel
 }
 
-/** 家庭点单域网络供给 */
+/** 吃啥域网络供给 */
 @Module
 @InstallIn(SingletonComponent::class)
 object DiningApiModule {
@@ -64,7 +64,7 @@ object DiningApiModule {
 }
 
 /**
- * 家庭点单域深链贡献者（对齐 common:init 的 InitTask 模式：@IntoSet 汇入壳层
+ * 吃啥域深链贡献者（对齐 common:init 的 InitTask 模式：@IntoSet 汇入壳层
  * DeepLinkRegistry 的贡献者集合，host 字符串就地定义）。
  *
  * 本域 host：

@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 家庭点单-点单订单成员。
+ * 吃啥-点单订单成员。
  * 记录加入者：创建者即首个成员；uk_order_user 保证一人一单一条，重复加入由唯一索引兜底裁决。
  */
 @Data

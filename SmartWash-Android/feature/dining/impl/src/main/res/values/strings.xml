@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 家庭点单域用户可见文案（规范：禁止字符串硬编码，一律 stringResource 引用） -->
+<!-- 吃啥域用户可见文案（规范：禁止字符串硬编码，一律 stringResource 引用） -->
 <resources>
     <!-- 页面标题 -->
     <string name="dining_recipe_library_title">菜谱库</string>
@@ -52,7 +52,7 @@
     <string name="dining_form_error_steps_too_long">步骤内容过长（上限 20000 字符）</string>
 
     <!-- 订单列表页 -->
-    <string name="dining_order_list_title">家庭点单</string>
+    <string name="dining_order_list_title">吃啥</string>
     <string name="dining_order_action_recipe_library">菜谱库</string>
     <string name="dining_order_section_created">我发起的</string>
     <string name="dining_order_section_joined">我参与的</string>
@@ -71,7 +71,7 @@
     <string name="dining_order_create_menu_uncategorized">未分类</string>
     <string name="dining_order_create_selected_count_format">已选 %1$d 道菜</string>
     <string name="dining_order_create_submit">发起点单</string>
-    <string name="dining_order_create_submit_success">点单已发起，分享二维码喊家人加入吧</string>
+    <string name="dining_order_create_submit_success">点单已发起，分享二维码喊同学一起加入吧</string>
     <string name="dining_order_create_load_failed">菜品加载失败</string>
     <string name="dining_order_create_recipe_ingredients_format">%1$d 种食材</string>
     <string name="dining_order_create_recipe_select">勾选菜品 %1$s</string>
@@ -87,7 +87,7 @@
     <!-- 订单分享视图 -->
     <string name="dining_order_share_title">订单分享</string>
     <string name="dining_order_share_qr_section">扫码加入</string>
-    <string name="dining_order_share_qr_hint">家人用 App 扫一扫，确认后即可加入点单</string>
+    <string name="dining_order_share_qr_hint">同学用 App 扫一扫，确认后即可加入点单</string>
     <string name="dining_order_share_copy_link">复制加入链接</string>
     <string name="dining_order_share_copy_done">链接已复制</string>
     <string name="dining_order_share_reset_action">重置加入凭证</string>
@@ -110,7 +110,7 @@
     <string name="dining_order_detail_note_title">备注</string>
     <string name="dining_order_detail_my_note_format">我的备注：%1$s</string>
     <string name="dining_order_detail_selected_count_format">已选 %1$d 道</string>
-    <string name="dining_order_detail_bottom_hint">勾选想吃的菜，家人实时可见</string>
+    <string name="dining_order_detail_bottom_hint">勾选想吃的菜，同学实时可见</string>
     <string name="dining_order_detail_finish">结束点单</string>
     <string name="dining_order_detail_finish_confirm_title">结束点单</string>
     <string name="dining_order_detail_finish_confirm_message">结束后将锁定点单并生成购买清单，确定结束吗？</string>

@@ -27,12 +27,12 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 /**
- * 家庭点单-菜谱管理端控制器。
+ * 吃啥-菜谱管理端控制器。
  * 路径前缀 /admin/dining/recipes，需 ROLE_ADMIN（SecurityConfig /admin/** 通配统一拦截，无需改权限配置）。
  * 写操作挂 @Audited（HMAC 审计链）——管理端写接口横切红线；菜谱为低频运营操作，无需 @RateLimit。
  * 批量导入为两阶段：预览（解析校验不落库）→ 确认（整批事务写入，@Audited 留痕）。
  */
-@Tag(name = "家庭点单-菜谱管理端", description = "家庭点单公共菜谱库管理（ROLE_ADMIN）")
+@Tag(name = "吃啥-菜谱管理端", description = "吃啥公共菜谱库管理（ROLE_ADMIN）")
 @Slf4j
 @Validated
 @RestController
