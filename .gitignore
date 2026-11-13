@@ -57,6 +57,9 @@ oh_modules/
 # === Superpowers ===
 .superpowers/
 
+# === Impeccable 设计评审快照（工作产物，本地保留不提交） ===
+.impeccable/
+
 # === ZCode 会话数据（agent 镜像、计划等，本地保留不提交） ===
 .zcode/
 
