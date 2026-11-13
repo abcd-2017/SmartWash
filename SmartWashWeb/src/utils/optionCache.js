@@ -4,6 +4,7 @@
 import { getSchoolList } from '@/api/school';
 import { getLaundryList } from '@/api/laundry';
 import { getRoleList } from '@/api/role';
+import { getDiningCategoryList } from '@/api/dining';
 
 /**
  * 创建一个带失效入口的缓存拉取器
@@ -46,9 +47,13 @@ export const laundryOptionsCache = createCachedFetcher(getLaundryList, { page: 1
 // 角色选项缓存（管理员页面角色下拉共用）
 export const roleOptionsCache = createCachedFetcher(getRoleList, { page: 1, size: 1000 });
 
+// 菜谱分类选项缓存（家庭点单菜谱页分类筛选/表单下拉共用；分类管理页增删改后失效）
+export const diningCategoryOptionsCache = createCachedFetcher(getDiningCategoryList, { page: 1, size: 1000 });
+
 /** 一键失效全部选项缓存（如新增学校/套餐/角色后调用） */
 export function invalidateAllOptionCaches() {
   schoolOptionsCache.invalidate();
   laundryOptionsCache.invalidate();
   roleOptionsCache.invalidate();
+  diningCategoryOptionsCache.invalidate();
 }
