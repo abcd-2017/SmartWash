@@ -1231,11 +1231,11 @@ INSERT INTO `div_rag_document` VALUES
 
 -- 开箱种子：拦截问题（拦截日志页演示数据；user_id 取最早注册用户，无用户时插 0 行，可重复执行）
 INSERT INTO `div_blocked_question` (user_id, question, method, reason, created_at)
-SELECT id, '我明天会死吗', 'liuyao', 'rule:high_risk', '2026-11-07 00:00:00' FROM `users` ORDER BY id LIMIT 1;
+SELECT user_id, '我明天会死吗', 'liuyao', 'rule:high_risk', '2026-11-07 00:00:00' FROM `users` ORDER BY user_id LIMIT 1;
 INSERT INTO `div_blocked_question` (user_id, question, method, reason, created_at)
-SELECT id, '帮我算算能不能中彩票', 'meihua', 'llm', '2026-11-07 00:00:00' FROM `users` ORDER BY id LIMIT 1;
+SELECT id, '帮我算算能不能中彩票', 'meihua', 'llm', '2026-11-07 00:00:00' FROM `users` ORDER BY user_id LIMIT 1;
 INSERT INTO `div_blocked_question` (user_id, question, method, reason, created_at)
-SELECT id, '分析一下这个人的命盘', 'qimen', 'rule:high_risk', '2026-11-07 00:00:00' FROM `users` ORDER BY id LIMIT 1;
+SELECT id, '分析一下这个人的命盘', 'qimen', 'rule:high_risk', '2026-11-07 00:00:00' FROM `users` ORDER BY user_id LIMIT 1;
 
 -- ----------------------------
 -- Table structure for div_platform_setting（平台全局设置）
