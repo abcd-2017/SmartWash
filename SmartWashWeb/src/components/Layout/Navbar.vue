@@ -105,13 +105,14 @@ const handleLogout = async () => {
   outline-offset: 2px;
 }
 
+/* 头部唯一可点元素：hover 给淡彩底反馈（此前强制透明，可点性弱） */
 .user-info:hover {
-  background-color: transparent !important;
+  background-color: var(--primary-tint) !important;
 }
 
 .user-avatar {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   font-weight: 600;
   font-size: 14px;
 }

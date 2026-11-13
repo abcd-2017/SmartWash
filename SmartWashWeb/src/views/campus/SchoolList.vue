@@ -70,7 +70,7 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item>
+        <el-form-item class="filter-end">
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
@@ -147,10 +147,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增学校' : '编辑学校'"
       v-model="dialogVisible"
-      width="750px"
+      width="min(750px, 94vw)"
       @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempSchool" label-width="100px" :rules="rules">
+      <el-form ref="formRef" :model="tempSchool" label-width="min(100px, 94vw)" :rules="rules">
         <!-- 基本信息 -->
         <el-divider content-position="left">基本信息</el-divider>
 
@@ -225,7 +225,7 @@
           <el-input v-model="tempSchool.contactName" placeholder="请输入联系人姓名" />
         </el-form-item>
 
-        <el-form-item label="联系电话">
+        <el-form-item label="联系电话" prop="contactPhone">
           <el-input v-model="tempSchool.contactPhone" placeholder="请输入联系电话" />
         </el-form-item>
 
@@ -337,6 +337,11 @@ const lockerCountOptions = [50, 100, 200];
 
 // 验证规则
 const rules = reactive({
+  // 联系电话可选填，填了必须合法（口径与 UserList 手机号校验一致）；可空字段 async-validator 自动跳过
+  contactPhone: [
+    { pattern: /^(?:\+86)?1[3-9]\d{9}$/, message: '联系电话格式不正确', trigger: 'blur' },
+  ],
+
   schoolName: [{ required: true, message: '请输入学校名称', trigger: 'blur' }],
   schoolCode: [{ required: true, message: '请输入学校编码', trigger: 'blur' }],
   location: [{ required: true, message: '请输入位置', trigger: 'blur' }],
