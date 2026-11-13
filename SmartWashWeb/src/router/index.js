@@ -202,12 +202,24 @@ const routes = [
         },
       },
       {
-        // 游戏运行期数据管理：关卡维护（热更新，不重传游戏包）+ 存档/成绩查看
-        path: '/game/data',
-        name: 'GameData',
-        component: () => import('@/views/platform/game/GameData.vue'),
+        // 关卡维护：按游戏热更新关卡（批量导入/单关编辑），不重传游戏包
+        path: '/game/levels',
+        name: 'LevelManage',
+        component: () => import('@/views/platform/game/LevelManage.vue'),
         meta: {
-          title: '游戏数据',
+          title: '关卡管理',
+          showInMenu: true,
+          icon: 'Files',
+          requiresAuth: true,
+        },
+      },
+      {
+        // 玩家数据查看：存档记录 / 成绩榜（只读，支撑客诉与数据分析）
+        path: '/game/data',
+        name: 'PlayerData',
+        component: () => import('@/views/platform/game/PlayerData.vue'),
+        meta: {
+          title: '玩家数据',
           showInMenu: true,
           icon: 'DataAnalysis',
           requiresAuth: true,
