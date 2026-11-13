@@ -172,6 +172,63 @@ var GB=(function(){
     getLevels:function(gameKey){return call("getLevels",[gameKey]);}
   };
 })();
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底） ---------- */
+var LEVELS_KEY="sw.sudoku.v1.levels",LEVELS_VER_KEY="sw.sudoku.v1.levels.ver",PROG_KEY="sw.sudoku.v1.prog";
+var DB_LEVELS=[[],[],[]],fromDb=false;
+function setDbLevels(list){
+  var by=[[],[],[]];
+  for(var i=0;i<list.length;i++){var d=list[i];if(d&&d.diff>=0&&d.diff<=2)by[d.diff].push(d)}
+  DB_LEVELS=by;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  setDbLevels(list);
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){setDbLevels(list);return v}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function loadProg(){try{var p=JSON.parse(localStorage.getItem(PROG_KEY))||{};return{d0:p.d0||0,d1:p.d1||0,d2:p.d2||0}}catch(e){return{d0:0,d1:0,d2:0}}}
+function saveProg(){try{localStorage.setItem(PROG_KEY,JSON.stringify(prog))}catch(e){}}
+var prog=loadProg();
+/* ---------- DB 关卡解析与校验（任一条非法整批放弃） ---------- */
+function validLevel(d){
+  if(!d||typeof d.diff!=="number"||d.diff<0||d.diff>2||d.diff%1)return false;
+  var p=d.puzzle,s=d.sol;
+  if(!Array.isArray(p)||p.length!==81||!Array.isArray(s)||s.length!==81)return false;
+  for(var i=0;i<81;i++){
+    if(typeof p[i]!=="number"||p[i]<0||p[i]>9||p[i]%1)return false;
+    if(typeof s[i]!=="number"||s[i]<1||s[i]>9||s[i]%1)return false;
+    if(p[i]&&p[i]!==s[i])return false;
+  }
+  for(var r=0;r<9;r++)for(var c=0;c<9;c++)if(!okAt(s,r,c,s[r*9+c]))return false;
+  return countSolutions(p.slice(),2)===1;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[];
+  for(var i=0;i<res.levels.length;i++){
+    var d;
+    try{d=JSON.parse(res.levels[i].dataJson)}catch(e){return null}
+    if(!validLevel(d))return null;
+    list.push({diff:d.diff,puzzle:d.puzzle,sol:d.sol});
+  }
+  return list;
+}
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels("sudoku").then(function(res){
+    var list=parseDbLevels(res);
+    if(list&&applyLevels(list,res.version||0)&&!fromDb)startGame(diff);
+  }).catch(function(){});
+}
 /* ---------- 存档（本地 + 账号双写） ---------- */
 var KEY="sw.sudoku.v1";
 function loadBest(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};return{E:s.bestE||0,M:s.bestM||0,H:s.bestH||0}}catch(e){return{E:0,M:0,H:0}}}
@@ -279,10 +336,19 @@ function getVar(n){return getComputedStyle(document.documentElement).getProperty
 function fmt(s){var m=Math.floor(s/60),ss=s%60;return(m<10?"0":"")+m+":"+(ss<10?"0":"")+ss}
 function startGame(d){
   diff=d;
-  $("stDiff").textContent=DIFF[d].name;
   document.querySelectorAll(".chip").forEach(function(ch){ch.classList.toggle("on",+ch.dataset.d===d)});
   say("出题中…");
-  var g=generate(d);
+  var arr=DB_LEVELS[d],lv=-1,g;
+  if(arr&&arr.length){
+    lv=(prog["d"+d]||0)%arr.length;
+    prog["d"+d]=lv+1;saveProg();
+    g={puzzle:arr[lv].puzzle.slice(),sol:arr[lv].sol.slice()};
+    fromDb=true;
+  }else{
+    g=generate(d);
+    fromDb=false;
+  }
+  $("stDiff").textContent=DIFF[d].name+(lv>=0?" "+(lv+1)+"/"+arr.length:"");
   given=g.puzzle;sol=g.sol;
   user=[];notes=[];
   for(var i=0;i<81;i++){user.push(0);notes.push([])}
@@ -290,7 +356,7 @@ function startGame(d){
   $("stTime").textContent="00:00";
   paint();updLeft();
   startTimer();
-  say(DIFF[d].name+" · 提示格 "+given.filter(function(v){return v}).length);
+  say(DIFF[d].name+(lv>=0?" "+(lv+1)+"/"+arr.length:"")+" · 提示格 "+given.filter(function(v){return v}).length);
 }
 function startTimer(){
   stopTimer();running=true;
@@ -441,7 +507,7 @@ document.addEventListener("visibilitychange",function(){
   if(document.hidden&&running&&!done)togglePause();
 });
 buildGrid();buildKeys();startGame(0);
-syncSaveFromServer();
+syncLevelsFromServer();syncSaveFromServer();
 })();
 </script>
 </body>

@@ -1,0 +1,2018 @@
+[
+ {
+  "levelNo": 1,
+  "name": "画蛇添足",
+  "difficulty": null,
+  "data": {
+   "word": "画蛇添足",
+   "meaning": "多此一举，反而坏事"
+  }
+ },
+ {
+  "levelNo": 2,
+  "name": "亡羊补牢",
+  "difficulty": null,
+  "data": {
+   "word": "亡羊补牢",
+   "meaning": "出事之后设法补救"
+  }
+ },
+ {
+  "levelNo": 3,
+  "name": "守株待兔",
+  "difficulty": null,
+  "data": {
+   "word": "守株待兔",
+   "meaning": "不劳而获的侥幸心理"
+  }
+ },
+ {
+  "levelNo": 4,
+  "name": "一鸣惊人",
+  "difficulty": null,
+  "data": {
+   "word": "一鸣惊人",
+   "meaning": "平日不显，忽然做出惊人成绩"
+  }
+ },
+ {
+  "levelNo": 5,
+  "name": "掩耳盗铃",
+  "difficulty": null,
+  "data": {
+   "word": "掩耳盗铃",
+   "meaning": "自己欺骗自己"
+  }
+ },
+ {
+  "levelNo": 6,
+  "name": "井底之蛙",
+  "difficulty": null,
+  "data": {
+   "word": "井底之蛙",
+   "meaning": "眼界狭小的人"
+  }
+ },
+ {
+  "levelNo": 7,
+  "name": "刻舟求剑",
+  "difficulty": null,
+  "data": {
+   "word": "刻舟求剑",
+   "meaning": "拘泥固执，不懂变通"
+  }
+ },
+ {
+  "levelNo": 8,
+  "name": "狐假虎威",
+  "difficulty": null,
+  "data": {
+   "word": "狐假虎威",
+   "meaning": "借别人的势力吓唬人"
+  }
+ },
+ {
+  "levelNo": 9,
+  "name": "杯弓蛇影",
+  "difficulty": null,
+  "data": {
+   "word": "杯弓蛇影",
+   "meaning": "疑神疑鬼，自相惊扰"
+  }
+ },
+ {
+  "levelNo": 10,
+  "name": "望梅止渴",
+  "difficulty": null,
+  "data": {
+   "word": "望梅止渴",
+   "meaning": "用空想安慰自己"
+  }
+ },
+ {
+  "levelNo": 11,
+  "name": "塞翁失马",
+  "difficulty": null,
+  "data": {
+   "word": "塞翁失马",
+   "meaning": "坏事在一定条件下可变好事"
+  }
+ },
+ {
+  "levelNo": 12,
+  "name": "愚公移山",
+  "difficulty": null,
+  "data": {
+   "word": "愚公移山",
+   "meaning": "坚持不懈终能成功"
+  }
+ },
+ {
+  "levelNo": 13,
+  "name": "对牛弹琴",
+  "difficulty": null,
+  "data": {
+   "word": "对牛弹琴",
+   "meaning": "对不懂道理的人讲道理"
+  }
+ },
+ {
+  "levelNo": 14,
+  "name": "画龙点睛",
+  "difficulty": null,
+  "data": {
+   "word": "画龙点睛",
+   "meaning": "在关键处点明要旨"
+  }
+ },
+ {
+  "levelNo": 15,
+  "name": "滥竽充数",
+  "difficulty": null,
+  "data": {
+   "word": "滥竽充数",
+   "meaning": "没本领的人混在行家里充数"
+  }
+ },
+ {
+  "levelNo": 16,
+  "name": "自相矛盾",
+  "difficulty": null,
+  "data": {
+   "word": "自相矛盾",
+   "meaning": "言语行动前后抵触"
+  }
+ },
+ {
+  "levelNo": 17,
+  "name": "拔苗助长",
+  "difficulty": null,
+  "data": {
+   "word": "拔苗助长",
+   "meaning": "违反规律急于求成反而坏事"
+  }
+ },
+ {
+  "levelNo": 18,
+  "name": "叶公好龙",
+  "difficulty": null,
+  "data": {
+   "word": "叶公好龙",
+   "meaning": "表面爱好并非真爱好"
+  }
+ },
+ {
+  "levelNo": 19,
+  "name": "邯郸学步",
+  "difficulty": null,
+  "data": {
+   "word": "邯郸学步",
+   "meaning": "模仿不成反把原本领丢了"
+  }
+ },
+ {
+  "levelNo": 20,
+  "name": "惊弓之鸟",
+  "difficulty": null,
+  "data": {
+   "word": "惊弓之鸟",
+   "meaning": "受过惊吓，遇事就惶恐不安"
+  }
+ },
+ {
+  "levelNo": 21,
+  "name": "胸有成竹",
+  "difficulty": null,
+  "data": {
+   "word": "胸有成竹",
+   "meaning": "做事之前已有通盘考虑"
+  }
+ },
+ {
+  "levelNo": 22,
+  "name": "完璧归赵",
+  "difficulty": null,
+  "data": {
+   "word": "完璧归赵",
+   "meaning": "原物完好无损地归还本人"
+  }
+ },
+ {
+  "levelNo": 23,
+  "name": "负荆请罪",
+  "difficulty": null,
+  "data": {
+   "word": "负荆请罪",
+   "meaning": "背着荆条主动认错赔罪"
+  }
+ },
+ {
+  "levelNo": 24,
+  "name": "纸上谈兵",
+  "difficulty": null,
+  "data": {
+   "word": "纸上谈兵",
+   "meaning": "空谈理论不能解决实际问题"
+  }
+ },
+ {
+  "levelNo": 25,
+  "name": "四面楚歌",
+  "difficulty": null,
+  "data": {
+   "word": "四面楚歌",
+   "meaning": "陷入四面受敌的孤立境地"
+  }
+ },
+ {
+  "levelNo": 26,
+  "name": "卧薪尝胆",
+  "difficulty": null,
+  "data": {
+   "word": "卧薪尝胆",
+   "meaning": "刻苦自励，发愤图强"
+  }
+ },
+ {
+  "levelNo": 27,
+  "name": "三顾茅庐",
+  "difficulty": null,
+  "data": {
+   "word": "三顾茅庐",
+   "meaning": "诚心诚意一再登门邀请"
+  }
+ },
+ {
+  "levelNo": 28,
+  "name": "草船借箭",
+  "difficulty": null,
+  "data": {
+   "word": "草船借箭",
+   "meaning": "运用巧计获取所需"
+  }
+ },
+ {
+  "levelNo": 29,
+  "name": "破釜沉舟",
+  "difficulty": null,
+  "data": {
+   "word": "破釜沉舟",
+   "meaning": "下定决心，不留退路干到底"
+  }
+ },
+ {
+  "levelNo": 30,
+  "name": "指鹿为马",
+  "difficulty": null,
+  "data": {
+   "word": "指鹿为马",
+   "meaning": "颠倒黑白，混淆是非"
+  }
+ },
+ {
+  "levelNo": 31,
+  "name": "毛遂自荐",
+  "difficulty": null,
+  "data": {
+   "word": "毛遂自荐",
+   "meaning": "自告奋勇，自己推荐自己"
+  }
+ },
+ {
+  "levelNo": 32,
+  "name": "名落孙山",
+  "difficulty": null,
+  "data": {
+   "word": "名落孙山",
+   "meaning": "投考选拔没有被录取"
+  }
+ },
+ {
+  "levelNo": 33,
+  "name": "程门立雪",
+  "difficulty": null,
+  "data": {
+   "word": "程门立雪",
+   "meaning": "尊敬师长，诚恳求学"
+  }
+ },
+ {
+  "levelNo": 34,
+  "name": "口蜜腹剑",
+  "difficulty": null,
+  "data": {
+   "word": "口蜜腹剑",
+   "meaning": "嘴上甜言蜜语，心里藏着坏主意"
+  }
+ },
+ {
+  "levelNo": 35,
+  "name": "望洋兴叹",
+  "difficulty": null,
+  "data": {
+   "word": "望洋兴叹",
+   "meaning": "力量不够，感到无可奈何"
+  }
+ },
+ {
+  "levelNo": 36,
+  "name": "螳臂当车",
+  "difficulty": null,
+  "data": {
+   "word": "螳臂当车",
+   "meaning": "不自量力，必然失败"
+  }
+ },
+ {
+  "levelNo": 37,
+  "name": "鹬蚌相争",
+  "difficulty": null,
+  "data": {
+   "word": "鹬蚌相争",
+   "meaning": "双方相持不下，让第三者得了利"
+  }
+ },
+ {
+  "levelNo": 38,
+  "name": "鹤立鸡群",
+  "difficulty": null,
+  "data": {
+   "word": "鹤立鸡群",
+   "meaning": "才能仪表在一群人中很突出"
+  }
+ },
+ {
+  "levelNo": 39,
+  "name": "杯水车薪",
+  "difficulty": null,
+  "data": {
+   "word": "杯水车薪",
+   "meaning": "力量太小，无济于事"
+  }
+ },
+ {
+  "levelNo": 40,
+  "name": "雪中送炭",
+  "difficulty": null,
+  "data": {
+   "word": "雪中送炭",
+   "meaning": "在别人急难时给予及时帮助"
+  }
+ },
+ {
+  "levelNo": 41,
+  "name": "锦上添花",
+  "difficulty": null,
+  "data": {
+   "word": "锦上添花",
+   "meaning": "好上加好，美上加美"
+  }
+ },
+ {
+  "levelNo": 42,
+  "name": "水滴石穿",
+  "difficulty": null,
+  "data": {
+   "word": "水滴石穿",
+   "meaning": "坚持不懈，事情终能成功"
+  }
+ },
+ {
+  "levelNo": 43,
+  "name": "百发百中",
+  "difficulty": null,
+  "data": {
+   "word": "百发百中",
+   "meaning": "料事用计很有把握"
+  }
+ },
+ {
+  "levelNo": 44,
+  "name": "大器晚成",
+  "difficulty": null,
+  "data": {
+   "word": "大器晚成",
+   "meaning": "能担当大事的人成就来得较晚"
+  }
+ },
+ {
+  "levelNo": 45,
+  "name": "后来居上",
+  "difficulty": null,
+  "data": {
+   "word": "后来居上",
+   "meaning": "后来的超过先前的"
+  }
+ },
+ {
+  "levelNo": 46,
+  "name": "一箭双雕",
+  "difficulty": null,
+  "data": {
+   "word": "一箭双雕",
+   "meaning": "做一件事达到两个目的"
+  }
+ },
+ {
+  "levelNo": 47,
+  "name": "半途而废",
+  "difficulty": null,
+  "data": {
+   "word": "半途而废",
+   "meaning": "做事中途停止，不坚持到底"
+  }
+ },
+ {
+  "levelNo": 48,
+  "name": "坚韧不拔",
+  "difficulty": null,
+  "data": {
+   "word": "坚韧不拔",
+   "meaning": "意志坚定顽强，不可动摇"
+  }
+ },
+ {
+  "levelNo": 49,
+  "name": "得过且过",
+  "difficulty": null,
+  "data": {
+   "word": "得过且过",
+   "meaning": "马虎应付，过一天算一天"
+  }
+ },
+ {
+  "levelNo": 50,
+  "name": "豁然开朗",
+  "difficulty": null,
+  "data": {
+   "word": "豁然开朗",
+   "meaning": "一下子明白过来"
+  }
+ },
+ {
+  "levelNo": 51,
+  "name": "全神贯注",
+  "difficulty": null,
+  "data": {
+   "word": "全神贯注",
+   "meaning": "全部精神高度集中"
+  }
+ },
+ {
+  "levelNo": 52,
+  "name": "举一反三",
+  "difficulty": null,
+  "data": {
+   "word": "举一反三",
+   "meaning": "从一件事情类推而知道许多事情"
+  }
+ },
+ {
+  "levelNo": 53,
+  "name": "融会贯通",
+  "difficulty": null,
+  "data": {
+   "word": "融会贯通",
+   "meaning": "把知识融合贯穿，理解得全面透彻"
+  }
+ },
+ {
+  "levelNo": 54,
+  "name": "精益求精",
+  "difficulty": null,
+  "data": {
+   "word": "精益求精",
+   "meaning": "好了还求更好"
+  }
+ },
+ {
+  "levelNo": 55,
+  "name": "因地制宜",
+  "difficulty": null,
+  "data": {
+   "word": "因地制宜",
+   "meaning": "根据当地具体情况制定适宜办法"
+  }
+ },
+ {
+  "levelNo": 56,
+  "name": "实事求是",
+  "difficulty": null,
+  "data": {
+   "word": "实事求是",
+   "meaning": "按照事物的实际情况办事"
+  }
+ },
+ {
+  "levelNo": 57,
+  "name": "深思熟虑",
+  "difficulty": null,
+  "data": {
+   "word": "深思熟虑",
+   "meaning": "深入细致地考虑"
+  }
+ },
+ {
+  "levelNo": 58,
+  "name": "当机立断",
+  "difficulty": null,
+  "data": {
+   "word": "当机立断",
+   "meaning": "抓住时机，立刻做出决断"
+  }
+ },
+ {
+  "levelNo": 59,
+  "name": "雷厉风行",
+  "difficulty": null,
+  "data": {
+   "word": "雷厉风行",
+   "meaning": "执行起来严厉迅速"
+  }
+ },
+ {
+  "levelNo": 60,
+  "name": "同舟共济",
+  "difficulty": null,
+  "data": {
+   "word": "同舟共济",
+   "meaning": "同心协力，共同渡过困难"
+  }
+ },
+ {
+  "levelNo": 61,
+  "name": "众志成城",
+  "difficulty": null,
+  "data": {
+   "word": "众志成城",
+   "meaning": "万众一心，力量无比强大"
+  }
+ },
+ {
+  "levelNo": 62,
+  "name": "集思广益",
+  "difficulty": null,
+  "data": {
+   "word": "集思广益",
+   "meaning": "集中众人的智慧，收到更好效果"
+  }
+ },
+ {
+  "levelNo": 63,
+  "name": "各抒己见",
+  "difficulty": null,
+  "data": {
+   "word": "各抒己见",
+   "meaning": "各自发表自己的意见"
+  }
+ },
+ {
+  "levelNo": 64,
+  "name": "畅所欲言",
+  "difficulty": null,
+  "data": {
+   "word": "畅所欲言",
+   "meaning": "痛痛快快地把想说的话都说出来"
+  }
+ },
+ {
+  "levelNo": 65,
+  "name": "推心置腹",
+  "difficulty": null,
+  "data": {
+   "word": "推心置腹",
+   "meaning": "真心诚意地对待别人"
+  }
+ },
+ {
+  "levelNo": 66,
+  "name": "将心比心",
+  "difficulty": null,
+  "data": {
+   "word": "将心比心",
+   "meaning": "设身处地替别人着想"
+  }
+ },
+ {
+  "levelNo": 67,
+  "name": "雪上加霜",
+  "difficulty": null,
+  "data": {
+   "word": "雪上加霜",
+   "meaning": "接连遭受灾难，损害愈加严重"
+  }
+ },
+ {
+  "levelNo": 68,
+  "name": "釜底抽薪",
+  "difficulty": null,
+  "data": {
+   "word": "釜底抽薪",
+   "meaning": "从根本上解决问题"
+  }
+ },
+ {
+  "levelNo": 69,
+  "name": "抛砖引玉",
+  "difficulty": null,
+  "data": {
+   "word": "抛砖引玉",
+   "meaning": "用粗浅意见引出别人高明的见解"
+  }
+ },
+ {
+  "levelNo": 70,
+  "name": "事半功倍",
+  "difficulty": null,
+  "data": {
+   "word": "事半功倍",
+   "meaning": "做事费力小，收效大"
+  }
+ },
+ {
+  "levelNo": 71,
+  "name": "事倍功半",
+  "difficulty": null,
+  "data": {
+   "word": "事倍功半",
+   "meaning": "做事费力大，收效小"
+  }
+ },
+ {
+  "levelNo": 72,
+  "name": "取长补短",
+  "difficulty": null,
+  "data": {
+   "word": "取长补短",
+   "meaning": "吸取别人的长处，弥补自己的不足"
+  }
+ },
+ {
+  "levelNo": 73,
+  "name": "扬长避短",
+  "difficulty": null,
+  "data": {
+   "word": "扬长避短",
+   "meaning": "发挥长处，避开短处"
+  }
+ },
+ {
+  "levelNo": 74,
+  "name": "循序渐进",
+  "difficulty": null,
+  "data": {
+   "word": "循序渐进",
+   "meaning": "按照一定的步骤逐渐深入提高"
+  }
+ },
+ {
+  "levelNo": 75,
+  "name": "触类旁通",
+  "difficulty": null,
+  "data": {
+   "word": "触类旁通",
+   "meaning": "掌握某一事物的规律，推知同类事物"
+  }
+ },
+ {
+  "levelNo": 76,
+  "name": "熟能生巧",
+  "difficulty": null,
+  "data": {
+   "word": "熟能生巧",
+   "meaning": "熟练了就能找到巧妙的办法"
+  }
+ },
+ {
+  "levelNo": 77,
+  "name": "温故知新",
+  "difficulty": null,
+  "data": {
+   "word": "温故知新",
+   "meaning": "温习旧的知识，得到新的体会"
+  }
+ },
+ {
+  "levelNo": 78,
+  "name": "学以致用",
+  "difficulty": null,
+  "data": {
+   "word": "学以致用",
+   "meaning": "学了要能用于实际"
+  }
+ },
+ {
+  "levelNo": 79,
+  "name": "不耻下问",
+  "difficulty": null,
+  "data": {
+   "word": "不耻下问",
+   "meaning": "乐于向学问不如自己的人请教"
+  }
+ },
+ {
+  "levelNo": 80,
+  "name": "持之以恒",
+  "difficulty": null,
+  "data": {
+   "word": "持之以恒",
+   "meaning": "长期坚持做下去"
+  }
+ },
+ {
+  "levelNo": 81,
+  "name": "水到渠成",
+  "difficulty": null,
+  "data": {
+   "word": "水到渠成",
+   "meaning": "条件成熟，事情自然成功"
+  }
+ },
+ {
+  "levelNo": 82,
+  "name": "瓜熟蒂落",
+  "difficulty": null,
+  "data": {
+   "word": "瓜熟蒂落",
+   "meaning": "时机成熟，事情自然顺利解决"
+  }
+ },
+ {
+  "levelNo": 83,
+  "name": "雨后春笋",
+  "difficulty": null,
+  "data": {
+   "word": "雨后春笋",
+   "meaning": "新事物大量涌现，蓬勃发展"
+  }
+ },
+ {
+  "levelNo": 84,
+  "name": "日新月异",
+  "difficulty": null,
+  "data": {
+   "word": "日新月异",
+   "meaning": "发展变化快，不断出现新气象"
+  }
+ },
+ {
+  "levelNo": 85,
+  "name": "天衣无缝",
+  "difficulty": null,
+  "data": {
+   "word": "天衣无缝",
+   "meaning": "事物完美自然，没有破绽"
+  }
+ },
+ {
+  "levelNo": 86,
+  "name": "十全十美",
+  "difficulty": null,
+  "data": {
+   "word": "十全十美",
+   "meaning": "各方面都非常完美"
+  }
+ },
+ {
+  "levelNo": 87,
+  "name": "独一无二",
+  "difficulty": null,
+  "data": {
+   "word": "独一无二",
+   "meaning": "没有相同的，无可相比"
+  }
+ },
+ {
+  "levelNo": 88,
+  "name": "举世闻名",
+  "difficulty": null,
+  "data": {
+   "word": "举世闻名",
+   "meaning": "全世界都有名"
+  }
+ },
+ {
+  "levelNo": 89,
+  "name": "琳琅满目",
+  "difficulty": null,
+  "data": {
+   "word": "琳琅满目",
+   "meaning": "美好的东西很多，满眼都是"
+  }
+ },
+ {
+  "levelNo": 90,
+  "name": "美不胜收",
+  "difficulty": null,
+  "data": {
+   "word": "美不胜收",
+   "meaning": "美好的东西太多，看不过来"
+  }
+ },
+ {
+  "levelNo": 91,
+  "name": "心旷神怡",
+  "difficulty": null,
+  "data": {
+   "word": "心旷神怡",
+   "meaning": "心境开阔，精神愉快"
+  }
+ },
+ {
+  "levelNo": 92,
+  "name": "赏心悦目",
+  "difficulty": null,
+  "data": {
+   "word": "赏心悦目",
+   "meaning": "看到美好的景色而心情舒畅"
+  }
+ },
+ {
+  "levelNo": 93,
+  "name": "聚精会神",
+  "difficulty": null,
+  "data": {
+   "word": "聚精会神",
+   "meaning": "集中注意力，不分心"
+  }
+ },
+ {
+  "levelNo": 94,
+  "name": "兴高采烈",
+  "difficulty": null,
+  "data": {
+   "word": "兴高采烈",
+   "meaning": "兴致高，情绪热烈"
+  }
+ },
+ {
+  "levelNo": 95,
+  "name": "垂头丧气",
+  "difficulty": null,
+  "data": {
+   "word": "垂头丧气",
+   "meaning": "失望懊丧的样子"
+  }
+ },
+ {
+  "levelNo": 96,
+  "name": "眉开眼笑",
+  "difficulty": null,
+  "data": {
+   "word": "眉开眼笑",
+   "meaning": "高兴愉快的样子"
+  }
+ },
+ {
+  "levelNo": 97,
+  "name": "情不自禁",
+  "difficulty": null,
+  "data": {
+   "word": "情不自禁",
+   "meaning": "感情激动，难以控制自己"
+  }
+ },
+ {
+  "levelNo": 98,
+  "name": "依依不舍",
+  "difficulty": null,
+  "data": {
+   "word": "依依不舍",
+   "meaning": "留恋，不忍分离"
+  }
+ },
+ {
+  "levelNo": 99,
+  "name": "迫不及待",
+  "difficulty": null,
+  "data": {
+   "word": "迫不及待",
+   "meaning": "急迫得不能再等待"
+  }
+ },
+ {
+  "levelNo": 100,
+  "name": "小心翼翼",
+  "difficulty": null,
+  "data": {
+   "word": "小心翼翼",
+   "meaning": "举动十分谨慎，丝毫不敢疏忽"
+  }
+ },
+ {
+  "levelNo": 101,
+  "name": "目不转睛",
+  "difficulty": null,
+  "data": {
+   "word": "目不转睛",
+   "meaning": "看得很专注，眼睛不斜视"
+  }
+ },
+ {
+  "levelNo": 102,
+  "name": "东张西望",
+  "difficulty": null,
+  "data": {
+   "word": "东张西望",
+   "meaning": "向四处乱看，心神不定"
+  }
+ },
+ {
+  "levelNo": 103,
+  "name": "翻山越岭",
+  "difficulty": null,
+  "data": {
+   "word": "翻山越岭",
+   "meaning": "翻越山岭，长途跋涉"
+  }
+ },
+ {
+  "levelNo": 104,
+  "name": "风尘仆仆",
+  "difficulty": null,
+  "data": {
+   "word": "风尘仆仆",
+   "meaning": "奔波忙碌，旅途劳累"
+  }
+ },
+ {
+  "levelNo": 105,
+  "name": "和颜悦色",
+  "difficulty": null,
+  "data": {
+   "word": "和颜悦色",
+   "meaning": "脸色和蔼，态度温和可亲"
+  }
+ },
+ {
+  "levelNo": 106,
+  "name": "脱口而出",
+  "difficulty": null,
+  "data": {
+   "word": "脱口而出",
+   "meaning": "不假思索，随口说出"
+  }
+ },
+ {
+  "levelNo": 107,
+  "name": "哑口无言",
+  "difficulty": null,
+  "data": {
+   "word": "哑口无言",
+   "meaning": "像哑巴一样说不出话来"
+  }
+ },
+ {
+  "levelNo": 108,
+  "name": "理直气壮",
+  "difficulty": null,
+  "data": {
+   "word": "理直气壮",
+   "meaning": "理由充分，说话有气势"
+  }
+ },
+ {
+  "levelNo": 109,
+  "name": "语重心长",
+  "difficulty": null,
+  "data": {
+   "word": "语重心长",
+   "meaning": "言辞诚恳，情意深长"
+  }
+ },
+ {
+  "levelNo": 110,
+  "name": "念念不忘",
+  "difficulty": null,
+  "data": {
+   "word": "念念不忘",
+   "meaning": "牢记在心，时刻不忘"
+  }
+ },
+ {
+  "levelNo": 111,
+  "name": "历历在目",
+  "difficulty": null,
+  "data": {
+   "word": "历历在目",
+   "meaning": "清晰地展现在眼前"
+  }
+ },
+ {
+  "levelNo": 112,
+  "name": "一模一样",
+  "difficulty": null,
+  "data": {
+   "word": "一模一样",
+   "meaning": "完全相同，毫无二致"
+  }
+ },
+ {
+  "levelNo": 113,
+  "name": "千篇一律",
+  "difficulty": null,
+  "data": {
+   "word": "千篇一律",
+   "meaning": "形式陈旧呆板，毫无变化"
+  }
+ },
+ {
+  "levelNo": 114,
+  "name": "五花八门",
+  "difficulty": null,
+  "data": {
+   "word": "五花八门",
+   "meaning": "花样繁多，变化多端"
+  }
+ },
+ {
+  "levelNo": 115,
+  "name": "南辕北辙",
+  "difficulty": 2,
+  "data": {
+   "word": "南辕北辙",
+   "meaning": "行动与目的正好相反"
+  }
+ },
+ {
+  "levelNo": 116,
+  "name": "朝三暮四",
+  "difficulty": 2,
+  "data": {
+   "word": "朝三暮四",
+   "meaning": "反复无常，变来变去"
+  }
+ },
+ {
+  "levelNo": 117,
+  "name": "水中捞月",
+  "difficulty": 2,
+  "data": {
+   "word": "水中捞月",
+   "meaning": "白费力气，一场空"
+  }
+ },
+ {
+  "levelNo": 118,
+  "name": "一诺千金",
+  "difficulty": 2,
+  "data": {
+   "word": "一诺千金",
+   "meaning": "说话算数，极讲信用"
+  }
+ },
+ {
+  "levelNo": 119,
+  "name": "出口成章",
+  "difficulty": 2,
+  "data": {
+   "word": "出口成章",
+   "meaning": "能说会道，有条有理"
+  }
+ },
+ {
+  "levelNo": 120,
+  "name": "废寝忘食",
+  "difficulty": 2,
+  "data": {
+   "word": "废寝忘食",
+   "meaning": "专心努力，顾不上睡觉吃饭"
+  }
+ },
+ {
+  "levelNo": 121,
+  "name": "闻鸡起舞",
+  "difficulty": 2,
+  "data": {
+   "word": "闻鸡起舞",
+   "meaning": "有志者及时奋发努力"
+  }
+ },
+ {
+  "levelNo": 122,
+  "name": "一心一意",
+  "difficulty": 2,
+  "data": {
+   "word": "一心一意",
+   "meaning": "非常专注，不存杂念"
+  }
+ },
+ {
+  "levelNo": 123,
+  "name": "三心二意",
+  "difficulty": 2,
+  "data": {
+   "word": "三心二意",
+   "meaning": "犹豫不决，不够专注"
+  }
+ },
+ {
+  "levelNo": 124,
+  "name": "专心致志",
+  "difficulty": 2,
+  "data": {
+   "word": "专心致志",
+   "meaning": "集中精神，全神贯注"
+  }
+ },
+ {
+  "levelNo": 125,
+  "name": "以身作则",
+  "difficulty": 2,
+  "data": {
+   "word": "以身作则",
+   "meaning": "用自己的行动做榜样"
+  }
+ },
+ {
+  "levelNo": 126,
+  "name": "七上八下",
+  "difficulty": 2,
+  "data": {
+   "word": "七上八下",
+   "meaning": "心里慌乱不安"
+  }
+ },
+ {
+  "levelNo": 127,
+  "name": "鸦雀无声",
+  "difficulty": 2,
+  "data": {
+   "word": "鸦雀无声",
+   "meaning": "非常安静，一点动静也没有"
+  }
+ },
+ {
+  "levelNo": 128,
+  "name": "百战百胜",
+  "difficulty": 2,
+  "data": {
+   "word": "百战百胜",
+   "meaning": "每仗都赢，所向无敌"
+  }
+ },
+ {
+  "levelNo": 129,
+  "name": "默默无闻",
+  "difficulty": 2,
+  "data": {
+   "word": "默默无闻",
+   "meaning": "不出名，没人知道"
+  }
+ },
+ {
+  "levelNo": 130,
+  "name": "五彩缤纷",
+  "difficulty": 2,
+  "data": {
+   "word": "五彩缤纷",
+   "meaning": "颜色繁多，非常好看"
+  }
+ },
+ {
+  "levelNo": 131,
+  "name": "张灯结彩",
+  "difficulty": 2,
+  "data": {
+   "word": "张灯结彩",
+   "meaning": "布置得喜气洋洋"
+  }
+ },
+ {
+  "levelNo": 132,
+  "name": "任劳任怨",
+  "difficulty": 2,
+  "data": {
+   "word": "任劳任怨",
+   "meaning": "做事勤恳，不怕辛苦"
+  }
+ },
+ {
+  "levelNo": 133,
+  "name": "埋头苦干",
+  "difficulty": 2,
+  "data": {
+   "word": "埋头苦干",
+   "meaning": "专心一意，不声不响地工作"
+  }
+ },
+ {
+  "levelNo": 134,
+  "name": "脚踏实地",
+  "difficulty": 2,
+  "data": {
+   "word": "脚踏实地",
+   "meaning": "做事认真，稳步前进"
+  }
+ },
+ {
+  "levelNo": 135,
+  "name": "鱼目混珠",
+  "difficulty": 3,
+  "data": {
+   "word": "鱼目混珠",
+   "meaning": "以假乱真，以次充好"
+  }
+ },
+ {
+  "levelNo": 136,
+  "name": "黔驴技穷",
+  "difficulty": 3,
+  "data": {
+   "word": "黔驴技穷",
+   "meaning": "有限的本领已经用完"
+  }
+ },
+ {
+  "levelNo": 137,
+  "name": "凿壁偷光",
+  "difficulty": 3,
+  "data": {
+   "word": "凿壁偷光",
+   "meaning": "家贫仍刻苦读书"
+  }
+ },
+ {
+  "levelNo": 138,
+  "name": "博古通今",
+  "difficulty": 3,
+  "data": {
+   "word": "博古通今",
+   "meaning": "知识面广，了解历史"
+  }
+ },
+ {
+  "levelNo": 139,
+  "name": "妙笔生花",
+  "difficulty": 3,
+  "data": {
+   "word": "妙笔生花",
+   "meaning": "文辞优美，表达出色"
+  }
+ },
+ {
+  "levelNo": 140,
+  "name": "学富五车",
+  "difficulty": 3,
+  "data": {
+   "word": "学富五车",
+   "meaning": "读书很多，见识渊博"
+  }
+ },
+ {
+  "levelNo": 141,
+  "name": "手不释卷",
+  "difficulty": 3,
+  "data": {
+   "word": "手不释卷",
+   "meaning": "勤奋好学，书本总带身边"
+  }
+ },
+ {
+  "levelNo": 142,
+  "name": "才高八斗",
+  "difficulty": 3,
+  "data": {
+   "word": "才高八斗",
+   "meaning": "天赋出众，学问渊博"
+  }
+ },
+ {
+  "levelNo": 143,
+  "name": "多多益善",
+  "difficulty": 3,
+  "data": {
+   "word": "多多益善",
+   "meaning": "数量越大越好"
+  }
+ },
+ {
+  "levelNo": 144,
+  "name": "老当益壮",
+  "difficulty": 3,
+  "data": {
+   "word": "老当益壮",
+   "meaning": "年纪虽大，干劲更足"
+  }
+ },
+ {
+  "levelNo": 145,
+  "name": "后生可畏",
+  "difficulty": 3,
+  "data": {
+   "word": "后生可畏",
+   "meaning": "年轻人有出息，令人敬佩"
+  }
+ },
+ {
+  "levelNo": 146,
+  "name": "夜以继日",
+  "difficulty": 3,
+  "data": {
+   "word": "夜以继日",
+   "meaning": "连续工作，不肯停歇"
+  }
+ },
+ {
+  "levelNo": 147,
+  "name": "孜孜不倦",
+  "difficulty": 3,
+  "data": {
+   "word": "孜孜不倦",
+   "meaning": "勤奋努力，坚持到底"
+  }
+ },
+ {
+  "levelNo": 148,
+  "name": "言传身教",
+  "difficulty": 3,
+  "data": {
+   "word": "言传身教",
+   "meaning": "用行动影响别人"
+  }
+ },
+ {
+  "levelNo": 149,
+  "name": "青出于蓝",
+  "difficulty": 3,
+  "data": {
+   "word": "青出于蓝",
+   "meaning": "学生超过老师，后人胜前人"
+  }
+ },
+ {
+  "levelNo": 150,
+  "name": "六神无主",
+  "difficulty": 3,
+  "data": {
+   "word": "六神无主",
+   "meaning": "惊慌着急，不知如何"
+  }
+ },
+ {
+  "levelNo": 151,
+  "name": "心不在焉",
+  "difficulty": 3,
+  "data": {
+   "word": "心不在焉",
+   "meaning": "精神没集中，走神"
+  }
+ },
+ {
+  "levelNo": 152,
+  "name": "心惊胆战",
+  "difficulty": 3,
+  "data": {
+   "word": "心惊胆战",
+   "meaning": "非常害怕，浑身发抖"
+  }
+ },
+ {
+  "levelNo": 153,
+  "name": "提心吊胆",
+  "difficulty": 3,
+  "data": {
+   "word": "提心吊胆",
+   "meaning": "十分担忧，害怕出事"
+  }
+ },
+ {
+  "levelNo": 154,
+  "name": "一败涂地",
+  "difficulty": 3,
+  "data": {
+   "word": "一败涂地",
+   "meaning": "输得很惨，不可收拾"
+  }
+ },
+ {
+  "levelNo": 155,
+  "name": "全军覆没",
+  "difficulty": 3,
+  "data": {
+   "word": "全军覆没",
+   "meaning": "整个部队都被消灭"
+  }
+ },
+ {
+  "levelNo": 156,
+  "name": "如雷贯耳",
+  "difficulty": 3,
+  "data": {
+   "word": "如雷贯耳",
+   "meaning": "名声很大，人人都知道"
+  }
+ },
+ {
+  "levelNo": 157,
+  "name": "悄无声息",
+  "difficulty": 3,
+  "data": {
+   "word": "悄无声息",
+   "meaning": "没有动静，很安静"
+  }
+ },
+ {
+  "levelNo": 158,
+  "name": "落荒而逃",
+  "difficulty": 3,
+  "data": {
+   "word": "落荒而逃",
+   "meaning": "战败后慌张跑掉"
+  }
+ },
+ {
+  "levelNo": 159,
+  "name": "震耳欲聋",
+  "difficulty": 3,
+  "data": {
+   "word": "震耳欲聋",
+   "meaning": "声音极大，快把鼓膜击穿"
+  }
+ },
+ {
+  "levelNo": 160,
+  "name": "万家灯火",
+  "difficulty": 3,
+  "data": {
+   "word": "万家灯火",
+   "meaning": "天黑后，各处都亮起来"
+  }
+ },
+ {
+  "levelNo": 161,
+  "name": "万紫千红",
+  "difficulty": 3,
+  "data": {
+   "word": "万紫千红",
+   "meaning": "百花齐放，色彩艳丽"
+  }
+ },
+ {
+  "levelNo": 162,
+  "name": "百花齐放",
+  "difficulty": 3,
+  "data": {
+   "word": "百花齐放",
+   "meaning": "艺术上不同风格自由发展"
+  }
+ },
+ {
+  "levelNo": 163,
+  "name": "不骄不躁",
+  "difficulty": 3,
+  "data": {
+   "word": "不骄不躁",
+   "meaning": "态度稳重，心平气和"
+  }
+ },
+ {
+  "levelNo": 164,
+  "name": "彬彬有礼",
+  "difficulty": 3,
+  "data": {
+   "word": "彬彬有礼",
+   "meaning": "举止斯文，很谦和"
+  }
+ },
+ {
+  "levelNo": 165,
+  "name": "文质彬彬",
+  "difficulty": 3,
+  "data": {
+   "word": "文质彬彬",
+   "meaning": "举止端庄，有礼貌"
+  }
+ },
+ {
+  "levelNo": 166,
+  "name": "温文尔雅",
+  "difficulty": 3,
+  "data": {
+   "word": "温文尔雅",
+   "meaning": "态度和蔼，举止得体"
+  }
+ },
+ {
+  "levelNo": 167,
+  "name": "落落大方",
+  "difficulty": 3,
+  "data": {
+   "word": "落落大方",
+   "meaning": "言谈举止自然得体"
+  }
+ },
+ {
+  "levelNo": 168,
+  "name": "乘风破浪",
+  "difficulty": 3,
+  "data": {
+   "word": "乘风破浪",
+   "meaning": "志向远大，不怕困难勇往直前"
+  }
+ },
+ {
+  "levelNo": 169,
+  "name": "锲而不舍",
+  "difficulty": 3,
+  "data": {
+   "word": "锲而不舍",
+   "meaning": "一直坚持，始终如一"
+  }
+ },
+ {
+  "levelNo": 170,
+  "name": "鹏程万里",
+  "difficulty": 3,
+  "data": {
+   "word": "鹏程万里",
+   "meaning": "前途远大，不可限量"
+  }
+ },
+ {
+  "levelNo": 171,
+  "name": "买椟还珠",
+  "difficulty": 4,
+  "data": {
+   "word": "买椟还珠",
+   "meaning": "取舍不当，只看外表"
+  }
+ },
+ {
+  "levelNo": 172,
+  "name": "唇亡齿寒",
+  "difficulty": 4,
+  "data": {
+   "word": "唇亡齿寒",
+   "meaning": "利害相关，彼此依存"
+  }
+ },
+ {
+  "levelNo": 173,
+  "name": "按图索骥",
+  "difficulty": 4,
+  "data": {
+   "word": "按图索骥",
+   "meaning": "照着提示去寻找"
+  }
+ },
+ {
+  "levelNo": 174,
+  "name": "饮鸩止渴",
+  "difficulty": 4,
+  "data": {
+   "word": "饮鸩止渴",
+   "meaning": "用有害办法解一时之急"
+  }
+ },
+ {
+  "levelNo": 175,
+  "name": "一字千金",
+  "difficulty": 4,
+  "data": {
+   "word": "一字千金",
+   "meaning": "文辞精妙，价值极高"
+  }
+ },
+ {
+  "levelNo": 176,
+  "name": "七步成诗",
+  "difficulty": 4,
+  "data": {
+   "word": "七步成诗",
+   "meaning": "才思敏捷，片刻写好"
+  }
+ },
+ {
+  "levelNo": 177,
+  "name": "东山再起",
+  "difficulty": 4,
+  "data": {
+   "word": "东山再起",
+   "meaning": "失败后重新恢复地位"
+  }
+ },
+ {
+  "levelNo": 178,
+  "name": "悬梁刺股",
+  "difficulty": 4,
+  "data": {
+   "word": "悬梁刺股",
+   "meaning": "刻苦学习，防止困倦"
+  }
+ },
+ {
+  "levelNo": 179,
+  "name": "江郎才尽",
+  "difficulty": 4,
+  "data": {
+   "word": "江郎才尽",
+   "meaning": "文思减退，灵感枯竭"
+  }
+ },
+ {
+  "levelNo": 180,
+  "name": "满腹经纶",
+  "difficulty": 4,
+  "data": {
+   "word": "满腹经纶",
+   "meaning": "有才干，善谋划"
+  }
+ },
+ {
+  "levelNo": 181,
+  "name": "草木皆兵",
+  "difficulty": 4,
+  "data": {
+   "word": "草木皆兵",
+   "meaning": "极度惊恐，疑神疑鬼"
+  }
+ },
+ {
+  "levelNo": 182,
+  "name": "一鼓作气",
+  "difficulty": 4,
+  "data": {
+   "word": "一鼓作气",
+   "meaning": "趁劲头正足时完成"
+  }
+ },
+ {
+  "levelNo": 183,
+  "name": "十面埋伏",
+  "difficulty": 4,
+  "data": {
+   "word": "十面埋伏",
+   "meaning": "处处受敌，处境险恶"
+  }
+ },
+ {
+  "levelNo": 184,
+  "name": "背水一战",
+  "difficulty": 4,
+  "data": {
+   "word": "背水一战",
+   "meaning": "拼死拼活，不留退路"
+  }
+ },
+ {
+  "levelNo": 185,
+  "name": "春风化雨",
+  "difficulty": 4,
+  "data": {
+   "word": "春风化雨",
+   "meaning": "良好的教育熏陶"
+  }
+ },
+ {
+  "levelNo": 186,
+  "name": "桃李满门",
+  "difficulty": 4,
+  "data": {
+   "word": "桃李满门",
+   "meaning": "培养学生众多"
+  }
+ },
+ {
+  "levelNo": 187,
+  "name": "诲人不倦",
+  "difficulty": 4,
+  "data": {
+   "word": "诲人不倦",
+   "meaning": "教导学生很有耐心"
+  }
+ },
+ {
+  "levelNo": 188,
+  "name": "不寒而栗",
+  "difficulty": 4,
+  "data": {
+   "word": "不寒而栗",
+   "meaning": "吓得直发抖"
+  }
+ },
+ {
+  "levelNo": 189,
+  "name": "忐忑不安",
+  "difficulty": 4,
+  "data": {
+   "word": "忐忑不安",
+   "meaning": "心神慌乱，七上八下"
+  }
+ },
+ {
+  "levelNo": 190,
+  "name": "响彻云霄",
+  "difficulty": 4,
+  "data": {
+   "word": "响彻云霄",
+   "meaning": "声音嘹亮，直达高空"
+  }
+ },
+ {
+  "levelNo": 191,
+  "name": "声如洪钟",
+  "difficulty": 4,
+  "data": {
+   "word": "声如洪钟",
+   "meaning": "说话响亮，像敲响铜锣"
+  }
+ },
+ {
+  "levelNo": 192,
+  "name": "流光溢彩",
+  "difficulty": 4,
+  "data": {
+   "word": "流光溢彩",
+   "meaning": "闪烁变幻，非常绚丽"
+  }
+ },
+ {
+  "levelNo": 193,
+  "name": "火树银花",
+  "difficulty": 4,
+  "data": {
+   "word": "火树银花",
+   "meaning": "夜晚张灯结彩，非常美丽"
+  }
+ },
+ {
+  "levelNo": 194,
+  "name": "花团锦簇",
+  "difficulty": 4,
+  "data": {
+   "word": "花团锦簇",
+   "meaning": "色彩绚丽，十分美丽"
+  }
+ },
+ {
+  "levelNo": 195,
+  "name": "亭亭玉立",
+  "difficulty": 4,
+  "data": {
+   "word": "亭亭玉立",
+   "meaning": "姿态挺拔秀丽"
+  }
+ },
+ {
+  "levelNo": 196,
+  "name": "婀娜多姿",
+  "difficulty": 4,
+  "data": {
+   "word": "婀娜多姿",
+   "meaning": "体态柔美，形态各异"
+  }
+ },
+ {
+  "levelNo": 197,
+  "name": "虚怀若谷",
+  "difficulty": 4,
+  "data": {
+   "word": "虚怀若谷",
+   "meaning": "能容纳别人意见，很宽容"
+  }
+ },
+ {
+  "levelNo": 198,
+  "name": "雍容华贵",
+  "difficulty": 4,
+  "data": {
+   "word": "雍容华贵",
+   "meaning": "仪态端庄，气质优雅"
+  }
+ },
+ {
+  "levelNo": 199,
+  "name": "披荆斩棘",
+  "difficulty": 4,
+  "data": {
+   "word": "披荆斩棘",
+   "meaning": "清除前进路上的障碍"
+  }
+ },
+ {
+  "levelNo": 200,
+  "name": "鸿鹄之志",
+  "difficulty": 4,
+  "data": {
+   "word": "鸿鹄之志",
+   "meaning": "远大的抱负"
+  }
+ },
+ {
+  "levelNo": 201,
+  "name": "东施效颦",
+  "difficulty": 5,
+  "data": {
+   "word": "东施效颦",
+   "meaning": "盲目模仿，越学越糟"
+  }
+ },
+ {
+  "levelNo": 202,
+  "name": "削足适履",
+  "difficulty": 5,
+  "data": {
+   "word": "削足适履",
+   "meaning": "不合理地迁就现成条件"
+  }
+ },
+ {
+  "levelNo": 203,
+  "name": "抱薪救火",
+  "difficulty": 5,
+  "data": {
+   "word": "抱薪救火",
+   "meaning": "用错办法，反使灾祸扩大"
+  }
+ },
+ {
+  "levelNo": 204,
+  "name": "缘木求鱼",
+  "difficulty": 5,
+  "data": {
+   "word": "缘木求鱼",
+   "meaning": "方向方法不对，办不到"
+  }
+ },
+ {
+  "levelNo": 205,
+  "name": "郑人买履",
+  "difficulty": 5,
+  "data": {
+   "word": "郑人买履",
+   "meaning": "死守教条，不知变通"
+  }
+ },
+ {
+  "levelNo": 206,
+  "name": "囊萤映雪",
+  "difficulty": 5,
+  "data": {
+   "word": "囊萤映雪",
+   "meaning": "条件艰苦仍勤奋学习"
+  }
+ },
+ {
+  "levelNo": 207,
+  "name": "约法三章",
+  "difficulty": 5,
+  "data": {
+   "word": "约法三章",
+   "meaning": "定下简单规矩，共同遵守"
+  }
+ },
+ {
+  "levelNo": 208,
+  "name": "暗度陈仓",
+  "difficulty": 5,
+  "data": {
+   "word": "暗度陈仓",
+   "meaning": "佯装一路，实走他路"
+  }
+ },
+ {
+  "levelNo": 209,
+  "name": "毛骨悚然",
+  "difficulty": 5,
+  "data": {
+   "word": "毛骨悚然",
+   "meaning": "极度恐惧，浑身发冷"
+  }
+ },
+ {
+  "levelNo": 210,
+  "name": "万籁俱寂",
+  "difficulty": 5,
+  "data": {
+   "word": "万籁俱寂",
+   "meaning": "四周安静，没有一点声响"
+  }
+ },
+ {
+  "levelNo": 211,
+  "name": "偃旗息鼓",
+  "difficulty": 5,
+  "data": {
+   "word": "偃旗息鼓",
+   "meaning": "停止行动，不再声张"
+  }
+ },
+ {
+  "levelNo": 212,
+  "name": "汗牛充栋",
+  "difficulty": 6,
+  "data": {
+   "word": "汗牛充栋",
+   "meaning": "藏书极多，堆满屋子"
+  }
+ },
+ {
+  "levelNo": 213,
+  "name": "洛阳纸贵",
+  "difficulty": 6,
+  "data": {
+   "word": "洛阳纸贵",
+   "meaning": "作品风行，流传很广"
+  }
+ },
+ {
+  "levelNo": 214,
+  "name": "风声鹤唳",
+  "difficulty": 6,
+  "data": {
+   "word": "风声鹤唳",
+   "meaning": "惊慌失措，自相惊扰"
+  }
+ },
+ {
+  "levelNo": 215,
+  "name": "围魏救赵",
+  "difficulty": 6,
+  "data": {
+   "word": "围魏救赵",
+   "meaning": "袭击敌人后方，解友军之困"
+  }
+ },
+ {
+  "levelNo": 216,
+  "name": "国士无双",
+  "difficulty": 6,
+  "data": {
+   "word": "国士无双",
+   "meaning": "才华出众，没人可比"
+  }
+ },
+ {
+  "levelNo": 217,
+  "name": "投笔从戎",
+  "difficulty": 6,
+  "data": {
+   "word": "投笔从戎",
+   "meaning": "弃文就武，参军报国"
+  }
+ },
+ {
+  "levelNo": 218,
+  "name": "马革裹尸",
+  "difficulty": 6,
+  "data": {
+   "word": "马革裹尸",
+   "meaning": "战死沙场，为国捐躯"
+  }
+ },
+ {
+  "levelNo": 219,
+  "name": "噤若寒蝉",
+  "difficulty": 6,
+  "data": {
+   "word": "噤若寒蝉",
+   "meaning": "不敢作声，沉默不语"
+  }
+ },
+ {
+  "levelNo": 220,
+  "name": "铩羽而归",
+  "difficulty": 6,
+  "data": {
+   "word": "铩羽而归",
+   "meaning": "失败或受挫后回来"
+  }
+ },
+ {
+  "levelNo": 221,
+  "name": "鸣金收兵",
+  "difficulty": 6,
+  "data": {
+   "word": "鸣金收兵",
+   "meaning": "敲锣命令军队撤回"
+  }
+ },
+ {
+  "levelNo": 222,
+  "name": "风姿绰约",
+  "difficulty": 6,
+  "data": {
+   "word": "风姿绰约",
+   "meaning": "仪态柔美，气质动人"
+  }
+ },
+ {
+  "levelNo": 223,
+  "name": "兔死狗烹",
+  "difficulty": 7,
+  "data": {
+   "word": "兔死狗烹",
+   "meaning": "功成之后，反过来加害"
+  }
+ },
+ {
+  "levelNo": 224,
+  "name": "鸟尽弓藏",
+  "difficulty": 7,
+  "data": {
+   "word": "鸟尽弓藏",
+   "meaning": "目的达到，工具就被抛弃"
+  }
+ }
+]

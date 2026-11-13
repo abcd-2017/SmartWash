@@ -26,6 +26,54 @@
   顺带修复 tetris 既有回归：`saveBest` 误把 `best` 对象整体写入、`loadBest` 读出后 `parseInt` 恒为 0，
   最高分从未真正持久化。`theme-gates` + `audit-gates` 8/8 全绿。
 
+- **2026-11-13（新游戏·自研入库·第七批）pitch-pot 投壶 / idiom-chain 成语接龙 / tile-tap 落块达人（游戏库 50 款）**：
+  净室自研（零外链、零素材、canvas/DOM 自绘），出生即按 §6 规范并登记 audit-gates STRICT。pitch-pot 120 关
+  （`{name,arrows,distance,wind,target,bonus}`，抛物线 + 风力，解析反解 + 模拟验证 120/120 可通关）；
+  idiom-chain 120 关（`{name,start,length,time,hints,mask}`，自撰 1249 成语词库 + 接龙图可解性 DFS 实证）；
+  tile-tap 120 关（`{name,rows,speed,seed}`，时钟驱动落块 + 种子确定性 + 引擎交叉比对）。
+  三款严格模式 0 违规、theme-gates 全绿、零外链。
+
+- **2026-11-13（新游戏·自研入库·第六批）maze 迷宫 / game24 24点 / whack-a-mole 打地鼠（游戏库 47 款）**：
+  净室自研（零外链、零素材、canvas 自绘），出生即按 §6 规范并登记 audit-gates STRICT。maze 120 关
+  （`{name,rows,cols,cells}`，生成树打通全通路 + 独立 BFS 复核）；game24 120 关
+  （`{name,numbers,target}`，精确有理数求值 + 独立穷举求解器复核可解）；whack-a-mole 120 关
+  （`{name,holes,time,speed,visible,moleRatio,bombRatio,variant,target}`，400 局蒙特卡洛验证目标分合理）。
+  三款严格模式 0 违规、theme-gates 全绿、零外链。
+
+- **2026-11-13（新游戏·自研入库·第五批）suika 合成大西瓜 / klotski 华容道 / pipes 管道工（游戏库 44 款）**：
+  净室自研（零外链、零素材、canvas 自绘），出生即按 §6 规范并登记 audit-gates STRICT。suika 120 关
+  （`{name,target,moves,seed,fruitSet}`，自研 2D 圆物理 + 合成，引擎同构求解回放验证）；klotski 128 关
+  （`{name,blocks,goal}`，A* 精确最少步数求解器构造可解布局，经典布局复核 105 步）；pipes 120 关
+  （`{name,size,tiles,src,snk,par}`，生成树构造连通解再打乱，独立回溯求解器 120/120 复核）。
+  三款严格模式 0 违规、theme-gates 全绿、零外链。
+
+- **2026-11-13（新游戏·自研入库·第四批）mahjong-solitaire 麻将连连看 / xiangqi 中国象棋（游戏库 41 款）**：
+  净室自研（零外链、零素材、canvas 自绘），出生即按 §6 规范并登记 audit-gates STRICT。mahjong-solitaire 120 关
+  （`{w,h,p,g}` 层叠牌对，反向放置构造保证可解 + 独立回溯求解器复核）；xiangqi 120 关
+  （`{name,depth,handicap,first,rand}`，完整规则 + negamax/α-β AI，四难度参数组合递进）。
+  两款严格模式 0 违规、theme-gates 全绿、零外链。
+
+- **2026-11-13（新游戏·自研入库·第三批）hangman 猜单词 / mastermind 密码破译 / asteroids 小行星（游戏库 39 款）**：
+  净室自研（零外链、零素材、canvas/DOM 自绘），出生即按 §6 规范并登记 audit-gates STRICT。hangman 122 关
+  （`{name,word,hint,topic,maxWrong}`，词长 3→10 递进，提示不泄字母）；mastermind 120 关
+  （`{name,slots,colors,maxTries,secret}`，色弱双区分，secret 可重现）；asteroids 120 关
+  （`{name,waves,seed,lives}`，惯性物理 + 虚拟按键多指操作，540 波次布局脚本复现校验）。
+  三款严格模式 0 违规、theme-gates 全绿、零外链。
+
+- **2026-11-13（新游戏·自研入库·第二批）word-search 单词搜索 / dots-boxes 点格棋 / bubble-shooter 泡泡龙（游戏库 36 款）**：
+  净室自研（零外链、零素材、canvas 自绘），出生即按 §6 规范并登记 audit-gates STRICT。word-search 100 关
+  （`{name,size,words,grid}`，构造法摆词 + 逐词回读校验，10 主题 730 词）；dots-boxes 120 关
+  （`{name,rows,cols,ai,first,handi}`，AI 三档，大师档 3 层 negamax + alpha-beta）；bubble-shooter 120 关
+  （`{name,rows,colors,moves,target,seed}`，六边形网格 + 悬空簇掉落，引擎同构求解器回放 120/120 通关）。
+  三款严格模式 0 违规、theme-gates 全绿、零外链。
+
+- **2026-11-13（新游戏·自研入库）lianliankan 连连看 / match3 宝石消除（游戏库 33 款）**：
+  净室自研（零外链、零素材、canvas 自绘），出生即按 GAME-THEME.md §6 规范实现（token 两块 CSS + head 运行时、
+  无 h1、PAL + `__gOnTheme`、卡片式布局、热区 ≥44、375px 无横向溢出）。两款均带包内默认关 + DB 关卡下发
+  （`GB.getLevels` + localStorage 版本缓存）与账号存档 / 成绩上报：lianliankan 120 关（`{r,c,p,g}` 棋盘串，
+  反向放置构造保证可解，独立回溯求解器复核）；match3 120 关（`{name,moves,target,colors,seed,board}`，
+  引擎同构贪心求解验证可通关）。已登记 audit-gates STRICT 名单，两款严格模式 0 违规，theme-gates 全绿。
+
 - **2026-11-09（游戏数据平台化·批次三）crossword / idiom / beat-tap 接入账号存档 / 关卡热更新 / 排行榜**：
   复用 sokoban 沉淀的 `GB` 桥适配层铺开第三批，均为「DB 下发 + localStorage 版本缓存 +
   包内默认关兜底」，无桥自动降级。crossword 4 关 × 8 词（dataJson `{name,words,distractors}`，
