@@ -48,7 +48,7 @@ public class GameAdminController {
     private final GameConfigService gameConfigService;
 
     @Operation(summary = "上传游戏", description = "multipart 文件（.html/.htm/.zip，≤10MB）+ 表单元数据；同 gameKey 重复上传 = 覆盖更新；可玩地址读时拼 MinIO 直链（指向入口文件）；上传后默认不下发，需调开关接口上架；zip 防炸弹（≤200 文件、解压 ≤20MB）与 ZipSlip 防护")
-    @Audited(action = "GAME_UPLOAD", targetType = "game", targetIdSpEL = "#from.gameKey")
+    @Audited(action = "GAME_UPLOAD", targetType = "game_config", targetIdSpEL = "#from.gameKey")
     @PostMapping("/upload")
     public Result<AdminGameVo> upload(@RequestPart("file") MultipartFile file,
                                       @Valid @ModelAttribute UploadGameFrom from) {
@@ -60,7 +60,7 @@ public class GameAdminController {
     }
 
     @Operation(summary = "上传游戏封面", description = "multipart 图片（png/jpeg/webp，≤5MB），存 MinIO game-covers/ 前缀并返回对象键，对象键回填 coverUrl 字段（上传/编辑接口共用）；下发时由服务层拼公共读直链")
-    @Audited(action = "GAME_COVER_UPLOAD", targetType = "game", targetIdSpEL = "#result.data")
+    @Audited(action = "GAME_COVER_UPLOAD", targetType = "game_config", targetIdSpEL = "#result.data")
     @PostMapping("/cover")
     public Result<String> uploadCover(@RequestPart("file") @Parameter(description = "封面图片", required = true) MultipartFile file) {
         return Result.ok(gameConfigService.uploadCover(file));
@@ -73,7 +73,7 @@ public class GameAdminController {
     }
 
     @Operation(summary = "编辑游戏元数据", description = "gameKey 不可修改；enabled 走专用开关接口；description/badge/remark 传空字符串表示清空")
-    @Audited(action = "GAME_UPDATE", targetType = "game", targetIdSpEL = "#id")
+    @Audited(action = "GAME_UPDATE", targetType = "game_config", targetIdSpEL = "#id")
     @PutMapping("/{id}")
     public Result<String> update(@PathVariable("id") @Parameter(description = "游戏ID", required = true) Long id,
                                  @RequestBody @Valid UpdateGameFrom from) {
@@ -82,7 +82,7 @@ public class GameAdminController {
     }
 
     @Operation(summary = "上下架开关", description = "CAS 条件更新判影响行数，语义 = 选择哪些下发；不存在 404，已是目标状态幂等成功；写后用户端列表即时生效")
-    @Audited(action = "GAME_ENABLED_CHANGE", targetType = "game", targetIdSpEL = "#id")
+    @Audited(action = "GAME_ENABLED_CHANGE", targetType = "game_config", targetIdSpEL = "#id")
     @PostMapping("/{id}/enabled/{enabled}")
     public Result<String> changeEnabled(@PathVariable("id") @Parameter(description = "游戏ID", required = true) Long id,
                                         @PathVariable("enabled") @Parameter(description = "1下发 0不下发", required = true) Integer enabled) {
@@ -91,14 +91,14 @@ public class GameAdminController {
     }
 
     @Operation(summary = "批量上下架", description = "逐条 CAS 尽力而为：单条失败（不存在等）不阻断其余，按入参顺序返回 success/message 明细；幂等命中计成功；写后用户端列表即时生效。仅管理后台消费（Web 管理后台游戏库页），Android/鸿蒙不涉及")
-    @Audited(action = "GAME_ENABLED_BATCH", targetType = "game", targetIdSpEL = "#from.ids")
+    @Audited(action = "GAME_ENABLED_BATCH", targetType = "game_config", targetIdSpEL = "#from.ids")
     @PostMapping("/enabled/batch")
     public Result<List<GameBatchResultVo>> changeEnabledBatch(@Valid @RequestBody BatchEnabledFrom from) {
         return Result.ok(gameConfigService.changeEnabledBatch(from.getIds(), from.getEnabled()));
     }
 
     @Operation(summary = "删除游戏", description = "物理删除记录并清理 MinIO game/{gameKey}/ 前缀全部对象；存储清理失败将阻断删除（可重试）")
-    @Audited(action = "GAME_DELETE", targetType = "game", targetIdSpEL = "#id")
+    @Audited(action = "GAME_DELETE", targetType = "game_config", targetIdSpEL = "#id")
     @DeleteMapping("/{id}")
     public Result<Boolean> delete(@PathVariable("id") @Parameter(description = "游戏ID", required = true) Long id) {
         gameConfigService.deleteGame(id);

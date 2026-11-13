@@ -32,7 +32,7 @@ object UserDeepLinkModule {
         mapOf(
             "login" to DeepLinkRouteFactory { _, _ -> UserRoute.Login },
             "register" to DeepLinkRouteFactory { _, _ -> UserRoute.Register },
-            "setting" to DeepLinkRouteFactory { _, _ -> UserRoute.Setting() },
+            "setting" to DeepLinkRouteFactory { _, _ -> UserRoute.Setting },
         )
     }
 }

@@ -3,6 +3,7 @@ package com.smartwash.divination.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import com.smartwash.divination.entity.DivBlockedQuestion;
 import com.smartwash.divination.entity.DivInterpretation;
 import com.smartwash.divination.entity.DivModelConfig;
@@ -98,12 +99,14 @@ public class DivinationAdminController {
     }
 
     @Operation(summary = "保存 Prompt 版本", description = "新增或更新 prompt 版本")
+    @Audited(action = "DIV_PROMPT_SAVE", targetType = "div_prompt_version")
     @PostMapping("/prompts")
     public Result<Long> savePrompt(@RequestBody DivPromptVersion version) {
         return Result.ok(promptService.save(version));
     }
 
     @Operation(summary = "激活 Prompt 版本", description = "激活指定版本（同方法其他版本退役）")
+    @Audited(action = "DIV_PROMPT_ACTIVATE", targetType = "div_prompt_version", targetIdSpEL = "#id")
     @PostMapping("/prompts/{id}/activate")
     public Result<String> activatePrompt(@PathVariable("id") Long id) {
         promptService.activate(id);
@@ -111,6 +114,7 @@ public class DivinationAdminController {
     }
 
     @Operation(summary = "删除 Prompt 版本", description = "删除指定 prompt 版本")
+    @Audited(action = "DIV_PROMPT_DELETE", targetType = "div_prompt_version", targetIdSpEL = "#id")
     @DeleteMapping("/prompts/{id}")
     public Result<String> deletePrompt(@PathVariable("id") Long id) {
         promptService.deleteById(id);
@@ -137,6 +141,7 @@ public class DivinationAdminController {
     }
 
     @Operation(summary = "上传古籍文档", description = "上传并切片（触发异步 Embedding）")
+    @Audited(action = "DIV_RAG_UPLOAD", targetType = "div_rag_document")
     @PostMapping("/rag/documents")
     public Result<Long> uploadRagDocument(@RequestBody RagUploadFrom from) {
         return Result.ok(ragService.uploadDocument(from.getTitle(), from.getBook(), from.getMethod(), from.getContent()));
@@ -180,12 +185,14 @@ public class DivinationAdminController {
     }
 
     @Operation(summary = "保存模型目录条目", description = "新增或更新目录条目（明文密钥加密入库，编辑留空表示不更换）")
+    @Audited(action = "DIV_MODEL_SAVE", targetType = "div_model_config")
     @PostMapping("/models")
     public Result<Long> saveModel(@RequestBody @Valid SaveModelFrom from) {
         return Result.ok(modelConfigService.save(from));
     }
 
     @Operation(summary = "批量导入模型目录", description = "JSON 数组批量入库（vendor/name/baseUrl/modelId 必填，apiKey 可选）；非法条目跳过，返回成功导入数")
+    @Audited(action = "DIV_MODEL_IMPORT", targetType = "div_model_config")
     @PostMapping("/models/import")
     public Result<Integer> importModels(@RequestBody List<SaveModelFrom> items) {
         int imported = 0;
@@ -202,6 +209,7 @@ public class DivinationAdminController {
     }
 
     @Operation(summary = "删除模型配置", description = "删除指定模型")
+    @Audited(action = "DIV_MODEL_DELETE", targetType = "div_model_config", targetIdSpEL = "#id")
     @DeleteMapping("/models/{id}")
     public Result<String> deleteModel(@PathVariable("id") Long id) {
         modelConfigService.deleteById(id);
@@ -225,6 +233,7 @@ public class DivinationAdminController {
     }
 
     @Operation(summary = "更新平台设置", description = "更新平台全局设置")
+    @Audited(action = "DIV_SETTING_UPDATE", targetType = "div_platform_setting")
     @PutMapping("/settings")
     public Result<String> updateSettings(@RequestBody DivPlatformSetting setting) {
         platformSettingService.updateSetting(setting);

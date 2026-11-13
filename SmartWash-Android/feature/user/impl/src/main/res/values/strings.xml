@@ -119,18 +119,21 @@
     <string name="about_smartwash">关于 SmartWash</string>
 
     <!-- 解读模型（issue #79：设置页观象台分组，模型密钥经平台网关加密中转；
-         2026-11-11 双模式契约：目录模式两级选择 / 自定义模式自输接入点，平台零兜底） -->
+         2026-11-11 双模式契约：目录模式双下拉联动 / 自定义模式自输接入点，平台零兜底） -->
     <string name="api_config_title">解读模型</string>
-    <string name="api_config_unconfigured">未配置，点击配置模型</string>
+    <string name="api_config_configured">已配置</string>
+    <string name="api_config_unconfigured">未配置</string>
     <string name="api_config_verified">已验证</string>
-    <string name="api_config_platform_disabled">平台已关闭自带模型</string>
+    <string name="api_config_platform_disabled">平台已关闭</string>
     <string name="api_config_privacy_note">API Key 经平台网关加密存储，仅用于后端转发解读请求；解读前需先在此配置模型与 API Key；支持平台目录选择或自定义 OpenAI 兼容接入点。</string>
     <string name="api_config_mode_label">选择模式</string>
     <string name="api_config_mode_catalog">平台模型目录</string>
     <string name="api_config_mode_custom">自定义接入</string>
-    <string name="api_config_catalog_step_vendor">第一步：选择厂商</string>
-    <string name="api_config_catalog_step_model_format">第二步：选择模型 · %1$s</string>
-    <string name="api_config_catalog_back">上一步</string>
+    <string name="api_config_catalog_vendor_label">厂商</string>
+    <string name="api_config_catalog_vendor_placeholder">选择厂商</string>
+    <string name="api_config_catalog_model_label">模型</string>
+    <string name="api_config_catalog_model_placeholder">选择模型</string>
+    <string name="api_config_catalog_model_disabled_hint">请先选择厂商</string>
     <string name="api_config_selected_format">已选：%1$s · %2$s</string>
     <string name="api_config_base_url_label">接入点地址</string>
     <string name="api_config_base_url_hint">https://api.example.com</string>

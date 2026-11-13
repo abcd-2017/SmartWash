@@ -319,7 +319,7 @@ fun DivChartPage(
                                     context.getString(R.string.div_interpret_need_config),
                                     Toast.LENGTH_SHORT,
                                 ).show()
-                                navController.navigate(UserRoute.Setting(openApiConfig = true))
+                                navController.navigate(UserRoute.ApiConfig)
                             }
                             InterpretGate.PLATFORM_DISABLED ->
                                 Toast.makeText(

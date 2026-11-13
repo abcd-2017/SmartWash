@@ -9,6 +9,8 @@ export class RouteNames {
   static readonly HOME: string = "Home"
   static readonly ADD_SCHOOL: string = "AddSchool"
   static readonly SETTING: string = "Setting"
+  // 解读模型（BYOK）配置页（对齐安卓 UserRoute.ApiConfig；设置页「解读模型」行与观象台 428 拦截跳入）
+  static readonly API_CONFIG: string = "ApiConfig"
   // 权限管理页（对齐安卓 UserRoute.PermissionManagement；设置页「消息通知」「权限管理」行跳入）
   static readonly PERMISSION_MANAGEMENT: string = "PermissionManagement"
   static readonly RECHARGE: string = "Recharge"

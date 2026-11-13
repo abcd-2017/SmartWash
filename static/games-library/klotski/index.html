@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>华容道</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（棋盘/滑块，深色同色相压暗）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-on-primary:#fff;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-board:#EAE2D0;--g-board2:#DFD5BE;--g-grid:#C6B998;--g-cell:#2D9B6A;--g-cellhi:#1E8C5C;--g-celllo:#E8F6EF;--g-card:#D98A26;--g-card2:#B96F1C;--g-ball:#4A9FD4;--g-ballln:#2F7CB0;--g-open:#E8F6EF;--g-openln:#2D9B6A;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-board:#262A27;--g-board2:#1D201E;--g-grid:#3A3F3B;--g-cellhi:#5BC894;--g-celllo:#1D3229;--g-card:#E2A44E;--g-card2:#B97E3A;--g-ball:#6BB4DE;--g-ballln:#3F7CA6;--g-open:#1D3229;--g-openln:#2D9B6A;color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stage { display: flex; justify-content: center; touch-action: none; }
+  canvas { display: block; touch-action: none; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: var(--g-on-primary);
+    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
+  .panel .btn { width: 100%; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">点选滑块 · 拖动或点空位移动 · 送曹操出关</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/1</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">最少</span><span class="val" id="stBest">-</span></div>
+    <div class="stat"><span class="label">已通</span><span class="val" id="stDone">0/1</span></div>
+  </div>
+  <div class="stage" id="stage"><canvas id="cv" aria-label="华容道棋盘" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点选滑块，拖动或点相邻空位移动</p>
+  <div class="tools">
+    <button class="btn ghost" id="btnPrev">上一关</button>
+    <button class="btn ghost" id="btnReset">重玩本关</button>
+    <button class="btn" id="btnNext">下一关</button>
+  </div>
+  <p class="foot">绿色大块的曹操移到下方虚线出口即过关 · 步数越少越好 · 进度自动保存</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 调色板：UI 壳走 token，棋盘/滑块为玩法素材 token ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),onPrimary:v("--g-on-primary"),
+    danger:v("--g-danger"),
+    board:v("--g-board"),board2:v("--g-board2"),grid:v("--g-grid"),
+    cell:v("--g-cell"),cellhi:v("--g-cellhi"),celllo:v("--g-celllo"),
+    card:v("--g-card"),card2:v("--g-card2"),ball:v("--g-ball"),ballln:v("--g-ballln"),
+    open:v("--g-open"),openln:v("--g-openln")};
+}
+window.__gOnTheme=function(){palLoad();draw(performance.now())};
+/* ---------- 常量与内置关卡（含经典「横刀立马」） ---------- */
+var BOARD_W=4,BOARD_H=5;
+var DEFAULT_LEVELS=[{"name":"初识·初试锋芒","blocks":[[2,3,2,2],[0,2,2,1],[0,3,1,1],[0,4,1,1]],"goal":[1,3]},{"name":"初识·浴血奋战","blocks":[[2,3,2,2],[1,0,1,1],[1,1,1,1],[0,2,2,1]],"goal":[1,3]},{"name":"小试·初试锋芒","blocks":[[2,0,2,2],[0,1,1,1],[1,1,1,1],[0,2,2,1],[0,3,1,2]],"goal":[1,3]},{"name":"小试·浴血奋战","blocks":[[2,2,2,2],[1,1,1,1],[0,2,2,1],[0,3,1,2],[3,4,1,1]],"goal":[1,3]},{"name":"进阶·金蝉脱壳","blocks":[[2,2,2,2],[0,0,1,2],[2,0,1,2],[3,1,1,1],[0,4,2,1],[2,4,1,1],[3,4,1,1]],"goal":[1,3]},{"name":"进阶·齐头并进","blocks":[[0,1,2,2],[2,0,1,2],[3,0,1,2],[2,2,1,1],[3,2,1,1],[1,4,2,1],[3,4,1,1]],"goal":[1,3]},{"name":"布阵·水到渠成","blocks":[[2,2,2,2],[0,0,1,2],[1,0,1,1],[3,0,1,2],[1,2,1,1],[1,3,1,2],[0,4,1,1],[2,4,2,1]],"goal":[0,3]},{"name":"布阵·顺手牵羊","blocks":[[0,0,2,2],[2,0,1,2],[3,1,1,1],[2,2,2,1],[0,3,1,1],[1,3,1,1],[2,3,1,2],[3,3,1,2]],"goal":[1,3]},{"name":"经典·反客为主","blocks":[[1,2,2,2],[0,0,1,2],[1,0,1,1],[2,0,1,2],[1,1,1,1],[0,2,1,2],[3,2,1,2],[0,4,1,1],[1,4,1,1],[2,4,2,1]],"goal":[1,3]},{"name":"经典·铁壁铜墙","blocks":[[0,0,2,2],[2,0,1,1],[3,0,1,1],[2,1,1,2],[3,1,1,2],[0,3,2,1],[2,3,1,2],[3,3,1,2],[0,4,1,1],[1,4,1,1]],"goal":[1,3]},{"name":"经典·兵锋所指","blocks":[[1,0,2,2],[3,0,1,2],[0,1,1,1],[1,2,1,1],[2,2,1,1],[3,2,1,2],[0,3,1,2],[1,3,1,2],[2,3,1,1],[2,4,2,1]],"goal":[1,3]},{"name":"横刀立马","blocks":[[1,0,2,2],[0,0,1,2],[3,0,1,2],[0,2,2,1],[2,2,1,2],[3,2,1,2],[0,3,1,1],[1,3,1,1],[0,4,1,1],[1,4,1,1]],"goal":[1,3]}];
+var LEVELS=DEFAULT_LEVELS.slice();
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底；任一条非法整批放弃） ---------- */
+var LEVELS_KEY="sw.klotski.v1.levels",LEVELS_VER_KEY="sw.klotski.v1.levels.ver";
+function parseKlotskiLevels(res){
+  if(!res||typeof res!=="object"||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var BW=4,BH=5,out=[];
+  for(var i=0;i<res.levels.length;i++){
+    var it=res.levels[i];
+    if(!it||typeof it!=="object")return null;
+    var d;
+    try{d=JSON.parse(it.dataJson);}catch(e){return null;}
+    if(!d||typeof d!=="object"||Array.isArray(d))return null;
+    if(typeof d.name!=="string"||!d.name||d.name.length>32)return null;
+    if(!Array.isArray(d.blocks)||d.blocks.length<2||d.blocks.length>10)return null;
+    var goal;
+    if(Array.isArray(d.goal)){
+      if(d.goal.length!==2||!d.goal.every(function(n){return Number.isInteger(n)}))return null;
+      goal=d.goal;
+    }else if(d.goal===undefined){goal=[1,3];}
+    else{return null;}
+    if(goal[0]<0||goal[0]>2||goal[1]<0||goal[1]>3)return null;
+    var occ=new Int8Array(BW*BH),main=-1,others=[];
+    for(var b=0;b<d.blocks.length;b++){
+      var bl=d.blocks[b];
+      if(!Array.isArray(bl)||bl.length!==4||!bl.every(function(n){return Number.isInteger(n)}))return null;
+      var x=bl[0],y=bl[1],w=bl[2],h=bl[3];
+      if(!((w===2&&h===2)||(w===2&&h===1)||(w===1&&h===2)||(w===1&&h===1)))return null;
+      if(x<0||y<0||x+w>BW||y+h>BH)return null;
+      for(var dy=0;dy<h;dy++)for(var dx=0;dx<w;dx++){
+        var c=(y+dy)*BW+x+dx;
+        if(occ[c])return null;
+        occ[c]=1;
+      }
+      if(w===2&&h===2){if(main>=0)return null;main=b;}
+      others.push(bl);
+    }
+    if(main<0)return null;
+    var mb=others.splice(main,1)[0];
+    others.sort(function(a,b){return a[1]-b[1]||a[0]-b[0]||a[2]-b[2]||a[3]-b[3];});
+    var blocks=[[mb[0],mb[1],mb[2],mb[3]]];
+    for(var j=0;j<others.length;j++)blocks.push([others[j][0],others[j][1],others[j][2],others[j][3]]);
+    out.push({name:d.name,blocks:blocks,goal:[goal[0],goal[1]]});
+  }
+  return out;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return;}
+  }catch(e){}
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("klotski").then(function(res){
+    var list=parseKlotskiLevels(res);
+    if(!list)return;                        // 任一条非法 → 整批放弃
+    if(applyLevels(list,res&&res.version?res.version:0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      startLevel(cur);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（进度 + 每关最少步数） ---------- */
+var KEY="sw.klotski.v1";
+function loadSave(){
+  try{
+    var s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s==="object")return{lv:Math.max(0,parseInt(s.lv,10)||0),best:s.best&&typeof s.best==="object"?s.best:{}};
+  }catch(e){}
+  return{lv:0,best:{}};
+}
+function save(){
+  var data={lv:cur,best:best};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("klotski",data).catch(function(){});
+}
+var saveData=loadSave();
+var best=saveData.best;
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("klotski").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rlv=parseInt(r.lv,10)||0;
+      if(rlv>saveData.lv){saveData.lv=Math.min(LEVELS.length-1,rlv);changed=true;}
+      if(r.best&&typeof r.best==="object"){
+        for(var k in r.best){
+          var v=parseInt(r.best[k],10);
+          if(!(v>0))continue;
+          if(best[k]==null||v<best[k]){best[k]=v;changed=true;}
+        }
+      }
+      if(changed){saveData.best=best;save();startLevel(saveData.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- DOM 与状态 ---------- */
+function $(id){return document.getElementById(id)}
+var cv=$("cv"),ctx=cv.getContext("2d"),stage=document.getElementById("stage");
+var cur=0,blocks=[],goal=[1,3],steps=0,sel=-1,won=false;
+var cell=72,dpr=1,anims=[],rafId=0;
+var BARNAMES=["张","赵","马","黄","关"];
+/* ---------- 规则 ---------- */
+function occupancy(exclude){
+  var g=new Int8Array(BOARD_W*BOARD_H).fill(-1);
+  for(var i=0;i<blocks.length;i++){
+    if(i===exclude)continue;
+    var b=blocks[i];
+    for(var dy=0;dy<b.h;dy++)for(var dx=0;dx<b.w;dx++)g[(b.y+dy)*BOARD_W+b.x+dx]=i;
+  }
+  return g;
+}
+function canMove(b,dx,dy){
+  var nx=b.x+dx,ny=b.y+dy;
+  if(nx<0||ny<0||nx+b.w>BOARD_W||ny+b.h>BOARD_H)return false;
+  var g=occupancy(-1);
+  for(var oy=0;oy<b.h;oy++)for(var ox=0;ox<b.w;ox++){
+    var occ=g[(ny+oy)*BOARD_W+nx+ox];
+    if(occ!==-1&&!(blocks[occ]===b))return false;
+  }
+  return true;
+}
+function legalDirs(i){
+  var b=blocks[i],out=[];
+  var dirs=[[0,-1],[0,1],[-1,0],[1,0]];
+  for(var k=0;k<dirs.length;k++)if(canMove(b,dirs[k][0],dirs[k][1]))out.push(dirs[k]);
+  return out;
+}
+function tryStep(i,dx,dy){
+  var b=blocks[i];
+  if(!canMove(b,dx,dy))return false;
+  b.x+=dx;b.y+=dy;steps++;
+  anims.push({i:i,dx:-dx,dy:-dy,t0:performance.now(),dur:110});
+  updateStats();kick();checkWin();
+  return true;
+}
+function tryStepToCell(cx,cy){
+  if(sel<0)return false;
+  var b=blocks[sel],dirs=legalDirs(sel);
+  for(var i=0;i<dirs.length;i++){
+    if(b.x+dirs[i][0]===cx&&b.y+dirs[i][1]===cy)return tryStep(sel,dirs[i][0],dirs[i][1]);
+  }
+  return false;
+}
+/* ---------- 界面 ---------- */
+function say(t){$("msg").textContent=t}
+function updateStats(){
+  var done=0;
+  for(var k in best)if(best[k]>0)done++;
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stMoves").textContent=steps;
+  $("stBest").textContent=best[cur+1]!=null?best[cur+1]:"-";
+  $("stDone").textContent=done+"/"+LEVELS.length;
+  $("btnPrev").disabled=cur<=0;
+  $("btnNext").disabled=cur>=LEVELS.length-1;
+}
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function text(s,x,y,size,c){
+  ctx.fillStyle=c;ctx.font="700 "+size+"px -apple-system,'PingFang SC',sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x,y);
+}
+function draw(now){
+  now=now||performance.now();
+  var W=cell*BOARD_W,boardH=cell*BOARD_H,H=boardH+18;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  // 棋盘底
+  rr(0,0,W,boardH,12);ctx.fillStyle=PAL.board;ctx.fill();
+  rr(4,4,W-8,boardH-8,10);ctx.fillStyle=PAL.board2;ctx.fill();
+  // 网格线
+  ctx.strokeStyle=PAL.grid;ctx.lineWidth=1;ctx.beginPath();
+  for(var x=1;x<BOARD_W;x++){ctx.moveTo(x*cell+.5,6);ctx.lineTo(x*cell+.5,boardH-6);}
+  for(var y=1;y<BOARD_H;y++){ctx.moveTo(6,y*cell+.5);ctx.lineTo(W-6,y*cell+.5);}
+  ctx.stroke();
+  // 目标虚线框 + 出口条
+  var gx=goal[0]*cell,gy=goal[1]*cell;
+  ctx.save();ctx.setLineDash([5,4]);ctx.strokeStyle=PAL.openln;ctx.lineWidth=2;
+  ctx.strokeRect(gx+4,gy+4,2*cell-8,2*cell-8);ctx.restore();
+  ctx.fillStyle=PAL.openln;ctx.fillRect(gx+6,boardH-7,2*cell-12,4);
+  text("出口",gx+cell,boardH+12,12,PAL.deep);
+  // 动画偏移
+  var off={};
+  for(var a=0;a<anims.length;a++){
+    var an=anims[a];
+    var p=Math.min(1,(now-an.t0)/an.dur);
+    var e=1-Math.pow(1-p,3);
+    off[an.i]={x:an.dx*(1-e),y:an.dy*(1-e)};
+  }
+  anims=anims.filter(function(an){return (now-an.t0)<an.dur;});
+  // 滑块
+  var gap=Math.max(2,Math.round(cell*0.035));
+  for(var i=0;i<blocks.length;i++){
+    var b=blocks[i],o=off[i]||{x:0,y:0};
+    var px=(b.x+o.x)*cell+gap,py=(b.y+o.y)*cell+gap;
+    var pw=b.w*cell-gap*2,ph=b.h*cell-gap*2;
+    var main=b.w===2&&b.h===2,bar=!main&&(b.w*b.h===2);
+    var fill=main?PAL.cell:(bar?PAL.card:PAL.ball);
+    var edge=main?PAL.cellhi:(bar?PAL.card2:PAL.ballln);
+    rr(px,py,pw,ph,10);ctx.fillStyle=fill;ctx.fill();
+    ctx.strokeStyle=edge;ctx.lineWidth=2;rr(px+1,py+1,pw-2,ph-2,9);ctx.stroke();
+    ctx.save();ctx.globalAlpha=0.22;ctx.fillStyle=PAL.onPrimary;
+    rr(px+3,py+3,pw-6,Math.max(4,ph*0.26),8);ctx.fill();ctx.restore();
+    if(main)text("曹",px+pw/2,py+ph/2,22,PAL.onPrimary);
+    else if(bar){
+      var bi=0;
+      for(var j=0;j<i;j++)if(blocks[j].w*blocks[j].h===2)bi++;
+      text(BARNAMES[bi%BARNAMES.length],px+pw/2,py+ph/2,16,PAL.onPrimary);
+    }
+  }
+  // 选中描边 + 可走提示
+  if(sel>=0&&blocks[sel]){
+    var sb=blocks[sel],so=off[sel]||{x:0,y:0};
+    var sx=(sb.x+so.x)*cell+gap,sy=(sb.y+so.y)*cell+gap;
+    var sw=sb.w*cell-gap*2,sh=sb.h*cell-gap*2;
+    ctx.strokeStyle=PAL.danger;ctx.lineWidth=3;
+    rr(sx-2,sy-2,sw+4,sh+4,11);ctx.stroke();
+    var dirs=legalDirs(sel);
+    ctx.save();ctx.globalAlpha=0.85;ctx.fillStyle=PAL.primary;
+    for(var k=0;k<dirs.length;k++){
+      var cx=(sb.x+dirs[k][0])*cell+cell/2,cy=(sb.y+dirs[k][1])*cell+cell/2;
+      ctx.beginPath();ctx.arc(cx,cy,Math.max(4,cell*0.09),0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+function kick(){
+  if(rafId)return;
+  rafId=requestAnimationFrame(function ts(now){
+    rafId=0;draw(now);
+    if(anims.length)kick();
+  });
+}
+/* ---------- 流程 ---------- */
+function startLevel(n){
+  cur=n;var L=LEVELS[n];
+  if(!L)return;
+  blocks=(L.blocks||[]).map(function(b){return{x:b[0],y:b[1],w:b[2],h:b[3]};});
+  goal=Array.isArray(L.goal)?[L.goal[0],L.goal[1]]:[1,3];
+  steps=0;sel=-1;won=false;anims=[];hideOverlay();
+  say("第"+(n+1)+"关 · "+(L.name||"")+" · 把曹操移到下方虚线出口");
+  updateStats();draw(performance.now());
+}
+function checkWin(){
+  var m=blocks[0];
+  if(!m||m.x!==goal[0]||m.y!==goal[1])return;
+  won=true;sel=-1;
+  var ln=cur+1;
+  var rec=false;
+  if(best[ln]==null||steps<best[ln]){best[ln]=steps;rec=true;}
+  save();updateStats();draw(performance.now());
+  var isLast=cur>=LEVELS.length-1;
+  $("ovTitle").textContent="过关！";
+  $("ovDesc").innerHTML="本关用了 <b>"+steps+"</b> 步<br>历史最少 <b>"+best[ln]+"</b> 步"+(rec?"<br>新纪录！":"");
+  $("ovBtn").textContent=isLast?"再玩一遍":"下一关";
+  showOverlay();
+  // 成绩上报（到达关卡，desc：越大越好；辅助值为步数）
+  if(GB.available)GB.reportScore("klotski",{metricValue:cur+1,metricExtra:steps}).catch(function(){});
+}
+function showOverlay(){$("overlay").classList.add("show")}
+function hideOverlay(){$("overlay").classList.remove("show")}
+/* ---------- 输入：点选 + 拖动滑动 + 点相邻空位 ---------- */
+function pt(e){var r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+function hitBlock(px,py){
+  for(var i=blocks.length-1;i>=0;i--){
+    var b=blocks[i];
+    if(px>=b.x*cell&&px<(b.x+b.w)*cell&&py>=b.y*cell&&py<(b.y+b.h)*cell)return i;
+  }
+  return -1;
+}
+var drag=null;
+cv.addEventListener("pointerdown",function(e){
+  if(won)return;
+  var p=pt(e),i=hitBlock(p.x,p.y);
+  if(i>=0){
+    sel=(sel===i?-1:i);
+    drag=sel>=0?{i:sel,sx:p.x,sy:p.y,axis:null,rem:0,moved:false}:null;
+    try{cv.setPointerCapture(e.pointerId)}catch(err){}
+  }else{
+    var cx=Math.floor(p.x/cell),cy=Math.floor(p.y/cell);
+    if(!(sel>=0&&tryStepToCell(cx,cy))){sel=-1;}
+    drag=null;
+  }
+  draw(performance.now());
+  e.preventDefault();
+});
+cv.addEventListener("pointermove",function(e){
+  if(!drag||won)return;
+  var p=pt(e);
+  var dx=p.x-drag.sx,dy=p.y-drag.sy;
+  if(!drag.axis){
+    if(Math.abs(dx)<8&&Math.abs(dy)<8)return;
+    drag.axis=Math.abs(dx)>Math.abs(dy)?"x":"y";
+  }
+  drag.rem=drag.axis==="x"?dx:dy;
+  var th=cell*0.55;
+  while(Math.abs(drag.rem)>=th){
+    var dir=drag.rem>0?1:-1;
+    var ok=tryStep(drag.i,drag.axis==="x"?dir:0,drag.axis==="y"?dir:0);
+    if(!ok){drag.rem=0;break;}
+    drag.moved=true;drag.rem-=dir*th;
+  }
+  e.preventDefault();
+});
+cv.addEventListener("pointerup",function(){drag=null;});
+cv.addEventListener("pointercancel",function(){drag=null;});
+window.addEventListener("keydown",function(e){
+  if(sel<0||won)return;
+  var map={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+  var d=map[e.key];
+  if(!d)return;
+  tryStep(sel,d[0],d[1]);e.preventDefault();
+});
+stage.addEventListener("contextmenu",function(e){e.preventDefault();});
+/* ---------- 按钮 ---------- */
+$("btnReset").addEventListener("click",function(){startLevel(cur);});
+$("btnPrev").addEventListener("click",function(){if(cur>0)startLevel(cur-1);});
+$("btnNext").addEventListener("click",function(){if(cur<LEVELS.length-1)startLevel(cur+1);});
+$("ovBtn").addEventListener("click",function(){
+  if(won){if(cur<LEVELS.length-1)startLevel(cur+1);else startLevel(0);}
+});
+/* ---------- 尺寸 ---------- */
+function resize(){
+  var avail=stage.clientWidth||360;
+  var byW=Math.floor(avail/BOARD_W);
+  var byH=Math.floor((window.innerHeight-190)/BOARD_H);
+  cell=Math.max(44,Math.min(byW,byH>44?byH:byW));
+  var W=cell*BOARD_W,H=cell*BOARD_H+18;
+  cv.style.width=W+"px";cv.style.height=H+"px";
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  draw(performance.now());
+}
+window.addEventListener("resize",resize);
+document.addEventListener("visibilitychange",function(){if(!document.hidden)draw(performance.now());});
+/* ---------- 启动 ---------- */
+palLoad();resize();
+startLevel(Math.min(saveData.lv,LEVELS.length-1));
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+</body>
+</html>

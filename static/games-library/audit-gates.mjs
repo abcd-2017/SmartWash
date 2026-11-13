@@ -15,7 +15,13 @@ const CANONICAL = readFileSync(join(DIR, "block-drop/index.html"), "utf8");
 const STRICT = new Set([
   "tetris", "sudoku", "idiom", "pacman", "invaders", "lights-out",
   "sokoban", "connect-four", "solitaire", "fruit-slice", "air-hockey", "reversi",
-  "magic-tower", "crossword"
+  "magic-tower", "crossword", "lianliankan", "match3",
+  "word-search", "dots-boxes", "bubble-shooter",
+  "hangman", "mastermind", "asteroids",
+  "mahjong-solitaire", "xiangqi",
+  "suika", "klotski", "pipes",
+  "maze", "game24", "whack-a-mole",
+  "pitch-pot", "idiom-chain", "tile-tap"
 ]);
 
 // §2 基础 token + §3 已登记素材 token 前缀

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,7 +87,6 @@ import com.smartwash.common.utils.pressable
 @Composable
 fun SettingPage(
     navController: NavController,
-    openApiConfig: Boolean = false,
     checkUpdateContent: (@Composable () -> Unit)? = null,
     settingViewModel: SettingViewModel = hiltViewModel(),
 ) {
@@ -101,8 +100,12 @@ fun SettingPage(
     // 平台级 AI 解读总开关（契约更名 divUseEnabled 0/1，替代原 byokEnabled）：仅响应明确
     // 返回 0 时关闭，字段缺失（旧响应）或 data=null（未配置）均视为开启——additive 向后兼容
     val divUseDisabled = apiConfig?.divUseEnabled == 0
-    // 观象台解读拦截跳入（UserRoute.Setting(openApiConfig=true)）→ 进入即弹起配置弹层
-    var showApiConfigSheet by remember { mutableStateOf(openApiConfig) }
+    // 从「解读模型」配置页返回时刷新行内回显：配置页（ApiConfigPage）使用独立 ViewModel
+    // 实例，保存/删除成功后本页需重新拉取；首次进入与 ViewModel init 拉取重复一次，
+    // 配置数据轻量可接受
+    LaunchedEffect(Unit) {
+        settingViewModel.refreshApiConfig()
+    }
     // 版本号：关于行尾注与关于弹窗同源（D-ST5）
     val versionName = remember {
         try {
@@ -136,8 +139,8 @@ fun SettingPage(
             SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 // 解读模型 BYOK 入口（issue #79，替换 2026-11-01 移除的假数据行）：
                 // 已配置回显（仅掩码，verified 徽标）——目录模式「vendor · modelName」、
-                // 自定义模式 customModel；未配置显示引导文案；点击进编辑弹层（查/存/删/试呼，
-                // 见 ApiConfigSheet）。平台总开关 divUseEnabled=0 时整行置灰、显示关闭提示且弹层不可进入
+                // 自定义模式 customModel；未配置显示引导文案；点击进配置页（查/存/删/试呼，
+                // 见 ApiConfigPage）。平台总开关 divUseEnabled=0 时整行置灰、显示关闭提示且页面不可进入
                 SettingRow(
                     icon = Icons.Default.Psychology,
                     containerColor = AppColors.colorScheme.iconContainerPurple,
@@ -149,55 +152,39 @@ fun SettingPage(
                                 text = stringResource(R.string.api_config_platform_disabled),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.colorScheme.textTertiary,
+                                maxLines = 1,
                             )
                         } else {
                             val cfg = apiConfig
-                            Column(
-                                modifier = Modifier.widthIn(max = 180.dp),
-                                horizontalAlignment = Alignment.End,
-                            ) {
-                                if (cfg != null) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            // 目录模式回显「厂商 · 模型名」，自定义回显模型名
-                                            text = if (cfg.modelConfigId != null) {
-                                                listOfNotNull(cfg.vendor, cfg.modelName).joinToString(" · ")
-                                            } else {
-                                                cfg.customModel.orEmpty()
-                                            },
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = AppColors.colorScheme.textSecondary,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                        if (cfg.verified == 1) {
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            VerifiedBadge()
-                                        }
-                                    }
-                                    if (!cfg.apiKeyMask.isNullOrBlank()) {
-                                        Text(
-                                            text = cfg.apiKeyMask.orEmpty(),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = AppColors.colorScheme.textTertiary,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
-                                } else {
+                            // 尾注只放状态词（模型名/掩码的详细回显在配置页）：设置行 64dp 单行，
+                            // 尾注越短标题越宽裕，不再需要宽度限制防折行（2026-11-12 精简）
+                            if (cfg != null) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = stringResource(R.string.api_config_unconfigured),
+                                        text = stringResource(R.string.api_config_configured),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = AppColors.colorScheme.textSecondary,
+                                        maxLines = 1,
                                     )
+                                    if (cfg.verified == 1) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        VerifiedBadge()
+                                    }
                                 }
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.api_config_unconfigured),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.colorScheme.textSecondary,
+                                    maxLines = 1,
+                                )
                             }
                             Spacer(modifier = Modifier.width(4.dp))
                             IconChevron()
                         }
                     },
                     enabled = !divUseDisabled,
-                    onClick = { showApiConfigSheet = true }
+                    onClick = { navController.navigate(UserRoute.ApiConfig) }
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 SettingRow(
@@ -314,13 +301,6 @@ fun SettingPage(
         )
     }
 
-    // 解读模型 BYOK 编辑弹层（issue #79）：关闭时 ViewModel 已在弹层内重置瞬态
-    if (showApiConfigSheet) {
-        ApiConfigSheet(
-            settingViewModel = settingViewModel,
-            onDismiss = { showApiConfigSheet = false }
-        )
-    }
 }
 
 /**
@@ -393,6 +373,9 @@ private fun SettingRow(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
             color = AppColors.colorScheme.textPrimary,
+            // 单行省略：尾注（模型名/掩码）较宽时标题不得折行（2026-11-12 换行缺陷）
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
         trailing()

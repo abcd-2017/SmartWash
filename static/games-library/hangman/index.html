@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>猜单词</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-rail 木色，深色压暗）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-rail:#C9B691;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-rail:#4E4636;color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .hintcard { margin-top: 10px; padding: 10px 12px; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); }
+  .hintcard .label { display: block; font-size: 12px; color: var(--g-faint); margin-bottom: 4px; }
+  .hintcard .hint { margin: 0; font-size: 16px; line-height: 1.5; color: var(--g-text); }
+  .hintcard .miss { margin: 6px 0 0; font-size: 14px; color: var(--g-danger); min-height: 18px; }
+  .blanks { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin: 12px 0 8px; }
+  .blank { min-width: 26px; height: 34px; display: flex; align-items: flex-end; justify-content: center; border-bottom: 2px solid var(--g-border); font-size: 22px; font-weight: 600; line-height: 1.1; color: var(--g-text); }
+  .blank.on { border-bottom-color: var(--g-primary-deep); }
+  .msg { min-height: 20px; margin: 6px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)); gap: 6px; margin-bottom: 10px; }
+  .key { min-height: 44px; min-width: 44px; border: 0; border-radius: 10px; background: var(--g-surface); color: var(--g-text); font: inherit; font-size: 18px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 0 var(--g-border); }
+  .key:active { opacity: .7; }
+  .key.hit { background: var(--g-success); color: #fff; box-shadow: none; }
+  .key.miss { background: var(--g-surface2); color: var(--g-faint); box-shadow: none; }
+  .tools { display: flex; gap: 8px; }
+  .btn { min-height: 44px; padding: 0 14px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: #fff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .btn:disabled { opacity: .4; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.show { display: flex; }
+  .panel { width: 100%; max-width: 320px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .word { margin: 0 0 4px; font-size: 28px; font-weight: 700; color: var(--g-primary-deep); letter-spacing: 2px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .btn { width: 100%; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">看中文释义 · 逐字母猜出英文单词</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/10</span></div>
+    <div class="stat"><span class="label">剩余机会</span><span class="val" id="stCh">7</span></div>
+    <div class="stat"><span class="label">已过关卡</span><span class="val" id="stDone">0</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="绞架与小人" role="img"></canvas></div>
+  <div class="hintcard">
+    <span class="label">中文释义（不泄露字母）</span>
+    <p class="hint" id="hintText"></p>
+    <p class="miss" id="missText"></p>
+  </div>
+  <div class="blanks" id="blanks"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点下方字母键开始猜测</p>
+  <div class="keys" id="keys"></div>
+  <div class="tools">
+    <button class="btn ghost" id="btnPrev" type="button">上一关</button>
+    <button class="btn ghost" id="btnReset" type="button">重玩本关</button>
+    <button class="btn" id="btnNext" type="button">下一关</button>
+  </div>
+  <p class="foot">猜错扣一次机会 · 机会用完即失败 · 进度自动保存</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">猜对了！</h2>
+    <p class="word" id="ovWord"></p>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn" id="ovBtn" type="button">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 调色板：canvas 颜色全部经 CSS 变量读取，JS 零颜色字面量 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),
+    border:v("--g-border"),text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    danger:v("--g-danger"),success:v("--g-success"),warning:v("--g-warning"),water:v("--g-water"),
+    rail:v("--g-rail")};
+}
+window.__gOnTheme=function(){palLoad();draw();};
+/* ---------- 关卡数据（包内默认优先兜底，DB 下发覆盖） ---------- */
+var DEFAULT_LEVELS=[{"name":"校园·01","word":"art","hint":"画画和手工制作一类的课程","topic":"校园","maxWrong":7},{"name":"校园·02","word":"bus","hint":"接送学生上下学的大型车辆","topic":"校园","maxWrong":7},{"name":"校园·03","word":"gym","hint":"室内上体育活动课的场馆","topic":"校园","maxWrong":7},{"name":"校园·04","word":"ink","hint":"钢笔吸的深色书写液体","topic":"校园","maxWrong":7},{"name":"校园·05","word":"lab","hint":"摆放仪器、做实验的房间","topic":"校园","maxWrong":7},{"name":"校园·06","word":"pen","hint":"用墨水书写、能夹在口袋里的工具","topic":"校园","maxWrong":7},{"name":"食物·07","word":"egg","hint":"母鸡产下的卵，常作早餐","topic":"食物","maxWrong":7},{"name":"食物·08","word":"jam","hint":"水果加糖熬成的涂抹酱","topic":"食物","maxWrong":7},{"name":"食物·09","word":"pie","hint":"带酥皮、内夹馅料的烘焙点心","topic":"食物","maxWrong":7},{"name":"校园·10","word":"bell","hint":"提示上课和下课的声响装置","topic":"校园","maxWrong":7}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY="sw.hangman.v1.levels",LEVELS_VER_KEY="sw.hangman.v1.levels.ver";
+/* 单条结构校验：全字母单词、非空中文提示、主题与名称非空、机会上限 4–7 */
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.word!=="string"||!/^[A-Za-z]{2,10}$/.test(d.word))return false;
+  if(typeof d.hint!=="string"||!d.hint.trim())return false;
+  if(typeof d.topic!=="string"||!d.topic.trim())return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Number.isInteger(d.maxWrong)||d.maxWrong<4||d.maxWrong>7)return false;
+  return true;
+}
+/* 解析 DB 批次：任一条非法整批放弃（返回 null），词条唯一性一并校验 */
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    var w=d.word.toLowerCase();
+    if(seen[w])return null;
+    seen[w]=1;
+    list.push({name:String(d.name),word:w,hint:String(d.hint),topic:String(d.topic),maxWrong:d.maxWrong});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("hangman").then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    applyLevels(list,res.version||0);
+    startLevel(Math.min(Math.max(cur,0),LEVELS.length-1));
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+var KEY="sw.hangman.v1";
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&s.lv>=0)return{lv:s.lv,done:s.done||{}};}catch(e){}return{lv:0,done:{}};}
+var saveData=loadSave();
+var done=saveData.done||{};
+function save(){
+  var data={lv:cur,done:done};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("hangman",data).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("hangman").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rl=parseInt(remote.lv,10)||0,changed=false;
+      if(rl>cur){cur=Math.min(Math.max(rl,0),LEVELS.length-1);changed=true;}
+      if(remote.done&&typeof remote.done==="object"){
+        for(var k in remote.done){
+          if(remote.done[k]&&!done[k]){done[k]=1;changed=true;}
+        }
+      }
+      if(changed){save();startLevel(cur);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var cur=Math.min(Math.max(saveData.lv||0,0),LEVELS.length-1);
+var word="",hint="",topic="",maxWrong=6,guessed={},wrong=[],over=false,won=false;
+var LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var L={W:0,H:0};
+var blanksEl=document.getElementById("blanks"),keysEl=document.getElementById("keys"),
+    msgEl=document.getElementById("msg"),hintEl=document.getElementById("hintText"),
+    missEl=document.getElementById("missText");
+var keyEls={};
+function $(id){return document.getElementById(id)}
+function say(t){msgEl.textContent=t}
+function hideOverlay(){$("overlay").classList.remove("show")}
+function showOverlay(){$("overlay").classList.add("show")}
+/* ---------- 渲染 ---------- */
+function renderHint(){
+  hintEl.textContent=hint;
+  missEl.textContent=wrong.length?("已猜错："+wrong.join(" ")):"";
+}
+function renderBlanks(){
+  blanksEl.innerHTML="";
+  for(var i=0;i<word.length;i++){
+    var ch=word[i],d=document.createElement("div");
+    d.className="blank"+(guessed[ch]?" on":"");
+    d.textContent=guessed[ch]?ch.toUpperCase():"";
+    blanksEl.appendChild(d);
+  }
+}
+function buildKeys(){
+  keysEl.innerHTML="";
+  for(var i=0;i<LETTERS.length;i++){
+    var ch=LETTERS[i],b=document.createElement("button");
+    b.type="button";b.className="key";b.textContent=ch;
+    (function(c){b.addEventListener("click",function(){guess(c);});})(ch.toLowerCase());
+    keysEl.appendChild(b);
+    keyEls[ch]=b;
+  }
+}
+function renderKeys(){
+  for(var i=0;i<LETTERS.length;i++){
+    var ch=LETTERS[i],b=keyEls[ch],used=!!guessed[ch.toLowerCase()];
+    b.className="key"+(used?(word.indexOf(ch.toLowerCase())>=0?" hit":" miss"):"");
+    b.disabled=used||over;
+  }
+}
+function clearedCount(){
+  var n=0;for(var k in done)if(done[k])n++;
+  return n;
+}
+function renderStats(){
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stCh").textContent=Math.max(0,maxWrong-wrong.length);
+  $("stDone").textContent=clearedCount();
+}
+function renderNav(){
+  $("btnPrev").disabled=cur<=0;
+  $("btnNext").disabled=cur>=LEVELS.length-1;
+}
+/* ---------- 画布绘制（自绘素材，零外链零文件） ---------- */
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function seg(x1,y1,x2,y2,w,c){
+  ctx.strokeStyle=c;ctx.lineWidth=w;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+}
+function circ(x,y,r,c,fill){
+  ctx.beginPath();ctx.arc(x,y,r,0,6.2832);
+  if(fill){ctx.fillStyle=c;ctx.fill();}else{ctx.strokeStyle=c;ctx.lineWidth=3;ctx.stroke();}
+}
+function drawFigure(cx,neckY,u){
+  var parts=won?6:Math.min(wrong.length,6);
+  var headR=16*u;
+  var headY=neckY+headR;
+  var bodyTop=headY+headR;
+  var hipY=bodyTop+46*u;
+  if(parts>=1)circ(cx,headY,headR,PAL.text,false);
+  if(parts>=2)seg(cx,bodyTop,cx,hipY,5*u,PAL.text);
+  if(parts>=3)seg(cx,bodyTop+8*u,cx-24*u,bodyTop+28*u,4*u,PAL.text);
+  if(parts>=4)seg(cx,bodyTop+8*u,cx+24*u,bodyTop+28*u,4*u,PAL.text);
+  if(parts>=5)seg(cx,hipY,cx-18*u,hipY+34*u,4*u,PAL.text);
+  if(parts>=6)seg(cx,hipY,cx+18*u,hipY+34*u,4*u,PAL.text);
+  if(over&&!won){
+    var e=5*u;
+    seg(cx-e-3*u,headY-4*u,cx-e+3*u,headY+4*u,2*u,PAL.danger);
+    seg(cx-e-3*u,headY+4*u,cx-e+3*u,headY-4*u,2*u,PAL.danger);
+    seg(cx+e-3*u,headY-4*u,cx+e+3*u,headY+4*u,2*u,PAL.danger);
+    seg(cx+e-3*u,headY+4*u,cx+e+3*u,headY-4*u,2*u,PAL.danger);
+  }else if(won){
+    ctx.strokeStyle=PAL.danger;ctx.lineWidth=2*u;
+    ctx.beginPath();ctx.arc(cx,headY+2*u,6*u,0.15*Math.PI,0.85*Math.PI);ctx.stroke();
+  }
+}
+function draw(){
+  if(!ctx||!L.W)return;
+  var W=L.W,H=L.H,u=H/259;
+  ctx.fillStyle=PAL.surface;rr(0.5,0.5,W-1,H-1,12*u);ctx.fill();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;ctx.stroke();
+  var gy=H-24*u,px=W*0.28,top=28*u,armX=W*0.72;
+  ctx.lineCap="round";
+  ctx.strokeStyle=PAL.faint;ctx.lineWidth=2*u;
+  ctx.beginPath();ctx.moveTo(14*u,gy);ctx.lineTo(W-14*u,gy);ctx.stroke();
+  ctx.strokeStyle=PAL.rail;
+  ctx.lineWidth=10*u;ctx.beginPath();ctx.moveTo(px,gy);ctx.lineTo(px,top);ctx.stroke();
+  ctx.lineWidth=9*u;ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(armX,top);ctx.stroke();
+  ctx.lineWidth=6*u;ctx.beginPath();ctx.moveTo(px,top+34*u);ctx.lineTo(px+(armX-px)*0.45,top);ctx.stroke();
+  ctx.strokeStyle=PAL.muted;ctx.lineWidth=3*u;
+  ctx.beginPath();ctx.moveTo(armX,top);ctx.lineTo(armX,top+30*u);ctx.stroke();
+  drawFigure(armX,top+30*u,u);
+  if(won){
+    var cols=[PAL.success,PAL.warning,PAL.water,PAL.danger];
+    ctx.globalAlpha=.85;
+    for(var i=0;i<18;i++){
+      var fx=(i*97%100)/100*W;
+      var fy=(i*53%100)/100*H*0.55;
+      var fr=(2+(i%3))*u;
+      ctx.fillStyle=cols[i%4];
+      ctx.beginPath();ctx.arc(fx,fy,fr,0,6.2832);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+}
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  var h=Math.round(w*0.72);
+  L.W=w;L.H=h;
+  cv.style.height=h+"px";
+  cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  draw();
+}
+/* ---------- 流程 ---------- */
+function startLevel(n){
+  n=Math.max(0,Math.min(LEVELS.length-1,n));
+  cur=n;
+  var d=LEVELS[n]||{};
+  word=String(d.word||"").toLowerCase();
+  hint=String(d.hint||"");
+  topic=String(d.topic||"");
+  maxWrong=(Number.isInteger(d.maxWrong)&&d.maxWrong>=4&&d.maxWrong<=7)?d.maxWrong:6;
+  guessed={};wrong=[];over=false;won=false;
+  hideOverlay();
+  renderHint();renderBlanks();renderKeys();renderStats();renderNav();draw();
+  save();
+  say("第 "+(n+1)+" 关 · "+topic+" · 单词共 "+word.length+" 个字母");
+}
+function revealedCount(){
+  var n=0;for(var i=0;i<word.length;i++)if(guessed[word[i]])n++;
+  return n;
+}
+function guess(ch){
+  if(over||guessed[ch])return;
+  guessed[ch]=true;
+  if(word.indexOf(ch)>=0){
+    if(revealedCount()===word.length){win();return;}
+    say("猜对了！「"+ch.toUpperCase()+"」在单词里");
+  }else{
+    wrong.push(ch);
+    if(wrong.length>=maxWrong){lose();return;}
+    say("没有「"+ch.toUpperCase()+"」，还剩 "+(maxWrong-wrong.length)+" 次机会");
+  }
+  renderBlanks();renderKeys();renderHint();renderStats();draw();
+}
+function win(){
+  over=true;won=true;
+  done[cur]=1;
+  save();renderStats();renderKeys();renderNav();draw();
+  // 成绩上报（已过关卡 desc：越大越好）
+  if(GB.available)GB.reportScore("hangman",{metricValue:clearedCount()}).catch(function(){});
+  $("ovTitle").textContent="猜对了！";
+  $("ovWord").textContent=word.toUpperCase();
+  $("ovDesc").innerHTML="第 "+(cur+1)+" 关 · "+topic+"<br>"+hint+"<br>共用掉 "+wrong.length+" 次错误机会";
+  $("ovBtn").textContent=cur<LEVELS.length-1?"下一关":"再玩一轮";
+  showOverlay();
+  say("猜对了！共用掉 "+wrong.length+" 次错误机会");
+}
+function lose(){
+  over=true;won=false;
+  renderKeys();renderHint();renderStats();renderNav();draw();
+  $("ovTitle").textContent="机会用完";
+  $("ovWord").textContent=word.toUpperCase();
+  $("ovDesc").innerHTML="正确答案是上面的单词<br>释义："+hint;
+  $("ovBtn").textContent="重玩本关";
+  showOverlay();
+  say("机会用完，正确答案是 "+word.toUpperCase());
+}
+/* ---------- 输入与按钮 ---------- */
+window.addEventListener("keydown",function(e){
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  var k=e.key;
+  if(k&&k.length===1&&/[a-zA-Z]/.test(k))guess(k.toLowerCase());
+});
+$("btnPrev").addEventListener("click",function(){startLevel(cur-1);});
+$("btnNext").addEventListener("click",function(){startLevel(cur+1);});
+$("btnReset").addEventListener("click",function(){startLevel(cur);});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(won)startLevel(cur<LEVELS.length-1?cur+1:0);
+  else startLevel(cur);
+});
+window.addEventListener("resize",resize);
+/* ---------- 启动 ---------- */
+buildKeys();
+palLoad();resize();
+startLevel(cur);
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+</body>
+</html>

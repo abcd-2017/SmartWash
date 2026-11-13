@@ -25,20 +25,11 @@ enum class ApiConfigField { MODEL_CONFIG, BASE_URL, MODEL, API_KEY }
 
 /** 解读模型配置模式（2026-11-11 双模式契约）：目录模式点选条目回传 id，自定义模式自输接入点 */
 enum class ApiConfigMode {
-    /** 目录模式（默认）：GET /models 分步选择（厂商→模型条目），服务端取接入点/模型名 */
+    /** 目录模式（默认）：GET /models 返回厂商→模型目录树，双下拉联动选择，服务端取接入点/模型名 */
     CATALOG,
 
     /** 自定义模式：自输 baseUrl + 模型名 + apiKey */
     CUSTOM,
-}
-
-/** 目录模式分步选择（2026-11-11 契约）：第一步选厂商、第二步选该厂商的模型 */
-enum class ApiConfigCatalogStep {
-    /** 第一步：厂商列表（点选进入第二步） */
-    VENDOR,
-
-    /** 第二步：当前厂商的模型列表（可「上一步」返回） */
-    MODEL,
 }
 
 /** BYOK 表单校验错误（仅在提交时展示；输入即清除，规范 §3.7「输入中不报错」） */
@@ -74,7 +65,7 @@ class SettingViewModel @Inject constructor(
     private val _apiConfig = MutableStateFlow<UserApiConfigVo?>(null)
     val apiConfig = _apiConfig.asStateFlow()
 
-    /** 配置拉取状态（弹层打开时加载/失败反馈；行内展示不依赖它，失败可重试） */
+    /** 配置拉取状态（页面打开时加载/失败反馈；设置页行内展示不依赖它，失败可重试） */
     private val _apiConfigState = MutableStateFlow<RequestState>(RequestState.Idle)
     val apiConfigState = _apiConfigState.asStateFlow()
 
@@ -82,7 +73,7 @@ class SettingViewModel @Inject constructor(
     private val _platformModels = MutableStateFlow<List<PlatformVendorGroupVo>>(emptyList())
     val platformModels = _platformModels.asStateFlow()
 
-    /** 连通性测试状态（POST test；成功/失败均在弹层内即时反馈） */
+    /** 连通性测试状态（POST test；成功/失败均在配置页内即时反馈） */
     private val _apiTestState = MutableStateFlow<RequestState>(RequestState.Idle)
     val apiTestState = _apiTestState.asStateFlow()
 
@@ -99,7 +90,7 @@ class SettingViewModel @Inject constructor(
     val apiFieldError = _apiFieldError.asStateFlow()
 
     init {
-        // 首进即拉解读模型配置（2026-11-07 双轴审查 B1）：原先仅在弹层打开/保存/删除后刷新，
+        // 首进即拉解读模型配置（2026-11-07 双轴审查 B1）：原先仅在配置页打开/保存/删除后刷新，
         // 已配置用户首进看不到掩码回显、divUseEnabled=0 的行内置灰也不生效
         refreshApiConfig()
     }
@@ -119,8 +110,8 @@ class SettingViewModel @Inject constructor(
     // -------------------- BYOK：查询与建议目录 --------------------
 
     /**
-     * 拉取最新 BYOK 配置（弹层打开与保存/删除成功后调用）。
-     * 失败置 Error 供弹层展示重试；行内展示保持最近一次成功数据（无则未配置态）。
+     * 拉取最新 BYOK 配置（配置页打开与保存/删除成功后调用；设置页回到前台亦调用以刷新行内回显）。
+     * 失败置 Error 供配置页展示重试；行内展示保持最近一次成功数据（无则未配置态）。
      */
     fun refreshApiConfig() {
         viewModelScope.launch {
@@ -298,15 +289,6 @@ class SettingViewModel @Inject constructor(
                 _apiDeleteState.value = RequestState.Error(R.string.error_network_fail)
             }
         }
-    }
-
-    /** 弹层关闭时重置瞬态（测试/保存/删除/校验/加载态），避免下次打开残留旧反馈 */
-    fun resetApiEditState() {
-        _apiTestState.value = RequestState.Idle
-        _apiSaveState.value = RequestState.Idle
-        _apiDeleteState.value = RequestState.Idle
-        _apiConfigState.value = RequestState.Idle
-        _apiFieldError.value = null
     }
 
     private companion object {

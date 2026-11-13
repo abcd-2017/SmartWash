@@ -224,7 +224,7 @@ struct DivChartPage {
       const config = resp.data
       if (config === null) {
         showToastSafety(null, DivText.chartModelMissing)
-        pathStack.pushPathByName(RouteNames.SETTING, null)
+        pathStack.pushPathByName(RouteNames.API_CONFIG, null)
         return false
       }
       if (config.divUseEnabled === 0) {
@@ -234,7 +234,7 @@ struct DivChartPage {
       }
       if ((config.apiKeyMask ?? '').length === 0) {
         showToastSafety(null, DivText.chartModelMissing)
-        pathStack.pushPathByName(RouteNames.SETTING, null)
+        pathStack.pushPathByName(RouteNames.API_CONFIG, null)
         return false
       }
       return true
