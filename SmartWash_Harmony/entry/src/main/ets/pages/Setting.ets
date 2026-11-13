@@ -10,19 +10,9 @@ import { isPickupReminderEnabled, setPickupReminderEnabled } from "../utils/Remi
 import { HttpStatusCode } from "@ohos/axios"
 import { getAppVersion } from "../network/api/AppVersionApi"
 import { showToastSafety } from "../utils/ToastUtil"
-import {
-  DivModelVo,
-  DivVendorGroupVo,
-  SaveDivUserApiForm,
-  deleteDivUserApiConfig,
-  getDivModels,
-  getDivUserApiConfig,
-  saveDivUserApiConfig,
-  testDivUserApiConfig
-} from "../feature/divination/network/DivSettingsApi"
+import { getDivUserApiConfig } from "../feature/divination/network/DivSettingsApi"
 import vibrator from "@ohos.vibrator"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
-import { resColor } from '../utils/ResourceColor'
 import { resString } from '../utils/ResourceString'
 
 // 隐私与免责声明全文（对齐安卓 privacy_disclaimer_content）
@@ -36,33 +26,11 @@ const PRIVACY_DISCLAIMER: string =
   resString('setting_7') +
   resString('setting_8')
 
-// 解读模型说明文案（观星台零兜底口径：无平台默认模型，解读由用户配置的模型完成；
-// 与上方隐私声明「解读请求经平台网关转发大模型」口径一致）
-const BYOK_NOTICE: string =
-  resString('setting_9') +
-  resString('setting_10')
-
 // 平台总开关关闭（GET settings/api 下发 divUseEnabled=0）的入口行提示（入口置灰展示）
 function BYOK_DISABLED_NOTICE(): string { return resString('div_interpret_platform_disabled') }
 
 // 未配置引导文案（零兜底：未配置模型不能 AI 解读，替代旧「未配置，使用平台默认模型」）
-function BYOK_UNCONFIGURED_NOTICE(): string { return resString('setting_11') }
-
-// 删除配置确认弹窗文案（零兜底：删除后无默认模型可回落，需重新配置才能 AI 解读）
-const BYOK_DELETE_CONFIRM: string =
-  resString('setting_12')
-
-// 编辑层「选择模式」分段文案（目录模式默认）
-function BYOK_MODE_CATALOG(): string { return resString('api_config_mode_catalog') }
-function BYOK_MODE_CUSTOM(): string { return resString('api_config_mode_custom') }
-
-// 目录模式分步选择文案（第一步选厂商 → 第二步在该厂商内选模型；目录树一次拉取、第二步本地过滤）
-function BYOK_STEP_VENDOR(): string { return resString('api_config_catalog_step_vendor') }
-function BYOK_STEP_VENDOR_HINT(): string { return resString('setting_13') }
-function BYOK_STEP_MODEL(): string { return resString('setting_14') }
-function BYOK_STEP_CURRENT_VENDOR(): string { return resString('setting_15') }
-function BYOK_STEP_BACK(): string { return resString('api_config_catalog_back') }
-function BYOK_SELECT_MODEL_REQUIRED(): string { return resString('setting_16') }
+function BYOK_UNCONFIGURED_NOTICE(): string { return resString('api_config_unconfigured') }
 
 // ========== 设置页面（对齐安卓 SettingPage.kt）==========
 @Builder
@@ -81,62 +49,15 @@ struct Setting {
   // 「发现新版本」弹窗内容（open 前赋值，弹窗以当次值初始化）
   @State updateDialogMessage: string = ""
 
-  // ===== 解读模型（BYOK）配置态（#81 重构契约）：仅从后端 GET 拉取展示，端上不持久化 key（key 只在服务端密文）=====
+  // ===== 解读模型（BYOK）入口行回显态：仅从后端 GET 拉取展示，端上不持久化 key（key 只在服务端密文）=====
   // 首次 GET 是否已返回（返回前行尾不显示摘要，避免加载中误显「未配置」）
   @State configLoaded: boolean = false
   @State loadingConfig: boolean = false
   @State hasApiConfig: boolean = false
-  // 当前配置是否目录模式（modelConfigId 非 null；否则为自定义接入）
-  @State configIsCatalog: boolean = false
-  // 目录模式条目 id（自定义模式为 0）
-  @State configModelConfigId: number = 0
-  // 目录模式厂商名（编辑态预填源：打开弹层时定位第二步并回显选中模型）
-  @State configVendor: string = ""
-  // 行尾摘要字段（对齐安卓两行 trailing：摘要行 + 徽标 / mask）：
-  // 目录模式 = 「vendor · modelName」；自定义模式 = customModel（缺省兜底 customBaseUrl）
-  @State configModel: string = ""
-  @State configMask: string = ""
   @State configVerified: boolean = false
-  // 观星台 AI 解读总开关（divUseEnabled===0 关闭）：入口置灰 + 不可进编辑层；
+  // 观星台 AI 解读总开关（divUseEnabled===0 关闭）：入口置灰 + 不可进配置页；
   // =1 / 字段缺失（旧响应兼容）均视为开启，行为不变
   @State byokDisabled: boolean = false
-  // 编辑态预填源（自定义模式；编辑弹层打开时回填；key 不回填，后端仅回掩码）
-  @State configBaseUrl: string = ""
-  // 编辑态预填源：customModel 原文（新契约下自定义模式的 modelName 即 customModel 原文）
-  @State configCustomModel: string = ""
-
-  // ===== 解读模型编辑半模态态：表单值只在内存 @State，不落任何本地存储 =====
-  @State showModelSheet: boolean = false
-  // 选择模式：true = 目录模式（默认，按厂商分组两级选择，无需输 url）/ false = 自定义接入
-  @State editModeCatalog: boolean = true
-  // 目录模式已选条目 id（0 = 未选；apiKey 恒不回显）
-  @State editSelectedModelId: number = 0
-  // 目录模式分步选择：当前步骤（1 = 选择厂商，2 = 选择模型）
-  @State catalogStep: number = 1
-  // 目录模式分步选择：已选厂商名（空串 = 未选，停留在第一步）
-  @State selectedVendor: string = ""
-  @State editBaseUrl: string = ""
-  @State editModel: string = ""
-  @State editApiKey: string = ""
-  @State showApiKeyPlain: boolean = false
-  @State testing: boolean = false
-  @State saving: boolean = false
-  @State deleting: boolean = false
-  // 「测试连接」即时反馈（空串 = 无反馈；ok/fail 决定图标与颜色）
-  @State testFeedback: string = ""
-  @State testFeedbackOk: boolean = false
-  // 平台模型目录（树形整包缓存；目录模式分步选择数据源 + 自定义模式输入建议）
-  @State platformModels: Array<DivVendorGroupVo> = []
-  @State modelsLoaded: boolean = false
-  @State modelsLoading: boolean = false
-  @State modelsLoadFailed: boolean = false
-  @State modelsExpanded: boolean = false
-  // 目录拉取成功但为空（显示「暂无平台模型目录」，对齐安卓 api_config_model_catalog_empty）
-  @State modelsEmpty: boolean = false
-  // 输入框聚焦态（聚焦描边主色，SubscriptionEditPage 同款）
-  @State baseUrlFocused: boolean = false
-  @State modelFocused: boolean = false
-  @State apiKeyFocused: boolean = false
 
   // 退出登录弹窗（对齐安卓 AppConfirmDialog isDanger，统一使用 #23 产出的通用组件）
   private logoutDialogController: CustomDialogController = new CustomDialogController({
@@ -181,25 +102,6 @@ struct Setting {
     builder: AppInfoDialog({
       title: resString('privacy_disclaimer'),
       message: PRIVACY_DISCLAIMER
-    }),
-    autoCancel: true,
-    alignment: DialogAlignment.Center,
-    customStyle: true
-  })
-
-  // 删除解读模型配置二次确认弹窗（对齐安卓「删除配置」需确认；不可逆操作走 dangerInk）
-  private deleteConfigDialogController: CustomDialogController = new CustomDialogController({
-    builder: AppConfirmDialog({
-      title: resString('api_config_confirm_delete_title'),
-      message: BYOK_DELETE_CONFIRM,
-      confirmText: resString('subscription_action_delete'),
-      cancelText: resString('cancel'),
-      isDanger: true,
-      onConfirm: () => {
-        // 不可逆确认操作：先给中触再执行（对齐退出登录弹窗）
-        this.performHaptic()
-        this.deleteConfig()
-      }
     }),
     autoCancel: true,
     alignment: DialogAlignment.Center,
@@ -292,7 +194,7 @@ struct Setting {
   }
 
   /**
-   * 拉取解读模型配置回显（仅掩码，端上不持久化；新契约双模式 VO）。
+   * 拉取解读模型配置回显（仅掩码，端上不持久化）。
    * 业务失败/网络异常静默留痕不打断设置页首屏（401 已由 Axios 拦截器统一处理）。
    */
   private async loadApiConfig(): Promise<void> {
@@ -305,37 +207,12 @@ struct Setting {
       if (res.code === HttpStatusCode.Ok) {
         const config = res.data
         this.hasApiConfig = config !== null
-        // 模式判定：modelConfigId 非 null = 目录模式；null = 自定义模式
-        const catalogId = config?.modelConfigId ?? null
-        this.configIsCatalog = catalogId !== null
-        this.configModelConfigId = catalogId ?? 0
-        // 目录模式厂商名（编辑态预填：打开弹层直接回显第二步选中模型）
-        this.configVendor = catalogId !== null ? (config?.vendor ?? "") : ""
-        this.configBaseUrl = config?.customBaseUrl ?? ""
-        // 编辑态预填（自定义模式）：customModel 原文
-        const customModel = config?.customModel ?? ""
-        this.configCustomModel = customModel
-        // 行尾摘要（对齐安卓两行 trailing）：目录模式 = 「vendor · modelName」；
-        // 自定义模式 = customModel（缺省兜底 customBaseUrl，保证摘要行不空）；掩码独立一行
-        if (this.configIsCatalog) {
-          const vendor = config?.vendor ?? ""
-          const modelName = config?.modelName ?? ""
-          if (vendor !== "" && modelName !== "") {
-            this.configModel = `${vendor} · ${modelName}`
-          } else {
-            this.configModel = vendor !== "" ? vendor : modelName
-          }
-        } else {
-          this.configModel = customModel !== "" ? customModel : this.configBaseUrl
-        }
-        this.configMask = config?.apiKeyMask ?? ""
         this.configVerified = config?.verified === 1
         // 观星台 AI 解读总开关：仅 === 0 关闭；1 / undefined / null（旧响应）均视为开启（兼容）
         this.byokDisabled = config !== null && config.divUseEnabled === 0
         this.configLoaded = true
         // 回显仅掩码，日志不含 baseUrl/model/key（敏感红线：明文不留存不进日志）
-        logger.debug('setting', `解读模型配置回显 hasConfig=${config !== null} ` +
-          `catalog=${this.configIsCatalog} verified=${this.configVerified}`)
+        logger.debug('setting', `解读模型配置回显 hasConfig=${config !== null} verified=${this.configVerified}`)
       } else {
         logger.warn('setting', `解读模型配置获取失败 code=${res.code} message=${res.message ?? ""}`)
       }
@@ -344,777 +221,6 @@ struct Setting {
     } finally {
       this.loadingConfig = false
     }
-  }
-
-  /**
-   * 打开编辑半模态（双模式预填）：已配置目录模式 → 回显选中条目；已配置自定义 → 回填
-   * baseUrl/customModel；未配置 → 默认目录模式。key 一律置空——后端 PUT apiKey 必填，
-   * 占位文案引导「重新输入 API Key」。
-   */
-  private openModelEditor(): void {
-    // 平台已关闭 AI 解读：入口行置灰不可进（ModelConfigRow 已不响应点击，此处双保险）
-    if (this.byokDisabled) {
-      return
-    }
-    this.editModeCatalog = this.hasApiConfig ? this.configIsCatalog : true
-    this.editSelectedModelId = this.hasApiConfig && this.configIsCatalog ? this.configModelConfigId : 0
-    // 分步选择：已配置目录模式且厂商已知 → 直接回显第二步；否则从第一步开始
-    this.selectedVendor = this.hasApiConfig && this.configIsCatalog ? this.configVendor : ""
-    this.catalogStep = this.selectedVendor !== "" ? 2 : 1
-    this.editBaseUrl = this.hasApiConfig && !this.configIsCatalog ? this.configBaseUrl : ""
-    this.editModel = this.hasApiConfig && !this.configIsCatalog ? this.configCustomModel : ""
-    this.editApiKey = ""
-    this.showApiKeyPlain = false
-    this.testFeedback = ""
-    this.testFeedbackOk = false
-    this.modelsExpanded = false
-    this.showModelSheet = true
-    this.fetchModelSuggestions()
-  }
-
-  /** 切换选择模式：目录模式（默认，分步选择）/ 自定义接入（url + 模型名自填） */
-  private switchMode(catalog: boolean): void {
-    if (this.editModeCatalog === catalog) {
-      return
-    }
-    this.editModeCatalog = catalog
-    // 模式切换后旧选择与试呼反馈不再适用，全部清空（分步状态归位第一步）
-    this.catalogStep = 1
-    this.selectedVendor = ""
-    this.editSelectedModelId = 0
-    this.testFeedback = ""
-    this.testFeedbackOk = false
-    if (catalog) {
-      this.fetchModelSuggestions()
-    }
-  }
-
-  /**
-   * 第一步选中厂商：进入第二步。切换厂商时清空旧模型选择与试呼反馈（避免跨厂商残留）；
-   * 重进同一厂商（从第一步返回后再点回）保留已选模型，避免选择丢失。
-   */
-  private selectVendor(vendor: string): void {
-    if (vendor === "") {
-      return
-    }
-    const isSameVendor = this.selectedVendor === vendor
-    this.selectedVendor = vendor
-    this.catalogStep = 2
-    if (!isSameVendor) {
-      this.editSelectedModelId = 0
-      this.testFeedback = ""
-      this.testFeedbackOk = false
-    }
-  }
-
-  /** 第二步返回第一步：保留厂商与已选模型（便于核对/改选），仅切换步骤 */
-  private backToVendorStep(): void {
-    this.catalogStep = 1
-  }
-
-  /** 目录模式选中模型条目：记录 modelConfigId（接入点/模型名由服务端按条目取，端上不输 url） */
-  private selectCatalogModel(model: DivModelVo): void {
-    const id = model.id ?? 0
-    if (id <= 0) {
-      return
-    }
-    this.editSelectedModelId = id
-    // 切换选择后旧试呼反馈不再适用，清除
-    this.testFeedback = ""
-    this.testFeedbackOk = false
-  }
-
-  /**
-   * 平台模型目录拉取：目录模式分步选择的数据源（树形整包，第二步本地过滤；自定义模式下
-   * 仍作模型名输入建议，现状交互保留）。拉取一次缓存；失败置 modelsLoadFailed，可点击重试。
-   */
-  private async fetchModelSuggestions(force: boolean = false): Promise<void> {
-    if (this.modelsLoaded && !force) {
-      return
-    }
-    if (this.modelsLoading) {
-      return
-    }
-    this.modelsLoading = true
-    this.modelsLoadFailed = false
-    try {
-      const res = await getDivModels()
-      if (res.code === HttpStatusCode.Ok && res.data !== null) {
-        this.platformModels = res.data
-        this.modelsEmpty = res.data.length === 0
-        this.modelsLoaded = true
-        logger.debug('setting', `平台模型目录已加载 ${res.data.length} 个厂商`)
-      } else {
-        this.modelsLoadFailed = true
-        logger.debug('setting', `平台模型目录拉取失败 code=${res.code}`)
-      }
-    } catch (err) {
-      this.modelsLoadFailed = true
-      logger.debug('setting', '平台模型目录拉取失败')
-    } finally {
-      this.modelsLoading = false
-    }
-  }
-
-  /** 展开/收起自定义模式下的平台目录建议（对齐安卓 api_config_model_catalog_expand/collapse） */
-  private toggleModelsExpanded(): void {
-    this.modelsExpanded = !this.modelsExpanded
-  }
-
-  /**
-   * 平台目录扁平化（自定义模式模型名建议数据源）：树形目录按厂商分组，建议 chip 只需
-   * modelId。build 内调用：每次渲染重算（目录量级小，不改动 @State 原数组）。
-   */
-  private flattenPlatformModels(): Array<DivModelVo> {
-    const models: Array<DivModelVo> = []
-    for (const group of this.platformModels) {
-      for (const model of group.models) {
-        models.push(model)
-      }
-    }
-    return models
-  }
-
-  /** 当前选中厂商分组（第二步数据源；未选/目录未加载返回 null） */
-  private selectedVendorGroup(): DivVendorGroupVo | null {
-    for (const group of this.platformModels) {
-      if ((group.vendor ?? "") === this.selectedVendor) {
-        return group
-      }
-    }
-    return null
-  }
-
-  /**
-   * 表单预校验（镜像服务端双模式校验）：目录模式 modelConfigId 必选；自定义模式镜像
-   * SaveUserApiFrom @NotBlank + SSRF 的 https 规则。apiKey 两模式均必填。
-   * 返回错误文案；空串 = 通过。
-   */
-  private validateForm(): string {
-    if (this.editModeCatalog) {
-      if (this.editSelectedModelId <= 0) {
-        return BYOK_SELECT_MODEL_REQUIRED()
-      }
-    } else {
-      if (this.editBaseUrl.trim() === "") {
-        return resString('api_config_error_base_url_empty')
-      }
-      if (!this.editBaseUrl.trim().startsWith("https://")) {
-        return resString('api_config_error_base_url_https')
-      }
-      if (this.editModel.trim() === "") {
-        return resString('api_config_error_model_empty')
-      }
-    }
-    if (this.editApiKey.trim() === "") {
-      return resString('api_config_error_key_empty')
-    }
-    return ""
-  }
-
-  /** 组请求体（双模式二选一，trim 后提交；key 明文仅进请求体，不落日志） */
-  private buildForm(): SaveDivUserApiForm {
-    if (this.editModeCatalog) {
-      // 目录模式：{modelConfigId, apiKey}，接入点/模型名服务端从目录取
-      const form: SaveDivUserApiForm = { apiKey: this.editApiKey.trim() }
-      form.modelConfigId = this.editSelectedModelId
-      return form
-    }
-    // 自定义模式：{baseUrl, model, apiKey}
-    const custom: SaveDivUserApiForm = {
-      baseUrl: this.editBaseUrl.trim(),
-      model: this.editModel.trim(),
-      apiKey: this.editApiKey.trim()
-    }
-    return custom
-  }
-
-  /** 测试连接（不保存，独立试呼）：即时反馈走弹层内文案，成功/失败都留在原处便于修正 */
-  private async testConnection(): Promise<void> {
-    if (this.testing) {
-      return
-    }
-    const invalid = this.validateForm()
-    if (invalid !== "") {
-      this.testFeedbackOk = false
-      this.testFeedback = invalid
-      return
-    }
-    this.testing = true
-    this.testFeedback = ""
-    try {
-      const res = await testDivUserApiConfig(this.buildForm())
-      if (res.code === HttpStatusCode.Ok) {
-        // 后端 data 为 boolean：true 连通 / false 试呼未通过（key/接入点/模型任一不匹配）
-        const ok = res.data === true
-        this.testFeedbackOk = ok
-        // 文案对齐安卓 api_config_test_ok / api_config_test_fail
-        this.testFeedback = ok ? resString('api_config_test_ok') : resString('setting_19')
-        logger.debug('setting', `BYOK 试呼完成 ok=${ok}`)
-      } else {
-        this.testFeedbackOk = false
-        this.testFeedback = res.message ?? resString('setting_20')
-      }
-    } catch (err) {
-      logger.error('setting', 'BYOK 试呼异常', err instanceof Error ? err.message : "")
-      if (this.isSessionActive()) {
-        this.testFeedbackOk = false
-        this.testFeedback = resString('setting_18')
-      }
-    } finally {
-      this.testing = false
-    }
-  }
-
-  /** 保存（服务端试呼通过才加密落库）：失败保留弹层并展示服务端文案 */
-  private async saveConfig(): Promise<void> {
-    if (this.saving) {
-      return
-    }
-    const invalid = this.validateForm()
-    if (invalid !== "") {
-      showToastSafety(invalid)
-      return
-    }
-    this.saving = true
-    try {
-      const res = await saveDivUserApiConfig(this.buildForm())
-      if (res.code === HttpStatusCode.Ok) {
-        // 低频关键动作成功留 info（不含 baseUrl/model/key）
-        logger.info('setting', '解读模型配置已保存')
-        // 文案对齐安卓 api_config_save_success
-        showToastSafety(resString('api_config_save_success'))
-        this.showModelSheet = false
-        this.loadApiConfig()
-      } else {
-        // 服务端连通校验等业务失败文案（decode 已按 data 字符串优先转译）
-        logger.warn('setting', `解读模型配置保存失败 code=${res.code}`)
-        showToastSafety(res.message, resString('setting_21'))
-      }
-    } catch (err) {
-      logger.error('setting', '解读模型配置保存异常', err instanceof Error ? err.message : "")
-      if (this.isSessionActive()) {
-        showToastSafety(resString('setting_18'))
-      }
-    } finally {
-      this.saving = false
-    }
-  }
-
-  /** 删除解读模型配置（删除确认弹窗二次确认后进入）：成功回落未配置态（零兜底，需重新配置才能 AI 解读） */
-  private async deleteConfig(): Promise<void> {
-    if (this.deleting) {
-      return
-    }
-    this.deleting = true
-    try {
-      const res = await deleteDivUserApiConfig()
-      if (res.code === HttpStatusCode.Ok) {
-        logger.info('setting', '解读模型配置已删除，需重新配置模型才能使用 AI 解读')
-        // 文案对齐安卓 api_config_delete_success
-        showToastSafety(resString('api_config_delete_success'))
-        this.showModelSheet = false
-        this.loadApiConfig()
-      } else {
-        logger.warn('setting', `解读模型配置删除失败 code=${res.code}`)
-        showToastSafety(res.message, resString('setting_22'))
-      }
-    } catch (err) {
-      logger.error('setting', '解读模型配置删除异常', err instanceof Error ? err.message : "")
-      if (this.isSessionActive()) {
-        showToastSafety(resString('setting_18'))
-      }
-    } finally {
-      this.deleting = false
-    }
-  }
-
-  /** 输入框通用描边（surfaceVariant 底 + outline 描边 + 聚焦主色，SubscriptionEditPage 同款） */
-  private inputBorder(focused: boolean): SettingBorderStyle {
-    return { width: 1, color: focused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE') }
-  }
-
-  /** 表单字段标签（SubscriptionEditPage FormLabel 同款视觉） */
-  @Builder
-  FormLabel(title: string) {
-    Text(title)
-      .fontSize(DesignFontSize.BODY_SMALL)
-      .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor($r('app.color.TEXT_SECONDARY'))
-      .margin({ bottom: DesignDimens.SPACE_XS })
-  }
-
-  /** 平台目录建议 chip：点击回填模型名（接入点仍由用户自填，BYOK 不限目录） */
-  @Builder
-  ModelChip(model: DivModelVo) {
-    Text(model.modelId ?? "")
-      .fontSize(DesignFontSize.CAPTION)
-      .fontColor($r('app.color.TEXT_SECONDARY'))
-      .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 8, bottom: 8 })
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor($r('app.color.SURFACE_VARIANT'))
-      .border({ width: 1, color: $r('app.color.OUTLINE') })
-      .margin({ right: DesignDimens.SPACE_XS })
-      .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
-      .onClick(() => {
-        if (model.modelId !== undefined) {
-          this.editModel = model.modelId
-        }
-      })
-  }
-
-  /** 选择模式分段 chip（目录模式默认；选中主色浅底 + 描边，未选中 surfaceVariant，参照 ModelChip 风格） */
-  @Builder
-  EditModeChip(label: string, selected: boolean, onSelect: () => void) {
-    Text(label)
-      .fontSize(DesignFontSize.BODY_SMALL)
-      .fontWeight(selected ? DesignFontWeight.MEDIUM : DesignFontWeight.NORMAL)
-      .fontColor(selected ? $r('app.color.PRIMARY') : $r('app.color.TEXT_SECONDARY'))
-      .textAlign(TextAlign.Center)
-      .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 8, bottom: 8 })
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(selected ? $r('app.color.PRIMARY_LIGHT') : $r('app.color.SURFACE_VARIANT'))
-      .border({ width: 1, color: selected ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE') })
-      .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
-      .onClick(() => {
-        onSelect()
-      })
-  }
-
-  /**
-   * 目录模式：平台模型目录分步选择（第一步选厂商，第二步在该厂商内选模型；
-   * 树形目录一次拉取，第二步本地过滤，无二次请求）。
-   */
-  @Builder
-  CatalogSelector() {
-    Column({ space: DesignDimens.SPACE_XS }) {
-      if (!this.modelsLoaded) {
-        if (this.modelsLoadFailed) {
-          Text($r('app.string.setting_23'))
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor($r('app.color.PRIMARY'))
-            // 上下 14 + 行高 16 = 44 触控热区（规范 §2.3）
-            .padding({ top: 14, bottom: 14 })
-            .onClick(() => {
-              this.fetchModelSuggestions(true)
-            })
-        } else {
-          Text($r('app.string.setting_24'))
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor($r('app.color.TEXT_TERTIARY'))
-            .padding({ top: 14, bottom: 14 })
-        }
-      } else if (this.modelsEmpty) {
-        Text($r('app.string.setting_25'))
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor($r('app.color.TEXT_TERTIARY'))
-          .padding({ top: 14, bottom: 14 })
-      } else if (this.catalogStep === 1) {
-        // ---- 第一步：选择厂商 ----
-        this.FormLabel(BYOK_STEP_VENDOR())
-        ForEach(this.platformModels, (group: DivVendorGroupVo) => {
-          this.VendorStepRow(group)
-        }, (group: DivVendorGroupVo) => `vendor-${group.vendor ?? ""}`)
-        Text(BYOK_STEP_VENDOR_HINT())
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor($r('app.color.TEXT_TERTIARY'))
-          .margin({ top: DesignDimens.SPACE_XS })
-      } else {
-        // ---- 第二步：选择该厂商的模型 ----
-        Row() {
-          Row({ space: DesignDimens.SPACE_XXS }) {
-            SymbolGlyph($r('sys.symbol.chevron_left'))
-              .fontSize(16)
-              .fontColor([$r('app.color.PRIMARY')])
-            Text(BYOK_STEP_BACK())
-              .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor($r('app.color.PRIMARY'))
-          }
-          .padding({ top: 12, bottom: 12 })
-          .onClick(() => {
-            this.backToVendorStep()
-          })
-          Text(BYOK_STEP_MODEL())
-            .fontSize(DesignFontSize.BODY_SMALL)
-            .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor($r('app.color.TEXT_SECONDARY'))
-            .margin({ left: DesignDimens.SPACE_SM })
-        }
-        .width("100%")
-        .alignItems(VerticalAlign.Center)
-
-        Text(`${BYOK_STEP_CURRENT_VENDOR()}${this.selectedVendor}`)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor($r('app.color.TEXT_TERTIARY'))
-          .margin({ top: DesignDimens.SPACE_XXS })
-
-        ForEach(this.selectedVendorGroup()?.models ?? [], (model: DivModelVo) => {
-          this.CatalogModelRow(model)
-        }, (model: DivModelVo) => `catalog-model-${model.id ?? 0}`)
-      }
-    }
-    .width("100%")
-    .margin({ top: DesignDimens.SPACE_XS })
-  }
-
-  /** 第一步厂商行：厂商名 + 接入点次要信息 + 模型数；选中高亮（返回第一步时保留厂商选择） */
-  @Builder
-  VendorStepRow(group: DivVendorGroupVo) {
-    Row() {
-      Column({ space: 2 }) {
-        Text(group.vendor ?? "")
-          .fontSize(DesignFontSize.BODY)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor($r('app.color.TEXT_PRIMARY'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(group.baseUrl ?? "")
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor($r('app.color.TEXT_TERTIARY'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .alignItems(HorizontalAlign.Start)
-      .layoutWeight(1)
-      .margin({ right: DesignDimens.SPACE_SM })
-
-      Text(`${group.models.length} 个模型`)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor($r('app.color.TEXT_TERTIARY'))
-
-      if (this.selectedVendor === (group.vendor ?? "")) {
-        SymbolGlyph($r('sys.symbol.checkmark'))
-          .fontSize(16)
-          .fontColor([$r('app.color.PRIMARY')])
-          .margin({ left: DesignDimens.SPACE_XS })
-      }
-    }
-    .width("100%")
-    .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
-    .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 10, bottom: 10 })
-    .borderRadius(DesignDimens.INPUT_RADIUS)
-    .backgroundColor($r('app.color.SURFACE'))
-    .border({
-      width: 1,
-      color: this.selectedVendor === (group.vendor ?? "") ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE')
-    })
-    .onClick(() => {
-      this.selectVendor(group.vendor ?? "")
-    })
-  }
-
-  /** 二级模型条目：目录显示名 + modelId 副行 + 「使用中」徽标 + 选中勾 */
-  @Builder
-  CatalogModelRow(model: DivModelVo) {
-    Row() {
-      Column({ space: 2 }) {
-        Text(model.name ?? "")
-          .fontSize(DesignFontSize.BODY)
-          .fontColor($r('app.color.TEXT_PRIMARY'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(model.modelId ?? "")
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor($r('app.color.TEXT_TERTIARY'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .alignItems(HorizontalAlign.Start)
-      .layoutWeight(1)
-      .margin({ right: DesignDimens.SPACE_SM })
-
-      if (model.active) {
-        Text($r('app.string.setting_26'))
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor($r('app.color.ON_SUCCESS_CONTAINER'))
-          .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-          .borderRadius(DesignDimens.RADIUS_FULL)
-          .backgroundColor($r('app.color.SUCCESS_CONTAINER'))
-      }
-
-      if (this.editSelectedModelId === (model.id ?? 0)) {
-        SymbolGlyph($r('sys.symbol.checkmark'))
-          .fontSize(16)
-          .fontColor([$r('app.color.PRIMARY')])
-          .margin({ left: DesignDimens.SPACE_XS })
-      }
-    }
-    .width("100%")
-    .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
-    .padding({
-      left: DesignDimens.SPACE_MD,
-      right: DesignDimens.SPACE_MD,
-      top: 10,
-      bottom: 10
-    })
-    .borderRadius(DesignDimens.INPUT_RADIUS)
-    .backgroundColor($r('app.color.SURFACE'))
-    .border({
-      width: 1,
-      color: this.editSelectedModelId === (model.id ?? 0) ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE')
-    })
-    .onClick(() => {
-      this.selectCatalogModel(model)
-    })
-  }
-
-  /**
-   * 解读模型编辑半模态（#81 重构契约，对齐安卓编辑弹层）：
-   * 自绘 handle（bindSheet dragBar 关闭，样式走令牌，Payment.ets 同款）+ 说明文案 +
-   * 选择模式（目录默认 / 自定义接入）双模式表单 + 测试连接即时反馈 + 保存 +
-   * 已配置时的删除入口。
-   */
-  @Builder
-  ModelEditorSheet() {
-    Column() {
-      // 拖拽指示条
-      Row()
-        .width(32)
-        .height(4)
-        .borderRadius(DesignDimens.RADIUS_FULL)
-        .backgroundColor($r('app.color.OUTLINE'))
-        .margin({ top: DesignDimens.SPACE_SM })
-
-      // 标题 + 说明文案（与隐私声明口径一致）
-      Column({ space: DesignDimens.SPACE_XXS }) {
-        Text($r('app.string.api_config_title'))
-          .fontSize(DesignFontSize.SECTION_TITLE)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor($r('app.color.TEXT_PRIMARY'))
-          .margin({ top: DesignDimens.SPACE_MD })
-
-        Text(BYOK_NOTICE)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor($r('app.color.TEXT_TERTIARY'))
-          .lineHeight(18)
-      }
-      .width("100%")
-      .alignItems(HorizontalAlign.Start)
-      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-
-      // 表单（可滚动）
-      Scroll() {
-        Column() {
-          // ---- 选择模式（目录模式默认：分步选择厂商/模型免输 url；自定义接入保留三输入现状交互）----
-          this.FormLabel(resString('api_config_mode_label'))
-          Row({ space: DesignDimens.SPACE_SM }) {
-            this.EditModeChip(BYOK_MODE_CATALOG(), this.editModeCatalog, (): void => {
-              this.switchMode(true)
-            })
-            this.EditModeChip(BYOK_MODE_CUSTOM(), !this.editModeCatalog, (): void => {
-              this.switchMode(false)
-            })
-          }
-          .width("100%")
-
-          if (this.editModeCatalog) {
-            // ---- 目录模式：分步选择厂商 → 模型（接入点/模型名服务端从目录取，不显示 url 输入）----
-            this.CatalogSelector()
-            Text($r('app.string.setting_27'))
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor($r('app.color.TEXT_TERTIARY'))
-              .margin({ top: DesignDimens.SPACE_XS })
-          } else {
-            // ---- 自定义接入（现状交互保留）：接入点 + 模型名（label/hint 对齐安卓 api_config_base_url_label/hint）----
-            this.FormLabel(resString('api_config_base_url_label'))
-            TextInput({ text: this.editBaseUrl, placeholder: "https://api.example.com" })
-              .height(48)
-              .fontSize(DesignFontSize.BODY)
-              .backgroundColor($r('app.color.SURFACE_VARIANT'))
-              .borderRadius(DesignDimens.INPUT_RADIUS)
-              .border(this.inputBorder(this.baseUrlFocused))
-              .placeholderColor($r('app.color.TEXT_TERTIARY'))
-              .placeholderFont({ size: DesignFontSize.BODY })
-              .onFocus(() => {
-                this.baseUrlFocused = true
-              })
-              .onBlur(() => {
-                this.baseUrlFocused = false
-              })
-              .onChange((value: string) => {
-                this.editBaseUrl = value
-              })
-
-            Text($r('app.string.setting_28'))
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor($r('app.color.TEXT_TERTIARY'))
-              .margin({ top: DesignDimens.SPACE_XS })
-
-            Column().height(DesignDimens.SPACE_LG)
-
-            // ---- 模型名称 ----
-            this.FormLabel(resString('api_config_model_label'))
-            TextInput({ text: this.editModel, placeholder: resString('api_config_model_hint') })
-              .height(48)
-              .fontSize(DesignFontSize.BODY)
-              .backgroundColor($r('app.color.SURFACE_VARIANT'))
-              .borderRadius(DesignDimens.INPUT_RADIUS)
-              .border(this.inputBorder(this.modelFocused))
-              .placeholderColor($r('app.color.TEXT_TERTIARY'))
-              .placeholderFont({ size: DesignFontSize.BODY })
-              .onFocus(() => {
-                this.modelFocused = true
-              })
-              .onBlur(() => {
-                this.modelFocused = false
-              })
-              .onChange((value: string) => {
-                this.editModel = value
-              })
-
-            // ---- 平台目录建议（现状交互保留：折叠展开，点击回填模型名；目录为树形，先扁平化）----
-            if (this.modelsLoaded && this.flattenPlatformModels().length > 0) {
-              Text(this.modelsExpanded ? resString('setting_29') : resString('setting_30'))
-                .fontSize(DesignFontSize.CAPTION)
-                .fontColor($r('app.color.PRIMARY'))
-                // 上下 14 + 行高 16 = 44 触控热区（规范 §2.3，Payment「去领取」同款处理）
-                .padding({ top: 14, bottom: 14 })
-                .margin({ top: 4 })
-                .onClick(() => {
-                  this.toggleModelsExpanded()
-                })
-              if (this.modelsExpanded) {
-                Scroll() {
-                  Row() {
-                    ForEach(this.flattenPlatformModels(), (model: DivModelVo) => {
-                      this.ModelChip(model)
-                    }, (model: DivModelVo) => `model-${model.id ?? model.modelId ?? ""}`)
-                  }
-                  .width("100%")
-                }
-                .width("100%")
-                .scrollable(ScrollDirection.Horizontal)
-                .scrollBar(BarState.Off)
-                .align(Alignment.Start)
-                .margin({ top: DesignDimens.SPACE_XS })
-              }
-            } else if (this.modelsLoaded && this.modelsEmpty) {
-              // 目录拉取成功但为空（对齐安卓 api_config_model_catalog_empty）
-              Text($r('app.string.setting_31'))
-                .fontSize(DesignFontSize.CAPTION)
-                .fontColor($r('app.color.TEXT_TERTIARY'))
-                .margin({ top: DesignDimens.SPACE_XS })
-            }
-          }
-
-          Column().height(DesignDimens.SPACE_LG)
-
-          // ---- API Key（密码框可切明文，DeliveryCreatePage 同款）----
-          this.FormLabel("API Key")
-          Row() {
-            TextInput({
-              text: this.editApiKey,
-              placeholder: this.hasApiConfig ? resString('api_config_key_hint_edit') : resString('api_config_key_hint_new')
-            })
-              .type(this.showApiKeyPlain ? InputType.Normal : InputType.Password)
-              .height(48)
-              .fontSize(DesignFontSize.BODY)
-              .backgroundColor($r('app.color.SURFACE_VARIANT'))
-              .borderRadius(DesignDimens.INPUT_RADIUS)
-              .border(this.inputBorder(this.apiKeyFocused))
-              .placeholderColor($r('app.color.TEXT_TERTIARY'))
-              .placeholderFont({ size: DesignFontSize.BODY_SMALL })
-              .showPasswordIcon(false)
-              .layoutWeight(1)
-              .onFocus(() => {
-                this.apiKeyFocused = true
-              })
-              .onBlur(() => {
-                this.apiKeyFocused = false
-              })
-              .onChange((value: string) => {
-                this.editApiKey = value
-              })
-
-            Stack({ alignContent: Alignment.Center }) {
-              SymbolGlyph(this.showApiKeyPlain ? $r('sys.symbol.eye_slash') : $r('sys.symbol.eye'))
-                .fontSize(20)
-                .fontColor([$r('app.color.TEXT_SECONDARY')])
-            }
-            .width(DesignDimens.BACK_HIT_AREA)
-            .height(DesignDimens.BACK_HIT_AREA)
-            .accessibilityDescription(this.showApiKeyPlain ? resString('api_config_key_hide') : resString('api_config_key_show'))
-            .onClick(() => {
-              this.showApiKeyPlain = !this.showApiKeyPlain
-            })
-          }
-          .width('100%')
-          .alignItems(VerticalAlign.Center)
-
-          Text($r('app.string.setting_32'))
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor($r('app.color.TEXT_TERTIARY'))
-            .margin({ top: DesignDimens.SPACE_XS })
-
-          // ---- 测试连接即时反馈 ----
-          if (this.testFeedback !== "") {
-            Row({ space: DesignDimens.SPACE_XXS }) {
-              SymbolGlyph(this.testFeedbackOk
-                ? $r('sys.symbol.checkmark')
-                : $r('sys.symbol.exclamationmark_triangle_fill'))
-                .fontSize(14)
-                .fontColor([this.testFeedbackOk ? $r('app.color.SUCCESS') : $r('app.color.DANGER')])
-              Text(this.testFeedback)
-                .fontSize(DesignFontSize.CAPTION)
-                .fontColor(this.testFeedbackOk ? $r('app.color.SUCCESS') : $r('app.color.DANGER'))
-                .layoutWeight(1)
-            }
-            .width("100%")
-            .alignItems(VerticalAlign.Center)
-            .margin({ top: DesignDimens.SPACE_MD })
-          }
-
-          // ---- 操作按钮：测试连接 + 保存（DeliveryCreatePage 并排 AppButton 同款）----
-          Row({ space: DesignDimens.SPACE_SM }) {
-            AppButton({
-              text: resString('api_config_test'),
-              variant: AppButtonVariant.SECONDARY,
-              loading: this.testing,
-              click: () => {
-                this.testConnection()
-              }
-            })
-              .layoutWeight(1)
-            AppButton({
-              text: resString('subscription_submit_save'),
-              loading: this.saving,
-              click: () => {
-                this.saveConfig()
-              }
-            })
-              .layoutWeight(1)
-          }
-          .width("100%")
-          .margin({ top: DesignDimens.SPACE_LG })
-
-          // ---- 删除配置（仅已配置时；二次确认见 deleteConfigDialogController）----
-          if (this.hasApiConfig) {
-            AppButton({
-              text: resString('api_config_delete'),
-              variant: AppButtonVariant.SECONDARY,
-              contentColor: $r('app.color.DANGER_INK'),
-              loading: this.deleting,
-              click: () => {
-                this.deleteConfigDialogController.open()
-              }
-            })
-              .margin({ top: DesignDimens.SPACE_SM })
-          }
-        }
-        .width("100%")
-        .padding({
-          left: DesignDimens.PAGE_PADDING,
-          right: DesignDimens.PAGE_PADDING,
-          top: DesignDimens.SPACE_LG,
-          bottom: DesignDimens.SPACE_XL
-        })
-      }
-      .layoutWeight(1)
-      .scrollBar(BarState.Off)
-      .align(Alignment.Top)
-    }
-    .width("100%")
-    .height("100%")
   }
 
   build() {
@@ -1161,58 +267,40 @@ struct Setting {
               .width("100%")
               .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
 
-            // 解读模型（BYOK）编辑半模态挂在外层容器（bindSheet 双向绑定 showModelSheet）
-            Column() {
-              SettingGroupCard() {
-                // 解读模型入口行（#81 重构契约，自定义 trailing 摘要）：
-                // 目录模式 = 「vendor · modelName」+「已验证」徽标 / 掩码；自定义模式 = customModel + 掩码；
-                // 未配置 = 引导配置文案；divUseEnabled=0（总开关关闭）= 置灰提示不可进编辑层。
-                // 配置仅从后端 GET 回显，端上不持久化 key。
-                ModelConfigRow({
-                  icon: $r('sys.symbol.key'),
-                  containerColor: $r('app.color.ICON_CONTAINER_PURPLE'),
-                  iconColor: $r('app.color.ICON_FOREGROUND_PURPLE'),
-                  title: resString('api_config_title'),
-                  hasConfig: this.configLoaded && this.hasApiConfig,
-                  modelText: this.configModel,
-                  maskText: this.configMask,
-                  verified: this.configVerified,
-                  loading: this.loadingConfig,
-                  disabled: this.byokDisabled,
-                  onRowClick: () => {
-                    this.openModelEditor()
-                  }
-                })
+            // 解读模型（BYOK）配置入口（issue #79；对齐安卓尾注精简版）
+            SettingGroupCard() {
+              // 已配置 = 「已配置」+「已验证」徽标；未配置 = 「未配置」；
+              // divUseEnabled=0（总开关关闭）= 置灰提示不可进配置页。
+              // 配置仅从后端 GET 回显，端上不持久化 key；编辑在独立配置页（ApiConfigPage）。
+              ModelConfigRow({
+                icon: $r('sys.symbol.key'),
+                containerColor: $r('app.color.ICON_CONTAINER_PURPLE'),
+                iconColor: $r('app.color.ICON_FOREGROUND_PURPLE'),
+                title: resString('api_config_title'),
+                hasConfig: this.configLoaded && this.hasApiConfig,
+                verified: this.configVerified,
+                loading: this.loadingConfig,
+                disabled: this.byokDisabled,
+                onRowClick: () => {
+                  pathStack.pushPathByName(RouteNames.API_CONFIG, null)
+                }
+              })
 
-                Divider()
-                  .color($r('app.color.HAIRLINE'))
-                  .strokeWidth(0.5)
+              Divider()
+                .color($r('app.color.HAIRLINE'))
+                .strokeWidth(0.5)
 
-                SettingRow({
-                  icon: $r('sys.symbol.questionmark_circle'),
-                  containerColor: $r('app.color.ICON_CONTAINER_PURPLE'),
-                  iconColor: $r('app.color.ICON_FOREGROUND_PURPLE'),
-                  title: resString('privacy_disclaimer'),
-                  trailingValue: "",
-                  onRowClick: () => {
-                    this.privacyDialogController.open()
-                  }
-                })
-              }
+              SettingRow({
+                icon: $r('sys.symbol.questionmark_circle'),
+                containerColor: $r('app.color.ICON_CONTAINER_PURPLE'),
+                iconColor: $r('app.color.ICON_FOREGROUND_PURPLE'),
+                title: resString('privacy_disclaimer'),
+                trailingValue: "",
+                onRowClick: () => {
+                  this.privacyDialogController.open()
+                }
+              })
             }
-            .width("100%")
-            .bindSheet($$this.showModelSheet, this.ModelEditorSheet(), {
-              // 近 3/4 高表单浮层（Payment 选券浮层同款参数口径）；
-              // dragBar:false + 自绘 handle，容器色对齐 Android surface
-              height: "72%",
-              backgroundColor: $r('app.color.SURFACE'),
-              showClose: false,
-              dragBar: false,
-              // 键盘避让（实测修复）：默认 TRANSLATE_AND_SCROLL 下 Key 输入聚焦后窗口被压缩、
-              // 弹层按压缩后窗口重算导致 Key 区被挤出可视区（输入内容看不见）。
-              // 改 TRANSLATE_AND_RESIZE：弹层上移并收缩到键盘上沿，保证输入框始终可见。
-              keyboardAvoidMode: SheetKeyboardAvoidMode.TRANSLATE_AND_RESIZE
-            })
 
             // ===== 其他 =====
             Text($r('app.string.div_category_other'))
@@ -1317,7 +405,7 @@ struct Setting {
     // 补齐：隐藏系统标题栏，避免与自绘 PageHeader 出现双返回按钮（问题6）
     .hideTitleBar(true)
     .onShown(() => {
-      // 返回本页时重拉解读模型配置（在别的入口改动后回显保持新鲜；loadingConfig 挡并发）
+      // 返回本页时重拉解读模型配置（在配置页改动后回显保持新鲜；loadingConfig 挡并发）
       this.loadApiConfig()
     })
   }
@@ -1403,11 +491,9 @@ struct SettingRow {
 }
 
 /**
- * 解读模型入口行（#81 重构契约，自定义 trailing 摘要）：
- * 已配置 = 右对齐两行（目录模式「vendor · modelName」/ 自定义模式 customModel，+「已验证」徽标，
- * 第二行 apiKeyMask 仅掩码）；
- * 未配置 = 单行「未配置，解读前请先配置模型」；
- * 平台总开关关闭（divUseEnabled=0）= 置灰 + 提示「观星台 AI 解读暂未开放」，不可点击进入编辑层。
+ * 解读模型入口行（对齐安卓 SettingRow 尾注精简版）：
+ * 已配置 = 「已配置」+「已验证」徽标；未配置 = 「未配置」；
+ * 平台总开关关闭（divUseEnabled=0）= 置灰 + 提示「观星台 AI 解读暂未开放」，不可点击进入配置页。
  * 其余视觉与 SettingRow 一致（64dp 高 / ib32 图标容器 / 按压铺 surfaceVariant）。
  */
 @Component
@@ -1417,8 +503,6 @@ struct ModelConfigRow {
   @Prop iconColor: ResourceColor = $r('app.color.PRIMARY')
   @Prop title: string = ""
   @Prop hasConfig: boolean = false
-  @Prop modelText: string = ""
-  @Prop maskText: string = ""
   @Prop verified: boolean = false
   @Prop loading: boolean = false
   // 平台总开关关闭（divUseEnabled=0）：整行置灰（降透明 0.5，对齐 AppButton 禁用惯例）、
@@ -1449,6 +533,9 @@ struct ModelConfigRow {
         .fontColor($r('app.color.TEXT_PRIMARY'))
         .layoutWeight(1)
         .margin({ left: 12 })
+        // 单行省略：尾注较宽时标题不得折行（对齐安卓 2026-11-12 换行缺陷修复）
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
 
       if (this.loading) {
         // 加载中：spinner 占位（对齐安卓行内加载反馈）
@@ -1461,49 +548,25 @@ struct ModelConfigRow {
         Text(BYOK_DISABLED_NOTICE())
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontColor($r('app.color.TEXT_SECONDARY'))
+          .maxLines(1)
       } else if (this.hasConfig) {
-        // 已配置：右对齐两行摘要（对齐安卓 Column(horizontalAlignment = End)）
-        Column({ space: 2 }) {
-          Row({ space: 4 }) {
-            Text(this.modelText)
-              .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor($r('app.color.TEXT_SECONDARY'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-              .constraintSize({ maxWidth: 150 })
-            if (this.verified) {
-              // 「已验证」徽标（微字号 10 非字阶档位，对齐安卓 VerifiedBadge 视觉）
-              Row({ space: 2 }) {
-                SymbolGlyph($r('sys.symbol.checkmark'))
-                  .fontSize(10)
-                  .fontColor([$r('app.color.ON_SUCCESS_CONTAINER')])
-                Text($r('app.string.api_config_verified'))
-                  .fontSize(10)
-                  .fontColor($r('app.color.ON_SUCCESS_CONTAINER'))
-              }
-              .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-              .borderRadius(DesignDimens.RADIUS_FULL)
-              .backgroundColor($r('app.color.SUCCESS_CONTAINER'))
-            }
-          }
-          .alignItems(VerticalAlign.Center)
-
-          if (this.maskText !== "") {
-            Text(this.maskText)
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor($r('app.color.TEXT_TERTIARY'))
-              .fontFeature(DesignFontFeature.TNUM)
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-              .constraintSize({ maxWidth: 180 })
+        // 已配置：状态词 + 「已验证」徽标（模型名/掩码的详细回显在配置页）
+        Row({ space: 4 }) {
+          Text(resString('api_config_configured'))
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontColor($r('app.color.TEXT_SECONDARY'))
+            .maxLines(1)
+          if (this.verified) {
+            VerifiedBadge()
           }
         }
-        .alignItems(HorizontalAlign.End)
+        .alignItems(VerticalAlign.Center)
       } else {
         // 未配置引导文案（零兜底口径：无平台默认模型，需配置后才能 AI 解读）
         Text(BYOK_UNCONFIGURED_NOTICE())
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontColor($r('app.color.TEXT_SECONDARY'))
+          .maxLines(1)
       }
 
       // chevron 是「可进入」的视觉信号：置灰态不渲染
@@ -1541,6 +604,26 @@ struct ModelConfigRow {
 }
 
 /**
+ * 「已验证」徽标 — SUCCESS_CONTAINER 底 + ON_SUCCESS_CONTAINER 字的胶囊小标（对齐安卓 VerifiedBadge）。
+ */
+@Component
+struct VerifiedBadge {
+  build() {
+    Row({ space: 2 }) {
+      SymbolGlyph($r('sys.symbol.checkmark'))
+        .fontSize(10)
+        .fontColor([$r('app.color.ON_SUCCESS_CONTAINER')])
+      Text(resString('api_config_verified'))
+        .fontSize(10)
+        .fontColor($r('app.color.ON_SUCCESS_CONTAINER'))
+    }
+    .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+    .borderRadius(DesignDimens.RADIUS_FULL)
+    .backgroundColor($r('app.color.SUCCESS_CONTAINER'))
+  }
+}
+
+/**
  * 设置分组卡（对齐安卓 SettingGroupCard：卡内边距仅水平 20，行铺满；
  * 卡高 = 行数 × 64，纵向不加内边距）。卡片本体复用组件层 AppCard 的唯一画法。
  */
@@ -1562,10 +645,4 @@ struct SettingGroupCard {
 // @BuilderParam 的默认空插槽（ArkTS 要求默认值必须是 @Builder 函数，不能用内联箭头函数）
 @Builder
 function emptyContent() {
-}
-
-/** 输入框描边样式（ArkTS 对象字面量需显式类型，SubscriptionEditPage 同款约定） */
-interface SettingBorderStyle {
-  width: number
-  color: number | Resource
 }

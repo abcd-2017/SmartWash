@@ -273,9 +273,9 @@ struct DivFollowUpPage {
     }
   }
 
-  /** 428（未配置解读模型）：错误行追加「去配置」入口，跳设置页（鸿蒙端不自动弹层） */
+  /** 428（未配置解读模型）：错误行追加「去配置」入口，直达解读模型配置页 */
   private goModelSetting(): void {
-    pathStack.pushPathByName(RouteNames.SETTING, null)
+    pathStack.pushPathByName(RouteNames.API_CONFIG, null)
   }
 
   /**

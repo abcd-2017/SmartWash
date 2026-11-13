@@ -4553,6 +4553,50 @@
       "value": "自定义接入"
     },
     {
+      "name": "api_config_configured",
+      "value": "已配置"
+    },
+    {
+      "name": "api_config_unconfigured",
+      "value": "未配置"
+    },
+    {
+      "name": "api_config_catalog_vendor_label",
+      "value": "厂商"
+    },
+    {
+      "name": "api_config_catalog_vendor_placeholder",
+      "value": "选择厂商"
+    },
+    {
+      "name": "api_config_catalog_model_label",
+      "value": "模型"
+    },
+    {
+      "name": "api_config_catalog_model_placeholder",
+      "value": "选择模型"
+    },
+    {
+      "name": "api_config_catalog_model_disabled_hint",
+      "value": "请先选择厂商"
+    },
+    {
+      "name": "api_config_selected_prefix",
+      "value": "已选："
+    },
+    {
+      "name": "api_config_load_failed",
+      "value": "配置加载失败"
+    },
+    {
+      "name": "api_config_retry",
+      "value": "重试"
+    },
+    {
+      "name": "api_config_save",
+      "value": "保存"
+    },
+    {
       "name": "api_config_catalog_step_vendor",
       "value": "第一步：选择厂商"
     },
