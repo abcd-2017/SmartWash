@@ -565,8 +565,8 @@
 
 ### 10.1 站内信（notice / notice_read / NoticeType）
 
-- **代码标识**：`notice`、`notice_read`、`NoticeType`（SYSTEM / ANNOUNCEMENT）、`WebNoticeController`
-- **定义**：管理端发送站内信（title / content / type / deepLink），用户端收件箱分页 + 未读数 + 标记已读（幂等）+ 全部已读；已读记录按用户落库。
+- **代码标识**：`notice`、`notice_read`、`NoticeType`（SYSTEM / ANNOUNCEMENT / DINING_JOIN / DINING_FINISH）、`WebNoticeController`
+- **定义**：管理端发送站内信（title / content / type / deepLink），用户端收件箱分页 + 未读数 + 标记已读（幂等）+ 全部已读；已读记录按用户落库。通知分广播（`user_id` NULL，全平台可见）与定向（`user_id` 非空，按接收人一行，如点单加入/结束通知）；收件箱与未读数口径 = 广播或定向给我。
 - **四端对应物**：
   - 后端：`notice/controller/WebNoticeController.java` + `NoticeAdminController`。
   - Android：`:feature:notice`（`NoticeServiceApi` + 收件箱页）。
@@ -632,6 +632,47 @@
 - **定义**：鸿蒙 `DeepLinkRegistry` 已注册 `order-detail/{orderId}` → `OrderDetail`；Android 尚未注册（只有 `order` 带 tab）。两端 host 清单需逐字对齐。
 - **四端对应物**：鸿蒙 `utils/deeplink/DeepLinkRegistry.ets`；Android `DeepLinkRegistry`（缺该 host）。
 - **易混淆点**：同链接在鸿蒙可直达订单详情、在 Android 回 `Unknown`；补注册时注意 Android 订单详情页留壳、路由常量归 `OrderRoute`。
+
+### 10.9 家庭点单（dining_category / 菜谱分类）
+
+- **代码标识**：`dining_category`、`DiningCategory`、`/admin/dining/categories`
+- **定义**：平台公共菜谱库的分类目录（name 唯一 / sort 升序 / 物理删除），运营在 Web 后台增删改查；菜谱按 `dining_recipe.category_id` 挂靠（可空=未分类），用户端按分类组织点单菜单左侧分类栏。点单订单 / 本单菜单 / 选菜记录 / 购买清单 / join_token 见 10.11，同步通道与复用入口见 10.12。
+- **四端对应物**：
+  - 后端：`dining/`（管理端 `DiningCategoryAdminController`，ROLE_ADMIN，写接口 @Audited；用户端只读目录 `WebDiningCategoryController` `/web/auth/dining/categories/all`，ROLE_USER）。
+  - Android：`:feature:dining:{api,impl}`（`DiningServiceApi.categories`，菜谱库分类筛选 chips；04 号票）。鸿蒙：本期不做（Out of Scope，spec 决策），契约以 `WebDiningCategoryController` 为源。
+  - Web：`views/dining/DiningCategoryList.vue` + `api/dining.js`（菜单组「家庭点单」）。
+- **易混淆点**：dining 是独立业务域（避开既有洗护 `orders` 域）；删除分类为物理删除且无级联——**被菜谱引用时服务层拒绝删除**（按 category_id 计数，提示引用数量），先校验后删保证批量整体拒绝。
+
+### 10.10 菜谱（dining_recipe）
+
+- **代码标识**：`dining_recipe`、`DiningRecipe`、`/admin/dining/recipes`
+- **定义**：平台公共菜谱库的正片条目：菜名（不做唯一约束）、食材名数组（`ingredients` JSON 文本，服务层与结构化 `List<String>` 互转）、步骤、封面（`cover_object_key` 存 MinIO `dining/covers/` 前缀对象键，直链由 `MinioConfig.urlOf` 拼装）、来源 `source`（ADMIN=运营录入 / USER=用户新增直上架）、上下架 `status`（1=上架 0=下架）。下架语义：不再出现在用户端上架查询，历史点单订单按菜谱 ID 引用不受影响；购买清单 = 所选菜谱食材名并集去重。
+- **四端对应物**：
+  - 后端：`dining/`（`DiningRecipeAdminController`，ROLE_ADMIN，写接口全 @Audited；上传校验 `RecipeImageValidator`：JPG/PNG/WebP + 魔数 + 扩展名一致性 + 5MB，走统一 `FileStorageService`）。批量导入：`DiningRecipeImportService` 两阶段——`POST /import` 解析校验（xlsx/CSV，缺列/非法分类/超长给行号级错误，**预览前不落库**）→ `POST /import/confirm` 整批事务写入（任一失败行全批不落库，`@Audited` DINING_RECIPE_IMPORT）；模板由 `GET /import/template` 动态生成。
+  - Android：`:feature:dining:{api,impl}`（`DiningServiceApi`：`/web/auth/dining/recipes` 上架列表/详情/新增直上架/封面上传，用户端新增 source=USER 直上架；04 号票，封面直链匿名读依赖 MinIO 白名单 `dining/covers/`）。鸿蒙：本期不做（Out of Scope），契约以 `WebDiningRecipeController` 为源。
+  - Web：`views/dining/DiningRecipeList.vue`（列表/筛选/CRUD/上下架/封面上传回显）+ `api/dining.js`；分类下拉走 `optionCache.diningCategoryOptionsCache`。导入交互 `views/dining/components/RecipeImportDialog.vue`（下载模板→上传解析→预览确认→逐行结果报告）。
+- **易混淆点**：接口分类字段协议——新增传 `null`/`0` 均为未分类；修改传 `null`=不修改、`0`=改回未分类、`>0`=换分类（哨兵归一在服务层）。管理端修改为全量字段语义（字段不传即不修改，MyBatis-Plus 跳过 null 列）；上下架走专用 `{id}/status/{status}` 接口而非修改接口。批量导入的两阶段语义：预览只解析校验不落库，确认端点再次逐行校验——任一行失败全批不落库（rolledBack=true 全行回显失败，非半批）；导入模板「分类名」必须与已有分类完全一致（不存在即行级报错，不自动建）；「封面链接」列仅校验格式不落库（对象键与外链语义不同，封面走单独上传）；导入行数上限 500、文件上限 5MB。
+
+### 10.11 点单订单（dining_order / dining_order_member / dining_order_menu / dining_order_item）
+
+- **代码标识**：`dining_order`、`DiningOrder`、`/web/auth/dining/orders`（ROLE_USER）；成员 `dining_order_member` / 本单菜单 `dining_order_menu` / 选菜记录 `dining_order_item`。
+- **定义**：一人发起点单（title + 从菜谱库勾选本单菜单，支持 `fromOrderId` 复用历史菜单）、生成二维码分享（内容 `https://{host}/dining/join/{orderId}?t={join_token}`），他人扫码 → brief 确认弹窗 → 加入（创建者即首个成员）；共享购物车勾选想吃的菜（一人一菜一条，note 备注，取消即删行）；发起者结束后生成购买清单（食材名并集去重 + 按菜视图，`ShoppingListAssembler` 纯函数，快照落 `shopping_list` 列）。
+- **version 轮询协议**：`dining_order.version` 乐观并发——所有选菜变更走条件 UPDATE `WHERE id=? AND version=? SET version=version+1`，不匹配返回业务错误码 409（客户端拉取最新后重放）；详情接口为轮询主接口，客户端带 `knownVersion`，一致返回 `unchanged=true` 轻量响应，不一致/未带返回全量。
+- **四端对应物**：
+  - 后端：`dining/`（`WebDiningOrderController` / `WebDiningOrderItemController`，ROLE_USER；`DiningRecipeGate` 为点单对菜谱库的窄访问门面）。
+  - Android：`:feature:dining:{api,impl}`（07 号票发起链路）——`DiningServiceApi` 订单三接口（create/my/orderDetail）+ `DiningOrderStatus` 枚举映射；订单列表页（域首页，深链 host `dining` 落点 + 工作台入口）/ 创建订单页 / 分享视图 / 点单页 `OrderDetail`（09 号票：美团式左分类栏 + 右菜品列表 + 底部已选栏 + 参与者区 + 发起者「结束点单」占位入口；左右联动派生逻辑在 `DiningMenuNavigator` 纯函数，本地勾选/备注即时生效，写接口 version 冲突重放留 10 号票）。二维码内容 `{BASE_URL origin}/dining/join/{orderId}?t={join_token}`，token 由创建响应与**发起者**详情响应下发。鸿蒙：本期不做（Out of Scope），契约以 `WebDiningOrderController` / `WebDiningOrderItemController` 为源。Web：无用户端（管理后台不消费点单订单）。
+- **易混淆点**：join_token 重置即旧二维码全部作废（仅发起者，仅 ONGOING）；加入三类失败各有明确业务提示（凭证无效/已结束/重复加入）；FINISHED 后拒绝一切选菜写入且不递增 version；version 只由选菜变更驱动，重置凭证不触碰 version；详情接口仅向发起者回传 join_token（参与者与轻量 `unchanged=true` 响应不下发，端上沿用首次全量值）。
+
+### 10.12 同步通道与复用入口（DiningOrderSyncChannel / fromOrderId / 再来一单）
+
+- **代码标识**：`DiningOrderSyncChannel`、`PollingDiningOrderSyncChannel`、`DiningSyncLifecycle`、`DiningCartSyncCoordinator`、`CreateDiningOrderFrom.fromOrderId`、`DiningRoute.OrderCreate(fromOrderId)`
+- **定义**：共享购物车同步的传输层抽象——业务只依赖 `DiningOrderSyncChannel`「订阅订单变更」语义，首实现 `PollingDiningOrderSyncChannel` 在点单页可见时约 3s 带 `knownVersion` 轮询详情（unchanged 轻量），后续可换 SSE/WebSocket 而不动业务代码。写操作携带已知 `version`，服务端不匹配返回业务码 409，端上经 `DiningCartSyncCoordinator` 以「服务端真相 + 本地意图」差分光重放（他人变更永不覆盖），失败全量刷新回滚。历史订单「再来一单」= 创建时携带 `fromOrderId` 复用源单本单菜单（当前用户须为源单成员，复用菜谱仍须上架，后端整份复制、逐道保序）。
+- **四端对应物**：
+  - 后端：`dining/`（`WebDiningOrderController` 的 `knownVersion` 轮询协议 + version 乐观并发；`CreateDiningOrderFrom.fromOrderId` 复用解析在 `DiningOrderServiceImpl`）。
+  - Android：`:feature:dining:impl`（`sync/DiningOrderSyncChannel` + `PollingDiningOrderSyncChannel` + `DiningSyncLifecycle`，点单页消费；订单列表卡「再来一单」→ `DiningRoute.OrderCreate(fromOrderId)` → 创建页复用模式，13 号票）。
+  - 鸿蒙：本期不做（Out of Scope），契约以后端 `knownVersion` 轮询协议与 `fromOrderId` 创建契约为准。
+  - Web：无用户端（管理后台不消费点单订单）。
+- **易混淆点**：version 只由选菜变更驱动（重置凭证/结束点单都不递增）；复用创建仍过上架把关，源单含已下架菜时整体拒绝；复用模式端上菜单只读回显（`toggleRecipe` 忽略），提交不传 recipeIds。
 
 ---
 
