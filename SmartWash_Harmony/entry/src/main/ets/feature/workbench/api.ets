@@ -99,6 +99,9 @@ export function workbenchIconFromKey(key: string | null | undefined): Resource {
       return $r('sys.symbol.ellipsis_message')
     case 'link':
       return $r('sys.symbol.link')
+    // 私密文本（阅后即焚）工作台入口（对齐安卓 WorkbenchTool lock 映射，gamepad 补契约先例）
+    case 'lock':
+      return $r('sys.symbol.lock')
     case 'science':
       return $r('sys.symbol.science_technology')
     case 'gamepad':

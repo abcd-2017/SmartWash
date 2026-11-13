@@ -22,3 +22,25 @@ export function consumeShortCodeChanged(): boolean {
   shortCodeChanged = false
   return true
 }
+
+// 物品标签变更信号 — 语义同 shortCodeChanged（创建/状态流转/删除回列表重拉）。
+// 域内二组信号互不干扰（标签列表只消费标签信号，短码列表只消费短码信号）。
+
+let assetTagChanged: boolean = false
+
+/** 置位标签变更信号（创建 / 状态流转 / 删除成功后调用） */
+export function markAssetTagChanged(): void {
+  assetTagChanged = true
+}
+
+/**
+ * 消费标签变更信号。
+ * @returns 本次 onShown 是否需要重拉标签列表（true = 有未消费的变更）
+ */
+export function consumeAssetTagChanged(): boolean {
+  if (!assetTagChanged) {
+    return false
+  }
+  assetTagChanged = false
+  return true
+}

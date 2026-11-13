@@ -21,9 +21,18 @@ import {
   VISIBILITY_PUBLIC,
   pageShortCodes,
   toolboxClicksFormat,
-  toolboxExpiryUntil
+  toolboxExpiryUntil,
+  toolboxSecretStateText
 } from './api'
-import { ExpiryState, expiryStateOf, formatDisplayDateTime, isPublicVisibility } from './ShortCodeRules'
+import {
+  CONTENT_TYPE_SECRET_TEXT,
+  ExpiryState,
+  expiryStateOf,
+  formatDisplayDateTime,
+  isPublicVisibility,
+  SecretState,
+  secretStateOf
+} from './ShortCodeRules'
 import { consumeShortCodeChanged } from './ToolboxChangeSignal'
 import { AppButton, EmptyState, IconBox, SkeletonBlock, SkeletonList } from '../../view/common/AppComponents'
 import { logger } from '../../utils/Logger'
@@ -166,6 +175,10 @@ struct ToolboxShortCodeList {
     param.expireAt = vo.expireAt ?? ""
     param.shortUrl = vo.shortUrl ?? ""
     param.createdAt = vo.createdAt ?? ""
+    // 私密文本（contentType=7）：状态/焚毁时间/分享链接随路由携带
+    param.secretState = vo.secretState ?? ""
+    param.burnedAt = vo.burnedAt ?? ""
+    param.secretUrl = vo.secretUrl ?? ""
     pathStack.pushPathByName(RouteNames.TOOLBOX_SHORT_CODE_DETAIL, param)
   }
 
@@ -173,15 +186,17 @@ struct ToolboxShortCodeList {
     pathStack.pushPathByName(RouteNames.TOOLBOX_SHORT_CODE_CREATE, null)
   }
 
-  /** 复制短链（空缺回落短码）+ 提示，与详情页复制行为一致（对齐安卓 onCopy） */
+  /** 复制短链/私密文本分享链接（空缺回落短码）+ 提示，与详情页复制行为一致（对齐安卓 onCopy） */
   private copyShortCode(vo: ShortCodeVo): void {
-    const text = (vo.shortUrl ?? "").length > 0 ? (vo.shortUrl ?? "") : (vo.code ?? "")
+    const isSecret = (vo.contentType ?? CONTENT_TYPE_SHORT_LINK) === CONTENT_TYPE_SECRET_TEXT
+    const link = isSecret ? (vo.secretUrl ?? "") : (vo.shortUrl ?? "")
+    const text = link.length > 0 ? link : (vo.code ?? "")
     if (text.length === 0) {
       return
     }
     const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
-      showToastSafety(ToolboxText.toolbox_copy_success)
+      showToastSafety(isSecret ? ToolboxText.toolbox_secret_copy_success : ToolboxText.toolbox_copy_success)
     }).catch((err: BusinessError) => {
       // 复制失败与「找不到浏览器」是两种失败，各用各的文案（原复用 open_failed 属误导）
       showToastSafety(ToolboxText.toolbox_copy_failed)
@@ -192,6 +207,36 @@ struct ToolboxShortCodeList {
   /** 可见性映射（非 2 一律公开，对齐后端 1公开/2私有） */
   private isPublicOf(vo: ShortCodeVo): boolean {
     return isPublicVisibility(vo.isPublic ?? VISIBILITY_PUBLIC)
+  }
+
+  /** 私密文本状态 chip 底色（ACTIVE=primaryContainer / BURNED=errorContainer / EXPIRED=warningContainer / 兜底 surfaceVariant） */
+  private secretChipContainer(state: string | null | undefined): ResourceColor {
+    const s: SecretState = secretStateOf(state)
+    if (s === SecretState.ACTIVE) {
+      return $r('app.color.PRIMARY_CONTAINER')
+    }
+    if (s === SecretState.BURNED) {
+      return $r('app.color.ERROR_CONTAINER')
+    }
+    if (s === SecretState.EXPIRED) {
+      return $r('app.color.WARNING_CONTAINER')
+    }
+    return $r('app.color.SURFACE_VARIANT')
+  }
+
+  /** 私密文本状态 chip 字色（与 secretChipContainer 一一配对，对齐安卓） */
+  private secretChipContent(state: string | null | undefined): ResourceColor {
+    const s: SecretState = secretStateOf(state)
+    if (s === SecretState.ACTIVE) {
+      return $r('app.color.ON_PRIMARY_CONTAINER')
+    }
+    if (s === SecretState.BURNED) {
+      return $r('app.color.ON_ERROR_CONTAINER')
+    }
+    if (s === SecretState.EXPIRED) {
+      return $r('app.color.ON_WARNING_CONTAINER')
+    }
+    return $r('app.color.TEXT_SECONDARY')
   }
 
   /** 过期态文字（列表页：永久/有效灰、已过期 dangerInk） */
@@ -316,9 +361,15 @@ struct ToolboxShortCodeList {
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
           Row({ space: 4 }) {
-            this.TagChip(ToolboxText.toolbox_type_short_link,
+            this.TagChip((vo.contentType ?? CONTENT_TYPE_SHORT_LINK) === CONTENT_TYPE_SECRET_TEXT
+              ? ToolboxText.toolbox_create_mode_secret : ToolboxText.toolbox_type_short_link,
               $r('app.color.SURFACE_VARIANT'), $r('app.color.TEXT_SECONDARY'))
-            if (this.isPublicOf(vo)) {
+            if ((vo.contentType ?? CONTENT_TYPE_SHORT_LINK) === CONTENT_TYPE_SECRET_TEXT) {
+              // 私密文本：状态 chip（未领取/已焚毁/已过期）替代可见性（恒公开无信息量，对齐安卓；
+              // @Builder 内不做局部声明，色值经 secretChipContainer/Content 方法取）
+              this.TagChip(toolboxSecretStateText(vo.secretState),
+                this.secretChipContainer(vo.secretState), this.secretChipContent(vo.secretState))
+            } else if (this.isPublicOf(vo)) {
               // 公开 = primaryContainer/onPrimaryContainer（对齐安卓）
               this.TagChip(ToolboxText.toolbox_visibility_public_value,
                 $r('app.color.PRIMARY_CONTAINER'), $r('app.color.ON_PRIMARY_CONTAINER'))

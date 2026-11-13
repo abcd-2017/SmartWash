@@ -62,6 +62,10 @@ function buildHostRoutes(): Map<string, DeepLinkRouteTarget> {
   routes.set('divination-history', { routeName: RouteNames.DIV_HISTORY, param: null })
   // 工具箱域
   routes.set('toolbox-short-code', { routeName: RouteNames.TOOLBOX_SHORT_CODE_LIST, param: null })
+  // 工具箱域私密文本（阅后即焚）入口（对齐安卓 ToolboxDeepLinkModule：toolbox-secret → 列表页）
+  routes.set('toolbox-secret', { routeName: RouteNames.TOOLBOX_SHORT_CODE_LIST, param: null })
+  // 物品标签（一物一码 M2）入口（对齐安卓 ToolboxDeepLinkModule：toolbox-asset-tag → 标签列表）
+  routes.set('toolbox-asset-tag', { routeName: RouteNames.TOOLBOX_ASSET_TAG_LIST, param: null })
   // 游戏中心域（对齐安卓 GameDeepLinkModule：game-center → GameRoute.Center）
   routes.set('game-center', { routeName: RouteNames.GAME_CENTER, param: null })
   // 工具箱域设备投递（对齐安卓 ToolboxDeepLinkModule：delivery → ToolboxRoute.Delivery）

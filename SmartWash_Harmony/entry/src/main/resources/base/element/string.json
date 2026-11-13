@@ -2705,6 +2705,282 @@
       "value": "提交失败，请重试"
     },
     {
+      "name": "asset_tag_title",
+      "value": "物品标签"
+    },
+    {
+      "name": "asset_tag_create_title",
+      "value": "新建物品标签"
+    },
+    {
+      "name": "asset_tag_detail_title",
+      "value": "标签详情"
+    },
+    {
+      "name": "asset_tag_action_new",
+      "value": "新建标签"
+    },
+    {
+      "name": "asset_tag_empty_message",
+      "value": "还没有物品标签，给常用的物品建一个吧"
+    },
+    {
+      "name": "asset_tag_item_name_label",
+      "value": "物品名称"
+    },
+    {
+      "name": "asset_tag_item_name_hint",
+      "value": "如：蓝色折叠伞"
+    },
+    {
+      "name": "asset_tag_item_desc_label",
+      "value": "物品描述（可选）"
+    },
+    {
+      "name": "asset_tag_item_desc_hint",
+      "value": "外观特征，方便识别"
+    },
+    {
+      "name": "asset_tag_contact_label",
+      "value": "联系方式（可选）"
+    },
+    {
+      "name": "asset_tag_contact_hint",
+      "value": "微信号 / 手机号"
+    },
+    {
+      "name": "asset_tag_contact_desc",
+      "value": "仅物品「寻物中」时向扫码者展示，其余状态不下发"
+    },
+    {
+      "name": "asset_tag_custom_code_label",
+      "value": "自定义标签码（可选）"
+    },
+    {
+      "name": "asset_tag_submit_create",
+      "value": "创建标签"
+    },
+    {
+      "name": "asset_tag_toast_create_success",
+      "value": "标签创建成功"
+    },
+    {
+      "name": "asset_tag_error_item_name",
+      "value": "物品名称不能为空且不超过 64 字符"
+    },
+    {
+      "name": "asset_tag_error_contact",
+      "value": "联系方式不能超过 64 字符"
+    },
+    {
+      "name": "asset_tag_error_submit",
+      "value": "提交失败，请重试"
+    },
+    {
+      "name": "asset_tag_status_normal",
+      "value": "正常"
+    },
+    {
+      "name": "asset_tag_status_lost",
+      "value": "寻物中"
+    },
+    {
+      "name": "asset_tag_status_found",
+      "value": "已寻回"
+    },
+    {
+      "name": "asset_tag_label_status",
+      "value": "寻物状态"
+    },
+    {
+      "name": "asset_tag_label_scans",
+      "value": "累计扫码"
+    },
+    {
+      "name": "asset_tag_scans_format",
+      "value": "%1$s 次扫码"
+    },
+    {
+      "name": "asset_tag_label_last_scanned",
+      "value": "最近扫码"
+    },
+    {
+      "name": "asset_tag_label_code",
+      "value": "标签码"
+    },
+    {
+      "name": "asset_tag_link_label",
+      "value": "标签链接"
+    },
+    {
+      "name": "asset_tag_link_hint",
+      "value": "贴在物品上的二维码即此链接，捡到的人扫码可见物品信息"
+    },
+    {
+      "name": "asset_tag_link_unavailable",
+      "value": "未配置 Web 域名，标签链接暂不可用"
+    },
+    {
+      "name": "asset_tag_copy_success",
+      "value": "标签链接已复制"
+    },
+    {
+      "name": "asset_tag_copy_failed",
+      "value": "复制失败，请重试"
+    },
+    {
+      "name": "asset_tag_action_set_lost",
+      "value": "设为寻物中"
+    },
+    {
+      "name": "asset_tag_action_set_found",
+      "value": "标记已寻回"
+    },
+    {
+      "name": "asset_tag_action_set_normal",
+      "value": "恢复正常"
+    },
+    {
+      "name": "asset_tag_toast_status_success",
+      "value": "状态已更新"
+    },
+    {
+      "name": "asset_tag_action_delete",
+      "value": "删除标签"
+    },
+    {
+      "name": "asset_tag_confirm_delete_title",
+      "value": "删除物品标签"
+    },
+    {
+      "name": "asset_tag_confirm_delete_message",
+      "value": "删除后扫码将显示「标签不存在」，确定删除「%1$s」？"
+    },
+    {
+      "name": "asset_tag_toast_delete_success",
+      "value": "已删除"
+    },
+    {
+      "name": "asset_tag_privacy_note",
+      "value": "联系方式加密存储，仅寻物中状态下发给扫码者"
+    },
+    {
+      "name": "asset_tag_loading_first",
+      "value": "加载中"
+    },
+    {
+      "name": "toolbox_common_off",
+      "value": "关闭"
+    },
+    {
+      "name": "toolbox_common_on",
+      "value": "开启"
+    },
+    {
+      "name": "toolbox_create_mode_short_link",
+      "value": "短链"
+    },
+    {
+      "name": "toolbox_create_mode_secret",
+      "value": "私密文本"
+    },
+    {
+      "name": "toolbox_secret_mode_helper",
+      "value": "阅后即焚：对方仅可查看一次，查看或到期后立即焚毁"
+    },
+    {
+      "name": "toolbox_secret_content_label",
+      "value": "内容"
+    },
+    {
+      "name": "toolbox_secret_content_hint",
+      "value": "输入要一次性分享的内容"
+    },
+    {
+      "name": "toolbox_secret_content_counter_format",
+      "value": "%1$s/%2$s"
+    },
+    {
+      "name": "toolbox_secret_password_label",
+      "value": "访问口令（可选）"
+    },
+    {
+      "name": "toolbox_secret_password_hint",
+      "value": "4-32 位口令"
+    },
+    {
+      "name": "toolbox_secret_password_desc",
+      "value": "开启后对方需先输入口令才能揭示"
+    },
+    {
+      "name": "toolbox_secret_expiry_label",
+      "value": "时效"
+    },
+    {
+      "name": "toolbox_secret_expiry_preset_1h",
+      "value": "1 小时"
+    },
+    {
+      "name": "toolbox_secret_expiry_preset_1d",
+      "value": "1 天"
+    },
+    {
+      "name": "toolbox_secret_expiry_preset_7d",
+      "value": "7 天"
+    },
+    {
+      "name": "toolbox_error_secret_content",
+      "value": "内容不能为空且不超过 2000 字符"
+    },
+    {
+      "name": "toolbox_error_secret_password",
+      "value": "口令须为 4-32 位"
+    },
+    {
+      "name": "toolbox_secret_label_state",
+      "value": "秘密状态"
+    },
+    {
+      "name": "toolbox_secret_state_active",
+      "value": "未领取"
+    },
+    {
+      "name": "toolbox_secret_state_burned",
+      "value": "已焚毁"
+    },
+    {
+      "name": "toolbox_secret_state_expired",
+      "value": "已过期"
+    },
+    {
+      "name": "toolbox_secret_state_unknown",
+      "value": "未知"
+    },
+    {
+      "name": "toolbox_secret_label_burned_at",
+      "value": "焚毁时间"
+    },
+    {
+      "name": "toolbox_secret_link_label",
+      "value": "分享链接"
+    },
+    {
+      "name": "toolbox_secret_link_hint",
+      "value": "对方打开链接即可查看一次，查看后立即焚毁"
+    },
+    {
+      "name": "toolbox_secret_link_unavailable",
+      "value": "未配置 Web 域名，分享链接暂不可用"
+    },
+    {
+      "name": "toolbox_secret_privacy_note",
+      "value": "内容经服务端加密存储，任何端不回显"
+    },
+    {
+      "name": "toolbox_secret_copy_success",
+      "value": "分享链接已复制"
+    },
+    {
       "name": "toolbox_label_code",
       "value": "短码"
     },

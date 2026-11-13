@@ -26,15 +26,19 @@ import {
   toolboxClicksFormat,
   toolboxConfirmDeleteMessage,
   toolboxExpiryUntil,
+  toolboxSecretStateText,
   updateShortCode
 } from './api'
 import {
+  CONTENT_TYPE_SECRET_TEXT,
   ExpiryPreset,
   ExpiryState,
   expiryStateOf,
   expireAtFor,
   formatDisplayDateTime,
-  isPublicVisibility
+  isPublicVisibility,
+  SecretState,
+  secretStateOf
 } from './ShortCodeRules'
 import { markShortCodeChanged } from './ToolboxChangeSignal'
 import { toolboxCardTransition } from './ToolboxCardTransition'
@@ -196,6 +200,37 @@ struct ToolboxShortCodeDetail {
     }
   }
 
+  /** 是否私密文本（contentType=7）：信息卡/二维码卡/续期入口按类型分支 */
+  private isSecretCode(): boolean {
+    return (this.param?.contentType ?? 1) === CONTENT_TYPE_SECRET_TEXT
+  }
+
+  /** 私密文本是否终态（已焚毁/已过期）：终态隐藏续期入口（决策 9），后端终审 */
+  private secretTerminal(): boolean {
+    const state = secretStateOf(this.param?.secretState)
+    return state === SecretState.BURNED || state === SecretState.EXPIRED
+  }
+
+  /** 私密文本状态字色（ACTIVE=textGreen / BURNED=dangerInk / EXPIRED=onWarningContainer / 兜底 textSecondary，§10 深档） */
+  private secretStateColor(): ResourceColor {
+    const state = secretStateOf(this.param?.secretState)
+    if (state === SecretState.ACTIVE) {
+      return $r('app.color.TEXT_GREEN')
+    }
+    if (state === SecretState.BURNED) {
+      return $r('app.color.DANGER_INK')
+    }
+    if (state === SecretState.EXPIRED) {
+      return $r('app.color.ON_WARNING_CONTAINER')
+    }
+    return $r('app.color.TEXT_SECONDARY')
+  }
+
+  /** 私密文本分享链接：{toolbox.web-base-url}/s/{code}；未配置为空串（页面降级提示） */
+  private secretUrlOf(): string {
+    return this.param?.secretUrl ?? ""
+  }
+
   private getShortUrl(): string {
     const carried = this.param?.shortUrl ?? ""
     if (carried.length > 0) {
@@ -221,9 +256,9 @@ struct ToolboxShortCodeDetail {
     return text.length > 0 ? text : ToolboxText.toolbox_value_none
   }
 
-  /** 二维码本地生成（内容为完整 shortUrl；对齐安卓 generateQrCodeBitmap(shortUrl, 512)） */
+  /** 二维码本地生成（内容为完整跳转/分享链接；对齐安卓 generateQrCodeBitmap(url, 512)） */
   private async loadQrCode(): Promise<void> {
-    const url = this.getShortUrl()
+    const url = this.isSecretCode() ? this.secretUrlOf() : this.getShortUrl()
     if (url.length === 0) {
       logger.warn(TAG, 'shortUrl 缺失，二维码进入失败态')
       this.qrFailed = true
@@ -319,15 +354,16 @@ struct ToolboxShortCodeDetail {
     }
   }
 
-  /** 复制短链到剪贴板 */
+  /** 复制短链/私密文本分享链接到剪贴板 */
   private copyShortUrl(): void {
-    const url = this.getShortUrl()
+    const url = this.isSecretCode() ? this.secretUrlOf() : this.getShortUrl()
     if (url.length === 0) {
       return
     }
     const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, url)
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
-      showToastSafety(ToolboxText.toolbox_copy_success)
+      showToastSafety(this.isSecretCode()
+        ? ToolboxText.toolbox_secret_copy_success : ToolboxText.toolbox_copy_success)
     }).catch((err: BusinessError) => {
       // 复制失败与「找不到浏览器」是两种失败，各用各的文案（原复用 open_failed 属误导）
       showToastSafety(ToolboxText.toolbox_copy_failed)
@@ -335,8 +371,12 @@ struct ToolboxShortCodeDetail {
     })
   }
 
-  /** 打开链接：公开码直开 shortUrl；私有码先 resolve 取 target（计一次点击属预期） */
+  /** 打开链接：私密文本直开分享链接；公开码直开 shortUrl；私有码先 resolve 取 target（计一次点击属预期） */
   private async openLink(): Promise<void> {
+    if (this.isSecretCode()) {
+      this.openInBrowser(this.secretUrlOf())
+      return
+    }
     const url = this.getShortUrl()
     if (this.isPublicCode()) {
       if (url.length > 0) {
@@ -489,10 +529,12 @@ struct ToolboxShortCodeDetail {
   InfoCard() {
     Column() {
       InfoRow({ label: ToolboxText.toolbox_label_code, value: this.param?.code ?? "", valueColor: $r('app.color.TEXT_PRIMARY'), valueTnum: true })
-      InfoRow({ label: ToolboxText.toolbox_label_type, value: ToolboxText.toolbox_type_short_link, valueColor: $r('app.color.TEXT_PRIMARY'), valueTnum: false })
+      InfoRow({ label: ToolboxText.toolbox_label_type, value: this.isSecretCode() ? ToolboxText.toolbox_create_mode_secret : ToolboxText.toolbox_type_short_link, valueColor: $r('app.color.TEXT_PRIMARY'), valueTnum: false })
       // 12fp 小字语义色走深档（对比度红线 §10）：公开=TEXT_GREEN（≈5.1:1）、私有=ON_WARNING_CONTAINER；
-      // success(3.4:1)/ongoingInk(2.76:1) 作小字不达标（audit-18）
-      InfoRow({ label: ToolboxText.toolbox_label_visibility, value: this.isPublicCode() ? ToolboxText.toolbox_visibility_public_value : ToolboxText.toolbox_visibility_private_value, valueColor: this.isPublicCode() ? $r('app.color.TEXT_GREEN') : $r('app.color.ON_WARNING_CONTAINER'), valueTnum: false })
+      // success(3.4:1)/ongoingInk(2.76:1) 作小字不达标（audit-18）。私密文本恒公开，不展示可见性行
+      if (!this.isSecretCode()) {
+        InfoRow({ label: ToolboxText.toolbox_label_visibility, value: this.isPublicCode() ? ToolboxText.toolbox_visibility_public_value : ToolboxText.toolbox_visibility_private_value, valueColor: this.isPublicCode() ? $r('app.color.TEXT_GREEN') : $r('app.color.ON_WARNING_CONTAINER'), valueTnum: false })
+      }
       InfoRow({ label: ToolboxText.toolbox_label_clicks, value: toolboxClicksFormat(this.param?.clickCount ?? 0), valueColor: $r('app.color.TEXT_GREEN'), valueTnum: true })
       InfoRow({ label: ToolboxText.toolbox_label_created, value: this.displayCreated(), valueColor: $r('app.color.TEXT_PRIMARY'), valueTnum: true })
 
@@ -503,6 +545,18 @@ struct ToolboxShortCodeDetail {
         InfoRow({ label: ToolboxText.toolbox_label_expiry, value: toolboxExpiryUntil(formatDisplayDateTime(this.param?.expireAt)), valueColor: $r('app.color.TEXT_SECONDARY'), valueTnum: true })
       } else {
         InfoRow({ label: ToolboxText.toolbox_label_expiry, value: ToolboxText.toolbox_expiry_expired, valueColor: $r('app.color.DANGER_INK'), valueTnum: false })
+      }
+
+      if (this.isSecretCode()) {
+        // 私密文本：状态行 + 焚毁时间 + 隐私注记（对齐安卓；@Builder 内不做局部声明，色值经方法取）
+        InfoRow({ label: ToolboxText.toolbox_secret_label_state, value: toolboxSecretStateText(this.param?.secretState), valueColor: this.secretStateColor(), valueTnum: false })
+        if (secretStateOf(this.param?.secretState) === SecretState.BURNED && (this.param?.burnedAt ?? "").length > 0) {
+          InfoRow({ label: ToolboxText.toolbox_secret_label_burned_at, value: formatDisplayDateTime(this.param?.burnedAt), valueColor: $r('app.color.TEXT_PRIMARY'), valueTnum: true })
+        }
+        Text(ToolboxText.toolbox_secret_privacy_note)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor($r('app.color.TEXT_SECONDARY'))
+          .margin({ top: DesignDimens.SPACE_XXS })
       }
 
       if ((this.param?.target ?? "").length > 0) {
@@ -520,34 +574,37 @@ struct ToolboxShortCodeDetail {
           .margin({ top: 4 })
       }
 
-      Row() {
-        Blank()
-        // 热区外扩至 48（触控红线 ≥48，对齐安卓 defaultMinSize(minHeight=48)，audit-18）：
-        // 原 vertical 4×2 + 行高仅 24；外层容器承接点击，内层文字视觉字号与位置不变
-        Column() {
-          // 字重对齐安卓 labelMedium 12/500（原 600）；行内文字动作小字绿走 TEXT_GREEN（§10）
-          Text(ToolboxText.toolbox_action_renew)
-            .fontSize(DesignFontSize.CAPTION)
-            .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor($r('app.color.TEXT_GREEN'))
-        }
-        .constraintSize({ minWidth: 48, minHeight: 48 })
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Center)
-        .scale({ x: this.pressedKey === 'renew' ? 0.97 : 1, y: this.pressedKey === 'renew' ? 0.97 : 1 })
-        .onTouch((event: TouchEvent) => {
-          if (event.type === TouchType.Down) {
-            this.pressedKey = 'renew'
-          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-            this.pressedKey = ''
+      // 续期入口：私密文本终态（焚毁/过期）隐藏（决策 9，对齐安卓 secretTerminal）
+      if (!this.secretTerminal()) {
+        Row() {
+          Blank()
+          // 热区外扩至 48（触控红线 ≥48，对齐安卓 defaultMinSize(minHeight=48)，audit-18）：
+          // 原 vertical 4×2 + 行高仅 24；外层容器承接点击，内层文字视觉字号与位置不变
+          Column() {
+            // 字重对齐安卓 labelMedium 12/500（原 600）；行内文字动作小字绿走 TEXT_GREEN（§10）
+            Text(ToolboxText.toolbox_action_renew)
+              .fontSize(DesignFontSize.CAPTION)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor($r('app.color.TEXT_GREEN'))
           }
-        })
-        .onClick(() => {
-          this.openRenewDialog()
-        })
+          .constraintSize({ minWidth: 48, minHeight: 48 })
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+          .scale({ x: this.pressedKey === 'renew' ? 0.97 : 1, y: this.pressedKey === 'renew' ? 0.97 : 1 })
+          .onTouch((event: TouchEvent) => {
+            if (event.type === TouchType.Down) {
+              this.pressedKey = 'renew'
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+              this.pressedKey = ''
+            }
+          })
+          .onClick(() => {
+            this.openRenewDialog()
+          })
+        }
+        .width('100%')
+        .margin({ top: DesignDimens.SPACE_XS })
       }
-      .width('100%')
-      .margin({ top: DesignDimens.SPACE_XS })
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
@@ -571,14 +628,22 @@ struct ToolboxShortCodeDetail {
   @Builder
   QrCard() {
     Column() {
-      Text(ToolboxText.toolbox_qr_section_title)
+      Text(this.isSecretCode() ? ToolboxText.toolbox_secret_link_label : ToolboxText.toolbox_qr_section_title)
         .fontSize(DesignFontSize.CARD_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor($r('app.color.TEXT_PRIMARY'))
         .width('100%')
         .margin({ bottom: DesignDimens.SPACE_MD })
 
-      if (this.qrPixelMap !== null) {
+      if (this.isSecretCode() && this.secretUrlOf().length === 0) {
+        // 私密文本分享链接不可用（web-base-url 未配置）：降级文案而非失败重试空转
+        Text(ToolboxText.toolbox_secret_link_unavailable)
+          .fontSize(DesignFontSize.BODY)
+          .fontColor($r('app.color.TEXT_SECONDARY'))
+          .width('100%')
+          .textAlign(TextAlign.Center)
+          .padding({ top: 16, bottom: 16 })
+      } else if (this.qrPixelMap !== null) {
         Image(this.qrPixelMap)
           .width(200)
           .height(200)
@@ -625,7 +690,7 @@ struct ToolboxShortCodeDetail {
       }
 
       // 字重对齐安卓 labelSmall 12/500（原 400）
-      Text(this.getShortUrl())
+      Text(this.isSecretCode() ? this.secretUrlOf() : this.getShortUrl())
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
         .fontColor($r('app.color.TEXT_SECONDARY'))
@@ -637,7 +702,14 @@ struct ToolboxShortCodeDetail {
         .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD })
         .margin({ top: DesignDimens.SPACE_SM })
 
-      if (!this.isPublicCode()) {
+      if (this.isSecretCode()) {
+        Text(ToolboxText.toolbox_secret_link_hint)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor($r('app.color.ON_WARNING_CONTAINER'))
+          .textAlign(TextAlign.Center)
+          .width('100%')
+          .margin({ top: DesignDimens.SPACE_XS })
+      } else if (!this.isPublicCode()) {
         Text(ToolboxText.toolbox_private_open_hint)
           .fontSize(DesignFontSize.CAPTION)
           // 私有码提示为用户必读正文：ongoingInk 压白 2.76:1 不达标，改 onWarningContainer（§10，audit-18）
