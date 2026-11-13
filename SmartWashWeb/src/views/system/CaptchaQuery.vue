@@ -122,8 +122,8 @@ function formatRemainTime(seconds) {
 
 <style scoped>
 .captcha-code {
-  font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
-  font-size: 18px;
+  font-family: var(--font-mono);
+  font-size: 20px; /* 对齐 headline 档（验证码强调展示，原 18px off-ramp） */
   font-weight: 700;
   letter-spacing: 4px;
   color: var(--color-primary);

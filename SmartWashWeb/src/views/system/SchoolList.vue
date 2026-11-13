@@ -82,7 +82,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="schoolList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="schoolList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="schoolId" label="ID" min-width="80" />
         <el-table-column prop="schoolName" label="学校名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="schoolCode" label="学校编码" min-width="120" />
@@ -116,10 +122,10 @@
         <el-table-column prop="createdAt" label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -392,7 +398,11 @@ const submitForm = async () => {
     } else {
       await updateSchool(tempSchool);
       ElMessage.success('修改成功');
-      logger.info('修改学校成功', `schoolId=${tempSchool.schoolId}`, `schoolName=${tempSchool.schoolName}`);
+      logger.info(
+        '修改学校成功',
+        `schoolId=${tempSchool.schoolId}`,
+        `schoolName=${tempSchool.schoolName}`
+      );
     }
     // 学校数据有变，失效学校下拉的全量缓存，其他页面下次进入时重新拉取
     schoolOptionsCache.invalidate();

@@ -40,7 +40,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="noticeList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="noticeList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="id" label="ID" min-width="80" align="center">
           <template #default="{ row }">{{ row.id ?? '-' }}</template>
         </el-table-column>
@@ -408,13 +414,13 @@ onMounted(() => {
 }
 
 .stat-panel__value {
-  font-size: 18px;
+  font-size: 20px; /* 对齐 headline 档（送达统计数值强调展示，原 18px off-ramp） */
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .stat-panel__value--primary {
-  color: var(--el-color-primary);
+  color: var(--color-primary);
 }
 </style>

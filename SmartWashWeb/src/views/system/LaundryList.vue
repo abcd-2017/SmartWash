@@ -35,7 +35,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="laundryList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="laundryList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="itemId" label="ID" min-width="80" />
         <el-table-column prop="itemName" label="套餐名称" min-width="180" />
         <el-table-column prop="basePrice" label="基础价格" min-width="120" align="right">
@@ -50,10 +56,10 @@
         <el-table-column prop="createdAt" label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -209,7 +215,11 @@ const submitForm = async () => {
     } else {
       await updateLaundry(tempLaundry);
       ElMessage.success('修改成功');
-      logger.info('修改套餐成功', `itemId=${tempLaundry.itemId}`, `itemName=${tempLaundry.itemName}`);
+      logger.info(
+        '修改套餐成功',
+        `itemId=${tempLaundry.itemId}`,
+        `itemName=${tempLaundry.itemName}`
+      );
     }
     // 套餐数据有变，失效套餐下拉的全量缓存（评审 #15 的失效入口）
     laundryOptionsCache.invalidate();

@@ -133,6 +133,10 @@ const CHART_ANIMATION = {
   animationEasing: 'cubicOut',
 };
 
+// 图表色板：canvas 无法引用 CSS var，此处按 DESIGN.md 色板字面量维护
+// （靛蓝/翡翠绿/警琥珀/警示红/浅靛，与 base.css token 同源）；四张图共用一份
+const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#818cf8'];
+
 onMounted(() => {
   initCharts();
   fetchStats();
@@ -213,7 +217,7 @@ const renderCharts = (records) => {
   // 每日用量趋势
   trendChart.setOption({
     ...CHART_ANIMATION,
-    color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#818cf8'],
+    color: CHART_COLORS,
     tooltip: { trigger: 'axis' },
     legend: { data: ['卦例数', '解读数', '拦截数'] },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
@@ -243,7 +247,7 @@ const renderCharts = (records) => {
   }));
   methodChart.setOption({
     ...CHART_ANIMATION,
-    color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#818cf8'],
+    color: CHART_COLORS,
     tooltip: { trigger: 'item' },
     legend: { orient: 'vertical', left: 'left' },
     series: [
@@ -262,7 +266,7 @@ const renderCharts = (records) => {
   // Token 消耗
   tokenChart.setOption({
     ...CHART_ANIMATION,
-    color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#818cf8'],
+    color: CHART_COLORS,
     tooltip: { trigger: 'axis' },
     legend: { data: ['输入 Token', '输出 Token'] },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
@@ -281,7 +285,7 @@ const renderCharts = (records) => {
   });
   cacheChart.setOption({
     ...CHART_ANIMATION,
-    color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#818cf8'],
+    color: CHART_COLORS,
     tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: { type: 'category', data: dates },

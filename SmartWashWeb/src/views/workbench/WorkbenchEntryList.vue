@@ -36,7 +36,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="entryList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="entryList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="sort" label="排序" min-width="70" align="center">
           <template #default="{ row }">{{ row.sort ?? '-' }}</template>
         </el-table-column>
@@ -109,10 +115,11 @@
         <el-table-column label="更新时间" min-width="170">
           <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="130" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button
+              link
               size="small"
               type="danger"
               :loading="deletingId === row.id"
@@ -231,7 +238,9 @@
             />
           </el-select>
           <div class="form-tip">
-            端上按 sort 顺序流式渲染：连续「列表行」归并进同一张白卡、连续「两列小卡」归并为两列网格，「通栏横卡」独占一行，「公告条」为可关闭的运营触达位（target 选填）；配合排序与分组标题即可组合出不同的页面构图
+            端上按 sort
+            顺序流式渲染：连续「列表行」归并进同一张白卡、连续「两列小卡」归并为两列网格，「通栏横卡」独占一行，「公告条」为可关闭的运营触达位（target
+            选填）；配合排序与分组标题即可组合出不同的页面构图
           </div>
         </el-form-item>
 
@@ -293,6 +302,7 @@
             </el-upload>
             <el-button
               v-if="tempEntry.imageUrl"
+              link
               size="small"
               :disabled="coverUploading"
               @click="tempEntry.imageUrl = ''"
@@ -300,7 +310,9 @@
               移除配图
             </el-button>
           </div>
-          <div class="form-tip">选填：png / jpeg / webp，不超过 5MB；有配图时端上卡片展示图文样式</div>
+          <div class="form-tip">
+            选填：png / jpeg / webp，不超过 5MB；有配图时端上卡片展示图文样式
+          </div>
         </el-form-item>
 
         <el-form-item label="跳转 target" prop="target">
@@ -810,14 +822,14 @@ const handleDelete = async (row) => {
 }
 
 .cover-uploader :deep(.el-upload) {
-  border: 1px dashed var(--border, #dcdfe6);
+  border: 1px dashed var(--border-color);
   border-radius: 8px;
   overflow: hidden;
-  transition: border-color 0.2s;
+  transition: border-color var(--motion-fast) var(--ease-standard);
 }
 
 .cover-uploader :deep(.el-upload:hover) {
-  border-color: var(--el-color-primary);
+  border-color: var(--color-primary);
 }
 
 .cover-preview {
@@ -835,7 +847,7 @@ const handleDelete = async (row) => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: var(--text-muted, #909399);
+  color: var(--text-muted);
   font-size: 12px;
 }
 

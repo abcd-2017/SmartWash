@@ -90,7 +90,13 @@
 
     <!-- 数据表格（只读：审计日志仅查询，不提供新增/编辑/删除） -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="auditList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="auditList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="adminUser" label="操作人" min-width="120" show-overflow-tooltip />
         <el-table-column label="动作" min-width="150">
@@ -326,7 +332,7 @@ onMounted(() => {
 .payload-tip {
   max-width: 480px;
   margin: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   white-space: pre-wrap;
   word-break: break-all;

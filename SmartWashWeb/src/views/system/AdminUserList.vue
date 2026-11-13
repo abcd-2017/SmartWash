@@ -66,6 +66,7 @@
         :data="adminList"
         fit
         highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
@@ -75,10 +76,10 @@
         <el-table-column label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -316,7 +317,11 @@ const submitForm = async () => {
     } else {
       await updateAdminUser(submitData);
       ElMessage.success('修改成功');
-      logger.info('修改管理员成功', `adminId=${tempAdmin.adminId}`, `username=${tempAdmin.username}`);
+      logger.info(
+        '修改管理员成功',
+        `adminId=${tempAdmin.adminId}`,
+        `username=${tempAdmin.username}`
+      );
     }
 
     dialogVisible.value = false;

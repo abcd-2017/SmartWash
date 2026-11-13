@@ -35,7 +35,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -864,23 +866,50 @@ private fun WorkbenchRowLine(
             color = scheme.textPrimary,
             modifier = Modifier.weight(1f)
         )
-        tool.badge?.let { badge ->
-            // U-104：原 #2D9B6A on #F0FBF4 仅 3.30:1；#1E8C5C on #F0FBF4 为 3.99:1 仍 <4.5，
-            // 且 §10 绿色文字仅限 ≥16sp/600（本角标 12sp/500），故改 textPrimary #1C1C1E（16.05:1）
-            Text(
-                text = badge,
-                style = MaterialTheme.typography.labelSmall,
-                color = scheme.textPrimary,
-                modifier = Modifier
-                    .background(scheme.primaryLight, RoundedCornerShape(AppDimens.radiusFull))
-                    .padding(horizontal = AppDimens.spaceSm, vertical = 2.dp)
-            )
-        }
+        tool.badge?.let { WorkbenchBadge(it) }
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
             tint = scheme.textTertiary
+        )
+    }
+}
+
+/**
+ * 服务端下发角标（workbench_entry.badge，管理端可配）：已知值映射矢量小图标——
+ * 「新」→ AutoAwesome 星芒（primary）、「热」→ LocalFireDepartment 火焰（ongoing）；
+ * 未知值回退清氧文字胶囊（radiusFull + primaryLight 浅底）。
+ * U-104：胶囊文字 textPrimary #1C1C1E（16.05:1）——原 #2D9B6A on #F0FBF4 仅 3.30:1，
+ * 且 §10 绿色文字仅限 ≥16sp/600（本角标 12sp/500 不适用）。
+ * 「新」/「热」为服务端约定下发值（协议字面量，非端上 UI 文案）；读屏文案见 strings.xml。
+ */
+@Composable
+private fun WorkbenchBadge(
+    badge: String,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = AppColors.colorScheme
+    when (badge) {
+        "新" -> Icon(
+            imageVector = Icons.Rounded.AutoAwesome,
+            contentDescription = stringResource(R.string.workbench_badge_new),
+            tint = scheme.primary,
+            modifier = modifier.size(16.dp),
+        )
+        "热" -> Icon(
+            imageVector = Icons.Rounded.LocalFireDepartment,
+            contentDescription = stringResource(R.string.workbench_badge_hot),
+            tint = scheme.ongoing,
+            modifier = modifier.size(16.dp),
+        )
+        else -> Text(
+            text = badge,
+            style = MaterialTheme.typography.labelSmall,
+            color = scheme.textPrimary,
+            modifier = modifier
+                .background(scheme.primaryLight, RoundedCornerShape(AppDimens.radiusFull))
+                .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.space2xs)
         )
     }
 }
@@ -1132,7 +1161,8 @@ private fun DivinationCompass(modifier: Modifier = Modifier) {
  * 工具卡（type=tile，设计稿 tile3）：白卡 1px 描边 + level1 阴影 + 44dp 语义图标容器（icon.md 24）
  * + 14sp/500 标题（与列表行/chip/公告标题同级字重统一，审查 #11）+ 12sp 描述（限两行，审查 #4）；
  * 可选配图（顶部 96dp 通铺，图卡不再叠图标容器）；右上角 badge 角标
- * （清氧小胶囊：radiusFull、主色浅底/主色文字）。icon/color 由 WorkbenchTint 白名单映射（未知值兜底），
+ * （已知值映射矢量小图标，未知值回退清氧小胶囊，见 WorkbenchBadge）。
+ * icon/color 由 WorkbenchTint 白名单映射（未知值兜底），
  * 触控整卡 ≥48dp、按压反馈走 pressable（scale 0.97 + indication = null，禁止 Material ripple）。
  * 描述为空不下发占位行（卡内节奏不因空文案错位）。
  */
@@ -1190,19 +1220,13 @@ private fun ToolTile(
                     }
                 }
             }
-            // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底（caption 档）
-            // U-104：文字改 textPrimary #1C1C1E（原 #2D9B6A on #F0FBF4 3.30:1；绿字红线要求
-            // ≥16sp/600，本角标 12sp/500 不适用 green.700）
-            if (!tool.badge.isNullOrBlank()) {
-                Text(
-                    text = tool.badge,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = scheme.textPrimary,
+            // badge 角标（服务端下发）：已知值映射矢量图标，未知值回退文字胶囊（见 WorkbenchBadge）
+            tool.badge?.takeIf { it.isNotBlank() }?.let { badge ->
+                WorkbenchBadge(
+                    badge = badge,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(top = AppDimens.spaceSm, end = AppDimens.spaceSm)
-                        .background(scheme.primaryLight, RoundedCornerShape(AppDimens.radiusFull))
-                        .padding(horizontal = AppDimens.spaceSm, vertical = 2.dp)
+                        .padding(top = AppDimens.spaceSm, end = AppDimens.spaceSm),
                 )
             }
         }

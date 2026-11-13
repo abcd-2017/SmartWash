@@ -29,6 +29,20 @@
   --bg-subtle: #f8fafc;        /* 弱底：表头/输入框底/分页条 */
   --sidebar-bg: #0f172a;       /* 墨色外壳（与主文字同值不同角色） */
 
+  /* 暗侧外壳灰阶（DESIGN.md · 外壳即墨色规则）：侧栏/登录品牌区/404 品牌光场景专属，
+     亮暗两界各用各的文字灰阶，暗面板禁止引用亮侧 --text-* token */
+  --sidebar-text-strong: #f1f5f9; /* 暗面板标题/品牌名字 */
+  --sidebar-text: #cbd5e1;        /* 暗面板正文、菜单项默认字、品牌区功能列表 */
+  --sidebar-text-sub: #94a3b8;    /* 暗面板弱化说明（品牌副标语/页脚） */
+  --sidebar-text-active: #a5b4fc; /* 侧栏激活项字（浅靛） */
+  --sidebar-text-hover: #e2e8f0;  /* 侧栏 hover 字 */
+  --sidebar-hover-bg: rgba(99, 102, 241, 0.1);  /* 侧栏菜单项 hover 底 */
+  --sidebar-active-bg: rgba(99, 102, 241, 0.2); /* 侧栏激活项底 */
+  --sidebar-gradient: linear-gradient(135deg, var(--sidebar-bg), #1e293b, #312e81);
+
+  /* 等宽字体（DESIGN.md · mono）：全站唯一等宽栈，只服务于代码与数据 */
+  --font-mono: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+
   /* 阴影词汇表 —— 阴影是响应不是装饰（DESIGN.md · Elevation & Depth） */
   --shadow-ground: 0 1px 3px rgba(15, 23, 42, 0.04);   /* 静止着地 */
   --shadow-lift: 0 4px 12px rgba(15, 23, 42, 0.08);    /* hover 上浮 */

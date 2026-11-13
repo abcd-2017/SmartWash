@@ -91,7 +91,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="paymentList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="paymentList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="paymentId" label="支付ID" min-width="90" />
         <el-table-column prop="orderNo" label="订单号" min-width="200" show-overflow-tooltip />
         <el-table-column label="用户" min-width="150">

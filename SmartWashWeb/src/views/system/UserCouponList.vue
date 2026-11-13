@@ -39,7 +39,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="couponList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="couponList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="userCouponId" label="记录ID" min-width="100" />
         <el-table-column prop="phoneNumber" label="手机号" min-width="140" />
         <el-table-column prop="couponTitle" label="优惠券名称" min-width="180">

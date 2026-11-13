@@ -52,7 +52,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="documentList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="documentList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="title" label="书名" min-width="180" show-overflow-tooltip />
         <el-table-column prop="book" label="所属典籍" min-width="160" show-overflow-tooltip />

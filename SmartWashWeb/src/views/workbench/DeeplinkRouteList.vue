@@ -36,7 +36,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="routeList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="routeList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column label="Host" min-width="200">
           <template #default="{ row }">
             <div class="host-cell">
@@ -75,10 +81,11 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="130" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button
+              link
               size="small"
               type="danger"
               :loading="deletingId === row.id"
@@ -279,13 +286,7 @@ const handleToggleEnabled = async (row) => {
     ElMessage.success(next === 1 ? '已启用' : '已停用');
   } catch (error) {
     row.enabled = prev; // 失败回滚开关状态
-    logger.error(
-      '跳转路由启停失败:',
-      `id=${row.id}`,
-      `host=${row.host}`,
-      `enabled=${next}`,
-      error
-    );
+    logger.error('跳转路由启停失败:', `id=${row.id}`, `host=${row.host}`, `enabled=${next}`, error);
     ElMessage.error(error.message || '状态切换失败');
   } finally {
     togglingId.value = null;
@@ -415,7 +416,7 @@ const handleDelete = async (row) => {
 .host-main {
   color: var(--text-primary);
   font-weight: 500;
-  font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+  font-family: var(--font-mono);
 }
 
 .host-sub {

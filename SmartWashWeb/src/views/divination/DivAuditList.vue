@@ -25,7 +25,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="auditList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="auditList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="recordId" label="卦例ID" min-width="100" />
         <el-table-column prop="interpretationId" label="解读ID" min-width="100" />
@@ -41,7 +47,7 @@
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleViewDetail(row)">查看详情</el-button>
+            <el-button link size="small" @click="handleViewDetail(row)">查看详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -176,6 +182,7 @@ const handleViewDetail = (row) => {
 
 .diff-content pre {
   margin: 0;
+  font-family: var(--font-mono); /* 审计 JSON 属机器数据，走 mono 规则 */
   font-size: 12px;
   color: var(--text-body);
   white-space: pre-wrap;

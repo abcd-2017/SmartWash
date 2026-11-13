@@ -62,12 +62,20 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="list" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="list"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column label="订阅ID" min-width="90">
           <template #default="{ row }">{{ row.subscriptionId ?? row.id ?? '-' }}</template>
         </el-table-column>
         <el-table-column label="用户手机号" min-width="120">
-          <template #default="{ row }">{{ row.userPhone ?? row.users?.phoneNumber ?? '-' }}</template>
+          <template #default="{ row }">{{
+            row.userPhone ?? row.users?.phoneNumber ?? '-'
+          }}</template>
         </el-table-column>
         <el-table-column label="订阅名称" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">{{ row.name || '-' }}</template>
