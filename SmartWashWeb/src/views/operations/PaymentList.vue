@@ -23,7 +23,7 @@
           />
         </el-form-item>
 
-        <el-form-item label="手机号">
+        <el-form-item label="手机号" :error="phoneError">
           <el-input
             v-model="listQuery.phoneNumber"
             placeholder="输入手机号"
@@ -91,16 +91,26 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="paymentList" fit highlight-current-row>
-        <el-table-column prop="paymentId" label="支付ID" min-width="90" />
-        <el-table-column prop="orderNo" label="订单号" min-width="200" show-overflow-tooltip />
+      <el-table
+        v-loading="listLoading"
+        :data="paymentList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
+        <el-table-column prop="paymentId" label="支付ID" min-width="90" class-name="col-subtle" />
+        <el-table-column label="订单号" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.order?.orderNo || '-' }}</template>
+        </el-table-column>
         <el-table-column label="用户" min-width="150">
           <template #default="{ row }">
             {{ row.user?.phoneNumber || '-' }}
           </template>
         </el-table-column>
         <el-table-column label="金额" min-width="120" align="right">
-          <template #default="{ row }">￥{{ row.amount?.toFixed(2) || '0.00' }}</template>
+          <template #default="{ row }">
+            <span class="pay-amount">￥{{ formatAmount(row.amount) }}</span>
+          </template>
         </el-table-column>
         <el-table-column label="支付方式" min-width="120">
           <template #default="{ row }">
@@ -114,10 +124,9 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="支付时间" min-width="180">
+        <el-table-column label="支付时间" min-width="180" class-name="col-subtle">
           <template #default="{ row }">{{ formatTime(row.paidAt) }}</template>
         </el-table-column>
-        <!-- 操作列（原删除按钮）已按后端契约移除：支付/充值凭证禁止物理删除 -->
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -139,7 +148,7 @@
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getPayTypes, getPayStatus, getPaymentList } from '@/api/payment';
-import { formatTime } from '@/utils/format';
+import { formatAmount, formatTime } from '@/utils/format';
 import { payStatusTagType } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
@@ -214,14 +223,14 @@ const fetchPayStatus = async () => {
   }
 };
 
-// 手机号验证
+// 手机号验证：失焦时内联提示并保留输入（清空属静默丢弃用户输入，评审 P2）
+const phoneError = ref('');
 const validatePhone = () => {
   const phone = listQuery.phoneNumber;
   if (phone && !/^(?:\+86)?1[3-9]\d{9}$/.test(phone)) {
-    ElMessage.warning('手机号格式不正确');
-    // 清空用户输入属于静默丢弃动作，留 debug 便于开发期排查；不打输入值（可能含真实手机号）
-    logger.debug('支付记录筛选：手机号格式校验未通过，已清空输入');
-    listQuery.phoneNumber = '';
+    phoneError.value = '手机号格式不正确，仅支持 11 位大陆手机号';
+    return;
   }
+  phoneError.value = '';
 };
 </script>

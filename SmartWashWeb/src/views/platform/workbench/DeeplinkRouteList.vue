@@ -36,11 +36,17 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="routeList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="routeList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column label="Host" min-width="200">
           <template #default="{ row }">
             <div class="host-cell">
-              <span class="host-main">{{ row.host || '-' }}</span>
+              <span class="host-chip">{{ row.host || '-' }}</span>
               <span v-if="row.name" class="host-sub">{{ row.name }}</span>
             </div>
           </template>
@@ -75,10 +81,11 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="130" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button
+              link
               size="small"
               type="danger"
               :loading="deletingId === row.id"
@@ -107,10 +114,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增跳转路由' : '编辑跳转路由'"
       v-model="dialogVisible"
-      width="600px"
+      width="min(600px, 94vw)"
       @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempRoute" label-width="100px" :rules="rules">
+      <el-form ref="formRef" :model="tempRoute" label-width="min(100px, 94vw)" :rules="rules">
         <el-form-item label="Host" prop="host">
           <el-input
             v-model="tempRoute.host"
@@ -188,6 +195,7 @@ import {
   deeplinkPlatformTagType,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -279,13 +287,7 @@ const handleToggleEnabled = async (row) => {
     ElMessage.success(next === 1 ? '已启用' : '已停用');
   } catch (error) {
     row.enabled = prev; // 失败回滚开关状态
-    logger.error(
-      '跳转路由启停失败:',
-      `id=${row.id}`,
-      `host=${row.host}`,
-      `enabled=${next}`,
-      error
-    );
+    logger.error('跳转路由启停失败:', `id=${row.id}`, `host=${row.host}`, `enabled=${next}`, error);
     ElMessage.error(error.message || '状态切换失败');
   } finally {
     togglingId.value = null;
@@ -365,8 +367,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
-    if (error?.fields) {
-      logger.debug('跳转路由表单校验未通过，已拦截提交');
+    if (isValidationError(error)) {
+      logger.debug('跳转路由表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error(
         '跳转路由提交失败:',
@@ -375,8 +377,8 @@ const submitForm = async () => {
         `id=${tempRoute.id ?? '-'}`,
         error
       );
+      ElMessage.error(error.message || '操作失败');
     }
-    ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
   }
@@ -405,17 +407,24 @@ const handleDelete = async (row) => {
 </script>
 
 <style scoped>
-/* host + 名称两行单元格 */
+/* host + 名称两行单元格:host 为机器标识符,弱底块与短码列同一语言 */
 .host-cell {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.host-main {
-  color: var(--text-primary);
+.host-chip {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
   font-weight: 500;
-  font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+  letter-spacing: 0.02em;
+  color: var(--text-input);
 }
 
 .host-sub {

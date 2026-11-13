@@ -401,7 +401,7 @@ private fun ShortCodeCard(
                         style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                         color = AppColors.colorScheme.textSecondary,
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(AppDimens.space2xs))
                     CopyPillButton(onClick = onCopy)
                 }
             }

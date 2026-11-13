@@ -68,7 +68,7 @@
 
 .el-pager li.is-active {
   background-color: var(--color-primary) !important;
-  color: #fff;
+  color: var(--color-on-primary);
   border-radius: 8px;
 }
 
@@ -184,17 +184,17 @@
 /* 淡彩底规则：淡彩底 + 同色系深字，无边框；实心饱和色只属于按钮 */
 .el-tag--success {
   background-color: var(--success-tint) !important;
-  color: #065f46 !important;
+  color: var(--success-tint-text) !important;
 }
 
 .el-tag--danger {
   background-color: var(--danger-tint) !important;
-  color: #991b1b !important;
+  color: var(--danger-tint-text) !important;
 }
 
 .el-tag--warning {
   background-color: var(--warning-tint) !important;
-  color: #92400e !important;
+  color: var(--warning-tint-text) !important;
 }
 
 .el-tag--info {
@@ -204,7 +204,7 @@
 
 .el-tag--primary {
   background-color: var(--primary-tint) !important;
-  color: #4338ca !important;
+  color: var(--primary-tint-text) !important;
 }
 
 /* 默认 type（无 type / 空字符串）*/
@@ -219,7 +219,7 @@
 .el-button--primary:hover {
   background-color: var(--color-primary) !important;
   border-color: var(--color-primary) !important;
-  color: #fff !important;
+  color: var(--color-on-primary) !important;
 }
 
 .el-button--primary:hover,
@@ -239,18 +239,18 @@
 .el-button--success:hover {
   background-color: var(--color-success) !important;
   border-color: var(--color-success) !important;
-  color: #fff !important;
+  color: var(--color-on-primary) !important;
 }
 
 .el-button--success:hover,
 .el-button--success:focus {
-  background-color: #34d399 !important;
-  border-color: #34d399 !important;
+  background-color: var(--success-light) !important;
+  border-color: var(--success-light) !important;
 }
 
 .el-button--success:active {
-  background-color: #059669 !important;
-  border-color: #059669 !important;
+  background-color: var(--success-dark) !important;
+  border-color: var(--success-dark) !important;
 }
 
 /* --- el-button 危险 (Red) --- */
@@ -259,18 +259,18 @@
 .el-button--danger:hover {
   background-color: var(--color-danger) !important;
   border-color: var(--color-danger) !important;
-  color: #fff !important;
+  color: var(--color-on-primary) !important;
 }
 
 .el-button--danger:hover,
 .el-button--danger:focus {
-  background-color: #f87171 !important;
-  border-color: #f87171 !important;
+  background-color: var(--danger-light) !important;
+  border-color: var(--danger-light) !important;
 }
 
 .el-button--danger:active {
-  background-color: #dc2626 !important;
-  border-color: #dc2626 !important;
+  background-color: var(--danger-dark) !important;
+  border-color: var(--danger-dark) !important;
 }
 
 /* 按压反馈：轻微缩放表达「按下」因果（motion-meaning），时长走全局 token；
@@ -294,18 +294,18 @@
 .el-button--warning:hover {
   background-color: var(--color-warning) !important;
   border-color: var(--color-warning) !important;
-  color: #fff !important;
+  color: var(--color-on-primary) !important;
 }
 
 .el-button--warning:hover,
 .el-button--warning:focus {
-  background-color: #fbbf24 !important;
-  border-color: #fbbf24 !important;
+  background-color: var(--warning-light) !important;
+  border-color: var(--warning-light) !important;
 }
 
 .el-button--warning:active {
-  background-color: #d97706 !important;
-  border-color: #d97706 !important;
+  background-color: var(--warning-dark) !important;
+  border-color: var(--warning-dark) !important;
 }
 
 /* --- el-button 默认 (Slate)：hover 转入靛蓝淡彩世界 --- */
@@ -605,7 +605,8 @@
 
 /* 键盘可达性：按钮与分页 focus-visible 统一靛蓝 outline */
 .el-button:focus-visible,
-.el-pager li:focus-visible {
+.el-pager li:focus-visible,
+a:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }

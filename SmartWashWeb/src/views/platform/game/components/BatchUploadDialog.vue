@@ -58,7 +58,12 @@
         class="batch-progress"
       />
 
-      <el-table :data="queue" size="small" max-height="380">
+      <el-table
+        :data="queue"
+        size="small"
+        max-height="380"
+        empty-text="选择父目录后，此处展示预检到的游戏目录"
+      >
         <el-table-column label="目录" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">{{ row.dirName }}</template>
         </el-table-column>
@@ -121,7 +126,7 @@ import { getGameList, uploadGame, uploadGameCover } from '@/api/game';
 import { useConfirm } from '@/composables/useConfirm';
 import { formatFileSize } from '@/utils/format';
 import logger from '@/utils/logger';
-import { splitGameDirs, inspectGameDir, parseGameReadme, GAME_KEY_PATTERN } from './gameDirectory';
+import { splitGameDirs, inspectGameDir, parseGameReadme, GAME_KEY_PATTERN } from '../gameDirectory';
 
 /** 单游戏包上限，与后端 GamePackageValidator.MAX_ORIGINAL_BYTES 对齐 */
 const MAX_PACKAGE_BYTES = 10 * 1024 * 1024;
@@ -349,16 +354,16 @@ const handleClosed = () => {
 
 .batch-guide {
   padding: 16px 20px;
-  background: var(--bg-subtle, #f8fafc);
+  background: var(--bg-subtle);
   border-radius: 10px;
-  color: var(--text-regular, #475569);
+  color: var(--text-regular);
   font-size: 13px;
   line-height: 1.8;
 }
 
 .batch-guide-title {
   font-weight: 600;
-  color: var(--text-body, #334155);
+  color: var(--text-body);
 }
 
 .batch-guide p {
@@ -374,12 +379,12 @@ const handleClosed = () => {
 .batch-summary {
   margin-bottom: 12px;
   font-size: 13px;
-  color: var(--text-regular, #475569);
+  color: var(--text-regular);
 }
 
 .batch-num {
   font-weight: 700;
-  color: var(--color-primary, #6366f1);
+  color: var(--color-primary);
 }
 
 .batch-progress {
@@ -389,7 +394,7 @@ const handleClosed = () => {
 .batch-reason {
   margin-left: 8px;
   font-size: 12px;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary);
 }
 
 .batch-actions {

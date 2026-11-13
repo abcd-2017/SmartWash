@@ -47,6 +47,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.impl.network.vo.recharge.RechargeRecordVo
+import java.util.Locale
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
@@ -381,7 +382,7 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
             // 用户反馈已被 2026-11-06 裁决记录推翻）
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = stringResource(R.string.recharge_record_amount_format, String.format("%.2f", record.amount)),
+                text = stringResource(R.string.recharge_record_amount_format, String.format(Locale.CHINA, "%.2f", record.amount)),
                 // titleLarge 22/28/600；金额开 tnum 等宽防数字抖动（规范 §2.2 硬规则）
                 style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.primaryDark,

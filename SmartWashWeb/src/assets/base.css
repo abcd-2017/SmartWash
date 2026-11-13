@@ -29,12 +29,26 @@
   --bg-subtle: #f8fafc;        /* 弱底：表头/输入框底/分页条 */
   --sidebar-bg: #0f172a;       /* 墨色外壳（与主文字同值不同角色） */
 
+  /* 暗侧外壳灰阶（DESIGN.md · 外壳即墨色规则）：侧栏/登录品牌区/404 品牌光场景专属，
+     亮暗两界各用各的文字灰阶，暗面板禁止引用亮侧 --text-* token */
+  --sidebar-text-strong: #f1f5f9; /* 暗面板标题/品牌名字 */
+  --sidebar-text: #cbd5e1;        /* 暗面板正文、菜单项默认字、品牌区功能列表 */
+  --sidebar-text-sub: #94a3b8;    /* 暗面板弱化说明（品牌副标语/页脚） */
+  --sidebar-text-active: #a5b4fc; /* 侧栏激活项字（浅靛） */
+  --sidebar-text-hover: #e2e8f0;  /* 侧栏 hover 字 */
+  --sidebar-hover-bg: rgba(99, 102, 241, 0.1);  /* 侧栏菜单项 hover 底 */
+  --sidebar-active-bg: rgba(99, 102, 241, 0.2); /* 侧栏激活项底 */
+  --sidebar-gradient: linear-gradient(135deg, var(--sidebar-bg), #1e293b, #312e81);
+
+  /* 等宽字体（DESIGN.md · mono）：全站唯一等宽栈，只服务于代码与数据 */
+  --font-mono: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+
   /* 阴影词汇表 —— 阴影是响应不是装饰（DESIGN.md · Elevation & Depth） */
   --shadow-ground: 0 1px 3px rgba(15, 23, 42, 0.04);   /* 静止着地 */
   --shadow-lift: 0 4px 12px rgba(15, 23, 42, 0.08);    /* hover 上浮 */
   --shadow-popover: 0 10px 30px rgba(15, 23, 42, 0.1); /* 气泡浮层 */
   --shadow-dialog: 0 20px 60px rgba(15, 23, 42, 0.15); /* 弹窗最高层 */
-  --shadow-brand: 0 4px 32px rgba(99, 102, 241, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04); /* 仅登录/404 面板 */
+  --shadow-brand: 0 4px 32px rgba(99, 102, 241, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04); /* 仅登录/404/投递取件面板（投递页已登记使用） */
 
   /* 动效 Token —— 全站共享，禁止在组件内另立时长/缓动常量
      时长取自 skill 规则：按下/颜色反馈取短、常规过渡取中、需要"呼吸感"的场景取长 */
@@ -45,6 +59,31 @@
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-decelerate: cubic-bezier(0, 0, 0.2, 1); /* 进场 */
   --ease-accelerate: cubic-bezier(0.4, 0, 1, 1); /* 离场 */
+
+  /* 淡彩底配套深字 —— 淡彩底规则的另一半：底（--*-tint）与深字成对进 token，
+     皮肤层与页面一律取 var，禁止再抄 #065f46 等色值 */
+  --primary-tint-text: #4338ca;
+  --success-tint-text: #065f46;
+  --danger-tint-text: #991b1b;
+  --warning-tint-text: #92400e;
+
+  /* 语义色辅助阶 —— 按钮 hover 提亮 / active 加深专用（与主 token 同源成对） */
+  --success-light: #34d399;
+  --success-dark: #059669;
+  --danger-light: #f87171;
+  --danger-dark: #dc2626;
+  --warning-light: #fbbf24;
+  --warning-dark: #d97706;
+
+  /* 统计卡图标容器淡底（语义色 10% 透明底 + 实色图标，DESIGN.md · 签名组件） */
+  --primary-soft-bg: rgba(99, 102, 241, 0.1);
+  --info-soft-bg: rgba(59, 130, 246, 0.1);
+  --success-soft-bg: rgba(16, 185, 129, 0.1);
+  --warning-soft-bg: rgba(245, 158, 11, 0.1);
+  --danger-soft-bg: rgba(239, 68, 68, 0.1);
+
+  /* 主操作字色（实心按钮/主色底上的白字） */
+  --color-on-primary: #ffffff;
 }
 
 *,

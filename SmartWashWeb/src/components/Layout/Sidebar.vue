@@ -4,15 +4,7 @@
       <div class="brand-name">SmartWash</div>
       <div class="brand-sub">管理系统</div>
     </div>
-    <el-menu
-      ref="menuRef"
-      :default-active="activeMenu"
-      :default-openeds="defaultOpeneds"
-      background-color="#0f172a"
-      text-color="#cbd5e1"
-      active-text-color="#a5b4fc"
-      router
-    >
+    <el-menu ref="menuRef" :default-active="activeMenu" :default-openeds="defaultOpeneds" router>
       <!-- 首页是唯一子项的「数据看板」，保持顶层不折叠，减少一次点击 -->
       <el-menu-item v-if="homeRoute" :index="homeRoute.path">
         <el-icon><component :is="resolveIcon(homeRoute.meta.icon)" /></el-icon>
@@ -57,14 +49,13 @@ import {
   Cpu,
   Setting,
   Message,
+  // 情绪与订阅
   AlarmClock,
   // 树形分组表头图标 + 短链管理
   Files,
   OfficeBuilding,
   User,
-  Present,
   MagicStick,
-  Suitcase,
   Link,
   Grid,
   // 工作台配置
@@ -108,15 +99,14 @@ const iconRegistry = {
   Cpu: markRaw(Cpu),
   Setting: markRaw(Setting),
   Message: markRaw(Message),
+  // 情绪与订阅
   AlarmClock: markRaw(AlarmClock),
   // 工具箱与分组表头
   Link: markRaw(Link),
   Files: markRaw(Files),
   OfficeBuilding: markRaw(OfficeBuilding),
   User: markRaw(User),
-  Present: markRaw(Present),
   MagicStick: markRaw(MagicStick),
-  Suitcase: markRaw(Suitcase),
   Grid: markRaw(Grid),
   // 工作台配置
   Guide: markRaw(Guide),
@@ -143,11 +133,27 @@ const menuRoutes = computed(() => {
 // 树形分组配置：paths 引用路由 path，item 的标题/图标仍取自路由 meta。
 // 未被任何分组覆盖的 showInMenu 路由会兜底进「其他」组，
 // 保证将来新增路由即使忘了登记分组，菜单也不会消失。
+// 六组信息架构：基础数据 → 业务管理 → 用户运营 → 平台模块 → 观象台 → 系统与安全，
+// 与 src/views/ 的目录划分一一对应；组间顺序即侧边栏展示顺序
 const MENU_GROUP_CONFIG = [
-  { title: '业务管理', icon: 'Files', paths: ['/orders', '/payment', '/recharge'] },
   { title: '基础数据', icon: 'OfficeBuilding', paths: ['/schools', '/lockers', '/laundry'] },
-  { title: '用户与权限', icon: 'User', paths: ['/users', '/adminUsers', '/roles'] },
-  { title: '营销', icon: 'Present', paths: ['/coupon', '/userCoupon'] },
+  { title: '业务管理', icon: 'Files', paths: ['/orders', '/payment', '/recharge'] },
+  // 用户触达（站内信）与营销发券同属用户运营，不再各自成组
+  { title: '用户运营', icon: 'User', paths: ['/users', '/coupon', '/userCoupon', '/notices'] },
+  {
+    // 短链/工作台/游戏/订阅等平台实验模块统一归口
+    title: '平台模块',
+    icon: 'Grid',
+    paths: [
+      '/toolbox/short-codes',
+      '/workbench/entries',
+      '/workbench/deeplink-routes',
+      '/game/list',
+      '/game/levels',
+      '/game/data',
+      '/subscriptions',
+    ],
+  },
   {
     title: '观象台',
     icon: 'MagicStick',
@@ -161,7 +167,7 @@ const MENU_GROUP_CONFIG = [
       '/divination/settings',
     ],
   },
-  { title: '工具箱', icon: 'Suitcase', paths: ['/captcha', '/toolbox/short-codes'] },
+    { title: '系统与安全', icon: 'Lock', paths: ['/roles', '/adminUsers', '/audit-logs', '/captcha'] },
   {
     title: '工作台',
     icon: 'Grid',
@@ -237,17 +243,22 @@ watch(activeGroupIndex, (title) => {
 .brand-name {
   font-size: 18px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--sidebar-text-strong);
   letter-spacing: -0.3px;
 }
 
 .brand-sub {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--sidebar-text-sub);
   margin-top: 4px;
 }
 
-.el-menu {
+/* 菜单三色改用暗侧 token 经 EP CSS 变量注入（替代原 background-color/text-color/active-text-color 硬编码 props） */
+.sidebar :deep(.el-menu) {
+  --el-menu-bg-color: var(--sidebar-bg);
+  --el-menu-text-color: var(--sidebar-text);
+  --el-menu-hover-bg-color: var(--sidebar-hover-bg);
+  --el-menu-active-color: var(--sidebar-text-active);
   border-right: none;
   flex: 1;
   min-height: 0;
@@ -260,19 +271,19 @@ watch(activeGroupIndex, (title) => {
   margin-bottom: 2px;
   height: 44px;
   line-height: 44px;
-  color: #cbd5e1 !important;
+  color: var(--sidebar-text) !important;
   font-weight: 500;
   font-size: 14px;
 }
 
 :deep(.el-menu-item:hover) {
-  background-color: rgba(99, 102, 241, 0.1) !important;
-  color: #e2e8f0 !important;
+  background-color: var(--sidebar-hover-bg) !important;
+  color: var(--sidebar-text-hover) !important;
 }
 
 :deep(.el-menu-item.is-active) {
-  background-color: rgba(99, 102, 241, 0.2) !important;
-  color: #a5b4fc !important;
+  background-color: var(--sidebar-active-bg) !important;
+  color: var(--sidebar-text-active) !important;
 }
 
 :deep(.el-menu-item .el-icon) {
@@ -286,14 +297,14 @@ watch(activeGroupIndex, (title) => {
   margin-bottom: 2px;
   height: 44px;
   line-height: 44px;
-  color: #cbd5e1 !important;
+  color: var(--sidebar-text) !important;
   font-weight: 500;
   font-size: 14px;
 }
 
 :deep(.el-sub-menu__title:hover) {
-  background-color: rgba(99, 102, 241, 0.1) !important;
-  color: #e2e8f0 !important;
+  background-color: var(--sidebar-hover-bg) !important;
+  color: var(--sidebar-text-hover) !important;
 }
 
 :deep(.el-sub-menu__title .el-icon) {
@@ -303,7 +314,7 @@ watch(activeGroupIndex, (title) => {
 
 /* 激活项所在分组的表头同步高亮文字色 */
 :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
-  color: #a5b4fc !important;
+  color: var(--sidebar-text-active) !important;
 }
 
 /* 二级菜单项略紧凑，与一级拉开层级 */

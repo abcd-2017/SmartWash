@@ -2,6 +2,8 @@ package com.smartwash.game.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.game.entity.GameLevel;
+import com.smartwash.game.from.GameLevelBatchFrom;
+import com.smartwash.game.vo.GameLevelImportResultVo;
 
 import java.util.List;
 
@@ -27,6 +29,14 @@ public interface GameLevelService extends IService<GameLevel> {
      */
     GameLevel upsertLevel(String gameKey, Integer levelNo, String name, String dataJson,
                           Integer difficulty, Integer enabled, Integer sort, String remark);
+
+    /**
+     * 批量导入关卡（管理端）：整批事务，任一项校验失败（序号/JSON/批内重复）全量回滚不落库；
+     * replaceAll=true 先清空该游戏现有关卡再导入；成功后 levels_version 仅递增一次，
+     * 避免逐关递增让 H5 拉到中间态关卡集。
+     */
+    GameLevelImportResultVo batchImportLevels(String gameKey, boolean replaceAll,
+                                              List<GameLevelBatchFrom.LevelItem> levels);
 
     /**
      * 删除关卡：按 (gameKey, levelNo)。变更后递增版本号。

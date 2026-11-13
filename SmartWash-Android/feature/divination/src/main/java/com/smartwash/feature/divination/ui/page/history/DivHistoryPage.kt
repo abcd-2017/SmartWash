@@ -1,7 +1,6 @@
 package com.smartwash.feature.divination.ui.page.history
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -43,9 +42,10 @@ import com.smartwash.feature.divination.ui.components.DivPageHeader
 import com.smartwash.feature.divination.ui.components.DivSeal
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.common.ui.theme.DivColors
-import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.motionSpec
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -107,9 +107,11 @@ fun DivHistoryPage(
             else -> HistoryListState.READY
         }
         // 空态与列表互相替换走 Crossfade，避免 0ms 硬切
+        // （常态走 micro 档 enterTween；CROSSFADE_ALT_MS 是 reduced motion 降级专用档，
+        // 经 motionSpec 自动落 180ms——口径与 DivAskPage/DivReadingPage 的 Crossfade 一致）
         Crossfade(
             targetState = listState,
-            animationSpec = tween(CROSSFADE_ALT_MS),
+            animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
             label = "historyState",
         ) { state ->
             when (state) {
@@ -127,7 +129,7 @@ fun DivHistoryPage(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         // 卦历画板 = flat 平涂深朱口径（DivSeal 组件契约），同时印文对比 3.4→5.31:1 达标（audit-08 #1）
-                        DivSeal("空", size = 44.dp, fontSize = 22.sp, flat = true)
+                        DivSeal(stringResource(R.string.div_seal_empty), size = 44.dp, fontSize = 22.sp, flat = true)
                         Spacer(Modifier.height(16.dp))
                         Text(
                             text = stringResource(R.string.div_history_empty),
@@ -175,6 +177,8 @@ private fun HistoryCard(
     val timeText = remember(record.castAt) {
         SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(record.castAt))
     }
+    // @Composable 的 methodLabel 在字符串模板外先取值（Composable 调用须在组合上下文直呼）
+    val methodText = methodLabel(DivMethod.fromId(record.method))
     DivCard(modifier = modifier, onClick = onClick) {
         // 画板：卡高 60，印章距左 14；问句 14/20 偏上 12、元信息 12/14 间隔 2；› 距右 8
         Row(
@@ -194,7 +198,7 @@ private fun HistoryCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "$timeText · ${methodLabel(DivMethod.fromId(record.method))} · ${record.summaryLine()}",
+                    text = "$timeText · $methodText · ${record.summaryLine()}",
                     fontSize = 12.sp,
                     // 行高维持画板 12/14 口径（观象台域既有画板豁免；v0.4 caption 12/16 留画板复核）
                     lineHeight = 14.sp,
@@ -222,11 +226,13 @@ private fun com.smartwash.feature.divination.database.DivRecordEntity.summaryLin
         }
     } ?: ""
 
+/** 术数显示名（与首页玉牌/案卷行同源 div_method_*_name 资源，audit-11 #1：禁止硬编码/枚举直出） */
+@Composable
 private fun methodLabel(method: DivMethod): String = when (method) {
-    DivMethod.LIU_YAO -> "六爻"
-    DivMethod.MEI_HUA -> "梅花"
-    DivMethod.QI_MEN -> "奇门"
-    DivMethod.LIU_REN -> "六壬"
+    DivMethod.LIU_YAO -> stringResource(R.string.div_method_liuyao_name)
+    DivMethod.MEI_HUA -> stringResource(R.string.div_method_meihua_name)
+    DivMethod.QI_MEN -> stringResource(R.string.div_method_qimen_name)
+    DivMethod.LIU_REN -> stringResource(R.string.div_method_liuren_name)
 }
 
 /** 术数印章字资源（画板：六爻印「六」、梅花「梅」、奇门「奇」、六壬「壬」；2026-11-05 卦历画板六爻印取「六」） */

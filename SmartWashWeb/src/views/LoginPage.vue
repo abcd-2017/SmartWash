@@ -56,6 +56,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue';
+import { passwordLengthRule } from '@/utils/validators';
 import { ElMessage } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import { login } from '@/api/auth';
@@ -73,10 +74,7 @@ const loginForm = reactive({
 
 const rules = reactive({
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 16, message: '密码长度在6到16个字符', trigger: 'blur' },
-  ],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }, passwordLengthRule()],
 });
 
 const loading = ref(false);
@@ -136,15 +134,15 @@ const handleLogin = async () => {
   box-shadow: var(--shadow-brand);
 }
 
-/* --- 左侧品牌区（暗面板：文字用暗侧专属灰阶，不走亮色 token） --- */
+/* --- 左侧品牌区（暗面板：文字用暗侧专属灰阶 token，不走亮色 token） --- */
 .brand-panel {
   display: flex;
   flex-direction: column;
   width: 46%;
   padding: 48px 40px;
-  /* 墨色外壳渐变（外壳即墨色规则）：暗面板专属文字色见上方注释 */
-  background: linear-gradient(135deg, var(--sidebar-bg), #1e293b, #312e81);
-  color: #f1f5f9;
+  /* 墨色外壳渐变（外壳即墨色规则） */
+  background: var(--sidebar-gradient);
+  color: var(--sidebar-text-strong);
 }
 
 .brand-logo-row {
@@ -159,7 +157,8 @@ const handleLogin = async () => {
 }
 
 .brand-name {
-  font-size: 20px;
+  /* 品牌字登记档 18px/700（DESIGN.md）：与侧栏品牌名同档，避免与右侧 20px 表单标题争抢层级 */
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.3px;
 }
@@ -167,7 +166,7 @@ const handleLogin = async () => {
 .brand-slogan {
   margin-top: 8px;
   font-size: 13px;
-  color: #cbd5e1;
+  color: var(--sidebar-text);
 }
 
 .brand-features {
@@ -175,13 +174,14 @@ const handleLogin = async () => {
   padding: 0;
   list-style: none;
   font-size: 14px;
-  color: #cbd5e1;
-  line-height: 2.2;
+  color: var(--sidebar-text);
+  /* 行高收紧到 2.0：三行功能列表在暗面板内更利落，避免过疏散漫 */
+  line-height: 2;
 }
 
 .brand-footer {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--sidebar-text-sub); /* 暗面板弱化字：不再混用亮侧 --text-muted（外壳即墨色规则） */
 }
 
 /* --- 右侧表单区 --- */
@@ -201,7 +201,8 @@ const handleLogin = async () => {
 }
 
 .form-sub {
-  margin: 6px 0 24px;
+  /* 标题与说明贴紧(4px)、说明与表单拉开(20px)，形成有意的疏密节奏 */
+  margin: 4px 0 20px;
   font-size: 13px;
   color: var(--text-secondary);
 }

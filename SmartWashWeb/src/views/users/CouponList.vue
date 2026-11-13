@@ -31,8 +31,12 @@
             style="width: 120px"
             @change="handleSearch"
           >
-            <el-option label="可用" value="ACTIVE" />
-            <el-option label="已失效" value="INACTIVE" />
+            <el-option
+              v-for="opt in COUPON_STATUS_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
 
@@ -40,7 +44,7 @@
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="filter-end">
           <el-button type="primary" @click="handleCreate">新增优惠券</el-button>
           <el-button
             type="danger"
@@ -60,21 +64,33 @@
         :data="couponList"
         fit
         highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="couponId" label="ID" min-width="80" />
         <el-table-column prop="title" label="标题" min-width="150" show-overflow-tooltip />
         <el-table-column label="折扣金额" min-width="120" align="right">
-          <template #default="{ row }">￥{{ row.discount?.toFixed(2) || '0.00' }}</template>
+          <template #default="{ row }">
+            <!-- 金额列(live 打磨 v3):600 字重 + 墨色,数字成为扫读锚点 -->
+            <div class="amount-cell">￥{{ formatAmount(row.discount) }}</div>
+          </template>
         </el-table-column>
         <el-table-column label="使用门槛" min-width="120" align="right">
-          <template #default="{ row }">￥{{ row.threshold?.toFixed(2) || '0.00' }}</template>
+          <template #default="{ row }">
+            <div class="amount-cell">￥{{ formatAmount(row.threshold) }}</div>
+          </template>
         </el-table-column>
         <el-table-column label="有效期" min-width="220">
           <template #default="{ row }">
-            {{ formatTime(row.startTime, 'YYYY-MM-DD HH:mm') }} ~
-            {{ formatTime(row.endTime, 'YYYY-MM-DD HH:mm') }}
+            <!-- 有效期两行单元格:起始/截止上下对齐,「至」前缀弱化承载区间语义(live 打磨 v2) -->
+            <div class="validity-cell">
+              <span class="validity-line">{{ formatTime(row.startTime, 'YYYY-MM-DD HH:mm') }}</span>
+              <span class="validity-line">
+                <span class="validity-prefix">至</span
+                >{{ formatTime(row.endTime, 'YYYY-MM-DD HH:mm') }}
+              </span>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="状态" min-width="100">
@@ -84,10 +100,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -109,9 +125,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增优惠券' : '编辑优惠券'"
       v-model="dialogVisible"
-      width="800px"
+      width="min(800px, 94vw)"
+      @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempCoupon" label-width="120px" :rules="rules">
+      <el-form ref="formRef" :model="tempCoupon" label-width="min(120px, 94vw)" :rules="rules">
         <el-form-item label="优惠券标题" prop="title">
           <el-input v-model="tempCoupon.title" placeholder="请输入标题" />
         </el-form-item>
@@ -195,8 +212,12 @@
 
         <el-form-item label="状态" prop="status">
           <el-select v-model="tempCoupon.status" placeholder="请选择状态" style="width: 100%">
-            <el-option label="可用" value="ACTIVE" />
-            <el-option label="已失效" value="INACTIVE" />
+            <el-option
+              v-for="opt in COUPON_STATUS_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
       </el-form>
@@ -214,14 +235,21 @@ import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
 import { getCouponList, addCoupon, updateCoupon, deleteCoupon } from '@/api/coupon';
-import { formatTime } from '@/utils/format';
-import { couponStatusTagType, couponStatusText } from '@/constants/dict';
+import { formatAmount, formatTime } from '@/utils/format';
+import { COUPON_STATUS_OPTIONS, couponStatusTagType, couponStatusText } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 
 const tableRef = ref(null);
 const formRef = ref(null);
+
+// 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
+// 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
+const handleDialogClosed = () => {
+  formRef.value?.resetFields();
+  formRef.value?.clearValidate();
+};
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const multipleSelection = ref([]);
@@ -333,10 +361,13 @@ const handleCreate = () => {
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
+  // 时间判空：老数据/后端空值时 dayjs(null).format() 会产出 "Invalid Date"
+  // 回填日期选择器并在提交时携带脏数据；空值保持 null 原样回填
+  const fmtOrNull = (v) => (v ? dayjs(v).format('YYYY-MM-DD HH:mm:ss') : null);
   Object.assign(tempCoupon, {
     ...row,
-    startTime: dayjs(row.startTime).format('YYYY-MM-DD HH:mm:ss'),
-    endTime: dayjs(row.endTime).format('YYYY-MM-DD HH:mm:ss'),
+    startTime: fmtOrNull(row.startTime),
+    endTime: fmtOrNull(row.endTime),
   });
 };
 
@@ -346,11 +377,12 @@ const submitForm = async () => {
   try {
     await formRef.value.validate();
 
-    // 处理时间格式
+    // 处理时间格式（与 handleEdit 同口径判空，空值提交 null 而非 Invalid Date）
+    const fmtOrNull = (v) => (v ? dayjs(v).format('YYYY-MM-DD HH:mm:ss') : null);
     const submitData = {
       ...tempCoupon,
-      startTime: dayjs(tempCoupon.startTime).format('YYYY-MM-DD HH:mm:ss'),
-      endTime: dayjs(tempCoupon.endTime).format('YYYY-MM-DD HH:mm:ss'),
+      startTime: fmtOrNull(tempCoupon.startTime),
+      endTime: fmtOrNull(tempCoupon.endTime),
     };
 
     if (dialogType.value === 'create') {
@@ -392,3 +424,34 @@ const handleDelete = async (row) => {
   }
 };
 </script>
+
+<style scoped>
+/* 金额列(live 打磨 v3):600 字重 + 墨色文字,与正文灰阶拉开锚点层级 */
+.amount-cell {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+/* 有效期两行单元格(live 打磨 v2):上下对齐 + tabular-nums,窄列宽下不截断 */
+.validity-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--text-body);
+}
+
+.validity-line {
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.validity-prefix {
+  display: inline-block;
+  margin-right: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+</style>

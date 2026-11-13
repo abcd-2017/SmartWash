@@ -1,9 +1,16 @@
 <template>
   <div class="page-container">
     <!-- 搜索区域 -->
-    <div class="filter-container">
-      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
-        <el-form-item label="书名">
+    <!-- 搜索区域 -->
+    <!-- 筛选区(live 打磨 v1):主操作右置成组 + 搜索/上传竖分隔,行尾不再空洞 -->
+    <div class="filter-container rag-filter">
+      <el-form
+        :inline="true"
+        :model="listQuery"
+        @keyup.enter="handleSearch"
+        class="rag-filter__form"
+      >
+        <el-form-item label="书名" class="rag-filter__field">
           <el-input
             v-model="listQuery.title"
             placeholder="请输入书名"
@@ -12,7 +19,7 @@
             @clear="handleSearch"
           />
         </el-form-item>
-        <el-form-item label="术数方法">
+        <el-form-item label="术数方法" class="rag-filter__field">
           <el-select
             v-model="listQuery.method"
             placeholder="全部方法"
@@ -28,7 +35,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item label="状态" class="rag-filter__field">
           <el-select
             v-model="listQuery.status"
             placeholder="全部"
@@ -40,11 +47,11 @@
             <el-option label="可用" :value="1" />
           </el-select>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="rag-filter__actions">
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="rag-filter__primary">
           <el-button type="primary" @click="handleUpload">上传古籍</el-button>
         </el-form-item>
       </el-form>
@@ -52,7 +59,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="documentList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="documentList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="title" label="书名" min-width="180" show-overflow-tooltip />
         <el-table-column prop="book" label="所属典籍" min-width="160" show-overflow-tooltip />
@@ -85,8 +98,13 @@
     </div>
 
     <!-- 上传弹窗 -->
-    <el-dialog title="上传古籍" v-model="dialogVisible" width="500px" @closed="handleDialogClosed">
-      <el-form ref="formRef" :model="uploadForm" label-width="100px" :rules="rules">
+    <el-dialog
+      title="上传古籍"
+      v-model="dialogVisible"
+      width="min(500px, 94vw)"
+      @closed="handleDialogClosed"
+    >
+      <el-form ref="formRef" :model="uploadForm" label-width="min(100px, 94vw)" :rules="rules">
         <el-form-item label="书名" prop="title">
           <el-input v-model="uploadForm.title" placeholder="如 增删卜易" />
         </el-form-item>
@@ -140,6 +158,7 @@ import { getRagDocumentList, uploadRagDocument } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import logger from '@/utils/logger';
+import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const uploadRef = ref(null);
@@ -242,12 +261,12 @@ const submitUpload = async () => {
     fetchData();
   } catch (error) {
     // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
-    if (error?.fields) {
-      logger.debug('古籍上传表单校验未通过，已拦截提交');
+    if (isValidationError(error)) {
+      logger.debug('古籍上传表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error('古籍上传失败:', `title=${uploadForm.title}`, error);
+      ElMessage.error(error.message || '上传失败');
     }
-    ElMessage.error(error.message || '上传失败');
   } finally {
     uploading.value = false;
   }
@@ -255,6 +274,21 @@ const submitUpload = async () => {
 </script>
 
 <style scoped>
+/* 筛选区(live 打磨 v1):主操作右置成组 + 搜索/上传竖分隔,行尾不再空洞 */
+.rag-filter .rag-filter__form {
+  gap: 12px 0;
+}
+
+.rag-filter .rag-filter__actions {
+  margin-left: auto;
+}
+
+.rag-filter .rag-filter__primary {
+  margin-left: 8px;
+  padding-left: 16px;
+  border-left: 1px solid var(--border-subtle);
+}
+
 .upload-tip {
   font-size: 12px;
   color: var(--text-secondary);

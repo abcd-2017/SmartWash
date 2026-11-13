@@ -1121,7 +1121,7 @@ object XxxInitModule {
 
 ### 构建配置
 
-- BASE_URL 通过 Gradle 属性 `baseUrl` 注入（`app/build.gradle`），由 `BaseUrlModule.kt` 以 `@Named("baseUrl")` 供给；代码中一律读 `BuildConfig.BASE_URL`，**禁止硬编码 URL**；兜底值为演示服务器 `http://8.148.70.81:9000/`，生产通过 `-PbaseUrl=https://your-domain.com/` 注入
+- BASE_URL 通过 Gradle 属性 `baseUrl` 注入（`app/build.gradle`），由 `BaseUrlModule.kt` 以 `@Named("baseUrl")` 供给；代码中一律读 `BuildConfig.BASE_URL`，**禁止硬编码 URL**；兜底值为无 IP 占位(未注入时请求失败)，生产通过 `-PbaseUrl=https://your-domain.com/` 注入
 - `DIVINATION_BASE_URL` 与 BASE_URL 同步注入（观象台 LLM 网关）
 - Release: 开启 ProGuard 混淆和资源压缩，签名配置优先读取 Gradle 属性 / 环境变量（`SMART_WASH_STORE_FILE` 等），未配置则构建失败
 - Maven 仓库使用阿里云镜像（当前注释，启用需同时取消 `settings.gradle` 与 `build-logic` 两处注释），海外构建需改回 `google()` / `mavenCentral()`
@@ -1174,7 +1174,7 @@ data class PageData<T>(
 - **按压反馈全量失效**：`:common:utils/PressFeedbackModifier.kt` 的 `pressScale/pressAlpha` 自建 InteractionSource 未接入 clickable，全项目 31 处调用无效——修复前不要模仿该写法
 - **组合期副作用**：6 个页面（PaymentPage、PaySuccessPage、OrderDetailPage、IndexPage、RegisterPage、OrderPage）在 `when(state)` 渲染分支里直接 Toast/回写状态，需迁 `LaunchedEffect`
 - **主线程阻塞**：MainActivity/LoginPage/SettingPage 经 `runBlocking` 读写 DataStore，ANR 风险
-- **环境不对齐**：BASE_URL 兜底为演示服务器 `http://8.148.70.81:9000/`（生产须通过 `-PbaseUrl=` 注入）+ `usesCleartextTraffic` 全局放行；Token 明文存 DataStore 且 backup_rules 未排除
+- **环境不对齐**：BASE_URL 兜底为无 IP 占位(未注入时请求失败,生产须通过 `-PbaseUrl=` 注入）+ `usesCleartextTraffic` 全局放行；Token 明文存 DataStore 且 backup_rules 未排除
 - **网络层健壮性**：`:common:network` 的 ResponseInterceptor 空 body NPE、`peekBody(Long.MAX_VALUE)` 双重解析、`:common:database` 的 Room 无 migration、缓存写入无事务
 - **分层破洞**：LaundryViewModel/CouponViewModel 直连 Api 绕过 Repository；订单分页手写 Map 与 Paging 3 双轨并存
 - **RechargePage 组合期副作用**：`RechargePage.kt` 的金额选择/支付状态分支中存在写在 `when(state)` 渲染分支里的副作用，待独立任务修复

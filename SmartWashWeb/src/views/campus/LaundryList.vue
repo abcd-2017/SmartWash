@@ -27,7 +27,7 @@
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="filter-end">
           <el-button type="primary" @click="handleCreate">新增套餐</el-button>
         </el-form-item>
       </el-form>
@@ -35,25 +35,32 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="laundryList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="laundryList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="itemId" label="ID" min-width="80" />
-        <el-table-column prop="itemName" label="套餐名称" min-width="180" />
-        <el-table-column prop="basePrice" label="基础价格" min-width="120" align="right">
-          <template #default="{ row }">￥{{ row.basePrice?.toFixed(2) || '0.00' }}</template>
+        <el-table-column label="套餐" min-width="320">
+          <template #default="{ row }">
+            <div class="laundry-item">
+              <span class="laundry-item__name">{{ row.itemName }}</span>
+              <span class="laundry-item__desc">{{ row.description || '暂无描述' }}</span>
+            </div>
+          </template>
         </el-table-column>
-        <el-table-column
-          prop="description"
-          label="套餐描述"
-          min-width="240"
-          show-overflow-tooltip
-        />
+        <el-table-column prop="basePrice" label="基础价格" min-width="140" align="right">
+          <template #default="{ row }">￥{{ formatAmount(row.basePrice) }}</template>
+        </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -75,9 +82,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增套餐' : '编辑套餐'"
       v-model="dialogVisible"
-      width="600px"
+      width="min(600px, 94vw)"
+      @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempLaundry" label-width="100px" :rules="rules">
+      <el-form ref="formRef" :model="tempLaundry" label-width="min(100px, 94vw)" :rules="rules">
         <el-form-item label="套餐名称" prop="itemName">
           <el-input v-model="tempLaundry.itemName" placeholder="请输入套餐名称" />
         </el-form-item>
@@ -116,12 +124,19 @@ import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getLaundryList, addLaundry, updateLaundry, deleteLaundry } from '@/api/laundry';
 import { laundryOptionsCache } from '@/utils/optionCache';
-import { formatTime } from '@/utils/format';
+import { formatAmount, formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 
 const formRef = ref(null);
+
+// 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
+// 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
+const handleDialogClosed = () => {
+  formRef.value?.resetFields();
+  formRef.value?.clearValidate();
+};
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const submitting = ref(false); // 确认按钮 loading，防连点
@@ -209,7 +224,11 @@ const submitForm = async () => {
     } else {
       await updateLaundry(tempLaundry);
       ElMessage.success('修改成功');
-      logger.info('修改套餐成功', `itemId=${tempLaundry.itemId}`, `itemName=${tempLaundry.itemName}`);
+      logger.info(
+        '修改套餐成功',
+        `itemId=${tempLaundry.itemId}`,
+        `itemName=${tempLaundry.itemName}`
+      );
     }
     // 套餐数据有变，失效套餐下拉的全量缓存（评审 #15 的失效入口）
     laundryOptionsCache.invalidate();

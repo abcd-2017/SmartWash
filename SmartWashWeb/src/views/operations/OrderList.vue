@@ -98,7 +98,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="orderList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="orderList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="orderNo" label="订单号" min-width="200" show-overflow-tooltip />
         <el-table-column label="用户信息" min-width="150">
           <template #default="{ row }">
@@ -116,7 +122,7 @@
           </template>
         </el-table-column>
         <el-table-column label="总价" min-width="120" align="right">
-          <template #default="{ row }">￥{{ row.totalPrice?.toFixed(2) || '0.00' }}</template>
+          <template #default="{ row }">￥{{ formatAmount(row.totalPrice) }}</template>
         </el-table-column>
         <el-table-column label="状态" min-width="120">
           <template #default="{ row }">
@@ -125,16 +131,16 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="pickupCode" label="取件码" min-width="120" />
+        <el-table-column prop="pickupCode" label="取件码" min-width="150" class-name="col-code" />
         <el-table-column label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" type="primary" @click="handleUpdateStatus(row)"
+            <el-button link type="primary" size="small" @click="handleUpdateStatus(row)"
               >修改状态</el-button
             >
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -153,8 +159,8 @@
     </div>
 
     <!-- 修改状态对话框 -->
-    <el-dialog v-model="statusDialogVisible" title="修改订单状态" width="400px">
-      <el-form :model="statusForm" label-width="100px">
+    <el-dialog v-model="statusDialogVisible" title="修改订单状态" width="min(400px, 94vw)">
+      <el-form :model="statusForm" label-width="min(100px, 94vw)">
         <el-form-item label="订单号">
           <span>{{ statusForm.orderNo }}</span>
         </el-form-item>
@@ -164,14 +170,26 @@
           </el-tag>
         </el-form-item>
         <el-form-item label="新状态">
-          <el-select v-model="statusForm.newStatus" placeholder="请选择新状态">
+          <el-select
+            v-model="statusForm.newStatus"
+            placeholder="请选择新状态"
+            :disabled="isCurrentTerminal"
+          >
             <el-option
-              v-for="(desc, code) in statusOptions"
+              v-for="(desc, code) in allowedTargetOptions"
               :key="code"
               :label="desc"
               :value="code"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item v-if="isCurrentTerminal" label=" ">
+          <span class="status-warning">当前状态为终态（已完成/已退款/已取消），不可再流转</span>
+        </el-form-item>
+        <el-form-item v-else-if="isIrreversibleTarget" label=" ">
+          <span class="status-warning danger"
+            >目标状态为终态（退款/取消），操作不可逆，请核对资金状态后再执行</span
+          >
         </el-form-item>
       </el-form>
       <template #footer>
@@ -187,11 +205,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getOrderStatus, getOrderList, deleteOrder, updateOrderStatus } from '@/api/order';
 import { schoolOptionsCache, laundryOptionsCache } from '@/utils/optionCache';
-import { formatTime } from '@/utils/format';
+import { formatTime, formatAmount } from '@/utils/format';
 import { orderStatusTagType } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
@@ -200,6 +218,37 @@ import logger from '@/utils/logger';
 
 // 数据
 const statusOptions = ref({}); // 状态选项
+
+// 订单状态机合法转移表（与后端 OrdersStatus 枚举对齐）。终态 7 已完成 / -1 已退款 / -2 已取消不再流转。
+// 此表仅在前端拦截误操作与倒退转移（如 已完成→待支付），最终裁决仍以后端为准；
+// 四端联动评审后应收敛为后端下发合法转移表，前端只渲染。
+const ORDER_ALLOWED_TRANSITIONS = {
+  0: [1, -2], // 待支付 → 待寄件 / 取消
+  1: [2, -1, -2], // 待寄件 → 已收取 / 退款 / 取消
+  2: [3, -1], // 已收取 → 清洗中 / 退款
+  3: [4, -1], // 清洗中 → 已烘干 / 退款
+  4: [5], // 已烘干 → 配送中
+  5: [6], // 配送中 → 待取件
+  6: [7], // 待取件 → 已完成
+  7: [],
+  '-1': [],
+  '-2': [],
+};
+
+// 弹窗内：当前状态为终态时禁止流转
+const isCurrentTerminal = computed(
+  () => (ORDER_ALLOWED_TRANSITIONS[statusForm.currentStatus] || []).length === 0
+);
+// 合法目标选项（筛选下拉仍用全量 statusOptions，此处只约束修改动作）
+const allowedTargetOptions = computed(() => {
+  const allowed = ORDER_ALLOWED_TRANSITIONS[statusForm.currentStatus];
+  if (!allowed?.length) return {};
+  return Object.fromEntries(
+    Object.entries(statusOptions.value).filter(([code]) => allowed.includes(Number(code)))
+  );
+});
+// 不可逆转移提示：目标为退款/取消终态
+const isIrreversibleTarget = computed(() => ['-1', '-2'].includes(String(statusForm.newStatus)));
 const schoolOptions = ref([]); // 学校选项
 const laundryOptions = ref([]); // 洗护套餐选项
 
@@ -290,8 +339,12 @@ const fetchLaundry = async () => {
 
 // 删除订单
 const handleDelete = async (row) => {
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除订单 ${row.orderNo} 吗？`);
+  // 确认弹窗：列明订单号与金额，明确不可恢复（订单含支付金额，删除即资金对账盲区；
+  // 后端为最终裁决，四端联动评审后建议改为作废语义）
+  const confirmed = await useConfirm(
+    `确认删除订单 ${row.orderNo}（金额 ￥${formatAmount(row.totalPrice)}）吗？删除后不可恢复，如需留痕请改用状态流转或联系开发确认。`,
+    '删除订单'
+  );
   if (!confirmed) return;
   try {
     await deleteOrder(row.orderId);
@@ -318,6 +371,12 @@ const handleUpdateStatus = (row) => {
 const confirmUpdateStatus = async () => {
   if (!statusForm.newStatus) {
     ElMessage.warning('请选择新状态');
+    return;
+  }
+  // 兜底校验：目标不在合法转移表内（含终态再流转/倒退转移）直接拦截，不发起请求
+  const allowed = ORDER_ALLOWED_TRANSITIONS[statusForm.currentStatus] || [];
+  if (!allowed.includes(Number(statusForm.newStatus))) {
+    ElMessage.error('目标状态与当前状态不符合法转移，请重新选择');
     return;
   }
 
@@ -355,3 +414,23 @@ const formatStatus = (status) => {
   return statusOptions.value[status] || '未知状态';
 };
 </script>
+
+<style scoped>
+/* 状态弹窗警示文案：终态/不可逆提示走语义文字色，不做实心色块（淡彩底规则） */
+.status-warning {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.status-warning.danger {
+  color: var(--color-danger);
+}
+
+/* impeccable generate 2ea823a7: accepted variant 1 */
+/* v1 微细节：取件码为机器短码，mono + nowrap 防断码 */
+div.table-card .el-table .col-code .cell {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: nowrap;
+}
+</style>

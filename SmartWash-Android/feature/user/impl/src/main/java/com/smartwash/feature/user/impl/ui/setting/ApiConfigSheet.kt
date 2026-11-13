@@ -519,7 +519,8 @@ fun ApiConfigSheet(
                                 entry.name.orEmpty(),
                             ),
                             style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.colorScheme.primary,
+                            // 12sp 绿字走 textGreen 深档（R17 裁定）：原 primary #2D9B6A on 白 3.5:1 不达 AA
+                            color = AppColors.colorScheme.textGreen,
                             modifier = Modifier.padding(top = AppDimens.spaceXs),
                         )
                     }
@@ -627,7 +628,8 @@ fun ApiConfigSheet(
                     color = if (result is RequestState.Error) {
                         AppColors.colorScheme.error
                     } else {
-                        AppColors.colorScheme.success
+                        // 12sp 绿字走 textGreen 深档（R17 裁定）：success #2D9B6A on 白 3.5:1 不达 AA
+                        AppColors.colorScheme.textGreen
                     },
                     modifier = Modifier.padding(top = AppDimens.spaceXs),
                 )
@@ -721,7 +723,9 @@ private fun ModeChip(
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-            color = if (selected) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary,
+            // 选中态小号绿字走 textGreenOnTint（tinted 浅底专用深档，R17 裁定）：
+            // 原 primary on primarySoft 浅色仅 ≈3.1:1 不达 AA；RechargePage AmountGridCell 同口径
+            color = if (selected) AppColors.colorScheme.textGreenOnTint else AppColors.colorScheme.textSecondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

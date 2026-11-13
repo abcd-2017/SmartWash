@@ -9,41 +9,41 @@
     <!-- 统计卡片 -->
     <div class="stats-grid">
       <div class="stat-card stat-card--indigo">
-        <div class="stat-card__icon">
-          <el-icon :size="28"><School /></el-icon>
-        </div>
-        <div class="stat-card__info">
+        <div class="stat-card__head">
+          <div class="stat-card__icon">
+            <el-icon :size="16"><School /></el-icon>
+          </div>
           <span class="stat-card__label">学校总数</span>
-          <span class="stat-card__value">{{ schoolCount }}</span>
         </div>
+        <span class="stat-card__value">{{ schoolCount }}</span>
       </div>
       <div class="stat-card stat-card--blue">
-        <div class="stat-card__icon">
-          <el-icon :size="28"><UserFilled /></el-icon>
-        </div>
-        <div class="stat-card__info">
+        <div class="stat-card__head">
+          <div class="stat-card__icon">
+            <el-icon :size="16"><UserFilled /></el-icon>
+          </div>
           <span class="stat-card__label">用户总数</span>
-          <span class="stat-card__value">{{ userCount }}</span>
         </div>
+        <span class="stat-card__value">{{ userCount }}</span>
       </div>
       <div class="stat-card stat-card--emerald">
-        <div class="stat-card__icon">
-          <el-icon :size="28"><Document /></el-icon>
-        </div>
-        <div class="stat-card__info">
+        <div class="stat-card__head">
+          <div class="stat-card__icon">
+            <el-icon :size="16"><Document /></el-icon>
+          </div>
           <span class="stat-card__label">今日订单</span>
-          <span class="stat-card__value">{{ todayOrderCount }}</span>
         </div>
+        <span class="stat-card__value">{{ todayOrderCount }}</span>
       </div>
       <div class="stat-card stat-card--amber">
-        <div class="stat-card__icon">
-          <el-icon :size="28"><Coin /></el-icon>
-        </div>
-        <div class="stat-card__info">
+        <div class="stat-card__head">
+          <div class="stat-card__icon">
+            <el-icon :size="16"><Coin /></el-icon>
+          </div>
           <span class="stat-card__label">今日收入</span>
-          <!-- 金额：整数元做滚动（小数补 .00 固定），避免 rAF 对小数漏帧抖动 -->
-          <span class="stat-card__value">￥{{ incomeDisplay }}</span>
         </div>
+        <!-- 金额：整数元做滚动（小数补 .00 固定），避免 rAF 对小数漏帧抖动 -->
+        <span class="stat-card__value">￥{{ incomeDisplay }}</span>
       </div>
     </div>
 
@@ -82,21 +82,29 @@
     <!-- 快捷操作区 -->
     <div class="quick-actions">
       <h3 class="quick-actions__title">快捷操作</h3>
-      <div class="quick-actions__grid">
-        <router-link to="/orders" class="quick-action-item">
-          <el-icon :size="24"><Document /></el-icon>
+      <div class="quick-actions__chips">
+        <router-link to="/orders" class="quick-action-chip">
+          <span class="quick-action-chip__icon"
+            ><el-icon :size="16"><Document /></el-icon
+          ></span>
           <span>订单管理</span>
         </router-link>
-        <router-link to="/users" class="quick-action-item">
-          <el-icon :size="24"><UserFilled /></el-icon>
+        <router-link to="/users" class="quick-action-chip">
+          <span class="quick-action-chip__icon"
+            ><el-icon :size="16"><UserFilled /></el-icon
+          ></span>
           <span>学生管理</span>
         </router-link>
-        <router-link to="/schools" class="quick-action-item">
-          <el-icon :size="24"><School /></el-icon>
+        <router-link to="/schools" class="quick-action-chip">
+          <span class="quick-action-chip__icon"
+            ><el-icon :size="16"><School /></el-icon
+          ></span>
           <span>学校管理</span>
         </router-link>
-        <router-link to="/coupon" class="quick-action-item">
-          <el-icon :size="24"><Ticket /></el-icon>
+        <router-link to="/coupon" class="quick-action-chip">
+          <span class="quick-action-chip__icon"
+            ><el-icon :size="16"><Ticket /></el-icon
+          ></span>
           <span>优惠券管理</span>
         </router-link>
       </div>
@@ -138,8 +146,10 @@ onMounted(async () => {
     const data = await getDashboardStats();
     stats.value = data;
   } catch (error) {
-    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败；页面保持默认 0 值展示
+    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作；与趋势卡失败反馈
+    // 统一弹 toast——此前仅 logger 静默，页面保持 0 值展示，用户对空面板无从归因
     logger.error('工作台统计数据加载失败:', error);
+    ElMessage.error(error.message || '获取统计数据失败');
   }
 });
 
@@ -188,10 +198,6 @@ onMounted(fetchTrend);
 </script>
 
 <style scoped>
-.dashboard {
-  padding: 0;
-}
-
 /* 统计卡片网格 */
 .stats-grid {
   display: grid;
@@ -208,48 +214,50 @@ onMounted(fetchTrend);
 
 .stat-card {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 18px 20px;
   background: var(--bg-card);
   border-radius: 12px;
   box-shadow: var(--shadow-ground);
+}
+
+/* 头行：小淡底图标与标签同行，数值独占一行——四卡数值共享基线，扫读成列 */
+.stat-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .stat-card__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   flex-shrink: 0;
 }
 
 .stat-card--indigo .stat-card__icon {
-  background: rgba(99, 102, 241, 0.1);
+  background: var(--primary-soft-bg);
   color: var(--color-primary);
 }
 
 .stat-card--blue .stat-card__icon {
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--info-soft-bg);
   color: var(--color-info);
 }
 
 .stat-card--emerald .stat-card__icon {
-  background: rgba(16, 185, 129, 0.1);
+  background: var(--success-soft-bg);
   color: var(--color-success);
 }
 
 .stat-card--amber .stat-card__icon {
-  background: rgba(245, 158, 11, 0.1);
+  background: var(--warning-soft-bg);
   color: var(--color-warning);
-}
-
-.stat-card__info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .stat-card__label {
@@ -258,9 +266,12 @@ onMounted(fetchTrend);
 }
 
 .stat-card__value {
-  font-size: 24px;
+  font-size: 26px;
+  line-height: 1.2;
   font-weight: 700;
   color: var(--text-primary);
+  /* 数字等宽规则：数值滚动动画期间避免逐帧变宽抖动 */
+  font-variant-numeric: tabular-nums;
 }
 
 /* 趋势分析卡：与统计卡同级白卡语言（12px 圆角 + 着地阴影），靛蓝/信息蓝只出现在图表主体 */
@@ -320,30 +331,24 @@ onMounted(fetchTrend);
 }
 
 .quick-actions__title {
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.quick-actions__grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-@media (min-width: 600px) {
-  .quick-actions__grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-.quick-action-item {
+/* 高频入口收成一行 chip：弱底块 + 28px 图标容器，hover 转靛蓝淡底并上浮 */
+.quick-actions__chips {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quick-action-chip {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 20px 16px;
+  padding: 8px 14px 8px 8px;
   border-radius: 10px;
   background: var(--bg-subtle);
   color: var(--text-regular);
@@ -357,11 +362,31 @@ onMounted(fetchTrend);
     box-shadow var(--motion-fast) var(--ease-standard);
 }
 
-.quick-action-item:hover {
+.quick-action-chip__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--text-regular);
+  flex-shrink: 0;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
+}
+
+.quick-action-chip:hover {
   background: rgba(99, 102, 241, 0.08);
   color: var(--color-primary);
   /* hover 上浮表达「可进入」，与统计卡层级语言一致 */
   transform: translateY(-2px);
   box-shadow: var(--shadow-lift);
+}
+
+.quick-action-chip:hover .quick-action-chip__icon {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--color-primary);
 }
 </style>

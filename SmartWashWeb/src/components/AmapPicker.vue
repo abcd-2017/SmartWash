@@ -9,7 +9,7 @@
       @click="openPicker"
     >
       <template #append>
-        <el-button @click="openPicker">
+        <el-button aria-label="打开地图选点" @click="openPicker">
           <el-icon><Location /></el-icon>
         </el-button>
       </template>
@@ -18,7 +18,7 @@
     <el-dialog
       v-model="dialogVisible"
       title="选择位置"
-      width="800px"
+      width="min(800px, 94vw)"
       :close-on-click-modal="false"
       destroy-on-close
       @closed="handleDialogClosed"
@@ -43,7 +43,11 @@
               v-for="item in searchResults"
               :key="item.id"
               class="amap-search-item"
+              role="button"
+              tabindex="0"
               @click="selectSearchResult(item)"
+              @keydown.enter.prevent="selectSearchResult(item)"
+              @keydown.space.prevent="selectSearchResult(item)"
             >
               <div class="amap-search-item-name">{{ item.name }}</div>
               <div class="amap-search-item-address">{{ item.address }}</div>
@@ -328,7 +332,7 @@ function handleDialogClosed() {
   max-height: 400px;
   overflow-y: auto;
   background: var(--bg-card);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-popover); /* 气泡浮层走阴影词汇表（原字面量不在词汇表内） */
   border-radius: 8px;
   z-index: 10;
 }

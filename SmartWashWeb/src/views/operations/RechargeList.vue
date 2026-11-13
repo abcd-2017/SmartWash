@@ -99,13 +99,19 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="rechargeList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="rechargeList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="recordId" label="记录ID" min-width="100" />
         <el-table-column label="手机号" min-width="120">
           <template #default="{ row }">{{ row.users?.phoneNumber || '-' }}</template>
         </el-table-column>
         <el-table-column label="充值金额" min-width="150" align="right">
-          <template #default="{ row }">￥{{ row.amount?.toFixed(2) || '0.00' }}</template>
+          <template #default="{ row }">￥{{ formatAmount(row.amount) }}</template>
         </el-table-column>
         <el-table-column label="充值类型" min-width="120">
           <template #default="{ row }">
@@ -206,14 +212,16 @@ const syncRangeToQuery = () => {
   listQuery.endTime = dateRange.value?.[1] ? `${dateRange.value[1]} 23:59:59` : null;
 };
 
-// 汇总/导出共用的日期范围参数（dateFrom/dateTo，yyyy-MM-dd；清空则不限定）
+// 汇总/导出共用的日期范围参数（dateFrom/dateTo，yyyy-MM-dd HH:mm:ss；清空则不限定）
+// 后端 RechargeDateRangeFrom 按 yyyy-MM-dd HH:mm:ss 解析，此前只传日期导致 400；
+// 补全时间与列表筛选 syncRangeToQuery 同口径（含当天：起 00:00:00 / 止 23:59:59）
 const buildRangeParams = () => {
   const params = {};
   if (dateRange.value?.[0]) {
-    params.dateFrom = dateRange.value[0];
+    params.dateFrom = `${dateRange.value[0]} 00:00:00`;
   }
   if (dateRange.value?.[1]) {
-    params.dateTo = dateRange.value[1];
+    params.dateTo = `${dateRange.value[1]} 23:59:59`;
   }
   return params;
 };
@@ -317,13 +325,22 @@ onMounted(() => {
   gap: 4px;
 }
 
+/* KPI 项之间 1px 分隔线：从松散均布改为利落分栏（窄屏两列布局下取消） */
+@media (min-width: 900px) {
+  .summary-card__item + .summary-card__item {
+    padding-left: 16px;
+    border-left: 1px solid var(--border-subtle);
+  }
+}
+
 .summary-card__label {
   font-size: 13px;
   color: var(--text-secondary);
 }
 
 .summary-card__value {
-  font-size: 20px;
+  /* 对齐 DESIGN.md Stat 规格 24px：与首页统计卡同类数值卡同语言 */
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;

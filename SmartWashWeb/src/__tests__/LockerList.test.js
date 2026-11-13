@@ -20,7 +20,7 @@ vi.mock('@/utils/optionCache', () => ({
   },
 }));
 
-import LockerList from '@/views/system/LockerList.vue';
+import LockerList from '@/views/campus/LockerList.vue';
 import { batchAddLocker } from '@/api/locker';
 
 // Element Plus 组件 stub：保留结构语义（按钮可点、弹窗受控），去掉样式/定位等 DOM 依赖

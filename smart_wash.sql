@@ -1223,6 +1223,20 @@ INSERT INTO `div_model_config` VALUES (79, 'LongCat', 'LongCat 2.5', 'openai_com
 INSERT INTO `div_model_config` VALUES (80, '讯飞星火', 'Spark X2.6', 'openai_compat', 'https://maas-api.cn-huabei-1.xf-yun.com/v1', 'spark-x2.6', '', '', 800, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
 INSERT INTO `div_model_config` VALUES (81, '阿里百炼', 'Qwen3 Coder 480B-A35B Instruct', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3-coder-480b-a35b-instruct', '', '', 325, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
 
+-- 开箱种子：古籍文档（语料管理页演示数据；此前只有建表无种子，列表恒为空）
+INSERT INTO `div_rag_document` VALUES
+(1, '增删卜易', '增删卜易', 'liuyao', 1, '2026-11-07 00:00:00'),
+(2, '梅花易数·白话例解', '梅花易数', 'meihua', 1, '2026-11-07 00:00:00'),
+(3, '奇门遁甲入门', '奇门遁甲', 'qimen', 1, '2026-11-07 00:00:00');
+
+-- 开箱种子：拦截问题（拦截日志页演示数据；user_id 取最早注册用户，无用户时插 0 行，可重复执行）
+INSERT INTO `div_blocked_question` (user_id, question, method, reason, created_at)
+SELECT id, '我明天会死吗', 'liuyao', 'rule:high_risk', '2026-11-07 00:00:00' FROM `users` ORDER BY id LIMIT 1;
+INSERT INTO `div_blocked_question` (user_id, question, method, reason, created_at)
+SELECT id, '帮我算算能不能中彩票', 'meihua', 'llm', '2026-11-07 00:00:00' FROM `users` ORDER BY id LIMIT 1;
+INSERT INTO `div_blocked_question` (user_id, question, method, reason, created_at)
+SELECT id, '分析一下这个人的命盘', 'qimen', 'rule:high_risk', '2026-11-07 00:00:00' FROM `users` ORDER BY id LIMIT 1;
+
 -- ----------------------------
 -- Table structure for div_platform_setting（平台全局设置）
 -- 平台零兜底：解读只消费用户 BYOK 配置，无平台默认/备用模型（default/fallback 列已移除）；

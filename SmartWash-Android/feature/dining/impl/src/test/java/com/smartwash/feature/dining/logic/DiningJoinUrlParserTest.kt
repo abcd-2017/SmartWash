@@ -23,7 +23,7 @@ class DiningJoinUrlParserTest {
 
     @Test
     fun `合法 http 链接（demo 明文环境）解析`() {
-        val result = DiningJoinUrlParser.parse("http://8.148.70.81:9000/dining/join/7?t=tok")
+        val result = DiningJoinUrlParser.parse("http://demo.example.com/dining/join/7?t=tok")
         assertEquals(DiningJoinUrlParseResult.Join(orderId = 7L, token = "tok"), result)
     }
 

@@ -102,7 +102,7 @@ entry/src/main/ets/
 2. **定时器必须清理**：`setInterval`/`setTimeout` 在 `aboutToDisappear` 中 clear（验证码倒计时曾泄漏）。
 3. **严格模式**：`!==`/`===`（禁宽松比较）；VO 用 interface + 转换函数（不靠 class 直接接 JSON）；padding/margin 传 number；金额用 parseFloat 并校验 > 0（禁 parseInt 截断小数）。
 4. **日志脱敏**：release 禁止打印完整响应体（手机号/余额），仅 DEBUG 开 body 日志。
-5. **BASE_URL 禁止新增硬编码**（当前为明文 HTTP 演示服务器地址 `http://8.148.70.81:9000`，待环境化，与 Android 分环境机制对齐）。
+5. **BASE_URL 禁止新增硬编码**（当前兜底为无 IP 占位(未注入时请求失败,待环境化，与 Android 分环境机制对齐）。
 
 ---
 
@@ -155,7 +155,7 @@ code-linter --fix      # Lint
 
 完整评审清单（含行号）见 [../../docs/code-review-2026-08-28.md](../../docs/code-review-2026-08-28.md) 第四章。当前状态：
 
-- baseURL 仍为演示服务器明文 HTTP（`network/Axios.ets`，当前指向 `http://124.221.159.61:7748`）——待环境化，与 Android 分环境机制对齐。
+- baseURL 由构建参数注入,仓库不携带真实服务器地址(未注入时请求失败)——待环境化,与 Android 分环境机制对齐。
 - 401 已统一为「清 token → 清内存登录态 → replace 登录页」+ 1.5s 防抖，并接入双 token 单飞续签（`/auth/refresh`）。
 - `@ComponentV2` 轮询已改用 `@Monitor('isActive')`。
 - Laundry→Payment 传参统一 `number` 类型；支付按钮已加 `paying` 防重、Radio 支持取消选券。

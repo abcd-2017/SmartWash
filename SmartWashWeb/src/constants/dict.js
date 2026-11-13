@@ -470,3 +470,149 @@ export const DINING_RECIPE_SOURCE_TAG_TYPES = {
 
 /** 菜谱来源标签配色 */
 export const diningRecipeSourceTagType = (source) => dictValue(DINING_RECIPE_SOURCE_TAG_TYPES, source);
+// ---------- 操作审计（与后端 @Audited 注解全集对齐） ----------
+
+// 来源：SmartWash 后端 controller/background/ 各 Controller 的 @Audited(action, targetType)。
+// 后端新增注解动作时需同步维护 AUDIT_ACTION_TEXT；未知值由页面回显原始编码，不猜文案。
+export const AUDIT_ACTION_TEXT = {
+  ORDER_DELETE: '删除订单',
+  ORDER_STATUS_UPDATE: '更新订单状态',
+  ROLE_ADD: '新增角色',
+  ROLE_UPDATE: '更新角色',
+  ROLE_DELETE: '删除角色',
+  LOCKER_ADD: '新增寄存柜',
+  LOCKER_BATCH_ADD: '批量新增寄存柜',
+  LOCKER_UPDATE: '更新寄存柜',
+  LOCKER_DELETE: '删除寄存柜',
+  USER_ADD: '新增学生',
+  USER_UPDATE: '更新学生',
+  USER_DELETE: '删除学生',
+  PAYMENT_MANUAL_ADD: '人工补录支付',
+  PAYMENT_MANUAL_UPDATE: '更新支付记录',
+  USER_COUPON_DELETE: '删除用户优惠券',
+  COUPON_ADD: '新增优惠券',
+  COUPON_UPDATE: '更新优惠券',
+  COUPON_DELETE: '删除优惠券',
+  LAUNDRY_ITEM_ADD: '新增洗护套餐',
+  LAUNDRY_ITEM_UPDATE: '更新洗护套餐',
+  LAUNDRY_ITEM_DELETE: '删除洗护套餐',
+  SCHOOL_ADD: '新增学校',
+  SCHOOL_UPDATE: '更新学校',
+  SCHOOL_DELETE: '删除学校',
+  ADMIN_USER_ADD: '新增管理员',
+  ADMIN_USER_UPDATE: '更新管理员',
+  ADMIN_USER_DELETE: '删除管理员',
+};
+
+export const AUDIT_TARGET_TYPE_TEXT = {
+  order: '订单',
+  role: '角色',
+  locker: '寄存柜',
+  user: '学生',
+  payment: '支付记录',
+  user_coupon: '用户优惠券',
+  coupon: '优惠券',
+  laundry_item: '洗护套餐',
+  school: '学校',
+  admin_user: '管理员',
+};
+
+/** 审计筛选下拉由字典派生，保证下拉与表格文案同源 */
+export const AUDIT_ACTION_OPTIONS = Object.entries(AUDIT_ACTION_TEXT).map(([value, label]) => ({
+  value,
+  label,
+}));
+
+export const AUDIT_TARGET_TYPE_OPTIONS = Object.entries(AUDIT_TARGET_TYPE_TEXT).map(
+  ([value, label]) => ({ value, label })
+);
+
+/** 未知动作/类型回显原始编码（后端后续新增动作时页面不致显示错误文案） */
+export const auditActionText = (action) => AUDIT_ACTION_TEXT[action] || action || '-';
+
+export const auditTargetTypeText = (targetType) =>
+  AUDIT_TARGET_TYPE_TEXT[targetType] || targetType || '-';
+
+/** 动作标签配色按动词后缀派生：新增绿 / 更新蓝 / 删除红 / 其余灰 */
+export const auditActionTagType = (action) => {
+  if (action?.endsWith('_ADD')) return 'success';
+  if (action?.endsWith('_UPDATE')) return 'primary';
+  if (action?.endsWith('_DELETE')) return 'danger';
+  return 'info';
+};
+
+// ---------- 验证码用途（与后端 CaptchaPurpose 对齐） ----------
+
+export const CAPTCHA_PURPOSE_TAG_TYPES = {
+  register: 'success',
+  reset: 'warning',
+};
+
+/** 用途标签配色（文案 purposeDesc 由后端下发） */
+export const captchaPurposeTagType = (purpose) => dictValue(CAPTCHA_PURPOSE_TAG_TYPES, purpose);
+
+// ---------- 观象台·审计复审状态 ----------
+
+export const DIV_AUDIT_STATUS_TEXT = {
+  0: '待审',
+  1: '通过',
+  2: '不一致',
+};
+
+export const DIV_AUDIT_STATUS_TAG_TYPES = {
+  0: 'info',
+  1: 'success',
+  2: 'danger',
+};
+
+export const divAuditStatusText = (status) => DIV_AUDIT_STATUS_TEXT[status] || '未知';
+
+export const divAuditStatusTagType = (status) => dictValue(DIV_AUDIT_STATUS_TAG_TYPES, status);
+
+/** 审计复审筛选下拉 */
+export const DIV_AUDIT_STATUS_OPTIONS = Object.entries(DIV_AUDIT_STATUS_TEXT).map(([value, label]) => ({
+  value: Number(value),
+  label,
+}));
+
+// ---------- 观象台·Prompt 状态 ----------
+
+export const DIV_PROMPT_STATUS_TEXT = {
+  0: '草稿',
+  1: '激活',
+  2: '退役',
+};
+
+export const DIV_PROMPT_STATUS_TAG_TYPES = {
+  0: 'info',
+  1: 'success',
+  2: 'warning',
+};
+
+export const divPromptStatusText = (status) => DIV_PROMPT_STATUS_TEXT[status] || '未知';
+
+export const divPromptStatusTagType = (status) => dictValue(DIV_PROMPT_STATUS_TAG_TYPES, status);
+
+// ---------- 用户优惠券使用状态 ----------
+
+export const USER_COUPON_USED_TEXT = {
+  true: '已使用',
+  false: '未使用',
+};
+
+export const USER_COUPON_USED_TAG_TYPES = {
+  true: 'info',
+  false: 'success',
+};
+
+export const userCouponUsedText = (isUsed) => USER_COUPON_USED_TEXT[String(isUsed)] || '未知';
+
+export const userCouponUsedTagType = (isUsed) => dictValue(USER_COUPON_USED_TAG_TYPES, String(isUsed));
+
+// ---------- 优惠券状态选项（筛选/表单下拉共用） ----------
+
+/** 优惠券状态选项（筛选/表单下拉共用；后端将 EXPIRED 归并为已失效，不单列筛选值） */
+export const COUPON_STATUS_OPTIONS = [
+  { value: 'ACTIVE', label: '可用' },
+  { value: 'INACTIVE', label: '已失效' },
+];

@@ -2,13 +2,16 @@ package com.smartwash.game.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import com.smartwash.game.entity.GameLevel;
+import com.smartwash.game.from.GameLevelBatchFrom;
 import com.smartwash.game.from.GameLevelSaveFrom;
 import com.smartwash.game.from.GameSaveSearchFrom;
 import com.smartwash.game.from.GameScoreSearchFrom;
 import com.smartwash.game.service.GameLevelService;
 import com.smartwash.game.service.GameScoreService;
 import com.smartwash.game.service.GameUserSaveService;
+import com.smartwash.game.vo.GameLevelImportResultVo;
 import com.smartwash.game.vo.GameSaveAdminVo;
 import com.smartwash.game.vo.GameScoreAdminVo;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,6 +56,7 @@ public class GameDataAdminController {
     }
 
     @Operation(summary = "保存关卡（新建/更新）", description = "按 (gameKey, levelNo) upsert；dataJson 仅校验 JSON 合法性，结构由游戏自定；保存后版本号递增")
+    @Audited(action = "GAME_LEVEL_SAVE", targetType = "game_level", targetIdSpEL = "#from.gameKey + ':' + #from.levelNo")
     @PostMapping("/levels")
     public Result<GameLevel> saveLevel(@RequestBody @Valid GameLevelSaveFrom from) {
         GameLevel level = gameLevelService.upsertLevel(from.getGameKey(), from.getLevelNo(), from.getName(),
@@ -60,7 +64,15 @@ public class GameDataAdminController {
         return Result.ok(level);
     }
 
+    @Operation(summary = "批量导入关卡", description = "整批事务：任一项校验失败（序号/JSON/批内重复/上限 500）全量回滚不落库；replaceAll=true 先清空该游戏现有关卡再导入；成功后 levels_version 仅递增一次。双兼容 JSON 文件由前端解析归一后提交")
+    @Audited(action = "GAME_LEVEL_BATCH_IMPORT", targetType = "game_level", targetIdSpEL = "#from.gameKey")
+    @PostMapping("/levels/batch")
+    public Result<GameLevelImportResultVo> batchImportLevels(@RequestBody @Valid GameLevelBatchFrom from) {
+        return Result.ok(gameLevelService.batchImportLevels(from.getGameKey(), from.isReplaceAll(), from.getLevels()));
+    }
+
     @Operation(summary = "删除关卡", description = "按 (gameKey, levelNo) 物理删除；删除后版本号递增")
+    @Audited(action = "GAME_LEVEL_DELETE", targetType = "game_level", targetIdSpEL = "#gameKey + ':' + #levelNo")
     @DeleteMapping("/levels")
     public Result<String> deleteLevel(@RequestParam("gameKey") String gameKey,
                                       @RequestParam("levelNo") Integer levelNo) {

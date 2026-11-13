@@ -77,8 +77,14 @@ public class AdminCaptchaController {
         }
 
         if (captchas.isEmpty()) {
+            // 「无有效验证码」是正常业务状态而非失败：返回成功 + 空列表，
+            // 由前端渲染空态（「该手机号暂无有效验证码」）；此前返回 failMsg(201)
+            // 会被 Web 拦截器按失败 reject，空态成为死代码、且「暂无」被误报为「查询失败」
             log.info("管理员查询验证码：未找到有效验证码, phone: {}", maskPhone(phoneNumber));
-            return Result.failMsg("该手机号暂无有效验证码");
+            AdminCaptchaVo emptyVo = new AdminCaptchaVo();
+            emptyVo.setPhone(phoneNumber);
+            emptyVo.setCaptchas(captchas);
+            return Result.ok(emptyVo);
         }
 
         log.info("管理员查询验证码：找到 {} 个有效验证码, phone: {}", captchas.size(), maskPhone(phoneNumber));

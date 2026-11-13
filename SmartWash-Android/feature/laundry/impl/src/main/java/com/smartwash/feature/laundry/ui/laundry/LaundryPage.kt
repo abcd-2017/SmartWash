@@ -77,6 +77,7 @@ import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.selectedColor
 import com.smartwash.feature.laundry.R
 import com.smartwash.feature.payment.api.PaymentRoute
+import java.util.Locale
 
 @Composable
 fun LaundryPage(
@@ -217,12 +218,15 @@ fun LaundryPage(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
+                                    // 学校信息未就绪时空值占位「—」，防空 Text 占位塌陷（AND-B-010）
                                     Text(
-                                        text = userInfo?.school?.schoolName ?: "",
+                                        text = userInfo?.school?.schoolName?.takeIf { it.isNotBlank() }
+                                            ?: stringResource(R.string.school_info_placeholder),
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                     Text(
-                                        text = userInfo?.school?.location ?: "",
+                                        text = userInfo?.school?.location?.takeIf { it.isNotBlank() }
+                                            ?: stringResource(R.string.school_info_placeholder),
                                         style = MaterialTheme.typography.bodySmall,
                                         maxLines = 1,
                                         modifier = Modifier.fillMaxWidth(0.6f),
@@ -262,7 +266,7 @@ fun LaundryPage(
                         title = item.itemName,
                         description = item.description,
                         isSelected = selectItemId == item.itemId,
-                        price = stringResource(R.string.currency_format, String.format("%.2f", item.basePrice))
+                        price = stringResource(R.string.currency_format, String.format(Locale.CHINA, "%.2f", item.basePrice))
                     ) {
                         selectItemId = item.itemId
                         totalPrice = item.basePrice
@@ -285,7 +289,7 @@ fun LaundryPage(
                     else stringResource(
                         R.string.confirm_booking_format,
                         // 金额统一走 currency_format（¥%s），原直拼 %.2f 导致按钮只显示「\prod预约 · 29.90」无 ¥
-                        stringResource(R.string.currency_format, String.format("%.2f", totalPrice))
+                        stringResource(R.string.currency_format, String.format(Locale.CHINA, "%.2f", totalPrice))
                     ),
                     onClick = {
                         if (selectItemId == -1L) showDialog = true

@@ -49,7 +49,7 @@ class DeepLinkParserTest {
 
     @Test
     fun `http 直链原样进 WebView 且不解码不改写`() {
-        val uri = "http://8.148.70.81:9000/web/t/ab12?x=%E6%B4%97"
+        val uri = "http://demo.example.com/web/t/ab12?x=%E6%B4%97"
         val action = DeepLinkParser.parse(uri) { _, _, _ -> null }
         assertEquals(DeepLinkAction.WebViewUrl(uri, null), action)
     }

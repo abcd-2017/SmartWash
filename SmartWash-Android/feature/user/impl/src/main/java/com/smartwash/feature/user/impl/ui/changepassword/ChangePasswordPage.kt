@@ -1,6 +1,11 @@
 package com.smartwash.feature.user.impl.ui.changepassword
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,8 +41,12 @@ import com.smartwash.common.ui.components.PasswordInput
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.ClickDebouncer
+import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.common.utils.model.RequestState
@@ -126,9 +135,11 @@ fun ChangePasswordPage(
                         oldPassword = it
                         isOldPasswordError = false
                     }
-                    if (isOldPasswordError) {
-                        InlineErrorText(text = stringResource(R.string.error_old_password_empty))
-                    }
+                    // 行内错误淡入 + 纵向展开（对齐注册页同场景，AND-B-012），不再 0ms 硬切
+                    InlineError(
+                        visible = isOldPasswordError,
+                        text = stringResource(R.string.error_old_password_empty)
+                    )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
@@ -156,9 +167,10 @@ fun ChangePasswordPage(
                         confirmPassword = it
                         isMismatchError = false
                     }
-                    if (isMismatchError) {
-                        InlineErrorText(text = stringResource(R.string.error_password_mismatch))
-                    }
+                    InlineError(
+                        visible = isMismatchError,
+                        text = stringResource(R.string.error_password_mismatch)
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -206,4 +218,24 @@ private fun InlineErrorText(text: String) {
         color = AppColors.colorScheme.dangerInk,
         modifier = Modifier.padding(top = 4.dp)
     )
+}
+
+/** 退出时长 ≈ 进入（DURATION_MICRO_MS）的 70%（动效语言 v0.4，对齐注册页） */
+private const val EXIT_MICRO_MS = 140
+
+/**
+ * 行内错误出现/消失过渡（AND-B-012）：fadeIn + expandVertically / fadeOut + shrinkVertically，
+ * 对齐注册页 VerificationCodeRow 错误文案同款；reduced motion 经 motionSpec 降级 180ms 纯淡变。
+ */
+@Composable
+private fun InlineError(visible: Boolean, text: String) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+            expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+        exit = fadeOut(motionSpec(exitTween(EXIT_MICRO_MS))) +
+            shrinkVertically(motionSpec(exitTween(EXIT_MICRO_MS))),
+    ) {
+        InlineErrorText(text = text)
+    }
 }

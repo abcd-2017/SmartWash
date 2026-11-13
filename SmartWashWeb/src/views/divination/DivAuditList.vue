@@ -11,9 +11,12 @@
             style="width: 120px"
             @change="handleSearch"
           >
-            <el-option label="待审" :value="0" />
-            <el-option label="通过" :value="1" />
-            <el-option label="不一致" :value="2" />
+            <el-option
+              v-for="opt in DIV_AUDIT_STATUS_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -25,14 +28,20 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="auditList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="auditList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="recordId" label="卦例ID" min-width="100" />
         <el-table-column prop="interpretationId" label="解读ID" min-width="100" />
         <el-table-column label="审计状态" min-width="120">
           <template #default="{ row }">
-            <el-tag :type="auditStatusTagType(row.auditStatus)">
-              {{ auditStatusText(row.auditStatus) }}
+            <el-tag :type="divAuditStatusTagType(row.auditStatus)">
+              {{ divAuditStatusText(row.auditStatus) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -41,7 +50,7 @@
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleViewDetail(row)">查看详情</el-button>
+            <el-button link size="small" @click="handleViewDetail(row)">查看详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -60,7 +69,7 @@
     </div>
 
     <!-- 审计详情弹窗 -->
-    <el-dialog title="审计详情" v-model="detailDialogVisible" width="700px">
+    <el-dialog title="审计详情" v-model="detailDialogVisible" width="min(700px, 94vw)">
       <div v-if="currentAudit" class="audit-detail">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="解读ID">{{
@@ -70,8 +79,8 @@
             currentAudit.recordId || '-'
           }}</el-descriptions-item>
           <el-descriptions-item label="审计状态">
-            <el-tag :type="auditStatusTagType(currentAudit.auditStatus)">
-              {{ auditStatusText(currentAudit.auditStatus) }}
+            <el-tag :type="divAuditStatusTagType(currentAudit.auditStatus)">
+              {{ divAuditStatusText(currentAudit.auditStatus) }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="审计时间">{{
@@ -97,18 +106,15 @@ import { ref, onMounted } from 'vue';
 import { getAuditList } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
+import {
+  DIV_AUDIT_STATUS_OPTIONS,
+  divAuditStatusTagType,
+  divAuditStatusText,
+} from '@/constants/dict';
 import logger from '@/utils/logger';
 
 const detailDialogVisible = ref(false);
 const currentAudit = ref(null);
-
-const auditStatusText = (status) => {
-  return { 0: '待审', 1: '通过', 2: '不一致' }[status] || '未知';
-};
-
-const auditStatusTagType = (status) => {
-  return { 0: 'info', 1: 'success', 2: 'danger' }[status] || 'info';
-};
 
 const {
   list: auditList,
@@ -176,6 +182,7 @@ const handleViewDetail = (row) => {
 
 .diff-content pre {
   margin: 0;
+  font-family: var(--font-mono); /* 审计 JSON 属机器数据，走 mono 规则 */
   font-size: 12px;
   color: var(--text-body);
   white-space: pre-wrap;

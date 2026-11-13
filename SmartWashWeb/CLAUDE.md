@@ -42,11 +42,11 @@ npm run preview    # 预览生产构建
 
 1. **入口** — `src/main.js`：注册 Element Plus、Pinia、Router，`$dayjs` 全局属性。
 2. **HTTP 层** — `src/utils/http.js`：默认导出 `http`（管理端实例）+ 命名导出 `envelopeHttp`（公开信封实例，供设备投递页）。请求拦截器从 `useAuthStore` 取 token 加 `Bearer` 头；响应拦截器解包 `response.data`，`code !== 200` 视为错误。**401 已统一为单飞续签**：`/auth/refresh` 换新双 token → 落盘 store → 重试原请求一次，仍 401 则清态跳 `/login?redirect=`；1.5s 去重窗防并发堆叠。新代码不要使用 `window.location.reload()`，也不要另写一套 401 处理。
-3. **API 层** — `src/api/*.js`：按领域拆分，共 24 个模块：order / user / school / laundry / locker / payment / recharge / coupon / role / adminUser / auth / dashboard / userCoupon / divination / game / gameData / toolbox / workbench / deeplink / notice / subscription / audit / captcha / delivery。统一 `request({url, method, params})` 模式，`code === 200` 时返回 `res.data`，失败抛 `Error(res.message)`。例外：`delivery.js` 用 `envelopeHttp`（公开端返回完整信封，业务码 200/403/404/409/413 由页面分支）。
+3. **API 层** — `src/api/*.js`：按领域拆分，共 23 个模块：order / user / school / laundry / locker / payment / recharge / coupon / role / adminUser / auth / dashboard / userCoupon / divination / game / toolbox / workbench / deeplink / notice / subscription / audit / captcha / delivery。统一 `request({url, method, params})` 模式，`code === 200` 时返回 `res.data`，失败抛 `Error(res.message)`。例外：`delivery.js` 用 `envelopeHttp`（公开端返回完整信封，业务码 200/403/404/409/413 由页面分支）。
 4. **状态管理** — `src/stores/auth.js`：Pinia `useAuthStore` 统一管理 token / refreshToken / role（初始化从 localStorage 恢复；`setTokens` 供 401 续签后更新），路由守卫与 HTTP 拦截器统一从 store 读取登录态。不要新增裸 localStorage 读写。
 5. **路由** — `src/router/index.js`：管理页面均为 `Layout` 子路由（路径 `/`），`/login` 与 `/d/:code?`（设备投递对端页）免认证；**所有页面已使用 `() => import(...)` 懒加载**（含 404 兜底页 `NotFound.vue`，通配路由 `/:pathMatch(.*)*`）。`beforeEach` 守卫从 `useAuthStore` 检查 token/角色；侧边栏按 `MENU_GROUP_CONFIG` 分组渲染。
 6. **布局与共享层** — `src/components/Layout/`（Layout + Sidebar + Navbar，菜单/面包屑/图标由路由 `meta` 驱动）、`AmapPicker.vue` / `RegionCascader.vue`（高德选点与省市区）、`TrendChart.vue`（ECharts 趋势图）；通用逻辑抽在 `src/composables/`（`useTableList` 列表分页、`useTimeRange`、`useConfirm`、`useAnimatedNumber`）。新增页面优先复用，禁止再复制第 N 份 CRUD。
-7. **页面** — `src/views/`：登录页 + `system/` 15 个管理页（含审计、站内信、订阅、验证码查询）+ `divination/` 7 个观象台页 + `game/` 3 个游戏库页 + `toolbox/` 1 个短链页 + `workbench/` 2 个配置页 + `delivery/` 2 个公开投递页 + `NotFound.vue`。
+7. **页面** — `src/views/`（目录划分与侧边栏六组菜单一一对应）：`campus/` 基础数据 3 页（学校/寄存柜/洗护套餐）+ `operations/` 业务管理 3 页（订单/支付/充值）+ `users/` 用户运营 4 页（学生/优惠券/用户优惠券/站内信）+ `platform/` 平台模块（`game/` 游戏库与数据 + `toolbox/` 短链 + `workbench/` 入口与跳转路由 + 订阅）+ `divination/` 7 个观象台页 + `system/` 系统与安全 4 页（角色/管理员/审计/验证码）+ `delivery/` 2 个公开投递页 + 登录页/首页/404。
 
 ### API 响应约定
 
@@ -62,7 +62,7 @@ npm run preview    # 预览生产构建
 - 标准方法：`fetchData`、`handleSearch`、`resetSearch`、`handleCreate`、`handleEdit`、`handleDelete`、`submitForm`
 - `formatTime` 用 dayjs 格式化；枚举状态经映射函数渲染文本/标签（参考 `OrderList.vue`）
 
-**重要**：`src/composables/` 已提供 `useTableList`（列表/分页/搜索/竞态守卫）与 `useTimeRange`，新列表页必须复用；`formatTime`/`formatAmount`/`formatFileSize` 统一在 `src/utils/format.js`。枚举/字典值统一在 `src/constants/dict.js`（66 个导出，含订单/支付/充值/优惠券/短码/观象台/工作台/游戏/深链/订阅/站内信分组），与后端枚举对齐，禁止页面内联映射。
+**重要**：`src/composables/` 已提供 `useTableList`（列表/分页/搜索/竞态守卫）与 `useTimeRange`，新列表页必须复用；`formatTime`/`formatAmount`/`formatFileSize` 统一在 `src/utils/format.js`。枚举/字典值统一在 `src/constants/dict.js`（68 个导出，含订单/支付/充值/优惠券/短码/观象台/工作台/游戏/深链/情绪/订阅/站内信分组），与后端枚举对齐，禁止页面内联映射。
 
 ## 相关 Skills 与子代理
 

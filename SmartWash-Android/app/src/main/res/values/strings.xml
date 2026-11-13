@@ -218,6 +218,9 @@
     <string name="workbench_search_empty">没有找到相关工具，换个关键词试试</string>
     <string name="workbench_recent_title">最近使用</string>
     <string name="workbench_notice_dismiss">关闭公告</string>
+    <!-- 角标已知值映射为图标后的读屏文案（未知值仍按服务端原文渲染文字胶囊） -->
+    <string name="workbench_badge_new">新</string>
+    <string name="workbench_badge_hot">热</string>
 
     <!-- ==================== 内置浏览器页（壳层留守，深链 web 分支承载） ==================== -->
     <string name="webview_default_title">详情页</string>

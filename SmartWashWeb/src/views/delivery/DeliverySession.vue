@@ -527,9 +527,9 @@ function formatSize(bytes) {
 /* --- 顶部会话信息卡 --- */
 .session-card {
   padding: 20px 24px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-ground);
   animation: delivery-card-in var(--motion-slow) var(--ease-decelerate) both;
 }
 
@@ -570,6 +570,8 @@ function formatSize(bytes) {
   color: var(--color-primary);
   letter-spacing: 2px;
   font-variant-numeric: tabular-nums;
+  /* 机器标识符走全站唯一等宽栈(mono 规则) */
+  font-family: var(--font-mono);
 }
 
 .session-meta {
@@ -615,9 +617,9 @@ function formatSize(bytes) {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-ground);
   /* 条目进场：淡入上移，随轮询新增自然触发 */
   transition:
     opacity var(--motion-base) var(--ease-standard),
@@ -638,19 +640,20 @@ function formatSize(bytes) {
   flex-shrink: 0;
 }
 
+/* 条目类型淡底图标容器：走语义 tint token（淡彩底规则） */
 .kind-text {
-  background: #eef2ff;
-  color: #4338ca;
+  background: var(--primary-tint);
+  color: var(--primary-tint-text);
 }
 
 .kind-image {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-tint);
+  color: var(--warning-tint-text);
 }
 
 .kind-file {
-  background: #e2e8f0;
-  color: #334155;
+  background: var(--border-color);
+  color: var(--text-body);
 }
 
 .item-body {
@@ -675,20 +678,20 @@ function formatSize(bytes) {
 .item-direction {
   flex-shrink: 0;
   padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 11px;
+  border-radius: 999px; /* 胶囊角标：有意保留的角标形态（阶梯外例外） */
+  font-size: 12px; /* 对齐 micro 档（原 11px 低于 ramp 最小值） */
   line-height: 18px;
 }
 
 /* 方向角标：手机→电脑 = 本端可取（主色淡底）；电脑→手机 = 对端发布（灰底） */
 .dir-to-peer {
-  background: #eef2ff;
-  color: #4338ca;
+  background: var(--primary-tint);
+  color: var(--primary-tint-text);
 }
 
 .dir-to-owner {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--border-subtle);
+  color: var(--text-secondary);
 }
 
 .item-meta {
@@ -741,10 +744,11 @@ function formatSize(bytes) {
 /* --- 发送区 --- */
 .composer-card {
   padding: 16px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-ground);
   animation: delivery-card-in var(--motion-slow) var(--ease-decelerate) both;
+  /* 错峰 delay 60ms 为 stagger 节奏值(off-ramp,非状态过渡时长) */
   animation-delay: 60ms;
 }
 
@@ -788,7 +792,7 @@ function formatSize(bytes) {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .session-card {
     padding: 16px;
   }

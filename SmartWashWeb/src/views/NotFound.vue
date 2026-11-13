@@ -1,6 +1,10 @@
 <template>
   <div class="not-found-page">
     <div class="not-found-card">
+      <div class="not-found-brand">
+        <img src="@/assets/logo.svg" alt="SmartWash" class="not-found-logo" />
+        <span class="not-found-brand-name">SmartWash</span>
+      </div>
       <div class="not-found-code">404</div>
       <div class="not-found-title">页面不存在</div>
       <div class="not-found-desc">抱歉，您访问的页面不存在或已被移除</div>
@@ -31,10 +35,30 @@ const goHome = () => {
 
 .not-found-card {
   text-align: center;
-  padding: 48px 64px;
+  padding: 40px 56px;
   background: var(--bg-card);
   border-radius: 16px;
   box-shadow: var(--shadow-brand);
+}
+
+/* 404 品牌行(live 打磨 v1):对齐登录/投递页品牌语言,让兜底页有产品归属 */
+.not-found-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.not-found-logo {
+  width: 24px;
+  height: 24px;
+}
+
+.not-found-brand-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .not-found-code {

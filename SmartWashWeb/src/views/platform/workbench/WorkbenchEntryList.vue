@@ -36,7 +36,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="entryList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="entryList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="sort" label="排序" min-width="70" align="center">
           <template #default="{ row }">{{ row.sort ?? '-' }}</template>
         </el-table-column>
@@ -51,10 +57,18 @@
         <el-table-column label="图标 / 色组" min-width="120">
           <template #default="{ row }">
             <div class="icon-color-cell">
-              <!-- 端上按 icon/color key 白名单映射：展示中文文案便于核对，title 悬浮保留原始 key 便于两端对齐 -->
-              <el-tag size="small" :title="row.icon || 'default'">
+              <!-- 端上按 icon/color key 白名单映射：展示中文文案便于核对，title 悬浮保留原始 key 便于两端对齐；图标标签底色/文字色由色组 hex 派生，呼应端上「淡底图标容器」语言 -->
+              <span
+                class="icon-chip"
+                :title="row.icon || 'default'"
+                :style="{
+                  backgroundColor: workbenchEntryColorHex(row.color) + '1A',
+                  color:
+                    'color-mix(in srgb, ' + workbenchEntryColorHex(row.color) + ' 42%, #0f172a)',
+                }"
+              >
                 {{ workbenchEntryIconText(row.icon) }}
-              </el-tag>
+              </span>
               <span class="color-line" :title="row.color || '-'">
                 <span
                   class="color-dot"
@@ -109,10 +123,11 @@
         <el-table-column label="更新时间" min-width="170">
           <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="130" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button
+              link
               size="small"
               type="danger"
               :loading="deletingId === row.id"
@@ -141,10 +156,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增工作台入口' : '编辑工作台入口'"
       v-model="dialogVisible"
-      width="750px"
+      width="min(750px, 94vw)"
       @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempEntry" label-width="100px" :rules="rules">
+      <el-form ref="formRef" :model="tempEntry" label-width="min(100px, 94vw)" :rules="rules">
         <!-- 基本内容 -->
         <el-divider content-position="left">基本内容</el-divider>
 
@@ -231,7 +246,9 @@
             />
           </el-select>
           <div class="form-tip">
-            端上按 sort 顺序流式渲染：连续「列表行」归并进同一张白卡、连续「两列小卡」归并为两列网格，「通栏横卡」独占一行，「公告条」为可关闭的运营触达位（target 选填）；配合排序与分组标题即可组合出不同的页面构图
+            端上按 sort
+            顺序流式渲染：连续「列表行」归并进同一张白卡、连续「两列小卡」归并为两列网格，「通栏横卡」独占一行，「公告条」为可关闭的运营触达位（target
+            选填）；配合排序与分组标题即可组合出不同的页面构图
           </div>
         </el-form-item>
 
@@ -293,6 +310,7 @@
             </el-upload>
             <el-button
               v-if="tempEntry.imageUrl"
+              link
               size="small"
               :disabled="coverUploading"
               @click="tempEntry.imageUrl = ''"
@@ -300,7 +318,9 @@
               移除配图
             </el-button>
           </div>
-          <div class="form-tip">选填：png / jpeg / webp，不超过 5MB；有配图时端上卡片展示图文样式</div>
+          <div class="form-tip">
+            选填：png / jpeg / webp，不超过 5MB；有配图时端上卡片展示图文样式
+          </div>
         </el-form-item>
 
         <el-form-item label="跳转 target" prop="target">
@@ -364,6 +384,7 @@ import {
   workbenchEntryTypeText,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -685,8 +706,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
-    if (error?.fields) {
-      logger.debug('工作台入口表单校验未通过，已拦截提交');
+    if (isValidationError(error)) {
+      logger.debug('工作台入口表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error(
         '工作台入口提交失败:',
@@ -695,8 +716,8 @@ const submitForm = async () => {
         `id=${tempEntry.id ?? '-'}`,
         error
       );
+      ElMessage.error(error.message || '操作失败');
     }
-    ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
   }
@@ -728,6 +749,16 @@ const handleDelete = async (row) => {
 </script>
 
 <style scoped>
+/* 图标标签:底色/文字色由行内样式按色组 hex 派生(呼应端上淡底图标容器语言) */
+.icon-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
 /* 标题 + 副标题两行单元格 */
 .title-cell {
   display: flex;
@@ -741,7 +772,7 @@ const handleDelete = async (row) => {
 }
 
 .title-sub {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -810,14 +841,14 @@ const handleDelete = async (row) => {
 }
 
 .cover-uploader :deep(.el-upload) {
-  border: 1px dashed var(--border, #dcdfe6);
+  border: 1px dashed var(--border-color);
   border-radius: 8px;
   overflow: hidden;
-  transition: border-color 0.2s;
+  transition: border-color var(--motion-fast) var(--ease-standard);
 }
 
 .cover-uploader :deep(.el-upload:hover) {
-  border-color: var(--el-color-primary);
+  border-color: var(--color-primary);
 }
 
 .cover-preview {
@@ -835,7 +866,7 @@ const handleDelete = async (row) => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: var(--text-muted, #909399);
+  color: var(--text-secondary);
   font-size: 12px;
 }
 

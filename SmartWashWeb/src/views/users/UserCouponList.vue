@@ -39,7 +39,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="couponList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="couponList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="userCouponId" label="记录ID" min-width="100" />
         <el-table-column prop="phoneNumber" label="手机号" min-width="140" />
         <el-table-column prop="couponTitle" label="优惠券名称" min-width="180">
@@ -47,8 +53,8 @@
         </el-table-column>
         <el-table-column label="使用状态" min-width="100">
           <template #default="{ row }">
-            <el-tag :type="row.isUsed ? 'info' : 'success'">
-              {{ row.isUsed ? '已使用' : '未使用' }}
+            <el-tag :type="userCouponUsedTagType(row.isUsed)">
+              {{ userCouponUsedText(row.isUsed) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -61,12 +67,16 @@
         <el-table-column label="使用时间" min-width="160">
           <template #default="{ row }">{{ formatTime(row.usedAt) }}</template>
         </el-table-column>
-        <el-table-column prop="orderNo" label="订单号" min-width="200">
-          <template #default="{ row }">{{ row.orderNo || '-' }}</template>
+        <el-table-column label="订单号" min-width="200">
+          <template #default="{ row }">
+            <!-- 订单号机器标识符(live 打磨 v2):mono + 弱底 chip,与短码/Host 列同一语言 -->
+            <div class="order-no-cell">{{ row.orderNo || '-' }}</div>
+          </template>
         </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button
+              link
               size="small"
               type="danger"
               :loading="deletingId === row.userCouponId"
@@ -101,6 +111,7 @@ import { getCouponList } from '@/api/coupon';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import { userCouponUsedTagType, userCouponUsedText } from '@/constants/dict';
 import logger from '@/utils/logger';
 
 const couponOptions = ref([]); // 优惠券选项
@@ -151,8 +162,12 @@ const fetchCoupons = async () => {
 
 // 删除记录
 const handleDelete = async (row) => {
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除该领取记录吗？`);
+  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）；
+  // 文案带对象标识（券名 + 手机号），误删时无从核对的问题收敛
+  const confirmed = await useConfirm(
+    `确认删除领取记录吗？持有人 ${row.phoneNumber || '-'}，券「${row.couponVo?.title || '-'}」删除后不可恢复。`,
+    '删除领取记录'
+  );
   if (!confirmed) return;
   deletingId.value = row.userCouponId;
   try {
@@ -169,3 +184,19 @@ const handleDelete = async (row) => {
   }
 };
 </script>
+
+<style scoped>
+/* 订单号机器标识符(live 打磨 v2):mono + 弱底 chip,与短码/Host 列同一语言 */
+.order-no-cell {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-input);
+}
+</style>

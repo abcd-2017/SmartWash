@@ -37,9 +37,20 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="modelList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="modelList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="id" label="ID" min-width="80" />
-        <el-table-column prop="vendor" label="厂商" min-width="120" />
+        <el-table-column label="厂商" min-width="120">
+          <template #default="{ row }">
+            <!-- 厂商列(live 打磨 v1):13px 次级文字,与显示名(14px)形成主次层级,减少重复噪音 -->
+            <div class="model-vendor-cell">{{ row.vendor }}</div>
+          </template>
+        </el-table-column>
         <el-table-column prop="name" label="显示名" min-width="160" />
         <el-table-column prop="baseUrl" label="Base URL" min-width="220" show-overflow-tooltip />
         <el-table-column prop="modelId" label="模型标识" min-width="160" />
@@ -51,9 +62,13 @@
         </el-table-column>
         <el-table-column label="状态" min-width="100">
           <template #default="{ row }">
-            <el-tag :type="row.enabled === 1 ? 'success' : 'info'">
-              {{ row.enabled === 1 ? '启用' : '停用' }}
-            </el-tag>
+            <!-- 状态列(live 打磨 v2):标签内加圆点,与相邻连通性列(纯标签)区分两套状态语言 -->
+            <div class="model-status-cell">
+              <el-tag :type="row.enabled === 1 ? 'success' : 'info'" class="model-status-tag">
+                <span class="model-status-tag__dot"></span>
+                {{ row.enabled === 1 ? '启用' : '停用' }}
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="连通性" min-width="120">
@@ -66,9 +81,9 @@
         <el-table-column prop="updatedAt" label="更新时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="320" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-tooltip
               :content="row.apiKeyMask ? '' : '该条目未录入 API Key（用户自带密钥模式），无法测试'"
               :disabled="!!row.apiKeyMask"
@@ -76,6 +91,7 @@
             >
               <span>
                 <el-button
+                  link
                   size="small"
                   type="primary"
                   @click="handleTest(row)"
@@ -87,6 +103,7 @@
               </span>
             </el-tooltip>
             <el-button
+              link
               size="small"
               :type="row.enabled === 1 ? 'warning' : 'success'"
               :loading="togglingId === row.id"
@@ -95,6 +112,7 @@
               {{ row.enabled === 1 ? '停用' : '启用' }}
             </el-button>
             <el-button
+              link
               size="small"
               type="danger"
               :loading="deletingId === row.id"
@@ -120,10 +138,10 @@
     </div>
 
     <!-- 批量导入弹窗 -->
-    <el-dialog title="批量导入模型目录" v-model="importVisible" width="640px">
+    <el-dialog title="批量导入模型目录" v-model="importVisible" width="min(640px, 94vw)">
       <p class="import-tip">
-        粘贴 JSON 数组（每条含 <code>vendor / name / baseUrl / modelId</code>，可选 <code>priority</code>），
-        非法条目自动跳过。目录密钥由用户自带，此处无需填 API Key。
+        粘贴 JSON 数组（每条含 <code>vendor / name / baseUrl / modelId</code>，可选
+        <code>priority</code>）， 非法条目自动跳过。目录密钥由用户自带，此处无需填 API Key。
       </p>
       <el-input
         v-model="importJson"
@@ -141,10 +159,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增模型' : '编辑模型'"
       v-model="dialogVisible"
-      width="600px"
+      width="min(600px, 94vw)"
       @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempModel" label-width="120px" :rules="rules">
+      <el-form ref="formRef" :model="tempModel" label-width="min(120px, 94vw)" :rules="rules">
         <el-form-item label="厂商" prop="vendor">
           <el-input v-model="tempModel.vendor" placeholder="如 DeepSeek（客户端一级分组）" />
         </el-form-item>
@@ -152,7 +170,10 @@
           <el-input v-model="tempModel.name" placeholder="如 GLM-5.3" />
         </el-form-item>
         <el-form-item label="Base URL" prop="baseUrl">
-          <el-input v-model="tempModel.baseUrl" placeholder="https://api.example.com/v1（OpenAI 兼容端点）" />
+          <el-input
+            v-model="tempModel.baseUrl"
+            placeholder="https://api.example.com/v1（OpenAI 兼容端点）"
+          />
         </el-form-item>
         <el-form-item label="模型标识" prop="modelId">
           <el-input v-model="tempModel.modelId" placeholder="如 glm-5.3" />
@@ -201,6 +222,7 @@ import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -360,8 +382,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
-    if (error?.fields) {
-      logger.debug('模型表单校验未通过，已拦截提交');
+    if (isValidationError(error)) {
+      logger.debug('模型表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error(
         '模型提交失败:',
@@ -370,8 +392,8 @@ const submitForm = async () => {
         `name=${tempModel.name}`,
         error
       );
+      ElMessage.error(error.message || '操作失败');
     }
-    ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
   }
@@ -416,8 +438,24 @@ const handleToggle = async (row) => {
   togglingId.value = row.id;
   try {
     const targetEnabled = row.enabled === 1 ? 0 : 1;
-    await updateModel(row.id, { enabled: targetEnabled });
-    logger.info(`模型${action}成功`, `id=${row.id}`, `name=${row.name}`, `enabled=${targetEnabled}`);
+    // 启停走全量更新体（update 为全量字段语义）：后端 SaveModelFrom 对 vendor/name/baseUrl/modelId
+    // 均 @NotBlank，只传 {enabled} 会恒 400 且报错指向无关字段；apiKey 不携带，避免误覆盖密钥
+    await updateModel(row.id, {
+      id: row.id,
+      vendor: row.vendor,
+      name: row.name,
+      provider: row.provider || 'openai_compat',
+      baseUrl: row.baseUrl,
+      modelId: row.modelId,
+      priority: row.priority,
+      enabled: targetEnabled,
+    });
+    logger.info(
+      `模型${action}成功`,
+      `id=${row.id}`,
+      `name=${row.name}`,
+      `enabled=${targetEnabled}`
+    );
     ElMessage.success(`${action}成功`);
     fetchData();
   } catch (error) {
@@ -430,6 +468,27 @@ const handleToggle = async (row) => {
 </script>
 
 <style scoped>
+/* 状态列(live 打磨 v2):标签内加圆点,与相邻连通性列(纯标签)区分两套状态语言 */
+.model-status-cell .model-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.model-status-cell .model-status-tag__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+}
+
+/* 厂商列(live 打磨 v1):13px 次级文字,与显示名(14px)形成主次层级,减少重复噪音 */
+.model-vendor-cell {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
 .form-tip {
   margin-left: 8px;
   font-size: 12px;
@@ -445,8 +504,8 @@ const handleToggle = async (row) => {
 
 .import-tip code {
   padding: 1px 4px;
-  background: var(--bg-secondary, #f5f7fa);
-  border-radius: 3px;
+  background: var(--bg-subtle);
+  border-radius: 6px; /* 对齐 rounded.sm（原 3px 低于阶梯最小档） */
   font-size: 12px;
 }
 </style>

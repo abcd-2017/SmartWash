@@ -10,7 +10,8 @@ plugins {
 // 统一后端地址（与鸿蒙端/Web 端对齐）：通过 Gradle 属性注入，兜底为演示服务器地址。
 // 生产发布切换方式：GitHub Actions 传入 -PbaseUrl=https://your-domain.com/（保留末尾斜杠），
 // 并同步删除 network_security_config.xml 中对应的明文放行。
-def SMART_WASH_BASE_URL = project.hasProperty('baseUrl') ? "\"${project.baseUrl}\"" : '"http://8.148.70.81:9000/"'
+// 兜底不含真实服务器地址(开源仓库红线):未注入 baseUrl 时请求会失败,生产/演示经 -PbaseUrl= 注入
+def SMART_WASH_BASE_URL = project.hasProperty('baseUrl') ? "\"${project.baseUrl}\"" : '"https://your-domain.com/"'
 
 android {
     namespace 'com.smartwash'

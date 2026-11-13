@@ -23,6 +23,15 @@ export function saveGameLevel(data) {
   });
 }
 
+/** 批量导入关卡：整批事务（任一项校验失败全量回滚），replaceAll=true 先清空再导入；成功后版本号仅递增一次 */
+export function batchImportGameLevels(data) {
+  return request({
+    url: '/admin/game/levels/batch',
+    method: 'post',
+    data,
+  });
+}
+
 /** 删除关卡：按 (gameKey, levelNo) 物理删除，删除后版本号递增 */
 export function deleteGameLevel(gameKey, levelNo) {
   return request({

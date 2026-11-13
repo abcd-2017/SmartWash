@@ -74,7 +74,7 @@
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="filter-end">
           <el-button type="primary" @click="handleCreate">新增寄存柜</el-button>
           <el-button @click="handleBatchCreate">批量新增</el-button>
         </el-form-item>
@@ -83,7 +83,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="lockerList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="lockerList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="lockerId" label="ID" min-width="80" />
         <el-table-column label="学校" min-width="180">
           <template #default="{ row }">
@@ -101,10 +107,10 @@
         <el-table-column prop="lastUsedAt" label="最后使用时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.lastUsedAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -126,9 +132,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增寄存柜' : '编辑寄存柜'"
       v-model="dialogVisible"
-      width="600px"
+      width="min(600px, 94vw)"
+      @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempLocker" label-width="100px" :rules="rules">
+      <el-form ref="formRef" :model="tempLocker" label-width="min(100px, 94vw)" :rules="rules">
         <el-form-item label="学校" prop="schoolId">
           <el-select
             v-model="tempLocker.schoolId"
@@ -175,8 +182,18 @@
     </el-dialog>
 
     <!-- 批量新增弹窗 -->
-    <el-dialog title="批量新增寄存柜" v-model="batchDialogVisible" width="600px">
-      <el-form ref="batchFormRef" :model="tempBatchLocker" label-width="120px" :rules="batchRules">
+    <el-dialog
+      title="批量新增寄存柜"
+      v-model="batchDialogVisible"
+      width="min(600px, 94vw)"
+      @closed="handleDialogClosed"
+    >
+      <el-form
+        ref="batchFormRef"
+        :model="tempBatchLocker"
+        label-width="min(120px, 94vw)"
+        :rules="batchRules"
+      >
         <el-form-item label="学校" prop="schoolId">
           <el-select
             v-model="tempBatchLocker.schoolId"
@@ -200,9 +217,6 @@
             controls-position="right"
             style="width: 100%"
           />
-          <div style="color: var(--text-secondary); font-size: 12px; margin-top: 4px">
-            系统将自动跳过该学校已占用的编号
-          </div>
         </el-form-item>
 
         <el-form-item label="新增数量" prop="count">
@@ -214,6 +228,12 @@
             style="width: 100%"
           />
         </el-form-item>
+
+        <div class="batch-preview">
+          将新增 <span class="batch-preview__num">{{ tempBatchLocker.count }}</span> 个寄存柜 ·
+          自编号 <span class="batch-preview__num">{{ tempBatchLocker.startNumber }}</span> 起 ·
+          自动跳过已占用编号
+        </div>
       </el-form>
 
       <template #footer>
@@ -252,6 +272,13 @@ const schoolMap = ref({}); // 学校ID到名称的映射
 const dialogVisible = ref(false); // 弹窗显示状态
 const dialogType = ref('create'); // 弹窗类型（新增/编辑）
 const formRef = ref(null); // 引用表单组件
+
+// 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
+// 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
+const handleDialogClosed = () => {
+  batchFormRef.value?.resetFields();
+  batchFormRef.value?.clearValidate();
+};
 const submitting = ref(false); // 确认按钮 loading，防连点
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
@@ -495,3 +522,22 @@ const formatStatus = (status) => {
   return statusOptions.value[status] || '未知状态';
 };
 </script>
+
+<style scoped>
+/* 批量新增结果预览条：提交前让操作者确认将产生的结果，数字等宽防跳动 */
+.batch-preview {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  font-size: 13px;
+  color: var(--text-regular);
+  line-height: 1.6;
+}
+
+.batch-preview__num {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+</style>

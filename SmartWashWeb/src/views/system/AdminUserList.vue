@@ -46,7 +46,7 @@
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="filter-end">
           <el-button type="primary" @click="handleCreate">新增管理员</el-button>
           <el-button
             type="danger"
@@ -66,19 +66,25 @@
         :data="adminList"
         fit
         highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="adminId" label="ID" min-width="80" />
         <el-table-column prop="username" label="用户名" min-width="150" />
-        <el-table-column prop="roles.roleName" label="角色" min-width="180" />
+        <el-table-column label="角色" min-width="180">
+          <template #default="{ row }">
+            <!-- 角色码机器标识符(live 打磨 v2):mono + 弱底 chip,与角色页/订单号列同一语言 -->
+            <div class="admin-role-cell">{{ row.roles?.roleName || '-' }}</div>
+          </template>
+        </el-table-column>
         <el-table-column label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -100,9 +106,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增管理员' : '编辑管理员'"
       v-model="dialogVisible"
-      width="600px"
+      width="min(600px, 94vw)"
+      @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempAdmin" label-width="100px" :rules="rules">
+      <el-form ref="formRef" :model="tempAdmin" label-width="min(100px, 94vw)" :rules="rules">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="tempAdmin.username" placeholder="请输入用户名" />
         </el-form-item>
@@ -160,9 +167,17 @@ import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { passwordLengthRule } from '@/utils/validators';
 
 const tableRef = ref(null);
 const formRef = ref(null);
+
+// 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
+// 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
+const handleDialogClosed = () => {
+  formRef.value?.resetFields();
+  formRef.value?.clearValidate();
+};
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const multipleSelection = ref([]);
@@ -223,6 +238,9 @@ const rules = reactive({
         }
       },
     },
+    // 与登录页共用同一规则（utils/validators）：此前创建无长度校验，
+    // 16 位以上密码能创建却永远无法登录，属自造锁定
+    passwordLengthRule(),
   ],
   roleId: [
     { required: true, message: '请选择角色', trigger: 'change' },
@@ -316,7 +334,11 @@ const submitForm = async () => {
     } else {
       await updateAdminUser(submitData);
       ElMessage.success('修改成功');
-      logger.info('修改管理员成功', `adminId=${tempAdmin.adminId}`, `username=${tempAdmin.username}`);
+      logger.info(
+        '修改管理员成功',
+        `adminId=${tempAdmin.adminId}`,
+        `username=${tempAdmin.username}`
+      );
     }
 
     dialogVisible.value = false;
@@ -351,3 +373,19 @@ const handleDelete = async (row) => {
   }
 };
 </script>
+
+<style scoped>
+/* 角色码机器标识符(live 打磨 v2):mono + 弱底 chip,与角色页/订单号列同一语言 */
+.admin-role-cell {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-input);
+}
+</style>

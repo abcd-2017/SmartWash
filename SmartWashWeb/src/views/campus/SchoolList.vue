@@ -70,11 +70,11 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item>
+        <el-form-item class="filter-end">
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="filter-end">
           <el-button type="primary" @click="handleCreate">新增学校</el-button>
         </el-form-item>
       </el-form>
@@ -82,7 +82,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="schoolList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="schoolList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="schoolId" label="ID" min-width="80" />
         <el-table-column prop="schoolName" label="学校名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="schoolCode" label="学校编码" min-width="120" />
@@ -116,10 +122,10 @@
         <el-table-column prop="createdAt" label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -141,10 +147,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增学校' : '编辑学校'"
       v-model="dialogVisible"
-      width="750px"
+      width="min(750px, 94vw)"
       @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempSchool" label-width="100px" :rules="rules">
+      <el-form ref="formRef" :model="tempSchool" label-width="min(100px, 94vw)" :rules="rules">
         <!-- 基本信息 -->
         <el-divider content-position="left">基本信息</el-divider>
 
@@ -219,7 +225,7 @@
           <el-input v-model="tempSchool.contactName" placeholder="请输入联系人姓名" />
         </el-form-item>
 
-        <el-form-item label="联系电话">
+        <el-form-item label="联系电话" prop="contactPhone">
           <el-input v-model="tempSchool.contactPhone" placeholder="请输入联系电话" />
         </el-form-item>
 
@@ -331,6 +337,11 @@ const lockerCountOptions = [50, 100, 200];
 
 // 验证规则
 const rules = reactive({
+  // 联系电话可选填，填了必须合法（口径与 UserList 手机号校验一致）；可空字段 async-validator 自动跳过
+  contactPhone: [
+    { pattern: /^(?:\+86)?1[3-9]\d{9}$/, message: '联系电话格式不正确', trigger: 'blur' },
+  ],
+
   schoolName: [{ required: true, message: '请输入学校名称', trigger: 'blur' }],
   schoolCode: [{ required: true, message: '请输入学校编码', trigger: 'blur' }],
   location: [{ required: true, message: '请输入位置', trigger: 'blur' }],
@@ -392,7 +403,11 @@ const submitForm = async () => {
     } else {
       await updateSchool(tempSchool);
       ElMessage.success('修改成功');
-      logger.info('修改学校成功', `schoolId=${tempSchool.schoolId}`, `schoolName=${tempSchool.schoolName}`);
+      logger.info(
+        '修改学校成功',
+        `schoolId=${tempSchool.schoolId}`,
+        `schoolName=${tempSchool.schoolName}`
+      );
     }
     // 学校数据有变，失效学校下拉的全量缓存，其他页面下次进入时重新拉取
     schoolOptionsCache.invalidate();
