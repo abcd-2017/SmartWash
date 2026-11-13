@@ -7,6 +7,7 @@ import baZiAnchorTest from './BaZiAnchor.test';
 import publicPathsTest from './PublicPaths.test';
 import requestRulesTest from './RequestRules.test';
 import httpUtilTest from './HttpUtil.test';
+import diningLogicTest from './DiningLogic.test';
 
 export default function testsuite() {
   localUnitTest();
@@ -18,4 +19,5 @@ export default function testsuite() {
   publicPathsTest();
   requestRulesTest();
   httpUtilTest();
+  diningLogicTest();
 }
