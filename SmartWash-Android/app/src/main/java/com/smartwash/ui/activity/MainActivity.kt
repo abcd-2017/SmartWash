@@ -47,6 +47,7 @@ import com.smartwash.common.utils.isReduceMotionEnabled
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.deeplink.DeepLinkHandler
 import com.smartwash.feature.coupon.ui.couponGraph
+import com.smartwash.feature.dining.ui.diningGraph
 import com.smartwash.feature.divination.ui.divinationGraph
 import com.smartwash.feature.game.ui.gameGraph
 import com.smartwash.feature.lab.ui.labGraph
@@ -297,6 +298,10 @@ class MainActivity : ComponentActivity() {
                             pointsGraph(navController)
                             // 设备投递（入口走深链 smartwash://delivery 与工作台卡片，无底栏入口）
                             deliveryGraph(navController)
+                            // 家庭点单（入口走深链 smartwash://dining 与后端 workbench_entry
+                            // 配置的工作台卡片；域首页=订单列表页，07 号票已由菜谱库占位重指向，
+                            // 菜谱三页入口在订单列表页右上角，无底栏入口）
+                            diningGraph(navController)
                         }
                         }
                     }
