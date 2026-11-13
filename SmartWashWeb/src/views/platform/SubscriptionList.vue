@@ -43,20 +43,31 @@
     <!-- 订阅汇总（无参数，仅首载拉取一次） -->
     <div class="summary-card" v-loading="summaryLoading">
       <div class="summary-card__item">
-        <span class="summary-card__label">生效中</span>
-        <span class="summary-card__value summary-card__value--success">
-          {{ formatThousands(summary.activeCount) }}
-        </span>
+        <div class="summary-card__head">
+          <div class="summary-card__icon summary-card__icon--success">
+            <el-icon><CircleCheck /></el-icon>
+          </div>
+          <span class="summary-card__label">生效中</span>
+        </div>
+        <span class="summary-card__value">{{ formatThousands(summary.activeCount) }}</span>
       </div>
       <div class="summary-card__item">
-        <span class="summary-card__label">已过期</span>
+        <div class="summary-card__head">
+          <div class="summary-card__icon summary-card__icon--muted">
+            <el-icon><Clock /></el-icon>
+          </div>
+          <span class="summary-card__label">已过期</span>
+        </div>
         <span class="summary-card__value">{{ formatThousands(summary.expiredCount) }}</span>
       </div>
       <div class="summary-card__item">
-        <span class="summary-card__label">7 天内到期</span>
-        <span class="summary-card__value summary-card__value--warning">
-          {{ formatThousands(summary.expiringIn7Days) }}
-        </span>
+        <div class="summary-card__head">
+          <div class="summary-card__icon summary-card__icon--warning">
+            <el-icon><AlarmClock /></el-icon>
+          </div>
+          <span class="summary-card__label">7 天内到期</span>
+        </div>
+        <span class="summary-card__value">{{ formatThousands(summary.expiringIn7Days) }}</span>
       </div>
     </div>
 
@@ -128,6 +139,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
+import { AlarmClock, CircleCheck, Clock } from '@element-plus/icons-vue';
 import { getSubscriptionList, getSubscriptionSummary } from '@/api/subscription';
 import { formatAmount, formatTime, formatThousands } from '@/utils/format';
 import {
@@ -205,7 +217,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 汇总卡：复用统计卡视觉语言（白卡 12px 圆角 + 着地阴影 + 等宽数字），同 RechargeList */
+/* 汇总卡：对齐全站统计卡语言（白卡 12px 圆角 + 着地阴影 + 等宽数字），同 RechargeList */
 .summary-card {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -222,10 +234,44 @@ onMounted(() => {
   }
 }
 
+/* 头行：小淡底图标与标签同行，26px 数值独占一行——对齐 Home 纵向堆叠统计卡 */
 .summary-card__item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px;
+}
+
+.summary-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+/* 语义收进图标淡底：生效=翡翠绿、已过期=中性、临期=警琥珀；数值保持全墨 */
+.summary-card__icon--success {
+  background: var(--success-soft-bg);
+  color: var(--color-success);
+}
+
+.summary-card__icon--muted {
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.summary-card__icon--warning {
+  background: var(--warning-soft-bg);
+  color: var(--color-warning);
 }
 
 .summary-card__label {
@@ -234,18 +280,10 @@ onMounted(() => {
 }
 
 .summary-card__value {
-  font-size: 20px;
+  font-size: 26px;
+  line-height: 1.2;
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
-}
-
-/* 语义点缀：生效走翡翠绿、临期走警琥珀（裸数值同色系深字，符合淡彩底规则的外延） */
-.summary-card__value--success {
-  color: var(--color-success);
-}
-
-.summary-card__value--warning {
-  color: var(--color-warning);
 }
 </style>

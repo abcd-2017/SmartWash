@@ -34,24 +34,49 @@
     <!-- 统计卡片 -->
     <div class="stats-row" v-loading="loading">
       <div class="stat-card">
-        <div class="stat-label">总卦例数</div>
-        <div class="stat-value">{{ summary.recordCount.toLocaleString() }}</div>
+        <div class="stat-head">
+          <div class="stat-icon stat-icon--indigo">
+            <el-icon><Document /></el-icon>
+          </div>
+          <span class="stat-label">总卦例数</span>
+        </div>
+        <div class="stat-value">{{ formatThousands(summary.recordCount) }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">总解读数</div>
-        <div class="stat-value">{{ summary.interpretCount.toLocaleString() }}</div>
+        <div class="stat-head">
+          <div class="stat-icon stat-icon--blue">
+            <el-icon><ChatDotRound /></el-icon>
+          </div>
+          <span class="stat-label">总解读数</span>
+        </div>
+        <div class="stat-value">{{ formatThousands(summary.interpretCount) }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">缓存命中</div>
-        <div class="stat-value">{{ summary.cacheHitCount.toLocaleString() }}</div>
+        <div class="stat-head">
+          <div class="stat-icon stat-icon--emerald">
+            <el-icon><CircleCheck /></el-icon>
+          </div>
+          <span class="stat-label">缓存命中</span>
+        </div>
+        <div class="stat-value">{{ formatThousands(summary.cacheHitCount) }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">拦截数</div>
-        <div class="stat-value">{{ summary.blockedCount.toLocaleString() }}</div>
+        <div class="stat-head">
+          <div class="stat-icon stat-icon--red">
+            <el-icon><CircleClose /></el-icon>
+          </div>
+          <span class="stat-label">拦截数</span>
+        </div>
+        <div class="stat-value">{{ formatThousands(summary.blockedCount) }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">活跃用户</div>
-        <div class="stat-value">{{ summary.activeUsers.toLocaleString() }}</div>
+        <div class="stat-head">
+          <div class="stat-icon stat-icon--amber">
+            <el-icon><User /></el-icon>
+          </div>
+          <span class="stat-label">活跃用户</span>
+        </div>
+        <div class="stat-value">{{ formatThousands(summary.activeUsers) }}</div>
       </div>
     </div>
 
@@ -60,14 +85,26 @@
         <h4 class="chart-title">每日用量趋势</h4>
         <div class="chart-wrap">
           <div v-if="!hasData" class="chart-empty">暂无数据</div>
-          <div ref="trendChartRef" class="chart-container" :class="{ 'is-empty': !hasData }"></div>
+          <div
+            ref="trendChartRef"
+            class="chart-container"
+            :class="{ 'is-empty': !hasData }"
+            role="img"
+            :aria-label="`每日用量趋势图：共 ${recordsCount} 天数据，含卦例数、解读数、拦截数三条序列`"
+          ></div>
         </div>
       </div>
       <div class="chart-card">
         <h4 class="chart-title">术数方法分布</h4>
         <div class="chart-wrap">
           <div v-if="!hasData" class="chart-empty">暂无数据</div>
-          <div ref="methodChartRef" class="chart-container" :class="{ 'is-empty': !hasData }"></div>
+          <div
+            ref="methodChartRef"
+            class="chart-container"
+            :class="{ 'is-empty': !hasData }"
+            role="img"
+            aria-label="术数方法分布饼图：各术数解读量占比"
+          ></div>
         </div>
       </div>
     </div>
@@ -76,14 +113,26 @@
         <h4 class="chart-title">Token 消耗</h4>
         <div class="chart-wrap">
           <div v-if="!hasData" class="chart-empty">暂无数据</div>
-          <div ref="tokenChartRef" class="chart-container" :class="{ 'is-empty': !hasData }"></div>
+          <div
+            ref="tokenChartRef"
+            class="chart-container"
+            :class="{ 'is-empty': !hasData }"
+            role="img"
+            aria-label="Token 消耗柱状图：输入与输出 Token 对比"
+          ></div>
         </div>
       </div>
       <div class="chart-card">
         <h4 class="chart-title">缓存命中率</h4>
         <div class="chart-wrap">
           <div v-if="!hasData" class="chart-empty">暂无数据</div>
-          <div ref="cacheChartRef" class="chart-container" :class="{ 'is-empty': !hasData }"></div>
+          <div
+            ref="cacheChartRef"
+            class="chart-container"
+            :class="{ 'is-empty': !hasData }"
+            role="img"
+            aria-label="缓存命中率趋势图：百分比折线"
+          ></div>
         </div>
       </div>
     </div>
@@ -92,11 +141,28 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import * as echarts from 'echarts';
+// echarts/core 按需注册（树摇，收编 TrendChart.vue 方案）：折线/柱/饼 + 网格/悬浮提示/图例 + Canvas，
+// 避免整包 echarts 进入本路由 chunk
+import * as echarts from 'echarts/core';
+import { BarChart, LineChart, PieChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
 import { ElMessage } from 'element-plus';
+import { ChatDotRound, CircleCheck, CircleClose, Document, User } from '@element-plus/icons-vue';
 import { DIV_METHOD_OPTIONS as methodOptions } from '@/constants/dict';
 import { getUsageStats } from '@/api/divination';
+import { formatThousands } from '@/utils/format';
 import logger from '@/utils/logger';
+
+echarts.use([
+  LineChart,
+  BarChart,
+  PieChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  CanvasRenderer,
+]);
 
 const loading = ref(false);
 const dateRange = ref(null);
@@ -119,23 +185,42 @@ let trendChart = null;
 let methodChart = null;
 let tokenChart = null;
 let cacheChart = null;
+let resizeTimer = null;
 
 // 是否有可渲染数据：决定图表是否挂空状态占位（评审遗留：图表空状态补齐）
 const hasData = computed(() => recordsCount.value > 0);
 const recordsCount = ref(0);
 
-// 图表入场/更新动画：数据登场与过滤变化有节奏，值取自 --motion-slow/--motion-base 档
-const CHART_ANIMATION = {
-  animation: true,
-  // 与样式 Token 对齐：首帧进场取 --motion-slow(320)，数据更新取 --motion-base(220)
-  animationDuration: 320,
-  animationDurationUpdate: 220,
-  animationEasing: 'cubicOut',
+// 减少动态效果：canvas 动画直接关闭（DESIGN.md 全局降级要求，与 TrendChart 同法）
+const reducedMotion =
+  typeof window !== 'undefined' &&
+  !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+// canvas 无法引用 CSS var：构建 option 时运行时解析设计令牌一次（TrendChart.vue 同款方案，
+// 取不到时回退令牌字面值），时长/色板与全局 token 不再手工复制
+const readCssVar = (name, fallback) => {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
 };
 
-// 图表色板：canvas 无法引用 CSS var，此处按 DESIGN.md 色板字面量维护
-// （靛蓝/翡翠绿/警琥珀/警示红/浅靛，与 base.css token 同源）；四张图共用一份
-const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#818cf8'];
+const resolveColor = (name, fallback) => readCssVar(name, fallback);
+
+// 图表入场/更新动画：时长运行时读全局 token（--motion-slow/--motion-base）
+const buildAnimation = () => ({
+  animation: !reducedMotion,
+  animationDuration: Number(readCssVar('--motion-slow', '320ms').replace(/ms$/, '')) || 320,
+  animationDurationUpdate: Number(readCssVar('--motion-base', '220ms').replace(/ms$/, '')) || 220,
+  animationEasing: 'cubicOut',
+});
+
+// 图表色板：与 base.css token 同源（靛蓝/翡翠绿/警琥珀/警示红/浅靛），四张图共用一份
+const buildChartColors = () => [
+  resolveColor('--color-primary', '#6366f1'),
+  resolveColor('--color-success', '#10b981'),
+  resolveColor('--color-warning', '#f59e0b'),
+  resolveColor('--color-danger', '#ef4444'),
+  resolveColor('--primary-soft', '#a5b4fc'),
+];
 
 onMounted(() => {
   initCharts();
@@ -145,6 +230,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
+  if (resizeTimer) clearTimeout(resizeTimer);
   trendChart?.dispose();
   methodChart?.dispose();
   tokenChart?.dispose();
@@ -158,11 +244,15 @@ const initCharts = () => {
   cacheChart = echarts.init(cacheChartRef.value);
 };
 
+// resize 防抖：窗口拖拽时避免每帧重建布局
 const handleResize = () => {
-  trendChart?.resize();
-  methodChart?.resize();
-  tokenChart?.resize();
-  cacheChart?.resize();
+  if (resizeTimer) clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    trendChart?.resize();
+    methodChart?.resize();
+    tokenChart?.resize();
+    cacheChart?.resize();
+  }, 150);
 };
 
 const fetchStats = async () => {
@@ -210,14 +300,21 @@ const resetFilter = () => {
   fetchStats();
 };
 
-const renderCharts = (records) => {
-  const dates = records.map((r) => r.statDate).sort();
-  recordsCount.value = records.length;
+const renderCharts = (rawRecords) => {
+  recordsCount.value = rawRecords.length;
+  // 先按日期统一排序再派生全部序列：此前只排 x 轴标签不排 records，
+  // 后端一旦乱序返回，标签与三条序列会整体错位且无告警（评审 P1）
+  const records = [...rawRecords].sort((a, b) =>
+    String(a.statDate ?? '').localeCompare(String(b.statDate ?? ''))
+  );
+  const dates = records.map((r) => r.statDate);
+  const animation = buildAnimation();
+  const chartColors = buildChartColors();
 
   // 每日用量趋势
   trendChart.setOption({
-    ...CHART_ANIMATION,
-    color: CHART_COLORS,
+    ...animation,
+    color: chartColors,
     tooltip: { trigger: 'axis' },
     legend: { data: ['卦例数', '解读数', '拦截数'] },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
@@ -246,8 +343,8 @@ const renderCharts = (records) => {
     value,
   }));
   methodChart.setOption({
-    ...CHART_ANIMATION,
-    color: CHART_COLORS,
+    ...animation,
+    color: chartColors,
     tooltip: { trigger: 'item' },
     legend: { orient: 'vertical', left: 'left' },
     series: [
@@ -265,8 +362,8 @@ const renderCharts = (records) => {
 
   // Token 消耗
   tokenChart.setOption({
-    ...CHART_ANIMATION,
-    color: CHART_COLORS,
+    ...animation,
+    color: chartColors,
     tooltip: { trigger: 'axis' },
     legend: { data: ['输入 Token', '输出 Token'] },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
@@ -284,8 +381,8 @@ const renderCharts = (records) => {
     return ((r.cacheHitCount / r.interpretCount) * 100).toFixed(1);
   });
   cacheChart.setOption({
-    ...CHART_ANIMATION,
-    color: CHART_COLORS,
+    ...animation,
+    color: chartColors,
     tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: { type: 'category', data: dates },
@@ -310,11 +407,58 @@ const renderCharts = (records) => {
   gap: 16px;
 }
 
+/* 头行:小淡底图标与标签同行,26px 数值独占一行——对齐 Home 纵向堆叠统计卡 */
 .stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   background: var(--bg-card);
   border-radius: 12px;
   padding: 20px 24px;
   box-shadow: var(--shadow-ground);
+}
+
+.stat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 语义分配:卦例=靛蓝、解读=信息蓝、缓存命中=翡翠绿、拦截=警示红、活跃用户=警琥珀 */
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.stat-icon--indigo {
+  background: var(--primary-soft-bg);
+  color: var(--color-primary);
+}
+
+.stat-icon--blue {
+  background: var(--info-soft-bg);
+  color: var(--color-info);
+}
+
+.stat-icon--emerald {
+  background: var(--success-soft-bg);
+  color: var(--color-success);
+}
+
+.stat-icon--red {
+  background: var(--danger-soft-bg);
+  color: var(--color-danger);
+}
+
+.stat-icon--amber {
+  background: var(--warning-soft-bg);
+  color: var(--color-warning);
 }
 
 .stat-label {
@@ -324,10 +468,12 @@ const renderCharts = (records) => {
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 26px;
+  line-height: 1.2;
   font-weight: 700;
   color: var(--text-primary);
-  margin-top: 8px;
+  /* 数字等宽规则：汇总数值随查询变化，避免逐帧变宽抖动 */
+  font-variant-numeric: tabular-nums;
 }
 
 .charts-row {
@@ -373,12 +519,19 @@ const renderCharts = (records) => {
   z-index: 1;
 }
 
-@media (max-width: 1200px) {
+/* 断点收敛回全局词汇表（600/880/900），移除越轨的 1200px 第四断点 */
+@media (max-width: 900px) {
   .stats-row {
     grid-template-columns: repeat(3, 1fr);
   }
   .charts-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

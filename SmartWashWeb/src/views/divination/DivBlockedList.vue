@@ -1,18 +1,25 @@
 <template>
   <div class="page-container">
     <!-- 搜索区域 -->
-    <div class="filter-container">
-      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
-        <el-form-item label="关键词">
+    <!-- 搜索区域 -->
+    <!-- 筛选区(live 打磨 v1):关键词输入定宽成组、动作右置,消除原 705px 行尾空洞 -->
+    <div class="filter-container blocked-filter">
+      <el-form
+        :inline="true"
+        :model="listQuery"
+        @keyup.enter="handleSearch"
+        class="blocked-filter__form"
+      >
+        <el-form-item label="关键词" class="blocked-filter__field">
           <el-input
             v-model="listQuery.keyword"
             placeholder="请输入问题内容"
             clearable
-            style="width: 240px"
+            style="width: 100%"
             @clear="handleSearch"
           />
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="blocked-filter__actions">
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
@@ -92,3 +99,20 @@ onMounted(() => {
   fetchData();
 });
 </script>
+
+<style scoped>
+/* 筛选区(live 打磨 v1):关键词输入定宽成组、动作右置,消除原 705px 行尾空洞 */
+.blocked-filter .blocked-filter__form {
+  gap: 12px 0;
+}
+
+.blocked-filter .blocked-filter__field {
+  flex: 0 1 480px;
+  min-width: 0;
+}
+
+.blocked-filter .blocked-filter__actions {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+</style>

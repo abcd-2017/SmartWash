@@ -1,14 +1,14 @@
 <template>
   <div class="page-container">
     <!-- 搜索区域 -->
-    <div class="filter-container">
+    <div class="filter-container user-filter">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="用户ID">
           <el-input
             v-model.number="listQuery.userId"
             placeholder="输入用户ID"
             clearable
-            style="width: 120px"
+            style="width: 100px"
             @clear="handleSearch"
           />
         </el-form-item>
@@ -18,7 +18,7 @@
             v-model="listQuery.phoneNumber"
             placeholder="输入手机号"
             clearable
-            style="width: 160px"
+            style="width: 140px"
             @clear="handleSearch"
           />
         </el-form-item>
@@ -28,7 +28,7 @@
             v-model="listQuery.schoolId"
             placeholder="选择学校"
             clearable
-            style="width: 200px"
+            style="width: 160px"
             @change="handleSearch"
           >
             <el-option
@@ -45,7 +45,7 @@
             v-model="listQuery.studentId"
             placeholder="输入学号"
             clearable
-            style="width: 160px"
+            style="width: 120px"
             @clear="handleSearch"
           />
         </el-form-item>
@@ -90,7 +90,7 @@
           <template #default="{ row }">{{ row.campusCard || '-' }}</template>
         </el-table-column>
         <el-table-column prop="balance" label="余额" min-width="120" align="right">
-          <template #default="{ row }">￥{{ row.balance?.toFixed(2) || '0.00' }}</template>
+          <template #default="{ row }">￥{{ formatAmount(row.balance) }}</template>
         </el-table-column>
         <el-table-column prop="createdAt" label="注册时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
@@ -120,9 +120,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增用户' : '编辑用户'"
       v-model="dialogVisible"
-      width="600px"
+      width="min(600px, 94vw)"
+      @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempUser" label-width="100px" :rules="rules">
+      <el-form ref="formRef" :model="tempUser" label-width="min(100px, 94vw)" :rules="rules">
         <el-form-item label="学校" prop="schoolId">
           <el-select v-model="tempUser.schoolId" placeholder="请选择学校" filterable>
             <el-option
@@ -182,12 +183,19 @@ import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getUserList, addUser, updateUser, deleteUser } from '@/api/user';
 import { schoolOptionsCache } from '@/utils/optionCache';
-import { formatTime } from '@/utils/format';
+import { formatAmount, formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 
 const formRef = ref(null);
+
+// 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
+// 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
+const handleDialogClosed = () => {
+  formRef.value?.resetFields();
+  formRef.value?.clearValidate();
+};
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const submitting = ref(false); // 确认按钮 loading，防连点
@@ -264,8 +272,9 @@ const fetchSchools = async () => {
   try {
     schoolOptions.value = await schoolOptionsCache.load();
   } catch (error) {
-    // HTTP 层错误已由拦截器统一提示，这里仅记录日志避免未处理 rejection
+    // 与 LockerList 同场景对齐：下拉拉取失败弹 toast（此前仅 logger 静默，筛选不可用无从归因）
     logger.error('获取学校列表失败:', error);
+    ElMessage.error(error.message || '获取学校列表失败');
   }
 };
 
@@ -305,13 +314,26 @@ const submitForm = async () => {
     if (dialogType.value === 'create') {
       await addUser(tempUser);
       ElMessage.success('新增成功');
+      // 写操作留痕对齐其他页（成功 info / 失败 error）；手机号等敏感字段不入日志
+      logger.info(
+        '新增学生成功',
+        `userId=${tempUser.userId ?? '-'}`,
+        `schoolId=${tempUser.schoolId}`
+      );
     } else {
       await updateUser(tempUser);
       ElMessage.success('修改成功');
+      logger.info('修改学生成功', `userId=${tempUser.userId}`);
     }
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    logger.error(
+      '学生提交失败:',
+      `type=${dialogType.value}`,
+      `userId=${tempUser.userId ?? '-'}`,
+      error
+    );
     ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
@@ -326,17 +348,25 @@ const handleDelete = async (row) => {
   try {
     await deleteUser(row.userId);
     ElMessage.success('删除成功');
+    logger.info('删除学生成功', `userId=${row.userId}`);
     fetchData();
   } catch (error) {
+    logger.error('删除学生失败:', `userId=${row.userId}`, error);
     ElMessage.error(error.message || '删除失败');
   }
 };
 </script>
 
 <style scoped>
+/* 学生筛选字段收窄后全条单行，筛选卡高度减半 */
+.user-filter :deep(.el-form-item) {
+  margin-right: 10px;
+}
+
 .user-table-avatar {
   background: var(--color-primary);
-  color: #fff;
+  /* 主色底上的白字 → on-primary token */
+  color: var(--color-on-primary);
   font-size: 12px;
   font-weight: 600;
 }
