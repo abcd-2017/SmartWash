@@ -4,6 +4,7 @@ import com.smartwash.common.Result;
 import com.smartwash.from.users.ResetPasswordFrom;
 import com.smartwash.from.users.UserRegisterFrom;
 import com.smartwash.service.IAdminUsersService;
+import com.smartwash.service.ISysConfigService;
 import com.smartwash.service.IUsersService;
 import com.smartwash.service.JwtBlacklistService;
 import com.smartwash.service.SmsService;
@@ -32,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -72,6 +74,8 @@ class LoginControllerTest {
     private SmsService smsService;
     @Mock
     private JwtBlacklistService jwtBlacklistService;
+    @Mock
+    private ISysConfigService sysConfigService;
 
     /** 模拟 Redis 的字符串存储与计数器，配合 mock 还原真实 get/set/increment/delete 语义 */
     private final Map<String, String> store = new ConcurrentHashMap<>();
@@ -83,7 +87,10 @@ class LoginControllerTest {
     @BeforeEach
     void setUp() {
         jwtUtil = new JwtUtil("dGVzdFNlY3JldEtleUZvckpXVFRlc3RpbmdQdXJwb3Nlcw==");
-        controller = new LoginController(adminUsersService, usersService, jwtUtil, authenticationManager, redisTemplate, smsService, jwtBlacklistService);
+        controller = new LoginController(adminUsersService, usersService, jwtUtil, authenticationManager, redisTemplate, smsService, jwtBlacklistService, sysConfigService);
+
+        // 登录锁定阈值/时长参数：透传默认值（与 sys_config 种子一致），避免 mock 默认 0 导致首次失败即锁定
+        when(sysConfigService.getIntValue(anyString(), anyInt())).thenAnswer(inv -> inv.getArgument(1));
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get(anyString())).thenAnswer(inv -> store.get(inv.getArgument(0, String.class)));

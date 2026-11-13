@@ -5,6 +5,7 @@ import com.smartwash.common.OrderStatus;
 import com.smartwash.entity.Orders;
 import com.smartwash.mapper.LockersMapper;
 import com.smartwash.mapper.OrdersMapper;
+import com.smartwash.service.ISysConfigService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,10 +26,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -55,6 +58,8 @@ class OrderTimeoutManagerTest {
     private TaskScheduler taskScheduler;
     @Mock
     private ScheduledFuture<?> scheduledFuture;
+    @Mock
+    private ISysConfigService sysConfigService;
 
     private OrderTimeoutManager manager;
 
@@ -64,6 +69,9 @@ class OrderTimeoutManagerTest {
         ReflectionTestUtils.setField(manager, "ordersMapper", ordersMapper);
         ReflectionTestUtils.setField(manager, "lockersMapper", lockersMapper);
         ReflectionTestUtils.setField(manager, "taskScheduler", taskScheduler);
+        ReflectionTestUtils.setField(manager, "sysConfigService", sysConfigService);
+        // 支付超时分钟数参数：透传默认值（与 sys_config 种子一致）；lenient——部分用例不触发调度
+        lenient().when(sysConfigService.getIntValue(anyString(), anyInt())).thenAnswer(inv -> inv.getArgument(1));
     }
 
     /** 通过反射调用私有方法 cancelIfUnpaid（超时任务回调体） */

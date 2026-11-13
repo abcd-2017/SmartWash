@@ -6,6 +6,7 @@ import com.smartwash.common.OrderStatus;
 import com.smartwash.entity.Orders;
 import com.smartwash.mapper.LockersMapper;
 import com.smartwash.mapper.OrdersMapper;
+import com.smartwash.service.ISysConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -27,7 +28,11 @@ import java.util.concurrent.ScheduledFuture;
 @Slf4j
 public class OrderTimeoutManager {
 
-    private static final long TIMEOUT_MINUTES = 30;
+    /** 超时分钟数参数键（sys_config 表，管理端「参数设置」可实时修改） */
+    public static final String KEY_PAY_TIMEOUT_MINUTES = "order.payTimeoutMinutes";
+
+    /** 参数缺失/非法时的兜底值（与 sys_config 种子一致） */
+    private static final int DEFAULT_TIMEOUT_MINUTES = 30;
 
     private final ConcurrentHashMap<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
 
@@ -37,17 +42,19 @@ public class OrderTimeoutManager {
     private OrdersMapper ordersMapper;
     @Autowired
     private LockersMapper lockersMapper;
+    @Autowired
+    private ISysConfigService sysConfigService;
 
     /**
-     * 订单创建后调用，调度超时取消任务
+     * 订单创建后调用，调度超时任务
      */
     public void scheduleTimeout(Long orderId) {
         ScheduledFuture<?> future = taskScheduler.schedule(
                 () -> cancelIfUnpaid(orderId),
-                Instant.now().plus(TIMEOUT_MINUTES, ChronoUnit.MINUTES)
+                Instant.now().plus(getTimeoutMinutes(), ChronoUnit.MINUTES)
         );
         scheduledTasks.put(orderId, future);
-        log.info("已调度订单超时任务, orderId: {}, 超时时间: {} 分钟", orderId, TIMEOUT_MINUTES);
+        log.info("已调度订单超时任务, orderId: {}, 超时时间: {} 分钟", orderId, getTimeoutMinutes());
     }
 
     /**
@@ -110,7 +117,7 @@ public class OrderTimeoutManager {
 
         for (Orders order : pendingOrders) {
             long minutesElapsed = ChronoUnit.MINUTES.between(order.getCreatedAt(), LocalDateTime.now());
-            long remainingMinutes = TIMEOUT_MINUTES - minutesElapsed;
+            long remainingMinutes = getTimeoutMinutes() - minutesElapsed;
 
             if (remainingMinutes <= 0) {
                 // 已经超时，直接取消
@@ -128,5 +135,12 @@ public class OrderTimeoutManager {
         }
 
         log.info("启动重载待支付订单超时任务完成, 重新调度: {} 笔, 立即取消: {} 笔", reloadCount, immediateCancelCount);
+    }
+
+    /**
+     * 当前生效的支付超时分钟数（读 sys_config，管理端改参数即生效）
+     */
+    private long getTimeoutMinutes() {
+        return sysConfigService.getIntValue(KEY_PAY_TIMEOUT_MINUTES, DEFAULT_TIMEOUT_MINUTES);
     }
 }

@@ -510,7 +510,8 @@ export const diningRecipeStatusText = (status) =>
   dictValue(DINING_RECIPE_STATUS_TEXT, status, String(status));
 
 /** 菜谱上下架标签配色 */
-export const diningRecipeStatusTagType = (status) => dictValue(DINING_RECIPE_STATUS_TAG_TYPES, status);
+export const diningRecipeStatusTagType = (status) =>
+  dictValue(DINING_RECIPE_STATUS_TAG_TYPES, status);
 
 /** 菜谱来源 → 文案 */
 export const DINING_RECIPE_SOURCE_TEXT = {
@@ -519,7 +520,8 @@ export const DINING_RECIPE_SOURCE_TEXT = {
 };
 
 /** 菜谱来源文案（未知值兜底） */
-export const diningRecipeSourceText = (source) => DINING_RECIPE_SOURCE_TEXT[source] || source || '-';
+export const diningRecipeSourceText = (source) =>
+  DINING_RECIPE_SOURCE_TEXT[source] || source || '-';
 
 /** 菜谱来源 → el-tag 类型 */
 export const DINING_RECIPE_SOURCE_TAG_TYPES = {
@@ -528,7 +530,8 @@ export const DINING_RECIPE_SOURCE_TAG_TYPES = {
 };
 
 /** 菜谱来源标签配色 */
-export const diningRecipeSourceTagType = (source) => dictValue(DINING_RECIPE_SOURCE_TAG_TYPES, source);
+export const diningRecipeSourceTagType = (source) =>
+  dictValue(DINING_RECIPE_SOURCE_TAG_TYPES, source);
 // ---------- 操作审计（与后端 @Audited 注解全集对齐） ----------
 
 // 来源：SmartWash 后端 controller/background/ 各 Controller 的 @Audited(action, targetType)。
@@ -561,6 +564,7 @@ export const AUDIT_ACTION_TEXT = {
   ADMIN_USER_ADD: '新增管理员',
   ADMIN_USER_UPDATE: '更新管理员',
   ADMIN_USER_DELETE: '删除管理员',
+  SYS_CONFIG_UPDATE: '更新系统参数',
 };
 
 export const AUDIT_TARGET_TYPE_TEXT = {
@@ -574,6 +578,7 @@ export const AUDIT_TARGET_TYPE_TEXT = {
   laundry_item: '洗护套餐',
   school: '学校',
   admin_user: '管理员',
+  sysConfig: '系统参数',
 };
 
 /** 审计筛选下拉由字典派生，保证下拉与表格文案同源 */
@@ -629,10 +634,12 @@ export const divAuditStatusText = (status) => DIV_AUDIT_STATUS_TEXT[status] || '
 export const divAuditStatusTagType = (status) => dictValue(DIV_AUDIT_STATUS_TAG_TYPES, status);
 
 /** 审计复审筛选下拉 */
-export const DIV_AUDIT_STATUS_OPTIONS = Object.entries(DIV_AUDIT_STATUS_TEXT).map(([value, label]) => ({
-  value: Number(value),
-  label,
-}));
+export const DIV_AUDIT_STATUS_OPTIONS = Object.entries(DIV_AUDIT_STATUS_TEXT).map(
+  ([value, label]) => ({
+    value: Number(value),
+    label,
+  })
+);
 
 // ---------- 观象台·Prompt 状态 ----------
 
@@ -666,7 +673,8 @@ export const USER_COUPON_USED_TAG_TYPES = {
 
 export const userCouponUsedText = (isUsed) => USER_COUPON_USED_TEXT[String(isUsed)] || '未知';
 
-export const userCouponUsedTagType = (isUsed) => dictValue(USER_COUPON_USED_TAG_TYPES, String(isUsed));
+export const userCouponUsedTagType = (isUsed) =>
+  dictValue(USER_COUPON_USED_TAG_TYPES, String(isUsed));
 
 // ---------- 优惠券状态选项（筛选/表单下拉共用） ----------
 
