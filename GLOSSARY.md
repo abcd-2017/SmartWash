@@ -1,7 +1,7 @@
 # SmartWash 术语表（GLOSSARY）
 
 > 本文件是 SmartWash 四端（Spring Boot 后端 / Android / 鸿蒙 NEXT / Web 管理后台）共享的领域词汇表。
-> 事实来源：**当前分支代码**（`feat/game-data-platform`，2026-11-09 同步）+ 根目录 `smart_wash.sql` + `docs/adr/`。
+> 事实来源：**当前代码**（2026-11-13 同步）+ 根目录 `smart_wash.sql` + `docs/adr/`（ADR 尚未创建，正文中的 ADR 编号为引用占位）。
 > 与 ADR 冲突时，以 ADR 的裁定为准；本表只描述「代码现在是什么」，不替代 ADR 的「为什么这样定」。
 
 ## 维护约定
