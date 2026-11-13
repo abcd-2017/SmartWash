@@ -105,10 +105,3 @@ fun CompassDial(modifier: Modifier = Modifier, dialText: String = "卜") {
         drawText(dial, topLeft = center - dial.size.center.toOffset())
     }
 }
-
-/** DrawScope 辅助：由中心与角度取环上坐标 */
-private fun ringOffset(center: Offset, radius: Float, angleDeg: Double): Offset =
-    center + Offset(
-        (radius * kotlin.math.cos(Math.toRadians(angleDeg - 90.0))).toFloat(),
-        (radius * kotlin.math.sin(Math.toRadians(angleDeg - 90.0))).toFloat(),
-    )

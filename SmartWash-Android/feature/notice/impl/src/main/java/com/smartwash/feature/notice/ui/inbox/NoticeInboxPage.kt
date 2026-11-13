@@ -140,13 +140,16 @@ fun NoticeInboxPage(
                 title = stringResource(R.string.notice_title),
                 onBack = { navController.navigateUp() },
                 actions = {
-                    Text(
-                        text = stringResource(R.string.notice_unread_count_format, unreadCount),
-                        // 未读数是数量，开 tabular numbers（规范 §2.2 硬规则，避免数字变化左右跳）
-                        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                        color = AppColors.colorScheme.textSecondary,
-                    )
-                    Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                    // 未读数为 0 时不渲染计数（AND-B-014）：「0 条未读」是常驻噪音，无信息量
+                    if (unreadCount > 0) {
+                        Text(
+                            text = stringResource(R.string.notice_unread_count_format, unreadCount),
+                            // 未读数是数量，开 tabular numbers（规范 §2.2 硬规则，避免数字变化左右跳）
+                            style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                            color = AppColors.colorScheme.textSecondary,
+                        )
+                        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                    }
                     AppButton(
                         text = stringResource(R.string.notice_read_all),
                         onClick = { showReadAllDialog = true },

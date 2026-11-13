@@ -104,6 +104,7 @@ import com.smartwash.feature.payment.api.PaymentRoute
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 /** 订单列表混合项：月份标题或整月订单组（D-O9 每月合并单卡），用于 LazyColumn 单列表渲染 */
 private sealed interface OrderListItem {
@@ -552,7 +553,7 @@ private fun OrderRow(
         ) {
             Text(
                 // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页「¥29.90」不一致
-                text = stringResource(R.string.currency_format, String.format("%.2f", order.payPrice)),
+                text = stringResource(R.string.currency_format, String.format(Locale.CHINA, "%.2f", order.payPrice)),
                 color = if (order.status == OrderStatus.CANCELED.status) {
                     AppColors.colorScheme.textSecondary
                 } else {
@@ -711,6 +712,7 @@ private fun OrderEmptyState(onGoOrder: () -> Unit) {
 /**
  * 订单时间相对化展示（D-O7）：同天「今天 HH:mm」、前一天「昨天 HH:mm」、
  * 其余仅「M月d日」（设计稿屏 5 旧日期无时分）；createdAt 解析失败兜底显示原文。时区用系统默认。
+ * 纯日期串（无时分部分）直接落「M月d日」档，避免「今天 」带尾随空格（AND-B-009）。
  */
 @Composable
 private fun formatOrderTime(createdAt: String): String {
@@ -719,11 +721,14 @@ private fun formatOrderTime(createdAt: String): String {
     } catch (_: DateTimeParseException) {
         return createdAt
     }
-    // 时间部分取 createdAt 第 12-16 位（"HH:mm"）
+    // 时间部分取 createdAt 第 12-16 位（"HH:mm"）；日期串时为空
     val time = createdAt.drop(11).take(5)
-    return when (ChronoUnit.DAYS.between(date, LocalDate.now())) {
-        0L -> stringResource(R.string.order_time_today_prefix, time)
-        1L -> stringResource(R.string.order_time_yesterday_prefix, time)
+    return when {
+        time.isBlank() -> stringResource(R.string.order_time_date, date.monthValue, date.dayOfMonth)
+        ChronoUnit.DAYS.between(date, LocalDate.now()) == 0L ->
+            stringResource(R.string.order_time_today_prefix, time)
+        ChronoUnit.DAYS.between(date, LocalDate.now()) == 1L ->
+            stringResource(R.string.order_time_yesterday_prefix, time)
         else -> stringResource(R.string.order_time_date, date.monthValue, date.dayOfMonth)
     }
 }

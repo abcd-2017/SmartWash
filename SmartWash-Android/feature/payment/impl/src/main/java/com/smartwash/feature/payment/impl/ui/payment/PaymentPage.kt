@@ -58,6 +58,7 @@ import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.feature.coupon.api.CouponRoute
 import com.smartwash.feature.coupon.api.model.UsableCoupon
+import java.util.Locale
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppConfirmDialog
@@ -81,6 +82,7 @@ import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
+import com.smartwash.common.utils.selectedColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -190,7 +192,7 @@ fun PaymentPage(
                                         // 与充值/记录/订单页的「¥29.90」不一致（tnum 大字随字符串统一）
                                         text = stringResource(
                                             R.string.currency_format,
-                                            String.format("%.2f", payPrice ?: 0f)
+                                            String.format(Locale.CHINA, "%.2f", payPrice ?: 0f)
                                         ),
                                         style = AppTextStyles.DataLarge,
                                         color = AppColors.colorScheme.primaryDark,
@@ -228,13 +230,17 @@ fun PaymentPage(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             // 选中态：primaryContainer 底（浅 #F0FBF4 / 深 #17322B）+ 1px 描边 + level1 阴影。
-                            // U-117：原 primarySoft #E8F6EF 已被 §1.4 裁决弃用（统一 #F0FBF4）
+                            // U-117：原 primarySoft #E8F6EF 已被 §1.4 裁决弃用（统一 #F0FBF4）；
+                            // 选中/未选中容器色经 selectedColor 弹簧过渡（AND-B-007，对齐 AmountGridCell
+                            // /SelectableChip/AppPillTabRow 同类选中态），reduced motion 自动降级 180ms
                             Surface(
                                 modifier = Modifier.fillMaxWidth().softCardShadow(),
                                 shape = RoundedCornerShape(AppDimens.radiusLg),
-                                color = if (selectedPaymentMethod == "balance")
-                                    MaterialTheme.colorScheme.primaryContainer
-                                else AppColors.colorScheme.surface,
+                                color = selectedColor(
+                                    if (selectedPaymentMethod == "balance")
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else AppColors.colorScheme.surface
+                                ),
                                 border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                             ) {
                                 Row(
@@ -274,7 +280,7 @@ fun PaymentPage(
                                         Text(
                                             stringResource(
                                                 R.string.current_balance_format,
-                                                String.format("%.2f", orderInfo?.userVo?.balance ?: 0f)
+                                                String.format(Locale.CHINA, "%.2f", orderInfo?.userVo?.balance ?: 0f)
                                             ),
                                             // 余额行开 tnum（规范 §2.2 金额硬规则）
                                             style = MaterialTheme.typography.bodySmall.copy(
@@ -340,7 +346,7 @@ fun PaymentPage(
                                             text = if (discount == null) stringResource(R.string.do_not_use)
                                             else stringResource(
                                                 R.string.coupon_discount_value,
-                                                String.format("%.2f", discount ?: 0f)
+                                                String.format(Locale.CHINA, "%.2f", discount ?: 0f)
                                             ),
                                             style = MaterialTheme.typography.bodySmall.copy(
                                                 fontFeatureSettings = if (discount == null) "normal" else "tnum"
@@ -372,7 +378,7 @@ fun PaymentPage(
                         AppButton(
                             text = stringResource(
                                 R.string.confirm_pay_format,
-                                String.format("%.2f", orderInfo?.payPrice ?: 0f)
+                                String.format(Locale.CHINA, "%.2f", orderInfo?.payPrice ?: 0f)
                             ),
                             onClick = {
                                 if (orderInfo != null) {
@@ -583,7 +589,7 @@ private fun UserCouponItem(
                 Text(
                     text = stringResource(
                         R.string.coupon_amount_format,
-                        String.format("%.2f", userCouponVo.discount)
+                        String.format(Locale.CHINA, "%.2f", userCouponVo.discount)
                     ),
                     style = AppTextStyles.AmountMedium
                 )
@@ -591,12 +597,12 @@ private fun UserCouponItem(
                     text = if (userCouponVo.threshold == 0f)
                         stringResource(
                             R.string.coupon_discount_format,
-                            String.format("%.2f", userCouponVo.discount + 0.01f),
-                            String.format("%.2f", userCouponVo.discount)
+                            String.format(Locale.CHINA, "%.2f", userCouponVo.discount + 0.01f),
+                            String.format(Locale.CHINA, "%.2f", userCouponVo.discount)
                         )
                     else stringResource(
                         R.string.coupon_min_amount_format,
-                        String.format("%.2f", userCouponVo.threshold)
+                        String.format(Locale.CHINA, "%.2f", userCouponVo.threshold)
                     ),
                     // 门槛/折扣是金额，开 tnum（规范 §2.2）
                     style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),

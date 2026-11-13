@@ -54,6 +54,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.feature.coupon.R
 import com.smartwash.feature.coupon.network.vo.coupon.UserCouponVo
 import com.smartwash.feature.coupon.repository.CouponSource
+import java.util.Locale
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppButtonVariant
@@ -269,10 +270,10 @@ fun UserCouponCard(
             // 画板已使用态整卡 opacity .38（换灰 + 半透明双层弱化）
             .then(if (isHistorical) Modifier.alpha(0.38f) else Modifier)
             .drawBehind {
-                // 中间虚线 — 设计稿：1dp 竖线、段 6 / 隔 4，上下 margin 12（虚线 x=88 与打孔同轴）
+                // 中间虚线 — 设计稿：1dp 竖线、段 6 / 隔 4，上下 margin 12（虚线 x=面额区右缘与打孔同轴）
                 val dashWidth = 6.dp.toPx()
                 val dashGap = 4.dp.toPx()
-                val x = 88.dp.toPx()
+                val x = TicketFaceWidth.toPx()
                 val strokeWidth = 1.dp.toPx()
                 var y = 12.dp.toPx()
                 val maxY = size.height - 12.dp.toPx()
@@ -301,7 +302,7 @@ fun UserCouponCard(
             // 变灰 surface-2（surfaceVariant）；底色溢出凹口区域由 Surface outline 裁剪
             Box(
                 modifier = Modifier
-                    .width(88.dp)
+                    .width(TicketFaceWidth)
                     .fillMaxHeight()
                     .background(
                         if (isHistorical) AppColors.colorScheme.surfaceVariant
@@ -366,10 +367,11 @@ fun UserCouponCard(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
+                    // 门槛两位小数（对齐 PaymentPage UserCouponItem 口径）：原 Float 直拼出「满59.0元可用」
                     text = if (couponVo.couponVo.threshold == 0f)
                         stringResource(R.string.no_threshold)
                     else
-                        stringResource(R.string.coupon_min_amount_format, "${couponVo.couponVo.threshold}"),
+                        stringResource(R.string.coupon_min_amount_format, String.format(Locale.CHINA, "%.2f", couponVo.couponVo.threshold)),
                     // 门槛是金额，开 tnum（规范 §2.2）
                     style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                     color = AppColors.colorScheme.textSecondary
@@ -428,6 +430,13 @@ internal fun CouponSectionError(onRetry: () -> Unit, modifier: Modifier = Modifi
 }
 
 /**
+ * 票券面额区宽度 —— 布局宽（Box width）/ 虚线 x（drawBehind）/ 打孔圆心（TicketShape notchX）
+ * 三处共用的单一来源（AND-B-013）：原先 88dp 魔数在本文件与 AvailableCouponsTab 共 5 处重复，
+ * 改面额区宽时极易漂移。
+ */
+internal val TicketFaceWidth = 88.dp
+
+/**
  * 票券形状 — r16 圆角矩形 + **面额区右缘虚线两端上下凹口 φ12**（2026-11-06 按裁决 2 对齐当前画板：
  * φ12 圆、孔心落在 x=88 虚线与卡顶/底边交点上，页面底色自凹口透出，构成「面额区右缘虚线
  * 两端上下凹口」造型；2026-11-01 曾按当时拍板改画左右缘中点打孔 φ14，与当前画板正相反）
@@ -440,7 +449,7 @@ internal val TicketShape = object : Shape {
     ): Outline {
         val cardRadius = with(density) { 16.dp.toPx() }
         val notchRadius = with(density) { 6.dp.toPx() }
-        val notchX = with(density) { 88.dp.toPx() }
+        val notchX = with(density) { TicketFaceWidth.toPx() }
         val w = size.width
         val h = size.height
 
