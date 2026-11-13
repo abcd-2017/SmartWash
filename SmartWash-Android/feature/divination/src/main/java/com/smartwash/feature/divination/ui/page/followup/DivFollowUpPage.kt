@@ -214,7 +214,7 @@ fun DivFollowUpPage(
                                         .background(c.gold14)
                                         .border(BorderStroke(1.dp, c.hair), RoundedCornerShape(AppDimens.radiusFull))
                                         .pressable(onClick = {
-                                            navController.navigate(UserRoute.Setting(openApiConfig = true))
+                                            navController.navigate(UserRoute.ApiConfig)
                                         })
                                         .padding(horizontal = 20.dp, vertical = 8.dp),
                                 )

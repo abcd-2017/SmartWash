@@ -184,7 +184,7 @@ fun DivReadingPage(
                                                     .clip(RoundedCornerShape(AppDimens.radiusFull))
                                                     .background(c.gold14)
                                                     .pressable(onClick = {
-                                                        navController.navigate(UserRoute.Setting(openApiConfig = true))
+                                                        navController.navigate(UserRoute.ApiConfig)
                                                     })
                                                     .padding(horizontal = 24.dp, vertical = 10.dp),
                                             )
