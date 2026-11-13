@@ -18,7 +18,7 @@ class GameThemeBridgePolicyTest {
 
     @Test
     fun `hostOf 提取 http https 的 host 并归一化`() {
-        assertEquals("8.148.70.81", GameThemeBridgePolicy.hostOf("http://8.148.70.81:9000/"))
+        assertEquals("demo.example.com", GameThemeBridgePolicy.hostOf("http://demo.example.com/"))
         assertEquals(
             "minio.example.com",
             GameThemeBridgePolicy.hostOf("https://MinIO.Example.COM/smartwash/game/snake/index.html"),
@@ -55,8 +55,8 @@ class GameThemeBridgePolicyTest {
 
     @Test
     fun `白名单内 host 放行且大小写不敏感`() {
-        val whitelist = setOf("8.148.70.81", "minio.example.com")
-        assertTrue(GameThemeBridgePolicy.isAllowedHost("8.148.70.81", whitelist))
+        val whitelist = setOf("demo.example.com", "minio.example.com")
+        assertTrue(GameThemeBridgePolicy.isAllowedHost("demo.example.com", whitelist))
         assertTrue(GameThemeBridgePolicy.isAllowedHost("minio.example.com", whitelist))
         assertTrue(GameThemeBridgePolicy.isAllowedHost("MINIO.EXAMPLE.com", whitelist))
         assertTrue(GameThemeBridgePolicy.isAllowedHost("minio.example.com.", whitelist))
@@ -64,15 +64,15 @@ class GameThemeBridgePolicyTest {
 
     @Test
     fun `白名单外或非法 host 一律拒绝（fail-closed 锚点）`() {
-        val whitelist = setOf("8.148.70.81", "minio.example.com")
+        val whitelist = setOf("demo.example.com", "minio.example.com")
         assertFalse(GameThemeBridgePolicy.isAllowedHost("evil.example.com", whitelist))
         assertFalse(GameThemeBridgePolicy.isAllowedHost("sub.minio.example.com", whitelist))
         // 白名单 host 的前缀/后缀拼接不构成放行
-        assertFalse(GameThemeBridgePolicy.isAllowedHost("8.148.70.81.evil.com", whitelist))
+        assertFalse(GameThemeBridgePolicy.isAllowedHost("demo.example.com.evil.com", whitelist))
         assertFalse(GameThemeBridgePolicy.isAllowedHost(null, whitelist))
         assertFalse(GameThemeBridgePolicy.isAllowedHost("", whitelist))
         // 空白名单拒绝一切来源
-        assertFalse(GameThemeBridgePolicy.isAllowedHost("8.148.70.81", emptySet()))
+        assertFalse(GameThemeBridgePolicy.isAllowedHost("demo.example.com", emptySet()))
     }
 
     // ---------- whitelistHostsOf：配置 URL → 白名单集 ----------
@@ -81,10 +81,10 @@ class GameThemeBridgePolicyTest {
     fun `白名单由配置 URL 产出 host 集并去重`() {
         // 与 BuildConfig 注入值同构：BASE_URL / MINIO_ENDPOINT 各取 host（端口不参与判定）
         val whitelist = GameThemeBridgePolicy.whitelistHostsOf(
-            "http://8.148.70.81:9000/",
+            "http://demo.example.com/",
             "http://192.168.1.61:9000",
         )
-        assertEquals(setOf("8.148.70.81", "192.168.1.61"), whitelist)
+        assertEquals(setOf("demo.example.com", "192.168.1.61"), whitelist)
         // 非法/空配置自动剔除，不产生放行面
         assertEquals(setOf("api.example.com"), GameThemeBridgePolicy.whitelistHostsOf("https://api.example.com/", "", null))
         assertEquals(emptySet<String>(), GameThemeBridgePolicy.whitelistHostsOf(null, "about:blank"))
@@ -94,8 +94,8 @@ class GameThemeBridgePolicyTest {
 
     @Test
     fun `getTheme 白名单内返回主题模式`() {
-        val bridge = SmartWashGameBridge(setOf("8.148.70.81"), { "system" })
-        bridge.currentPageHost = "8.148.70.81"
+        val bridge = SmartWashGameBridge(setOf("demo.example.com"), { "system" })
+        bridge.currentPageHost = "demo.example.com"
         assertEquals("system", bridge.getTheme())
     }
 
@@ -103,7 +103,7 @@ class GameThemeBridgePolicyTest {
     fun `getTheme 白名单外来源返回空串并记录来源（验收锚点）`() {
         val rejected = mutableListOf<String?>()
         val bridge = SmartWashGameBridge(
-            whitelist = setOf("8.148.70.81", "minio.example.com"),
+            whitelist = setOf("demo.example.com", "minio.example.com"),
             themeModeProvider = { "dark" },
             onHostRejected = { rejected.add(it) },
         )

@@ -26,14 +26,14 @@ SmartWash 是校园智能洗衣一站式服务平台：学生在 App（Android /
 
 - **使用场景**：校园宿舍楼/教学楼下的储物柜取还；清洗在中央厂房完成（订单流转：待寄件→已收取→清洗中→已烘干→配送中→待取件→已完成）。
 - **管理场景**：运营方通过 Web 后台完成学校（地图选点）、储物柜、洗衣项目、订单 CSV 导出、支付/充值流水、优惠券、账号角色的日常管理。
-- **部署**：`deploy/deploy.sh`（/opt/smartwash）——GitHub Actions 按版本 tag 构建，APK 经 MinIO 分发并 SHA256 校验热更新，后端/Web 走阿里云 ACR 镜像滚动更新；演示服务器 `http://8.148.70.81:9000`。
+- **部署**：`deploy/deploy.sh`（/opt/smartwash）——GitHub Actions 按版本 tag 构建，APK 经 MinIO 分发并 SHA256 校验热更新，后端/Web 走阿里云 ACR 镜像滚动更新；演示服务器地址不入库(经构建参数注入)。
 - **开发**：后端 `mvn spring-boot:run`（MySQL 8 + Redis，8080）；Web `npm run dev`（5000，代理 /api→8080）；Android Studio / `./gradlew`；鸿蒙 DevEco / hvigorw。
 
 ## Capabilities and Constraints
 
 **核心能力**：手机号注册登录（校园卡绑定）、学校选择、洗衣项目（种子 5 档：29.9–199.9）、预约下单（30 分钟未支付自动取消）、支付（钱包余额/支付宝/微信，当前为桩实现 `StubPaymentGatewayServiceImpl`）、充值与流水、优惠券（模板发放/领取/门槛核销）、订单评价、取件码与二维码、APK 热更新。
 
-**平台实验模块**（四端联动，允许更大设计自由度）：站内信消息中心、积分签到与月榜、订阅管理、记忆复习（FSRS）、工具箱（短链 + 设备投递）、游戏中心（H5 游戏 + 存档/排行榜/关卡热更新）、解压实验舱（纯本地玩具）、工作台（后端配置化入口 + 深链分发）、观象台（AI 占卜：四术排盘 + LLM SSE 解读 + BYOK）。
+**平台实验模块**（四端联动，允许更大设计自由度）：站内信消息中心、积分签到与月榜、订阅管理、记忆复习（FSRS）、工具箱（短链 + 设备投递）、游戏中心（H5 游戏 + 存档/排行榜/关卡热更新）、解压实验舱（纯本地玩具）、工作台（后端配置化入口 + 深链分发）、观象台（AI 占卜：四术排盘 + LLM SSE 解读 + BYOK）、餐饮拼单（扫码点餐 + 拼单，Android / Web / 后端）。
 
 **硬性契约与约束**（来自根 AGENTS.md 与各端 CLAUDE.md，改动不得绕过）：
 
@@ -58,7 +58,7 @@ SmartWash 是校园智能洗衣一站式服务平台：学生在 App（Android /
 ## Evidence on Hand
 
 - `smart_wash.sql`：9 所衡阳市中小学种子数据、5 档洗衣项目价格、完整状态枚举与角色种子；含平台模块 30+ 张表。
-- `README.md`：功能模块表、API 契约、默认账号（root/admin/lisi，生产必改）。
+- `README.md`：项目简介、架构与技术栈速览、快速开始、默认账号（root/admin/lisi，生产必改）。
 - `GLOSSARY.md`：四端共享术语表（含游戏数据平台、站内信、积分、订阅、复习、审计、限流等）。
 - `docs/code-review-2026-08-28.md`：四端深度评审问题清单与优先级（做订单/支付/充值/优惠券改动前必读）。
 - `SmartWash-Android/.claude/ui-design-spec.md`：清氧设计系统完整规范（本仓库唯一成文的设计规范文档）。

@@ -29,11 +29,11 @@ class DiningJoinUrlBuilderTest {
     @Test
     fun `http baseUrl scheme 随环境（demo 明文兜底）`() {
         val url = DiningJoinUrlBuilder.buildJoinUrl(
-            baseUrl = "http://8.148.70.81:9000/",
+            baseUrl = "http://demo.example.com/",
             orderId = 7L,
             joinToken = "tok",
         )
-        assertEquals("http://8.148.70.81:9000/dining/join/7?t=tok", url)
+        assertEquals("http://demo.example.com/dining/join/7?t=tok", url)
     }
 
     @Test

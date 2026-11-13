@@ -55,8 +55,8 @@ class PublicBaseUrlResolverTest {
     void blankConfigured_derivesFromHostHeader() {
         PublicBaseUrlResolver resolver = resolverWith("");
 
-        assertEquals("http://8.148.70.81:9000",
-                resolver.resolve(request("8.148.70.81", "8.148.70.81:9000", "http", null, null)));
+        assertEquals("http://demo.example.com",
+                resolver.resolve(request("demo.example.com", "demo.example.com", "http", null, null)));
         assertEquals("https://smartwash.example.com",
                 resolver.resolve(request("203.0.113.9", "smartwash.example.com", "https", null, null)));
     }
@@ -77,8 +77,8 @@ class PublicBaseUrlResolverTest {
     void untrustedPeer_forwardedHeadersIgnored() {
         PublicBaseUrlResolver resolver = resolverWith("");
 
-        assertEquals("http://8.148.70.81:9000",
-                resolver.resolve(request("203.0.113.9", "8.148.70.81:9000", "http",
+        assertEquals("http://demo.example.com",
+                resolver.resolve(request("203.0.113.9", "demo.example.com", "http",
                         "evil.example.com", "https")),
                 "无条件采信转发头会把短链指向任意域名（钓鱼面）");
     }

@@ -30,7 +30,7 @@
 ./scripts/check-ui.sh      # UI 规范静态门禁（M3 交互组件业务层清零，规范 §7/§3.7）
 ```
 
-- **环境配置**：BASE_URL 由 `app/build.gradle` 通过 Gradle 属性 `baseUrl` 注入（兜底为演示服务器 `http://8.148.70.81:9000/`），生产通过 `-PbaseUrl=https://your-domain.com/` 注入。代码读 `BuildConfig.BASE_URL`，禁止硬编码 URL。另有 `DIVINATION_BASE_URL`（观象台 LLM 网关，当前与 BASE_URL 一致）。
+- **环境配置**：BASE_URL 由 `app/build.gradle` 通过 Gradle 属性 `baseUrl` 注入（兜底为无 IP 占位 `https://your-domain.com/`，未注入时请求失败,生产通过 `-PbaseUrl=https://your-domain.com/` 注入。代码读 `BuildConfig.BASE_URL`，禁止硬编码 URL。另有 `DIVINATION_BASE_URL`（观象台 LLM 网关，当前与 BASE_URL 一致）。
 - Manifest 中 `usesCleartextTraffic=true` 为 demo 项目全局放行明文 HTTP，并声明 `REQUEST_INSTALL_PACKAGES`（APK 热更新）与 FileProvider（APK 安装）。**发版前须按生产地址改为 HTTPS 并移除该开关**。
 - Maven 仓库用阿里云镜像（当前注释，启用需同时取消 `settings.gradle` 与 `config/` 两处注释）；海外构建需改回 `google()` / `mavenCentral()`。
 
