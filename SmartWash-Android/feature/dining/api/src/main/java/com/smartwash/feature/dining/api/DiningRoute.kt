@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * 家庭点单域类型安全路由（模块内单一事实来源，模式对齐 NoticeRoute/CouponRoute）。
+ * 吃啥域类型安全路由（模块内单一事实来源，模式对齐 NoticeRoute/CouponRoute）。
  *
  * 页面清单：菜谱三页（04 号票菜谱竖切：菜谱库/详情/新增）+ 订单四页（07 号票发起链路：
  * 订单列表 → 创建订单 → 分享视图；09 号票点单页 OrderDetail）。深链 host "dining" 落点为域首页订单列表
@@ -25,7 +25,7 @@ sealed interface DiningRoute : SmartWashRoute {
 
     /** 菜谱详情页（食材名列表 + 步骤） */
     @Serializable
-    @SerialName("DiningRecipeDetail/{recipeId}")
+    @SerialName("DiningRecipeDetail")
     data class RecipeDetail(val recipeId: Long) : DiningRoute
 
     /** 新增菜谱页（表单 + 封面上传，成功返回菜谱库刷新） */
@@ -53,22 +53,18 @@ sealed interface DiningRoute : SmartWashRoute {
     ) : DiningRoute
 
     /**
-     * 扫码加入页（08 号票）：CameraX 预览 + ML Kit 识别，入口在订单列表页右上角。
-     * 识别 join URL → 拉 brief → 确认 → join；加入成功后按已注册路由进 [OrderDetail]
-     * （09 未落地时回退 [OrderList]）。
-     */
-    @Serializable
-    @SerialName("DiningScan")
-    data object Scan : DiningRoute
-
-    /**
+     * 扫码加入的承接（08 号票能力随全局扫一扫上移壳层）：扫码识别与分发移至壳层
+     * [com.smartwash.common.ui.navigation.ShellRoute.Scan]（工作台常驻入口），
+     * dining 域经 [com.smartwash.feature.dining.api.DiningApi.normalizeScanToDeepLink]
+     * 把本域加入链接归一为 smartwash:// 深链，加入入口统一落 [OrderJoin]。
+     *
      * 点单页（美团式左分类右菜品 + 底部已选栏 + 参与者区 + 发起者结束入口，09 号票）。
      *
      * 从订单列表卡进入；页面自身经详情接口全量拉取（[joinToken] 仅发起者可见，供本页
      * 顶部分享入口带往 [OrderShare]）。
      */
     @Serializable
-    @SerialName("DiningOrderDetail/{orderId}")
+    @SerialName("DiningOrderDetail")
     data class OrderDetail(val orderId: Long) : DiningRoute
 
     /**
@@ -79,7 +75,7 @@ sealed interface DiningRoute : SmartWashRoute {
      * 缺失/无效时页面按「加入凭证无效或已重置」提示。
      */
     @Serializable
-    @SerialName("DiningOrderJoin/{orderId}/{token}")
+    @SerialName("DiningOrderJoin")
     data class OrderJoin(val orderId: Long, val token: String) : DiningRoute
 
     /**
@@ -90,7 +86,7 @@ sealed interface DiningRoute : SmartWashRoute {
      * （09 号票修补条），参与者仍降级提示「凭证仅发起者可得」。
      */
     @Serializable
-    @SerialName("DiningOrderShare/{orderId}")
+    @SerialName("DiningOrderShare")
     data class OrderShare(
         val orderId: Long,
         val title: String = "",
@@ -104,6 +100,6 @@ sealed interface DiningRoute : SmartWashRoute {
      * 双视图；[orderId] 为唯一入口参数（标题/快照不随路由传递，避免长 JSON 进返回栈）。
      */
     @Serializable
-    @SerialName("DiningShoppingList/{orderId}")
+    @SerialName("DiningShoppingList")
     data class ShoppingList(val orderId: Long) : DiningRoute
 }
