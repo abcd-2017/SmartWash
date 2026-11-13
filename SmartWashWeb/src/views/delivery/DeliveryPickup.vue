@@ -2,79 +2,82 @@
   <!-- 会话视图：纵向流式布局（会话页自带居中与满高），进入/失效视图：视口居中卡片 -->
   <div class="pickup-page" :class="{ 'pickup-page--flow': view === 'session' }">
     <!-- 视图一：进入页（输码 / 密码） -->
-    <div v-if="view === 'entering'" class="enter-card">
-      <div class="enter-brand">
+    <div v-if="view === 'entering'" class="enter-card enter-card--branded">
+      <div class="enter-brand-band">
         <img src="@/assets/logo.svg" alt="SmartWash" class="enter-logo" />
         <span class="enter-name">SmartWash 设备投递</span>
       </div>
-      <h1 class="enter-title">{{ routeCode ? '进入投递会话' : '输入投递码' }}</h1>
-      <p class="enter-sub">
-        {{
-          routeCode
-            ? '该会话来自你的手机，进入后可与手机双向互传文本与文件'
-            : '请输入手机端设备投递页展示的 7 位投递码'
-        }}
-      </p>
+      <div class="enter-body">
+        <h1 class="enter-title">{{ routeCode ? '进入投递会话' : '输入投递码' }}</h1>
+        <p class="enter-sub">
+          {{
+            routeCode
+              ? '该会话来自你的手机，进入后可与手机双向互传文本与文件'
+              : '请输入手机端设备投递页展示的 7 位投递码'
+          }}
+        </p>
 
-      <!-- 无码访问 /d 时先输码 -->
-      <el-form v-if="!routeCode" class="enter-form" @submit.prevent>
-        <el-form-item>
-          <el-input
-            v-model="inputCode"
-            class="code-input"
-            placeholder="如 Dlv4xkQ"
-            maxlength="7"
-            size="large"
-            autofocus
-            @keyup.enter="handleEnter"
-          >
-            <template #prefix
-              ><el-icon><Postcard /></el-icon
-            ></template>
-          </el-input>
-        </el-form-item>
-      </el-form>
+        <!-- 无码访问 /d 时先输码 -->
+        <el-form v-if="!routeCode" class="enter-form" @submit.prevent>
+          <el-form-item>
+            <el-input
+              v-model="inputCode"
+              class="code-input"
+              placeholder="如 Dlv4xkQ"
+              maxlength="7"
+              size="large"
+              autofocus
+              @input="inputCode = inputCode.toUpperCase()"
+              @keyup.enter="handleEnter"
+            >
+              <template #prefix
+                ><el-icon><Postcard /></el-icon
+              ></template>
+            </el-input>
+          </el-form-item>
+        </el-form>
 
-      <!-- 有密码会话：密码输入（仅当后端返回 403 后展示） -->
-      <el-form v-if="needPassword" class="enter-form" @submit.prevent>
-        <el-form-item>
-          <el-input
-            v-model="inputPassword"
-            type="password"
-            placeholder="请输入会话访问密码"
-            size="large"
-            show-password
-            @keyup.enter="handleEnter"
-          >
-            <template #prefix
-              ><el-icon><Lock /></el-icon
-            ></template>
-          </el-input>
-        </el-form-item>
-      </el-form>
+        <!-- 有密码会话：密码输入（仅当后端返回 403 后展示） -->
+        <el-form v-if="needPassword" class="enter-form" @submit.prevent>
+          <el-form-item>
+            <el-input
+              v-model="inputPassword"
+              type="password"
+              placeholder="请输入会话访问密码"
+              size="large"
+              show-password
+              @keyup.enter="handleEnter"
+            >
+              <template #prefix
+                ><el-icon><Lock /></el-icon
+              ></template>
+            </el-input>
+          </el-form-item>
+        </el-form>
 
-      <!-- 内联错误：409/404 等会话语义错误常驻展示，避免 toast 一闪而过 -->
-      <el-alert
-        v-if="enterError"
-        class="enter-alert"
-        :title="enterError"
-        :type="enterErrorType"
-        :closable="false"
-        show-icon
-      />
+        <!-- 内联错误：409/404 等会话语义错误常驻展示，避免 toast 一闪而过 -->
+        <el-alert
+          v-if="enterError"
+          class="enter-alert"
+          :title="enterError"
+          :type="enterErrorType"
+          :closable="false"
+          show-icon
+        />
 
-      <el-button
-        type="primary"
-        size="large"
-        class="enter-btn"
-        :loading="entering"
-        :disabled="!canSubmit"
-        @click="handleEnter"
-      >
-        {{ needPassword ? '验证密码并进入' : '进入会话' }}
-      </el-button>
+        <el-button
+          type="primary"
+          size="large"
+          class="enter-btn"
+          :loading="entering"
+          :disabled="!canSubmit"
+          @click="handleEnter"
+        >
+          {{ needPassword ? '验证密码并进入' : '进入会话' }}
+        </el-button>
 
-      <p class="enter-tip">文本与文件经服务器中转且取走即焚，会话到期自动回收</p>
+        <p class="enter-tip">文本与文件经服务器中转且取走即焚，会话到期自动回收</p>
+      </div>
     </div>
 
     <!-- 视图二：会话页 -->
@@ -253,6 +256,29 @@ function handleBackToEnter() {
   text-align: center;
 }
 
+/* 进入页品牌暗色头带(live 打磨 v2):对齐登录页品牌语言,公开页有产品归属 */
+.enter-card--branded {
+  padding: 0;
+  overflow: hidden;
+}
+
+.enter-brand-band {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 24px;
+  background: var(--sidebar-gradient);
+}
+
+.enter-brand-band .enter-name {
+  color: var(--sidebar-text-strong);
+}
+
+.enter-body {
+  padding: 32px 36px 28px;
+}
+
 .enter-brand {
   display: flex;
   align-items: center;
@@ -298,6 +324,7 @@ function handleBackToEnter() {
   font-size: 20px;
   font-weight: 600;
   letter-spacing: 6px;
+  /* 值已在 @input 同步转大写,此处 uppercase 仅为冗余保险 */
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
 }
@@ -317,7 +344,8 @@ function handleBackToEnter() {
 .enter-tip {
   margin: 20px 0 0;
   font-size: 12px;
-  color: var(--text-muted);
+  /* 有意义提示文字用 secondary(muted 对白底 ≈2.9:1,低于 WCAG AA 4.5:1) */
+  color: var(--text-secondary);
 }
 
 /* --- 失效态 --- */

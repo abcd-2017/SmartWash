@@ -278,11 +278,17 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 短码是机器标识符：按 DESIGN.md mono 规则用等宽字体 */
+/* 短码是机器标识符:按 DESIGN.md mono 规则用等宽字体,弱底块与输入控件同语言 */
 .code-cell {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--border-subtle);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12.5px;
+  font-weight: 500;
   letter-spacing: 0.02em;
+  color: var(--text-input);
 }
 
 .visit-title {

@@ -67,8 +67,8 @@
         <el-table-column prop="version" label="版本号" min-width="140" />
         <el-table-column label="状态" min-width="100">
           <template #default="{ row }">
-            <el-tag :type="statusTagType(row.status)">
-              {{ statusText(row.status) }}
+            <el-tag :type="divPromptStatusTagType(row.status)">
+              {{ divPromptStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -126,10 +126,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增 Prompt' : '编辑 Prompt'"
       v-model="dialogVisible"
-      width="700px"
+      width="min(700px, 94vw)"
       @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempPrompt" label-width="120px" :rules="rules">
+      <el-form ref="formRef" :model="tempPrompt" label-width="min(120px, 94vw)" :rules="rules">
         <el-form-item label="术数方法" prop="method">
           <el-select v-model="tempPrompt.method" placeholder="选择术数方法" style="width: 100%">
             <el-option
@@ -190,7 +190,9 @@ import { getPromptList, createPrompt, updatePrompt, activatePrompt } from '@/api
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import { divPromptStatusTagType, divPromptStatusText } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -201,15 +203,7 @@ const deletingId = ref(null); // 行内「删除」按钮 loading
 
 // 术数方法选项（与后端 method 枚举对齐）
 
-// 状态映射
-const statusText = (status) => {
-  return { 0: '草稿', 1: '激活', 2: '退役' }[status] || '未知';
-};
-
-const statusTagType = (status) => {
-  return { 0: 'info', 1: 'success', 2: 'warning' }[status] || 'info';
-};
-
+// 状态映射统一引 constants/dict.js（DIV_PROMPT_STATUS_*），页面不再自写 switch
 const {
   list: promptList,
   total,
@@ -337,8 +331,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
-    if (error?.fields) {
-      logger.debug('Prompt 表单校验未通过，已拦截提交');
+    if (isValidationError(error)) {
+      logger.debug('Prompt 表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error(
         'Prompt 提交失败:',
@@ -348,8 +342,8 @@ const submitForm = async () => {
         `version=${tempPrompt.version}`,
         error
       );
+      ElMessage.error(error.message || '操作失败');
     }
-    ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
   }
@@ -394,7 +388,8 @@ const handleDelete = async (row) => {
   if (!confirmed) return;
   deletingId.value = row.id;
   try {
-    // 后端未提供删除接口，此处通过标记退役实现（或扩展 delete 接口）
+    // 退役为软删除语义（status=2）；后端另有 DELETE /admin/div/prompts/{id} 硬删接口未接，
+    // 是否放开硬删待产品确认，勿在未对齐前混用两种删除语义
     await updatePrompt(row.id, { status: 2 });
     logger.info(
       'Prompt 退役成功',

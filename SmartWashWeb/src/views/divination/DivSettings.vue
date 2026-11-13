@@ -2,7 +2,6 @@
   <div class="page-container">
     <div class="table-card settings-card">
       <div class="settings-header">
-        <h2>平台设置</h2>
         <p class="settings-sub">
           观象台全局配置：AI 解读开关、用户每日限额与主密钥轮换（平台零兜底，模型由用户自行配置）
         </p>
@@ -11,7 +10,7 @@
       <el-form
         ref="formRef"
         :model="settings"
-        label-width="160px"
+        label-width="min(160px, 94vw)"
         :rules="rules"
         class="settings-form"
         v-loading="loading"
@@ -69,6 +68,7 @@ import { Refresh } from '@element-plus/icons-vue';
 import { getPlatformSettings, updatePlatformSettings, rotateMasterKey } from '@/api/divination';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const loading = ref(false);
@@ -118,12 +118,12 @@ const submitForm = async () => {
     ElMessage.success('保存成功');
   } catch (error) {
     // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
-    if (error?.fields) {
-      logger.debug('平台设置表单校验未通过，已拦截提交');
+    if (isValidationError(error)) {
+      logger.debug('平台设置表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error('平台设置保存失败:', error);
+      ElMessage.error(error.message || '保存失败');
     }
-    ElMessage.error(error.message || '保存失败');
   } finally {
     submitting.value = false;
   }
@@ -184,5 +184,13 @@ const handleRotateKey = async () => {
 
 .rotate-key-section {
   padding: 0 16px 16px;
+}
+
+/* 设置卡(live 打磨 v1):表单内容宽度收敛至 720px,避免控件在满宽卡片内被拉散 */
+.settings-card > .settings-header,
+.settings-card > .settings-form,
+.settings-card > .el-divider,
+.settings-card > .rotate-key-section {
+  max-width: 720px;
 }
 </style>

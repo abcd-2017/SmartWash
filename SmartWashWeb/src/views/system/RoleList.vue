@@ -17,7 +17,7 @@
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="filter-end">
           <el-button type="primary" @click="handleCreate">新增角色</el-button>
         </el-form-item>
       </el-form>
@@ -33,7 +33,12 @@
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="roleId" label="ID" min-width="80" />
-        <el-table-column prop="roleName" label="角色名称" min-width="150" />
+        <el-table-column label="角色名称" min-width="150">
+          <template #default="{ row }">
+            <!-- 角色码机器标识符(live 打磨 v2):mono + 弱底 chip,与订单号/短码列同一语言 -->
+            <div class="role-name-cell">{{ row.roleName }}</div>
+          </template>
+        </el-table-column>
         <el-table-column
           prop="description"
           label="角色描述"
@@ -68,9 +73,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增角色' : '编辑角色'"
       v-model="dialogVisible"
-      width="600px"
+      width="min(600px, 94vw)"
+      @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempRole" label-width="100px" :rules="rules">
+      <el-form ref="formRef" :model="tempRole" label-width="min(100px, 94vw)" :rules="rules">
         <el-form-item label="角色名称" prop="roleName">
           <el-input v-model="tempRole.roleName" placeholder="请输入角色名称" />
         </el-form-item>
@@ -104,6 +110,13 @@ import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 
 const formRef = ref(null);
+
+// 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
+// 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
+const handleDialogClosed = () => {
+  formRef.value?.resetFields();
+  formRef.value?.clearValidate();
+};
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const submitting = ref(false); // 确认按钮 loading，防连点
@@ -214,3 +227,19 @@ const handleDelete = async (row) => {
   }
 };
 </script>
+
+<style scoped>
+/* 角色码机器标识符(live 打磨 v2):mono + 弱底 chip,与订单号/短码列同一语言 */
+.role-name-cell {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-input);
+}
+</style>

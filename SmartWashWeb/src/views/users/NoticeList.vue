@@ -32,7 +32,7 @@
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="filter-end">
           <el-button type="primary" @click="handleCreate">发送公告</el-button>
         </el-form-item>
       </el-form>
@@ -55,9 +55,12 @@
         </el-table-column>
         <el-table-column label="类型" min-width="110">
           <template #default="{ row }">
-            <el-tag size="small" :type="noticeTypeTagType(row.type)" :title="row.type">
-              {{ noticeTypeText(row.type) }}
-            </el-tag>
+            <!-- 类型标签(live 打磨 v2):圆点标记 + 体量微调,圆点继承标签语义色 -->
+            <div class="notice-type-cell">
+              <el-tag size="small" :type="noticeTypeTagType(row.type)" :title="row.type">
+                {{ noticeTypeText(row.type) }}
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="深链" min-width="220" show-overflow-tooltip>
@@ -111,7 +114,7 @@
     <el-dialog
       v-model="dialogVisible"
       title="发送站内信"
-      width="640px"
+      width="min(640px, 94vw)"
       @closed="handleDialogClosed"
     >
       <el-form ref="formRef" :model="tempNotice" label-width="90px" :rules="rules">
@@ -167,7 +170,7 @@
     </el-dialog>
 
     <!-- 送达统计弹窗 -->
-    <el-dialog v-model="statVisible" title="送达统计" width="420px">
+    <el-dialog v-model="statVisible" title="送达统计" width="min(420px, 94vw)">
       <div v-loading="statLoading" class="stat-panel">
         <div class="stat-panel__item">
           <span class="stat-panel__label">发送总数（全平台用户）</span>
@@ -206,6 +209,7 @@ import {
   noticeReadRateTagType,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -339,8 +343,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
-    if (error?.fields) {
-      logger.debug('站内信表单校验未通过，已拦截提交');
+    if (isValidationError(error)) {
+      logger.debug('站内信表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error(
         '站内信发送失败:',
@@ -348,8 +352,8 @@ const submitForm = async () => {
         `type=${tempNotice.type}`,
         error
       );
+      ElMessage.error(error.message || '发送失败');
     }
-    ElMessage.error(error.message || '发送失败');
   } finally {
     submitting.value = false;
   }
@@ -373,6 +377,21 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 类型标签(live 打磨 v2):圆点标记提升可扫读性,圆点继承标签语义色(currentColor) */
+.notice-type-cell .el-tag {
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.notice-type-cell .el-tag::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 /* 深链列：文本 + 复制按钮 */
 .deep-link-cell {
   display: flex;

@@ -23,7 +23,7 @@
             @change="handleSearch"
           >
             <el-option
-              v-for="item in actionOptions"
+              v-for="item in AUDIT_ACTION_OPTIONS"
               :key="item.value"
               :label="item.label"
               :value="item.value"
@@ -40,7 +40,7 @@
             @change="handleSearch"
           >
             <el-option
-              v-for="item in targetTypeOptions"
+              v-for="item in AUDIT_TARGET_TYPE_OPTIONS"
               :key="item.value"
               :label="item.label"
               :value="item.value"
@@ -61,35 +61,31 @@
           />
         </el-form-item>
 
-        <el-form-item>
+        <el-form-item class="filter-end">
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-        </el-form-item>
-
-        <el-form-item label="抽查条数">
-          <el-select v-model="verifyLimit" style="width: 100px">
-            <el-option
-              v-for="limit in VERIFY_LIMIT_OPTIONS"
-              :key="limit"
-              :label="String(limit)"
-              :value="limit"
-            />
-          </el-select>
-          <el-button
-            type="warning"
-            plain
-            :loading="verifyLoading"
-            style="margin-left: 12px"
-            @click="handleVerify"
-          >
-            链完整性校验
-          </el-button>
         </el-form-item>
       </el-form>
     </div>
 
-    <!-- 数据表格（只读：审计日志仅查询，不提供新增/编辑/删除） -->
+    <!-- 数据表格（只读：审计日志仅查询，不提供新增/编辑/删除）；
+         链完整性校验是动作不是筛选，独立成工具条避免误触 5000 条 HMAC 复算 -->
     <div class="table-card">
+      <div class="card-toolbar">
+        <!-- 工具条标签(live 打磨 v2):墨色 600 + 竖分隔线,划分标签区与控件区 -->
+        <span class="card-toolbar__label">链完整性校验</span>
+        <el-select v-model="verifyLimit" style="width: 100px" aria-label="抽查条数">
+          <el-option
+            v-for="limit in VERIFY_LIMIT_OPTIONS"
+            :key="limit"
+            :label="String(limit)"
+            :value="limit"
+          />
+        </el-select>
+        <el-button type="warning" plain :loading="verifyLoading" @click="handleVerify">
+          校验最近 {{ verifyLimit }} 条
+        </el-button>
+      </div>
       <el-table
         v-loading="listLoading"
         :data="auditList"
@@ -101,11 +97,13 @@
         <el-table-column prop="adminUser" label="操作人" min-width="120" show-overflow-tooltip />
         <el-table-column label="动作" min-width="150">
           <template #default="{ row }">
-            <el-tag :type="actionTagType(row.action)">{{ actionText(row.action) }}</el-tag>
+            <el-tag :type="auditActionTagType(row.action)">{{
+              auditActionText(row.action)
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="目标类型" min-width="110">
-          <template #default="{ row }">{{ targetTypeText(row.targetType) }}</template>
+          <template #default="{ row }">{{ auditTargetTypeText(row.targetType) }}</template>
         </el-table-column>
         <el-table-column label="目标ID" min-width="110" show-overflow-tooltip>
           <template #default="{ row }">{{ row.targetId || '-' }}</template>
@@ -118,14 +116,21 @@
         </el-table-column>
         <el-table-column label="操作前后摘要" min-width="260">
           <template #default="{ row }">
-            <el-tooltip v-if="row.beforeJson || row.afterJson" placement="top" effect="light">
+            <el-tooltip
+              v-if="row.beforeJson || row.afterJson"
+              placement="top"
+              effect="light"
+              trigger="click"
+            >
               <template #content>
                 <div class="payload-tip">
                   <p v-if="row.beforeJson">操作前：{{ row.beforeJson }}</p>
                   <p v-if="row.afterJson">操作后：{{ row.afterJson }}</p>
                 </div>
               </template>
-              <span class="payload-cell">{{ payloadSummary(row) }}</span>
+              <span class="payload-cell" tabindex="0" role="button" aria-label="查看操作前后数据">{{
+                payloadSummary(row)
+              }}</span>
             </el-tooltip>
             <span v-else>-</span>
           </template>
@@ -146,7 +151,7 @@
     </div>
 
     <!-- 链完整性校验结果弹窗 -->
-    <el-dialog v-model="verifyVisible" title="链完整性校验结果" width="560px">
+    <el-dialog v-model="verifyVisible" title="链完整性校验结果" width="min(560px, 94vw)">
       <el-descriptions v-if="verifyResult" :column="1" border>
         <el-descriptions-item label="校验结果">
           <el-tag :type="verifyResult.valid ? 'success' : 'danger'">
@@ -181,72 +186,17 @@ import { getAuditLogs, verifyAuditLogs } from '@/api/audit';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
+import {
+  AUDIT_ACTION_OPTIONS,
+  AUDIT_TARGET_TYPE_OPTIONS,
+  auditActionTagType,
+  auditActionText,
+  auditTargetTypeText,
+} from '@/constants/dict';
 import logger from '@/utils/logger';
 
-// ===== 动作/目标类型字典（与后端 @Audited 注解全集对齐） =====
-// 来源：SmartWash 后端 controller/background/ 各 Controller 的 @Audited(action, targetType)。
-// 后端新增注解动作时需同步维护 ACTION_TEXT；未知值在表格中回显原始编码，不猜文案。
-const ACTION_TEXT = {
-  ORDER_DELETE: '删除订单',
-  ORDER_STATUS_UPDATE: '更新订单状态',
-  ROLE_ADD: '新增角色',
-  ROLE_UPDATE: '更新角色',
-  ROLE_DELETE: '删除角色',
-  LOCKER_ADD: '新增寄存柜',
-  LOCKER_BATCH_ADD: '批量新增寄存柜',
-  LOCKER_UPDATE: '更新寄存柜',
-  LOCKER_DELETE: '删除寄存柜',
-  USER_ADD: '新增学生',
-  USER_UPDATE: '更新学生',
-  USER_DELETE: '删除学生',
-  PAYMENT_MANUAL_ADD: '人工补录支付',
-  PAYMENT_MANUAL_UPDATE: '更新支付记录',
-  USER_COUPON_DELETE: '删除用户优惠券',
-  COUPON_ADD: '新增优惠券',
-  COUPON_UPDATE: '更新优惠券',
-  COUPON_DELETE: '删除优惠券',
-  LAUNDRY_ITEM_ADD: '新增洗护套餐',
-  LAUNDRY_ITEM_UPDATE: '更新洗护套餐',
-  LAUNDRY_ITEM_DELETE: '删除洗护套餐',
-  SCHOOL_ADD: '新增学校',
-  SCHOOL_UPDATE: '更新学校',
-  SCHOOL_DELETE: '删除学校',
-  ADMIN_USER_ADD: '新增管理员',
-  ADMIN_USER_UPDATE: '更新管理员',
-  ADMIN_USER_DELETE: '删除管理员',
-};
-
-const TARGET_TYPE_TEXT = {
-  order: '订单',
-  role: '角色',
-  locker: '寄存柜',
-  user: '学生',
-  payment: '支付记录',
-  user_coupon: '用户优惠券',
-  coupon: '优惠券',
-  laundry_item: '洗护套餐',
-  school: '学校',
-  admin_user: '管理员',
-};
-
-// 筛选下拉由字典派生，保证下拉与表格文案同源
-const actionOptions = Object.entries(ACTION_TEXT).map(([value, label]) => ({ value, label }));
-const targetTypeOptions = Object.entries(TARGET_TYPE_TEXT).map(([value, label]) => ({
-  value,
-  label,
-}));
-
-// 未知动作/类型回显原始编码（后端后续新增动作时页面不致显示错误文案）
-const actionText = (action) => ACTION_TEXT[action] || action || '-';
-const targetTypeText = (targetType) => TARGET_TYPE_TEXT[targetType] || targetType || '-';
-
-// 动作标签配色按动词后缀派生：新增绿 / 更新蓝 / 删除红 / 其余灰
-const actionTagType = (action) => {
-  if (action?.endsWith('_ADD')) return 'success';
-  if (action?.endsWith('_UPDATE')) return 'primary';
-  if (action?.endsWith('_DELETE')) return 'danger';
-  return 'info';
-};
+// 动作/目标类型字典已统一收敛到 constants/dict.js（AUDIT_*）：
+// 与后端 @Audited 注解全集对齐，未知动作/类型回显原始编码，不猜文案。
 
 // ===== 操作前后摘要 =====
 // 单元格内前/后各截 40 字符防撑破布局，完整内容经 tooltip 展开（纯文本插值，无 v-html）
@@ -347,5 +297,33 @@ onMounted(() => {
   font-size: 12px;
   line-height: 1.6;
   color: var(--el-text-color-secondary);
+}
+
+/* 链完整性校验工具条：表格卡头部，与分页条同语言（弱底 + 卡内分隔线） */
+.card-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* 工具条标签(live 打磨 v2):墨色 600 + 竖分隔线,划分标签区与控件区 */
+.card-toolbar__label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-toolbar__label::after {
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 14px;
+  margin-left: 12px;
+  background: var(--border);
 }
 </style>

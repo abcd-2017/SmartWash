@@ -570,6 +570,8 @@ function formatSize(bytes) {
   color: var(--color-primary);
   letter-spacing: 2px;
   font-variant-numeric: tabular-nums;
+  /* 机器标识符走全站唯一等宽栈(mono 规则) */
+  font-family: var(--font-mono);
 }
 
 .session-meta {
@@ -641,12 +643,12 @@ function formatSize(bytes) {
 /* 条目类型淡底图标容器：走语义 tint token（淡彩底规则） */
 .kind-text {
   background: var(--primary-tint);
-  color: #4338ca;
+  color: var(--primary-tint-text);
 }
 
 .kind-image {
   background: var(--warning-tint);
-  color: #92400e;
+  color: var(--warning-tint-text);
 }
 
 .kind-file {
@@ -684,7 +686,7 @@ function formatSize(bytes) {
 /* 方向角标：手机→电脑 = 本端可取（主色淡底）；电脑→手机 = 对端发布（灰底） */
 .dir-to-peer {
   background: var(--primary-tint);
-  color: #4338ca;
+  color: var(--primary-tint-text);
 }
 
 .dir-to-owner {
@@ -746,6 +748,7 @@ function formatSize(bytes) {
   border-radius: 12px;
   box-shadow: var(--shadow-ground);
   animation: delivery-card-in var(--motion-slow) var(--ease-decelerate) both;
+  /* 错峰 delay 60ms 为 stagger 节奏值(off-ramp,非状态过渡时长) */
   animation-delay: 60ms;
 }
 
@@ -789,7 +792,7 @@ function formatSize(bytes) {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .session-card {
     padding: 16px;
   }

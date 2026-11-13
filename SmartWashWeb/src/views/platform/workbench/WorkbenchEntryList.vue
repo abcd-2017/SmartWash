@@ -57,10 +57,18 @@
         <el-table-column label="图标 / 色组" min-width="120">
           <template #default="{ row }">
             <div class="icon-color-cell">
-              <!-- 端上按 icon/color key 白名单映射：展示中文文案便于核对，title 悬浮保留原始 key 便于两端对齐 -->
-              <el-tag size="small" :title="row.icon || 'default'">
+              <!-- 端上按 icon/color key 白名单映射：展示中文文案便于核对，title 悬浮保留原始 key 便于两端对齐；图标标签底色/文字色由色组 hex 派生，呼应端上「淡底图标容器」语言 -->
+              <span
+                class="icon-chip"
+                :title="row.icon || 'default'"
+                :style="{
+                  backgroundColor: workbenchEntryColorHex(row.color) + '1A',
+                  color:
+                    'color-mix(in srgb, ' + workbenchEntryColorHex(row.color) + ' 42%, #0f172a)',
+                }"
+              >
                 {{ workbenchEntryIconText(row.icon) }}
-              </el-tag>
+              </span>
               <span class="color-line" :title="row.color || '-'">
                 <span
                   class="color-dot"
@@ -148,10 +156,10 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增工作台入口' : '编辑工作台入口'"
       v-model="dialogVisible"
-      width="750px"
+      width="min(750px, 94vw)"
       @closed="handleDialogClosed"
     >
-      <el-form ref="formRef" :model="tempEntry" label-width="100px" :rules="rules">
+      <el-form ref="formRef" :model="tempEntry" label-width="min(100px, 94vw)" :rules="rules">
         <!-- 基本内容 -->
         <el-divider content-position="left">基本内容</el-divider>
 
@@ -376,6 +384,7 @@ import {
   workbenchEntryTypeText,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -697,8 +706,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
-    if (error?.fields) {
-      logger.debug('工作台入口表单校验未通过，已拦截提交');
+    if (isValidationError(error)) {
+      logger.debug('工作台入口表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error(
         '工作台入口提交失败:',
@@ -707,8 +716,8 @@ const submitForm = async () => {
         `id=${tempEntry.id ?? '-'}`,
         error
       );
+      ElMessage.error(error.message || '操作失败');
     }
-    ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
   }
@@ -740,6 +749,16 @@ const handleDelete = async (row) => {
 </script>
 
 <style scoped>
+/* 图标标签:底色/文字色由行内样式按色组 hex 派生(呼应端上淡底图标容器语言) */
+.icon-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
 /* 标题 + 副标题两行单元格 */
 .title-cell {
   display: flex;
@@ -753,7 +772,7 @@ const handleDelete = async (row) => {
 }
 
 .title-sub {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -847,7 +866,7 @@ const handleDelete = async (row) => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
