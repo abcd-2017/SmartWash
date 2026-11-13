@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>点格棋 · 人机对弈</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（UI 壳全部走 token，画布素材色读同一组变量）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stage { display: flex; justify-content: center; margin-bottom: 10px; }
+  canvas { display: block; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); touch-action: none; }
+  .msg { min-height: 20px; margin: 8px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn { min-height: 44px; padding: 0 10px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: #fff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.show { display: flex; }
+  .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
+  .panel .btn { width: 100%; }
+  .lvgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; max-height: 46vh; overflow-y: auto; margin-bottom: 14px; padding: 2px; }
+  .lvbtn { min-height: 44px; min-width: 44px; padding: 0; border: 1px solid var(--g-border); border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .lvbtn:active { opacity: .8; }
+  .lvbtn.on { background: var(--g-primary); border-color: transparent; color: #fff; }
+  .lvbtn:disabled { opacity: .35; cursor: default; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">轮流画边 · 围住格子得一分并可继续行动</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/12</span></div>
+    <div class="stat"><span class="label">你</span><span class="val" id="stYou">0</span></div>
+    <div class="stat"><span class="label">AI</span><span class="val" id="stAi">0</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="点格棋棋盘" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点两条相邻圆点之间的边</p>
+  <div class="tools">
+    <button class="btn ghost" id="btnUndo">悔棋</button>
+    <button class="btn ghost" id="btnRestart">重玩</button>
+    <button class="btn ghost" id="btnLevels">选关</button>
+  </div>
+  <p class="foot" id="foot">围格得分可继续行动 · 全部边画完得分高者胜</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">胜利</h2>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn" id="ovBtn">下一关</button>
+  </div>
+</div>
+<div class="overlay" id="lvOverlay">
+  <div class="panel">
+    <h2>选择关卡</h2>
+    <p class="desc" id="lvDesc"></p>
+    <div class="lvgrid" id="lvGrid"></div>
+    <button class="btn ghost" id="lvClose">关闭</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 调色板：全部经 CSS 变量读取，JS 零颜色字面量 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),hairline:v("--g-hairline"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),onSoft:v("--g-on-soft"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),water:v("--g-water")};
+}
+window.__gOnTheme=function(){palLoad();render();};
+/* ---------- 常量 ---------- */
+var HUMAN=1,AI=2;
+var AI_NAMES=["入门","进阶","大师"];
+/* ---------- 关卡数据（包内默认 + DB 下发 + 本地缓存） ---------- */
+var DEFAULT_LEVELS=[
+  {"name":"入门·001","data":{"name":"入门·001","rows":2,"cols":2,"ai":0,"first":0,"handi":2}},
+  {"name":"入门·002","data":{"name":"入门·002","rows":2,"cols":3,"ai":0,"first":0,"handi":2}},
+  {"name":"入门·003","data":{"name":"入门·003","rows":3,"cols":2,"ai":0,"first":0,"handi":1}},
+  {"name":"入门·004","data":{"name":"入门·004","rows":2,"cols":2,"ai":0,"first":1,"handi":2}},
+  {"name":"入门·005","data":{"name":"入门·005","rows":3,"cols":3,"ai":0,"first":0,"handi":0}},
+  {"name":"进阶·006","data":{"name":"进阶·006","rows":3,"cols":3,"ai":1,"first":0,"handi":1}},
+  {"name":"进阶·007","data":{"name":"进阶·007","rows":3,"cols":4,"ai":1,"first":0,"handi":0}},
+  {"name":"进阶·008","data":{"name":"进阶·008","rows":4,"cols":3,"ai":1,"first":1,"handi":1}},
+  {"name":"进阶·009","data":{"name":"进阶·009","rows":4,"cols":4,"ai":1,"first":0,"handi":0}},
+  {"name":"大师·010","data":{"name":"大师·010","rows":4,"cols":4,"ai":2,"first":0,"handi":1}},
+  {"name":"大师·011","data":{"name":"大师·011","rows":5,"cols":4,"ai":2,"first":1,"handi":0}},
+  {"name":"大师·012","data":{"name":"大师·012","rows":5,"cols":5,"ai":2,"first":1,"handi":0}}
+];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY="sw.dots-boxes.v1.levels",LEVELS_VER_KEY="sw.dots-boxes.v1.levels.ver";
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){
+      for(var i=0;i<list.length;i++){if(!validLevel(list[i]&&list[i].data))return 0;}
+      LEVELS=list;return v;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+/* ---------- DB 关卡解析与校验（任一条非法整批放弃） ---------- */
+function validLevel(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(!Number.isInteger(d.rows)||d.rows<2||d.rows>5)return false;
+  if(!Number.isInteger(d.cols)||d.cols<2||d.cols>5)return false;
+  if(!Number.isInteger(d.ai)||d.ai<0||d.ai>2)return false;
+  if(!Number.isInteger(d.first)||d.first<0||d.first>1)return false;
+  if(!Number.isInteger(d.handi)||d.handi<0||d.handi>2)return false;
+  return true;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={},i,d,key;
+  for(i=0;i<res.levels.length;i++){
+    try{d=JSON.parse(res.levels[i].dataJson);}catch(e){return null;}
+    if(!validLevel(d))return null;
+    key=d.rows+"|"+d.cols+"|"+d.ai+"|"+d.first+"|"+d.handi;
+    if(seen[key])return null;
+    seen[key]=1;
+    list.push({name:String(res.levels[i].name||("第"+(i+1)+"关")),data:d});
+  }
+  return list;
+}
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("dots-boxes").then(function(res){
+    var list=parseDbLevels(res);
+    if(list&&applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      startLevel(cur);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+var KEY="sw.dots-boxes.v1";
+function loadSave(){
+  try{
+    var s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s==="object")return {lv:s.lv|0,cleared:s.cleared|0,best:s.best|0};
+  }catch(e){}
+  return {lv:0,cleared:0,best:0};
+}
+function saveGame(){
+  var data={lv:cur,cleared:cleared,best:best};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("dots-boxes",data).catch(function(){});
+}
+var saveData=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("dots-boxes").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson);
+      var rc=parseInt(r.cleared,10)||0,rb=parseInt(r.best,10)||0,rl=parseInt(r.lv,10)||0;
+      var changed=false;
+      if(rc>cleared){cleared=rc;changed=true;}
+      if(rb>best){best=rb;changed=true;}
+      if(rl>cur){cur=Math.min(rl,LEVELS.length-1);changed=true;}
+      if(changed){saveGame();startLevel(cur);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var cur=0,cleared=saveData.cleared||0,best=saveData.best||0;
+var rows=0,cols=0,levelAi=0,levelFirst=0,handi=0;
+var hEdges=[],vEdges=[],boxOwner=[];
+var youScore=0,aiScore=0,turn=HUMAN;
+var gameOver=false,aiThinking=false;
+var history=[],lastHumanSnap=-1;
+var lastMove=null,hoverEdge=null,lastResult="";
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d"),stage=cv.parentElement;
+var L={sp:0,ox:0,W:0,H:0};
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function clamp(v,a,b){return v<a?a:v>b?b:v}
+/* ---------- 几何与绘制 ---------- */
+function resize(){
+  if(!rows||!cols){render();return;}
+  var w=stage.clientWidth||cv.parentElement.clientWidth||360;
+  if(!(w>0))w=360;
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  var sp=Math.floor(w/(cols+1));
+  if(sp>96)sp=96;
+  if(sp<24)sp=24;
+  L.sp=sp;L.W=w;L.H=(rows+1)*sp;
+  L.ox=Math.round((w-(cols+1)*sp)/2);
+  cv.style.width=w+"px";cv.style.height=L.H+"px";
+  cv.width=Math.round(w*dpr);cv.height=Math.round(L.H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  render();
+}
+function rr(x,y,w,h,r){
+  r=clamp(r,0,Math.min(w/2,h/2));
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function render(){
+  if(!rows||!cols)return;
+  var sp=L.sp,ox=L.ox,W=L.W,H=L.H,r,c,i,inset,x,y,s;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=PAL.surface;rr(0,0,W,H,12);ctx.fill();
+  ctx.strokeStyle=PAL.hairline;ctx.lineWidth=Math.max(1,sp*0.03);
+  ctx.beginPath();
+  for(r=0;r<=rows;r++)for(c=0;c<cols;c++){ctx.moveTo(ox+c*sp,r*sp);ctx.lineTo(ox+(c+1)*sp,r*sp);}
+  for(r=0;r<rows;r++)for(c=0;c<=cols;c++){ctx.moveTo(ox+c*sp,r*sp);ctx.lineTo(ox+c*sp,(r+1)*sp);}
+  ctx.stroke();
+  for(r=0;r<rows;r++)for(c=0;c<cols;c++){
+    i=boxOwner[r*cols+c];if(!i)continue;
+    inset=sp*0.17;x=ox+c*sp+inset;y=r*sp+inset;s=sp-inset*2;
+    ctx.save();
+    if(i===AI)ctx.globalAlpha=0.18;
+    ctx.fillStyle=i===HUMAN?PAL.soft:PAL.water;
+    rr(x,y,s,s,sp*0.16);ctx.fill();
+    ctx.restore();
+  }
+  ctx.lineCap="round";
+  for(r=0;r<=rows;r++)for(c=0;c<cols;c++){
+    i=hEdges[r*cols+c];if(!i)continue;
+    ctx.strokeStyle=i===HUMAN?PAL.primary:PAL.water;
+    ctx.lineWidth=Math.max(3,sp*0.11);
+    ctx.beginPath();ctx.moveTo(ox+c*sp,r*sp);ctx.lineTo(ox+(c+1)*sp,r*sp);ctx.stroke();
+  }
+  for(r=0;r<rows;r++)for(c=0;c<=cols;c++){
+    i=vEdges[r*(cols+1)+c];if(!i)continue;
+    ctx.strokeStyle=i===HUMAN?PAL.primary:PAL.water;
+    ctx.lineWidth=Math.max(3,sp*0.11);
+    ctx.beginPath();ctx.moveTo(ox+c*sp,r*sp);ctx.lineTo(ox+c*sp,(r+1)*sp);ctx.stroke();
+  }
+  if(hoverEdge&&!gameOver&&!aiThinking&&turn===HUMAN){
+    ctx.save();ctx.globalAlpha=0.35;
+    ctx.strokeStyle=PAL.primary;ctx.lineWidth=Math.max(3,sp*0.11);
+    ctx.beginPath();
+    if(hoverEdge.t==="h"){ctx.moveTo(ox+hoverEdge.c*sp,hoverEdge.r*sp);ctx.lineTo(ox+(hoverEdge.c+1)*sp,hoverEdge.r*sp);}
+    else{ctx.moveTo(ox+hoverEdge.c*sp,hoverEdge.r*sp);ctx.lineTo(ox+hoverEdge.c*sp,(hoverEdge.r+1)*sp);}
+    ctx.stroke();ctx.restore();
+  }
+  ctx.fillStyle=PAL.faint;
+  for(r=0;r<=rows;r++)for(c=0;c<=cols;c++){
+    ctx.beginPath();ctx.arc(ox+c*sp,r*sp,Math.max(2,sp*0.055),0,6.2832);ctx.fill();
+  }
+  if(lastMove){
+    var mx,my;
+    if(lastMove.t==="h"){mx=ox+(lastMove.c+0.5)*sp;my=lastMove.r*sp;}
+    else{mx=ox+lastMove.c*sp;my=(lastMove.r+0.5)*sp;}
+    ctx.strokeStyle=PAL.warning;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(mx,my,Math.max(3,sp*0.13),0,6.2832);ctx.stroke();
+  }
+}
+/* ---------- 棋盘模型 ---------- */
+function cellSides(r,c){
+  return (hEdges[r*cols+c]?1:0)+(hEdges[(r+1)*cols+c]?1:0)+(vEdges[r*(cols+1)+c]?1:0)+(vEdges[r*(cols+1)+c+1]?1:0);
+}
+function adjCells(edge){
+  var out=[];
+  if(edge.t==="h"){
+    if(edge.r>0)out.push((edge.r-1)*cols+edge.c);
+    if(edge.r<rows)out.push(edge.r*cols+edge.c);
+  }else{
+    if(edge.c>0)out.push(edge.r*cols+edge.c-1);
+    if(edge.c<cols)out.push(edge.r*cols+edge.c);
+  }
+  return out;
+}
+function doMove(edge,side){
+  if(edge.t==="h")hEdges[edge.r*cols+edge.c]=side;
+  else vEdges[edge.r*(cols+1)+edge.c]=side;
+  var cells=adjCells(edge),g=0,i,idx;
+  for(i=0;i<cells.length;i++){
+    idx=cells[i];
+    if(boxOwner[idx]===0&&cellSides((idx/cols)|0,idx%cols)===4){boxOwner[idx]=side;g++;}
+  }
+  if(side===HUMAN)youScore+=g;else aiScore+=g;
+  return g;
+}
+function undoMove(edge,side,g){
+  var cells=adjCells(edge),i,idx;
+  for(i=0;i<cells.length;i++){idx=cells[i];if(boxOwner[idx]===side)boxOwner[idx]=0;}
+  if(side===HUMAN)youScore-=g;else aiScore-=g;
+  if(edge.t==="h")hEdges[edge.r*cols+edge.c]=0;
+  else vEdges[edge.r*(cols+1)+edge.c]=0;
+}
+function edgeStats(edge){
+  var cells=adjCells(edge),comp=0,danger=0,i,idx,s;
+  for(i=0;i<cells.length;i++){
+    idx=cells[i];
+    if(boxOwner[idx]!==0)continue;
+    s=cellSides((idx/cols)|0,idx%cols);
+    if(s===3)comp++;
+    else if(s===2)danger++;
+  }
+  return {comp:comp,danger:danger};
+}
+function legalEdges(){
+  var out=[],r,c;
+  for(r=0;r<=rows;r++)for(c=0;c<cols;c++)if(!hEdges[r*cols+c])out.push({t:"h",r:r,c:c});
+  for(r=0;r<rows;r++)for(c=0;c<=cols;c++)if(!vEdges[r*(cols+1)+c])out.push({t:"v",r:r,c:c});
+  return out;
+}
+function findCompletingEdge(){
+  var legal=legalEdges(),i,st;
+  for(i=0;i<legal.length;i++){st=edgeStats(legal[i]);if(st.comp>0)return legal[i];}
+  return null;
+}
+/* ---------- AI：三档策略 ---------- */
+function orderedMoves(cap){
+  var legal=legalEdges(),scored=[],i,st;
+  for(i=0;i<legal.length;i++){
+    st=edgeStats(legal[i]);
+    scored.push({e:legal[i],k:st.comp*1000-st.danger*10,idx:i});
+  }
+  scored.sort(function(a,b){return (b.k-a.k)||(a.idx-b.idx);});
+  var out=[];
+  for(i=0;i<scored.length&&i<cap;i++)out.push(scored[i].e);
+  return out;
+}
+function evalFor(side){
+  var my=side===HUMAN?youScore:aiScore;
+  var op=side===HUMAN?aiScore:youScore;
+  var v=(my-op)*100;
+  var three=0,r,c;
+  for(r=0;r<rows;r++)for(c=0;c<cols;c++){
+    if(boxOwner[r*cols+c]===0&&cellSides(r,c)===3)three++;
+  }
+  return v+three*35;
+}
+var SEARCH_NODES=0,SEARCH_LIMIT=60000,SEARCH_ABORT=false;
+function search(depth,alpha,beta,side){
+  SEARCH_NODES++;
+  if(SEARCH_NODES>SEARCH_LIMIT){SEARCH_ABORT=true;return evalFor(side);}
+  var legal=legalEdges(),i,e,g,val;
+  if(!legal.length)return evalFor(side);
+  if(depth<=0)return evalFor(side);
+  var moves=orderedMoves(10),best=-Infinity;
+  for(i=0;i<moves.length;i++){
+    e=moves[i];
+    g=doMove(e,side);
+    if(g>0)val=search(depth-1,alpha,beta,side);
+    else val=-search(depth-1,-beta,-alpha,side===HUMAN?AI:HUMAN);
+    undoMove(e,side,g);
+    if(SEARCH_ABORT)return best===-Infinity?evalFor(side):best;
+    if(val>best)best=val;
+    if(best>alpha)alpha=best;
+    if(alpha>=beta)break;
+  }
+  return best;
+}
+function chainTake(side){
+  var total=0,applied=[],e,g;
+  for(;;){
+    e=findCompletingEdge();
+    if(!e)break;
+    g=doMove(e,side);
+    applied.push({e:e,g:g});
+    total+=g;
+  }
+  for(var i=applied.length-1;i>=0;i--)undoMove(applied[i].e,side,applied[i].g);
+  return total;
+}
+function chooseBeginner(){
+  var legal=legalEdges(),safe=[],i,st,pool;
+  for(i=0;i<legal.length;i++){st=edgeStats(legal[i]);if(st.danger===0)safe.push(legal[i]);}
+  pool=safe.length?safe:legal;
+  return pool[(Math.random()*pool.length)|0];
+}
+function chooseAdvanced(){
+  var legal=legalEdges(),i,st,bestE=null,bestComp=-1,bestDanger=99;
+  for(i=0;i<legal.length;i++){
+    st=edgeStats(legal[i]);
+    if(st.comp>bestComp||(st.comp===bestComp&&st.danger<bestDanger)){bestComp=st.comp;bestDanger=st.danger;bestE=legal[i];}
+  }
+  if(bestComp>0)return bestE;
+  var safe=[];
+  for(i=0;i<legal.length;i++){st=edgeStats(legal[i]);if(st.danger===0)safe.push(legal[i]);}
+  if(safe.length)return safe[(Math.random()*safe.length)|0];
+  var pick=legal[0],pickCost=Infinity,g,cost;
+  for(i=0;i<legal.length;i++){
+    g=doMove(legal[i],AI);
+    cost=chainTake(HUMAN);
+    undoMove(legal[i],AI,g);
+    if(cost<pickCost){pickCost=cost;pick=legal[i];}
+  }
+  return pick;
+}
+function chooseMaster(){
+  var legal=legalEdges();
+  if(!legal.length)return null;
+  SEARCH_NODES=0;SEARCH_ABORT=false;
+  var moves=orderedMoves(14),bestVal=-Infinity,best=moves[0],alpha=-Infinity,i,g,e,val;
+  for(i=0;i<moves.length;i++){
+    e=moves[i];
+    g=doMove(e,AI);
+    if(g>0)val=search(2,alpha,Infinity,AI);
+    else val=-search(2,-Infinity,-alpha,HUMAN);
+    undoMove(e,AI,g);
+    if(val>bestVal){bestVal=val;best=e;}
+    if(bestVal>alpha)alpha=bestVal;
+    if(SEARCH_ABORT)break;
+  }
+  return best||chooseAdvanced();
+}
+function chooseAiMove(){
+  if(levelAi===0)return chooseBeginner();
+  if(levelAi===1)return chooseAdvanced();
+  try{return chooseMaster();}catch(e){return chooseAdvanced();}
+}
+/* ---------- 对局流程 ---------- */
+function snapshot(){return {h:hEdges.slice(),v:vEdges.slice(),b:boxOwner.slice(),y:youScore,a:aiScore,t:turn};}
+function restore(s){hEdges=s.h.slice();vEdges=s.v.slice();boxOwner=s.b.slice();youScore=s.y;aiScore=s.a;turn=s.t;}
+function isFinished(){
+  var i;
+  for(i=0;i<hEdges.length;i++)if(!hEdges[i])return false;
+  for(i=0;i<vEdges.length;i++)if(!vEdges[i])return false;
+  return true;
+}
+function humanMove(edge){
+  if(gameOver||aiThinking||turn!==HUMAN)return;
+  var snapIdx=history.length;
+  history.push(snapshot());
+  lastHumanSnap=snapIdx;
+  var g=doMove(edge,HUMAN);
+  lastMove=edge;hoverEdge=null;
+  afterMove(HUMAN,g);
+}
+function afterMove(side,g){
+  updStats();updateButtons();render();
+  if(isFinished()){finish();return;}
+  if(g>0){
+    if(side===HUMAN)say("你围住 "+g+" 格，再走一步！");
+    else aiStep();
+  }else{
+    if(side===HUMAN){turn=AI;aiStep();}
+    else{turn=HUMAN;say("轮到你画边");updateButtons();}
+  }
+}
+function aiStep(){
+  if(gameOver)return;
+  turn=AI;aiThinking=true;updateButtons();updStats();render();
+  say("AI 思考中…");
+  setTimeout(function(){
+    if(gameOver){aiThinking=false;return;}
+    var edge=chooseAiMove();
+    if(!edge){aiThinking=false;finish();return;}
+    var g=doMove(edge,AI);
+    lastMove=edge;
+    aiThinking=false;
+    if(isFinished()){updStats();updateButtons();render();finish();return;}
+    if(g>0){say("AI 围住 "+g+" 格，继续…");aiStep();}
+    else{turn=HUMAN;updStats();updateButtons();render();say("轮到你画边");}
+  },380+Math.random()*300);
+}
+function undo(){
+  if(aiThinking||gameOver||lastHumanSnap<0)return;
+  restore(history[lastHumanSnap]);
+  history.length=lastHumanSnap;
+  lastHumanSnap=lastHumanSnap-1;
+  lastMove=null;hoverEdge=null;turn=HUMAN;
+  updStats();updateButtons();render();
+  say("已悔棋，轮到你画边");
+}
+function finish(){
+  gameOver=true;aiThinking=false;
+  var yt=youScore+handi,at=aiScore;
+  lastResult=yt>at?"w":(yt===at?"d":"l");
+  if(yt>best)best=yt;
+  if(lastResult==="w")cleared=Math.max(cleared,cur+1);
+  saveGame();updStats();updateButtons();render();
+  $("ovTitle").textContent=lastResult==="w"?"胜利！":(lastResult==="d"?"平局":"惜败");
+  $("ovDesc").innerHTML="你 <b>"+yt+"</b> : "+at+" AI"+(handi?"（含让分 +"+handi+"）":"")+"<br>"+
+    (lastResult==="w"?(cur<LEVELS.length-1?"已解锁第 "+(cur+2)+" 关":"已全部通关，太棒了！"):"围得更多就能赢，再来一次！");
+  $("ovBtn").textContent=lastResult==="w"?(cur<LEVELS.length-1?"下一关":"再玩一遍"):"重试本关";
+  $("overlay").classList.add("show");
+  if(lastResult==="w"&&GB.available)GB.reportScore("dots-boxes",{metricValue:Math.max(1,cleared),metricExtra:cur+1}).catch(function(){});
+}
+/* ---------- 交互命中（热区 ≥44px：命中半径 = max(边距/2, 22px)） ---------- */
+function distToSeg(px,py,x1,y1,x2,y2){
+  var dx=x2-x1,dy=y2-y1,len2=dx*dx+dy*dy;
+  var t=len2?((px-x1)*dx+(py-y1)*dy)/len2:0;
+  t=clamp(t,0,1);
+  var x=x1+t*dx,y=y1+t*dy;
+  return Math.sqrt((px-x)*(px-x)+(py-y)*(py-y));
+}
+function hitEdge(px,py){
+  var sp=L.sp,ox=L.ox,best=null,bestD=Infinity,r,c,d;
+  for(r=0;r<=rows;r++)for(c=0;c<cols;c++){
+    if(hEdges[r*cols+c])continue;
+    d=distToSeg(px,py,ox+c*sp,r*sp,ox+(c+1)*sp,r*sp);
+    if(d<bestD){bestD=d;best={t:"h",r:r,c:c};}
+  }
+  for(r=0;r<rows;r++)for(c=0;c<=cols;c++){
+    if(vEdges[r*(cols+1)+c])continue;
+    d=distToSeg(px,py,ox+c*sp,r*sp,ox+c*sp,(r+1)*sp);
+    if(d<bestD){bestD=d;best={t:"v",r:r,c:c};}
+  }
+  var tol=Math.max(sp*0.5,22);
+  return bestD<=tol?best:null;
+}
+function toLocal(e){
+  var rect=cv.getBoundingClientRect();
+  return {x:e.clientX-rect.left,y:e.clientY-rect.top};
+}
+cv.addEventListener("pointerdown",function(e){
+  e.preventDefault();
+  if(gameOver||aiThinking||turn!==HUMAN)return;
+  var p=toLocal(e),edge=hitEdge(p.x,p.y);
+  if(edge)humanMove(edge);
+  else say("请点在两条相邻圆点之间的边上");
+});
+cv.addEventListener("pointermove",function(e){
+  if(gameOver||aiThinking||turn!==HUMAN){hoverEdge=null;return;}
+  var p=toLocal(e);
+  hoverEdge=hitEdge(p.x,p.y);
+  render();
+});
+cv.addEventListener("pointerleave",function(){hoverEdge=null;render();});
+/* ---------- 界面 ---------- */
+function updStats(){
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stYou").textContent=youScore+handi;
+  $("stAi").textContent=aiScore;
+  $("foot").textContent="已解锁 "+Math.min(cleared+1,LEVELS.length)+"/"+LEVELS.length+" · 历史最佳 "+best+" 分 · 围格得分可继续行动";
+}
+function updateButtons(){
+  $("btnUndo").disabled=aiThinking||gameOver||lastHumanSnap<0;
+  $("btnRestart").disabled=aiThinking;
+  $("btnLevels").disabled=aiThinking;
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+function startLevel(n){
+  cur=clamp(n,0,LEVELS.length-1);
+  var d=(LEVELS[cur]&&LEVELS[cur].data)||{};
+  rows=d.rows|0;cols=d.cols|0;levelAi=d.ai|0;levelFirst=d.first|0;handi=d.handi|0;
+  hEdges=new Array((rows+1)*cols).fill(0);
+  vEdges=new Array(rows*(cols+1)).fill(0);
+  boxOwner=new Array(rows*cols).fill(0);
+  youScore=0;aiScore=0;turn=levelFirst===1?AI:HUMAN;
+  gameOver=false;aiThinking=false;history=[];lastHumanSnap=-1;
+  lastMove=null;hoverEdge=null;lastResult="";
+  hideOverlay();
+  resize();updStats();updateButtons();
+  var aiName=AI_NAMES[levelAi]||"入门";
+  say("第 "+(cur+1)+" 关 · "+String(LEVELS[cur].name||("第"+(cur+1)+"关"))+" · AI "+aiName+(handi?" · 让分 +"+handi:""));
+  saveGame();
+  if(turn===AI)aiStep();
+}
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(lastResult==="w"){
+    if(cur<LEVELS.length-1)startLevel(cur+1);else startLevel(0);
+  }else startLevel(cur);
+});
+$("btnUndo").addEventListener("click",undo);
+$("btnRestart").addEventListener("click",function(){if(!aiThinking)startLevel(cur);});
+$("btnLevels").addEventListener("click",function(){
+  if(aiThinking)return;
+  var grid=$("lvGrid");
+  grid.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    var b=document.createElement("button");
+    b.className="lvbtn"+(i===cur?" on":"");
+    b.textContent=String(i+1);
+    b.disabled=i>cleared;
+    b.addEventListener("click",(function(idx){
+      return function(){startLevel(idx);$("lvOverlay").classList.remove("show");};
+    })(i));
+    grid.appendChild(b);
+  }
+  $("lvDesc").textContent="已解锁 "+Math.min(cleared+1,LEVELS.length)+" / "+LEVELS.length+" 关 · 点数字进入对应关卡";
+  $("lvOverlay").classList.add("show");
+});
+$("lvClose").addEventListener("click",function(){$("lvOverlay").classList.remove("show")});
+/* ---------- 启动 ---------- */
+palLoad();
+cur=clamp(saveData.lv||0,0,LEVELS.length-1);
+startLevel(cur);
+window.addEventListener("resize",resize);
+document.addEventListener("visibilitychange",function(){if(!document.hidden)render();});
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+</body>
+</html>

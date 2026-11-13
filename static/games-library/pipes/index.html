@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>管道工</title>
+<style>
+  /*token:GAME-THEME.md §2 + §3 素材 token（管道/管水/漏口）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-pipe-field:#EFF1EE;--g-pipe-grid:#E6E9E6;--g-pipe-body:#2D9B6A;--g-pipe-hi:#7CD6A8;--g-pipe-water:#4A9FD4;--g-pipe-src:#1E8C5C;--g-pipe-snk:#C9526B;--g-pipe-leak:#D98A26;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-pipe-field:#1D201E;--g-pipe-grid:#2C312D;--g-pipe-body:#2D9B6A;--g-pipe-hi:#5BC894;--g-pipe-water:#6BB4DE;--g-pipe-src:#5BC894;--g-pipe-snk:#DB7186;--g-pipe-leak:#E2A44E;color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 10px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: var(--g-on-primary);
+    font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
+  .panel .btn { width: 100%; margin-top: 8px; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 46vh; overflow-y: auto; }
+  .lvgrid button {
+    min-height: 44px; border: 0; border-radius: 10px;
+    background: var(--g-surface2); color: var(--g-text);
+    font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .lvgrid button:disabled { opacity: .35; cursor: default; }
+  .lvgrid button.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lvgrid button.cur { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">点按旋转管道 · 接通水源与出水口 · 不留漏口</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/120</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">最少</span><span class="val" id="stBest">-</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" role="img" aria-label="管道工棋盘"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点击管道块顺时针旋转</p>
+  <div class="tools">
+    <button class="btn ghost" id="btnPrev">上一关</button>
+    <button class="btn ghost" id="btnReset">重玩</button>
+    <button class="btn" id="btnNext">下一关</button>
+    <button class="btn ghost" id="btnPick">选关</button>
+  </div>
+  <p class="foot">绿圈为水源 · 红圈为出水口 · 亮起管道已连通 · 黄点为漏口</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel" id="panel"></div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 数据：包内默认关（覆盖 3×3→8×8 各尺寸段） ---------- */
+var DEFAULT_LEVELS=[{"name":"入门·3×3 001","size":3,"tiles":[6,4,6,5,3,8,9,4,2],"src":8,"snk":4,"par":15},{"name":"入门·3×3 012","size":3,"tiles":[9,4,9,5,9,7,3,8,0],"src":6,"snk":8,"par":19},{"name":"简单·4×4 023","size":4,"tiles":[6,12,4,2,5,8,7,0,5,8,11,13,1,3,2,6],"src":14,"snk":12,"par":31},{"name":"初级·5×5 033","size":5,"tiles":[1,0,4,4,6,5,2,4,6,5,5,3,4,11,11,5,0,12,13,8,7,4,6,8,2],"src":1,"snk":0,"par":49},{"name":"初级·5×5 044","size":5,"tiles":[3,10,13,4,6,0,3,12,2,5,12,10,10,7,5,3,1,9,7,5,3,4,10,1,2],"src":24,"snk":20,"par":46},{"name":"中级·6×6 055","size":6,"tiles":[3,1,9,10,4,2,8,11,6,12,0,1,3,0,0,11,8,6,8,12,4,11,12,2,0,7,8,14,13,1,2,10,7,2,7,8],"src":11,"snk":0,"par":70},{"name":"中级·6×6 066","size":6,"tiles":[8,13,10,1,3,6,5,5,12,4,6,5,1,1,3,0,11,11,0,4,6,12,7,5,3,2,14,10,3,11,7,4,6,7,0,2],"src":24,"snk":12,"par":76},{"name":"进阶·7×7 077","size":7,"tiles":[9,2,3,4,9,1,3,5,8,6,9,7,12,8,5,2,5,12,12,10,1,5,3,5,1,5,13,6,7,11,14,4,14,10,2,0,13,10,3,13,10,9,2,7,8,8,2,2,2],"src":1,"snk":2,"par":98},{"name":"进阶·7×7 088","size":7,"tiles":[0,3,3,7,0,3,9,5,11,4,10,14,4,10,11,10,0,3,7,8,10,5,12,6,2,4,13,5,5,3,6,13,12,10,2,5,2,13,5,11,14,6,9,1,1,3,2,3,3],"src":36,"snk":43,"par":100},{"name":"专家·8×8 098","size":8,"tiles":[2,10,2,3,8,0,3,6,0,14,1,7,12,6,0,13,6,14,4,10,4,12,4,7,2,5,8,12,4,13,12,1,1,5,11,6,0,5,9,9,7,11,5,8,11,5,3,1,0,11,14,0,3,8,10,1,9,6,7,4,0,2,10,8],"src":55,"snk":0,"par":123},{"name":"专家·8×8 109","size":8,"tiles":[1,6,7,0,3,9,13,0,5,3,5,12,8,1,8,6,5,3,5,13,4,0,2,11,11,12,14,14,9,1,0,5,5,8,6,5,13,14,14,10,5,5,8,13,3,5,3,3,5,2,5,2,6,14,4,9,9,2,2,2,6,8,0,1],"src":13,"snk":57,"par":119},{"name":"专家·8×8 120","size":8,"tiles":[3,9,0,0,2,7,0,3,8,10,8,5,0,9,13,5,12,2,9,7,5,3,5,5,5,3,9,9,9,12,14,6,7,14,6,13,1,0,14,0,0,8,9,10,3,8,10,6,0,0,3,12,14,14,6,3,9,12,4,4,7,1,8,2],"src":4,"snk":0,"par":119}];
+var LEVELS=DEFAULT_LEVELS;
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底） ---------- */
+var LEVELS_KEY="sw.pipes.v1.levels",LEVELS_VER_KEY="sw.pipes.v1.levels.ver";
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+/* 解析口径与 docs/level-gen/tools/pipes/lib.mjs 的 validData 保持一致：任一条非法整批放弃 */
+function validData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  var n=d.size;
+  if(!Number.isInteger(n)||n<3||n>8)return false;
+  if(!Array.isArray(d.tiles)||d.tiles.length!==n*n)return false;
+  for(var i=0;i<d.tiles.length;i++){
+    var v=d.tiles[i];
+    if(!Number.isInteger(v)||v<0||v>14)return false;
+  }
+  if(!Number.isInteger(d.src)||!Number.isInteger(d.snk))return false;
+  if(d.src<0||d.src>=n*n||d.snk<0||d.snk>=n*n||d.src===d.snk)return false;
+  var st=tType(d.tiles[d.src]),sk=tType(d.tiles[d.snk]);
+  if(st!==0||sk!==0)return false;              /* 水源/出水口必须是端点件 */
+  if(!Number.isInteger(d.par)||d.par<0||d.par>n*n*3)return false;
+  return true;
+}
+function parseLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return false;
+  var list=[];
+  for(var i=0;i<res.levels.length;i++){
+    var item=res.levels[i];
+    if(!item||typeof item.dataJson!=="string")return false;
+    var d;
+    try{d=JSON.parse(item.dataJson);}catch(e){return false;}
+    if(!validData(d))return false;
+    var name=(typeof d.name==="string"&&d.name)?d.name:("第"+(i+1)+"关");
+    if(name.length>32)return false;
+    list.push({name:name,size:d.size,tiles:d.tiles.slice(),src:d.src,snk:d.snk,par:d.par});
+  }
+  return list;
+}
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("pipes").then(function(res){
+    var list=parseLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      startLevel(cur);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档 ---------- */
+var KEY="sw.pipes.v1";
+function loadSave(){
+  try{
+    var s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s==="object"){
+      var done={};
+      if(s.done&&typeof s.done==="object"){
+        for(var k in s.done){var v=parseInt(s.done[k],10);if(v>0)done[k]=v;}
+      }
+      return {lv:Math.max(0,parseInt(s.lv,10)||0),done:done};
+    }
+  }catch(e){}
+  return {lv:0,done:{}};
+}
+function save(){
+  var data={lv:saveData.lv,done:doneSave};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("pipes",data).catch(function(){});
+}
+var saveData=loadSave();
+var doneSave=saveData.done;
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("pipes").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson),changed=false;
+      if(remote.done&&typeof remote.done==="object"){
+        for(var k in remote.done){
+          var rv=parseInt(remote.done[k],10);
+          if(!(rv>0))continue;
+          var mine=parseInt(doneSave[k],10);
+          if(!(mine>0)||rv<mine){doneSave[k]=rv;changed=true;}
+        }
+      }
+      var rl=parseInt(remote.lv,10)||0;
+      if(rl>saveData.lv){saveData.lv=rl;changed=true;}
+      if(changed){
+        var n=Math.min(Math.max(saveData.lv,0),unlockedMax());
+        startLevel(n);
+        save();
+      }
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 编码与棋盘 ---------- */
+var OPP=[2,3,0,1],DX=[-1,0,1,0],DY=[0,1,0,-1];
+/* 紧凑编码 0..14：端点 0-3 / 直管 4-5 / 弯管 6-9 / 三通 10-13 / 十字 14 */
+function tType(v){return v===14?4:(v<4?0:(v<6?1:(v<10?2:3)));}
+function tRot(v){return v===14?0:(v<4?v:(v<6?v-4:(v<10?v-6:v-10)));}
+function encTile(t,r){
+  if(t===4)return 14;
+  var off=t===0?0:(t===1?4:(t===2?6:10));
+  return off+(t===1?(r&1):r);
+}
+function maskOf(v){
+  var t=tType(v),r=tRot(v),base=t===0?1:(t===1?5:(t===2?3:(t===3?7:15))),m=0;
+  for(var d=0;d<4;d++)if(base&(1<<d))m|=1<<((d+r)%4);
+  return m;
+}
+/* ---------- 状态 ---------- */
+var cur=0,size=0,tiles=[],src=0,snk=0,par=0,moves=0,won=false;
+var stateConn=new Uint8Array(0),stateLeaks=[],stateReached=0;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var stageEl=document.querySelector(".stage");
+var msgEl=document.getElementById("msg");
+function $(id){return document.getElementById(id);}
+function say(t){msgEl.textContent=t;}
+function nb(i,d){
+  var r=(i/size)|0,c=i%size;
+  if(d===0)return r>0?i-size:-1;
+  if(d===1)return c<size-1?i+1:-1;
+  if(d===2)return r<size-1?i+size:-1;
+  return c>0?i-1:-1;
+}
+function evaluate(){
+  var N=size*size,masks=[],i,d,u,v;
+  for(i=0;i<N;i++)masks[i]=maskOf(tiles[i]);
+  var conn=new Uint8Array(N),q=[src];
+  conn[src]=1;
+  var reached=0;
+  for(var h=0;h<q.length;h++){
+    u=q[h];reached++;
+    for(d=0;d<4;d++){
+      if(!(masks[u]&(1<<d)))continue;
+      v=nb(u,d);
+      if(v>=0&&(masks[v]&(1<<OPP[d]))&&!conn[v]){conn[v]=1;q.push(v);}
+    }
+  }
+  var leaks=[],count=0;
+  for(u=0;u<N;u++)for(d=0;d<4;d++){
+    if(!(masks[u]&(1<<d)))continue;
+    v=nb(u,d);
+    if(v<0||!(masks[v]&(1<<OPP[d]))){count++;leaks.push([u,d]);}
+  }
+  stateConn=conn;stateLeaks=leaks;stateReached=reached;
+  return reached===N&&count===0;
+}
+/* ---------- 调色板（GAME-THEME.md D2/D3） ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim();}
+  PAL={field:v("--g-pipe-field"),grid:v("--g-pipe-grid"),body:v("--g-pipe-body"),
+    hi:v("--g-pipe-hi"),water:v("--g-pipe-water"),src:v("--g-pipe-src"),
+    snk:v("--g-pipe-snk"),leak:v("--g-pipe-leak"),faint:v("--g-faint"),
+    muted:v("--g-muted"),surface:v("--g-surface"),text:v("--g-text"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep")};
+}
+window.__gOnTheme=function(){palLoad();render();};
+/* ---------- 渲染 ---------- */
+var viewSize=0,cellPx=0,dpr=1,pulseCell=-1,pulseT0=0,rafId=0;
+function resize(){
+  var w=stageEl.clientWidth||320;
+  if(!(w>0))w=320;
+  viewSize=w;
+  cellPx=w/(size||8);
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.style.width=w+"px";cv.style.height=w+"px";
+  cv.width=Math.round(w*dpr);cv.height=Math.round(w*dpr);
+  render();
+}
+function poke(){
+  if(rafId)return;
+  rafId=requestAnimationFrame(function(ts){
+    rafId=0;render(ts);
+    if(pulseCell>=0&&ts-pulseT0<160)poke();
+  });
+}
+function drawCell(i,ts){
+  var r=(i/size)|0,c=i%size;
+  var cx=c*cellPx+cellPx/2,cy=r*cellPx+cellPx/2;
+  var mask=maskOf(tiles[i]);
+  var active=stateConn[i]===1;
+  var body=active?PAL.body:PAL.faint;
+  var w=Math.max(3,cellPx*0.30);
+  var sc=1;
+  if(i===pulseCell){var dt=(ts-pulseT0)/160;if(dt>=0&&dt<1)sc=1+0.12*Math.sin(Math.PI*dt);}
+  ctx.save();
+  ctx.translate(cx,cy);ctx.scale(sc,sc);ctx.translate(-cx,-cy);
+  ctx.strokeStyle=body;ctx.lineWidth=w;ctx.lineCap="round";
+  ctx.beginPath();
+  for(var d=0;d<4;d++){
+    if(!(mask&(1<<d)))continue;
+    ctx.moveTo(cx,cy);ctx.lineTo(cx+DX[d]*cellPx*0.5,cy+DY[d]*cellPx*0.5);
+  }
+  ctx.stroke();
+  if(active){
+    if(won){ctx.shadowColor=PAL.water;ctx.shadowBlur=cellPx*0.18;}
+    ctx.strokeStyle=PAL.water;ctx.lineWidth=Math.max(1.5,w*0.42);
+    ctx.beginPath();
+    for(var d2=0;d2<4;d2++){
+      if(!(mask&(1<<d2)))continue;
+      ctx.moveTo(cx,cy);ctx.lineTo(cx+DX[d2]*cellPx*0.5,cy+DY[d2]*cellPx*0.5);
+    }
+    ctx.stroke();
+    ctx.shadowBlur=0;
+  }
+  ctx.fillStyle=body;
+  ctx.beginPath();ctx.arc(cx,cy,w*0.55,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawBadge(i,color){
+  var cx=(i%size)*cellPx+cellPx/2,cy=((i/size)|0)*cellPx+cellPx/2;
+  var rr=cellPx*0.36;
+  ctx.strokeStyle=color;ctx.lineWidth=Math.max(2,cellPx*0.05);
+  ctx.beginPath();ctx.arc(cx,cy,rr,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=color;
+  ctx.beginPath();ctx.arc(cx,cy,rr*0.42,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=PAL.surface;
+  ctx.beginPath();ctx.arc(cx,cy,rr*0.18,0,Math.PI*2);ctx.fill();
+}
+function render(ts){
+  ts=ts||performance.now();
+  if(!size)return;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,viewSize,viewSize);
+  ctx.fillStyle=PAL.field;ctx.fillRect(0,0,viewSize,viewSize);
+  ctx.strokeStyle=PAL.grid;ctx.lineWidth=1;
+  ctx.beginPath();
+  for(var k=1;k<size;k++){
+    var p=Math.round(k*cellPx)+0.5;
+    ctx.moveTo(p,0);ctx.lineTo(p,viewSize);
+    ctx.moveTo(0,p);ctx.lineTo(viewSize,p);
+  }
+  ctx.stroke();
+  for(var i=0;i<size*size;i++)drawCell(i,ts);
+  ctx.fillStyle=PAL.leak;
+  for(var li=0;li<stateLeaks.length;li++){
+    var cell=stateLeaks[li][0],dir=stateLeaks[li][1];
+    var cx=(cell%size)*cellPx+cellPx/2,cy=((cell/size)|0)*cellPx+cellPx/2;
+    ctx.beginPath();
+    ctx.arc(cx+DX[dir]*cellPx*0.42,cy+DY[dir]*cellPx*0.42,Math.max(2,cellPx*0.075),0,Math.PI*2);
+    ctx.fill();
+  }
+  drawBadge(src,PAL.src);
+  drawBadge(snk,PAL.snk);
+}
+/* ---------- 关卡流程 ---------- */
+function unlockedMax(){
+  var m=0;
+  for(var k in doneSave){
+    var i=parseInt(k,10);
+    if(doneSave[k]!=null&&i+1>m)m=i+1;
+  }
+  return Math.min(m,LEVELS.length-1);
+}
+function updateStats(){
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stMoves").textContent=String(moves);
+  $("stBest").textContent=doneSave[cur]!=null?String(doneSave[cur]):"-";
+}
+function updateNav(){
+  $("btnPrev").disabled=cur<=0;
+  $("btnNext").disabled=cur>=unlockedMax();
+}
+function startLevel(n){
+  n=Math.max(0,Math.min(n,LEVELS.length-1));
+  cur=n;
+  saveData.lv=n;
+  var L=LEVELS[n];
+  size=L.size;tiles=L.tiles.slice();src=L.src;snk=L.snk;
+  par=Number.isInteger(L.par)?L.par:0;
+  moves=0;won=false;pulseCell=-1;
+  evaluate();
+  resize();
+  updateStats();
+  updateNav();
+  say("第"+(n+1)+"关 · "+L.name+" · 参考步数 "+par);
+  save();
+}
+function rotateCell(i){
+  var t=tType(tiles[i]);
+  if(t===4)return;   /* 十字任意方向等价 */
+  tiles[i]=encTile(t,(tRot(tiles[i])+1)%4);
+  moves++;
+  pulseCell=i;pulseT0=performance.now();poke();
+  var ok=evaluate();
+  updateStats();
+  render();
+  if(ok){onWin();}
+  else if(stateLeaks.length>0)say("还有 "+stateLeaks.length+" 个漏口 · 已连通 "+stateReached+"/"+(size*size));
+  else say("已无漏口 · 继续接通水源");
+  save();
+}
+function onWin(){
+  won=true;
+  var prev=parseInt(doneSave[cur],10);
+  if(!(prev>0)||moves<prev)doneSave[cur]=moves;
+  saveData.lv=Math.min(cur+1,LEVELS.length-1);
+  save();updateStats();updateNav();
+  render();
+  var best=doneSave[cur];
+  var html='<h2>通关！</h2><p class="desc">本关用了 <b>'+moves+'</b> 步<br>参考步数 '+par+' · 最少 '+best+' 步'+(moves<=par?'<br>表现出色':'')+'</p>';
+  html+='<button class="btn" data-act="next">'+(cur<LEVELS.length-1?'下一关':'再玩一遍')+'</button>';
+  html+='<button class="btn ghost" data-act="retry">重玩本关</button>';
+  html+='<button class="btn ghost" data-act="close">关闭</button>';
+  showOverlay(html);
+  say("通关！用了 "+moves+" 步");
+  if(GB.available)GB.reportScore("pipes",{metricValue:Object.keys(doneSave).length,metricExtra:moves}).catch(function(){});
+}
+/* ---------- 覆盖层 ---------- */
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function showOverlay(html){
+  $("panel").innerHTML=html;
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show");}
+function openPicker(){
+  var html='<h2>选择关卡</h2><p class="desc">已解锁 '+(unlockedMax()+1)+' / '+LEVELS.length+'</p><div class="lvgrid">';
+  for(var i=0;i<LEVELS.length;i++){
+    var cls="lvgrid-btn"+(doneSave[i]!=null?" done":"")+(i===cur?" cur":"");
+    var dis=i>unlockedMax()?" disabled":"";
+    html+='<button class="'+cls+'" data-act="lv" data-lv="'+i+'"'+dis+'>'+(i+1)+'</button>';
+  }
+  html+='</div><button class="btn ghost" data-act="close">关闭</button>';
+  showOverlay(html);
+}
+$("panel").addEventListener("click",function(e){
+  var t=e.target&&e.target.closest?e.target.closest("[data-act]"):null;
+  if(!t)return;
+  var act=t.getAttribute("data-act");
+  if(act==="next"){hideOverlay();startLevel(cur<LEVELS.length-1?cur+1:0);}
+  else if(act==="retry"){hideOverlay();startLevel(cur);}
+  else if(act==="close"){hideOverlay();}
+  else if(act==="lv"){var i=parseInt(t.getAttribute("data-lv"),10);hideOverlay();if(i<=unlockedMax())startLevel(i);}
+});
+/* ---------- 输入 ---------- */
+cv.addEventListener("pointerdown",function(e){
+  if(won)return;
+  var rect=cv.getBoundingClientRect();
+  var c=Math.floor((e.clientX-rect.left)/cellPx),r=Math.floor((e.clientY-rect.top)/cellPx);
+  if(r<0||r>=size||c<0||c>=size)return;
+  e.preventDefault();
+  rotateCell(r*size+c);
+});
+cv.addEventListener("contextmenu",function(e){e.preventDefault();});
+$("btnPrev").addEventListener("click",function(){if(cur>0)startLevel(cur-1);});
+$("btnNext").addEventListener("click",function(){if(cur<unlockedMax())startLevel(cur+1);});
+$("btnReset").addEventListener("click",function(){startLevel(cur);say("本关已重置");});
+$("btnPick").addEventListener("click",openPicker);
+window.addEventListener("resize",resize);
+window.addEventListener("load",resize);
+document.addEventListener("visibilitychange",function(){if(!document.hidden)render();});
+/* ---------- 启动 ---------- */
+palLoad();
+startLevel(Math.min(Math.max(saveData.lv,0),unlockedMax()));
+syncLevelsFromServer();
+syncSaveFromServer();
+})();
+</script>
+</body>
+</html>

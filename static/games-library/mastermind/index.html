@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>密码破译</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材（bp1..bp8 已登记前缀，八色棋子）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#C9526B;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-on-primary:#FFF;--g-bp1:#D94F4F;--g-bp2:#2E7DD1;--g-bp3:#2E9B6A;--g-bp4:#8A5CC7;--g-bp5:#B26B1B;--g-bp6:#0F9AA8;--g-bp7:#C9526B;--g-bp8:#5A7A2B;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-bp1:#E87272;--g-bp2:#6BA8E8;--g-bp3:#5BC894;--g-bp4:#AC8FEC;--g-bp5:#E2A44E;--g-bp6:#4FC3D9;--g-bp7:#DB7186;--g-bp8:#A8C66C;color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .board { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px; display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--g-gap); }
+  .row { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 10px; }
+  .row.cur { background: var(--g-primary-soft); }
+  .row.old { padding: 2px 6px; }
+  .no { flex: 0 0 16px; text-align: right; font-size: 12px; color: var(--g-faint); font-variant-numeric: tabular-nums; }
+  .slots { flex: 1; min-width: 0; display: grid; gap: 4px; justify-items: center; }
+  .slot { width: 100%; max-width: 48px; aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--g-text); background: var(--g-surface2); border: 2px dashed transparent; }
+  .row.cur .slot { cursor: pointer; border-color: var(--g-border); }
+  .row.cur .slot.filled { border-color: transparent; }
+  .row.old .slot { max-width: 28px; }
+  .row.result .slot { max-width: 32px; }
+  .cb0 { background: var(--g-bp1); }
+  .cb1 { background: var(--g-bp2); }
+  .cb2 { background: var(--g-bp3); }
+  .cb3 { background: var(--g-bp4); }
+  .cb4 { background: var(--g-bp5); }
+  .cb5 { background: var(--g-bp6); }
+  .cb6 { background: var(--g-bp7); }
+  .cb7 { background: var(--g-bp8); }
+  [data-theme=dark] .slot { color: var(--g-bg); }
+  .pegs { flex: 0 0 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; justify-items: center; align-content: center; }
+  .peg { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--g-border); background: transparent; }
+  .peg.b { background: var(--g-text); border-color: var(--g-text); }
+  .peg.w { background: var(--g-surface); border-color: var(--g-muted); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .msg.win { color: var(--g-success); font-weight: 600; }
+  .msg.lose { color: var(--g-danger); font-weight: 600; }
+  .sec { font-size: 12px; color: var(--g-faint); margin: 12px 2px 6px; }
+  .palette { display: grid; gap: 10px; margin-bottom: 12px; }
+  .chip { min-height: 44px; min-width: 44px; width: 100%; max-width: 56px; aspect-ratio: 1; justify-self: center; border: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font: inherit; font-size: 16px; font-weight: 700; color: var(--g-text); cursor: pointer; box-shadow: var(--g-shadow); }
+  .chip.sel { outline: 3px solid var(--g-primary-deep); outline-offset: 2px; }
+  [data-theme=dark] .chip { color: var(--g-bg); }
+  .tools { display: flex; gap: 8px; margin-top: 10px; }
+  .tools + .tools { margin-top: 8px; }
+  .btn { min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: var(--g-on-primary); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .4; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  #btnSubmit { flex: 1; }
+  #btnNext { flex: 1; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">点颜色再点圆圈填入 · ● 位置颜色全对 ○ 颜色对位置错</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/12</span></div>
+    <div class="stat"><span class="label">轮次</span><span class="val" id="stTry">0/8</span></div>
+    <div class="stat"><span class="label">已过</span><span class="val" id="stDone">0</span></div>
+  </div>
+  <div class="board" id="board"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">选择下方颜色开始破译</p>
+  <p class="sec">颜色（圆点上的数字即编号，便于色弱辨认）</p>
+  <div class="palette" id="palette"></div>
+  <div class="tools">
+    <button class="btn ghost" id="btnClear" type="button">清除</button>
+    <button class="btn ghost" id="btnRestart" type="button">重玩</button>
+    <button class="btn" id="btnSubmit" type="button">提交猜测</button>
+  </div>
+  <div class="tools">
+    <button class="btn" id="btnNext" type="button" hidden>下一关</button>
+  </div>
+  <p class="foot">进度自动保存 · 秘密序列每关不同 · 在限定轮数内猜中即过关</p>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 数据：包内默认关（覆盖 4→6 位 / 4→8 色 / 8→12 轮） ---------- */
+var DEFAULT_LEVELS=[{"name":"入门·4位4色 001","slots":4,"colors":4,"maxTries":8,"secret":[1,0,0,0]},{"name":"入门·4位4色 011","slots":4,"colors":4,"maxTries":8,"secret":[1,1,2,3]},{"name":"简单·4位5色 021","slots":4,"colors":5,"maxTries":8,"secret":[2,1,1,0]},{"name":"简单·4位5色 031","slots":4,"colors":5,"maxTries":8,"secret":[1,1,3,0]},{"name":"初级·4位6色 041","slots":4,"colors":6,"maxTries":9,"secret":[2,2,4,3]},{"name":"初级·4位6色 051","slots":4,"colors":6,"maxTries":9,"secret":[5,0,2,2]},{"name":"中级·5位6色 061","slots":5,"colors":6,"maxTries":9,"secret":[2,0,3,3,5]},{"name":"中级·5位6色 071","slots":5,"colors":6,"maxTries":9,"secret":[2,0,1,0,1]},{"name":"进阶·5位7色 081","slots":5,"colors":7,"maxTries":10,"secret":[4,6,1,0,2]},{"name":"困难·5位8色 091","slots":5,"colors":8,"maxTries":10,"secret":[0,5,5,3,7]},{"name":"困难·5位8色 101","slots":5,"colors":8,"maxTries":10,"secret":[5,4,2,1,6]},{"name":"专家·6位8色 111","slots":6,"colors":8,"maxTries":12,"secret":[4,2,2,1,0,3]}];
+var LEVELS=DEFAULT_LEVELS;
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底） ---------- */
+var LEVELS_KEY="sw.mastermind.v1.levels",LEVELS_VER_KEY="sw.mastermind.v1.levels.ver";
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+/* 解析口径与 docs/level-gen/tools/mastermind/lib.mjs 的 validData 保持一致：任一条非法整批放弃 */
+function parseLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return false;
+  var list=[];
+  for(var i=0;i<res.levels.length;i++){
+    var item=res.levels[i];
+    if(!item||typeof item.dataJson!=="string")return false;
+    var d;
+    try{d=JSON.parse(item.dataJson);}catch(e){return false;}
+    if(!d||typeof d!=="object"||Array.isArray(d))return false;
+    var slots=d.slots,colors=d.colors,maxTries=d.maxTries,secret=d.secret;
+    if(!Number.isInteger(slots)||slots<4||slots>6)return false;
+    if(!Number.isInteger(colors)||colors<4||colors>8)return false;
+    if(!Number.isInteger(maxTries)||maxTries<slots+2||maxTries>20)return false;
+    if(!Array.isArray(secret)||secret.length!==slots)return false;
+    for(var j=0;j<secret.length;j++){
+      if(!Number.isInteger(secret[j])||secret[j]<0||secret[j]>=colors)return false;
+    }
+    var name=(typeof d.name==="string"&&d.name)?d.name:("第"+(i+1)+"关");
+    if(name.length>32)return false;
+    list.push({name:name,slots:slots,colors:colors,maxTries:maxTries,secret:secret.slice()});
+  }
+  return list;
+}
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("mastermind").then(function(res){
+    var list=parseLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0))startLevel(Math.min(Math.max(cur,0),LEVELS.length-1));
+  }).catch(function(){});
+}
+/* ---------- 存档 ---------- */
+var KEY="sw.mastermind.v1";
+function loadSave(){
+  try{
+    var s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s==="object")return {lv:Math.max(0,parseInt(s.lv,10)||0),done:(s.done&&typeof s.done==="object")?s.done:{}};
+  }catch(e){}
+  return {lv:0,done:{}};
+}
+function save(){
+  var data={lv:saveData.lv,done:saveData.done};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("mastermind",data).catch(function(){});
+}
+var saveData=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("mastermind").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0,changed=false;
+      if(rlv>saveData.lv){saveData.lv=Math.min(rlv,Math.max(0,LEVELS.length-1));changed=true;}
+      if(remote.done&&typeof remote.done==="object"){
+        for(var k in remote.done){
+          if(remote.done[k]&&!saveData.done[k]){saveData.done[k]=1;changed=true;}
+        }
+      }
+      if(changed){save();startLevel(Math.min(saveData.lv,LEVELS.length-1));}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var cur=0,slots=4,colors=4,maxTries=8,secret=[],guesses=[],input=[],sel=0,over=false,won=false;
+var doneSave=saveData.done;
+var boardEl=document.getElementById("board"),paletteEl=document.getElementById("palette"),msgEl=document.getElementById("msg");
+function $(id){return document.getElementById(id);}
+function say(t,cls){msgEl.textContent=t;msgEl.className="msg"+(cls?" "+cls:"");}
+/* ---------- 构建 ---------- */
+function startLevel(n){
+  cur=Math.max(0,Math.min(n,LEVELS.length-1));
+  var L=LEVELS[cur];
+  slots=L.slots;colors=L.colors;maxTries=L.maxTries;secret=L.secret.slice();
+  guesses=[];input=[];
+  for(var i=0;i<slots;i++)input.push(-1);
+  sel=0;over=false;won=false;
+  $("btnNext").hidden=true;
+  say("第 "+(cur+1)+" 关 · "+L.name+" · "+slots+" 位密码 / "+maxTries+" 轮");
+  renderAll();
+}
+function mkSlots(){
+  var box=document.createElement("div");
+  box.className="slots";
+  box.style.gridTemplateColumns="repeat("+slots+",1fr)";
+  return box;
+}
+function fillSlot(el,v){
+  if(v>=0){
+    el.className="slot filled cb"+v;
+    el.textContent=String(v+1);
+  }else{
+    el.className="slot";
+    el.textContent="";
+  }
+}
+function mkGuessRow(r){
+  var g=guesses[r];
+  var row=document.createElement("div");row.className="row old";
+  var no=document.createElement("span");no.className="no";no.textContent=String(r+1);
+  var box=mkSlots();
+  for(var i=0;i<slots;i++){
+    var s=document.createElement("div");s.className="slot";fillSlot(s,g.g[i]);box.appendChild(s);
+  }
+  var pegs=document.createElement("div");pegs.className="pegs";
+  for(var p=0;p<slots;p++){
+    var peg=document.createElement("span");
+    peg.className="peg"+(p<g.b?" b":(p<g.b+g.w?" w":""));
+    pegs.appendChild(peg);
+  }
+  row.appendChild(no);row.appendChild(box);row.appendChild(pegs);
+  return row;
+}
+function mkCurRow(){
+  var row=document.createElement("div");row.className="row cur";
+  var no=document.createElement("span");no.className="no";no.textContent=String(guesses.length+1);
+  var box=mkSlots();
+  for(var i=0;i<slots;i++){
+    var s=document.createElement("div");s.className="slot";fillSlot(s,input[i]);
+    (function(idx){s.addEventListener("click",function(){tapSlot(idx);});})(i);
+    box.appendChild(s);
+  }
+  row.appendChild(no);row.appendChild(box);
+  return row;
+}
+function mkResultRow(){
+  var row=document.createElement("div");row.className="row result";
+  var no=document.createElement("span");no.className="no";no.textContent="答";
+  var box=mkSlots();
+  for(var i=0;i<slots;i++){
+    var s=document.createElement("div");s.className="slot";fillSlot(s,secret[i]);box.appendChild(s);
+  }
+  row.appendChild(no);row.appendChild(box);
+  return row;
+}
+function renderBoard(){
+  boardEl.innerHTML="";
+  for(var r=0;r<guesses.length;r++)boardEl.appendChild(mkGuessRow(r));
+  if(over){if(!won)boardEl.appendChild(mkResultRow());}
+  else boardEl.appendChild(mkCurRow());
+}
+function renderPalette(){
+  paletteEl.innerHTML="";
+  var cols=colors<=4?4:Math.ceil(colors/2);
+  paletteEl.style.gridTemplateColumns="repeat("+cols+",1fr)";
+  for(var c=0;c<colors;c++){
+    var b=document.createElement("button");
+    b.type="button";
+    b.className="chip cb"+c+(c===sel?" sel":"");
+    b.setAttribute("aria-pressed",c===sel?"true":"false");
+    b.setAttribute("aria-label","颜色 "+String(c+1));
+    b.textContent=String(c+1);
+    (function(idx){b.addEventListener("click",function(){pickColor(idx);});})(c);
+    paletteEl.appendChild(b);
+  }
+}
+function renderStats(){
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stTry").textContent=guesses.length+"/"+maxTries;
+  $("stDone").textContent=String(Object.keys(doneSave).length);
+}
+function updateButtons(){
+  var full=true;
+  for(var i=0;i<slots;i++)if(input[i]<0)full=false;
+  $("btnSubmit").disabled=over||!full;
+  $("btnClear").disabled=over||!full;
+}
+function renderAll(){renderBoard();renderPalette();renderStats();updateButtons();}
+/* ---------- 交互 ---------- */
+function pickColor(c){
+  if(over)return;
+  sel=c;
+  renderPalette();
+}
+function tapSlot(i){
+  if(over)return;
+  input[i]=(input[i]===sel)?-1:sel;
+  renderBoard();updateButtons();
+}
+function feedback(guess,sec){
+  var black=0,white=0,i,gc={},sc={};
+  for(i=0;i<sec.length;i++){
+    if(guess[i]===sec[i]){black++;continue;}
+    gc[guess[i]]=(gc[guess[i]]||0)+1;
+    sc[sec[i]]=(sc[sec[i]]||0)+1;
+  }
+  for(var k in gc)if(sc[k])white+=Math.min(gc[k],sc[k]);
+  return {black:black,white:white};
+}
+function submit(){
+  if(over)return;
+  for(var i=0;i<slots;i++)if(input[i]<0){say("还有空位没填，点圆圈放入颜色");return;}
+  var g=input.slice();
+  var f=feedback(g,secret);
+  guesses.push({g:g,b:f.black,w:f.white});
+  input=[];
+  for(var k=0;k<slots;k++)input.push(-1);
+  if(f.black===slots){
+    over=true;won=true;doneSave[cur]=1;
+    if(cur+1>saveData.lv)saveData.lv=Math.min(cur+1,LEVELS.length-1);
+    save();
+    say("破译成功！共用 "+guesses.length+" 轮","win");
+    $("btnNext").hidden=false;
+    $("btnNext").textContent=cur<LEVELS.length-1?"下一关":"再玩一轮";
+    // 成绩上报（到达关卡，desc：越大越好）
+    if(GB.available)GB.reportScore("mastermind",{metricValue:cur+1}).catch(function(){});
+  }else if(guesses.length>=maxTries){
+    over=true;won=false;save();
+    say("轮数用尽，正确答案如下","lose");
+  }else{
+    say("● "+f.black+" 位置颜色全对 · ○ "+f.white+" 颜色对位置错");
+  }
+  renderAll();
+}
+/* ---------- 按钮 ---------- */
+$("btnClear").addEventListener("click",function(){
+  if(over)return;
+  for(var i=0;i<slots;i++)input[i]=-1;
+  renderBoard();updateButtons();
+});
+$("btnRestart").addEventListener("click",function(){startLevel(cur);});
+$("btnSubmit").addEventListener("click",submit);
+$("btnNext").addEventListener("click",function(){
+  startLevel(cur<LEVELS.length-1?cur+1:0);
+});
+/* ---------- 启动 ---------- */
+startLevel(Math.min(saveData.lv,LEVELS.length-1));
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+</body>
+</html>

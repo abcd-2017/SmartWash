@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>小行星</title>
+<style>
+/*token:GAME-THEME.md §2 基线 + §3 素材（sky/star/field/line）*/
+:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#1E8C5C;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-sky1:#101B30;--g-sky2:#22345C;--g-star:#E9EEF8;--g-field:#9C9488;--g-line:#DCD6CB;color-scheme:light}
+:root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-sky1:#05070D;--g-sky2:#0C1424;--g-star:#8E9AB5;--g-field:#7D766B;--g-line:#A29B90;color-scheme:dark}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;background:var(--g-bg);color:var(--g-text);display:flex;flex-direction:column;align-items:center;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior:none}
+header{width:100%;max-width:430px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px 10px}
+.stats{display:flex;gap:10px;font-size:14px;color:var(--g-muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden}
+.stats span{flex:1;min-width:0}
+.stats b{color:var(--g-primary-deep);font-size:16px;font-variant-numeric:tabular-nums}
+.pbtn{min-width:60px;min-height:44px;border:0;border-radius:10px;background:var(--g-primary);color:var(--g-on-primary);font-size:16px;font-weight:600;padding:0 14px;cursor:pointer;font-family:inherit}
+.pbtn:active{transform:scale(.96)}
+#stage{position:relative;width:100%;max-width:430px;flex:1;min-height:0;touch-action:none;overflow:hidden}
+canvas{display:block;width:100%;height:100%}
+.padbar{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;z-index:3}
+.cluster{display:flex;gap:8px}
+.ctl{min-width:64px;min-height:52px;border:1px solid var(--g-border);border-radius:14px;background:var(--g-surface2);color:var(--g-text);font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent}
+.ctl.fire{background:var(--g-primary);border-color:var(--g-primary);color:var(--g-on-primary)}
+.ctl:active{opacity:.7}
+#toast{position:absolute;left:0;right:0;top:14px;text-align:center;font-size:22px;font-weight:600;color:var(--g-text);opacity:0;transition:opacity .25s;pointer-events:none;z-index:4}
+#toast.show{opacity:.95}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--g-scrim);text-align:center;padding:20px;z-index:5}
+.overlay.hide{display:none}
+.overlay h2{font-size:22px;color:var(--g-primary-deep)}
+.overlay .big{font-size:18px}
+.overlay .small{font-size:12px;color:var(--g-muted);line-height:1.6}
+.btn{min-height:48px;min-width:150px;border:0;border-radius:14px;background:var(--g-primary);color:var(--g-on-primary);font-size:16px;font-weight:600;padding:0 26px;cursor:pointer;font-family:inherit}
+.btn:active{transform:scale(.96)}
+.btn.ghost{background:var(--g-surface2);border:1px solid var(--g-border);color:var(--g-text)}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<header>
+  <div class="stats">
+    <span>分 <b id="hScore">0</b></span>
+    <span>关 <b id="hLevel">1/120</b></span>
+    <span>波 <b id="hWave">1/1</b></span>
+    <span>命 <b id="hLives">3</b></span>
+  </div>
+  <button id="btnPause" class="pbtn">暂停</button>
+</header>
+<div id="stage">
+  <canvas id="cv" role="img" aria-label="小行星游戏画面"></canvas>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div class="padbar">
+    <div class="cluster">
+      <button class="ctl" id="btnRotL" aria-label="左转">⟲ 左转</button>
+      <button class="ctl" id="btnRotR" aria-label="右转">⟳ 右转</button>
+    </div>
+    <div class="cluster">
+      <button class="ctl" id="btnThrust" aria-label="推进">▲ 推进</button>
+      <button class="ctl fire" id="btnFire" aria-label="射击">● 射击</button>
+    </div>
+  </div>
+  <div id="ovStart" class="overlay">
+    <h2>小行星</h2>
+    <div class="big">最高分 <span id="sBest">0</span> · 最远第 <span id="sBestLv">1</span> 关</div>
+    <button id="btnStart" class="btn">开始游戏</button>
+    <div class="small" id="sCont">共 120 关 · 清空全部波次即可过关</div>
+    <div class="small">按住「推进」惯性飞行 · 被撞耗尽生命即失败</div>
+  </div>
+  <div id="ovPause" class="overlay hide" aria-live="assertive">
+    <h2>已暂停</h2>
+    <button id="btnResume" class="btn">继续游戏</button>
+    <div class="small">切到后台会自动暂停</div>
+  </div>
+  <div id="ovClear" class="overlay hide">
+    <h2 id="clearTitle">第 1 关完成</h2>
+    <div class="big">当前得分 <span id="clearScore">0</span></div>
+    <button id="btnNext" class="btn">进入第 2 关</button>
+    <div class="small" id="clearSub"></div>
+  </div>
+  <div id="ovOver" class="overlay hide">
+    <h2>游戏结束</h2>
+    <div class="big">本局得分 <span id="overScore">0</span></div>
+    <div class="small" id="overInfo">最高分 0 · 最远第 1 关</div>
+    <button id="btnRestart" class="btn">重新开始</button>
+    <div class="small">从第 <span id="overLv">1</span> 关重新挑战</div>
+  </div>
+</div>
+<script>
+(function(){
+'use strict';
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 关卡数据：包内默认 + DB 下发（整批替换，任一条非法整批放弃） ========== */
+var DEFAULT_LEVELS=[{"name":"近轨巡航·第1关","waves":1,"seed":104768,"lives":3},{"name":"近轨巡航·第2关","waves":1,"seed":201819,"lives":3},{"name":"近轨巡航·第3关","waves":1,"seed":298870,"lives":3},{"name":"近轨巡航·第4关","waves":1,"seed":395921,"lives":3},{"name":"近轨巡航·第5关","waves":1,"seed":492972,"lives":3},{"name":"近轨巡航·第6关","waves":1,"seed":590023,"lives":3},{"name":"近轨巡航·第7关","waves":1,"seed":687074,"lives":3},{"name":"近轨巡航·第8关","waves":1,"seed":784125,"lives":3},{"name":"近轨巡航·第9关","waves":1,"seed":881176,"lives":3},{"name":"近轨巡航·第10关","waves":1,"seed":978227,"lives":3},{"name":"近轨巡航·第11关","waves":1,"seed":1075278,"lives":3},{"name":"近轨巡航·第12关","waves":1,"seed":1172329,"lives":3}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY="sw.asteroids.v1.levels",LEVELS_VER_KEY="sw.asteroids.v1.levels.ver";
+function parseAsteroidsLevels(res){
+  if(!res||typeof res!=="object"||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={},i;
+  for(i=0;i<res.levels.length;i++){
+    var item=res.levels[i];
+    if(!item||typeof item!=="object")return null;
+    var d;
+    try{d=JSON.parse(item.dataJson)}catch(e){return null}
+    if(!d||typeof d!=="object"||Array.isArray(d))return null;
+    if(typeof d.name!=="string"||!d.name.length||d.name.length>32)return null;
+    if(!isFinite(d.waves)||Math.floor(d.waves)!==d.waves||d.waves<1||d.waves>8)return null;
+    if(!isFinite(d.seed)||Math.floor(d.seed)!==d.seed||d.seed<0||d.seed>2147483647)return null;
+    if(!isFinite(d.lives)||Math.floor(d.lives)!==d.lives||d.lives<1||d.lives>5)return null;
+    var no=parseInt(item.levelNo,10);
+    if(!isFinite(no)||no<1)no=i+1;
+    if(seen[no])return null;
+    seen[no]=true;
+    list.push({no:no,name:d.name,waves:d.waves,seed:d.seed,lives:d.lives});
+  }
+  list.sort(function(a,b){return a.no-b.no});
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("asteroids").then(function(res){
+    var list=parseAsteroidsLevels(res);
+    if(!list||!list.length)return;
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      if(state==="ready"){updateHud();showStart();}
+      else startLevel(cur);
+    }
+  }).catch(function(){});
+}
+
+/* ---------- 存档（本地 + 账号双写，账号更优才覆盖） ---------- */
+var KEY="sw.asteroids.v1";
+function loadSave(){
+  try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&s.lv>=0)return{lv:Math.min(s.lv,LEVELS.length-1),best:parseInt(s.best,10)||0,bestLevel:parseInt(s.bestLevel,10)||0};}catch(e){}
+  return{lv:0,best:0,bestLevel:0};
+}
+function save(){
+  var data={lv:cur,best:best,bestLevel:bestLevel};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("asteroids",data).catch(function(){});
+}
+var saveData=loadSave(),best=saveData.best||0,bestLevel=saveData.bestLevel||0;
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("asteroids").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rl=parseInt(r.lv,10),rb=parseInt(r.best,10),rbl=parseInt(r.bestLevel,10);
+      if(isFinite(rl)&&rl>saveData.lv){saveData.lv=Math.min(rl,LEVELS.length-1);changed=true;}
+      if(isFinite(rb)&&rb>best){best=rb;changed=true;}
+      if(isFinite(rbl)&&rbl>bestLevel){bestLevel=rbl;changed=true;}
+      if(changed){
+        cur=Math.min(saveData.lv,LEVELS.length-1);
+        save();
+        if(state==="ready"){updateHud();showStart();}
+        else startLevel(cur);
+      }
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ========== 确定性初始局面生成（校验器按标记抽取复现） ========== */
+/*AST-CORE-BEGIN*/
+var AST_MW=480,AST_MH=640;
+var AST_RADII={3:46,2:26,1:14};
+var AST_SHIP_HOME={x:240,y:320};
+function astMulberry(seed){
+  seed|=0;
+  return function(){
+    seed=(seed+0x6D2B79F5)|0;
+    var t=Math.imul(seed^(seed>>>15),1|seed);
+    t=(t+Math.imul(t^(t>>>7),61|t))^t;
+    return((t^(t>>>14))>>>0)/4294967296;
+  };
+}
+function astCount(w){return Math.min(3+w,10);}
+function astSpeed(w){return 45+12*w;}
+function astSizes(total){var large=total<=3?total:Math.ceil(total/2);return[large,total-large];}
+function astVerts(rng){
+  var n=9+Math.floor(rng()*3),v=[],i;
+  for(i=0;i<n;i++)v.push(0.72+rng()*0.5);
+  return v;
+}
+function astSpawnWave(seed,w){
+  var rng=astMulberry(((seed>>>0)^Math.imul(w+1,2654435761))>>>0);
+  var total=astCount(w),sizes=astSizes(total),out=[],i,j,r,size,x,y,dx,dy,ok,tries,need;
+  for(i=0;i<total;i++){
+    size=i<sizes[0]?3:2;
+    r=AST_RADII[size];
+    var placed=false;
+    for(tries=0;tries<500;tries++){
+      x=r+4+rng()*(AST_MW-2*r-8);
+      y=r+4+rng()*(AST_MH-2*r-8);
+      dx=x-AST_SHIP_HOME.x;dy=y-AST_SHIP_HOME.y;
+      if(dx*dx+dy*dy<(175+r)*(175+r))continue;
+      ok=true;need=tries<250?12:2;
+      for(j=0;j<out.length;j++){
+        var o=out[j];dx=x-o.x;dy=y-o.y;
+        if(dx*dx+dy*dy<(r+o.r+need)*(r+o.r+need)){ok=false;break}
+      }
+      if(ok){placed=true;break}
+    }
+    if(!placed){
+      for(tries=0;tries<500;tries++){
+        x=r+4+rng()*(AST_MW-2*r-8);
+        y=r+4+rng()*(AST_MH-2*r-8);
+        dx=x-AST_SHIP_HOME.x;dy=y-AST_SHIP_HOME.y;
+        if(dx*dx+dy*dy<(175+r)*(175+r))continue;
+        ok=true;
+        for(j=0;j<out.length;j++){var o2=out[j];dx=x-o2.x;dy=y-o2.y;need=r+o2.r;if(dx*dx+dy*dy<need*need){ok=false;break}}
+        if(ok){placed=true;break}
+      }
+    }
+    if(!placed){x=r+4+rng()*(AST_MW-2*r-8);y=r+4+rng()*(AST_MH-2*r-8);}
+    var ang=rng()*6.283185307179586;
+    var spd=astSpeed(w)*(size===2?1.15:1)*(0.7+0.6*rng());
+    out.push({x:x,y:y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r:r,size:size,
+      rot:rng()*6.283185307179586,va:(rng()-0.5)*1.6,verts:astVerts(rng)});
+  }
+  return out;
+}
+/*AST-CORE-END*/
+
+/* ========== DOM / 调色板 ========== */
+function $(id){return document.getElementById(id)}
+var stage=$("stage"),cv=$("cv"),ctx=cv.getContext("2d");
+var ovStart=$("ovStart"),ovPause=$("ovPause"),ovClear=$("ovClear"),ovOver=$("ovOver");
+var hScore=$("hScore"),hLevel=$("hLevel"),hWave=$("hWave"),hLives=$("hLives");
+var elSBest=$("sBest"),elSBestLv=$("sBestLv"),elSCont=$("sCont");
+var elClearTitle=$("clearTitle"),elClearScore=$("clearScore"),elClearSub=$("clearSub"),btnNext=$("btnNext");
+var elOverScore=$("overScore"),elOverInfo=$("overInfo"),elOverLv=$("overLv");
+var toastEl=$("toast");
+var W=0,H=0,dpr=1,SC=1,OX=0,OY=0,bgGrad=null;
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  var keys=['sky1','sky2','star','field','line','primary','primary-deep','on-primary','surface','surface2','text','muted','faint','border','danger','warning','success'],i;
+  for(i=0;i<keys.length;i++)PAL[keys[i]]=s.getPropertyValue('--g-'+keys[i]).trim();
+  bgGrad=null;
+}
+function bgGradBuild(){bgGrad=ctx.createLinearGradient(0,0,0,H);bgGrad.addColorStop(0,PAL.sky1);bgGrad.addColorStop(1,PAL.sky2);}
+window.__gOnTheme=function(){palLoad();if(W>0)bgGradBuild();};
+palLoad();
+
+/* ========== 状态 ========== */
+var state="ready";   // ready|playing|paused|clear|over
+var cur=Math.min(saveData.lv,LEVELS.length-1),wave=0,lives=3,score=0;
+var ship={x:AST_SHIP_HOME.x,y:AST_SHIP_HOME.y,vx:0,vy:0,a:-Math.PI/2,av:0,invuln:0};
+var asteroids=[],bullets=[],parts=[];
+var fireCd=0,waveTimer=0,toastT=0,elapsed=0;
+var rotIn=0,thrIn=false,fireIn=false,brakeIn=false;
+var stars=[];
+(function(){var r=astMulberry(20261113),i;for(i=0;i<90;i++)stars.push({x:r()*AST_MW,y:r()*AST_MH,s:r()<0.25?2:1,p:r()*6.28});})();
+
+/* ========== 工具 ========== */
+function clamp(v,a,b){return v<a?a:(v>b?b:v)}
+function moveWrap(o,r,dt){
+  var ox=o.x,oy=o.y;
+  o.x+=o.vx*dt;o.y+=o.vy*dt;
+  var sx=0,sy=0;
+  if(o.x<-r)sx=1;else if(o.x>AST_MW+r)sx=-1;
+  if(o.y<-r)sy=1;else if(o.y>AST_MH+r)sy=-1;
+  if(sx){o.x+=sx*(AST_MW+2*r);ox+=sx*(AST_MW+2*r);}
+  if(sy){o.y+=sy*(AST_MH+2*r);oy+=sy*(AST_MH+2*r);}
+  return[ox,oy];
+}
+function segDist2(ax,ay,bx,by,cx,cy){
+  var dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy,t;
+  t=l2>0?((cx-ax)*dx+(cy-ay)*dy)/l2:0;
+  t=clamp(t,0,1);
+  var ex=cx-(ax+dx*t),ey=cy-(ay+dy*t);
+  return ex*ex+ey*ey;
+}
+function spawnPart(x,y,vx,vy,life,color,r){if(parts.length<220)parts.push({x:x,y:y,vx:vx,vy:vy,life:life,max:life,color:color,r:r});}
+function explode(x,y,size){
+  var cols=[PAL.danger,PAL.warning,PAL.text],n=10+size*6,i;
+  for(i=0;i<n;i++){
+    var a=Math.random()*6.283185307179586,sp=40+Math.random()*(60+size*40);
+    spawnPart(x,y,Math.cos(a)*sp,Math.sin(a)*sp,0.5+Math.random()*0.5,cols[i%3],1.5+Math.random()*2);
+  }
+}
+function updParts(dt){
+  for(var i=parts.length-1;i>=0;i--){
+    var p=parts[i];
+    p.x+=p.vx*dt;p.y+=p.vy*dt;
+    var d=Math.exp(-0.6*dt);p.vx*=d;p.vy*=d;
+    p.life-=dt;
+    if(p.life<=0)parts.splice(i,1);
+  }
+}
+
+/* ========== 流程 ========== */
+function hideAll(){ovStart.classList.add("hide");ovPause.classList.add("hide");ovClear.classList.add("hide");ovOver.classList.add("hide");}
+function updateHud(){
+  hScore.textContent=String(score);
+  hLevel.textContent=(cur+1)+"/"+LEVELS.length;
+  hWave.textContent=(wave+1)+"/"+LEVELS[cur].waves;
+  hLives.textContent=String(lives);
+}
+function showToast(t,dur){toastEl.textContent=t;toastEl.classList.add("show");toastT=dur||2.2;}
+function resetShip(){
+  ship.x=AST_SHIP_HOME.x;ship.y=AST_SHIP_HOME.y;ship.vx=0;ship.vy=0;ship.a=-Math.PI/2;ship.av=0;ship.invuln=2;
+  // 重生时把贴得太近的小行星推到 150px 外，避免无敌时间结束后立刻二次撞击
+  var i;
+  for(i=0;i<asteroids.length;i++){
+    var a=asteroids[i];
+    var dx=a.x-AST_SHIP_HOME.x,dy=a.y-AST_SHIP_HOME.y;
+    var d=Math.sqrt(dx*dx+dy*dy);
+    if(d<150){
+      if(d<1){dx=1;dy=0;d=1;}
+      a.x=AST_SHIP_HOME.x+dx/d*150;
+      a.y=AST_SHIP_HOME.y+dy/d*150;
+    }
+  }
+}
+function loadWave(w,silent){
+  wave=w;asteroids.length=0;
+  var list=astSpawnWave(LEVELS[cur].seed,w),i;
+  for(i=0;i<list.length;i++)asteroids.push(list[i]);
+  updateHud();
+  if(!silent&&state==="playing")showToast("第 "+(w+1)+" 波 · "+list.length+" 颗",1.6);
+}
+function startLevel(n){
+  cur=clamp(n,0,LEVELS.length-1);
+  var L=LEVELS[cur];
+  lives=L.lives;score=0;waveTimer=0;fireCd=0;
+  bullets.length=0;parts.length=0;
+  resetShip();
+  loadWave(0,true);
+  state="playing";
+  hideAll();
+  if(cur+1>bestLevel)bestLevel=cur+1;
+  showToast("第 "+(cur+1)+" 关 · "+L.name+" · 共 "+L.waves+" 波",2.4);
+  updateHud();
+  save();
+}
+function levelClear(){
+  state="clear";
+  var bonus=1000+150*wave;
+  score+=bonus;
+  if(score>best)best=score;
+  save();
+  if(GB.available)GB.reportScore("asteroids",{metricValue:Math.min(cur+2,LEVELS.length)}).catch(function(){});
+  elClearTitle.textContent="第 "+(cur+1)+" 关完成";
+  elClearScore.textContent=String(score);
+  elClearSub.textContent="通关奖励 +"+bonus+" · 下一关生命 "+LEVELS[Math.min(cur+1,LEVELS.length-1)].lives;
+  btnNext.textContent=cur<LEVELS.length-1?"进入第 "+(cur+2)+" 关":"再玩一遍";
+  ovClear.classList.remove("hide");
+  updateHud();
+}
+function gameOver(){
+  state="over";
+  var isNew=score>best;
+  if(isNew)best=score;
+  if(cur+1>bestLevel)bestLevel=cur+1;
+  save();
+  if(GB.available)GB.reportScore("asteroids",{metricValue:best,metricExtra:cur+1}).catch(function(){});
+  elOverScore.textContent=String(score);
+  elOverInfo.textContent=(isNew?"新纪录！ ":"")+"最高分 "+best+" · 最远第 "+bestLevel+" 关";
+  elOverLv.textContent=String(cur+1);
+  ovOver.classList.remove("hide");
+  updateHud();
+}
+function loseLife(){
+  lives--;
+  explode(ship.x,ship.y,2);
+  updateHud();
+  if(lives<=0)gameOver();
+  else resetShip();
+}
+function pauseGame(){if(state==="playing"){state="paused";ovPause.classList.remove("hide");rotIn=0;thrIn=fireIn=brakeIn=false;}}
+function resumeGame(){if(state==="paused"){state="playing";ovPause.classList.add("hide");}}
+
+/* ========== 输入 ========== */
+var ctl={l:false,r:false,t:false,f:false},keys={};
+function bindHold(id,key){
+  var el=$(id);
+  function on(e){e.preventDefault();e.stopPropagation();ctl[key]=true;try{el.setPointerCapture(e.pointerId)}catch(err){}}
+  function off(e){e.preventDefault();e.stopPropagation();ctl[key]=false}
+  el.addEventListener("pointerdown",on);
+  el.addEventListener("pointerup",off);
+  el.addEventListener("pointercancel",off);
+  el.addEventListener("lostpointercapture",off);
+}
+bindHold("btnRotL","l");bindHold("btnRotR","r");bindHold("btnThrust","t");bindHold("btnFire","f");
+document.addEventListener("keydown",function(e){
+  keys[e.code]=true;
+  if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Space"].indexOf(e.code)>=0)e.preventDefault();
+});
+document.addEventListener("keyup",function(e){keys[e.code]=false});
+window.addEventListener("blur",function(){keys={};ctl.l=ctl.r=ctl.t=ctl.f=false;});
+stage.addEventListener("contextmenu",function(e){e.preventDefault();});
+function readCtl(){
+  var kl=(ctl.l||keys.ArrowLeft||keys.KeyA)?1:0;
+  var kr=(ctl.r||keys.ArrowRight||keys.KeyD)?1:0;
+  rotIn=kr-kl;
+  thrIn=!!(ctl.t||keys.ArrowUp||keys.KeyW);
+  fireIn=!!(ctl.f||keys.Space);
+  brakeIn=!!(keys.ArrowDown||keys.KeyS);
+}
+
+/* ========== 物理 / 判定 ========== */
+function shoot(){
+  var nx=ship.x+Math.cos(ship.a)*16,ny=ship.y+Math.sin(ship.a)*16;
+  bullets.push({x:nx,y:ny,px:nx,py:ny,vx:ship.vx+Math.cos(ship.a)*540,vy:ship.vy+Math.sin(ship.a)*540,life:0.9});
+  fireCd=0.16;
+}
+function destroyAst(idx){
+  var a=asteroids[idx],k,childSize;
+  score+=a.size===3?20:(a.size===2?50:100);
+  explode(a.x,a.y,a.size);
+  if(a.size>1){
+    childSize=a.size-1;
+    var baseAng=Math.atan2(a.vy,a.vx),sp0=Math.sqrt(a.vx*a.vx+a.vy*a.vy)*1.35;
+    for(k=0;k<2;k++){
+      var ang=baseAng+(k===0?-1:1)*(0.5+Math.random()*0.5);
+      var sp=sp0*(0.85+Math.random()*0.3);
+      asteroids.push({x:a.x,y:a.y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,r:AST_RADII[childSize],size:childSize,
+        rot:Math.random()*6.283185307179586,va:(Math.random()-0.5)*2,verts:astVerts(Math.random)});
+    }
+  }
+  asteroids.splice(idx,1);
+  updateHud();
+}
+function collideBullets(){
+  for(var i=bullets.length-1;i>=0;i--){
+    var b=bullets[i],hit=-1,j;
+    for(j=0;j<asteroids.length;j++){
+      var a=asteroids[j],rr=a.r+2;
+      if(segDist2(b.px,b.py,b.x,b.y,a.x,a.y)<=rr*rr){hit=j;break}
+    }
+    if(hit>=0){destroyAst(hit);bullets.splice(i,1);}
+  }
+}
+function collideShip(ox,oy){
+  for(var j=0;j<asteroids.length;j++){
+    var a=asteroids[j],rr=a.r+10;
+    if(segDist2(ox,oy,ship.x,ship.y,a.x,a.y)<=rr*rr){loseLife();return}
+  }
+}
+function step(dt){
+  elapsed+=dt;
+  var tgt=rotIn*3.4;
+  ship.av+=(tgt-ship.av)*Math.min(1,dt*9);
+  ship.a+=ship.av*dt;
+  if(thrIn){
+    ship.vx+=Math.cos(ship.a)*280*dt;
+    ship.vy+=Math.sin(ship.a)*280*dt;
+  }
+  if(brakeIn){var bd=Math.exp(-2.2*dt);ship.vx*=bd;ship.vy*=bd;}
+  var damp=Math.exp(-0.10*dt);
+  ship.vx*=damp;ship.vy*=damp;
+  var sp=Math.sqrt(ship.vx*ship.vx+ship.vy*ship.vy);
+  if(sp>320){ship.vx*=320/sp;ship.vy*=320/sp;}
+  var prev=moveWrap(ship,12,dt);
+  if(ship.invuln>0)ship.invuln-=dt;
+
+  var i;
+  for(i=bullets.length-1;i>=0;i--){
+    var b=bullets[i];
+    b.px=b.x;b.py=b.y;
+    b.x+=b.vx*dt;b.y+=b.vy*dt;
+    if(b.x<-2)b.x+=AST_MW+4;else if(b.x>AST_MW+2)b.x-=AST_MW+4;
+    if(b.y<-2)b.y+=AST_MH+4;else if(b.y>AST_MH+2)b.y-=AST_MH+4;
+    b.life-=dt;
+    if(b.life<=0)bullets.splice(i,1);
+  }
+  fireCd-=dt;
+  if(fireIn&&fireCd<=0&&bullets.length<7)shoot();
+
+  for(i=0;i<asteroids.length;i++){
+    var a=asteroids[i];
+    moveWrap(a,a.r,dt);
+    a.rot+=a.va*dt;
+  }
+
+  collideBullets();
+  if(state==="playing"&&ship.invuln<=0)collideShip(prev[0],prev[1]);
+
+  updParts(dt);
+
+  if(asteroids.length===0&&state==="playing"){
+    if(waveTimer<=0){
+      waveTimer=1.2;
+      if(wave+1<LEVELS[cur].waves)showToast("第 "+(wave+1)+" 波清空 · 准备",1.2);
+      else showToast("全部波次清空！",1.2);
+    }
+    waveTimer-=dt;
+    if(waveTimer<=0){
+      if(wave+1<LEVELS[cur].waves)loadWave(wave+1,false);
+      else levelClear();
+    }
+  }
+}
+
+/* ========== 绘制 ========== */
+function drawStars(){
+  for(var i=0;i<stars.length;i++){
+    var st=stars[i];
+    ctx.globalAlpha=0.25+0.55*Math.abs(Math.sin(elapsed*0.8+st.p));
+    ctx.fillStyle=PAL.star;
+    ctx.fillRect(st.x,st.y,st.s,st.s);
+  }
+  ctx.globalAlpha=1;
+}
+function drawAsteroids(){
+  for(var i=0;i<asteroids.length;i++){
+    var a=asteroids[i],n=a.verts.length,j;
+    ctx.save();
+    ctx.translate(a.x,a.y);
+    ctx.rotate(a.rot);
+    ctx.beginPath();
+    for(j=0;j<n;j++){
+      var ang=j/n*6.283185307179586,rr=a.r*a.verts[j];
+      if(j===0)ctx.moveTo(Math.cos(ang)*rr,Math.sin(ang)*rr);
+      else ctx.lineTo(Math.cos(ang)*rr,Math.sin(ang)*rr);
+    }
+    ctx.closePath();
+    ctx.fillStyle=PAL.field;
+    ctx.fill();
+    ctx.strokeStyle=PAL.line;
+    ctx.lineWidth=a.size===1?1.5:2;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawBullets(){
+  ctx.fillStyle=PAL.success;
+  for(var i=0;i<bullets.length;i++){
+    ctx.beginPath();
+    ctx.arc(bullets[i].x,bullets[i].y,2.5,0,6.283185307179586);
+    ctx.fill();
+  }
+}
+function drawParts(){
+  for(var i=0;i<parts.length;i++){
+    var p=parts[i];
+    ctx.globalAlpha=Math.max(0,p.life/p.max);
+    ctx.fillStyle=p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,6.283185307179586);
+    ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+function drawShip(){
+  if(state==="over")return;
+  if(ship.invuln>0&&Math.floor(ship.invuln*8)%2===0)return;
+  ctx.save();
+  ctx.translate(ship.x,ship.y);
+  ctx.rotate(ship.a);
+  if(thrIn&&state==="playing"){
+    var fl=10+Math.random()*8;
+    ctx.fillStyle=PAL.warning;
+    ctx.beginPath();ctx.moveTo(-5,9);ctx.lineTo(5,9);ctx.lineTo(0,9+fl);ctx.closePath();ctx.fill();
+    ctx.fillStyle=PAL.onPrimary;
+    ctx.beginPath();ctx.moveTo(-2.5,9);ctx.lineTo(2.5,9);ctx.lineTo(0,9+fl*0.55);ctx.closePath();ctx.fill();
+  }
+  ctx.fillStyle=PAL.primary;
+  ctx.strokeStyle=PAL.primaryDeep;
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,-14);ctx.lineTo(-10,10);ctx.lineTo(0,5);ctx.lineTo(10,10);ctx.closePath();
+  ctx.fill();ctx.stroke();
+  ctx.fillStyle=PAL.onPrimary;
+  ctx.beginPath();ctx.arc(0,-2,3,0,6.283185307179586);ctx.fill();
+  ctx.restore();
+}
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  if(!bgGrad)bgGradBuild();
+  ctx.fillStyle=bgGrad;
+  ctx.fillRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(OX,OY);
+  ctx.scale(SC,SC);
+  ctx.beginPath();ctx.rect(0,0,AST_MW,AST_MH);ctx.clip();
+  drawStars();
+  drawAsteroids();
+  drawBullets();
+  drawParts();
+  drawShip();
+  ctx.restore();
+  ctx.strokeStyle=PAL.border;
+  ctx.lineWidth=2;
+  ctx.strokeRect(1,1,AST_MW-2,AST_MH-2);
+}
+
+/* ========== 主循环 ========== */
+var lastT=performance.now();
+function frame(now){
+  requestAnimationFrame(frame);
+  var dt=(now-lastT)/1000;
+  lastT=now;
+  if(!(dt>0))dt=0;
+  if(dt>0.05)dt=0.05;
+  if(state==="playing"){readCtl();step(dt);}
+  else{rotIn=0;thrIn=false;fireIn=false;brakeIn=false;}
+  if(toastT>0){toastT-=dt;if(toastT<=0)toastEl.classList.remove("show");}
+  draw();
+}
+
+/* ========== 尺寸 ========== */
+function resize(){
+  var r=stage.getBoundingClientRect();
+  W=Math.max(1,r.width);H=Math.max(1,r.height);
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  SC=Math.min(W/AST_MW,H/AST_MH);
+  OX=(W-AST_MW*SC)/2;
+  OY=(H-AST_MH*SC)/2;
+  bgGrad=null;
+}
+window.addEventListener("resize",resize);
+window.addEventListener("orientationchange",resize);
+
+/* ========== 按钮 ========== */
+$("btnStart").addEventListener("click",function(){startLevel(cur);});
+$("btnRestart").addEventListener("click",function(){startLevel(cur);});
+btnNext.addEventListener("click",function(){startLevel(cur<LEVELS.length-1?cur+1:0);});
+$("btnResume").addEventListener("click",resumeGame);
+$("btnPause").addEventListener("click",function(){
+  if(state==="playing")pauseGame();
+  else if(state==="paused")resumeGame();
+});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden)pauseGame();
+});
+
+/* ========== 启动 ========== */
+function showStart(){
+  elSBest.textContent=String(best);
+  elSBestLv.textContent=String(bestLevel);
+  elSCont.textContent=saveData.lv>0?("将从第 "+(Math.min(saveData.lv,LEVELS.length-1)+1)+" 关继续"):"共 "+LEVELS.length+" 关 · 清空全部波次即可过关";
+  ovStart.classList.remove("hide");
+}
+resize();
+updateHud();
+showStart();
+requestAnimationFrame(frame);
+syncLevelsFromServer();
+syncSaveFromServer();
+})();
+</script>
+</body>
+</html>
