@@ -77,6 +77,7 @@
         <el-form-item class="filter-end">
           <el-button type="primary" @click="handleCreate">新增寄存柜</el-button>
           <el-button @click="handleBatchCreate">批量新增</el-button>
+          <el-button @click="handleGenerateTagsForSchool">生成柜码标签</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -107,9 +108,10 @@
         <el-table-column prop="lastUsedAt" label="最后使用时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.lastUsedAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link size="small" @click="handleOpenLockerTag(row)">柜码</el-button>
             <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -243,12 +245,33 @@
         >
       </template>
     </el-dialog>
+
+    <!-- 柜码标签打印弹窗：A4 网格排版（学校/柜号 + 二维码 + 扫码地址），借 ATA「生成→排版→打印」玩法 -->
+    <el-dialog title="柜码标签" v-model="tagDialogVisible" width="860px" class="locker-tag-dialog">
+      <div id="locker-tag-print">
+        <div class="tag-sheet-title">{{ tagSchoolName }} · 储物柜资产码标签</div>
+        <div class="tag-grid">
+          <div v-for="item in tagItems" :key="item.lockerId" class="tag-card">
+            <div class="tag-school">{{ tagSchoolName }}</div>
+            <div class="tag-number">{{ item.lockerNumber }} 号柜</div>
+            <img v-if="item.qrDataUrl" :src="item.qrDataUrl" class="tag-qr" alt="柜码二维码" />
+            <div class="tag-url">{{ item.shortUrl }}</div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <span class="tag-count">共 {{ tagItems.length }} 张 · 建议用 A4 不干胶纸打印后裁剪贴柜</span>
+        <el-button @click="tagDialogVisible = false">关闭</el-button>
+        <el-button type="primary" :loading="tagPrinting" @click="printTagSheet">打印</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
+import QRCode from 'qrcode';
 import {
   getLockerStatus,
   getLockerList,
@@ -257,6 +280,7 @@ import {
   deleteLocker,
   batchAddLocker,
 } from '@/api/locker';
+import { generateLockerTag, generateLockerTagsForSchool } from '@/api/lockerTag';
 import { schoolOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
 import { lockerStatusTagType } from '@/constants/dict';
@@ -521,6 +545,84 @@ const handleDelete = async (row) => {
 const formatStatus = (status) => {
   return statusOptions.value[status] || '未知状态';
 };
+
+// ==================== 柜码标签（一物一码 M3） ====================
+// 柜码 = 短码内核活码（别名 L{lockerId}，幂等）：扫码 /web/t/{code} 302 → 公开落地页 /l/{lockerId}
+const tagDialogVisible = ref(false);
+const tagItems = ref([]); // [{lockerId, lockerNumber, code, shortUrl, qrDataUrl}]
+const tagSchoolName = ref('');
+const tagPrinting = ref(false);
+
+// 单柜生成柜码并打开打印弹窗（幂等：重复生成复用既有活码，不重复建行）
+const handleOpenLockerTag = async (row) => {
+  try {
+    const vo = await generateLockerTag(row.lockerId);
+    await openTagDialog(
+      [
+        {
+          lockerId: row.lockerId,
+          lockerNumber: row.lockerNumber,
+          code: vo.code,
+          shortUrl: vo.shortUrl,
+        },
+      ],
+      schoolMap.value[row.schoolId]?.schoolName || ''
+    );
+  } catch (error) {
+    logger.error('柜码生成失败:', `id=${row.lockerId}`, error);
+    ElMessage.error(error.message || '柜码生成失败');
+  }
+};
+
+// 按校批量生成（需先按学校筛选；逐柜幂等含既有复用项，一次出整校标签）
+const handleGenerateTagsForSchool = async () => {
+  const schoolId = listQuery.schoolId;
+  if (!schoolId) {
+    ElMessage.warning('请先在搜索区选择学校，再批量生成柜码标签');
+    return;
+  }
+  const confirmed = await useConfirm(
+    `确认为「${schoolMap.value[schoolId]?.schoolName || schoolId}」的全部储物柜生成柜码标签吗？已生成的柜子将复用原有码。`
+  );
+  if (!confirmed) return;
+  try {
+    const items = await generateLockerTagsForSchool(schoolId);
+    await openTagDialog(items, schoolMap.value[schoolId]?.schoolName || '');
+    ElMessage.success(`已就绪 ${items.length} 张柜码标签`);
+  } catch (error) {
+    logger.error('批量生成柜码失败:', `schoolId=${schoolId}`, error);
+    ElMessage.error(error.message || '批量生成柜码失败');
+  }
+};
+
+// 打开弹窗并生成二维码 DataURL（qrcode 库浏览器端本地生成，不走后端）
+const openTagDialog = async (items, schoolName) => {
+  tagSchoolName.value = schoolName;
+  tagItems.value = [];
+  tagPrinting.value = false;
+  tagDialogVisible.value = true;
+  try {
+    tagItems.value = await Promise.all(
+      items.map(async (item) => ({
+        ...item,
+        qrDataUrl: item.shortUrl
+          ? await QRCode.toDataURL(item.shortUrl, { width: 240, margin: 1 })
+          : '',
+      }))
+    );
+  } catch (error) {
+    logger.error('二维码生成失败:', error);
+    ElMessage.error('二维码生成失败，请重试');
+  }
+};
+
+// 打印（@media print 仅保留 #locker-tag-print 排版区）
+const printTagSheet = async () => {
+  await nextTick();
+  tagPrinting.value = true;
+  window.print();
+  tagPrinting.value = false;
+};
 </script>
 
 <style scoped>
@@ -539,5 +641,102 @@ const formatStatus = (status) => {
   color: var(--text-primary);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+/* 标签排版（屏显）：4 列网格，卡片即裁剪边界 */
+.tag-sheet-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.tag-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-height: 460px;
+  overflow: auto;
+}
+
+.tag-card {
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 学校/柜号：柜号等宽 tabular nums（DESIGN.md mono 规则） */
+.tag-school {
+  font-size: 12px;
+  color: var(--text-secondary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-number {
+  font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tag-qr {
+  width: 110px;
+  height: 110px;
+}
+
+.tag-url {
+  font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  color: var(--text-secondary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-count {
+  margin-right: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+</style>
+
+<style>
+/* 打印（非 scoped：需作用到 body 层级）——仅保留标签排版区，A4 网格裁剪贴柜 */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #locker-tag-print,
+  #locker-tag-print * {
+    visibility: visible !important;
+  }
+  #locker-tag-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .tag-grid {
+    max-height: none;
+    overflow: visible;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .tag-card {
+    width: 25%;
+    box-sizing: border-box;
+    break-inside: avoid;
+  }
 }
 </style>

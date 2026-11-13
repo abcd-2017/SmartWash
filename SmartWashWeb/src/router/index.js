@@ -28,6 +28,38 @@ const routes = [
     },
   },
   {
+    // 阅后即焚公开查看页（私密文本一次性揭示）：免登录匿名访问，码即凭证。
+    // 独立可达，不挂 Layout、不进导航菜单；:code 可选——无码访问时进入页提供输码表单
+    path: '/s/:code?',
+    name: 'SecretView',
+    component: () => import('@/views/secret/SecretView.vue'),
+    meta: {
+      title: '阅后即焚',
+      requiresAuth: false,
+    },
+  },
+  {
+    // 柜码公开落地页（一物一码 M3）：柜上二维码 → /web/t/{code} 302 → 本页。
+    // 免登录匿名访问；路由携带 lockerId，公开解析 API 别名即 L{lockerId}
+    path: '/l/:lockerId?',
+    name: 'LockerTagLanding',
+    component: () => import('@/views/lockertag/LockerTagLanding.vue'),
+    meta: {
+      title: '智能储物柜',
+      requiresAuth: false,
+    },
+  },
+  {
+    // 物品标签公开寻物页（一物一码 M2）：捡到物品扫码直达，免登录匿名访问
+    path: '/tag/:code?',
+    name: 'AssetTagLanding',
+    component: () => import('@/views/assettag/AssetTagLanding.vue'),
+    meta: {
+      title: '寻物启事',
+      requiresAuth: false,
+    },
+  },
+  {
     path: '/',
     component: Layout,
     children: [

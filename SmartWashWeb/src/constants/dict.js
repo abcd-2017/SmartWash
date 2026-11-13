@@ -37,6 +37,16 @@ export const LOCKER_STATUS_TAG_TYPES = {
   2: 'warning', // 故障
 };
 
+/** 柜子状态 → 文案（公开落地页等无后端字典下发场景使用；未知值兜底） */
+export const LOCKER_STATUS_TEXT = {
+  0: '空闲',
+  1: '使用中',
+  2: '故障',
+};
+
+/** 柜子状态文案（未知状态兜底） */
+export const lockerStatusText = (status) => LOCKER_STATUS_TEXT[status] || '未知状态';
+
 /** 充值类型选项（搜索下拉用） */
 export const RECHARGE_TYPE_OPTIONS = [
   { value: '1', label: '微信支付' },
@@ -99,6 +109,9 @@ export const SHORT_CODE_CONTENT_TYPE_OPTIONS = [
   { value: 3, label: '交付箱' },
   { value: 4, label: '图床' },
   { value: 5, label: '时间胶囊' },
+  { value: 6, label: '设备投递' },
+  { value: 7, label: '私密文本' },
+  { value: 8, label: '物品标签' },
 ];
 
 /** 短码内容类型 → 文案 */
@@ -108,6 +121,9 @@ export const SHORT_CODE_CONTENT_TYPE_TEXT = {
   3: '交付箱',
   4: '图床',
   5: '时间胶囊',
+  6: '设备投递',
+  7: '私密文本',
+  8: '物品标签',
 };
 
 /** 短码内容类型 → el-tag 类型 */
@@ -117,7 +133,50 @@ export const SHORT_CODE_CONTENT_TYPE_TAG_TYPES = {
   3: 'warning',
   4: 'danger',
   5: 'info',
+  6: 'info',
+  7: 'danger',
+  8: 'success',
 };
+
+/** 物品标签寻物状态 → 文案（后端 status：0 正常 / 1 寻物中 / 2 已寻回） */
+export const ASSET_TAG_STATUS_TEXT = {
+  0: '正常',
+  1: '寻物中',
+  2: '已寻回',
+};
+
+/** 物品标签寻物状态 → el-tag 类型 */
+export const ASSET_TAG_STATUS_TAG_TYPES = {
+  0: 'info',
+  1: 'danger',
+  2: 'success',
+};
+
+/** 物品标签寻物状态文案（未知状态兜底） */
+export const assetTagStatusText = (status) => ASSET_TAG_STATUS_TEXT[status] || '未知';
+
+/** 物品标签寻物状态标签配色 */
+export const assetTagStatusTagType = (status) => dictValue(ASSET_TAG_STATUS_TAG_TYPES, status);
+
+/** 私密文本（阅后即焚）状态 → 文案（后端 SecretState：ACTIVE/BURNED/EXPIRED） */
+export const SECRET_STATE_TEXT = {
+  ACTIVE: '未领取',
+  BURNED: '已焚毁',
+  EXPIRED: '已过期',
+};
+
+/** 私密文本状态 → el-tag 类型 */
+export const SECRET_STATE_TAG_TYPES = {
+  ACTIVE: 'success',
+  BURNED: 'danger',
+  EXPIRED: 'warning',
+};
+
+/** 私密文本状态文案（未知状态兜底） */
+export const secretStateText = (state) => SECRET_STATE_TEXT[state] || '未知';
+
+/** 私密文本状态标签配色 */
+export const secretStateTagType = (state) => dictValue(SECRET_STATE_TAG_TYPES, state);
 
 /** 短码可见性 → 文案（后端 isPublic：1公开 2私有） */
 export const SHORT_CODE_VISIBILITY_TEXT = {

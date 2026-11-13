@@ -59,7 +59,21 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="target" label="目标链接" min-width="240" show-overflow-tooltip />
+        <el-table-column label="目标链接" min-width="240" show-overflow-tooltip>
+          <template #default="{ row }">
+            <!-- 私密文本无目标链接（内容不对管理端展示） -->
+            <span v-if="row.contentType === 7">—</span>
+            <span v-else>{{ row.target }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="秘密状态" min-width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.contentType === 7" :type="secretStateTagType(row.secretState)">
+              {{ secretStateText(row.secretState) }}
+            </el-tag>
+            <span v-else>—</span>
+          </template>
+        </el-table-column>
         <el-table-column label="归属人手机号" min-width="130">
           <template #default="{ row }">{{ row.ownerPhone || '-' }}</template>
         </el-table-column>
@@ -123,7 +137,19 @@
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="目标链接">
-              <span class="break-all">{{ detail.target }}</span>
+              <span v-if="detail.contentType === 7">—</span>
+              <span v-else class="break-all">{{ detail.target }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="detail.contentType === 7" label="秘密状态">
+              <el-tag :type="secretStateTagType(detail.secretState)">
+                {{ secretStateText(detail.secretState) }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="detail.contentType === 7" label="焚毁时间">
+              {{ formatTime(detail.burnedAt) }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="detail.contentType === 7" label="内容">
+              <span class="privacy-note">不对管理端展示（隐私红线）</span>
             </el-descriptions-item>
             <el-descriptions-item label="归属人ID">
               {{ detail.ownerUserId ?? '-' }}
@@ -195,6 +221,8 @@ import {
   shortCodeContentTypeTagType,
   shortCodeVisibilityText,
   shortCodeVisibilityTagType,
+  secretStateText,
+  secretStateTagType,
 } from '@/constants/dict';
 
 // 过期判断：expireAt 为空表示永不过期
@@ -300,5 +328,11 @@ onMounted(() => {
 
 .break-all {
   word-break: break-all;
+}
+
+/* 隐私红线提示：管理端永不展示私密文本内容（含密文） */
+.privacy-note {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 </style>
