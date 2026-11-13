@@ -8,7 +8,8 @@
 //   login / register / setting / recharge / recharge-record / coupon / order(query tab) /
 //   order-detail/{orderId}（鸿蒙端内：桌面洗衣卡片点击直达详情，安卓无此入口） /
 //   laundry / pickup / divination / divination-history / toolbox-short-code / delivery /
-//   t/{code} / game-center / lab / review / subscription / ai-work / points / messages / web(内建)
+//   t/{code} / game-center / lab / review / subscription / ai-work / points / messages /
+//   dining（吃啥：无路径 → 域首页；order/{orderId}?t= → 加入入口页）/ web(内建)
 //
 // 未实现域的兜底（对齐「先兜底实现」排期）：
 //   后端 workbench_entry 种子对全部端统一下发这些卡片（无 platform 过滤），未落地域注册到
@@ -28,6 +29,8 @@ import { OrderStatusList } from '../../constant/ShowOrderStatus'
 // 鸿蒙单模块无编译层界：t/{code} 需要构造详情页既有参数类（ToolboxShortCodeDetailParam），
 // 对齐安卓由 toolbox 域贡献者自持参数构造的职责划分
 import { ToolboxShortCodeDetailParam } from '../../feature/toolbox/api'
+// dining 域深链参数（order/{orderId}?t= → 加入入口页），职责同上
+import { DiningOrderJoinParam } from '../../feature/dining/api'
 import { DeepLinkRouteLookup, DeepLinkRouteTarget } from './DeepLinkParser'
 
 /** 短链码规则：4-16 位字母数字（URL path 段安全集，对齐安卓 ToolboxDeepLinkModule.SHORT_CODE_REGEX） */
@@ -89,6 +92,32 @@ function buildHostRoutes(): Map<string, DeepLinkRouteTarget> {
 }
 
 /**
+ * dining/{orderId} 带参形态：`order/{orderId}` + query `t` → 加入入口页（DiningOrderJoin）；
+ * 无路径 / 非法 orderId → 域首页订单列表（对齐安卓 DiningDeepLinkModule 的降级策略）。
+ * query `t` 大小写敏感（token 由创建响应下发，重置后旧值作废；缺失按非法参数走列表兜底）。
+ */
+function resolveDiningTarget(pathSegments: string[], query: Map<string, string>): DeepLinkRouteTarget | null {
+  if (pathSegments.length === 0) {
+    return { routeName: RouteNames.DINING_ORDER_LIST, param: null }
+  }
+  if (pathSegments.length !== 2 || pathSegments[0] !== 'order') {
+    return null
+  }
+  const orderId = Number(pathSegments[1])
+  if (!Number.isInteger(orderId) || orderId <= 0) {
+    return null
+  }
+  const token = query.get('t') ?? ''
+  if (token.trim().length === 0) {
+    return null
+  }
+  const param = new DiningOrderJoinParam()
+  param.orderId = orderId
+  param.token = token
+  return { routeName: RouteNames.DINING_ORDER_JOIN, param: param }
+}
+
+/**
  * host → 路由目标查找（供 DeepLinkParser.parse 的 routeLookup 消费）。
  * 带参 host（order/t）在表外按参数动态构造目标，参数校验失败返回 null。
  *
@@ -107,6 +136,10 @@ export const lookup: DeepLinkRouteLookup = (host: string, pathSegments: string[]
   }
   if (host === 't') {
     return resolveShortCodeDetail(pathSegments)
+  }
+  // dining：无路径 → 域首页；order/{orderId}?t= → 加入入口页（DiningOrderJoin）
+  if (host === 'dining') {
+    return resolveDiningTarget(pathSegments, query)
   }
   const fixed = HOST_ROUTES.get(host)
   return fixed !== undefined ? fixed : null
