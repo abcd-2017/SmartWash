@@ -13,6 +13,7 @@
    数据池换（翻页/搜索）不重放进度条；路由每次进入该页重新挂载时自然播放 */
 .filter-container,
 .summary-card,
+.stat-card,
 .table-card {
   animation: page-fade-in-up var(--motion-slow) var(--ease-decelerate) both;
 }
@@ -145,3 +146,19 @@
   font-size: 14px;
   color: var(--text-secondary);
 }
+/* impeccable generate 48b6820f: accepted variant 1 */
+/* v1 冗余合并：名称+描述两行单元格，去除截断的描述列 */
+div.table-card .laundry-item {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+}
+div.table-card .laundry-item__name {
+  font-size: 14px; font-weight: 500; color: var(--text-primary); line-height: 1.4;
+}
+div.table-card .laundry-item__desc {
+  font-size: 12px; color: var(--text-secondary); line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* impeccable generate abfc9b70: accepted variant 1 */
+/* v1 层级：金额 600 字重成为扫读锚点，支付ID/时间降为次级 */
+div.table-card .pay-amount { font-weight: 600; }
+div.table-card .el-table .col-subtle .cell { color: var(--text-secondary); font-size: 13px; }
