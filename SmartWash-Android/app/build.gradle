@@ -165,6 +165,8 @@ dependencies {
     //订单域实现（T6.1）：订单网络链路（OrderServiceApi/OrderRepository）+ 订单页迁入；
     //app 壳仅剩 NavHost 页面注册（OrderPage，T8.1 拆 NavGraphBuilder 聚合后摘除）
     implementation project(":feature:order:impl")
+    // 家庭点单（diningGraph 聚合；入口走深链 smartwash://dining 与后续工作台卡片，无底栏入口）
+    implementation project(":feature:dining:impl")
 
     //支付域对外契约（T6.2，含充值）：仅 PaymentRoute 路由常量（零跨模块数据消费）；
     //PageConstant 支付/充值四路由委托本模块，order-impl/user-impl 跨域跳转同源取值

@@ -345,6 +345,29 @@ const routes = [
           requiresAuth: true,
         },
       },
+      // ===== 家庭点单（dining 域）=====
+      {
+        path: '/dining/categories',
+        name: 'DiningCategoryList',
+        component: () => import('@/views/dining/DiningCategoryList.vue'),
+        meta: {
+          title: '分类管理',
+          showInMenu: true,
+          icon: 'Dish',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/dining/recipes',
+        name: 'DiningRecipeList',
+        component: () => import('@/views/dining/DiningRecipeList.vue'),
+        meta: {
+          title: '菜谱管理',
+          showInMenu: true,
+          icon: 'ForkSpoon',
+          requiresAuth: true,
+        },
+      },
     ],
   },
   {

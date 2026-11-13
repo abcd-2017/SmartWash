@@ -40,7 +40,7 @@ public class WebNoticeController {
         return Result.ok(noticeService.pageInbox(from, user.getUserId()));
     }
 
-    @Operation(summary = "未读数", description = "notice 总数 − 当前用户已读数（懒创建口径，两个 COUNT 相减）")
+    @Operation(summary = "未读数", description = "可见公告数（广播或定向给我）− 当前用户已读数（懒创建口径，两个 COUNT 相减）")
     @GetMapping("/unread-count")
     public Result<Long> unreadCount() {
         LoginUser user = UserContextHolder.getUser();

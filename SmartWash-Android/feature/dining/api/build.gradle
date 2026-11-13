@@ -1,0 +1,26 @@
+// :feature:dining:api —— 家庭点单域对外契约（按域嵌套结构 feature/dining/{api,impl}，
+// 模式对齐 notice 的 api/impl 拆分）。暴露面四件：
+// - DiningRoute 类型安全路由（订单列表[域首页/深链 host "dining" 目标]/创建/分享 + 菜谱三页）
+// - 模型（与后端 dining/vo、dining/from 一一对应，Gson 全可空容错）：菜谱/分类 + 订单状态/创建请求/
+//   创建响应/列表条目/详情（version 轮询协议）
+// - DiningServiceApi 网络接口（@RequireAuthorization，路径/参数/响应以后端 WebDiningRecipeController
+//   / WebDiningCategoryController / WebDiningOrderController 为契约源）
+// - DiningApi 跨域服务契约（跨域消费方按分类拉上架菜谱，命名对齐 NoticeApi 先例）
+// 依赖方向：api → common（铁律 1/2：不依赖任何 feature，不引 Hilt 运行时）。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/serialization.gradle"
+
+android {
+    namespace 'com.smartwash.feature.dining.api'
+}
+
+dependencies {
+    // suspend 契约（coroutines-core，无需 android 变体）
+    implementation libs.kotlinx.coroutines.core
+    // @Keep（Gson 载荷防 release 混淆；annotation 不经 common 传递，显式声明）
+    implementation libs.androidx.annotation
+    // SmartWashRoute 类型安全路由契约 + ApiResult 信封 + PageData 分页载荷
+    implementation project(':common:utils')
+    // @RequireAuthorization 注解（retrofit 类型经其 api 依赖传递，无需显式声明 retrofit）
+    implementation project(':common:network')
+}

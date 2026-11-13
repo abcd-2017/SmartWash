@@ -425,3 +425,48 @@ export const noticeReadRateTagType = (rateText) => {
   if (value >= 50) return 'primary';
   return 'warning';
 };
+
+// ---------- 家庭点单菜谱（与后端 dining_recipe.status/source 对齐：1/0 + ADMIN/USER） ----------
+
+/** 菜谱上下架选项（列表筛选 + 表单共用） */
+export const DINING_RECIPE_STATUS_OPTIONS = [
+  { value: 1, label: '上架' },
+  { value: 0, label: '下架' },
+];
+
+/** 菜谱上下架 → 文案（未知值回显原值） */
+export const DINING_RECIPE_STATUS_TEXT = {
+  1: '上架',
+  0: '下架',
+};
+
+/** 菜谱上下架 → el-tag 类型（上架绿、下架灰） */
+export const DINING_RECIPE_STATUS_TAG_TYPES = {
+  1: 'success',
+  0: 'info',
+};
+
+/** 菜谱上下架文案（未知值兜底） */
+export const diningRecipeStatusText = (status) =>
+  dictValue(DINING_RECIPE_STATUS_TEXT, status, String(status));
+
+/** 菜谱上下架标签配色 */
+export const diningRecipeStatusTagType = (status) => dictValue(DINING_RECIPE_STATUS_TAG_TYPES, status);
+
+/** 菜谱来源 → 文案 */
+export const DINING_RECIPE_SOURCE_TEXT = {
+  ADMIN: '运营录入',
+  USER: '用户新增',
+};
+
+/** 菜谱来源文案（未知值兜底） */
+export const diningRecipeSourceText = (source) => DINING_RECIPE_SOURCE_TEXT[source] || source || '-';
+
+/** 菜谱来源 → el-tag 类型 */
+export const DINING_RECIPE_SOURCE_TAG_TYPES = {
+  ADMIN: 'primary',
+  USER: 'warning',
+};
+
+/** 菜谱来源标签配色 */
+export const diningRecipeSourceTagType = (source) => dictValue(DINING_RECIPE_SOURCE_TAG_TYPES, source);

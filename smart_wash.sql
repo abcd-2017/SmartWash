@@ -1379,11 +1379,12 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
   ('review',             '记忆复习',    3, 1, 'smartwash://review 打开记忆复习今日队列页', 1),
   ('subscription',       '订阅逃生舱',  3, 1, 'smartwash://subscription 打开订阅列表页', 1),
   ('delivery',           '设备投递',    3, 0, 'smartwash://delivery 打开设备投递发起页', 1),
-  ('lab',                '解压实验舱',  3, 0, 'smartwash://lab 打开解压实验舱首页', 1);
+  ('lab',                '解压实验舱',  3, 0, 'smartwash://lab 打开解压实验舱首页', 1),
+  ('dining',             '家庭点单',    3, 1, 'smartwash://dining 打开家庭点单订单列表页（域首页，工作台入口同 target）', 1);
 
 -- ----------------------------
 -- 种子数据：workbench_entry（全部 enabled=1）
--- type + section_title 演示构图：游戏中心通栏卡 → 「趣味实验」两列小卡 → 「日常管理」四行列表卡 → 「效率工具」两列小卡
+-- type + section_title 演示构图：游戏中心通栏卡 → 「趣味实验」两列小卡 → 「日常管理」五行列表卡 → 「效率工具」两列小卡
 -- image_url 种子留空，配图由管理端上传接口（POST /admin/workbench/entries/image）产生
 -- ----------------------------
 INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `color`, `type`, `section_title`, `target`, `badge`, `enabled`, `sort`, `remark`) VALUES
@@ -1392,9 +1393,10 @@ INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `col
   ('review',             '记忆复习',   'FSRS 复习卡片',                'book',    'blue',   'row',   '日常管理', 'smartwash://review',             '新', 1, 4, NULL),
   ('subscription',       '订阅逃生舱', '管理订阅与续费',               'link',    'orange', 'row',   '日常管理', 'smartwash://subscription',       '新', 1, 5, NULL),
   ('delivery',           '设备投递',   '手机与电脑互传文件',           'link',    'teal',   'row',   '日常管理', 'smartwash://delivery',           '新', 1, 6, NULL),
-  ('my-history',         '我的卦历',   NULL,                           'history', 'purple', 'row',   '日常管理', 'smartwash://divination-history', NULL, 1, 7, NULL),
-  ('toolbox-short-code', '短链工具箱', '生成与管理短链',               'link',    'blue',   'tile',  '效率工具', 'smartwash://toolbox-short-code', NULL, 1, 8, NULL),
-  ('ai-assistant',       'AI 助手',    NULL,                           'chat',    'blue',   'tile',  '效率工具', 'smartwash://ai-work',            NULL, 1, 9, NULL);
+  ('dining',             '家庭点单',   '发起点单 · 扫码一起选菜',      'chat',    'orange', 'row',   '日常管理', 'smartwash://dining',             NULL, 1, 7, NULL),
+  ('my-history',         '我的卦历',   NULL,                           'history', 'purple', 'row',   '日常管理', 'smartwash://divination-history', NULL, 1, 8, NULL),
+  ('toolbox-short-code', '短链工具箱', '生成与管理短链',               'link',    'blue',   'tile',  '效率工具', 'smartwash://toolbox-short-code', NULL, 1, 9, NULL),
+  ('ai-assistant',       'AI 助手',    NULL,                           'chat',    'blue',   'tile',  '效率工具', 'smartwash://ai-work',            NULL, 1, 10, NULL);
 
 -- =====================================================================
 -- 游戏中心 —— H5 游戏库与下发配置（1 张业务表 + 管理端上传包存 MinIO game/{game_key}/ 前缀）
@@ -1771,9 +1773,11 @@ CREATE TABLE `point_sign_in` (
 -- =====================================================================
 
 -- ----------------------------
--- Table structure for notice（站内信主表）
--- 已读采用懒创建：notice_read 仅在用户首次标记时插入，未读 = notice 不在 read 表，
--- 未读数 = notice 总数 − 当前用户已读数（两个 COUNT 相减），不做全量 fan-out。
+-- Table structure for notice（站内信主表：运营通知/公告 + 业务事件定向通知）
+-- 定向能力：user_id NULL=全平台广播（存量行为不变），非空=定向发给该用户（按接收人一人一行）。
+-- 已读采用懒创建：notice_read 仅在用户首次标记时插入，未读 = 可见 notice 不在 read 表，
+-- 可见集合 = 广播（user_id IS NULL）或定向给我（user_id = 本人），
+-- 未读数 = 可见 notice 数 − 当前用户已读数（两个 COUNT 相减），不做全量 fan-out。
 -- v2 若未读数成为热点，改为 fan-out（发送时写全量占位行或 Redis 计数缓存）。
 -- ----------------------------
 DROP TABLE IF EXISTS `notice`;
@@ -1781,13 +1785,15 @@ CREATE TABLE `notice` (
   `id`               BIGINT       NOT NULL AUTO_INCREMENT COMMENT '公告 ID',
   `title`            VARCHAR(100) NOT NULL COMMENT '标题',
   `content`          TEXT         NOT NULL COMMENT '正文（可含换行）',
-  `type`             VARCHAR(20)  NOT NULL COMMENT '类型：SYSTEM系统通知/ANNOUNCEMENT运营公告（v2 可扩展业务事件类型）',
+  `type`             VARCHAR(20)  NOT NULL COMMENT '类型：SYSTEM系统通知/ANNOUNCEMENT运营公告/DINING_JOIN点单加入/DINING_FINISH点单结束',
   `deep_link`        VARCHAR(512) NULL COMMENT '深链：smartwash://... 或 https://...；NULL=纯文案公告无跳转',
+  `user_id`          BIGINT       NULL COMMENT '定向接收人(users.user_id)；NULL=全平台广播',
   `creator_admin_id` BIGINT       NULL COMMENT '发送人(admin_users.admin_id)',
   `created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
   PRIMARY KEY (`id`) USING BTREE,
-  KEY `idx_created_at` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信主表（运营通知/公告）' ROW_FORMAT = Dynamic;
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信主表（运营通知/公告/业务事件定向通知）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for notice_read（已读账本，懒创建 + uk 幂等）
@@ -1803,4 +1809,135 @@ CREATE TABLE `notice_read` (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_notice` (`user_id`,`notice_id`) USING BTREE COMMENT '幂等闸门:一人一公告一条已读记录'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信已读账本（懒创建）' ROW_FORMAT = Dynamic;
+
+-- =====================================================================
+-- 家庭点单 —— dining 域（Web 后台维护公共菜谱库，用户端扫码加入点单）
+-- 建表纪律：模块前缀 dining_，BIGINT 自增主键、snake_case、中文注释、
+-- created_at/updated_at、uk_/idx_ 索引命名、utf8mb4、无逻辑删除（物理删除）。
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for dining_category（菜谱分类）
+-- 分类是平台公共菜谱库的目录：Web 管理端增删改排序，菜谱（dining_recipe，后续批次）
+-- 按 category_id 挂靠，用户端按分类组织点单菜单左侧分类栏。
+-- name 唯一（uk_name）：分类名即业务标识，重名由服务层先查重给友好提示、唯一索引兜底并发。
+-- ----------------------------
+DROP TABLE IF EXISTS `dining_category`;
+CREATE TABLE `dining_category` (
+  `id`         BIGINT      NOT NULL AUTO_INCREMENT COMMENT '分类 ID',
+  `name`       VARCHAR(32) NOT NULL COMMENT '分类名称（如 家常菜/汤羹/凉菜）',
+  `sort`       INT         NOT NULL DEFAULT 100 COMMENT '排序，越小越靠前',
+  `created_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-菜谱分类';
+
+-- ----------------------------
+-- Table structure for dining_recipe（菜谱）
+-- 平台公共菜谱库的正片条目：Web 管理端增删改查/上下架/封面上传，用户端后续批次
+-- 浏览（上架列表）并在点单菜单里按菜谱勾选；购买清单 = 所选菜谱 ingredients 食材名并集去重。
+-- category_id 可空 = 未分类（分类被菜谱引用时服务层拒绝删除分类，避免悬空）。
+-- cover_object_key 存 MinIO 对象键（dining/covers/ 前缀，匿名直读白名单），直链由 MinioConfig.urlOf 拼装。
+-- ingredients 用 JSON 类型存食材名数组（如 ["西红柿","鸡蛋","葱"]），不聚合数量、不换算单位（spec 有意简化）。
+-- source 区分 ADMIN（运营后台录入）/ USER（用户端新增直上架）；创建人二选一落 created_by_admin_id / created_by_user_id。
+-- status 上下架：1=上架（客户端可选），0=下架（不再出现在客户端上架列表，历史点单订单不受影响）。
+-- name 不做唯一约束（同名菜谱是合法业务态，如不同来源的家传做法）。
+-- ----------------------------
+DROP TABLE IF EXISTS `dining_recipe`;
+CREATE TABLE `dining_recipe` (
+  `id`                  BIGINT       NOT NULL AUTO_INCREMENT COMMENT '菜谱 ID',
+  `category_id`         BIGINT       NULL COMMENT '所属分类 ID（dining_category.id），NULL=未分类',
+  `name`                VARCHAR(64)  NOT NULL COMMENT '菜名（如 番茄炒蛋）',
+  `cover_object_key`    VARCHAR(255) NULL COMMENT '封面图对象键（MinIO dining/covers/ 前缀），NULL=未上传',
+  `ingredients`         JSON         NULL COMMENT '食材名数组（JSON，如 ["西红柿","鸡蛋"]），购买清单按名字并集去重',
+  `steps`               TEXT         NULL COMMENT '做法步骤（纯文本，换行分段）',
+  `source`              VARCHAR(16)  NOT NULL DEFAULT 'ADMIN' COMMENT '来源：ADMIN=运营后台录入，USER=用户端新增',
+  `status`              TINYINT      NOT NULL DEFAULT 1 COMMENT '上下架：1=上架，0=下架',
+  `created_by_user_id`  BIGINT       NULL COMMENT '创建人用户 ID（source=USER 时记录 users.user_id）',
+  `created_by_admin_id` BIGINT       NULL COMMENT '创建人管理员 ID（source=ADMIN 时记录 admin_users.admin_id）',
+  `created_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_category_id` (`category_id`) COMMENT '分类筛选与分类引用计数',
+  KEY `idx_status` (`status`) COMMENT '客户端上架列表过滤',
+  KEY `idx_name` (`name`) COMMENT '关键词模糊搜索'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-菜谱';
+
+-- ----------------------------
+-- Table structure for dining_order（点单订单）
+-- 一人发起点单、生成二维码分享，其他人扫码加入后各自勾选想吃的菜。
+-- status：ONGOING 进行中 / FINISHED 已结束（结束时锁定并写 shopping_list 快照）。
+-- version：共享购物车乐观并发版本号——所有选菜变更走单行插入/删除并递增 version，
+-- 客户端写请求携带已知 version，不匹配返回业务错误码 409（客户端拉取最新后重放）。
+-- join_token：加入凭证（二维码携带），uk_join_token 支撑扫码入口直查，重置即旧码作废。
+-- ----------------------------
+DROP TABLE IF EXISTS `dining_order`;
+CREATE TABLE `dining_order` (
+  `id`              BIGINT       NOT NULL AUTO_INCREMENT COMMENT '点单订单 ID',
+  `title`           VARCHAR(64)  NOT NULL COMMENT '订单标题（如 周五晚火锅）',
+  `creator_user_id` BIGINT       NOT NULL COMMENT '发起者用户 ID(users.user_id)',
+  `status`          VARCHAR(16)  NOT NULL DEFAULT 'ONGOING' COMMENT '订单状态：ONGOING进行中 / FINISHED已结束',
+  `join_token`      VARCHAR(64)  NOT NULL COMMENT '加入凭证（二维码携带，重置即旧码作废）',
+  `version`         INT          NOT NULL DEFAULT 0 COMMENT '乐观并发版本号（每次选菜变更 +1，轮询协议基准）',
+  `shopping_list`   JSON         DEFAULT NULL COMMENT '购买清单快照（结束时写入：食材名并集去重 + 按菜视图）',
+  `finished_at`     DATETIME     DEFAULT NULL COMMENT '结束时间',
+  `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_join_token` (`join_token`),
+  KEY `idx_creator` (`creator_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-点单订单';
+
+-- ----------------------------
+-- Table structure for dining_order_member（点单订单成员）
+-- 记录加入者：创建者为首个成员；重复加入由 uk_order_user 兜底裁决。
+-- idx_user 支撑「我的订单列表（我发起+我参与）」按人反查。
+-- ----------------------------
+DROP TABLE IF EXISTS `dining_order_member`;
+CREATE TABLE `dining_order_member` (
+  `id`         BIGINT   NOT NULL AUTO_INCREMENT COMMENT '成员记录 ID',
+  `order_id`   BIGINT   NOT NULL COMMENT '点单订单 ID(dining_order.id)',
+  `user_id`    BIGINT   NOT NULL COMMENT '成员用户 ID(users.user_id)',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_order_user` (`order_id`,`user_id`),
+  KEY `idx_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-点单订单成员';
+
+-- ----------------------------
+-- Table structure for dining_order_menu（本单菜单）
+-- 发起者从公共菜谱库勾选的菜品范围，参与者只能在此范围内选菜；
+-- uk_order_recipe 保证一道菜在本单只出现一次。
+-- ----------------------------
+DROP TABLE IF EXISTS `dining_order_menu`;
+CREATE TABLE `dining_order_menu` (
+  `id`         BIGINT   NOT NULL AUTO_INCREMENT COMMENT '菜单行 ID',
+  `order_id`   BIGINT   NOT NULL COMMENT '点单订单 ID(dining_order.id)',
+  `recipe_id`  BIGINT   NOT NULL COMMENT '菜谱 ID(dining_recipe.id)',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加入菜单时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_order_recipe` (`order_id`,`recipe_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-本单菜单（发起者编排）';
+
+-- ----------------------------
+-- Table structure for dining_order_item（选菜记录）
+-- 共享购物车明细：一人一菜一条（uk order+recipe+user），取消即删行；
+-- note 承载个人备注（如 不要辣）。变更全部经 version 乐观并发协议。
+-- ----------------------------
+DROP TABLE IF EXISTS `dining_order_item`;
+CREATE TABLE `dining_order_item` (
+  `id`         BIGINT       NOT NULL AUTO_INCREMENT COMMENT '选菜记录 ID',
+  `order_id`   BIGINT       NOT NULL COMMENT '点单订单 ID(dining_order.id)',
+  `recipe_id`  BIGINT       NOT NULL COMMENT '菜谱 ID(dining_recipe.id)',
+  `user_id`    BIGINT       NOT NULL COMMENT '选菜人用户 ID(users.user_id)',
+  `note`       VARCHAR(128) DEFAULT NULL COMMENT '个人备注（如 不要辣），可空',
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '勾选时间',
+  `updated_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_order_recipe_user` (`order_id`,`recipe_id`,`user_id`),
+  KEY `idx_order` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-选菜记录（一人一菜一条，取消即删行）';
 SET FOREIGN_KEY_CHECKS = 1;

@@ -76,6 +76,9 @@ import {
   DocumentChecked,
   // 消息中心（站内信）
   Bell,
+  // 家庭点单
+  Food,
+  Dish,
 } from '@element-plus/icons-vue';
 
 const route = useRoute();
@@ -124,6 +127,9 @@ const iconRegistry = {
   DocumentChecked: markRaw(DocumentChecked),
   // 消息中心（站内信）
   Bell: markRaw(Bell),
+  // 家庭点单
+  Food: markRaw(Food),
+  Dish: markRaw(Dish),
 };
 
 // 按图标名解析组件，未登记的图标回退为空（不渲染）
@@ -165,6 +171,8 @@ const MENU_GROUP_CONFIG = [
   { title: '系统与安全', icon: 'Lock', paths: ['/audit-logs'] },
   // 站内信为触达类工具，独立成组（不并入业务管理，避免与订单/支付混排）
   { title: '消息中心', icon: 'Bell', paths: ['/notices'] },
+  // 家庭点单为独立业务域，单独成组（后续批量导入挂同组）
+  { title: '家庭点单', icon: 'Food', paths: ['/dining/categories', '/dining/recipes'] },
 ];
 
 const homeRoute = computed(() => menuRoutes.value.find((r) => r.path === '/') || null);

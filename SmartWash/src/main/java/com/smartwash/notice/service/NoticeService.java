@@ -2,15 +2,19 @@ package com.smartwash.notice.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.smartwash.notice.constant.NoticeType;
 import com.smartwash.notice.entity.Notice;
 import com.smartwash.notice.from.AddNoticeFrom;
 import com.smartwash.notice.from.SearchNoticeFrom;
 import com.smartwash.notice.vo.NoticeReadStatVo;
 import com.smartwash.notice.vo.NoticeVo;
 
+import java.util.List;
+
 /**
- * 站内信服务（v1：运营通知 + 用户收件箱）。
- * 已读采用懒创建（notice_read 首次标记才插入），未读数 = notice 总数 − 当前用户已读数。
+ * 站内信服务（v1：运营通知 + 用户收件箱；v2：业务事件定向通知）。
+ * 已读采用懒创建（notice_read 首次标记才插入），
+ * 未读数 = 「可见 notice 数（广播或定向给我）」− 当前用户已读数。
  */
 public interface NoticeService extends IService<Notice> {
 
@@ -24,6 +28,15 @@ public interface NoticeService extends IService<Notice> {
 
     /** 送达统计（发送总数 = 用户总数，已读数按 notice 过滤） */
     NoticeReadStatVo readStat(Long noticeId);
+
+    // ==================== 定向发送（业务事件入箱） ====================
+
+    /**
+     * 定向发送站内信：多接收人一次调用，一人一行（user_id 落到接收人），返回发送条数。
+     * 类型取 NoticeType 枚举（编译期白名单）；deep_link 可空。
+     * 实现取舍见 NoticeServiceImpl#publishTargeted 注释。
+     */
+    int publishTargeted(NoticeType type, String title, String content, String deepLink, List<Long> userIds);
 
     // ==================== 用户端 ====================
 
