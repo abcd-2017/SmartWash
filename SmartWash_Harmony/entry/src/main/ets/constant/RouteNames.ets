@@ -86,4 +86,15 @@ export class RouteNames {
   static readonly COMING_SOON: string = "ComingSoon"
   // 消息中心页（站内信收件箱；入口为我的页功能卡「消息中心」行 + 深链 smartwash://messages）
   static readonly MESSAGES: string = "Messages"
+  // 吃啥域路由名（对齐 Android DiningRoute：OrderList/OrderCreate/OrderShare/OrderDetail/
+  // OrderJoin/ShoppingList/Library/RecipeDetail/RecipeCreate；域首页深链 host `dining` 落点）
+  static readonly DINING_ORDER_LIST: string = "DiningOrderList"
+  static readonly DINING_ORDER_CREATE: string = "DiningOrderCreate"
+  static readonly DINING_ORDER_SHARE: string = "DiningOrderShare"
+  static readonly DINING_ORDER_DETAIL: string = "DiningOrderDetail"
+  static readonly DINING_ORDER_JOIN: string = "DiningOrderJoin"
+  static readonly DINING_SHOPPING_LIST: string = "DiningShoppingList"
+  static readonly DINING_LIBRARY: string = "DiningLibrary"
+  static readonly DINING_RECIPE_DETAIL: string = "DiningRecipeDetail"
+  static readonly DINING_RECIPE_CREATE: string = "DiningRecipeCreate"
 }
