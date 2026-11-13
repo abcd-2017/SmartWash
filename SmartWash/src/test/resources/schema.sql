@@ -220,3 +220,107 @@ CREATE TABLE IF NOT EXISTS div_usage_daily (
     PRIMARY KEY (id),
     CONSTRAINT uk_date_method UNIQUE (stat_date, method)
 );
+
+-- 家庭点单-菜谱分类表（DiningCategoryAdminControllerIntegrationTest 的 /admin/dining/categories 端点验证用）
+CREATE TABLE IF NOT EXISTS dining_category (
+    id         bigint NOT NULL AUTO_INCREMENT,
+    name       varchar(32) NOT NULL,
+    sort       int DEFAULT 100,
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_dining_category_name UNIQUE (name)
+);
+
+-- 家庭点单-菜谱表（DiningRecipeAdminControllerIntegrationTest 的 /admin/dining/recipes 端点验证用）
+-- ingredients 生产库为 MySQL JSON 类型，H2 用等价的 varchar 承载（MyBatis 两侧均按字符串映射）
+CREATE TABLE IF NOT EXISTS dining_recipe (
+    id                  bigint NOT NULL AUTO_INCREMENT,
+    category_id         bigint DEFAULT NULL,
+    name                varchar(64) NOT NULL,
+    cover_object_key    varchar(255) DEFAULT NULL,
+    ingredients         varchar(4096) DEFAULT NULL,
+    steps               text DEFAULT NULL,
+    source              varchar(16) NOT NULL DEFAULT 'ADMIN',
+    status              tinyint NOT NULL DEFAULT 1,
+    created_by_user_id  bigint DEFAULT NULL,
+    created_by_admin_id bigint DEFAULT NULL,
+    created_at          timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at          timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+
+-- 家庭点单-点单订单表（WebDiningOrderControllerIntegrationTest 的 /web/auth/dining/orders 端点验证用）
+-- shopping_list 生产库为 MySQL JSON 类型，H2 用等价 varchar 承载（MyBatis 两侧均按字符串映射）
+CREATE TABLE IF NOT EXISTS dining_order (
+    id              bigint NOT NULL AUTO_INCREMENT,
+    title           varchar(64) NOT NULL,
+    creator_user_id bigint NOT NULL,
+    status          varchar(16) NOT NULL DEFAULT 'ONGOING',
+    join_token      varchar(64) NOT NULL,
+    version         int NOT NULL DEFAULT 0,
+    shopping_list   varchar(4096) DEFAULT NULL,
+    finished_at     timestamp DEFAULT NULL,
+    created_at      timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at      timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_dining_order_token UNIQUE (join_token)
+);
+
+-- 家庭点单-点单订单成员表（uk order+user：一人一单一条，重复加入兜底裁决）
+CREATE TABLE IF NOT EXISTS dining_order_member (
+    id         bigint NOT NULL AUTO_INCREMENT,
+    order_id   bigint NOT NULL,
+    user_id    bigint NOT NULL,
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_dining_order_member UNIQUE (order_id, user_id)
+);
+
+-- 家庭点单-本单菜单表（uk order+recipe：一道菜在本单只出现一次）
+CREATE TABLE IF NOT EXISTS dining_order_menu (
+    id         bigint NOT NULL AUTO_INCREMENT,
+    order_id   bigint NOT NULL,
+    recipe_id  bigint NOT NULL,
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_dining_order_menu UNIQUE (order_id, recipe_id)
+);
+
+-- 家庭点单-选菜记录表（uk order+recipe+user：一人一菜一条，取消即删行）
+CREATE TABLE IF NOT EXISTS dining_order_item (
+    id         bigint NOT NULL AUTO_INCREMENT,
+    order_id   bigint NOT NULL,
+    recipe_id  bigint NOT NULL,
+    user_id    bigint NOT NULL,
+    note       varchar(128) DEFAULT NULL,
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_dining_order_item UNIQUE (order_id, recipe_id, user_id)
+);
+
+-- 站内信主表（12 号票：DINING_JOIN/DINING_FINISH 定向通知落库验证用；结构对齐 smart_wash.sql）
+CREATE TABLE IF NOT EXISTS notice (
+    id               bigint NOT NULL AUTO_INCREMENT,
+    title            varchar(100) NOT NULL,
+    content          text NOT NULL,
+    type             varchar(20) NOT NULL,
+    deep_link        varchar(512) DEFAULT NULL,
+    user_id          bigint DEFAULT NULL,
+    creator_admin_id bigint DEFAULT NULL,
+    created_at       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+
+-- 站内信已读账本（懒创建 + uk 幂等；12 号票验证定向通知未读数口径时按需使用）
+CREATE TABLE IF NOT EXISTS notice_read (
+    id        bigint NOT NULL AUTO_INCREMENT,
+    user_id   bigint NOT NULL,
+    notice_id bigint NOT NULL,
+    read_at   timestamp NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_user_notice UNIQUE (user_id, notice_id)
+);

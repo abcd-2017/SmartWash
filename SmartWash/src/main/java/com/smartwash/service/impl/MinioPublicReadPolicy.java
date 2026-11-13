@@ -19,11 +19,19 @@ public final class MinioPublicReadPolicy {
     /**
      * 匿名只读白名单前缀（新增前缀必须同步评估三端直链消费方，禁止静默扩白名单）。
      * <p>覆盖：游戏包(game/)、用户头像(avatar/)、默认头像(default/)、
-     * 游戏封面(game-covers/)、工作台配图(workbench/covers/)。
-     * 后两者由端上 Coil 匿名直拉（不带 token），必须公共读，否则封面/配图 403。</p>
+     * 游戏封面(game-covers/)、工作台配图(workbench/covers/)、菜谱封面(dining/covers/)。
+     * 前三者由端上 Coil 匿名直拉（不带 token），必须公共读，否则封面/配图 403。</p>
+     * <p><b>dining/covers/ 三端直链消费方评估（家庭点单菜谱封面，02 号票）：</b>
+     * <ul>
+     *   <li>Web 管理后台：菜谱列表与编辑弹窗以 img 直拉封面（不带 Authorization 头）——需公共读；</li>
+     *   <li>Android（后续批次）：菜谱库页/新增菜谱页按「库内存对象键、读时拼直链」现行标准由 Coil 匿名直拉——需公共读；</li>
+     *   <li>鸿蒙（本期 Out of Scope）：用户端菜单后续按同标准消费，接口契约已留文档（GLOSSARY dining 词条）。</li>
+     * </ul>
+     * 封面非私密内容（运营+用户共同维护的公共菜谱库配图），无按人鉴权诉求；
+     * 白名单仅授 s3:GetObject，写路径仍走管理端/用户端鉴权接口，不扩大泄露面。</p>
      */
     public static final List<String> PUBLIC_READ_PREFIXES =
-            List.of("game/", "avatar/", "default/", "game-covers/", "workbench/covers/");
+            List.of("game/", "avatar/", "default/", "game-covers/", "workbench/covers/", "dining/covers/");
 
     private static final String GET_OBJECT = "s3:GetObject";
 

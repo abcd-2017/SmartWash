@@ -32,19 +32,27 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 站内信服务实现（v1：运营通知 + 用户收件箱）。
+ * 站内信服务实现（v1：运营通知 + 用户收件箱；v2：业务事件定向通知）。
  *
  * <p>已读口径（懒创建，不做全量 fan-out）：
- * notice_read 仅在用户首次标记时插入一条，未读 = notice 不在 read 表；
- * 未读数 = COUNT(notice) − COUNT(notice_read WHERE user_id)，两个 COUNT 相减；
+ * notice_read 仅在用户首次标记时插入一条，未读 = 可见 notice 不在 read 表；
+ * 可见集合 = 广播（user_id IS NULL）或定向给我（user_id = 当前用户）；
+ * 未读数 = COUNT(可见 notice) − COUNT(notice_read WHERE user_id)，两个 COUNT 相减；
  * uk_user_notice(user_id, notice_id) 唯一索引是幂等 DB 闸门，
  * 标记已读/全部已读的重复插入一律捕获 DuplicateKeyException 判幂等成功。</p>
  *
+ * <p>定向发送实现取舍（多行 vs 关联表）：选择「按接收人一人一行」（notice.user_id 填接收人），
+ * 不新增接收人关联表。理由：
+ * ① 定向场景是点单订单参与者（几人到几十人），存储冗余可忽略，无需为省空间引入 JOIN/EXISTS；
+ * ② 未读数与已读幂等沿用既有「懒创建双 COUNT 相减 + uk_user_notice」口径，零结构改动，
+ *    关联表方案会破坏该口径（可见性判断变成 EXISTS 子查询）并需迁移全部读路径，侵入过大；
+ * ③ 已知局限：同内容 N 行冗余；定向消息无发送级幂等闸门，防重由调用方（业务事件消费侧）负责。</p>
+ *
  * <p>v2 演进路径（本设计不做）：若未读数成为热点（用户量大 / 轮询频繁），
  * 改为 fan-out——发送时给全量用户写 notice_read 占位行（或 Redis 未读数缓存），
- * 未读数即单用户 COUNT，避免每次双 COUNT；表结构已留扩展位（type/deep_link）。</p>
+ * 未读数即单用户 COUNT，避免每次双 COUNT；表结构已留扩展位（type/deep_link/user_id）。</p>
  *
- * <p>归属：所有读路径强制 user_id = 当前登录用户；标记已读先校验 notice 存在，
+ * <p>归属：所有读路径按「广播或定向给我」过滤；标记已读先校验 notice 存在且对本人可见，
  * 再按 (user_id, notice_id) 查重，越权/不存在一律按「不存在」处理。</p>
  */
 @Slf4j
@@ -63,8 +71,9 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
 
     @Override
     public Long publish(AddNoticeFrom from, Long creatorAdminId) {
-        // @Valid 之外的服务端兜底：防绕过校验器写入非法类型
-        if (!NoticeType.isValid(from.getType())) {
+        // @Valid 之外的服务端兜底：管理端仅开放广播类型（SYSTEM/ANNOUNCEMENT），
+        // DINING_* 业务事件类型只走 publishTargeted 定向入口
+        if (!NoticeType.isValidBroadcast(from.getType())) {
             throw new CustomExceptions("类型仅支持 SYSTEM/ANNOUNCEMENT");
         }
         Notice notice = new Notice()
@@ -108,12 +117,40 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
                 .setReadRateText(formatReadRate(readCount, totalUsers));
     }
 
+    // ==================== 定向发送（业务事件入箱） ====================
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int publishTargeted(NoticeType type, String title, String content, String deepLink, List<Long> userIds) {
+        // 入参防御：类型经枚举编译期白名单；空接收人/空白必填项是调用方编程错误，fail-fast 而非静默 no-op
+        // （静默成功会让业务事件侧误判「已送达」，留下无人收到的通知）
+        if (type == null || StrUtil.isBlank(title) || StrUtil.isBlank(content)
+                || userIds == null || userIds.isEmpty()) {
+            throw new CustomExceptions("定向发送参数不完整（类型/标题/内容/接收人均必填，接收人列表不可为空）");
+        }
+        // 保序去重：同一接收人重复传入视为调用方失误，一人只发一条
+        List<Long> distinctUserIds = userIds.stream().distinct().toList();
+        // 深链空白归一为 NULL，与管理端 publish 的归一口径一致
+        String normalizedLink = StrUtil.trimToNull(deepLink);
+        for (Long userId : distinctUserIds) {
+            this.save(new Notice()
+                    .setTitle(title.trim())
+                    .setContent(content)
+                    .setType(type.getType())
+                    .setDeepLink(normalizedLink)
+                    .setUserId(userId));
+        }
+        // 多行同事务：任一行失败整体回滚，事件侧可整体重试
+        log.info("站内信定向发送完成, type: {}, title: {}, 接收人数: {}", type.getType(), title.trim(), distinctUserIds.size());
+        return distinctUserIds.size();
+    }
+
     // ==================== 用户端 ====================
 
     @Override
     public Page<NoticeVo> pageInbox(SearchNoticeFrom from, Long userId) {
-        // 全量公告分页（不按用户过滤 notice 本身——公告对所有人可见，已读标记才按人区分）
-        LambdaQueryWrapper<Notice> wrapper = new LambdaQueryWrapper<>();
+        // 收件箱口径：只看「广播或定向给我」的公告（定向给别人的不可见），已读标记按人区分
+        LambdaQueryWrapper<Notice> wrapper = visibleToUserWrapper(userId);
         wrapper.orderByDesc(Notice::getCreatedAt).orderByDesc(Notice::getId);
         Page<Notice> page = this.page(new Page<>(from.getPage(), from.getSize()), wrapper);
         Page<NoticeVo> voPage = convertPage(page);
@@ -129,18 +166,21 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
 
     @Override
     public long countUnread(Long userId) {
-        long total = this.count();
+        // 可见总数 = 广播（user_id IS NULL）或定向给我（user_id = 本人）；定向给别人的不计入我的未读
+        long visible = this.count(visibleToUserWrapper(userId));
         long read = noticeReadMapper.selectCount(new LambdaQueryWrapper<NoticeRead>()
                 .eq(NoticeRead::getUserId, userId));
-        // 已读数不会超过总数（唯一索引保证），防御性兜底防脏数据出负数
-        return Math.max(0L, total - read);
+        // 已读数不会超过可见总数（唯一索引保证），防御性兜底防脏数据出负数
+        return Math.max(0L, visible - read);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void markRead(Long noticeId, Long userId) {
         Notice notice = this.getById(noticeId);
-        if (notice == null) {
+        // 可见性校验：广播（user_id=NULL）对所有人可见；定向给别人的消息对本人按「不存在」处理
+        // （与越权同语义，不暴露消息存在性），防止给不可见消息留下已读记录污染未读数口径
+        if (notice == null || (notice.getUserId() != null && !notice.getUserId().equals(userId))) {
             throw new CustomExceptions("公告不存在");
         }
         // 幂等快路径：本人已读记录已存在 → 静默成功（覆盖重复点击与并发之一）
@@ -167,9 +207,10 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int readAll(Long userId) {
-        // 全量公告（不分页，一次拉取上限内扫描；公告量级小，v1 不做游标批处理）
-        Page<Notice> page = this.page(new Page<>(1, READ_ALL_SCAN_LIMIT),
-                new LambdaQueryWrapper<Notice>().orderByDesc(Notice::getCreatedAt));
+        // 全部已读只覆盖「广播或定向给我」的可见公告（不分页，一次拉取上限内扫描；公告量级小，v1 不做游标批处理）
+        LambdaQueryWrapper<Notice> wrapper = visibleToUserWrapper(userId);
+        wrapper.orderByDesc(Notice::getCreatedAt);
+        Page<Notice> page = this.page(new Page<>(1, READ_ALL_SCAN_LIMIT), wrapper);
         if (page.getRecords().isEmpty()) {
             return 0;
         }
@@ -191,6 +232,15 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     }
 
     // ==================== 内部方法 ====================
+
+    /**
+     * 「广播或定向给我」可见性条件（未读数 / 收件箱 / 全部已读共用同一口径）：
+     * user_id IS NULL OR user_id = 本人。广播行 user_id 恒为 NULL，存量广播数据行为不变。
+     */
+    private LambdaQueryWrapper<Notice> visibleToUserWrapper(Long userId) {
+        return new LambdaQueryWrapper<Notice>()
+                .and(w -> w.isNull(Notice::getUserId).or().eq(Notice::getUserId, userId));
+    }
 
     /** 批量查当前用户已读的 noticeId 集合（用于分页 is_read 回填，一次查询替代逐条） */
     private Set<Long> listReadNoticeIds(Long userId, List<Long> noticeIds) {

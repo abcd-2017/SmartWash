@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 /**
  * 站内信视图对象（用户端收件箱条目）。
  * isRead 为「当前登录用户」的已读状态，由服务端按 read 表批量回填；
- * 不做按用户过滤 notice 本身——所有用户看到同一份公告列表，只是已读标记不同。
+ * 收件箱口径 = 广播（user_id IS NULL）或定向给我（user_id = 本人）的公告列表。
  */
 @Data
 @Accessors(chain = true)

@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Param;
 public interface NoticeReadMapper extends BaseMapper<NoticeRead> {
 
     /**
-     * 全平台用户总数（管理端送达统计分母：v1 公告对全部用户可见，无定向推送）。
+     * 全平台用户总数（管理端送达统计分母：广播公告对全部用户可见）。
      */
     long countUsers();
 

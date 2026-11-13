@@ -89,7 +89,7 @@ class MinioPublicReadPolicyTest {
         String mixed = """
                 {"Version":"2012-10-17","Statement":[
                  {"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],
-                  "Resource":["arn:aws:s3:::smartwash/game/*","arn:aws:s3:::smartwash/avatar/*","arn:aws:s3:::smartwash/default/*","arn:aws:s3:::smartwash/game-covers/*","arn:aws:s3:::smartwash/workbench/covers/*"]},
+                  "Resource":["arn:aws:s3:::smartwash/game/*","arn:aws:s3:::smartwash/avatar/*","arn:aws:s3:::smartwash/default/*","arn:aws:s3:::smartwash/game-covers/*","arn:aws:s3:::smartwash/workbench/covers/*","arn:aws:s3:::smartwash/dining/covers/*"]},
                  {"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],
                   "Resource":["arn:aws:s3:::smartwash/*"]}]}
                 """;
@@ -112,7 +112,7 @@ class MinioPublicReadPolicyTest {
         String withCustom = """
                 {"Version":"2012-10-17","Statement":[
                  {"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],
-                  "Resource":["arn:aws:s3:::smartwash/default/*","arn:aws:s3:::smartwash/avatar/*","arn:aws:s3:::smartwash/game/*","arn:aws:s3:::smartwash/game-covers/*","arn:aws:s3:::smartwash/workbench/covers/*"]},
+                  "Resource":["arn:aws:s3:::smartwash/default/*","arn:aws:s3:::smartwash/avatar/*","arn:aws:s3:::smartwash/game/*","arn:aws:s3:::smartwash/game-covers/*","arn:aws:s3:::smartwash/workbench/covers/*","arn:aws:s3:::smartwash/dining/covers/*"]},
                  {"Effect":"Deny","Principal":{"AWS":["*"]},"Action":["s3:DeleteObject"],
                   "Resource":["arn:aws:s3:::smartwash/asset-receipt/*"]}]}
                 """;
@@ -130,10 +130,10 @@ class MinioPublicReadPolicyTest {
     }
 
     @Test
-    @DisplayName("前缀白名单常量锚点：游戏包/头像/默认头像/游戏封面/工作台配图五前缀，扩白名单须显式改此处并有评审")
+    @DisplayName("前缀白名单常量锚点：游戏包/头像/默认头像/游戏封面/工作台配图/菜谱封面六前缀，扩白名单须显式改此处并有评审")
     void publicReadPrefixes_anchor() {
-        assertEquals(5, MinioPublicReadPolicy.PUBLIC_READ_PREFIXES.size());
+        assertEquals(6, MinioPublicReadPolicy.PUBLIC_READ_PREFIXES.size());
         assertTrue(MinioPublicReadPolicy.PUBLIC_READ_PREFIXES.containsAll(
-                java.util.List.of("game/", "avatar/", "default/", "game-covers/", "workbench/covers/")));
+                java.util.List.of("game/", "avatar/", "default/", "game-covers/", "workbench/covers/", "dining/covers/")));
     }
 }
