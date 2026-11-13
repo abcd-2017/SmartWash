@@ -3,6 +3,18 @@
     <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
+        <el-form-item label="厂商">
+          <el-select
+            v-model="listQuery.vendor"
+            placeholder="全部"
+            clearable
+            filterable
+            style="width: 160px"
+            @change="handleSearch"
+          >
+            <el-option v-for="v in vendorOptions" :key="v" :label="v" :value="v" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="模型名称">
           <el-input
             v-model="listQuery.name"
@@ -35,95 +47,124 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
+    <!-- 目录摘要：与移动端「厂商一级分组 / 模型二级」目录树形态对应 -->
+    <div class="tree-summary">共 {{ vendorCount }} 个厂商 / {{ total }} 个模型</div>
+
+    <!-- 数据表格（树形：厂商为一级分组、模型为二级子行） -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
-        :data="modelList"
+        :data="treeData"
+        row-key="id"
+        :tree-props="{ children: 'children' }"
+        default-expand-all
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
       >
-        <el-table-column prop="id" label="ID" min-width="80" />
-        <el-table-column label="厂商" min-width="120">
+        <el-table-column prop="vendor" label="厂商" min-width="200">
           <template #default="{ row }">
-            <!-- 厂商列(live 打磨 v1):13px 次级文字,与显示名(14px)形成主次层级,减少重复噪音 -->
-            <div class="model-vendor-cell">{{ row.vendor }}</div>
+            <template v-if="row._isVendor">
+              <span class="vendor-name">{{ row.vendor }}</span>
+              <el-tag size="small" type="info" effect="plain" class="vendor-badge">
+                {{ row._modelCount }} 个模型
+              </el-tag>
+            </template>
+            <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="显示名" min-width="160" />
-        <el-table-column prop="baseUrl" label="Base URL" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="modelId" label="模型标识" min-width="160" />
+        <el-table-column prop="id" label="ID" min-width="80">
+          <template #default="{ row }">{{ row._isVendor ? '-' : row.id }}</template>
+        </el-table-column>
+        <el-table-column prop="name" label="显示名" min-width="160">
+          <template #default="{ row }">{{ row._isVendor ? '-' : row.name }}</template>
+        </el-table-column>
+        <el-table-column prop="baseUrl" label="Base URL" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">{{ row._isVendor ? row.baseUrl || '-' : row.baseUrl }}</template>
+        </el-table-column>
+        <el-table-column prop="modelId" label="模型标识" min-width="160">
+          <template #default="{ row }">{{ row._isVendor ? '-' : row.modelId }}</template>
+        </el-table-column>
         <el-table-column label="API Key" min-width="140">
-          <template #default="{ row }">{{ row.apiKeyMask || '用户自带' }}</template>
+          <template #default="{ row }">
+            {{ row._isVendor ? '-' : row.apiKeyMask || '用户自带' }}
+          </template>
         </el-table-column>
         <el-table-column label="优先级" min-width="100" align="right">
-          <template #default="{ row }">{{ row.priority }}</template>
+          <template #default="{ row }">{{ row._isVendor ? '-' : row.priority }}</template>
         </el-table-column>
-        <el-table-column label="状态" min-width="100">
+        <el-table-column label="状态" min-width="120">
           <template #default="{ row }">
-            <!-- 状态列(live 打磨 v2):标签内加圆点,与相邻连通性列(纯标签)区分两套状态语言 -->
-            <div class="model-status-cell">
-              <el-tag :type="row.enabled === 1 ? 'success' : 'info'" class="model-status-tag">
-                <span class="model-status-tag__dot"></span>
-                {{ row.enabled === 1 ? '启用' : '停用' }}
-              </el-tag>
-            </div>
+            <template v-if="row._isVendor">
+              <el-tag v-if="row._enabledCount === row._modelCount" type="success">全部启用</el-tag>
+              <el-tag v-else-if="row._enabledCount === 0" type="info">全部停用</el-tag>
+              <el-tag v-else type="warning">{{ row._enabledCount }}/{{ row._modelCount }} 启用</el-tag>
+            </template>
+            <el-tag v-else :type="row.enabled === 1 ? 'success' : 'info'">
+              {{ row.enabled === 1 ? '启用' : '停用' }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="连通性" min-width="120">
+        <el-table-column label="连通性" min-width="150">
           <template #default="{ row }">
-            <el-tag v-if="row.lastTestOk === 1" type="success">通过</el-tag>
-            <el-tag v-else-if="row.lastTestOk === 0" type="danger">失败</el-tag>
-            <el-tag v-else type="info">未测试</el-tag>
+            <template v-if="row._isVendor">
+              <span class="vendor-aggregate">{{ vendorConnectivityText(row) }}</span>
+            </template>
+            <template v-else>
+              <el-tag v-if="row.lastTestOk === 1" type="success">通过</el-tag>
+              <el-tag v-else-if="row.lastTestOk === 0" type="danger">失败</el-tag>
+              <el-tag v-else type="info">未测试</el-tag>
+            </template>
           </template>
         </el-table-column>
         <el-table-column prop="updatedAt" label="更新时间" min-width="180">
-          <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
+          <template #default="{ row }">
+            {{ formatTime(row._isVendor ? row._latestUpdatedAt : row.updatedAt) }}
+          </template>
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-tooltip
-              :content="row.apiKeyMask ? '' : '该条目未录入 API Key（用户自带密钥模式），无法测试'"
-              :disabled="!!row.apiKeyMask"
-              placement="top"
-            >
-              <span>
-                <el-button
-                  link
-                  size="small"
-                  type="primary"
-                  @click="handleTest(row)"
-                  :loading="testingId === row.id"
-                  :disabled="!row.apiKeyMask"
-                >
-                  测试
-                </el-button>
-              </span>
-            </el-tooltip>
-            <el-button
-              link
-              size="small"
-              :type="row.enabled === 1 ? 'warning' : 'success'"
-              :loading="togglingId === row.id"
-              @click="handleToggle(row)"
-            >
-              {{ row.enabled === 1 ? '停用' : '启用' }}
-            </el-button>
-            <el-button
-              link
-              size="small"
-              type="danger"
-              :loading="deletingId === row.id"
-              @click="handleDelete(row)"
-            >
-              删除
-            </el-button>
+            <!-- 厂商父节点为分组行，不提供行级操作 -->
+            <template v-if="!row._isVendor">
+              <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+              <el-tooltip
+                :content="row.apiKeyMask ? '' : '该条目未录入 API Key（用户自带密钥模式），无法测试'"
+                :disabled="!!row.apiKeyMask"
+                placement="top"
+              >
+                <span>
+                  <el-button
+                    size="small"
+                    type="primary"
+                    @click="handleTest(row)"
+                    :loading="testingId === row.id"
+                    :disabled="!row.apiKeyMask"
+                  >
+                    测试
+                  </el-button>
+                </span>
+              </el-tooltip>
+              <el-button
+                size="small"
+                :type="row.enabled === 1 ? 'warning' : 'success'"
+                :loading="togglingId === row.id"
+                @click="handleToggle(row)"
+              >
+                {{ row.enabled === 1 ? '停用' : '启用' }}
+              </el-button>
+              <el-button
+                size="small"
+                type="danger"
+                :loading="deletingId === row.id"
+                @click="handleDelete(row)"
+              >
+                删除
+              </el-button>
+            </template>
           </template>
         </el-table-column>
       </el-table>
-      <div class="pagination-bar">
+      <!-- 全量树形模式不分页；仅当目录总量超出一次拉取上限时才出现分页器兜底 -->
+      <div v-if="total > listQuery.size" class="pagination-bar">
         <el-pagination
           background
           :current-page="listQuery.page"
@@ -164,7 +205,16 @@
     >
       <el-form ref="formRef" :model="tempModel" label-width="min(120px, 94vw)" :rules="rules">
         <el-form-item label="厂商" prop="vendor">
-          <el-input v-model="tempModel.vendor" placeholder="如 DeepSeek（客户端一级分组）" />
+          <el-select
+            v-model="tempModel.vendor"
+            filterable
+            allow-create
+            default-first-option
+            placeholder="选择已有厂商或输入新厂商（客户端按此分组）"
+            style="width: 100%"
+          >
+            <el-option v-for="v in vendorOptions" :key="v" :label="v" :value="v" />
+          </el-select>
         </el-form-item>
         <el-form-item label="显示名" prop="name">
           <el-input v-model="tempModel.name" placeholder="如 GLM-5.3" />
@@ -208,7 +258,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import {
   getModelList,
@@ -223,6 +273,9 @@ import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 import { isValidationError } from '@/utils/errors';
+
+// 树形目录一次拉全量（目录当前仅 81 条，量级远低于该上限；超出时分页器出现兜底）
+const FULL_LOAD_SIZE = 500;
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -251,14 +304,69 @@ const {
   baseQuery: {
     name: '',
     enabled: null,
+    vendor: '',
   },
   buildParams: (q) => ({
     ...q,
     name: q.name || undefined,
     enabled: q.enabled ?? undefined,
+    vendor: q.vendor || undefined,
   }),
   errorMsg: '获取模型列表失败',
 });
+// 页面内换用全量加载（useTableList 为多页共用，不改其本身）：一次拉满，前端按厂商分组构树
+listQuery.size = FULL_LOAD_SIZE;
+
+// 厂商下拉选项：取当前加载的数据去重 vendor（清空筛选 = 全部厂商）
+const vendorOptions = computed(() => {
+  const set = new Set();
+  for (const model of modelList.value) {
+    if (model.vendor) set.add(model.vendor);
+  }
+  return Array.from(set);
+});
+
+// 平铺记录按 vendor 分组构树：厂商父节点（id 用 vendor-<vendor>，带 _isVendor 标记）+ 模型子行。
+// 后端按 priority 升序且种子数据同厂商连续编号，组内保持接口返回顺序；厂商组之间按首次出现顺序。
+const treeData = computed(() => {
+  const groups = new Map();
+  for (const model of modelList.value) {
+    const bucket = groups.get(model.vendor);
+    if (bucket) {
+      bucket.push(model);
+    } else {
+      groups.set(model.vendor, [model]);
+    }
+  }
+  return Array.from(groups.entries()).map(([vendor, models]) => ({
+    id: `vendor-${vendor}`,
+    _isVendor: true,
+    vendor,
+    // 厂商接入点取组内首条（同厂商接入点一致）
+    baseUrl: models[0]?.baseUrl || '',
+    _modelCount: models.length,
+    _enabledCount: models.filter((m) => m.enabled === 1).length,
+    _testOkCount: models.filter((m) => m.lastTestOk === 1).length,
+    _testFailCount: models.filter((m) => m.lastTestOk === 0).length,
+    _latestUpdatedAt: models.reduce(
+      (latest, m) => (m.updatedAt && m.updatedAt > latest ? m.updatedAt : latest),
+      ''
+    ),
+    children: models,
+  }));
+});
+
+const vendorCount = computed(() => treeData.value.length);
+
+// 厂商行连通性聚合文案（仅显示非零分段）
+const vendorConnectivityText = (row) => {
+  const untested = row._modelCount - row._testOkCount - row._testFailCount;
+  const parts = [];
+  if (row._testOkCount > 0) parts.push(`通过 ${row._testOkCount}`);
+  if (row._testFailCount > 0) parts.push(`失败 ${row._testFailCount}`);
+  if (untested > 0) parts.push(`未测 ${untested}`);
+  return parts.join(' / ') || '-';
+};
 
 const tempModel = reactive({
   id: null,
@@ -273,7 +381,7 @@ const tempModel = reactive({
 });
 
 const rules = reactive({
-  vendor: [{ required: true, message: '请输入厂商', trigger: 'blur' }],
+  vendor: [{ required: true, message: '请选择或输入厂商', trigger: 'change' }],
   name: [{ required: true, message: '请输入显示名', trigger: 'blur' }],
   baseUrl: [
     { required: true, message: '请输入 Base URL', trigger: 'blur' },
@@ -507,5 +615,24 @@ const handleToggle = async (row) => {
   background: var(--bg-subtle);
   border-radius: 6px; /* 对齐 rounded.sm（原 3px 低于阶梯最小档） */
   font-size: 12px;
+}
+
+.tree-summary {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.vendor-name {
+  font-weight: 600;
+}
+
+.vendor-badge {
+  margin-left: 8px;
+}
+
+.vendor-aggregate {
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 </style>
