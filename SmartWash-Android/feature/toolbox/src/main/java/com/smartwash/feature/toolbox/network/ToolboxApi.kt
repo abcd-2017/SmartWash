@@ -67,11 +67,18 @@ interface ToolboxApi {
 
 @Keep
 data class AddShortCodeRequest(
-    val target: String,
+    /** 内容类型：1 短链（默认） 7 私密文本（阅后即焚）；null 时后端按 1 处理 */
+    val contentType: Int? = null,
+    /** 类型1：目标长链（http/https）；类型7 不传 */
+    val target: String? = null,
+    /** 类型7：私密文本正文（≤2000 字符，服务端 AES-256-GCM 加密落库） */
+    val content: String? = null,
+    /** 类型7：可选访问口令（4-32 位，服务端 BCrypt 落库） */
+    val password: String? = null,
     val customCode: String? = null,
-    /** ISO LocalDateTime（yyyy-MM-dd'T'HH:mm:ss），null = 永久 */
+    /** ISO LocalDateTime（yyyy-MM-dd'T'HH:mm:ss）；类型1 null = 永久，类型7 必填 */
     val expireAt: String? = null,
-    /** 1公开（默认） 2私有 */
+    /** 1公开（默认） 2私有；类型7 后端忽略传值恒为公开 */
     val isPublic: Int = ToolboxConstant.VISIBILITY_PUBLIC,
 )
 
@@ -85,7 +92,7 @@ data class UpdateShortCodeRequest(
 data class ShortCodeVo(
     val id: Long = 0L,
     val code: String = "",
-    /** 1短链 2活码 3交付箱 4图床 5时间胶囊 */
+    /** 1短链 2活码 3交付箱 4图床 5时间胶囊 6设备投递 7私密文本 8物品标签 */
     val contentType: Int = 1,
     val target: String? = null,
     /** 1公开 2私有 */
@@ -96,6 +103,12 @@ data class ShortCodeVo(
     val clickCount: Long = 0L,
     /** 完整跳转 URL：{toolbox.public-base-url}/web/t/{code}，二维码由客户端生成 */
     val shortUrl: String? = null,
+    /** 私密文本状态（仅 contentType=7）：ACTIVE/BURNED/EXPIRED（后端 SecretState） */
+    val secretState: String? = null,
+    /** 焚毁时刻（仅 contentType=7，未焚毁为 null），ISO LocalDateTime */
+    val burnedAt: String? = null,
+    /** 私密文本分享链接：{toolbox.web-base-url}/s/{code}；未配置时为空串（降级仅展示短码） */
+    val secretUrl: String? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )

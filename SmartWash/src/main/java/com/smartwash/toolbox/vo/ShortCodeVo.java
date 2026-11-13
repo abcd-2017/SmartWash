@@ -16,7 +16,7 @@ public class ShortCodeVo {
 
     private String code;
 
-    /** 1短链 2活码 3交付箱 4图床 5时间胶囊 */
+    /** 1短链 2活码 6设备投递 7私密文本 8物品标签 */
     private Integer contentType;
 
     private String target;
@@ -34,6 +34,15 @@ public class ShortCodeVo {
 
     /** 完整跳转 URL：{toolbox.public-base-url}/web/t/{code}，二维码由客户端生成 */
     private String shortUrl;
+
+    /** 私密文本状态（仅 contentType=7）：ACTIVE/BURNED/EXPIRED，取值见 SecretState */
+    private String secretState;
+
+    /** 焚毁时刻（仅 contentType=7，未焚毁为 null） */
+    private LocalDateTime burnedAt;
+
+    /** 私密文本分享链接：{toolbox.web-base-url}/s/{code}（未配置 web-base-url 时为空串，端上降级展示短码） */
+    private String secretUrl;
 
     private LocalDateTime createdAt;
 

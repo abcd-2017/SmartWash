@@ -44,6 +44,9 @@ class ShortCodeDetailViewModel @Inject constructor(
         clickCount = savedStateHandle.get<Long>(ARG_CLICK_COUNT) ?: 0L,
         shortUrl = savedStateHandle.get<String>(ARG_SHORT_URL)?.ifBlank { null },
         createdAt = savedStateHandle.get<String>(ARG_CREATED_AT)?.ifBlank { null },
+        secretState = savedStateHandle.get<String>(ARG_SECRET_STATE)?.ifBlank { null },
+        burnedAt = savedStateHandle.get<String>(ARG_BURNED_AT)?.ifBlank { null },
+        secretUrl = savedStateHandle.get<String>(ARG_SECRET_URL)?.ifBlank { null },
     )
 
     /** 访问明细分页 */
@@ -165,6 +168,9 @@ class ShortCodeDetailViewModel @Inject constructor(
         const val ARG_EXPIRE_AT = "expireAt"
         const val ARG_SHORT_URL = "shortUrl"
         const val ARG_CREATED_AT = "createdAt"
+        const val ARG_SECRET_STATE = "secretState"
+        const val ARG_BURNED_AT = "burnedAt"
+        const val ARG_SECRET_URL = "secretUrl"
 
         private const val TAG = "ShortCodeDetailViewModel"
     }

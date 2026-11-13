@@ -1290,13 +1290,14 @@ DROP TABLE IF EXISTS `toolbox_short_code`;
 CREATE TABLE `toolbox_short_code` (
   `id`              BIGINT        NOT NULL AUTO_INCREMENT,
   `code`            VARCHAR(16)   NOT NULL COMMENT '短码:7位随机或4-16位自定义别名',
-  `content_type`    TINYINT       NOT NULL DEFAULT 1 COMMENT '1短链 2活码 3交付箱 4图床 5时间胶囊 6设备投递',
+  `content_type`    TINYINT       NOT NULL DEFAULT 1 COMMENT '1短链 2活码 3交付箱 4图床 5时间胶囊 6设备投递 7私密文本 8物品标签',
   `target`          VARCHAR(2048) NULL COMMENT '类型1/2:目标长链;类型4:MinIO对象名',
-  `content`         MEDIUMTEXT    NULL COMMENT '类型3/5:文本正文(交付箱密文/胶囊内容)',
+  `content`         MEDIUMTEXT    NULL COMMENT '类型3/5/7:文本正文(交付箱密文/胶囊内容/私密文本密文)',
   `owner_user_id`   BIGINT        NOT NULL COMMENT 'users.id',
   `is_public`       TINYINT       NOT NULL DEFAULT 1 COMMENT '1公开 2私有;私有仅owner可解析,匿名一律404',
-  `password_hash`   VARCHAR(64)   NULL COMMENT '类型3访问密码(BCrypt),其余NULL',
-  `burn_after_read` TINYINT       NOT NULL DEFAULT 0 COMMENT '类型3:阅后即焚(读取后内容即毁)',
+  `password_hash`   VARCHAR(64)   NULL COMMENT '类型3/6/7访问密码(BCrypt),其余NULL',
+  `burn_after_read` TINYINT       NOT NULL DEFAULT 0 COMMENT '类型3/7:阅后即焚(读取后内容即毁)',
+  `burned_at`       DATETIME      NULL COMMENT '焚毁时刻(类型7一次性查看成功时写入,NULL=未焚毁)',
   `unlock_at`       DATETIME      NULL COMMENT '类型5解锁时刻,NULL不锁,读路径判断',
   `expire_at`       DATETIME      NULL COMMENT '过期时刻,NULL永不过期,读路径判断',
   `max_visits`      BIGINT        NULL COMMENT '访问上限,NULL不限(shlink maxVisits)',
@@ -1305,7 +1306,8 @@ CREATE TABLE `toolbox_short_code` (
   `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_code` (`code`),
-  KEY `idx_owner_time` (`owner_user_id`, `created_at`)
+  KEY `idx_owner_time` (`owner_user_id`, `created_at`),
+  KEY `idx_expire` (`expire_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-短码内核';
 
 -- ----------------------------
@@ -1394,7 +1396,11 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
   ('subscription',       '订阅逃生舱',  3, 1, 'smartwash://subscription 打开订阅列表页', 1),
   ('delivery',           '设备投递',    3, 0, 'smartwash://delivery 打开设备投递发起页', 1),
   ('lab',                '解压实验舱',  3, 0, 'smartwash://lab 打开解压实验舱首页', 1),
-  ('dining',             '家庭点单',    3, 1, 'smartwash://dining 打开家庭点单订单列表页（域首页，工作台入口同 target）', 1);
+  ('dining',             '家庭点单',    3, 1, 'smartwash://dining 打开家庭点单订单列表页（域首页，工作台入口同 target）', 1),
+  ('toolbox-secret',     '阅后即焚',    3, 1, 'smartwash://toolbox-secret 打开私密文本入口（短码列表页）', 1),
+  ('s',                  '私密文本查看', 3, 0, 'scheme 说明：分享链接 {toolbox.web-base-url}/s/{code} 为 Web 公开查看页；smartwash://s/{code} 仅字典占位（端上经内置 WebView 打开）', 1),
+  ('toolbox-asset-tag',  '物品标签',    3, 1, 'smartwash://toolbox-asset-tag 打开物品标签列表页', 1),
+  ('tag',                '寻物页查看',  3, 0, 'scheme 说明：分享链接 {toolbox.web-base-url}/tag/{code} 为 Web 公开寻物页；smartwash://tag/{code} 仅字典占位', 1);
 
 -- ----------------------------
 -- 种子数据：workbench_entry（全部 enabled=1）
@@ -1410,7 +1416,9 @@ INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `col
   ('dining',             '家庭点单',   '发起点单 · 扫码一起选菜',      'chat',    'orange', 'row',   '日常管理', 'smartwash://dining',             NULL, 1, 7, NULL),
   ('my-history',         '我的卦历',   NULL,                           'history', 'purple', 'row',   '日常管理', 'smartwash://divination-history', NULL, 1, 8, NULL),
   ('toolbox-short-code', '短链工具箱', '生成与管理短链',               'link',    'blue',   'tile',  '效率工具', 'smartwash://toolbox-short-code', NULL, 1, 9, NULL),
-  ('ai-assistant',       'AI 助手',    NULL,                           'chat',    'blue',   'tile',  '效率工具', 'smartwash://ai-work',            NULL, 1, 10, NULL);
+  ('ai-assistant',       'AI 助手',    NULL,                           'chat',    'blue',   'tile',  '效率工具', 'smartwash://ai-work',            NULL, 1, 10, NULL),
+  ('toolbox-secret',     '阅后即焚',   '一次性秘密分享，查看即焚毁',   'lock',    'pink',   'tile',  '效率工具', 'smartwash://toolbox-secret',     '新', 1, 11, NULL),
+  ('toolbox-asset-tag',  '物品标签',   '一物一码，贴码寻物',           'link',    'teal',   'tile',  '效率工具', 'smartwash://toolbox-asset-tag',  '新', 1, 12, NULL);
 
 -- =====================================================================
 -- 游戏中心 —— H5 游戏库与下发配置（1 张业务表 + 管理端上传包存 MinIO game/{game_key}/ 前缀）
@@ -1704,6 +1712,25 @@ CREATE TABLE `toolbox_delivery_item` (
   KEY `idx_code_time` (`session_code`, `created_at`),
   KEY `idx_expire` (`expire_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-设备投递条目';
+
+-- ----------------------------
+-- Table structure for toolbox_asset_tag（物品标签明细,主记录复用 toolbox_short_code content_type=8）
+-- ----------------------------
+DROP TABLE IF EXISTS `toolbox_asset_tag`;
+CREATE TABLE `toolbox_asset_tag` (
+  `id`              BIGINT       NOT NULL AUTO_INCREMENT,
+  `code`            VARCHAR(16)  NOT NULL COMMENT '标签码,关联 toolbox_short_code.code(content_type=8),uk 唯一',
+  `item_name`       VARCHAR(64)  NOT NULL COMMENT '物品名称',
+  `item_desc`       VARCHAR(256) NULL COMMENT '物品描述(可选)',
+  `contact_cipher`  VARCHAR(512) NULL COMMENT '联系方式密文 v{ver}:{iv}:{ct}(AES-256-GCM),NULL=未留;仅寻物中状态解密下发',
+  `status`          TINYINT      NOT NULL DEFAULT 0 COMMENT '0正常 1寻物中 2已寻回(状态裁定在后端)',
+  `last_scanned_at` DATETIME     NULL COMMENT '最近被扫码时间(失主线索)',
+  `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tag_code` (`code`),
+  KEY `idx_tag_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-物品标签明细(一物一码)';
 
 -- =====================================================================
 -- 管理端操作审计 —— 1 张业务表

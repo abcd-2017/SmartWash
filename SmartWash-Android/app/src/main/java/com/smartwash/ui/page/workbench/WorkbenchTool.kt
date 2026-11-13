@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Search
@@ -52,6 +53,7 @@ internal fun workbenchIconFromKey(key: String?): ImageVector = when (key?.lowerc
     "history" -> Icons.Default.History
     "chat" -> Icons.Default.ChatBubbleOutline
     "link" -> Icons.Default.Link
+    "lock" -> Icons.Default.Lock
     "science" -> Icons.Default.Science
     "gamepad" -> Icons.Default.SportsEsports
     else -> Icons.Default.Apps

@@ -30,6 +30,10 @@ object ToolboxDeepLinkModule {
     fun provideToolboxDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
             "toolbox-short-code" to DeepLinkRouteFactory { _, _ -> ToolboxRoute.List },
+            // toolbox-secret：私密文本（阅后即焚）入口，落同一短码列表页（对齐鸿蒙 DeepLinkRegistry）
+            "toolbox-secret" to DeepLinkRouteFactory { _, _ -> ToolboxRoute.List },
+            // toolbox-asset-tag：物品标签（一物一码）入口（对齐鸿蒙 DeepLinkRegistry）
+            "toolbox-asset-tag" to DeepLinkRouteFactory { _, _ -> ToolboxRoute.AssetTagList },
             // delivery → 设备投递发起页（工作台卡片入口）
             "delivery" to DeepLinkRouteFactory { _, _ -> ToolboxRoute.Delivery },
             // t/{code}：仅接受 t + code 两段形态（parser 已滤空段）；code 校验在本域——

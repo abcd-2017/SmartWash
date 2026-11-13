@@ -1,5 +1,6 @@
 package com.smartwash.toolbox.controller;
 
+import com.smartwash.common.crypto.ToolboxGcmCipher;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.toolbox.entity.ToolboxShortCode;
@@ -8,6 +9,7 @@ import com.smartwash.toolbox.mapper.ToolboxShortCodeMapper;
 import com.smartwash.toolbox.service.ToolboxShortVisitService;
 import com.smartwash.toolbox.service.impl.ToolboxShortCodeServiceImpl;
 import com.smartwash.toolbox.toolkit.PublicBaseUrlResolver;
+import com.smartwash.toolbox.toolkit.WebBaseUrlResolver;
 import com.smartwash.toolbox.toolkit.ShortCodeGenerator;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -26,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
@@ -66,6 +69,12 @@ class ToolboxShortCodeUpdateValidationTest {
     private UsersMapper usersMapper;
     @Mock
     private PublicBaseUrlResolver publicBaseUrlResolver;
+    @Mock
+    private WebBaseUrlResolver webBaseUrlResolver;
+    @Mock
+    private ToolboxGcmCipher toolboxGcmCipher;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     private static ValidatorFactory validatorFactory;
     private static Validator validator;
@@ -86,7 +95,8 @@ class ToolboxShortCodeUpdateValidationTest {
     @BeforeEach
     void setUp() {
         service = new ToolboxShortCodeServiceImpl(new ShortCodeGenerator(), visitService,
-                stringRedisTemplate, usersMapper, publicBaseUrlResolver);
+                stringRedisTemplate, usersMapper, publicBaseUrlResolver, webBaseUrlResolver,
+                toolboxGcmCipher, passwordEncoder);
         // ServiceImpl 的 getById/updateById 等内置方法走父类 baseMapper 字段
         ReflectionTestUtils.setField(service, "baseMapper", shortCodeMapper);
     }

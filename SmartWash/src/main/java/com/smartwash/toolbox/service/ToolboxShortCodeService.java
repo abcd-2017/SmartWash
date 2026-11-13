@@ -7,6 +7,8 @@ import com.smartwash.toolbox.from.AddShortCodeFrom;
 import com.smartwash.toolbox.from.SearchShortCodeFrom;
 import com.smartwash.toolbox.from.UpdateShortCodeFrom;
 import com.smartwash.toolbox.vo.AdminShortCodeVo;
+import com.smartwash.toolbox.vo.SecretMetaVo;
+import com.smartwash.toolbox.vo.SecretViewVo;
 import com.smartwash.toolbox.vo.ShortCodeStatsVo;
 import com.smartwash.toolbox.vo.ShortCodeVo;
 import lombok.AllArgsConstructor;
@@ -19,7 +21,7 @@ import lombok.Getter;
  */
 public interface ToolboxShortCodeService extends IService<ToolboxShortCode> {
 
-    /** 创建短码（唯一索引裁决 + 冲突重试；M1 仅交付 content_type=1 短链入口） */
+    /** 创建短码（唯一索引裁决 + 冲突重试；支持 1 短链 / 7 私密文本入口） */
     ShortCodeVo createShortCode(AddShortCodeFrom from, Long ownerUserId);
 
     /** 我的短码分页（按创建时间倒序） */
@@ -39,6 +41,15 @@ public interface ToolboxShortCodeService extends IService<ToolboxShortCode> {
 
     /** owner 解析（私有码的唯一取值通道；校验归属，不符按 404 语义处理） */
     ShortCodeVo resolveForOwner(String code, Long ownerUserId);
+
+    /** 私密文本元信息（公开）：仅回是否需要口令；不存在/非私密文本 404，已焚毁/已过期 410 */
+    SecretMetaVo secretMeta(String code);
+
+    /**
+     * 私密文本一次性揭示（公开）：事务内行锁串行化并发读者 + 条件焚毁，成功即返回明文；
+     * 口令错误 403 且不焚毁（防爆破者烧毁他人内容）。
+     */
+    SecretViewVo viewSecret(String code, String password);
 
     /** 管理端：全局分页（code/ownerPhone/contentType 筛选，不受 is_public 限制） */
     IPage<AdminShortCodeVo> adminPage(SearchShortCodeFrom from);

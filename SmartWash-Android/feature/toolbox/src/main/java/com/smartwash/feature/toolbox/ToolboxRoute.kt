@@ -44,12 +44,41 @@ sealed interface ToolboxRoute : SmartWashRoute {
         val expireAt: String = "",
         val shortUrl: String = "",
         val createdAt: String = "",
+        // ---------- 私密文本（contentType=7） ----------
+        val secretState: String = "",
+        val burnedAt: String = "",
+        val secretUrl: String = "",
     ) : ToolboxRoute
 
     /** 设备投递发起页（表单 + 会话信息，见 ui/delivery/DeliveryGraph） */
     @Serializable
     @SerialName("ToolboxDelivery")
     data object Delivery : ToolboxRoute
+
+    /** 物品标签列表（一物一码 M2） */
+    @Serializable
+    @SerialName("ToolboxAssetTagList")
+    data object AssetTagList : ToolboxRoute
+
+    /** 新建物品标签 */
+    @Serializable
+    @SerialName("ToolboxAssetTagCreate")
+    data object AssetTagCreate : ToolboxRoute
+
+    /** 物品标签详情（字段经 query 携带，对齐短链详情模式） */
+    @Serializable
+    @SerialName("ToolboxAssetTagDetail")
+    data class AssetTagDetail(
+        val id: Long = -1L,
+        val code: String = "",
+        val itemName: String = "",
+        val itemDesc: String = "",
+        val status: Int = 0,
+        val hasContact: Boolean = false,
+        val tagUrl: String = "",
+        val scanCount: Long = 0L,
+        val lastScannedAt: String = "",
+    ) : ToolboxRoute
 
     /** 设备投递会话页（会话码经 query 携带，见 ui/delivery/DeliveryGraph） */
     @Serializable
@@ -62,5 +91,8 @@ sealed interface ToolboxRoute : SmartWashRoute {
          * 创建/续期/删除成功后由发起页置 true，列表页消费后复位，驱动 pagingFlow 重新加载。
          */
         const val CHANGED_KEY = "toolbox_short_code_changed"
+
+        /** 物品标签列表刷新信号 key（语义同 CHANGED_KEY，域内二组信号互不干扰） */
+        const val ASSET_TAG_CHANGED_KEY = "toolbox_asset_tag_changed"
     }
 }

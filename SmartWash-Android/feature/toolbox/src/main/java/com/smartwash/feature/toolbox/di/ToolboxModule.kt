@@ -1,7 +1,10 @@
 package com.smartwash.feature.toolbox.di
 
+import com.smartwash.feature.toolbox.network.AssetTagApi
 import com.smartwash.feature.toolbox.network.DeliveryApi
 import com.smartwash.feature.toolbox.network.ToolboxApi
+import com.smartwash.feature.toolbox.repository.AssetTagRepository
+import com.smartwash.feature.toolbox.repository.AssetTagRepositoryImpl
 import com.smartwash.feature.toolbox.repository.DeliveryRepository
 import com.smartwash.feature.toolbox.repository.DeliveryRepositoryImpl
 import com.smartwash.feature.toolbox.repository.ToolboxRepository
@@ -32,6 +35,11 @@ object ToolboxApiModule {
     @Singleton
     fun provideDeliveryApi(retrofit: Retrofit): DeliveryApi =
         retrofit.create(DeliveryApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideAssetTagApi(retrofit: Retrofit): AssetTagApi =
+        retrofit.create(AssetTagApi::class.java)
 }
 
 @Module
@@ -43,4 +51,7 @@ abstract class ToolboxRepositoryModule {
 
     @Binds
     abstract fun bindDeliveryRepository(impl: DeliveryRepositoryImpl): DeliveryRepository
+
+    @Binds
+    abstract fun bindAssetTagRepository(impl: AssetTagRepositoryImpl): AssetTagRepository
 }

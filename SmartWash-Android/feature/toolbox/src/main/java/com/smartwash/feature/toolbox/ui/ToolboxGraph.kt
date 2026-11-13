@@ -6,7 +6,11 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.smartwash.feature.toolbox.ToolboxRoute
+import com.smartwash.feature.toolbox.network.AssetTagVo
 import com.smartwash.feature.toolbox.network.ShortCodeVo
+import com.smartwash.feature.toolbox.ui.assettag.AssetTagCreatePage
+import com.smartwash.feature.toolbox.ui.assettag.AssetTagDetailPage
+import com.smartwash.feature.toolbox.ui.assettag.AssetTagListPage
 import com.smartwash.feature.toolbox.ui.create.ShortCodeCreatePage
 import com.smartwash.feature.toolbox.ui.detail.ShortCodeDetailPage
 import com.smartwash.feature.toolbox.ui.list.ToolboxListPage
@@ -42,6 +46,15 @@ fun NavGraphBuilder.toolboxGraph(
             sharedTransitionScope = sharedTransitionScope,
         )
     }
+    composable<ToolboxRoute.AssetTagList> {
+        AssetTagListPage(navController)
+    }
+    composable<ToolboxRoute.AssetTagCreate> {
+        AssetTagCreatePage(navController)
+    }
+    composable<ToolboxRoute.AssetTagDetail> {
+        AssetTagDetailPage(navController)
+    }
 }
 
 /** 列表 → 详情：基础字段随路由携带（勿在详情页经 resolve 拉取，resolve 会计点击） */
@@ -57,6 +70,9 @@ fun NavHostController.navigateToShortCodeDetail(vo: ShortCodeVo) {
             expireAt = vo.expireAt.orEmpty(),
             shortUrl = vo.shortUrl.orEmpty(),
             createdAt = vo.createdAt.orEmpty(),
+            secretState = vo.secretState.orEmpty(),
+            burnedAt = vo.burnedAt.orEmpty(),
+            secretUrl = vo.secretUrl.orEmpty(),
         )
     )
 }
@@ -64,4 +80,26 @@ fun NavHostController.navigateToShortCodeDetail(vo: ShortCodeVo) {
 /** 创建/续期/删除成功后置位刷新信号（列表页消费后复位并重建分页流） */
 fun NavHostController.notifyShortCodeChanged() {
     previousBackStackEntry?.savedStateHandle?.set(ToolboxRoute.CHANGED_KEY, true)
+}
+
+/** 列表 → 标签详情：基础字段随路由携带（对齐短链详情模式，不额外请求） */
+fun NavHostController.navigateToAssetTagDetail(vo: AssetTagVo) {
+    navigate(
+        ToolboxRoute.AssetTagDetail(
+            id = vo.id,
+            code = vo.code,
+            itemName = vo.itemName.orEmpty(),
+            itemDesc = vo.itemDesc.orEmpty(),
+            status = vo.status,
+            hasContact = vo.hasContact,
+            tagUrl = vo.tagUrl.orEmpty(),
+            scanCount = vo.scanCount,
+            lastScannedAt = vo.lastScannedAt.orEmpty(),
+        )
+    )
+}
+
+/** 标签创建/状态流转/删除成功后置位刷新信号（物品标签列表消费） */
+fun NavHostController.notifyAssetTagChanged() {
+    previousBackStackEntry?.savedStateHandle?.set(ToolboxRoute.ASSET_TAG_CHANGED_KEY, true)
 }

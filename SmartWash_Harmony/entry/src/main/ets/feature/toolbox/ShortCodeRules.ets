@@ -112,6 +112,76 @@ export function isPublicVisibility(isPublic: number): boolean {
   return isPublic !== VISIBILITY_PRIVATE
 }
 
+// ==================== 私密文本（阅后即焚，contentType=7） ====================
+
+/** 内容类型：私密文本（阅后即焚），对齐后端 ShortCodeContentType.SECRET_TEXT */
+export const CONTENT_TYPE_SECRET_TEXT: number = 7
+
+/** 正文上限（对齐后端 AddShortCodeFrom @Size，2000 字符） */
+export const SECRET_MAX_CHARS: number = 2000
+
+/** 口令位数（对齐后端 @Size(min=4, max=32)） */
+export const SECRET_PASSWORD_MIN: number = 4
+export const SECRET_PASSWORD_MAX: number = 32
+
+/** 私密文本状态（对齐后端 SecretState：ACTIVE/BURNED/EXPIRED；未知值兜底 UNKNOWN） */
+export enum SecretState {
+  ACTIVE,
+  BURNED,
+  EXPIRED,
+  UNKNOWN
+}
+
+/** 后端 secretState 字符串 → 展示态（未知值兜底 UNKNOWN，对齐端上白名单惯例） */
+export function secretStateOf(state: string | null | undefined): SecretState {
+  if (state === 'ACTIVE') {
+    return SecretState.ACTIVE
+  }
+  if (state === 'BURNED') {
+    return SecretState.BURNED
+  }
+  if (state === 'EXPIRED') {
+    return SecretState.EXPIRED
+  }
+  return SecretState.UNKNOWN
+}
+
+/** 私密文本时效预设（1 小时 / 1 天 / 7 天）——阅后即焚必须有终点，无「永久」 */
+export enum SecretExpiryPreset {
+  HOURS_1,
+  DAYS_1,
+  DAYS_7
+}
+
+/** 私密文本预设 → 过期时刻 ISO 串（now + n 小时，对齐后端 expireAt 必填语义） */
+export function secretExpireAtFor(preset: SecretExpiryPreset, now: Date): string {
+  if (preset === SecretExpiryPreset.HOURS_1) {
+    return formatRequestDateTime(addHours(now, 1))
+  }
+  if (preset === SecretExpiryPreset.DAYS_7) {
+    return formatRequestDateTime(addHours(now, 168))
+  }
+  return formatRequestDateTime(addHours(now, 24))
+}
+
+/** 私密文本正文端上前置校验（后端终审）：非空 ≤2000 字符 */
+export function isValidSecretContent(content: string): boolean {
+  return content.trim().length > 0 && content.length <= SECRET_MAX_CHARS
+}
+
+/** 口令校验（创建侧前置，可空 = 不设口令）：4-32 位 */
+export function isValidSecretPassword(password: string): boolean {
+  return password.length >= SECRET_PASSWORD_MIN && password.length <= SECRET_PASSWORD_MAX
+}
+
+/** 在保持时分秒不变的前提下加 n 小时（对齐安卓 LocalDateTime.plusHours） */
+function addHours(date: Date, hours: number): Date {
+  return new Date(
+    date.getFullYear(), date.getMonth(), date.getDate(),
+    date.getHours() + hours, date.getMinutes(), date.getSeconds(), date.getMilliseconds()
+  )
+}
+
 /**
  * 解析无时区 ISO LocalDateTime。
  * 仅接受 yyyy-MM-dd'T'HH:mm:ss / 省略秒的 yyyy-MM-dd'T'HH:mm 形式；其余返回 null（按永久处理）。

@@ -49,6 +49,9 @@ export class RouteNames {
   // 工具箱设备投递域路由名（对齐安卓 ToolboxRoute.Delivery / DeliverySession）
   static readonly TOOLBOX_DELIVERY: string = "ToolboxDelivery"
   static readonly TOOLBOX_DELIVERY_SESSION: string = "ToolboxDeliverySession"
+  static readonly TOOLBOX_ASSET_TAG_LIST: string = "ToolboxAssetTagList"
+  static readonly TOOLBOX_ASSET_TAG_CREATE: string = "ToolboxAssetTagCreate"
+  static readonly TOOLBOX_ASSET_TAG_DETAIL: string = "ToolboxAssetTagDetail"
   // AI 助手页（对齐安卓壳层 PageConstant.AiWork；深链 smartwash://ai-work 与工作台卡片入口）
   static readonly AI_WORK: string = "AiWork"
   // 内置浏览器页（深链 web 分支与运营位 H5 承载，对齐安卓 ShellRoute.WEB_VIEW）

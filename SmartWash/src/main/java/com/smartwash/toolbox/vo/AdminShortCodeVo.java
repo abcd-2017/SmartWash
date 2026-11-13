@@ -36,6 +36,12 @@ public class AdminShortCodeVo {
 
     private Long clickCount;
 
+    /** 私密文本状态（仅 contentType=7）：ACTIVE/BURNED/EXPIRED；管理端永不携带内容（含密文） */
+    private String secretState;
+
+    /** 焚毁时刻（仅 contentType=7，未焚毁为 null） */
+    private LocalDateTime burnedAt;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

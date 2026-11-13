@@ -3,6 +3,7 @@ package com.smartwash.controller.web;
 import com.smartwash.common.Result;
 import com.smartwash.config.MinioConfig;
 import com.smartwash.toolbox.toolkit.PublicBaseUrlResolver;
+import com.smartwash.toolbox.toolkit.WebBaseUrlResolver;
 import com.smartwash.vo.ServerConfigVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,14 +31,18 @@ public class WebConfigController {
     private final MinioConfig minioConfig;
     /** 短链对外跳转域名，与 ToolboxShortCodeServiceImpl 同源（显式配置优先，否则按请求推导） */
     private final PublicBaseUrlResolver publicBaseUrlResolver;
+    /** Web 前端对外地址（私密文本分享链接来源，只认显式配置） */
+    private final WebBaseUrlResolver webBaseUrlResolver;
 
-    public WebConfigController(MinioConfig minioConfig, PublicBaseUrlResolver publicBaseUrlResolver) {
+    public WebConfigController(MinioConfig minioConfig, PublicBaseUrlResolver publicBaseUrlResolver,
+                               WebBaseUrlResolver webBaseUrlResolver) {
         this.minioConfig = minioConfig;
         this.publicBaseUrlResolver = publicBaseUrlResolver;
+        this.webBaseUrlResolver = webBaseUrlResolver;
     }
 
     @Operation(summary = "获取服务端公开配置",
-            description = "MinIO 对外端点 + 短链对外域名；App 启动拉取，替代编译期注入")
+            description = "MinIO 对外端点 + 短链对外域名 + Web 对外地址；App 启动拉取，替代编译期注入")
     @GetMapping("/config")
     public Result<ServerConfigVo> config(HttpServletRequest request) {
         ServerConfigVo vo = new ServerConfigVo();
@@ -45,6 +50,8 @@ public class WebConfigController {
         vo.setMinioEndpoint(minioConfig.publicEndpoint());
         // 按本次请求推导，保证 App 拿到的与它实际访问后端用的域名一致
         vo.setShortLinkBaseUrl(publicBaseUrlResolver.resolve(request));
+        // Web SPA 对外地址：无法按请求推导（与后端不同源），未配置返回空串由端上降级
+        vo.setWebBaseUrl(webBaseUrlResolver.resolve());
         return Result.ok(vo);
     }
 }

@@ -231,12 +231,18 @@ fun ToolboxListPage(
                                         sharedTransitionScope = sharedTransitionScope,
                                         onClick = { navController.navigateToShortCodeDetail(vo) },
                                         onCopy = {
-                                            // 复制短链（空缺回落短码）+ 提示，与详情页复制行为一致
-                                            val text = vo.shortUrl?.takeIf { it.isNotBlank() } ?: vo.code
+                                            // 复制短链/私密文本分享链接（空缺回落短码）+ 提示，与详情页复制行为一致
+                                            val isSecret =
+                                                ShortCodeRules.CONTENT_TYPE_SECRET_TEXT == vo.contentType
+                                            val text = (if (isSecret) vo.secretUrl else vo.shortUrl)
+                                                ?.takeIf { it.isNotBlank() } ?: vo.code
                                             copyToClipboard(context, text)
                                             Toast.makeText(
                                                 context,
-                                                context.getString(R.string.toolbox_copy_success),
+                                                context.getString(
+                                                    if (isSecret) R.string.toolbox_secret_copy_success
+                                                    else R.string.toolbox_copy_success
+                                                ),
                                                 Toast.LENGTH_SHORT,
                                             ).show()
                                         },
@@ -368,30 +374,61 @@ private fun ShortCodeCard(
                     )
                     Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                     Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXxs)) {
+                        val isSecret = ShortCodeRules.CONTENT_TYPE_SECRET_TEXT == vo.contentType
                         ToolboxTagChip(
-                            text = stringResource(R.string.toolbox_type_short_link),
+                            text = stringResource(
+                                if (isSecret) R.string.toolbox_create_mode_secret
+                                else R.string.toolbox_type_short_link
+                            ),
                             containerColor = AppColors.colorScheme.surfaceVariant,
                             contentColor = AppColors.colorScheme.textSecondary,
                         )
-                        // 画板实测：公开 = primaryContainer/onPrimaryContainer；
-                        // 私密 = warningContainer 底 + 深棕字（画板 #8F5B0C 为 v0.4 已合并的旧
-                        // ongoingInk，端上按条目备选档取其配对字色 onWarningContainer，浅 #92400E/深 #ECB36A）
-                        ToolboxTagChip(
-                            text = stringResource(
-                                if (isPublic) R.string.toolbox_visibility_public_value
-                                else R.string.toolbox_visibility_private_value
-                            ),
-                            containerColor = if (isPublic) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                AppColors.colorScheme.warningContainer
-                            },
-                            contentColor = if (isPublic) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                AppColors.colorScheme.onWarningContainer
-                            },
-                        )
+                        if (isSecret) {
+                            // 私密文本：状态 chip（未领取/已焚毁/已过期）替代可见性（恒公开无信息量）
+                            val state = ShortCodeRules.secretStateOf(vo.secretState)
+                            ToolboxTagChip(
+                                text = stringResource(
+                                    when (state) {
+                                        ShortCodeRules.SecretState.Active -> R.string.toolbox_secret_state_active
+                                        ShortCodeRules.SecretState.Burned -> R.string.toolbox_secret_state_burned
+                                        ShortCodeRules.SecretState.Expired -> R.string.toolbox_secret_state_expired
+                                        ShortCodeRules.SecretState.Unknown -> R.string.toolbox_secret_state_unknown
+                                    }
+                                ),
+                                containerColor = when (state) {
+                                    ShortCodeRules.SecretState.Active -> MaterialTheme.colorScheme.primaryContainer
+                                    ShortCodeRules.SecretState.Burned -> MaterialTheme.colorScheme.errorContainer
+                                    ShortCodeRules.SecretState.Expired -> AppColors.colorScheme.warningContainer
+                                    ShortCodeRules.SecretState.Unknown -> AppColors.colorScheme.surfaceVariant
+                                },
+                                contentColor = when (state) {
+                                    ShortCodeRules.SecretState.Active -> MaterialTheme.colorScheme.onPrimaryContainer
+                                    ShortCodeRules.SecretState.Burned -> MaterialTheme.colorScheme.onErrorContainer
+                                    ShortCodeRules.SecretState.Expired -> AppColors.colorScheme.onWarningContainer
+                                    ShortCodeRules.SecretState.Unknown -> AppColors.colorScheme.textSecondary
+                                },
+                            )
+                        } else {
+                            // 画板实测：公开 = primaryContainer/onPrimaryContainer；
+                            // 私密 = warningContainer 底 + 深棕字（画板 #8F5B0C 为 v0.4 已合并的旧
+                            // ongoingInk，端上按条目备选档取其配对字色 onWarningContainer，浅 #92400E/深 #ECB36A）
+                            ToolboxTagChip(
+                                text = stringResource(
+                                    if (isPublic) R.string.toolbox_visibility_public_value
+                                    else R.string.toolbox_visibility_private_value
+                                ),
+                                containerColor = if (isPublic) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    AppColors.colorScheme.warningContainer
+                                },
+                                contentColor = if (isPublic) {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                } else {
+                                    AppColors.colorScheme.onWarningContainer
+                                },
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.width(AppDimens.spaceXs))

@@ -2,9 +2,11 @@ package com.smartwash.toolbox.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.smartwash.common.crypto.ToolboxGcmCipher;
 import com.smartwash.entity.Users;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.mapper.UsersMapper;
@@ -17,8 +19,13 @@ import com.smartwash.toolbox.mapper.ToolboxShortCodeMapper;
 import com.smartwash.toolbox.service.ToolboxShortCodeService;
 import com.smartwash.toolbox.service.ToolboxShortVisitService;
 import com.smartwash.toolbox.toolkit.PublicBaseUrlResolver;
+import com.smartwash.toolbox.toolkit.SecretState;
+import com.smartwash.toolbox.toolkit.ShortCodeContentType;
 import com.smartwash.toolbox.toolkit.ShortCodeGenerator;
+import com.smartwash.toolbox.toolkit.WebBaseUrlResolver;
 import com.smartwash.toolbox.vo.AdminShortCodeVo;
+import com.smartwash.toolbox.vo.SecretMetaVo;
+import com.smartwash.toolbox.vo.SecretViewVo;
 import com.smartwash.toolbox.vo.ShortCodeStatsVo;
 import com.smartwash.toolbox.vo.ShortCodeVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +33,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -59,12 +68,20 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
     private static final long REDIRECT_TTL_MINUTES = 10;
     /** 空值负缓存 TTL：拦截不存在的短码穿透 */
     private static final long MISS_TTL_SECONDS = 60;
-    /** 内容类型：M1 仅交付 1 短链 */
-    private static final int CONTENT_TYPE_SHORT_LINK = 1;
-    private static final int CONTENT_TYPE_LIVE_CODE = 2;
     /** 可见性：1公开 2私有 */
     private static final int PUBLIC_TRUE = 1;
     private static final int PUBLIC_FALSE = 2;
+    /** 私密文本密钥版本（TOOLBOX_MASTER_KEY 当前代） */
+    private static final int SECRET_KEY_VERSION = 1;
+    /** 私密文本正文上限（与 AddShortCodeFrom @Size 一致，服务端二次校验） */
+    private static final int MAX_SECRET_CHARS = 2000;
+    /** 揭示失败防爆破延迟（对齐投递模块 BCrypt 失败延迟 500ms） */
+    private static final long BRUTE_FORCE_DELAY_MS = 500;
+    /** 业务码语义（{code,message,data} 信封，对齐投递模块）：与 HTTP 状态语义一致 */
+    private static final int CODE_NOT_FOUND = 404;
+    private static final int CODE_FORBIDDEN = 403;
+    private static final int CODE_GONE = 410;
+    private static final int CODE_CONFLICT = 409;
 
     private static final String REDIRECT_KEY_PREFIX = "smartwash:toolbox:redirect:";
     private static final String MISS_KEY_PREFIX = "smartwash:toolbox:miss:";
@@ -77,19 +94,49 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
     /** 短链对外域名解析：显式配置优先，未配置时按当前请求推导（见 PublicBaseUrlResolver） */
     private final PublicBaseUrlResolver publicBaseUrlResolver;
 
+    /** Web 对外地址解析（私密文本分享链接来源；与短链域名不同源，只认显式配置） */
+    private final WebBaseUrlResolver webBaseUrlResolver;
+
+    /** 私密文本内容加密（TOOLBOX_MASTER_KEY，与占卜域分钥） */
+    private final ToolboxGcmCipher toolboxGcmCipher;
+
+    /** 口令 BCrypt（对齐投递模块与登录体系） */
+    private final PasswordEncoder passwordEncoder;
+
     // ==================== 创建（唯一索引裁决 + 冲突重试） ====================
 
     @Override
     public ShortCodeVo createShortCode(AddShortCodeFrom from, Long ownerUserId) {
-        String target = validateTarget(from.getTarget());
-
         String customCode = from.getCustomCode();
         if (customCode != null && !shortCodeGenerator.validCustomCode(customCode)) {
             throw new CustomExceptions("自定义短码须为4-16位字母数字或-_");
         }
-        Integer isPublic = from.getIsPublic() == null ? PUBLIC_TRUE : from.getIsPublic();
-        if (isPublic != PUBLIC_TRUE && isPublic != PUBLIC_FALSE) {
-            throw new CustomExceptions("可见性参数非法");
+
+        int contentType = from.getContentType() == null
+                ? ShortCodeContentType.SHORT_LINK : from.getContentType();
+        String target = null;
+        String contentCipher = null;
+        String passwordHash = null;
+        int burnAfterRead = 0;
+        int isPublic;
+        LocalDateTime expireAt = from.getExpireAt();
+        switch (contentType) {
+            case ShortCodeContentType.SHORT_LINK -> {
+                target = validateTarget(from.getTarget());
+                isPublic = normalizeVisibility(from.getIsPublic());
+            }
+            case ShortCodeContentType.SECRET_TEXT -> {
+                // 私密文本：正文必填并加密落库、可选口令 BCrypt、恒公开（接收者匿名查看）、必须设置未来过期时间
+                contentCipher = validateAndEncryptSecret(from.getContent());
+                passwordHash = StrUtil.isBlank(from.getPassword())
+                        ? null : passwordEncoder.encode(from.getPassword());
+                burnAfterRead = 1;
+                isPublic = PUBLIC_TRUE;
+                if (expireAt == null || !expireAt.isAfter(LocalDateTime.now())) {
+                    throw new CustomExceptions("私密文本必须设置晚于当前时刻的过期时间");
+                }
+            }
+            default -> throw new CustomExceptions("不支持的内容类型");
         }
 
         // 别名直接使用，随机码冲突时由唯一索引裁决后重生成（禁止先查后插，存在 TOCTOU 竞态窗口）
@@ -98,16 +145,19 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
             try {
                 ToolboxShortCode entity = new ToolboxShortCode()
                         .setCode(code)
-                        .setContentType(CONTENT_TYPE_SHORT_LINK)
+                        .setContentType(contentType)
                         .setTarget(target)
+                        .setContent(contentCipher)
+                        .setPasswordHash(passwordHash)
+                        .setBurnAfterRead(burnAfterRead)
                         .setOwnerUserId(ownerUserId)
                         .setIsPublic(isPublic)
-                        .setExpireAt(from.getExpireAt());
+                        .setExpireAt(expireAt);
                 // 单条 insert 自带原子性，不套外层事务
                 this.save(entity);
                 // 清空可能残留的负缓存，防止刚创建的码在 60s 内被误判 404
                 stringRedisTemplate.delete(MISS_KEY_PREFIX + code);
-                log.info("短码创建成功, code: {}, ownerUserId: {}, isPublic: {}", code, ownerUserId, isPublic);
+                log.info("短码创建成功, code: {}, ownerUserId: {}, contentType: {}", code, ownerUserId, contentType);
                 return buildVo(entity);
             } catch (DuplicateKeyException e) {
                 if (customCode != null) {
@@ -135,6 +185,15 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
     @Override
     public ShortCodeVo updateShortCode(Long id, UpdateShortCodeFrom from, Long ownerUserId) {
         ToolboxShortCode record = getOwnedRecord(id, ownerUserId);
+        if (Integer.valueOf(ShortCodeContentType.SECRET_TEXT).equals(record.getContentType())) {
+            // 已焚毁/已过期一律终态，禁止续期；未焚毁仅允许改过期时间
+            if (record.getBurnedAt() != null || isExpired(record)) {
+                throw new CustomExceptions(CODE_CONFLICT, "已焚毁或已过期的私密文本不可更新");
+            }
+            if (from.getTarget() != null) {
+                throw new CustomExceptions("私密文本不支持修改目标链接");
+            }
+        }
         if (from.getTarget() != null) {
             record.setTarget(validateTarget(from.getTarget()));
         }
@@ -202,6 +261,10 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
         if (isUnavailable(record)) {
             return ResolveResult.unavailable();
         }
+        // 非跳转类型（私密文本/投递会话等 target 为空）一律 410，防 302 至空目标
+        if (StrUtil.isBlank(record.getTarget())) {
+            return ResolveResult.unavailable();
+        }
         // 7. 仅「干净」记录进缓存；其余每次走 DB，换取生命周期语义绝对正确
         if (isClean(record)) {
             stringRedisTemplate.opsForValue()
@@ -221,10 +284,64 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
             log.debug("短码归属校验不符, code: {}, ownerUserId: {}", code, ownerUserId);
             throw new CustomExceptions("短码不存在");
         }
-        if (isUnavailable(record)) {
+        // 私密文本对 owner 始终可见（状态随 Vo 下发，焚毁/过期也可见）；其余类型沿用不可用即拒绝
+        if (!Integer.valueOf(ShortCodeContentType.SECRET_TEXT).equals(record.getContentType()) && isUnavailable(record)) {
             throw new CustomExceptions("短码已过期或暂不可访问");
         }
         return buildVo(record);
+    }
+
+    // ==================== 私密文本（阅后即焚） ====================
+
+    @Override
+    public SecretMetaVo secretMeta(String code) {
+        ToolboxShortCode record = getByCode(code);
+        if (record == null || !Integer.valueOf(ShortCodeContentType.SECRET_TEXT).equals(record.getContentType())) {
+            throw new CustomExceptions(CODE_NOT_FOUND, "私密文本不存在");
+        }
+        if (record.getBurnedAt() != null) {
+            throw new CustomExceptions(CODE_GONE, "私密文本已焚毁");
+        }
+        if (isExpired(record)) {
+            throw new CustomExceptions(CODE_GONE, "私密文本已过期");
+        }
+        return new SecretMetaVo().setRequiresPassword(StrUtil.isNotBlank(record.getPasswordHash()));
+    }
+
+    @Override
+    @Transactional
+    public SecretViewVo viewSecret(String code, String password) {
+        // 行锁串行化并发揭示：两个并发 view 只有一个拿到内容（一次性语义的最终裁决）
+        ToolboxShortCode record = this.getBaseMapper().selectOne(new LambdaQueryWrapper<ToolboxShortCode>()
+                .eq(ToolboxShortCode::getCode, code)
+                .last("FOR UPDATE"));
+        if (record == null || !Integer.valueOf(ShortCodeContentType.SECRET_TEXT).equals(record.getContentType())) {
+            throw new CustomExceptions(CODE_NOT_FOUND, "私密文本不存在");
+        }
+        if (record.getBurnedAt() != null) {
+            throw new CustomExceptions(CODE_GONE, "私密文本已焚毁");
+        }
+        if (isExpired(record)) {
+            throw new CustomExceptions(CODE_GONE, "私密文本已过期");
+        }
+        // 可选口令：BCrypt 校验，失败故意延迟防爆破（错误口令绝不焚毁，防爆破者烧毁他人内容）
+        if (StrUtil.isNotBlank(record.getPasswordHash())
+                && !passwordEncoder.matches(password == null ? "" : password, record.getPasswordHash())) {
+            delayAgainstBruteForce();
+            throw new CustomExceptions(CODE_FORBIDDEN, "口令错误");
+        }
+        // 条件焚毁（行锁内必成功，affected=0 仅作并发兜底防御）：焚毁状态与内容清空一次写入
+        boolean burned = this.update(new LambdaUpdateWrapper<ToolboxShortCode>()
+                .eq(ToolboxShortCode::getId, record.getId())
+                .isNull(ToolboxShortCode::getBurnedAt)
+                .set(ToolboxShortCode::getBurnedAt, LocalDateTime.now())
+                .set(ToolboxShortCode::getContent, ""));
+        if (!burned) {
+            throw new CustomExceptions(CODE_GONE, "私密文本已焚毁");
+        }
+        String plaintext = toolboxGcmCipher.decrypt(record.getContent());
+        log.info("私密文本已焚毁, code: {}", code);
+        return new SecretViewVo().setContent(plaintext).setExpireAt(record.getExpireAt());
     }
 
     // ==================== 管理端 ====================
@@ -336,13 +453,64 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
         return trimmed;
     }
 
-    /** 生命周期判断（读路径）：过期 / 未解锁 / 达访问上限 */
+    /** 可见性归一：null 默认公开，非法值拒绝 */
+    private int normalizeVisibility(Integer isPublic) {
+        if (isPublic == null) {
+            return PUBLIC_TRUE;
+        }
+        if (isPublic != PUBLIC_TRUE && isPublic != PUBLIC_FALSE) {
+            throw new CustomExceptions("可见性参数非法");
+        }
+        return isPublic;
+    }
+
+    /** 私密文本正文校验并加密：非空 ≤2000 字符；AES-256-GCM 落库，库中无明文 */
+    private String validateAndEncryptSecret(String content) {
+        if (StrUtil.isBlank(content)) {
+            throw new CustomExceptions("私密文本内容不能为空");
+        }
+        if (content.length() > MAX_SECRET_CHARS) {
+            throw new CustomExceptions("私密文本过长（上限2000字符）");
+        }
+        return toolboxGcmCipher.encrypt(content, SECRET_KEY_VERSION);
+    }
+
+    /** 揭示失败防爆破延迟：固定 500ms，抹平响应时差 */
+    private void delayAgainstBruteForce() {
+        try {
+            Thread.sleep(BRUTE_FORCE_DELAY_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /** 私密文本状态：焚毁 > 过期 > 可用 */
+    private String secretStateOf(ToolboxShortCode record) {
+        if (record.getBurnedAt() != null) {
+            return SecretState.BURNED;
+        }
+        return isExpired(record) ? SecretState.EXPIRED : SecretState.ACTIVE;
+    }
+
+    /** 私密文本分享链接：{toolbox.web-base-url}/s/{code}；未配置降级空串（端上仅展示短码） */
+    private String secretUrlOf(String code) {
+        String base = webBaseUrlResolver.resolve();
+        if (StrUtil.isBlank(base)) {
+            log.debug("未配置 toolbox.web-base-url，私密文本分享链接降级为空串: code={}", code);
+            return "";
+        }
+        return StrUtil.removeSuffix(base, "/") + "/s/" + code;
+    }
+
+    /** 生命周期判断（读路径）：已焚毁 / 过期 / 未解锁 / 达访问上限 */
     private boolean isUnavailable(ToolboxShortCode record) {
-        LocalDateTime now = LocalDateTime.now();
-        if (record.getExpireAt() != null && record.getExpireAt().isBefore(now)) {
+        if (record.getBurnedAt() != null) {
             return true;
         }
-        if (record.getUnlockAt() != null && record.getUnlockAt().isAfter(now)) {
+        if (isExpired(record)) {
+            return true;
+        }
+        if (record.getUnlockAt() != null && record.getUnlockAt().isAfter(LocalDateTime.now())) {
             return true;
         }
         return record.getMaxVisits() != null
@@ -350,11 +518,16 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
                 && record.getClickCount() >= record.getMaxVisits();
     }
 
+    /** 过期判断：expire_at 早于当前时刻 */
+    private boolean isExpired(ToolboxShortCode record) {
+        return record.getExpireAt() != null && record.getExpireAt().isBefore(LocalDateTime.now());
+    }
+
     /** 「干净」记录：公开 + 类型1/2 + 无生命周期字段 —— 语义仅依赖 target 本身，可安全缓存 */
     private boolean isClean(ToolboxShortCode record) {
         boolean publicCode = Integer.valueOf(PUBLIC_TRUE).equals(record.getIsPublic());
-        boolean shortLinkOrLive = Integer.valueOf(CONTENT_TYPE_SHORT_LINK).equals(record.getContentType())
-                || Integer.valueOf(CONTENT_TYPE_LIVE_CODE).equals(record.getContentType());
+        boolean shortLinkOrLive = ShortCodeContentType.SHORT_LINK == record.getContentType()
+                || ShortCodeContentType.LIVE_CODE == record.getContentType();
         boolean noLifecycle = record.getExpireAt() == null
                 && record.getUnlockAt() == null
                 && record.getMaxVisits() == null;
@@ -401,6 +574,7 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
     }
 
     private ShortCodeVo buildVo(ToolboxShortCode record) {
+        boolean secret = Integer.valueOf(ShortCodeContentType.SECRET_TEXT).equals(record.getContentType());
         return new ShortCodeVo()
                 .setId(record.getId())
                 .setCode(record.getCode())
@@ -412,6 +586,10 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
                 .setMaxVisits(record.getMaxVisits())
                 .setClickCount(record.getClickCount())
                 .setShortUrl(shortUrlOf(record.getCode()))
+                // 私密文本：状态与分享链接随 Vo 下发；content（含密文）永不回显
+                .setSecretState(secret ? secretStateOf(record) : null)
+                .setBurnedAt(record.getBurnedAt())
+                .setSecretUrl(secret ? secretUrlOf(record.getCode()) : null)
                 .setCreatedAt(record.getCreatedAt())
                 .setUpdatedAt(record.getUpdatedAt());
     }
@@ -439,6 +617,9 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
                 .setExpireAt(record.getExpireAt())
                 .setMaxVisits(record.getMaxVisits())
                 .setClickCount(record.getClickCount())
+                .setSecretState(Integer.valueOf(ShortCodeContentType.SECRET_TEXT).equals(record.getContentType())
+                        ? secretStateOf(record) : null)
+                .setBurnedAt(record.getBurnedAt())
                 .setCreatedAt(record.getCreatedAt())
                 .setUpdatedAt(record.getUpdatedAt());
     }

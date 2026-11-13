@@ -15,7 +15,7 @@ public class SearchShortCodeFrom extends BaseSearchFrom {
     /** 短码精确筛选（管理端） */
     private String code;
 
-    /** 内容类型筛选：1短链 2活码 3交付箱 4图床 5时间胶囊（管理端） */
+    /** 内容类型筛选：1短链 2活码 6设备投递 7私密文本 8物品标签（管理端） */
     private Integer contentType;
 
     /** owner 手机号筛选（管理端，精确匹配） */

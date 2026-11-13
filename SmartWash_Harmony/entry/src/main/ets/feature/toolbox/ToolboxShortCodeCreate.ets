@@ -13,7 +13,19 @@ import {
   VISIBILITY_PRIVATE,
   VISIBILITY_PUBLIC
 } from './api'
-import { ExpiryPreset, expireAtFor, isValidCustomCode, isValidTarget } from './ShortCodeRules'
+import {
+  CONTENT_TYPE_SECRET_TEXT,
+  ExpiryPreset,
+  expireAtFor,
+  isValidCustomCode,
+  isValidSecretContent,
+  isValidSecretPassword,
+  isValidTarget,
+  SECRET_MAX_CHARS,
+  SECRET_PASSWORD_MAX,
+  SecretExpiryPreset,
+  secretExpireAtFor
+} from './ShortCodeRules'
 import { markShortCodeChanged } from './ToolboxChangeSignal'
 import { ToolboxDatePickerDialog } from './ToolboxDatePickerDialog'
 import { AppButton, AppButtonVariant } from '../../view/common/AppComponents'
@@ -48,6 +60,14 @@ struct ToolboxShortCodeCreate {
   @State customCodeFocused: boolean = false
   // 预设 chip 按压态（对齐安卓 pressable scale 0.97）
   @State pressedChipId: number = -1
+  // ---------- 私密文本（阅后即焚）模式：false = 短链（默认） ----------
+  @State secretMode: boolean = false
+  @State content: string = ""
+  @State passwordEnabled: boolean = false
+  @State password: string = ""
+  @State secretPreset: SecretExpiryPreset = SecretExpiryPreset.DAYS_1
+  @State contentFocused: boolean = false
+  @State passwordFocused: boolean = false
 
   /**
    * 自定义日期弹窗控制器 —— 必须由结构体字段持有（对齐 DivAskPage.ets:244 / SubscriptionDetailPage.ets:313）：
@@ -80,7 +100,7 @@ struct ToolboxShortCodeCreate {
 
   /**
    * 提交创建。客户端前置校验失败不触网；业务错误保留后端 message 由页面内联展示。
-   * 校验顺序对齐安卓 ShortCodeCreateViewModel.submit：target → customCode → 自定义日期。
+   * 校验顺序对齐安卓 ShortCodeCreateViewModel.submit：customCode → 模式分支（target/内容口令时效）。
    */
   async submit(): Promise<void> {
     if (this.submitting) {
@@ -88,36 +108,60 @@ struct ToolboxShortCodeCreate {
       return
     }
     const code = this.customCode.trim()
-    if (!isValidTarget(this.target)) {
-      logger.warn(TAG, '创建校验拒绝: 目标链接格式不合法')
-      this.errorMessage = ToolboxText.toolbox_error_invalid_target
-      return
-    }
     if (code.length > 0 && !isValidCustomCode(code)) {
       logger.warn(TAG, '创建校验拒绝: 自定义短码格式不合法')
       this.errorMessage = ToolboxText.toolbox_error_invalid_custom_code
       return
     }
-    if (this.preset === ExpiryPreset.CUSTOM &&
-      (this.customDate === null || this.customDate.length === 0)) {
-      logger.warn(TAG, '创建校验拒绝: 自定义有效期未选日期')
-      this.errorMessage = ToolboxText.toolbox_error_custom_date_required
-      return
+    if (this.secretMode) {
+      // ---------- 私密文本：内容必填、口令可选、时效必有终点 ----------
+      if (!isValidSecretContent(this.content)) {
+        logger.warn(TAG, '创建校验拒绝: 私密文本内容为空或超长')
+        this.errorMessage = ToolboxText.toolbox_error_secret_content
+        return
+      }
+      if (this.passwordEnabled && !isValidSecretPassword(this.password)) {
+        logger.warn(TAG, '创建校验拒绝: 口令位数不符')
+        this.errorMessage = ToolboxText.toolbox_error_secret_password
+        return
+      }
+    } else {
+      if (!isValidTarget(this.target)) {
+        logger.warn(TAG, '创建校验拒绝: 目标链接格式不合法')
+        this.errorMessage = ToolboxText.toolbox_error_invalid_target
+        return
+      }
+      if (this.preset === ExpiryPreset.CUSTOM &&
+        (this.customDate === null || this.customDate.length === 0)) {
+        logger.warn(TAG, '创建校验拒绝: 自定义有效期未选日期')
+        this.errorMessage = ToolboxText.toolbox_error_custom_date_required
+        return
+      }
     }
 
-    const form: AddShortCodeForm = {
-      target: this.target.trim(),
-      customCode: code.length > 0 ? code : undefined,
-      expireAt: expireAtFor(this.preset, this.customDate, new Date()) ?? undefined,
-      isPublic: this.isPublic ? VISIBILITY_PUBLIC : VISIBILITY_PRIVATE
-    }
+    // 口令明文仅经 HTTPS 请求体上行（服务端 BCrypt 落库），不进日志
+    const form: AddShortCodeForm = this.secretMode
+      ? {
+        contentType: CONTENT_TYPE_SECRET_TEXT,
+        content: this.content,
+        password: this.passwordEnabled ? this.password : undefined,
+        customCode: code.length > 0 ? code : undefined,
+        expireAt: secretExpireAtFor(this.secretPreset, new Date()),
+        isPublic: VISIBILITY_PUBLIC
+      }
+      : {
+        target: this.target.trim(),
+        customCode: code.length > 0 ? code : undefined,
+        expireAt: expireAtFor(this.preset, this.customDate, new Date()) ?? undefined,
+        isPublic: this.isPublic ? VISIBILITY_PUBLIC : VISIBILITY_PRIVATE
+      }
 
     this.errorMessage = ""
     this.submitting = true
     try {
       const res = await createShortCode(form)
       if (res.code === HttpStatusCode.Ok) {
-        logger.info(TAG, `短链创建成功 code=${res.data?.code ?? ''} 公开=${this.isPublic}`)
+        logger.info(TAG, `短码创建成功 code=${res.data?.code ?? ''} 模式=${this.secretMode ? 'secret' : 'link'}`)
         showToastSafety(ToolboxText.toolbox_toast_create_success)
         // 置变更信号：列表 onShown 据此重拉（对齐安卓 notifyShortCodeChanged）
         markShortCodeChanged()
@@ -184,7 +228,8 @@ struct ToolboxShortCodeCreate {
     .animation({ duration: 200, curve: Curve.EaseInOut })
   }
 
-  /** chip 点击分流：0/1 为可见性（公开/私有），2..5 为有效期预设（永久/7天/30天/自定义） */
+  /** chip 点击分流：0/1 可见性（公开/私有），2..5 有效期预设（永久/7天/30天/自定义），
+   * 10/11 创建模式（短链/私密文本），12..14 私密文本时效（1小时/1天/7天），20/21 口令开关 */
   private onChipSelect(chipId: number): void {
     if (chipId === 0) {
       this.isPublic = true
@@ -196,8 +241,22 @@ struct ToolboxShortCodeCreate {
       this.preset = ExpiryPreset.DAYS_7
     } else if (chipId === 4) {
       this.preset = ExpiryPreset.DAYS_30
-    } else {
+    } else if (chipId === 5) {
       this.preset = ExpiryPreset.CUSTOM
+    } else if (chipId === 10) {
+      this.secretMode = false
+    } else if (chipId === 11) {
+      this.secretMode = true
+    } else if (chipId === 12) {
+      this.secretPreset = SecretExpiryPreset.HOURS_1
+    } else if (chipId === 13) {
+      this.secretPreset = SecretExpiryPreset.DAYS_1
+    } else if (chipId === 14) {
+      this.secretPreset = SecretExpiryPreset.DAYS_7
+    } else if (chipId === 20) {
+      this.passwordEnabled = false
+    } else if (chipId === 21) {
+      this.passwordEnabled = true
     }
   }
 
@@ -236,40 +295,152 @@ struct ToolboxShortCodeCreate {
 
           // 表单卡（对齐安卓 GroupCard）
           Column() {
-            // ---------- 目标链接 ----------
-            this.FormLabel(ToolboxText.toolbox_target_label)
-            TextInput({ text: this.target, placeholder: ToolboxText.toolbox_target_hint })
-              .height(48)
-              .fontSize(DesignFontSize.BODY)
-              // URL 键盘（「/」「.com」便捷键，对齐安卓 KeyboardType.Uri，audit-17 #11）
-              .type(InputType.URL)
-              .backgroundColor($r('app.color.SURFACE_VARIANT'))
-              // 输入档圆角对齐安卓 ShortCodeCreatePage 的 radiusMd 12（规范 §3 radius.input）
-              .borderRadius(DesignDimens.RADIUS_MD)
-              .borderWidth(1)
-              .borderColor(this.targetFocused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
-              .placeholderColor($r('app.color.TEXT_TERTIARY'))
-              .placeholderFont({ size: DesignFontSize.BODY_SMALL })
-              .onFocus(() => {
-                this.targetFocused = true
-              })
-              .onBlur(() => {
-                this.targetFocused = false
-              })
-              .onChange((value: string) => {
-                this.target = value
-              })
-            Text(ToolboxText.toolbox_target_helper)
-              .fontSize(DesignFontSize.CAPTION)
-              .fontWeight(DesignFontWeight.MEDIUM)
-              // helper 为用户必读说明文字：textTertiary ≈2.3:1 破 §10 红线，收敛 textSecondary（audit-17 #1）
-              .fontColor($r('app.color.TEXT_SECONDARY'))
-              .margin({ top: DesignDimens.SPACE_XXS })
+            // ---------- 创建模式（短链 / 私密文本） ----------
+            this.FormLabel(ToolboxText.toolbox_label_type)
+            Row({ space: DesignDimens.SPACE_XS }) {
+              this.SelectableChip(ToolboxText.toolbox_create_mode_short_link, !this.secretMode, 10)
+              this.SelectableChip(ToolboxText.toolbox_create_mode_secret, this.secretMode, 11)
+            }
+            if (this.secretMode) {
+              Text(ToolboxText.toolbox_secret_mode_helper)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                .fontColor($r('app.color.TEXT_SECONDARY'))
+                .margin({ top: DesignDimens.SPACE_XXS })
+            }
 
             Column()
               .height(DesignDimens.SPACE_LG)
 
-            // ---------- 自定义短码（可选） ----------
+            if (this.secretMode) {
+              // ---------- 内容（阅后即焚正文） ----------
+              this.FormLabel(ToolboxText.toolbox_secret_content_label)
+              TextArea({ text: this.content, placeholder: ToolboxText.toolbox_secret_content_hint })
+                .constraintSize({ minHeight: 96, maxHeight: 220 })
+                .fontSize(DesignFontSize.BODY)
+                .backgroundColor($r('app.color.SURFACE_VARIANT'))
+                .borderRadius(DesignDimens.RADIUS_MD)
+                .borderWidth(1)
+                .borderColor(this.contentFocused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
+                .placeholderColor($r('app.color.TEXT_TERTIARY'))
+                .placeholderFont({ size: DesignFontSize.BODY_SMALL })
+                .onFocus(() => {
+                  this.contentFocused = true
+                })
+                .onBlur(() => {
+                  this.contentFocused = false
+                })
+                .onChange((value: string) => {
+                  // 硬上限 2000：粘贴超长时截断，与计数一致
+                  this.content = value.length > SECRET_MAX_CHARS
+                    ? value.substring(0, SECRET_MAX_CHARS)
+                    : value
+                })
+              Row() {
+                Text(`${this.content.length}/${SECRET_MAX_CHARS}`)
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontWeight(DesignFontWeight.MEDIUM)
+                  .fontColor($r('app.color.TEXT_SECONDARY'))
+                  .fontFeature(DesignFontFeature.TNUM)
+              }
+              .width('100%')
+              .justifyContent(FlexAlign.End)
+              .margin({ top: DesignDimens.SPACE_XXS })
+
+              Column()
+                .height(DesignDimens.SPACE_LG)
+
+              // ---------- 访问口令（可选） ----------
+              this.FormLabel(ToolboxText.toolbox_secret_password_label)
+              Row({ space: DesignDimens.SPACE_XS }) {
+                this.SelectableChip(ToolboxText.toolbox_common_off, !this.passwordEnabled, 20)
+                this.SelectableChip(ToolboxText.toolbox_common_on, this.passwordEnabled, 21)
+              }
+              Text(ToolboxText.toolbox_secret_password_desc)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                .fontColor($r('app.color.TEXT_SECONDARY'))
+                .margin({ top: DesignDimens.SPACE_XXS })
+              if (this.passwordEnabled) {
+                TextInput({ text: this.password, placeholder: ToolboxText.toolbox_secret_password_hint })
+                  .height(48)
+                  .fontSize(DesignFontSize.BODY)
+                  .type(InputType.Password)
+                  .backgroundColor($r('app.color.SURFACE_VARIANT'))
+                  .borderRadius(DesignDimens.RADIUS_MD)
+                  .borderWidth(1)
+                  .borderColor(this.passwordFocused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
+                  .placeholderColor($r('app.color.TEXT_TERTIARY'))
+                  .placeholderFont({ size: DesignFontSize.BODY_SMALL })
+                  .margin({ top: DesignDimens.SPACE_SM })
+                  .onFocus(() => {
+                    this.passwordFocused = true
+                  })
+                  .onBlur(() => {
+                    this.passwordFocused = false
+                  })
+                  .onChange((value: string) => {
+                    this.password = value.length > SECRET_PASSWORD_MAX
+                      ? value.substring(0, SECRET_PASSWORD_MAX)
+                      : value
+                  })
+              }
+
+              Column()
+                .height(DesignDimens.SPACE_LG)
+
+              // ---------- 时效预设（阅后即焚必须有终点，无「永久」） ----------
+              this.FormLabel(ToolboxText.toolbox_secret_expiry_label)
+              Scroll() {
+                Row({ space: DesignDimens.SPACE_XS }) {
+                  this.SelectableChip(ToolboxText.toolbox_secret_expiry_preset_1h,
+                    this.secretPreset === SecretExpiryPreset.HOURS_1, 12)
+                  this.SelectableChip(ToolboxText.toolbox_secret_expiry_preset_1d,
+                    this.secretPreset === SecretExpiryPreset.DAYS_1, 13)
+                  this.SelectableChip(ToolboxText.toolbox_secret_expiry_preset_7d,
+                    this.secretPreset === SecretExpiryPreset.DAYS_7, 14)
+                }
+              }
+              .scrollable(ScrollDirection.Horizontal)
+              .align(Alignment.Start)
+              .width('100%')
+              .scrollBar(BarState.Off)
+            } else {
+              // ---------- 目标链接 ----------
+              this.FormLabel(ToolboxText.toolbox_target_label)
+              TextInput({ text: this.target, placeholder: ToolboxText.toolbox_target_hint })
+                .height(48)
+                .fontSize(DesignFontSize.BODY)
+                // URL 键盘（「/」「.com」便捷键，对齐安卓 KeyboardType.Uri，audit-17 #11）
+                .type(InputType.URL)
+                .backgroundColor($r('app.color.SURFACE_VARIANT'))
+                // 输入档圆角对齐安卓 ShortCodeCreatePage 的 radiusMd 12（规范 §3 radius.input）
+                .borderRadius(DesignDimens.RADIUS_MD)
+                .borderWidth(1)
+                .borderColor(this.targetFocused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
+                .placeholderColor($r('app.color.TEXT_TERTIARY'))
+                .placeholderFont({ size: DesignFontSize.BODY_SMALL })
+                .onFocus(() => {
+                  this.targetFocused = true
+                })
+                .onBlur(() => {
+                  this.targetFocused = false
+                })
+                .onChange((value: string) => {
+                  this.target = value
+                })
+              Text(ToolboxText.toolbox_target_helper)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                // helper 为用户必读说明文字：textTertiary ≈2.3:1 破 §10 红线，收敛 textSecondary（audit-17 #1）
+                .fontColor($r('app.color.TEXT_SECONDARY'))
+                .margin({ top: DesignDimens.SPACE_XXS })
+
+              Column()
+                .height(DesignDimens.SPACE_LG)
+            }
+
+            // ---------- 自定义短码（可选，两种模式共用） ----------
             this.FormLabel(ToolboxText.toolbox_custom_code_label)
             TextInput({ text: this.customCode, placeholder: ToolboxText.toolbox_custom_code_hint })
               .height(48)
@@ -291,57 +462,59 @@ struct ToolboxShortCodeCreate {
                 this.customCode = value
               })
 
-            Column()
-              .height(DesignDimens.SPACE_LG)
+            if (!this.secretMode) {
+              Column()
+                .height(DesignDimens.SPACE_LG)
 
-            // ---------- 可见性 ----------
-            this.FormLabel(ToolboxText.toolbox_visibility_label)
-            Row({ space: DesignDimens.SPACE_XS }) {
-              this.SelectableChip(ToolboxText.toolbox_visibility_public_value, this.isPublic, 0)
-              this.SelectableChip(ToolboxText.toolbox_visibility_private_value, !this.isPublic, 1)
-            }
-            Text(this.isPublic ? ToolboxText.toolbox_visibility_public_desc
-              : ToolboxText.toolbox_visibility_private_desc)
-              .fontSize(DesignFontSize.CAPTION)
-              .fontWeight(DesignFontWeight.MEDIUM)
-              // 可见性说明是用户必读语义：与 helper 同口径收敛 textSecondary（audit-17 #2）
-              .fontColor($r('app.color.TEXT_SECONDARY'))
-              .margin({ top: DesignDimens.SPACE_XXS })
-
-            Column()
-              .height(DesignDimens.SPACE_LG)
-
-            // ---------- 有效期预设 ----------
-            this.FormLabel(ToolboxText.toolbox_expiry_label)
-            // 横向可滚动兜底（对齐安卓 horizontalScroll，audit-17 T4 同口径）：
-            // 窄屏/字体放大时 chips 超宽不挤压末位 chip，内容放得下时视觉与固定行一致
-            Scroll() {
+              // ---------- 可见性（仅短链；私密文本由后端恒置公开） ----------
+              this.FormLabel(ToolboxText.toolbox_visibility_label)
               Row({ space: DesignDimens.SPACE_XS }) {
-                this.SelectableChip(ToolboxText.toolbox_expiry_preset_permanent,
-                  this.preset === ExpiryPreset.PERMANENT, 2)
-                this.SelectableChip(ToolboxText.toolbox_expiry_preset_7d,
-                  this.preset === ExpiryPreset.DAYS_7, 3)
-                this.SelectableChip(ToolboxText.toolbox_expiry_preset_30d,
-                  this.preset === ExpiryPreset.DAYS_30, 4)
-                this.SelectableChip(ToolboxText.toolbox_expiry_preset_custom,
-                  this.preset === ExpiryPreset.CUSTOM, 5)
+                this.SelectableChip(ToolboxText.toolbox_visibility_public_value, this.isPublic, 0)
+                this.SelectableChip(ToolboxText.toolbox_visibility_private_value, !this.isPublic, 1)
               }
-            }
-            .scrollable(ScrollDirection.Horizontal)
-            .align(Alignment.Start)
-            .width('100%')
-            .scrollBar(BarState.Off)
+              Text(this.isPublic ? ToolboxText.toolbox_visibility_public_desc
+                : ToolboxText.toolbox_visibility_private_desc)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                // 可见性说明是用户必读语义：与 helper 同口径收敛 textSecondary（audit-17 #2）
+                .fontColor($r('app.color.TEXT_SECONDARY'))
+                .margin({ top: DesignDimens.SPACE_XXS })
 
-            if (this.preset === ExpiryPreset.CUSTOM) {
-              // 自定义日期按钮：AppButton SECONDARY 胶囊 48（对齐安卓）
-              AppButton({
-                text: this.customDate ?? ToolboxText.toolbox_expiry_custom_pick,
-                variant: AppButtonVariant.SECONDARY,
-                click: () => {
-                  this.openDatePicker()
+              Column()
+                .height(DesignDimens.SPACE_LG)
+
+              // ---------- 有效期预设 ----------
+              this.FormLabel(ToolboxText.toolbox_expiry_label)
+              // 横向可滚动兜底（对齐安卓 horizontalScroll，audit-17 T4 同口径）：
+              // 窄屏/字体放大时 chips 超宽不挤压末位 chip，内容放得下时视觉与固定行一致
+              Scroll() {
+                Row({ space: DesignDimens.SPACE_XS }) {
+                  this.SelectableChip(ToolboxText.toolbox_expiry_preset_permanent,
+                    this.preset === ExpiryPreset.PERMANENT, 2)
+                  this.SelectableChip(ToolboxText.toolbox_expiry_preset_7d,
+                    this.preset === ExpiryPreset.DAYS_7, 3)
+                  this.SelectableChip(ToolboxText.toolbox_expiry_preset_30d,
+                    this.preset === ExpiryPreset.DAYS_30, 4)
+                  this.SelectableChip(ToolboxText.toolbox_expiry_preset_custom,
+                    this.preset === ExpiryPreset.CUSTOM, 5)
                 }
-              })
-              .margin({ top: DesignDimens.SPACE_SM })
+              }
+              .scrollable(ScrollDirection.Horizontal)
+              .align(Alignment.Start)
+              .width('100%')
+              .scrollBar(BarState.Off)
+
+              if (this.preset === ExpiryPreset.CUSTOM) {
+                // 自定义日期按钮：AppButton SECONDARY 胶囊 48（对齐安卓）
+                AppButton({
+                  text: this.customDate ?? ToolboxText.toolbox_expiry_custom_pick,
+                  variant: AppButtonVariant.SECONDARY,
+                  click: () => {
+                    this.openDatePicker()
+                  }
+                })
+                .margin({ top: DesignDimens.SPACE_SM })
+              }
             }
           }
           .width('100%')

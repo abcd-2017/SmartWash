@@ -50,6 +50,17 @@ object ShortCodeRules {
         }
     }
 
+    /** 私密文本时效预设（1 小时 / 1 天 / 7 天）——阅后即焚必须有终点，无「永久」 */
+    enum class SecretExpiryPreset(val hours: Long) {
+        HOURS_1(1),
+        DAYS_1(24),
+        DAYS_7(168),
+    }
+
+    /** 私密文本预设 → 过期时刻 ISO 串（now + n 小时，对齐后端 expireAt 必填语义） */
+    fun secretExpireAtFor(preset: SecretExpiryPreset, now: LocalDateTime): String =
+        now.plusHours(preset.hours).format(REQUEST_FORMAT)
+
     /** DatePicker 的 UTC 毫秒 → LocalDate（DatePicker 内部按 UTC 取整日） */
     fun localDateFromPickerMillis(millis: Long?): LocalDate? {
         return millis?.let { Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
@@ -85,6 +96,46 @@ object ShortCodeRules {
 
     /** 可见性映射：非 2（私有）一律按公开处理（对齐后端 1公开/2私有） */
     fun isPublicVisibility(isPublic: Int): Boolean = isPublic != ToolboxConstant.VISIBILITY_PRIVATE
+
+    // ==================== 私密文本（阅后即焚，contentType=7） ====================
+
+    /** 内容类型：私密文本（阅后即焚），对齐后端 ShortCodeContentType.SECRET_TEXT */
+    const val CONTENT_TYPE_SECRET_TEXT = 7
+
+    /** 正文上限（对齐后端 AddShortCodeFrom @Size，2000 字符） */
+    const val SECRET_MAX_CHARS = 2000
+
+    /** 口令位数（对齐后端 @Size(min=4, max=32)） */
+    const val SECRET_PASSWORD_MIN = 4
+    const val SECRET_PASSWORD_MAX = 32
+
+    /** 私密文本状态（对齐后端 SecretState：ACTIVE/BURNED/EXPIRED） */
+    sealed interface SecretState {
+        /** 未领取：内容可被一次性揭示 */
+        data object Active : SecretState
+        /** 已焚毁：已被成功揭示，内容不可找回 */
+        data object Burned : SecretState
+        /** 已过期：到期未领取，内容不可找回 */
+        data object Expired : SecretState
+        /** 未知值兜底（后端新增状态时前端兜底展示） */
+        data object Unknown : SecretState
+    }
+
+    /** 后端 secretState 字符串 → 展示态（未知值兜底 Unknown，对齐端上白名单惯例） */
+    fun secretStateOf(state: String?): SecretState = when (state) {
+        "ACTIVE" -> SecretState.Active
+        "BURNED" -> SecretState.Burned
+        "EXPIRED" -> SecretState.Expired
+        else -> SecretState.Unknown
+    }
+
+    /** 私密文本正文端上前置校验（后端终审）：非空 ≤2000 字符 */
+    fun isValidSecretContent(content: String): Boolean =
+        content.isNotBlank() && content.length <= SECRET_MAX_CHARS
+
+    /** 口令校验（创建侧前置，可空 = 不设口令）：4-32 位 */
+    fun isValidSecretPassword(password: String): Boolean =
+        password.length in SECRET_PASSWORD_MIN..SECRET_PASSWORD_MAX
 
     private fun parseOrNull(expireAt: String?): LocalDateTime? {
         val raw = expireAt?.takeIf { it.isNotBlank() } ?: return null

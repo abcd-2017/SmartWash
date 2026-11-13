@@ -441,7 +441,7 @@
   - Android：`:feature:toolbox` `logic/ShortCodeRules.kt`、`ToolboxRoute`。
   - 鸿蒙：`feature/toolbox/ToolboxShortCodeList.ets` / `Create` / `Detail`、`feature/toolbox/api.ets`。
   - Web：`views/toolbox/ShortCodeList.vue`、`api/toolbox.js`、`dict.js` `SHORT_CODE_CONTENT_TYPE_OPTIONS`。
-- **易混淆点**：日常说的「短链」通常指 `content_type=1`；「短码」是 `code`（7 位随机或别名）；**当前 M1 仅交付短链**（`CONTENT_TYPE_SHORT_LINK = 1`），活码/交付箱/图床/时间胶囊为表结构预留。
+- **易混淆点**：日常说的「短链」通常指 `content_type=1`；「短码」是 `code`（7 位随机或别名）；已实现类型：1 短链、2 活码（储物柜资产码首消费）、6 设备投递、7 私密文本（阅后即焚）、8 物品标签（一物一码）；交付箱（3）/图床（4）/时间胶囊（5）为表结构预留。
 
 ### 7.3 短码访问明细（toolbox_short_visit）
 
@@ -474,6 +474,30 @@
   - 鸿蒙：`feature/toolbox/DeliveryApi.ets` + `ui/delivery/`。
   - Web：`views/delivery/DeliveryPickup.vue` / `DeliverySession.vue`（公开对端页）。
 - **易混淆点**：公开对端接口 `/web/delivery/**` 与创作端 `/web/auth/toolbox/delivery/**` 是**两组**，不要混用；文件上限 20MB，业务码 403/404/409/413 由页面分支。
+
+### 7.6 私密文本 / 阅后即焚（contentType=7 / burned_at / SecretState）
+
+- **代码标识**：`contentType=7`、`burned_at`、`SecretState`（ACTIVE/BURNED/EXPIRED）、`ToolboxSecretController`（`/web/s/**`）、`ToolboxGcmCipher`（`TOOLBOX_MASTER_KEY`）、`toolbox.web-base-url`
+- **定义**：短码内核的私密文本入口——创建（content ≤2000 字符 AES-256-GCM 加密落库、可选口令 BCrypt、时效预设 1小时/1天/7天必填、恒公开）→ 分享 `{webBaseUrl}/s/{code}` → 接收者经 Web 公开页 `POST /web/s/{code}/view` 点击揭示（事务内 `SELECT FOR UPDATE` + 条件焚毁，成功即 `burned_at` 写入并清空 `content`）→ 二次访问 410。错误口令 403 **不焚毁**（500ms 延迟防爆破）；meta 只读不焚毁。分享链接 `secretUrl` 未配置 `toolbox.web-base-url` 时为空串（端上降级仅展示短码）。
+- **四端对应物**：
+  - 后端：`toolbox/controller/ToolboxSecretController`、`ToolboxShortCodeServiceImpl.viewSecret/secretMeta`、`common/crypto/GcmCipherService`（通用内核，占卜域 `AesGcmCipher` 薄继承同源）、`common/log/LogMasker`（content 入脱敏清单）。
+  - Android：`:feature:toolbox` `ShortCodeRules`（`SecretState`/`SecretExpiryPreset`）+ 创建页模式切换 + 详情/列表状态徽章。
+  - 鸿蒙：`feature/toolbox/ShortCodeRules.ets` + `api.ets`（`toolboxSecretStateText`）+ 三页同构。
+  - Web：`api/secret.js`（`SECRET_CODE` 403/404/410 信封分支）+ `views/secret/SecretView.vue`（公开揭示页 `/s/:code?`）。
+- **易混淆点**：揭示必须 **POST**（GET 会被链接预览爬虫提前烧毁）；`content` 列存**密文**，任何端/管理端永不回显（连掩码不给）；`/web/t/{code}` 对私密文本一律 410（target 为空），不要用短链跳转链路打开它；分享域名 `toolbox.web-base-url` 与短链域名 `toolbox.public-base-url` 是**两个配置**（前者指向 Web SPA，无法按请求推导）。
+- → ADR-0008
+
+### 7.7 物品标签（一物一码 / contentType=8 / toolbox_asset_tag）
+
+- **代码标识**：`contentType=8`、`toolbox_asset_tag`、`status`（0 正常/1 寻物中/2 已寻回）、`contact_cipher`、`last_scanned_at`、`/web/auth/toolbox/asset-tags`、`/web/tag/{code}`
+- **定义**：给用户自己的物品建一张二维码标签——创建（物品名必填/描述与联系方式可选/联系方式 AES-256-GCM 加密落库）→ 生成标签图（物品名 + 二维码，Android 端合成）打印张贴 → 捡到者扫码经 Web 公开寻物页 `/tag/{code}` 看到物品信息；**联系方式仅「寻物中 + 失主已留」时解密下发**（防批量扫码扒信息）；每次解析为失主留下扫码线索（访问明细 IP 摘要 + 最近扫码时间）。状态流转（正常↔寻物中↔已寻回）裁定在后端。
+- **四端对应物**：
+  - 后端：`toolbox/assettag/`（镜像 delivery 子包：entity/mapper/service/三 controller）、`ToolboxAssetTagServiceImpl`。
+  - Android：`:feature:toolbox` `network/AssetTagApi.kt` + `ui/assettag/`（List/Create/Detail + `AssetTagLabelImage` 标签图合成）。
+  - 鸿蒙：`feature/toolbox/api.ets` + `ToolboxAssetTagList/Create/Detail.ets`（标签图合成未做，以复制链接承载分享，见 ADR-0009 取舍）。
+  - Web：`api/assetTag.js` + `views/assettag/AssetTagLanding.vue`（公开寻物页 `/tag/:code`）。
+- **易混淆点**：主记录复用 `toolbox_short_code`（type=8），明细表 `toolbox_asset_tag` 按 `code` 关联（uk_tag_code）；owner 删除与管理端治理删除均**级联**（明细 + 访问明细 + 主表）；联系方式**永不回显**（连掩码不给），编辑时留空 = 不修改、空串 = 清空；管理端仅有治理删除接口，无物品信息读取通道。
+- → ADR-0009
 
 ---
 
@@ -538,14 +562,14 @@
 
 ### 9.2 MinIO 端点运行期下发（/web/config）
 
-- **代码标识**：`GET /web/config`、`ServerConfigVo`、`minioEndpoint`、`ServerConfig`、`ServerConfigInitTask`
-- **定义**：MinIO 对外端点与短链对外域名经 `GET /web/config` **运行期下发**，替代早期编译期注入 `BuildConfig.MINIO_ENDPOINT`（域名变更免发版）。端上启动预热写入内存，WebView 主题桥白名单消费该运行期值。
+- **代码标识**：`GET /web/config`、`ServerConfigVo`、`minioEndpoint`、`shortLinkBaseUrl`、`webBaseUrl`、`ServerConfig`、`ServerConfigInitTask`
+- **定义**：MinIO 对外端点、短链对外域名与 Web 前端对外地址经 `GET /web/config` **运行期下发**，替代早期编译期注入 `BuildConfig.MINIO_ENDPOINT`（域名变更免发版）。端上启动预热写入内存，WebView 主题桥白名单消费该运行期值。`webBaseUrl`（`toolbox.web-base-url`，`TOOLBOX_WEB_BASE_URL` 注入）是私密文本分享链接的域名来源，只认显式配置、无法按请求推导（Web SPA 与后端不同源）。
 - **四端对应物**：
-  - 后端：`controller/web/WebConfigController.java`、`vo/ServerConfigVo.java`、`MinioConfig.publicEndpoint()`（`externalEndpoint` 优先，缺失回退 `endpoint`）。
+  - 后端：`controller/web/WebConfigController.java`、`vo/ServerConfigVo.java`、`MinioConfig.publicEndpoint()`（`externalEndpoint` 优先，缺失回退 `endpoint`）、`toolbox/toolkit/WebBaseUrlResolver`。
   - Android：`config/ServerConfig.kt`（`minioEndpoint` / `shortLinkBaseUrl`）、`init/ServerConfigInitTask.kt`（优先级 300，非阻塞，失败静默）。
   - 鸿蒙：`network/api/ServerConfigApi.ets`（启动预热；H5 主题桥未接入）。
   - Web：无（管理端不消费）。
-- **易混淆点**：`minioConfig.urlOf(objectKey)` 是所有拼给端上直链（游戏可玩地址、头像）的统一口径，**禁止直接用 `getEndpoint()`**（那是内部通信地址）；启动极早期白名单只含 API host 属可接受降级。
+- **易混淆点**：`minioConfig.urlOf(objectKey)` 是所有拼给端上直链（游戏可玩地址、头像）的统一口径，**禁止直接用 `getEndpoint()`**（那是内部通信地址）；`webBaseUrl` 未配置时后端返回空串、私密文本 `secretUrl` 同为空串（端上降级仅展示短码），生产必须 HTTPS。
 - → ADR-0004
 
 ### 9.3 清氧设计系统（清氧·日 / 清氧·夜 / 玄墨）
@@ -687,7 +711,10 @@
 | 支付方式 | `PayType`（1/2/3） | `PaymentType.kt` | `PaymentType.ets` | `RECHARGE_TYPE_OPTIONS` |
 | 充值类型 | `RechargeType`（1/2） | `RechargeApi` | `RechargeType.ets` | `RECHARGE_TYPE_TEXT` |
 | 优惠券状态 | `CouponStatus`（0/1/2） | `CouponStatus.kt` | `CouponStatus.ets` | `COUPON_STATUS_TEXT` |
-| 短码内容类型 | `contentType`（1-5） | `ShortCodeRules.kt` | `feature/toolbox/api.ets` | `SHORT_CODE_CONTENT_TYPE_TEXT` |
+| 短码内容类型 | `contentType`（1-8） | `ShortCodeRules.kt` | `feature/toolbox/api.ets` | `SHORT_CODE_CONTENT_TYPE_TEXT` |
+| 私密文本状态 | `SecretState`（ACTIVE/BURNED/EXPIRED） | `ShortCodeRules.kt` | `ShortCodeRules.ets` | `SECRET_STATE_TEXT` |
+| 物品标签状态 | `status`（0/1/2） | `AssetTagRules.kt` | `api.ets` | `ASSET_TAG_STATUS_TEXT` |
+| 柜码别名 | `L{lockerId}` | `ToolboxLockerTagServiceImpl` | 无（Web 管理端打印） | `lockerTag.js` |
 | 游戏分类 | `category`（puzzle/arcade/word/board/other） | `GameCategory` | 无 | `GAME_CATEGORY_OPTIONS` |
 | 游戏来源 | `source_type`（1/2） | 消费 `url` | 无 | `GAME_SOURCE_TYPE_TEXT` |
 | 占卜术数 | `method`（liuyao/meihua/qimen/liuren） | `DivinationApi` | `METHOD_NAMES` | `DIV_METHOD_OPTIONS` |

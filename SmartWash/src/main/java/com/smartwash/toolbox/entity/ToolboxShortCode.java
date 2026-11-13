@@ -29,13 +29,13 @@ public class ToolboxShortCode implements Serializable {
     /** 短码：7 位随机或 4-16 位自定义别名，uk_code 唯一索引是并发下的最终裁决 */
     private String code;
 
-    /** 1短链 2活码 3交付箱 4图床 5时间胶囊 */
+    /** 1短链 2活码 3交付箱 4图床 5时间胶囊 6设备投递 7私密文本 8物品标签 */
     private Integer contentType;
 
     /** 类型1/2:目标长链;类型4:MinIO对象名 */
     private String target;
 
-    /** 类型3/5:文本正文(交付箱密文/胶囊内容) */
+    /** 类型3/5/7:文本正文(交付箱密文/胶囊内容/私密文本密文) */
     private String content;
 
     /** users.id */
@@ -44,11 +44,14 @@ public class ToolboxShortCode implements Serializable {
     /** 1公开 2私有;私有仅owner可解析,匿名一律404 */
     private Integer isPublic;
 
-    /** 类型3访问密码(BCrypt),其余NULL */
+    /** 类型3/6/7访问密码(BCrypt),其余NULL */
     private String passwordHash;
 
-    /** 类型3:阅后即焚(读取后内容即毁) */
+    /** 类型3/7:阅后即焚(读取后内容即毁) */
     private Integer burnAfterRead;
+
+    /** 焚毁时刻(类型7一次性查看成功时写入,NULL=未焚毁) */
+    private LocalDateTime burnedAt;
 
     /** 类型5解锁时刻,NULL不锁,读路径判断 */
     private LocalDateTime unlockAt;

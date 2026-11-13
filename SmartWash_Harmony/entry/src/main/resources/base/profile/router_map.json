@@ -309,6 +309,27 @@
       }
     },
     {
+      "name": "ToolboxAssetTagList",
+      "pageSourceFile": "src/main/ets/feature/toolbox/ToolboxAssetTagList.ets",
+      "buildFunction": "ToolboxAssetTagListBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ToolboxAssetTagCreate",
+      "pageSourceFile": "src/main/ets/feature/toolbox/ToolboxAssetTagCreate.ets",
+      "buildFunction": "ToolboxAssetTagCreateBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ToolboxAssetTagDetail",
+      "pageSourceFile": "src/main/ets/feature/toolbox/ToolboxAssetTagDetail.ets",
+      "buildFunction": "ToolboxAssetTagDetailBuilder",
+      "data": {
+      }
+    },
+    {
       "name": "AiWork",
       "pageSourceFile": "src/main/ets/pages/AiWorkPage.ets",
       "buildFunction": "AiWorkBuilder",

@@ -46,6 +46,81 @@
     <string name="toolbox_error_expiry_in_past">有效期不能早于当前时间</string>
     <string name="toolbox_error_submit">提交失败，请重试</string>
 
+    <!-- ==================== 创建页 · 私密文本（阅后即焚） ==================== -->
+    <string name="toolbox_common_off">关闭</string>
+    <string name="toolbox_common_on">开启</string>
+    <string name="toolbox_create_mode_short_link">短链</string>
+    <string name="toolbox_create_mode_secret">私密文本</string>
+    <string name="toolbox_secret_mode_helper">阅后即焚：对方仅可查看一次，查看或到期后立即焚毁</string>
+    <string name="toolbox_secret_content_label">内容</string>
+    <string name="toolbox_secret_content_hint">输入要一次性分享的内容</string>
+    <string name="toolbox_secret_content_counter_format">%1$d/%2$d</string>
+    <string name="toolbox_secret_password_label">访问口令（可选）</string>
+    <string name="toolbox_secret_password_hint">4-32 位口令</string>
+    <string name="toolbox_secret_password_desc">开启后对方需先输入口令才能揭示</string>
+    <string name="toolbox_secret_expiry_label">时效</string>
+    <string name="toolbox_secret_expiry_preset_1h">1 小时</string>
+    <string name="toolbox_secret_expiry_preset_1d">1 天</string>
+    <string name="toolbox_secret_expiry_preset_7d">7 天</string>
+    <string name="toolbox_error_secret_content">内容不能为空且不超过 2000 字符</string>
+    <string name="toolbox_error_secret_password">口令须为 4-32 位</string>
+
+    <!-- ==================== 详情页 · 私密文本 ==================== -->
+    <string name="toolbox_secret_label_state">秘密状态</string>
+    <string name="toolbox_secret_state_active">未领取</string>
+    <string name="toolbox_secret_state_burned">已焚毁</string>
+    <string name="toolbox_secret_state_expired">已过期</string>
+    <string name="toolbox_secret_state_unknown">未知</string>
+    <string name="toolbox_secret_label_burned_at">焚毁时间</string>
+    <string name="toolbox_secret_link_label">分享链接</string>
+    <string name="toolbox_secret_link_hint">对方打开链接即可查看一次，查看后立即焚毁</string>
+    <string name="toolbox_secret_link_unavailable">未配置 Web 域名，分享链接暂不可用</string>
+    <string name="toolbox_secret_privacy_note">内容经服务端加密存储，任何端不回显</string>
+    <string name="toolbox_secret_copy_success">分享链接已复制</string>
+
+    <!-- ==================== 物品标签（一物一码 M2） ==================== -->
+    <string name="asset_tag_title">物品标签</string>
+    <string name="asset_tag_create_title">新建物品标签</string>
+    <string name="asset_tag_detail_title">标签详情</string>
+    <string name="asset_tag_action_new">新建标签</string>
+    <string name="asset_tag_empty_message">还没有物品标签，给常用的物品建一个吧</string>
+    <string name="asset_tag_item_name_label">物品名称</string>
+    <string name="asset_tag_item_name_hint">如：蓝色折叠伞</string>
+    <string name="asset_tag_item_desc_label">物品描述（可选）</string>
+    <string name="asset_tag_item_desc_hint">外观特征，方便识别</string>
+    <string name="asset_tag_contact_label">联系方式（可选）</string>
+    <string name="asset_tag_contact_hint">微信号 / 手机号</string>
+    <string name="asset_tag_contact_desc">仅物品「寻物中」时向扫码者展示，其余状态不下发</string>
+    <string name="asset_tag_custom_code_label">自定义标签码（可选）</string>
+    <string name="asset_tag_submit_create">创建标签</string>
+    <string name="asset_tag_toast_create_success">标签创建成功</string>
+    <string name="asset_tag_error_item_name">物品名称不能为空且不超过 64 字符</string>
+    <string name="asset_tag_error_contact">联系方式不能超过 64 字符</string>
+    <string name="asset_tag_error_submit">提交失败，请重试</string>
+    <string name="asset_tag_status_normal">正常</string>
+    <string name="asset_tag_status_lost">寻物中</string>
+    <string name="asset_tag_status_found">已寻回</string>
+    <string name="asset_tag_label_status">寻物状态</string>
+    <string name="asset_tag_label_scans">累计扫码</string>
+    <string name="asset_tag_scans_format">%1$d 次扫码</string>
+    <string name="asset_tag_label_last_scanned">最近扫码</string>
+    <string name="asset_tag_label_code">标签码</string>
+    <string name="asset_tag_link_label">标签链接</string>
+    <string name="asset_tag_link_hint">贴在物品上的二维码即此链接，捡到的人扫码可见物品信息</string>
+    <string name="asset_tag_link_unavailable">未配置 Web 域名，标签链接暂不可用</string>
+    <string name="asset_tag_copy_success">标签链接已复制</string>
+    <string name="asset_tag_action_set_lost">设为寻物中</string>
+    <string name="asset_tag_action_set_found">标记已寻回</string>
+    <string name="asset_tag_action_set_normal">恢复正常</string>
+    <string name="asset_tag_toast_status_success">状态已更新</string>
+    <string name="asset_tag_action_share_label">分享标签图</string>
+    <string name="asset_tag_action_delete">删除标签</string>
+    <string name="asset_tag_confirm_delete_title">删除物品标签</string>
+    <string name="asset_tag_confirm_delete_message">删除后扫码将显示「标签不存在」，确定删除「%1$s」？</string>
+    <string name="asset_tag_toast_delete_success">已删除</string>
+    <string name="asset_tag_privacy_note">联系方式加密存储，仅寻物中状态下发给扫码者</string>
+    <string name="asset_tag_share_chooser">分享物品标签图</string>
+
     <!-- ==================== 详情页 ==================== -->
     <string name="toolbox_value_none">—</string>
     <string name="toolbox_label_code">短码</string>

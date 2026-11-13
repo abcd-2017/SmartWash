@@ -149,6 +149,12 @@ fun ShortCodeDetailPage(
     }
 
     val isPublic = ShortCodeRules.isPublicVisibility(vo.isPublic)
+    // 私密文本（contentType=7）：状态与分享链接按类型分支（方案 §4.7）
+    val isSecret = ShortCodeRules.CONTENT_TYPE_SECRET_TEXT == vo.contentType
+    val secretState = ShortCodeRules.secretStateOf(vo.secretState)
+    // 终态（已焚毁/已过期）禁止续期（决策 9），页面隐藏入口、后端终审
+    val secretTerminal = isSecret && (secretState == ShortCodeRules.SecretState.Burned ||
+        secretState == ShortCodeRules.SecretState.Expired)
 
     // 续期结果：成功 → 提示 + 刷新信号 + 返回列表（列表重建后展示新过期态）
     LaunchedEffect(updateState) {
@@ -267,18 +273,23 @@ fun ShortCodeDetailPage(
                     )
                     InfoRow(
                         label = stringResource(R.string.toolbox_label_type),
-                        value = stringResource(R.string.toolbox_type_short_link),
-                    )
-                    InfoRow(
-                        label = stringResource(R.string.toolbox_label_visibility),
                         value = stringResource(
-                            if (isPublic) R.string.toolbox_visibility_public_value
-                            else R.string.toolbox_visibility_private_value
+                            if (isSecret) R.string.toolbox_create_mode_secret
+                            else R.string.toolbox_type_short_link
                         ),
-                        // 12sp 小字语义色走深档（对比度红线 §10）：公开=textGreen(#177A4C ≈5.1:1)、
-                        // 私有=onWarningContainer(#92400E)；success(3.49:1)/ongoingInk(2.76:1) 作小字不达标
-                        valueColor = if (isPublic) AppColors.colorScheme.textGreen else AppColors.colorScheme.onWarningContainer,
                     )
+                    if (!isSecret) {
+                        InfoRow(
+                            label = stringResource(R.string.toolbox_label_visibility),
+                            value = stringResource(
+                                if (isPublic) R.string.toolbox_visibility_public_value
+                                else R.string.toolbox_visibility_private_value
+                            ),
+                            // 12sp 小字语义色走深档（对比度红线 §10）：公开=textGreen(#177A4C ≈5.1:1)、
+                            // 私有=onWarningContainer(#92400E)；success(3.49:1)/ongoingInk(2.76:1) 作小字不达标
+                            valueColor = if (isPublic) AppColors.colorScheme.textGreen else AppColors.colorScheme.onWarningContainer,
+                        )
+                    }
                     InfoRow(
                         label = stringResource(R.string.toolbox_label_clicks),
                         value = stringResource(R.string.toolbox_clicks_format, vo.clickCount),
@@ -310,6 +321,37 @@ fun ShortCodeDetailPage(
                         valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                         valueColor = expiryColor,
                     )
+                    if (isSecret) {
+                        val (stateText, stateColor) = when (secretState) {
+                            ShortCodeRules.SecretState.Active ->
+                                stringResource(R.string.toolbox_secret_state_active) to AppColors.colorScheme.textGreen
+                            ShortCodeRules.SecretState.Burned ->
+                                stringResource(R.string.toolbox_secret_state_burned) to AppColors.colorScheme.dangerInk
+                            ShortCodeRules.SecretState.Expired ->
+                                stringResource(R.string.toolbox_secret_state_expired) to AppColors.colorScheme.onWarningContainer
+                            ShortCodeRules.SecretState.Unknown ->
+                                stringResource(R.string.toolbox_secret_state_unknown) to AppColors.colorScheme.textSecondary
+                        }
+                        InfoRow(
+                            label = stringResource(R.string.toolbox_secret_label_state),
+                            value = stateText,
+                            valueColor = stateColor,
+                        )
+                        if (secretState == ShortCodeRules.SecretState.Burned && vo.burnedAt != null) {
+                            InfoRow(
+                                label = stringResource(R.string.toolbox_secret_label_burned_at),
+                                value = ShortCodeRules.formatDisplayDateTime(vo.burnedAt)
+                                    .ifBlank { stringResource(R.string.toolbox_value_none) },
+                                valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.toolbox_secret_privacy_note),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AppColors.colorScheme.textSecondary,
+                            modifier = Modifier.padding(top = AppDimens.spaceXxs),
+                        )
+                    }
                     if (!vo.target.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(AppDimens.spaceXs))
                         Text(
@@ -326,46 +368,75 @@ fun ShortCodeDetailPage(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Spacer(modifier = Modifier.height(AppDimens.spaceXs))
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.End)
-                            // 热区外扩至 48dp（触控红线 ≥48，对齐列表页已修口径）：
-                            // 原 vertical 4×2 + labelMedium 行高 16 仅 24dp；视觉字号与位置不变
-                            .defaultMinSize(minHeight = 48.dp)
-                            .pressable(onClick = { showRenewDialog = true })
-                            .padding(vertical = AppDimens.spaceXxs),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        // 行内文字动作 — 13sp 非规范档收敛为 captionStrong 12/500（规范 §2 迁移表 13→12）
-                        Text(
-                            text = stringResource(R.string.toolbox_action_renew),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = AppColors.colorScheme.textGreen,
-                        )
+                    // 续期入口：私密文本终态（焚毁/过期）隐藏（决策 9）
+                    if (!secretTerminal) {
+                        Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.End)
+                                // 热区外扩至 48dp（触控红线 ≥48，对齐列表页已修口径）：
+                                // 原 vertical 4×2 + labelMedium 行高 16 仅 24dp；视觉字号与位置不变
+                                .defaultMinSize(minHeight = 48.dp)
+                                .pressable(onClick = { showRenewDialog = true })
+                                .padding(vertical = AppDimens.spaceXxs),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            // 行内文字动作 — 13sp 非规范档收敛为 captionStrong 12/500（规范 §2 迁移表 13→12）
+                            Text(
+                                text = stringResource(R.string.toolbox_action_renew),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = AppColors.colorScheme.textGreen,
+                            )
+                        }
                     }
                 }
             }
 
             // ---------- 二维码与动作 ----------
             item(key = "qr") {
-                QrCard(
-                    shortUrl = vo.shortUrl,
-                    isPublic = isPublic,
-                    onCopy = {
-                        vo.shortUrl?.let { url ->
-                            copyToClipboard(context, url)
-                            Toast.makeText(context, context.getString(R.string.toolbox_copy_success), Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    onOpen = {
-                        if (isPublic) {
-                            openInBrowser(context, vo.shortUrl.orEmpty())
+                if (isSecret) {
+                    QrCard(
+                        url = vo.secretUrl,
+                        sectionTitle = stringResource(R.string.toolbox_secret_link_label),
+                        hint = stringResource(R.string.toolbox_secret_link_hint),
+                        unavailableText = stringResource(R.string.toolbox_secret_link_unavailable),
+                        onCopy = {
+                            vo.secretUrl?.takeIf { it.isNotBlank() }?.let { url ->
+                                copyToClipboard(context, url)
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.toolbox_secret_copy_success),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                        },
+                        onOpen = { openInBrowser(context, vo.secretUrl.orEmpty()) },
+                    )
+                } else {
+                    QrCard(
+                        url = vo.shortUrl,
+                        sectionTitle = stringResource(R.string.toolbox_qr_section_title),
+                        hint = if (!isPublic) {
+                            stringResource(R.string.toolbox_private_open_hint)
                         } else {
-                            viewModel.resolveTarget()
-                        }
-                    },
-                )
+                            null
+                        },
+                        unavailableText = null,
+                        onCopy = {
+                            vo.shortUrl?.let { url ->
+                                copyToClipboard(context, url)
+                                Toast.makeText(context, context.getString(R.string.toolbox_copy_success), Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        onOpen = {
+                            if (isPublic) {
+                                openInBrowser(context, vo.shortUrl.orEmpty())
+                            } else {
+                                viewModel.resolveTarget()
+                            }
+                        },
+                    )
+                }
             }
 
             // ---------- 访问明细 ----------
@@ -514,28 +585,42 @@ fun ShortCodeDetailPage(
     }
 }
 
-/** 二维码卡：shortUrl 生成（默认线程池，组合期副作用收敛在 produceState）+ 复制/打开 */
+/** 二维码卡：url 生成（默认线程池，组合期副作用收敛在 produceState）+ 复制/打开。
+ *  私密文本传 secretUrl（链接不可用时降级提示文案，不再骨架空转） */
 @Composable
 private fun QrCard(
-    shortUrl: String?,
-    isPublic: Boolean,
+    url: String?,
+    sectionTitle: String,
+    hint: String?,
+    unavailableText: String?,
     onCopy: () -> Unit,
     onOpen: () -> Unit,
 ) {
-    val qrBitmap by produceState<Bitmap?>(initialValue = null, key1 = shortUrl) {
+    val qrBitmap by produceState<Bitmap?>(initialValue = null, key1 = url) {
         value = withContext(Dispatchers.Default) {
-            shortUrl?.takeIf { it.isNotBlank() }?.let { generateQrCodeBitmap(it, 512) }
+            url?.takeIf { it.isNotBlank() }?.let { generateQrCodeBitmap(it, 512) }
         }
     }
     GroupCard {
         Text(
-            text = stringResource(R.string.toolbox_qr_section_title),
+            text = sectionTitle,
             style = AppTextStyles.SectionTitle,
             color = AppColors.colorScheme.textPrimary,
             modifier = Modifier.padding(bottom = AppDimens.spaceMd),
         )
         val bitmap = qrBitmap
-        if (bitmap == null) {
+        if (url.isNullOrBlank() && unavailableText != null) {
+            // 分享链接不可用（web-base-url 未配置）：降级文案而非骨架空转
+            Text(
+                text = unavailableText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.colorScheme.textSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = AppDimens.spaceMd),
+            )
+        } else if (bitmap == null) {
             SkeletonBlock(
                 modifier = Modifier
                     .size(200.dp)
@@ -545,7 +630,7 @@ private fun QrCard(
         } else {
             Image(
                 bitmap = bitmap.asImageBitmap(),
-                contentDescription = stringResource(R.string.toolbox_qr_section_title),
+                contentDescription = sectionTitle,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .size(200.dp)
@@ -556,7 +641,7 @@ private fun QrCard(
         }
         Spacer(modifier = Modifier.height(AppDimens.spaceSm))
         Text(
-            text = shortUrl.orEmpty(),
+            text = url.orEmpty(),
             style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
             color = AppColors.colorScheme.textSecondary,
             textAlign = TextAlign.Center,
@@ -566,10 +651,10 @@ private fun QrCard(
                 .fillMaxWidth()
                 .padding(horizontal = AppDimens.spaceMd),
         )
-        if (!isPublic) {
+        if (hint != null) {
             Spacer(modifier = Modifier.height(AppDimens.spaceXs))
             Text(
-                text = stringResource(R.string.toolbox_private_open_hint),
+                text = hint,
                 style = MaterialTheme.typography.labelSmall,
                 // 12sp 可读小字橙语义走 onWarningContainer 深档（ongoingInk #D98A26 仅 2.76:1，§10 红线）
                 color = AppColors.colorScheme.onWarningContainer,
