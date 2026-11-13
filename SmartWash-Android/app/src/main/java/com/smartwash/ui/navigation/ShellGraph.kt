@@ -24,6 +24,7 @@ import com.smartwash.ui.page.detail.OrderDetailPage
 import com.smartwash.ui.page.home.HomePage
 import com.smartwash.ui.page.pickup.PickupDeliveryPage
 import com.smartwash.ui.page.pickup.PickupPage
+import com.smartwash.ui.page.scan.ScanPage
 import com.smartwash.ui.page.webview.WebViewPage
 
 /**
@@ -50,6 +51,10 @@ fun NavGraphBuilder.shellGraph(navController: NavHostController) {
     }
     composable<PageConstant.Pickup> {
         PickupPage(navController)
+    }
+    // 全局扫一扫（工作台常驻入口）：识别 + 分发，业务承接在各域深链与壳层页面
+    composable<ShellRoute.Scan> {
+        ScanPage(navController)
     }
     composable<PageConstant.AiWork> {
         AiWorkPage(onBack = { navController.popBackStack() })

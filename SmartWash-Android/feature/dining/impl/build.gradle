@@ -53,14 +53,9 @@ dependencies {
     implementation libs.androidx.core.ktx
     // 购买清单快照 JSON 解析（纯 Gson，与 api 模块载荷一致）
     implementation libs.gson
-    // 扫码加入链路（08 号票）：CameraX 预览/取景 + ML Kit 离线 barcode 识别
-    implementation libs.androidx.camera.core
-    implementation libs.androidx.camera.camera2
-    implementation libs.androidx.camera.lifecycle
-    implementation libs.androidx.camera.view
-    implementation libs.mlkit.barcode.scanning
+    // 扫码识别与分发已上移壳层全局扫一扫（CameraX/ML Kit 依赖随迁 app 壳）
 
-    // JVM 单测（表单校验 / VO 映射 / 深链贡献者 / 扫码解析与导航归一锚点）
+    // JVM 单测（表单校验 / VO 映射 / 深链贡献者 / 扫码解析归一锚点）
     testImplementation libs.junit
     // 共享购物车同步状态机 / 轮询调度 / 订阅生命周期（10 号票）
     testImplementation libs.kotlinx.coroutines.test

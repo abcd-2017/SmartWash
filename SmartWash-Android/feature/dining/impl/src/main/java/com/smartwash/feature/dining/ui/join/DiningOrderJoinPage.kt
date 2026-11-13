@@ -159,7 +159,7 @@ private fun JoinConfirmContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = brief.title.ifBlank { stringResource(R.string.dining_scan_confirm_unknown) },
+                    text = brief.title.ifBlank { stringResource(R.string.dining_order_join_unknown_title) },
                     style = MaterialTheme.typography.titleLarge,
                     color = AppColors.colorScheme.textPrimary,
                     textAlign = TextAlign.Center,

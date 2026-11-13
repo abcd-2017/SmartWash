@@ -51,12 +51,19 @@ class DiningOrderShareViewModel @Inject constructor(
     private val _detail = MutableStateFlow<DiningOrderShareDetail?>(null)
     val detail = _detail.asStateFlow()
 
+    /** 重置凭证动作态（防重；成功/失败经页面提示，失败不改变现有二维码） */
+    private val _resetState = MutableStateFlow<RequestState>(RequestState.Idle)
+    val resetState = _resetState.asStateFlow()
+
+    /** 重置后下发的最新凭证（非空即优先于入口/详情携带值，二维码随其重建） */
+    private val _resetToken = MutableStateFlow<String?>(null)
+
     /**
-     * 生效加入凭证：入口携带优先；入口未携带时取详情全量响应回传的 token（仅发起者下发）。
-     * 读 `_detail` 使详情到达触发页面重组（页面已收集 detail，重组时重算）。
+     * 生效加入凭证：重置下发 > 入口携带 > 详情全量响应回传（仅发起者下发）。
+     * 读 `_detail`/`_resetToken` 使详情到达或重置成功触发页面重组（页面已收集 detail，重组时重算）。
      */
     val effectiveJoinToken: String
-        get() = joinToken.ifBlank { _detail.value?.joinToken.orEmpty() }
+        get() = _resetToken.value ?: joinToken.ifBlank { _detail.value?.joinToken.orEmpty() }
 
     /** 二维码内容 URL（joinUrlBuilder 构造失败/null=token 缺失或 baseUrl 畸形，页面降级提示） */
     val joinUrl: String?
@@ -81,6 +88,33 @@ class DiningOrderShareViewModel @Inject constructor(
                 _detailState.value = RequestState.Error(e.resId, e.message)
             }
         }
+    }
+
+    /**
+     * 重置加入凭证（发起者，二次确认后触发）：后端作废旧 token 并返回新 token，
+     * 成功即写入 `_resetToken`——二维码与复制链接随 effectiveJoinToken 重建为最新值。
+     * 失败不改变现有二维码（继续可用），经 resetState 提示。
+     */
+    fun resetJoinToken() {
+        if (_resetState.value is RequestState.Loading) return
+        if (orderId <= 0L) return
+        _resetState.value = RequestState.Loading
+        viewModelScope.launch {
+            try {
+                _resetToken.value = diningRepository.resetJoinToken(orderId)
+                _resetState.value = RequestState.Success
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: NetworkException) {
+                AppLogger.error(TAG, "DiningOrderShareViewModel.resetJoinToken: ${e.message}", e)
+                _resetState.value = RequestState.Error(e.resId, e.message)
+            }
+        }
+    }
+
+    /** 消费重置完成态（页面提示后调用，恢复 Idle 允许再次重置） */
+    fun consumeResetState() {
+        _resetState.value = RequestState.Idle
     }
 
     private companion object {

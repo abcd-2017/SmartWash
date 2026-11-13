@@ -235,4 +235,16 @@
     <!-- ==================== 深链（壳层聚合，host 由各域贡献者注册） ==================== -->
     <!-- 深链解析为 Unknown（非法/未注册 host）时的统一提示 -->
     <string name="deeplink_unsupported">暂不支持该链接</string>
+
+    <!-- ==================== 全局扫一扫（壳层留守，工作台常驻入口） ==================== -->
+    <string name="back">返回</string>
+    <string name="scan_title">扫一扫</string>
+    <string name="scan_hint">对准二维码，自动识别内容并跳转</string>
+    <string name="scan_invalid_link">二维码内容无效，请核对后再试</string>
+    <string name="scan_copy_done">内容已复制</string>
+    <string name="scan_permission_title">需要相机权限</string>
+    <string name="scan_permission_desc">授权相机后即可扫描二维码，识别内容自动跳转</string>
+    <string name="scan_permission_denied">相机权限已被拒绝，请到系统设置中开启</string>
+    <string name="scan_permission_settings">去系统设置</string>
+    <string name="scan_permission_grant">授权相机</string>
 </resources>

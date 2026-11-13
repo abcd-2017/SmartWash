@@ -90,6 +90,11 @@
     <string name="dining_order_share_qr_hint">家人用 App 扫一扫，确认后即可加入点单</string>
     <string name="dining_order_share_copy_link">复制加入链接</string>
     <string name="dining_order_share_copy_done">链接已复制</string>
+    <string name="dining_order_share_reset_action">重置加入凭证</string>
+    <string name="dining_order_share_reset_confirm_title">重置加入凭证</string>
+    <string name="dining_order_share_reset_confirm_message">重置后旧的加入二维码与链接将全部失效，已分享的码需要重新分享，是否继续？</string>
+    <string name="dining_order_share_reset_confirm">重置</string>
+    <string name="dining_order_share_reset_done">已重置，请将新二维码重新分享给成员</string>
     <string name="dining_order_share_qr_unavailable">仅点单发起者可生成加入二维码</string>
     <string name="dining_order_share_detail_failed">订单信息加载失败</string>
     <string name="dining_order_share_menu_count_format">%1$d 道菜</string>
@@ -126,33 +131,12 @@
     <string name="dining_shopping_list_selector_note_format">：%1$s</string>
     <string name="dining_shopping_list_load_failed">购买清单加载失败</string>
 
-    <!-- 扫码加入链路 -->
-    <string name="back">返回</string>
-    <string name="dining_scan_entry">扫一扫</string>
-    <string name="dining_scan_title">扫一扫</string>
-    <string name="dining_scan_hint">将点单二维码放入框内，自动识别</string>
-    <string name="dining_scan_permission_title">开启相机扫码</string>
-    <string name="dining_scan_permission_desc">用于扫描点单二维码，加入家人的点餐</string>
-    <string name="dining_scan_permission_grant">授予相机权限</string>
-    <string name="dining_scan_permission_settings">去系统设置</string>
-    <string name="dining_scan_permission_denied">未获得相机权限，无法扫码；已拒绝时可到系统设置手动开启</string>
-    <string name="dining_scan_not_our_code">非本应用的点单二维码</string>
-    <string name="dining_scan_invalid_link">加入链接无效，请确认二维码来源</string>
-    <string name="dining_scan_brief_failed">订单信息获取失败，请重试</string>
-    <string name="dining_scan_order_finished">该点单已结束，无法加入</string>
-    <string name="dining_scan_joined_already">你已在该点单中</string>
-    <string name="dining_scan_join_success">已加入点单</string>
-    <string name="dining_scan_join_failed">加入失败，请重试</string>
-    <string name="dining_scan_confirm_title">加入点单</string>
-    <string name="dining_scan_confirm_message_format">是否加入点餐环节：%1$s</string>
-    <string name="dining_scan_confirm_unknown">未命名点单</string>
-    <string name="dining_scan_confirm_join">加入</string>
-    <string name="dining_scan_detail_pending">已加入，点单页即将就绪</string>
-
+    <!-- 扫码识别与分发已上移壳层全局扫一扫（工作台常驻入口）；加入承接仍在本域 -->
     <!-- 站内信 dining 深链加入入口（12 号票） -->
     <string name="dining_order_join_title">加入点单</string>
     <string name="dining_order_join_creator_format">发起者：%1$s</string>
     <string name="dining_order_join_recipe_count_format">%1$d 道菜</string>
+    <string name="dining_order_join_unknown_title">未命名点单</string>
     <string name="dining_order_join_action">加入</string>
     <string name="dining_order_join_order_finished">该点单已结束，无法加入</string>
     <string name="dining_order_join_load_failed">订单信息加载失败</string>

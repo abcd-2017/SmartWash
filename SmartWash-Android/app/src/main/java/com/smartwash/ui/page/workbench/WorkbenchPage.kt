@@ -54,6 +54,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -82,6 +83,7 @@ import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LocalCoverArt
 import com.smartwash.common.ui.components.SkeletonBlock
+import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -284,12 +286,20 @@ fun WorkbenchPage(
                     color = AppColors.colorScheme.textSecondary
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
-                // 搜索框（§3.7 输入控件：16sp 正文 / 48dp 行高 / 前缀图标 16dp@0.5 / radiusButton 14）
-                WorkbenchSearchField(
-                    query = searchQuery,
-                    onQueryChange = workbenchViewModel::onSearchChange,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                // 搜索框 + 扫一扫常驻入口（§3.7 输入控件：16sp 正文 / 48dp 行高 / 前缀图标 16dp@0.5 / radiusButton 14；
+                // 扫码为端上固定工具位：44dp 触控目标容器（§3.2 图标进容器），不参与服务端下发与搜索过滤）
+                Row(
+                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    WorkbenchSearchField(
+                        query = searchQuery,
+                        onQueryChange = workbenchViewModel::onSearchChange,
+                        modifier = Modifier.weight(1f)
+                    )
+                    ScanEntryButton(navController)
+                }
             }
 
             LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -498,6 +508,37 @@ fun WorkbenchPage(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * 扫一扫常驻入口按钮（§3.2 功能图标进容器：44dp 容器 / iconContainerRadius 圆角 / 24dp 图标，
+ * primaryLight 底 + primary 前景对齐 IconBox 默认配色）。端上固定工具位：导航至壳层扫码页，
+ * 不参与服务端下发与搜索过滤。图标为 common:ui 的 ic_scan vector（规范：不新增 Icons.* 使用）。
+ */
+@Composable
+private fun ScanEntryButton(navController: NavHostController) {
+    val scheme = AppColors.colorScheme
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .pressable(onClick = { navController.navigate(ShellRoute.Scan) }),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
+                .background(scheme.primaryLight),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(com.smartwash.common.ui.R.drawable.ic_scan),
+                contentDescription = stringResource(R.string.scan_title),
+                modifier = Modifier.size(24.dp),
+                tint = scheme.primary,
+            )
         }
     }
 }

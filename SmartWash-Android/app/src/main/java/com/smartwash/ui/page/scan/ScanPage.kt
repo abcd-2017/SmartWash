@@ -1,4 +1,4 @@
-package com.smartwash.feature.dining.ui.scan
+package com.smartwash.ui.page.scan
 
 import android.Manifest
 import android.app.Activity
@@ -38,7 +38,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,9 +51,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -66,16 +67,12 @@ import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import com.smartwash.R
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
-import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
-import com.smartwash.feature.dining.R
-import com.smartwash.feature.dining.api.DiningRoute
-import com.smartwash.feature.dining.logic.DiningJoinNavigation
 import java.util.concurrent.Executors
 
 /** 扫码框边长（组件尺寸，非间距/圆角令牌；取常见扫码取景框观感） */
@@ -88,25 +85,21 @@ private val SCAN_FRAME_RADIUS = AppDimens.radiusMd
 private val SCAN_SCRIM = Color.Black.copy(alpha = 0.55f)
 
 /**
- * 扫码加入页（08 号票）：CameraX 预览 + ML Kit 离线识别 + 运行时 CAMERA 权限。
+ * 全局扫一扫页（壳层留守，工作台常驻入口）。
  *
- * 流程：权限授予 → 相机取景 → 识别原始内容 → [DiningScanViewModel] 解析/拉 brief →
- * 确认弹窗「是否加入点餐环节：{标题}」→ join → 导航（点单页已注册则进入，否则回订单列表 + 提示）。
- *
- * 入口取舍：订单列表页右上角（与「菜谱库」并列）——受邀用户的核心动作是「扫码加入」，
- * 放在域首页右上角保证空态/有数据均可达；不占用 FAB（FAB 语义为发起点单）。
+ * 职责边界：只做「识别 + 分发」——CameraX 预览 + ML Kit 离线识别原始内容，
+ * [ScanViewModel] 归一化后按内容分发：本应用深链（含点单加入，经 dining 域拦截）
+ * → 本地路由；http(s) → 内置浏览器；纯文本 → 复制进剪贴板。业务承接在各域
+ * 深链贡献者与壳层页面，本页不感知任何业务。
  */
 @Composable
-fun DiningScanPage(
+fun ScanPage(
     navController: NavHostController,
-    viewModel: DiningScanViewModel = hiltViewModel(),
+    viewModel: ScanViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val activity = context.findActivity()
-    val briefState by viewModel.briefState.collectAsState()
-    val brief by viewModel.brief.collectAsState()
-    val joinState by viewModel.joinState.collectAsState()
-    val joined by viewModel.joined.collectAsState()
+    val clipboardManager = LocalClipboardManager.current
 
     var hasPermission by remember {
         mutableStateOf(context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
@@ -144,49 +137,27 @@ fun DiningScanPage(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // 失败路径 Toast（组合期禁副作用，统一收进 effect）
-    LaunchedEffect(briefState) {
-        val state = briefState
-        if (state is RequestState.Error) {
-            Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
-        }
-    }
-    LaunchedEffect(joinState) {
-        val state = joinState
-        if (state is RequestState.Error) {
-            Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
-        }
-    }
+    // 分发事件（副作用出组合期）：深链导航 / 纯文本复制 / 无效提示
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is ScanDispatchEvent.Navigate -> {
+                    viewModel.navigate(navController, event.action)
+                    // 扫码页已完成使命：目标页返回不再回到相机页
+                    navController.popBackStack()
+                }
 
-    // 加入成功 → 点单页已注册则进入；未注册（09 未落地）回订单列表 + 过渡提示
-    LaunchedEffect(joined) {
-        val event = joined ?: return@LaunchedEffect
-        val registeredRoutes = navController.graph.mapNotNull { it.route }
-        val detailRoute = DiningJoinNavigation.resolveOrderDetailRoute(registeredRoutes, event.orderId)
-        if (detailRoute != null) {
-            Toast.makeText(
-                context,
-                context.getString(
-                    if (event.alreadyJoined) R.string.dining_scan_joined_already else R.string.dining_scan_join_success
-                ),
-                Toast.LENGTH_SHORT,
-            ).show()
-            navController.navigate(detailRoute) {
-                // 扫码页已完成使命：详情页返回直回订单列表，不再回到相机页
-                popUpTo(DiningRoute.Scan) { inclusive = true }
-                launchSingleTop = true
+                is ScanDispatchEvent.CopyAndExit -> {
+                    clipboardManager.setText(AnnotatedString(event.text))
+                    Toast.makeText(context, R.string.scan_copy_done, Toast.LENGTH_SHORT).show()
+                    navController.popBackStack()
+                }
+
+                is ScanDispatchEvent.Invalid -> {
+                    Toast.makeText(context, event.messageRes, Toast.LENGTH_SHORT).show()
+                }
             }
-        } else {
-            if (!navController.popBackStack(DiningRoute.OrderList, inclusive = false)) {
-                navController.navigate(DiningRoute.OrderList)
-            }
-            Toast.makeText(
-                context,
-                context.getString(R.string.dining_scan_detail_pending),
-                Toast.LENGTH_SHORT,
-            ).show()
         }
-        viewModel.consumeJoined()
     }
 
     Box(
@@ -226,26 +197,13 @@ fun DiningScanPage(
             )
         }
         Text(
-            text = stringResource(R.string.dining_scan_title),
+            text = stringResource(R.string.scan_title),
             style = MaterialTheme.typography.titleLarge,
             color = Color.White,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
                 .padding(top = 24.dp),
-        )
-    }
-
-    // 确认弹窗（join 进行中不展示，防重复提交；失败由 VM 恢复 brief 重新展示可重试）
-    val currentBrief = brief
-    if (currentBrief != null && joinState !is RequestState.Loading) {
-        val titleForDialog = currentBrief.title.ifBlank { stringResource(R.string.dining_scan_confirm_unknown) }
-        AppConfirmDialog(
-            title = stringResource(R.string.dining_scan_confirm_title),
-            message = stringResource(R.string.dining_scan_confirm_message_format, titleForDialog),
-            confirmText = stringResource(R.string.dining_scan_confirm_join),
-            onConfirm = { viewModel.join() },
-            onDismiss = { viewModel.dismissBrief() },
         )
     }
 }
@@ -309,7 +267,7 @@ private fun CameraScanContent(
             primaryColor = AppColors.colorScheme.primary,
         )
         Text(
-            text = stringResource(R.string.dining_scan_hint),
+            text = stringResource(R.string.scan_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White,
             textAlign = TextAlign.Center,
@@ -424,14 +382,14 @@ private fun PermissionContent(
             )
         }
         Text(
-            text = stringResource(R.string.dining_scan_permission_title),
+            text = stringResource(R.string.scan_permission_title),
             style = MaterialTheme.typography.titleLarge,
             color = Color.White,
             modifier = Modifier.padding(top = AppDimens.spaceMd),
         )
         Text(
             text = stringResource(
-                if (showSettings) R.string.dining_scan_permission_denied else R.string.dining_scan_permission_desc
+                if (showSettings) R.string.scan_permission_denied else R.string.scan_permission_desc
             ),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.7f),
@@ -440,7 +398,7 @@ private fun PermissionContent(
         )
         AppButton(
             text = stringResource(
-                if (showSettings) R.string.dining_scan_permission_settings else R.string.dining_scan_permission_grant
+                if (showSettings) R.string.scan_permission_settings else R.string.scan_permission_grant
             ),
             onClick = if (showSettings) onOpenSettings else onRequest,
             variant = AppButtonVariant.PRIMARY,

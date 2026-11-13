@@ -27,7 +27,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,6 +46,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
@@ -89,6 +93,29 @@ fun DiningOrderSharePage(
         }
     }
 
+    // 重置凭证结果反馈（成功=新码已生效；失败=旧码继续可用）
+    LaunchedEffect(Unit) {
+        viewModel.resetState.collect { state ->
+            when (state) {
+                is RequestState.Success -> {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.dining_order_share_reset_done),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    viewModel.consumeResetState()
+                }
+
+                is RequestState.Error -> {
+                    Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
+                    viewModel.consumeResetState()
+                }
+
+                else -> Unit
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -131,7 +158,7 @@ fun DiningOrderSharePage(
     }
 }
 
-/** 分享内容：订单信息卡（锚点标题）+ 加入二维码卡 + 复制链接 */
+/** 分享内容：订单信息卡（锚点标题）+ 加入二维码卡（发起者可重置凭证）+ 复制链接 */
 @Composable
 private fun ShareContent(
     viewModel: DiningOrderShareViewModel,
@@ -139,6 +166,20 @@ private fun ShareContent(
 ) {
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
+    // 重置凭证二次确认（不可逆动作弹窗；重置进行中不重复弹出）
+    var showResetConfirm by rememberSaveable { mutableStateOf(false) }
+    if (showResetConfirm && viewModel.resetState.value !is RequestState.Loading) {
+        AppConfirmDialog(
+            title = stringResource(R.string.dining_order_share_reset_confirm_title),
+            message = stringResource(R.string.dining_order_share_reset_confirm_message),
+            confirmText = stringResource(R.string.dining_order_share_reset_confirm),
+            onConfirm = {
+                showResetConfirm = false
+                viewModel.resetJoinToken()
+            },
+            onDismiss = { showResetConfirm = false },
+        )
+    }
 
     // 展示标题：详情成功用详情值；失败/加载中降级用路由携带标题（入口均已下发，无空窗）
     val title = detail?.title?.takeIf { it.isNotBlank() } ?: viewModel.routeTitle
@@ -212,6 +253,15 @@ private fun ShareContent(
                         ).show()
                     },
                     variant = AppButtonVariant.SECONDARY,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+                // 重置凭证入口（发起者限定：joinUrl 非空即 token 可得=发起者；参与者本就走降级提示）
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+                AppButton(
+                    small = true,
+                    text = stringResource(R.string.dining_order_share_reset_action),
+                    onClick = { showResetConfirm = true },
+                    variant = AppButtonVariant.TEXT,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 )
             }
