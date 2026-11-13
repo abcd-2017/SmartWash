@@ -126,7 +126,7 @@ import { getGameList, uploadGame, uploadGameCover } from '@/api/game';
 import { useConfirm } from '@/composables/useConfirm';
 import { formatFileSize } from '@/utils/format';
 import logger from '@/utils/logger';
-import { splitGameDirs, inspectGameDir, parseGameReadme, GAME_KEY_PATTERN } from './gameDirectory';
+import { splitGameDirs, inspectGameDir, parseGameReadme, GAME_KEY_PATTERN } from '../gameDirectory';
 
 /** 单游戏包上限，与后端 GamePackageValidator.MAX_ORIGINAL_BYTES 对齐 */
 const MAX_PACKAGE_BYTES = 10 * 1024 * 1024;

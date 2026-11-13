@@ -664,7 +664,7 @@ import { formatTime, formatFileSize } from '@/utils/format';
 import logger from '@/utils/logger';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
-import BatchUploadDialog from './BatchUploadDialog.vue';
+import BatchUploadDialog from './components/BatchUploadDialog.vue';
 import { relSegs, inspectGameDir, parseGameReadme, GAME_KEY_PATTERN } from './gameDirectory';
 import {
   GAME_CATEGORY_OPTIONS,

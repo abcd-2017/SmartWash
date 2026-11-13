@@ -42,18 +42,19 @@ src/
 │   └── optionCache.js      # 下拉全量缓存（school/laundry/role）
 ├── stores/auth.js          # Pinia useAuthStore（token/refreshToken/role）
 ├── router/index.js         # 管理页为 Layout 子路由；/login 与 /d/:code? 免认证
-├── constants/dict.js       # 66 个枚举/字典导出（订单/支付/充值/券/短码/观象台/工作台/游戏/深链/订阅/站内信）
+├── constants/dict.js       # 68 个枚举/字典导出（订单/支付/充值/券/短码/观象台/工作台/游戏/深链/情绪/订阅/站内信）
 ├── components/             # Layout/（Layout+Sidebar+Navbar）、AmapPicker、RegionCascader、TrendChart
 ├── composables/            # useTableList、useTimeRange、useConfirm、useAnimatedNumber
 ├── views/
 │   ├── LoginPage.vue  Home.vue  NotFound.vue
-│   ├── system/             # 15 个管理页（UserList、OrderList、SchoolList、LockerList、
-│   │                       #   RechargeList、PaymentList、AdminUserList、AuditLogList、
-│   │                       #   NoticeList、SubscriptionList、CaptchaQuery 等）
+│   ├── campus/             # 基础数据（SchoolList、LockerList、LaundryList）
+│   ├── operations/         # 业务管理（OrderList、PaymentList、RechargeList）
+│   ├── users/              # 用户运营（UserList、CouponList、UserCouponList、NoticeList）
+│   ├── platform/           # 平台模块（game/ 游戏库+components+gameDirectory.js、
+│   │                       #   toolbox/ 短链、workbench/ 入口+跳转路由、
+│   │                       #   SubscriptionList）
 │   ├── divination/         # 7 个观象台管理页
-│   ├── game/               # 游戏库（GameList + BatchUploadDialog + gameDirectory.js）
-│   ├── toolbox/            # 短链管理
-│   ├── workbench/          # 工作台入口 + 跳转路由字典
+│   ├── system/             # 系统与安全（AdminUserList、RoleList、AuditLogList、CaptchaQuery）
 │   └── delivery/           # 设备投递公开对端页（DeliveryPickup + DeliverySession）
 └── __tests__/              # 3 个生效用例 + 2 个 .bak 禁用用例
 ```
@@ -71,8 +72,8 @@ src/
 
 ## 四、路由与权限
 
-- 所有管理页面挂 `Layout`（`/`）下；`/login` 与 `/d/:code?`（设备投递公开页）免认证；通配路由 `/:pathMatch(.*)*` 渲染 404 页。共 30 条路由。
-- 菜单、面包屑、图标由路由 `meta` 驱动（`title`/`showInMenu`/icon），新增页面必须配齐 meta；侧边栏按 `MENU_GROUP_CONFIG` 分组（业务管理/基础数据/用户与权限/营销/观象台/工具箱/工作台/订阅/系统与安全/消息中心）。
+- 所有管理页面挂 `Layout`（`/`）下；`/login` 与 `/d/:code?`（设备投递公开页）免认证；通配路由 `/:pathMatch(.*)*` 渲染 404 页。共 31 条路由。
+- 菜单、面包屑、图标由路由 `meta` 驱动（`title`/`showInMenu`/icon），新增页面必须配齐 meta；侧边栏按 `MENU_GROUP_CONFIG` 六组分组（基础数据/业务管理/用户运营/平台模块/观象台/系统与安全），与 `src/views/` 目录划分一一对应，新增页面必须登记进对应分组（漏登记会兜底进「其他」组）。
 - **权限现状**：守卫从 `useAuthStore` 检查 token/角色，角色由后端登录接口返回（中文展示名），具体接口权限由后端 `/admin/**` 的 ROLE_ADMIN 强校验兜底。权限必须以后端接口鉴权为准，前端只做展示控制。
 - 路由已全部懒加载（`component: () => import(...)`）；新增页面保持此模式。
 
@@ -80,7 +81,7 @@ src/
 
 ## 五、CRUD 页面模式
 
-每个管理页面遵循统一结构（参考 `src/views/system/UserList.vue`）：
+每个管理页面遵循统一结构（参考 `src/views/users/UserList.vue`）：
 
 1. 响应式 `listQuery`（搜索 + 分页参数）
 2. `el-table` + `v-loading`，`el-pagination` 分页
