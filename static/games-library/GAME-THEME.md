@@ -169,6 +169,48 @@ HTML/CSS、`__gThemeToggle`、`g-theme` 读写、matchMedia 监听及按钮让�
 **当前接入 `immersive` 的 5 个全屏画布游戏**：breakout、flappy、gomoku、falling-sand、beat-tap。
 其余 11 个保持 `full`。
 
+## 5.2 游戏数据桥（D7 · 2026-11-09，PR #89）
+
+**问题**：游戏存档存 H5 localStorage，换设备/清缓存即丢；无账号维度成绩，无法做排行榜；
+关卡内联在 `index.html`，扩展关卡要重传整个游戏包。
+
+**方案 = 桥代理**：与 `getTheme`/`setChrome` 同一注入对象 `window.SmartWashGameBridge`，
+新增 5 个数据方法。**H5 不持有 token**——原生侧带 `Bearer` 请求后端 `/web/auth/game/*`
+（ROLE_USER，契约源 `SmartWash/src/main/java/com/smartwash/game/controller/WebGameDataController.java`），
+结果经 `evaluateJavascript` 回传。所有方法过 host 白名单（复用主题桥 `isAllowedHost`），
+**白名单外 fail-closed**（回调 `ok=false`，不泄露任何数据）。
+
+### 方法签名（原生 `GameThemeBridge.kt` 的 `@JavascriptInterface`，勿改动）
+
+| 方法 | 参数 | 后端端点 | 返回 payload |
+|---|---|---|---|
+| `loadState` | `(gameKey, cbId)` | `GET /web/auth/game/state` | `{gameKey, stateJson(可空), schemaVer, updatedAt}`，无存档 `stateJson=null` |
+| `saveState` | `(gameKey, payloadJson, cbId)` | `PUT /web/auth/game/state` | 同上（upsert 后的存档） |
+| `reportScore` | `(gameKey, payloadJson, cbId)` | `POST /web/auth/game/score` | 字符串（历史最佳说明文案） |
+| `getLeaderboard` | `(gameKey, limit, cbId)` | `GET /web/auth/game/leaderboard` | `{gameKey, metricLabel, metricOrder, entries:[{rank,userId,maskedPhone,avatar,metricValue,metricExtra}], my:{rank,metricValue}}` |
+| `getLevels` | `(gameKey, cbId)` | `GET /web/auth/game/levels` | `{gameKey, version, levels:[{levelNo,name,dataJson,difficulty,sort}]}` |
+
+### 载荷与回调协议
+
+- **回调**：`window.__gOnGameBridgeResult(cbId, ok, payload)`——`ok=true` 时 `payload` 为
+  上表 JSON 对象字面量；`ok=false` 时为失败说明（`非白名单来源` / `桥未就绪` / `网络异常` /
+  后端 message）。cbId 由 H5 生成（GB 适配层用 `gb<时间戳>_<seq>`），原生原样回传。
+- **saveState 载荷双格式兼容**（2026-11-09 修复所有游戏存档静默失败的兜底）：
+  标准 `{"stateJson":"<游戏自定义 JSON 字符串>","schemaVer":1}`；裸 JSON（无 `stateJson` 键）
+  整体作为存档内容落库。游戏侧一律走 GB 适配层包装标准格式。
+- **reportScore 载荷**：`{"metricValue":100,"metricExtra":null,"metricJson":null}`——
+  语义由 `game_config` 决定（desc 分数越大越好 / asc 越小越好），榜单开关/列名同为配置。
+- **getLeaderboard 的 `limit`**：`<=0` 时原生归一化为 20。
+- **关卡缓存策略**：启动拉 `getLevels` 全量（KB 级），按 `version` 比对 localStorage 缓存，
+  版本一致直接用缓存；包内保留默认关卡作离线兜底（接口失败游戏仍可启动）。
+- **存档策略**：双写（localStorage + 账号），读时账号优先、本地兜底；冲突以账号为准。
+
+### H5 侧 GB 适配层（每游戏内联一份，单文件自包含）
+
+`var GB=(function(){...})()`：维护 `cbId → Promise` 映射表，桥缺失/方法不可用/回调 `ok=false`
+一律 reject，游戏逻辑 catch 后**降级 localStorage**（无桥环境可玩，进度不丢）。
+标准形态见 `sokoban/index.html`「游戏桥适配层」段，新游戏直接照抄。
+
 ## 6. 新游戏接入清单（library/ 后续加游戏时照此执行）
 
 1. 抄第 2 节 token 两块 CSS（`:root` + `[data-theme=dark]`）+ 第 4 节运行时（置于
@@ -186,9 +228,12 @@ HTML/CSS、`__gThemeToggle`、`g-theme` 读写、matchMedia 监听及按钮让�
 6. 全屏视口游戏（`html,body{height:100%}` + `overflow:hidden`）在 `<head` 主题运行时里追加
    `try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}`（§5.1）；
    卡片式布局游戏不加。
-7. 过三关：`node` 提取 `<script>` `new Function` 语法检查；`grep -nE 'https?://'` 零命中；
+7. **接入数据桥 GB 适配层**（§5.2）：内联 GB Promise 包装（照抄 `sokoban/index.html` 标准形态），
+   存档双写（账号优先 + 本地兜底）、有关卡的游戏异步加载 + `version` 缓存 + 包内默认关卡兜底、
+   有成绩的上报 `reportScore`；桥失败/无桥一律降级 localStorage，游戏可玩不报错。
+8. 过三关：`node` 提取 `<script>` `new Function` 语法检查；`grep -nE 'https?://'` 零命中；
    375px 视口实开无横向溢出。体积：改后 ≤ 改前 × 1.3。
-8. 更新 `PROGRESS.md` 该游戏行。
+9. 更新 `PROGRESS.md` 该游戏行。
 
 ## 7. 三关验证与预算
 
