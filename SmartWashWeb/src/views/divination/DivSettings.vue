@@ -61,10 +61,7 @@
       <!-- 主密钥轮换 -->
       <el-divider content-position="left">主密钥轮换</el-divider>
       <div class="rotate-key-section">
-        <p class="form-tip">
-          轮换主密钥后，后台将分批对所有已加密的 API Key 进行「解密→重新加密→写回」操作。
-          轮换期间解读服务不受影响（解密按记录的 key_version 路由）。
-        </p>
+        <p class="form-tip">当前版本轮换仅记录审计，密钥重加密任务尚未实现。</p>
         <el-button type="danger" @click="handleRotateKey" :loading="rotating">
           <el-icon><Refresh /></el-icon>
           执行主密钥轮换
@@ -148,7 +145,7 @@ const submitForm = async () => {
 
 const handleRotateKey = async () => {
   const confirmed = await useConfirm(
-    '确认执行主密钥轮换？此操作将触发后台分批重加密任务，耗时取决于数据量。',
+    '确认执行主密钥轮换？当前版本仅记录审计，密钥重加密任务尚未实现。',
     '危险操作'
   );
   if (!confirmed) return;
@@ -156,8 +153,8 @@ const handleRotateKey = async () => {
   try {
     await rotateMasterKey();
     // 高危关键动作必留痕；密钥材料一律不入日志
-    logger.info('主密钥轮换已启动');
-    ElMessage.success('主密钥轮换已启动，后台正在分批重加密');
+    logger.info('主密钥轮换已记录');
+    ElMessage.success('主密钥轮换已记录（密钥重加密任务尚未实现）');
   } catch (error) {
     logger.error('主密钥轮换失败:', error);
     ElMessage.error(error.message || '主密钥轮换失败');
@@ -174,13 +171,6 @@ const handleRotateKey = async () => {
 
 .settings-header {
   margin-bottom: 8px;
-}
-
-.settings-header h2 {
-  margin: 0 0 4px 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
 }
 
 .settings-sub {

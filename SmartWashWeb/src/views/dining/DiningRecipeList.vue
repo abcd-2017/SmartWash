@@ -187,6 +187,9 @@
             />
           </el-select>
           <span class="form-tip-inline">分类在「分类管理」页维护</span>
+          <span v-if="categoryOptionsLoadFailed" class="form-tip-inline form-tip-inline--error">
+            分类选项加载失败，请刷新页面重试
+          </span>
         </el-form-item>
         <el-form-item label="封面" prop="coverObjectKey">
           <div class="cover-field">
@@ -209,7 +212,7 @@
               </div>
             </el-upload>
             <el-button
-              v-if="tempRecipe.coverObjectKey"
+              v-if="dialogType === 'create' && tempRecipe.coverObjectKey"
               size="small"
               :disabled="coverUploading"
               @click="handleRemoveCover"
@@ -217,7 +220,9 @@
               移除封面
             </el-button>
           </div>
-          <div class="form-tip">选填：png / jpeg / webp，不超过 5MB；用户端菜谱卡展示</div>
+          <!-- 编辑态封面字段后端约定 null=不修改，故不提供「移除」动作，只能重新上传覆盖 -->
+          <div v-if="dialogType === 'edit'" class="form-tip">如需更换封面请直接重新上传</div>
+          <div v-else class="form-tip">选填：png / jpeg / webp，不超过 5MB；用户端菜谱卡展示</div>
         </el-form-item>
         <el-form-item label="食材" prop="ingredients">
           <div class="ingredient-editor">
@@ -248,6 +253,8 @@
             maxlength="20000"
             show-word-limit
           />
+          <!-- 后端 updateRecipe 对 steps 用 hasText 判空：留空不会清空原内容，需显式告知 -->
+          <div class="form-tip">编辑时留空表示不修改原步骤内容</div>
         </el-form-item>
       </el-form>
 
@@ -304,6 +311,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -334,12 +342,16 @@ const hasRecipeFilter = computed(
 
 // 分类下拉：走 optionCache 全量缓存（分类页增删改后自动失效）
 const categoryOptions = ref([]);
+// 失败状态位：为 true 时表单分类项下提示重试，避免用户对着空下拉无从判断
+const categoryOptionsLoadFailed = ref(false);
 const loadCategoryOptions = async () => {
   try {
     categoryOptions.value = await diningCategoryOptionsCache.load();
+    categoryOptionsLoadFailed.value = false;
   } catch (error) {
     logger.warn('菜谱分类选项加载失败:', error);
     categoryOptions.value = [];
+    categoryOptionsLoadFailed.value = true;
   }
 };
 
@@ -364,7 +376,16 @@ const rules = reactive({
 // ---------- 封面上传 ----------
 
 const coverUploading = ref(false);
-const coverPreviewUrl = ref(null); // 本地预览直链（新上传用 ObjectURL，编辑回显用 coverUrl）
+const coverPreviewUrl = ref(null); // 预览直链（新上传用 ObjectURL，编辑回显用 coverUrl）
+const coverObjectUrl = ref(null); // 本地生成的 ObjectURL，换图/移除/关闭时统一回收
+
+// 统一回收本地预览 ObjectURL：换图、移除、弹窗关闭都走这里，避免泄漏
+const revokeCoverPreview = () => {
+  if (coverObjectUrl.value) {
+    URL.revokeObjectURL(coverObjectUrl.value);
+    coverObjectUrl.value = null;
+  }
+};
 
 const COVER_OK_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
@@ -389,8 +410,10 @@ const handleCoverUpload = async ({ file }) => {
     formData.append('file', file);
     const objectKey = await uploadDiningRecipeCover(formData);
     tempRecipe.coverObjectKey = objectKey;
-    // 用本地 ObjectURL 立即预览（不依赖后端拼直链）
-    coverPreviewUrl.value = URL.createObjectURL(file);
+    // 用本地 ObjectURL 立即预览（不依赖后端拼直链）；换图前回收旧 URL 防泄漏
+    revokeCoverPreview();
+    coverObjectUrl.value = URL.createObjectURL(file);
+    coverPreviewUrl.value = coverObjectUrl.value;
     ElMessage.success('封面已上传');
   } catch (error) {
     ElMessage.error(error.message || '封面上传失败');
@@ -403,6 +426,7 @@ const handleCoverUpload = async ({ file }) => {
 // 故「移除」仅在新增场景生效；编辑场景如需换图直接重新上传覆盖）
 const handleRemoveCover = () => {
   tempRecipe.coverObjectKey = null;
+  revokeCoverPreview();
   coverPreviewUrl.value = null;
 };
 
@@ -444,6 +468,8 @@ const handleCreate = () => {
     ingredients: [],
     steps: '',
   });
+  ingredientInput.value = '';
+  revokeCoverPreview();
   coverPreviewUrl.value = null;
 };
 
@@ -459,13 +485,18 @@ const handleEdit = (row) => {
     ingredients: [...(row.ingredients || [])],
     steps: row.steps || '',
   });
+  ingredientInput.value = '';
+  // 回显用后端直链（非 ObjectURL），先回收上次本地预览再切换
+  revokeCoverPreview();
   coverPreviewUrl.value = row.coverUrl || null;
 };
 
-// 弹窗关闭 — 清除验证状态
+// 弹窗关闭 — 清除验证状态并回收本地预览 ObjectURL
 const handleDialogClosed = () => {
   formRef.value?.resetFields();
   formRef.value?.clearValidate();
+  revokeCoverPreview();
+  coverPreviewUrl.value = null;
 };
 
 // 提交表单（编辑为全量字段语义，与后端 UpdateDiningRecipeFrom 对齐）
@@ -541,7 +572,8 @@ const handleDelete = async (row) => {
     await deleteDiningRecipe(row.id);
     logger.info('菜谱删除成功', `id=${row.id}`, `name=${row.name}`);
     ElMessage.success('删除成功');
-    fetchData(); // 刷新当前页
+    // 删除后统一走页码钳制：当前页只剩 1 条且不在第一页时先回退一页再拉取
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('菜谱删除失败:', `id=${row.id}`, `name=${row.name}`, error);
     ElMessage.error(error.message || '删除失败');
@@ -625,6 +657,11 @@ const handleDelete = async (row) => {
   margin-left: 8px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+/* 加载失败等异常态行内说明 */
+.form-tip-inline--error {
+  color: var(--color-danger);
 }
 
 .form-tip {

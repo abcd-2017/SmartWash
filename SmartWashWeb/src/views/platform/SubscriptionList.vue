@@ -69,6 +69,7 @@
         </div>
         <span class="summary-card__value">{{ formatThousands(summary.expiringIn7Days) }}</span>
       </div>
+      <p class="summary-card__note">统计范围为全部订阅，不随下方筛选变化</p>
     </div>
 
     <!-- 数据表格 -->
@@ -106,11 +107,17 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" min-width="90">
+        <el-table-column label="状态" min-width="120">
           <template #default="{ row }">
-            <el-tag :type="subscriptionStatusTagType(row.status)">
-              {{ subscriptionStatusText(row.status) }}
-            </el-tag>
+            <div class="status-cell">
+              <el-tag :type="subscriptionStatusTagType(row.status)">
+                {{ subscriptionStatusText(row.status) }}
+              </el-tag>
+              <!-- 生效中但下次续费日已过：弱化「已逾期」标识，与状态标签并存 -->
+              <el-tag v-if="isOverdue(row)" type="warning" size="small" effect="plain">
+                已逾期
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="下次续费日" min-width="110">
@@ -139,6 +146,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
+import dayjs from 'dayjs';
 import { AlarmClock, CircleCheck, Clock } from '@element-plus/icons-vue';
 import { getSubscriptionList, getSubscriptionSummary } from '@/api/subscription';
 import { formatAmount, formatTime, formatThousands } from '@/utils/format';
@@ -154,6 +162,12 @@ import { useTimeRange } from '@/composables/useTimeRange';
 import logger from '@/utils/logger';
 
 const statusOptions = SUBSCRIPTION_STATUS_OPTIONS;
+
+// 已逾期：仍处生效中但下次续费日已早于今天（按「日」比较，与列表 YYYY-MM-DD 展示口径一致）
+const isOverdue = (row) =>
+  row.status === 'active' &&
+  !!row.nextRenewDate &&
+  dayjs(row.nextRenewDate).isBefore(dayjs(), 'day');
 
 // 列表查询：分页/搜索/翻页统一由 useTableList 承载。
 // 后端 AdminSearchSubscriptionFrom 继承 BaseSearchFrom（page/size），与仓库其他列表分页参数一致
@@ -285,5 +299,22 @@ onMounted(() => {
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+}
+
+/* 汇总口径说明：Micro 弱化文字，横跨整行置于卡内底部 */
+.summary-card__note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* 状态列：状态标签 + 已逾期弱化标识换行排布 */
+.status-cell {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 </style>

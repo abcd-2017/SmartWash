@@ -123,7 +123,8 @@
           />
         </el-form-item>
 
-        <el-form-item label="修改密码" v-if="dialogType === 'edit'">
+        <!-- prop 缺失会导致编辑态密码规则整体不参与校验（与 UserList 同款漏洞） -->
+        <el-form-item label="修改密码" prop="password" v-if="dialogType === 'edit'">
           <el-input
             v-model="tempAdmin.password"
             type="password"

@@ -9,7 +9,9 @@
       <div class="not-found-title">页面不存在</div>
       <div class="not-found-desc">抱歉，您访问的页面不存在或已被移除</div>
       <div class="not-found-actions">
-        <el-button type="primary" @click="goBack">返回上一页</el-button>
+        <el-button type="primary" @click="goBack">
+          {{ hasInternalBack ? '返回上一页' : '返回首页' }}
+        </el-button>
         <el-button @click="goHome">{{ isLoggedIn ? '返回首页' : '去登录' }}</el-button>
       </div>
     </div>
@@ -28,9 +30,17 @@ const authStore = useAuthStore();
 // 登录态决定次级按钮去向：未登录去登录页（路由守卫也会拦回登录页），已登录回首页
 const isLoggedIn = computed(() => !!authStore.token);
 
-// 有历史记录则退回上一页（404 常见于误点链接），否则兜底回首页
+// 站内来源判断：Vue Router 在 push 时会把来源地址写入 history.state.back
+// （初始直连进入时该字段为 null/undefined），据此区分「站内跳转来的 404」与「直接打开的 404」；
+// window.history.length > 1 不可靠——浏览器历史里可能存有站外页面，会把用户带回站外
+const hasInternalBack = computed(() => {
+  const back = window.history.state?.back;
+  return typeof back === 'string' && back.length > 0;
+});
+
+// 有站内来源则退回上一页（404 常见于误点链接），否则降级为返回首页
 const goBack = () => {
-  if (window.history.length > 1) {
+  if (hasInternalBack.value) {
     router.back();
   } else {
     router.push('/');

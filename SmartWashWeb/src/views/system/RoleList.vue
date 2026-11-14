@@ -50,11 +50,21 @@
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
+            <!-- 内置超管角色（roleId=1）后端拒绝改名/删除，行内按钮禁用并给出原因 -->
+            <el-button
+              link
+              size="small"
+              :disabled="row.roleId === 1"
+              :title="row.roleId === 1 ? '内置角色不可修改' : undefined"
+              @click="handleEdit(row)"
+              >编辑</el-button
+            >
             <el-button
               link
               type="danger"
               size="small"
+              :disabled="row.roleId === 1"
+              :title="row.roleId === 1 ? '内置角色不可修改' : undefined"
               :loading="deletingId === row.roleId"
               @click="handleDelete(row)"
               >删除</el-button
@@ -225,26 +235,28 @@ const submitForm = async () => {
 
 // 删除角色
 const handleDelete = async (row) => {
-  // 确认前查该角色下的管理员数，确认文案列明影响面（删除后账号将失去权限）；
-  // 引用数查询失败不阻断删除，降级为原文案
-  let confirmText = `确认删除角色 ${row.roleName} 吗？`;
-  try {
-    const { total: adminCount } = await getAdminUserList({
-      page: 1,
-      size: 1,
-      roleId: row.roleId,
-    });
-    if (adminCount > 0) {
-      confirmText += `该角色下有 ${adminCount} 个管理员,删除后这些账号将失去权限`;
-    }
-  } catch (error) {
-    logger.warn('查询角色下管理员数失败，删除确认降级为普通文案:', `roleId=${row.roleId}`, error);
-  }
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(confirmText);
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (deletingId.value) return;
   deletingId.value = row.roleId;
   try {
+    // 确认前查该角色下的管理员数，确认文案与后端拒绝口径一致（占用时无法删除）；
+    // 引用数查询失败不阻断删除，降级为原文案
+    let confirmText = `确认删除角色 ${row.roleName} 吗？`;
+    try {
+      const { total: adminCount } = await getAdminUserList({
+        page: 1,
+        size: 1,
+        roleId: row.roleId,
+      });
+      if (adminCount > 0) {
+        confirmText += `该角色下有 ${adminCount} 个管理员时无法删除，请先将这些管理员移出该角色`;
+      }
+    } catch (error) {
+      logger.warn('查询角色下管理员数失败，删除确认降级为普通文案:', `roleId=${row.roleId}`, error);
+    }
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+    const confirmed = await useConfirm(confirmText);
+    if (!confirmed) return;
     await deleteRole(row.roleId);
     ElMessage.success('删除成功');
     // 写操作成功留痕：业务键仅 roleId/roleName

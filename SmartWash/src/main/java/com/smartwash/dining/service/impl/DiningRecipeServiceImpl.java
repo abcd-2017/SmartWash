@@ -101,6 +101,8 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         recipe.setCategoryId(categoryId);
         recipe.setSteps(from.getSteps());
         recipe.setIngredients(serializeIngredients(from.getIngredients()));
+        // 封面上传与表单分两次提交：先拿对象键，随新增/编辑一起落库（缺失时保持 null）
+        recipe.setCoverObjectKey(from.getCoverObjectKey());
         // 管理端录入：来源固定 ADMIN、创建人取当前登录管理员，默认上架（下架需显式走上下架接口）
         recipe.setSource(SOURCE_ADMIN);
         recipe.setStatus(DiningRecipe.STATUS_ON_SHELF);
@@ -223,6 +225,8 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         recipe.setCategoryId(categoryId);
         recipe.setSteps(from.getSteps());
         recipe.setIngredients(serializeIngredients(from.getIngredients()));
+        // 封面对象键随用户端新增一并落库，避免仅上传成功而记录缺失导致封面静默丢失
+        recipe.setCoverObjectKey(from.getCoverObjectKey());
         // 用户端新增：来源 USER、创建人取当前登录用户，直上架（无审核流，spec 决策）
         recipe.setSource(SOURCE_USER);
         recipe.setStatus(DiningRecipe.STATUS_ON_SHELF);

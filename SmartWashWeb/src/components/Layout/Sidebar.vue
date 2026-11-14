@@ -13,6 +13,8 @@
         :prefix-icon="Search"
         size="small"
         aria-label="搜索菜单"
+        @keydown.esc="handleSearchClear"
+        @keyup.enter="handleSearchEnter"
       />
     </div>
     <el-menu
@@ -21,6 +23,8 @@
       :default-active="activeMenu"
       :default-openeds="defaultOpeneds"
       router
+      @open="handleMenuOpen"
+      @close="handleMenuClose"
     >
       <!-- 首页是唯一子项的「数据看板」，保持顶层不折叠，减少一次点击 -->
       <el-menu-item v-if="homeRoute" :index="homeRoute.path">
@@ -278,14 +282,39 @@ const searchResults = computed(() => {
   return results;
 });
 
+// Esc 退出搜索态：清空关键词，恢复分组菜单
+const handleSearchClear = () => {
+  menuQuery.value = '';
+};
+
+// Enter 直达第一条匹配结果；同路由重复跳转由 Router 判重，吞掉即可
+const handleSearchEnter = async () => {
+  const first = searchResults.value[0];
+  if (!first) return;
+  try {
+    await router.push(first.path);
+  } catch {
+    // 导航被守卫取消/重定向等场景无需处理
+  }
+  menuQuery.value = '';
+};
+
 const menuRef = ref(null);
-// 已展开分组记录：el-menu 对重复 open 可能重复入栈，自己去重
+// 已展开分组记录：由 el-menu @open/@close 同步真实展开态。
+// 只增不减会导致用户手动收起分组后，路由切走再切回时无法自动重新展开当前分组
 const expandedGroups = new Set(defaultOpeneds.value);
+
+const handleMenuOpen = (index) => {
+  expandedGroups.add(index);
+};
+
+const handleMenuClose = (index) => {
+  expandedGroups.delete(index);
+};
 
 // 编程式跳转（如首页卡片跳订单页）时目标分组可能未展开：路由变化后自动展开当前分组
 watch(activeGroupIndex, (title) => {
   if (title && !expandedGroups.has(title)) {
-    expandedGroups.add(title);
     menuRef.value?.open(title);
   }
 });
@@ -418,6 +447,15 @@ watch(
   box-shadow: none;
 }
 
+/* 暗底搜索框：wrapper 已改暗色，inner 文字/占位符须同步走暗侧文字灰阶，否则近黑字不可读 */
+.menu-search :deep(.el-input__inner) {
+  color: var(--sidebar-text-strong);
+}
+
+.menu-search :deep(.el-input__inner::placeholder) {
+  color: var(--sidebar-text-sub);
+}
+
 .search-menu {
   padding-bottom: 16px;
 }
@@ -432,10 +470,10 @@ watch(
 
 /* 结果右侧的所属分组小标签，帮助区分重名页面 */
 .search-group-tag {
-  font-size: 11px;
+  font-size: 12px; /* 对齐 Micro 档字阶，与侧栏说明文字同档 */
   color: var(--sidebar-text-sub);
   background-color: var(--sidebar-hover-bg);
-  border-radius: 4px;
+  border-radius: 6px; /* 对齐形状档：标签/小元素 6px */
   padding: 1px 6px;
   margin-left: 6px;
   flex-shrink: 0;

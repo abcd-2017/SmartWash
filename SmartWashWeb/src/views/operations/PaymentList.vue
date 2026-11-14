@@ -76,6 +76,7 @@
             start-placeholder="开始时间"
             end-placeholder="结束时间"
             value-format="YYYY-MM-DD HH:mm:ss"
+            :default-time="['00:00:00', '23:59:59']"
             style="width: 380px"
             @change="handleSearch"
           />
@@ -109,7 +110,8 @@
         </el-table-column>
         <el-table-column label="金额" min-width="120" align="right">
           <template #default="{ row }">
-            <span class="pay-amount">￥{{ formatAmount(row.amount, '-') }}</span>
+            <!-- 空金额整格输出 '-'：￥- 会让人误读为「负金额」 -->
+            <span class="pay-amount">{{ formatPayAmount(row.amount) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="支付方式" min-width="120">
@@ -192,12 +194,14 @@ const {
 // 时间范围处理（评审 #14：抽离为公共 composable）
 const timeRange = useTimeRange(listQuery);
 
-// 初始化数据
-onMounted(async () => {
-  await fetchPayTypes();
-  await fetchPayStatus();
+// 初始化数据：枚举与列表无依赖，并行发起（串行会让首屏多等一个 RTT）
+onMounted(() => {
+  Promise.allSettled([fetchPayTypes(), fetchPayStatus()]);
   fetchData();
 });
+
+// 金额单元格：空值整格 '-'，非空才带 ￥ 前缀
+const formatPayAmount = (amount) => (amount == null ? '-' : `￥${formatAmount(amount)}`);
 
 // 获取支付类型
 const fetchPayTypes = async () => {

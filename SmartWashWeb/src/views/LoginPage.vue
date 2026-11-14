@@ -101,8 +101,9 @@ const handleLogin = async () => {
     await formRef.value.validate();
     loading.value = true;
 
-    // 后端登录响应 data 为 { token, refreshToken, role }，role 为该管理员实际角色名
-    const data = await login(loginForm);
+    // 后端登录响应 data 为 { token, refreshToken, role }，role 为该管理员实际角色名；
+    // silent: true 跳过 http.js 全局网络错误 toast，传输层错误由下方 catch 分级提示（避免双弹）
+    const data = await login(loginForm, { silent: true });
     if (!data?.token) {
       throw new Error('登录响应缺少凭证，请稍后重试');
     }

@@ -18,11 +18,13 @@ import com.smartwash.vo.roles.RolesVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +40,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements IRolesService {
 
+    /** 内置超级管理员角色 ID：不允许删除/改名，防止系统失去唯一超管入口 */
+    private static final Integer BUILT_IN_ROLE_ID = 1;
+
     private final AdminUsersMapper adminUsersMapper;
 
     @Override
@@ -45,6 +50,8 @@ public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements
         Page<Roles> page = new Page<>(rolesFrom.getPage(), rolesFrom.getSize());
         LambdaQueryWrapper<Roles> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.and(rolesFrom.getRoleId() != null, b -> b.eq(Roles::getRoleId, rolesFrom.getRoleId()));
+        queryWrapper.and(StringUtils.hasText(rolesFrom.getRoleName()),
+                b -> b.like(Roles::getRoleName, rolesFrom.getRoleName()));
 
         List<Roles> Roles = this.list(page, queryWrapper);
         Page<RolesVo> RolesVoPage = new Page<>();
@@ -79,6 +86,13 @@ public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements
         if (roles == null) {
             throw new CustomExceptions("角色不存在");
         }
+        // 内置超管角色保护：角色名不允许修改（描述等其他字段可正常维护）
+        if (Objects.equals(BUILT_IN_ROLE_ID, roles.getRoleId())
+                && StringUtils.hasText(rolesFrom.getRoleName())
+                && !rolesFrom.getRoleName().equals(roles.getRoleName())) {
+            log.warn("更新角色被拒绝：内置角色不可改名, roleId: {}, roleName: {}", roles.getRoleId(), rolesFrom.getRoleName());
+            throw new CustomExceptions("内置角色不可改名");
+        }
         BeanUtils.copyProperties(rolesFrom, roles);
         return updateById(roles);
     }
@@ -89,6 +103,11 @@ public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(Long::valueOf)
                 .collect(Collectors.toList());
+        // 内置超管角色保护：不允许删除，防止系统失去唯一超管入口
+        if (idList.contains(BUILT_IN_ROLE_ID.longValue())) {
+            log.warn("删除角色被拒绝：内置角色不可删除, ids: {}", ids);
+            throw new CustomExceptions("内置角色不可删除");
+        }
         // 删除前校验引用：角色仍被管理员账号占用时拒绝，防止误删导致账号失去权限（评审 P1）
         Long adminCount = adminUsersMapper.selectCount(
                 new LambdaQueryWrapper<AdminUsers>().in(AdminUsers::getRoleId, idList));

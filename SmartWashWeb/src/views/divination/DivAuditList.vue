@@ -6,7 +6,7 @@
         <el-form-item label="审计状态">
           <el-select
             v-model="listQuery.status"
-            placeholder="全部"
+            placeholder="不一致(默认)"
             clearable
             style="width: 120px"
             @change="handleSearch"
@@ -77,7 +77,7 @@
     </div>
 
     <!-- 审计详情弹窗 -->
-    <el-dialog title="审计详情" v-model="detailDialogVisible" width="min(700px, 94vw)">
+    <el-dialog title="审计详情" v-model="detailDialogVisible" width="min(760px, 94vw)">
       <div v-if="currentAudit" class="audit-detail">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="解读ID">{{
@@ -85,6 +85,10 @@
           }}</el-descriptions-item>
           <el-descriptions-item label="卦例ID">{{
             currentAudit.recordId || '-'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="模型">{{ currentAudit.model || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="服务商">{{
+            currentAudit.provider || '-'
           }}</el-descriptions-item>
           <el-descriptions-item label="审计状态">
             <el-tag :type="divAuditStatusTagType(currentAudit.auditStatus)">
@@ -96,10 +100,49 @@
           }}</el-descriptions-item>
         </el-descriptions>
 
+        <h4 class="diff-title">问事</h4>
+        <div class="audit-text">{{ currentAudit.question || '-' }}</div>
+
+        <h4 class="diff-title">
+          AI 原文
+          <el-button
+            link
+            size="small"
+            class="collapse-toggle"
+            @click="contentCollapsed = !contentCollapsed"
+          >
+            {{ contentCollapsed ? '展开' : '折叠' }}
+          </el-button>
+        </h4>
+        <pre
+          v-if="currentAudit.contentMd"
+          class="audit-content"
+          :class="{ 'is-collapsed': contentCollapsed }"
+          >{{ currentAudit.contentMd }}</pre>
+        <span v-else class="audit-empty">无 AI 原文</span>
+
         <h4 class="diff-title">审计明细</h4>
+        <div v-if="auditDiffs.length" class="diff-chips">
+          <el-tag v-for="(diff, index) in auditDiffs" :key="index" type="danger" effect="light">
+            {{ diffChipText(diff) }}
+          </el-tag>
+        </div>
         <div class="diff-content">
-          <pre v-if="currentAudit.auditJson">{{ formatJson(currentAudit.auditJson) }}</pre>
-          <span v-else style="color: var(--text-secondary)">无审计明细数据</span>
+          <template v-if="currentAudit.auditJson">
+            <el-button
+              v-if="auditDiffs.length"
+              link
+              size="small"
+              class="collapse-toggle"
+              @click="rawJsonCollapsed = !rawJsonCollapsed"
+            >
+              {{ rawJsonCollapsed ? '展开原始 JSON' : '折叠原始 JSON' }}
+            </el-button>
+            <pre v-if="!auditDiffs.length || !rawJsonCollapsed">{{
+              formatJson(currentAudit.auditJson)
+            }}</pre>
+          </template>
+          <span v-else class="audit-empty">无审计明细数据</span>
         </div>
       </div>
       <template #footer>
@@ -110,7 +153,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { getAuditList } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
@@ -123,6 +166,9 @@ import logger from '@/utils/logger';
 
 const detailDialogVisible = ref(false);
 const currentAudit = ref(null);
+// AI 原文默认展开、原始审计 JSON 默认折叠（有 diffs 时以 chip 行替代raw JSON 倾倒）
+const contentCollapsed = ref(false);
+const rawJsonCollapsed = ref(true);
 
 const {
   list: auditList,
@@ -151,19 +197,40 @@ onMounted(() => {
   fetchData();
 });
 
-const formatJson = (json) => {
+const parseAuditJson = (json) => {
   try {
-    if (typeof json === 'string') return JSON.stringify(JSON.parse(json), null, 2);
-    return JSON.stringify(json, null, 2);
+    return typeof json === 'string' ? JSON.parse(json) : json;
   } catch {
+    return null;
+  }
+};
+
+const formatJson = (json) => {
+  const parsed = parseAuditJson(json);
+  if (parsed === null) {
     // 降级为原文展示；审计明细可能含用户问事内容，日志只记异常事实不打内容
     logger.warn('审计明细 JSON 解析失败，已按原文兜底展示');
     return String(json);
   }
+  return JSON.stringify(parsed, null, 2);
 };
+
+// diffs 数组存在时以 chip 行呈现（field + cited + inChart），避免 raw JSON 倾倒
+const auditDiffs = computed(() => {
+  const parsed = parseAuditJson(currentAudit.value?.auditJson);
+  return Array.isArray(parsed?.diffs) ? parsed.diffs : [];
+});
+
+const diffChipText = (diff) =>
+  `${diff.field ?? '-'}：引用 ${diff.cited ?? '-'}，盘面 ${
+    String(diff.inChart) === 'true' ? '命中' : '缺失'
+  }`;
 
 const handleViewDetail = (row) => {
   currentAudit.value = row;
+  // 每次打开重置折叠态，避免上一条记录的状态串到下一条
+  contentCollapsed.value = false;
+  rawJsonCollapsed.value = true;
   detailDialogVisible.value = true;
 };
 </script>
@@ -185,6 +252,48 @@ const handleViewDetail = (row) => {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.collapse-toggle {
+  margin-left: 8px;
+  font-weight: 400;
+}
+
+/* 问事 / AI 原文：长文 pre-wrap，弱底块承载（对齐输入框弱底语言） */
+.audit-text,
+.audit-content {
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-body);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.audit-content {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.audit-content.is-collapsed {
+  max-height: 96px;
+  overflow: hidden;
+}
+
+.audit-empty {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* diffs chip 行：field + cited + inChart 一屏可读，替代 raw JSON 倾倒 */
+.diff-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .diff-content {

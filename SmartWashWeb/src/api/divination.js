@@ -50,6 +50,8 @@ export function uploadRagDocument(data) {
     url: '/admin/div/rag/documents',
     method: 'post',
     data,
+    // 语料文件最大 10MB，切片上传耗时较长：放宽至 60s，避免被实例默认 30s 误杀
+    timeout: 60000,
   });
 }
 

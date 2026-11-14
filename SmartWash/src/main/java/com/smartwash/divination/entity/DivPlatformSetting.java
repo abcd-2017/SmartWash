@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -28,9 +30,13 @@ public class DivPlatformSetting implements Serializable {
     private Long id;
 
     /** 观星台 AI 解读总开关：0=客户端隐藏入口并拦截，1=按用户自配模型解读 */
+    @Min(value = 0, message = "AI 解读开关仅支持 0/1")
+    @Max(value = 1, message = "AI 解读开关仅支持 0/1")
     private Integer divUseEnabled;
 
     /** 每用户每日解读次数限额 */
+    @Min(value = 1, message = "每日解读限额最小为 1")
+    @Max(value = 999, message = "每日解读限额最大为 999")
     private Integer byokDailyLimit;
 
     private LocalDateTime updatedAt;

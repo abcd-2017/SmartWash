@@ -36,6 +36,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.SecureRandom;
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -265,6 +266,14 @@ public class LoginController {
         String jti = claims.get("jti", String.class);
         String username = claims.getSubject();
         if (!StringUtils.hasText(username)) {
+            return refreshUnauthorized();
+        }
+        // 管理员改密后会话失效：签发时间早于改密时间戳的旧 refresh 直接拒绝（不做占用/轮换）
+        Date issuedAt = claims.getIssuedAt();
+        if (username.startsWith(DefaultConstant.ADMIN_USER_LOGIN_TYPE + "-")
+                && jwtBlacklistService.isSessionInvalidated(username,
+                        issuedAt == null ? 0L : issuedAt.getTime())) {
+            log.warn("刷新令牌失败：管理员会话因改密失效, subject: {}", username);
             return refreshUnauthorized();
         }
         // 第三环：原子「检查+占用」（替代原「查黑名单→重签→拉黑」两段式，封死并发重放双胜出竞态，见 ADR-0007 注记 (a)）——

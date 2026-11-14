@@ -41,7 +41,9 @@
         <el-table-column label="术数方法" min-width="120">
           <template #default="{ row }">{{ methodText(row.method) }}</template>
         </el-table-column>
-        <el-table-column prop="reason" label="拦截原因" min-width="200" show-overflow-tooltip />
+        <el-table-column label="拦截原因" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">{{ blockedReasonText(row.reason) }}</template>
+        </el-table-column>
         <el-table-column prop="createdAt" label="拦截时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
@@ -64,7 +66,7 @@
 
 <script setup>
 import { onMounted } from 'vue';
-import { divinationMethodText } from '@/constants/dict';
+import { blockedReasonText, divinationMethodText } from '@/constants/dict';
 import { getBlockedList } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';

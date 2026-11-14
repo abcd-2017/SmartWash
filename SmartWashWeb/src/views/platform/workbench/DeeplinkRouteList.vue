@@ -217,6 +217,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -401,7 +402,8 @@ const handleDelete = async (row) => {
     await deleteDeeplinkRoute(row.id);
     logger.info('跳转路由删除成功', `id=${row.id}`, `host=${row.host}`);
     ElMessage.success('删除成功');
-    fetchData(); // 刷新当前页
+    // 删除后钳制页码再刷新，避免当前页删空后停留在超出末页的空页
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('跳转路由删除失败:', `id=${row.id}`, `host=${row.host}`, error);
     ElMessage.error(error.message || '删除失败');

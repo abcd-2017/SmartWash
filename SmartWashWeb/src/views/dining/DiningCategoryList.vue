@@ -37,7 +37,12 @@
             <span class="category-name">{{ row.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="排序" prop="sort" width="100">
+        <el-table-column prop="sort" width="100">
+          <template #header>
+            <el-tooltip content="数值越小越靠前，用户端按此顺序展示" placement="top">
+              <span>排序</span>
+            </el-tooltip>
+          </template>
           <template #default="{ row }">
             <el-tag type="info" effect="plain">{{ row.sort }}</el-tag>
           </template>
@@ -151,8 +156,9 @@ const {
   errorMsg: '获取菜谱分类列表失败',
 });
 
-// 空态区分：有名称筛选时提示调整条件，否则视为库空引导新增
-const hasCategoryFilter = computed(() => Boolean((listQuery.name || '').trim()));
+// 空态区分：名称筛选且当前筛选有结果时才提示调整条件；
+// 库空（total=0）即使用户带了筛选也一律引导新增，避免「试试调整筛选条件」误报
+const hasCategoryFilter = computed(() => Boolean((listQuery.name || '').trim()) && total.value > 0);
 
 // 表单数据（字段名已与后端 DiningCategoryVo / Add·UpdateDiningCategoryFrom 对齐）
 const tempCategory = reactive({

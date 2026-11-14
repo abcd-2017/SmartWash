@@ -8,7 +8,12 @@
         </p>
       </div>
 
-      <el-table :data="list" v-loading="loading" border stripe>
+      <!-- 加载失败态：与空列表区分，给出重试入口，不再让表格静默空白 -->
+      <div v-if="loadError" class="load-error">
+        <span>系统参数加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchList">重试</el-button>
+      </div>
+      <el-table v-else :data="list" v-loading="loading" border stripe>
         <el-table-column prop="configKey" label="参数键" min-width="200">
           <template #default="{ row }">
             <span class="config-key">{{ row.configKey }}</span>
@@ -27,16 +32,27 @@
       </el-table>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" title="修改参数" width="min(480px, 94vw)">
+    <el-dialog
+      v-model="dialogVisible"
+      title="修改参数"
+      width="min(480px, 94vw)"
+      @closed="handleDialogClosed"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="88px">
         <el-form-item label="参数键">
           <span class="config-key">{{ form.configKey }}</span>
         </el-form-item>
         <el-form-item label="参数值" prop="configValue">
-          <el-input v-model="form.configValue" placeholder="请输入参数值" />
+          <el-input v-model="form.configValue" placeholder="请输入参数值" maxlength="255" />
         </el-form-item>
         <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="参数用途说明" />
+          <el-input
+            v-model="form.remark"
+            type="textarea"
+            :rows="2"
+            placeholder="参数用途说明"
+            maxlength="255"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -56,6 +72,7 @@ import { isValidationError } from '@/utils/errors';
 import logger from '@/utils/logger';
 
 const loading = ref(false);
+const loadError = ref(false); // 列表加载失败态：与空列表区分，供表格区展示重试入口
 const submitting = ref(false);
 const dialogVisible = ref(false);
 const list = ref([]);
@@ -78,14 +95,21 @@ onMounted(() => {
 
 const fetchList = async () => {
   loading.value = true;
+  loadError.value = false;
   try {
     list.value = await getSysConfigList();
   } catch (error) {
     logger.error('获取系统参数失败:', error);
+    loadError.value = true;
     ElMessage.error(error.message || '获取系统参数失败');
   } finally {
     loading.value = false;
   }
+};
+
+// 弹窗关闭 — 清除校验红字，避免下次打开残留上次未通过的校验态
+const handleDialogClosed = () => {
+  formRef.value?.clearValidate();
 };
 
 const handleEdit = (row) => {
@@ -99,9 +123,10 @@ const handleEdit = (row) => {
 };
 
 const submitForm = async () => {
+  // 先进入提交态再校验：validate 是异步的，若在其后才置 loading，连点会打开双提交窗口
+  submitting.value = true;
   try {
     await formRef.value.validate();
-    submitting.value = true;
     await updateSysConfig({
       id: form.id,
       configValue: form.configValue,
@@ -143,6 +168,17 @@ const submitForm = async () => {
 
 .header-sub {
   margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* 列表加载失败占位：与空列表区分，居中提示 + 重试入口 */
+.load-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 0;
   font-size: 13px;
   color: var(--text-secondary);
 }

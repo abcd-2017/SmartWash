@@ -53,8 +53,8 @@
         </el-table-column>
         <el-table-column label="使用状态" min-width="100">
           <template #default="{ row }">
-            <el-tag :type="userCouponUsedTagType(row.isUsed)">
-              {{ userCouponUsedText(row.isUsed) }}
+            <el-tag :type="userCouponStatusTagType(row)">
+              {{ userCouponStatusText(row) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -110,16 +110,33 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
+import dayjs from 'dayjs';
 import { getUserCouponList, deleteUserCoupon } from '@/api/userCoupon';
 import { getCouponList } from '@/api/coupon';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
-import { userCouponUsedTagType, userCouponUsedText } from '@/constants/dict';
 import logger from '@/utils/logger';
 
 const couponOptions = ref([]); // 优惠券选项
 const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
+
+// 使用状态三态展示（评审 P1）：已过期未使用的券此前被渲染成绿色「未使用」，
+// 运营扫读时会误以为仍可核销。三态 = 未使用（绿）/ 已使用（灰）/ 已过期未使用（info 弱化）。
+// 字典/映射统一收敛在 dict.js（另一批改动），此处按约定内联实现并保留注释。
+const isExpired = (row) => Boolean(row.expiredAt) && dayjs(row.expiredAt).isBefore(dayjs());
+
+const userCouponStatusText = (row) => {
+  if (row.isUsed) return '已使用';
+  if (isExpired(row)) return '已过期';
+  return '未使用';
+};
+
+const userCouponStatusTagType = (row) => {
+  if (row.isUsed) return 'info';
+  if (isExpired(row)) return 'info';
+  return 'success';
+};
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {

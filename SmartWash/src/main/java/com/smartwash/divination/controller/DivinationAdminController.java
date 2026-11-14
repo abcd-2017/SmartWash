@@ -13,6 +13,7 @@ import com.smartwash.divination.entity.DivRagDocument;
 import com.smartwash.divination.entity.DivUsageDaily;
 import com.smartwash.divination.from.RagUploadFrom;
 import com.smartwash.divination.from.SaveModelFrom;
+import com.smartwash.divination.from.SearchBlockedQuestionFrom;
 import com.smartwash.divination.mapper.DivBlockedQuestionMapper;
 import com.smartwash.divination.mapper.DivInterpretationMapper;
 import com.smartwash.divination.mapper.DivRagDocumentMapper;
@@ -21,6 +22,7 @@ import com.smartwash.divination.service.DivModelConfigService;
 import com.smartwash.divination.service.DivPlatformSettingService;
 import com.smartwash.divination.service.DivPromptService;
 import com.smartwash.divination.service.DivRagService;
+import com.smartwash.divination.support.DivRagTextExtractor;
 import com.smartwash.divination.vo.DivModelConfigAdminVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -140,22 +143,24 @@ public class DivinationAdminController {
         return Result.ok(ragDocumentMapper.selectPage(pageObj, wrapper));
     }
 
-    @Operation(summary = "上传古籍文档", description = "上传并切片（触发异步 Embedding）")
+    @Operation(summary = "上传古籍文档", description = "multipart 文件（.txt/.md/.docx，≤10MB）+ 书名/所属典籍/术数方法；文本从文件读取后落库并切片（PDF 暂不支持）")
     @Audited(action = "DIV_RAG_UPLOAD", targetType = "div_rag_document")
     @PostMapping("/rag/documents")
-    public Result<Long> uploadRagDocument(@RequestBody RagUploadFrom from) {
-        return Result.ok(ragService.uploadDocument(from.getTitle(), from.getBook(), from.getMethod(), from.getContent()));
+    public Result<Long> uploadRagDocument(@RequestPart("file") MultipartFile file,
+                                          @Valid @ModelAttribute RagUploadFrom from) {
+        // 契约对齐前端 FormData：file + title/book/method，content 不再走 JSON 入参
+        String content = DivRagTextExtractor.extract(file);
+        return Result.ok(ragService.uploadDocument(from.getTitle(), from.getBook(), from.getMethod(), content));
     }
 
     // ==================== 拦截问题日志 ====================
 
-    @Operation(summary = "拦截问题日志", description = "查询被安全分流拦截的问题")
+    @Operation(summary = "拦截问题日志", description = "按关键词模糊匹配问题内容分页查询被安全分流拦截的问题")
     @GetMapping("/blocked")
-    public Result<Page<DivBlockedQuestion>> getBlockedQuestions(
-            @RequestParam(value = "page", defaultValue = "1") Integer page,
-            @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        Page<DivBlockedQuestion> pageObj = new Page<>(page, size);
+    public Result<Page<DivBlockedQuestion>> getBlockedQuestions(SearchBlockedQuestionFrom from) {
+        Page<DivBlockedQuestion> pageObj = new Page<>(from.getPage(), from.getSize());
         LambdaQueryWrapper<DivBlockedQuestion> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(StringUtils.hasText(from.getKeyword()), DivBlockedQuestion::getQuestion, from.getKeyword());
         wrapper.orderByDesc(DivBlockedQuestion::getCreatedAt);
         return Result.ok(blockedQuestionMapper.selectPage(pageObj, wrapper));
     }
@@ -235,12 +240,13 @@ public class DivinationAdminController {
     @Operation(summary = "更新平台设置", description = "更新平台全局设置")
     @Audited(action = "DIV_SETTING_UPDATE", targetType = "div_platform_setting")
     @PutMapping("/settings")
-    public Result<String> updateSettings(@RequestBody DivPlatformSetting setting) {
+    public Result<String> updateSettings(@RequestBody @Valid DivPlatformSetting setting) {
         platformSettingService.updateSetting(setting);
         return Result.ok("更新成功");
     }
 
     @Operation(summary = "主密钥轮换", description = "触发主密钥轮换（新版本生效并触发后台重加密）")
+    @Audited(action = "DIV_KEY_ROTATE", targetType = "divPlatformSetting")
     @PostMapping("/settings/rotate-key")
     public Result<String> rotateKey() {
         // TODO: 触发 DivKeyReEncryptTask 分批重加密

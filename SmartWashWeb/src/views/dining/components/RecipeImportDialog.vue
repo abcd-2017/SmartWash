@@ -134,7 +134,7 @@
       </el-table>
 
       <div class="step-actions">
-        <el-button @click="stage = 'input'">继续导入</el-button>
+        <el-button @click="resetState">继续导入</el-button>
         <el-button type="primary" @click="visible = false">完成</el-button>
       </div>
     </template>

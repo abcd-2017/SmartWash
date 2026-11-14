@@ -6,14 +6,19 @@
       <p>欢迎使用 SmartWash 智能洗衣管理系统</p>
     </div>
 
-    <!-- 统计卡片 -->
+    <!-- 统计卡片：配置数组驱动，四卡共享同一套骨架与数值结构，避免四份复制 -->
     <div class="stats-grid">
-      <div class="stat-card stat-card--indigo">
+      <div
+        v-for="card in statCards"
+        :key="card.label"
+        class="stat-card"
+        :class="`stat-card--${card.theme}`"
+      >
         <div class="stat-card__head">
           <div class="stat-card__icon">
-            <el-icon :size="16"><School /></el-icon>
+            <el-icon :size="16"><component :is="card.icon" /></el-icon>
           </div>
-          <span class="stat-card__label">学校总数</span>
+          <span class="stat-card__label">{{ card.label }}</span>
         </div>
         <span class="stat-card__value">
           <el-skeleton v-if="statsLoading" animated>
@@ -22,59 +27,7 @@
             </template>
           </el-skeleton>
           <template v-else-if="statsError">--</template>
-          <template v-else>{{ schoolCount }}</template>
-        </span>
-      </div>
-      <div class="stat-card stat-card--blue">
-        <div class="stat-card__head">
-          <div class="stat-card__icon">
-            <el-icon :size="16"><UserFilled /></el-icon>
-          </div>
-          <span class="stat-card__label">用户总数</span>
-        </div>
-        <span class="stat-card__value">
-          <el-skeleton v-if="statsLoading" animated>
-            <template #template>
-              <el-skeleton-item variant="text" class="stat-card__skeleton-bar" />
-            </template>
-          </el-skeleton>
-          <template v-else-if="statsError">--</template>
-          <template v-else>{{ userCount }}</template>
-        </span>
-      </div>
-      <div class="stat-card stat-card--emerald">
-        <div class="stat-card__head">
-          <div class="stat-card__icon">
-            <el-icon :size="16"><Document /></el-icon>
-          </div>
-          <span class="stat-card__label">今日订单</span>
-        </div>
-        <span class="stat-card__value">
-          <el-skeleton v-if="statsLoading" animated>
-            <template #template>
-              <el-skeleton-item variant="text" class="stat-card__skeleton-bar" />
-            </template>
-          </el-skeleton>
-          <template v-else-if="statsError">--</template>
-          <template v-else>{{ todayOrderCount }}</template>
-        </span>
-      </div>
-      <div class="stat-card stat-card--amber">
-        <div class="stat-card__head">
-          <div class="stat-card__icon">
-            <el-icon :size="16"><Coin /></el-icon>
-          </div>
-          <span class="stat-card__label">今日收入</span>
-        </div>
-        <!-- 金额：整数元做滚动（小数补 .00 固定），避免 rAF 对小数漏帧抖动 -->
-        <span class="stat-card__value">
-          <el-skeleton v-if="statsLoading" animated>
-            <template #template>
-              <el-skeleton-item variant="text" class="stat-card__skeleton-bar" />
-            </template>
-          </el-skeleton>
-          <template v-else-if="statsError">--</template>
-          <template v-else>￥{{ incomeDisplay }}</template>
+          <template v-else>{{ card.prefix }}{{ card.value }}</template>
         </span>
       </div>
     </div>
@@ -150,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
 import { School, UserFilled, Document, Coin, Ticket } from '@element-plus/icons-vue';
 import { getDashboardStats, getDashboardTrend } from '@/api/dashboard';
@@ -183,23 +136,48 @@ const incomeDisplay = computed(() => {
   return settled ? formatAmount(current) : current.toFixed(2);
 });
 
-onMounted(async () => {
+// 统计卡配置：主题/图标/标签/数值来源收敛为一份，模板只保留一套骨架与数值结构
+const statCards = computed(() => [
+  { theme: 'indigo', icon: School, label: '学校总数', prefix: '', value: schoolCount.value },
+  { theme: 'blue', icon: UserFilled, label: '用户总数', prefix: '', value: userCount.value },
+  {
+    theme: 'emerald',
+    icon: Document,
+    label: '今日订单',
+    prefix: '',
+    value: todayOrderCount.value,
+  },
+  // 金额：整数元做滚动（小数补 .00 固定），避免 rAF 对小数漏帧抖动
+  { theme: 'amber', icon: Coin, label: '今日收入', prefix: '￥', value: incomeDisplay.value },
+]);
+
+// 组件卸载守卫：延迟返回的响应不得写入已卸载组件的状态，也不得再弹 toast
+let alive = true;
+onBeforeUnmount(() => {
+  alive = false;
+});
+
+const fetchStats = async () => {
   statsLoading.value = true;
   statsError.value = false;
   try {
     const data = await getDashboardStats();
+    if (!alive) return;
     // 后端可能返回 null：空对象兜底，保留默认结构避免展开报错
     stats.value = { ...stats.value, ...(data || {}) };
   } catch (error) {
+    if (!alive) return;
     statsError.value = true;
     // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作；与趋势卡失败反馈
     // 统一弹 toast——此前仅 logger 静默，页面保持 0 值展示，用户对空面板无从归因
     logger.error('工作台统计数据加载失败:', error);
     ElMessage.error(error.message || '获取统计数据失败');
   } finally {
-    statsLoading.value = false;
+    if (alive) statsLoading.value = false;
   }
-});
+};
+
+onMounted(fetchStats);
 
 // ---------- 趋势分析 ----------
 // 近 N 天逐日趋势：一次请求同时产出收入与订单量两条序列（后端已补零成连续日期）
@@ -219,15 +197,15 @@ const fetchTrend = async () => {
   trendError.value = false;
   try {
     const data = (await getDashboardTrend(trendDays.value)) || [];
-    if (mySeq !== trendFetchSeq) return;
+    if (mySeq !== trendFetchSeq || !alive) return;
     trendData.value = data;
   } catch (error) {
-    if (mySeq !== trendFetchSeq) return;
+    if (mySeq !== trendFetchSeq || !alive) return;
     trendError.value = true;
     logger.error('趋势数据加载失败:', error);
     ElMessage.error(error.message || '获取趋势数据失败');
   } finally {
-    if (mySeq === trendFetchSeq) {
+    if (mySeq === trendFetchSeq && alive) {
       trendLoading.value = false;
     }
   }

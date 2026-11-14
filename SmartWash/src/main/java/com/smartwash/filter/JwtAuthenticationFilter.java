@@ -1,5 +1,6 @@
 package com.smartwash.filter;
 
+import com.smartwash.common.DefaultConstant;
 import com.smartwash.common.Result;
 import com.smartwash.common.ResultCodeEnum;
 import com.smartwash.service.JwtBlacklistService;
@@ -22,6 +23,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Date;
 
 /**
  * JWT 认证过滤器。
@@ -98,6 +100,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 从 token 获取 username
             String username = claims.get("sub", String.class);
+
+            // 管理员改密后会话失效：Redis 记录改密时间戳，签发时间早于该时间戳的 access 一律拒绝；
+            // refresh 走 /auth/refresh（不经过本过滤器），由刷新端点做同一校验
+            Date issuedAt = claims.getIssuedAt();
+            if (username != null && username.startsWith(DefaultConstant.ADMIN_USER_LOGIN_TYPE + "-")
+                    && jwtBlacklistService.isSessionInvalidated(username,
+                            issuedAt == null ? 0L : issuedAt.getTime())) {
+                log.warn("管理员会话因改密失效, username: {}", username);
+                SecurityContextHolder.clearContext();
+                UserContextHolder.clear();
+                writeUnauthorized(response);
+                return;
+            }
 
             // 加载与 token 关联的用户
             LoginUser userDetails = (LoginUser) userDetailsService.loadUserByUsername(username);

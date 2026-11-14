@@ -160,7 +160,8 @@
           />
         </el-form-item>
 
-        <el-form-item label="修改密码" v-if="dialogType === 'edit'">
+        <!-- prop 缺失会导致 rules 不生效：编辑态可提交 1 位密码（评审 P1） -->
+        <el-form-item label="修改密码" prop="password" v-if="dialogType === 'edit'">
           <el-input
             v-model="tempUser.password"
             type="password"
@@ -186,6 +187,7 @@ import { schoolOptionsCache } from '@/utils/optionCache';
 import { formatAmount, formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import { passwordLengthRule } from '@/utils/validators';
 import logger from '@/utils/logger';
 
 const formRef = ref(null);
@@ -256,8 +258,20 @@ const rules = reactive({
   ],
   studentId: [{ required: true, message: '请输入学号', trigger: 'blur' }],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少6位', trigger: 'blur' },
+    {
+      // 新增必填；编辑态留空 = 不修改密码（自定义 validator，避免 required 误伤编辑场景）
+      validator: (rule, value, callback) => {
+        if (dialogType.value === 'create' && !value) {
+          callback(new Error('请输入密码'));
+          return;
+        }
+        callback();
+      },
+      trigger: 'blur',
+    },
+    // 与登录页共用同一规则（utils/validators）：async-validator 对空值自动跳过，
+    // 编辑态留空不报错，非空时校验 6-16 位
+    passwordLengthRule(),
   ],
 });
 
@@ -308,6 +322,15 @@ const handleEdit = (row) => {
 const submitForm = async () => {
   const valid = await formRef.value.validate().catch(() => false);
   if (!valid) return;
+
+  // 修改密码静默提交无确认（评审 P3）：填了非空密码时二次确认，防止误改锁定用户
+  if (dialogType.value === 'edit' && tempUser.password) {
+    const confirmed = await useConfirm(
+      `确认修改用户 ${tempUser.phoneNumber} 的登录密码吗？`,
+      '修改密码'
+    );
+    if (!confirmed) return;
+  }
 
   submitting.value = true;
   try {

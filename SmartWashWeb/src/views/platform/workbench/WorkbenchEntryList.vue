@@ -401,6 +401,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -740,7 +741,8 @@ const handleDelete = async (row) => {
       `title=${row.title}`
     );
     ElMessage.success('删除成功');
-    fetchData(); // 刷新当前页
+    // 删除后钳制页码再刷新，避免当前页删空后停留在超出末页的空页
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('工作台入口删除失败:', `id=${row.id}`, `entryKey=${row.entryKey}`, error);
     ElMessage.error(error.message || '删除失败');

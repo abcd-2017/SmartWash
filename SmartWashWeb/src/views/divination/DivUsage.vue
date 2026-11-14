@@ -103,7 +103,6 @@
           <div
             ref="trendChartRef"
             class="chart-container"
-            :class="{ 'is-empty': !hasData }"
             role="img"
             :aria-label="`每日用量趋势图：共 ${recordsCount} 天数据，含卦例数、解读数、拦截数三条序列`"
           ></div>
@@ -117,7 +116,6 @@
           <div
             ref="methodChartRef"
             class="chart-container"
-            :class="{ 'is-empty': !hasData }"
             role="img"
             aria-label="术数方法分布饼图：各术数解读量占比"
           ></div>
@@ -133,7 +131,6 @@
           <div
             ref="tokenChartRef"
             class="chart-container"
-            :class="{ 'is-empty': !hasData }"
             role="img"
             aria-label="Token 消耗柱状图：输入与输出 Token 对比"
           ></div>
@@ -147,7 +144,6 @@
           <div
             ref="cacheChartRef"
             class="chart-container"
-            :class="{ 'is-empty': !hasData }"
             role="img"
             aria-label="缓存命中率趋势图：百分比折线"
           ></div>
@@ -500,7 +496,7 @@ const renderCharts = (rawRecords) => {
 /* 口径说明标签：hover 光标 + 可交互暗示，提示可悬停查看说明 */
 .stat-label--help {
   cursor: help;
-  border-bottom: 1px dashed var(--border-subtle);
+  border-bottom: 1px dashed var(--text-muted);
 }
 
 .stat-value {

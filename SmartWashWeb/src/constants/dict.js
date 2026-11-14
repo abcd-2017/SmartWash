@@ -65,9 +65,12 @@ export const RECHARGE_TYPE_TAG_TYPES = {
   2: 'primary', // 支付宝支付
 };
 
-/** 充值状态 → 文案（与后端充值记录 status 对齐：1 成功 2 失败 3 处理中） */
+/**
+ * 充值状态 → 文案（复用后端 PaymentStatus 枚举语义：0 待支付 1 已支付 2 失败 3 处理中）。
+ * 1 与导出 xlsx 的 paymentStatusText 保持一致，避免页面显示「成功」而导出显示「已支付」。
+ */
 export const RECHARGE_STATUS_TEXT = {
-  1: '成功',
+  1: '已支付',
   2: '失败',
   3: '处理中',
 };
@@ -443,9 +446,11 @@ export const subscriptionCycleText = (cycleType, interval) => {
     return cycleType || '-';
   }
   const n = Number(interval);
-  // 多期间隔加量词「个」消除「每2月」类数字与单位连排歧义（如 每 2 个月）；单期维持「每月/每年」
+  // 多期间隔加量词「个」消除「每2月」类数字与单位连排歧义（如 每 2 个月）；
+  // 年单位中文不说「个」，直接用「每 2 年」；单期维持「每月/每年」
   const step = Number.isFinite(n) && n > 1 ? n : '';
-  return step ? `每 ${step} 个${unit}` : `每${unit}`;
+  if (!step) return `每${unit}`;
+  return cycleType === 'year' ? `每 ${step} 年` : `每 ${step} 个${unit}`;
 };
 
 /** 自动续费 → 文案（auto_renew 1是 0否） */
@@ -463,12 +468,16 @@ export const NOTICE_TYPE_OPTIONS = [
 export const NOTICE_TYPE_TEXT = {
   SYSTEM: '系统通知',
   ANNOUNCEMENT: '运营公告',
+  DINING_JOIN: '点单加入通知',
+  DINING_FINISH: '点单结束通知',
 };
 
 /** 公告类型 → el-tag 类型 */
 export const NOTICE_TYPE_TAG_TYPES = {
   SYSTEM: 'warning',
   ANNOUNCEMENT: 'success',
+  DINING_JOIN: 'primary',
+  DINING_FINISH: 'success',
 };
 
 /** 公告类型文案（未知值兜底） */
@@ -566,6 +575,43 @@ export const AUDIT_ACTION_TEXT = {
   ADMIN_USER_UPDATE: '更新管理员',
   ADMIN_USER_DELETE: '删除管理员',
   SYS_CONFIG_UPDATE: '更新系统参数',
+  // 游戏库
+  GAME_UPLOAD: '上传游戏',
+  GAME_COVER_UPLOAD: '上传游戏封面',
+  GAME_UPDATE: '更新游戏',
+  GAME_ENABLED_CHANGE: '变更游戏启用状态',
+  GAME_ENABLED_BATCH: '批量变更游戏启用状态',
+  GAME_DELETE: '删除游戏',
+  GAME_LEVEL_SAVE: '保存游戏关卡',
+  GAME_LEVEL_BATCH_IMPORT: '批量导入游戏关卡',
+  GAME_LEVEL_DELETE: '删除游戏关卡',
+  // 工具箱
+  TOOLBOX_SHORT_CODE_DELETE: '删除短码',
+  LOCKER_TAG_GENERATE: '生成寄存柜标签',
+  LOCKER_TAG_BATCH_GENERATE: '批量生成寄存柜标签',
+  TOOLBOX_ASSET_TAG_DELETE: '删除物品标签',
+  // 验证码
+  CAPTCHA_QUERY: '查询验证码',
+  // 餐饮
+  DINING_CATEGORY_ADD: '新增餐饮分类',
+  DINING_CATEGORY_UPDATE: '更新餐饮分类',
+  DINING_CATEGORY_DELETE: '删除餐饮分类',
+  DINING_RECIPE_ADD: '新增菜谱',
+  DINING_RECIPE_UPDATE: '更新菜谱',
+  DINING_RECIPE_DELETE: '删除菜谱',
+  DINING_RECIPE_STATUS: '变更菜谱上下架',
+  DINING_RECIPE_COVER_UPLOAD: '上传菜谱封面',
+  DINING_RECIPE_IMPORT: '导入菜谱',
+  // 观象台
+  DIV_PROMPT_SAVE: '保存 Prompt',
+  DIV_PROMPT_ACTIVATE: '激活 Prompt',
+  DIV_PROMPT_DELETE: '删除 Prompt',
+  DIV_RAG_UPLOAD: '上传语料',
+  DIV_MODEL_SAVE: '保存模型配置',
+  DIV_MODEL_IMPORT: '导入模型配置',
+  DIV_MODEL_DELETE: '删除模型配置',
+  DIV_SETTING_UPDATE: '更新平台设置',
+  DIV_KEY_ROTATE: '轮换密钥',
 };
 
 export const AUDIT_TARGET_TYPE_TEXT = {
@@ -580,6 +626,18 @@ export const AUDIT_TARGET_TYPE_TEXT = {
   school: '学校',
   admin_user: '管理员',
   sysConfig: '系统参数',
+  game_config: '游戏配置',
+  game_level: '游戏关卡',
+  captcha: '验证码',
+  toolbox_short_code: '短码',
+  toolbox_asset_tag: '物品标签',
+  dining_category: '餐饮分类',
+  dining_recipe: '菜谱',
+  div_prompt_version: 'Prompt 版本',
+  div_rag_document: '语料文档',
+  div_model_config: '模型配置',
+  div_platform_setting: '平台设置',
+  divPlatformSetting: '平台设置',
 };
 
 /** 审计筛选下拉由字典派生，保证下拉与表格文案同源 */
@@ -659,6 +717,22 @@ export const DIV_PROMPT_STATUS_TAG_TYPES = {
 export const divPromptStatusText = (status) => DIV_PROMPT_STATUS_TEXT[status] || '未知';
 
 export const divPromptStatusTagType = (status) => dictValue(DIV_PROMPT_STATUS_TAG_TYPES, status);
+
+// ---------- 观象台·拦截原因（DivBlockedQuestion.reason） ----------
+
+/**
+ * 拦截原因 → 文案。
+ * 后端写入约定：keyword=关键词命中；llm=模型判定；rule:<规则名>=规则命中。
+ * 未知值（含未识别的 rule:*）一律回显原值，不猜文案。
+ */
+export const BLOCKED_REASON_TEXT = {
+  keyword: '关键词命中',
+  llm: '模型判定',
+  'rule:high_risk': '高风险规则',
+};
+
+/** 拦截原因文案（未知值回显原值） */
+export const blockedReasonText = (reason) => BLOCKED_REASON_TEXT[reason] || reason || '-';
 
 // ---------- 用户优惠券使用状态 ----------
 

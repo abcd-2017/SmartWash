@@ -49,6 +49,8 @@ function validateEnvelopeField(field, value) {
 }
 
 const ENVELOPE_FIELDS = ['levelNo', 'name', 'difficulty', 'enabled', 'sort'];
+// 信封允许的顶层键 = data + 已知元数据；其余键静默丢弃会让提交结果与文件不一致，故预检拦截
+const ENVELOPE_ALLOWED_KEYS = new Set(['data', ...ENVELOPE_FIELDS]);
 
 /**
  * 解析批量导入文本为条目列表（不含序号分配，序号决策见 planLevelImport）。
@@ -92,6 +94,13 @@ export function parseLevelImportText(text) {
       // 信封格式：data 必须携带可序列化的关卡数据
       if (el.data === undefined || el.data === null) {
         return { ...base, error: `第 ${seq} 项：信封缺少 data 关卡数据` };
+      }
+      const unknownKeys = Object.keys(el).filter((key) => !ENVELOPE_ALLOWED_KEYS.has(key));
+      if (unknownKeys.length) {
+        return {
+          ...base,
+          error: `第 ${seq} 项：包含无法识别的字段（${unknownKeys.join('、')}）`,
+        };
       }
       for (const field of ENVELOPE_FIELDS) {
         if (el[field] !== undefined && el[field] !== null) {
