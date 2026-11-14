@@ -156,26 +156,33 @@ private sealed interface WorkbenchBlock {
 }
 
 /**
- * 按 sort 序折块：sectionTitle 与前一 entry 不同 → 插区块标题（并打断连续归并链，
- * 不同分组的 row/tile 各自成组）；随后按 layout 流式归并。
+ * 按 sort 序折块：sectionTitle 与前一 entry 不同（含 null 与非 null 互转）→ 打断连续归并链
+ * （不同分组的 row/tile 各自成组），非空 title 同时插区块标题；随后按 layout 流式归并。
  */
 private fun List<WorkbenchTool>.toBlocks(): List<WorkbenchBlock> {
     val blocks = mutableListOf<WorkbenchBlock>()
     var currentSection: String? = null
     // Section key 防碰撞流水号（审查 #5）：A→B→A 序列下同名分组重现时递增，key 永不重复
     var sectionOrdinal = 0
+    // 分组边界标记：sectionTitle 与前一 entry 不一致（含 null 与非 null 互转）即打断归并链。
+    // null 分组无标题可插，故以标记表达边界，避免无分组条目被并进上一分组的卡
+    // （ui-check P2：后台漏配 section_title 时触发）
+    var atSectionBoundary = true
     forEach { tool ->
         val section = tool.sectionTitle
-        if (section != null && section != currentSection) {
-            blocks += WorkbenchBlock.Section(section, sectionOrdinal++)
+        if (section != currentSection) {
+            if (section != null) {
+                blocks += WorkbenchBlock.Section(section, sectionOrdinal++)
+            }
             currentSection = section
+            atSectionBoundary = true
         }
         when (tool.layout) {
             WorkbenchLayout.NOTICE -> blocks += WorkbenchBlock.Notice(tool)
             WorkbenchLayout.WIDE -> blocks += WorkbenchBlock.Wide(tool)
             WorkbenchLayout.ROW -> {
                 val last = blocks.lastOrNull()
-                if (last is WorkbenchBlock.RowGroup) {
+                if (!atSectionBoundary && last is WorkbenchBlock.RowGroup) {
                     blocks[blocks.lastIndex] = last.copy(tools = last.tools + tool)
                 } else {
                     blocks += WorkbenchBlock.RowGroup(listOf(tool))
@@ -183,13 +190,14 @@ private fun List<WorkbenchTool>.toBlocks(): List<WorkbenchBlock> {
             }
             WorkbenchLayout.TILE -> {
                 val last = blocks.lastOrNull()
-                if (last is WorkbenchBlock.TileRow && last.tools.size < GRID_COLUMNS) {
+                if (!atSectionBoundary && last is WorkbenchBlock.TileRow && last.tools.size < GRID_COLUMNS) {
                     blocks[blocks.lastIndex] = last.copy(tools = last.tools + tool)
                 } else {
                     blocks += WorkbenchBlock.TileRow(listOf(tool))
                 }
             }
         }
+        atSectionBoundary = false
     }
     return blocks
 }
@@ -248,231 +256,247 @@ fun WorkbenchPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        LazyColumn {
-            item(key = "wb_title") {
-                // 标题区（顶部与其他 tab 页统一取状态栏下 16；副标题底→搜索框 20 为原特色卡节奏）
-                    Column(
-                        modifier = Modifier.padding(
-                            start = AppDimens.pagePadding,
-                            end = AppDimens.pagePadding,
-                            top = AppDimens.spaceMd,
-                            bottom = AppDimens.spaceLg
-                        )
-                    ) {
-                        Text(
-                            text = stringResource(R.string.workbench_title),
-                            style = AppTextStyles.RootTitle,
-                            color = AppColors.colorScheme.textPrimary
-                        )
-                        // 设计稿实测：大标题底→副标题 4（spaceXxs，审查 #10 令牌化）
-                        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-                    Text(
-                        text = stringResource(R.string.workbench_subtitle),
-                        // 画板副标题 12/400（caption 400 档），非 captionStrong 500
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.colorScheme.textSecondary
+        Column(modifier = Modifier.fillMaxSize()) {
+            // ===== 固定头部：标题区与搜索框不随内容滚动，仅搜索框下方内容区滚动 =====
+            // 标题区（顶部与其他 tab 页统一取状态栏下 16；副标题底→搜索框 20 为原特色卡节奏）
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = AppDimens.pagePadding,
+                        end = AppDimens.pagePadding,
+                        top = AppDimens.spaceMd,
+                        // 头部固定后内容从其下滑过，留 12dp 呼吸空隙（P07 搜索框→内容节奏）
+                        bottom = AppDimens.spaceSm
                     )
-                }
-            }
-
-            item(key = "wb_search") {
+            ) {
+                Text(
+                    text = stringResource(R.string.workbench_title),
+                    style = AppTextStyles.RootTitle,
+                    color = AppColors.colorScheme.textPrimary
+                )
+                // 设计稿实测：大标题底→副标题 4（spaceXxs，审查 #10 令牌化）
+                Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+                Text(
+                    text = stringResource(R.string.workbench_subtitle),
+                    // 画板副标题 12/400（caption 400 档），非 captionStrong 500
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textSecondary
+                )
+                Spacer(modifier = Modifier.height(AppDimens.spaceLg))
                 // 搜索框（§3.7 输入控件：16sp 正文 / 48dp 行高 / 前缀图标 16dp@0.5 / radiusButton 14）
                 WorkbenchSearchField(
                     query = searchQuery,
                     onQueryChange = workbenchViewModel::onSearchChange,
-                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
-        if (showSkeleton) {
-            // 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实网格一致；行距同真实网格 cardSpacing）
-            item(key = "wb_tools_skeleton") {
-                Column(
-                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
-                ) {
-                    repeat(2) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
-                        ) {
-                            repeat(GRID_COLUMNS) {
-                                SkeletonBlock(
+            LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            if (showSkeleton) {
+                // 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实网格一致；行距同真实网格 cardSpacing）
+                item(key = "wb_tools_skeleton") {
+                    Column(
+                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
+                    ) {
+                        repeat(2) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
+                            ) {
+                                repeat(GRID_COLUMNS) {
+                                    SkeletonBlock(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(148.dp),
+                                        shape = RoundedCornerShape(AppDimens.radiusLg)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (entriesState is RequestState.Error) {
+                    // 真实错误态（2026-11-01 缺陷 6：原失败静默回落本地假列表）——说明 + 重试
+                    item(key = "wb_tools_error") {
+                        EmptyState(
+                            icon = Icons.Rounded.Apps,
+                            message = (entriesState as RequestState.Error).getMessage(context),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = AppDimens.sectionSpacing),
+                            action = {
+                                AppButton(
+                                    small = true,
+                                    text = stringResource(R.string.workbench_retry),
+                                    onClick = { workbenchViewModel.loadEntries() },
+                                    variant = AppButtonVariant.SECONDARY
+                                )
+                            }
+                        )
+                    }
+                } else if (visibleTools.isEmpty()) {
+                    // 真实空态（后端未配置 / 搜索无结果）
+                    item(key = "wb_tools_empty") {
+                        EmptyState(
+                            icon = Icons.Rounded.Apps,
+                            message = if (isSearching) {
+                                stringResource(R.string.workbench_search_empty)
+                            } else {
+                                stringResource(R.string.workbench_entries_empty)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = AppDimens.sectionSpacing),
+                            // 搜索无结果给「清除搜索」行动入口（规范 §3.6 空态 = 母题 + 文案 + 行动按钮；
+                            // ui-check P2：原空态无按钮，用户需自行找搜索框尾缀叉号）
+                            action = if (isSearching) {
+                                {
+                                    AppButton(
+                                        small = true,
+                                        text = stringResource(R.string.workbench_search_clear),
+                                        onClick = { workbenchViewModel.onSearchChange("") },
+                                        variant = AppButtonVariant.SECONDARY,
+                                    )
+                                }
+                            } else {
+                                null
+                            },
+                        )
+                    }
+                } else if (isSearching) {
+                    // 搜索态：平铺两列（快速扫视优先，分组/类型排版让位）
+                    itemsIndexed(
+                        searchRows,
+                        key = { _, rowTools ->
+                            "wb_search_${rowTools.size}_" + rowTools.joinToString("-") { it.entryKey }
+                        }
+                    ) { rowIndex, rowTools ->
+                        StaggerIn(index = rowIndex, modifier = Modifier.fillMaxWidth()) {
+                            TileRowContent(
+                                tools = rowTools,
+                                onToolClick = handleToolClick,
+                                // 搜索框无 bottom padding（常态下观象台卡按设计稿 P07 以 12dp 贴合其下，
+                                // 搜索框不能加 bottom），首行自担 spaceXl(24)——真实间距 24 与注释一致
+                                //（审查 #3：原 spaceXs(8) 注释声称 24 与实现不符）
+                                topSpacing = if (rowIndex == 0) AppDimens.spaceXl else 0.dp
+                            )
+                        }
+                    }
+                } else {
+                    // 常态：玄墨品牌位 → 最近使用 → 类型化分区
+                    if (recentTools.isNotEmpty()) {
+                        item(key = "wb_recent") {
+                            RecentSection(
+                                tools = recentTools,
+                                onToolClick = handleToolClick
+                            )
+                        }
+                    }
+
+                    item(key = "wb_divination") {
+                        // 观象台特色卡 — 玄墨渐变窗（端上固定品牌位，不随服务端下发）
+                        // 顶距：无「最近使用」时取 12dp（设计稿 P07 搜索框底→观象台卡顶 = 12，
+                        // 2026-11-06 复验原 0 导致卡片与搜索框紧贴）；有「最近使用」时仍按区块 32
+                        DivinationEntryCard(
+                            modifier = Modifier
+                                .padding(horizontal = AppDimens.pagePadding)
+                                .padding(top = if (recentTools.isEmpty()) AppDimens.spaceSm else AppDimens.sectionSpacing),
+                            onClick = { navController.navigate(DivRoute.Home) }
+                        )
+                    }
+
+                    // 全部工具总标题仅在没有分组标题时显示（有 section_title 时各分区自带标题）
+                    if (!hasSections) {
+                        item(key = "wb_tools_header") {
+                            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                            Text(
+                                text = stringResource(R.string.workbench_all_tools),
+                                // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp
+                                style = AppTextStyles.SectionTitle,
+                                color = AppColors.colorScheme.textPrimary,
+                                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                            )
+                            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                        }
+                    }
+
+                    itemsIndexed(blocks, key = { _, block -> block.key }) { index, block ->
+                        // 间距责任统一（2026-11-11 审查 #1/#2）：内容块 top 按前置块判定——
+                        // Section 后 = 0（标题 bottom spaceSm=12 已承担标题→内容节奏，四种块型一致）；
+                        // 连续 tile 行 = 0（行距 16 由上一行 bottom cardSpacing 承担）；
+                        // 其余前置（观象台卡 / 其他卡片块）自担 sectionSpacing=32，消除 12/44 跳变
+                        // 与观象台卡→tile 0dp 贴合叠影。无分组时「全部工具」总标题 item 打头，
+                        // bottom spaceSm=12 同 Section，首块 top 亦为 0。
+                        val prev = blocks.getOrNull(index - 1)
+                        val afterSection = prev is WorkbenchBlock.Section
+                        val afterToolsHeader = prev == null && !hasSections
+                        val blockTop = if (afterSection || afterToolsHeader) 0.dp else AppDimens.sectionSpacing
+                        when (block) {
+                            is WorkbenchBlock.Section -> SectionHeader(title = block.title)
+                            is WorkbenchBlock.Notice -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
+                                NoticeBar(
+                                    tool = block.tool,
+                                    onClick = { handleToolClick(block.tool) },
+                                    onDismiss = { workbenchViewModel.dismissNotice(block.tool) },
                                     modifier = Modifier
-                                        .weight(1f)
-                                        .height(148.dp),
-                                    shape = RoundedCornerShape(AppDimens.radiusLg)
+                                        .padding(horizontal = AppDimens.pagePadding)
+                                        .padding(top = blockTop, bottom = AppDimens.cardSpacing)
+                                )
+                            }
+                            is WorkbenchBlock.Wide -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
+                                WideCard(
+                                    tool = block.tool,
+                                    onClick = { handleToolClick(block.tool) },
+                                    modifier = Modifier
+                                        .padding(horizontal = AppDimens.pagePadding)
+                                        .padding(top = blockTop, bottom = AppDimens.cardSpacing)
+                                )
+                            }
+                            is WorkbenchBlock.TileRow -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
+                                TileRowContent(
+                                    tools = block.tools,
+                                    onToolClick = handleToolClick,
+                                    topSpacing = if (afterSection || afterToolsHeader || prev is WorkbenchBlock.TileRow) {
+                                        0.dp
+                                    } else {
+                                        AppDimens.sectionSpacing
+                                    }
+                                )
+                            }
+                            is WorkbenchBlock.RowGroup -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
+                                RowGroupCard(
+                                    tools = block.tools,
+                                    onToolClick = handleToolClick,
+                                    modifier = Modifier
+                                        .padding(horizontal = AppDimens.pagePadding)
+                                        .padding(top = blockTop, bottom = AppDimens.cardSpacing)
                                 )
                             }
                         }
                     }
                 }
-            }
-        } else if (entriesState is RequestState.Error) {
-                // 真实错误态（2026-11-01 缺陷 6：原失败静默回落本地假列表）——说明 + 重试
-                item(key = "wb_tools_error") {
-                    EmptyState(
-                        icon = Icons.Rounded.Apps,
-                        message = (entriesState as RequestState.Error).getMessage(context),
+
+                item(key = "wb_footer") {
+                    // 页脚弱提示
+                    // U-105：原 textTertiary #A9AEA9 on #F5F6F3 仅 2.08:1（§10 正文红线 ≥4.5）；
+                    // 改 textSecondary #6B6E73（实测 4.72:1）
+                    Text(
+                        text = stringResource(R.string.workbench_footer),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.colorScheme.textSecondary,
+                        textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = AppDimens.sectionSpacing),
-                        action = {
-                            AppButton(
-                                small = true,
-                                text = stringResource(R.string.workbench_retry),
-                                onClick = { workbenchViewModel.loadEntries() },
-                                variant = AppButtonVariant.SECONDARY
+                            .padding(
+                                start = AppDimens.pagePadding,
+                                end = AppDimens.pagePadding,
+                                top = AppDimens.spaceXs,
+                                bottom = AppDimens.spaceXs
                             )
-                        }
                     )
                 }
-            } else if (visibleTools.isEmpty()) {
-                // 真实空态（后端未配置 / 搜索无结果）
-                item(key = "wb_tools_empty") {
-                    EmptyState(
-                        icon = Icons.Rounded.Apps,
-                        message = if (isSearching) {
-                            stringResource(R.string.workbench_search_empty)
-                        } else {
-                            stringResource(R.string.workbench_entries_empty)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = AppDimens.sectionSpacing)
-                    )
-                }
-            } else if (isSearching) {
-                // 搜索态：平铺两列（快速扫视优先，分组/类型排版让位）
-                itemsIndexed(
-                    searchRows,
-                    key = { _, rowTools ->
-                        "wb_search_${rowTools.size}_" + rowTools.joinToString("-") { it.entryKey }
-                    }
-                ) { rowIndex, rowTools ->
-                    StaggerIn(index = rowIndex, modifier = Modifier.fillMaxWidth()) {
-                        TileRowContent(
-                            tools = rowTools,
-                            onToolClick = handleToolClick,
-                            // 搜索框无 bottom padding（常态下观象台卡按设计稿 P07 以 12dp 贴合其下，
-                            // 搜索框不能加 bottom），首行自担 spaceXl(24)——真实间距 24 与注释一致
-                            //（审查 #3：原 spaceXs(8) 注释声称 24 与实现不符）
-                            topSpacing = if (rowIndex == 0) AppDimens.spaceXl else 0.dp
-                        )
-                    }
-                }
-            } else {
-                // 常态：玄墨品牌位 → 最近使用 → 类型化分区
-                if (recentTools.isNotEmpty()) {
-                    item(key = "wb_recent") {
-                        RecentSection(
-                            tools = recentTools,
-                            onToolClick = handleToolClick
-                        )
-                    }
-                }
-
-                item(key = "wb_divination") {
-                    // 观象台特色卡 — 玄墨渐变窗（端上固定品牌位，不随服务端下发）
-                    // 顶距：无「最近使用」时取 12dp（设计稿 P07 搜索框底→观象台卡顶 = 12，
-                    // 2026-11-06 复验原 0 导致卡片与搜索框紧贴）；有「最近使用」时仍按区块 32
-                    DivinationEntryCard(
-                        modifier = Modifier
-                            .padding(horizontal = AppDimens.pagePadding)
-                            .padding(top = if (recentTools.isEmpty()) AppDimens.spaceSm else AppDimens.sectionSpacing),
-                        onClick = { navController.navigate(DivRoute.Home) }
-                    )
-                }
-
-                // 全部工具总标题仅在没有分组标题时显示（有 section_title 时各分区自带标题）
-                if (!hasSections) {
-                    item(key = "wb_tools_header") {
-                        Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-                        Text(
-                            text = stringResource(R.string.workbench_all_tools),
-                            // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp
-                            style = AppTextStyles.SectionTitle,
-                            color = AppColors.colorScheme.textPrimary,
-                            modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
-                        )
-                        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-                    }
-                }
-
-                itemsIndexed(blocks, key = { _, block -> block.key }) { index, block ->
-                    // 间距责任统一（2026-11-11 审查 #1/#2）：内容块 top 按前置块判定——
-                    // Section 后 = 0（标题 bottom spaceSm=12 已承担标题→内容节奏，四种块型一致）；
-                    // 连续 tile 行 = 0（行距 16 由上一行 bottom cardSpacing 承担）；
-                    // 其余前置（观象台卡 / 其他卡片块）自担 sectionSpacing=32，消除 12/44 跳变
-                    // 与观象台卡→tile 0dp 贴合叠影。无分组时「全部工具」总标题 item 打头，
-                    // bottom spaceSm=12 同 Section，首块 top 亦为 0。
-                    val prev = blocks.getOrNull(index - 1)
-                    val afterSection = prev is WorkbenchBlock.Section
-                    val afterToolsHeader = prev == null && !hasSections
-                    val blockTop = if (afterSection || afterToolsHeader) 0.dp else AppDimens.sectionSpacing
-                    when (block) {
-                        is WorkbenchBlock.Section -> SectionHeader(title = block.title)
-                        is WorkbenchBlock.Notice -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
-                            NoticeBar(
-                                tool = block.tool,
-                                onClick = { handleToolClick(block.tool) },
-                                onDismiss = { workbenchViewModel.dismissNotice(block.tool) },
-                                modifier = Modifier
-                                    .padding(horizontal = AppDimens.pagePadding)
-                                    .padding(top = blockTop, bottom = AppDimens.cardSpacing)
-                            )
-                        }
-                        is WorkbenchBlock.Wide -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
-                            WideCard(
-                                tool = block.tool,
-                                onClick = { handleToolClick(block.tool) },
-                                modifier = Modifier
-                                    .padding(horizontal = AppDimens.pagePadding)
-                                    .padding(top = blockTop, bottom = AppDimens.cardSpacing)
-                            )
-                        }
-                        is WorkbenchBlock.TileRow -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
-                            TileRowContent(
-                                tools = block.tools,
-                                onToolClick = handleToolClick,
-                                topSpacing = if (afterSection || afterToolsHeader || prev is WorkbenchBlock.TileRow) {
-                                    0.dp
-                                } else {
-                                    AppDimens.sectionSpacing
-                                }
-                            )
-                        }
-                        is WorkbenchBlock.RowGroup -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
-                            RowGroupCard(
-                                tools = block.tools,
-                                onToolClick = handleToolClick,
-                                modifier = Modifier
-                                    .padding(horizontal = AppDimens.pagePadding)
-                                    .padding(top = blockTop, bottom = AppDimens.cardSpacing)
-                            )
-                        }
-                    }
-                }
-            }
-
-            item(key = "wb_footer") {
-                // 页脚弱提示
-                // U-105：原 textTertiary #A9AEA9 on #F5F6F3 仅 2.08:1（§10 正文红线 ≥4.5）；
-                // 改 textSecondary #6B6E73（实测 4.72:1）
-                Text(
-                    text = stringResource(R.string.workbench_footer),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.textSecondary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            start = AppDimens.pagePadding,
-                            end = AppDimens.pagePadding,
-                            top = AppDimens.spaceXs,
-                            bottom = AppDimens.spaceXs
-                        )
-                )
             }
         }
     }
@@ -835,7 +859,7 @@ private fun RowGroupCard(
     }
 }
 
-/** 列表行：36dp 次级图标容器（§2.4 v0.4 36/12/20）+ 14/500 主文案 + 角标 + 箭头 */
+/** 列表行：36dp 次级图标容器（§2.4 v0.4 36/12/20）+ 14/500 主文案 + 12sp 副文案 + 角标 + 箭头 */
 @Composable
 private fun WorkbenchRowLine(
     tool: WorkbenchTool,
@@ -859,13 +883,26 @@ private fun WorkbenchRowLine(
             containerColor = containerColor,
             iconTint = iconTint
         )
-        Text(
-            text = tool.title,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = scheme.textPrimary,
-            modifier = Modifier.weight(1f)
-        )
+        // 标题 + 服务端下发描述（ui-check P2：原实现整组丢弃 description）：
+        // 描述为空时保持单行紧凑构图，不占位
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = tool.title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = scheme.textPrimary
+            )
+            if (tool.description.isNotBlank()) {
+                Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+                Text(
+                    text = tool.description,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
         tool.badge?.let { WorkbenchBadge(it) }
         Icon(
             imageVector = Icons.Default.ChevronRight,
@@ -979,29 +1016,33 @@ private fun WorkbenchImage(
 }
 
 /**
+ * 配图存在性判定（单一事实：服务端 imageUrl 或本地自绘封面任一即视为有配图）。
+ * ToolTile 据此决定 IconBox 回退，避免与 [WorkbenchCoverImage] 的渲染分流各判各的
+ * （ui-check P2：两处判断单边修改易漂移）。
+ */
+private fun WorkbenchTool.hasCover(): Boolean =
+    imageUrl != null || LocalCoverArt.workbenchCover(entryKey) != null
+
+/**
  * 工作台配图统一槽：服务端 imageUrl 优先（Coil），未下发时按 entryKey 用本地自绘封面兜底，
- * 两者皆无则不渲染（调用方据此回退 IconBox 布局）。
+ * 两者皆无则不渲染（调用方据 [WorkbenchTool.hasCover] 回退 IconBox 布局）。
  */
 @Composable
 private fun WorkbenchCoverImage(
     tool: WorkbenchTool,
     modifier: Modifier = Modifier,
-): Boolean {
+) {
     val local = LocalCoverArt.workbenchCover(tool.entryKey)
     if (tool.imageUrl != null) {
         WorkbenchImage(url = tool.imageUrl!!, modifier = modifier)
-        return true
-    }
-    if (local != null) {
+    } else if (local != null) {
         Image(
             painter = painterResource(local),
             contentDescription = null,
             modifier = modifier.background(AppColors.colorScheme.surfaceVariant),
             contentScale = ContentScale.Crop
         )
-        return true
     }
-    return false
 }
 
 /** 六色浅底语义色组（icon/color 白名单映射产物，卡片组件共用） */
@@ -1173,7 +1214,7 @@ private fun ToolTile(
     modifier: Modifier = Modifier,
 ) {
     val scheme = AppColors.colorScheme
-    val hasCover = tool.imageUrl != null || LocalCoverArt.workbenchCover(tool.entryKey) != null
+    val hasCover = tool.hasCover()
     val (containerColor, iconTint) = workbenchTintColors(tool)
     Surface(
         modifier = modifier.pressable(onClick = onClick).softCardShadow(),

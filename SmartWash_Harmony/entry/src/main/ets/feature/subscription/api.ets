@@ -368,6 +368,8 @@ export class SubscriptionText {
   static get subscription_filter_canceled(): string { return resString('subscription_filter_canceled') }
   static get subscription_filter_finished(): string { return resString('subscription_filter_finished') }
   static get subscription_empty_message(): string { return resString('subscription_empty_message') }
+  /** 筛选结果为空时的空态文案（区别于「一条订阅都没有」的全局空态） */
+  static get subscription_empty_filter_message(): string { return resString('subscription_empty_filter_message') }
   static get subscription_empty_action(): string { return resString('subscription_edit_title_new') }
   static get subscription_error_load(): string { return resString('subscription_error_load') }
   static get subscription_action_retry(): string { return resString('subscription_action_retry') }
@@ -477,6 +479,9 @@ export class SubscriptionText {
   static get subscription_stats_per_use_none(): string { return resString('subscription_stats_per_use_none') }
   static get subscription_stats_monthly_format(): string { return resString('subscription_text_subscription_stats_monthly_format') }
   static get subscription_stats_error(): string { return resString('subscription_stats_error') }
+  /** 统计口径标注：后端只统计进行中订阅，暂停/终态不参与，避免与同页打卡列表矛盾 */
+  static get subscription_stats_scope_note(): string { return resString('subscription_stats_scope_note') }
+  static get subscription_stats_inactive_hint(): string { return resString('subscription_stats_inactive_hint') }
 
   // 使用打卡
   static get subscription_usage_title(): string { return resString('subscription_usage_title') }

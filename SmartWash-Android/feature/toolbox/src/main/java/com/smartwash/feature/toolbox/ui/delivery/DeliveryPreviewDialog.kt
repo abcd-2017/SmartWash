@@ -67,6 +67,7 @@ internal fun DeliveryPreviewDialog(
     onDismiss: () -> Unit,
     onConfirmTakeImage: () -> Unit,
     onConfirmTakeFile: () -> Unit,
+    onRetryContent: () -> Unit,
     onCopyText: () -> Unit,
     onSaveImage: () -> Unit,
 ) {
@@ -108,6 +109,8 @@ internal fun DeliveryPreviewDialog(
                         )
 
                         is PreviewState.ImageReady -> ImageReadyBody(state)
+
+                        is PreviewState.ContentFailed -> ContentFailedBody()
                     }
                 }
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
@@ -117,6 +120,7 @@ internal fun DeliveryPreviewDialog(
                     onDismiss = onDismiss,
                     onConfirmTakeImage = onConfirmTakeImage,
                     onConfirmTakeFile = onConfirmTakeFile,
+                    onRetryContent = onRetryContent,
                     onCopyText = onCopyText,
                     onSaveImage = onSaveImage,
                 )
@@ -193,13 +197,13 @@ private fun ConfirmBody(
             textAlign = TextAlign.Center,
         )
     }
-    if (!item.mimeType.isNullOrBlank() || item.objectSize != null) {
+    if (!displayMimeType(item).isNullOrBlank() || item.objectSize != null) {
         Spacer(modifier = Modifier.height(AppDimens.spaceSm))
         Column {
-            if (!item.mimeType.isNullOrBlank()) {
+            displayMimeType(item)?.let {
                 InfoRow(
                     label = stringResource(R.string.toolbox_delivery_file_type),
-                    value = item.mimeType,
+                    value = it,
                 )
             }
             item.objectSize?.let {
@@ -211,6 +215,32 @@ private fun ConfirmBody(
             }
         }
     }
+}
+
+/**
+ * 条目类型展示：后端发布 multipart 未携带真实 MIME 时存 octet-stream，信息量低——
+ * 端侧按扩展名推断兜底（推断失败回退原值；title 已带扩展名）。
+ */
+private fun displayMimeType(item: DeliveryItemVo): String? {
+    val raw = item.mimeType
+    if (!raw.isNullOrBlank() && raw != "application/octet-stream") return raw
+    val ext = item.title?.substringAfterLast('.', "")?.lowercase(java.util.Locale.US).orEmpty()
+    if (ext.isBlank()) return raw
+    return android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: raw
+}
+
+/** 内容获取失败占位（认领成功但下载未完成，条目未焚毁）：明确告知可重试（P0 端侧兜底） */
+@Composable
+private fun ContentFailedBody() {
+    Text(
+        text = stringResource(R.string.toolbox_delivery_take_failed),
+        style = MaterialTheme.typography.bodyMedium,
+        color = AppColors.colorScheme.textSecondary,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AppDimens.spaceMd),
+    )
 }
 
 /** 图片预览：下载完成的缓存位图（解码失败回退「可直接保存」），强调已焚毁需及时保存 */
@@ -275,6 +305,7 @@ private fun PreviewActionRow(
     onDismiss: () -> Unit,
     onConfirmTakeImage: () -> Unit,
     onConfirmTakeFile: () -> Unit,
+    onRetryContent: () -> Unit,
     onCopyText: () -> Unit,
     onSaveImage: () -> Unit,
 ) {
@@ -366,6 +397,24 @@ private fun PreviewActionRow(
                     text = stringResource(R.string.toolbox_delivery_action_save_gallery),
                     color = AppColors.colorScheme.textGreen,
                     onClick = onSaveImage,
+                    loading = actionLoading,
+                    enabled = !actionLoading,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            is PreviewState.ContentFailed -> {
+                PreviewDialogAction(
+                    text = stringResource(R.string.toolbox_delivery_action_close),
+                    color = AppColors.colorScheme.textSecondary,
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                )
+                ActionDivider()
+                PreviewDialogAction(
+                    text = stringResource(R.string.toolbox_delivery_action_retry),
+                    color = AppColors.colorScheme.textGreen,
+                    onClick = onRetryContent,
                     loading = actionLoading,
                     enabled = !actionLoading,
                     modifier = Modifier.weight(1f),

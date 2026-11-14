@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +50,7 @@ import com.smartwash.feature.toolbox.logic.ShortCodeRules
 import com.smartwash.feature.toolbox.ui.ToolboxDatePickerDialog
 import com.smartwash.feature.toolbox.ui.ToolboxSelectableChip
 import com.smartwash.feature.toolbox.ui.ToolboxExpiryPresetRow
+import com.smartwash.feature.toolbox.ui.navigateToShortCodeDetail
 import com.smartwash.feature.toolbox.ui.notifyShortCodeChanged
 import java.time.format.DateTimeFormatter
 
@@ -65,6 +67,8 @@ fun ShortCodeCreatePage(
     val context = LocalContext.current
     val form by viewModel.form.collectAsState()
     val submitState by viewModel.submitState.collectAsState()
+    // 收集创建结果：私密文本成功分支据此直达详情（StateFlow 不能直接当值用）
+    val lastCreated by viewModel.lastCreated.collectAsState()
 
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -74,7 +78,15 @@ fun ShortCodeCreatePage(
             is RequestState.Success -> {
                 Toast.makeText(context, context.getString(R.string.toolbox_toast_create_success), Toast.LENGTH_SHORT).show()
                 navController.notifyShortCodeChanged()
-                navController.popBackStack()
+                if (form.mode == ShortCodeCreateViewModel.CreateMode.SECRET) {
+                    // 阅后即焚：核心交付物是分享链接——创建成功直达详情页（复制/打开入口在彼处），
+                    // 并把创建页弹栈，返回键回列表而非已提交的表单（防重复创建）
+                    lastCreated?.let { vo ->
+                        navController.navigateToShortCodeDetail(vo, popUpCreatePage = true)
+                    } ?: navController.popBackStack()
+                } else {
+                    navController.popBackStack()
+                }
                 viewModel.resetSubmitState()
             }
             else -> {}
@@ -91,7 +103,14 @@ fun ShortCodeCreatePage(
             .imePadding()
     ) {
         PageHeader(
-            title = stringResource(R.string.toolbox_create_title),
+            // 标题随创建模式切换（私密文本口径与列表/详情类型 chip 一致）
+            title = stringResource(
+                if (form.mode == ShortCodeCreateViewModel.CreateMode.SECRET) {
+                    R.string.toolbox_create_title_secret
+                } else {
+                    R.string.toolbox_create_title
+                }
+            ),
             onBack = { navController.navigateUp() },
         )
         Column(
@@ -147,8 +166,12 @@ fun ShortCodeCreatePage(
                             },
                             textStyle = MaterialTheme.typography.bodyLarge,
                             singleLine = true,
-                            // URL 输入补 Uri 键盘（「/」「.com」便捷键，audit-17 #11）
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                            // URL 输入补 Uri 键盘（「/」「.com」便捷键，audit-17 #11）；
+                            // 关闭自动纠错：Gboard 会把 http:// 静默改写成 https://（协议头不可被键盘篡改）
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Uri,
+                                autoCorrectEnabled = false,
+                            ),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
@@ -211,7 +234,8 @@ fun ShortCodeCreatePage(
                         Row {
                             ToolboxSelectableChip(
                                 text = stringResource(R.string.toolbox_common_off),
-                                selected = false,
+                                // 与「开启」chip 对称绑定真实开关状态（写死 false 会导致关闭态无选中视觉）
+                                selected = !form.passwordEnabled,
                                 onClick = { viewModel.updatePasswordEnabled(false) },
                             )
                             Spacer(modifier = Modifier.width(AppDimens.spaceXs))
@@ -243,7 +267,11 @@ fun ShortCodeCreatePage(
                                 },
                                 textStyle = MaterialTheme.typography.bodyLarge,
                                 singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                // 口令框同关自动纠错（键盘联想/纠正会污染口令字符）
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Password,
+                                    autoCorrectEnabled = false,
+                                ),
                                 visualTransformation = PasswordVisualTransformation(),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -274,6 +302,12 @@ fun ShortCodeCreatePage(
                     },
                     textStyle = MaterialTheme.typography.bodyLarge,
                     singleLine = true,
+                    // 短码为大小写敏感的字母数字：Ascii 键盘 + 关自动纠错/首字母大写（码值不可被键盘改写）
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Ascii,
+                        autoCorrectEnabled = false,
+                        capitalization = KeyboardCapitalization.None,
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),

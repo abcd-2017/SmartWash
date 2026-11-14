@@ -83,16 +83,24 @@ class NetworkModule {
 }
 
 /**
- * 请求/响应日志中 apiKey 字段值脱敏（2026-11-07 BYOK，issue #79）：
- * 形如 `"apiKey":"…"`（含大小写、空格变体）的 JSON 字段值替换为 `"apiKey":"***"`。
+ * 请求/响应日志敏感字段脱敏：
+ * - apiKey 字段值（2026-11-07 BYOK，issue #79）：形如 `"apiKey":"…"`（含大小写、空格变体）
+ *   的 JSON 字段值替换为 `"apiKey":"***"`。
+ * - Bearer 会话 token（2026-11-14 评审）：`Authorization: Bearer <jwt>` 的值替换为 `***`，
+ *   防止 debug BODY 级日志把会话令牌明文打进 logcat。
  *
  * 仅作用于 debug 日志输出通道（HttpLoggingInterceptor logger 包装），不触碰请求本身；
  * internal 供 JVM 单测锚点（同 ResponseInterceptor.resolveBusinessErrorMessage 先例）。
  * 注：OkHttp 超长日志（>4KB）会分段进 logger，跨段字段理论上可能漏匹配——BYOK 请求体
- * 远小于分段阈值，实际路径可靠；其余接口不涉及密钥字段。
+ * 与 Authorization 头均远小于分段阈值，实际路径可靠；其余接口不涉及密钥字段。
  */
 internal val API_KEY_LOG_PATTERN: Regex =
     Regex("\"\\s*api_?key\"\\s*:\\s*\"[^\"]*\"", RegexOption.IGNORE_CASE)
 
+internal val BEARER_TOKEN_LOG_PATTERN: Regex =
+    Regex("(?i)(authorization\\s*:\\s*bearer\\s+)\\S+")
+
 internal fun maskApiKeyForLog(message: String): String =
-    message.replace(API_KEY_LOG_PATTERN, "\"apiKey\":\"***\"")
+    message
+        .replace(BEARER_TOKEN_LOG_PATTERN, "$1***")
+        .replace(API_KEY_LOG_PATTERN, "\"apiKey\":\"***\"")

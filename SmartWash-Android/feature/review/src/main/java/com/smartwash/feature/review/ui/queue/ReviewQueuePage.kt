@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,8 +31,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
@@ -93,6 +96,24 @@ fun ReviewQueuePage(
             PageHeader(
                 title = stringResource(R.string.review_queue_title),
                 onBack = { navController.navigateUp() },
+                actions = {
+                    // 资料页入口：队列非空时也要能管理资料/建卡（评审 P1：原仅空态可达，
+                    // 有到期卡的日子资料管理整体断路）。文字按钮热区 ≥48dp（§3.3）
+                    Box(
+                        modifier = Modifier
+                            .pressable(onClick = { navController.navigate(ReviewRoute.Materials) })
+                            .heightIn(min = 48.dp)
+                            .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.review_queue_action_materials),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.colorScheme.textGreen,
+                        )
+                    }
+                },
             )
 
             PullToRefreshBox(
@@ -227,7 +248,8 @@ private fun QueueCard(
     now: LocalDateTime,
     onClick: () -> Unit,
 ) {
-    val dueText = ReviewFormat.dueTextOf(card.dueAt, now)
+    // 新卡不显示到期：语义由「新卡」角标承担（原实现未短路，出现「新卡 + 7 小时后到期」冗余）
+    val dueText = if (card.isNewCard) ReviewFormat.DueText.Unknown else ReviewFormat.dueTextOf(card.dueAt, now)
     AppCard(modifier = Modifier.pressable(onClick = onClick)) {
         // 卡内容包卡内边距 20dp：AppCard 无默认内边距，遗漏会让文本贴 16dp 圆角切字
         // （规范 §3.1 卡内边距 / 审查矩阵 #1，与 ReviewStudyPage 卡面画法一致）

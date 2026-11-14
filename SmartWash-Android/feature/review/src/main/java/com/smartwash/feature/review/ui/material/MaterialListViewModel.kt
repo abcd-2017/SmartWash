@@ -124,10 +124,6 @@ class MaterialListViewModel @Inject constructor(
         }
     }
 
-    fun consumeLoadMoreError() {
-        _state.update { if (it.loadMoreState is RequestState.Error) it.copy(loadMoreState = RequestState.Idle) else it }
-    }
-
     // ---------- 展开卡片列表 ----------
 
     /** 展开/收起某份资料的卡片列表（展开即拉卡片首页） */

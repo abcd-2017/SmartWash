@@ -18,10 +18,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
@@ -45,12 +45,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -98,6 +100,7 @@ fun DeliverySessionPage(
     val sendState by viewModel.sendState.collectAsState()
     val preview by viewModel.preview.collectAsState()
     val previewAction by viewModel.previewAction.collectAsState()
+    val retryableIds by viewModel.retryableItemIds.collectAsState()
     val closeState by viewModel.closeState.collectAsState()
     val toast by viewModel.toast.collectAsState()
 
@@ -217,10 +220,13 @@ fun DeliverySessionPage(
                 )
             }
             else -> {
+                // 条目少时卡片高度包裹内容（weight 不强制占满，稀疏留白优于整屏空白卡）；
+                // 空态/骨架/错误分支仍用 weight(1f) 撑满以便居中
                 DeliveryItemList(
                     items = items,
+                    retryableIds = retryableIds,
                     onItem = viewModel::openItem,
-                    modifier = listModifier,
+                    modifier = Modifier.weight(1f, fill = false).fillMaxWidth(),
                 )
             }
         }
@@ -242,6 +248,7 @@ fun DeliverySessionPage(
             onDismiss = viewModel::dismissPreview,
             onConfirmTakeImage = viewModel::takeImageForPreview,
             onConfirmTakeFile = viewModel::takeFileAndSave,
+            onRetryContent = viewModel::retryContentTake,
             onCopyText = viewModel::copyTextAndTake,
             onSaveImage = viewModel::saveImageToGallery,
         )
@@ -328,19 +335,28 @@ private fun SessionStrip(
     }
 }
 
-/** 双向条目流：单卡容器 + 行间发丝线（规范 §1.3 只在卡内），正序展示，新条目且已到底部时跟随滚动 */
+/**
+ * 双向条目流：单卡容器 + 行间发丝线（规范 §1.3 只在卡内），正序展示，新条目且已到底部时跟随滚动。
+ * 用 [verticalScroll] 普通列而非 LazyColumn：条目少时卡片高度包裹内容（外层 weight(fill=false)），
+ * 稀疏留白优于整屏空白卡；条目超出可视区时列内滚动（与 review 弹窗同型）。
+ */
 @Composable
 private fun DeliveryItemList(
     items: List<DeliveryItemVo>,
+    retryableIds: Set<Long>,
     onItem: (DeliveryItemVo) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val listState = rememberLazyListState()
+    val scrollState = rememberScrollState()
     val reduceMotion = LocalReduceMotion.current
     LaunchedEffect(items.size) {
+        if (items.isEmpty()) return@LaunchedEffect
+        // 等一帧让新条目完成布局后再取 maxValue（否则滚不到真正底部）
+        withFrameNanos { }
         // 只在用户已阅读到底部时跟随新条目，不打断回看
-        if (items.isNotEmpty() && !listState.canScrollForward) {
-            if (reduceMotion) listState.scrollToItem(items.lastIndex) else listState.animateScrollToItem(items.lastIndex)
+        if (!scrollState.canScrollForward) {
+            val target = scrollState.maxValue
+            if (reduceMotion) scrollState.scrollTo(target) else scrollState.animateScrollTo(target)
         }
     }
     // 卡片阴影与描边统一走 GroupCard（softCardShadow），与创建页同一画法（规范 §2.4 / §3.1）；
@@ -350,13 +366,13 @@ private fun DeliveryItemList(
             .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
         contentPadding = PaddingValues(horizontal = AppDimens.cardPadding),
     ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState),
         ) {
-            items(items.size, key = { items[it].id }) { index ->
-                val item = items[index]
-                DeliveryItemRow(item = item, onClick = { onItem(item) })
+            items.forEachIndexed { index, item ->
+                DeliveryItemRow(item = item, retryable = item.id in retryableIds, onClick = { onItem(item) })
                 if (index < items.lastIndex) {
                     HorizontalDivider(
                         thickness = 0.5.dp,
@@ -370,15 +386,22 @@ private fun DeliveryItemList(
     }
 }
 
-/** 条目行：kind 图标容器（蓝·物流语义）+ 标题 + 时间·大小 + 方向/取走角标；已焚毁整行灰态不可点 */
+/**
+ * 条目行：kind 图标容器（蓝·物流语义）+ 标题 + 时间·大小 + 方向/取走角标；已焚毁整行灰态不可点。
+ * [retryable] 为「认领成功但内容未到手」的 P0 兜底条目：服务端 taken=1 但内容未交付，
+ * 端侧保持「待取走」可点（不进入焚毁灰态），重开可续取。
+ */
 @Composable
 private fun DeliveryItemRow(
     item: DeliveryItemVo,
+    retryable: Boolean,
     onClick: () -> Unit,
 ) {
     val kind = DeliveryRules.ItemKind.fromCode(item.kind)
     val direction = DeliveryRules.Direction.fromCode(item.direction)
     val taken = item.taken != 0
+    // 仅「已取走且非可重试」才是真正焚毁占位；可重试条目按待取走渲染
+    val burnt = taken && !retryable
     val rowContent: @Composable () -> Unit = {
         Row(
             modifier = Modifier
@@ -390,12 +413,12 @@ private fun DeliveryItemRow(
                 icon = kindIcon(kind),
                 size = 32.dp,
                 iconSize = 20.dp,
-                containerColor = if (taken) {
+                containerColor = if (burnt) {
                     AppColors.colorScheme.surfaceVariant
                 } else {
                     AppColors.colorScheme.iconContainerBlue
                 },
-                iconTint = if (taken) {
+                iconTint = if (burnt) {
                     AppColors.colorScheme.textTertiary
                 } else {
                     AppColors.colorScheme.iconForegroundBlue
@@ -407,7 +430,7 @@ private fun DeliveryItemRow(
                     text = item.title ?: stringResource(kindNameRes(kind)),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color = if (taken) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textPrimary,
+                    color = if (burnt) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -439,12 +462,12 @@ private fun DeliveryItemRow(
                             R.string.toolbox_delivery_direction_in
                         }
                     ),
-                    containerColor = if (direction == DeliveryRules.Direction.COMPUTER_TO_PHONE && !taken) {
+                    containerColor = if (direction == DeliveryRules.Direction.COMPUTER_TO_PHONE && !burnt) {
                         AppColors.colorScheme.iconContainerBlue
                     } else {
                         AppColors.colorScheme.surfaceVariant
                     },
-                    contentColor = if (direction == DeliveryRules.Direction.COMPUTER_TO_PHONE && !taken) {
+                    contentColor = if (direction == DeliveryRules.Direction.COMPUTER_TO_PHONE && !burnt) {
                         AppColors.colorScheme.iconForegroundBlue
                     } else {
                         AppColors.colorScheme.textSecondary
@@ -453,15 +476,15 @@ private fun DeliveryItemRow(
                 Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                 // 取走状态：待取走 = 橙·待办语义；已取走 = 灰（焚毁占位）
                 ToolboxTagChip(
-                    text = stringResource(if (taken) R.string.toolbox_delivery_state_taken else R.string.toolbox_delivery_state_pending),
-                    containerColor = if (taken) {
+                    text = stringResource(if (burnt) R.string.toolbox_delivery_state_taken else R.string.toolbox_delivery_state_pending),
+                    containerColor = if (burnt) {
                         AppColors.colorScheme.surfaceVariant
                     } else {
                         AppColors.colorScheme.warningContainer
                     },
                     // 功能色浅底 + 成对文字色（规范 §5）：#D98A26 on warningContainer 仅 2.51:1
                     // 违反 §10 红线（audit-07 P0-2），改用成对的 onWarningContainer（两主题 ≥6.4:1）
-                    contentColor = if (taken) {
+                    contentColor = if (burnt) {
                         AppColors.colorScheme.textTertiary
                     } else {
                         AppColors.colorScheme.onWarningContainer
@@ -470,7 +493,7 @@ private fun DeliveryItemRow(
             }
         }
     }
-    if (taken) {
+    if (burnt) {
         // 焚毁占位：灰态（半透明弱化）且不可再点——内容已焚毁，仅保留对话流占位
         Box(modifier = Modifier.alpha(0.45f)) { rowContent() }
     } else {
@@ -602,6 +625,9 @@ private fun PickerIconButton(
     Box(
         modifier = Modifier
             .size(44.dp)
+            // 读屏语义挂在外层热区 Box（IconBox 内部 Icon contentDescription=null）：
+            // 否则 TalkBack 聚焦到无描述的图标容器，无法发现/操作选取入口（audit P2）
+            .semantics { this.contentDescription = contentDescription }
             .pressable(onClick = onClick, debounce = false),
         contentAlignment = Alignment.Center,
     ) {

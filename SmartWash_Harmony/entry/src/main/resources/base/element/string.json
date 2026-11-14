@@ -1861,6 +1861,10 @@
       "value": "开始复习"
     },
     {
+      "name": "review_queue_action_materials",
+      "value": "资料"
+    },
+    {
       "name": "review_queue_empty_message",
       "value": "今日没有需要复习的卡片，先去资料页建卡吧"
     },
@@ -2127,6 +2131,10 @@
     {
       "name": "subscription_empty_message",
       "value": "还没有订阅，把正在按期扣费的服务登记进来吧"
+    },
+    {
+      "name": "subscription_empty_filter_message",
+      "value": "当前筛选条件下暂无订阅"
     },
     {
       "name": "subscription_error_load",
@@ -2479,6 +2487,14 @@
     {
       "name": "subscription_stats_error",
       "value": "统计加载失败"
+    },
+    {
+      "name": "subscription_stats_scope_note",
+      "value": "统计仅含进行中的订阅，不含已暂停/已结束"
+    },
+    {
+      "name": "subscription_stats_inactive_hint",
+      "value": "非进行中状态暂不计入统计"
     },
     {
       "name": "subscription_usage_title",
@@ -3407,6 +3423,10 @@
     {
       "name": "workbench_search_empty",
       "value": "没有找到相关工具，换个关键词试试"
+    },
+    {
+      "name": "workbench_search_clear",
+      "value": "清空搜索"
     },
     {
       "name": "workbench_recent_title",

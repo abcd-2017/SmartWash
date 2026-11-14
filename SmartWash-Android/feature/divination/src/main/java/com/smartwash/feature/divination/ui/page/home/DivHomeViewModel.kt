@@ -3,6 +3,7 @@ package com.smartwash.feature.divination.ui.page.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nlf.calendar.Solar
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.divination.core.DivCategory
 import com.smartwash.feature.divination.core.GanZhi
 import com.smartwash.feature.divination.core.meihua.MeiHuaChart
@@ -11,6 +12,7 @@ import com.smartwash.feature.divination.data.DivRecordRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +53,17 @@ class DivHomeViewModel @Inject constructor(
     /** 今日一签保存中（audit-11 #6）：点击→导航前链路（本地建档 + GET /today 服务端关联）的
      *  轻量 loading 反馈，true 期间页面禁用重复点击；业务链路不变（建档 → 关联 → onSaved 导航） */
     val signSaving: StateFlow<Boolean> = _signSaving.asStateFlow()
+
+    private val _signSaveFailed = MutableStateFlow(false)
+
+    /** 今日一签入库失败事件（2026-11-14 检查 report P2）：本地建档异常兜底的用户可感知出口，
+     *  页面 LaunchedEffect 收集后 Toast 提示，经 [consumeSignSaveFailed] 消费复位 */
+    val signSaveFailed: StateFlow<Boolean> = _signSaveFailed.asStateFlow()
+
+    /** 失败事件消费复位（避免返回本页时重复提示） */
+    fun consumeSignSaveFailed() {
+        _signSaveFailed.value = false
+    }
 
     /** 案卷：Room 卦历近三条 */
     val recentRecords: StateFlow<List<DivRecordEntity>> = repository.observeAll()
@@ -93,9 +106,21 @@ class DivHomeViewModel @Inject constructor(
                 )
                 repository.linkTodaySign(id)
                 onSaved(id)
+            } catch (e: CancellationException) {
+                // 取消必须原样 rethrow（协程取消不得吞成业务失败）
+                throw e
+            } catch (e: Exception) {
+                // 本地建档异常兜底（Room 写入/时间卦计算等）：不让异常沿 launch 未捕获逃逸裸崩，
+                // 置失败事件由页面 Toast 提示重试（网络段 linkTodaySign 已在 Repository 内静默回退）
+                AppLogger.warn(TAG, "今日一签入库失败: ${e.message}", e)
+                _signSaveFailed.value = true
             } finally {
                 _signSaving.value = false
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "DivHomeViewModel"
     }
 }

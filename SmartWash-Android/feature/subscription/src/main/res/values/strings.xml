@@ -17,6 +17,7 @@
     <string name="subscription_filter_canceled">已取消</string>
     <string name="subscription_filter_finished">已结束</string>
     <string name="subscription_empty_message">还没有订阅，把正在按期扣费的服务登记进来吧</string>
+    <string name="subscription_empty_filter_message">该筛选下暂无订阅</string>
     <string name="subscription_empty_action">新建订阅</string>
     <string name="subscription_error_load">订阅加载失败</string>
     <string name="subscription_action_retry">重试</string>
@@ -125,6 +126,7 @@
     <string name="subscription_stats_per_use_format">单次折算 ¥%1$s</string>
     <string name="subscription_stats_per_use_none">窗口内暂无使用，暂无单次成本</string>
     <string name="subscription_stats_monthly_format">月度折算 ¥%1$s</string>
+    <string name="subscription_stats_inactive_note">使用统计仅含进行中的订阅</string>
     <string name="subscription_stats_error">统计加载失败</string>
 
     <!-- ==================== 使用打卡 ==================== -->
@@ -158,4 +160,5 @@
     <!-- ==================== 日期弹窗 ==================== -->
     <string name="subscription_date_confirm">确定</string>
     <string name="subscription_date_cancel">取消</string>
+    <string name="subscription_date_select_hint">请先选择日期</string>
 </resources>

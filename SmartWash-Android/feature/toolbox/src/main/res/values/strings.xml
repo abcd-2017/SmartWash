@@ -4,6 +4,7 @@
     <!-- ==================== 页面标题 ==================== -->
     <string name="toolbox_title">短链管理</string>
     <string name="toolbox_create_title">新建短链</string>
+    <string name="toolbox_create_title_secret">新建私密文本</string>
     <string name="toolbox_detail_title">短链详情</string>
     <string name="toolbox_action_new">新建</string>
 
@@ -211,6 +212,7 @@
     <string name="toolbox_delivery_pick_file">选文件</string>
     <string name="toolbox_delivery_error_send">发送失败，请重试</string>
     <string name="toolbox_delivery_error_file_too_large">文件超过 20MB 上限</string>
+    <string name="toolbox_delivery_error_content_changed">所选内容已变化，请重新选择后发送</string>
     <string name="toolbox_delivery_error_text_too_long">文本超过 10 万字符上限</string>
     <string name="toolbox_delivery_error_text_empty">请输入要投递的文本</string>
     <string name="toolbox_delivery_session_gone_toast">投递会话不存在或已失效</string>
@@ -234,4 +236,5 @@
     <string name="toolbox_delivery_toast_saved_gallery">已保存到相册</string>
     <string name="toolbox_delivery_toast_saved_file">已保存到「下载」/SmartWash</string>
     <string name="toolbox_delivery_preview_error">内容读取失败</string>
+    <string name="toolbox_delivery_take_failed">内容获取失败，条目尚未焚毁，可重试</string>
 </resources>

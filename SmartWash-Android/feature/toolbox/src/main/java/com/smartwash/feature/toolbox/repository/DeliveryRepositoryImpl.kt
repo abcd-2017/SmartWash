@@ -6,6 +6,7 @@ import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.utils.model.HttpStatusCode
+import com.smartwash.feature.toolbox.R as ToolboxR
 import com.smartwash.feature.toolbox.network.AddDeliverySessionRequest
 import com.smartwash.feature.toolbox.network.AddDeliveryTextRequest
 import com.smartwash.feature.toolbox.network.DeliveryApi
@@ -26,7 +27,6 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.BufferedSink
-import okio.source
 import org.json.JSONObject
 import retrofit2.Retrofit
 import java.io.InputStream
@@ -58,8 +58,9 @@ class DeliveryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun closeSession(code: String) {
-        // 后端 Result.ok(null)：成功以 code=200 为准（非 200 已转译为异常），data 不消费
-        deliveryApi.closeSession(code)
+        // 后端 Result.ok(null)：data 为 null 属正常不消费；信封码必须显式校验——
+        // 403/404/409/413 原样穿过拦截器，不校验会把「会话不存在或已失效」判成假成功
+        deliveryApi.closeSession(code).requireDeliverySuccess()
     }
 
     override suspend fun fetchSessionDetail(code: String): DeliverySessionDetailVo {
@@ -87,7 +88,33 @@ class DeliveryRepositoryImpl @Inject constructor(
                     AppLogger.warn(TAG, "publishFile: 内容流工厂返回空，所选内容已失效 fileName=$fileName size=$size")
                     throw NetworkException("所选内容已失效", R.string.error_network_fail)
                 }
-                input.use { sink.writeAll(it.source()) }
+                input.use {
+                    // 实际写出与声明长度不符时主动失败并给真实原因——provider SIZE 是快照值，
+                    // 两次开流之间内容仍可能被改写；不拦会被 OkHttp 判 ProtocolException，
+                    // 再被拦截器误转成「网络连接失败」（audit P1：错误文案按真实失败类型）
+                    var written = 0L
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val read = it.read(buffer)
+                        if (read == -1) break
+                        if (written + read > size) {
+                            // message 留空使用户可见文案走 resId（规范 §9 禁硬编码中文）
+                            throw NetworkException(
+                                "",
+                                ToolboxR.string.toolbox_delivery_error_content_changed,
+                            )
+                        }
+                        sink.write(buffer, 0, read)
+                        written += read
+                    }
+                    if (written != size) {
+                        // message 留空使用户可见文案走 resId（规范 §9 禁硬编码中文）
+                        throw NetworkException(
+                            "",
+                            ToolboxR.string.toolbox_delivery_error_content_changed,
+                        )
+                    }
+                }
             }
         }
         val filePart = MultipartBody.Part.createFormData("file", fileName, fileBody)
@@ -155,6 +182,14 @@ class DeliveryRepositoryImpl @Inject constructor(
         return data ?: run {
             AppLogger.warn(TAG, "requireDeliveryData: 投递响应 data 为空（$emptyMessage），按失败上抛")
             throw NetworkException(emptyMessage, R.string.error_network_fail)
+        }
+    }
+
+    /** 信封码校验（data 允许为 null，closeSession 场景）：非 200 按业务码抛 [DeliveryException] */
+    private fun ApiResult<*>.requireDeliverySuccess() {
+        if (code != HttpStatusCode.Success.code) {
+            AppLogger.warn(TAG, "requireDeliverySuccess: 投递业务拒绝 code=$code")
+            throw DeliveryException(code, message)
         }
     }
 

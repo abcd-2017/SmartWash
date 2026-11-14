@@ -9,6 +9,7 @@ import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.ToolboxConstant
 import com.smartwash.feature.toolbox.logic.ShortCodeRules
 import com.smartwash.feature.toolbox.network.AddShortCodeRequest
+import com.smartwash.feature.toolbox.network.ShortCodeVo
 import com.smartwash.feature.toolbox.repository.ToolboxRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -52,6 +53,10 @@ class ShortCodeCreateViewModel @Inject constructor(
 
     private val _submitState = MutableStateFlow<RequestState>(RequestState.Idle)
     val submitState = _submitState.asStateFlow()
+
+    /** 最近一次创建成功的短码 VO（私密文本创建成功直达详情页用，仅该分支写入/消费） */
+    private val _lastCreated = MutableStateFlow<ShortCodeVo?>(null)
+    val lastCreated = _lastCreated.asStateFlow()
 
     fun updateMode(mode: CreateMode) {
         _form.value = _form.value.copy(mode = mode)
@@ -180,7 +185,7 @@ class ShortCodeCreateViewModel @Inject constructor(
         viewModelScope.launch {
             _submitState.value = RequestState.Loading
             try {
-                repository.createShortCode(
+                val vo = repository.createShortCode(
                     AddShortCodeRequest(
                         contentType = ShortCodeRules.CONTENT_TYPE_SECRET_TEXT,
                         content = f.content,
@@ -190,6 +195,8 @@ class ShortCodeCreateViewModel @Inject constructor(
                         expireAt = ShortCodeRules.secretExpireAtFor(f.secretPreset, now),
                     )
                 )
+                // 记录创建结果供页面直达详情（分享链接是核心交付物，少一步打断）
+                _lastCreated.value = vo
                 _submitState.value = RequestState.Success
                 AppLogger.info(TAG, "私密文本创建成功 customCode=${f.customCode.trim().ifEmpty { "auto" }} 带口令=${f.passwordEnabled}")
             } catch (e: CancellationException) {

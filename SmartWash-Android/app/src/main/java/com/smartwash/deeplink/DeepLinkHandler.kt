@@ -99,9 +99,10 @@ class DeepLinkHandler @Inject constructor(
      *   拦截即循环跳登录）与 lab（解压实验舱，纯本地玩具零网络请求）。
      *
      * 其余 host（pickup / ai-work / order / coupon / laundry / recharge / recharge-record /
-     * divination / divination-history / game-center / review / subscription /
-     * toolbox-short-code / t / delivery / setting）对应页面入口均消费 /web/auth 鉴权接口
-     * 或依赖会话语义，未登录不放行，由壳层落登录页。
+     * divination / divination-history / game-center / review / subscription / dining /
+     * messages / points / toolbox-short-code / toolbox-secret / toolbox-asset-tag / t /
+     * delivery / setting）对应页面入口均消费 /web/auth 鉴权接口或依赖会话语义，
+     * 未登录不放行，由壳层落登录页。
      *
      * @param uri 原始深链串（NativeRoute 的 host 自此处提取；host 不可提取时按受保护兜底）
      */

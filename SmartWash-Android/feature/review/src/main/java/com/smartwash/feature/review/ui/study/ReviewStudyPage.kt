@@ -118,13 +118,15 @@ fun ReviewStudyPage(
                     EmptyState(
                         icon = Icons.Rounded.School,
                         message = loadState.getMessage(context),
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = AppDimens.pagePadding),
                         action = {
-                            // 错误态唯一主行动：48dp 全宽主按钮，与完成态返回按钮口径一致（审查矩阵 #6）
+                            // 错误态唯一主行动：48dp 全宽主按钮，与完成态返回按钮口径一致（审查矩阵 #6）；
+                            // 水平边距由 EmptyState 统一承担，长错误文案不贴屏幕边缘（评审 P2）
                             AppButton(
                                 text = stringResource(R.string.review_action_retry),
                                 onClick = { viewModel.load() },
-                                modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
                             )
                         },
                     )
