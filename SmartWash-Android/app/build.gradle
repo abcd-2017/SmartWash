@@ -24,8 +24,12 @@ android {
         versionCode = project.hasProperty('versionCode') ? project.versionCode.toInteger() : 1
         versionName = project.hasProperty('versionName') ? project.versionName : "1.0"
         ndk {
+            // ABI 过滤由 Gradle 属性注入，仅发版打包使用（CI 传 -PabiFilters=arm64-v8a，逗号分隔可传多个）。
+            // 本地开发不带该参数：保留全部 ABI，模拟器（x86_64/arm64 镜像）与真机均可安装调试。
             //noinspection ChromeOsAbiSupport
-//            abiFilters 'arm64-v8a'
+            if (project.hasProperty('abiFilters')) {
+                abiFilters.addAll(project.abiFilters.split(',').collect { it.trim() }.findAll { it })
+            }
         }
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

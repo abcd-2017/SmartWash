@@ -164,10 +164,13 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%03d%03d", $1, $2, $3}')
+          # ABI 过滤：发版仅打 arm64-v8a（ML Kit 扫码引擎不再打入 x86/x86_64/armeabi-v7a 副本，省 ~15MB）。
+          # 本地开发不带 -PabiFilters，保留全 ABI 供模拟器调试。
           ./gradlew assembleRelease \
             -PversionCode=$VERSION_CODE \
             -PversionName=$VERSION \
-            -PbaseUrl=$BASE_URL
+            -PbaseUrl=$BASE_URL \
+            -PabiFilters=arm64-v8a
 
       - name: Rename APK
         id: rename

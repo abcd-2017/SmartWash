@@ -31,6 +31,7 @@
 ```
 
 - **环境配置**：BASE_URL 由 `app/build.gradle` 通过 Gradle 属性 `baseUrl` 注入（兜底为无 IP 占位 `https://your-domain.com/`，未注入时请求失败,生产通过 `-PbaseUrl=https://your-domain.com/` 注入。代码读 `BuildConfig.BASE_URL`，禁止硬编码 URL。另有 `DIVINATION_BASE_URL`（观象台 LLM 网关，当前与 BASE_URL 一致）。
+- **ABI 过滤**：发版打包经 Gradle 属性注入（CI `-PabiFilters=arm64-v8a`，逗号分隔可传多个），仅打指定架构、省掉 ML Kit 扫码引擎的多余 ABI 副本（~15MB）；本地构建**不带**该参数保留全 ABI（模拟器调试），勿在 `defaultConfig` 里写死。
 - Manifest 中 `usesCleartextTraffic=true` 为 demo 项目全局放行明文 HTTP，并声明 `REQUEST_INSTALL_PACKAGES`（APK 热更新）与 FileProvider（APK 安装）。**发版前须按生产地址改为 HTTPS 并移除该开关**。
 - Maven 仓库用阿里云镜像（当前注释，启用需同时取消 `settings.gradle` 与 `config/` 两处注释）；海外构建需改回 `google()` / `mavenCentral()`。
 
