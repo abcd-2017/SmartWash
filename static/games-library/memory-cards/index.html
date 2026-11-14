@@ -22,8 +22,16 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; padding: 0 2px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; padding: 0 2px; }
+  .sub { flex: 1; min-width: 0; font-size: 14px; color: var(--g-muted); }
+  .dbtn {
+    flex: 0 0 auto; min-height: 44px; padding: 4px 10px;
+    border: 1px solid var(--g-border); border-radius: var(--g-radius-inner);
+    background: var(--g-surface); color: var(--g-text);
+    font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; line-height: 1.2;
+  }
+  .dbtn.done { border-color: var(--g-primary); background: var(--g-primary-soft); color: var(--g-primary-deep); }
+  .dbtn:active { opacity: .85; }
   .levels { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; }
   .levels::-webkit-scrollbar { display: none; }
   .lv {
@@ -114,7 +122,7 @@ paint(B||"light");
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub">翻两张 · 配对全部点亮</span></header>
+  <header><span class="sub">翻两张 · 配对全部点亮</span><button class="dbtn" id="btnDaily" type="button">每日挑战</button></header>
   <nav class="levels" id="levels" aria-label="关卡选择"></nav>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1</span></div>
@@ -248,27 +256,89 @@ function syncSaveFromServer(){
         }
         if(changed){persist();build();}
       }
+      //每日挑战：同日取更优（步数少者，步同取时短者），跨日缺失则补录
+      if(remote.daily&&typeof remote.daily==="object"){
+        var chD=false;
+        for(var dk in remote.daily){
+          var rd=remote.daily[dk];
+          if(!rd||typeof rd!=="object"||!rd.done||!isFinite(rd.moves))continue;
+          var ld=save.daily[dk];
+          if(!ld||rd.moves<ld.moves||(rd.moves===ld.moves&&rd.time<ld.time)){
+            save.daily[dk]={done:true,moves:rd.moves,time:isFinite(rd.time)?rd.time:0};
+            chD=true;
+          }
+        }
+        if(chD){trimDaily(save.daily);persist();renderDailyBtn();build();}
+      }
     }catch(e){}
   }).catch(function(){});
 }
 save.best=save.best||{};
+save.daily=trimDaily(save.daily||{});
 save.lv=Math.min(Math.max(parseInt(save.lv,10)||0,0),LEVELS.length-1);
+/*SW-DAILY-BEGIN*/
+/* 每日挑战：本地 UTC+8 日期派生种子（纯函数，跨端一致），生成失败自动 seed+1 重试。
+   布局约束沿用 DEFAULT_LEVELS 模式：2p 能被 cols 整除、列数 ≥2、行数 ∈[2,4]、p ≤ 图案数。 */
+function dailyKey(d){return new Date(d.getTime()+8*3600e3).toISOString().slice(0,10).replace(/-/g,"")}
+function hashGameKey(k){var s=0,i;for(i=0;i<k.length;i++)s=(s+k.charCodeAt(i))%1000;return s}
+function dailySeedFor(key,ymd){return parseInt(ymd,10)*31+hashGameKey(key)}
+function swMulberry(seed){seed=seed|0;return function(){seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function seededShuffle(a,rnd){var arr=a.slice(),i,j,t;for(i=arr.length-1;i>0;i--){j=Math.floor(rnd()*(i+1));t=arr[i];arr[i]=arr[j];arr[j]=t}return arr}
+function pairValid(cfg,glyphCount){
+  if(!cfg||cfg.p<2||cfg.p>glyphCount||cfg.cols<2)return false;
+  if((2*cfg.p)%cfg.cols)return false;
+  var rows=(2*cfg.p)/cfg.cols;
+  return rows>=2&&rows<=4;
+}
+function legalPairs(glyphCount){
+  var out=[],p,cols;
+  for(p=2;p<=glyphCount;p++){
+    for(cols=2;cols<=2*p;cols++){
+      if(pairValid({p:p,cols:cols},glyphCount))out.push({p:p,cols:cols});
+    }
+  }
+  return out;
+}
+function dailyLayout(key,glyphCount){
+  var seed=dailySeedFor("memory-cards",key),pairs=legalPairs(glyphCount),t;
+  for(t=0;t<16;t++){
+    var sd=seed+t,cfg=pairs[sd%pairs.length];
+    if(pairValid(cfg,glyphCount))return{seed:sd,cfg:cfg};
+  }
+  return{seed:seed,cfg:pairs[0]};
+}
+function dailyDeck(seed,p,glyphCount){
+  var rnd=swMulberry(seed),idx=[],i;
+  for(i=0;i<glyphCount;i++)idx.push(i);
+  seededShuffle(idx,rnd);
+  var deck=idx.slice(0,p).concat(idx.slice(0,p));
+  return seededShuffle(deck,rnd);
+}
+function trimDaily(d){var ks=Object.keys(d).sort();while(ks.length>30)delete d[ks.shift()];return d}
+/*SW-DAILY-END*/
 /* ---------- 状态 ---------- */
 var cur=save.lv,deck=[],open=[],lock=false,moves=0,matched=0,timer=null,sec=0,started=false,over=false;
+var mode="classic",dCur="",dailyCfg=null,dailySeed=0;
 var grid=document.getElementById("grid");
 function $(id){return document.getElementById(id)}
 function fmt(t){return t>=60?Math.floor(t/60)+"m"+(t%60)+"s":t+"s"}
 /* ---------- 关卡 ---------- */
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function activeCfg(){return mode==="daily"?dailyCfg:LEVELS[cur]}
 function build(){
-  var cfg=LEVELS[cur];
+  var cfg=activeCfg();
+  if(!cfg)return;
   over=false;moves=0;matched=0;open=[];lock=false;sec=0;started=false;
   clearInterval(timer);timer=null;
   $("stMoves").textContent="0";$("stTime").textContent="0s";
-  $("stBest").textContent=save.best[cur]?save.best[cur].m+"步":"—";
-  //随机抽 N 种图案，成对洗入牌阵
-  var pool=shuffle(GLYPHS.map(function(g,i){return i})).slice(0,cfg.p);
-  deck=shuffle(pool.concat(pool));
+  if(mode==="daily")$("stBest").textContent=save.daily[dCur]?save.daily[dCur].moves+"步":"—";
+  else $("stBest").textContent=save.best[cur]?save.best[cur].m+"步":"—";
+  //经典：随机抽 N 种图案；每日：按当日种子确定性抽洗
+  if(mode==="daily")deck=dailyDeck(dailySeed,cfg.p,GLYPHS.length);
+  else{
+    var pool=shuffle(GLYPHS.map(function(g,i){return i})).slice(0,cfg.p);
+    deck=shuffle(pool.concat(pool));
+  }
   grid.style.gridTemplateColumns="repeat("+cfg.cols+",1fr)";
   grid.innerHTML="";
   deck.forEach(function(gi,pos){
@@ -280,9 +350,16 @@ function build(){
     b.addEventListener("click",function(){tap(b,gi)});
     grid.appendChild(b);
   });
-  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stLv").textContent=mode==="daily"?"每日":(cur+1)+"/"+LEVELS.length;
   renderLevels();
-  say(cfg.p+" 对图案，翻开两张相同的即配对成功。");
+  renderDailyBtn();
+  say((mode==="daily"?"每日挑战 · ":"")+cfg.p+" 对图案，翻开两张相同的即配对成功。");
+}
+function todayKey(){return dailyKey(new Date())}
+function renderDailyBtn(){
+  var b=$("btnDaily"),k=todayKey(),done=!!(save.daily[k]&&save.daily[k].done);
+  b.textContent="每日挑战 · "+k.slice(0,4)+"-"+k.slice(4,6)+"-"+k.slice(6,8)+(done?" ✓":"");
+  b.classList.toggle("done",done);
 }
 function renderLevels(){
   var el=$("levels");el.innerHTML="";
@@ -292,7 +369,7 @@ function renderLevels(){
     if(i===cur)b.classList.add("cur");
     if(save.best[i])b.classList.add("done");
     b.disabled=i>save.lv;
-    b.addEventListener("click",function(){if(i===cur&&!over)return;cur=i;persist();hideOverlay();build()});
+    b.addEventListener("click",function(){if(mode==="classic"&&i===cur&&!over)return;mode="classic";cur=i;persist();hideOverlay();build()});
     el.appendChild(b);
   });
 }
@@ -311,8 +388,9 @@ function tap(el,gi){
   if(a.g===b2.g){
     a.el.classList.add("done");b2.el.classList.add("done");
     matched++;
-    say(matched===LEVELS[cur].p?"全部配对！":"配对成功，继续！");
-    if(matched===LEVELS[cur].p)win();
+    var tp=activeCfg().p;
+    say(matched===tp?"全部配对！":"配对成功，继续！");
+    if(matched===tp)win();
   }else{
     lock=true;
     setTimeout(function(){
@@ -325,6 +403,23 @@ function tap(el,gi){
 /* ---------- 通关 ---------- */
 function win(){
   over=true;clearInterval(timer);timer=null;
+  var cfg=activeCfg(),min=cfg.p;
+  if(mode==="daily"){
+    var prevD=save.daily[dCur],rec="";
+    if(!prevD||moves<prevD.moves||(moves===prevD.moves&&sec<prevD.time)){
+      save.daily[dCur]={done:true,moves:moves,time:sec};
+      rec=(!prevD||moves<prevD.moves)?"（新纪录！）":"";
+    }else{
+      rec="（今日最佳 "+prevD.moves+" 步）";
+    }
+    trimDaily(save.daily);persist();renderDailyBtn();
+    $("stBest").textContent=save.daily[dCur].moves+"步";
+    $("ovTitle").textContent="每日挑战完成 ✓";
+    $("ovDesc").innerHTML="用时 <b>"+fmt(sec)+"</b> · 步数 <b>"+moves+"</b>"+rec+"<br>理论最少 "+min+" 步";
+    $("ovNext").textContent="返回经典关卡";
+    $("overlay").classList.add("show");
+    return;
+  }
   var prev=save.best[cur],record="";
   if(!prev||moves<prev.m||sec<prev.t){
     save.best[cur]={m:prev?Math.min(prev.m,moves):moves,t:prev?Math.min(prev.t,sec):sec};
@@ -332,19 +427,28 @@ function win(){
     persist();renderLevels();
     $("stBest").textContent=save.best[cur].m+"步";
   }
-  var min=LEVELS[cur].p;
   $("ovTitle").textContent="配对完成！";
   $("ovDesc").innerHTML="用时 <b>"+fmt(sec)+"</b> · 步数 <b>"+moves+"</b>"+record+"<br>理论最少 "+min+" 步"+(prev?" · 最佳 "+save.best[cur].m+"步 / "+fmt(save.best[cur].t):"");
   $("ovNext").textContent=cur+1<LEVELS.length?"下一关":"全部通关";
-  // 成绩上报（步数，asc：越少越好）
+  // 成绩上报（步数，asc：越少越好；每日成绩不进排行榜）
   if(GB.available)GB.reportScore("memory-cards",{metricValue:moves,metricExtra:sec}).catch(function(){});
   $("overlay").classList.add("show");
 }
 function hideOverlay(){$("overlay").classList.remove("show")}
 $("btnRestart").addEventListener("click",build);
 $("ovReplay").addEventListener("click",function(){hideOverlay();build()});
+$("btnDaily").addEventListener("click",function(){
+  var k=todayKey();
+  if(mode!=="daily"||k!==dCur){
+    dCur=k;
+    var lay=dailyLayout(k,GLYPHS.length);
+    dailySeed=lay.seed;dailyCfg=lay.cfg;
+  }
+  mode="daily";hideOverlay();build();
+});
 $("ovNext").addEventListener("click",function(){
   hideOverlay();
+  if(mode==="daily"){mode="classic";cur=Math.min(save.lv,LEVELS.length-1);persist();build();return}
   if(cur+1<LEVELS.length){cur=cur+1;persist();build()}
   else say("六关全部通关，记忆大师！");
 });

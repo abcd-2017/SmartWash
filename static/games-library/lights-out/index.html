@@ -54,6 +54,8 @@
   }
   .btn:active { opacity: .85; }
   .btn[disabled] { opacity: .45; }
+  .btn.on { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  #btnDaily { font-size: 12px; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -99,6 +101,7 @@ paint(B||"light");
   <div class="tools">
     <button class="btn" id="btnPrev">上一关</button>
     <button class="btn" id="btnReset">重开本关</button>
+    <button class="btn" id="btnDaily">每日挑战</button>
   </div>
   <p class="foot">每关由全灭状态倒推生成，保证有解 · 步数 ≤ 参考最优可得 ★ 最优标记 · 50 关后进入无尽模式</p>
 </div>
@@ -141,21 +144,31 @@ var GB=(function(){
 })();
 /* ---------- 存档（本地 + 账号双写） ---------- */
 var KEY="sw.lightsout.v1";
-function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};return{lv:Math.max(1,parseInt(s.lv,10)||1),flags:Array.isArray(s.flags)?s.flags:[]}}catch(e){return{lv:1,flags:[]}}}
-function saveGame(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};
+  return{lv:Math.max(1,parseInt(s.lv,10)||1),flags:Array.isArray(s.flags)?s.flags:[],daily:(s.daily&&typeof s.daily==="object")?s.daily:{}}}catch(e){return{lv:1,flags:[],daily:{}}}}
+function pruneDaily(){var ks=Object.keys(save.daily).sort();while(ks.length>30)delete save.daily[ks.shift()]}
+function saveGame(){pruneDaily();try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}
   if(GB.available)GB.saveState("lights-out",save).catch(function(){});}
 var save=loadSave();
+pruneDaily();
 function syncSaveFromServer(){
   if(!GB.available||!GB.loadState)return;
   GB.loadState("lights-out").then(function(res){
     if(!res||!res.stateJson)return;
     try{
-      var r=JSON.parse(res.stateJson),rlv=Math.max(1,parseInt(r.lv,10)||1),lvUp=false,starUp=false;
+      var r=JSON.parse(res.stateJson),rlv=Math.max(1,parseInt(r.lv,10)||1),lvUp=false,starUp=false,dailyCh=false;
       if(rlv>save.lv){save.lv=rlv;lv=rlv;lvUp=true}
       if(Array.isArray(r.flags)){
         for(var i=0;i<r.flags.length;i++)if(r.flags[i]&&!flags[i]){flags[i]=true;save.flags=flags;starUp=true}
       }
-      if(lvUp||starUp){saveGame();if(lvUp)startLevel();else paint()}
+      // 每日挑战：同日取更优（done/★ 优先，步数短者胜）
+      if(r.daily&&typeof r.daily==="object"){for(var dk in r.daily){var rr=r.daily[dk];
+        if(!rr||typeof rr!=="object")continue;
+        var m=save.daily[dk]||(save.daily[dk]={done:false,moves:0,ref:0,star:false});
+        var rm=+rr.moves||0;if(rr.done)m.done=true;if(rr.star)m.star=true;
+        if(rm>0&&(!m.moves||rm<m.moves))m.moves=rm;dailyCh=true}
+        pruneDaily()}
+      if(lvUp||starUp||dailyCh){saveGame();if(dailyMode)paint();else if(lvUp)startLevel();else paint()}
     }catch(e){}
   }).catch(function(){});
 }
@@ -193,13 +206,22 @@ function syncLevelsFromServer(){
   GB.getLevels("lights-out").then(function(res){
     var list=parseLevels(res);
     if(!list)return;
-    if(applyLevels(list,res.version||0))startLevel();
+    if(applyLevels(list,res.version||0)&&!dailyMode)startLevel();
   }).catch(function(){});
 }
 /* ---------- 状态 ---------- */
 var N=5,lamp=[],lit=[],moves=0,ref=0,lv=save.lv,flags=save.flags,done=false,builtN=5;
+var dailyMode=false,dailyDate="";
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+/* 本地 UTC+8 日期，每日挑战唯一时间源 */
+function todayStr(){return new Date(Date.now()+8*3600e3).toISOString().slice(0,10).replace(/-/g,"")}
+function updDailyBtn(){
+  var ds=todayStr(),rec=save.daily[ds],fin=!!(rec&&rec.done),b=$("btnDaily");
+  b.textContent="每日 "+ds.slice(4,6)+"-"+ds.slice(6)+(fin?" ✓":"");
+  b.classList.toggle("on",fin||dailyMode);
+}
+function starOn(){return dailyMode?!!(save.daily[dailyDate]&&save.daily[dailyDate].star):!!flags[lv-1]}
 function kOf(n){return Math.min(20,6+n)}
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 /* ---------- 生成：从全灭反向执行 k 步，参考最优 = 出现奇数次的格数 ---------- */
@@ -224,7 +246,12 @@ function flipSim(n){
   if(c>0)toggle(n-1);if(c<N-1)toggle(n+1);
 }
 function toggle(n){lit[n]=!lit[n]}
-/* ---------- 参考最优：GF(2) 解 A·x=lit 的权重（自由变量取 0；无解返回 -1） ---------- */
+/* ---------- 参考最优 + 每日挑战纯函数块 ---------- */
+/*DAILY-PURE-BEGIN*/
+function hashKey(s){var h=0;for(var i=0;i<s.length;i++)h+=s.charCodeAt(i);return h%1000}
+function seedForDate(ds){return(+ds)*31+hashKey("lights-out")}
+function prng32(a){return function(){a=(a*1664525+1013904223)>>>0;return a/4294967296}}
+/* 参考最优：GF(2) 解 A·x=lit 的权重（自由变量取 0；无解返回 -1） */
 function refOf(l,n){
   var m=n*n,A=[],i,j,c,r,p,w=0;
   for(i=0;i<m;i++){r=(i/n)|0;c=i%n;var row=new Array(m+1);
@@ -238,6 +265,22 @@ function refOf(l,n){
   for(r=0;r<m;r++){if(r<w){if(A[r][m])cnt++}else if(A[r][m])return -1}
   return cnt;
 }
+function flipCell(l,n,N){var r=(n/N)|0,c=n%N;l[n]=!l[n];
+  if(r>0)l[n-N]=!l[n-N];if(r<N-1)l[n+N]=!l[n+N];if(c>0)l[n-1]=!l[n-1];if(c<N-1)l[n+1]=!l[n+1]}
+/* 每日：seed→k=6+seed%15，反向走 k 步保证可解 */
+function dailyGenerate(seed){
+  var N=5,k=6+(seed%15),rnd=prng32(seed>>>0),lit=[],i,s,n;
+  lit=[];for(i=0;i<N*N;i++)lit.push(false);
+  for(s=0;s<k;s++){n=Math.floor(rnd()*N*N);flipCell(lit,n,N)}
+  return{lit:lit,ref:refOf(lit,N)};
+}
+/* 每日挑战：按日期 seed 生成，失败 seed+1 重试 */
+function dailyBoardFor(ds,tries){
+  var t=tries||8,s=seedForDate(ds),r=null,i;
+  for(i=0;i<t;i++){r=dailyGenerate(s+i);if(r.ref>=3)break;r=null}
+  return r?{lit:r.lit,ref:r.ref,seed:s}:null;
+}
+/*DAILY-PURE-END*/
 /* ---------- 渲染 ---------- */
 function buildGrid(){
   var g=$("grid");g.innerHTML="";lamp=[];
@@ -256,31 +299,46 @@ function buildGrid(){
 }
 function paint(){
   for(var i=0;i<N*N;i++){
-    lamp[i].className="lamp"+(lit[i]?" on":"")+(flags[lv-1]?" star":"");
+    lamp[i].className="lamp"+(lit[i]?" on":"")+(starOn()?" star":"");
   }
 }
 function updStats(){
   $("stLv").textContent=lv;
   $("stMoves").textContent=moves;
   $("stRef").textContent=ref;
-  $("btnPrev").disabled=lv<=1;
+  $("btnPrev").disabled=dailyMode||lv<=1;
+  $("btnReset").textContent=dailyMode?"重玩本日":"重开本关";
 }
 function checkWin(){
   var allOff=true;
   for(var i=0;i<N*N;i++)if(lit[i]){allOff=false;break}
   if(!allOff)return;
   done=true;
-  if(moves<=ref)flags[lv-1]=true;
-  saveGame();paint();
-  // 成绩上报（最高关卡 desc：越大越好；附 ★ 数）
-  if(GB.available)GB.reportScore("lights-out",{metricValue:lv,metricExtra:flags.filter(Boolean).length}).catch(function(){});
-  $("ovTitle").textContent="第 "+lv+" 关 过关！";
-  $("ovDesc").innerHTML="用步 <b>"+moves+"</b> / 参考最优 "+ref+
-    (moves<=ref?"<br>★ 最优解！":"<br>试试更少的步数拿 ★")+
-    (lv>50?"<br>无尽模式 · 随机阵型":"");
-  $("ovBtn").textContent="下一关";
+  if(dailyMode){
+    // 每日挑战：只写本地/账号存档，不进排行榜
+    var rec=save.daily[dailyDate]||(save.daily[dailyDate]={done:false,moves:0,ref:ref,star:false});
+    rec.done=true;
+    if(!rec.moves||moves<rec.moves)rec.moves=moves;
+    if(moves<=ref)rec.star=true;
+    saveGame();paint();
+    $("ovTitle").textContent="每日挑战完成 ✓";
+    $("ovDesc").innerHTML="每日 "+dailyDate.slice(4,6)+"-"+dailyDate.slice(6)+
+      "<br>用步 <b>"+moves+"</b> / 参考最优 "+ref+(moves<=ref?"<br>★ 最优解！":"");
+    $("ovBtn").textContent="再玩本日";
+  }else{
+    if(moves<=ref)flags[lv-1]=true;
+    saveGame();paint();
+    // 成绩上报（最高关卡 desc：越大越好；附 ★ 数）
+    if(GB.available)GB.reportScore("lights-out",{metricValue:lv,metricExtra:flags.filter(Boolean).length}).catch(function(){});
+    $("ovTitle").textContent="第 "+lv+" 关 过关！";
+    $("ovDesc").innerHTML="用步 <b>"+moves+"</b> / 参考最优 "+ref+
+      (moves<=ref?"<br>★ 最优解！":"<br>试试更少的步数拿 ★")+
+      (lv>50?"<br>无尽模式 · 随机阵型":"");
+    $("ovBtn").textContent="下一关";
+  }
   $("overlay").classList.add("show");
   say("漂亮！"+(moves<=ref?"最优过关":"用了 "+moves+" 步"));
+  updDailyBtn();
 }
 function startLevel(){
   var d=LEVELS.length&&lv<=LEVELS.length?LEVELS[lv-1]:null;
@@ -293,16 +351,30 @@ function startLevel(){
   $("stLv").textContent=endless?lv+" · 无尽":lv;
   say("第 "+lv+" 关 · 参考最优 "+ref+" 步");
 }
+/* 每日挑战：本地 seed 生成，绕过 DB 关卡 */
+function startDaily(){
+  var ds=todayStr(),b=dailyBoardFor(ds);
+  if(!b){say("每日挑战题目生成失败，请稍后重试");return}
+  dailyMode=true;dailyDate=ds;
+  N=5;lit=b.lit.slice();ref=b.ref;moves=0;done=false;
+  if(builtN!==N)buildGrid();
+  paint();updStats();
+  $("stLv").textContent="每日 "+ds.slice(4,6)+"-"+ds.slice(6);
+  say("每日挑战 · 参考最优 "+ref+" 步");
+  updDailyBtn();
+}
 /* ---------- 输入 ---------- */
-$("btnReset").addEventListener("click",startLevel);
+$("btnReset").addEventListener("click",function(){dailyMode?startDaily():startLevel()});
 $("btnPrev").addEventListener("click",function(){
-  if(lv>1){lv--;saveGame();startLevel()}
+  if(!dailyMode&&lv>1){lv--;saveGame();startLevel()}
 });
 $("ovBtn").addEventListener("click",function(){
   $("overlay").classList.remove("show");
-  lv++;saveGame();startLevel();
+  if(dailyMode)startDaily();
+  else{lv++;saveGame();startLevel()}
 });
-buildGrid();startLevel();
+$("btnDaily").addEventListener("click",startDaily);
+buildGrid();startLevel();updDailyBtn();
 syncSaveFromServer();syncLevelsFromServer();
 })();
 </script>
