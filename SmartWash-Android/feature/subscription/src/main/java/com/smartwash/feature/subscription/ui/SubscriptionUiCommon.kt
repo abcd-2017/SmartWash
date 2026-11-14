@@ -21,7 +21,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -141,16 +145,30 @@ internal fun SubscriptionDatePickerDialog(
         ?.toInstant()
         ?.toEpochMilli()
     val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+    // 未选日期直接点「确定」时给出校验提示（原实现静默吞掉回调，用户以为按钮坏了——评审 P2）
+    var showSelectDateHint by remember { mutableStateOf(false) }
     // 对齐清氧规范：弹窗圆角收敛到 radiusLg 16dp（M3 默认 28dp 不在 §2.3 五档内），
     // 容器走 surface 令牌 + tonalElevation 归零（防 M3 默认叠加色偏灰）
     val datePickerColors = DatePickerDefaults.colors(
         containerColor = MaterialTheme.colorScheme.surface,
     )
+    // 选择日期后清除校验提示
+    LaunchedEffect(pickerState.selectedDateMillis) {
+        if (pickerState.selectedDateMillis != null) showSelectDateHint = false
+    }
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             DialogTextAction(text = stringResource(R.string.subscription_date_confirm)) {
-                SubscriptionRules.localDateFromPickerMillis(pickerState.selectedDateMillis)?.let(onConfirm)
+                val selectedMillis = pickerState.selectedDateMillis
+                if (selectedMillis == null) {
+                    showSelectDateHint = true
+                } else {
+                    SubscriptionRules.localDateFromPickerMillis(selectedMillis)?.let {
+                        showSelectDateHint = false
+                        onConfirm(it)
+                    }
+                }
             }
         },
         dismissButton = {
@@ -161,6 +179,14 @@ internal fun SubscriptionDatePickerDialog(
         colors = datePickerColors,
     ) {
         DatePicker(state = pickerState, colors = datePickerColors)
+        if (showSelectDateHint) {
+            Text(
+                text = stringResource(R.string.subscription_date_select_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.colorScheme.error,
+                modifier = Modifier.padding(top = AppDimens.spaceXs),
+            )
+        }
     }
 }
 

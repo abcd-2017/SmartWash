@@ -613,31 +613,49 @@ private fun DetailContent(
                         }
                     }
                     else -> {
-                        InfoRow(
-                            label = stringResource(R.string.subscription_stats_usage_format, statsItem?.usageCount90d ?: 0),
-                            value = stringResource(R.string.subscription_stats_monthly_format, SubscriptionRules.formatAmount(statsItem?.monthlyNormalized ?: 0.0)),
-                            valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                            valueColor = AppColors.colorScheme.textGreen,
-                        )
-                        val perUse = statsItem?.perUseCost
-                        Text(
-                            text = if (perUse != null) {
-                                stringResource(R.string.subscription_stats_per_use_format, SubscriptionRules.formatAmount(perUse))
-                            } else {
-                                stringResource(R.string.subscription_stats_per_use_none)
-                            },
-                            style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                            // 占位语义空值提示统一收敛 textSecondary（audit-15 #15，与 #7/#8 同口径）
-                            color = if (perUse != null) AppColors.colorScheme.textPrimary else AppColors.colorScheme.textSecondary,
-                            modifier = Modifier.padding(vertical = AppDimens.spaceSm),
-                        )
+                        // 后端统计仅含进行中订阅（stats.items 过滤 ACTIVE）：非 ACTIVE 时兜底 0 值会与
+                        // 同页打卡列表矛盾（评审 P1）。端侧改为口径说明占位，不改后端契约。
+                        if (status != SubscriptionStatus.ACTIVE) {
+                            Text(
+                                text = stringResource(R.string.subscription_stats_inactive_note),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.colorScheme.textSecondary,
+                                modifier = Modifier.padding(vertical = AppDimens.spaceSm),
+                            )
+                        } else {
+                            InfoRow(
+                                label = stringResource(R.string.subscription_stats_usage_format, statsItem?.usageCount90d ?: 0),
+                                value = stringResource(R.string.subscription_stats_monthly_format, SubscriptionRules.formatAmount(statsItem?.monthlyNormalized ?: 0.0)),
+                                valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                                valueColor = AppColors.colorScheme.textGreen,
+                            )
+                            val perUse = statsItem?.perUseCost
+                            Text(
+                                text = if (perUse != null) {
+                                    stringResource(R.string.subscription_stats_per_use_format, SubscriptionRules.formatAmount(perUse))
+                                } else {
+                                    stringResource(R.string.subscription_stats_per_use_none)
+                                },
+                                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                                // 占位语义空值提示统一收敛 textSecondary（audit-15 #15，与 #7/#8 同口径）
+                                color = if (perUse != null) AppColors.colorScheme.textPrimary else AppColors.colorScheme.textSecondary,
+                                modifier = Modifier.padding(vertical = AppDimens.spaceSm),
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // ---------- 使用打卡（卡头：标题 + 打卡按钮 + 非数据态块；数据行铺平为 items，见下） ----------
+        // ---------- 使用打卡（标题 + 打卡按钮 + 非数据态块 + 使用记录行，全部同一卡容器） ----------
         item(key = "usage") {
+            val today = remember { LocalDate.now() }
+            // 当天已打卡：按钮转禁用态（后端同日唯一，重复点击必吃报错——评审 P2）
+            val checkedInToday = usageItems.itemSnapshotList.any { log ->
+                log != null && SubscriptionRules.parseDate(log.usageDate) == today
+            }
+            val usageCount = usageItems.itemCount
+            val usageLogs = usageItems.itemSnapshotList.filterNotNull()
             GroupCard(modifier = Modifier.padding(bottom = AppDimens.cardSpacing)) {
                 Text(
                     text = stringResource(R.string.subscription_usage_title),
@@ -647,8 +665,13 @@ private fun DetailContent(
                 )
                 if (!terminal) {
                     AppButton(
-                        text = stringResource(R.string.subscription_usage_check_in),
+                        text = stringResource(
+                            if (checkedInToday) R.string.subscription_usage_check_in_done
+                            else R.string.subscription_usage_check_in
+                        ),
                         onClick = viewModel::checkIn,
+                        // 刷新会话期间同样禁用，堵住「列表清空→新数据到达」间隙的重复点击窗口
+                        enabled = !checkedInToday && !usageRefreshSession,
                         loading = checkInState is RequestState.Loading,
                     )
                     Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -658,47 +681,31 @@ private fun DetailContent(
                     refreshSession = usageRefreshSession,
                     everLoaded = usageEverLoaded,
                 )
-            }
-        }
-
-        // ---------- 使用记录行（铺平虚拟化 + 稳定 key=usageId：DESIGN-SPEC §8 列表必须虚拟化，audit-15 #11） ----------
-        val usageCount = usageItems.itemCount
-        if (usageCount > 0) {
-            val appendLoading = usageItems.loadState.append is LoadState.Loading
-            items(
-                count = usageCount,
-                key = { index -> usageItems[index]?.usageId ?: -1L - index },
-            ) { index ->
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    if (index > 0) {
-                        HorizontalDivider(
-                            thickness = 0.5.dp,
-                            color = AppColors.colorScheme.hairline,
-                        )
-                    }
-                    usageItems[index]?.let { log ->
-                        UsageRow(
-                            log = log,
-                            terminal = terminal,
-                            onUndo = onShowUndoDialog,
-                        )
-                    }
-                    // 末行（且无 append footer 时）与下一卡之间承接原卡间距
-                    if (index == usageCount - 1 && !appendLoading) {
-                        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+                // 使用记录行回归「使用打卡」卡内（评审 P2：原铺平为独立 items 后行脱离卡片容器，
+                // 发丝线落在卡外违反 §3.4「分隔线只在同一卡片内部」；记录量级为人工打卡，非长列表）
+                if (usageCount > 0 && usageLogs.isNotEmpty()) {
+                    Column {
+                        usageLogs.forEachIndexed { index, log ->
+                            if (index > 0) {
+                                HorizontalDivider(
+                                    thickness = 0.5.dp,
+                                    color = AppColors.colorScheme.hairline,
+                                )
+                            }
+                            UsageRow(
+                                log = log,
+                                terminal = terminal,
+                                onUndo = onShowUndoDialog,
+                            )
+                        }
                     }
                 }
-            }
-            if (appendLoading) {
-                item(key = "usage_footer") {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        com.smartwash.common.ui.components.SkeletonBlock(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(14.dp)
-                        )
-                        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
-                    }
+                if (usageItems.loadState.append is LoadState.Loading) {
+                    com.smartwash.common.ui.components.SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(14.dp)
+                    )
                 }
             }
         }

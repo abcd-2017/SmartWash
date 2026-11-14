@@ -7,7 +7,6 @@ import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.review.R
 import com.smartwash.feature.review.ReviewConstant
-import com.smartwash.feature.review.network.ReviewCardVo
 import com.smartwash.feature.review.network.ReviewQueueVo
 import com.smartwash.feature.review.repository.ReviewRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -82,9 +81,6 @@ class ReviewQueueViewModel @Inject constructor(
         }
         return titles
     }
-
-    /** 队列条目（复习入口按卡片定位） */
-    fun cardAt(index: Int): ReviewCardVo? = _state.value.queue?.cards?.getOrNull(index)
 
     private companion object {
         const val TAG = "ReviewQueueViewModel"

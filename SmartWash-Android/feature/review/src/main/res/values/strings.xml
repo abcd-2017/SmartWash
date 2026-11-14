@@ -10,6 +10,7 @@
     <string name="review_queue_count_format">今日 %1$d 张</string>
     <string name="review_queue_breakdown_format">到期 %1$d 张 · 新卡 %2$d 张</string>
     <string name="review_queue_action_start">开始复习</string>
+    <string name="review_queue_action_materials">资料</string>
     <string name="review_queue_empty_message">今日没有需要复习的卡片，先去资料页建卡吧</string>
     <string name="review_queue_empty_action">去资料页建卡</string>
     <string name="review_card_new">新卡</string>
