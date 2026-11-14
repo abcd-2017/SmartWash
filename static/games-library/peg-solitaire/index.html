@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>孔明棋</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（棋盘/孔位/棋子）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-board:#EAE2D0;--g-board2:#DFD5BE;--g-grid:#C6B998;--g-cell:#B8A87F;--g-line:#8D7B56;--g-card:#8A5A33;--g-card2:#C89B6C;--g-bshade:rgba(20,40,30,.10);color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-board:#2A2620;--g-board2:#241F1A;--g-grid:#3A342B;--g-cell:#171310;--g-line:#5A4F3C;--g-card:#5A3A22;--g-card2:#9A6B42;--g-bshade:rgba(0,0,0,.4);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .boardbox { background: var(--g-board); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px; }
+  .board { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cell { position: relative; aspect-ratio: 1; }
+  .cell.void { visibility: hidden; }
+  .holebg { position: absolute; inset: 9%; border-radius: 50%; background: var(--g-cell); box-shadow: inset 0 2px 4px var(--g-bshade); }
+  .peg { position: absolute; left: 50%; top: 50%; width: 72%; height: 72%; transform: translate(-50%,-50%); border-radius: 50%;
+         background: radial-gradient(circle at 32% 28%, var(--g-card2), var(--g-card) 72%);
+         box-shadow: inset 0 -2px 3px var(--g-bshade), 0 2px 4px var(--g-bshade); }
+  .cell.sel .peg { box-shadow: 0 0 0 3px var(--g-primary), 0 2px 4px var(--g-bshade); }
+  .cell.hint .holebg { box-shadow: inset 0 2px 4px var(--g-bshade), 0 0 0 3px var(--g-primary); }
+  .cell.hint::after { content: ""; position: absolute; left: 50%; top: 50%; width: 26%; height: 26%; transform: translate(-50%,-50%);
+                      border-radius: 50%; background: var(--g-primary); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 10px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: var(--g-on-primary);
+    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
+  .panel .btn { width: 100%; margin-top: 8px; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 46vh; overflow-y: auto; }
+  .lvgrid button {
+    min-height: 44px; border: 0; border-radius: 10px;
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .lvgrid button:disabled { opacity: .35; cursor: default; }
+  .lvgrid button.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lvgrid button.cur { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">跳子棋 · 隔子跳吃 · 把棋子减到目标数</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/104</span></div>
+    <div class="stat"><span class="label">剩余</span><span class="val" id="stLeft">0</span></div>
+    <div class="stat"><span class="label">目标</span><span class="val" id="stGoal">0</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val" id="stMoves">0</span></div>
+  </div>
+  <div class="boardbox"><div class="board" id="board"></div></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点选棋子，再点跳过相邻棋子后的空位</p>
+  <div class="tools">
+    <button class="btn ghost" id="btnUndo">撤销</button>
+    <button class="btn ghost" id="btnReset">重玩本关</button>
+    <button class="btn" id="btnNext" hidden>下一关</button>
+    <button class="btn ghost" id="btnPick">选关</button>
+  </div>
+  <p class="foot">被跳过的棋子移除 · 目标剩子达成即过关 · 目标为 1 时最后一子需落在盘心</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel" id="panel"></div>
+</div>
+<script>
+//PG-PARSER-BEGIN
+// 解析与校验（纯函数，供浏览器与单测共用；口径与 docs/level-gen/tools/peg-solitaire/lib.mjs 一致）
+var PG_PARSE = (function(){
+  function popcountStr(b){var c=0;for(var i=0;i<b.length;i++)if(b[i]==="1")c++;return c;}
+  function validData(d){
+    if(!d||typeof d!=="object"||Array.isArray(d))return false;
+    var b=d.board,g=d.goal;
+    if(typeof b!=="string"||b.length!==33)return false;
+    for(var i=0;i<33;i++)if(b[i]!=="0"&&b[i]!=="1")return false;
+    if(!Number.isInteger(g)||g<1||g>31)return false;
+    if(popcountStr(b)<=g)return false;
+    return true;
+  }
+  function parseLevels(res){
+    if(!res||!Array.isArray(res.levels)||!res.levels.length)return false;
+    var list=[];
+    for(var i=0;i<res.levels.length;i++){
+      var item=res.levels[i];
+      if(!item||typeof item.dataJson!=="string")return false;
+      var d;
+      try{d=JSON.parse(item.dataJson);}catch(e){return false;}
+      if(!validData(d))return false;
+      var name=(typeof item.name==="string"&&item.name)?item.name:(typeof d.name==="string"&&d.name?d.name:("第"+(i+1)+"关"));
+      if(name.length>32)return false;
+      list.push({name:name,board:d.board,goal:d.goal});
+    }
+    return list;
+  }
+  return {validData:validData,parseLevels:parseLevels};
+})();
+//PG-PARSER-END
+</script>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 数据 ---------- */
+var DEFAULT_LEVELS = [{"name":"小试锋芒 · 01","board":"000000011010000011000001100011011","goal":6},{"name":"小试锋芒 · 02","board":"010110110000001011000011000010000","goal":5},{"name":"小试锋芒 · 03","board":"100000101000010111000010110100001","goal":6},{"name":"小试锋芒 · 04","board":"001010001101001011010000001011000","goal":6},{"name":"小试锋芒 · 05","board":"010010000110000010001110110010100","goal":6},{"name":"小试锋芒 · 06","board":"000110001100010110110110000010000","goal":5},{"name":"小试锋芒 · 07","board":"000000111101001110110001010001000","goal":5},{"name":"小试锋芒 · 08","board":"010010000001001101100001010010000","goal":6},{"name":"小试锋芒 · 09","board":"001100001110000001000001011010100","goal":6},{"name":"小试锋芒 · 10","board":"011110000110000010000000100110100","goal":6},{"name":"小试锋芒 · 11","board":"011001110001001110000101000011100","goal":5},{"name":"小试锋芒 · 12","board":"000001010011100011010001100011000","goal":6},{"name":"小试锋芒 · 13","board":"000110101100001110111000000000000","goal":5},{"name":"小试锋芒 · 14","board":"000011000010001100110110111000001","goal":6},{"name":"小试锋芒 · 15","board":"000001000001010111100111100101010","goal":6},{"name":"小试锋芒 · 16","board":"100000110000000101000011010010100","goal":6},{"name":"小试锋芒 · 17","board":"011000010001100011100010001100100","goal":5},{"name":"小试锋芒 · 18","board":"000001111111001000010011100101000","goal":5},{"name":"小试锋芒 · 19","board":"000001011000011011100010010000000","goal":5},{"name":"小试锋芒 · 20","board":"100101000111011101100100000000000","goal":5},{"name":"渐入佳境 · 01","board":"110000011111001001100111100111000","goal":4},{"name":"渐入佳境 · 02","board":"110110001001001110111100001110010","goal":4},{"name":"渐入佳境 · 03","board":"111001000001101111010011100111100","goal":3},{"name":"渐入佳境 · 04","board":"000011011111001100110001110101001","goal":3},{"name":"渐入佳境 · 05","board":"111111010111011001000000001101100","goal":3},{"name":"渐入佳境 · 06","board":"010011001111011111100100000011011","goal":4},{"name":"渐入佳境 · 07","board":"110111000100001011100101110111111","goal":3},{"name":"渐入佳境 · 08","board":"110111010101001011000111101110001","goal":4},{"name":"渐入佳境 · 09","board":"110001011001110101000101110011010","goal":4},{"name":"渐入佳境 · 10","board":"011110000110101110110111100101011","goal":3},{"name":"渐入佳境 · 11","board":"000110111110111110010100011010110","goal":4},{"name":"渐入佳境 · 12","board":"000010011100001111100011100111100","goal":4},{"name":"渐入佳境 · 13","board":"010111001011011101101111110000000","goal":4},{"name":"渐入佳境 · 14","board":"011001101011010010111101010110000","goal":4},{"name":"渐入佳境 · 15","board":"100101011001001111111000111111001","goal":4},{"name":"渐入佳境 · 16","board":"110111010010001011100101110000010","goal":3},{"name":"渐入佳境 · 17","board":"110010111101111000110011110110000","goal":3},{"name":"渐入佳境 · 18","board":"110111000010011100001101000111101","goal":4},{"name":"渐入佳境 · 19","board":"011000001111101011110001111011010","goal":4},{"name":"渐入佳境 · 20","board":"110101111100001111000101100011001","goal":4},{"name":"渐入佳境 · 21","board":"100100010011001101101100000111110","goal":4},{"name":"渐入佳境 · 22","board":"011110110011011111100101100101100","goal":4},{"name":"孤子深入 · 01","board":"101111011001001111010111010111111","goal":3},{"name":"孤子深入 · 02","board":"000111111110011111111110011110110","goal":3},{"name":"孤子深入 · 03","board":"110110010111111111110110010110111","goal":2},{"name":"孤子深入 · 04","board":"001110011111111011110101111111001","goal":3},{"name":"孤子深入 · 05","board":"010011110101111111111101011111100","goal":2},{"name":"孤子深入 · 06","board":"011111100011011110110010110111110","goal":2},{"name":"孤子深入 · 07","board":"110111010111001111100101110110110","goal":2},{"name":"孤子深入 · 08","board":"010110110101111011011011101111110","goal":2},{"name":"孤子深入 · 09","board":"000111110011111110110111111011010","goal":3},{"name":"孤子深入 · 10","board":"110111110111001110011011110111110","goal":3},{"name":"孤子深入 · 11","board":"011101011011011111011111011011011","goal":3},{"name":"孤子深入 · 12","board":"011111110100110111111111010111011","goal":3},{"name":"孤子深入 · 13","board":"110111101111011111100111010111011","goal":3},{"name":"孤子深入 · 14","board":"011111111011001111111101110111110","goal":2},{"name":"孤子深入 · 15","board":"011011110110101111110110010101110","goal":2},{"name":"孤子深入 · 16","board":"011111110111111111110101011010000","goal":2},{"name":"孤子深入 · 17","board":"011110110111101111110001011111000","goal":2},{"name":"孤子深入 · 18","board":"110111110110011101100101011111110","goal":3},{"name":"孤子深入 · 19","board":"000011110111101111111101100111011","goal":2},{"name":"孤子深入 · 20","board":"011111111110011001100101110110101","goal":3},{"name":"孤子深入 · 21","board":"110011111101111111011011010111101","goal":2},{"name":"孤子深入 · 22","board":"110101101101101011110110010111110","goal":3},{"name":"孤子深入 · 23","board":"110110111101110111111111100111010","goal":2},{"name":"孤子深入 · 24","board":"010110011100011101111111111011011","goal":3},{"name":"孤子深入 · 25","board":"010011111001111110110101110111110","goal":3},{"name":"孤子深入 · 26","board":"110111110111011111111011011111000","goal":2},{"name":"绝处逢生 · 01","board":"110111010111011111111110011111111","goal":1},{"name":"绝处逢生 · 02","board":"111111111101111111111101011111110","goal":2},{"name":"绝处逢生 · 03","board":"011111111101011111111101111111010","goal":1},{"name":"绝处逢生 · 04","board":"111111101101111111110101011111101","goal":2},{"name":"绝处逢生 · 05","board":"110111110111111111111111010111111","goal":1},{"name":"绝处逢生 · 06","board":"011111011111111111111111011001110","goal":2},{"name":"绝处逢生 · 07","board":"011110111111111011111111010111110","goal":2},{"name":"绝处逢生 · 08","board":"011011111111111110110111111111011","goal":2},{"name":"绝处逢生 · 09","board":"110101011111111111110111110111110","goal":1},{"name":"绝处逢生 · 10","board":"111011111101111111111101011111100","goal":1},{"name":"绝处逢生 · 11","board":"111111011111011111111101110110011","goal":1},{"name":"绝处逢生 · 12","board":"111111110101011111111111110111110","goal":2},{"name":"绝处逢生 · 13","board":"110111111111111001111111010111011","goal":2},{"name":"绝处逢生 · 14","board":"111110110111011111110111111101110","goal":1},{"name":"绝处逢生 · 15","board":"011011111111001111111101011111111","goal":2},{"name":"绝处逢生 · 16","board":"110111011111011011111111011111110","goal":2},{"name":"绝处逢生 · 17","board":"111111011101111111110110101111110","goal":1},{"name":"绝处逢生 · 18","board":"011111111101011111101011110111111","goal":1},{"name":"绝处逢生 · 19","board":"011111110101111111110111111111011","goal":2},{"name":"绝处逢生 · 20","board":"010111111101011101111011111111111","goal":2},{"name":"绝处逢生 · 21","board":"011110111101111111111111111111000","goal":1},{"name":"绝处逢生 · 22","board":"011111011101111111111101111111101","goal":1},{"name":"绝处逢生 · 23","board":"110111011111111111110111011101011","goal":2},{"name":"绝处逢生 · 24","board":"011111111101111111110101111011110","goal":2},{"name":"一线生机 · 01","board":"111111110111101111111101111111011","goal":1},{"name":"一线生机 · 02","board":"011111111101111111111101110111111","goal":1},{"name":"一线生机 · 03","board":"111111111101111111111101110111011","goal":1},{"name":"一线生机 · 04","board":"011111110111011111111111011111111","goal":1},{"name":"一线生机 · 05","board":"111111111111011011111111110111011","goal":1},{"name":"一线生机 · 06","board":"111111011011111011111111111111110","goal":1},{"name":"一线生机 · 07","board":"011111111101111111110101111111111","goal":1},{"name":"一线生机 · 08","board":"110111110111111111110111011111111","goal":1},{"name":"一线生机 · 09","board":"111111110111011111111111011111011","goal":1},{"name":"一线生机 · 10","board":"111111011111111111111101011111111","goal":1},{"name":"一线生机 · 11","board":"111111110111111111111101111111110","goal":1},{"name":"一线生机 · 12","board":"011111101101111111111111111111110","goal":1}];
+var LEVELS=DEFAULT_LEVELS;
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底） ---------- */
+var LEVELS_KEY="sw.peg-solitaire.v1.levels",LEVELS_VER_KEY="sw.peg-solitaire.v1.levels.ver";
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("peg-solitaire").then(function(res){
+    var list=PG_PARSE.parseLevels(res);
+    if(!list)return;                        // 任一条非法整批放弃
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      startLevel(cur);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档 ---------- */
+var KEY="sw.peg-solitaire.v1";
+function loadSave(){
+  try{
+    var s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s==="object"){
+      var done={};
+      if(s.done&&typeof s.done==="object"){
+        for(var k in s.done){
+          var m=parseInt(s.done[k]&&s.done[k].m,10),st=parseInt(s.done[k]&&s.done[k].s,10);
+          if(m>=0)done[k]={m:m,s:st>0?st:1};
+        }
+      }
+      return {lv:Math.max(0,parseInt(s.lv,10)||0),done:done};
+    }
+  }catch(e){}
+  return {lv:0,done:{}};
+}
+function save(){
+  var data={lv:saveData.lv,done:doneSave};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("peg-solitaire",data).catch(function(){});
+}
+var saveData=loadSave();
+var doneSave=saveData.done;
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("peg-solitaire").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson),changed=false;
+      if(remote.done&&typeof remote.done==="object"){
+        for(var k in remote.done){
+          var rm=parseInt(remote.done[k]&&remote.done[k].m,10),rs=parseInt(remote.done[k]&&remote.done[k].s,10);
+          if(!(rm>=0))continue;
+          var mine=doneSave[k];
+          if(!mine||rm<mine.m||(rm===mine.m&&rs>mine.s)){doneSave[k]={m:rm,s:rs>0?rs:1};changed=true;}
+        }
+      }
+      var rl=parseInt(remote.lv,10)||0;
+      if(rl>saveData.lv){saveData.lv=rl;changed=true;}
+      if(changed){
+        var n=Math.min(Math.max(saveData.lv,0),unlockedMax());
+        startLevel(n);
+        save();
+      }
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 棋盘编码（33 孔，行优先，盘心 16） ---------- */
+var HX=[2,3,4,2,3,4,0,1,2,3,4,5,6,0,1,2,3,4,5,6,0,1,2,3,4,5,6,2,3,4,2,3,4];
+var HY=[0,0,0,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,3,3,4,4,4,4,4,4,4,5,5,5,6,6,6];
+var CENTER=16;
+var DX=[0,1,0,-1],DY=[-1,0,1,0];
+var TRIPLES=[];
+(function(){
+  var idx=[];
+  for(var y=0;y<7;y++){idx.push([]);for(var x=0;x<7;x++)idx[y].push(-1);}
+  for(var i=0;i<33;i++)idx[HY[i]][HX[i]]=i;
+  for(var f=0;f<33;f++){
+    for(var d=0;d<4;d++){
+      var jx=HX[f]+DX[d],jy=HY[f]+DY[d],kx=HX[f]+2*DX[d],ky=HY[f]+2*DY[d];
+      if(jx<0||jy<0||jx>=7||jy>=7||kx<0||ky<0||kx>=7||ky>=7)continue;
+      var j=idx[jy][jx],k=idx[ky][kx];
+      if(j<0||k<0)continue;
+      TRIPLES.push([f,j,k]);
+    }
+  }
+})();
+function pegCount(b){var c=0;for(var i=0;i<33;i++)if(b[i]==="1")c++;return c;}
+function targetsOf(b,from){
+  var out=[];
+  for(var t=0;t<TRIPLES.length;t++){
+    var tr=TRIPLES[t];
+    if(tr[0]!==from)continue;
+    if(b[tr[0]]==="1"&&b[tr[1]]==="1"&&b[tr[2]]==="0")out.push(tr[2]);
+  }
+  return out;
+}
+function anyMove(b){
+  for(var t=0;t<TRIPLES.length;t++){
+    var tr=TRIPLES[t];
+    if(b[tr[0]]==="1"&&b[tr[1]]==="1"&&b[tr[2]]==="0")return true;
+  }
+  return false;
+}
+/* ---------- 状态 ---------- */
+var boardEl=document.getElementById("board"),msgEl=document.getElementById("msg");
+function $(id){return document.getElementById(id);}
+function say(t){msgEl.textContent=t;}
+var cur=0,goal=1,board="",initial="",selected=-1,history=[],moves=0,undos=0,won=false;
+var cellEls=[];
+(function(){
+  for(var slot=0;slot<49;slot++){
+    var y=(slot/7)|0,x=slot%7;
+    var d=document.createElement("div");
+    var hole=-1;
+    for(var i=0;i<33;i++)if(HX[i]===x&&HY[i]===y){hole=i;break;}
+    if(hole<0){d.className="cell void";d.setAttribute("aria-hidden","true");boardEl.appendChild(d);cellEls.push(null);continue;}
+    d.className="cell";d.setAttribute("data-i",String(hole));
+    d.innerHTML='<div class="holebg"></div><div class="peg" hidden></div>';
+    boardEl.appendChild(d);cellEls.push(d);
+  }
+})();
+/* ---------- 关卡构建 ---------- */
+function startLevel(n){
+  n=Math.max(0,Math.min(n,LEVELS.length-1));
+  cur=n;saveData.lv=n;
+  var L=LEVELS[n];
+  board=L.board;initial=L.board;goal=L.goal;
+  selected=-1;history=[];moves=0;undos=0;won=false;
+  $("btnNext").hidden=true;
+  refresh();
+  say("第"+(n+1)+"关 · "+L.name+" · 把棋子减到 "+goal+" 子");
+  save();
+}
+function refresh(){
+  for(var i=0;i<33;i++){
+    var el=cellEls[i];
+    if(!el)continue;
+    var peg=el.querySelector(".peg");
+    if(peg)peg.hidden=board[i]!=="1";
+    el.classList.toggle("sel",i===selected);
+    var isHint=false;
+    if(selected>=0&&board[i]==="0"){
+      var ts=targetsOf(board,selected);
+      for(var k=0;k<ts.length;k++)if(ts[k]===i)isHint=true;
+    }
+    el.classList.toggle("hint",isHint);
+  }
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stLeft").textContent=String(pegCount(board));
+  $("stGoal").textContent=String(goal);
+  $("stMoves").textContent=String(moves);
+  $("btnUndo").disabled=history.length===0;
+}
+/* ---------- 交互 ---------- */
+function onCell(i){
+  if(won)return;
+  if(board[i]==="1"){
+    if(selected===i){selected=-1;refresh();return;}
+    selected=i;refresh();
+    say("已选中 · 点高亮空位跳子");
+    return;
+  }
+  if(selected<0){say("先点选一颗棋子");return;}
+  var ts=targetsOf(board,selected);
+  var ok=false;
+  for(var k=0;k<ts.length;k++)if(ts[k]===i)ok=true;
+  if(!ok){say("只能跳过相邻棋子落到正后方空位");return;}
+  var from=selected;
+  var nb=board.split("");
+  nb[from]="0";
+  for(var t=0;t<TRIPLES.length;t++){
+    var tr=TRIPLES[t];
+    if(tr[0]===from&&tr[2]===i){nb[tr[1]]="0";break;}
+  }
+  nb[i]="1";
+  history.push({board:board,from:from,over:findOver(from,i),to:i});
+  board=nb.join("");
+  selected=-1;moves++;
+  refresh();
+  checkEnd();
+}
+function findOver(from,to){
+  for(var t=0;t<TRIPLES.length;t++){
+    var tr=TRIPLES[t];
+    if(tr[0]===from&&tr[2]===to)return tr[1];
+  }
+  return -1;
+}
+boardEl.addEventListener("click",function(e){
+  var cell=e.target&&e.target.closest?e.target.closest(".cell"):null;
+  if(!cell||cell.classList.contains("void"))return;
+  var i=parseInt(cell.getAttribute("data-i"),10);
+  if(Number.isInteger(i))onCell(i);
+});
+function checkEnd(){
+  var left=pegCount(board);
+  if(left===goal&&(goal!==1||board[CENTER]==="1")){onWin();return;}
+  if(!anyMove(board)){
+    var html='<h2>无棋可走</h2><p class="desc">还剩 '+left+' 子 · 目标是 '+goal+' 子<br>再试一次吧</p>';
+    html+='<button class="btn" data-act="retry">重玩本关</button>';
+    html+='<button class="btn ghost" data-act="close">关闭</button>';
+    showOverlay(html);
+    say("无棋可走 · 还剩 "+left+" 子");
+  }
+}
+/* ---------- 统计 / 解锁 ---------- */
+function unlockedMax(){
+  var m=0;
+  for(var k in doneSave){
+    var i=parseInt(k,10);
+    if(doneSave[k]&&doneSave[k].m>=0&&i+1>m)m=i+1;
+  }
+  return Math.min(m,LEVELS.length-1);
+}
+function starOf(u){return u===0?3:(u<=2?2:1);}
+function onWin(){
+  won=true;
+  var rec=doneSave[cur];
+  var stars=starOf(undos);
+  if(!rec||undos<rec.m||(undos===rec.m&&stars>rec.s))doneSave[cur]={m:undos,s:stars};
+  saveData.lv=Math.min(cur+1,LEVELS.length-1);
+  save();
+  $("btnNext").hidden=false;
+  refresh();
+  var last=cur>=LEVELS.length-1;
+  var html='<h2>通关！</h2><p class="desc">用了 <b>'+moves+'</b> 步 · 撤销 '+undos+' 次<br>获得 '+stars+' 星 · 共 '+LEVELS.length+' 关</p>';
+  html+='<button class="btn" data-act="next">'+(last?"再玩一遍":"下一关")+'</button>';
+  html+='<button class="btn ghost" data-act="retry">重玩本关</button>';
+  html+='<button class="btn ghost" data-act="close">关闭</button>';
+  showOverlay(html);
+  say("通关！还剩 "+pegCount(board)+" 子");
+  if(GB.available)GB.reportScore("peg-solitaire",{metricValue:Object.keys(doneSave).length,metricExtra:undos}).catch(function(){});
+}
+/* ---------- 覆盖层 ---------- */
+function showOverlay(html){$("panel").innerHTML=html;$("overlay").classList.add("show");}
+function hideOverlay(){$("overlay").classList.remove("show");}
+function openPicker(){
+  var html='<h2>选择关卡</h2><p class="desc">已解锁 '+(unlockedMax()+1)+' / '+LEVELS.length+'</p><div class="lvgrid">';
+  for(var i=0;i<LEVELS.length;i++){
+    var cls="lvgrid-btn"+(doneSave[i]?" done":"")+(i===cur?" cur":"");
+    var dis=i>unlockedMax()?" disabled":"";
+    var label=doneSave[i]?("★"+doneSave[i].s):(i+1);
+    html+='<button class="'+cls+'" data-act="lv" data-lv="'+i+'"'+dis+'>'+label+'</button>';
+  }
+  html+='</div><button class="btn ghost" data-act="close">关闭</button>';
+  showOverlay(html);
+}
+$("panel").addEventListener("click",function(e){
+  var t=e.target&&e.target.closest?e.target.closest("[data-act]"):null;
+  if(!t)return;
+  var act=t.getAttribute("data-act");
+  if(act==="next"){hideOverlay();startLevel(cur<LEVELS.length-1?cur+1:0);}
+  else if(act==="retry"){hideOverlay();startLevel(cur);}
+  else if(act==="close"){hideOverlay();}
+  else if(act==="lv"){var i=parseInt(t.getAttribute("data-lv"),10);hideOverlay();if(i<=unlockedMax())startLevel(i);}
+});
+/* ---------- 按钮 ---------- */
+$("btnUndo").addEventListener("click",function(){
+  if(won||history.length===0)return;
+  var h=history.pop();
+  board=h.board;selected=-1;undos++;if(moves>0)moves--;
+  refresh();
+  say("已撤销一步");
+});
+$("btnReset").addEventListener("click",function(){startLevel(cur);say("本关已重置");});
+$("btnNext").addEventListener("click",function(){startLevel(cur<LEVELS.length-1?cur+1:0);});
+$("btnPick").addEventListener("click",openPicker);
+/* ---------- 启动 ---------- */
+startLevel(Math.min(Math.max(saveData.lv,0),unlockedMax()));
+syncLevelsFromServer();
+syncSaveFromServer();
+})();
+</script>
+</body>
+</html>
