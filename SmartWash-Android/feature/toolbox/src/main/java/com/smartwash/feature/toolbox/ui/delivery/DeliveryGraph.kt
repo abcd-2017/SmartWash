@@ -20,7 +20,9 @@ fun NavGraphBuilder.deliveryGraph(navController: NavHostController) {
     }
 }
 
-/** 发起页 → 会话页（会话码随路由携带） */
+/** 发起页 → 会话页（会话码随路由携带）；launchSingleTop 防连点叠加多层会话页 */
 fun NavHostController.navigateToDeliverySession(code: String) {
-    navigate(ToolboxRoute.DeliverySession(code))
+    navigate(ToolboxRoute.DeliverySession(code)) {
+        launchSingleTop = true
+    }
 }

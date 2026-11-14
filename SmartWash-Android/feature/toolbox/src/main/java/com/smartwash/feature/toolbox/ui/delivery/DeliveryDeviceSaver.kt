@@ -38,8 +38,11 @@ internal data class DeliveryPickedFile(
 )
 
 /**
- * 解析所选 Uri 的显示名与大小（DocumentsProvider 一般都带 SIZE）；
- * 个别 Provider 不带 SIZE 时经临时文件补测（发布前必须拿到确切字节数：端侧 20MB 前置校验 + multipart contentLength）。
+ * 解析所选 Uri 的显示名与大小（DocumentsProvider 一般都带 SIZE）。
+ * SIZE 列是 provider 快照值（documentsui「最近」在选取后文件被修改/元信息过期即失真），
+ * 与实际流不符会被 multipart contentLength 判 ProtocolException 且误报网络失败，
+ * 故一律以实际流计数复核修正（封顶 MAX+1 提前止损，超限不再读完整个流）；
+ * 流打不开时回落快照值，把失败留给发布阶段以真实错误暴露。
  */
 internal suspend fun resolvePickedFile(context: Context, uri: Uri): DeliveryPickedFile =
     withContext(Dispatchers.IO) {
@@ -61,19 +64,22 @@ internal suspend fun resolvePickedFile(context: Context, uri: Uri): DeliveryPick
                 }
             }
         }
-        if (size < 0) {
-            val probe = File(context.cacheDir, "delivery_probe_${System.nanoTime()}")
-            runCatching {
-                context.contentResolver.openInputStream(uri)?.use { input ->
-                    probe.outputStream().use { output -> input.copyTo(output) }
+        // 实际流计数复核（修正快照漂移）：含 0 字节空文件——流能打开即以实际计数为准
+        runCatching {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                var total = 0L
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (total <= DeliveryRules.MAX_FILE_BYTES) {
+                    val read = input.read(buffer)
+                    if (read == -1) break
+                    total += read
                 }
-                size = probe.length()
+                size = total
             }
-            probe.delete()
-            if (size < 0) {
-                // 元信息查询与补测均失败：发布必然被 20MB 前置校验/后端拒，降级留痕
-                AppLogger.warn(TAG, "resolvePickedFile: 文件大小探测失败，按 0 字节降级 uri=$uri")
-            }
+        }
+        if (size < 0) {
+            // 元信息查询与流计数均失败：发布必然失败，降级留痕
+            AppLogger.warn(TAG, "resolvePickedFile: 文件大小探测失败，按 0 字节降级 uri=$uri")
         }
         DeliveryPickedFile(uri = uri, displayName = name, size = size.coerceAtLeast(0))
     }

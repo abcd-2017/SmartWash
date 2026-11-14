@@ -57,8 +57,9 @@ fun NavGraphBuilder.toolboxGraph(
     }
 }
 
-/** 列表 → 详情：基础字段随路由携带（勿在详情页经 resolve 拉取，resolve 会计点击） */
-fun NavHostController.navigateToShortCodeDetail(vo: ShortCodeVo) {
+/** 列表 → 详情：基础字段随路由携带（勿在详情页经 resolve 拉取，resolve 会计点击）；
+ *  [popUpCreatePage] 用于创建页直达详情（阅后即焚）：同时弹掉创建页，返回键回列表而非已提交的表单 */
+fun NavHostController.navigateToShortCodeDetail(vo: ShortCodeVo, popUpCreatePage: Boolean = false) {
     navigate(
         ToolboxRoute.Detail(
             id = vo.id,
@@ -74,7 +75,13 @@ fun NavHostController.navigateToShortCodeDetail(vo: ShortCodeVo) {
             burnedAt = vo.burnedAt.orEmpty(),
             secretUrl = vo.secretUrl.orEmpty(),
         )
-    )
+    ) {
+        // 重复导航去重：栈顶已是详情时复用，避免连续点击/深链叠加多层相同页面
+        launchSingleTop = true
+        if (popUpCreatePage) {
+            popUpTo(ToolboxRoute.Create) { inclusive = true }
+        }
+    }
 }
 
 /** 创建/续期/删除成功后置位刷新信号（列表页消费后复位并重建分页流） */
