@@ -100,6 +100,13 @@ class DrumEngine {
 
     private var future: Future<*>? = null
 
+    /**
+     * 播放异常中断回调（引擎内部停止时通知外部回写状态）。
+     * 正常 stop() 不触发；createTrack 失败 / 调度线程崩溃时触发，
+     * 避免 UI 停在假「播放中」（ui-check P1-2）。
+     */
+    var onPlaybackStopped: (() -> Unit)? = null
+
     private val _currentStep = MutableStateFlow(-1)
 
     /** 当前发声步（0..15；停止时 -1），驱动网格播放头 */
@@ -145,6 +152,8 @@ class DrumEngine {
             AppLogger.warn(TAG, "createTrack 失败，节拍机本次播放无法开始")
             playing = false
             _currentStep.value = -1
+            // 回写外部播放态（VM）：避免 UI 停在假「播放中」
+            onPlaybackStopped?.invoke()
             return
         }
         ensureVoices()
@@ -155,10 +164,37 @@ class DrumEngine {
         var nextStepFrame = 0L
         var nextStepIndex = 0
         var anchored = false
+        // 音频时钟健康检测（ui-check P1 根因）：部分音频栈（模拟器）getTimestamp 失败且
+        // playbackHeadPosition 恒 0，原实现「等 head 前进才写数据」与 HAL「等数据才启动」
+        // 互锁死——一个音符都调度不出、播放头恒卡末步。连续 [AUDIO_CLOCK_STALL_TICKS] 拍
+        // head 不推进即判定时钟不可用，改用系统时钟推进虚拟帧打破自锁；
+        // 真机时钟正常时该分支永不进入，调度行为与原来完全一致。
+        var lastHead = -1L
+        var lastHeadAt = 0L
+        var stallTicks = 0
+        var virtualHead = 0L
         try {
             track.play()
             while (playing && !released && generation.get() == gen) {
-                val head = headFrame(track)
+                val rawHead = headFrame(track)
+                val now = System.nanoTime()
+                val head: Long
+                if (rawHead == lastHead) {
+                    stallTicks++
+                    if (stallTicks >= AUDIO_CLOCK_STALL_TICKS) {
+                        // 时钟停摆：按 wall time 推进虚拟帧（含判定前等待的拍数）
+                        virtualHead += (now - lastHeadAt) * SAMPLE_RATE / 1_000_000_000L
+                        head = virtualHead
+                    } else {
+                        head = rawHead
+                    }
+                } else {
+                    stallTicks = 0
+                    virtualHead = rawHead
+                    head = rawHead
+                }
+                lastHead = rawHead
+                lastHeadAt = now
                 if (!anchored) {
                     // 首帧对齐：第一步落在 lookahead 之后，避免起始被削
                     nextStepFrame = head + lookaheadFrames()
@@ -187,6 +223,8 @@ class DrumEngine {
         } catch (e: Throwable) {
             // 音频设备异常：静默停止（玩具页不崩溃），降级留痕（低频：每次播放会话至多一次）
             AppLogger.warn(TAG, "音频调度线程异常退出，节拍机停止", e)
+            // 回写外部播放态（VM）：按钮从「停止」复原到「播放」，用户可再次尝试
+            onPlaybackStopped?.invoke()
         } finally {
             track.release()
             if (generation.get() == gen) _currentStep.value = -1
@@ -414,6 +452,9 @@ class DrumEngine {
 
         /** 调度线程唤醒间隔（ms）：必须小于 [LOOKAHEAD_MS]，留出重试余量 */
         private const val SCHEDULER_TICK_MS = 25L
+
+        /** 音频时钟停摆判定阈值（连续拍数）：连续这么多拍 head 不推进即回退系统时钟驱动调度 */
+        private const val AUDIO_CLOCK_STALL_TICKS = 2
 
         /** 单次写缓冲上限（帧）：正常每 tick 只写 ~1102 帧，超预算分块写 */
         private const val MAX_CHUNK_FRAMES = 16_384

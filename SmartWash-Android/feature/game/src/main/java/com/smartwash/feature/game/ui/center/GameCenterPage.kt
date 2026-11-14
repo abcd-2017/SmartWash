@@ -17,14 +17,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import android.widget.Toast
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -75,6 +80,7 @@ private val GRID_SPACING = AppDimens.cardSpacing
  * 三态：骨架 shimmer / EmptyState / 错误重试（规范 §3.6）。
  * 卡片点击 → 既有壳层 WebView 路由（后端下发 url 即最终可玩地址，端上零拼装）。
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameCenterPage(
     navController: NavHostController,
@@ -85,79 +91,94 @@ fun GameCenterPage(
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val context = LocalContext.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppColors.colorScheme.background)
+    // 网格滚动状态：分类切换后回顶。LazyColumn 按行 key 换代后仍保留旧偏移，
+    // 顶部会残留上一分类被裁切的残卡（ui-check P1：切筛选必现）
+    val gridListState = rememberLazyListState()
+    LaunchedEffect(selectedCategory) {
+        gridListState.scrollToItem(0)
+    }
+
+    PullToRefreshBox(
+        // 首载骨架已在表达加载态，指示器仅在已有内容时的下拉刷新出现
+        isRefreshing = listState is RequestState.Loading && games.isNotEmpty(),
+        onRefresh = viewModel::loadGames,
+        modifier = Modifier.fillMaxSize(),
     ) {
-        PageHeader(
-            title = stringResource(R.string.game_center_title),
-            onBack = { navController.navigateUp() },
-        )
-
-        // 分类筛选 chips（横向滚动不换行；数据无关常驻，骨架/错误态同样可见）
-        GameCategoryChipsRow(
-            selected = selectedCategory,
-            onSelect = viewModel::selectCategory,
-            modifier = Modifier.padding(top = AppDimens.spaceXs, bottom = AppDimens.spaceSm),
-        )
-
-        when {
-            // 首刷失败：说明发生了什么 + 重试（规范 §3.6 错误态）
-            listState is RequestState.Error -> {
-                // 文案消费状态携带的 resId（单一事实源：VM 按错误类型区分文案时页面自动跟随）
-                val error = listState as RequestState.Error
-                EmptyState(
-                    // EmptyState 的 icon 为占位参数不渲染（组件只出滚筒圆母题）；Filled 变体对齐 GameConstant
-                    icon = Icons.Default.Apps,
-                    message = stringResource(error.messageResId),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = AppDimens.pagePadding),
-                    action = {
-                        AppButton(
-                            small = true,
-                            text = stringResource(R.string.game_action_retry),
-                            onClick = viewModel::loadGames,
-                        )
-                    },
-                )
-            }
-            // 首刷加载：骨架屏占位（禁止转圈），形状与真实网格一致
-            games.isEmpty() && listState !is RequestState.Success -> {
-                GameGridSkeleton(modifier = Modifier.fillMaxSize())
-            }
-            // 空态：全量空（后端未上传/未上架）与筛选无命中分别给文案
-            games.isEmpty() -> {
-                EmptyState(
-                    // 占位参数不渲染；Filled 变体对齐 GameConstant 游戏卡图标组
-                    icon = Icons.Default.Apps,
-                    message = if (selectedCategory == null) {
-                        stringResource(R.string.game_empty_message)
-                    } else {
-                        stringResource(R.string.game_empty_category)
-                    },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = AppDimens.pagePadding),
-                )
-            }
-            // 游戏网格（两列，行 key 由 gameKey 拼接，服务端 sort 序）
-            else -> GameGrid(
-                games = games,
-                onGameClick = { game ->
-                    if (game.url.isBlank()) {
-                        // 数据残缺防御（后端契约保证非空，正常配置不会走到）：可见反馈替代静默
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.game_unavailable),
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    } else {
-                        navController.navigateToGameWebView(game)
-                    }
-                },
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(AppColors.colorScheme.background)
+        ) {
+            PageHeader(
+                title = stringResource(R.string.game_center_title),
+                onBack = { navController.navigateUp() },
             )
+
+            // 分类筛选 chips（横向滚动不换行；数据无关常驻，骨架/错误态同样可见）
+            GameCategoryChipsRow(
+                selected = selectedCategory,
+                onSelect = viewModel::selectCategory,
+                modifier = Modifier.padding(top = AppDimens.spaceXs, bottom = AppDimens.spaceSm),
+            )
+
+            when {
+                // 首刷失败：说明发生了什么 + 重试（规范 §3.6 错误态）
+                listState is RequestState.Error -> {
+                    // 文案消费状态携带的 resId（单一事实源：VM 按错误类型区分文案时页面自动跟随）
+                    val error = listState as RequestState.Error
+                    EmptyState(
+                        // EmptyState 的 icon 为占位参数不渲染（组件只出滚筒圆母题）；Filled 变体对齐 GameConstant
+                        icon = Icons.Default.Apps,
+                        message = stringResource(error.messageResId),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = AppDimens.pagePadding),
+                        action = {
+                            AppButton(
+                                small = true,
+                                text = stringResource(R.string.game_action_retry),
+                                onClick = viewModel::loadGames,
+                            )
+                        },
+                    )
+                }
+                // 首刷加载：骨架屏占位（禁止转圈），形状与真实网格一致
+                games.isEmpty() && listState !is RequestState.Success -> {
+                    GameGridSkeleton(modifier = Modifier.fillMaxSize())
+                }
+                // 空态：全量空（后端未上传/未上架）与筛选无命中分别给文案
+                games.isEmpty() -> {
+                    EmptyState(
+                        // 占位参数不渲染；Filled 变体对齐 GameConstant 游戏卡图标组
+                        icon = Icons.Default.Apps,
+                        message = if (selectedCategory == null) {
+                            stringResource(R.string.game_empty_message)
+                        } else {
+                            stringResource(R.string.game_empty_category)
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = AppDimens.pagePadding),
+                    )
+                }
+                // 游戏网格（两列，行 key 由 gameKey 拼接，服务端 sort 序）
+                else -> GameGrid(
+                    games = games,
+                    listState = gridListState,
+                    onGameClick = { game ->
+                        if (game.url.isBlank()) {
+                            // 数据残缺防御（后端契约保证非空，正常配置不会走到）：可见反馈替代静默
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.game_unavailable),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        } else {
+                            navController.navigateToGameWebView(game)
+                        }
+                    },
+                )
+            }
         }
     }
 }
@@ -203,10 +224,12 @@ private fun categoryChipLabel(category: GameCategory): String = when (category) 
 @Composable
 private fun GameGrid(
     games: List<GameItem>,
+    listState: LazyListState,
     onGameClick: (GameItem) -> Unit,
 ) {
     val rows = remember(games) { games.chunked(GRID_COLUMNS) }
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             // 顶部 ≥12dp：首行卡片阴影越出卡边 12dp，LazyColumn 会裁切边界外内容，需留容身空间

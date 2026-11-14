@@ -126,6 +126,17 @@ class DrumViewModel @Inject constructor() : ViewModel() {
     )
     val state: StateFlow<DrumUiState> = _state.asStateFlow()
 
+    init {
+        // 引擎侧异常中断（createTrack 失败 / 调度线程崩溃）时回写播放态，
+        // 避免 UI 停在假「播放中」（ui-check P1-2：引擎 playing 与 VM 状态脱钩）。
+        // 回调在 drum-engine 线程触发，MutableStateFlow 写入本身线程安全。
+        engine.onPlaybackStopped = {
+            if (_state.value.playing) {
+                _state.value = _state.value.copy(playing = false)
+            }
+        }
+    }
+
     /** 播放/停止切换（引擎即时起停；pattern/bpm 在启动前同步） */
     fun togglePlay() {
         val current = _state.value

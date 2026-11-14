@@ -156,26 +156,33 @@ private sealed interface WorkbenchBlock {
 }
 
 /**
- * 按 sort 序折块：sectionTitle 与前一 entry 不同 → 插区块标题（并打断连续归并链，
- * 不同分组的 row/tile 各自成组）；随后按 layout 流式归并。
+ * 按 sort 序折块：sectionTitle 与前一 entry 不同（含 null 与非 null 互转）→ 打断连续归并链
+ * （不同分组的 row/tile 各自成组），非空 title 同时插区块标题；随后按 layout 流式归并。
  */
 private fun List<WorkbenchTool>.toBlocks(): List<WorkbenchBlock> {
     val blocks = mutableListOf<WorkbenchBlock>()
     var currentSection: String? = null
     // Section key 防碰撞流水号（审查 #5）：A→B→A 序列下同名分组重现时递增，key 永不重复
     var sectionOrdinal = 0
+    // 分组边界标记：sectionTitle 与前一 entry 不一致（含 null 与非 null 互转）即打断归并链。
+    // null 分组无标题可插，故以标记表达边界，避免无分组条目被并进上一分组的卡
+    // （ui-check P2：后台漏配 section_title 时触发）
+    var atSectionBoundary = true
     forEach { tool ->
         val section = tool.sectionTitle
-        if (section != null && section != currentSection) {
-            blocks += WorkbenchBlock.Section(section, sectionOrdinal++)
+        if (section != currentSection) {
+            if (section != null) {
+                blocks += WorkbenchBlock.Section(section, sectionOrdinal++)
+            }
             currentSection = section
+            atSectionBoundary = true
         }
         when (tool.layout) {
             WorkbenchLayout.NOTICE -> blocks += WorkbenchBlock.Notice(tool)
             WorkbenchLayout.WIDE -> blocks += WorkbenchBlock.Wide(tool)
             WorkbenchLayout.ROW -> {
                 val last = blocks.lastOrNull()
-                if (last is WorkbenchBlock.RowGroup) {
+                if (!atSectionBoundary && last is WorkbenchBlock.RowGroup) {
                     blocks[blocks.lastIndex] = last.copy(tools = last.tools + tool)
                 } else {
                     blocks += WorkbenchBlock.RowGroup(listOf(tool))
@@ -183,13 +190,14 @@ private fun List<WorkbenchTool>.toBlocks(): List<WorkbenchBlock> {
             }
             WorkbenchLayout.TILE -> {
                 val last = blocks.lastOrNull()
-                if (last is WorkbenchBlock.TileRow && last.tools.size < GRID_COLUMNS) {
+                if (!atSectionBoundary && last is WorkbenchBlock.TileRow && last.tools.size < GRID_COLUMNS) {
                     blocks[blocks.lastIndex] = last.copy(tools = last.tools + tool)
                 } else {
                     blocks += WorkbenchBlock.TileRow(listOf(tool))
                 }
             }
         }
+        atSectionBoundary = false
     }
     return blocks
 }
@@ -340,7 +348,21 @@ fun WorkbenchPage(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = AppDimens.sectionSpacing)
+                                .padding(top = AppDimens.sectionSpacing),
+                            // 搜索无结果给「清除搜索」行动入口（规范 §3.6 空态 = 母题 + 文案 + 行动按钮；
+                            // ui-check P2：原空态无按钮，用户需自行找搜索框尾缀叉号）
+                            action = if (isSearching) {
+                                {
+                                    AppButton(
+                                        small = true,
+                                        text = stringResource(R.string.workbench_search_clear),
+                                        onClick = { workbenchViewModel.onSearchChange("") },
+                                        variant = AppButtonVariant.SECONDARY,
+                                    )
+                                }
+                            } else {
+                                null
+                            },
                         )
                     }
                 } else if (isSearching) {
@@ -837,7 +859,7 @@ private fun RowGroupCard(
     }
 }
 
-/** 列表行：36dp 次级图标容器（§2.4 v0.4 36/12/20）+ 14/500 主文案 + 角标 + 箭头 */
+/** 列表行：36dp 次级图标容器（§2.4 v0.4 36/12/20）+ 14/500 主文案 + 12sp 副文案 + 角标 + 箭头 */
 @Composable
 private fun WorkbenchRowLine(
     tool: WorkbenchTool,
@@ -861,13 +883,26 @@ private fun WorkbenchRowLine(
             containerColor = containerColor,
             iconTint = iconTint
         )
-        Text(
-            text = tool.title,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = scheme.textPrimary,
-            modifier = Modifier.weight(1f)
-        )
+        // 标题 + 服务端下发描述（ui-check P2：原实现整组丢弃 description）：
+        // 描述为空时保持单行紧凑构图，不占位
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = tool.title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = scheme.textPrimary
+            )
+            if (tool.description.isNotBlank()) {
+                Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+                Text(
+                    text = tool.description,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
         tool.badge?.let { WorkbenchBadge(it) }
         Icon(
             imageVector = Icons.Default.ChevronRight,
@@ -981,29 +1016,33 @@ private fun WorkbenchImage(
 }
 
 /**
+ * 配图存在性判定（单一事实：服务端 imageUrl 或本地自绘封面任一即视为有配图）。
+ * ToolTile 据此决定 IconBox 回退，避免与 [WorkbenchCoverImage] 的渲染分流各判各的
+ * （ui-check P2：两处判断单边修改易漂移）。
+ */
+private fun WorkbenchTool.hasCover(): Boolean =
+    imageUrl != null || LocalCoverArt.workbenchCover(entryKey) != null
+
+/**
  * 工作台配图统一槽：服务端 imageUrl 优先（Coil），未下发时按 entryKey 用本地自绘封面兜底，
- * 两者皆无则不渲染（调用方据此回退 IconBox 布局）。
+ * 两者皆无则不渲染（调用方据 [WorkbenchTool.hasCover] 回退 IconBox 布局）。
  */
 @Composable
 private fun WorkbenchCoverImage(
     tool: WorkbenchTool,
     modifier: Modifier = Modifier,
-): Boolean {
+) {
     val local = LocalCoverArt.workbenchCover(tool.entryKey)
     if (tool.imageUrl != null) {
         WorkbenchImage(url = tool.imageUrl!!, modifier = modifier)
-        return true
-    }
-    if (local != null) {
+    } else if (local != null) {
         Image(
             painter = painterResource(local),
             contentDescription = null,
             modifier = modifier.background(AppColors.colorScheme.surfaceVariant),
             contentScale = ContentScale.Crop
         )
-        return true
     }
-    return false
 }
 
 /** 六色浅底语义色组（icon/color 白名单映射产物，卡片组件共用） */
@@ -1175,7 +1214,7 @@ private fun ToolTile(
     modifier: Modifier = Modifier,
 ) {
     val scheme = AppColors.colorScheme
-    val hasCover = tool.imageUrl != null || LocalCoverArt.workbenchCover(tool.entryKey) != null
+    val hasCover = tool.hasCover()
     val (containerColor, iconTint) = workbenchTintColors(tool)
     Surface(
         modifier = modifier.pressable(onClick = onClick).softCardShadow(),
