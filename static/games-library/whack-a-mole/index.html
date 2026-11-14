@@ -41,6 +41,8 @@
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
   .btn:disabled { opacity: .35; cursor: default; }
+  .btn.daily { margin-top: 8px; }
+  .btn.daily.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -99,6 +101,7 @@ paint(B||"light");
     <button class="btn ghost" id="btnPick">选关</button>
     <button class="btn" id="btnNext">下一关</button>
   </div>
+  <button class="btn daily" id="btnDaily" type="button">每日挑战</button>
   <p class="foot">普通鼠 +10 · 黄金鼠 +30 · 炸弹 -15 · 漏掉地鼠 -5</p>
 </div>
 <div class="overlay" id="overlay">
@@ -204,6 +207,7 @@ function syncLevelsFromServer(){
     var list=parseLevels(res);
     if(!list)return;
     if(applyLevels(list,res.version||0)){
+      if(dailyMode)return;   // 每日挑战进行中：不替换当前局
       if(cur>LEVELS.length-1)cur=LEVELS.length-1;
       startLevel(cur);
     }
@@ -219,19 +223,44 @@ function loadSave(){
       if(s.done&&typeof s.done==="object"){
         for(var k in s.done){var v=parseInt(s.done[k],10);if(v>0)done[k]=v;}
       }
-      return {lv:Math.max(0,parseInt(s.lv,10)||0),done:done,best:Math.max(0,parseInt(s.best,10)||0)};
+      var daily={};
+      if(s.daily&&typeof s.daily==="object"){
+        for(var dk in s.daily){
+          if(!/^\d{8}$/.test(dk))continue;
+          var rd=s.daily[dk];
+          if(rd&&rd.done)daily[dk]={done:true,score:Math.max(0,parseInt(rd.score,10)||0)};
+        }
+      }
+      return {lv:Math.max(0,parseInt(s.lv,10)||0),done:done,best:Math.max(0,parseInt(s.best,10)||0),daily:daily};
     }
   }catch(e){}
-  return {lv:0,done:{},best:0};
+  return {lv:0,done:{},best:0,daily:{}};
 }
 function save(){
-  var data={lv:saveData.lv,done:doneSave,best:best};
+  pruneDaily();
+  var data={lv:saveData.lv,done:doneSave,best:best,daily:saveData.daily};
   try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
   if(GB.available)GB.saveState("whack-a-mole",data).catch(function(){});
 }
 var saveData=loadSave();
 var doneSave=saveData.done||{};
 var best=saveData.best||0;
+/* ---------- 每日挑战状态与存档（同一存档键内追加 daily，不新增 localStorage 键） ---------- */
+var dailyMode=false,dailyDate="";
+function pruneDaily(){
+  var d=new Date(Date.now()+8*3600e3);
+  d.setUTCDate(d.getUTCDate()-29);
+  var cut=d.toISOString().slice(0,10).replace(/-/g,"");
+  var ks=Object.keys(saveData.daily),i;
+  for(i=0;i<ks.length;i++)if(ks[i]<cut)delete saveData.daily[ks[i]];
+  ks=Object.keys(saveData.daily).sort();
+  for(i=0;i<ks.length-30;i++)delete saveData.daily[ks[i]];
+}
+function updateDailyBtn(){
+  var b=document.getElementById("btnDaily"),t=dailyDateStr(),d=saveData.daily[t];
+  b.textContent="每日挑战 · "+t.slice(4,6)+"月"+t.slice(6,8)+"日"+(d&&d.done?" ✓":"");
+  b.classList.toggle("done",!!(d&&d.done));
+}
 function syncSaveFromServer(){
   if(!GB.available||!GB.loadState)return;
   GB.loadState("whack-a-mole").then(function(res){
@@ -250,9 +279,20 @@ function syncSaveFromServer(){
           if(rv>mv){doneSave[k]=rv;changed=true;}
         }
       }
+      if(remote.daily&&typeof remote.daily==="object"){
+        for(var dk in remote.daily){
+          var rd=remote.daily[dk];
+          if(!rd||!rd.done)continue;
+          var ld=saveData.daily[dk],rs=Math.max(0,parseInt(rd.score,10)||0);
+          if(!ld||!ld.done)saveData.daily[dk]={done:true,score:rs};
+          else if(rs>ld.score)ld.score=rs;
+          changed=true;
+        }
+      }
       if(changed){
         var n=Math.min(Math.max(saveData.lv,0),unlockedMax());
-        startLevel(n);save();
+        if(!dailyMode)startLevel(n);
+        save();updateDailyBtn();
       }
     }catch(e){}
   }).catch(function(){}
@@ -277,6 +317,7 @@ function colsRows(n){
   return[3,3];
 }
 /* 确定性伪随机（仅用于按 variant 选择空洞分布） */
+/*WM-RNG-BEGIN*/
 function rng32(a){
   return function(){
     a|=0;a=a+0x6d2b79f5|0;
@@ -285,6 +326,7 @@ function rng32(a){
     return((t^t>>>14)>>>0)/4294967296;
   };
 }
+/*WM-RNG-END*/
 /* 由 variant 决定洞数不足时的空位分布，保证同关可复现 */
 function occupiedSlots(n,variant){
   var cr=colsRows(n),rows=cr[0],cols=cr[1],total=rows*cols,i;
@@ -296,6 +338,24 @@ function occupiedSlots(n,variant){
   arr.sort(function(a,b){return a-b;});
   return arr;
 }
+/* ---------- 每日挑战：本地确定性生成（无桥依赖，同一天全平台同关） ---------- */
+/*WM-DAILY-BEGIN*/
+function hashKey(s){var h=0,i;for(i=0;i<s.length;i++)h=(h+s.charCodeAt(i))%1000;return h;}
+function dailyDateStr(){return new Date(Date.now()+8*3600e3).toISOString().slice(0,10).replace(/-/g,"");}
+function dailySeedOf(key,dateStr){return Number(dateStr)*31+hashKey(key);}
+/* 由 seed 派生当日参数：洞数 3-6 / 时长 25-40s / 速度与可见时长中等偏易 / 目标取保守值（完美上限的 35%） */
+function genDailyLevel(seed,dateStr){
+  var r=rng32(seed),ri=function(lo,hi){return lo+Math.floor(r()*(hi-lo+1));};
+  var holes=ri(3,6),time=ri(25,40),speed=ri(1000,1200),visible=ri(1400,1800);
+  var moleRatio=Math.round((0.06+r()*0.08)*1000)/1000;
+  var bombRatio=Math.round((0.12+r()*0.16)*1000)/1000;
+  var spawns=Math.floor((time*1000-600)/speed);
+  var upper=spawns*((1-moleRatio)*10+moleRatio*(1-bombRatio)*30);
+  var target=Math.max(1,Math.floor(upper*0.35));
+  return {name:dateStr.slice(4,6)+"月"+dateStr.slice(6,8)+"日",time:time,holes:holes,
+    speed:speed,visible:visible,moleRatio:moleRatio,bombRatio:bombRatio,target:target,variant:ri(0,999999)};
+}
+/*WM-DAILY-END*/
 function layout(){
   var cr=colsRows(L.holes),rows=cr[0],cols=cr[1];
   var w=cv.parentElement.clientWidth||360;
@@ -321,6 +381,7 @@ function layout(){
 /* ---------- 关卡流 ---------- */
 function startLevel(n){
   n=Math.max(0,Math.min(n,LEVELS.length-1));
+  dailyMode=false;
   cur=n;L=LEVELS[n];score=0;moles=[];parts=[];texts=[];shake=0;
   playing=true;
   startAt=performance.now();totalMs=Math.max(1,L.time*1000);endAt=startAt+totalMs;
@@ -329,10 +390,33 @@ function startLevel(n){
   say("第"+(cur+1)+"关 · "+L.name+" · 目标 "+L.target+" 分");
   save();
 }
+/* 每日挑战：按当日 seed 生成关卡（失败自动 seed+1 重试，上限 200），绕过 DB 关卡列表 */
+function startDaily(){
+  var dateStr=dailyDateStr(),lv=null,base=dailySeedOf("whack-a-mole",dateStr),i;
+  for(i=0;i<200;i++){lv=genDailyLevel(base+i,dateStr);if(lv)break;}
+  if(!lv)return;
+  dailyMode=true;dailyDate=dateStr;
+  L=lv;cur=0;score=0;moles=[];parts=[];texts=[];shake=0;
+  playing=true;
+  startAt=performance.now();totalMs=Math.max(1,L.time*1000);endAt=startAt+totalMs;
+  nextSpawn=startAt+INITIAL_DELAY;
+  layout();updateStats();updateNav();hideOverlay();updateDailyBtn();
+  say("每日挑战 · "+L.name+" · 目标 "+L.target+" 分");
+  save();
+}
 function finish(){
   if(!playing)return;
   playing=false;
   var win=score>=L.target;
+  if(dailyMode){
+    if(win){
+      var rec=saveData.daily[dailyDate]||{};
+      saveData.daily[dailyDate]={done:true,score:Math.max(parseInt(rec.score,10)||0,score)};
+    }
+    save();updateStats();updateNav();updateDailyBtn();
+    showResult(win);
+    return;
+  }
   var lvNo=cur+1;
   if(win){
     var old=doneSave[lvNo];
@@ -570,16 +654,21 @@ function mkBtn(cls,txt,fn){
 }
 function showResult(win){
   var p=$("panel");p.innerHTML="";
-  var h2=document.createElement("h2");h2.textContent=win?"过关！":"还差一点";p.appendChild(h2);
+  var h2=document.createElement("h2");
+  h2.textContent=dailyMode?(win?"每日挑战完成 ✓":"未达目标"):(win?"过关！":"还差一点");
+  p.appendChild(h2);
   var desc=document.createElement("p");desc.className="desc";
-  desc.innerHTML="得分 <b>"+score+"</b> / 目标 "+L.target+"<br>历史最高 "+best;
+  desc.innerHTML="得分 <b>"+score+"</b> / 目标 "+L.target+"<br>"+
+    (dailyMode?(win?"今日已打卡 · 明天继续挑战":"今日尚未完成 · 明天再来"):"历史最高 "+best);
   p.appendChild(desc);
-  var main=mkBtn("btn",win?(cur<LEVELS.length-1?"下一关":"再玩一次"):"重试本关",function(){
+  var mainTxt=win?(dailyMode?"再玩一次":(cur<LEVELS.length-1?"下一关":"再玩一次")):(dailyMode?"重新挑战":"重试本关");
+  var main=mkBtn("btn",mainTxt,function(){
     hideOverlay();
-    startLevel(win&&cur<LEVELS.length-1?cur+1:cur);
+    if(dailyMode)startDaily();
+    else startLevel(win&&cur<LEVELS.length-1?cur+1:cur);
   });
   p.appendChild(main);
-  p.appendChild(mkBtn("btn ghost","选关",showPicker));
+  p.appendChild(mkBtn("btn ghost",dailyMode?"经典选关":"选关",showPicker));
   showOverlay();
 }
 function showPicker(){
@@ -602,20 +691,22 @@ function showPicker(){
 }
 /* ---------- 状态与导航 ---------- */
 function updateStats(){
-  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stLv").textContent=dailyMode?"每日":((cur+1)+"/"+LEVELS.length);
   $("stScore").textContent=score;
   $("stTarget").textContent=L?L.target:0;
   $("stBest").textContent=best;
 }
 function updateNav(){
+  if(dailyMode){$("btnPrev").disabled=true;$("btnNext").disabled=true;return;}
   $("btnPrev").disabled=cur<=0;
   $("btnNext").disabled=cur>=unlockedMax();
 }
 /* ---------- 事件 ---------- */
 $("btnPrev").addEventListener("click",function(){startLevel(cur-1);});
-$("btnRetry").addEventListener("click",function(){startLevel(cur);});
+$("btnRetry").addEventListener("click",function(){if(dailyMode)startDaily();else startLevel(cur);});
 $("btnNext").addEventListener("click",function(){startLevel(cur+1);});
 $("btnPick").addEventListener("click",showPicker);
+$("btnDaily").addEventListener("click",startDaily);
 cv.addEventListener("pointerdown",function(e){
   if(!playing)return;
   var rect=cv.getBoundingClientRect();
@@ -636,6 +727,7 @@ cv.addEventListener("contextmenu",function(e){e.preventDefault();});
 window.addEventListener("resize",function(){if(L)layout();});
 /* ---------- 启动 ---------- */
 palLoad();
+updateDailyBtn();
 startLevel(saveData.lv<LEVELS.length?saveData.lv:0);
 loop();
 syncLevelsFromServer();syncSaveFromServer();

@@ -35,6 +35,7 @@
     font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
   }
   .chip.on { background: var(--g-primary-soft); color: var(--g-on-soft); border-color: transparent; }
+  #btnDaily { font-size: 12px; white-space: nowrap; }
   .sud {
     display: grid; grid-template-columns: repeat(9, 1fr);
     width: min(420px, 100%); margin: 0 auto;
@@ -124,6 +125,7 @@ paint(B||"light");
     <button class="chip on" data-d="0">入门</button>
     <button class="chip" data-d="1">进阶</button>
     <button class="chip" data-d="2">大师</button>
+    <button class="chip" id="btnDaily">每日挑战</button>
   </div>
   <div class="sud" id="sud" aria-label="数独棋盘"></div>
   <p class="msg" id="msg" role="status" aria-live="polite">点空格选中，再点下方数字填入</p>
@@ -226,14 +228,16 @@ function syncLevelsFromServer(){
   if(!GB.available||!GB.getLevels)return;
   GB.getLevels("sudoku").then(function(res){
     var list=parseDbLevels(res);
-    if(list&&applyLevels(list,res.version||0)&&!fromDb)startGame(diff);
+    if(list&&applyLevels(list,res.version||0)&&!fromDb&&!dailyMode)startGame(diff);
   }).catch(function(){});
 }
 /* ---------- 存档（本地 + 账号双写） ---------- */
 var KEY="sw.sudoku.v1";
-function loadBest(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};return{E:s.bestE||0,M:s.bestM||0,H:s.bestH||0}}catch(e){return{E:0,M:0,H:0}}}
-function saveBest(){try{localStorage.setItem(KEY,JSON.stringify({bestE:best.E,bestM:best.M,bestH:best.H}))}catch(e){}
-  if(GB.available)GB.saveState("sudoku",{bestE:best.E,bestM:best.M,bestH:best.H}).catch(function(){});}
+function pruneDaily(o){var ks=Object.keys(o).sort();while(ks.length>30)delete o[ks.shift()];return o}
+function loadBest(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};
+  return{E:s.bestE||0,M:s.bestM||0,H:s.bestH||0,daily:(s.daily&&typeof s.daily==="object")?pruneDaily(s.daily):{}}}catch(e){return{E:0,M:0,H:0,daily:{}}}}
+function saveBest(){pruneDaily(best.daily);try{localStorage.setItem(KEY,JSON.stringify({bestE:best.E,bestM:best.M,bestH:best.H,daily:best.daily}))}catch(e){}
+  if(GB.available)GB.saveState("sudoku",{bestE:best.E,bestM:best.M,bestH:best.H,daily:best.daily}).catch(function(){});}
 var best=loadBest();
 function syncSaveFromServer(){
   if(!GB.available||!GB.loadState)return;
@@ -246,13 +250,31 @@ function syncSaveFromServer(){
         var k=keys[i],rv=Math.max(0,parseInt(r["best"+k],10)||0);
         if(rv>0&&(best[k]===0||rv<best[k])){best[k]=rv;changed=true}
       }
-      if(changed)saveBest();
+      // 每日挑战：同日取更优（done 优先，用时短者胜）
+      if(r.daily&&typeof r.daily==="object"){
+        for(var dk in r.daily){
+          var rr=r.daily[dk];if(!rr||typeof rr!=="object")continue;
+          var m=best.daily[dk]||(best.daily[dk]={done:false,time:0,diff:0});
+          var rt=Math.max(0,parseInt(rr.time,10)||0);
+          if(rr.done)m.done=true;
+          if(rt>0&&(!m.time||rt<m.time))m.time=rt;
+          if((rr.diff||0)>m.diff)m.diff=rr.diff;
+          changed=true;
+        }
+        pruneDaily(best.daily);
+      }
+      if(changed){saveBest();updDailyBtn()}
     }catch(e){}
   }).catch(function(){});
 }
-/* ---------- 生成器：回溯填满 + 挖洞保唯一解 ---------- */
+/* ---------- 生成器：回溯填满 + 挖洞保唯一解（含每日挑战纯函数块） ---------- */
+/*DAILY-PURE-BEGIN*/
+var GKEY="sudoku";
+function hashKey(s){var h=0;for(var i=0;i<s.length;i++)h+=s.charCodeAt(i);return h%1000}
+function seedForDate(ds){return(+ds)*31+hashKey(GKEY)}
+function mulberry32(a){return function(){a|=0;a=(a+0x6d2b79f5)|0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
+function shuffle(a,rng){for(var i=a.length-1;i>0;i--){var j=Math.floor((rng||Math.random)()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 function idx(r,c){return r*9+c}
-function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 function okAt(g,r,c,v){
   for(var i=0;i<9;i++){
     if(i!==c&&g[idx(r,i)]===v)return false;
@@ -263,12 +285,12 @@ function okAt(g,r,c,v){
     if((rr!==r||cc!==c)&&g[idx(rr,cc)]===v)return false;
   return true;
 }
-function fillAll(g){
+function fillAll(g,rng){
   for(var i=0;i<81;i++)if(!g[i]){
-    var vals=shuffle([1,2,3,4,5,6,7,8,9]),r=Math.floor(i/9),c=i%9;
+    var vals=shuffle([1,2,3,4,5,6,7,8,9],rng),r=Math.floor(i/9),c=i%9;
     for(var j=0;j<9;j++)if(okAt(g,r,c,vals[j])){
       g[i]=vals[j];
-      if(fillAll(g))return true;
+      if(fillAll(g,rng))return true;
       g[i]=0;
     }
     return false;
@@ -292,12 +314,12 @@ function countSolutions(g,limit){
   return count;
 }
 var DIFF=[{name:"入门",clues:40},{name:"进阶",clues:32},{name:"大师",clues:26}];
-function generate(d){
+function generate(d,rng){
   var base=[],i;
   for(i=0;i<81;i++)base.push(0);
-  fillAll(base);
+  fillAll(base,rng);
   var sol=base.slice();
-  var order=shuffle((function(){var a=[];for(var k=0;k<81;k++)a.push(k);return a})());
+  var order=shuffle((function(){var a=[];for(var k=0;k<81;k++)a.push(k);return a})(),rng);
   var holes=0,target=81-DIFF[d].clues,deadline=Date.now()+400;
   for(i=0;i<81&&holes<target;i++){
     if(Date.now()>deadline)break;
@@ -310,9 +332,21 @@ function generate(d){
   }
   return{puzzle:base,sol:sol};
 }
+function validatePuzzle(g){
+  if(!g||!Array.isArray(g.puzzle)||g.puzzle.length!==81||!Array.isArray(g.sol)||g.sol.length!==81)return false;
+  for(var i=0;i<81;i++)if(g.puzzle[i]!==0&&g.puzzle[i]!==g.sol[i])return false;
+  return countSolutions(g.puzzle.slice(),2)===1;
+}
+/* 每日挑战：按日期 seed 生成；失败自动 seed+1 重试（tries 次） */
+function dailyPuzzleFor(ds,tries){
+  var t=tries||8,s=seedForDate(ds),d=s%3,g=null,i;
+  for(i=0;i<t;i++){g=generate(d,mulberry32(s+i));if(validatePuzzle(g))break;g=null}
+  return g?{puzzle:g.puzzle,sol:g.sol,diff:d,seed:s}:null;
+}
+/*DAILY-PURE-END*/
 /* ---------- 局面状态 ---------- */
 var given=[],user=[],notes=[],sol=[],diff=0,elapsed=0,timer=null,running=false,done=false;
-var notesMode=false,sel=-1;
+var notesMode=false,sel=-1,dailyMode=false,dailyDate="";
 var cellEls=[];
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
@@ -334,21 +368,33 @@ function buildGrid(){
 }
 function getVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
 function fmt(s){var m=Math.floor(s/60),ss=s%60;return(m<10?"0":"")+m+":"+(ss<10?"0":"")+ss}
-function startGame(d){
+/* 本地 UTC+8 日期（YYYYMMDD），每日挑战唯一时间源 */
+function todayStr(){return new Date(Date.now()+8*3600e3).toISOString().slice(0,10).replace(/-/g,"")}
+function updDailyBtn(){
+  var ds=todayStr(),rec=best.daily[ds],fin=!!(rec&&rec.done),b=$("btnDaily");
+  b.textContent="每日 "+ds.slice(4,6)+"-"+ds.slice(6)+(fin?" ✓":"");
+  b.classList.toggle("on",fin||dailyMode);
+}
+function startGame(d,daily){
+  var ds=daily?todayStr():"",g=null,lv=-1,arr=null;
+  dailyMode=!!daily;dailyDate=ds;fromDb=false;
+  say("出题中…");
+  if(daily){
+    g=dailyPuzzleFor(ds);
+    if(!g){say("每日挑战题目生成失败，请稍后重试");return}
+    d=g.diff;
+  }else{
+    arr=DB_LEVELS[d];
+    if(arr&&arr.length){
+      lv=(prog["d"+d]||0)%arr.length;
+      prog["d"+d]=lv+1;saveProg();
+      g={puzzle:arr[lv].puzzle.slice(),sol:arr[lv].sol.slice()};
+      fromDb=true;
+    }else g=generate(d);
+  }
   diff=d;
   document.querySelectorAll(".chip").forEach(function(ch){ch.classList.toggle("on",+ch.dataset.d===d)});
-  say("出题中…");
-  var arr=DB_LEVELS[d],lv=-1,g;
-  if(arr&&arr.length){
-    lv=(prog["d"+d]||0)%arr.length;
-    prog["d"+d]=lv+1;saveProg();
-    g={puzzle:arr[lv].puzzle.slice(),sol:arr[lv].sol.slice()};
-    fromDb=true;
-  }else{
-    g=generate(d);
-    fromDb=false;
-  }
-  $("stDiff").textContent=DIFF[d].name+(lv>=0?" "+(lv+1)+"/"+arr.length:"");
+  $("stDiff").textContent=DIFF[d].name+(daily?" · 每日":(lv>=0?" "+(lv+1)+"/"+arr.length:""));
   given=g.puzzle;sol=g.sol;
   user=[];notes=[];
   for(var i=0;i<81;i++){user.push(0);notes.push([])}
@@ -356,7 +402,9 @@ function startGame(d){
   $("stTime").textContent="00:00";
   paint();updLeft();
   startTimer();
-  say(DIFF[d].name+(lv>=0?" "+(lv+1)+"/"+arr.length:"")+" · 提示格 "+given.filter(function(v){return v}).length);
+  say(daily?("每日挑战 "+ds.slice(4,6)+"-"+ds.slice(6)+" · "+DIFF[d].name)
+           :(DIFF[d].name+(lv>=0?" "+(lv+1)+"/"+arr.length:"")+" · 提示格 "+given.filter(function(v){return v}).length));
+  updDailyBtn();
 }
 function startTimer(){
   stopTimer();running=true;
@@ -453,11 +501,24 @@ function checkWin(){
   var key=diff===0?"E":diff===1?"M":"H";
   var isRecord=!best[key]||elapsed<best[key];
   if(isRecord){best[key]=elapsed;saveBest()}
-  // 成绩上报（用时 asc：越少越好）
-  if(GB.available)GB.reportScore("sudoku",{metricValue:elapsed}).catch(function(){});
-  $("ovTitle").textContent="完成！";
-  $("ovDesc").innerHTML="用时 <b>"+fmt(elapsed)+"</b><br>"+DIFF[diff].name+"难度"+(isRecord?" · 新纪录！":" · 最佳 "+fmt(best[key]));
-  $("ovBtn").textContent="再来一局";
+  if(dailyMode){
+    // 每日挑战：只写本地/账号存档，不进排行榜
+    var rec=best.daily[dailyDate]||(best.daily[dailyDate]={done:false,time:0,diff:diff});
+    rec.done=true;rec.diff=diff;
+    if(!rec.time||elapsed<rec.time)rec.time=elapsed;
+    saveBest();updDailyBtn();
+    $("ovTitle").textContent="每日挑战完成 ✓";
+    $("ovDesc").innerHTML="每日 "+dailyDate.slice(4,6)+"-"+dailyDate.slice(6)+" · "+DIFF[diff].name+
+      "<br>用时 <b>"+fmt(elapsed)+"</b>"+(isRecord?" · 新纪录！":" · 本日最佳 "+fmt(rec.time))+
+      "<br><span style=\"font-size:12px\">成绩仅记录在本地每日挑战</span>";
+    $("ovBtn").textContent="再玩本日";
+  }else{
+    // 成绩上报（用时 asc：越少越好）
+    if(GB.available)GB.reportScore("sudoku",{metricValue:elapsed}).catch(function(){});
+    $("ovTitle").textContent="完成！";
+    $("ovDesc").innerHTML="用时 <b>"+fmt(elapsed)+"</b><br>"+DIFF[diff].name+"难度"+(isRecord?" · 新纪录！":" · 最佳 "+fmt(best[key]));
+    $("ovBtn").textContent="再来一局";
+  }
   $("overlay").classList.add("show");
   say("全部正确，漂亮！");
 }
@@ -489,8 +550,9 @@ function buildKeys(){
   k.appendChild(e);
 }
 document.querySelectorAll(".chip").forEach(function(ch){
-  ch.addEventListener("click",function(){startGame(+this.dataset.d)});
+  ch.addEventListener("click",function(){if(this.id==="btnDaily")return;startGame(+this.dataset.d)});
 });
+$("btnDaily").addEventListener("click",function(){startGame(0,true)});
 $("btnNote").addEventListener("click",function(){
   notesMode=!notesMode;
   this.textContent=notesMode?"笔记 开":"笔记 关";
@@ -498,10 +560,12 @@ $("btnNote").addEventListener("click",function(){
   say(notesMode?"笔记模式：点数字写候选，再点一次取消":"正式填数模式");
 });
 $("btnPause").addEventListener("click",togglePause);
-$("btnNew").addEventListener("click",function(){startGame(diff)});
+$("btnNew").addEventListener("click",function(){dailyMode?startGame(0,true):startGame(diff)});
 $("ovBtn").addEventListener("click",function(){
   $("overlay").classList.remove("show");
-  if(!done)startTimer();else startGame(diff);
+  if(!done)startTimer();
+  else if(dailyMode)startGame(0,true);
+  else startGame(diff);
 });
 document.addEventListener("visibilitychange",function(){
   if(document.hidden&&running&&!done)togglePause();

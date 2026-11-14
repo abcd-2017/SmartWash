@@ -7,8 +7,8 @@
 <title>粉笔台球</title>
 <style>
   /*token:GAME-THEME.md§2*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-success:#2D9B6A;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-felt:#2F8A66;--g-felt2:#379871;--g-rail:#C9B691;--g-pocket:#1A221D;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-felt:#27604A;--g-felt2:#2E6E55;--g-rail:#4E4636;--g-pocket:#0B0E0C;color-scheme:dark }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-success:#2D9B6A;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-felt:#2F8A66;--g-felt2:#379871;--g-rail:#C9B691;--g-pocket:#1A221D;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-felt:#27604A;--g-felt2:#2E6E55;--g-rail:#4E4636;--g-pocket:#0B0E0C;color-scheme:dark }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
@@ -61,6 +61,7 @@
     font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer;
   }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
+  .btn.daily-done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .btn:active { opacity: .85; }
   .btn:focus-visible { outline: 2px solid var(--g-primary); outline-offset: 2px; }
   .toolbar { display: flex; gap: 10px; margin: 12px 0 0; }
@@ -124,6 +125,11 @@ var TIMED_BALLS=6,TIMED_SEC=60;
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,String(v))}catch(e){}}
 function lsNum(k,d){var v=parseInt(lsGet(k),10);return isFinite(v)?v:d}
+/* ---------- 每日挑战存档（沿用 sw.billiards.v1 系子键，保留最近 30 天） ---------- */
+var DAILY_KEY="sw.billiards.v1.daily";
+function loadDaily(){try{var v=JSON.parse(localStorage.getItem(DAILY_KEY));if(v&&typeof v==="object")return v}catch(e){}return{}}
+function saveDaily(d){try{localStorage.setItem(DAILY_KEY,JSON.stringify(d))}catch(e){}}
+var dailySave=trimDaily(loadDaily());
 /* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
 var GB=(function(){
   var pending={},seq=0;
@@ -157,7 +163,8 @@ function accountSave(){
   GB.saveState("billiards",{
     "g_billiards_unlock":lsNum(K_UNLOCK,1),
     "g_billiards_best_run":lsNum(K_RUN,0),
-    "g_billiards_timed_best":lsNum(K_TIME,0)
+    "g_billiards_timed_best":lsNum(K_TIME,0),
+    "daily":dailySave
   }).catch(function(){});
 }
 function syncSaveFromServer(){
@@ -172,6 +179,18 @@ function syncSaveFromServer(){
       if(isFinite(ru)&&ru>lsNum(K_UNLOCK,1)){lsSet(K_UNLOCK,String(ru));changed=true;}
       if(isFinite(rr)&&rr>lsNum(K_RUN,0)){lsSet(K_RUN,String(rr));changed=true;}
       if(isFinite(rt)&&rt>lsNum(K_TIME,0)){lsSet(K_TIME,String(rt));changed=true;}
+      //每日挑战：同日取更优（分数高者），跨日缺失则补录
+      if(r.daily&&typeof r.daily==="object"){
+        for(var dd in r.daily){
+          var rd=r.daily[dd];
+          if(!rd||typeof rd!=="object"||!rd.done||!isFinite(rd.score))continue;
+          var ld=dailySave[dd];
+          if(!ld||rd.score>ld.score){
+            dailySave[dd]={done:true,score:rd.score,shots:isFinite(rd.shots)?rd.shots:0,balls:isFinite(rd.balls)?rd.balls:0};
+            trimDaily(dailySave);saveDaily(dailySave);changed=true;
+          }
+        }
+      }
       if(changed){prepLevel(Math.min(lsNum(K_UNLOCK,1),maxLevel()));if(S.phase==="menu")showMenu(false);}
     }catch(e){}
   }).catch(function(){});
@@ -268,7 +287,7 @@ var ovK=$("ovK"),ovT=$("ovT"),ovX=$("ovX"),ovS=$("ovS"),ovB=$("ovB");
 
 /* ---------- 状态 ---------- */
 var S={
-  mode:null,phase:"menu",paused:false,   // mode: levels|timed; phase: menu|running|settling|over
+  mode:null,phase:"menu",paused:false,   // mode: levels|timed|daily; phase: menu|running|settling|over
   level:1,score:0,shotsLeft:0,streak:0,levelBalls:0,levelShots:0,
   balls:[],everFired:false,
   timeLeft:TIMED_SEC,timerOn:false,
@@ -283,7 +302,7 @@ function nearPocket(x,y,d){
   for(var i=0;i<POCKETS.length;i++){var p=POCKETS[i];if(Math.hypot(x-p.x,y-p.y)<d)return true}
   return false;
 }
-function genRack(seed,count){
+function genRackPositions(seed,count){
   var rnd=mulberry(seed),list=[],tries=0;
   while(list.length<count&&tries<900){
     tries++;
@@ -305,6 +324,10 @@ function genRack(seed,count){
     if(!clash)list.push({x:gx,y:gy});
     if(g>60)break;
   }
+  return list;
+}
+function genRack(seed,count){
+  var list=genRackPositions(seed,count);
   var balls=[mkBall(250,690,"#FFFFFF",0,true)];
   for(var k=0;k<list.length;k++)balls.push(mkBall(list[k].x,list[k].y,BALL_COLORS[k%BALL_COLORS.length],k+1,false));
   return balls;
@@ -315,6 +338,38 @@ function rackFromBalls(list){
   for(k=0;k<list.length;k++)balls.push(mkBall(list[k][0],list[k][1],BALL_COLORS[k%BALL_COLORS.length],k+1,false));
   return balls;
 }
+/*SW-DAILY-BEGIN*/
+/* 每日挑战：本地 UTC+8 日期派生种子（纯函数，跨端一致），生成失败自动 seed+1 重试 */
+function dailyKey(d){return new Date(d.getTime()+8*3600e3).toISOString().slice(0,10).replace(/-/g,"")}
+function hashGameKey(k){var s=0,i;for(i=0;i<k.length;i++)s=(s+k.charCodeAt(i))%1000;return s}
+function dailySeedFor(key,ymd){return parseInt(ymd,10)*31+hashGameKey(key)}
+function dailyCount(seed){return 3+(seed%6)}
+function dailyShots(count){return count+2}
+function rackOk(list,count){
+  var i,j;
+  if(!Array.isArray(list)||list.length!==count||!count)return false;
+  for(i=0;i<list.length;i++){
+    var b=list[i];
+    if(!isFinite(b.x)||!isFinite(b.y))return false;
+    if(b.x<B_L||b.x>B_R||b.y<B_T||b.y>B_B)return false;
+    if(nearPocket(b.x,b.y,62))return false;
+    for(j=i+1;j<list.length;j++){
+      if(Math.hypot(b.x-list[j].x,b.y-list[j].y)<2*R-.5)return false;
+    }
+  }
+  return true;
+}
+function dailyConfig(key){
+  var seed=dailySeedFor("billiards",key),t;
+  for(t=0;t<16;t++){
+    var sd=seed+t,count=dailyCount(sd),list=genRackPositions(sd,count);
+    if(rackOk(list,count))return{seed:sd,count:count,shots:dailyShots(count),balls:list};
+  }
+  var fb=genRackPositions(seed,3);
+  return{seed:seed,count:fb.length,shots:dailyShots(fb.length),balls:fb};
+}
+function trimDaily(d){var ks=Object.keys(d).sort();while(ks.length>30)delete d[ks.shift()];return d}
+/*SW-DAILY-END*/
 function prepLevel(L){
   S.level=L;
   var dl=dbLevel(L),n=levelBallCount(L);
@@ -472,6 +527,32 @@ function resolveShot(){
       return;
     }
     S.phase="running";
+  }else if(S.mode==="daily"){
+    if(targetsLeft()===0){
+      var dBonus=150+S.shotsLeft*50;
+      addScore(dBonus);
+      var rec=dailySave[S.dailyKey]||{};
+      if(!rec.done||S.score>(rec.score||0)){
+        dailySave[S.dailyKey]={done:true,score:S.score,shots:S.levelShots-S.shotsLeft,balls:S.levelBalls};
+        trimDaily(dailySave);saveDaily(dailySave);
+      }
+      accountSave();
+      S.phase="over";
+      showOv({kicker:"DAILY CHALLENGE",title:"每日挑战完成 ✓",
+        text:"今日挑战达成，剩余杆数转化为加分。明日再来挑战新球阵。",
+        stats:[["本局得分",S.score],["用杆",S.levelShots-S.shotsLeft],["清台奖励","+"+dBonus]],
+        btns:[["再来一次","primary",function(){startDaily()}],["返回菜单","ghost",function(){showMenu(false)}]]});
+      return;
+    }
+    if(S.shotsLeft<=0){
+      S.phase="over";
+      showOv({kicker:"OUT OF SHOTS",title:"杆数用尽",
+        text:"今日挑战还剩 "+targetsLeft()+" 颗目标球，重整思路再战。",
+        stats:[["本局得分",S.score],["已进袋",S.levelBalls-targetsLeft()],["本关杆数",S.levelShots]],
+        btns:[["重试今日","primary",function(){startDaily()}],["返回菜单","ghost",function(){showMenu(false)}]]});
+      return;
+    }
+    S.phase="running";
   }else if(S.mode==="timed"){
     if(targetsLeft()===0){
       S.rackSeed=(S.rackSeed*16807+11)%2147483647;
@@ -544,8 +625,18 @@ function timedOver(){
     stats:[["本局得分",S.score],["历史最佳",Math.max(best,S.score)],["当前连击",S.streak]],
     btns:[["再来一局","primary",function(){startTimed()}],["返回菜单","ghost",function(){showMenu(false)}]]});
 }
+function startDaily(){
+  var key=dailyKey(new Date()),cfg=dailyConfig(key);
+  S.mode="daily";S.score=0;S.streak=0;S.paused=false;S.everFired=false;
+  S.dailyKey=key;
+  S.balls=rackFromBalls(cfg.balls.map(function(p){return[p.x,p.y]}));
+  S.levelBalls=cfg.count;S.shotsLeft=cfg.shots;S.levelShots=cfg.shots;
+  S.pottedShot=0;S.scratched=false;
+  S.phase="running";hideOv();
+}
 function retry(){
   if(S.mode==="levels"){S.paused=false;prepLevel(S.level);S.phase="running";hideOv()}
+  else if(S.mode==="daily"){startDaily()}
   else if(S.mode==="timed"){startTimed()}
 }
 function resumeFromMenu(){
@@ -557,6 +648,8 @@ function showMenu(inGame){
   var btns=[];
   if(hasGame)btns.push(["继续游戏","primary",resumeFromMenu]);
   btns.push(["清台闯关 · 第 "+Math.min(lsNum(K_UNLOCK,1),maxLevel())+" 关",hasGame?"ghost":"primary",function(){startLevels()}]);
+  var dk=dailyKey(new Date()),dDone=!!(dailySave[dk]&&dailySave[dk].done);
+  btns.push(["每日挑战 · "+dk.slice(0,4)+"-"+dk.slice(4,6)+"-"+dk.slice(6,8)+(dDone?" ✓":""),"ghost"+(dDone?" daily-done":""),function(){startDaily()}]);
   btns.push(["限时挑战 · 60 秒","ghost",function(){startTimed()}]);
   showOv({kicker:"CHALK BILLIARDS",title:"粉笔台球",
     text:"闯关模式清台过关、杆数有限；限时模式 60 秒内连续进球冲高分。母球落袋罚 50 分。",
@@ -772,6 +865,8 @@ function syncHud(){
   var lbl,val,left=targetsLeft();
   if(S.mode==="levels"){
     lbl="第 "+S.level+" 关";val=S.shotsLeft+" 杆 · 余 "+left+" 球";
+  }else if(S.mode==="daily"){
+    lbl="每日挑战";val=S.shotsLeft+" 杆 · 余 "+left+" 球";
   }else if(S.mode==="timed"){
     lbl="限时挑战";val=S.timerOn?Math.max(0,Math.ceil(S.timeLeft))+"s · 余 "+left+" 球":"余 "+left+" 球";
   }else{lbl="球局";val="--"}

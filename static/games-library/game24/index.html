@@ -48,6 +48,8 @@
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
   .btn:disabled { opacity: .3; }
+  .btn.daily { margin-top: 8px; }
+  .btn.daily.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
   .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
@@ -99,6 +101,7 @@ paint(B||"light");
     <button class="btn ghost" type="button" id="btnRetry">重玩本关</button>
     <button class="btn" type="button" id="btnSubmit">提交答案</button>
   </div>
+  <button class="btn daily" id="btnDaily" type="button">每日挑战</button>
   <p class="msg" id="msg" role="status" aria-live="polite">用尽 4 个数算出 24</p>
   <p class="foot">点数字与运算符号组式，可加括号；提交时自动补齐未闭合的括号 · 每关限时且答错扣机会</p>
 </div>
@@ -207,6 +210,7 @@ function syncLevelsFromServer(){
     var list=parseDbLevels(res);
     if(!list)return;
     applyLevels(list,res.version||0);
+    if(dailyMode)return;   // 每日挑战进行中：不替换当前局
     startLevel(Math.min(Math.max(saveData.lv,0),LEVELS.length-1));
   }).catch(function(){});
 }
@@ -218,14 +222,39 @@ function loadSave(){
     if(s&&s.lv>=0){
       var best=s.best||{};
       if(typeof best!=="object"||Array.isArray(best))best={};
-      return {lv:s.lv,best:best};
+      var daily={};
+      if(s.daily&&typeof s.daily==="object"){
+        for(var dk in s.daily){
+          if(!/^\d{8}$/.test(dk))continue;
+          var rd=s.daily[dk];
+          if(rd&&rd.done)daily[dk]={done:true,time:Math.max(0,parseInt(rd.time,10)||0)};
+        }
+      }
+      return {lv:s.lv,best:best,daily:daily};
     }
   }catch(e){}
-  return {lv:0,best:{}};
+  return {lv:0,best:{},daily:{}};
 }
 var saveData=loadSave();
+/* ---------- 每日挑战状态与存档（同一存档键内追加 daily，不新增 localStorage 键） ---------- */
+var dailyMode=false,dailyDate="";
+function pruneDaily(){
+  var d=new Date(Date.now()+8*3600e3);
+  d.setUTCDate(d.getUTCDate()-29);
+  var cut=d.toISOString().slice(0,10).replace(/-/g,"");
+  var ks=Object.keys(saveData.daily),i;
+  for(i=0;i<ks.length;i++)if(ks[i]<cut)delete saveData.daily[ks[i]];
+  ks=Object.keys(saveData.daily).sort();
+  for(i=0;i<ks.length-30;i++)delete saveData.daily[ks[i]];
+}
+function updateDailyBtn(){
+  var b=document.getElementById("btnDaily"),t=dailyDateStr(),d=saveData.daily[t];
+  b.textContent="每日挑战 · "+t.slice(4,6)+"月"+t.slice(6,8)+"日"+(d&&d.done?" ✓":"");
+  b.classList.toggle("done",!!(d&&d.done));
+}
 function save(){
-  var data={lv:cur,best:saveData.best};
+  pruneDaily();
+  var data={lv:dailyMode?saveData.lv:cur,best:saveData.best,daily:saveData.daily};
   try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
   if(GB.available)GB.saveState("game24",data).catch(function(){});
 }
@@ -245,11 +274,26 @@ function syncSaveFromServer(){
           if(!(mv>0)||rv<mv){saveData.best[k]=rv;changed=true;}
         }
       }
-      if(changed){save();startLevel(Math.min(saveData.lv,LEVELS.length-1));}
+      if(r.daily&&typeof r.daily==="object"&&!Array.isArray(r.daily)){
+        for(var dk in r.daily){
+          var rd=r.daily[dk];
+          if(!rd||!rd.done)continue;
+          var ld=saveData.daily[dk],rt=Math.max(0,parseInt(rd.time,10)||0);
+          if(!ld||!ld.done)saveData.daily[dk]={done:true,time:rt};
+          else if(rt>0&&(ld.time<=0||rt<ld.time))ld.time=rt;
+          changed=true;
+        }
+      }
+      if(changed){
+        save();
+        if(!dailyMode)startLevel(Math.min(saveData.lv,LEVELS.length-1));
+        updateDailyBtn();
+      }
     }catch(e){}
   }).catch(function(){});
 }
 /* ---------- 分数运算：精确有理数，避免浮点误差 ---------- */
+/*G24-FRAC-BEGIN*/
 function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){var t=a%b;a=b;b=t;}return a||1;}
 function mkF(n,d){if(d<0){n=-n;d=-d;}if(n===0)d=1;var g=gcd(n,d);return {n:n/g,d:d/g};}
 function fAdd(a,b){return mkF(a.n*b.d+b.n*a.d,a.d*b.d);}
@@ -257,6 +301,7 @@ function fSub(a,b){return mkF(a.n*b.d-b.n*a.d,a.d*b.d);}
 function fMul(a,b){return mkF(a.n*b.n,a.d*b.d);}
 function fDiv(a,b){if(b.n===0)return null;return mkF(a.n*b.d,a.d*b.n);}
 function fStr(a){return a.d===1?String(a.n):(a.n+"/"+a.d);}
+/*G24-FRAC-END*/
 /* 递归下降求值：token 序列 → 精确分数；非法返回 null */
 function evalAll(toks){
   var p=0;
@@ -307,6 +352,47 @@ function levelConf(diff){
   var d=Math.max(1,Math.min(10,diff||1));
   return {diff:d,time:d<=3?90:(d<=6?75:(d<=8?60:45)),chances:d<=3?5:(d<=6?4:3)};
 }
+/* ---------- 每日挑战：本地确定性生成 + 内嵌 4 数求解器（无桥依赖） ---------- */
+/*G24-DAILY-BEGIN*/
+function rng32(a){
+  return function(){
+    a|=0;a=a+0x6d2b79f5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+function hashKey(s){var h=0,i;for(i=0;i<s.length;i++)h=(h+s.charCodeAt(i))%1000;return h;}
+function dailyDateStr(){return new Date(Date.now()+8*3600e3).toISOString().slice(0,10).replace(/-/g,"");}
+function dailySeedOf(key,dateStr){return Number(dateStr)*31+hashKey(key);}
+/* 4 数求解器：枚举两两配对 × 四则运算（精确分数），存在等于 target 的解即返回 true */
+function solvable24(ns,tgt){
+  if(ns.length===1){var f=ns[0];return f.n===tgt*f.d;}
+  for(var i=0;i<ns.length;i++){
+    for(var j=i+1;j<ns.length;j++){
+      var rest=[];
+      for(var k=0;k<ns.length;k++)if(k!==i&&k!==j)rest.push(ns[k]);
+      var a=ns[i],b=ns[j];
+      var cand=[fAdd(a,b),fSub(a,b),fSub(b,a),fMul(a,b)];
+      var q=fDiv(a,b);if(q)cand.push(q);
+      q=fDiv(b,a);if(q)cand.push(q);
+      for(var m=0;m<cand.length;m++){
+        if(solvable24(rest.concat([cand[m]]),tgt))return true;
+      }
+    }
+  }
+  return false;
+}
+/* 由 seed 派生当日题面：4 个 1-13 的数（必须可解，否则返回 null 由调用方 seed+1 重抽）；限时/限次中等偏易 */
+function genDaily24(seed,dateStr){
+  var r=rng32(seed),ri=function(lo,hi){return lo+Math.floor(r()*(hi-lo+1));};
+  var nums=[ri(1,13),ri(1,13),ri(1,13),ri(1,13)];
+  var fracs=[mkF(nums[0],1),mkF(nums[1],1),mkF(nums[2],1),mkF(nums[3],1)];
+  if(!solvable24(fracs,24))return null;
+  return {name:dateStr.slice(4,6)+"月"+dateStr.slice(6,8)+"日",
+    numbers:nums,target:24,time:ri(90,120),chances:ri(5,7)};
+}
+/*G24-DAILY-END*/
 /* ---------- 渲染 ---------- */
 function renderNums(){
   var box=$("nums");box.innerHTML="";
@@ -435,6 +521,7 @@ function loseChance(msg){
 /* ---------- 流程 ---------- */
 function startLevel(n){
   cur=Math.max(0,Math.min(n,LEVELS.length-1));
+  dailyMode=false;
   var L=LEVELS[cur];
   if(!L||!Array.isArray(L.numbers)||L.numbers.length!==4)return;
   numbers=L.numbers.slice();
@@ -456,6 +543,31 @@ function startLevel(n){
   timer=setInterval(tick,200);
   say("用尽 4 个数算出 "+target);
 }
+/* 每日挑战：按当日 seed 生成题面（不可解自动 seed+1 重抽，上限 200），绕过 DB 关卡列表 */
+function startDaily(){
+  var dateStr=dailyDateStr(),lv=null,base=dailySeedOf("game24",dateStr),i;
+  for(i=0;i<200;i++){lv=genDaily24(base+i,dateStr);if(lv)break;}
+  if(!lv)return;
+  dailyMode=true;dailyDate=dateStr;
+  numbers=lv.numbers.slice();target=24;
+  conf={diff:3,time:lv.time,chances:lv.chances};
+  tokens=[];remaining=[1,1,1,1];over=false;lastResult="fail";
+  chancesLeft=conf.chances;
+  clearInterval(timer);timer=null;remainHide=0;
+  startTs=Date.now();
+  deadline=startTs+conf.time*1000;
+  cur=0;
+  $("lvTag").textContent="每日挑战 · "+lv.name;
+  $("lvTarget").textContent="目标 24 点";
+  $("stLv").textContent="每日";
+  $("stBest").textContent="--";
+  updateChances();updateTime();
+  hideOverlay();
+  renderNums();renderExpr();renderPad();
+  updateDailyBtn();
+  timer=setInterval(tick,200);
+  say("每日挑战 · 用尽 4 个数算出 24");
+}
 function tick(){
   if(over)return;
   updateTime();
@@ -472,8 +584,21 @@ function fail(reason){
 }
 function success(usedSec){
   if(over)return;
-  over=true;lastResult=(cur>=LEVELS.length-1)?"win":"success";
+  over=true;lastResult="success";
   clearInterval(timer);timer=null;
+  if(dailyMode){
+    var rec=saveData.daily[dailyDate]||{};
+    var prevT=parseInt(rec.time,10)||0;
+    saveData.daily[dailyDate]={done:true,time:prevT>0?Math.min(prevT,usedSec):usedSec};
+    save();updateDailyBtn();
+    $("stBest").textContent=usedSec+"s";
+    $("ovTitle").textContent="每日挑战完成 ✓";
+    $("ovDesc").innerHTML="用时 <b>"+usedSec+"</b> 秒<br>"+numbers.join("，")+" → "+target;
+    $("ovBtn").textContent="再玩一次";
+    showOverlay();
+    return;
+  }
+  lastResult=(cur>=LEVELS.length-1)?"win":"success";
   var prev=saveData.best[cur],isNew=!(prev>0)||usedSec<prev;
   if(isNew)saveData.best[cur]=usedSec;
   saveData.lv=Math.min(cur+1,LEVELS.length-1);
@@ -514,13 +639,15 @@ function bindPad(){
 }
 bindPad();
 $("btnSubmit").addEventListener("click",submit);
-$("btnRetry").addEventListener("click",function(){startLevel(cur);});
+$("btnRetry").addEventListener("click",function(){if(dailyMode)startDaily();else startLevel(cur);});
+$("btnDaily").addEventListener("click",startDaily);
 $("ovBtn").addEventListener("click",function(){
-  if(lastResult==="fail")startLevel(cur);
+  if(lastResult==="fail"){if(dailyMode)startDaily();else startLevel(cur);}
   else if(lastResult==="win")startLevel(0);
-  else startLevel(Math.min(cur+1,LEVELS.length-1));
+  else{if(dailyMode)startDaily();else startLevel(Math.min(cur+1,LEVELS.length-1));}
 });
 document.addEventListener("visibilitychange",onVis);
+updateDailyBtn();
 startLevel(Math.min(Math.max(saveData.lv,0),LEVELS.length-1));
 syncLevelsFromServer();
 syncSaveFromServer();
