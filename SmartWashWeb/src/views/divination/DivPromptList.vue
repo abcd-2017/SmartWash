@@ -64,7 +64,11 @@
         <el-table-column label="术数方法" min-width="120">
           <template #default="{ row }">{{ methodText(row.method) }}</template>
         </el-table-column>
-        <el-table-column prop="version" label="版本号" min-width="140" />
+        <el-table-column prop="version" label="版本号" min-width="140">
+          <template #default="{ row }">
+            <span class="version-chip">{{ row.version }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" min-width="100">
           <template #default="{ row }">
             <el-tag :type="divPromptStatusTagType(row.status)">
@@ -413,3 +417,17 @@ const handleDelete = async (row) => {
   }
 };
 </script>
+
+<style scoped>
+/* 版本号是机器标识符：mono chip 与短码/Host 列同一语言（DESIGN.md Mono 13px/400） */
+.version-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-input);
+}
+</style>

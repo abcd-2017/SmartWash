@@ -15,7 +15,15 @@
           </div>
           <span class="stat-card__label">学校总数</span>
         </div>
-        <span class="stat-card__value">{{ schoolCount }}</span>
+        <span class="stat-card__value">
+          <el-skeleton v-if="statsLoading" animated>
+            <template #template>
+              <el-skeleton-item variant="text" class="stat-card__skeleton-bar" />
+            </template>
+          </el-skeleton>
+          <template v-else-if="statsError">--</template>
+          <template v-else>{{ schoolCount }}</template>
+        </span>
       </div>
       <div class="stat-card stat-card--blue">
         <div class="stat-card__head">
@@ -24,7 +32,15 @@
           </div>
           <span class="stat-card__label">用户总数</span>
         </div>
-        <span class="stat-card__value">{{ userCount }}</span>
+        <span class="stat-card__value">
+          <el-skeleton v-if="statsLoading" animated>
+            <template #template>
+              <el-skeleton-item variant="text" class="stat-card__skeleton-bar" />
+            </template>
+          </el-skeleton>
+          <template v-else-if="statsError">--</template>
+          <template v-else>{{ userCount }}</template>
+        </span>
       </div>
       <div class="stat-card stat-card--emerald">
         <div class="stat-card__head">
@@ -33,7 +49,15 @@
           </div>
           <span class="stat-card__label">今日订单</span>
         </div>
-        <span class="stat-card__value">{{ todayOrderCount }}</span>
+        <span class="stat-card__value">
+          <el-skeleton v-if="statsLoading" animated>
+            <template #template>
+              <el-skeleton-item variant="text" class="stat-card__skeleton-bar" />
+            </template>
+          </el-skeleton>
+          <template v-else-if="statsError">--</template>
+          <template v-else>{{ todayOrderCount }}</template>
+        </span>
       </div>
       <div class="stat-card stat-card--amber">
         <div class="stat-card__head">
@@ -43,7 +67,15 @@
           <span class="stat-card__label">今日收入</span>
         </div>
         <!-- 金额：整数元做滚动（小数补 .00 固定），避免 rAF 对小数漏帧抖动 -->
-        <span class="stat-card__value">￥{{ incomeDisplay }}</span>
+        <span class="stat-card__value">
+          <el-skeleton v-if="statsLoading" animated>
+            <template #template>
+              <el-skeleton-item variant="text" class="stat-card__skeleton-bar" />
+            </template>
+          </el-skeleton>
+          <template v-else-if="statsError">--</template>
+          <template v-else>￥{{ incomeDisplay }}</template>
+        </span>
       </div>
     </div>
 
@@ -57,7 +89,12 @@
           </el-radio-button>
         </el-radio-group>
       </div>
-      <div class="trend-card__grid">
+      <!-- 加载失败态：面板内显式失败 + 重试，不再误显 el-empty「暂无数据」 -->
+      <div v-if="trendError" class="trend-card__error">
+        <span>加载失败</span>
+        <el-button size="small" @click="fetchTrend">重试</el-button>
+      </div>
+      <div v-else class="trend-card__grid">
         <div class="trend-card__panel">
           <span class="trend-card__panel-title">收入趋势</span>
           <TrendChart
@@ -129,27 +166,38 @@ const stats = ref({
   todayIncome: 0,
 });
 
+// 统计卡加载态：进行中渲染骨架，失败落定「--」，避免「0→真值」闪变与误导
+const statsLoading = ref(true);
+const statsError = ref(false);
+
 // 统计卡数值滚动：数据来自 getDashboardStats（真实数据触发），reduced-motion 下直接落定
 const { value: schoolCount } = useAnimatedNumber(() => stats.value.schoolCount);
 const { value: userCount } = useAnimatedNumber(() => stats.value.userCount);
 const { value: todayOrderCount } = useAnimatedNumber(() => stats.value.todayOrderCount);
 const { value: todayIncome } = useAnimatedNumber(() => stats.value.todayIncome);
 
-// 金额展示：整数元滚动 + 固定 .00，保证视觉效果连贯
+// 金额展示：滚动中间帧保持整数元（无千分位，避免逗号抖动），落定帧走 formatAmount 千分位
 const incomeDisplay = computed(() => {
-  const v = Number(todayIncome.value) || 0;
-  return `${v.toFixed(2)}`;
+  const current = Number(todayIncome.value) || 0;
+  const settled = todayIncome.value === (Number(stats.value.todayIncome) || 0);
+  return settled ? formatAmount(current) : current.toFixed(2);
 });
 
 onMounted(async () => {
+  statsLoading.value = true;
+  statsError.value = false;
   try {
     const data = await getDashboardStats();
-    stats.value = data;
+    // 后端可能返回 null：空对象兜底，保留默认结构避免展开报错
+    stats.value = { ...stats.value, ...(data || {}) };
   } catch (error) {
+    statsError.value = true;
     // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作；与趋势卡失败反馈
     // 统一弹 toast——此前仅 logger 静默，页面保持 0 值展示，用户对空面板无从归因
     logger.error('工作台统计数据加载失败:', error);
     ElMessage.error(error.message || '获取统计数据失败');
+  } finally {
+    statsLoading.value = false;
   }
 });
 
@@ -159,6 +207,8 @@ const TREND_DAYS_OPTIONS = [7, 30, 90];
 const trendDays = ref(30);
 const trendData = ref([]);
 const trendLoading = ref(false);
+// 趋势卡失败态：失败面板内显式提示 + 重试，不再误显「暂无数据」空态
+const trendError = ref(false);
 
 // 竞态守卫：快速切换 7/30/90 天时旧响应后到会覆盖新窗数据，序号不一致即丢弃（对齐 useTableList）
 let trendFetchSeq = 0;
@@ -166,12 +216,14 @@ let trendFetchSeq = 0;
 const fetchTrend = async () => {
   const mySeq = ++trendFetchSeq;
   trendLoading.value = true;
+  trendError.value = false;
   try {
     const data = (await getDashboardTrend(trendDays.value)) || [];
     if (mySeq !== trendFetchSeq) return;
     trendData.value = data;
   } catch (error) {
     if (mySeq !== trendFetchSeq) return;
+    trendError.value = true;
     logger.error('趋势数据加载失败:', error);
     ElMessage.error(error.message || '获取趋势数据失败');
   } finally {
@@ -274,6 +326,13 @@ onMounted(fetchTrend);
   font-variant-numeric: tabular-nums;
 }
 
+/* 统计卡加载骨架：数值位等高占位，避免「0→真值」闪变与布局跳动 */
+.stat-card__skeleton-bar {
+  width: 96px;
+  height: 26px;
+  border-radius: 6px;
+}
+
 /* 趋势分析卡：与统计卡同级白卡语言（12px 圆角 + 着地阴影），靛蓝/信息蓝只出现在图表主体 */
 .trend-card {
   padding: 20px;
@@ -312,6 +371,17 @@ onMounted(fetchTrend);
 /* min-width: 0 防止图表画布在 grid 单元格内溢出 */
 .trend-card__panel {
   min-width: 0;
+}
+
+/* 趋势卡失败态：面板内居中提示 + 重试入口 */
+.trend-card__error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
 .trend-card__panel-title {

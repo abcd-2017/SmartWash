@@ -5,17 +5,20 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.smartwash.entity.AdminUsers;
 import com.smartwash.entity.Roles;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.roles.AddRolesFrom;
 import com.smartwash.from.roles.SearchRolesFrom;
 import com.smartwash.from.roles.UpdateRolesFrom;
+import com.smartwash.mapper.AdminUsersMapper;
 import com.smartwash.mapper.RolesMapper;
 import com.smartwash.service.IRolesService;
 import com.smartwash.vo.roles.RolesVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
@@ -32,7 +35,10 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements IRolesService {
+
+    private final AdminUsersMapper adminUsersMapper;
 
     @Override
     public Page<RolesVo> getAllRoles(SearchRolesFrom rolesFrom) {
@@ -83,6 +89,13 @@ public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(Long::valueOf)
                 .collect(Collectors.toList());
+        // 删除前校验引用：角色仍被管理员账号占用时拒绝，防止误删导致账号失去权限（评审 P1）
+        Long adminCount = adminUsersMapper.selectCount(
+                new LambdaQueryWrapper<AdminUsers>().in(AdminUsers::getRoleId, idList));
+        if (adminCount != null && adminCount > 0) {
+            log.warn("删除角色被拒绝：角色仍被管理员引用, ids: {}, 管理员数: {}", ids, adminCount);
+            throw new CustomExceptions("该角色下仍有 " + adminCount + " 个管理员,无法删除");
+        }
         return removeByIds(idList);
     }
 }

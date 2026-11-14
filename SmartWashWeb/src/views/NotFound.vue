@@ -8,19 +8,37 @@
       <div class="not-found-code">404</div>
       <div class="not-found-title">页面不存在</div>
       <div class="not-found-desc">抱歉，您访问的页面不存在或已被移除</div>
-      <el-button type="primary" class="back-btn" @click="goHome"> 返回首页 </el-button>
+      <div class="not-found-actions">
+        <el-button type="primary" @click="goBack">返回上一页</el-button>
+        <el-button @click="goHome">{{ isLoggedIn ? '返回首页' : '去登录' }}</el-button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 // 404 兜底页：替代原先通配路由直接 redirect 首页的行为，明确告知用户路径无效
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
+const authStore = useAuthStore();
+
+// 登录态决定次级按钮去向：未登录去登录页（路由守卫也会拦回登录页），已登录回首页
+const isLoggedIn = computed(() => !!authStore.token);
+
+// 有历史记录则退回上一页（404 常见于误点链接），否则兜底回首页
+const goBack = () => {
+  if (window.history.length > 1) {
+    router.back();
+  } else {
+    router.push('/');
+  }
+};
 
 const goHome = () => {
-  router.push('/');
+  router.push(isLoggedIn.value ? '/' : '/login');
 };
 </script>
 
@@ -82,7 +100,11 @@ const goHome = () => {
   color: var(--text-secondary);
 }
 
-.back-btn {
+/* 出路按钮组：主/次按钮横排居中 */
+.not-found-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
   margin-top: 24px;
 }
 </style>

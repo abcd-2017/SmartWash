@@ -111,7 +111,7 @@
           <template #default="{ row }">{{ row.users?.phoneNumber || '-' }}</template>
         </el-table-column>
         <el-table-column label="充值金额" min-width="150" align="right">
-          <template #default="{ row }">￥{{ formatAmount(row.amount) }}</template>
+          <template #default="{ row }">￥{{ formatAmount(row.amount, '-') }}</template>
         </el-table-column>
         <el-table-column label="充值类型" min-width="120">
           <template #default="{ row }">

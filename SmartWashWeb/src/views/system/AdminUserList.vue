@@ -164,6 +164,7 @@ import { ElMessage } from 'element-plus';
 import { getAdminUserList, addAdminUser, updateAdminUser, deleteAdminUser } from '@/api/adminUser';
 import { roleOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
+import { isValidationError } from '@/utils/errors';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
@@ -192,6 +193,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -282,7 +284,7 @@ const handleBatchDelete = async () => {
     ElMessage.success('删除成功');
     // 写操作成功留痕：仅记 adminId 串，绝不含密码字段
     logger.info('批量删除管理员成功', `count=${count}`, `adminIds=${ids}`);
-    fetchData();
+    fetchDataAfterDelete();
     tableRef.value.clearSelection();
   } catch (error) {
     logger.error('批量删除管理员失败:', `count=${count}`, error);
@@ -344,12 +346,13 @@ const submitForm = async () => {
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本，防止密码入日志
-    logger.error('保存管理员失败:', error instanceof Error ? error : '表单校验未通过');
-    if (error.message) {
-      ElMessage.error(error.message);
+    // 分级处理（参考 NoticeList）：校验失败走字段红字（fieldValue 含输入明文，防止密码入日志），
+    // 不弹全局假 toast、不记失败日志
+    if (isValidationError(error)) {
+      logger.debug('管理员表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
-      ElMessage.error('操作失败，请检查输入');
+      logger.error('保存管理员失败:', error instanceof Error ? error : '未知错误');
+      ElMessage.error(error.message || '操作失败，请检查输入');
     }
   } finally {
     submitting.value = false;
@@ -366,7 +369,7 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功');
     // 写操作成功留痕：仅记 adminId/username，绝不含密码字段
     logger.info('删除管理员成功', `adminId=${row.adminId}`, `username=${row.username}`);
-    fetchData();
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除管理员失败:', `adminId=${row.adminId}`, error);
     ElMessage.error(error.message || '删除失败');

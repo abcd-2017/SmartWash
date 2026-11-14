@@ -436,15 +436,16 @@ export const subscriptionStatusText = (status) => SUBSCRIPTION_STATUS_TEXT[statu
 export const subscriptionStatusTagType = (status) =>
   dictValue(SUBSCRIPTION_STATUS_TAG_TYPES, status);
 
-/** 计费周期 → 文案（cycle_type month/year + cycle_interval → 每月/每2月/每年，未知值回显原值） */
+/** 计费周期 → 文案（cycle_type month/year + cycle_interval → 每月/每 2 个月/每年，未知值回显原值） */
 export const subscriptionCycleText = (cycleType, interval) => {
   const unit = { month: '月', year: '年' }[cycleType];
   if (!unit) {
     return cycleType || '-';
   }
   const n = Number(interval);
+  // 多期间隔加量词「个」消除「每2月」类数字与单位连排歧义（如 每 2 个月）；单期维持「每月/每年」
   const step = Number.isFinite(n) && n > 1 ? n : '';
-  return `每${step}${unit}`;
+  return step ? `每 ${step} 个${unit}` : `每${unit}`;
 };
 
 /** 自动续费 → 文案（auto_renew 1是 0否） */

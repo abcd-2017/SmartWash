@@ -78,7 +78,7 @@
         :data="list"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        empty-text="暂无订阅记录"
       >
         <el-table-column label="订阅ID" min-width="90">
           <template #default="{ row }">{{ row.subscriptionId ?? row.id ?? '-' }}</template>

@@ -125,8 +125,6 @@ public class LoginController {
         this.smsService = smsService;
         this.jwtBlacklistService = jwtBlacklistService;
         this.sysConfigService = sysConfigService;
-        this.smsService = smsService;
-        this.jwtBlacklistService = jwtBlacklistService;
     }
 
     @Operation(summary = "管理员登录", description = "管理员通过用户名和密码登录，返回JWT令牌与角色")

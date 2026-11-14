@@ -46,7 +46,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="shortCodeList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="shortCodeList"
+        fit
+        highlight-current-row
+        empty-text="暂无短码记录"
+      >
         <el-table-column label="短码" min-width="110">
           <template #default="{ row }">
             <span class="code-cell">{{ row.code }}</span>
@@ -66,7 +72,7 @@
             <span v-else>{{ row.target }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="秘密状态" min-width="100">
+        <el-table-column label="私密状态" min-width="100">
           <template #default="{ row }">
             <el-tag v-if="row.contentType === 7" :type="secretStateTagType(row.secretState)">
               {{ secretStateText(row.secretState) }}
@@ -86,8 +92,11 @@
         </el-table-column>
         <el-table-column label="过期时间" min-width="170">
           <template #default="{ row }">
-            <el-tag v-if="isExpired(row.expireAt)" type="danger">已过期</el-tag>
-            <span v-else>{{ formatTime(row.expireAt) }}</span>
+            <!-- 纯文本展示：空值=永不过期；已过期保留原时间并与状态并存 -->
+            <span v-if="!row.expireAt">永不过期</span>
+            <span v-else :class="{ 'expired-text': isExpired(row.expireAt) }">
+              {{ formatTime(row.expireAt) }}{{ isExpired(row.expireAt) ? ' 已过期' : '' }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column label="点击数" min-width="90" align="right">
@@ -140,7 +149,7 @@
               <span v-if="detail.contentType === 7">—</span>
               <span v-else class="break-all">{{ detail.target }}</span>
             </el-descriptions-item>
-            <el-descriptions-item v-if="detail.contentType === 7" label="秘密状态">
+            <el-descriptions-item v-if="detail.contentType === 7" label="私密状态">
               <el-tag :type="secretStateTagType(detail.secretState)">
                 {{ secretStateText(detail.secretState) }}
               </el-tag>
@@ -166,8 +175,10 @@
               {{ formatTime(detail.unlockAt) }}
             </el-descriptions-item>
             <el-descriptions-item label="过期时间">
-              <el-tag v-if="isExpired(detail.expireAt)" type="danger">已过期</el-tag>
-              <span v-else>{{ formatTime(detail.expireAt) }}</span>
+              <span v-if="!detail.expireAt">永不过期</span>
+              <span v-else :class="{ 'expired-text': isExpired(detail.expireAt) }">
+                {{ formatTime(detail.expireAt) }}{{ isExpired(detail.expireAt) ? ' 已过期' : '' }}
+              </span>
             </el-descriptions-item>
             <el-descriptions-item label="访问上限">
               {{ detail.maxVisits ?? '不限' }}
@@ -317,6 +328,11 @@ onMounted(() => {
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--text-input);
+}
+
+/* 已过期的过期时间：时间 + 状态并存，红色弱警示替代原 danger tag */
+.expired-text {
+  color: var(--color-danger);
 }
 
 .visit-title {

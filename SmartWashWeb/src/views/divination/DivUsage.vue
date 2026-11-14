@@ -33,58 +33,73 @@
 
     <!-- 统计卡片 -->
     <div class="stats-row" v-loading="loading">
-      <div class="stat-card">
-        <div class="stat-head">
-          <div class="stat-icon stat-icon--indigo">
-            <el-icon><Document /></el-icon>
-          </div>
-          <span class="stat-label">总卦例数</span>
-        </div>
-        <div class="stat-value">{{ formatThousands(summary.recordCount) }}</div>
+      <!-- 查询失败占位：替代统计卡区域，避免失败后残留旧数据伪装正常 -->
+      <div v-if="queryError" class="stats-error">
+        <el-icon class="stats-error__icon"><WarningFilled /></el-icon>
+        <p class="stats-error__text">数据加载失败</p>
+        <el-button type="primary" size="small" @click="fetchStats">重试</el-button>
       </div>
-      <div class="stat-card">
-        <div class="stat-head">
-          <div class="stat-icon stat-icon--blue">
-            <el-icon><ChatDotRound /></el-icon>
+      <template v-else>
+        <div class="stat-card">
+          <div class="stat-head">
+            <div class="stat-icon stat-icon--indigo">
+              <el-icon><Document /></el-icon>
+            </div>
+            <span class="stat-label">总卦例数</span>
           </div>
-          <span class="stat-label">总解读数</span>
+          <div class="stat-value">{{ formatThousands(summary.recordCount) }}</div>
         </div>
-        <div class="stat-value">{{ formatThousands(summary.interpretCount) }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-head">
-          <div class="stat-icon stat-icon--emerald">
-            <el-icon><CircleCheck /></el-icon>
+        <div class="stat-card">
+          <div class="stat-head">
+            <div class="stat-icon stat-icon--blue">
+              <el-icon><ChatDotRound /></el-icon>
+            </div>
+            <span class="stat-label">总解读数</span>
           </div>
-          <span class="stat-label">缓存命中</span>
+          <div class="stat-value">{{ formatThousands(summary.interpretCount) }}</div>
         </div>
-        <div class="stat-value">{{ formatThousands(summary.cacheHitCount) }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-head">
-          <div class="stat-icon stat-icon--red">
-            <el-icon><CircleClose /></el-icon>
+        <div class="stat-card">
+          <div class="stat-head">
+            <div class="stat-icon stat-icon--emerald">
+              <el-icon><CircleCheck /></el-icon>
+            </div>
+            <span class="stat-label">缓存命中</span>
           </div>
-          <span class="stat-label">拦截数</span>
+          <div class="stat-value">{{ formatThousands(summary.cacheHitCount) }}</div>
         </div>
-        <div class="stat-value">{{ formatThousands(summary.blockedCount) }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-head">
-          <div class="stat-icon stat-icon--amber">
-            <el-icon><User /></el-icon>
+        <div class="stat-card">
+          <div class="stat-head">
+            <div class="stat-icon stat-icon--red">
+              <el-icon><CircleClose /></el-icon>
+            </div>
+            <span class="stat-label">拦截数</span>
           </div>
-          <span class="stat-label">活跃用户</span>
+          <div class="stat-value">{{ formatThousands(summary.blockedCount) }}</div>
         </div>
-        <div class="stat-value">{{ formatThousands(summary.activeUsers) }}</div>
-      </div>
+        <div class="stat-card">
+          <div class="stat-head">
+            <div class="stat-icon stat-icon--amber">
+              <el-icon><User /></el-icon>
+            </div>
+            <!-- 口径说明：activeUsers 为每日每方法明细求和，非去重用户数 -->
+            <el-tooltip
+              content="按日按方法累计：同一用户跨方法/跨天会重复计入，非去重用户数"
+              placement="top"
+            >
+              <span class="stat-label stat-label--help">活跃人次</span>
+            </el-tooltip>
+          </div>
+          <div class="stat-value">{{ formatThousands(summary.activeUsers) }}</div>
+        </div>
+      </template>
     </div>
 
     <div class="charts-row" v-loading="loading">
       <div class="chart-card">
         <h4 class="chart-title">每日用量趋势</h4>
         <div class="chart-wrap">
-          <div v-if="!hasData" class="chart-empty">暂无数据</div>
+          <div v-if="queryError" class="chart-empty">数据加载失败</div>
+          <div v-else-if="!hasData" class="chart-empty">暂无数据</div>
           <div
             ref="trendChartRef"
             class="chart-container"
@@ -97,7 +112,8 @@
       <div class="chart-card">
         <h4 class="chart-title">术数方法分布</h4>
         <div class="chart-wrap">
-          <div v-if="!hasData" class="chart-empty">暂无数据</div>
+          <div v-if="queryError" class="chart-empty">数据加载失败</div>
+          <div v-else-if="!hasData" class="chart-empty">暂无数据</div>
           <div
             ref="methodChartRef"
             class="chart-container"
@@ -112,7 +128,8 @@
       <div class="chart-card">
         <h4 class="chart-title">Token 消耗</h4>
         <div class="chart-wrap">
-          <div v-if="!hasData" class="chart-empty">暂无数据</div>
+          <div v-if="queryError" class="chart-empty">数据加载失败</div>
+          <div v-else-if="!hasData" class="chart-empty">暂无数据</div>
           <div
             ref="tokenChartRef"
             class="chart-container"
@@ -125,7 +142,8 @@
       <div class="chart-card">
         <h4 class="chart-title">缓存命中率</h4>
         <div class="chart-wrap">
-          <div v-if="!hasData" class="chart-empty">暂无数据</div>
+          <div v-if="queryError" class="chart-empty">数据加载失败</div>
+          <div v-else-if="!hasData" class="chart-empty">暂无数据</div>
           <div
             ref="cacheChartRef"
             class="chart-container"
@@ -148,7 +166,14 @@ import { BarChart, LineChart, PieChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { ElMessage } from 'element-plus';
-import { ChatDotRound, CircleCheck, CircleClose, Document, User } from '@element-plus/icons-vue';
+import {
+  ChatDotRound,
+  CircleCheck,
+  CircleClose,
+  Document,
+  User,
+  WarningFilled,
+} from '@element-plus/icons-vue';
 import { DIV_METHOD_OPTIONS as methodOptions } from '@/constants/dict';
 import { getUsageStats } from '@/api/divination';
 import { formatThousands } from '@/utils/format';
@@ -165,6 +190,8 @@ echarts.use([
 ]);
 
 const loading = ref(false);
+// 查询失败态：失败时统计卡与图表显示错误占位而非残留旧数据/「暂无数据」（成功查询清位）
+const queryError = ref(false);
 const dateRange = ref(null);
 const methodFilter = ref('');
 
@@ -266,6 +293,7 @@ const fetchStats = async () => {
     if (methodFilter.value) {
       params.method = methodFilter.value;
     }
+    queryError.value = false;
     const res = await getUsageStats(params);
 
     // 汇总数据
@@ -287,6 +315,8 @@ const fetchStats = async () => {
       `records=${records.length}`
     );
   } catch (error) {
+    // 失败置位：统计卡显示错误占位+重试按钮，图表区显示错误态而非「暂无数据」
+    queryError.value = true;
     logger.error('用量统计查询失败:', error);
     ElMessage.error(error.message || '获取用量数据失败');
   } finally {
@@ -467,6 +497,12 @@ const renderCharts = (rawRecords) => {
   font-weight: 500;
 }
 
+/* 口径说明标签：hover 光标 + 可交互暗示，提示可悬停查看说明 */
+.stat-label--help {
+  cursor: help;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+
 .stat-value {
   font-size: 26px;
   line-height: 1.2;
@@ -480,6 +516,30 @@ const renderCharts = (rawRecords) => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+}
+
+/* 查询失败占位：独占统计卡整行，图标+文案+重试按钮纵向居中 */
+.stats-error {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 0;
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: var(--shadow-ground);
+}
+
+.stats-error__icon {
+  font-size: 28px;
+  color: var(--color-danger);
+}
+
+.stats-error__text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
 .chart-card {

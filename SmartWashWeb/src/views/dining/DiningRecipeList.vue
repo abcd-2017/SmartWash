@@ -57,7 +57,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="recipeList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="recipeList"
+        fit
+        highlight-current-row
+        :empty-text="hasRecipeFilter ? undefined : '还没有菜谱：可逐个新增，或用 Excel 批量导入'"
+      >
         <el-table-column label="封面" width="90">
           <template #default="{ row }">
             <el-image
@@ -257,7 +263,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Plus } from '@element-plus/icons-vue';
 import RecipeImportDialog from './components/RecipeImportDialog.vue';
@@ -317,6 +323,14 @@ const {
   }),
   errorMsg: '获取菜谱列表失败',
 });
+
+// 空态区分：无任何筛选条件视为「库空」引导新增/批量导入，有筛选时保留默认空态文案
+const hasRecipeFilter = computed(
+  () =>
+    (listQuery.categoryId ?? '') !== '' ||
+    (listQuery.status ?? '') !== '' ||
+    Boolean((listQuery.keyword || '').trim())
+);
 
 // 分类下拉：走 optionCache 全量缓存（分类页增删改后自动失效）
 const categoryOptions = ref([]);

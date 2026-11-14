@@ -1,17 +1,25 @@
 <template>
-  <el-cascader
-    v-model="selected"
-    :options="options"
-    :props="cascaderProps"
-    placeholder="请选择省/市/区"
-    clearable
-    style="width: 100%"
-    @change="handleChange"
-  />
+  <div class="region-cascader">
+    <el-cascader
+      v-model="selected"
+      :options="options"
+      :props="cascaderProps"
+      :placeholder="cascaderPlaceholder"
+      clearable
+      style="width: 100%"
+      @change="handleChange"
+    />
+    <!-- 加载失败显式反馈：不再静默空列表，引导刷新重试 -->
+    <div v-if="loadFailed" class="region-load-error">
+      <el-icon :size="12"><WarningFilled /></el-icon>
+      <span>行政区划加载失败，请刷新重试</span>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { WarningFilled } from '@element-plus/icons-vue';
 import AMapLoader from '@amap/amap-jsapi-loader';
 
 const props = defineProps({
@@ -25,6 +33,16 @@ const emit = defineEmits(['update:modelValue', 'change']);
 
 const selected = ref([]);
 const options = ref([]);
+// 省份列表加载态：加载中/失败落到 placeholder（el-cascader 无内置 loading 属性），失败另给下方提示
+const loading = ref(false);
+const loadFailed = ref(false);
+
+const cascaderPlaceholder = computed(() => {
+  if (loading.value) return '行政区划加载中...';
+  if (loadFailed.value) return '行政区划加载失败，请刷新重试';
+  return '请选择省/市/区';
+});
+
 const cascaderProps = {
   value: 'name',
   label: 'name',
@@ -136,7 +154,14 @@ async function loadFullPath(path) {
 
 // 初始化省份数据
 onMounted(async () => {
-  options.value = await searchDistrict('中国', 0);
+  loading.value = true;
+  try {
+    options.value = await searchDistrict('中国', 0);
+    // 省份列表不可能合法为空，空结果即视为加载失败（高德 key 未配置/网络异常）
+    loadFailed.value = options.value.length === 0;
+  } finally {
+    loading.value = false;
+  }
 
   // 如果初始有值，加载完整路径
   if (props.modelValue && props.modelValue.length > 0) {
@@ -173,3 +198,16 @@ async function setValue(val) {
 
 defineExpose({ setValue });
 </script>
+
+<style scoped>
+/* 失败提示：Micro 档 12px，随表单项流式排布 */
+.region-load-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-danger);
+}
+</style>

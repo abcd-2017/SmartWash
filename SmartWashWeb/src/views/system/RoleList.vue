@@ -51,7 +51,14 @@
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              link
+              type="danger"
+              size="small"
+              :loading="deletingId === row.roleId"
+              @click="handleDelete(row)"
+              >删除</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -103,8 +110,10 @@
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getRoleList, addRole, updateRole, deleteRole } from '@/api/role';
+import { getAdminUserList } from '@/api/adminUser';
 import { roleOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
+import { isValidationError } from '@/utils/errors';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
@@ -120,6 +129,7 @@ const handleDialogClosed = () => {
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const submitting = ref(false); // 确认按钮 loading，防连点
+const deletingId = ref(null); // 删除请求在途的行 ID，行内删除按钮 loading，防连点
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
@@ -129,6 +139,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -200,9 +211,13 @@ const submitForm = async () => {
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本
-    logger.error('保存角色失败:', error instanceof Error ? error : '表单校验未通过');
-    ElMessage.error(error.message || '操作失败');
+    // 分级处理（参考 NoticeList）：校验失败走字段红字，不弹全局假 toast、不记失败日志
+    if (isValidationError(error)) {
+      logger.debug('角色表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
+    } else {
+      logger.error('保存角色失败:', error instanceof Error ? error : '未知错误');
+      ElMessage.error(error.message || '操作失败');
+    }
   } finally {
     submitting.value = false;
   }
@@ -210,9 +225,25 @@ const submitForm = async () => {
 
 // 删除角色
 const handleDelete = async (row) => {
+  // 确认前查该角色下的管理员数，确认文案列明影响面（删除后账号将失去权限）；
+  // 引用数查询失败不阻断删除，降级为原文案
+  let confirmText = `确认删除角色 ${row.roleName} 吗？`;
+  try {
+    const { total: adminCount } = await getAdminUserList({
+      page: 1,
+      size: 1,
+      roleId: row.roleId,
+    });
+    if (adminCount > 0) {
+      confirmText += `该角色下有 ${adminCount} 个管理员,删除后这些账号将失去权限`;
+    }
+  } catch (error) {
+    logger.warn('查询角色下管理员数失败，删除确认降级为普通文案:', `roleId=${row.roleId}`, error);
+  }
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除角色 ${row.roleName} 吗？`);
+  const confirmed = await useConfirm(confirmText);
   if (!confirmed) return;
+  deletingId.value = row.roleId;
   try {
     await deleteRole(row.roleId);
     ElMessage.success('删除成功');
@@ -220,10 +251,12 @@ const handleDelete = async (row) => {
     logger.info('删除角色成功', `roleId=${row.roleId}`, `roleName=${row.roleName}`);
     // 角色下拉缓存同步失效（评审 #15 的失效入口）
     roleOptionsCache.invalidate();
-    fetchData();
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除角色失败:', `roleId=${row.roleId}`, error);
     ElMessage.error(error.message || '删除失败');
+  } finally {
+    deletingId.value = null;
   }
 };
 </script>

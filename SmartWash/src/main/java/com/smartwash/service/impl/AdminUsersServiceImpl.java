@@ -124,11 +124,23 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
     }
 
     @Override
-    public Boolean deleteAdminUsers(String ids) {
-        log.info("删除管理员, ids: {}", ids);
+    public Boolean deleteAdminUsers(String ids, Long currentAdminId) {
+        log.info("删除管理员, ids: {}, currentAdminId: {}", ids, currentAdminId);
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(Long::valueOf)
                 .collect(Collectors.toList());
+        // 防自删：删除列表包含当前登录管理员时拒绝，避免自己把自己登出系统
+        if (currentAdminId != null && idList.contains(currentAdminId)) {
+            log.warn("删除管理员被拒绝：不能删除当前登录账号, currentAdminId: {}", currentAdminId);
+            throw new CustomExceptions("不能删除当前登录账号");
+        }
+        // 防删光：删除后剩余管理员数必须 >= 1，拒绝删除全部管理员
+        Long remainCount = baseMapper.selectCount(
+                new LambdaQueryWrapper<AdminUsers>().notIn(AdminUsers::getAdminId, idList));
+        if (remainCount == null || remainCount < 1) {
+            log.warn("删除管理员被拒绝：至少保留一个管理员账号, ids: {}", ids);
+            throw new CustomExceptions("至少保留一个管理员账号");
+        }
         return removeByIds(idList);
     }
 }

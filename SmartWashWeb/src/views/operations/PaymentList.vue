@@ -109,7 +109,7 @@
         </el-table-column>
         <el-table-column label="金额" min-width="120" align="right">
           <template #default="{ row }">
-            <span class="pay-amount">￥{{ formatAmount(row.amount) }}</span>
+            <span class="pay-amount">￥{{ formatAmount(row.amount, '-') }}</span>
           </template>
         </el-table-column>
         <el-table-column label="支付方式" min-width="120">

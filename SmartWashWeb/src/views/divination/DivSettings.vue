@@ -7,6 +7,17 @@
         </p>
       </div>
 
+      <!-- 加载失败提示：配置未加载期间禁止保存，防止默认值写穿线上配置 -->
+      <el-alert
+        v-if="!loaded && !loading"
+        title="配置未加载，无法保存"
+        description="请检查网络后点击「重置」重新加载配置"
+        type="warning"
+        show-icon
+        :closable="false"
+        class="settings-alert"
+      />
+
       <el-form
         ref="formRef"
         :model="settings"
@@ -40,7 +51,9 @@
 
         <!-- 操作按钮 -->
         <el-form-item>
-          <el-button type="primary" @click="submitForm" :loading="submitting">保存设置</el-button>
+          <el-button type="primary" @click="submitForm" :loading="submitting" :disabled="!loaded"
+            >保存设置</el-button
+          >
           <el-button @click="fetchSettings">重置</el-button>
         </el-form-item>
       </el-form>
@@ -72,6 +85,8 @@ import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const loading = ref(false);
+// 配置是否已成功加载：未加载期间禁用保存，避免把表单默认值当成线上配置写穿
+const loaded = ref(false);
 const submitting = ref(false);
 const rotating = ref(false);
 
@@ -96,6 +111,8 @@ const fetchSettings = async () => {
       divUseEnabled: res.divUseEnabled ?? 1,
       byokDailyLimit: res.byokDailyLimit ?? 50,
     });
+    // 加载成功才解锁保存；失败保持锁定，保存按钮与警告提示共同兜底
+    loaded.value = true;
   } catch (error) {
     logger.error('获取平台设置失败:', error);
     ElMessage.error(error.message || '获取平台设置失败');
@@ -176,6 +193,10 @@ const handleRotateKey = async () => {
   margin-top: 16px;
 }
 
+.settings-alert {
+  margin-top: 16px;
+}
+
 .form-tip {
   margin-left: 8px;
   font-size: 12px;
@@ -188,6 +209,7 @@ const handleRotateKey = async () => {
 
 /* 设置卡(live 打磨 v1):表单内容宽度收敛至 720px,避免控件在满宽卡片内被拉散 */
 .settings-card > .settings-header,
+.settings-card > .settings-alert,
 .settings-card > .settings-form,
 .settings-card > .el-divider,
 .settings-card > .rotate-key-section {

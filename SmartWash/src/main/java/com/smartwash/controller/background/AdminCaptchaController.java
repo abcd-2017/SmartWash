@@ -2,6 +2,8 @@ package com.smartwash.controller.background;
 
 import com.smartwash.common.DefaultConstant;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
+import com.smartwash.common.ratelimit.RateLimit;
 import com.smartwash.vo.AdminCaptchaVo;
 import com.smartwash.vo.AdminCaptchaVo.CaptchaInfo;
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,6 +56,11 @@ public class AdminCaptchaController {
      * @return 验证码信息列表
      */
     @Operation(summary = "查询手机号有效验证码（演示用）", description = "从 Redis 查询指定手机号当前有效的短信验证码，仅演示/调试场景使用")
+    // 验证码明文属高敏数据：按手机号维度限流（60 秒 10 次，与登录验证码获取同档），
+    // SpEL 解析失败时由 RateLimitKeyResolver 降级为登录用户 ID 兜底
+    @RateLimit(key = "#phoneNumber", window = 60, limit = 10, message = "查询过于频繁，请稍后再试")
+    // 查询动作留痕：验证码明文可被用于绕过注册/重置密码风控，纳入 HMAC 审计链
+    @Audited(action = "CAPTCHA_QUERY", targetType = "captcha", targetIdSpEL = "#phoneNumber")
     @GetMapping("/{phoneNumber}")
     public Result<AdminCaptchaVo> queryCaptcha(
             @PathVariable @Parameter(description = "手机号码", required = true, example = "13800138000") String phoneNumber) {

@@ -36,8 +36,16 @@
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
-        <el-table-column prop="recordId" label="卦例ID" min-width="100" />
-        <el-table-column prop="interpretationId" label="解读ID" min-width="100" />
+        <el-table-column prop="recordId" label="卦例ID" min-width="100">
+          <template #default="{ row }">
+            <span class="mono-text">{{ row.recordId ?? '-' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="interpretationId" label="解读ID" min-width="100">
+          <template #default="{ row }">
+            <span class="mono-text">{{ row.interpretationId ?? '-' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="审计状态" min-width="120">
           <template #default="{ row }">
             <el-tag :type="divAuditStatusTagType(row.auditStatus)">
@@ -161,6 +169,13 @@ const handleViewDetail = (row) => {
 </script>
 
 <style scoped>
+/* 卦例/解读 ID 是机器标识符：走 mono（DESIGN.md Mono 13px/400） */
+.mono-text {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-body);
+}
+
 .audit-detail {
   padding: 0 8px;
 }

@@ -59,8 +59,21 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
       if (mySeq !== fetchSeq) return;
       ElMessage.error(error.message || errorMsg);
     } finally {
-      listLoading.value = false;
+      // 竞态守卫同样覆盖 loading：被丢弃的旧响应不得关掉最新请求的 loading，
+      // 否则快速翻页/连续搜索时表格会提前退出加载态、露出旧数据
+      if (mySeq === fetchSeq) {
+        listLoading.value = false;
+      }
     }
+  };
+
+  // 删除成功后的页码钳制：当前页只剩 1 条且不在第一页时回退一页再拉取，
+  // 避免删除后停留在空页（后端 total 已减少，但当前页号已超出最后一页）
+  const fetchDataAfterDelete = () => {
+    if (listQuery.page > 1 && list.value.length <= 1) {
+      listQuery.page -= 1;
+    }
+    return fetchData();
   };
 
   // 搜索：回到第一页后拉取
@@ -95,6 +108,7 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
     listQuery,
     pageSizes,
     fetchData,
+    fetchDataAfterDelete,
     handleSearch,
     resetSearch,
     handlePageChange,

@@ -78,19 +78,19 @@
           </template>
         </el-table-column>
         <el-table-column prop="phoneNumber" label="手机号" min-width="150" />
-        <el-table-column label="学校" min-width="180">
+        <el-table-column label="学校" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
             {{ row.schools?.schoolName || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="studentId" label="学号" min-width="120">
+        <el-table-column prop="studentId" label="学号" min-width="120" show-overflow-tooltip>
           <template #default="{ row }">{{ row.studentId || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="campusCard" label="校园卡号" min-width="150">
+        <el-table-column prop="campusCard" label="校园卡号" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.campusCard || '-' }}</template>
         </el-table-column>
         <el-table-column prop="balance" label="余额" min-width="120" align="right">
-          <template #default="{ row }">￥{{ formatAmount(row.balance) }}</template>
+          <template #default="{ row }">￥{{ formatAmount(row.balance, '-') }}</template>
         </el-table-column>
         <el-table-column prop="createdAt" label="注册时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>

@@ -13,9 +13,9 @@
         <el-form-item label="手机号" :error="phoneError">
           <el-input
             v-model="form.phoneNumber"
-            placeholder="请输入11位手机号"
+            placeholder="请输入11位手机号，支持 +86 前缀"
             clearable
-            maxlength="11"
+            maxlength="16"
             style="width: 240px"
             @input="phoneError = ''"
           />
@@ -68,11 +68,13 @@
             <span v-if="liveRemainSeconds(row) > 0">
               {{ formatRemainTime(liveRemainSeconds(row)) }}
             </span>
-            <span v-else style="color: var(--color-danger)">已过期</span>
+            <span v-else style="color: var(--color-danger)">{{ expiredText() }}</span>
           </template>
         </el-table-column>
       </el-table>
       <el-empty v-else description="该手机号暂无有效验证码" :image-size="80" />
+      <!-- 口径说明（Micro 档）：多历史验证码时以最新一次为准 -->
+      <p class="result-hint">以最新一次查询为准，验证码被使用后立即失效</p>
     </div>
   </div>
 </template>
@@ -165,8 +167,11 @@ async function handleQuery() {
   }
 }
 
+// 过期文案统一出口：倒计时列与剩余时间格式化共用，避免改文案漏改一处
+const expiredText = () => '已过期';
+
 function formatRemainTime(seconds) {
-  if (!seconds || seconds <= 0) return '已过期';
+  if (!seconds || seconds <= 0) return expiredText();
   const min = Math.floor(seconds / 60);
   const sec = seconds % 60;
   if (min > 0) {
@@ -183,5 +188,13 @@ function formatRemainTime(seconds) {
   font-weight: 700;
   letter-spacing: 4px;
   color: var(--color-primary);
+}
+
+/* 结果区口径说明（Micro 档 12px 弱化） */
+.result-hint {
+  margin: 0;
+  padding: 10px 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 </style>

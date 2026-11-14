@@ -69,8 +69,12 @@
         </el-table-column>
         <el-table-column label="订单号" min-width="200">
           <template #default="{ row }">
-            <!-- 订单号机器标识符(live 打磨 v2):mono + 弱底 chip,与短码/Host 列同一语言 -->
-            <div class="order-no-cell">{{ row.orderNo || '-' }}</div>
+            <!-- 订单号机器标识符(live 打磨 v2):mono + 弱底 chip,与短码/Host 列同一语言;
+                 空值输出纯文本占位,不渲染空 chip -->
+            <span v-if="row.orderNo" class="order-no-cell" :title="row.orderNo">
+              {{ row.orderNo }}
+            </span>
+            <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -125,6 +129,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -175,7 +180,7 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功');
     // 写操作成功留痕：业务键仅 userCouponId，手机号不入日志（敏感红线）
     logger.info('删除领取记录成功', `userCouponId=${row.userCouponId}`);
-    fetchData();
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除领取记录失败:', `userCouponId=${row.userCouponId}`, error);
     ElMessage.error(error.message || '删除失败');
@@ -186,17 +191,20 @@ const handleDelete = async (row) => {
 </script>
 
 <style scoped>
-/* 订单号机器标识符(live 打磨 v2):mono + 弱底 chip,与短码/Host 列同一语言 */
+/* 订单号机器标识符(live 打磨 v2):mono + 弱底 chip,与短码/Host 列同一语言;
+   对齐 DESIGN.md Mono 13px/400,长单号溢出省略并经 title 悬浮看全文 */
 .order-no-cell {
   display: inline-block;
-  align-self: flex-start;
+  max-width: 100%;
   padding: 2px 8px;
   border-radius: 6px;
   background: var(--border-subtle);
   font-family: var(--font-mono);
-  font-size: 12.5px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-size: 13px;
+  font-weight: 400;
   color: var(--text-input);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

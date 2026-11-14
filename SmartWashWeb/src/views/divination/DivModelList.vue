@@ -79,10 +79,14 @@
           <template #default="{ row }">{{ row._isVendor ? '-' : row.name }}</template>
         </el-table-column>
         <el-table-column prop="baseUrl" label="Base URL" min-width="220" show-overflow-tooltip>
-          <template #default="{ row }">{{ row._isVendor ? row.baseUrl || '-' : row.baseUrl }}</template>
+          <template #default="{ row }">
+            <span class="mono-text">{{ row._isVendor ? row.baseUrl || '-' : row.baseUrl }}</span>
+          </template>
         </el-table-column>
         <el-table-column prop="modelId" label="模型标识" min-width="160">
-          <template #default="{ row }">{{ row._isVendor ? '-' : row.modelId }}</template>
+          <template #default="{ row }">
+            <span class="mono-text">{{ row._isVendor ? '-' : row.modelId }}</span>
+          </template>
         </el-table-column>
         <el-table-column label="API Key" min-width="140">
           <template #default="{ row }">
@@ -97,7 +101,9 @@
             <template v-if="row._isVendor">
               <el-tag v-if="row._enabledCount === row._modelCount" type="success">全部启用</el-tag>
               <el-tag v-else-if="row._enabledCount === 0" type="info">全部停用</el-tag>
-              <el-tag v-else type="warning">{{ row._enabledCount }}/{{ row._modelCount }} 启用</el-tag>
+              <el-tag v-else type="warning"
+                >{{ row._enabledCount }}/{{ row._modelCount }} 启用</el-tag
+              >
             </template>
             <el-tag v-else :type="row.enabled === 1 ? 'success' : 'info'">
               {{ row.enabled === 1 ? '启用' : '停用' }}
@@ -127,7 +133,9 @@
             <template v-if="!row._isVendor">
               <el-button size="small" @click="handleEdit(row)">编辑</el-button>
               <el-tooltip
-                :content="row.apiKeyMask ? '' : '该条目未录入 API Key（用户自带密钥模式），无法测试'"
+                :content="
+                  row.apiKeyMask ? '' : '该条目未录入 API Key（用户自带密钥模式），无法测试'
+                "
                 :disabled="!!row.apiKeyMask"
                 placement="top"
               >
@@ -576,6 +584,13 @@ const handleToggle = async (row) => {
 </script>
 
 <style scoped>
+/* 模型标识 / Base URL 是机器标识符：走 mono（DESIGN.md Mono 13px/400） */
+.mono-text {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-body);
+}
+
 /* 状态列(live 打磨 v2):标签内加圆点,与相邻连通性列(纯标签)区分两套状态语言 */
 .model-status-cell .model-status-tag {
   display: inline-flex;

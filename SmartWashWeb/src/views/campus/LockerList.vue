@@ -135,7 +135,7 @@
       :title="dialogType === 'create' ? '新增寄存柜' : '编辑寄存柜'"
       v-model="dialogVisible"
       width="min(600px, 94vw)"
-      @closed="handleDialogClosed"
+      @closed="handleMainDialogClosed"
     >
       <el-form ref="formRef" :model="tempLocker" label-width="min(100px, 94vw)" :rules="rules">
         <el-form-item label="学校" prop="schoolId">
@@ -188,7 +188,7 @@
       title="批量新增寄存柜"
       v-model="batchDialogVisible"
       width="min(600px, 94vw)"
-      @closed="handleDialogClosed"
+      @closed="handleBatchDialogClosed"
     >
       <el-form
         ref="batchFormRef"
@@ -297,11 +297,11 @@ const dialogVisible = ref(false); // 弹窗显示状态
 const dialogType = ref('create'); // 弹窗类型（新增/编辑）
 const formRef = ref(null); // 引用表单组件
 
-// 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
+// 主弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
 // 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
-const handleDialogClosed = () => {
-  batchFormRef.value?.resetFields();
-  batchFormRef.value?.clearValidate();
+const handleMainDialogClosed = () => {
+  formRef.value?.resetFields();
+  formRef.value?.clearValidate();
 };
 const submitting = ref(false); // 确认按钮 loading，防连点
 
@@ -365,6 +365,12 @@ const rules = reactive({
 const batchDialogVisible = ref(false);
 const batchFormRef = ref(null);
 const batchSubmitting = ref(false);
+
+// 批量弹窗关闭后清理：与主弹窗各自 handler，避免共用一个 handler 清错表单实例
+const handleBatchDialogClosed = () => {
+  batchFormRef.value?.resetFields();
+  batchFormRef.value?.clearValidate();
+};
 
 const tempBatchLocker = reactive({
   schoolId: null,
@@ -660,7 +666,7 @@ const printTagSheet = async () => {
 }
 
 .tag-card {
-  border: 1px solid var(--border-light, #e5e7eb);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 10px 8px;
   text-align: center;

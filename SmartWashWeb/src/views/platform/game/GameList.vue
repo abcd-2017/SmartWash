@@ -83,7 +83,9 @@
         :data="gameList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        :empty-text="
+          hasGameFilter ? '暂无数据，试试调整筛选条件' : '还没有游戏，点击右上角上传或批量导入开始'
+        "
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="42" />
@@ -759,6 +761,15 @@ const {
   errorMsg: '获取游戏列表失败',
 });
 
+// 空态区分：无任何筛选条件视为「库空」（引导上传/批量导入），有筛选时提示调整条件
+const hasGameFilter = computed(
+  () =>
+    Boolean((listQuery.keyword || '').trim()) ||
+    (listQuery.category ?? '') !== '' ||
+    (listQuery.sourceType ?? '') !== '' ||
+    (listQuery.enabled ?? '') !== ''
+);
+
 // ---------- 表单数据（字段名按方案 05 §三 DDL/§五契约，驼峰对齐 AdminGameVo） ----------
 
 const tempGame = reactive({
@@ -1271,10 +1282,12 @@ const submitUpload = async () => {
 };
 
 // 成功态 → 再传一个：回到表单态保留已填字段；
-// title 未变时 watch 不会触发，gameKey 需手动重生成
+// title 未变时 watch 不会触发，gameKey 需手动重生成；
+// 封面与 handleCreate 同步清位，避免上一局的封面静默带入下一个游戏
 const handleReupload = () => {
   uploadResult.value = null;
   selectedFile.value = null;
+  handleCoverRemove();
   uploadPercent.value = 0;
   keyEdited.value = false;
   levelsDraft.value = null;

@@ -29,7 +29,12 @@
           @keyup.enter="handleLogin"
         >
           <el-form-item label="用户名" prop="username">
-            <el-input v-model="loginForm.username" placeholder="请输入用户名" clearable />
+            <el-input
+              v-model="loginForm.username"
+              placeholder="请输入用户名"
+              clearable
+              autocomplete="username"
+            />
           </el-form-item>
 
           <el-form-item label="密码" prop="password">
@@ -38,13 +43,17 @@
               type="password"
               placeholder="请输入密码"
               show-password
+              autocomplete="current-password"
             />
           </el-form-item>
 
           <el-form-item>
-            <el-button type="primary" :loading="loading" class="login-btn" @click="handleLogin">
-              登 录
-            </el-button>
+            <div class="login-submit-area">
+              <el-button type="primary" :loading="loading" class="login-btn" @click="handleLogin">
+                登 录
+              </el-button>
+              <div class="login-help">忘记密码请联系系统管理员重置</div>
+            </div>
           </el-form-item>
         </el-form>
 
@@ -57,6 +66,7 @@
 <script setup>
 import { ref, reactive } from 'vue';
 import { passwordLengthRule } from '@/utils/validators';
+import { isValidationError } from '@/utils/errors';
 import { ElMessage } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import { login } from '@/api/auth';
@@ -79,6 +89,9 @@ const rules = reactive({
 
 const loading = ref(false);
 
+// 网络/系统错误的中文固定文案：axios 传输层错误的 message 是英文原文（如 "Network Error"），不透传给用户
+const LOGIN_SYSTEM_ERROR_TEXT = '登录失败，请检查网络或稍后重试';
+
 const handleLogin = async () => {
   if (!formRef.value) return;
   // 请求在途时拦截 Enter 重复触发（按钮 :loading 只拦点击，拦不住表单回车）
@@ -100,13 +113,23 @@ const handleLogin = async () => {
     ElMessage.success('登录成功');
     // 低频关键动作留痕：用户名可能是手机号形态，不记用户名明文，仅记后端返回的角色名
     logger.info('管理员登录成功', `role=${data.role}`);
-    // 原路返回：仅接受站内路径（/ 开头），防止 redirect 参数被外链利用
+    // 原路返回：仅接受站内路径（/ 开头且非 // 协议相对路径），防止 redirect 参数被外链利用
     const redirect = route.query.redirect;
-    router.push(typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/');
+    const isSafeRedirect =
+      typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//');
+    router.push(isSafeRedirect ? redirect : '/');
   } catch (error) {
-    // validate 校验失败 reject 的是字段对象（fieldValue 含密码明文），非 Error 时仅记文本，防止密码入日志
-    logger.error('管理员登录失败:', error instanceof Error ? error : '表单校验未通过');
-    ElMessage.error(error.message || '登录失败');
+    // 分级处理：表单校验失败（reject 对象无 message 且带字段信息）只保留字段红字，
+    // 不弹全局 toast、不记失败日志（fieldValue 含密码明文，防密码入日志）
+    if (isValidationError(error)) {
+      return;
+    }
+    // 网络/系统错误：axios 传输层错误用中文固定文案，不透传英文原文；
+    // 后端业务失败（如「用户名或密码错误」）message 已是后端中文文案，原样展示
+    logger.error('管理员登录失败:', error instanceof Error ? error : '未知错误');
+    ElMessage.error(
+      error?.isAxiosError ? LOGIN_SYSTEM_ERROR_TEXT : error.message || LOGIN_SYSTEM_ERROR_TEXT
+    );
   } finally {
     loading.value = false;
   }
@@ -221,6 +244,18 @@ const handleLogin = async () => {
 
 .login-btn:not(.is-disabled):hover {
   transform: translateY(-1px);
+}
+
+/* 按钮容器：让按钮保持整行宽，辅助文案贴按钮下方 */
+.login-submit-area {
+  width: 100%;
+}
+
+.login-help {
+  margin-top: 8px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--text-secondary);
 }
 
 .footer-text {

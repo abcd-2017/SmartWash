@@ -266,7 +266,9 @@ const searchResults = computed(() => {
   const groupOf = new Map();
   menuGroups.value.forEach((g) => g.items.forEach((item) => groupOf.set(item.path, g.title)));
   const results = menuRoutes.value
-    .filter((r) => (r.meta?.title || '').toLowerCase().includes(q))
+    .filter(
+      (r) => (r.meta?.title || '').toLowerCase().includes(q) || r.path.toLowerCase().includes(q)
+    )
     .map((r) => ({
       path: r.path,
       title: r.meta?.title || r.path,

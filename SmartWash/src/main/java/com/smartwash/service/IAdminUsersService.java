@@ -22,7 +22,14 @@ public interface IAdminUsersService extends IService<AdminUsers> {
 
     Boolean addAdminUsers(AddAdminUserFrom adminUserFrom);
 
-    Boolean deleteAdminUsers(String ids);
+    /**
+     * 批量删除管理员（防自删 + 防删光）。
+     *
+     * @param ids            待删除的管理员 ID 串（逗号分隔）
+     * @param currentAdminId 当前登录管理员 ID（Controller 从 SecurityContext 取出传入）
+     * @return 是否删除成功
+     */
+    Boolean deleteAdminUsers(String ids, Long currentAdminId);
 
     Boolean updateAdminUsers(UpdateAdminUserFrom adminUsersFrom);
 
