@@ -130,7 +130,7 @@
     var t=window.SmartWashGameBridge&&SmartWashGameBridge.getTheme&&SmartWashGameBridge.getTheme();
     if(t==="light"||t==="dark")B=t;
   }catch(e){}
-  paint(B||"light");/*'system'/空串/无桥=浅色*/
+  window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");/*'system'/空串/无桥=浅色*/
 })();
 </script>
 </head>

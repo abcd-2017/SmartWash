@@ -225,8 +225,6 @@
     <!-- ==================== 内置浏览器页（壳层留守，深链 web 分支承载） ==================== -->
     <string name="webview_default_title">详情页</string>
     <string name="webview_error_url_unsupported">仅支持打开网页链接</string>
-    <string name="webview_error_load">页面加载失败，请检查网络后重试</string>
-    <string name="webview_action_retry">重试</string>
 
     <!-- 首页断网降级（回归 2026-11-06 A3）：离线提示条 + 错误卡兜底文案 -->
     <string name="index_offline_hint">网络异常，当前展示缓存数据，可能不是最新</string>

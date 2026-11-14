@@ -62,7 +62,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>
@@ -495,7 +495,10 @@ paint(B||"light");
     if(running){
       acc += dt;
       let n = 0;
-      while(acc >= STEP && n < 3){ step(); acc -= STEP; n++; }
+      // A2 动效降级：系统「减少动效」时模拟步频降为 1/3（沙粒动态显著减缓，
+      // 保留玩法可继续；window.__gRM 由主题运行时注入并随系统设置联动）
+      const maxStep = window.__gRM ? 1 : 3;
+      while(acc >= STEP && n < maxStep){ step(); acc -= STEP; n++; }
       if(acc > STEP) acc = 0;
     }
     const count = render();

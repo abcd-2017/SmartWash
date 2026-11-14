@@ -333,9 +333,14 @@ function audit(name) {
   if (cvOpen !== cvClose) fail.push(`<canvas> 未闭合（open ${cvOpen} / close ${cvClose}）`);
 
   // ⑭ §4 裁撤残留（matchMedia/prefers-color-scheme/g-theme/切换按钮；全部硬性）
+  // ⑭ §4 裁撤残留（全部硬性）
+  // 2026-11-14 精确化：matchMedia 禁令仅限**主题层**（prefers-color-scheme）；
+  // prefers-reduced-motion 属动效层（§6.1 降级），允许使用，不再误报。
   const residue = [];
-  if (/matchMedia\(/.test(html)) residue.push("matchMedia");
   if (/prefers-color-scheme/.test(html)) residue.push("prefers-color-scheme");
+  if (/matchMedia\(/.test(html.replace(/matchMedia\(\s*["']?\(prefers-reduced-motion[^)]*\)/g, ""))) {
+    residue.push("matchMedia(非 reduced-motion)");
+  }
   if (/["']g-theme["']/.test(html)) residue.push("g-theme localStorage");
   if (/__gThemeToggle|g-theme-toggle|btnTheme/.test(html)) residue.push("切换按钮");
   if (residue.length) fail.push(`§4 裁撤残留: ${residue.join(",")}`);
