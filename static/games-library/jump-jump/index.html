@@ -7,7 +7,7 @@
 <title>跳一跳</title>
 <style>
 /*token:GAME-THEME.md §2 基线；素材 token：sky1/sky2 直用 bg/surface2（breakout 范式）、cld 随 flappy*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-radius-btn:14px;--g-sky1:#F5F6F3;--g-sky2:#EFF1EE;--g-cld:rgba(255,255,255,.85);color-scheme:light}
+:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-radius-btn:14px;--g-sky1:#F5F6F3;--g-sky2:#EFF1EE;--g-cld:rgba(255,255,255,.85);color-scheme:light}
 :root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-sky1:#1D201E;--g-sky2:#141614;--g-cld:rgba(255,255,255,.25);color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -21,10 +21,16 @@ canvas{display:block;width:100%;height:100%}
 .overlay h2{font-size:22px;color:var(--g-text)}
 .overlay .big{font-size:18px}
 .overlay .small{font-size:14px;color:var(--g-muted);line-height:1.6}
-.overlay .star{font-size:28px;color:var(--g-warning);letter-spacing:4px}
-.btn{min-height:48px;min-width:150px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-size:16px;font-weight:600;padding:0 26px;cursor:pointer;font-family:inherit}
+.overlay .star{font-size:28px;color: var(--g-text);letter-spacing:4px}
+.btn{min-height:48px;min-width:150px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-size:22px;font-weight:700;padding:0 26px;cursor:pointer;font-family:inherit}
 .btn:active{transform:scale(.96)}
-.btn.alt{background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text)}
+  .btn.alt{background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text)}
+  .live{min-height:18px;font-size:14px;font-weight:600;color:var(--g-primary-deep);white-space:nowrap}
+
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
@@ -36,14 +42,15 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>
 <body>
-<header><p>按住屏幕蓄力 · 松手起跳 · 落在台面中心连击加分</p></header>
+<header><p>按住屏幕蓄力 · 松手起跳 · 落在台面中心连击加分</p><div id="liveHud" class="live" role="status" aria-live="polite"></div></header>
 <div id="stage">
-  <canvas id="cv" role="img" aria-label="跳一跳游戏画面">
+  <canvas id="cv" role="img" aria-label="跳一跳游戏画面"></canvas>
+
   <div id="ovStart" class="overlay">
     <h2>准备起跳</h2>
     <div class="big">第 <span id="lvStart">1</span> 关 · 目标 <span id="tgStart">0</span> 分</div>
@@ -103,6 +110,7 @@ function write(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 var $=function(id){return document.getElementById(id)};
 var stage=$('stage'),cv=$('cv'),ctx=cv.getContext('2d');
 var ovStart=$('ovStart'),ovWin=$('ovWin'),ovOver=$('ovOver'),ovPause=$('ovPause');
+var liveHud=$('liveHud'),lastLive='';
 
 /* ========== 确定性物理引擎 ========== */
 /*JJ-ENGINE-BEGIN*/
@@ -388,6 +396,8 @@ function update(dt,now){
     if(!camInit){camX=targ;camInit=true;}
     else camX+=(targ-camX)*(1-Math.exp(-5*dt));
   }
+  var liveTxt=(state==='playing'||state==='paused')?('第 '+(cur+1)+'/'+LEVELS.length+' 关 · '+score+' / '+LEVELS[cur].target+' 分'):'';
+  if(liveTxt!==lastLive){lastLive=liveTxt;liveHud.textContent=liveTxt;}
   for(i=particles.length-1;i>=0;i--){
     var pt=particles[i];
     pt.life-=dt;pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.vy-=900*dt;
@@ -395,7 +405,7 @@ function update(dt,now){
   }
   for(i=floats.length-1;i>=0;i--){var ft=floats[i];ft.life-=dt;ft.y+=34*dt;if(ft.life<=0)floats.splice(i,1);}
   for(i=rings.length-1;i>=0;i--){var rg=rings[i];rg.life-=dt;rg.r+=95*dt;if(rg.life<=0)rings.splice(i,1);}
-  for(i=0;i<clouds.length;i++){var cl=clouds[i];cl.x-=cl.v*dt;if(cl.x<-160){cl.x=W+160;cl.y=H*(0.05+Math.random()*0.34);}}
+  for(i=0;i<clouds.length;i++){var cl=clouds[i];if(!window.__gRM)cl.x-=cl.v*dt;if(cl.x<-160){cl.x=W+160;cl.y=H*(0.05+Math.random()*0.34);}}
 }
 /* ---------- 绘制（世界→屏幕：sx=(x-camX)*scale，sy=地平线-y*scale） ---------- */
 function w2sx(x){return(x-camX)*scale;}
@@ -449,7 +459,7 @@ function drawPlayer(now){
     px=pp.x;py=pp.y;
     if(phase==='charge')squash=pow*0.32;
     else if(idleT<0.22&&jumpsDone>0)squash=-0.20*Math.sin(idleT/0.22*Math.PI);
-    else squash=0.02*Math.sin(now/420);
+    else squash=window.__gRM?0:0.02*Math.sin(now/420);
   }
   var sx=w2sx(px),sy=w2sy(py),u=scale;
   ctx.save();ctx.translate(sx,sy);
@@ -504,7 +514,7 @@ function drawCharge(now){
   ctx.strokeStyle=PAL.border;ctx.lineWidth=1;ctx.stroke();
   ctx.fillStyle=pow<0.55?PAL.primary:pow<0.85?PAL.warning:PAL.danger;
   if(w*pow>4){rr(x+2,y+2,(w-4)*pow,hh-4,4);ctx.fill();}
-  if(pow>=1&&Math.floor(now/160)%2===0){
+  if(pow>=1&&(window.__gRM||Math.floor(now/160)%2===0)){
     ctx.fillStyle=PAL.danger;ctx.font='600 12px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
     ctx.textAlign='center';ctx.textBaseline='bottom';
     ctx.fillText('力度已满',W/2,y-6);
@@ -558,6 +568,7 @@ function draw(){
 /* ---------- 输入与主循环 ---------- */
 stage.addEventListener('pointerdown',function(e){
   if(e.target&&e.target.closest&&e.target.closest('button'))return;
+  if(e.target&&e.target.closest&&e.target.closest('.overlay'))return;
   e.preventDefault();
   pressDown();
 });

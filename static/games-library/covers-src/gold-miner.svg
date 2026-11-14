@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F8E4BC"/>
+      <stop offset="0.55" stop-color="#E4C084"/>
+      <stop offset="1" stop-color="#C29A5F"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.6" stop-color="#3A2A1E" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3A2A1E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#A67C46" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#8A6B42" opacity="0.5"/>
+
+  <g fill="#FFFFFF" opacity="0.5">
+    <path d="M92 92 h11 M97.5 86.5 v11" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M700 80 h12 M706 74 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M668 300 h9 M672.5 295.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+  </g>
+  <g fill="#FFF3D6" opacity="0.55">
+    <circle cx="172" cy="150" r="4"/><circle cx="620" cy="330" r="3.4"/><circle cx="84" cy="230" r="3"/><circle cx="748" cy="160" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="404" rx="238" ry="26" fill="#7A5A34" opacity="0.35"/>
+
+  <!-- 木梁与滑轮 -->
+  <g stroke-linejoin="round">
+    <rect x="268" y="52" width="24" height="46" rx="8" fill="#8A6B42" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="508" y="52" width="24" height="46" rx="8" fill="#8A6B42" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="240" y="52" width="320" height="28" rx="12" fill="#A67C46" stroke="#3A2A1E" stroke-width="9"/>
+    <circle cx="520" cy="80" r="17" fill="#9AA3AD" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="520" cy="80" r="6" fill="#3A2A1E"/>
+  </g>
+
+  <!-- 钩索 -->
+  <path d="M520 97 L588 192" stroke="#7A5B3A" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <path d="M588 192 q0 24 -20 24 q-18 0 -18 -16" stroke="#3A2A1E" stroke-width="7" stroke-linecap="round" fill="none"/>
+
+  <!-- 大金块 -->
+  <g stroke-linejoin="round">
+    <path d="M545 245 L575 210 L630 205 L670 240 L658 290 L605 310 L555 288 Z"
+          fill="#E2A23B" stroke="#3A2A1E" stroke-width="9"/>
+    <ellipse cx="592" cy="238" rx="22" ry="11" fill="#FFFFFF" opacity="0.45" transform="rotate(-12 592 238)"/>
+    <path d="M648 196 h12 M654 190 v12" stroke="#FFF3D6" stroke-width="4" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- 矿工 -->
+  <g stroke-linejoin="round">
+    <rect x="255" y="322" width="180" height="74" rx="26" fill="#4A9FD4" stroke="#3A2A1E" stroke-width="9"/>
+    <circle cx="345" cy="235" r="95" fill="#F2C79B" stroke="#3A2A1E" stroke-width="10"/>
+    <path d="M250 220 Q345 122 440 220 L440 232 L250 232 Z" fill="#F2C25C" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="238" y="216" width="214" height="28" rx="14" fill="#F2C25C" stroke="#3A2A1E" stroke-width="9"/>
+    <circle cx="345" cy="176" r="19" fill="#FFF6D8" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="345" cy="176" r="7" fill="#F2C25C"/>
+    <circle cx="313" cy="256" r="11" fill="#1F1A14"/><circle cx="377" cy="256" r="11" fill="#1F1A14"/>
+    <path d="M323 290 Q345 312 367 290" stroke="#1F1A14" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <circle cx="298" cy="282" r="9" fill="#E8927C" opacity="0.55"/>
+    <circle cx="392" cy="282" r="9" fill="#E8927C" opacity="0.55"/>
+    <ellipse cx="300" cy="205" rx="26" ry="12" fill="#FFFFFF" opacity="0.4" transform="rotate(-10 300 205)"/>
+  </g>
+
+  <!-- 地面碎石 -->
+  <g stroke-linejoin="round">
+    <ellipse cx="230" cy="392" rx="26" ry="12" fill="#A7ADB2" stroke="#3A2A1E" stroke-width="6"/>
+    <ellipse cx="660" cy="398" rx="30" ry="13" fill="#A7ADB2" stroke="#3A2A1E" stroke-width="6"/>
+    <ellipse cx="120" cy="404" rx="22" ry="10" fill="#A7ADB2" stroke="#3A2A1E" stroke-width="6"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

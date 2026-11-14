@@ -7,7 +7,7 @@
 <title>木棍过桥</title>
 <style>
 /*token:GAME-THEME.md §2 基线；素材 token：sky1/sky2/cld 沿用 jump-jump 登记，gnd/gnd2 为台柱面/深涧雾底（深色同色相压暗）*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-radius-btn:14px;--g-sky1:#F5F6F3;--g-sky2:#EFF1EE;--g-cld:rgba(255,255,255,.85);--g-gnd:#DFE6DF;--g-gnd2:#B9C6BA;color-scheme:light}
+:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-radius-btn:14px;--g-sky1:#F5F6F3;--g-sky2:#EFF1EE;--g-cld:rgba(255,255,255,.85);--g-gnd:#DFE6DF;--g-gnd2:#B9C6BA;color-scheme:light}
 :root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-sky1:#1D201E;--g-sky2:#141614;--g-cld:rgba(255,255,255,.25);--g-gnd:#2A312B;--g-gnd2:#182019;color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -21,10 +21,15 @@ canvas{display:block;width:100%;height:100%}
 .overlay h2{font-size:22px;color:var(--g-text)}
 .overlay .big{font-size:18px}
 .overlay .small{font-size:14px;color:var(--g-muted);line-height:1.6}
-.overlay .star{font-size:28px;color:var(--g-warning);letter-spacing:4px}
-.btn{min-height:48px;min-width:150px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-size:16px;font-weight:600;padding:0 26px;cursor:pointer;font-family:inherit}
+.overlay .star{font-size:28px;color: var(--g-text);letter-spacing:4px}
+.btn{min-height:48px;min-width:150px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-size:22px;font-weight:700;padding:0 26px;cursor:pointer;font-family:inherit}
 .btn:active{transform:scale(.96)}
 .btn.alt{background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text)}
+
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
@@ -36,7 +41,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>
@@ -205,8 +210,12 @@ function applyLevels(list,version){
 function loadCachedLevels(){
   try{
     var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
-    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
-    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+    var raw=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(raw)&&raw.length){
+      var list=parseStickBridgeLevels({levels:raw.map(function(e,i){
+        return{levelNo:(e&&e.no)||i+1,dataJson:JSON.stringify(e)};}),version:v});
+      if(list&&list.length){LEVELS=list;return v;}
+    }
   }catch(e){}
   return 0;
 }
@@ -278,7 +287,7 @@ var state='ready';//ready|playing|paused|win|over
 var phase='stand';//stand|charge|fall|walk|drop|done
 var cur=0,speed=300,plats=[],segs=0,score=0,combo=0,perfects=0,runGems=0,failWhy='';
 var pending=null,sticks=[],heroX=0,walkFrom=0,walkTo=0,walkT=0,doomed=false;
-var chargeT0=0,fallT=0,doneT=0,dropX=0,dropY=0,dropVX=0,dropVY=0,dropT=0,idleT=0;
+var chargeT0=0,fallT=0,doneT=0,dropX=0,dropY=0,dropVX=0,dropVY=0,dropT=0,idleT=0,chargePointerId=null;
 var camX=0,camInit=false;
 var particles=[],floats=[],rings=[],clouds=[],peaks=[];
 var HERO_OFF=6;
@@ -313,11 +322,17 @@ function startLevel(n){
   state='playing';phase='stand';camInit=false;idleT=0;doneT=0;fallT=0;
   ovStart.classList.add('hide');ovWin.classList.add('hide');ovOver.classList.add('hide');ovPause.classList.add('hide');
 }
-function pressDown(){
+function pressDown(e){
+  if(e&&e.button!==0)return;//只响应主键/触摸，忽略右键等
   if(state==='ready'){startLevel(Math.min(saveData.lv,LEVELS.length-1));return;}
-  if(state==='playing'&&phase==='stand'){phase='charge';chargeT0=performance.now();}
+  if(state==='playing'&&phase==='stand'){
+    phase='charge';chargeT0=performance.now();
+    chargePointerId=(e&&e.pointerId!=null)?e.pointerId:null;
+  }
 }
-function release(){
+function release(e){
+  if(e&&chargePointerId!=null&&e.pointerId!==chargePointerId)return;//蓄力来源以外的 pointerup 不松手
+  chargePointerId=null;
   if(state!=='playing'||phase!=='charge')return;
   var a=plats[segs],b=plats[segs+1];
   if(!b)return;
@@ -328,7 +343,7 @@ function release(){
   pending={pivot:pivot,gap:gap,wNext:b.w,L:L,verdict:v,perfect:v==='perfect',center:pivot+gap+b.w/2,gemDone:false};
   fallT=0;phase='fall';
 }
-function cancelCharge(){if(state==='playing'&&phase==='charge'){phase='stand';}}
+function cancelCharge(){chargePointerId=null;if(state==='playing'&&phase==='charge'){phase='stand';}}
 function dust(x,y){
   for(var i=0;i<6;i++)particles.push({x:x,y:y,vx:(Math.random()-0.4)*70,vy:40+Math.random()*70,life:0.45+Math.random()*0.3,dust:1});
 }
@@ -373,6 +388,9 @@ function finish(reachedEnd){
     $('btnNext').textContent=cur>=LEVELS.length-1?'再玩一遍':'下一关';
     state='win';ovWin.classList.remove('hide');
   }else{
+    if(score>saveData.best)saveData.best=score;
+    saveData.gems=(saveData.gems||0)+runGems;
+    save();
     $('scoreOver').textContent=String(score);
     $('tgOver').textContent=String(L.target);
     var base=failWhy==='short'?'木棍太短，够不到对岸，再按久一点':'木棍太长，越过了对岸，松手再早一点';
@@ -382,7 +400,7 @@ function finish(reachedEnd){
 }
 /* ---------- 更新 ---------- */
 function update(dt,now){
-  var i;
+  var i,rm=!!window.__gRM;
   if(state==='playing'){
     if(phase==='stand')idleT+=dt;
     else if(phase==='fall'){
@@ -414,8 +432,10 @@ function update(dt,now){
     else focus=curPivot();
     var targ=focus-SB.VIEW_W*0.30;
     if(!camInit){camX=targ;camInit=true;}
+    else if(rm)camX=targ;//动效降级：相机直接到位
     else camX+=(targ-camX)*(1-Math.exp(-5*dt));
   }
+  if(state==='paused'||rm)return;//暂停冻结装饰模拟；动效降级跳过装饰更新
   for(i=particles.length-1;i>=0;i--){
     var pt=particles[i];
     pt.life-=dt;pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.vy-=900*dt;
@@ -488,7 +508,7 @@ function drawSticks(now,ty){
   if(phase==='charge'&&state==='playing'){
     var len=lenFromHold(now-chargeT0,speed);
     stickSeg(curPivot(),len,90,ty);
-    if(now-chargeT0>=SB.MAX_HOLD&&Math.floor(now/160)%2===0){
+    if(!window.__gRM&&now-chargeT0>=SB.MAX_HOLD&&Math.floor(now/160)%2===0){
       ctx.fillStyle=PAL.danger;ctx.font='600 12px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
       ctx.textAlign='center';ctx.textBaseline='bottom';
       ctx.fillText('力度已满',w2sx(curPivot()),Math.max(14,ty-len*scale-6*scale));
@@ -504,10 +524,10 @@ function drawHero(now,ty){
   if(phase==='drop'){px=dropX;py=ty+dropY;}
   else{
     px=heroX;py=ty;
-    if(phase==='walk')bob=Math.abs(Math.sin(now/60))*2.2*scale;
+    if(phase==='walk')bob=window.__gRM?0:Math.abs(Math.sin(now/60))*2.2*scale;
     else if(phase==='charge')squash=0.14;
     else if(idleT<0.22&&segs>0)squash=-0.16*Math.sin(idleT/0.22*Math.PI);
-    else squash=0.02*Math.sin(now/420);
+    else squash=window.__gRM?0:0.02*Math.sin(now/420);
   }
   var sx=w2sx(px),sy=py-bob,u=scale;
   ctx.save();ctx.translate(sx,sy);
@@ -603,7 +623,7 @@ function draw(now){
 stage.addEventListener('pointerdown',function(e){
   if(e.target&&e.target.closest&&e.target.closest('button'))return;
   e.preventDefault();
-  pressDown();
+  pressDown(e);
 });
 window.addEventListener('pointerup',release);
 window.addEventListener('pointercancel',cancelCharge);

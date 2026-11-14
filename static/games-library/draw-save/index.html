@@ -7,7 +7,7 @@
 <title>画线救小球</title>
 <style>
   /*token:GAME-THEME.md §2 基线 + §3 素材 token（画线场地底/小球/墨线）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-field:#FFFFFF;--g-ball:#4A9FD4;--g-line:#3D5A73;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-field:#FFFFFF;--g-ball:#4A9FD4;--g-line:#3D5A73;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-field:#1D201E;--g-ball:#6BB4DE;--g-line:#93B5CE;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -25,17 +25,17 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stage { position: relative; }
   canvas { display: block; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); width: 100%; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; }
-  .btn { min-height: 44px; padding: 0 10px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: var(--g-on-primary); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn { min-height: 44px; padding: 0 10px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: var(--g-on-primary); font-family: inherit; font-size:22px; font-weight:700; cursor: pointer; }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
   .overlay.show { display: flex; }
   .panel { width: 100%; max-width: 340px; max-height: 92vh; overflow-y: auto; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; }
@@ -47,10 +47,15 @@
   .stars .f { color: var(--g-warning); }
   .stars .e { color: var(--g-faint); }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 40vh; overflow-y: auto; margin-bottom: 10px; }
-  .lvgrid button { min-height: 44px; border: 0; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .lvgrid button { min-height: 44px; border: 0; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
   .lvgrid button:disabled { opacity: .35; cursor: default; }
   .lvgrid button.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lvgrid button.cur { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
@@ -61,7 +66,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
   try{window.__gOnTheme(m)}catch(e){}}
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>
@@ -393,7 +398,11 @@ function loadCachedLevels(){
   try{
     var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
     var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
-    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+    if(Array.isArray(list)&&list.length){
+      var ok=true;
+      for(var i=0;i<list.length;i++){if(!validData(list[i])){ok=false;break}}
+      if(ok){LEVELS=list;return v;}
+    }
   }catch(e){}
   return 0;
 }
@@ -403,6 +412,7 @@ function syncLevelsFromServer(){
   GB.getLevels("draw-save").then(function(res){
     var list=parseDbLevels(res);
     if(!list)return;                        // 任一条非法 → 整批放弃
+    if(state!=="menu")return;               // 对局进行中不打断
     if(applyLevels(list,res.version||0)){
       if(cur>=LEVELS.length)cur=LEVELS.length-1;
       startLevel(Math.min(saveData.lv,LEVELS.length-1));
@@ -440,7 +450,7 @@ function syncSaveFromServer(){
     try{
       var r=JSON.parse(res.stateJson),changed=false;
       var rl=parseInt(r.lv,10);
-      if(isFinite(rl)&&rl>saveData.lv){saveData.lv=rl;changed=true;}
+      if(isFinite(rl)&&rl>saveData.lv){saveData.lv=Math.min(rl,LEVELS.length-1);changed=true;}
       if(r.done&&typeof r.done==="object"){
         for(var k in r.done){
           var v=r.done[k];
@@ -582,6 +592,7 @@ function onSettled(){
   syncHud();
 }
 function puff(x,y,n){
+  if(window.__gRM)return;//动效降级：跳过胜利粒子
   for(var i=0;i<n;i++){
     var a=Math.random()*6.28,sp=40+Math.random()*120;
     parts.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-50,life:0,ttl:0.5+Math.random()*0.25});
@@ -599,7 +610,7 @@ function frame(ts){
     acc-=DS.DT;
   }
   if(st&&st.state!=="run"&&st.state!=="draw"&&state==="roll")onSettled();
-  for(var i=parts.length-1;i>=0;i--){
+  if(!window.__gRM)for(var i=parts.length-1;i>=0;i--){
     var p=parts[i];p.vy+=400*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life+=dt;
     if(p.life>=p.ttl)parts.splice(i,1);
   }

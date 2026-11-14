@@ -30,7 +30,7 @@
   .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
   .nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
-  .num { min-height: 64px; border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); background: var(--g-surface); color: var(--g-text); font: inherit; font-size: 28px; font-weight: 700; cursor: pointer; }
+  .num { min-height: 64px; border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); background: var(--g-surface); color: var(--g-text); font-family: inherit; font-size: 28px; font-weight: 700; cursor: pointer; }
   .num:active { background: var(--g-primary-soft); }
   .num.off { opacity: .3; }
   .expr { min-height: 56px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; border: 1px dashed var(--g-border); border-radius: var(--g-radius-inner); background: var(--g-surface); margin-bottom: 12px; overflow-x: auto; }
@@ -40,11 +40,11 @@
   .chip.o { color: var(--g-text); }
   .chip.p { color: var(--g-muted); }
   .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
-  .op { min-height: 44px; border: 1px solid var(--g-border); border-radius: var(--g-radius-btn); background: var(--g-surface); color: var(--g-text); font: inherit; font-size: 22px; font-weight: 600; cursor: pointer; }
+  .op { min-height: 44px; border: 1px solid var(--g-border); border-radius: var(--g-radius-btn); background: var(--g-surface); color: var(--g-text); font-family: inherit; font-size: 22px; font-weight: 600; cursor: pointer; }
   .op:disabled { opacity: .3; }
   .op:active { background: var(--g-surface2); }
   .tools { display: flex; gap: 8px; }
-  .btn { min-height: 44px; padding: 0 14px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: #fff; font: inherit; font-size:22px; font-weight:700; cursor: pointer; }
+  .btn { min-height: 44px; padding: 0 14px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: #fff; font-family: inherit; font-size:22px; font-weight:700; cursor: pointer; }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
   .btn:disabled { opacity: .3; }

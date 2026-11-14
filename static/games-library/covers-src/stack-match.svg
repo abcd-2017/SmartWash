@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F1EAF9"/>
+      <stop offset="0.55" stop-color="#CFC2EE"/>
+      <stop offset="1" stop-color="#A98FE0"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.6" stop-color="#1E2620" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E2620" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#8E7CC3" opacity="0.5"/>
+  <rect y="392" width="800" height="6" fill="#7561AC" opacity="0.5"/>
+
+  <g fill="#FFFFFF" opacity="0.5">
+    <path d="M92 84 h11 M97.5 78.5 v11" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M706 88 h12 M712 82 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M668 300 h9 M672.5 295.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M124 260 h9 M128.5 255.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#FBF7FF" opacity="0.6">
+    <circle cx="176" cy="150" r="4"/><circle cx="628" cy="330" r="3.4"/><circle cx="86" cy="226" r="3"/><circle cx="748" cy="160" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="404" rx="238" ry="25" fill="#6A529E" opacity="0.35"/>
+
+  <!-- 整齐堆叠的方块 -->
+  <g stroke-linejoin="round">
+    <!-- 顶行 -->
+    <g stroke="#3A2A1E" stroke-width="6">
+      <rect x="175" y="154" width="105" height="72" rx="12" fill="#5AA7E8"/>
+      <rect x="290" y="154" width="105" height="72" rx="12" fill="#EE7E9C"/>
+      <rect x="405" y="154" width="105" height="72" rx="12" fill="#9B7BE0"/>
+      <rect x="520" y="154" width="105" height="72" rx="12" fill="#4FC3D9"/>
+    </g>
+    <!-- 中行 -->
+    <g stroke="#3A2A1E" stroke-width="6">
+      <rect x="175" y="236" width="105" height="72" rx="12" fill="#F2B843"/>
+      <rect x="290" y="236" width="105" height="72" rx="12" fill="#7BC57B"/>
+      <rect x="405" y="236" width="105" height="72" rx="12" fill="#5AA7E8"/>
+      <rect x="520" y="236" width="105" height="72" rx="12" fill="#EE7E9C"/>
+    </g>
+    <!-- 底行 -->
+    <g stroke="#3A2A1E" stroke-width="6">
+      <rect x="175" y="318" width="105" height="72" rx="12" fill="#9B7BE0"/>
+      <rect x="290" y="318" width="105" height="72" rx="12" fill="#4FC3D9"/>
+      <rect x="405" y="318" width="105" height="72" rx="12" fill="#F2B843"/>
+      <rect x="520" y="318" width="105" height="72" rx="12" fill="#7BC57B"/>
+    </g>
+    <!-- 高光 -->
+    <g fill="#FFFFFF" opacity="0.35">
+      <rect x="188" y="162" width="44" height="8" rx="4"/><rect x="303" y="162" width="44" height="8" rx="4"/>
+      <rect x="418" y="162" width="44" height="8" rx="4"/><rect x="533" y="162" width="44" height="8" rx="4"/>
+      <rect x="188" y="244" width="44" height="8" rx="4"/><rect x="303" y="244" width="44" height="8" rx="4"/>
+      <rect x="418" y="244" width="44" height="8" rx="4"/><rect x="533" y="244" width="44" height="8" rx="4"/>
+      <rect x="188" y="326" width="44" height="8" rx="4"/><rect x="303" y="326" width="44" height="8" rx="4"/>
+      <rect x="418" y="326" width="44" height="8" rx="4"/><rect x="533" y="326" width="44" height="8" rx="4"/>
+    </g>
+  </g>
+
+  <!-- 顶部发光待放块 -->
+  <g stroke-linejoin="round">
+    <rect x="325" y="54" width="150" height="96" rx="22" fill="#F2B843" opacity="0.22"/>
+    <rect x="337" y="66" width="126" height="72" rx="14" fill="#F2B843" stroke="#3A2A1E" stroke-width="8"/>
+    <rect x="350" y="74" width="48" height="9" rx="4.5" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="377" cy="96" r="7" fill="#1F1A14"/><circle cx="423" cy="96" r="7" fill="#1F1A14"/>
+    <path d="M387 112 Q400 124 413 112" stroke="#1F1A14" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <path d="M362 156 v14 M438 156 v14" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

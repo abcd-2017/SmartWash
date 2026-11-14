@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCF5E6"/>
+      <stop offset="0.55" stop-color="#F0DFC0"/>
+      <stop offset="1" stop-color="#DCC493"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.6" stop-color="#3A2A1E" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3A2A1E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#C9AE7E" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#B19668" opacity="0.5"/>
+
+  <g fill="#FFFFFF" opacity="0.5">
+    <path d="M92 84 h11 M97.5 78.5 v11" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M706 92 h12 M712 86 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M668 300 h9 M672.5 295.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M124 250 h9 M128.5 245.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#FFF8E8" opacity="0.6">
+    <circle cx="176" cy="150" r="4"/><circle cx="628" cy="330" r="3.4"/><circle cx="86" cy="226" r="3"/><circle cx="748" cy="160" r="2.6"/>
+  </g>
+
+  <ellipse cx="420" cy="404" rx="238" ry="25" fill="#9A7C4E" opacity="0.35"/>
+
+  <!-- 七巧板拼成的狐狸 -->
+  <g stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round">
+    <!-- 身体（大三角） -->
+    <path d="M250 395 L490 395 L370 275 Z" fill="#D9B13B"/>
+    <!-- 后背（大三角） -->
+    <path d="M490 155 L490 395 L370 275 Z" fill="#2D9B6A"/>
+    <!-- 头（正方形） -->
+    <path d="M370 155 L430 215 L370 275 L310 215 Z" fill="#D98A26"/>
+    <!-- 耳（小三角 ×2） -->
+    <path d="M250 155 L370 155 L310 95 Z" fill="#C9526B"/>
+    <path d="M370 155 L490 155 L430 95 Z" fill="#8E7CC3"/>
+    <!-- 前腿（中三角） -->
+    <path d="M250 395 L250 275 L370 275 Z" fill="#3BA8A0"/>
+    <!-- 尾巴（平行四边） -->
+    <path d="M490 175 L610 175 L670 235 L550 235 Z" fill="#4A9FD4"/>
+  </g>
+
+  <!-- 高光 -->
+  <ellipse cx="345" cy="185" rx="13" ry="7" fill="#FFFFFF" opacity="0.4" transform="rotate(-20 345 185)"/>
+  <ellipse cx="300" cy="340" rx="20" ry="8" fill="#FFFFFF" opacity="0.28" transform="rotate(-12 300 340)"/>
+  <ellipse cx="520" cy="330" rx="18" ry="8" fill="#FFFFFF" opacity="0.28" transform="rotate(10 520 330)"/>
+
+  <!-- 表情（头部） -->
+  <circle cx="352" cy="206" r="8" fill="#1F1A14"/><circle cx="388" cy="206" r="8" fill="#1F1A14"/>
+  <path d="M358 224 Q370 236 382 224" stroke="#1F1A14" stroke-width="6" stroke-linecap="round" fill="none"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

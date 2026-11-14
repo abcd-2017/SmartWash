@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EAF1FB"/>
+      <stop offset="0.55" stop-color="#B9CDEB"/>
+      <stop offset="1" stop-color="#7FA3D4"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.6" stop-color="#1E2620" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E2620" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#5C82B8" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#4A6CA0" opacity="0.5"/>
+
+  <g fill="#FFFFFF" opacity="0.5">
+    <path d="M92 88 h11 M97.5 82.5 v11" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M704 78 h12 M710 72 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M668 260 h9 M672.5 255.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M124 250 h9 M128.5 245.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#F0F6FF" opacity="0.55">
+    <circle cx="176" cy="140" r="4"/><circle cx="628" cy="330" r="3.4"/><circle cx="86" cy="220" r="3"/><circle cx="748" cy="150" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="404" rx="238" ry="25" fill="#3C5E8C" opacity="0.35"/>
+
+  <!-- 底座与立柱 -->
+  <g stroke-linejoin="round">
+    <rect x="170" y="345" width="460" height="26" rx="12" fill="#A67C46" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="264" y="150" width="12" height="196" rx="6" fill="#6B6E73" stroke="#3A2A1E" stroke-width="6"/>
+    <rect x="394" y="150" width="12" height="196" rx="6" fill="#6B6E73" stroke="#3A2A1E" stroke-width="6"/>
+    <rect x="524" y="150" width="12" height="196" rx="6" fill="#6B6E73" stroke="#3A2A1E" stroke-width="6"/>
+    <ellipse cx="250" cy="352" rx="60" ry="7" fill="#FFFFFF" opacity="0.3"/>
+  </g>
+
+  <!-- 左柱圆环塔 -->
+  <g stroke-linejoin="round">
+    <rect x="145" y="315" width="250" height="30" rx="15" fill="#D98A26" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="165" y="285" width="210" height="30" rx="15" fill="#4A9FD4" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="185" y="255" width="170" height="30" rx="15" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="205" y="225" width="130" height="30" rx="15" fill="#D9B13B" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="225" y="195" width="90" height="30" rx="15" fill="#C9526B" stroke="#3A2A1E" stroke-width="7"/>
+    <!-- 高光 -->
+    <rect x="160" y="320" width="70" height="7" rx="3.5" fill="#FFFFFF" opacity="0.4"/>
+    <rect x="180" y="290" width="56" height="7" rx="3.5" fill="#FFFFFF" opacity="0.4"/>
+    <rect x="200" y="260" width="44" height="7" rx="3.5" fill="#FFFFFF" opacity="0.4"/>
+    <!-- 表情（最大环） -->
+    <circle cx="238" cy="330" r="8" fill="#1F1A14"/><circle cx="302" cy="330" r="8" fill="#1F1A14"/>
+    <path d="M252 340 Q270 349 288 340" stroke="#1F1A14" stroke-width="6" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- 移动中的圆环 -->
+  <g stroke-linejoin="round">
+    <g transform="rotate(-8 430 118)">
+      <rect x="365" y="103" width="130" height="30" rx="15" fill="#8E7CC3" stroke="#3A2A1E" stroke-width="7"/>
+      <rect x="378" y="108" width="44" height="7" rx="3.5" fill="#FFFFFF" opacity="0.4"/>
+    </g>
+    <path d="M352 96 q-14 10 -12 26 M336 88 q-20 14 -18 36" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.8"/>
+  </g>
+
+  <!-- 目标柱小旗 -->
+  <g stroke-linejoin="round">
+    <path d="M536 150 L536 106" stroke="#3A2A1E" stroke-width="6" stroke-linecap="round"/>
+    <path d="M536 106 L578 118 L536 132 Z" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="6"/>
+    <circle cx="536" cy="104" r="6" fill="#F2C25C" stroke="#3A2A1E" stroke-width="5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

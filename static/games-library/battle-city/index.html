@@ -7,34 +7,39 @@
 <title>坦克大战</title>
 <style>
 /*token:GAME-THEME.md §2 基线；素材 token：field/grid/bd（前缀已登记）*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-field-bg:#E9EDE5;--g-grid-line:#DFE4DA;--g-bd-body:#B65B43;--g-bd-mortar:#7E3A2A;--g-bd-steel:#9AA3AD;--g-field-grass:#7CB85C;--g-field-grass2:#5E9644;color-scheme:light}
+:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-field-bg:#E9EDE5;--g-grid-line:#DFE4DA;--g-bd-body:#B65B43;--g-bd-mortar:#7E3A2A;--g-bd-steel:#9AA3AD;--g-field-grass:#7CB85C;--g-field-grass2:#5E9644;color-scheme:light}
 :root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-field-bg:#1D201E;--g-grid-line:#2C312D;--g-bd-body:#8A4030;--g-bd-mortar:#5E2C20;--g-bd-steel:#4A5158;--g-field-grass:#3E5A34;--g-field-grass2:#2E4527;color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;background:var(--g-bg);color:var(--g-text);display:flex;flex-direction:column;align-items:center;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior:none}
 header{width:100%;max-width:430px;padding:8px 10px 4px}
 .stats{display:flex;gap:6px}
-.stat{flex:1;background:var(--g-surface2);border-radius:var(--g-radius-inner);padding:4px 2px;text-align:center;line-height:1.25}
+.stat{flex:1;background:var(--g-surface2);border-radius:var(--g-radius-inner);padding: 4px 8px;text-align:center;line-height:1.25}
 .stat .label{display:block;font-size:12px;color:var(--g-muted)}
 .stat .val{display:block;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--g-primary-deep)}
-#status{min-height:18px;margin-top:3px;text-align:center;font-size:12px;color:var(--g-warning)}
+#status{min-height:18px;margin-top:3px;text-align:center;font-size:12px;color:var(--g-muted)}
 #stage{position:relative;width:100%;max-width:430px;flex:1;min-height:0;touch-action:none;overflow:hidden}
 canvas{display:block;width:100%;height:100%}
 .pad{position:absolute;left:10px;bottom:10px;display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:2px;opacity:.94}
-.key{min-width:52px;min-height:52px;border:0;border-radius:12px;background:var(--g-surface);color:var(--g-text);font:inherit;font-size:22px;font-weight:700;box-shadow:0 2px 6px var(--g-shadow);cursor:pointer;touch-action:none}
+.key{min-width:52px;min-height:52px;border:0;border-radius:12px;background:var(--g-surface);color:var(--g-text);font-family:inherit;font-size:22px;font-weight:700;box-shadow:0 2px 6px var(--g-shadow);cursor:pointer;touch-action:none}
 .key:active{background:var(--g-primary-soft);color:var(--g-on-soft)}
 .key.held{background:var(--g-primary-soft);color:var(--g-on-soft)}
-.fire{position:absolute;right:14px;bottom:18px;min-width:72px;min-height:72px;border:0;border-radius:999px;background:var(--g-danger);color:#fff;font:inherit;font-size:16px;font-weight:700;box-shadow:0 2px 8px var(--g-shadow);cursor:pointer;touch-action:none}
+.fire{position:absolute;right:14px;bottom:18px;min-width:72px;min-height:72px;border:0;border-radius:999px;background:var(--g-danger);color:#fff;font-family:inherit;font-size:16px;font-weight:700;box-shadow:0 2px 8px var(--g-shadow);cursor:pointer;touch-action:none}
 .fire:active{transform:scale(.94)}
 .overlay{position:absolute;left:0;top:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--g-scrim);text-align:center;padding:20px;z-index:5}
 .overlay.hide{display:none}
 .overlay h2{font-size:22px;color:var(--g-text)}
 .overlay .big{font-size:18px;color:var(--g-text)}
 .overlay .small{font-size:14px;color:var(--g-muted);line-height:1.6}
-.btn{min-height:48px;min-width:150px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-size:16px;font-weight:600;padding:0 22px;cursor:pointer;font-family:inherit}
+.btn{min-height:48px;min-width:150px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-size:22px;font-weight:700;padding:0 22px;cursor:pointer;font-family:inherit}
 .btn:active{transform:scale(.96)}
 .btn.alt{background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text)}
 .row{display:flex;gap:10px}
+
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
@@ -46,7 +51,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>
@@ -391,6 +396,7 @@ function startLevel(n){
   var L=LEVELS[n],i;
   cur=n;levelScoreStart=score;lives=3;baseAlive=true;
   for(i=0;i<169;i++){var ch=L.map[i];cellT[i]=CH2T[ch]||0;cellHp[i]=ch==='B'?2:0;}
+  heldDirs={};
   player=makePlayer();respawnT=0;
   enemies=[];bullets=[];powerups=[];parts=[];floats=[];
   spawnQueue=buildQueue(L);totalFoes=spawnQueue.length;spawned=0;spawnT=0.9;spawnIdx=0;winT=0;
@@ -735,7 +741,7 @@ function drawWater(x,y,now){
   ctx.fillStyle=PAL.water;ctx.fillRect(x,y,s+0.5,s+0.5);
   ctx.strokeStyle='rgba(255,255,255,.35)';//恒白高光 例外
   ctx.lineWidth=Math.max(1,s*0.05);
-  var off=(now/380)%1*s;
+  var off=window.__gRM?0:(now/380)%1*s;
   ctx.beginPath();
   ctx.moveTo(x+s*0.12,y+s*0.3+off*0.2);ctx.quadraticCurveTo(x+s*0.3,y+s*0.22+off*0.2,x+s*0.48,y+s*0.3+off*0.2);
   ctx.moveTo(x+s*0.52,y+s*0.68-off*0.2);ctx.quadraticCurveTo(x+s*0.7,y+s*0.6-off*0.2,x+s*0.88,y+s*0.68-off*0.2);
@@ -795,7 +801,7 @@ function drawTank(t,isPlayer,now){
     t.type==='normal'?PAL.foeNormal:t.type==='fast'?PAL.foeFast:
     t.type==='heavy'?PAL.foeHeavy:PAL.foeShooter;
   ctx.save();ctx.translate(cxp,cyp);
-  if(t.spawnT>0)ctx.globalAlpha=0.35+0.4*Math.abs(Math.sin(now/70));
+  if(t.spawnT>0)ctx.globalAlpha=window.__gRM?1:0.35+0.4*Math.abs(Math.sin(now/70));
   else if(!isPlayer&&t.shieldT>0)ctx.globalAlpha=0.55;
   var vert=(t.dir===0||t.dir===2);
   ctx.fillStyle='rgba(0,0,0,.38)';//恒暗履带 例外
@@ -820,14 +826,14 @@ function drawTank(t,isPlayer,now){
   ctx.restore();
   if(isPlayer&&player.shieldT>0){
     ctx.save();
-    ctx.globalAlpha=0.5+0.3*Math.sin(now/120);
+    ctx.globalAlpha=window.__gRM?1:0.5+0.3*Math.sin(now/120);
     ctx.strokeStyle=PAL.success;ctx.lineWidth=Math.max(1.5,CS*0.07);
     ctx.beginPath();ctx.arc(cxp,cyp,CS*0.62,0,Math.PI*2);ctx.stroke();
     ctx.restore();
   }
   if(!isPlayer&&t.gift&&t.spawnT<=0){
     ctx.save();
-    ctx.globalAlpha=0.5+0.5*Math.abs(Math.sin(now/130));
+    ctx.globalAlpha=window.__gRM?1:0.5+0.5*Math.abs(Math.sin(now/130));
     ctx.fillStyle=PAL.warning;
     ctx.translate(cxp,cyp-CS*0.72);
     ctx.rotate(Math.PI/4);
@@ -849,7 +855,7 @@ function drawPowerup(p,now){
   var cxp=OX+p.x*CS,cyp=OY+p.y*CS;
   var s=CS*0.66;
   ctx.save();ctx.translate(cxp,cyp);
-  if(p.t<2)ctx.globalAlpha=0.4+0.6*Math.abs(Math.sin(now/90));
+  if(p.t<2&&!window.__gRM)ctx.globalAlpha=0.4+0.6*Math.abs(Math.sin(now/90));
   ctx.fillStyle=PAL.surface;
   rr(-s/2,-s/2,s,s,s*0.22);ctx.fill();
   ctx.strokeStyle=PAL.border;ctx.lineWidth=Math.max(1,CS*0.04);ctx.stroke();

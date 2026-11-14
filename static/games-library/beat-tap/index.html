@@ -20,7 +20,7 @@
   }
   .app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;padding:10px 12px calc(8px + env(safe-area-inset-bottom))}
   header{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .btn{min-height:44px;padding:0 16px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:var(--g-on-primary);font:inherit;font-size:22px;font-weight:700;cursor:pointer}
+  .btn{min-height:44px;padding:0 16px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:var(--g-on-primary);font-family:inherit;font-size:22px;font-weight:700;cursor:pointer}
   .btn:active{opacity:.85}
   .btn.ghost{background:var(--g-surface);color:var(--g-text);border:1px solid var(--g-border)}
   .btn:disabled{opacity:.4;cursor:default}
@@ -54,7 +54,7 @@
   .rbtns{display:flex;gap:10px;margin-top:14px}
   .rbtns .btn{flex:1}
   .pads{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
-  .pad{position:relative;min-height:58px;border:1px solid var(--g-border);border-radius:var(--g-radius-btn);background:var(--g-surface);color:var(--g-text);font:inherit;font-size:16px;font-weight:700;cursor:pointer;touch-action:none;overflow:hidden}
+  .pad{position:relative;min-height:58px;border:1px solid var(--g-border);border-radius:var(--g-radius-btn);background:var(--g-surface);color:var(--g-text);font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;touch-action:none;overflow:hidden}
   .pad i{position:absolute;left:0;right:0;bottom:0;height:5px}
   .pad[data-lane="0"] i{background:var(--g-primary)}
   .pad[data-lane="1"] i{background:var(--g-water)}

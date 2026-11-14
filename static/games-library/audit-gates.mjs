@@ -77,8 +77,9 @@ function themeRuntime(html) {
   const m = html.match(/<script>\s*(\/\/主题运行时[\s\S]*?)<\/script>/);
   return m ? m[1] : null;
 }
-// 严格比对前剥离 setChrome 行（全屏游戏按 §6#6 在运行时内追加，与范例差异仅此一行）
-function stripSetChrome(rt) { return rt ? rt.replace(/\n?\s*try\{SmartWashGameBridge&&SmartWashGameBridge\.setChrome\([^)]*\)\}catch\(e\)\{\}/g, "") : rt; }
+// 严格比对前剥离 setChrome 行（全屏游戏按 §6#6 在运行时内追加）与 __gRM 注入行
+// （2026-11-14 动效层注入，与主题运行时功能等价、不影响语义；2026-11-15 口径修正）
+function stripSetChrome(rt) { return rt ? rt.replace(/\n?\s*try\{SmartWashGameBridge&&SmartWashGameBridge\.setChrome\([^)]*\)\}catch\(e\)\{\}/g, "").replace(/\n?\s*window\.__gRM=\(function\(\)\{[\s\S]*?\}catch\(e\)\{\};/g, "") : rt; }
 const canonRuntime = themeRuntime(CANONICAL);
 
 // 颜色归一化：#abc→#aabbcc、#RRGGBBAA→rgba(...)、rgba 逗号归一、alpha 两位小数

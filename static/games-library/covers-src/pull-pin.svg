@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBEBC4"/>
+      <stop offset="0.55" stop-color="#F0CD82"/>
+      <stop offset="1" stop-color="#E2A93B"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.6" stop-color="#3A2A1E" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3A2A1E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#C98F2E" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#A9761E" opacity="0.5"/>
+
+  <g fill="#FFFFFF" opacity="0.5">
+    <path d="M92 88 h11 M97.5 82.5 v11" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M700 80 h12 M706 74 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M664 300 h9 M668.5 295.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+  </g>
+  <g fill="#FFF6DC" opacity="0.6">
+    <circle cx="176" cy="150" r="4"/><circle cx="628" cy="330" r="3.4"/><circle cx="86" cy="226" r="3"/><circle cx="748" cy="160" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="404" rx="238" ry="25" fill="#8A6B42" opacity="0.35"/>
+
+  <!-- 左壁 -->
+  <rect x="150" y="110" width="90" height="220" rx="18" fill="#A7ADB2" stroke="#3A2A1E" stroke-width="9"/>
+  <ellipse cx="178" cy="132" rx="22" ry="10" fill="#FFFFFF" opacity="0.4"/>
+
+  <!-- 彩色针 -->
+  <g stroke-linejoin="round">
+    <rect x="230" y="150" width="300" height="26" rx="13" fill="#C9526B" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="548" cy="163" r="16" fill="none" stroke="#3A2A1E" stroke-width="6"/>
+    <circle cx="300" cy="159" r="6" fill="#1F1A14"/><circle cx="336" cy="159" r="6" fill="#1F1A14"/>
+    <path d="M308 170 Q318 178 328 170" stroke="#1F1A14" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <rect x="244" y="155" width="70" height="6" rx="3" fill="#FFFFFF" opacity="0.4"/>
+
+    <rect x="230" y="205" width="340" height="26" rx="13" fill="#4A9FD4" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="588" cy="218" r="16" fill="none" stroke="#3A2A1E" stroke-width="6"/>
+    <circle cx="320" cy="214" r="6" fill="#1F1A14"/><circle cx="356" cy="214" r="6" fill="#1F1A14"/>
+    <path d="M328 225 Q338 233 348 225" stroke="#1F1A14" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <rect x="244" y="210" width="80" height="6" rx="3" fill="#FFFFFF" opacity="0.4"/>
+
+    <rect x="230" y="260" width="260" height="26" rx="13" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="508" cy="273" r="16" fill="none" stroke="#3A2A1E" stroke-width="6"/>
+    <circle cx="300" cy="269" r="6" fill="#1F1A14"/><circle cx="336" cy="269" r="6" fill="#1F1A14"/>
+    <path d="M308 280 Q318 288 328 280" stroke="#1F1A14" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <rect x="244" y="265" width="60" height="6" rx="3" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <!-- 滚动的球 -->
+  <g stroke-linejoin="round">
+    <g stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.8">
+      <path d="M262 356 H312"/><path d="M250 382 H300"/><path d="M268 404 H312"/>
+    </g>
+    <circle cx="400" cy="372" r="48" fill="#E2A93B" stroke="#3A2A1E" stroke-width="9"/>
+    <circle cx="380" cy="364" r="10" fill="#1F1A14"/><circle cx="420" cy="364" r="10" fill="#1F1A14"/>
+    <path d="M386 388 Q400 404 414 388" stroke="#1F1A14" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <ellipse cx="378" cy="344" rx="18" ry="10" fill="#FFFFFF" opacity="0.45" transform="rotate(-14 378 344)"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

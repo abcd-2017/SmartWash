@@ -32,12 +32,12 @@
   canvas { display: block; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .pad { display: grid; grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(3, 50px); gap: 8px; justify-content: center; margin: 12px 0 10px; }
-  .pad button { min-height: 48px; border: 0; border-radius: 12px; background: var(--g-surface); color: var(--g-text); box-shadow: inset 0 0 0 1px var(--g-border); font: inherit; font-size: 22px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .pad button { min-height: 48px; border: 0; border-radius: 12px; background: var(--g-surface); color: var(--g-text); box-shadow: inset 0 0 0 1px var(--g-border); font-family: inherit; font-size: 22px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .pad button:active { opacity: .7; }
   .pad .empty { visibility: hidden; }
   .pad .center { display: flex; align-items: center; justify-content: center; color: var(--g-faint); font-size: 18px; }
   .tools { display: flex; gap: 8px; }
-  .btn { min-height: 44px; padding: 0 10px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: var(--g-on-primary); font: inherit; font-size:22px; font-weight:700; cursor: pointer; }
+  .btn { min-height: 44px; padding: 0 10px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: var(--g-on-primary); font-family: inherit; font-size:22px; font-weight:700; cursor: pointer; }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
   .btn:disabled { opacity: .35; }
@@ -54,7 +54,7 @@
   .stars .f { color: var(--g-warning); }
   .stars .e { color: var(--g-faint); }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 46vh; overflow-y: auto; margin-bottom: 10px; }
-  .lvgrid button { min-height: 44px; border: 0; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .lvgrid button { min-height: 44px; border: 0; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
   .lvgrid button:disabled { opacity: .35; cursor: default; }
   .lvgrid button.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lvgrid button.cur { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
