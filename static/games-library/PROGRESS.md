@@ -281,3 +281,8 @@
   色数按预案逐级下调 128→96→64/48/32，目检无色带）→ 双处部署
   （games-library/<key>/<key>.png + drawable-nodpi/game_<key>.png，49 张字节一致核验通过，
   suika 此前已完成）。独立抽检 snake/tetris/xiangqi 成品通过。
+
+- **2026-11-15（三次 rebase 同步 + H5 图标 SVG 化）**：
+  - 同步远程「九款算法游戏各扩容百关 + 六款每日挑战模式」（冲突四处全部合并双方：WorkbenchPage 搜索+扫一扫行/whack-a-mole、lights-out 每日按钮/billiards 新基线 token/memory-cards 每日挑战变量+后台计时暂停）；audit-gates 62 款 0 违规、theme-gates 62/62。
+  - 统一图标库 `SW_ICON`（24 viewBox 线性、stroke=currentColor 跟随主题）：38 款游戏约 93 处 unicode 图标（→/★☆/✓✕/方向键/花色/旋转/删除等）替换为内联 SVG，消除 craft-floor「Unicode 充当图标系统」红线；CSS 伪元素图标改 DOM 注入（lights-out 星标/minesweeper 错旗）。
+  - 游戏封面定版方案 A（GAME-COVER.md 决策记录）；12 款新游戏封面按 A 落地（25-36KB，covers-src 共 62 份）。
