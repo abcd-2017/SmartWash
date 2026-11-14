@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildImportPayload,
+  buildChunkedPayloads,
   parseLevelImportText,
   planLevelImport,
   MAX_IMPORT_COUNT,
@@ -162,5 +163,78 @@ describe('buildImportPayload 请求体构建', () => {
         { levelNo: 4, name: 'N', dataJson: '"a"', difficulty: 1, enabled: null, sort: null },
       ],
     });
+  });
+});
+
+describe('buildChunkedPayloads 上传串联分批', () => {
+  const rows = (n) =>
+    Array.from({ length: n }, (_, i) => ({
+      levelNo: i + 1,
+      name: null,
+      dataJson: `"lv${i + 1}"`,
+      difficulty: null,
+      enabled: null,
+      sort: null,
+    }));
+
+  it(`≤${MAX_IMPORT_COUNT} 关单批，replaceAll 原样透传`, () => {
+    const payloads = buildChunkedPayloads(rows(120), { gameKey: 'game24', replaceAll: true });
+    expect(payloads).toHaveLength(1);
+    expect(payloads[0].gameKey).toBe('game24');
+    expect(payloads[0].replaceAll).toBe(true);
+    expect(payloads[0].levels).toHaveLength(120);
+    expect(payloads[0].levels[0].levelNo).toBe(1);
+  });
+
+  it(`>${MAX_IMPORT_COUNT} 关自动切批，replaceAll 仅随首批（清空动作只执行一次）`, () => {
+    const payloads = buildChunkedPayloads(rows(1201), { gameKey: 'maze', replaceAll: true });
+    expect(payloads).toHaveLength(3);
+    expect(payloads[0].levels).toHaveLength(MAX_IMPORT_COUNT);
+    expect(payloads[1].levels).toHaveLength(MAX_IMPORT_COUNT);
+    expect(payloads[2].levels).toHaveLength(201);
+    expect(payloads[0].replaceAll).toBe(true);
+    expect(payloads[1].replaceAll).toBe(false);
+    expect(payloads[2].replaceAll).toBe(false);
+    // 跨批序号连续无缝，与 planLevelImport 的分配结果一致
+    const nos = payloads.flatMap((p) => p.levels.map((l) => l.levelNo));
+    expect(nos[0]).toBe(1);
+    expect(nos[nos.length - 1]).toBe(1201);
+  });
+
+  it('空行返回空数组（无关卡可导时不发空请求）', () => {
+    expect(buildChunkedPayloads([], { gameKey: 'x', replaceAll: false })).toEqual([]);
+  });
+
+  it('与 planLevelImport 组合：全新游戏裸数据顺延 + 覆盖游戏撞号对齐后切批', () => {
+    // 全新游戏：按空表顺延，全部为 create
+    const fresh = parseLevelImportText(JSON.stringify(['a', 'b']));
+    const freshPlan = planLevelImport(fresh.items, []);
+    const freshPayloads = buildChunkedPayloads(
+      freshPlan.rows.filter((r) => r.fate !== 'error'),
+      { gameKey: 'new-game', replaceAll: false }
+    );
+    expect(freshPayloads).toHaveLength(1);
+    expect(freshPlan.created).toBe(2);
+    expect(freshPayloads[0].levels.map((l) => l.levelNo)).toEqual([1, 2]);
+
+    // 覆盖游戏撞号对齐：信封显式序号 1、2 与库内撞号 → 覆盖；裸数据按 maxExisting 顺延 → 新增第 3 关
+    //（语义提醒：裸数据永不撞号，只追加；撞号覆盖仅发生在信封显式 levelNo）
+    const existing = [
+      { levelNo: 1, name: 'old1' },
+      { levelNo: 2, name: 'old2' },
+    ];
+    const overwrite = parseLevelImportText(
+      JSON.stringify([{ levelNo: 1, data: 'x' }, { levelNo: 2, data: 'y' }, 'z'])
+    );
+    const overwritePlan = planLevelImport(overwrite.items, existing);
+    expect(overwritePlan.created).toBe(1);
+    expect(overwritePlan.updated).toBe(2);
+    const overwritePayloads = buildChunkedPayloads(
+      overwritePlan.rows.filter((r) => r.fate !== 'error'),
+      { gameKey: 'old-game', replaceAll: false }
+    );
+    expect(overwritePayloads).toHaveLength(1);
+    expect(overwritePayloads[0].replaceAll).toBe(false);
+    expect(overwritePayloads[0].levels.map((l) => l.levelNo)).toEqual([1, 2, 3]);
   });
 });

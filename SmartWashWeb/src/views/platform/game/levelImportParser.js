@@ -178,3 +178,25 @@ export function buildImportPayload(rows, { gameKey, replaceAll }) {
     })),
   };
 }
+
+/**
+ * 按单批上限切分请求体：序号已在 planLevelImport 分配完毕，这里只做切片。
+ * 游戏上传串联关卡导入时复用（BatchUploadDialog / GameList）；replaceAll 仅随首批下发
+ *（清空动作只需执行一次），后续批次按 upsert 追加，后端每批独立事务。
+ * @param {Array} rows planLevelImport 输出中 fate !== 'error' 的行（调用方负责过滤错误行）
+ * @param {{gameKey: string, replaceAll: boolean}} options
+ * @param {number} [batchSize] 单批上限，默认 MAX_IMPORT_COUNT（与后端 @Size(max=500) 对齐）
+ * @returns {Array<{gameKey: string, replaceAll: boolean, levels: Array}>} 至少一批（rows 为空时返回空数组）
+ */
+export function buildChunkedPayloads(rows, { gameKey, replaceAll }, batchSize = MAX_IMPORT_COUNT) {
+  const payloads = [];
+  for (let start = 0; start < rows.length; start += batchSize) {
+    payloads.push(
+      buildImportPayload(rows.slice(start, start + batchSize), {
+        gameKey,
+        replaceAll: replaceAll && start === 0,
+      })
+    );
+  }
+  return payloads;
+}
