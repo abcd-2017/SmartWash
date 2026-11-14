@@ -74,11 +74,10 @@
   .card.down {
     background: repeating-linear-gradient(45deg, var(--g-primary-soft), var(--g-primary-soft) 5px, var(--g-surface) 5px, var(--g-surface) 10px);
     border-color: var(--g-primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--g-primary);
   }
-  .card.down::after {
-    content: "♠"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 22px; color: var(--g-primary); opacity: .55;
-  }
+  .card.down .swi { opacity: .55; }
   .card .rk { position: absolute; top: 3px; left: 5px; font-size: 14px; font-weight: 700; line-height: 1; }
   .card .st { position: absolute; top: 18px; left: 5px; font-size: 12px; line-height: 1; }
   .card .cen { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; line-height: 1; }
@@ -112,6 +111,24 @@
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox，与 UI 令牌联动） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -164,7 +181,17 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 "use strict";
 /* ---------- 常量与工具 ---------- */
 var RANKS=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-var SUITS=["♠","♥","♦","♣"]; /* 0 黑桃 1 红桃 2 方块 3 梅花 */
+var SUITS=["\u2660","\u2665","\u2666","\u2663"]; /* 0 黑桃 1 红桃 2 方块 3 梅花（文本牌名，转义书写） */
+var SUIT_NAMES=["spade","heart","diamond","club"];
+var SUIT_PATHS={
+  spade:'<path d="M12 3c3 4 6 6.5 6 10a3.5 3.5 0 0 1-6 2.4V19h-2v-3.6A3.5 3.5 0 0 1 6 13c0-3.5 3-6 6-10z"/>',
+  heart:'<path d="M12 21C7 16.5 3 13 3 9.3 3 6.4 5.2 4.5 7.7 4.5c1.7 0 3.3.9 4.3 2.4 1-1.5 2.6-2.4 4.3-2.4 2.5 0 4.7 1.9 4.7 4.8 0 3.7-4 7.2-9 11.7z"/>',
+  diamond:'<path d="M12 2l7 10-7 10-7-10z"/>',
+  club:'<path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-1 7.9V17h3v2H6v-2h3v-3.1A4 4 0 0 1 8 6a4 4 0 0 1 4-4z"/>'
+};
+function suitSvg(i,s){s=s||"";
+  return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="'+s+'" aria-hidden="true">'+SUIT_PATHS[SUIT_NAMES[i]]+'</svg>';
+}
 var RED=[false,true,true,false]; /* 红桃与方块为红色 */
 var KEY="sw.solitaire.v1";
 function $(id){return document.getElementById(id)}
@@ -370,11 +397,11 @@ function checkWin(){
 /* ---------- 渲染 ---------- */
 function cardHtml(c,down,attrs){
   var a=attrs||"";
-  if(down)return'<div class="card down"'+a+'></div>';
+  if(down)return'<div class="card down"'+a+'>'+suitSvg(c.s)+'</div>';
   return'<div class="card'+(isRed(c)?" red":"")+'"'+a+'>'
     +'<span class="rk">'+RANKS[c.r]+'</span>'
-    +'<span class="st">'+SUITS[c.s]+'</span>'
-    +'<span class="cen">'+SUITS[c.s]+'</span></div>';
+    +'<span class="st">'+suitSvg(c.s)+'</span>'
+    +'<span class="cen">'+suitSvg(c.s)+'</span></div>';
 }
 function render(){
   var s=els.slotStock;
@@ -383,7 +410,7 @@ function render(){
     s.innerHTML=cardHtml(stock[stock.length-1],true)+'<span class="count">'+stock.length+'</span>';
   }else{
     s.className="slot empty";
-    s.innerHTML=waste.length?'<span class="recycle">↻</span>':'';
+    s.innerHTML=waste.length?'<span class="recycle">'+SW_ICON('rotate')+'</span>':'';
   }
   var w=els.slotWaste;
   if(waste.length){
@@ -396,7 +423,7 @@ function render(){
   for(var i=0;i<4;i++){
     var f=els["fnd"+i],pile=fnd[i];
     f.className="slot fnd"+(pile.length?"":" empty");
-    f.innerHTML=pile.length?cardHtml(pile[pile.length-1],false):'<span class="wm">'+SUITS[i]+'</span>';
+    f.innerHTML=pile.length?cardHtml(pile[pile.length-1],false):'<span class="wm">'+suitSvg(i)+'</span>';
   }
   for(var k=0;k<7;k++)renderCol(k);
   syncHud();

@@ -82,6 +82,24 @@
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
+/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox，与 UI 令牌联动） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
+<script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
 var R=document.documentElement,B=null;
@@ -303,7 +321,7 @@ var cur=0,chain=[],usedSet=new Set(),targetLen=0,effLen=0,timeLeft=0,hintsLeft=0
 var levelScore=0,totalScore=saveData.total,over=true,paused=false,solution=null,correctWord="",state="idle";
 var timerId=null,lastTs=0,baseSeed=1,overlayMode="start";
 function $(id){return document.getElementById(id)}
-function say(t){$("msg").textContent=t}
+function say(t){$("msg").innerHTML=t}
 function tailChar(){return chain.length?chain[chain.length-1].charAt(chain[chain.length-1].length-1):""}
 function fmtTime(t){var v=Math.max(0,Math.ceil(t));var m=Math.floor(v/60),s=v%60;return(m<10?"0":"")+m+":"+(s<10?"0":"")+s}
 function stopTimer(){if(timerId){clearInterval(timerId);timerId=null}}
@@ -382,7 +400,7 @@ function renderBoard(){
   }
 }
 function paintPrompt(){
-  $("prompt").innerHTML="下一成语须以「<b>"+tailChar()+"</b>」字开头 · 机会 "+"●".repeat(Math.max(0,attempts));
+  $("prompt").innerHTML="下一成语须以「<b>"+tailChar()+"</b>」字开头 · 机会 "+SW_ICON('circle-f').repeat(Math.max(0,attempts));
 }
 function updateStats(){
   $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
@@ -397,7 +415,7 @@ function pick(wd,btn){
   if(wd===correctWord){
     chain.push(wd);usedSet.add(wd);levelScore+=100;
     if(chain.length>=effLen){updateStats();win();return}
-    say("接得好！「"+wd+"」→ 再找以「"+tailChar()+"」开头的成语");
+    say("接得好！「"+wd+"」 "+SW_ICON('arrow-right','font-size:18px;vertical-align:-3px')+" 再找以「"+tailChar()+"」开头的成语");
     renderBoard();updateStats();
   }else{
     attempts--;wrongCount++;

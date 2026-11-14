@@ -70,6 +70,24 @@
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
+/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox，与 UI 令牌联动） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
+<script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
 var R=document.documentElement,B=null;
@@ -100,7 +118,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <button class="op" type="button" data-kind="op" data-op="/">÷</button>
     <button class="op" type="button" data-kind="lp">(</button>
     <button class="op" type="button" data-kind="rp">)</button>
-    <button class="op" type="button" data-kind="back">⌫</button>
+    <button class="op" type="button" data-kind="back"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="" aria-hidden="true"><path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/></svg></button>
     <button class="op" type="button" data-kind="clear">清空</button>
   </div>
   <div class="tools">
@@ -255,7 +273,7 @@ function pruneDaily(){
 }
 function updateDailyBtn(){
   var b=document.getElementById("btnDaily"),t=dailyDateStr(),d=saveData.daily[t];
-  b.textContent="每日挑战 · "+t.slice(4,6)+"月"+t.slice(6,8)+"日"+(d&&d.done?" ✓":"");
+  b.innerHTML="每日挑战 · "+t.slice(4,6)+"月"+t.slice(6,8)+"日"+(d&&d.done?" "+SW_ICON('check'):"");
   b.classList.toggle("done",!!(d&&d.done));
 }
 function save(){
@@ -584,7 +602,7 @@ function fail(reason){
   over=true;lastResult="fail";
   clearInterval(timer);timer=null;
   $("ovTitle").textContent="挑战失败";
-  $("ovDesc").innerHTML=reason+"<br>本关："+numbers.join("，")+" → "+target;
+  $("ovDesc").innerHTML=reason+"<br>本关："+numbers.join("，")+" "+SW_ICON('arrow-right')+" "+target;
   $("ovBtn").textContent="重新挑战";
   showOverlay();
 }
@@ -598,8 +616,8 @@ function success(usedSec){
     saveData.daily[dailyDate]={done:true,time:prevT>0?Math.min(prevT,usedSec):usedSec};
     save();updateDailyBtn();
     $("stBest").textContent=usedSec+"s";
-    $("ovTitle").textContent="每日挑战完成 ✓";
-    $("ovDesc").innerHTML="用时 <b>"+usedSec+"</b> 秒<br>"+numbers.join("，")+" → "+target;
+    $("ovTitle").innerHTML="每日挑战完成 "+SW_ICON('check');
+    $("ovDesc").innerHTML="用时 <b>"+usedSec+"</b> 秒<br>"+numbers.join("，")+" "+SW_ICON('arrow-right')+" "+target;
     $("ovBtn").textContent="再玩一次";
     showOverlay();
     return;
