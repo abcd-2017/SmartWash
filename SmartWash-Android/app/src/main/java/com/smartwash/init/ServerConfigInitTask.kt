@@ -1,6 +1,7 @@
 package com.smartwash.init
 
-import com.smartwash.config.ServerConfig
+import com.smartwash.common.ui.config.ServerConfig
+import com.smartwash.BuildConfig
 import com.smartwash.network.api.ServerConfigApi
 import com.smartwash.common.init.InitTask
 import com.smartwash.common.utils.AppLogger
@@ -32,6 +33,8 @@ class ServerConfigInitTask(
         try {
             val config = api.getConfig().data
             if (config != null) {
+                // API host 一并写入：游戏域 H5 承载页组白名单与壳层同源于本对象（2026-11-14 下沉）
+                ServerConfig.apiBaseUrl = BuildConfig.BASE_URL
                 config.minioEndpoint?.takeIf { it.isNotBlank() }?.let { ServerConfig.minioEndpoint = it }
                 config.shortLinkBaseUrl?.takeIf { it.isNotBlank() }?.let { ServerConfig.shortLinkBaseUrl = it }
                 // 就绪留痕（只记字段存在性，不记具体地址）：WebView 白名单排查时确认配置时机

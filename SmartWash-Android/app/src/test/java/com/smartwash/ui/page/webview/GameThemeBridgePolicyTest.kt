@@ -1,6 +1,12 @@
 package com.smartwash.ui.page.webview
 
 import android.content.res.Configuration
+import com.smartwash.common.ui.webview.GAME_THEME_BRIDGE_NAME
+import com.smartwash.common.ui.webview.GameThemeBridgePolicy
+import com.smartwash.common.ui.webview.SmartWashGameBridge
+import com.smartwash.common.ui.webview.GameThemeMode
+import com.smartwash.common.ui.webview.GAME_THEME_PUSH_SCRIPT
+import com.smartwash.common.ui.webview.pushGameTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

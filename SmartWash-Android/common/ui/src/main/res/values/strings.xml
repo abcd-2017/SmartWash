@@ -14,4 +14,6 @@
     <!-- 密码可见性切换图标 contentDescription（PasswordInput 尾缀，§3.7 图标化定稿） -->
     <string name="show_password">显示密码</string>
     <string name="hide_password">隐藏密码</string>
+    <string name="webview_error_load">页面加载失败，请检查网络后重试</string>
+    <string name="webview_action_retry">重试</string>
 </resources>

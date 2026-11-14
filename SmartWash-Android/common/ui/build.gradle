@@ -13,11 +13,14 @@ android {
 dependencies {
     // 触感反馈（AppTabBar）与按压反馈（AppCard/AppButton/SettingRow 的 pressScale/pressAlpha）
     implementation project(":common:utils")
+    implementation project(":common:network")
+    implementation libs.gson
     // 组件图标（ArrowBack/Lock/Visibility/Phone 等）
     implementation libs.androidx.material.icons.extended
     // Theme.kt 的 WindowCompat（edge-to-edge 适配）；app 的 core-ktx 是 implementation 不传递，
     // 本模块须自持（release variant 编译曾因此失败，debug 因传递差异侥幸通过）
     implementation libs.androidx.core.ktx
+    implementation libs.androidx.activity.compose
     // 统一网络配图（调研 C4）：SmartWashAsyncImage 供各域复用，避免每模块各自声明 Coil
     implementation libs.coil.compose
 }

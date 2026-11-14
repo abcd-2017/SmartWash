@@ -1,4 +1,4 @@
-package com.smartwash.ui.page.webview
+package com.smartwash.common.ui.webview
 
 import android.app.Activity
 import android.content.Context

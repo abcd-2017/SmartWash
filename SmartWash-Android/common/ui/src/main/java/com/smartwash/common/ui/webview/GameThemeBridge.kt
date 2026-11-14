@@ -1,4 +1,4 @@
-package com.smartwash.ui.page.webview
+package com.smartwash.common.ui.webview
 
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import java.net.URI
 
 /** 主题桥（白名单/模式）与数据桥（存档/成绩/排行榜）的纯函数集（单测锚定 GameThemeBridgePolicyTest / GameDataBridgePolicyTest） */
-internal object GameThemeBridgePolicy {
+object GameThemeBridgePolicy {
 
     /**
      * 从 URL 提取 host（归一化：小写、去尾部 FQDN 点）。
@@ -118,7 +118,7 @@ private const val TAG = "GameThemeBridge"
 /**
  * 游戏 H5 深色主题桥（注入对象名固定为 [GAME_THEME_BRIDGE_NAME]，H5 侧按此名取值）。
  *
- * WebViewPage 是通用容器（smartwash://web?url= 可装任意页），桥仅对白名单 host 生效：
+ * 公共 H5 容器（app 壳 WebViewPage 等）与游戏域承载页共用本桥，桥仅对白名单 host 生效：
  * - getTheme()：白名单内返回 App 当前主题模式（无应用内主题开关 → 'system'）；
  *   白名单外返回空串并记录（H5 端空串走 matchMedia 跟随系统，不报错）。
  * - setChrome(mode)：白名单内把原生顶部 chrome 切到 [GameChrome] 的合法模式，
@@ -129,7 +129,7 @@ private const val TAG = "GameThemeBridge"
  * 当前页 host 由 UI 线程在构造与 onPageStarted 刷新 [currentPageHost] 快照
  * （onPageStarted 先于页面任何 JS 执行，覆盖首帧与站内跳转；pushState 不换源无需处理）。
  */
-internal class SmartWashGameBridge(
+class SmartWashGameBridge(
     private val whitelist: Set<String>,
     private val themeModeProvider: () -> String,
     private val onHostRejected: (String?) -> Unit = { AppLogger.warn(TAG, "桥调用拒绝非白名单来源: $it") },
@@ -141,11 +141,11 @@ internal class SmartWashGameBridge(
 
     /** 当前页 host 快照（JS 桥线程读、UI 线程写） */
     @Volatile
-    internal var currentPageHost: String? = null
+    var currentPageHost: String? = null
 
     /** WebView 提供者（组合侧在 WebView 创建后注入，用于异步结果回调） */
     @Volatile
-    internal var webViewProvider: (() -> WebView?)? = null
+    var webViewProvider: (() -> WebView?)? = null
 
     /** 桥数据请求作用域（主线程回调，随桥存活） */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -273,13 +273,13 @@ internal class SmartWashGameBridge(
 const val GAME_THEME_BRIDGE_NAME = "SmartWashGameBridge"
 
 /** 主题推送脚本（H5 未定义钩子时为空操作，无报错） */
-internal const val GAME_THEME_PUSH_SCRIPT = "window.__applySmartWashTheme&&__applySmartWashTheme('%s')"
+const val GAME_THEME_PUSH_SCRIPT = "window.__applySmartWashTheme&&__applySmartWashTheme('%s')"
 
 /**
  * 主题变化 / onPageFinished 双保险推送（UI 线程调用）。
  * 白名单外静默跳过并记录——通用容器不得向第三方 H5 泄露 App 主题信号。
  */
-internal fun pushGameTheme(webView: WebView, mode: String, whitelist: Set<String>) {
+fun pushGameTheme(webView: WebView, mode: String, whitelist: Set<String>) {
     val host = GameThemeBridgePolicy.hostOf(webView.url)
     if (!GameThemeBridgePolicy.isAllowedHost(host, whitelist)) {
         AppLogger.warn(TAG, "主题推送跳过非白名单来源: $host")
