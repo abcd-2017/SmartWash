@@ -56,6 +56,8 @@
             start-placeholder="开始时间"
             end-placeholder="结束时间"
             value-format="YYYY-MM-DD HH:mm:ss"
+            :disabled-date="disabledDate"
+            :shortcuts="timeShortcuts"
             style="width: 380px"
             @change="handleSearch"
           />
@@ -111,7 +113,7 @@
         <el-table-column label="操作时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="IP" min-width="130">
+        <el-table-column label="IP" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">{{ row.ip || '-' }}</template>
         </el-table-column>
         <el-table-column label="操作前后摘要" min-width="260">
@@ -182,6 +184,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
+import dayjs from 'dayjs';
 import { getAuditLogs, verifyAuditLogs } from '@/api/audit';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
@@ -233,7 +236,7 @@ const {
   },
   buildParams: (q) => ({
     ...q,
-    adminUser: q.adminUser || undefined,
+    adminUser: (q.adminUser || '').trim() || undefined,
     action: q.action || undefined,
     targetType: q.targetType || undefined,
   }),
@@ -243,6 +246,31 @@ const {
 // 时间范围：startTime/endTime 字段名与后端 SearchAuditLogFrom 同名，
 // 格式 yyyy-MM-dd HH:mm:ss 与后端 @DateTimeFormat 口径一致
 const timeRange = useTimeRange(listQuery);
+
+// 时间筛选禁选未来时间（审计日志只增不改，未来区间必为空）
+const disabledDate = (date) => date.getTime() > Date.now();
+
+// 快捷区间：对齐运营排查常用窗口（今天 / 近 7 天 / 近 30 天）
+const timeShortcuts = [
+  {
+    text: '今天',
+    value: () => [dayjs().startOf('day').toDate(), dayjs().endOf('day').toDate()],
+  },
+  {
+    text: '近 7 天',
+    value: () => [
+      dayjs().subtract(6, 'day').startOf('day').toDate(),
+      dayjs().endOf('day').toDate(),
+    ],
+  },
+  {
+    text: '近 30 天',
+    value: () => [
+      dayjs().subtract(29, 'day').startOf('day').toDate(),
+      dayjs().endOf('day').toDate(),
+    ],
+  },
+];
 
 // ===== 链完整性校验 =====
 // 后端默认 500、上限 5000，此处提供常用档位

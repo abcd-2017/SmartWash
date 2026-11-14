@@ -128,12 +128,12 @@
             :limit="1"
             :on-change="handleFileChange"
             :on-exceed="handleExceed"
-            accept=".txt,.md,.pdf,.docx"
+            accept=".txt,.md,.docx"
           >
             <el-button type="primary">选择文件</el-button>
             <template #tip>
               <div class="upload-tip">
-                支持 .txt / .md / .pdf / .docx，上传后自动触发切片与 Embedding
+                支持 .txt / .md / .docx（不支持 PDF），上传后自动触发切片与 Embedding
               </div>
             </template>
           </el-upload>
@@ -199,11 +199,25 @@ const uploadForm = reactive({
   method: '',
 });
 
+// file 校验走自定义 validator 读 selectedFile 闭包（GameList.vue 同款先例）——
+// form model 中无 file 字段，required 校验 model.file 会因 undefined 恒不通过，
+// 导致表单永远无法提交且校验失败被 isValidationError 静默吞掉
 const rules = reactive({
   title: [{ required: true, message: '请输入书名', trigger: 'blur' }],
   book: [{ required: true, message: '请输入所属典籍', trigger: 'blur' }],
   method: [{ required: true, message: '请选择术数方法', trigger: 'change' }],
-  file: [{ required: true, message: '请选择文件', trigger: 'change' }],
+  file: [
+    {
+      validator: (rule, value, callback) => {
+        if (!selectedFile.value) {
+          callback(new Error('请选择文件'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'change',
+    },
+  ],
 });
 
 onMounted(() => {
@@ -235,11 +249,8 @@ const handleExceed = (files) => {
 };
 
 const submitUpload = async () => {
-  if (!selectedFile.value) {
-    ElMessage.warning('请选择文件');
-    return;
-  }
   try {
+    // 未选文件统一交由表单 file 校验提示（validator 已有「请选择文件」message），不再早退
     await formRef.value.validate();
     uploading.value = true;
     const formData = new FormData();

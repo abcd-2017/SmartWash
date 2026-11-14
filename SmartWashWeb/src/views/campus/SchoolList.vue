@@ -70,7 +70,7 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item class="filter-end">
+        <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
@@ -89,34 +89,25 @@
         highlight-current-row
         empty-text="暂无数据，试试调整筛选条件"
       >
-        <el-table-column prop="schoolId" label="ID" min-width="80" />
-        <el-table-column prop="schoolName" label="学校名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="schoolCode" label="学校编码" min-width="120" />
-        <el-table-column prop="province" label="省份" min-width="100">
-          <template #default="{ row }">{{ row.province || '-' }}</template>
-        </el-table-column>
-        <el-table-column prop="city" label="城市" min-width="100">
-          <template #default="{ row }">{{ row.city || '-' }}</template>
-        </el-table-column>
-        <el-table-column prop="district" label="区县" min-width="100">
-          <template #default="{ row }">{{ row.district || '-' }}</template>
-        </el-table-column>
-        <el-table-column prop="contactName" label="联系人" min-width="100">
-          <template #default="{ row }">{{ row.contactName || '-' }}</template>
-        </el-table-column>
-        <el-table-column prop="contactPhone" label="联系电话" min-width="130">
-          <template #default="{ row }">{{ row.contactPhone || '-' }}</template>
-        </el-table-column>
-        <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
-        <el-table-column label="经纬度" min-width="160">
+        <el-table-column prop="schoolId" label="ID" min-width="70" />
+        <el-table-column prop="schoolName" label="学校名称" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="schoolCode" label="学校编码" min-width="100" />
+        <el-table-column label="地址" min-width="190">
           <template #default="{ row }">
-            <span v-if="row.longitude && row.latitude">
-              {{ row.longitude }}, {{ row.latitude }}
-            </span>
-            <span v-else style="color: var(--text-secondary)">未定位</span>
+            <!-- 地址两行单元格（对齐 CouponList 有效期列先例）：主行详细地址，次行 12px 弱化省市区 + 经纬度，替代原省/市/区/位置/经纬度 5 列 -->
+            <div class="addr-cell">
+              <span class="addr-cell__main">{{ row.location || '-' }}</span>
+              <span class="addr-cell__sub">{{ addressSubLine(row) }}</span>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="lockerCount" label="储物柜数量" min-width="120">
+        <el-table-column prop="contactName" label="联系人" min-width="90">
+          <template #default="{ row }">{{ row.contactName || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="contactPhone" label="联系电话" min-width="120">
+          <template #default="{ row }">{{ row.contactPhone || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="lockerCount" label="储物柜数量" min-width="90">
           <template #default="{ row }">{{ row.lockerCount }}个</template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" min-width="180">
@@ -332,6 +323,13 @@ function handleRegionChange(val) {
   tempSchool.district = val[2] || '';
 }
 
+// 地址两行单元格次行：省市区 + 经纬度弱化展示（均缺省时提示未定位）
+function addressSubLine(row) {
+  const region = [row.province, row.city, row.district].filter(Boolean).join(' ');
+  const coord = row.longitude && row.latitude ? `${row.longitude}, ${row.latitude}` : '';
+  return [region, coord].filter(Boolean).join(' · ') || '未定位';
+}
+
 // 储物柜数量选项
 const lockerCountOptions = [50, 100, 200];
 
@@ -441,3 +439,32 @@ const handleDelete = async (row) => {
   }
 };
 </script>
+
+<style scoped>
+/* 地址两行单元格：主行详细地址、次行 12px 弱化省市区/经纬度，窄列宽下单行省略
+   （对齐 pages.css .laundry-item 两行单元格语言，此处列语义不同故页内自带样式） */
+.addr-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.addr-cell__main {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addr-cell__sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>

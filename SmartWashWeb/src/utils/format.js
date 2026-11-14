@@ -33,15 +33,17 @@ export function formatThousands(value) {
 }
 
 /**
- * 金额格式化：千分位 + 固定两位小数，空值或非法值返回 '0.00'
+ * 金额格式化：千分位 + 固定两位小数，空值或非法值返回占位符（默认 '0.00'）
+ * 资金明细列可传 '-'，让 null 金额显示为 '-' 而非伪装成 ￥0.00
  * 与页面既有 ￥ 前缀配合使用（￥{{ formatAmount(x) }}）
  * @param {Number|String|null} value 金额
+ * @param {String} placeholder 空值/非法值占位符，默认 '0.00'
  * @returns {String}
  */
-export function formatAmount(value) {
+export function formatAmount(value, placeholder = '0.00') {
   const num = Number(value);
   if (!Number.isFinite(num)) {
-    return '0.00';
+    return placeholder;
   }
   return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

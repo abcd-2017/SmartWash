@@ -83,7 +83,9 @@
         :data="gameList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        :empty-text="
+          hasGameFilter ? '暂无数据，试试调整筛选条件' : '还没有游戏，点击右上角上传或批量导入开始'
+        "
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="42" />
@@ -140,16 +142,26 @@
         <el-table-column prop="sort" label="排序" min-width="70" align="center">
           <template #default="{ row }">{{ row.sort ?? '-' }}</template>
         </el-table-column>
-        <el-table-column label="下发" min-width="90">
+        <el-table-column label="下发" min-width="170">
           <template #default="{ row }">
-            <!-- 行内切换即「选择哪些下发」：成功前乐观更新，失败回滚并提示 -->
-            <el-switch
-              v-model="row.enabled"
-              :active-value="1"
-              :inactive-value="0"
-              :loading="togglingId === row.id"
-              @change="handleToggleEnabled(row)"
-            />
+            <div class="enabled-cell">
+              <!-- 行内切换即「选择哪些下发」：成功前乐观更新，失败回滚并提示 -->
+              <el-switch
+                v-model="row.enabled"
+                :active-value="1"
+                :inactive-value="0"
+                :loading="togglingId === row.id"
+                @change="handleToggleEnabled(row)"
+              />
+              <!-- 后端下发会过滤空 url 的游戏包：已勾选下发但缺可玩地址时如实提示 -->
+              <el-tooltip
+                v-if="row.enabled === 1 && !row.url"
+                content="已下发但不可玩：缺少游戏包地址，端上下发时会被过滤，请重新上传游戏包"
+                placement="top"
+              >
+                <el-tag type="warning" size="small" effect="plain">已下发但不可玩</el-tag>
+              </el-tooltip>
+            </div>
           </template>
         </el-table-column>
         <!-- 更新时间（兜底 createdAt 防后端裁剪字段，对齐 WorkbenchEntryList 先例） -->
@@ -759,6 +771,15 @@ const {
   errorMsg: '获取游戏列表失败',
 });
 
+// 空态区分：无任何筛选条件视为「库空」（引导上传/批量导入），有筛选时提示调整条件
+const hasGameFilter = computed(
+  () =>
+    Boolean((listQuery.keyword || '').trim()) ||
+    (listQuery.category ?? '') !== '' ||
+    (listQuery.sourceType ?? '') !== '' ||
+    (listQuery.enabled ?? '') !== ''
+);
+
 // ---------- 表单数据（字段名按方案 05 §三 DDL/§五契约，驼峰对齐 AdminGameVo） ----------
 
 const tempGame = reactive({
@@ -1179,6 +1200,8 @@ const handleUploadDialogClosed = () => {
   levelsResult.value = null;
   levelsImporting.value = false;
   clearTimeout(keyCheckTimer);
+  // 与 handleEditDialogClosed 对齐：清掉封面选中态，避免残留带入下一次上传
+  handleCoverRemove();
 };
 
 // 提交上传：表单校验 → 组装 multipart（file + 表单字段）→ 进度回传
@@ -1271,10 +1294,12 @@ const submitUpload = async () => {
 };
 
 // 成功态 → 再传一个：回到表单态保留已填字段；
-// title 未变时 watch 不会触发，gameKey 需手动重生成
+// title 未变时 watch 不会触发，gameKey 需手动重生成；
+// 封面与 handleCreate 同步清位，避免上一局的封面静默带入下一个游戏
 const handleReupload = () => {
   uploadResult.value = null;
   selectedFile.value = null;
+  handleCoverRemove();
   uploadPercent.value = 0;
   keyEdited.value = false;
   levelsDraft.value = null;
@@ -1517,9 +1542,10 @@ const submitEdit = async () => {
 // ---------- 删除 ----------
 
 const handleDelete = async (row) => {
-  // 确认弹窗：明确说明会同时清除服务器上的游戏文件（confirmation-dialogs）
+  // 确认弹窗：如实说明影响范围——仅删游戏包与展示条目，关卡/存档/成绩数据保留，
+  // 同 gameKey 重新上传会继承历史数据（confirmation-dialogs）
   const confirmed = await useConfirm(
-    `确认删除游戏「${row.title}」吗？将同时清除服务器上的游戏文件，删除后端上不再展示且不可恢复。`
+    `确认删除游戏「${row.title}」吗？将同时清除服务器上的游戏文件，删除后不再展示且不可恢复。该游戏的关卡、存档与成绩数据不会删除，同 gameKey 重新上传会继承历史数据。`
   );
   if (!confirmed) return;
   deletingId.value = row.id;
@@ -1573,6 +1599,14 @@ onMounted(() => {
   height: 12px;
   border-radius: 6px; /* 对齐 rounded.sm（WEB-012：4px 低于阶梯最小档） */
   flex-shrink: 0;
+}
+
+/* 下发列：开关与「已下发但不可玩」提示上下排布 */
+.enabled-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 /* gameKey 等宽字体（对齐跳转路由页 host 单元格） */

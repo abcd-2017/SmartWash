@@ -64,7 +64,11 @@
         <el-table-column label="术数方法" min-width="120">
           <template #default="{ row }">{{ methodText(row.method) }}</template>
         </el-table-column>
-        <el-table-column prop="version" label="版本号" min-width="140" />
+        <el-table-column prop="version" label="版本号" min-width="140">
+          <template #default="{ row }">
+            <span class="version-chip">{{ row.version }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" min-width="100">
           <template #default="{ row }">
             <el-tag :type="divPromptStatusTagType(row.status)">
@@ -150,6 +154,7 @@
             :rows="6"
             placeholder="请输入系统提示词"
           />
+          <span class="form-tip">本系统 Prompt 不支持 {变量} 占位符，将按原文发送给模型</span>
         </el-form-item>
         <el-form-item label="领域方法文本" prop="methodText">
           <el-input
@@ -281,6 +286,28 @@ const handleCreate = () => {
   });
 };
 
+// 后端 outputConfig 是 String 字段（存 JSON 文本）：回显时 parse 成对象再 stringify 回可读文本，
+// 避免对字符串直接 JSON.stringify 造成双重转义；parse 失败兜底原文，防止历史脏数据卡住编辑
+const formatOutputConfigForEdit = (raw) => {
+  if (!raw) return '';
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    return String(raw);
+  }
+};
+
+// 提交时把 textarea 文本 parse 成对象再 stringify 成 JSON 字符串：后端字段为 String，
+// 直传对象会触发 Jackson 反序列化失败；parse 失败按原值提交（校验已前置拦截，此处兜底）
+const stringifyOutputConfig = (text) => {
+  if (!text) return '';
+  try {
+    return JSON.stringify(JSON.parse(text));
+  } catch {
+    return String(text);
+  }
+};
+
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
@@ -290,7 +317,7 @@ const handleEdit = (row) => {
     version: row.version,
     systemPrompt: row.systemPrompt || '',
     methodText: row.methodText || '',
-    outputConfig: row.outputConfig ? JSON.stringify(row.outputConfig) : '',
+    outputConfig: formatOutputConfigForEdit(row.outputConfig),
     remark: row.remark || '',
   });
 };
@@ -305,10 +332,8 @@ const submitForm = async () => {
   try {
     await formRef.value.validate();
     const submitData = { ...tempPrompt };
-    // outputConfig 从字符串解析为 JSON（合法性已由表单规则前置校验）
-    if (submitData.outputConfig) {
-      submitData.outputConfig = JSON.parse(submitData.outputConfig);
-    }
+    // outputConfig 提交为 JSON 字符串（后端字段为 String，直传对象会导致 Jackson 反序列化失败）
+    submitData.outputConfig = stringifyOutputConfig(submitData.outputConfig);
     if (dialogType.value === 'create') {
       await createPrompt(submitData);
       logger.info(
@@ -413,3 +438,25 @@ const handleDelete = async (row) => {
   }
 };
 </script>
+
+<style scoped>
+/* Prompt 无模板变量机制：说明文字为弱化辅助，12px/400 灰阶 */
+.form-tip {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* 版本号是机器标识符：mono chip 与短码/Host 列同一语言（DESIGN.md Mono 13px/400） */
+.version-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-input);
+}
+</style>

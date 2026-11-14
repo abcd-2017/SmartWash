@@ -177,19 +177,28 @@ const loadGameOptions = async () => {
 const levelGameKey = ref('');
 const levelList = ref([]);
 const levelLoading = ref(false);
+// 竞态守卫：切换游戏时旧响应后到会覆盖新游戏的关卡（同 useTableList fetchSeq 模式）
+let levelFetchSeq = 0;
 
 const fetchLevels = async () => {
   if (!levelGameKey.value) {
     levelList.value = [];
     return;
   }
+  const mySeq = ++levelFetchSeq;
   levelLoading.value = true;
   try {
-    levelList.value = (await getGameLevels(levelGameKey.value)) || [];
+    const res = await getGameLevels(levelGameKey.value);
+    if (mySeq !== levelFetchSeq) return;
+    levelList.value = res || [];
   } catch {
+    if (mySeq !== levelFetchSeq) return;
     levelList.value = [];
   } finally {
-    levelLoading.value = false;
+    // 被丢弃的旧响应不得关掉最新请求的 loading
+    if (mySeq === levelFetchSeq) {
+      levelLoading.value = false;
+    }
   }
 };
 

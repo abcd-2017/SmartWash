@@ -41,7 +41,7 @@
         :data="entryList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        empty-text="暂无工作台入口，点击右上角『新增入口』创建第一个"
       >
         <el-table-column prop="sort" label="排序" min-width="70" align="center">
           <template #default="{ row }">{{ row.sort ?? '-' }}</template>
@@ -171,7 +171,7 @@
             maxlength="64"
           />
           <div class="form-tip">
-            业务唯一标识，小写字母开头，仅含小写字母/数字/_/-{{
+            入口标识（业务唯一标识），小写字母开头，仅含小写字母/数字/_/-{{
               dialogType === 'edit' ? '；编辑时不可修改' : ''
             }}
           </div>
@@ -353,7 +353,7 @@
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -401,6 +401,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -444,7 +445,7 @@ const TARGET_PATTERN = /^(smartwash:\/\/|https?:\/\/)\S+$/;
 // 验证规则
 const rules = reactive({
   entryKey: [
-    { required: true, message: '请输入业务唯一标识', trigger: 'blur' },
+    { required: true, message: '请输入入口标识', trigger: 'blur' },
     {
       pattern: ENTRY_KEY_PATTERN,
       message: '须为小写字母开头、3-64 位小写字母/数字/_/-',
@@ -726,7 +727,9 @@ const submitForm = async () => {
 // 删除入口
 const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除入口「${row.title}」吗？删除后端上不再展示。`);
+  const confirmed = await useConfirm(
+    `确认删除入口「${row.title}」吗？删除后，App 工作台将不再展示该入口。`
+  );
   if (!confirmed) return;
   deletingId.value = row.id;
   try {
@@ -738,7 +741,8 @@ const handleDelete = async (row) => {
       `title=${row.title}`
     );
     ElMessage.success('删除成功');
-    fetchData(); // 刷新当前页
+    // 删除后钳制页码再刷新，避免当前页删空后停留在超出末页的空页
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('工作台入口删除失败:', `id=${row.id}`, `entryKey=${row.entryKey}`, error);
     ElMessage.error(error.message || '删除失败');

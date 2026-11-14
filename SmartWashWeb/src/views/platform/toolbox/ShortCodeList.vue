@@ -46,10 +46,23 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="shortCodeList" fit highlight-current-row>
-        <el-table-column label="短码" min-width="110">
+      <el-table
+        v-loading="listLoading"
+        :data="shortCodeList"
+        fit
+        highlight-current-row
+        empty-text="暂无短码记录"
+      >
+        <el-table-column label="短码" min-width="150">
           <template #default="{ row }">
-            <span class="code-cell">{{ row.code }}</span>
+            <div class="code-cell-wrap">
+              <span class="code-cell">{{ row.code }}</span>
+              <el-tooltip content="复制短码（完整访问链接需在端上按短码拼接）" placement="top">
+                <el-button link type="primary" size="small" @click="handleCopyCode(row)">
+                  复制
+                </el-button>
+              </el-tooltip>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="类型" min-width="100">
@@ -62,13 +75,16 @@
         <el-table-column label="目标链接" min-width="240" show-overflow-tooltip>
           <template #default="{ row }">
             <!-- 私密文本无目标链接（内容不对管理端展示） -->
-            <span v-if="row.contentType === 7">—</span>
+            <span v-if="row.contentType === SECRET_CONTENT_TYPE">—</span>
             <span v-else>{{ row.target }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="秘密状态" min-width="100">
+        <el-table-column label="私密状态" min-width="100">
           <template #default="{ row }">
-            <el-tag v-if="row.contentType === 7" :type="secretStateTagType(row.secretState)">
+            <el-tag
+              v-if="row.contentType === SECRET_CONTENT_TYPE"
+              :type="secretStateTagType(row.secretState)"
+            >
               {{ secretStateText(row.secretState) }}
             </el-tag>
             <span v-else>—</span>
@@ -86,8 +102,11 @@
         </el-table-column>
         <el-table-column label="过期时间" min-width="170">
           <template #default="{ row }">
-            <el-tag v-if="isExpired(row.expireAt)" type="danger">已过期</el-tag>
-            <span v-else>{{ formatTime(row.expireAt) }}</span>
+            <!-- 纯文本展示：空值=永不过期；已过期保留原时间并与状态并存 -->
+            <span v-if="!row.expireAt">永不过期</span>
+            <span v-else :class="{ 'expired-text': isExpired(row.expireAt) }">
+              {{ formatTime(row.expireAt) }}{{ isExpired(row.expireAt) ? ' 已过期' : '' }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column label="点击数" min-width="90" align="right">
@@ -137,18 +156,24 @@
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="目标链接">
-              <span v-if="detail.contentType === 7">—</span>
+              <span v-if="detail.contentType === SECRET_CONTENT_TYPE">—</span>
               <span v-else class="break-all">{{ detail.target }}</span>
             </el-descriptions-item>
-            <el-descriptions-item v-if="detail.contentType === 7" label="秘密状态">
+            <el-descriptions-item
+              v-if="detail.contentType === SECRET_CONTENT_TYPE"
+              label="私密状态"
+            >
               <el-tag :type="secretStateTagType(detail.secretState)">
                 {{ secretStateText(detail.secretState) }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item v-if="detail.contentType === 7" label="焚毁时间">
+            <el-descriptions-item
+              v-if="detail.contentType === SECRET_CONTENT_TYPE"
+              label="焚毁时间"
+            >
               {{ formatTime(detail.burnedAt) }}
             </el-descriptions-item>
-            <el-descriptions-item v-if="detail.contentType === 7" label="内容">
+            <el-descriptions-item v-if="detail.contentType === SECRET_CONTENT_TYPE" label="内容">
               <span class="privacy-note">不对管理端展示（隐私红线）</span>
             </el-descriptions-item>
             <el-descriptions-item label="归属人ID">
@@ -166,8 +191,10 @@
               {{ formatTime(detail.unlockAt) }}
             </el-descriptions-item>
             <el-descriptions-item label="过期时间">
-              <el-tag v-if="isExpired(detail.expireAt)" type="danger">已过期</el-tag>
-              <span v-else>{{ formatTime(detail.expireAt) }}</span>
+              <span v-if="!detail.expireAt">永不过期</span>
+              <span v-else :class="{ 'expired-text': isExpired(detail.expireAt) }">
+                {{ formatTime(detail.expireAt) }}{{ isExpired(detail.expireAt) ? ' 已过期' : '' }}
+              </span>
             </el-descriptions-item>
             <el-descriptions-item label="访问上限">
               {{ detail.maxVisits ?? '不限' }}
@@ -225,6 +252,10 @@ import {
   secretStateTagType,
 } from '@/constants/dict';
 
+// 私密文本类型（后端 contentType=7）：管理端不展示目标链接与内容，仅展示私密状态。
+// 内容类型枚举全量维护在 @/constants/dict 的 SHORT_CODE_CONTENT_TYPE_OPTIONS，此处仅锁定私密文本判定值
+const SECRET_CONTENT_TYPE = 7;
+
 // 过期判断：expireAt 为空表示永不过期
 const isExpired = (expireAt) => !!expireAt && dayjs(expireAt).isBefore(dayjs());
 
@@ -236,6 +267,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -280,6 +312,34 @@ const handleDetail = async (row) => {
   }
 };
 
+// ---------- 复制短码 ----------
+// 后端未提供完整短链 URL，此处复制裸 code，完整访问链接需在端上按短码拼接
+async function copyToClipboard(text) {
+  // 优先 Clipboard API（需 secure context），非 HTTPS 环境降级 execCommand（同 DeliverySession）
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
+}
+
+const handleCopyCode = async (row) => {
+  try {
+    await copyToClipboard(row.code);
+    ElMessage.success(`已复制短码 ${row.code}，完整访问链接需在端上按短码拼接`);
+  } catch (error) {
+    logger.error('短码复制失败:', `id=${row.id}`, `code=${row.code}`, error);
+    ElMessage.error('复制失败，请手动选择复制');
+  }
+};
+
 // 删除短码
 const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
@@ -291,7 +351,8 @@ const handleDelete = async (row) => {
     // 低频写操作成功（短链码与目标 URL 非凭证，可入日志；ownerPhone 不主动传参）
     logger.info('短码删除成功', `id=${row.id}`, `code=${row.code}`);
     ElMessage.success('删除成功');
-    fetchData(); // 刷新当前页
+    // 删除后钳制页码再刷新，避免当前页删空后停留在超出末页的空页
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('短码删除失败:', `id=${row.id}`, `code=${row.code}`, error);
     ElMessage.error(error.message || '删除失败');
@@ -317,6 +378,18 @@ onMounted(() => {
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--text-input);
+}
+
+/* 短码 + 复制按钮同行 */
+.code-cell-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 已过期的过期时间：时间 + 状态并存，红色弱警示替代原 danger tag */
+.expired-text {
+  color: var(--color-danger);
 }
 
 .visit-title {

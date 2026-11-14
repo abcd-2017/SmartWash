@@ -37,20 +37,34 @@
           </el-input>
         </div>
         <div class="amap-map-wrapper">
-          <div ref="mapContainer" class="amap-map-container"></div>
+          <div v-if="!mapError" ref="mapContainer" class="amap-map-container"></div>
+          <!-- 地图加载失败占位：不再留 400px 空白，引导改用手动填写经纬度 -->
+          <div v-else class="amap-map-error">
+            <el-icon :size="28"><WarningFilled /></el-icon>
+            <p>地图服务不可用，请手动填写经纬度</p>
+          </div>
           <div v-if="searchResults.length" class="amap-search-results">
-            <div
-              v-for="item in searchResults"
-              :key="item.id"
-              class="amap-search-item"
-              role="button"
-              tabindex="0"
-              @click="selectSearchResult(item)"
-              @keydown.enter.prevent="selectSearchResult(item)"
-              @keydown.space.prevent="selectSearchResult(item)"
-            >
-              <div class="amap-search-item-name">{{ item.name }}</div>
-              <div class="amap-search-item-address">{{ item.address }}</div>
+            <!-- 浮层头：标注条数且可关闭，不再常驻遮挡地图 -->
+            <div class="amap-search-results__head">
+              <span>搜索结果 {{ searchResults.length }} 条</span>
+              <el-button link aria-label="关闭搜索结果" @click="searchResults = []">
+                <el-icon><Close /></el-icon>
+              </el-button>
+            </div>
+            <div class="amap-search-results__list">
+              <div
+                v-for="item in searchResults"
+                :key="item.id"
+                class="amap-search-item"
+                role="button"
+                tabindex="0"
+                @click="selectSearchResult(item)"
+                @keydown.enter.prevent="selectSearchResult(item)"
+                @keydown.space.prevent="selectSearchResult(item)"
+              >
+                <div class="amap-search-item-name">{{ item.name }}</div>
+                <div class="amap-search-item-address">{{ item.address }}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -82,8 +96,9 @@
 
 <script setup>
 import { ref, nextTick, watch } from 'vue';
-import { Location } from '@element-plus/icons-vue';
+import { Location, WarningFilled, Close } from '@element-plus/icons-vue';
 import AMapLoader from '@amap/amap-jsapi-loader';
+import logger from '@/utils/logger';
 
 const props = defineProps({
   modelValue: {
@@ -113,6 +128,8 @@ const selectedLocation = ref(null);
 const addressDisplay = ref('');
 const mapContainer = ref(null);
 const searchCity = ref('');
+// 地图初始化失败标志（key 未配置/网络异常）：容器内渲染占位而非留白
+const mapError = ref(false);
 
 let mapInstance = null;
 let markerInstance = null;
@@ -160,28 +177,35 @@ async function openPicker() {
 async function initMap() {
   if (mapInstance) return;
 
-  AMapRef = await AMapLoader.load({
-    key: import.meta.env.VITE_AMAP_KEY,
-    version: '2.0',
-    plugins: ['AMap.Geocoder', 'AMap.PlaceSearch', 'AMap.AutoComplete'],
-  });
+  mapError.value = false;
+  try {
+    AMapRef = await AMapLoader.load({
+      key: import.meta.env.VITE_AMAP_KEY,
+      version: '2.0',
+      plugins: ['AMap.Geocoder', 'AMap.PlaceSearch', 'AMap.AutoComplete'],
+    });
 
-  mapInstance = new AMapRef.Map(mapContainer.value, {
-    zoom: 12,
-    center: selectedLocation.value
-      ? [selectedLocation.value.longitude, selectedLocation.value.latitude]
-      : [116.397428, 39.90923],
-  });
+    mapInstance = new AMapRef.Map(mapContainer.value, {
+      zoom: 12,
+      center: selectedLocation.value
+        ? [selectedLocation.value.longitude, selectedLocation.value.latitude]
+        : [116.397428, 39.90923],
+    });
 
-  geocoderInstance = new AMapRef.Geocoder();
+    geocoderInstance = new AMapRef.Geocoder();
 
-  mapInstance.on('click', async (e) => {
-    const lnglat = e.lnglat;
-    await updateLocationByLnglat(lnglat.lng, lnglat.lat);
-  });
+    mapInstance.on('click', async (e) => {
+      const lnglat = e.lnglat;
+      await updateLocationByLnglat(lnglat.lng, lnglat.lat);
+    });
 
-  if (selectedLocation.value) {
-    placeMarker(selectedLocation.value.longitude, selectedLocation.value.latitude);
+    if (selectedLocation.value) {
+      placeMarker(selectedLocation.value.longitude, selectedLocation.value.latitude);
+    }
+  } catch (error) {
+    // 失败在地图容器内留占位反馈，不静默留 400px 空白
+    mapError.value = true;
+    logger.error('地图初始化失败:', error);
   }
 }
 
@@ -239,6 +263,8 @@ function placeMarker(lng, lat) {
 
 async function handleSearch() {
   if (!searchKeyword.value.trim()) return;
+  // 地图库加载失败时不再触发搜索（避免空引用报错），占位提示已引导手动填写
+  if (!AMapRef) return;
 
   const placeSearch = new AMapRef.PlaceSearch({
     pageSize: 10,
@@ -324,17 +350,54 @@ function handleDialogClosed() {
   overflow: hidden;
 }
 
+/* 地图加载失败占位：与地图容器等高，弱底色块 + 提示文案 */
+.amap-map-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 400px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.amap-map-error p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
 .amap-search-results {
   position: absolute;
   top: 0;
   left: 0;
+  display: flex;
+  flex-direction: column;
   width: 280px;
-  max-height: 400px;
-  overflow-y: auto;
   background: var(--bg-card);
   box-shadow: var(--shadow-popover); /* 气泡浮层走阴影词汇表（原字面量不在词汇表内） */
   border-radius: 8px;
   z-index: 10;
+}
+
+/* 浮层头固定、列表区滚动：关闭后不再遮挡地图 */
+.amap-search-results__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 6px 8px 6px 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.amap-search-results__list {
+  max-height: 364px;
+  overflow-y: auto;
 }
 
 .amap-search-item {

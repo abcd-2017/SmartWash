@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <el-tabs v-model="activeTab">
+    <el-tabs v-model="activeTab" @tab-click="handleTabClick">
       <!-- ==================== 存档记录 ==================== -->
       <el-tab-pane label="存档记录" name="saves" lazy>
         <div class="filter-container">
@@ -156,6 +156,14 @@ import { formatTime } from '@/utils/format';
 defineOptions({ name: 'PlayerData' });
 
 const activeTab = ref('saves');
+// 成绩榜首次激活时才拉取（el-tab-pane lazy 仅控制渲染，不触发请求）
+const scoresLoaded = ref(false);
+const handleTabClick = (tab) => {
+  if (tab.props.name === 'scores' && !scoresLoaded.value) {
+    scoresLoaded.value = true;
+    fetchScores();
+  }
+};
 
 // ==================== 游戏选项 ====================
 
@@ -218,5 +226,7 @@ const {
 
 onMounted(() => {
   loadGameOptions();
+  // 默认 tab 为存档记录：进入页面即拉取，避免筛选下拉加载后列表恒空
+  fetchSaves();
 });
 </script>

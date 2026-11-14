@@ -100,6 +100,10 @@
             </el-tag>
           </template>
         </el-table-column>
+        <!-- 已发放数量：删除前需评估影响面（券在用户手中时删除会使其失效） -->
+        <el-table-column label="已发放" min-width="90" align="right">
+          <template #default="{ row }">{{ row.issuedCount || 0 }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
@@ -301,10 +305,40 @@ const rules = reactive({
     { required: true, message: '请输入标题', trigger: 'blur' },
     { max: 50, message: '标题不超过50字', trigger: 'blur' },
   ],
-  discount: [{ required: true, message: '请输入折扣金额', trigger: 'change' }],
+  discount: [
+    { required: true, message: '请输入折扣金额', trigger: 'change' },
+    {
+      // 交叉校验：折扣金额不得大于使用门槛，否则出现「用券反而倒赚」的资金漏洞
+      validator: (rule, value, callback) => {
+        if (
+          value != null &&
+          tempCoupon.threshold != null &&
+          Number(value) > Number(tempCoupon.threshold)
+        ) {
+          callback(new Error('折扣金额不能大于使用门槛'));
+          return;
+        }
+        callback();
+      },
+      trigger: 'change',
+    },
+  ],
   threshold: [{ required: true, message: '请输入使用门槛', trigger: 'change' }],
   startTime: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
-  endTime: [{ required: true, message: '请选择结束时间', trigger: 'change' }],
+  endTime: [
+    { required: true, message: '请选择结束时间', trigger: 'change' },
+    {
+      // 交叉校验：结束时间必须晚于开始时间
+      validator: (rule, value, callback) => {
+        if (value && tempCoupon.startTime && !dayjs(value).isAfter(dayjs(tempCoupon.startTime))) {
+          callback(new Error('结束时间必须晚于开始时间'));
+          return;
+        }
+        callback();
+      },
+      trigger: 'change',
+    },
+  ],
   validDays: [{ required: true, message: '请输入有效天数', trigger: 'blur' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 });
@@ -322,8 +356,15 @@ const handleSelectionChange = (val) => {
 // 批量删除
 const handleBatchDelete = async () => {
   const count = multipleSelection.value.length;
+  // 已发放数量提示：券在用户手中时删除会使其失效，需让运营明确影响面
+  const issuedCount = multipleSelection.value.reduce(
+    (sum, item) => sum + (Number(item.issuedCount) || 0),
+    0
+  );
+  const issuedTip =
+    issuedCount > 0 ? `已有 ${issuedCount} 张券在用户手中，删除后这些券将失效。` : '';
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除选中的 ${count} 个优惠券吗？`);
+  const confirmed = await useConfirm(`确认删除选中的 ${count} 个优惠券吗？${issuedTip}`);
   if (!confirmed) return;
   try {
     const ids = multipleSelection.value.map((item) => item.couponId).join(',');
@@ -409,8 +450,12 @@ const submitForm = async () => {
 
 // 删除优惠券
 const handleDelete = async (row) => {
+  // 已发放数量提示：券在用户手中时删除会使其失效，需让运营明确影响面
+  const issuedCount = Number(row.issuedCount) || 0;
+  const issuedTip =
+    issuedCount > 0 ? `已有 ${issuedCount} 张券在用户手中，删除后这些券将失效。` : '';
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除优惠券 "${row.title}" 吗？`);
+  const confirmed = await useConfirm(`确认删除优惠券 "${row.title}" 吗？${issuedTip}`);
   if (!confirmed) return;
   try {
     await deleteCoupon(row.couponId);

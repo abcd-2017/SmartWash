@@ -205,12 +205,15 @@ http.interceptors.response.use(
       }
       return processUnauthorized(error.config, error);
     }
-    // 非 401 的 HTTP 错误统一提示（优先展示后端返回的 message）；
+    // 非 401 的 HTTP 错误统一提示：文案固定中文（axios 英文原文如 "Network Error" 不透传给用户），
+    // 超时单独文案；config.silent 为页面级自定义通道——调用方自行处理错误时跳过全局 toast，
+    // 避免拦截器与页面 catch 双弹；
     // 刷新请求的此类失败由等待方按登录过期处理，不叠加网络错误提示
     // grouping 合并同文案的并发失败提示（页面初始化多请求齐挂时只弹一条）
-    if (!error.config?.__isRefresh) {
+    if (!error.config?.__isRefresh && !error.config?.silent) {
+      const isTimeout = error.code === 'ECONNABORTED' || /timeout/i.test(error.message || '');
       ElMessage.error({
-        message: error.response?.data?.message || error.message || '网络异常，请稍后重试',
+        message: isTimeout ? '请求超时，请稍后重试' : '网络异常，请稍后重试',
         grouping: true,
       });
     }

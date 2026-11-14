@@ -7,6 +7,17 @@
         </p>
       </div>
 
+      <!-- 加载失败提示：配置未加载期间禁止保存，防止默认值写穿线上配置 -->
+      <el-alert
+        v-if="!loaded && !loading"
+        title="配置未加载，无法保存"
+        description="请检查网络后点击「重置」重新加载配置"
+        type="warning"
+        show-icon
+        :closable="false"
+        class="settings-alert"
+      />
+
       <el-form
         ref="formRef"
         :model="settings"
@@ -40,7 +51,9 @@
 
         <!-- 操作按钮 -->
         <el-form-item>
-          <el-button type="primary" @click="submitForm" :loading="submitting">保存设置</el-button>
+          <el-button type="primary" @click="submitForm" :loading="submitting" :disabled="!loaded"
+            >保存设置</el-button
+          >
           <el-button @click="fetchSettings">重置</el-button>
         </el-form-item>
       </el-form>
@@ -48,10 +61,7 @@
       <!-- 主密钥轮换 -->
       <el-divider content-position="left">主密钥轮换</el-divider>
       <div class="rotate-key-section">
-        <p class="form-tip">
-          轮换主密钥后，后台将分批对所有已加密的 API Key 进行「解密→重新加密→写回」操作。
-          轮换期间解读服务不受影响（解密按记录的 key_version 路由）。
-        </p>
+        <p class="form-tip">当前版本轮换仅记录审计，密钥重加密任务尚未实现。</p>
         <el-button type="danger" @click="handleRotateKey" :loading="rotating">
           <el-icon><Refresh /></el-icon>
           执行主密钥轮换
@@ -72,6 +82,8 @@ import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const loading = ref(false);
+// 配置是否已成功加载：未加载期间禁用保存，避免把表单默认值当成线上配置写穿
+const loaded = ref(false);
 const submitting = ref(false);
 const rotating = ref(false);
 
@@ -96,6 +108,8 @@ const fetchSettings = async () => {
       divUseEnabled: res.divUseEnabled ?? 1,
       byokDailyLimit: res.byokDailyLimit ?? 50,
     });
+    // 加载成功才解锁保存；失败保持锁定，保存按钮与警告提示共同兜底
+    loaded.value = true;
   } catch (error) {
     logger.error('获取平台设置失败:', error);
     ElMessage.error(error.message || '获取平台设置失败');
@@ -131,7 +145,7 @@ const submitForm = async () => {
 
 const handleRotateKey = async () => {
   const confirmed = await useConfirm(
-    '确认执行主密钥轮换？此操作将触发后台分批重加密任务，耗时取决于数据量。',
+    '确认执行主密钥轮换？当前版本仅记录审计，密钥重加密任务尚未实现。',
     '危险操作'
   );
   if (!confirmed) return;
@@ -139,8 +153,8 @@ const handleRotateKey = async () => {
   try {
     await rotateMasterKey();
     // 高危关键动作必留痕；密钥材料一律不入日志
-    logger.info('主密钥轮换已启动');
-    ElMessage.success('主密钥轮换已启动，后台正在分批重加密');
+    logger.info('主密钥轮换已记录');
+    ElMessage.success('主密钥轮换已记录（密钥重加密任务尚未实现）');
   } catch (error) {
     logger.error('主密钥轮换失败:', error);
     ElMessage.error(error.message || '主密钥轮换失败');
@@ -159,13 +173,6 @@ const handleRotateKey = async () => {
   margin-bottom: 8px;
 }
 
-.settings-header h2 {
-  margin: 0 0 4px 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
 .settings-sub {
   margin: 0;
   font-size: 14px;
@@ -173,6 +180,10 @@ const handleRotateKey = async () => {
 }
 
 .settings-form {
+  margin-top: 16px;
+}
+
+.settings-alert {
   margin-top: 16px;
 }
 
@@ -188,6 +199,7 @@ const handleRotateKey = async () => {
 
 /* 设置卡(live 打磨 v1):表单内容宽度收敛至 720px,避免控件在满宽卡片内被拉散 */
 .settings-card > .settings-header,
+.settings-card > .settings-alert,
 .settings-card > .settings-form,
 .settings-card > .el-divider,
 .settings-card > .rotate-key-section {

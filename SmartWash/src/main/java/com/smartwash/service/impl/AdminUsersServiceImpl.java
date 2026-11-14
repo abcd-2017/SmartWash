@@ -14,12 +14,14 @@ import com.smartwash.from.admin_users.UpdateAdminUserFrom;
 import com.smartwash.mapper.AdminUsersMapper;
 import com.smartwash.service.IAdminUsersService;
 import com.smartwash.service.IRolesService;
+import com.smartwash.service.JwtBlacklistService;
 import com.smartwash.vo.admin_users.AdminUserVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUsers> implements IAdminUsersService {
     private final IRolesService rolesService;
+    private final JwtBlacklistService jwtBlacklistService;
 
     @Override
     public Page<AdminUserVo> getAllAdminUsers(SearchAdminUserFrom searchUserFrom) {
@@ -84,12 +87,22 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
         if (adminUsers == null) {
             throw new CustomExceptions("管理员不存在");
         }
+        // 记录改密前的用户名：表单可能同时改名，旧令牌的 sub 仍是旧名，失效标记必须落在旧名上
+        String usernameBeforeUpdate = adminUsers.getUsername();
         BeanUtils.copyProperties(adminUserFrom, adminUsers);
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        if (StringUtils.hasText(adminUserFrom.getPassword())) {
+        boolean passwordChanged = StringUtils.hasText(adminUserFrom.getPassword());
+        if (passwordChanged) {
             adminUsers.setPasswordHash(encoder.encode(adminUserFrom.getPassword()));
         }
-        return updateById(adminUsers);
+        boolean result = updateById(adminUsers);
+        // 改密后使该管理员的全部既有会话失效（access/refresh 的签发时间早于改密时间戳即拒绝），
+        // 旧 refresh 因未持久化 jti 无法批量拉黑，故以改密时间戳为会话分界；改名场景下新名不产生旧令牌，无需标记
+        if (passwordChanged) {
+            jwtBlacklistService.invalidateUserSessions(
+                    DefaultConstant.ADMIN_USER_LOGIN_TYPE + "-" + usernameBeforeUpdate);
+        }
+        return result;
     }
 
     @Override
@@ -124,11 +137,27 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
     }
 
     @Override
-    public Boolean deleteAdminUsers(String ids) {
-        log.info("删除管理员, ids: {}", ids);
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteAdminUsers(String ids, Long currentAdminId) {
+        log.info("删除管理员, ids: {}, currentAdminId: {}", ids, currentAdminId);
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(Long::valueOf)
                 .collect(Collectors.toList());
+        // 防自删：删除列表包含当前登录管理员时拒绝，避免自己把自己登出系统
+        if (currentAdminId != null && idList.contains(currentAdminId)) {
+            log.warn("删除管理员被拒绝：不能删除当前登录账号, currentAdminId: {}", currentAdminId);
+            throw new CustomExceptions("不能删除当前登录账号");
+        }
+        // 防删光 TOCTOU：先锁定全表行（FOR UPDATE），串行化所有删除路径，
+        // 使「计数校验 + 删除」之间不存在被并发事务删空的窗口
+        baseMapper.selectCount(new LambdaQueryWrapper<AdminUsers>().last("FOR UPDATE"));
+        // 删除后剩余管理员数必须 >= 1，拒绝删除全部管理员
+        Long remainCount = baseMapper.selectCount(
+                new LambdaQueryWrapper<AdminUsers>().notIn(AdminUsers::getAdminId, idList));
+        if (remainCount == null || remainCount < 1) {
+            log.warn("删除管理员被拒绝：至少保留一个管理员账号, ids: {}", ids);
+            throw new CustomExceptions("至少保留一个管理员账号");
+        }
         return removeByIds(idList);
     }
 }

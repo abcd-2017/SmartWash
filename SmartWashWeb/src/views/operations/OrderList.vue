@@ -122,7 +122,7 @@
           </template>
         </el-table-column>
         <el-table-column label="总价" min-width="120" align="right">
-          <template #default="{ row }">￥{{ formatAmount(row.totalPrice) }}</template>
+          <template #default="{ row }">￥{{ formatAmount(row.totalPrice, '-') }}</template>
         </el-table-column>
         <el-table-column label="状态" min-width="120">
           <template #default="{ row }">
@@ -158,8 +158,13 @@
       </div>
     </div>
 
-    <!-- 修改状态对话框 -->
-    <el-dialog v-model="statusDialogVisible" title="修改订单状态" width="min(400px, 94vw)">
+    <!-- 修改状态对话框（资金相关操作弹窗禁止点遮罩误关） -->
+    <el-dialog
+      v-model="statusDialogVisible"
+      title="修改订单状态"
+      width="min(400px, 94vw)"
+      :close-on-click-modal="false"
+    >
       <el-form :model="statusForm" label-width="min(100px, 94vw)">
         <el-form-item label="订单号">
           <span>{{ statusForm.orderNo }}</span>
@@ -183,13 +188,15 @@
             />
           </el-select>
         </el-form-item>
+        <!-- 取消已支付订单的确认区：展示实付金额，退款以此为准（空值显示 '-'） -->
+        <el-form-item v-if="showRefundAmount" label="实付金额">
+          <span class="refund-amount">{{ refundAmountText }}</span>
+        </el-form-item>
         <el-form-item v-if="isCurrentTerminal" label=" ">
           <span class="status-warning">当前状态为终态（已完成/已退款/已取消），不可再流转</span>
         </el-form-item>
         <el-form-item v-else-if="isIrreversibleTarget" label=" ">
-          <span class="status-warning danger"
-            >目标状态为终态（退款/取消），操作不可逆，请核对资金状态后再执行</span
-          >
+          <span class="status-warning danger">{{ irreversibleWarningText }}</span>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -219,17 +226,19 @@ import logger from '@/utils/logger';
 // 数据
 const statusOptions = ref({}); // 状态选项
 
-// 订单状态机合法转移表（与后端 OrdersStatus 枚举对齐）。终态 7 已完成 / -1 已退款 / -2 已取消不再流转。
+// 订单状态机合法转移表（与后端 OrdersServiceImpl.VALID_TRANSITIONS + adminCancelOrder 取消链路对齐）。
+// -1 已退款为退款链路内部产物：只能经「取消已支付订单」触达，前端不提供直达项；
+// 终态 7 已完成 / -1 已退款 / -2 已取消不再流转。
 // 此表仅在前端拦截误操作与倒退转移（如 已完成→待支付），最终裁决仍以后端为准；
 // 四端联动评审后应收敛为后端下发合法转移表，前端只渲染。
 const ORDER_ALLOWED_TRANSITIONS = {
-  0: [1, -2], // 待支付 → 待寄件 / 取消
-  1: [2, -1, -2], // 待寄件 → 已收取 / 退款 / 取消
-  2: [3, -1], // 已收取 → 清洗中 / 退款
-  3: [4, -1], // 清洗中 → 已烘干 / 退款
-  4: [5], // 已烘干 → 配送中
-  5: [6], // 配送中 → 待取件
-  6: [7], // 待取件 → 已完成
+  0: [1, -2], // 待支付 → 待寄件 / 取消（未支付直接取消，不触发退款）
+  1: [2, -2], // 待寄件 → 已收取 / 取消（已支付，取消走退款链路）
+  2: [3, -2], // 已收取 → 清洗中 / 取消（取消走退款链路）
+  3: [4, 6, -2], // 清洗中 → 已烘干 / 待取件 / 取消
+  4: [5, -2], // 已烘干 → 配送中 / 取消
+  5: [6, -2], // 配送中 → 待取件 / 取消
+  6: [7, -2], // 待取件 → 已完成 / 取消
   7: [],
   '-1': [],
   '-2': [],
@@ -247,8 +256,23 @@ const allowedTargetOptions = computed(() => {
     Object.entries(statusOptions.value).filter(([code]) => allowed.includes(Number(code)))
   );
 });
-// 不可逆转移提示：目标为退款/取消终态
+// 不可逆转移提示：目标为退款/取消终态（-1 已退款已收敛为取消链路内部产物，不再提供直达）
 const isIrreversibleTarget = computed(() => ['-1', '-2'].includes(String(statusForm.newStatus)));
+// 取消已支付订单的确认区需展示实付金额；待支付（0）无资金动作，不展示
+const showRefundAmount = computed(
+  () => String(statusForm.newStatus) === '-2' && Number(statusForm.currentStatus) !== 0
+);
+// 实付金额展示：空值（老数据/无支付流水）输出 '-'，避免 ￥- 误导
+const refundAmountText = computed(() =>
+  statusForm.payPrice == null ? '-' : `￥${formatAmount(statusForm.payPrice)}`
+);
+// 不可逆提示文案（与后端 adminCancelOrder 语义对齐）：待支付订单取消无资金动作；
+// 已支付订单取消走退款链路——按实付金额退款至用户余额并还原所用优惠券
+const irreversibleWarningText = computed(() =>
+  Number(statusForm.currentStatus) === 0
+    ? '目标状态为取消（终态），操作不可逆，请确认后再执行'
+    : `取消已支付订单将按实付金额 ${refundAmountText.value} 退款至用户余额并还原所用优惠券，操作不可逆，请核对资金状态后再执行`
+);
 const schoolOptions = ref([]); // 学校选项
 const laundryOptions = ref([]); // 洗护套餐选项
 
@@ -260,6 +284,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -294,6 +319,7 @@ const statusForm = reactive({
   orderNo: '',
   currentStatus: '',
   newStatus: '',
+  payPrice: null,
 });
 // 初始化数据
 onMounted(async () => {
@@ -342,7 +368,7 @@ const handleDelete = async (row) => {
   // 确认弹窗：列明订单号与金额，明确不可恢复（订单含支付金额，删除即资金对账盲区；
   // 后端为最终裁决，四端联动评审后建议改为作废语义）
   const confirmed = await useConfirm(
-    `确认删除订单 ${row.orderNo}（金额 ￥${formatAmount(row.totalPrice)}）吗？删除后不可恢复，如需留痕请改用状态流转或联系开发确认。`,
+    `确认删除订单 ${row.orderNo}（金额 ￥${formatAmount(row.totalPrice, '-')}）吗？删除后不可恢复，如需留痕请改用状态流转或联系开发确认。`,
     '删除订单'
   );
   if (!confirmed) return;
@@ -351,7 +377,7 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功');
     // 管理端写操作成功留痕（低频关键动作），业务键仅 orderId/orderNo，不含用户手机号等敏感字段
     logger.info('删除订单成功', `orderId=${row.orderId}`, `orderNo=${row.orderNo}`);
-    fetchData();
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除订单失败:', `orderId=${row.orderId}`, `orderNo=${row.orderNo}`, error);
     ElMessage.error(error.message || '删除失败');
@@ -364,6 +390,7 @@ const handleUpdateStatus = (row) => {
   statusForm.orderNo = row.orderNo;
   statusForm.currentStatus = row.status;
   statusForm.newStatus = '';
+  statusForm.payPrice = row.payPrice ?? null;
   statusDialogVisible.value = true;
 };
 
@@ -416,6 +443,13 @@ const formatStatus = (status) => {
 </script>
 
 <style scoped>
+/* 实付金额：金额列语言（600 字重 + 等宽数字），与退款文案形成资金锚点 */
+.refund-amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
 /* 状态弹窗警示文案：终态/不可逆提示走语义文字色，不做实心色块（淡彩底规则） */
 .status-warning {
   font-size: 13px;

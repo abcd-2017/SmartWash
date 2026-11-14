@@ -19,6 +19,14 @@ public class JwtBlacklistService {
 
     private static final String BLACKLIST_PREFIX = "jwt:blacklist:";
 
+    /** 改密会话失效标记 key 前缀：jwt:session-invalid:{subject}，值为改密时间戳（epoch 毫秒） */
+    private static final String SESSION_INVALIDATE_PREFIX = "jwt:session-invalid:";
+    /**
+     * 标记保留时长：8 天。refresh 令牌最长寿命 7 天，超过该时长后所有早于改密时间签发的
+     * token 已自然过期，标记即可安全清理；同时多实例共享 Redis，天然支持分布式部署。
+     */
+    private static final long SESSION_INVALIDATE_TTL_DAYS = 8;
+
     /**
      * 刷新令牌原子「检查+占用」脚本（Lua 由 Redis 单线程执行，天然原子）：
      * {@code SET jwt:blacklist:{jti} 1 NX EX {ttl}} —— 占用即拉黑一步完成，
@@ -78,6 +86,49 @@ public class JwtBlacklistService {
             // 轮换拉黑随故障失效（旧 token 保留至自然过期），不因 Redis 抖动拒绝合法续期
             log.warn("刷新令牌原子占用脚本执行失败，按 fail-open 放行, jti: {}", jti, e);
             return true;
+        }
+    }
+
+    /**
+     * 标记某主体（access/refresh 共用的 sub，如 admin-{用户名}）的全部既有会话失效。
+     *
+     * <p>用于管理员改密场景：refresh 令牌一次性轮换、签发时未持久化 jti，无法按 jti 批量拉黑；
+     * 改以「改密时间戳」为分界——过滤器与刷新端点比对 token 的 iat，早于该时间戳即拒绝。
+     * 只影响该主体，不影响其他管理员。</p>
+     *
+     * @param subject JWT sub（含 admin-/user- 前缀）
+     */
+    public void invalidateUserSessions(String subject) {
+        if (subject == null || subject.isBlank()) {
+            return;
+        }
+        redisTemplate.opsForValue().set(SESSION_INVALIDATE_PREFIX + subject,
+                String.valueOf(System.currentTimeMillis()), SESSION_INVALIDATE_TTL_DAYS, TimeUnit.DAYS);
+        log.info("用户会话已标记失效（改密）, subject: {}", subject);
+    }
+
+    /**
+     * 判断 token 是否因改密而失效：token 签发时间早于该主体最近一次改密时间即视为旧会话。
+     *
+     * @param subject        JWT sub（含 admin-/user- 前缀）
+     * @param issuedAtMillis token 的 iat（epoch 毫秒）；非正数表示无法判断，按未失效处理
+     * @return true=旧会话应拒绝
+     */
+    public boolean isSessionInvalidated(String subject, long issuedAtMillis) {
+        if (subject == null || subject.isBlank() || issuedAtMillis <= 0) {
+            return false;
+        }
+        try {
+            String invalidatedAt = redisTemplate.opsForValue().get(SESSION_INVALIDATE_PREFIX + subject);
+            if (invalidatedAt == null || invalidatedAt.isBlank()) {
+                return false;
+            }
+            return issuedAtMillis < Long.parseLong(invalidatedAt.trim());
+        } catch (Exception e) {
+            // Redis 故障按 fail-open 放行（与黑名单既有口径一致）：最坏后果是旧会话存活至自然过期，
+            // 不因 Redis 抖动拒绝合法请求
+            log.warn("改密会话失效标记读取失败，按 fail-open 放行, subject: {}", subject, e);
+            return false;
         }
     }
 }

@@ -1258,6 +1258,32 @@ CREATE TABLE `div_platform_setting` (
 INSERT INTO `div_platform_setting` VALUES (1, 1, 30, '2026-11-07 00:00:00');
 
 -- ----------------------------
+-- Table structure for sys_config（系统参数配置）
+-- 承载此前硬编码在 Java 常量里的业务参数，管理端「参数设置」页可实时修改并落库；
+-- 数值型参数由后端 SysConfigServiceImpl 校验正整数，读取走进程内缓存（更新即失效）
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_config`;
+CREATE TABLE `sys_config` (
+  `id`           BIGINT       NOT NULL AUTO_INCREMENT,
+  `config_key`   VARCHAR(100) NOT NULL COMMENT '参数键，唯一',
+  `config_value` VARCHAR(255) NOT NULL COMMENT '参数值',
+  `remark`       VARCHAR(255) NULL COMMENT '备注说明',
+  `updated_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sys_config_key` (`config_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统参数配置';
+
+-- ----------------------------
+-- Records of sys_config
+-- 种子值与各业务方 Java 兜底默认值一致，新增参数需同步 SysConfigServiceImpl.NUMERIC_KEYS
+-- ----------------------------
+INSERT INTO `sys_config` VALUES (1, 'order.payTimeoutMinutes', '30', '订单创建后未支付自动取消的分钟数');
+INSERT INTO `sys_config` VALUES (2, 'login.maxAttempts', '5', '同一账号连续登录失败达到该次数后锁定');
+INSERT INTO `sys_config` VALUES (3, 'login.lockoutMinutes', '5', '账号登录失败锁定时长（分钟）');
+INSERT INTO `sys_config` VALUES (4, 'login.ipMaxAttempts', '20', '同一 IP 连续登录失败达到该次数后限制该 IP');
+INSERT INTO `sys_config` VALUES (5, 'login.ipLockoutMinutes', '15', 'IP 登录失败限制时长（分钟）');
+
+-- ----------------------------
 -- Table structure for div_user_api_config（用户自带API BYOK）
 -- ----------------------------
 DROP TABLE IF EXISTS `div_user_api_config`;

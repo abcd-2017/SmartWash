@@ -79,10 +79,14 @@
           <template #default="{ row }">{{ row._isVendor ? '-' : row.name }}</template>
         </el-table-column>
         <el-table-column prop="baseUrl" label="Base URL" min-width="220" show-overflow-tooltip>
-          <template #default="{ row }">{{ row._isVendor ? row.baseUrl || '-' : row.baseUrl }}</template>
+          <template #default="{ row }">
+            <span class="mono-text">{{ row._isVendor ? row.baseUrl || '-' : row.baseUrl }}</span>
+          </template>
         </el-table-column>
         <el-table-column prop="modelId" label="模型标识" min-width="160">
-          <template #default="{ row }">{{ row._isVendor ? '-' : row.modelId }}</template>
+          <template #default="{ row }">
+            <span class="mono-text">{{ row._isVendor ? '-' : row.modelId }}</span>
+          </template>
         </el-table-column>
         <el-table-column label="API Key" min-width="140">
           <template #default="{ row }">
@@ -97,7 +101,9 @@
             <template v-if="row._isVendor">
               <el-tag v-if="row._enabledCount === row._modelCount" type="success">全部启用</el-tag>
               <el-tag v-else-if="row._enabledCount === 0" type="info">全部停用</el-tag>
-              <el-tag v-else type="warning">{{ row._enabledCount }}/{{ row._modelCount }} 启用</el-tag>
+              <el-tag v-else type="warning"
+                >{{ row._enabledCount }}/{{ row._modelCount }} 启用</el-tag
+              >
             </template>
             <el-tag v-else :type="row.enabled === 1 ? 'success' : 'info'">
               {{ row.enabled === 1 ? '启用' : '停用' }}
@@ -113,6 +119,9 @@
               <el-tag v-if="row.lastTestOk === 1" type="success">通过</el-tag>
               <el-tag v-else-if="row.lastTestOk === 0" type="danger">失败</el-tag>
               <el-tag v-else type="info">未测试</el-tag>
+              <span class="connectivity-time">
+                {{ row.lastTestAt ? formatTime(row.lastTestAt) : '未测试' }}
+              </span>
             </template>
           </template>
         </el-table-column>
@@ -127,7 +136,9 @@
             <template v-if="!row._isVendor">
               <el-button size="small" @click="handleEdit(row)">编辑</el-button>
               <el-tooltip
-                :content="row.apiKeyMask ? '' : '该条目未录入 API Key（用户自带密钥模式），无法测试'"
+                :content="
+                  row.apiKeyMask ? '' : '该条目未录入 API Key（用户自带密钥模式），无法测试'
+                "
                 :disabled="!!row.apiKeyMask"
                 placement="top"
               >
@@ -295,6 +306,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -515,7 +527,8 @@ const handleDelete = async (row) => {
     await deleteModel(row.id);
     logger.info('模型删除成功', `id=${row.id}`, `name=${row.name}`);
     ElMessage.success('删除成功');
-    fetchData();
+    // 删除后统一走页码钳制：当前页只剩 1 条且不在第一页时先回退一页再拉取
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('模型删除失败:', `id=${row.id}`, `name=${row.name}`, error);
     ElMessage.error(error.message || '删除失败');
@@ -527,12 +540,19 @@ const handleDelete = async (row) => {
 const handleTest = async (row) => {
   testingId.value = row.id;
   try {
-    await testModelConnectivity(row.id);
-    logger.info('模型连通性测试通过', `id=${row.id}`, `name=${row.name}`);
-    ElMessage.success('连通性测试通过');
+    // 后端返回 Boolean：true=试呼通过，false=真实试呼失败（与传输错误区分提示）
+    const passed = await testModelConnectivity(row.id);
+    if (passed) {
+      logger.info('模型连通性测试通过', `id=${row.id}`, `name=${row.name}`);
+      ElMessage.success('连通性测试通过');
+    } else {
+      logger.warn('模型连通性测试未通过', `id=${row.id}`, `name=${row.name}`);
+      ElMessage.error('连通性测试失败');
+    }
     fetchData();
   } catch (error) {
-    logger.error('模型连通性测试失败:', `id=${row.id}`, `name=${row.name}`, error);
+    // 传输层错误（网络/超时/HTTP）：与业务失败区分记录，提示沿用统一失败文案
+    logger.error('模型连通性测试请求失败:', `id=${row.id}`, `name=${row.name}`, error);
     ElMessage.error(error.message || '连通性测试失败');
   } finally {
     testingId.value = null;
@@ -576,6 +596,13 @@ const handleToggle = async (row) => {
 </script>
 
 <style scoped>
+/* 模型标识 / Base URL 是机器标识符：走 mono（DESIGN.md Mono 13px/400） */
+.mono-text {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-body);
+}
+
 /* 状态列(live 打磨 v2):标签内加圆点,与相邻连通性列(纯标签)区分两套状态语言 */
 .model-status-cell .model-status-tag {
   display: inline-flex;
@@ -634,5 +661,12 @@ const handleToggle = async (row) => {
 .vendor-aggregate {
   font-size: 13px;
   color: var(--text-secondary);
+}
+
+/* 连通性测试时间：弱化辅助信息，与状态标签同行 */
+.connectivity-time {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 </style>

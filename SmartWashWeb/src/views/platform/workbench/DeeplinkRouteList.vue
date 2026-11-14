@@ -41,12 +41,15 @@
         :data="routeList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        empty-text="暂无跳转路由，点击右上角『新增路由』创建第一个"
       >
         <el-table-column label="Host" min-width="200">
           <template #default="{ row }">
             <div class="host-cell">
-              <span class="host-chip">{{ row.host || '-' }}</span>
+              <!-- tooltip 悬浮完整 smartwash:// 形态，便于核对该 host 在端上的实际跳转 URI -->
+              <span class="host-chip" :title="row.host ? `smartwash://${row.host}` : ''">
+                {{ row.host || '-' }}
+              </span>
               <span v-if="row.name" class="host-sub">{{ row.name }}</span>
             </div>
           </template>
@@ -126,7 +129,9 @@
             maxlength="64"
           />
           <div class="form-tip">
-            smartwash://host 的 host 段{{ dialogType === 'edit' ? '，编辑时不可修改' : '' }}
+            即 App 深链（DeepLink）的路由字典，smartwash://host 的 host 段{{
+              dialogType === 'edit' ? '，编辑时不可修改' : ''
+            }}
           </div>
         </el-form-item>
 
@@ -152,7 +157,7 @@
 
         <el-form-item label="需登录" prop="requireLogin">
           <el-switch v-model="tempRoute.requireLogin" :active-value="1" :inactive-value="0" />
-          <span class="form-tip-inline">开启后端上跳转前会校验登录态</span>
+          <span class="form-tip-inline">开启后，App 在跳转前会先校验登录状态</span>
         </el-form-item>
 
         <el-form-item label="描述">
@@ -172,7 +177,7 @@
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -212,6 +217,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -388,7 +394,7 @@ const submitForm = async () => {
 const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
   const confirmed = await useConfirm(
-    `确认删除路由「${row.host}」吗？删除后相关入口的字典快捷选择将不可用。`
+    `确认删除路由「${row.host}」吗？删除后，『工作台入口』页配置跳转时下拉中将不再出现该路由；已填写的 target 不受影响。`
   );
   if (!confirmed) return;
   deletingId.value = row.id;
@@ -396,7 +402,8 @@ const handleDelete = async (row) => {
     await deleteDeeplinkRoute(row.id);
     logger.info('跳转路由删除成功', `id=${row.id}`, `host=${row.host}`);
     ElMessage.success('删除成功');
-    fetchData(); // 刷新当前页
+    // 删除后钳制页码再刷新，避免当前页删空后停留在超出末页的空页
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('跳转路由删除失败:', `id=${row.id}`, `host=${row.host}`, error);
     ElMessage.error(error.message || '删除失败');

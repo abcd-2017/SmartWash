@@ -13,9 +13,9 @@
         <el-form-item label="手机号" :error="phoneError">
           <el-input
             v-model="form.phoneNumber"
-            placeholder="请输入11位手机号"
+            placeholder="请输入11位手机号，支持 +86 前缀"
             clearable
-            maxlength="11"
+            maxlength="16"
             style="width: 240px"
             @input="phoneError = ''"
           />
@@ -68,11 +68,13 @@
             <span v-if="liveRemainSeconds(row) > 0">
               {{ formatRemainTime(liveRemainSeconds(row)) }}
             </span>
-            <span v-else style="color: var(--color-danger)">已过期</span>
+            <span v-else style="color: var(--color-danger)">{{ expiredText() }}</span>
           </template>
         </el-table-column>
       </el-table>
       <el-empty v-else description="该手机号暂无有效验证码" :image-size="80" />
+      <!-- 口径说明（Micro 档）：多历史验证码时以最新一次为准 -->
+      <p class="result-hint">以最新一次查询为准，验证码被使用后立即失效</p>
     </div>
   </div>
 </template>
@@ -108,7 +110,8 @@ const startTicker = () => {
     tick.value += 1;
     // 全部过期后停止计时，避免空转
     const list = result.value?.captchas ?? [];
-    if (list.length && list.every((row) => liveRemainSeconds(row) <= 0)) stopTicker();
+    // 空结果（无有效验证码）或全部过期都要停表，否则空列表下计时器一直空转
+    if (!list.length || list.every((row) => liveRemainSeconds(row) <= 0)) stopTicker();
   }, 1000);
 };
 
@@ -153,20 +156,25 @@ async function handleQuery() {
     // 读操作仅 debug 留痕：记条数便于对账；手机号与验证码值均不入日志（敏感红线）
     logger.debug('验证码查询成功', `count=${data?.captchas?.length ?? 0}`);
   } catch (error) {
-    // HTTP 层错误已由 http.js 拦截器统一 ElMessage 提示，这里归因到页面动作；
-    // 业务失败（code !== 200）拦截器仅 reject 不提示，此前只清空结果——失败被误读为
-    // 「该手机号无验证码」，找回账号等场景直接误导运营判断（评审 P1）
+    // HTTP/传输层错误已由 http.js 拦截器统一中文提示，这里归因到页面动作、不再补 toast（防双弹）；
+    // 业务失败（code !== 200）拦截器仅 reject 不提示，需由页面提示后端 message——此前只清空结果，
+    // 失败被误读为「该手机号无验证码」，找回账号等场景直接误导运营判断（评审 P1）
     // error 仅保留 message/stack（sanitize 丢弃 config），手机号与验证码值不入日志
     logger.error('验证码查询失败:', error);
     queryState.value = 'error';
-    ElMessage.error(error.message || '查询失败，请稍后重试');
+    if (!error?.isAxiosError) {
+      ElMessage.error(error.message || '查询失败，请稍后重试');
+    }
   } finally {
     loading.value = false;
   }
 }
 
+// 过期文案统一出口：倒计时列与剩余时间格式化共用，避免改文案漏改一处
+const expiredText = () => '已过期';
+
 function formatRemainTime(seconds) {
-  if (!seconds || seconds <= 0) return '已过期';
+  if (!seconds || seconds <= 0) return expiredText();
   const min = Math.floor(seconds / 60);
   const sec = seconds % 60;
   if (min > 0) {
@@ -179,9 +187,18 @@ function formatRemainTime(seconds) {
 <style scoped>
 .captcha-code {
   font-family: var(--font-mono);
-  font-size: 20px; /* 对齐 headline 档（验证码强调展示，原 18px off-ramp） */
-  font-weight: 700;
+  /* 对齐 DESIGN.md Mono 档（13px/400）：等宽只服务于机器标识符，不做风格装饰 */
+  font-size: 13px;
+  font-weight: 400;
   letter-spacing: 4px;
   color: var(--color-primary);
+}
+
+/* 结果区口径说明（Micro 档 12px 弱化） */
+.result-hint {
+  margin: 0;
+  padding: 10px 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 </style>

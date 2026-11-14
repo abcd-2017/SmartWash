@@ -17,7 +17,4 @@ public class RagUploadFrom {
 
     @NotBlank(message = "适用术数不能为空")
     private String method;
-
-    @NotBlank(message = "内容不能为空")
-    private String content;
 }

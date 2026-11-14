@@ -33,7 +33,7 @@
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
         <el-form-item class="filter-end">
-          <el-button type="primary" @click="handleCreate">发送公告</el-button>
+          <el-button type="primary" @click="handleCreate">发送站内信</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -57,7 +57,7 @@
           <template #default="{ row }">
             <!-- 类型标签(live 打磨 v2):圆点标记 + 体量微调,圆点继承标签语义色 -->
             <div class="notice-type-cell">
-              <el-tag size="small" :type="noticeTypeTagType(row.type)" :title="row.type">
+              <el-tag size="small" :type="noticeTypeTagType(row.type)">
                 {{ noticeTypeText(row.type) }}
               </el-tag>
             </div>
@@ -66,7 +66,10 @@
         <el-table-column label="深链" min-width="220" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="deep-link-cell">
-              <span class="deep-link-text">{{ row.deepLink || '纯文案公告（无跳转）' }}</span>
+              <!-- 深链是机器标识符：有链接时走 mono（DESIGN.md），占位句保持 sans -->
+              <span class="deep-link-text" :class="{ 'deep-link-mono': row.deepLink }">
+                {{ row.deepLink || '纯文案' }}
+              </span>
               <el-button
                 v-if="row.deepLink"
                 link
@@ -238,7 +241,7 @@ const {
     title: q.title || undefined,
     type: q.type || undefined,
   }),
-  errorMsg: '获取公告列表失败',
+  errorMsg: '获取站内信列表失败',
 });
 
 // 发送表单（字段名与后端 AddNoticeFrom 对齐；creatorAdminId 由后端从登录上下文写入，前端不传）
@@ -403,6 +406,12 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 深链值走 mono（DESIGN.md Mono 13px/400）：仅在有链接时应用，占位句保持 sans */
+.deep-link-mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
 }
 
 /* 表单项下的辅助说明 */

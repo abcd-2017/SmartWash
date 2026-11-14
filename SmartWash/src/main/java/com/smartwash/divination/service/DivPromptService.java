@@ -7,6 +7,7 @@ import com.smartwash.divination.mapper.DivPromptVersionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Prompt 版本管理服务。
@@ -52,7 +53,9 @@ public class DivPromptService {
 
     /**
      * 激活指定版本（同 method 其他版本置为退役）。
+     * 事务保证「同方法全部退役」与「目标版本激活」两步原子，避免并发激活出现多个激活版本。
      */
+    @Transactional(rollbackFor = Exception.class)
     public void activate(Long id) {
         DivPromptVersion version = promptVersionMapper.selectById(id);
         if (version == null) return;

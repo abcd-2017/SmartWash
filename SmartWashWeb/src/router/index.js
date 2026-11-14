@@ -392,6 +392,18 @@ const routes = [
           requiresAuth: true,
         },
       },
+      {
+        // 系统参数：业务参数统一配置入口（sys_config），修改落库并实时生效
+        path: '/sysconfig',
+        name: 'SysConfigList',
+        component: () => import('@/views/system/SysConfigList.vue'),
+        meta: {
+          title: '参数设置',
+          showInMenu: true,
+          icon: 'Tools',
+          requiresAuth: true,
+        },
+      },
       // ===== 家庭点单（dining 域）=====
       {
         path: '/dining/categories',

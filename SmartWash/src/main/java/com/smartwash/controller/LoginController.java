@@ -15,6 +15,7 @@ import com.smartwash.from.users.UserLoginFrom;
 import com.smartwash.from.users.UserRegisterFrom;
 import com.smartwash.service.IAdminUsersService;
 import com.smartwash.service.IUsersService;
+import com.smartwash.service.ISysConfigService;
 import com.smartwash.service.JwtBlacklistService;
 import com.smartwash.service.SmsService;
 import com.smartwash.utils.JwtUtil;
@@ -35,6 +36,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.SecureRandom;
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -46,8 +48,18 @@ public class LoginController {
 
     private static final String PHONE_REGEX = "^(\\+86)?1[3-9]\\d{9}$";
     private static final int CAPTCHA_LENGTH = 6;
-    private static final int LOGIN_MAX_ATTEMPTS = 5;
-    private static final long LOGIN_LOCKOUT_MINUTES = 5;
+    /** 账号维度登录失败上限/锁定时长参数键（sys_config 表，管理端「参数设置」可实时修改） */
+    public static final String KEY_LOGIN_MAX_ATTEMPTS = "login.maxAttempts";
+    public static final String KEY_LOGIN_LOCKOUT_MINUTES = "login.lockoutMinutes";
+    /** IP 维度登录失败上限：同一 IP 在统计窗口内失败达到该次数即限制该 IP 登录。
+     * 阈值远高于单账号锁定阈值，正常用户不受影响，仅拦截单点高频爆破/恶意锁号行为（评审报告后端 #18）。 */
+    public static final String KEY_LOGIN_IP_MAX_ATTEMPTS = "login.ipMaxAttempts";
+    public static final String KEY_LOGIN_IP_LOCKOUT_MINUTES = "login.ipLockoutMinutes";
+    /** 参数缺失/非法时的兜底值（与 sys_config 种子一致） */
+    private static final int LOGIN_MAX_ATTEMPTS_DEFAULT = 5;
+    private static final int LOGIN_LOCKOUT_MINUTES_DEFAULT = 5;
+    private static final int LOGIN_IP_MAX_ATTEMPTS_DEFAULT = 20;
+    private static final int LOGIN_IP_LOCKOUT_MINUTES_DEFAULT = 15;
 
     /**
      * 时序对齐用 BCrypt 校验器与伪哈希（启动时由随机 UUID 生成，不对应任何真实账号凭证，非密钥）：
@@ -57,12 +69,10 @@ public class LoginController {
     private static final BCryptPasswordEncoder DUMMY_PASSWORD_ENCODER = new BCryptPasswordEncoder();
     private static final String DUMMY_BCRYPT_HASH = new BCryptPasswordEncoder().encode(UUID.randomUUID().toString());
     /**
-     * IP 维度登录失败上限：同一 IP 在统计窗口（LOGIN_IP_LOCKOUT_MINUTES）内失败达到该次数即限制该 IP 登录。
-     * 阈值远高于单账号锁定阈值（5 次），正常用户不受影响，仅拦截单点高频爆破/恶意锁号行为（评审报告后端 #18）。
+     * IP 维度登录失败上限：同一 IP 在统计窗口（login.ipLockoutMinutes）内失败达到该次数即限制该 IP 登录。
+     * 阈值远高于单账号锁定阈值，正常用户不受影响，仅拦截单点高频爆破/恶意锁号行为（评审报告后端 #18）。
+     * IP 维度失败计数窗口与锁定时长（分钟）：计数窗口=锁定时长，锁定到期后计数已过期、自动从零开始
      */
-    private static final int LOGIN_IP_MAX_ATTEMPTS = 20;
-    /** IP 维度失败计数窗口与锁定时长（分钟）：计数窗口=锁定时长，锁定到期后计数已过期、自动从零开始 */
-    private static final long LOGIN_IP_LOCKOUT_MINUTES = 15;
 
     /**
      * 可信反向代理网段（IPv4 CIDR，逗号分隔，如 "10.0.0.0/8,172.16.0.0/12"；默认空=无可信代理）。
@@ -105,8 +115,9 @@ public class LoginController {
     private final StringRedisTemplate redisTemplate;
     private final SmsService smsService;
     private final JwtBlacklistService jwtBlacklistService;
+    private final ISysConfigService sysConfigService;
 
-    public LoginController(IAdminUsersService adminUsersService, IUsersService usersService, JwtUtil jwtUtil, AuthenticationManager authenticationManager, StringRedisTemplate redisTemplate, SmsService smsService, JwtBlacklistService jwtBlacklistService) {
+    public LoginController(IAdminUsersService adminUsersService, IUsersService usersService, JwtUtil jwtUtil, AuthenticationManager authenticationManager, StringRedisTemplate redisTemplate, SmsService smsService, JwtBlacklistService jwtBlacklistService, ISysConfigService sysConfigService) {
         this.adminUsersService = adminUsersService;
         this.usersService = usersService;
         this.jwtUtil = jwtUtil;
@@ -114,6 +125,7 @@ public class LoginController {
         this.redisTemplate = redisTemplate;
         this.smsService = smsService;
         this.jwtBlacklistService = jwtBlacklistService;
+        this.sysConfigService = sysConfigService;
     }
 
     @Operation(summary = "管理员登录", description = "管理员通过用户名和密码登录，返回JWT令牌与角色")
@@ -254,6 +266,14 @@ public class LoginController {
         String jti = claims.get("jti", String.class);
         String username = claims.getSubject();
         if (!StringUtils.hasText(username)) {
+            return refreshUnauthorized();
+        }
+        // 管理员改密后会话失效：签发时间早于改密时间戳的旧 refresh 直接拒绝（不做占用/轮换）
+        Date issuedAt = claims.getIssuedAt();
+        if (username.startsWith(DefaultConstant.ADMIN_USER_LOGIN_TYPE + "-")
+                && jwtBlacklistService.isSessionInvalidated(username,
+                        issuedAt == null ? 0L : issuedAt.getTime())) {
+            log.warn("刷新令牌失败：管理员会话因改密失效, subject: {}", username);
             return refreshUnauthorized();
         }
         // 第三环：原子「检查+占用」（替代原「查黑名单→重签→拉黑」两段式，封死并发重放双胜出竞态，见 ADR-0007 注记 (a)）——
@@ -482,18 +502,21 @@ public class LoginController {
     }
 
     private void recordFailedAttempt(String attemptKey, String lockKey) {
+        // 阈值/锁定时长读 sys_config（管理端可实时调整，进程内缓存，登录失败路径读取开销可忽略）
+        int maxAttempts = sysConfigService.getIntValue(KEY_LOGIN_MAX_ATTEMPTS, LOGIN_MAX_ATTEMPTS_DEFAULT);
+        int lockoutMinutes = sysConfigService.getIntValue(KEY_LOGIN_LOCKOUT_MINUTES, LOGIN_LOCKOUT_MINUTES_DEFAULT);
         Long attempts = redisTemplate.opsForValue().increment(attemptKey);
-        if (attempts != null && attempts >= LOGIN_MAX_ATTEMPTS) {
-            redisTemplate.opsForValue().set(lockKey, "1", LOGIN_LOCKOUT_MINUTES, TimeUnit.MINUTES);
+        if (attempts != null && attempts >= maxAttempts) {
+            redisTemplate.opsForValue().set(lockKey, "1", lockoutMinutes, TimeUnit.MINUTES);
             redisTemplate.delete(attemptKey);
-            log.warn("登录失败次数过多，账号已锁定 {} 分钟", LOGIN_LOCKOUT_MINUTES);
+            log.warn("登录失败次数过多，账号已锁定 {} 分钟", lockoutMinutes);
         } else if (attempts != null && attempts == 1) {
-            redisTemplate.expire(attemptKey, LOGIN_LOCKOUT_MINUTES, TimeUnit.MINUTES);
+            redisTemplate.expire(attemptKey, lockoutMinutes, TimeUnit.MINUTES);
         }
     }
 
     /**
-     * 记录 IP 维度登录失败计数：同一 IP 在统计窗口内失败达 LOGIN_IP_MAX_ATTEMPTS 次即锁定该 IP。
+     * 记录 IP 维度登录失败计数：同一 IP 在统计窗口内失败达上限（login.ipMaxAttempts）即锁定该 IP。
      * 与账号维度锁定并存——攻击者无法再通过"只撞他人账号"绕过 IP 限制恶意锁死任意账号（评审报告后端 #18）。
      *
      * @param ipAttemptKey IP 失败计数 key
@@ -501,14 +524,16 @@ public class LoginController {
      * @param clientIp     客户端 IP（仅用于日志）
      */
     private void recordIpFailedAttempt(String ipAttemptKey, String ipLockKey, String clientIp) {
+        int ipMaxAttempts = sysConfigService.getIntValue(KEY_LOGIN_IP_MAX_ATTEMPTS, LOGIN_IP_MAX_ATTEMPTS_DEFAULT);
+        int ipLockoutMinutes = sysConfigService.getIntValue(KEY_LOGIN_IP_LOCKOUT_MINUTES, LOGIN_IP_LOCKOUT_MINUTES_DEFAULT);
         Long attempts = redisTemplate.opsForValue().increment(ipAttemptKey);
-        if (attempts != null && attempts >= LOGIN_IP_MAX_ATTEMPTS) {
-            redisTemplate.opsForValue().set(ipLockKey, "1", LOGIN_IP_LOCKOUT_MINUTES, TimeUnit.MINUTES);
+        if (attempts != null && attempts >= ipMaxAttempts) {
+            redisTemplate.opsForValue().set(ipLockKey, "1", ipLockoutMinutes, TimeUnit.MINUTES);
             redisTemplate.delete(ipAttemptKey);
-            log.warn("同一 IP 登录失败次数过多，IP 已被限制 {} 分钟, ip: {}", LOGIN_IP_LOCKOUT_MINUTES, clientIp);
+            log.warn("同一 IP 登录失败次数过多，IP 已被限制 {} 分钟, ip: {}", ipLockoutMinutes, clientIp);
         } else if (attempts != null && attempts == 1) {
             // 计数窗口与锁定时长一致：窗口内从首次失败开始计数，过期自动归零
-            redisTemplate.expire(ipAttemptKey, LOGIN_IP_LOCKOUT_MINUTES, TimeUnit.MINUTES);
+            redisTemplate.expire(ipAttemptKey, ipLockoutMinutes, TimeUnit.MINUTES);
         }
     }
 

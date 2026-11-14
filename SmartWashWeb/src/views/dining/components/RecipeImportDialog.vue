@@ -56,7 +56,7 @@
           <b class="num-error">{{ preview.errorCount }}</b>
         </span>
         <el-tag v-if="preview.errorCount > 0" type="danger" effect="plain">
-          存在错误行，修正文件后重新上传解析
+          可先导入通过校验的 {{ preview.validCount }} 行，错误行将跳过；也可修正文件后重新解析
         </el-tag>
       </div>
 
@@ -134,7 +134,7 @@
       </el-table>
 
       <div class="step-actions">
-        <el-button @click="stage = 'input'">继续导入</el-button>
+        <el-button @click="resetState">继续导入</el-button>
         <el-button type="primary" @click="visible = false">完成</el-button>
       </div>
     </template>

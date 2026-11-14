@@ -82,14 +82,41 @@ const handleLogout = async () => {
   justify-content: space-between;
 }
 
+/* 窄屏面包屑截断：左侧可收缩溢出隐藏，右侧用户区不参与挤压 */
 .left {
   display: flex;
   align-items: center;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .right {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+}
+
+/* 面包屑改 flex 布局以便收缩：非末项不缩，末项单行省略 */
+.left :deep(.el-breadcrumb) {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.left :deep(.el-breadcrumb__item) {
+  flex-shrink: 0;
+}
+
+.left :deep(.el-breadcrumb__item:last-child) {
+  min-width: 0;
+}
+
+.left :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-info {

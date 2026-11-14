@@ -29,6 +29,9 @@ public class CouponVo {
     private Boolean isNewUser;
 
     private String status;
+
+    /** 已发放数量：管理端列表/删除确认需展示，实体已有该字段，BeanUtils 自动拷贝 */
+    private Integer issuedCount;
 //    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 //    private LocalDateTime createdAt;
 //    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

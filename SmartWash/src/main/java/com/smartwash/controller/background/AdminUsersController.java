@@ -83,11 +83,14 @@ public class AdminUsersController {
         return Result.ok("修改成功");
     }
 
-    @Operation(summary = "批量删除管理员", description = "根据ID批量删除管理员用户，多个ID用逗号分隔")
+    @Operation(summary = "批量删除管理员", description = "根据ID批量删除管理员用户，多个ID用逗号分隔。不能删除当前登录账号，且至少保留一个管理员")
     @Audited(action = "ADMIN_USER_DELETE", targetType = "admin_user", targetIdSpEL = "#ids")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteAdminUsers(@PathVariable("ids") @Parameter(description = "管理员ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         log.info("批量删除管理员, ids: {}", ids);
-        return Result.ok(adminUsersService.deleteAdminUsers(ids));
+        // 当前登录管理员从 SecurityContext 取出传入 Service（与 getAdminUserInfo 同模式），用于防自删校验
+        LoginUser currentUser = (LoginUser) securityUtil.getCurrentUser();
+        Long currentAdminId = currentUser != null ? currentUser.getUserId() : null;
+        return Result.ok(adminUsersService.deleteAdminUsers(ids, currentAdminId));
     }
 }
