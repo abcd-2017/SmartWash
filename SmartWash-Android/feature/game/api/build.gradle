@@ -1,0 +1,18 @@
+// :feature:game:api —— 游戏域对外契约（api/impl 拆分）。
+// GameRoute 路由常量 + GameApi/GameVo；零 Hilt 运行时、零 feature 依赖（铁律 1/2）。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/serialization.gradle"
+
+android {
+    namespace 'com.smartwash.feature.game.api'
+}
+
+dependencies {
+    implementation libs.kotlinx.coroutines.core
+    // @Keep（GameVo 防 release 混淆）
+    implementation libs.androidx.annotation
+    // SmartWashRoute 类型安全路由契约 + ApiResult 响应信封
+    implementation project(':common:utils')
+    // @RequireAuthorization 注解（retrofit 经其 api 传递）
+    implementation project(':common:network')
+}
