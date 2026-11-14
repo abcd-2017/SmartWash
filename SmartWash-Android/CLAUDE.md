@@ -13,6 +13,7 @@
 - **异步状态统一使用 `RequestState`** — ViewModel 中所有网络请求状态用 `RequestState`（Idle/Loading/Success/Error）管理，页面通过 `StateFlow` 收集。
 - **遵循 MVVM 模式** — 每个页面一个 `*Page.kt` + 一个 `*ViewModel.kt`，ViewModel 通过 Repository（或跨域经 api 接口）访问数据，Page 只负责 UI 渲染。
 - **禁止字符串硬编码** — 用户可见文本一律定义在模块内 `res/values/strings.xml`，代码经 `stringResource(R.string.xxx)` 引用；ViewModel 内经 `application.getString(...)`；非用户可见常量（存储 key、TAG）定义在对应常量类中。
+- **新增模块必须使用脚手架** — 一律经 `scripts/scaffold-module.py` 创建（`--type feature` 单模块 / `--split` api+impl / `--type common`），自动生成 `build.gradle`、`settings.gradle` 注册、`app/build.gradle` 依赖注入与 `AGENTS.md` 骨架；禁止手搓模块目录。详见 [AGENTS.md](AGENTS.md)「新增模块 SOP」。
 
 ## UI 设计规范（强制）
 
@@ -37,7 +38,7 @@
 
 ## 项目架构
 
-智慧校园洗衣服务 App，**多模块 Gradle 项目**，MVVM + Jetpack Compose + Hilt。模块化重构后共 **26 个 Gradle 模块**（1 app + 5 common + 20 feature 子模块）。
+智慧校园洗衣服务 App，**多模块 Gradle 项目**，MVVM + Jetpack Compose + Hilt。模块化重构后共 **36 个 Gradle 模块**（1 app + 5 common + 30 feature 子模块，15 个业务域全部 api/impl 拆分）。
 
 ### 模块地图
 
@@ -50,9 +51,12 @@
 :common:init                      InitTask 契约 + InitEngine + InitTaskRegistry（零业务依赖：仅 Android SDK + Hilt + coroutines）
 :feature:coupon:api             CouponApi 契约 + 优惠券模型 + CouponRoute
 :feature:coupon:impl            CouponRepository + CouponStatus + CouponApiImpl + EntityMappers + 三 Tab 页
-:feature:divination             观象台占卜子系统（四套算法内核 + 卦历库 + SSE 解读网关 + BYOK 设置 + 7 页面 + 独立库）
-:feature:game                   游戏中心（封面网格 + WebView 承载 + 深链 game-center）
-:feature:lab                    解压实验舱（10 个纯本地玩具，零网络/零存储）
+:feature:divination:api         DivRoute + DivinationApi/VO 契约
+:feature:divination:impl        观象台（四套算法内核 + 卦历库 + SSE 解读网关 + BYOK 设置 + 7 页面 + 独立库）
+:feature:game:api               GameRoute + GameApi/GameVo 契约
+:feature:game:impl              游戏中心（封面网格 + WebView 承载 + 深链 game-center）
+:feature:lab:api                LabRoute + LabToy 契约
+:feature:lab:impl               解压实验舱（10 个纯本地玩具，零网络/零存储）
 :feature:laundry:api            LaundryRoute + 学校搜索最小契约（SchoolSearchSource）
 :feature:laundry:impl           Laundry/School Repository + EntityMappers + SchoolSearchSourceImpl + SchoolApi/LaundryItemsApi + 洗衣预约/服务页（内存→Room→网络 缓存降级）
 :feature:notice:api             NoticeApi 契约 + 站内信模型 + NoticeRoute + NoticeServiceApi
@@ -63,10 +67,14 @@
 :feature:payment:impl            PaymentRepository + RechargeRepository + RechargeRecordPagingSource + PaymentType + PaySuccessPage + 支付/充值网络链路与页面
 :feature:points:api             PointsRoute + 积分模型 + PointsServiceApi
 :feature:points:impl            签到有礼页（余额/连签/月榜/流水）+ 深链 points
-:feature:review                 记忆复习（FSRS 队列/学习/资料，单模块）
-:feature:subscription           订阅逃生舱（列表/编辑/详情/提醒 + 分页）
-:feature:toolbox                工具箱（短链 + 设备投递会话 + 本地二维码兜底）
-:feature:update                 热更新全链路 + UpdateInitTask + ApkDownloadWorker + ApkInstaller + UpdateEventBus
+:feature:review:api             ReviewRoute/Constant + ReviewApi/VO 契约
+:feature:review:impl            记忆复习（FSRS 队列/学习/资料）
+:feature:subscription:api       SubscriptionRoute/Constant/Enums + SubscriptionApi/VO 契约
+:feature:subscription:impl      订阅逃生舱（列表/编辑/详情/提醒 + 分页）
+:feature:toolbox:api            ToolboxRoute/Constant + 短码/资产标签/投递三套 Api/VO 契约
+:feature:toolbox:impl           工具箱（短链 + 设备投递会话 + 本地二维码兜底）
+:feature:update:api             AppVersionVo + AppUpdateApi 契约
+:feature:update:impl            热更新全链路 + UpdateInitTask + ApkDownloadWorker + ApkInstaller + UpdateEventBus
 :feature:user:api               UserApi 契约 + User 模型 + UserRoute（登录态/用户信息/登录事件）
 :feature:user:impl              SessionManager + SessionEventBus + UserAccountApi + DivSettingApi + UserRepository + 登录/注册/重置修改密码/用户中心/资料编辑/设置/权限/钱包流水
 config/                          convention 脚本目录（android-library.gradle / compose.gradle / hilt.gradle，传统 apply from 方式）
