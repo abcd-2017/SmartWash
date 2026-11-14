@@ -18,6 +18,7 @@ import {
   AddDeliverySessionForm,
   createDeliverySession,
   closeDeliverySession,
+  fetchDeliverySessionDetail,
   durationChipText,
   clicksFormat,
   DELIVERY_DURATION_PRESETS,
@@ -181,6 +182,35 @@ struct DeliveryCreatePage {
       showToastSafety(DeliveryText.toolbox_delivery_error_close)
     } finally {
       this.closing = false
+    }
+  }
+
+  /**
+   * 返回发起页后对齐会话状态（修复 stale session 卡）：
+   * 会话在会话页/对端被关闭后读路径立即 404，此处校验并清回表单态，
+   * 避免继续展示死链投递码、可点的「进入会话/复制链接」。
+   */
+  private async syncSessionOnShown(): Promise<void> {
+    const session = this.session
+    if (session === null) {
+      return
+    }
+    const code = session.code ?? ''
+    if (code.length === 0) {
+      return
+    }
+    try {
+      const res = await fetchDeliverySessionDetail(code)
+      if (res.code === HttpStatusCode.Ok && res.data !== null && res.data.session !== null) {
+        this.session = res.data.session
+        this.updateRemain()
+        return
+      }
+      logger.warn(TAG, `返回发起页后会话已失效 code=${code} resCode=${res.code ?? 0}`)
+      this.resetToForm()
+    } catch (err) {
+      // 网络异常等不误判失效：保留现有卡片，下次返回再校验
+      logger.error(TAG, '返回发起页后会话校验异常', err instanceof Error ? err.message : '')
     }
   }
 
@@ -567,6 +597,10 @@ struct DeliveryCreatePage {
       }
     }
     .hideTitleBar(true)
+    .onShown(() => {
+      // 从会话页返回时校验会话是否仍有效（关闭后读路径 404），失效则清回表单态
+      this.syncSessionOnShown()
+    })
   }
 }
 

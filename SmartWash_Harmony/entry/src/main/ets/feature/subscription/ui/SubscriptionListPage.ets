@@ -297,7 +297,11 @@ struct SubscriptionListPage {
             .width('100%')
             .layoutWeight(1)
         } else if (this.list.length === 0) {
-          this.Placeholder(SubscriptionText.subscription_empty_message,
+          // 筛选空态与全局空态分流（对齐安卓 P1）：有订阅但当前状态筛选无结果时，
+          // 不能再用「还没有订阅」误导用户以为数据被清空
+          this.Placeholder(this.statusFilter !== null
+            ? SubscriptionText.subscription_empty_filter_message
+            : SubscriptionText.subscription_empty_message,
             SubscriptionText.subscription_empty_action, false)
         } else {
           Refresh({ refreshing: $$this.isRefreshing }) {

@@ -19,6 +19,7 @@ import {
   DivPageHeader,
   DivPalette,
   DivSeal,
+  DivSerifText,
   DivText
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
@@ -27,10 +28,14 @@ import { DesignDimens } from '../../../../../constant/DesignSystem'
 import { pathStack } from '../../../../../utils/PathStackUtil'
 import { logger } from '../../../../../utils/Logger'
 import { resString } from '../../../../../utils/ResourceString'
+import { Debouncer } from '../../../../../utils/DebounceUtil'
 
 /** 术数筛选选项（「全部」+ 四术） */
 const FILTER_ALL = 'all'
 const METHODS: string[] = ['liuyao', 'meihua', 'qimen', 'liuren']
+
+/** 卡片/空态 CTA 连点节流窗口（对齐安卓 rememberDebouncedClick，单位 ms） */
+const CLICK_THROTTLE_MS = 600
 
 @Builder
 export function DivHistoryBuilder() {
@@ -46,6 +51,8 @@ export struct DivHistoryPage {
   // 仅由初值 true → 首次加载完成置 false 单向翻转；refresh() 不再置回 true，
   // onShown 重拉静默不回亮骨架（对齐安卓 Flow null→数据 无回跳感）
   @Local isLoading: boolean = true
+  // 连点防抖（对齐安卓 rememberDebouncedClick）：navigate 无 launchSingleTop，窗口内只推一次栈
+  private debouncer: Debouncer = new Debouncer()
 
   aboutToAppear(): void {
     this.refresh()
@@ -122,7 +129,10 @@ export struct DivHistoryPage {
 
   private openChart(row: DivRecordRow): void {
     // 复盘：animate=false（对齐安卓 navigate Chart/{id}?animate=false）
-    pathStack.pushPathByName(RouteNames.DIV_CHART, row.id)
+    // 连点去重（对齐安卓卦历 P1 修复）：节流窗口内忽略重复点击，避免重复推栈污染返回链
+    this.debouncer.throttle((): void => {
+      pathStack.pushPathByName(RouteNames.DIV_CHART, row.id)
+    }, CLICK_THROTTLE_MS)
   }
 
   /** 加载骨架行（compare-08 #2，对齐安卓 HistorySkeletonRow）：与卦例卡同形——
@@ -219,6 +229,27 @@ export struct DivHistoryPage {
               .fontSize(12)
               .fontColor(DivPalette.textTertiary)
               .margin({ top: 16 })
+
+            // 空态行动按钮（对齐安卓卦历 P2：空态缺「去起一卦」CTA）：48 热区文字按钮直达起卦，
+            // 避免深链直达的空账号用户无任何路径引导（与首页案卷空态同款口径：默认六爻 + 节流）
+            Column() {
+              DivSerifText({
+                text: DivText.ledgerGoAsk,
+                textSize: 12,
+                weight: 600,
+                spacing: 2,
+                color: DivPalette.goldText
+              })
+            }
+            .width('100%')
+            .constraintSize({ minHeight: 48 })
+            .alignItems(HorizontalAlign.Center)
+            .justifyContent(FlexAlign.Center)
+            .onClick((): void => {
+              this.debouncer.throttle((): void => {
+                pathStack.pushPathByName(RouteNames.DIV_ASK, 'liuyao')
+              }, CLICK_THROTTLE_MS)
+            })
           }
           .width('100%')
           .alignItems(HorizontalAlign.Center)

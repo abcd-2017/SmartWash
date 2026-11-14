@@ -231,6 +231,19 @@ struct ToolboxShortCodeDetail {
     return this.param?.secretUrl ?? ""
   }
 
+  /**
+   * 链接动作（复制/打开）是否可用：
+   * - 私密文本需 web-base-url 已配置且非终态（焚毁/过期后链接已 410 失效）；
+   * - 短链需 shortUrl 可构造。
+   * 不可用时按钮置灰禁用，避免点击静默无反馈（对齐安卓阅后即焚 P1 修复）。
+   */
+  private linkActionEnabled(): boolean {
+    if (this.isSecretCode()) {
+      return this.secretUrlOf().length > 0 && !this.secretTerminal()
+    }
+    return this.getShortUrl().length > 0
+  }
+
   private getShortUrl(): string {
     const carried = this.param?.shortUrl ?? ""
     if (carried.length > 0) {
@@ -702,7 +715,8 @@ struct ToolboxShortCodeDetail {
         .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD })
         .margin({ top: DesignDimens.SPACE_SM })
 
-      if (this.isSecretCode()) {
+      // 链接不可用/秘密终态时不再承诺「对方打开链接即可查看一次」——与降级文案互斥（对齐安卓 P2-4）
+      if (this.isSecretCode() && this.linkActionEnabled()) {
         Text(ToolboxText.toolbox_secret_link_hint)
           .fontSize(DesignFontSize.CAPTION)
           .fontColor($r('app.color.ON_WARNING_CONTAINER'))
@@ -721,9 +735,11 @@ struct ToolboxShortCodeDetail {
 
       Row({ space: DesignDimens.SPACE_SM }) {
         // 复制 = SECONDARY（surfaceVariant 底 + 主文本色），打开 = PRIMARY（对齐安卓）
+        // 链接不可用/秘密终态时两个按钮置灰禁用（不再静默无反馈，对齐安卓阅后即焚 P1）
         AppButton({
           text: ToolboxText.toolbox_action_copy,
           variant: AppButtonVariant.SECONDARY,
+          isEnabled: this.linkActionEnabled(),
           click: () => {
             this.copyShortUrl()
           }
@@ -733,6 +749,7 @@ struct ToolboxShortCodeDetail {
         AppButton({
           text: ToolboxText.toolbox_action_open,
           loading: this.resolving,
+          isEnabled: this.linkActionEnabled(),
           click: () => {
             this.openLink()
           }

@@ -364,19 +364,21 @@ export struct Workbench {
     })
   }
 
-  /** 真实错误态 / 空态（对齐安卓 EmptyState + 重试按钮） */
+  /**
+   * 真实错误态 / 空态（对齐安卓 EmptyState + 行动按钮）。
+   * @param actionText 行动按钮文案；空串 = 不渲染按钮（真空态无出路时）
+   * @param onAction 行动按钮点击回调
+   */
   @Builder
-  StateHint(message: string, isError: boolean) {
+  StateHint(message: string, actionText: string, onAction: () => void) {
     EmptyState({ message: message, icon: $r('sys.symbol.square_grid_2x2') }) {
-      if (isError) {
+      if (actionText.length > 0) {
         Column() {
           AppButton({
             small: true,
-            text: WorkbenchText.workbench_retry,
+            text: actionText,
             variant: AppButtonVariant.SECONDARY,
-            click: () => {
-              this.loadEntries()
-            }
+            click: onAction
           })
         }
         .width('100%')
@@ -1035,17 +1037,23 @@ export struct Workbench {
         this.ToolsSkeleton()
       } else if (this.loadState === LoadState.ERROR) {
         Column() {
-          this.StateHint(WorkbenchText.workbench_entries_error, true)
+          this.StateHint(WorkbenchText.workbench_entries_error, WorkbenchText.workbench_retry, (): void => {
+            this.loadEntries()
+          })
         }
         .width('100%')
         .padding({ top: DesignDimens.SECTION_SPACING })
       } else if (this.visibleTools().length === 0) {
         Column() {
+          // 搜索无结果空态给「清空搜索」出路（对齐安卓 P2：空态缺行动按钮，与错误态重试同规格）
           this.StateHint(
             this.searchQuery.trim().length > 0
               ? WorkbenchText.workbench_search_empty
               : WorkbenchText.workbench_entries_empty,
-            false
+            this.searchQuery.trim().length > 0 ? WorkbenchText.workbench_search_clear : '',
+            (): void => {
+              this.searchQuery = ''
+            }
           )
         }
         .width('100%')

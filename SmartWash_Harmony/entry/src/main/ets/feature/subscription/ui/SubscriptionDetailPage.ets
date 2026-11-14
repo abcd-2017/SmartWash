@@ -450,6 +450,14 @@ struct SubscriptionDetailPage {
     return this.detail !== null ? subscriptionStatusOf(this.detail.status) : SubscriptionStatus.ACTIVE
   }
 
+  /**
+   * 统计口径：后端仅返回进行中（ACTIVE）订阅的统计数据，暂停/终态不在统计内。
+   * 此时不能渲染 0 值（会与同页打卡列表的历史记录自相矛盾），改展示口径说明。
+   */
+  private statsInactive(): boolean {
+    return this.detail !== null && subscriptionStatusOf(this.detail.status) !== SubscriptionStatus.ACTIVE
+  }
+
   /** 待撤销打卡的使用日期（弹窗文案用；pendingUndoId 在 open 前赋值） */
   private undoDateText(): string {
     const usage = this.usageList.find((item: UsageLogVo): boolean => item.usageId === this.pendingUndoId)
@@ -679,10 +687,16 @@ label: SubscriptionText.subscription_detail_note,
                     .onClick(() => {
                       this.loadStats()
                     })
+                } else if (this.statsInactive()) {
+                  // 暂停/终态不参与统计：展示口径说明而非 0 值，避免与下方打卡列表矛盾（对齐安卓 P1）
+                  Text(SubscriptionText.subscription_stats_inactive_hint)
+                    .fontSize(DesignFontSize.BODY_SMALL)
+                    .fontColor($r('app.color.TEXT_SECONDARY'))
+                    .width('100%')
                 } else {
                   InfoRow({
                       labelWidth: 88,
-label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
+                    label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
                       this.statsItem?.usageCount90d ?? 0),
                     value: subscriptionFormat(SubscriptionText.subscription_stats_monthly_format,
                       formatAmount(this.statsItem?.monthlyNormalized ?? 0)),
@@ -702,6 +716,12 @@ label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
                     .fontFeature(DesignFontFeature.TNUM)
                     .width('100%')
                     .margin({ top: DesignDimens.SPACE_XS })
+                  // 统计口径标注（后端只统计进行中订阅）：避免用户把暂停前后的数字理解为异常归零
+                  Text(SubscriptionText.subscription_stats_scope_note)
+                    .fontSize(DesignFontSize.CAPTION)
+                    .fontColor($r('app.color.TEXT_SECONDARY'))
+                    .width('100%')
+                    .margin({ top: DesignDimens.SPACE_XXS })
                 }
               }
               .width('100%')
