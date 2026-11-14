@@ -22,4 +22,20 @@ sealed interface GameRoute : SmartWashRoute {
     @Serializable
     @SerialName("GameCenter")
     data object Center : GameRoute
+
+    /**
+     * 游戏 H5 承载页（游戏域自建，2026-11-14 架构修正）：携带游戏业务数据（简介 desc），
+     * 与公共容器（app 壳 WebView 路由）分离——公共容器零业务字段。
+     *
+     * @param url 可玩地址（后端下发）
+     * @param title 游戏名（页头标题）
+     * @param desc 一句话玩法说明（服务端文案）；空串不显示简介入口
+     */
+    @Serializable
+    @SerialName("GameWebView")
+    data class GameWebView(
+        val url: String = "",
+        val title: String = "",
+        val desc: String = "",
+    ) : GameRoute
 }

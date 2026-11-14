@@ -20,4 +20,6 @@
     <string name="game_action_retry">重试</string>
     <!-- 点击了可玩地址为空的记录（数据残缺防御，正常配置下不该出现） -->
     <string name="game_unavailable">游戏暂未开放，请稍后再试</string>
+    <string name="game_webview_action_intro">游戏简介</string>
+    <string name="game_webview_default_title">游戏</string>
 </resources>
