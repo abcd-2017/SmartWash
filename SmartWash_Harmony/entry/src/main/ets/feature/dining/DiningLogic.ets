@@ -199,6 +199,40 @@ export enum DiningJoinEntryDecision {
   BRIEF_UNAVAILABLE
 }
 
+/** 扫码内容经本域归一化的三分结果（对齐 Android DiningScanResult） */
+export enum DiningScanKind {
+  /** 命中本域加入链接：deepLinkUri 可直接交壳层深链体系分发 */
+  DEEP_LINK,
+  /** 非本域二维码：交还通用分发（深链/内置浏览器/复制） */
+  NOT_DINING,
+  /** 命中本域加入路径但参数非法：提示后不落通用分发（防坏 URL 打开 WebView 404） */
+  MALFORMED
+}
+
+/** 扫码归一化结果（kind=DEEP_LINK 时 deepLinkUri 有值） */
+export interface DiningScanResult {
+  kind: DiningScanKind
+  deepLinkUri: string
+}
+
+/**
+ * 扫码内容归一化（壳层全局扫一扫消费，08 号票能力对齐 Android DiningApi.normalizeScanToDeepLink）：
+ * 识别本域加入链接（parseDiningJoinUrl 同源解析），命中返回对应
+ * `smartwash://dining/order/{orderId}?t={token}` 深链串（dining 深链注册表同协议单源），
+ * 由壳层深链体系分发进加入入口页。加入 URL 的识别知识留在本域，壳层扫码零业务感知。
+ */
+export function normalizeDiningScan(raw: string | null): DiningScanResult {
+  const parsed = parseDiningJoinUrl(raw)
+  if (parsed.kind === DiningJoinUrlKind.JOIN) {
+    const deepLinkUri = `smartwash://dining/order/${parsed.orderId}?t=${parsed.token}`
+    return { kind: DiningScanKind.DEEP_LINK, deepLinkUri }
+  }
+  if (parsed.kind === DiningJoinUrlKind.MALFORMED) {
+    return { kind: DiningScanKind.MALFORMED, deepLinkUri: '' }
+  }
+  return { kind: DiningScanKind.NOT_DINING, deepLinkUri: '' }
+}
+
 /**
  * 深链 `smartwash://dining/order/{orderId}?t={token}` 落地后的 brief 判重决策。
  * 状态保守降级：brief.status 未知按 FINISHED 档（不可加入）处理。

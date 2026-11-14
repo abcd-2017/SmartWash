@@ -695,7 +695,7 @@
 - **四端对应物**：
   - 后端：`dining/`（`WebDiningOrderController` 的 `knownVersion` 轮询协议 + version 乐观并发；`CreateDiningOrderFrom.fromOrderId` 复用解析在 `DiningOrderServiceImpl`）。
   - Android：`:feature:dining:impl`（`sync/DiningOrderSyncChannel` + `PollingDiningOrderSyncChannel` + `DiningSyncLifecycle`，点单页消费；订单列表卡「再来一单」→ `DiningRoute.OrderCreate(fromOrderId)` → 创建页复用模式，13 号票）。
-  - 鸿蒙：已实现（3s knownVersion 轮询 + 再来一单 fromOrderId；扫码壳层扫一扫为鸿蒙后续项）。契约以后端 `knownVersion` 轮询协议与 `fromOrderId` 创建契约为准。
+  - 鸿蒙：已实现（3s knownVersion 轮询 + 再来一单 fromOrderId；壳层扫一扫已实现（ScanKit 官方默认扫码页，工作台常驻入口））。契约以后端 `knownVersion` 轮询协议与 `fromOrderId` 创建契约为准。
   - Web：无用户端（管理后台不消费点单订单）。
 - **易混淆点**：version 只由选菜变更驱动（重置凭证/结束点单都不递增）；复用创建仍过上架把关，源单含已下架菜时整体拒绝；复用模式端上菜单只读回显（`toggleRecipe` 忽略），提交不传 recipeIds。
 

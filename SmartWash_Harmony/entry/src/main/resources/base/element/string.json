@@ -5437,6 +5437,26 @@
       "value": "二维码生成失败，点击重试"
     },
     {
+      "name": "scan_title",
+      "value": "扫一扫"
+    },
+    {
+      "name": "scan_invalid_link",
+      "value": "二维码内容无效，请核对后再试"
+    },
+    {
+      "name": "scan_copy_done",
+      "value": "内容已复制"
+    },
+    {
+      "name": "scan_unavailable",
+      "value": "当前设备不支持扫码"
+    },
+    {
+      "name": "scan_failed",
+      "value": "扫码失败，请重试"
+    },
+    {
       "name": "dining_order_detail_title",
       "value": "点单页"
     },

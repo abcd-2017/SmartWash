@@ -11,9 +11,11 @@ import { describe, it, expect } from '@ohos/hypium';
 import {
   DiningJoinEntryDecision,
   DiningJoinUrlKind,
+  DiningScanKind,
   buildDiningJoinUrl,
   decideDiningJoinEntry,
   maskDiningPhone,
+  normalizeDiningScan,
   originOf,
   parseDiningJoinUrl,
   parseDiningShoppingList
@@ -77,6 +79,24 @@ export default function diningLogicTest() {
       expect(parseDiningJoinUrl('http://a.com/dining/join/0?t=1').kind).assertEqual(DiningJoinUrlKind.MALFORMED)
       expect(parseDiningJoinUrl('http://a.com/dining/join/1/2?t=1').kind).assertEqual(DiningJoinUrlKind.MALFORMED)
       expect(parseDiningJoinUrl('http://a.com/dining/join/5').kind).assertEqual(DiningJoinUrlKind.MALFORMED)
+    })
+
+    // ---------- normalizeDiningScan（壳层扫一扫的域内归一） ----------
+
+    it('normalizeScan-加入链接归一为深链串', 0, () => {
+      const result = normalizeDiningScan('http://192.168.1.61:8080/dining/join/88?t=abc')
+      expect(result.kind).assertEqual(DiningScanKind.DEEP_LINK)
+      expect(result.deepLinkUri).assertEqual('smartwash://dining/order/88?t=abc')
+    })
+    it('normalizeScan-非本应用码交还通用分发', 0, () => {
+      const result = normalizeDiningScan('https://example.com/other')
+      expect(result.kind).assertEqual(DiningScanKind.NOT_DINING)
+      expect(result.deepLinkUri).assertEqual('')
+    })
+    it('normalizeScan-命中路径但结构非法', 0, () => {
+      const result = normalizeDiningScan('http://a.com/dining/join/abc?t=1')
+      expect(result.kind).assertEqual(DiningScanKind.MALFORMED)
+      expect(result.deepLinkUri).assertEqual('')
     })
 
     // ---------- maskDiningPhone ----------

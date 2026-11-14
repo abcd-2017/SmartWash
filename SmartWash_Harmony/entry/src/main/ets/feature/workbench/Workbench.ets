@@ -20,8 +20,11 @@ import { pathStack } from "../../utils/PathStackUtil"
 import { showToastSafety } from "../../utils/ToastUtil"
 import { getValue, setValue } from "../../utils/StorageUtil"
 import { handleDeepLink } from "../../utils/deeplink/DeepLinkHandler"
+import { scanAndDispatch } from "../../utils/ScanDispatch"
+import { resString } from "../../utils/ResourceString"
 import { logger } from "../../utils/Logger"
 import { BusinessError } from "@kit.BasicServicesKit"
+import { common } from "@kit.AbilityKit"
 import { KeyboardAvoidMode, LengthMetrics } from "@kit.ArkUI"
 import { ValueType } from "@kit.ArkData"
 import { safeBottomVp, safeTopVp } from "../../utils/SafeArea"
@@ -996,35 +999,53 @@ export struct Workbench {
         bottom: DesignDimens.SPACE_LG
       })
 
-      // 2. 搜索框（系统 Search 组件：自带搜索图标与清除钮；底/圆角对齐安卓 §3.7 输入框；
-      //    正文/占位 16、占位色 textSecondary、光标主色显式声明（对齐安卓显式控制，审查 P2-22），
-      //    清除钮热区走系统默认属端限制；外层 Column 承担左右页边距——Search 直接 margin +
-      //    width('100%') 会溢出父容器被居中抵消，故外包一层）
-      Column() {
-        Search({
-          value: this.searchQuery,
-          placeholder: WorkbenchText.workbench_search_hint
+      // 2. 搜索框 + 扫一扫常驻入口（系统 Search 组件：自带搜索图标与清除钮；底/圆角对齐安卓
+      //    §3.7 输入框；正文/占位 16、占位色 textSecondary、光标主色显式声明（对齐安卓显式控制，
+      //    审查 P2-22），清除钮热区走系统默认属端限制；Search 直接 margin + width('100%') 会
+      //    溢出父容器被居中抵消，故外包一层。扫一扫为端上固定工具位（不参与服务端下发与搜索
+      //    过滤，对齐安卓工作台搜索框右侧同位），点击拉起系统扫码页并统一分发）
+      Row() {
+        Column() {
+          Search({
+            value: this.searchQuery,
+            placeholder: WorkbenchText.workbench_search_hint
+          })
+            .onChange((value: string) => {
+              this.onSearchChange(value)
+            })
+            .onFocus(() => {
+              // 键盘弹出前重设 NONE（模拟器上 ArkUI 避让引擎不跟随 NONE，见
+              // applyKeyboardAvoidNone 注释；真机语义正确，保留为契约兜底）
+              this.applyKeyboardAvoidNone()
+            })
+            .width('100%')
+            .height(48)
+            .backgroundColor($r('app.color.SURFACE_VARIANT'))
+            .borderRadius(DesignDimens.INPUT_RADIUS)
+            .placeholderColor($r('app.color.TEXT_SECONDARY'))
+            .placeholderFont({ size: DesignFontSize.BODY })
+            .textFont({ size: DesignFontSize.BODY })
+            // SearchAttribute 无 caretColor 属性（SDK 17 编译核实），光标色不可自定义
+            // 图标/文案内边距对齐安卓：start spaceSm / end spaceXs
+            .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_XS })
+        }
+        .layoutWeight(1)
+
+        // 扫一扫入口：48vp 热区包 44vp 图标容器（§3.2 图标进容器），热区左右留出与搜索框间距
+        Column() {
+          IconBox({
+            icon: $r('sys.symbol.barcode_viewfinder'),
+            accessibilityLabel: resString('scan_title')
+          })
+        }
+        .height(48)
+        .justifyContent(FlexAlign.Center)
+        .onClick(() => {
+          scanAndDispatch(getContext(this) as common.UIAbilityContext)
         })
-          .onChange((value: string) => {
-            this.onSearchChange(value)
-          })
-          .onFocus(() => {
-            // 键盘弹出前重设 NONE（模拟器上 ArkUI 避让引擎不跟随 NONE，见
-            // applyKeyboardAvoidNone 注释；真机语义正确，保留为契约兜底）
-            this.applyKeyboardAvoidNone()
-          })
-          .width('100%')
-          .height(48)
-          .backgroundColor($r('app.color.SURFACE_VARIANT'))
-          .borderRadius(DesignDimens.INPUT_RADIUS)
-          .placeholderColor($r('app.color.TEXT_SECONDARY'))
-          .placeholderFont({ size: DesignFontSize.BODY })
-          .textFont({ size: DesignFontSize.BODY })
-          // SearchAttribute 无 caretColor 属性（SDK 17 编译核实），光标色不可自定义
-          // 图标/文案内边距对齐安卓：start spaceSm / end spaceXs
-          .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_XS })
       }
       .width('100%')
+      .alignItems(VerticalAlign.Center)
       // 底部间距对齐安卓：安卓搜索框无底距，其下区块自带 sectionSpacing(32) 顶距；
       // 原 bottom: SPACE_MD(16) 会让下方内容整体多下移 16vp
       .padding({
