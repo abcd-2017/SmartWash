@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>拉环救援</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（洞穴场地底 / 宝石 / 木销）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-field:#FFFFFF;--g-ball:#E2A93B;--g-line:#7A5B3A;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-field:#1D201E;--g-ball:#F2C25C;--g-line:#B39B72;color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stage { position: relative; }
+  canvas { display: block; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); width: 100%; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn { min-height: 44px; padding: 0 10px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: var(--g-on-primary); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.show { display: flex; }
+  .panel { width: 100%; max-width: 340px; max-height: 92vh; overflow-y: auto; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 12px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc b { color: var(--g-primary-deep); }
+  .panel .btn { width: 100%; margin-top: 8px; }
+  .stars { font-size: 22px; letter-spacing: 4px; margin: 2px 0 8px; }
+  .stars .f { color: var(--g-warning); }
+  .stars .e { color: var(--g-faint); }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 40vh; overflow-y: auto; margin-bottom: 10px; }
+  .lvgrid button { min-height: 44px; border: 0; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .lvgrid button:disabled { opacity: .35; cursor: default; }
+  .lvgrid button.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lvgrid button.cur { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">点销拔销 · 引宝入袋 · 慧眼避开岩浆</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/120</span></div>
+    <div class="stat"><span class="label">宝藏</span><span class="val" id="stGem">--</span></div>
+    <div class="stat"><span class="label">最佳</span><span class="val" id="stStar">--</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" role="img" aria-label="拉环救援洞穴场景"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点击插销把它拔出 · 宝藏会沿滑道流动，顺序决定结局</p>
+  <div class="tools">
+    <button type="button" class="btn ghost" id="btnRetry">重玩本关</button>
+    <button type="button" class="btn ghost" id="btnPick">选关</button>
+  </div>
+  <p class="foot">先开下游的销再放开宝藏 · 拔错桥销宝藏会坠入岩浆 · 救回全部 = 三星 · 进度自动保存</p>
+</div>
+<div class="overlay" id="overlay"><div class="panel" id="panel"></div></div>
+<script>
+/*PP-ENGINE-BEGIN*/
+var PP=(function(){
+"use strict";
+/* ===== 世界常量（逻辑坐标 360×480，画布等比缩放；固定步长保证确定性） ===== */
+var W=360,H=480;
+var R=10;               /* 宝藏球半径 */
+var PIN_CAP=4;          /* 插销胶囊半径 */
+var HOT_R=24;           /* 拔销热区半径（屏显直径约 48px ≥ 44px） */
+var GRAV=1500,DT=1/60,SUB=2;   /* 重力 / 固定步长 / 每步子步数（防隧穿） */
+var REST=0.18,AIR=0.999,FRIC=0.985; /* 法向恢复 / 空气阻尼 / 碰撞切向保持率 */
+var STOP_V=8,SETTLE_V=20,VMAX=140;  /* 防抖归零 / 静止判定 / 速度上限（防隧穿+限飞距） */
+var QUIET_T=0.35,STEP_CAP=420,TAIL_CAP=1000; /* 稳定语义：静止时长 / 单销模拟上限 / 尾段上限 */
+var BAG={x:100,y:404,w:160,h:60};   /* 收集判定区（底部宝袋，固定） */
+var LAVA_T=2,BAG_T=2;   /* 岩浆 / 收集判定内缩 */
+var FALL_Y=H+40,MAX_T=45;   /* 出界线（漏袋也算损失）/ 对局超时 */
+
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+
+/* ===== 确定性几何工具（生成器/校验器与线上同一份） ===== */
+/* 旋转矩形四角（世界系，[cx,cy] 为旋转中心，deg 度，正=顺时针） */
+function obbCorners(cx,cy,hw,hh,deg){
+  var a=deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
+  var ps=[[hw,hh],[hw,-hh],[-hw,-hh],[-hw,hh]],out=[],i;
+  for(i=0;i<4;i++)out.push([cx+ps[i][0]*c-ps[i][1]*s,cy+ps[i][0]*s+ps[i][1]*c]);
+  return out;
+}
+/* 点到旋转矩形边界距离（旋转到局部系后按 AABB 最近点） */
+function obbDist(cx,cy,hw,hh,deg,px,py){
+  var a=deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
+  var dx=px-cx,dy=py-cy;
+  var lx=dx*c+dy*s,ly=-dx*s+dy*c;
+  var nx=lx<-hw?-hw:(lx>hw?hw:lx);
+  var ny=ly<-hh?-hh:(ly>hh?hh:ly);
+  var ddx=lx-nx,ddy=ly-ny;
+  return Math.sqrt(ddx*ddx+ddy*ddy);
+}
+/* 点到线段距离 */
+function segPointDist(ax,ay,bx,by,px,py){
+  var abx=bx-ax,aby=by-ay;
+  var l2=abx*abx+aby*aby;
+  var t=l2>1e-9?((px-ax)*abx+(py-ay)*aby)/l2:0;
+  t=t<0?0:(t>1?1:t);
+  var dx=px-(ax+abx*t),dy=py-(ay+aby*t);
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+/* ===== 对局状态（level 为已校验关卡数据） ===== */
+function newGame(level){
+  var st={lv:level,t:0,steps:0,over:false,
+    balls:[],total:level.treasures.length,
+    collected:0,burned:0,alive:level.treasures.length,
+    pins:[],walls:[],lavas:[]};
+  var i,c,a;
+  for(i=0;i<level.chamber.length;i++){
+    c=level.chamber[i];
+    a=(c.length>=5?c[4]:0)*Math.PI/180;
+    st.walls.push({cx:c[0],cy:c[1],hw:c[2]/2,hh:c[3]/2,a:a,cos:Math.cos(a),sin:Math.sin(a)});
+  }
+  for(i=0;i<level.pins.length;i++){
+    c=level.pins[i];
+    var ax,ay,bx,by,hx,hy;
+    /* dir 0=横销 / 1=纵销 / 2=斜销（p[4]=角度，度，正=右端下沉）；拉环头在 a 端 */
+    var pa=c[2]===0?0:(c[2]===1?Math.PI/2:((c.length>=5?c[4]:0)*Math.PI/180));
+    ax=c[0]-Math.cos(pa)*c[3]/2;ay=c[1]-Math.sin(pa)*c[3]/2;
+    bx=c[0]+Math.cos(pa)*c[3]/2;by=c[1]+Math.sin(pa)*c[3]/2;
+    hx=ax;hy=ay;
+    st.pins.push({idx:i,cx:c[0],cy:c[1],dir:c[2],len:c[3],ax:ax,ay:ay,bx:bx,by:by,hx:hx,hy:hy,pulled:false});
+  }
+  for(i=0;i<level.lava.length;i++)st.lavas.push(level.lava[i]);
+  for(i=0;i<level.treasures.length;i++){
+    st.balls.push({x:level.treasures[i][0],y:level.treasures[i][1],vx:0,vy:0,dead:false,how:0});
+  }
+  return st;
+}
+
+/* ===== 碰撞：反弹（法向恢复 + 切向摩擦）、圆-旋转矩形、圆-胶囊（销）、圆-圆（等质量） ===== */
+function bounce(b,ux,uy){
+  var vn=b.vx*ux+b.vy*uy;
+  if(vn<0){
+    var vt=b.vx*(-uy)+b.vy*ux;
+    var vn2=-vn*REST;
+    b.vx=ux*vn2-uy*vt*FRIC;
+    b.vy=uy*vn2+ux*vt*FRIC;
+  }
+}
+function collideOBB(b,wl){
+  var dx=b.x-wl.cx,dy=b.y-wl.cy;
+  var lx=dx*wl.cos+dy*wl.sin,ly=-dx*wl.sin+dy*wl.cos;
+  var nx=lx<-wl.hw?-wl.hw:(lx>wl.hw?wl.hw:lx);
+  var ny=ly<-wl.hh?-wl.hh:(ly>wl.hh?wl.hh:ly);
+  var ddx=lx-nx,ddy=ly-ny;
+  var d2=ddx*ddx+ddy*ddy;
+  if(d2>=R*R)return false;
+  var d,ux,uy;
+  if(d2>1e-9){d=Math.sqrt(d2);ux=ddx/d;uy=ddy/d;}
+  else{ /* 圆心已入矩形：沿最小穿透轴推出（局部系） */
+    var lft=lx+wl.hw,rgt=wl.hw-lx,tp=ly+wl.hh,bt=wl.hh-ly;
+    var m=lft;ux=-1;uy=0;d=lft;
+    if(rgt<m){m=rgt;ux=1;uy=0;d=rgt;}
+    if(tp<m){m=tp;ux=0;uy=-1;d=tp;}
+    if(bt<m){m=bt;ux=0;uy=1;d=bt;}
+  }
+  var wx=ux*wl.cos-uy*wl.sin,wy=ux*wl.sin+uy*wl.cos;
+  var push=R-d;
+  if(push>0){b.x+=wx*push;b.y+=wy*push;}
+  bounce(b,wx,wy);
+  return true;
+}
+function collidePin(b,p){
+  var abx=p.bx-p.ax,aby=p.by-p.ay;
+  var l2=abx*abx+aby*aby;
+  var t=l2>1e-9?((b.x-p.ax)*abx+(b.y-p.ay)*aby)/l2:0;
+  t=t<0?0:(t>1?1:t);
+  var nx=p.ax+abx*t,ny=p.ay+aby*t;
+  var dx=b.x-nx,dy=b.y-ny;
+  var rr=R+PIN_CAP;
+  var d2=dx*dx+dy*dy;
+  if(d2>=rr*rr||d2<1e-12)return false;
+  var d=Math.sqrt(d2),ux=dx/d,uy=dy/d;
+  b.x+=ux*(rr-d);b.y+=uy*(rr-d);
+  bounce(b,ux,uy);
+  return true;
+}
+function resolvePair(a,c,dx,dy,d){
+  var nx=dx/d,ny=dy/d,overlap=R*2-d;
+  a.x-=nx*overlap*0.5;a.y-=ny*overlap*0.5;
+  c.x+=nx*overlap*0.5;c.y+=ny*overlap*0.5;
+  var rvx=c.vx-a.vx,rvy=c.vy-a.vy;
+  var vn=rvx*nx+rvy*ny;
+  if(vn<0){
+    var jimp=-(1+REST)*vn*0.5;
+    a.vx-=jimp*nx;a.vy-=jimp*ny;
+    c.vx+=jimp*nx;c.vy+=jimp*ny;
+  }
+}
+
+/* ===== 单步推进：积分 → 边界 → 静态碰撞 → 球-球 → 致死/收集判定 ===== */
+function step(st){
+  if(st.over)return;
+  st.t+=DT;st.steps++;
+  var s,i,j;
+  for(s=0;s<SUB;s++){
+    var h=DT/SUB;
+    for(i=0;i<st.balls.length;i++){
+      var b=st.balls[i];
+      if(b.dead)continue;
+      b.vy+=GRAV*h;
+      b.vx*=AIR;b.vy*=AIR;
+      var sp2=b.vx*b.vx+b.vy*b.vy;
+      if(sp2>VMAX*VMAX){var k=VMAX/Math.sqrt(sp2);b.vx*=k;b.vy*=k;}
+      b.x+=b.vx*h;b.y+=b.vy*h;
+      if(b.x<R+2){b.x=R+2;if(b.vx<0)b.vx=-b.vx*REST;}
+      else if(b.x>W-R-2){b.x=W-R-2;if(b.vx>0)b.vx=-b.vx*REST;}
+      if(b.y<R+2){b.y=R+2;if(b.vy<0)b.vy=-b.vy*REST;}
+      for(j=0;j<st.walls.length;j++)collideOBB(b,st.walls[j]);
+      for(j=0;j<st.pins.length;j++){var pn=st.pins[j];if(!pn.pulled)collidePin(b,pn);}
+    }
+    for(i=0;i<st.balls.length;i++){
+      var a2=st.balls[i];
+      if(a2.dead)continue;
+      for(j=i+1;j<st.balls.length;j++){
+        var c2=st.balls[j];
+        if(c2.dead)continue;
+        var dx=c2.x-a2.x;
+        if(dx>R*2||dx<-R*2)continue;
+        var dy=c2.y-a2.y;
+        if(dy>R*2||dy<-R*2)continue;
+        var d2=dx*dx+dy*dy;
+        if(d2<R*R*4){
+          if(d2>1e-9)resolvePair(a2,c2,dx,dy,Math.sqrt(d2));
+          else{a2.x-=0.3;c2.x+=0.3;}
+        }
+      }
+    }
+  }
+  for(i=0;i<st.balls.length;i++){
+    var b3=st.balls[i];
+    if(b3.dead)continue;
+    if(Math.abs(b3.vx)<STOP_V&&Math.abs(b3.vy)<STOP_V){b3.vx=0;b3.vy=0;}
+    if(b3.x>BAG.x+BAG_T&&b3.x<BAG.x+BAG.w-BAG_T&&b3.y>BAG.y&&b3.y<BAG.y+BAG.h){
+      b3.dead=true;b3.how=1;st.collected++;st.alive--;continue;
+    }
+    var burned=false,li;
+    for(li=0;li<st.lavas.length;li++){
+      var L=st.lavas[li];
+      if(L.length>=5){
+        /* 斜岩浆条（悬空）：球心到旋转矩形边界距离 ≤ 判定余量即烧毁 */
+        if(PP.obbDist(L[0]+L[2]/2,L[1]+L[3]/2,L[2]/2,L[3]/2,L[4],b3.x,b3.y)<L[3]/2-2+R*0.55){burned=true;break;}
+      }else if(b3.x>L[0]+LAVA_T&&b3.x<L[0]+L[2]-LAVA_T&&b3.y>L[1]+LAVA_T&&b3.y<L[1]+L[3]-LAVA_T){burned=true;break;}
+    }
+    if(!burned&&b3.y>FALL_Y)burned=true; /* 漏出宝袋同样算损失 */
+    if(burned){b3.dead=true;b3.how=2;st.burned++;st.alive--;}
+  }
+  if(st.alive<=0)st.over=true;
+}
+
+/* ===== 拔销与辅助判定 ===== */
+function pull(st,i){
+  if(st.pins[i]&&!st.pins[i].pulled){st.pins[i].pulled=true;return true;}
+  return false;
+}
+function allPulled(st){
+  for(var i=0;i<st.pins.length;i++)if(!st.pins[i].pulled)return false;
+  return true;
+}
+function ballsQuiet(st){
+  for(var i=0;i<st.balls.length;i++){
+    var b=st.balls[i];
+    if(!b.dead&&b.vx*b.vx+b.vy*b.vy>SETTLE_V*SETTLE_V)return false;
+  }
+  return true;
+}
+
+/* ===== 稳定语义模拟（生成器/校验器/e2e 与线上同一份物理） =====
+   语义：每拔一销 → 推进到（全损失 | 连续静止 QUIET_T | 步上限）→ 再拔下一销；
+   全部拔完后继续推进到终局。abortOnLoss：一旦出现烧毁即提前终止（全救已不可能）。 */
+function runStable(st,maxSteps){
+  var n=0,quiet=0,q=Math.round(QUIET_T/DT);
+  while(n<maxSteps&&!st.over){
+    step(st);n++;
+    if(ballsQuiet(st)){quiet++;if(quiet>=q)break;}
+    else quiet=0;
+  }
+  return n;
+}
+function simulateOrder(level,order,abortOnLoss){
+  var st=newGame(level),i;
+  for(i=0;i<order.length;i++){
+    runStable(st,STEP_CAP);
+    if(st.over)break;
+    if(abortOnLoss&&st.burned>0)break;
+    pull(st,order[i]);
+  }
+  if(!st.over)runStable(st,TAIL_CAP);
+  return st;
+}
+/* 星级：救回全部=3；≥60%=2；≥1=1；全灭=0 */
+function starsFor(collected,total){
+  if(total<=0)return 0;
+  if(collected>=total)return 3;
+  if(collected*10>=total*6)return 2;
+  if(collected>0)return 1;
+  return 0;
+}
+return {W:W,H:H,R:R,PIN_CAP:PIN_CAP,HOT_R:HOT_R,GRAV:GRAV,DT:DT,SUB:SUB,
+  REST:REST,AIR:AIR,FRIC:FRIC,STOP_V:STOP_V,SETTLE_V:SETTLE_V,VMAX:VMAX,
+  QUIET_T:QUIET_T,STEP_CAP:STEP_CAP,TAIL_CAP:TAIL_CAP,BAG:BAG,LAVA_T:LAVA_T,BAG_T:BAG_T,
+  FALL_Y:FALL_Y,MAX_T:MAX_T,
+  clamp:clamp,obbCorners:obbCorners,obbDist:obbDist,segPointDist:segPointDist,
+  newGame:newGame,step:step,pull:pull,allPulled:allPulled,ballsQuiet:ballsQuiet,
+  runStable:runStable,simulateOrder:simulateOrder,starsFor:starsFor};
+})();
+/*PP-ENGINE-END*/
+</script>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 调色板：canvas 颜色全部经 PAL 读 CSS 变量，JS 零字面色 ---------- */
+var PAL={};
+function shade(c,a){
+  var s=String(c).trim(),m;
+  if(s.charAt(0)==="#"){
+    var h=s.slice(1),r,g,b;
+    if(h.length===3){r=parseInt(h.charAt(0)+h.charAt(0),16);g=parseInt(h.charAt(1)+h.charAt(1),16);b=parseInt(h.charAt(2)+h.charAt(2),16);}
+    else{r=parseInt(h.slice(0,2),16);g=parseInt(h.slice(2,4),16);b=parseInt(h.slice(4,6),16);}
+    return"rgba("+r+","+g+","+b+","+a+")";
+  }
+  m=s.match(/rgba?\(([^)]+)\)/);
+  if(m){var p=m[1].split(",");return"rgba("+p[0]+","+p[1]+","+p[2]+","+a+")";}
+  return s;
+}
+function palLoad(){
+  var cs=getComputedStyle(document.documentElement);
+  function v(n){return cs.getPropertyValue(n).trim();}
+  PAL={field:v("--g-field"),surface:v("--g-surface"),surface2:v("--g-surface2"),
+    border:v("--g-border"),hairline:v("--g-hairline"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
+    ball:v("--g-ball"),line:v("--g-line")};
+}
+window.__gOnTheme=function(){palLoad();};//App 推送主题时刷新调色板，rAF 循环自动重绘
+palLoad();
+
+/*PP-PARSE-BEGIN*/
+/* ---------- 关卡数据校验（DB 下发逐条校验，任一条非法整批放弃） ---------- */
+function validData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  function int(v){return typeof v==="number"&&isFinite(v)&&Math.floor(v)===v;}
+  if(typeof d.name!=="string"||!d.name.length||d.name.length>32)return false;
+  if(!Array.isArray(d.pins)||d.pins.length<1||d.pins.length>8)return false;
+  var i,j,p,ax,ay,bx,by,pa;
+  for(i=0;i<d.pins.length;i++){
+    p=d.pins[i];
+    if(!Array.isArray(p)||p.length<4||p.length>5||!int(p[0])||!int(p[1])||!int(p[2])||!int(p[3]))return false;
+    if(p[2]!==0&&p[2]!==1&&p[2]!==2)return false;
+    if(p[2]===2&&(p.length!==5||!int(p[4])||p[4]<-70||p[4]>70))return false;
+    if(p[3]<28||p[3]>150)return false;
+    pa=p[2]===0?0:(p[2]===1?Math.PI/2:((p.length>=5?p[4]:0)*Math.PI/180));
+    ax=p[0]-Math.cos(pa)*p[3]/2;ay=p[1]-Math.sin(pa)*p[3]/2;
+    bx=p[0]+Math.cos(pa)*p[3]/2;by=p[1]+Math.sin(pa)*p[3]/2;
+    if(ax<6||ax>PP.W-6||bx<6||bx>PP.W-6||ay<6||ay>PP.H-6||by<6||by>PP.H-6)return false;
+  }
+  if(!Array.isArray(d.lava)||d.lava.length>3)return false;
+  for(i=0;i<d.lava.length;i++){
+    var L=d.lava[i];
+    if(!Array.isArray(L)||(L.length!==4&&L.length!==5)||!int(L[0])||!int(L[1])||!int(L[2])||!int(L[3]))return false;
+    if(L.length===5&&(!int(L[4])||L[4]<-70||L[4]>70))return false;
+    if(L[2]<6||L[3]<6||L[2]>200||L[3]>90)return false;
+    if(L[0]<4||L[1]<4||L[0]+L[2]>PP.W-4||L[1]+L[3]>PP.H-4)return false;
+  }
+  if(!Array.isArray(d.chamber)||d.chamber.length<3||d.chamber.length>20)return false;
+  for(i=0;i<d.chamber.length;i++){
+    var c=d.chamber[i];
+    if(!Array.isArray(c)||(c.length!==4&&c.length!==5))return false;
+    if(!int(c[0])||!int(c[1])||!int(c[2])||!int(c[3]))return false;
+    if(c[2]<6||c[3]<6||c[2]>180||c[3]>180)return false;
+    var deg=c.length===5?c[4]:0;
+    if(!int(deg)||deg<-70||deg>70)return false;
+    var cs=PP.obbCorners(c[0],c[1],c[2]/2,c[3]/2,deg);
+    for(j=0;j<4;j++){
+      if(cs[j][0]<3||cs[j][0]>PP.W-3||cs[j][1]<3||cs[j][1]>PP.H-3)return false;
+    }
+  }
+  if(!Array.isArray(d.treasures)||d.treasures.length<1||d.treasures.length>10)return false;
+  for(i=0;i<d.treasures.length;i++){
+    var t=d.treasures[i];
+    if(!Array.isArray(t)||t.length!==2||!int(t[0])||!int(t[1]))return false;
+    if(t[0]<PP.R+3||t[0]>PP.W-PP.R-3||t[1]<PP.R+3||t[1]>PP.H-46)return false;
+    for(j=0;j<i;j++){
+      var o=d.treasures[j];
+      var dx=t[0]-o[0],dy=t[1]-o[1];
+      if(dx*dx+dy*dy<PP.R*PP.R*4)return false;
+    }
+    for(j=0;j<d.chamber.length;j++){
+      var cc=d.chamber[j];
+      if(PP.obbDist(cc[0],cc[1],cc[2]/2,cc[3]/2,cc.length===5?cc[4]:0,t[0],t[1])<PP.R+1)return false;
+    }
+    for(j=0;j<d.pins.length;j++){
+      var pp=d.pins[j];
+      var pj=pp[2]===0?0:(pp[2]===1?Math.PI/2:((pp.length>=5?pp[4]:0)*Math.PI/180));
+      if(PP.segPointDist(pp[0]-Math.cos(pj)*pp[3]/2,pp[1]-Math.sin(pj)*pp[3]/2,
+        pp[0]+Math.cos(pj)*pp[3]/2,pp[1]+Math.sin(pj)*pp[3]/2,t[0],t[1])<PP.R+PP.PIN_CAP+1)return false;
+    }
+    for(j=0;j<d.lava.length;j++){
+      var LL=d.lava[j];
+      if(LL.length>=5){
+        /* 斜岩浆条：球心到条边界距离 < 判定余量即非法（宝藏初始不得近岩浆） */
+        if(PP.obbDist(LL[0]+LL[2]/2,LL[1]+LL[3]/2,LL[2]/2,LL[3]/2,LL[4],t[0],t[1])<LL[3]/2+PP.R)return false;
+      }else if(t[0]>LL[0]+PP.LAVA_T&&t[0]<LL[0]+LL[2]-PP.LAVA_T&&t[1]>LL[1]+PP.LAVA_T&&t[1]<LL[1]+LL[3]-PP.LAVA_T)return false;
+    }
+    var B2=PP.BAG;
+    if(t[0]>B2.x&&t[0]<B2.x+B2.w&&t[1]>B2.y&&t[1]<B2.y+B2.h)return false;
+  }
+  if(!int(d.seed)||d.seed<0||d.seed>=2147483648)return false;
+  return true;
+}
+function parseDbLevels(res){
+  if(!res||typeof res!=="object"||Array.isArray(res))return null;
+  if(!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var item=res.levels[i];
+    if(!item||typeof item!=="object")return null;
+    if(typeof item.dataJson!=="string"||!item.dataJson)return null;
+    var d;
+    try{d=JSON.parse(item.dataJson);}catch(e){return null;}
+    if(!validData(d))return null;
+    var no=parseInt(item.levelNo,10);
+    if(!isFinite(no)||no<1)no=i+1;
+    if(seen[no])return null;
+    seen[no]=1;
+    list.push({no:no,name:d.name,
+      pins:d.pins.map(function(p){return p.slice();}),
+      lava:d.lava.map(function(r){return r.slice();}),
+      chamber:d.chamber.map(function(r){return r.slice();}),
+      treasures:d.treasures.map(function(t){return t.slice();}),
+      seed:d.seed});
+  }
+  list.sort(function(a,b){return a.no-b.no;});
+  return list;
+}
+/*PP-PARSE-END*/
+
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底） ---------- */
+var DEFAULT_LEVELS=[{"name":"萤洞·01关","pins":[[270,135,0,98],[163,248,2,42,-31],[314,326,1,44]],"lava":[[101,282,44,40]],"chamber":[[215,99,6,52],[325,111,6,64],[270,21,116,6],[249,195,170,7,-31]],"treasures":[[249,119],[270,119],[291,119],[260,101],[281,101]],"seed":765038951},{"name":"萤洞·02关","pins":[[295,143,0,98],[184,251,2,44,-29],[180,40,0,44]],"lava":[[122,284,44,40]],"chamber":[[240,107,6,52],[350,119,6,64],[295,29,116,6],[273,200,170,7,-29]],"treasures":[[274,127],[295,127],[316,127],[285,109],[306,109]],"seed":1158645283},{"name":"萤洞·03关","pins":[[283,135,0,86],[175,249,2,43,-31],[314,326,1,44]],"lava":[[114,282,44,40]],"chamber":[[234,99,6,52],[332,111,6,64],[283,21,104,6],[262,195,170,7,-31]],"treasures":[[262,119],[283,119],[304,119],[273,101],[294,101]],"seed":1742096085},{"name":"萤洞·04关","pins":[[283,131,0,94],[175,245,2,44,-31],[290,40,0,40]],"lava":[[114,278,44,40]],"chamber":[[230,95,6,52],[336,107,6,64],[283,17,112,6],[262,191,170,7,-31]],"treasures":[[262,115],[283,115],[304,115],[273,97]],"seed":2129318973},{"name":"萤洞·05关","pins":[[280,129,0,92],[173,242,2,42,-31],[180,40,0,44]],"lava":[[111,276,44,40]],"chamber":[[228,93,6,52],[332,105,6,64],[280,15,110,6],[259,189,170,7,-31]],"treasures":[[259,113],[280,113],[301,113],[270,95],[291,95]],"seed":291553563},{"name":"萤洞·06关","pins":[[264,135,0,82],[156,249,2,43,-31],[70,40,0,40]],"lava":[[95,282,44,40]],"chamber":[[217,99,6,52],[311,111,6,64],[264,21,100,6],[243,195,170,7,-31]],"treasures":[[243,119],[264,119],[285,119],[254,101]],"seed":141892643},{"name":"萤洞·07关","pins":[[264,127,0,96],[157,240,2,42,-31],[30,190,1,44]],"lava":[[95,274,44,40]],"chamber":[[210,91,6,52],[318,103,6,64],[264,13,114,6],[243,187,170,7,-31]],"treasures":[[243,111],[264,111],[285,111],[254,93],[275,93]],"seed":742121064},{"name":"萤洞·08关","pins":[[266,131,0,88],[158,245,2,43,-31],[30,190,1,44]],"lava":[[97,278,44,40]],"chamber":[[216,95,6,52],[316,107,6,64],[266,17,106,6],[245,191,170,7,-31]],"treasures":[[245,115],[266,115],[287,115],[256,97],[277,97]],"seed":287101921},{"name":"萤洞·09关","pins":[[294,129,0,97],[186,243,2,43,-31],[70,40,0,40]],"lava":[[125,276,44,40]],"chamber":[[240,93,6,52],[349,105,6,64],[294,15,115,6],[273,189,170,7,-31]],"treasures":[[273,113],[294,113],[315,113],[284,95]],"seed":617556927},{"name":"萤洞·10关","pins":[[289,131,0,86],[180,242,2,42,-30],[290,40,0,40]],"lava":[[118,275,44,40]],"chamber":[[240,95,6,52],[338,107,6,64],[289,17,104,6],[267,190,170,7,-30]],"treasures":[[268,115],[289,115],[310,115],[279,97],[300,97]],"seed":1798945818},{"name":"萤洞·11关","pins":[[264,133,0,91],[152,238,2,42,-28],[24,70,1,40]],"lava":[[89,271,44,40]],"chamber":[[213,97,6,52],[316,109,6,64],[264,19,109,6],[241,189,170,7,-28]],"treasures":[[243,117],[264,117],[285,117],[254,99]],"seed":1489227581},{"name":"萤洞·12关","pins":[[287,134,0,89],[178,245,2,42,-30],[70,40,0,40]],"lava":[[116,278,44,40]],"chamber":[[237,98,6,52],[338,110,6,64],[287,20,107,6],[265,193,170,7,-30]],"treasures":[[266,118],[287,118],[308,118],[277,100]],"seed":152362529}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY="sw.pull-pin.v1.levels",LEVELS_VER_KEY="sw.pull-pin.v1.levels.ver";
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("pull-pin").then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;                        // 任一条非法 → 整批放弃
+    if(applyLevels(list,res.version||0)){
+      if(cur>=LEVELS.length)cur=LEVELS.length-1;
+      if(saveData.lv>LEVELS.length-1)saveData.lv=LEVELS.length-1;
+      startLevel(Math.min(saveData.lv,LEVELS.length-1));
+    }
+  }).catch(function(){});
+}
+
+/* ---------- 存档（本地 + 账号双写：解锁进度 + 逐关星级） ---------- */
+var KEY="sw.pull-pin.v1";
+function loadSave(){
+  try{
+    var s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s==="object"){
+      var done={};
+      if(s.done&&typeof s.done==="object"){
+        for(var k in s.done){
+          var v=s.done[k];
+          if(v&&Number.isInteger(v.s)&&v.s>0)done[k]={s:Math.min(3,v.s)};
+        }
+      }
+      return {lv:Math.max(0,parseInt(s.lv,10)||0),done:done};
+    }
+  }catch(e){}
+  return {lv:0,done:{}};
+}
+var saveData=loadSave();
+function save(){
+  var data={lv:saveData.lv,done:saveData.done};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("pull-pin",data).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("pull-pin").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rl=parseInt(r.lv,10);
+      if(isFinite(rl)&&rl>saveData.lv){saveData.lv=Math.min(rl,LEVELS.length-1);changed=true;}
+      if(r.done&&typeof r.done==="object"){
+        for(var k in r.done){
+          var v=r.done[k];
+          if(v&&Number.isInteger(v.s)&&v.s>0){
+            var mine=saveData.done[k]||(saveData.done[k]={s:0});
+            if(v.s>mine.s){mine.s=Math.min(3,v.s);changed=true;}
+          }
+        }
+      }
+      if(changed){save();syncHud();}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ---------- DOM 与视图 ---------- */
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d"),stage=document.querySelector(".stage");
+function $(id){return document.getElementById(id);}
+var ui={lv:$("stLv"),gem:$("stGem"),star:$("stStar"),msg:$("msg"),overlay:$("overlay"),panel:$("panel")};
+function sysFont(){return'-apple-system,"PingFang SC","Microsoft YaHei",sans-serif';}
+var view={S:1,dpr:1};
+function fit(){
+  var w=stage.clientWidth||320;
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  var h=w*PP.H/PP.W;
+  cv.style.height=h+"px";
+  cv.width=Math.max(1,Math.round(w*dpr));cv.height=Math.max(1,Math.round(h*dpr));
+  view.S=w/PP.W;view.dpr=dpr;
+  render();
+}
+window.addEventListener("resize",fit);
+
+/* ---------- 对局状态 ---------- */
+var cur=0,st=null,state="menu",quietT=0;
+var anims=[],parts=[];
+var lastTs=0,acc=0,prevCollected=0,prevBurned=0;
+function level(){return LEVELS[cur];}
+
+/* ---------- 关卡装载 ---------- */
+function startLevel(i){
+  if(!LEVELS.length)return;
+  cur=Math.max(0,Math.min(i,LEVELS.length-1));
+  st=PP.newGame(level());
+  quietT=0;anims=[];parts=[];acc=0;prevCollected=0;prevBurned=0;
+  state="play";
+  hidePanel();
+  syncHud();
+  ui.msg.textContent="第"+(cur+1)+"关 · "+level().name+" · 想好顺序再拔销";
+}
+function toMenu(){
+  if(!LEVELS.length)return;
+  state="menu";
+  st=PP.newGame(level());
+  anims=[];parts=[];
+  showMenu();
+  syncHud();
+}
+
+/* ---------- 输入：点击插销即拔出（热区半径 HOT_R） ---------- */
+function toLogical(ev){
+  var r=cv.getBoundingClientRect();
+  return{x:(ev.clientX-r.left)/view.S,y:(ev.clientY-r.top)/view.S};
+}
+function pinAt(x,y){
+  var best=-1,bd=PP.HOT_R,i;
+  for(i=0;i<st.pins.length;i++){
+    var p=st.pins[i];
+    if(p.pulled)continue;
+    var d=PP.segPointDist(p.ax,p.ay,p.bx,p.by,x,y);
+    if(d<bd){bd=d;best=i;}
+  }
+  return best;
+}
+cv.addEventListener("pointerdown",function(ev){
+  if(state!=="play"||!st||st.over)return;
+  ev.preventDefault();
+  var p=toLogical(ev);
+  var idx=pinAt(p.x,p.y);
+  if(idx>=0&&PP.pull(st,idx)){
+    var pin=st.pins[idx];
+    anims.push({ax:pin.ax,ay:pin.ay,bx:pin.bx,by:pin.by,t:0});
+    puff(pin.cx,pin.cy,PAL.line,5,90);
+    quietT=0;
+    ui.msg.textContent="已拔出一根销 · 剩余 "+(st.pins.length-anims.length)+" 根";
+  }
+});
+cv.addEventListener("contextmenu",function(ev){ev.preventDefault();});
+
+/* ---------- 事件表现（收集星光 / 烧毁烟） ---------- */
+function puff(x,y,c,n,up){
+  for(var i=0;i<n;i++){
+    var a=Math.random()*6.28,sp=30+Math.random()*110;
+    parts.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-(up||60),r:1.6+Math.random()*2.4,
+      color:c,life:0,ttl:0.4+Math.random()*0.3});
+  }
+}
+function trackEvents(){
+  if(!st)return;
+  if(st.collected>prevCollected){
+    puff(PP.BAG.x+PP.BAG.w/2,PP.BAG.y+14,PAL.success,8,80);
+    prevCollected=st.collected;
+  }
+  if(st.burned>prevBurned){
+    var L=st.lavas.length?st.lavas[st.burned>0&&st.lavas.length>1?(st.burned-1)%st.lavas.length:0]:null;
+    if(L)puff(L[0]+L[2]/2,L[1]+6,PAL.danger,10,90);
+    prevBurned=st.burned;
+  }
+}
+
+/* ---------- 终局结算 ---------- */
+function finish(){
+  if(state!=="play"||!st)return;
+  var stars=PP.starsFor(st.collected,st.total);
+  if(stars>0){
+    var rec=saveData.done[cur]||(saveData.done[cur]={s:0});
+    if(stars>rec.s)rec.s=stars;
+    var nx=Math.min(cur+1,LEVELS.length-1);
+    if(nx>saveData.lv)saveData.lv=nx;
+    save();
+    if(GB.available)GB.reportScore("pull-pin",{metricValue:cur+1,metricExtra:stars}).catch(function(){});
+    state="win";
+    showWin(stars);
+    ui.msg.textContent="救回 "+st.collected+"/"+st.total+" 颗宝藏"+(stars===3?"，一颗都没少！":"");
+  }else{
+    state="lose";
+    showLose();
+    ui.msg.textContent="宝藏全部损失了，换个别撞岩浆的顺序试试";
+  }
+  syncHud();
+}
+
+/* ---------- 主循环（固定步长累积器，确定性推进） ---------- */
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(!lastTs)lastTs=ts;
+  var dt=Math.min(0.05,(ts-lastTs)/1000||0);
+  lastTs=ts;
+  acc+=dt;
+  while(acc>=PP.DT){
+    if(st&&state==="play"&&!st.over)PP.step(st);
+    acc-=PP.DT;
+  }
+  if(state==="play"&&st){
+    if(st.over)finish();
+    else{
+      if(PP.allPulled(st)&&PP.ballsQuiet(st))quietT+=dt;else quietT=0;
+      if(quietT>=1.2||st.t>=PP.MAX_T)finish();
+    }
+  }
+  trackEvents();
+  var i;
+  for(i=anims.length-1;i>=0;i--){
+    var an=anims[i];an.t+=dt;
+    if(an.t>=0.3)anims.splice(i,1);
+  }
+  for(i=parts.length-1;i>=0;i--){
+    var p=parts[i];p.vy+=300*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life+=dt;
+    if(p.life>=p.ttl)parts.splice(i,1);
+  }
+  render();
+  syncHud();
+}
+
+/* ---------- 绘制 ---------- */
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function render(){
+  if(!st)return;
+  var dpr=view.dpr,S=view.S;
+  ctx.setTransform(dpr*S,0,0,dpr*S,0,0);
+  ctx.globalAlpha=1;
+  ctx.fillStyle=PAL.field;
+  ctx.fillRect(-2,-2,PP.W+4,PP.H+4);
+  var now=performance.now()/1000;
+  var i,j;
+  /* 岩浆池 / 悬空岩浆条（危险语义色 + 波动液面，条支持倾斜） */
+  for(i=0;i<st.lavas.length;i++){
+    var L=st.lavas[i];
+    ctx.save();
+    if(L.length>=5){ctx.translate(L[0]+L[2]/2,L[1]+L[3]/2);ctx.rotate(L[4]*Math.PI/180);}
+    else ctx.translate(L[0]+L[2]/2,L[1]+L[3]/2);
+    ctx.fillStyle=PAL.danger;
+    rr(-L[2]/2,-L[3]/2,L[2],L[3],6);ctx.fill();
+    ctx.strokeStyle=shade(PAL.danger,0.55);ctx.lineWidth=1.5;
+    rr(-L[2]/2,-L[3]/2,L[2],L[3],6);ctx.stroke();
+    ctx.fillStyle=shade(PAL.warning,0.7);
+    ctx.beginPath();
+    ctx.moveTo(-L[2]/2+2,-L[3]/2+5);
+    for(j=2;j<=L[2]-2;j+=5){
+      ctx.lineTo(-L[2]/2+j,-L[3]/2+5+Math.sin(j*0.24+now*2.6+i*1.7)*2.1);
+    }
+    ctx.lineTo(L[2]/2-2,-L[3]/2+10);ctx.lineTo(-L[2]/2+2,-L[3]/2+10);
+    ctx.closePath();ctx.fill();
+    for(j=0;j<3;j++){
+      var bx=-L[2]/2+6+((now*13+i*29+j*37)%Math.max(1,L[2]-12));
+      var by=L[3]/2-6-((now*9+j*23)%Math.max(1,Math.max(1,L[3]-16)));
+      ctx.globalAlpha=0.4+0.3*Math.sin(now*3+j);
+      ctx.fillStyle=shade(PAL.warning,0.85);
+      ctx.beginPath();ctx.arc(bx,by,1.6+((i*7+j*11)%3),0,6.3);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    ctx.restore();
+  }
+  /* 墙体 / 滑道（灰石，支持倾斜） */
+  for(i=0;i<st.walls.length;i++){
+    var wl=st.walls[i];
+    ctx.save();
+    ctx.translate(wl.cx,wl.cy);
+    ctx.rotate(wl.a);
+    ctx.fillStyle=PAL.muted;
+    rr(-wl.hw,-wl.hh,wl.hw*2,wl.hh*2,3);ctx.fill();
+    ctx.strokeStyle=shade(PAL.muted,0.5);ctx.lineWidth=1;
+    rr(-wl.hw,-wl.hh,wl.hw*2,wl.hh*2,3);ctx.stroke();
+    ctx.restore();
+  }
+  /* 宝袋（绿色 U 形 + 判定区淡填充） */
+  var B=PP.BAG;
+  ctx.fillStyle=shade(PAL.success,0.12);
+  ctx.fillRect(B.x,B.y,B.w,B.h);
+  ctx.strokeStyle=PAL.success;ctx.lineWidth=6;ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.beginPath();
+  ctx.moveTo(B.x-3,B.y-2);ctx.lineTo(B.x-3,B.y+B.h);ctx.lineTo(B.x+B.w+3,B.y+B.h);ctx.lineTo(B.x+B.w+3,B.y-2);
+  ctx.stroke();
+  ctx.strokeStyle=shade(PAL.success,0.65);ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(B.x-9,B.y-4);ctx.lineTo(B.x+7,B.y-4);
+  ctx.moveTo(B.x+B.w-7,B.y-4);ctx.lineTo(B.x+B.w+9,B.y-4);
+  ctx.stroke();
+  /* 宝藏球（金宝石，恒白高光） */
+  for(i=0;i<st.balls.length;i++){
+    var b=st.balls[i];
+    if(b.dead)continue;
+    ctx.fillStyle=PAL.ball;
+    ctx.beginPath();ctx.arc(b.x,b.y,PP.R,0,6.3);ctx.fill();
+    ctx.strokeStyle=shade(PAL.ball,0.6);ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle="rgba(0,0,0,0.16)";//恒暗体积弧
+    ctx.beginPath();ctx.arc(b.x,b.y+PP.R*0.34,PP.R*0.72,0,Math.PI);ctx.closePath();ctx.fill();
+    ctx.fillStyle="#FFF";//恒白高光
+    ctx.globalAlpha=0.4;
+    ctx.beginPath();ctx.ellipse(b.x-3.2,b.y-3.6,3.6,2.4,-0.5,0,6.3);ctx.fill();
+    ctx.globalAlpha=1;
+  }
+  /* 在位插销（木销 + 拉环头 + 脉动提示圈） */
+  for(i=0;i<st.pins.length;i++){
+    var p=st.pins[i];
+    if(p.pulled)continue;
+    var pu=0.5+0.5*Math.sin(now*3+i);
+    ctx.strokeStyle=shade(PAL.warning,0.22+0.2*pu);ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(p.hx,p.hy,10+2*pu,0,6.3);ctx.stroke();
+    ctx.strokeStyle=PAL.line;ctx.lineWidth=PP.PIN_CAP*2;ctx.lineCap="round";
+    ctx.beginPath();ctx.moveTo(p.ax,p.ay);ctx.lineTo(p.bx,p.by);ctx.stroke();
+    ctx.strokeStyle=shade(PAL.line,0.55);ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(p.ax,p.ay-PP.PIN_CAP+1);ctx.lineTo(p.bx,p.by-PP.PIN_CAP+1);ctx.stroke();
+    ctx.strokeStyle=PAL.warning;ctx.lineWidth=3.5;
+    ctx.beginPath();ctx.arc(p.hx,p.hy,7,0,6.3);ctx.stroke();
+    ctx.fillStyle=PAL.warning;
+    ctx.beginPath();ctx.arc(p.hx,p.hy,2.2,0,6.3);ctx.fill();
+  }
+  /* 拔出动画（沿轴向滑出并淡去） */
+  for(i=0;i<anims.length;i++){
+    var an=anims[i];
+    var k=an.t/0.3;
+    ctx.globalAlpha=Math.max(0,1-k);
+    var ox=(an.bx-an.ax)*k*1.6,oy=(an.by-an.ay)*k*1.6;
+    ctx.strokeStyle=PAL.line;ctx.lineWidth=PP.PIN_CAP*2;ctx.lineCap="round";
+    ctx.beginPath();ctx.moveTo(an.ax+ox,an.ay+oy);ctx.lineTo(an.bx+ox,an.by+oy);ctx.stroke();
+    ctx.strokeStyle=PAL.warning;ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(an.ax+ox,an.ay+oy,6,0,6.3);ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+  /* 粒子 */
+  for(i=0;i<parts.length;i++){
+    var pp=parts[i];
+    ctx.globalAlpha=Math.max(0,1-pp.life/pp.ttl);
+    ctx.fillStyle=pp.color;
+    ctx.beginPath();ctx.arc(pp.x,pp.y,pp.r,0,6.3);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ---------- HUD ---------- */
+function syncHud(){
+  ui.lv.textContent=(cur+1)+"/"+LEVELS.length;
+  ui.gem.textContent=st?(st.collected+"/"+st.total):"--";
+  var rec=saveData.done[cur];
+  ui.star.textContent=rec?("★★★".slice(0,rec.s)+"☆☆☆".slice(0,3-rec.s)):"--";
+}
+
+/* ---------- 面板（选关 / 胜负结算） ---------- */
+function hidePanel(){ui.overlay.classList.remove("show");}
+function starHtml(s){
+  var out="";
+  for(var i=0;i<3;i++)out+='<span class="'+(i<s?"f":"e")+'">'+(i<s?"★":"☆")+"</span>";
+  return out;
+}
+function showMenu(){
+  var done=0,k;
+  for(k in saveData.done)done++;
+  var html='<h2>拉环救援</h2>'+
+    '<p class="desc">点击插销把它<strong>拔出</strong>，宝藏受重力沿滑道流动<br>先开<strong>下游</strong>的销、再放开上方的宝藏，让宝石绕开岩浆滚进宝袋<br>桥销一旦拔错，宝藏会坠入岩浆 · 救回全部 = 三星</p>'+
+    '<div class="lvgrid" id="lvGrid"></div>'+
+    '<button type="button" class="btn" id="btnStart">开始第 '+(cur+1)+" 关</button>"+
+    '<p class="foot">已通关 <b>'+done+"</b> / "+LEVELS.length+' 关 · 进度自动保存</p>';
+  ui.panel.innerHTML=html;
+  var grid=document.getElementById("lvGrid");
+  for(var i=0;i<LEVELS.length;i++){
+    (function(idx){
+      var b=document.createElement("button");
+      b.type="button";
+      b.textContent=String(idx+1);
+      if(idx===cur)b.className="cur";
+      else if(saveData.done[idx])b.className="done";
+      if(idx>saveData.lv)b.disabled=true;
+      b.addEventListener("click",function(){startLevel(idx);});
+      grid.appendChild(b);
+    })(i);
+  }
+  document.getElementById("btnStart").addEventListener("click",function(){startLevel(cur);});
+  ui.overlay.classList.add("show");
+}
+function showWin(stars){
+  var html='<h2>'+(stars===3?"完美救援！":"救援成功！")+'</h2><div class="stars">'+starHtml(stars)+"</div>"+
+    '<p class="desc">第 '+(cur+1)+" 关 · 救回宝藏 <b>"+st.collected+"/"+st.total+"</b>"+
+    (stars<3&&st.burned>0?"<br>有 "+st.burned+" 颗坠入了岩浆，少拔桥销试试":"")+
+    (cur<LEVELS.length-1?"":"<br>全部关卡完成，太棒了！")+"</p>"+
+    '<button type="button" class="btn" id="btnGo">'+(cur<LEVELS.length-1?"下一关":"回到选关")+"</button>"+
+    '<button type="button" class="btn ghost" id="btnAgain">重玩本关</button>'+
+    '<button type="button" class="btn ghost" id="btnMenu">选关</button>';
+  ui.panel.innerHTML=html;
+  document.getElementById("btnGo").addEventListener("click",function(){
+    if(cur<LEVELS.length-1)startLevel(cur+1);else showMenu();
+  });
+  document.getElementById("btnAgain").addEventListener("click",function(){startLevel(cur);});
+  document.getElementById("btnMenu").addEventListener("click",showMenu);
+  ui.overlay.classList.add("show");
+}
+function showLose(){
+  var html='<h2>救援失败</h2><p class="desc">宝藏一颗都没能救回<br>提示：先开下游的销，桥销要留到最后</p>'+
+    '<button type="button" class="btn" id="btnGo">再试一次</button>'+
+    '<button type="button" class="btn ghost" id="btnMenu">选关</button>';
+  ui.panel.innerHTML=html;
+  document.getElementById("btnGo").addEventListener("click",function(){startLevel(cur);});
+  document.getElementById("btnMenu").addEventListener("click",showMenu);
+  ui.overlay.classList.add("show");
+}
+
+/* ---------- 按钮 ---------- */
+$("btnRetry").addEventListener("click",function(){
+  if(state==="menu")return;
+  startLevel(cur);
+});
+$("btnPick").addEventListener("click",function(){
+  if(state==="menu")return;
+  toMenu();
+});
+
+/* ---------- 启动 ---------- */
+fit();
+cur=Math.min(saveData.lv,Math.max(0,LEVELS.length-1));
+toMenu();
+requestAnimationFrame(frame);
+syncLevelsFromServer();
+syncSaveFromServer();
+})();
+</script>
+</body>
+</html>

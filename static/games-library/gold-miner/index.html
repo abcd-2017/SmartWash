@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>黄金矿工</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（UI 壳全部走 token；矿井/矿石为玩法素材另走 PAL/MAT）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; align-items: stretch; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
+  .stat .val { display: block; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.warn { color: var(--g-danger); }
+  .icon-btn { width: 44px; height: 44px; flex: 0 0 44px; border: 1px solid var(--g-border); border-radius: 12px; background: var(--g-surface); color: var(--g-text); display: grid; place-items: center; cursor: pointer; font: inherit; }
+  .icon-btn:active { opacity: .8; }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn { min-height: 44px; padding: 0 14px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: #fff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay { position: absolute; inset: 0; z-index: 5; display: none; flex-direction: column; align-items: center; justify-content: center; background: var(--g-scrim); padding: 14px; }
+  .overlay.show { display: flex; }
+  .panel { width: 100%; max-width: 340px; max-height: 100%; overflow-y: auto; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 18px 16px; display: flex; flex-direction: column; gap: 10px; text-align: center; }
+  .panel h2 { margin: 0; font-size: 22px; font-weight: 700; color: var(--g-primary-deep); }
+  .panel .desc { margin: 0; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc b { color: var(--g-primary-deep); }
+  .badge { display: none; margin: 0 auto; padding: 4px 12px; border-radius: 999px; background: var(--g-warning); color: #FFF; font-size: 12px; font-weight: 700; }
+  .badge.show { display: inline-block; }
+  .lv-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; margin: 2px 0; }
+  .lv-chip { min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lv-chip.done { background: var(--g-primary); border-color: var(--g-primary); color: #fff; }
+  .lv-chip:disabled { opacity: .35; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">钩子自动摆动 · 点按放钩 · 抓到不值钱的可引爆</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/1</span></div>
+    <div class="stat"><span class="label">金额</span><span class="val" id="stMoney">0/0</span></div>
+    <div class="stat"><span class="label">时间</span><span class="val" id="stTime">0</span></div>
+    <div class="stat"><span class="label">炸药</span><span class="val" id="stDyn">0</span></div>
+    <button class="icon-btn" id="btnPause" type="button" aria-label="暂停" title="暂停 / 继续">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>
+    </button>
+  </div>
+  <div class="stage">
+    <canvas id="cv" aria-label="黄金矿工矿井" role="img"></canvas>
+    <div class="overlay show" id="ov"><div class="panel" id="panel"></div></div>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite">摆到目标方向时点按放钩</p>
+  <div class="tools">
+    <button class="btn" id="btnDrop" type="button">放 钩</button>
+    <button class="btn ghost" id="btnBoom" type="button">引爆 ×0</button>
+  </div>
+  <p class="foot">金块 50 / 150 / 500 · 石头 11 / 20 · 钻石 600 · 神秘袋看手气<br>越重收得越慢 · 限时内凑够目标金额即过关</p>
+</div>
+<script>
+/*GM-ENGINE-BEGIN*/
+var GM=(function(){
+"use strict";
+/* ===== 世界几何（逻辑坐标 360×440，画布等比缩放；所有物理常量集中于此） ===== */
+var W=360,H=440,GROUND=52;        /* 地表线：之上天空、之下土壤 */
+var PX=180,PY=44;                 /* 钩子枢轴（井架滑轮） */
+var AMP=1.32,PERIOD=2.6;          /* 摆幅（弧度）与全摆周期（秒），正弦摆 */
+var EXT_SPEED=330;                /* 放钩伸速（逻辑像素/秒） */
+var EMPTY_SPEED=560;              /* 空钩回收速（恒快于任何负重） */
+var HOOK_R=6;                     /* 钩爪判定半径 */
+var MAX_LEN=430,PAD=10,EDGE=8,WALL_Y=434; /* 绳长上限 / 物品间距 / 墙内边距 / 底墙 */
+/* ===== 物品表：value 分值 / weight 重量（收回速度与重量成反比）/ r 半径 ===== */
+var TYPES={
+  g1:{v:50,w:1.0,r:9},
+  g2:{v:150,w:1.8,r:13},
+  g3:{v:500,w:3.0,r:19},
+  s1:{v:11,w:2.4,r:9},
+  s2:{v:20,w:4.2,r:16},
+  d:{v:600,w:0.7,r:8},
+  m:{v:0,w:1.2,r:11}   /* 神秘袋：开袋定值 */
+};
+function itemKey(t,size){return (t==="g"||t==="s")?t+size:t;}
+/* ===== 确定性伪随机（mulberry32） ===== */
+function makeRng(seed){return{s:seed|0};}
+function rngNext(rng){
+  rng.s=(rng.s+0x6D2B79F5)|0;
+  var t=Math.imul(rng.s^(rng.s>>>15),1|rng.s);
+  t=(t+Math.imul(t^(t>>>7),61|t))^t;
+  return ((t^(t>>>14))>>>0)/4294967296;
+}
+/* ===== 回收速度：与重量成反比（负重上限 520，恒慢于空钩 560） ===== */
+function retSpeed(w){return Math.min(520,520/(0.42+0.58*w));}
+/* ===== 神秘袋开袋（按关卡种子确定，整局可复现）：10% 空 / 12% 炸药+1 / 其余金币 ===== */
+function openBag(rng){
+  var r1=rngNext(rng);
+  if(r1<0.10)return{money:0,dyn:0,txt:"空空如也…"};
+  if(r1<0.22)return{money:0,dyn:1,txt:"炸药 +1"};
+  var r2=rngNext(rng);
+  var amt=r2<0.42?40:r2<0.72?120:r2<0.92?300:600;
+  return{money:amt,dyn:0,txt:"+"+amt+" 元"};
+}
+/* ===== 关卡数据 → 运行时物品（神秘袋在此一次性开定） ===== */
+function buildItems(level){
+  var rng=makeRng(level.seed),out=[];
+  for(var i=0;i<level.items.length;i++){
+    var it=level.items[i],spec=TYPES[itemKey(it[0],it[3])];
+    var rec={t:it[0],size:it[3],x:it[1],y:it[2],r:spec.r,val:spec.v,weight:spec.w,
+      alive:true,bagMoney:0,bagDyn:0,bagTxt:""};
+    if(it[0]==="m"){var o=openBag(rng);rec.bagMoney=o.money;rec.bagDyn=o.dyn;rec.bagTxt=o.txt;rec.val=o.money;}
+    out.push(rec);
+  }
+  return out;
+}
+/* ===== 沿角度的最大伸绳长（左右墙 + 底墙 + 绳长上限取最小） ===== */
+function reachLen(a){
+  var s=Math.sin(a),c=Math.cos(a),l=MAX_LEN;
+  if(s>1e-6)l=Math.min(l,(W-EDGE-PX)/s);
+  else if(s<-1e-6)l=Math.min(l,(PX-EDGE)/(-s));
+  if(c>1e-6)l=Math.min(l,(WALL_Y-PY)/c);
+  return l;
+}
+/* ===== 布局合法性：摆动可达扇区内、互不重叠、不出墙（关卡下发整批校验用） ===== */
+function checkLayout(items){
+  for(var i=0;i<items.length;i++){
+    var a=items[i],dx=a.x-PX,dy=a.y-PY,d=Math.sqrt(dx*dx+dy*dy);
+    if(dy<=4)return false;
+    var phi=Math.atan2(dx,dy);
+    var aw=Math.asin(Math.min(1,(a.r+HOOK_R)/Math.max(1,d)));
+    if(Math.abs(phi)+aw>AMP+1e-6)return false;
+    if(d+a.r+HOOK_R>reachLen(phi)-2)return false;
+    if(a.y-a.r<GROUND+16||a.y+a.r>WALL_Y-2)return false;
+    if(a.x-a.r<EDGE||a.x+a.r>W-EDGE)return false;
+    for(var j=i+1;j<items.length;j++){
+      var b=items[j],ddx=a.x-b.x,ddy=a.y-b.y;
+      if(Math.sqrt(ddx*ddx+ddy*ddy)<a.r+b.r+PAD)return false;
+    }
+  }
+  return true;
+}
+function tipPos(ang,len){return{x:PX+Math.sin(ang)*len,y:PY+Math.cos(ang)*len};}
+/* ===== 绳段 raycast：返回绳段扫过路径上首个命中的物品（遮挡判定同引擎） ===== */
+function castRay(items,ang,l0,l1){
+  var p0=tipPos(ang,l0),p1=tipPos(ang,l1),best=null,bl=Infinity;
+  var dx=p1.x-p0.x,dy=p1.y-p0.y,dd=dx*dx+dy*dy;
+  for(var i=0;i<items.length;i++){
+    var it=items[i];
+    if(!it.alive)continue;
+    var t=dd>0?((it.x-p0.x)*dx+(it.y-p0.y)*dy)/dd:0;
+    t=Math.max(0,Math.min(1,t));
+    var qx=p0.x+t*dx,qy=p0.y+t*dy,ex=it.x-qx,ey=it.y-qy;
+    var rr=it.r+HOOK_R;
+    if(ex*ex+ey*ey<=rr*rr){
+      var along=l0+(l1-l0)*t;
+      if(along<bl){bl=along;best=it;}
+    }
+  }
+  return best?{item:best,l:bl}:null;
+}
+/* ===== 对局状态 ===== */
+function newGame(level){
+  return{lv:level,items:buildItems(level),money:0,time:level.time,dyn:level.dyn,
+    phase:0,ang:0,mode:"swing",len:0,item:null,pop:null,popT:0,shake:0,boom:null,
+    over:false,won:false};
+}
+/* ===== 推进一帧：inp={drop:放钩请求, boom:引爆请求}（单帧消费） ===== */
+function step(st,dt,inp){
+  if(st.over)return;
+  if(st.money>=st.lv.target){st.won=true;st.over=true;return;}
+  st.time-=dt;
+  if(st.time<=0){st.time=0;st.over=true;return;}
+  if(st.mode==="swing"){
+    st.phase+=dt*Math.PI*2/PERIOD;
+    st.ang=AMP*Math.sin(st.phase);
+    if(inp&&inp.drop){st.mode="ext";st.len=0;}
+  }else if(st.mode==="ext"){
+    var prev=st.len;
+    st.len=Math.min(MAX_LEN,prev+EXT_SPEED*dt);
+    var hit=castRay(st.items,st.ang,prev,st.len);
+    if(hit){hit.item.alive=false;st.item=hit.item;st.mode="ret";}
+    else{
+      var tip=tipPos(st.ang,st.len);
+      if(st.len>=MAX_LEN||tip.x<EDGE||tip.x>W-EDGE||tip.y>WALL_Y)st.mode="ret";
+    }
+  }else{
+    if(inp&&inp.boom&&st.item&&st.dyn>0){
+      st.dyn--;
+      var bx=tipPos(st.ang,st.len);
+      st.boom={x:bx.x,y:bx.y,t:0.4};
+      st.item=null;st.shake=0.3;
+    }
+    var sp=st.item?retSpeed(st.item.weight):EMPTY_SPEED;
+    st.len-=sp*dt;
+    if(st.len<=0){
+      st.len=0;st.mode="swing";
+      if(st.item){
+        var it=st.item;st.item=null;
+        if(it.t==="m"){
+          st.money+=it.bagMoney;
+          if(it.bagDyn)st.dyn+=it.bagDyn;
+          st.pop=it.bagTxt;st.popT=1.0;
+        }else{
+          st.money+=it.val;
+          st.pop="+"+it.val+" 元";st.popT=1.0;
+        }
+      }
+    }
+  }
+  if(st.popT>0){st.popT-=dt;if(st.popT<=0)st.pop=null;}
+  if(st.shake>0)st.shake=Math.max(0,st.shake-dt);
+  if(st.boom){st.boom.t-=dt;if(st.boom.t<=0)st.boom=null;}
+  if(st.money>=st.lv.target){st.won=true;st.over=true;}
+}
+return {W:W,H:H,GROUND:GROUND,PX:PX,PY:PY,AMP:AMP,PERIOD:PERIOD,EXT_SPEED:EXT_SPEED,
+  EMPTY_SPEED:EMPTY_SPEED,HOOK_R:HOOK_R,MAX_LEN:MAX_LEN,PAD:PAD,EDGE:EDGE,WALL_Y:WALL_Y,
+  TYPES:TYPES,itemKey:itemKey,makeRng:makeRng,rngNext:rngNext,retSpeed:retSpeed,
+  openBag:openBag,buildItems:buildItems,reachLen:reachLen,checkLayout:checkLayout,
+  tipPos:tipPos,castRay:castRay,newGame:newGame,step:step};
+})();
+/*GM-ENGINE-END*/
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 调色板：canvas 颜色全经 CSS 变量读取，派生色用 shade 动态构造 ---------- */
+var PAL={};
+function shade(c,a){
+  var s=String(c).trim(),m;
+  if(s.charAt(0)==="#"){
+    var h=s.slice(1),r,g,b;
+    if(h.length===3){r=parseInt(h.charAt(0)+h.charAt(0),16);g=parseInt(h.charAt(1)+h.charAt(1),16);b=parseInt(h.charAt(2)+h.charAt(2),16);}
+    else{r=parseInt(h.slice(0,2),16);g=parseInt(h.slice(2,4),16);b=parseInt(h.slice(4,6),16);}
+    return"rgba("+r+","+g+","+b+","+(a).toFixed(3)+")";
+  }
+  m=s.match(/rgba?\(([^)]+)\)/);
+  if(m){var p=m[1].split(",");return"rgba("+p[0]+","+p[1]+","+p[2]+","+(a).toFixed(3)+")";}
+  return s;
+}
+function palLoad(){
+  var cs=getComputedStyle(document.documentElement);
+  function v(n){return cs.getPropertyValue(n).trim();}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),
+    danger:v("--g-danger"),warning:v("--g-warning")};
+  PAL.ugTop=shade(PAL.text,0.06);
+  PAL.ugBot=shade(PAL.text,0.17);
+  PAL.dot=shade(PAL.text,0.12);
+  PAL.guide=shade(PAL.text,0.30);
+}
+window.__gOnTheme=function(){palLoad();};//App 推送主题时刷新调色板，rAF 循环自动重绘
+palLoad();
+/* ---------- 玩法素材色（矿石/井架/地表，保留字面，D2） ---------- */
+var MAT={ //素材:矿石与地表为玩法辨识度素材（中高明度，深浅通用）
+  gold:"#E2A23B",goldLo:"#A9761E", //素材
+  stone:"#A7ADB2",stoneLo:"#6F767C", //素材
+  dia:"#5FC6DE",diaLo:"#2E93AC", //素材
+  bag:"#C29A5F",bagLo:"#8F6B3C", //素材
+  gnd:"#CBA470",gndLo:"#8A6B42",grass:"#7CB85C", //素材
+  skin:"#F2C79B" //素材
+};
+
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底） ---------- */
+var DEFAULT_LEVELS=[{"name":"金沙·第1关","time":50,"target":340,"seed":71162489,"dyn":1,"items":[["g",79,355,3],["g",314,192,2],["m",236,209,1],["g",53,170,1],["g",266,354,1],["g",295,406,1],["g",129,109,1],["s",109,386,1]]},{"name":"金沙·第2关","time":50,"target":360,"seed":1427416600,"dyn":1,"items":[["g",143,283,3],["g",296,241,2],["m",65,362,1],["m",137,180,1],["g",283,344,1],["g",155,244,1],["g",121,148,1],["s",196,113,1]]},{"name":"金沙·第3关","time":50,"target":410,"seed":1906882503,"dyn":1,"items":[["g",208,245,3],["g",209,332,2],["m",42,297,1],["g",276,376,1],["g",127,169,1],["g",181,308,1],["g",142,311,1],["s",273,243,1]]},{"name":"金沙·第4关","time":50,"target":520,"seed":1270917726,"dyn":1,"items":[["g",66,172,2],["m",280,369,1],["g",261,256,1],["g",217,279,1],["g",183,322,1],["g",23,276,1],["s",128,358,1],["d",126,310,1]]},{"name":"金沙·第5关","time":50,"target":570,"seed":1491004389,"dyn":1,"items":[["s",181,186,2],["g",265,257,2],["m",187,361,1],["g",153,124,1],["g",301,167,1],["g",205,260,1],["g",97,316,1],["d",242,397,1]]},{"name":"金沙·第6关","time":50,"target":220,"seed":684157796,"dyn":1,"items":[["g",128,350,2],["m",307,246,1],["m",222,168,1],["g",36,123,1],["g",335,223,1],["g",87,359,1],["s",115,154,1],["d",320,379,1]]},{"name":"金沙·第7关","time":50,"target":730,"seed":637134067,"dyn":1,"items":[["g",96,386,3],["g",282,315,2],["m",307,166,1],["m",57,306,1],["g",29,194,1],["g",151,357,1],["s",281,96,1],["d",230,297,1]]},{"name":"金沙·第8关","time":50,"target":560,"seed":1843294714,"dyn":1,"items":[["g",33,211,2],["m",138,220,1],["g",86,270,1],["g",256,287,1],["g",276,174,1],["g",109,303,1],["s",190,315,1],["d",315,278,1]]},{"name":"金沙·第9关","time":50,"target":750,"seed":2063381377,"dyn":1,"items":[["g",197,211,3],["g",117,332,2],["m",282,328,1],["g",240,228,1],["g",173,265,1],["g",85,243,1],["s",286,359,1],["d",230,261,1]]},{"name":"金沙·第10关","time":50,"target":520,"seed":1994914097,"dyn":1,"items":[["g",236,155,2],["m",287,296,1],["g",210,330,1],["g",244,194,1],["g",136,228,1],["g",31,113,1],["s",281,141,1],["d",31,255,1]]},{"name":"金沙·第11关","time":50,"target":800,"seed":1785221610,"dyn":1,"items":[["g",127,207,3],["g",269,392,2],["m",52,250,1],["g",70,391,1],["g",64,295,1],["g",86,325,1],["s",232,154,1],["d",198,379,1]]},{"name":"金沙·第12关","time":50,"target":750,"seed":1161832127,"dyn":1,"items":[["g",279,278,3],["g",183,315,2],["m",255,240,1],["g",130,323,1],["g",42,181,1],["g",332,385,1],["s",237,166,1],["d",240,277,1]]}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY="sw.gold-miner.v1.levels",LEVELS_VER_KEY="sw.gold-miner.v1.levels.ver";
+function intOK(v){return typeof v==="number"&&isFinite(v)&&Math.floor(v)===v;}
+function parseGoldLevels(res){
+  if(!res||typeof res!=="object"||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={},i;
+  for(i=0;i<res.levels.length;i++){
+    var item=res.levels[i];
+    if(!item||typeof item!=="object")return null;
+    var d;
+    try{d=JSON.parse(item.dataJson);}catch(e){return null;}
+    if(!d||typeof d!=="object"||Array.isArray(d))return null;
+    if(typeof d.name!=="string"||!d.name.length||d.name.length>32)return null;
+    if(!intOK(d.time)||d.time<30||d.time>90)return null;
+    if(!intOK(d.target)||d.target<100||d.target>999999)return null;
+    if(!intOK(d.seed)||d.seed<0||d.seed>2147483647)return null;
+    if(!intOK(d.dyn)||d.dyn<0||d.dyn>4)return null;
+    if(!Array.isArray(d.items)||d.items.length<6||d.items.length>16)return null;
+    var items=[];
+    for(var j=0;j<d.items.length;j++){
+      var w=d.items[j];
+      if(!Array.isArray(w)||w.length!==4)return null;
+      var t=w[0];
+      if(t!=="g"&&t!=="s"&&t!=="d"&&t!=="m")return null;
+      if(!intOK(w[1])||w[1]<0||w[1]>359)return null;
+      if(!intOK(w[2])||w[2]<60||w[2]>439)return null;
+      var sz=w[3];
+      if(t==="g"){if(sz!==1&&sz!==2&&sz!==3)return null;}
+      else if(t==="s"){if(sz!==1&&sz!==2)return null;}
+      else{if(sz!==1)return null;}
+      items.push([t,w[1],w[2],sz]);
+    }
+    if(!GM.checkLayout(GM.buildItems({seed:d.seed,items:items})))return null;
+    var no=parseInt(item.levelNo,10);
+    if(!isFinite(no)||no<1)no=i+1;
+    if(seen[no])return null;
+    seen[no]=1;
+    list.push({no:no,name:d.name,time:d.time,target:d.target,seed:d.seed,dyn:d.dyn,items:items});
+  }
+  list.sort(function(a,b){return a.no-b.no;});
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("gold-miner").then(function(res){
+    var list=parseGoldLevels(res);
+    if(!list||!list.length)return;
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      if(saveData.lv>LEVELS.length-1)saveData.lv=LEVELS.length-1;
+      buildChips();
+      loadLevel(cur);
+      showOverlay("ready");
+    }
+  }).catch(function(){});
+}
+
+/* ---------- 存档（本地 + 账号双写：解锁进度 + 最佳单关金额） ---------- */
+var KEY="sw.gold-miner.v1";
+function loadSave(){
+  try{var s=JSON.parse(localStorage.getItem(KEY))||{};
+    return{lv:Math.max(0,parseInt(s.lv,10)||0),best:Math.max(0,parseInt(s.best,10)||0)};
+  }catch(e){return{lv:0,best:0};}
+}
+var saveData=loadSave();
+function save(){
+  var data={lv:saveData.lv,best:saveData.best};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("gold-miner",data).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("gold-miner").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rl=parseInt(r.lv,10),rb=parseInt(r.best,10);
+      if(isFinite(rl)&&rl>saveData.lv){saveData.lv=Math.min(rl,LEVELS.length-1);changed=true;}
+      if(isFinite(rb)&&rb>saveData.best){saveData.best=rb;changed=true;}
+      if(changed){save();buildChips();}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ---------- DOM 与画布 ---------- */
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var stage=document.getElementById("stage");
+function sysFont(){return'-apple-system,"PingFang SC","Microsoft YaHei",sans-serif';}
+function $(id){return document.getElementById(id);}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+var L={W:0,H:0};
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  L.W=w;L.H=w*GM.H/GM.W;
+  cv.style.height=L.H+"px";
+  cv.width=Math.round(w*dpr);cv.height=Math.round(L.H*dpr);
+  var S=w/GM.W*dpr;
+  ctx.setTransform(S,0,0,S,0,0);
+}
+window.addEventListener("resize",resize);
+
+/* ---------- 对局状态 ---------- */
+var cur=0,st=null,state="ready";
+var input={drop:false,boom:false};
+var parts=[],floats=[],dots=[],prevBoom=null,prevMoney=0;
+var endKind=null,endTimer=0;
+
+/* ---------- 关卡装载 ---------- */
+function loadLevel(i){
+  cur=clamp(i,0,LEVELS.length-1);
+  st=GM.newGame(LEVELS[cur]);
+  /* 视图装饰：矿石轮廓与土壤斑点（确定性，随关卡变化） */
+  var rng=GM.makeRng(97*cur+13);
+  for(var k=0;k<st.items.length;k++){
+    var it=st.items[k];it.pts=[];
+    for(var m=0;m<8;m++){
+      var a=m/8*Math.PI*2+(GM.rngNext(rng)-0.5)*0.5;
+      var rr=it.r*(0.82+GM.rngNext(rng)*0.26);
+      it.pts.push([Math.cos(a)*rr*1.08,Math.sin(a)*rr*0.94]);
+    }
+  }
+  var drng=GM.makeRng(1000+cur*7);
+  dots=[];
+  for(var n=0;n<24;n++)dots.push({x:GM.EDGE+GM.rngNext(drng)*(GM.W-2*GM.EDGE),
+    y:GM.GROUND+26+GM.rngNext(drng)*(GM.H-GM.GROUND-44),r:1+GM.rngNext(drng)*2.2});
+  parts=[];floats=[];prevBoom=null;prevMoney=0;endKind=null;
+  input.drop=false;input.boom=false;
+  state="ready";
+  syncHud();
+}
+function startLevel(i){
+  loadLevel(i);
+  state="running";
+  showOverlay(null);
+  say("第"+(cur+1)+"关 · 目标 "+LEVELS[cur].target+" 元 · 加油！");
+}
+function buildChips(){
+  var grid=$("lvGrid");
+  if(!grid)return;
+  var html="";
+  for(var i=0;i<LEVELS.length;i++){
+    var cls="lv-chip"+(i===cur?" sel":"")+(i<saveData.lv?" done":"");
+    var dis=i<=saveData.lv?"":" disabled";
+    html+='<button class="'+cls+'" type="button" data-lv="'+i+'"'+dis+'>'+(i+1)+'</button>';
+  }
+  grid.innerHTML=html;
+  var btns=grid.querySelectorAll(".lv-chip");
+  for(var j=0;j<btns.length;j++){
+    btns[j].addEventListener("click",function(){
+      var idx=Number(this.getAttribute("data-lv"));
+      if(idx<=saveData.lv)startLevel(idx);
+    });
+  }
+}
+/* ---------- 覆盖层（单 panel 动态装配） ---------- */
+function showOverlay(kind){
+  var ov=$("ov"),panel=$("panel");
+  if(!kind){ov.classList.remove("show");return;}
+  ov.classList.add("show");
+  if(kind==="ready"){
+    panel.innerHTML='<h2>黄金矿工</h2>'+
+      '<p class="desc">钩子在井架滑轮上<strong>自动左右摆动</strong>，摆到目标方向时点按放钩<br>'+
+      '钩住物品匀速收回入账：<strong>越重收得越慢</strong>，钻石又贵又轻<br>'+
+      '神秘袋开出金币或炸药；抓到不值钱的石头，可按「引爆」弃单<br>'+
+      '限时内凑够目标金额即过关</p>'+
+      '<div class="lv-grid" id="lvGrid"></div>'+
+      '<div class="btn-row"><button class="btn" id="ovGo" type="button">开始挖矿</button></div>'+
+      '<p class="foot">已通关 <b id="ovDone">0</b> / '+LEVELS.length+' 关 · 单关最佳 '+saveData.best+' 元 · 进度自动保存</p>';
+    buildChips();
+    var done=$("ovDone");
+    if(done)done.textContent=String(Math.min(saveData.lv,LEVELS.length));
+    $("ovGo").addEventListener("click",function(){startLevel(cur);});
+  }else if(kind==="won"){
+    panel.innerHTML='<span class="badge'+(st.money>=saveData.best&&st.money>0?" show":"")+'">新纪录</span>'+
+      '<h2>过关！</h2>'+
+      '<p class="desc">本关入账 <b>'+st.money+'</b> 元（目标 '+st.lv.target+'）<br>剩余 '+Math.ceil(st.time)+' 秒'+(cur<LEVELS.length-1?"":"<br>已全部通关，矿场传奇！")+'</p>'+
+      '<div class="btn-row">'+
+      (cur<LEVELS.length-1?'<button class="btn" id="ovNext" type="button">下一关</button>':"")+
+      '<button class="btn ghost" id="ovReplay" type="button">重玩</button>'+
+      '<button class="btn ghost" id="ovMenu" type="button">选关</button></div>';
+    var nx=$("ovNext");
+    if(nx)nx.addEventListener("click",function(){startLevel(Math.min(cur+1,LEVELS.length-1));});
+    $("ovReplay").addEventListener("click",function(){startLevel(cur);});
+    $("ovMenu").addEventListener("click",toMenu);
+  }else if(kind==="lost"){
+    panel.innerHTML='<h2>差一点！</h2>'+
+      '<p class="desc">时间到，还差 <b>'+(st.lv.target-st.money)+'</b> 元<br>提示：优先抓价值高、重量轻的目标（看性价比）</p>'+
+      '<div class="btn-row"><button class="btn" id="ovRetry" type="button">重试本关</button>'+
+      '<button class="btn ghost" id="ovMenu" type="button">选关</button></div>';
+    $("ovRetry").addEventListener("click",function(){startLevel(cur);});
+    $("ovMenu").addEventListener("click",toMenu);
+  }else if(kind==="pause"){
+    panel.innerHTML='<h2>已暂停</h2><p class="desc">钩子先挂在半空，等你回来</p>'+
+      '<div class="btn-row"><button class="btn" id="ovResume" type="button">继续</button>'+
+      '<button class="btn ghost" id="ovMenu" type="button">选关</button></div>';
+    $("ovResume").addEventListener("click",resumeGame);
+    $("ovMenu").addEventListener("click",toMenu);
+  }
+}
+function toMenu(){
+  state="ready";
+  loadLevel(cur);
+  showOverlay("ready");
+}
+function pauseGame(){
+  if(state!=="running")return;
+  state="paused";input.drop=false;input.boom=false;
+  showOverlay("pause");
+}
+function resumeGame(){
+  if(state!=="paused")return;
+  state="running";showOverlay(null);
+}
+/* ---------- HUD ---------- */
+function say(t){$("msg").textContent=t;}
+function syncHud(){
+  if(!st)return;
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stMoney").textContent=st.money+"/"+st.lv.target;
+  var tv=$("stTime");
+  tv.textContent=Math.ceil(st.time)+"s";
+  tv.classList.toggle("warn",st.time<=10&&state==="running");
+  $("stDyn").textContent="×"+st.dyn;
+  $("btnBoom").textContent="引爆 ×"+st.dyn;
+}
+/* ---------- 结算 ---------- */
+function endLevel(){
+  if(st.won){
+    state="won";
+    saveData.lv=Math.max(saveData.lv,Math.min(cur+1,LEVELS.length-1));
+    saveData.best=Math.max(saveData.best,st.money);
+    save();
+    if(GB.available)GB.reportScore("gold-miner",{metricValue:cur+1,metricExtra:st.money}).catch(function(){});
+    buildChips();
+    endKind="win";endTimer=0.55;
+  }else{
+    state="lost";
+    say("还差 "+(st.lv.target-st.money)+" 元，再试一次！");
+    endKind="lose";endTimer=0.55;
+  }
+}
+/* ---------- 特效 ---------- */
+function puff(x,y,c,n,up){
+  for(var i=0;i<n;i++){
+    var a=Math.random()*6.28,sp=50+Math.random()*130;
+    parts.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-(up||30),r:1.6+Math.random()*2.6,
+      c:c,life:0,ttl:0.4+Math.random()*0.3});
+  }
+}
+function addFloat(txt,c){floats.push({txt:txt,c:c,life:0,ttl:1.0});}
+/* ---------- 更新 ---------- */
+function update(dt){
+  var tipBefore=st.item;
+  GM.step(st,dt,input);
+  input.drop=false;input.boom=false;
+  /* 抓中扬尘 */
+  if(st.item&&!tipBefore){
+    var t=GM.tipPos(st.ang,st.len);
+    puff(t.x,t.y,PAL.dot,6,20);
+  }
+  /* 引爆 */
+  if(st.boom&&st.boom!==prevBoom){
+    puff(st.boom.x,st.boom.y,PAL.warning,10,60);
+    puff(st.boom.x,st.boom.y,PAL.danger,6,80);
+    puff(st.boom.x,st.boom.y,PAL.muted,10,10);
+  }
+  prevBoom=st.boom;
+  /* 入账：金币喷泉 + 浮字 */
+  if(st.money>prevMoney){
+    puff(GM.PX,GM.GROUND-6,MAT.gold,10,90); //素材
+    if(st.pop)addFloat(st.pop,PAL.deep);
+  }
+  prevMoney=st.money;
+  var i;
+  for(i=parts.length-1;i>=0;i--){
+    var p=parts[i];p.vy+=420*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life+=dt;
+    if(p.life>=p.ttl)parts.splice(i,1);
+  }
+  for(i=floats.length-1;i>=0;i--){
+    var f=floats[i];f.life+=dt;
+    if(f.life>=f.ttl)floats.splice(i,1);
+  }
+  if(st.over)endLevel();
+}
+/* ---------- 绘制 ---------- */
+function poly(x,y,pts){
+  ctx.beginPath();ctx.moveTo(x+pts[0][0],y+pts[0][1]);
+  for(var i=1;i<pts.length;i++)ctx.lineTo(x+pts[i][0],y+pts[i][1]);
+  ctx.closePath();
+}
+function drawItem(it,x,y){
+  x=x===undefined?it.x:x;y=y===undefined?it.y:y;
+  var r=it.r;
+  if(it.t==="g"){
+    poly(x,y,it.pts);
+    ctx.fillStyle=MAT.gold;ctx.fill(); //素材
+    ctx.lineWidth=1.5;ctx.strokeStyle=MAT.goldLo;ctx.stroke(); //素材
+    ctx.fillStyle="rgba(255,255,255,.4)";//恒白高光
+    ctx.beginPath();ctx.ellipse(x-r*0.3,y-r*0.32,r*0.3,r*0.18,-0.6,0,7);ctx.fill();
+  }else if(it.t==="s"){
+    poly(x,y,it.pts);
+    ctx.fillStyle=MAT.stone;ctx.fill(); //素材
+    ctx.lineWidth=1.5;ctx.strokeStyle=MAT.stoneLo;ctx.stroke(); //素材
+    ctx.fillStyle="rgba(0,0,0,.15)";//恒暗斑纹
+    ctx.beginPath();ctx.arc(x+r*0.22,y-r*0.1,r*0.16,0,7);ctx.fill();
+    ctx.beginPath();ctx.arc(x-r*0.3,y+r*0.24,r*0.12,0,7);ctx.fill();
+  }else if(it.t==="d"){
+    ctx.beginPath();
+    ctx.moveTo(x,y-r*1.25);ctx.lineTo(x+r*0.95,y);ctx.lineTo(x,y+r*1.25);ctx.lineTo(x-r*0.95,y);
+    ctx.closePath();
+    ctx.fillStyle=MAT.dia;ctx.fill(); //素材
+    ctx.lineWidth=1.5;ctx.strokeStyle=MAT.diaLo;ctx.stroke(); //素材
+    ctx.strokeStyle="rgba(255,255,255,.75)";//恒白棱线
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x-r*0.95,y);ctx.lineTo(x+r*0.95,y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,y-r*1.25);ctx.lineTo(x,y+r*1.25);ctx.stroke();
+    ctx.fillStyle="rgba(255,255,255,.95)";//恒白闪光
+    ctx.fillRect(x-r*0.62,y-r*0.5,2,6);
+    ctx.fillRect(x-r*0.46,y-r*0.66,2,6);
+  }else{
+    ctx.fillStyle=MAT.bag; //素材
+    ctx.beginPath();ctx.ellipse(x,y+r*0.18,r*0.92,r*1.0,0,0,7);ctx.fill();
+    ctx.lineWidth=1.5;ctx.strokeStyle=MAT.bagLo;ctx.stroke(); //素材
+    ctx.fillStyle=MAT.bagLo; //素材
+    ctx.fillRect(x-r*0.34,y-r*0.98,r*0.68,r*0.5);
+    ctx.beginPath();ctx.arc(x,y-r*1.02,r*0.26,0,7);ctx.fill();
+    ctx.fillStyle="#FFF";//恒白袋印
+    ctx.font="700 12px "+sysFont();
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText("?",x,y+r*0.24);
+  }
+}
+function draw(ts){
+  ctx.fillStyle=PAL.bg;
+  ctx.fillRect(-8,-8,GM.W+16,GM.GROUND+8);
+  var ug=ctx.createLinearGradient(0,GM.GROUND,0,GM.H);
+  ug.addColorStop(0,PAL.ugTop);
+  ug.addColorStop(1,PAL.ugBot);
+  ctx.fillStyle=ug;
+  ctx.fillRect(-8,GM.GROUND,GM.W+16,GM.H-GM.GROUND+8);
+  ctx.fillStyle=MAT.gnd;ctx.fillRect(-8,GM.GROUND,GM.W+16,14); //素材
+  ctx.fillStyle=MAT.grass;ctx.fillRect(-8,GM.GROUND,GM.W+16,4); //素材
+  ctx.fillStyle=MAT.gndLo;ctx.fillRect(-8,GM.GROUND+14,GM.W+16,2); //素材
+  ctx.fillStyle=PAL.dot;
+  for(var d=0;d<dots.length;d++){
+    ctx.globalAlpha=0.5;
+    ctx.beginPath();ctx.arc(dots[d].x,dots[d].y,dots[d].r,0,7);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  if(!st)return;
+  /* 摆幅边界虚线（帮助瞄准） */
+  ctx.strokeStyle=PAL.guide;
+  ctx.globalAlpha=0.35;
+  ctx.lineWidth=1;
+  ctx.setLineDash([5,7]);
+  for(var s=-1;s<=1;s+=2){
+    var gl=GM.reachLen(s*GM.AMP);
+    var gp=GM.tipPos(s*GM.AMP,gl);
+    ctx.beginPath();ctx.moveTo(GM.PX,GM.PY);ctx.lineTo(gp.x,gp.y);ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.globalAlpha=1;
+  /* 场上物品 */
+  for(var i=0;i<st.items.length;i++)if(st.items[i].alive)drawItem(st.items[i]);
+  /* 绳与钩 */
+  var tip=GM.tipPos(st.ang,st.len);
+  ctx.strokeStyle=PAL.muted;
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(GM.PX,GM.PY);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+  ctx.save();
+  ctx.translate(tip.x,tip.y);
+  ctx.rotate(-st.ang);
+  ctx.fillStyle=PAL.text;
+  ctx.fillRect(-4,-2,8,5);
+  ctx.strokeStyle=PAL.text;
+  ctx.lineWidth=2.5;
+  ctx.lineCap="round";
+  ctx.beginPath();
+  if(st.item)ctx.arc(0,7,5,-0.35,Math.PI+0.35);
+  else ctx.arc(0,8,5,0.1,Math.PI-0.1);
+  ctx.stroke();
+  ctx.restore();
+  if(st.item){
+    var cp=GM.tipPos(st.ang,st.len+10+st.item.r);
+    drawItem(st.item,cp.x,cp.y);
+  }
+  /* 井架与矿工 */
+  ctx.strokeStyle=PAL.muted;
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(GM.PX-16,GM.GROUND);ctx.lineTo(GM.PX,GM.PY-2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(GM.PX+16,GM.GROUND);ctx.lineTo(GM.PX,GM.PY-2);ctx.stroke();
+  ctx.fillStyle=PAL.text;
+  ctx.beginPath();ctx.arc(GM.PX,GM.PY,4,0,7);ctx.fill();
+  ctx.fillStyle=PAL.bg;
+  ctx.beginPath();ctx.arc(GM.PX,GM.PY,1.6,0,7);ctx.fill();
+  ctx.fillStyle=PAL.primary; //矿工工装
+  ctx.fillRect(GM.PX+16,GM.GROUND-20,12,16);
+  ctx.fillStyle=MAT.skin; //素材
+  ctx.beginPath();ctx.arc(GM.PX+22,GM.GROUND-25,5.5,0,7);ctx.fill();
+  ctx.fillStyle=PAL.text; //安全帽
+  ctx.fillRect(GM.PX+15,GM.GROUND-32,14,5);
+  ctx.fillStyle=PAL.primary;
+  ctx.fillRect(GM.PX+16,GM.GROUND-27,12,3);
+  /* 粒子 */
+  for(var p=0;p<parts.length;p++){
+    var pt=parts[p];
+    ctx.globalAlpha=Math.max(0,1-pt.life/pt.ttl);
+    ctx.fillStyle=pt.c;
+    ctx.beginPath();ctx.arc(pt.x,pt.y,pt.r,0,7);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  /* 爆炸光圈 */
+  if(st.boom){
+    var k=1-st.boom.t/0.4;
+    ctx.globalAlpha=Math.max(0,1-k);
+    ctx.strokeStyle=PAL.warning;
+    ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(st.boom.x,st.boom.y,4+k*26,0,7);ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+  /* 浮字与入账提示 */
+  ctx.font="700 14px "+sysFont();
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  for(var f=0;f<floats.length;f++){
+    var fl=floats[f];
+    ctx.globalAlpha=Math.max(0,1-fl.life/fl.ttl);
+    ctx.fillStyle=fl.c;
+    ctx.fillText(fl.txt,GM.PX,GM.GROUND-30-f.life*18);
+  }
+  if(st.pop&&st.popT>0){
+    ctx.globalAlpha=Math.min(1,st.popT*2);
+    ctx.fillStyle=PAL.warning;
+    ctx.font="600 14px "+sysFont();
+    ctx.fillText(st.pop,clamp(tip.x,50,GM.W-50),clamp(tip.y-20,70,GM.H-10));
+    ctx.globalAlpha=1;
+  }
+  ctx.globalAlpha=1;
+}
+/* ---------- 主循环 ---------- */
+var last=0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(!last)last=ts;
+  var dt=Math.min(0.033,(ts-last)/1000||0);
+  last=ts;
+  if(state==="running")update(dt);
+  if(endKind){
+    endTimer-=dt;
+    if(endTimer<=0){showOverlay(endKind==="win"?"won":"lost");endKind=null;}
+  }
+  draw(ts);
+  syncHud();
+}
+/* ---------- 输入 ---------- */
+function tryDrop(){
+  if(state!=="running")return;
+  if(!st||st.over)return;
+  if(st.mode==="swing"){input.drop=true;}
+  else if(st.mode==="ext"){say("钩子正伸出，稍等它收回");}
+}
+function tryBoom(){
+  if(state!=="running"||!st||st.over)return;
+  if(st.mode==="ret"&&st.item&&st.dyn>0){input.boom=true;}
+  else if(st.dyn<=0){say("炸药用完了");}
+  else{say("只有钩住物品收回时才能引爆");}
+}
+$("btnDrop").addEventListener("click",tryDrop);
+$("btnBoom").addEventListener("click",tryBoom);
+cv.addEventListener("pointerdown",function(e){
+  tryDrop();
+  e.preventDefault();
+});
+$("btnPause").addEventListener("click",function(){
+  if(state==="running")pauseGame();
+  else if(state==="paused")resumeGame();
+});
+window.addEventListener("keydown",function(e){
+  if(e.key===" "||e.key==="Enter"){tryDrop();e.preventDefault();}
+  else if(e.key==="b"||e.key==="B")tryBoom();
+  else if(e.key==="p"||e.key==="P"){
+    if(state==="running")pauseGame();else if(state==="paused")resumeGame();
+  }
+});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&state==="running")pauseGame();
+});
+/* ---------- 启动 ---------- */
+resize();
+loadLevel(Math.min(saveData.lv,LEVELS.length-1));
+buildChips();
+showOverlay("ready");
+requestAnimationFrame(frame);
+syncLevelsFromServer();
+syncSaveFromServer();
+})();
+</script>
+</body>
+</html>

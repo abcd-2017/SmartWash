@@ -21,7 +21,18 @@ const STRICT = new Set([
   "mahjong-solitaire", "xiangqi",
   "suika", "klotski", "pipes",
   "maze", "game24", "whack-a-mole",
-  "pitch-pot", "idiom-chain", "tile-tap"
+  "pitch-pot", "idiom-chain", "tile-tap",
+  "jump-jump",
+  "stack-match",
+  "gold-miner",
+  "chai-zi",
+  "draw-save",
+  "pull-pin",
+  "stack-up",
+  "stick-bridge",
+  "hanoi",
+  "tangram",
+  "one-stroke", "battle-city"
 ]);
 
 // §2 基础 token + §3 已登记素材 token 前缀

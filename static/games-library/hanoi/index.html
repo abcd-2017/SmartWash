@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>汉诺塔</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（UI 壳全走 token，按需定义）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#fff;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.tight { color: var(--g-danger); }
+  /* 游戏板：DOM 自绘，颜色全走 var(--g-*) */
+  .stage { display: flex; justify-content: center; }
+  .board { position: relative; width: 100%; max-width: 440px; }
+  .pegHit { position: absolute; top: 0; bottom: 0; border: 0; padding: 0; margin: 0; background: transparent; border-radius: 10px; cursor: pointer; font: inherit; }
+  .pegHit.on { background: var(--g-primary-soft); }
+  .pegHit.shake { animation: shake .3s ease; }
+  @keyframes shake { 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } }
+  .pole { position: absolute; width: 8px; border-radius: 4px; background: var(--g-border); pointer-events: none; }
+  .pole.on { background: var(--g-primary-deep); }
+  .baseBar { position: absolute; left: 0; right: 0; bottom: 0; height: 12px; border-radius: 10px; background: var(--g-surface2); pointer-events: none; }
+  .goalTip { position: absolute; font-size: 12px; color: var(--g-primary-deep); pointer-events: none; line-height: 1; }
+  .goalFlag { position: absolute; width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid var(--g-primary-deep); pointer-events: none; }
+  .disk { position: absolute; height: 20px; border-radius: 8px; pointer-events: none; transition: left .12s ease, top .12s ease; box-shadow: inset 0 2px 0 rgba(255,255,255,.28); }
+  .disk.sel { outline: 2px solid var(--g-primary-deep); outline-offset: 1px; }
+  /* 盘色梯度（玩法素材：大→小循环结构 token，深浅色自动适配） */
+  .d1 { background: var(--g-warning); } .d2 { background: var(--g-water); } .d3 { background: var(--g-on-soft); }
+  .d4 { background: var(--g-primary); } .d5 { background: var(--g-primary-deep); } .d6 { background: var(--g-warning); }
+  .d7 { background: var(--g-water); } .d8 { background: var(--g-primary); } .d9 { background: var(--g-on-soft); }
+  .d10 { background: var(--g-primary-deep); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: var(--g-on-primary);
+    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .stars { font-size: 28px; letter-spacing: 6px; margin: 2px 0 8px; color: var(--g-border); }
+  .panel .stars .fill { color: var(--g-warning); }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 18px; }
+  .panel .btn { width: 100%; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">点柱选盘 · 再点目标柱移动 · 全部移到带旗的柱</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/1</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">最优</span><span class="val" id="stOpt">-</span></div>
+    <div class="stat"><span class="label">剩余</span><span class="val" id="stLeft">-</span></div>
+  </div>
+  <div class="stage" id="stage"><div class="board" id="board" aria-label="汉诺塔棋盘"></div></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">先点一根柱子选中顶盘，再点目标柱移动</p>
+  <div class="tools">
+    <button class="btn ghost" id="btnPrev">上一关</button>
+    <button class="btn ghost" id="btnReset">重玩本关</button>
+    <button class="btn" id="btnNext">下一关</button>
+  </div>
+  <p class="foot">大盘不可压小盘 · 步数等于最优得 3 星，不超 1.5 倍得 2 星 · 进度自动保存</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <div class="stars" id="ovStars"><span>★</span><span>★</span><span>★</span></div>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ========== 汉诺塔引擎（纯函数；生成器/校验器经 HN-ENGINE 块逐字提取同一份） ========== */
+/*HN-ENGINE-BEGIN*/
+var HN=(function(){
+  /* 盘号 1..n（1 最小），柱号内部 0/1/2；pegOf[d]=盘 d 所在柱 */
+  function layoutToPegOf(layout){ /* layout: 3 元素数组，每柱从底到顶列盘号 */
+    var pegOf=[];
+    for(var p=0;p<3;p++)for(var i=0;i<layout[p].length;i++)pegOf[layout[p][i]]=p;
+    return pegOf;
+  }
+  function pegOfToLayout(pegOf,n){ /* 输出与 layout 同约定：每柱从底(大)到顶(小) */
+    var l=[[],[],[]];
+    for(var d=n;d>=1;d--)l[pegOf[d]].push(d);
+    return l;
+  }
+  function encodeState(pegOf,n){
+    var s=0;
+    for(var d=1;d<=n;d++)s+=pegOf[d]*Math.pow(3,d-1);
+    return s;
+  }
+  /* 任意合法状态 → 全塔 target 的最优步数（贪心递推，可证最优；BFS 全量复核见校验器） */
+  function optSteps(pegOf,n,target){
+    var s=0,t=target;
+    for(var k=n;k>=1;k--){
+      var p=pegOf[k];
+      if(p!==t){ s+=1<<(k-1); t=3-p-t; }
+    }
+    return s;
+  }
+  /* 任意合法状态 → 全塔 target 的最优移动序列 [{d,from,to}...] */
+  function solveSeq(pegOf,n,target){
+    var cur=pegOf.slice(),seq=[];
+    function tower(k,from,to){ /* 盘 1..k 全在 from，经典搬运到 to */
+      if(k<1)return;
+      var aux=3-from-to;
+      tower(k-1,from,aux);
+      seq.push({d:k,from:from,to:to});cur[k]=to;
+      tower(k-1,aux,to);
+    }
+    function rec(k,t){
+      if(k<1)return;
+      var p=cur[k];
+      if(p!==t){
+        var o=3-p-t;
+        rec(k-1,o);
+        seq.push({d:k,from:p,to:t});cur[k]=t;
+        tower(k-1,o,t);
+      } else rec(k-1,t);
+    }
+    rec(n,target);
+    return seq;
+  }
+  /* 全空间 BFS（从目标态反向，移动可逆）：返回 dist 数组，下标 = encodeState */
+  function bfsAll(n,target){
+    var pw=[],i;
+    for(i=0;i<=n;i++)pw.push(Math.round(Math.pow(3,i)));
+    var total=pw[n],dist=new Int32Array(total).fill(-1);
+    var pegOf=new Int8Array(n+1),start=0;
+    for(i=1;i<=n;i++){pegOf[i]=target;start+=target*pw[i-1];}
+    dist[start]=0;
+    var q=[start],head=0,top=[0,0,0];
+    while(head<q.length){
+      var s=q[head++],d;
+      top[0]=top[1]=top[2]=-1;
+      var r=s;
+      for(d=1;d<=n;d++){var p=r%3;if(top[p]<0)top[p]=d;r=(r-p)/3;} /* 顶盘=柱上最小盘 */
+      for(var a=0;a<3;a++){
+        var disc=top[a];
+        if(disc<0)continue;
+        for(var b=0;b<3;b++){
+          if(b===a)continue;
+          if(top[b]>=0&&top[b]<disc)continue;
+          var ns=s-a*pw[disc-1]+b*pw[disc-1]; /* 盘 disc 从柱 a 挪到柱 b */
+          if(dist[ns]<0){dist[ns]=dist[s]+1;q.push(ns);}
+        }
+      }
+    }
+    return dist;
+  }
+  return {layoutToPegOf:layoutToPegOf,pegOfToLayout:pegOfToLayout,encodeState:encodeState,
+    optSteps:optSteps,solveSeq:solveSeq,bfsAll:bfsAll};
+})();
+/*HN-ENGINE-END*/
+/* ---------- 包内默认关卡（与 .levels.json 前 12 关一致；DB 下发优先） ---------- */
+var DEFAULT_LEVELS=[{"name":"入门·三盘左移中","disks":3,"startPeg":1,"targetPeg":2,"variant":"classic"},{"name":"入门·三盘左移右","disks":3,"startPeg":1,"targetPeg":3,"variant":"classic"},{"name":"入门·三盘中移左","disks":3,"startPeg":2,"targetPeg":1,"variant":"classic"},{"name":"入门·三盘中移右","disks":3,"startPeg":2,"targetPeg":3,"variant":"classic"},{"name":"入门·三盘右移左","disks":3,"startPeg":3,"targetPeg":1,"variant":"classic"},{"name":"入门·三盘右移中","disks":3,"startPeg":3,"targetPeg":2,"variant":"classic"},{"name":"入门·三盘散盘甲","disks":3,"startPeg":1,"targetPeg":3,"variant":"random","layout":[[3,1],[],[2]]},{"name":"入门·三盘散盘乙","disks":3,"startPeg":1,"targetPeg":3,"variant":"random","layout":[[3],[1],[2]]},{"name":"入门·三盘散盘丙","disks":3,"startPeg":2,"targetPeg":1,"variant":"random","layout":[[],[3,2],[1]]},{"name":"入门·三盘限步中移右","disks":3,"startPeg":2,"targetPeg":3,"variant":"classic","limit":13},{"name":"入门·三盘散盘限步甲","disks":3,"startPeg":1,"targetPeg":2,"variant":"random","layout":[[3,2,1],[],[]],"limit":11},{"name":"入门·四盘左移中","disks":4,"startPeg":1,"targetPeg":2,"variant":"classic"}];
+var LEVELS=DEFAULT_LEVELS.slice();
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底；任一条非法整批放弃） ---------- */
+var LEVELS_KEY="sw.hanoi.v1.levels",LEVELS_VER_KEY="sw.hanoi.v1.levels.ver";
+function parseHanoiLevels(res){
+  if(!res||typeof res!=="object"||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var out=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var it=res.levels[i];
+    if(!it||typeof it!=="object")return null;
+    var no=(typeof it.levelNo==="number"&&isFinite(it.levelNo)&&it.levelNo>0&&it.levelNo%1===0)?it.levelNo:i+1;
+    if(seen[no])return null;
+    seen[no]=1;
+    var d;
+    try{d=JSON.parse(it.dataJson);}catch(e){return null;}
+    if(!d||typeof d!=="object"||Array.isArray(d))return null;
+    if(typeof d.name!=="string"||!d.name||d.name.length>32)return null;
+    if(typeof d.disks!=="number"||!isFinite(d.disks)||d.disks%1!==0||d.disks<3||d.disks>10)return null;
+    var n=d.disks;
+    if(typeof d.startPeg!=="number"||!(d.startPeg>=1&&d.startPeg<=3&&d.startPeg%1===0))return null;
+    if(typeof d.targetPeg!=="number"||!(d.targetPeg>=1&&d.targetPeg<=3&&d.targetPeg%1===0))return null;
+    if(d.startPeg===d.targetPeg)return null;
+    if(d.variant!=="classic"&&d.variant!=="random")return null;
+    var pegOf,layout;
+    if(d.variant==="classic"){
+      if(d.layout!==undefined)return null;
+      pegOf=[];for(var k=1;k<=n;k++)pegOf[k]=d.startPeg-1;
+    }else{
+      if(!Array.isArray(d.layout)||d.layout.length!==3)return null;
+      var used={};
+      for(var p=0;p<3;p++){
+        if(!Array.isArray(d.layout[p]))return null;
+        for(var j=0;j<d.layout[p].length;j++){
+          var v=d.layout[p][j];
+          if(typeof v!=="number"||!(v>=1&&v<=n&&v%1===0)||used[v])return null;
+          used[v]=1;
+          if(j>0&&d.layout[p][j-1]<=v)return null; /* 柱内从底到顶严格递减（塔性质） */
+        }
+      }
+      for(var dv=1;dv<=n;dv++)if(!used[dv])return null;
+      pegOf=HN.layoutToPegOf(d.layout);
+      if(pegOf[n]!==d.startPeg-1)return null; /* startPeg=最大盘所在柱 */
+    }
+    var opt=HN.optSteps(pegOf,n,d.targetPeg-1);
+    var limit=null;
+    if(d.limit!==undefined&&d.limit!==null){
+      if(typeof d.limit!=="number"||!isFinite(d.limit)||d.limit%1!==0||d.limit<opt||d.limit>opt*2)return null;
+      limit=d.limit;
+    }
+    out.push({no:no,name:d.name,disks:n,startPeg:d.startPeg,targetPeg:d.targetPeg,
+      variant:d.variant,layout:layout||d.layout||null,limit:limit,opt:opt});
+  }
+  out.sort(function(a,b){return a.no-b.no;});
+  return out;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return;}
+  }catch(e){}
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("hanoi").then(function(res){
+    var list=parseHanoiLevels(res);
+    if(!list)return;                        // 任一条非法 → 整批放弃
+    if(applyLevels(list,res&&res.version?res.version:0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      startLevel(cur);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（进度 + 每关历史最佳星级） ---------- */
+var KEY="sw.hanoi.v1";
+function loadSave(){
+  try{
+    var s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s==="object")return{lv:Math.max(0,parseInt(s.lv,10)||0),stars:s.stars&&typeof s.stars==="object"?s.stars:{}};
+  }catch(e){}
+  return{lv:0,stars:{}};
+}
+function save(){
+  var data={lv:cur,stars:stars};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("hanoi",data).catch(function(){});
+}
+var saveData=loadSave();
+var stars=saveData.stars;
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("hanoi").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rlv=parseInt(r.lv,10)||0;
+      if(rlv>saveData.lv){saveData.lv=Math.min(LEVELS.length-1,rlv);changed=true;}
+      if(r.stars&&typeof r.stars==="object"){
+        for(var k in r.stars){
+          var v=parseInt(r.stars[k],10);
+          if(!(v>=1&&v<=3))continue;
+          if(stars[k]==null||v>stars[k]){stars[k]=v;changed=true;}
+        }
+      }
+      if(changed){saveData.stars=stars;save();startLevel(Math.min(saveData.lv,LEVELS.length-1));}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- DOM 与状态 ---------- */
+function $(id){return document.getElementById(id)}
+var board=$("board"),stage=$("stage");
+var cur=0,pegs=[[],[],[]],disks=0,steps=0,sel=-1,won=false,over=false,targetPeg=2;
+var zw=0,dh=20,boardH=0,baseH=12;
+var diskEls={};
+/* ---------- 规则 ---------- */
+function starsFor(s,opt){ if(s<=opt)return 3; if(s<=Math.ceil(opt*1.5))return 2; return 1; }
+/* ---------- 界面 ---------- */
+function say(t){$("msg").textContent=t}
+function updateStats(){
+  var L=LEVELS[cur];
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stMoves").textContent=steps;
+  $("stOpt").textContent=L.opt;
+  var left=$("stLeft");
+  if(L.limit){left.textContent=L.limit-steps;left.classList.toggle("tight",L.limit-steps<=3);}
+  else{left.textContent="-";left.classList.remove("tight");}
+  $("btnPrev").disabled=cur<=0;
+  $("btnNext").disabled=cur>=LEVELS.length-1;
+}
+function renderSel(){
+  var hits=board.querySelectorAll(".pegHit"),poles=board.querySelectorAll(".pole");
+  for(var p=0;p<3;p++){
+    hits[p].classList.toggle("on",sel===p);
+    poles[p].classList.toggle("on",sel===p);
+  }
+  for(var d=1;d<=disks;d++){
+    var el=diskEls[d];
+    if(el)el.classList.toggle("sel",sel>=0&&pegs[sel][pegs[sel].length-1]===d);
+  }
+}
+function diskW(d,n){
+  var maxW=zw-12,minW=Math.max(30,Math.round(zw*0.30));
+  return Math.round(minW+(maxW-minW)*(n>1?(d-1)/(n-1):0));
+}
+function placeDisk(d){
+  var el=diskEls[d];
+  if(!el)return;
+  var p=-1,s=-1;
+  for(var i=0;i<3&&p<0;i++)for(var j=0;j<pegs[i].length;j++)if(pegs[i][j]===d){p=i;s=j;break;}
+  var cx=zw*p+zw/2,w=parseInt(el.dataset.w,10);
+  el.style.left=(cx-w/2)+"px";
+  el.style.top=(boardH-baseH-(s+1)*dh)+"px";
+}
+/* ---------- 流程 ---------- */
+function startLevel(n){
+  cur=n;var L=LEVELS[n];
+  if(!L)return;
+  if(L.opt==null){ /* 包内默认关/旧缓存缺 opt 时惰性补算 */
+    var pg;
+    if(L.variant==="random"&&Array.isArray(L.layout))pg=HN.layoutToPegOf(L.layout);
+    else{pg=[];for(var q=1;q<=L.disks;q++)pg[q]=L.startPeg-1;}
+    L.opt=HN.optSteps(pg,L.disks,L.targetPeg-1);
+  }
+  disks=L.disks;targetPeg=L.targetPeg-1;steps=0;sel=-1;won=false;over=false;
+  pegs=[[],[],[]];
+  if(L.variant==="random"){pegs=L.layout.map(function(a){return a.slice();});}
+  else{for(var d=disks;d>=1;d--)pegs[L.startPeg-1].push(d);} /* pegs 约定：数组末尾=顶（大在下） */
+  buildBoard();
+  hideOverlay();
+  say("第"+(n+1)+"关 · "+(L.name||"")+" · 把全部盘子移到带旗的柱子");
+  updateStats();
+  save(); /* 切关即持久化所在关（重开回到最后一关） */
+}
+function buildBoard(){
+  board.innerHTML="";
+  diskEls={};
+  var W=stage.clientWidth||360;
+  zw=W/3;
+  dh=Math.max(16,Math.min(22,Math.floor(210/disks)));
+  boardH=disks*dh+baseH+26;
+  board.style.height=boardH+"px";
+  for(var p=0;p<3;p++){
+    (function(p){
+      var hit=document.createElement("button");
+      hit.className="pegHit";hit.type="button";
+      hit.style.left=(p*zw+2)+"px";hit.style.width=(zw-4)+"px";
+      hit.setAttribute("aria-label","第"+(p+1)+"根柱子");
+      hit.addEventListener("click",function(){tapPeg(p);});
+      board.appendChild(hit);
+      var pole=document.createElement("div");
+      pole.className="pole";
+      pole.style.left=(p*zw+zw/2-4)+"px";pole.style.top="6px";pole.style.height=(boardH-baseH-6)+"px";
+      board.appendChild(pole);
+    })(p);
+  }
+  var tip=document.createElement("div");
+  tip.className="goalTip";tip.textContent="目标";
+  tip.style.left=(targetPeg*zw+zw/2-14)+"px";tip.style.top="0px";
+  board.appendChild(tip);
+  var flag=document.createElement("div");
+  flag.className="goalFlag";
+  flag.style.left=(targetPeg*zw+zw/2-7)+"px";flag.style.top=(boardH-baseH-6)+"px";
+  board.appendChild(flag);
+  var base=document.createElement("div");
+  base.className="baseBar";
+  board.appendChild(base);
+  for(var d=1;d<=disks;d++){
+    var el=document.createElement("div");
+    el.className="disk d"+d;
+    var w=diskW(d,disks);
+    el.dataset.w=w;
+    el.style.width=w+"px";el.style.height=dh+"px";
+    diskEls[d]=el;
+    board.appendChild(el);
+  }
+  for(var i=0;i<3;i++)for(var j=0;j<pegs[i].length;j++)placeDisk(pegs[i][j]);
+  renderSel();
+}
+function tapPeg(p){
+  if(won||over)return;
+  if(sel<0){
+    if(!pegs[p].length){say("这根柱子上没有盘子，选一根有盘的柱子");return;}
+    sel=p;renderSel();say("已选中第"+(p+1)+"根柱的顶盘，再点目标柱移动");
+    return;
+  }
+  if(sel===p){sel=-1;renderSel();say("已取消选中");return;}
+  var moving=pegs[sel][pegs[sel].length-1];
+  var top=pegs[p][pegs[p].length-1];
+  if(top!==undefined&&moving>top){
+    say("大盘不能压在小盘上，换个柱子试试");
+    var hits=board.querySelectorAll(".pegHit");
+    hits[p].classList.remove("shake");void hits[p].offsetWidth;hits[p].classList.add("shake");
+    return;
+  }
+  pegs[sel].pop();pegs[p].push(moving);
+  steps++;sel=-1;
+  placeDisk(moving);renderSel();updateStats();
+  if(pegs[targetPeg].length===disks){onWin();return;}
+  var L=LEVELS[cur];
+  if(L.limit&&steps>=L.limit){onFail();return;}
+  say(L.limit?("还可走 "+(L.limit-steps)+" 步"):"继续，步数越少星越多");
+}
+function onWin(){
+  won=true;sel=-1;renderSel();
+  var L=LEVELS[cur],st=starsFor(steps,L.opt),ln=cur+1;
+  var rec=stars[ln]==null||st>stars[ln];
+  if(rec){stars[ln]=st;save();}
+  updateStats();
+  var isLast=cur>=LEVELS.length-1;
+  $("ovTitle").textContent="过关！";
+  var sp=$("ovStars").children;
+  for(var i=0;i<3;i++)sp[i].className=i<st?"fill":"";
+  $("ovDesc").innerHTML="本关 <b>"+steps+"</b> 步 · 最优 <b>"+L.opt+"</b> 步"+(L.limit?" · 限步 "+L.limit:"")+(rec?"<br>新纪录！":"");
+  $("ovBtn").textContent=isLast?"再玩一遍":"下一关";
+  showOverlay();
+  if(GB.available)GB.reportScore("hanoi",{metricValue:ln,metricExtra:steps}).catch(function(){});
+}
+function onFail(){
+  over=true;sel=-1;renderSel();
+  $("ovTitle").textContent="步数用完了";
+  $("ovStars").style.display="none";
+  $("ovDesc").innerHTML="限步 <b>"+LEVELS[cur].limit+"</b> 步内没能完成<br>对照最优 <b>"+LEVELS[cur].opt+"</b> 步再试一次";
+  $("ovBtn").textContent="重试本关";
+  showOverlay();
+}
+function showOverlay(){$("overlay").classList.add("show")}
+function hideOverlay(){$("overlay").classList.remove("show");$("ovStars").style.display="";}
+/* ---------- 按钮 ---------- */
+$("btnReset").addEventListener("click",function(){startLevel(cur);});
+$("btnPrev").addEventListener("click",function(){if(cur>0)startLevel(cur-1);});
+$("btnNext").addEventListener("click",function(){if(cur<LEVELS.length-1)startLevel(cur+1);});
+$("ovBtn").addEventListener("click",function(){
+  if(over){startLevel(cur);return;}
+  if(won){if(cur<LEVELS.length-1)startLevel(cur+1);else startLevel(0);}
+});
+/* ---------- 尺寸 ---------- */
+function resize(){
+  buildBoard();
+  for(var i=0;i<3;i++)for(var j=0;j<pegs[i].length;j++)placeDisk(pegs[i][j]);
+}
+window.addEventListener("resize",resize);
+/* ---------- 启动 ---------- */
+startLevel(Math.min(saveData.lv,LEVELS.length-1));
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+</body>
+</html>
