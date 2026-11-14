@@ -11,7 +11,10 @@ enum class DivMethod(val id: String) {
     ;
 
     companion object {
-        fun fromId(id: String): DivMethod = entries.first { it.id == id }
+        /** 未知 id 兜底为六爻（与 [DivCategory.fromId] 的 `?: OTHER` 同口径）：本地库当前
+         *  只写四枚举封闭值，但未来新增术数/数据迁移出现未知值时，UI 组合期直呼本函数的
+         *  when 名称/印章映射不得抛 NoSuchElementException 整页崩溃 */
+        fun fromId(id: String): DivMethod = entries.firstOrNull { it.id == id } ?: LIU_YAO
     }
 }
 

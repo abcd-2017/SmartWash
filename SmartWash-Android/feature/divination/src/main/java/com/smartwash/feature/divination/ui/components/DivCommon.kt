@@ -72,6 +72,11 @@ fun divSerif(
         lineHeight = lineHeight,
     )
 
+/** 印面文字：两主题恒为宣纸白 #EFE9DA（画板双板一致，与玄墨 textPrimary 同值）。
+ *  DivinationColorScheme 未提供印文专用 token（该色跨主题恒定、不随主题联动），
+ *  以模块级命名常量收敛、不在调用点写死字面量；规范若补录印文 token 再迁移 */
+private val SealTextInk = Color(0xFFEFE9DA)
+
 /** 朱砂印章：圆角方 + 22% 金描边，承担卦名印/类别印/落款印三职；
  *  flat=平涂深朱无描边（卦盘/卦历画板口径，双板一致 sealDeep） */
 @Composable
@@ -103,7 +108,7 @@ fun DivSeal(
         Text(
             text = text,
             style = divSerif(fontSize, FontWeight.Bold, 1.sp),
-            color = Color(0xFFEFE9DA),  // 印面文字两主题恒为宣纸白（画板双板一致）
+            color = SealTextInk,
         )
     }
 }
