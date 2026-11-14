@@ -4,7 +4,7 @@
 //         §4 裁撤残留检查、theme-color 同步检查、token 基线值比对、JS 颜色字面量检查、
 //         setChrome 位置检查、canvas 字号灰区单列、素材前缀补 st-。
 // 用法：node audit-gates.mjs [game…]（缺省审计全部游戏目录）
-import { readFileSync, readdirSync, statSync } from "fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 import { fileURLToPath } from "url";
 
@@ -32,7 +32,8 @@ const STRICT = new Set([
   "stick-bridge",
   "hanoi",
   "tangram",
-  "one-stroke", "battle-city"
+  "one-stroke", "battle-city",
+  "flow-connect", "bomberman", "poem-fill", "peg-solitaire", "matchstick"
 ]);
 
 // §2 基础 token + §3 已登记素材 token 前缀
@@ -390,8 +391,9 @@ function audit(name) {
 }
 
 const targets = process.argv.slice(2);
+// 仅把「含 index.html 的目录」当游戏审计；跳过 covers-src 等资源目录（非游戏）
 const games = targets.length ? targets : readdirSync(DIR).filter((d) =>
-  !d.startsWith(".") && !d.endsWith(".md") && statSync(join(DIR, d)).isDirectory());
+  !d.startsWith(".") && !d.endsWith(".md") && statSync(join(DIR, d)).isDirectory() && existsSync(join(DIR, d, "index.html")));
 
 let bad = 0, strictBad = 0;
 for (const g of games.sort()) {
