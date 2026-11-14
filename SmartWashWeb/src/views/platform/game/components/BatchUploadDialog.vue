@@ -14,7 +14,11 @@
         <p class="batch-guide-title">选择包含多个游戏目录的父目录，按规范逐个上传：</p>
         <p>
           · 每个游戏目录 = index.html（必须入口）+ README.md（可选，自动解析标题 / gameKey / 分类 /
-          玩法）+ 封面图（可选）
+          玩法）+ levels.json（可选，关卡文件，勾选后随上传自动导入）+ 封面图（可选）
+        </p>
+        <p>
+          · levels.json 为顶层数组（裸数据或 {data, levelNo?, name?…} 信封可混用）：
+          撞号的关卡序号覆盖、其余新增，现有关卡中超出文件范围的部分保留
         </p>
         <p>
           · 目录名 = gameKey（小写字母开头的 3-64 位字母数字-_）；不符合规范的目录自动跳过并给出原因
@@ -91,6 +95,76 @@
             <span v-if="row.skipReason" class="batch-reason">{{ row.skipReason }}</span>
           </template>
         </el-table-column>
+        <el-table-column min-width="170">
+          <template #header>
+            <!-- 列头全选：只作用于携带合法 levels.json 的行，部分勾选呈半选态 -->
+            <span class="levels-header">
+              关卡
+              <el-checkbox
+                :model-value="allLevelsChecked"
+                :indeterminate="someLevelsChecked"
+                :disabled="!importableRows.length || phase !== 'preview'"
+                aria-label="全选关卡导入"
+                @change="toggleAllLevels"
+              />
+            </span>
+          </template>
+          <template #default="{ row }">
+            <!-- 状态优先级：跳过 > 关卡文件异常 > 导入结果 > 预检处置 > 未携带 -->
+            <span v-if="row.skipReason" class="levels-none">—</span>
+            <el-tooltip
+              v-else-if="row.levels.error"
+              :content="row.levels.error"
+              placement="top"
+            >
+              <el-tag size="small" type="danger" effect="plain">关卡文件异常</el-tag>
+            </el-tooltip>
+            <template v-else-if="row.result">
+              <el-tag
+                v-if="row.levels.result?.ok"
+                size="small"
+                type="success"
+                effect="plain"
+              >
+                已导入 {{ row.levels.result.created + row.levels.result.updated }} 关
+              </el-tag>
+              <el-tooltip
+                v-else-if="row.levels.result"
+                :content="row.levels.result.message"
+                placement="top"
+              >
+                <el-tag size="small" type="danger" effect="plain">导入失败</el-tag>
+              </el-tooltip>
+              <span v-else class="levels-none">未导入</span>
+            </template>
+            <template v-else-if="row.levels.plan">
+              <div class="levels-cell">
+                <el-checkbox
+                  v-model="row.levels.checked"
+                  :disabled="phase !== 'preview'"
+                  :aria-label="`导入「${row.dirName}」的关卡`"
+                />
+                <el-tag
+                  v-if="row.levels.plan.created"
+                  size="small"
+                  type="success"
+                  effect="plain"
+                >
+                  新增 {{ row.levels.plan.created }} 关
+                </el-tag>
+                <el-tag
+                  v-if="row.levels.plan.updated"
+                  size="small"
+                  type="warning"
+                  effect="plain"
+                >
+                  覆盖 {{ row.levels.plan.updated }} 关
+                </el-tag>
+              </div>
+            </template>
+            <span v-else class="levels-none">— 未携带</span>
+          </template>
+        </el-table-column>
       </el-table>
 
       <div class="batch-actions">
@@ -123,10 +197,17 @@
 import { computed, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getGameList, uploadGame, uploadGameCover } from '@/api/game';
+import { batchImportGameLevels, getGameLevels } from '@/api/gameData';
 import { useConfirm } from '@/composables/useConfirm';
 import { formatFileSize } from '@/utils/format';
 import logger from '@/utils/logger';
 import { splitGameDirs, inspectGameDir, parseGameReadme, GAME_KEY_PATTERN } from '../gameDirectory';
+import {
+  MAX_IMPORT_FILE_SIZE,
+  parseLevelImportText,
+  planLevelImport,
+  buildChunkedPayloads,
+} from '../levelImportParser';
 
 /** 单游戏包上限，与后端 GamePackageValidator.MAX_ORIGINAL_BYTES 对齐 */
 const MAX_PACKAGE_BYTES = 10 * 1024 * 1024;
@@ -161,6 +242,23 @@ const failedCount = computed(
 const runPercent = computed(() =>
   uploadTargets.value.length ? Math.round((doneCount.value / uploadTargets.value.length) * 100) : 0
 );
+
+// 关卡列全选：只作用于携带合法 levels.json 的行（levels.plan 已算出）
+const importableRows = computed(() => queue.value.filter((it) => !it.skipReason && it.levels.plan));
+const checkedLevelsCount = computed(
+  () => importableRows.value.filter((it) => it.levels.checked).length
+);
+const allLevelsChecked = computed(
+  () => importableRows.value.length > 0 && checkedLevelsCount.value === importableRows.value.length
+);
+const someLevelsChecked = computed(
+  () => checkedLevelsCount.value > 0 && checkedLevelsCount.value < importableRows.value.length
+);
+const toggleAllLevels = (val) => {
+  importableRows.value.forEach((it) => {
+    it.levels.checked = !!val;
+  });
+};
 
 const handlePickDir = () => {
   dirInputRef.value?.click();
@@ -198,6 +296,8 @@ const handleDirChosen = async (event) => {
     const items = await Promise.all(
       groups.map(async ({ dirName, files: groupFiles }) => {
         const inspect = inspectGameDir(dirName, groupFiles, 2);
+        // levels.json（可选）：预检解析供预览与随上传导入；失败不跳过目录，游戏本体照常上传
+        const levels = { checked: true, items: null, plan: null, error: '', result: null };
         const item = {
           dirName,
           skipReason: inspect.ok ? '' : inspect.reason,
@@ -210,6 +310,7 @@ const handleDirChosen = async (event) => {
           sizeBytes: 0,
           willOverwrite: false,
           result: null, // { ok, message }：上传结果（done 页展示）
+          levels,
         };
         if (!inspect.ok) return item;
         if (inspect.indexHtml.size > MAX_PACKAGE_BYTES) {
@@ -224,6 +325,23 @@ const handleDirChosen = async (event) => {
           } catch (err) {
             logger.error('批量导入 README 读取失败:', dirName, err);
             // 读取失败不跳过：按目录名兜底继续（与无 README 同路径）
+          }
+        }
+        if (inspect.levelsFile) {
+          if (inspect.levelsFile.size > MAX_IMPORT_FILE_SIZE) {
+            levels.error = `关卡文件超过 ${MAX_IMPORT_FILE_SIZE / 1024 / 1024}MB 上限`;
+          } else {
+            try {
+              const parsed = parseLevelImportText(await inspect.levelsFile.text());
+              if (!parsed.ok) {
+                levels.error = parsed.reason;
+              } else {
+                levels.items = parsed.items;
+              }
+            } catch (err) {
+              logger.error('批量导入 levels.json 读取失败:', dirName, err);
+              levels.error = '关卡文件读取失败';
+            }
           }
         }
         item.gameKey = meta.gameKey;
@@ -255,6 +373,23 @@ const handleDirChosen = async (event) => {
     const existing = await fetchAllGameKeys();
     for (const it of items) {
       if (!it.skipReason) it.willOverwrite = existing.has(it.gameKey);
+    }
+
+    // 关卡分布预检：覆盖游戏拉现有关卡算「撞号覆盖 / 其余新增」；全新游戏按空表顺延分配序号。
+    // 现有关卡获取失败时该行关卡导入禁用（游戏本体不受影响）
+    for (const it of items) {
+      if (it.skipReason || !it.levels.items) continue;
+      if (it.willOverwrite) {
+        try {
+          it.levels.plan = planLevelImport(it.levels.items, await getGameLevels(it.gameKey));
+        } catch (err) {
+          logger.error('批量导入现有关卡获取失败:', `gameKey=${it.gameKey}`, err);
+          it.levels.items = null;
+          it.levels.error = '现有关卡获取失败，无法预览覆盖分布';
+        }
+      } else {
+        it.levels.plan = planLevelImport(it.levels.items, []);
+      }
     }
 
     queue.value = items;
@@ -325,6 +460,33 @@ const startUpload = async () => {
       });
       item.result = { ok: true };
       logger.info('批量导入游戏成功', `gameKey=${item.gameKey}`, `id=${res?.id ?? '-'}`);
+      // 关卡跟随导入（勾选行）：先游戏后关卡（后端 requireGame 要求游戏先入库），
+      // 按 500 一批串行提交；失败不回滚游戏上传，逐行独立展示可到关卡管理重试
+      if (item.levels.checked && item.levels.plan) {
+        try {
+          let created = 0;
+          let updated = 0;
+          const rows = item.levels.plan.rows.filter((r) => r.fate !== 'error');
+          for (const payload of buildChunkedPayloads(rows, {
+            gameKey: item.gameKey,
+            replaceAll: false,
+          })) {
+            const importRes = await batchImportGameLevels(payload);
+            created += importRes.created || 0;
+            updated += importRes.updated || 0;
+          }
+          item.levels.result = { ok: true, created, updated };
+          logger.info(
+            '批量导入关卡成功',
+            `gameKey=${item.gameKey}`,
+            `新增=${created}`,
+            `覆盖=${updated}`
+          );
+        } catch (err) {
+          logger.error('批量导入关卡失败:', `gameKey=${item.gameKey}`, err);
+          item.levels.result = { ok: false, message: err.message || '关卡导入失败' };
+        }
+      }
     } catch (err) {
       item.result = { ok: false, message: err.message || '上传失败' };
       logger.error('批量导入游戏失败:', `gameKey=${item.gameKey}`, err);
@@ -395,6 +557,24 @@ const handleClosed = () => {
   margin-left: 8px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+/* 关卡列：列头「关卡 + 全选」同行；单元格勾选框与处置 tag 对齐排布 */
+.levels-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.levels-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.levels-none {
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .batch-actions {
