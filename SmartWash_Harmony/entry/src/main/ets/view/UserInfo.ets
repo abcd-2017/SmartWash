@@ -27,6 +27,16 @@ function maskPhone(phone: string | null): string {
   return value
 }
 
+// ========== 头像滚动收缩停靠（scroll-driven docking）几何常量（对齐安卓 UserInfoPage.kt） ==========
+const TOP_BAR_HEIGHT: number = 72          // 顶栏高（标题 + 设置按钮）
+const AVATAR_ROW_HEIGHT: number = 80      // 头像行高：8 顶距 + 56 头像 + 16 底距
+const AVATAR_SIZE: number = 56            // 头像尺寸
+const DOCK_DISTANCE_BASE: number = 68     // 停靠行程基准（对齐顶栏内容中心 40vp）
+const TITLE_SHIFT: number = 40            // 标题右移让位量
+const NAME_SHIFT_BASE: number = 68        // 名字位移基准：左缘 = 头像右缘 + 12vp
+const NAME_SHIFT_PER_P: number = 28       // 名字位移随进度系数
+const AVATAR_DOCK_SHIFT: number = 14      // 停靠时头像水平左移量
+
 @Component
 export struct UserInfo {
   private scroller: Scroller = new Scroller()
@@ -43,6 +53,10 @@ export struct UserInfo {
   @State unreadCount: number = 0
   // 跨页刷新信号（自增 tick）：消息中心标记已读 / 全部已读成功后 bump
   @StorageLink(NOTICE_TICK_KEY) @Watch("onNoticeTick") noticeTick: number = 0
+  // 滚动收缩停靠进度 0..1（滚动驱动：0=展开，1=停靠）
+  @State progress: number = 0
+  // reduced motion：当前 SDK 无系统动画时长开关可读（同 divReduceMotion / labReduceMotion 决策），占位 false
+  private reduceMotion: boolean = false
 
   //监听用户信息刷新状态变化
   onUserInfoChange() {
@@ -110,6 +124,23 @@ export struct UserInfo {
     await this.refreshUserInfo()
     await this.loadUnreadCount()
     this.refreshing = false
+  }
+
+  /** 滚动驱动：读累计偏移换算进度（0..1），在 onScroll 中调用 */
+  private updateProgress(): void {
+    const offset = this.scroller.currentOffset()
+    const raw = offset.yOffset / DOCK_DISTANCE_BASE
+    this.progress = raw < 0 ? 0 : (raw > 1 ? 1 : raw)
+  }
+
+  /** 松手吸附：吸附到展开（0）或折叠（停靠行程）端点，避免停在中间态 */
+  private snapToEndpoint(): void {
+    const offset = this.scroller.currentOffset()
+    const target = offset.yOffset > DOCK_DISTANCE_BASE / 2 ? DOCK_DISTANCE_BASE : 0
+    if (Math.abs(offset.yOffset - target) > 1) {
+      // 立即跳转（无动画）：松手后只呈现展开/折叠两端点，不停在中间态
+      this.scroller.scrollTo({ xOffset: 0, yOffset: target })
+    }
   }
 
   // 选择图片并上传头像
@@ -187,17 +218,17 @@ export struct UserInfo {
           .height(24)
           .color($r('app.color.PRIMARY'))
       }
-      .width(56)
-      .height(56)
-      .borderRadius(28)
+      .width(AVATAR_SIZE)
+      .height(AVATAR_SIZE)
+      .borderRadius(AVATAR_SIZE / 2)
       .backgroundColor($r('app.color.PRIMARY_LIGHT'))
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
     } else if (this.avatarUrl !== null && this.avatarUrl !== "") {
       Image(this.avatarUrl)
-        .width(56)
-        .height(56)
-        .borderRadius(28)
+        .width(AVATAR_SIZE)
+        .height(AVATAR_SIZE)
+        .borderRadius(AVATAR_SIZE / 2)
         .objectFit(ImageFit.Cover)
     } else {
       Column() {
@@ -206,9 +237,9 @@ export struct UserInfo {
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor($r('app.color.ON_PRIMARY'))
       }
-      .width(56)
-      .height(56)
-      .borderRadius(28)
+      .width(AVATAR_SIZE)
+      .height(AVATAR_SIZE)
+      .borderRadius(AVATAR_SIZE / 2)
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
       .linearGradient({
@@ -268,339 +299,396 @@ export struct UserInfo {
   build() {
     // 下拉刷新（对齐安卓 PullToRefreshBox）：包裹滚动区，下拉触发 onRefresh 重拉用户信息
     Refresh({ refreshing: $$this.refreshing }) {
-    Scroll(this.scroller) {
-      Column() {
-        if (this.userInfo === null) {
-          if (this.loadFailed) {
-            // 首载失败（网络异常/401）：EmptyState + 重试，替代无限骨架（对齐规范 §3.6）
-            Column() {
-              EmptyState({ message: resString('user_info_1') }) {
-                AppButton({
-                  small: true,
-                  text: resString('retry'),
-                  variant: AppButtonVariant.SECONDARY,
-                  click: () => {
-                    this.refreshUserInfo()
+      Stack() {
+        // ========== 内容区（Scroll）：仅数据卡，不含标题/头像 ==========
+        Scroll(this.scroller) {
+          Column() {
+            if (this.userInfo === null) {
+              if (this.loadFailed) {
+                // 首载失败（网络异常/401）：EmptyState + 重试，替代无限骨架（对齐规范 §3.6）
+                Column() {
+                  EmptyState({ message: resString('user_info_1') }) {
+                    AppButton({
+                      small: true,
+                      text: resString('retry'),
+                      variant: AppButtonVariant.SECONDARY,
+                      click: () => {
+                        this.refreshUserInfo()
+                      }
+                    })
+                    .margin({ top: DesignDimens.SPACE_MD })
                   }
-                })
-                .margin({ top: DesignDimens.SPACE_MD })
+                }
+                .width("100%")
+                .layoutWeight(1)
+                .justifyContent(FlexAlign.Center)
+              } else {
+                // 首载骨架（对齐安卓 UserInfoPage.kt:180-195 LoadingState；回 tab/绑定/换头像后的刷新保留现有内容）
+                LoadingState()
               }
+            } else {
+              // ========== 数据卡（白底 GroupCard，对齐安卓 UserInfoPage.kt:359-436） ==========
+              Column() {
+                // 余额通栏在上（点击去充值）
+                Column() {
+                  // 显式行盒对齐安卓 Type.kt（D4）：bodySmall 12/16
+                  Text($r('app.string.wallet_balance'))
+                    .fontSize(DesignFontSize.CAPTION)
+                    .lineHeight(DesignFontSize.CAPTION + 4)
+                    .fontColor($r('app.color.TEXT_SECONDARY'))
+                  // 显式行盒对齐安卓 DataLarge 36/44；字重保持 BOLD（font.display 档，规范允许 700）
+                  Text(`¥${this.formatBalance()}`)
+                    .fontSize(DesignFontSize.DATA_LARGE)
+                    .lineHeight(DesignFontSize.DATA_LARGE + 8)
+                    .fontWeight(DesignFontWeight.BOLD)
+                    .fontFeature(DesignFontFeature.TNUM)
+                    .fontColor($r('app.color.PRIMARY_DARK'))
+                    .margin({ top: 4 })
+                }
+                .alignItems(HorizontalAlign.Start)
+                .width("100%")
+                .onClick(() => {
+                  pathStack.pushPathByName(RouteNames.RECHARGE, "")
+                })
+
+                // 下方券/单两半格各居中，中间 1×40 发丝线
+                Row() {
+                  Column() {
+                    // 行盒对齐安卓 Type.kt（D4）：AmountMedium 18/24、bodySmall 12/16
+                    Text(`${this.userInfo?.couponCount ?? 0}`)
+                      .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+                      .lineHeight(DesignFontSize.AMOUNT_MEDIUM + 6)
+                      .fontWeight(DesignFontWeight.SEMI_BOLD)
+                      .fontFeature(DesignFontFeature.TNUM)
+                      .fontColor($r('app.color.TEXT_PRIMARY'))
+                    Text($r('app.string.service_coupon'))
+                      .fontSize(DesignFontSize.CAPTION)
+                      .lineHeight(DesignFontSize.CAPTION + 4)
+                      .fontColor($r('app.color.TEXT_SECONDARY'))
+                      .margin({ top: 4 })
+                  }
+                  .layoutWeight(1)
+                  .height(48)
+                  .alignItems(HorizontalAlign.Center)
+                  .justifyContent(FlexAlign.Center)
+                  .onClick(() => {
+                    pathStack.pushPathByName(RouteNames.COUPON, null)
+                  })
+
+                  Column()
+                    .width(1)
+                    .height(40)
+                    .backgroundColor($r('app.color.HAIRLINE'))
+
+                  Column() {
+                    // 行盒对齐安卓 Type.kt（D4）：AmountMedium 18/24、bodySmall 12/16
+                    Text(`${this.userInfo?.orderCount ?? 0}`)
+                      .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+                      .lineHeight(DesignFontSize.AMOUNT_MEDIUM + 6)
+                      .fontWeight(DesignFontWeight.SEMI_BOLD)
+                      .fontFeature(DesignFontFeature.TNUM)
+                      .fontColor($r('app.color.TEXT_PRIMARY'))
+                    Text($r('app.string.home_total_orders'))
+                      .fontSize(DesignFontSize.CAPTION)
+                      .lineHeight(DesignFontSize.CAPTION + 4)
+                      .fontColor($r('app.color.TEXT_SECONDARY'))
+                      .margin({ top: 4 })
+                  }
+                  .layoutWeight(1)
+                  .height(48)
+                  .alignItems(HorizontalAlign.Center)
+                  .justifyContent(FlexAlign.Center)
+                }
+                .width("100%")
+                .margin({ top: 8 })
+              }
+              .width("100%")
+              .padding(DesignDimens.CARD_PADDING)
+              .backgroundColor($r('app.color.SURFACE'))
+              .borderRadius(DesignDimens.CARD_RADIUS)
+              .border({ width: 1, color: $r('app.color.OUTLINE') })
+              .shadow({
+                radius: DesignElevation.CARD_SHADOW_RADIUS,
+                color: $r('app.color.SHADOW_COLOR_CARD'),
+                offsetX: 0,
+                offsetY: DesignElevation.CARD_SHADOW_OFFSET
+              })
+
+              // ========== 账户卡 GroupCard（对齐安卓 UserInfoPage.kt:441-487） ==========
+              Column() {
+                // 校园卡行尾状态不能走 @Builder 按值参数（已知坑：参数首帧定格，绑定/解绑后不刷新）；
+                // 用 if 分支包住使 userInfo 变更时分支重跑、以新字面量重新调用 settingRow
+                if (this.isCampusCardBound()) {
+                  this.settingRow($r('sys.symbol.creditcard'), resString('campus_card'),
+                    $r('app.color.ICON_CONTAINER_GREEN'), $r('app.color.ICON_FOREGROUND_GREEN'),
+                    // U-103：「已绑定」绿字 on 白仅 3.50:1（绿字红线禁小号文字）→ 统一 textSecondary
+                    resString('bound'), $r('app.color.TEXT_SECONDARY'),
+                    () => {
+                      pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
+                        this.refreshUserInfo()
+                      }, false)
+                    })
+                } else {
+                  this.settingRow($r('sys.symbol.creditcard'), resString('campus_card'),
+                    $r('app.color.ICON_CONTAINER_GREEN'), $r('app.color.ICON_FOREGROUND_GREEN'),
+                    resString('not_bound'), $r('app.color.TEXT_SECONDARY'),
+                    () => {
+                      pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
+                        this.refreshUserInfo()
+                      }, false)
+                    })
+                }
+
+                Divider()
+                  .strokeWidth(0.5)
+                  .color($r('app.color.HAIRLINE'))
+
+                this.settingRow($r('sys.symbol.pin_fill'), resString('shipping_address'),
+                  $r('app.color.ICON_CONTAINER_ORANGE'), $r('app.color.ICON_FOREGROUND_ORANGE'),
+                  "", $r('app.color.TEXT_SECONDARY'),
+                  () => {
+                    // 文案对齐安卓 shipping_address_unavailable
+                    promptAction.showToast({ message: resString('shipping_address_unavailable') })
+                  })
+
+                Divider()
+                  .strokeWidth(0.5)
+                  .color($r('app.color.HAIRLINE'))
+
+                // 钱包流水入口（充值/消费合并明细，对齐安卓 WalletTransactionsPage 语义）
+                this.settingRow($r('sys.symbol.doc_text'), resString('wallet_transactions'),
+                  $r('app.color.ICON_CONTAINER_TEAL'), $r('app.color.ICON_FOREGROUND_TEAL'),
+                  "", $r('app.color.TEXT_SECONDARY'),
+                  () => {
+                    pathStack.pushPathByName(RouteNames.WALLET_TRANSACTIONS, null)
+                  })
+              }
+              .width("100%")
+              .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+              .backgroundColor($r('app.color.SURFACE'))
+              .borderRadius(DesignDimens.CARD_RADIUS)
+              .border({ width: 1, color: $r('app.color.OUTLINE') })
+              .shadow({
+                radius: DesignElevation.CARD_SHADOW_RADIUS,
+                color: $r('app.color.SHADOW_COLOR_CARD'),
+                offsetX: 0,
+                offsetY: DesignElevation.CARD_SHADOW_OFFSET
+              })
+              .margin({ top: DesignDimens.CARD_SPACING })
+
+              // ========== 功能卡 GroupCard（对齐安卓 UserInfoPage.kt:492-535） ==========
+              Column() {
+                this.settingRow($r('sys.symbol.list_square_bill'), resString('my_orders'),
+                  $r('app.color.ICON_CONTAINER_BLUE'), $r('app.color.ICON_FOREGROUND_BLUE'),
+                  `${this.userInfo?.orderCount ?? 0} 单`, $r('app.color.TEXT_SECONDARY'),
+                  () => {
+                    this.jumpToOrderList(0)
+                  })
+
+                Divider()
+                  .strokeWidth(0.5)
+                  .color($r('app.color.HAIRLINE'))
+
+                // 签到有礼（扩展提案功能 17/18 双端闭环；橙容器 = 通知/待办/营销奖励语义，
+                // 对齐安卓 UserInfoPage 功能卡「我的订单」与「设置」之间的 SettingRow 位置）
+                this.settingRow($r('sys.symbol.gift'), resString('points_title'),
+                  $r('app.color.ICON_CONTAINER_ORANGE'), $r('app.color.ICON_FOREGROUND_ORANGE'),
+                  "", $r('app.color.TEXT_SECONDARY'),
+                  () => {
+                    pathStack.pushPathByName(RouteNames.POINTS, null)
+                  })
+                // 消息中心入口（扩展提案 #4；对齐安卓 UserInfoPage 功能卡「消息中心」行）：
+                // 橙容器 = 通知/提醒语义（规范 §3.2 六色浅底）。
+                // 行尾未读角标依赖 @State，不能走 @Builder 按值参数（已知坑：参数首帧定格），
+                // 故本行不走 settingRow，直接内联渲染以随 unreadCount 变更重绘。
+                Row() {
+                  Column() {
+                    SymbolGlyph($r('sys.symbol.bell'))
+                      .fontSize(20)
+                      .fontColor([$r('app.color.ICON_FOREGROUND_ORANGE')])
+                  }
+                  .width(32)
+                  .height(32)
+                  .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
+                  .backgroundColor($r('app.color.ICON_CONTAINER_ORANGE'))
+                  .justifyContent(FlexAlign.Center)
+                  .alignItems(HorizontalAlign.Center)
+
+                  Text(NoticeText.notice_title)
+                    .fontSize(DesignFontSize.BODY_SMALL)
+                    .fontWeight(DesignFontWeight.NORMAL)
+                    .fontColor($r('app.color.TEXT_PRIMARY'))
+                    .layoutWeight(1)
+                    .margin({ left: 12 })
+
+                  // 未读数字角标（0/缺失隐藏；>99 封顶 99+）
+                  if (this.unreadBadgeText().length > 0) {
+                    Text(this.unreadBadgeText())
+                      .fontSize(DesignFontSize.CAPTION)
+                      .fontWeight(DesignFontWeight.MEDIUM)
+                      .fontColor($r('app.color.ICON_FOREGROUND_PINK'))
+                      .fontFeature(DesignFontFeature.TNUM)
+                      .padding({ left: 5, right: 5, top: 1, bottom: 1 })
+                      .backgroundColor($r('app.color.ICON_CONTAINER_PINK'))
+                      .borderRadius(DesignDimens.RADIUS_FULL)
+                      .margin({ right: DesignDimens.SPACE_XXS })
+                  }
+
+                  SymbolGlyph($r('sys.symbol.chevron_right'))
+                    .fontSize(20)
+                    .fontColor([$r('app.color.TEXT_TERTIARY')])
+                }
+                .width("100%")
+                .height(64)
+                .alignItems(VerticalAlign.Center)
+                .onClick(() => {
+                  pathStack.pushPathByName(RouteNames.MESSAGES, null)
+                })
+
+                Divider()
+                  .strokeWidth(0.5)
+                  .color($r('app.color.HAIRLINE'))
+
+                this.settingRow($r('sys.symbol.gearshape'), resString('settings'),
+                  $r('app.color.ICON_CONTAINER_GREEN'), $r('app.color.ICON_FOREGROUND_GREEN'),
+                  "", $r('app.color.TEXT_SECONDARY'),
+                  () => {
+                    pathStack.pushPathByName(RouteNames.SETTING, null)
+                  })
+              }
+              .width("100%")
+              .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+              .backgroundColor($r('app.color.SURFACE'))
+              .borderRadius(DesignDimens.CARD_RADIUS)
+              .border({ width: 1, color: $r('app.color.OUTLINE') })
+              .shadow({
+                radius: DesignElevation.CARD_SHADOW_RADIUS,
+                color: $r('app.color.SHADOW_COLOR_CARD'),
+                offsetX: 0,
+                offsetY: DesignElevation.CARD_SHADOW_OFFSET
+              })
+              .margin({ top: DesignDimens.CARD_SPACING })
             }
-            .width("100%")
-            .layoutWeight(1)
-            .justifyContent(FlexAlign.Center)
-          } else {
-            // 首载骨架（对齐安卓 UserInfoPage.kt:180-195 LoadingState；回 tab/绑定/换头像后的刷新保留现有内容）
-            LoadingState()
+
+            // 底部留白（对齐安卓 Spacer(24)）
+            Row().height(DesignDimens.SPACE_XL)
           }
-        } else {
-          // ========== 标题行（对齐安卓 UserInfoPage.kt:202-240） ==========
-          Row() {
+        }
+        .scrollable(ScrollDirection.Vertical)
+        .scrollBar(BarState.Off)
+        .width("100%")
+        .height("100%")
+        .align(Alignment.TopStart)
+        // 内容避让：状态栏 + 固定顶栏 + 覆盖层头像行
+        .padding({
+          left: DesignDimens.PAGE_PADDING,
+          right: DesignDimens.PAGE_PADDING,
+          top: safeTopVp() + TOP_BAR_HEIGHT + AVATAR_ROW_HEIGHT
+        })
+        // 滚动驱动：更新收缩停靠进度
+        .onScroll((xOffset: number, yOffset: number) => {
+          this.updateProgress()
+        })
+        // 松手吸附：吸附到展开/折叠端点
+        .onScrollStop(() => {
+          this.snapToEndpoint()
+        })
+
+        // ========== 固定顶栏（标题/名字 + 设置按钮）：不随滚动消失 ==========
+        Row() {
+          // 标题位：滚动 0 显示「我的」，停靠后切换为用户名（手机号）
+          Stack({ alignContent: Alignment.Start }) {
             Text($r('app.string.tab_mine'))
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor($r('app.color.TEXT_PRIMARY'))
+              .opacity(this.reduceMotion ? 1 - this.progress : 1 - this.progress)
+              .translate(this.reduceMotion ? { x: 0, y: 0 } : { x: TITLE_SHIFT * this.progress, y: 0 })
 
-            // 设置入口：48dp 圆形青底容器 + 齿轮 20（对齐安卓 UserInfoPage.kt:220-239，PR #47 由 surfaceVariant 改青）
-            Column() {
-              SymbolGlyph($r('sys.symbol.gearshape'))
-                .fontSize(20)
-                .fontColor([$r('app.color.ICON_FOREGROUND_TEAL')])
-            }
-            .width(48)
-            .height(48)
-            .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor($r('app.color.ICON_CONTAINER_TEAL'))
-            .justifyContent(FlexAlign.Center)
-            .alignItems(HorizontalAlign.Center)
-            // 无障碍：设置齿轮补语义（原仅图形，读屏无标签；accessibilityRole 需 SDK 18+，目标 API 17 不用）
-            .accessibilityDescription(resString('settings'))
-            .onClick(() => {
-              pathStack.pushPathByName(RouteNames.SETTING, null)
-            })
+            Text(maskPhone(this.userInfo?.phoneNumber ?? null))
+              .fontSize(DesignFontSize.ROOT_TITLE)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor($r('app.color.TEXT_PRIMARY'))
+              .opacity(this.progress)
+              .translate(this.reduceMotion
+                ? { x: 0, y: 0 }
+                : { x: NAME_SHIFT_BASE - NAME_SHIFT_PER_P * this.progress, y: 0 })
           }
-          .justifyContent(FlexAlign.SpaceBetween)
-          .alignItems(VerticalAlign.Center)
-          .width("100%")
-          .padding({ top: 16, bottom: 8 })
 
-          // ========== 横排头部（对齐安卓 UserInfoPage.kt:242-357） ==========
-          Row() {
-            Stack({ alignContent: Alignment.Center }) {
-              this.avatarContent()
-            }
-            .width(56)
-            .height(56)
-            .onClick(() => {
-              this.selectAndUploadAvatar()
-            })
-
-            Column() {
-              Text(maskPhone(this.userInfo?.phoneNumber ?? null))
-                .fontSize(DesignFontSize.CARD_TITLE)
-                .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor($r('app.color.TEXT_PRIMARY'))
-
-              // 学校名（对齐安卓 UserInfoPage.kt:343-348；无学校时显示空串）
-              Text(this.userInfo?.schoolVo?.schoolName ?? "")
-                .fontSize(DesignFontSize.CAPTION)
-                .fontColor($r('app.color.TEXT_SECONDARY'))
-                .margin({ top: 4 })
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start)
-            .margin({ left: 16 })
-
-            SymbolGlyph($r('sys.symbol.chevron_right'))
+          // 设置入口：48dp 圆形青底容器 + 齿轮 20（对齐安卓 UserInfoPage.kt:220-239）
+          Column() {
+            SymbolGlyph($r('sys.symbol.gearshape'))
               .fontSize(20)
-              .fontColor([$r('app.color.TEXT_TERTIARY')])
+              .fontColor([$r('app.color.ICON_FOREGROUND_TEAL')])
           }
-          .width("100%")
-          .alignItems(VerticalAlign.Center)
-          .padding({ top: 8, bottom: 16 })
-
-          // ========== 数据卡（白底 GroupCard，对齐安卓 UserInfoPage.kt:359-436） ==========
-          Column() {
-            // 余额通栏在上（点击去充值）
-            Column() {
-              // 显式行盒对齐安卓 Type.kt（D4）：bodySmall 12/16
-              Text($r('app.string.wallet_balance'))
-                .fontSize(DesignFontSize.CAPTION)
-                .lineHeight(DesignFontSize.CAPTION + 4)
-                .fontColor($r('app.color.TEXT_SECONDARY'))
-              // 显式行盒对齐安卓 DataLarge 36/44；字重保持 BOLD（font.display 档，规范允许 700）
-              Text(`¥${this.formatBalance()}`)
-                .fontSize(DesignFontSize.DATA_LARGE)
-                .lineHeight(DesignFontSize.DATA_LARGE + 8)
-                .fontWeight(DesignFontWeight.BOLD)
-                .fontFeature(DesignFontFeature.TNUM)
-                .fontColor($r('app.color.PRIMARY_DARK'))
-                .margin({ top: 4 })
-            }
-            .alignItems(HorizontalAlign.Start)
-            .width("100%")
-            .onClick(() => {
-              pathStack.pushPathByName(RouteNames.RECHARGE, "")
-            })
-
-            // 下方券/单两半格各居中，中间 1×40 发丝线
-            Row() {
-              Column() {
-                // 行盒对齐安卓 Type.kt（D4）：AmountMedium 18/24、bodySmall 12/16
-                Text(`${this.userInfo?.couponCount ?? 0}`)
-                  .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-                  .lineHeight(DesignFontSize.AMOUNT_MEDIUM + 6)
-                  .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontFeature(DesignFontFeature.TNUM)
-                  .fontColor($r('app.color.TEXT_PRIMARY'))
-                Text($r('app.string.service_coupon'))
-                  .fontSize(DesignFontSize.CAPTION)
-                  .lineHeight(DesignFontSize.CAPTION + 4)
-                  .fontColor($r('app.color.TEXT_SECONDARY'))
-                  .margin({ top: 4 })
-              }
-              .layoutWeight(1)
-              .height(48)
-              .alignItems(HorizontalAlign.Center)
-              .justifyContent(FlexAlign.Center)
-              .onClick(() => {
-                pathStack.pushPathByName(RouteNames.COUPON, null)
-              })
-
-              Column()
-                .width(1)
-                .height(40)
-                .backgroundColor($r('app.color.HAIRLINE'))
-
-              Column() {
-                // 行盒对齐安卓 Type.kt（D4）：AmountMedium 18/24、bodySmall 12/16
-                Text(`${this.userInfo?.orderCount ?? 0}`)
-                  .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-                  .lineHeight(DesignFontSize.AMOUNT_MEDIUM + 6)
-                  .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontFeature(DesignFontFeature.TNUM)
-                  .fontColor($r('app.color.TEXT_PRIMARY'))
-                Text($r('app.string.home_total_orders'))
-                  .fontSize(DesignFontSize.CAPTION)
-                  .lineHeight(DesignFontSize.CAPTION + 4)
-                  .fontColor($r('app.color.TEXT_SECONDARY'))
-                  .margin({ top: 4 })
-              }
-              .layoutWeight(1)
-              .height(48)
-              .alignItems(HorizontalAlign.Center)
-              .justifyContent(FlexAlign.Center)
-            }
-            .width("100%")
-            .margin({ top: 8 })
-          }
-          .width("100%")
-          .padding(DesignDimens.CARD_PADDING)
-          .backgroundColor($r('app.color.SURFACE'))
-          .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: $r('app.color.OUTLINE') })
-          .shadow({
-            radius: DesignElevation.CARD_SHADOW_RADIUS,
-            color: $r('app.color.SHADOW_COLOR_CARD'),
-            offsetX: 0,
-            offsetY: DesignElevation.CARD_SHADOW_OFFSET
+          .width(48)
+          .height(48)
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .backgroundColor($r('app.color.ICON_CONTAINER_TEAL'))
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+          // 无障碍：设置齿轮补语义（原仅图形，读屏无标签；accessibilityRole 需 SDK 18+，目标 API 17 不用）
+          .accessibilityDescription(resString('settings'))
+          .onClick(() => {
+            pathStack.pushPathByName(RouteNames.SETTING, null)
           })
-
-          // ========== 账户卡 GroupCard（对齐安卓 UserInfoPage.kt:441-487） ==========
-          Column() {
-            // 校园卡行尾状态不能走 @Builder 按值参数（已知坑：参数首帧定格，绑定/解绑后不刷新）；
-            // 用 if 分支包住使 userInfo 变更时分支重跑、以新字面量重新调用 settingRow
-            if (this.isCampusCardBound()) {
-              this.settingRow($r('sys.symbol.creditcard'), resString('campus_card'),
-                $r('app.color.ICON_CONTAINER_GREEN'), $r('app.color.ICON_FOREGROUND_GREEN'),
-                // U-103：「已绑定」绿字 on 白仅 3.50:1（绿字红线禁小号文字）→ 统一 textSecondary
-                resString('bound'), $r('app.color.TEXT_SECONDARY'),
-                () => {
-                  pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
-                    this.refreshUserInfo()
-                  }, false)
-                })
-            } else {
-              this.settingRow($r('sys.symbol.creditcard'), resString('campus_card'),
-                $r('app.color.ICON_CONTAINER_GREEN'), $r('app.color.ICON_FOREGROUND_GREEN'),
-                resString('not_bound'), $r('app.color.TEXT_SECONDARY'),
-                () => {
-                  pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
-                    this.refreshUserInfo()
-                  }, false)
-                })
-            }
-
-            Divider()
-              .strokeWidth(0.5)
-              .color($r('app.color.HAIRLINE'))
-
-            // 钱包流水入口（充值/消费合并明细，对齐安卓 WalletTransactionsPage 语义）
-            this.settingRow($r('sys.symbol.doc_text'), resString('wallet_transactions'),
-              $r('app.color.ICON_CONTAINER_TEAL'), $r('app.color.ICON_FOREGROUND_TEAL'),
-              "", $r('app.color.TEXT_SECONDARY'),
-              () => {
-                pathStack.pushPathByName(RouteNames.WALLET_TRANSACTIONS, null)
-              })
-          }
-          .width("100%")
-          .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-          .backgroundColor($r('app.color.SURFACE'))
-          .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: $r('app.color.OUTLINE') })
-          .shadow({
-            radius: DesignElevation.CARD_SHADOW_RADIUS,
-            color: $r('app.color.SHADOW_COLOR_CARD'),
-            offsetX: 0,
-            offsetY: DesignElevation.CARD_SHADOW_OFFSET
-          })
-          .margin({ top: DesignDimens.CARD_SPACING })
-
-          // ========== 功能卡 GroupCard（对齐安卓 UserInfoPage.kt:492-535） ==========
-          Column() {
-            this.settingRow($r('sys.symbol.list_square_bill'), resString('my_orders'),
-              $r('app.color.ICON_CONTAINER_BLUE'), $r('app.color.ICON_FOREGROUND_BLUE'),
-              `${this.userInfo?.orderCount ?? 0} 单`, $r('app.color.TEXT_SECONDARY'),
-              () => {
-                this.jumpToOrderList(0)
-              })
-
-            Divider()
-              .strokeWidth(0.5)
-              .color($r('app.color.HAIRLINE'))
-
-            // 签到有礼（扩展提案功能 17/18 双端闭环；橙容器 = 通知/待办/营销奖励语义，
-            // 对齐安卓 UserInfoPage 功能卡「我的订单」与「设置」之间的 SettingRow 位置）
-            this.settingRow($r('sys.symbol.gift'), resString('points_title'),
-              $r('app.color.ICON_CONTAINER_ORANGE'), $r('app.color.ICON_FOREGROUND_ORANGE'),
-              "", $r('app.color.TEXT_SECONDARY'),
-              () => {
-                pathStack.pushPathByName(RouteNames.POINTS, null)
-              })
-            // 消息中心入口（扩展提案 #4；对齐安卓 UserInfoPage 功能卡「消息中心」行）：
-            // 橙容器 = 通知/提醒语义（规范 §3.2 六色浅底）。
-            // 行尾未读角标依赖 @State，不能走 @Builder 按值参数（已知坑：参数首帧定格），
-            // 故本行不走 settingRow，直接内联渲染以随 unreadCount 变更重绘。
-            Row() {
-              Column() {
-                SymbolGlyph($r('sys.symbol.bell'))
-                  .fontSize(20)
-                  .fontColor([$r('app.color.ICON_FOREGROUND_ORANGE')])
-              }
-              .width(32)
-              .height(32)
-              .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-              .backgroundColor($r('app.color.ICON_CONTAINER_ORANGE'))
-              .justifyContent(FlexAlign.Center)
-              .alignItems(HorizontalAlign.Center)
-
-              Text(NoticeText.notice_title)
-                .fontSize(DesignFontSize.BODY_SMALL)
-                .fontWeight(DesignFontWeight.NORMAL)
-                .fontColor($r('app.color.TEXT_PRIMARY'))
-                .layoutWeight(1)
-                .margin({ left: 12 })
-
-              // 未读数字角标（0/缺失隐藏；>99 封顶 99+）
-              if (this.unreadBadgeText().length > 0) {
-                Text(this.unreadBadgeText())
-                  .fontSize(DesignFontSize.CAPTION)
-                  .fontWeight(DesignFontWeight.MEDIUM)
-                  .fontColor($r('app.color.ICON_FOREGROUND_PINK'))
-                  .fontFeature(DesignFontFeature.TNUM)
-                  .padding({ left: 5, right: 5, top: 1, bottom: 1 })
-                  .backgroundColor($r('app.color.ICON_CONTAINER_PINK'))
-                  .borderRadius(DesignDimens.RADIUS_FULL)
-                  .margin({ right: DesignDimens.SPACE_XXS })
-              }
-
-              SymbolGlyph($r('sys.symbol.chevron_right'))
-                .fontSize(20)
-                .fontColor([$r('app.color.TEXT_TERTIARY')])
-            }
-            .width("100%")
-            .height(64)
-            .alignItems(VerticalAlign.Center)
-            .onClick(() => {
-              pathStack.pushPathByName(RouteNames.MESSAGES, null)
-            })
-
-            Divider()
-              .strokeWidth(0.5)
-              .color($r('app.color.HAIRLINE'))
-
-            this.settingRow($r('sys.symbol.gearshape'), resString('settings'),
-              $r('app.color.ICON_CONTAINER_GREEN'), $r('app.color.ICON_FOREGROUND_GREEN'),
-              "", $r('app.color.TEXT_SECONDARY'),
-              () => {
-                pathStack.pushPathByName(RouteNames.SETTING, null)
-              })
-          }
-          .width("100%")
-          .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-          .backgroundColor($r('app.color.SURFACE'))
-          .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: $r('app.color.OUTLINE') })
-          .shadow({
-            radius: DesignElevation.CARD_SHADOW_RADIUS,
-            color: $r('app.color.SHADOW_COLOR_CARD'),
-            offsetX: 0,
-            offsetY: DesignElevation.CARD_SHADOW_OFFSET
-          })
-          .margin({ top: DesignDimens.CARD_SPACING })
         }
+        .justifyContent(FlexAlign.SpaceBetween)
+        .alignItems(VerticalAlign.Center)
+        .width("100%")
+        .height(TOP_BAR_HEIGHT)
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: safeTopVp() })
+        .backgroundColor($r('app.color.BACKGROUND'))
 
-        // 底部留白（对齐安卓 Spacer(24)）
-        Row().height(DesignDimens.SPACE_XL)
+        // ========== 覆盖层：头像 + 名字/学校（z 序高于顶栏，头像才能停靠进栏） ==========
+        Row() {
+          Stack({ alignContent: Alignment.Center }) {
+            this.avatarContent()
+          }
+          .width(AVATAR_SIZE)
+          .height(AVATAR_SIZE)
+          // 滚动驱动：缩小 + 上移停靠进顶栏；reduced motion 仅淡出
+          .scale(this.reduceMotion
+            ? { x: 1, y: 1 }
+            : { x: 1 - 0.5 * this.progress, y: 1 - 0.5 * this.progress })
+          .translate(this.reduceMotion
+            ? { x: 0, y: 0 }
+            : { x: -AVATAR_DOCK_SHIFT * this.progress, y: -DOCK_DISTANCE_BASE * this.progress })
+          .opacity(this.reduceMotion ? 1 - this.progress : 1)
+          .onClick(() => {
+            this.selectAndUploadAvatar()
+          })
+
+          Column() {
+            Text(maskPhone(this.userInfo?.phoneNumber ?? null))
+              .fontSize(DesignFontSize.CARD_TITLE)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor($r('app.color.TEXT_PRIMARY'))
+
+            // 学校名（对齐安卓 UserInfoPage.kt:343-348；无学校时显示空串）
+            Text(this.userInfo?.schoolVo?.schoolName ?? "")
+              .fontSize(DesignFontSize.CAPTION)
+              .fontColor($r('app.color.TEXT_SECONDARY'))
+              .margin({ top: 4 })
+          }
+          .layoutWeight(1)
+          .alignItems(HorizontalAlign.Start)
+          .margin({ left: 16 })
+          .opacity(this.reduceMotion ? 1 - this.progress : 1 - this.progress)
+
+          SymbolGlyph($r('sys.symbol.chevron_right'))
+            .fontSize(20)
+            .fontColor([$r('app.color.TEXT_TERTIARY')])
+            .opacity(1 - this.progress)
+        }
+        .width("100%")
+        .alignItems(VerticalAlign.Center)
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        .margin({ top: safeTopVp() + TOP_BAR_HEIGHT + 8 })
       }
-    }
-    .scrollable(ScrollDirection.Vertical)
-    .scrollBar(BarState.Off)
-    .width("100%")
-    .height("100%")
-    .align(Alignment.TopStart)
-    // 沉浸式：内容避让状态栏（背景延伸）
-    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: safeTopVp() })
+      .width("100%")
+      .height("100%")
+      .alignContent(Alignment.TopStart)
     }
     .onRefreshing(() => {
       this.onRefresh()
