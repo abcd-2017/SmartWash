@@ -7,7 +7,7 @@
 <title>中国象棋 · 人机对弈</title>
 <style>
   /*token:GAME-THEME.md §2 基线 + §3 素材 token（棋盘木纹 board1/board2、格线 line）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-board1:#F6DCAB;--g-board2:#ECCF92;--g-line:#7A5B34;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-board1:#F6DCAB;--g-board2:#ECCF92;--g-line:#7A5B34;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-board1:#4A3D26;--g-board2:#3A2F1D;--g-line:#9A845C;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -24,11 +24,11 @@
   .wrap { width: 100%; max-width: 480px; margin: 0 auto; }
   header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); flex: 1; min-width: 0; }
-  .lvname { font-size: 14px; font-weight: 600; color: var(--g-primary-deep); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 48%; }
+  .lvname { font-size:18px; font-weight:700; color: var(--g-primary-deep); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 48%; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
   .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stage { position: relative; }
   canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
@@ -37,13 +37,13 @@
     min-height: 44px; padding: 0 12px; flex: 1;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-primary); color: #fff;
-    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    font: inherit; font-size:22px; font-weight:700; cursor: pointer;
   }
   .btn:active { opacity: .85; }
   .btn:disabled { opacity: .35; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
   .btn.danger { background: var(--g-danger); }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
@@ -60,6 +60,12 @@
   .panel h2 { margin: 0 0 6px; font-size: 22px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .btn { width: 100%; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)

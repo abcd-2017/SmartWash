@@ -7,7 +7,7 @@
 <title>月面轻降</title>
 <style>
   /*token:GAME-THEME.md§2*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-success:#2D9B6A;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-sky1:#D9EEF6;--g-sky2:#F2F6F4;--g-water:#4A9FD4;--g-moon:#D8D3C4;--g-moon2:#C6BFA9;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-success:#2D9B6A;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-sky1:#D9EEF6;--g-sky2:#F2F6F4;--g-water:#4A9FD4;--g-moon:#D8D3C4;--g-moon2:#C6BFA9;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-sky1:#1B242E;--g-sky2:#141614;--g-water:#6BB4DE;--g-moon:#3B3E36;--g-moon2:#2F322B;color-scheme:dark }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -26,9 +26,9 @@
   .wrap { width: 100%; max-width: 480px; position: relative; }
   header { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
   .boxes { display: flex; gap: 8px; }
-  .box { background: var(--g-primary); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; }
+  .box { background: var(--g-primary-deep); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; }
   .box.alt { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
-  .box .label { display: block; font-size: 12px; opacity: .8; }
+  .box .label { display: block; font-size: 12px; }
   .box b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .stage { position: relative; width: min(100%, calc((100vh - 320px) * .75)); margin: 0 auto; }
   @supports (height: 100dvh) { .stage { width: min(100%, calc((100dvh - 320px) * .75)); } }
@@ -52,7 +52,7 @@
   .ov-text { margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: var(--g-muted); }
   .ov-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 12px; }
   .ov-stats .st { background: var(--g-surface2); border-radius: 12px; padding: 7px 4px; }
-  .ov-stats b { display: block; font-size: 16px; color: var(--g-primary-deep); font-variant-numeric: tabular-nums; }
+  .ov-stats b { display: block; font-size:18px; color: var(--g-primary-deep); font-variant-numeric: tabular-nums; }
   .ov-stats span { font-size: 12px; color: var(--g-muted); }
   .ov-btns { display: grid; gap: 8px; }
   .step { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 0 0 8px; }
@@ -61,7 +61,7 @@
   .btn {
     min-height: 48px; padding: 0 16px; border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-primary); color: var(--g-on-primary);
-    font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer;
+    font-size:22px; font-weight: 700; font-family: inherit; cursor: pointer;
   }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
   .btn.sq { min-width: 48px; padding: 0; font-size: 22px; line-height: 1; }
@@ -74,13 +74,16 @@
     font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer;
     touch-action: none;
   }
-  .pad.main { background: var(--g-primary); border-color: var(--g-primary); color: var(--g-on-primary); font-size: 18px; }
+  .pad.main { background: var(--g-primary); border-color: var(--g-primary); color: var(--g-on-primary); font-size:22px;font-weight:700; }
   .pad:active { opacity: .82; }
   .pad:focus-visible { outline: 2px solid var(--g-primary); outline-offset: 2px; }
   .toolbar { display: flex; gap: 10px; margin: 10px 0 0; }
   .toolbar .btn { flex: 1; min-height: 48px; }
   .toolbar .btn.ghost { background: var(--g-surface); border: 1px solid var(--g-border); color: var(--g-text); }
-  .foot { margin: 12px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-faint); text-align: center; }
+  .foot { margin: 12px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
 </style>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)

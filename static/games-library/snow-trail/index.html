@@ -9,10 +9,10 @@
   /*token:GAME-THEME.md§2*/
   :root {
     --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;
-    --g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-primary:#FFFFFF;--g-on-soft:#0B3625;
+    --g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-primary:#FFFFFF;--g-on-soft:#0B3625;
     --g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;
     --g-border:#E6E9E6;--g-hairline:#EFF1EE;
-    --g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;
+    --g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;
     --g-scrim:rgba(245,246,243,.9);
     --g-shadow:0 2px 12px rgba(20,40,30,.05);
     --g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;
@@ -85,19 +85,25 @@
   .ov-stat { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 10px; padding: 6px 12px; min-width: 84px; }
   .ov-stat .lb { display: block; font-size: 12px; color: var(--g-muted); }
   .ov-stat .vl { display: block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .badge { display: none; margin: 0 0 6px; padding: 4px 12px; border-radius: 999px; background: var(--g-warning); color: #FFF; font-size: 12px; font-weight: 700; }
+  .badge { display: none; margin: 0 0 6px; padding: 4px 12px; border-radius: 999px; background: var(--g-warning); color: var(--g-text); font-size: 12px; font-weight: 700; }
   .badge.show { display: inline-block; }
   .btn {
     min-height: 46px; padding: 0 22px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-primary); color: var(--g-on-primary);
-    font-size: 16px; font-weight: 600; font-family: inherit;
+    font-size:22px; font-weight:700; font-family: inherit;
     cursor: pointer; touch-action: manipulation;
   }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
   .btn-row { display: flex; gap: 10px; margin-top: 4px; }
-  .foot { margin: 12px 0 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .foot { margin: 12px 0 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
 /*主题运行时:D5 终版(桥唯一控制,系统跟随层已裁撤)——GAME-THEME.md§4*/

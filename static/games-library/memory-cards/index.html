@@ -7,7 +7,7 @@
 <title>记忆翻牌</title>
 <style>
   /*token:GAME-THEME.md §2（按需取用）+ 卡面/牌背素材 token*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-success:#2D9B6A;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-card:#FFFFFF;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-success:#2D9B6A;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-card:#FFFFFF;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-card:#262A27;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -83,11 +83,11 @@
     min-height: 44px; padding: 0 14px; flex: 1;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-primary); color: #fff;
-    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    font: inherit; font-size:22px; font-weight:700; cursor: pointer;
   }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
@@ -106,6 +106,12 @@
   .panel .desc b { color: var(--g-primary-deep); }
   .panel .row2 { display: flex; gap: 8px; }
   .panel .btn { flex: 1; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
@@ -319,6 +325,11 @@ function trimDaily(d){var ks=Object.keys(d).sort();while(ks.length>30)delete d[k
 /* ---------- 状态 ---------- */
 var cur=save.lv,deck=[],open=[],lock=false,moves=0,matched=0,timer=null,sec=0,started=false,over=false;
 var mode="classic",dCur="",dailyCfg=null,dailySeed=0;
+/* S4: 页面隐藏时暂停计时（sec 计数制，恢复自然续走） */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){ if(timer){clearInterval(timer);timer=null} }
+  else if(started&&!over&&!timer){ timer=setInterval(function(){sec++;$("stTime").textContent=fmt(sec)},1000) }
+});
 var grid=document.getElementById("grid");
 function $(id){return document.getElementById(id)}
 function fmt(t){return t>=60?Math.floor(t/60)+"m"+(t%60)+"s":t+"s"}

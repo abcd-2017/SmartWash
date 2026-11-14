@@ -7,8 +7,8 @@
 <title>扫雷</title>
 <style>
   /*token:GAME-THEME.md*/
-  :root { --g-bg:#F5F6F3;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-danger:#C9526B;--g-scrim:rgba(245,246,243,.9);--g-cell1:#E9EDF1;--g-cell2:#C6D0D8;--g-cellhi:rgba(255,255,255,.55);--g-celllo:rgba(70,90,105,.18);--g-open:#F2EFE7;--g-openln:rgba(120,140,155,.18);--g-n1:#2456C9;--g-n2:#2E7D32;--g-n3:#D3392F;--g-n4:#5B2A86;--g-n5:#8D2F23;--g-n6:#00838F;--g-n7:#37474F;--g-n8:#90A4AE;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface2:#262A27;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-cell1:#2A2F2C;--g-cell2:#232724;--g-cellhi:rgba(255,255,255,.07);--g-celllo:rgba(0,0,0,.45);--g-open:#262A27;--g-openln:rgba(255,255,255,.06);--g-n1:#7B9FF2;--g-n2:#6FCF8E;--g-n3:#F08A80;--g-n4:#B794E0;--g-n5:#E89A8E;--g-n6:#5BC8D6;--g-n7:#B7C4CC;--g-n8:#7E837D;color-scheme:dark }
+  :root { --g-bg:#F5F6F3;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-cell1:#E9EDF1;--g-cell2:#C6D0D8;--g-cellhi:rgba(255,255,255,.55);--g-celllo:rgba(70,90,105,.18);--g-open:#F2EFE7;--g-openln:rgba(120,140,155,.18);--g-n1:#2456C9;--g-n2:#2E7D32;--g-n3:#D3392F;--g-n4:#5B2A86;--g-n5:#8D2F23;--g-n6:#00838F;--g-n7:#37474F;--g-n8:#90A4AE;--g-primary-deep:#17734A;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface2:#262A27;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-cell1:#2A2F2C;--g-cell2:#232724;--g-cellhi:rgba(255,255,255,.07);--g-celllo:rgba(0,0,0,.45);--g-open:#262A27;--g-openln:rgba(255,255,255,.06);--g-n1:#7B9FF2;--g-n2:#6FCF8E;--g-n3:#F08A80;--g-n4:#B794E0;--g-n5:#E89A8E;--g-n6:#5BC8D6;--g-n7:#B7C4CC;--g-n8:#7E837D;--g-primary-deep:#5BC894;color-scheme:dark }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
@@ -40,7 +40,7 @@
     min-height: 44px; min-width: 64px; padding: 0 16px;
     border: 0; border-radius: 14px;
     background: var(--g-primary); color: #fff;
-    font-size: 16px; font-weight: 600; font-family: inherit;
+    font-size:22px; font-weight:700; font-family: inherit;
     cursor: pointer;
   }
   .btn:active { opacity: .85; }
@@ -107,7 +107,13 @@
   .ov-title { margin: 0; font-size: 22px; font-weight: 700; }
   .ov-sub { margin: 0 0 12px; font-size: 14px; color: var(--g-muted); }
   .overlay .btn { min-width: 132px; }
-  .foot { margin: 12px 0 0; font-size: 12px; color: var(--g-faint); text-align: center; }
+  .foot { margin: 12px 0 0; font-size: 12px; color: var(--g-muted); text-align: center; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
@@ -246,6 +252,13 @@ paint(B||"light");
   function stopTimer() {
     if (timerId) { clearInterval(timerId); timerId = null; }
   }
+
+  /* S4: 页面隐藏时暂停计时，恢复时平移时间基点 */
+  let hideAt = 0, wasRunning = false;
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { if (timerId) { wasRunning = true; stopTimer(); hideAt = Date.now(); } }
+    else if (wasRunning) { wasRunning = false; startAt += Date.now() - hideAt; timerId = setInterval(() => { timeEl.textContent = elapsedSec(); }, 250); }
+  });
 
   function reset() {
     mines = []; open = []; flags = []; counts = [];
