@@ -136,6 +136,11 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
                     throw new CustomExceptions("私密文本必须设置晚于当前时刻的过期时间");
                 }
             }
+            case ShortCodeContentType.ASSET_TAG -> {
+                // 物品标签：主记录仅承载码与归属（寻物明细在 asset_tag 表，标签默认永久无过期）；
+                // target 为空 = 非跳转类型，公开 /web/t/{code} 维持 410 语义，寻物入口走 Web 寻物页与端内深链
+                isPublic = PUBLIC_TRUE;
+            }
             default -> throw new CustomExceptions("不支持的内容类型");
         }
 
