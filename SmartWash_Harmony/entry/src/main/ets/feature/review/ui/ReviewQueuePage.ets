@@ -148,7 +148,15 @@ struct ReviewQueuePage {
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
-        ReviewPageHeader({ title: ReviewText.review_queue_title })
+        ReviewPageHeader({
+          title: ReviewText.review_queue_title,
+          // 队列非空时资料页同样需要可达（对齐安卓 PageHeader actions）：页头常显「资料」入口，
+          // 修复「有到期卡时无法建卡/管理资料」的断路
+          actionText: ReviewText.review_queue_action_materials,
+          onAction: (): void => {
+            this.goMaterials()
+          }
+        })
 
         if (this.isLoadingFirst) {
           QueueSkeleton()
@@ -300,7 +308,9 @@ struct QueueCard {
         // 到期时间是 FSRS 队列核心决策信息，用次文本档：TEXT_TERTIARY on 白卡
         // 浅色仅 2.25:1 破线（跨端矩阵 #1），TEXT_SECONDARY 浅色 4.9:1 达标；
         // 12/500 + 行高 16 对齐安卓 labelSmall（跨端矩阵 #15）
-        Text(reviewDueTextOf(this.card.dueAt, this.now))
+        // 新卡不显示到期（对齐安卓 dueDisplayText 按 isNewCard 短路）：语义由「新卡」角标承担，
+        // 避免新卡条目同时出现「新卡」+「7 小时后到期」两份冲突信息
+        Text(reviewIsNewCard(this.card) ? '' : reviewDueTextOf(this.card.dueAt, this.now))
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor($r('app.color.TEXT_SECONDARY'))

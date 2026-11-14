@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
@@ -82,6 +83,9 @@ fun BreathPage(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
+            // edge-to-edge 下底部避让系统手势区：开始/暂停/停止按钮不再压线
+            // （ui-check P2：原按钮底缘恰在 navigationBars inset 顶，与强制手势区重叠约 9dp）
+            .navigationBarsPadding(),
     ) {
         PageHeader(
             title = stringResource(R.string.lab_breath_title),

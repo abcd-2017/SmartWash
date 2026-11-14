@@ -432,12 +432,16 @@ private fun StepGridCard(
                 .fillMaxWidth()
                 .padding(AppDimens.cardPadding),
         ) {
-            // 声部标签列（固定，不随步进横滚；行间距与步进区 8dp 网格同步对齐）
+            // 声部标签列（固定，不随步进横滚；行距与步进区对齐）
             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
                 DrumVoice.entries.forEach { voice ->
                     Box(
                         modifier = Modifier
                             .width(CELL_LABEL_WIDTH)
+                            // 与 StepCell 同构：视觉高 ROW_HEIGHT 之外补同档纵向 padding，
+                            // 使两列「行高 + 间距」占位一致（ui-check P2：原标签列缺这层
+                            // padding，每行累积错位，第 8 行错位约 68dp）
+                            .padding(vertical = AppDimens.spaceXxs)
                             .height(ROW_HEIGHT),
                         contentAlignment = Alignment.CenterEnd,
                     ) {

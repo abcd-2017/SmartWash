@@ -336,6 +336,8 @@ export class WorkbenchText {
   static get workbench_retry(): string { return resString('workbench_retry') }
   static get workbench_search_hint(): string { return resString('workbench_search_hint') }
   static get workbench_search_empty(): string { return resString('workbench_search_empty') }
+  /** 搜索空态行动按钮：清空关键词恢复完整列表 */
+  static get workbench_search_clear(): string { return resString('workbench_search_clear') }
   static get workbench_recent_title(): string { return resString('workbench_recent_title') }
   static get workbench_notice_dismiss(): string { return resString('workbench_notice_dismiss') }
 }

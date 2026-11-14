@@ -62,6 +62,9 @@ class DeliverySessionViewModel @Inject constructor(
 
         /** 图片：认领并下载完成（bitmap 解码失败为 null，仍可保存原文件） */
         data class ImageReady(override val item: DeliveryItemVo, val bitmap: Bitmap?, val cacheFile: File) : PreviewState
+
+        /** 文件/图片：认领成功但内容未到手（下载失败）——条目未焚毁，弹窗转可重试错误态（P0 端侧兜底） */
+        data class ContentFailed(override val item: DeliveryItemVo, val claimed: Boolean) : PreviewState
     }
 
     /** 一次性提示（Toast 语义）；message 保留后端原文，优先于 resId 展示 */
@@ -80,6 +83,10 @@ class DeliverySessionViewModel @Inject constructor(
         private const val MAX_POLL_INTERVAL_MS = 10_000L
 
         private const val TAG = "DeliverySessionViewModel"
+
+        /** 后端兜底型泛化文案（信封 201 / ExceptionControllerAdvice 输出）：无上下文价值，
+         *  Toast 展示时回退端侧 resId 文案（规范 §3.6：错误须说明发生了什么+怎么解决） */
+        private val GENERIC_BACKEND_MESSAGES = setOf("失败", "系统异常，请稍后再试")
     }
 
     private var sessionCode: String? = null
@@ -123,6 +130,10 @@ class DeliverySessionViewModel @Inject constructor(
     /** 预览弹窗内动作（取走/下载/保存）的 loading，错误经 [toast] 提示 */
     private val _previewAction = MutableStateFlow<RequestState>(RequestState.Idle)
     val previewAction = _previewAction.asStateFlow()
+
+    /** 「认领后内容未到手」的可重试条目（P0 兜底）：列表行保持待取走可点，重开直达失败态续取 */
+    private val _retryableItemIds = MutableStateFlow<Set<Long>>(emptySet())
+    val retryableItemIds = _retryableItemIds.asStateFlow()
 
     /** 关闭会话提交状态 */
     private val _closeState = MutableStateFlow<RequestState>(RequestState.Idle)
@@ -292,7 +303,15 @@ class DeliverySessionViewModel @Inject constructor(
 
     /** 点条目：文本先读内容（非破坏预览），图片/文件出取走确认（内容获取须先认领） */
     fun openItem(item: DeliveryItemVo) {
-        if (item.taken != 0) return
+        if (item.taken != 0) {
+            // 已取走条目默认焚毁占位不可再点；唯「认领后内容未到手」的条目例外（P0 兜底）：
+            // 重开即上次失败态，可重试续取——内容未到手前不进入焚毁语义
+            if (item.id !in _retryableItemIds.value) return
+            _preview.value = PreviewState.ContentFailed(item, claimed = true)
+            return
+        }
+        // 条目已回到待取走（认领被服务端释放）时清掉残留重试标记
+        _retryableItemIds.value = _retryableItemIds.value - item.id
         val code = sessionCode ?: return
         val generation = ++previewGeneration
         when (DeliveryRules.ItemKind.fromCode(item.kind)) {
@@ -309,7 +328,7 @@ class DeliverySessionViewModel @Inject constructor(
                         closePreviewWithError(generation, toastFor(e, R.string.toolbox_delivery_preview_error))
                     } catch (e: NetworkException) {
                         AppLogger.error(TAG, "DeliverySessionViewModel.openItem: ${e.message}", e)
-                        closePreviewWithError(generation, ToastEvent(R.string.toolbox_delivery_preview_error, e.message))
+                        closePreviewWithError(generation, ToastEvent(R.string.toolbox_delivery_preview_error, informativeMessage(e.message)))
                     } catch (e: Exception) {
                         AppLogger.error(TAG, "DeliverySessionViewModel.openItem: ${e.message}", e)
                         closePreviewWithError(generation, ToastEvent(R.string.toolbox_delivery_preview_error))
@@ -324,38 +343,101 @@ class DeliverySessionViewModel @Inject constructor(
     /** 图片：take 原子认领 → 内容流落缓存 → 解码预览（流完成服务端即焚毁） */
     fun takeImageForPreview() {
         val confirm = _preview.value as? PreviewState.ConfirmImage ?: return
-        val code = sessionCode ?: return
-        runPreviewAction {
-            repository.takeItem(code, confirm.item.id)
-            val content = repository.openFileContent(code, confirm.item.id)
-            val cache = writeToCache(
-                appContext,
-                content.stream,
-                confirm.item.title ?: "delivery_image_${confirm.item.id}",
-            )
-            writePreview(previewGeneration, PreviewState.ImageReady(confirm.item, decodeSampledBitmap(cache), cache))
-        }
+        downloadItemContent(confirm.item, claimed = false)
     }
 
     /** 文件：take 认领 → 内容流直存系统「下载」目录（保存动作即焚毁） */
     fun takeFileAndSave() {
         val confirm = _preview.value as? PreviewState.ConfirmFile ?: return
+        downloadItemContent(confirm.item, claimed = false)
+    }
+
+    /** 失败态重试入口：按条目类型续走「下载 → 预览/落盘」（认领已完成时跳过 take） */
+    fun retryContentTake() {
+        val failed = _preview.value as? PreviewState.ContentFailed ?: return
+        downloadItemContent(failed.item, claimed = failed.claimed)
+    }
+
+    /**
+     * 图片/文件共用内容获取编排。契约要求文件类条目先 take 认领才可拉内容（未认领 409），
+     * 无法改为「先下载后 take」；P0 端侧兜底落在失败分支——认领成功而内容未到手时
+     * **不进入焚毁语义**：条目记入 [_retryableItemIds] 保持待取走可点、弹窗转可重试错误态，
+     * 也不触发会话关闭类清理（仅本地缓存清扫），绝不静默吞掉。
+     */
+    private fun downloadItemContent(item: DeliveryItemVo, claimed: Boolean) {
         val code = sessionCode ?: return
-        runPreviewAction {
-            repository.takeItem(code, confirm.item.id)
-            val content = repository.openFileContent(code, confirm.item.id)
-            saveDeliveryContent(
-                context = appContext,
-                isImage = false,
-                displayName = confirm.item.title ?: "delivery_file_${confirm.item.id}",
-                mimeType = confirm.item.mimeType,
-                source = content.stream,
-            )
-            AppLogger.info(TAG, "投递文件已保存并焚毁 itemId=${confirm.item.id}")
-            writePreview(previewGeneration, null)
-            _toast.value = ToastEvent(R.string.toolbox_delivery_toast_saved_file)
-            refreshNow()
+        if (_previewAction.value is RequestState.Loading) return
+        val generation = previewGeneration
+        viewModelScope.launch {
+            _previewAction.value = RequestState.Loading
+            var claimedNow = claimed
+            try {
+                if (!claimedNow) {
+                    repository.takeItem(code, item.id)
+                    claimedNow = true
+                }
+                val content = repository.openFileContent(code, item.id)
+                when (DeliveryRules.ItemKind.fromCode(item.kind)) {
+                    DeliveryRules.ItemKind.IMAGE -> {
+                        val cache = writeToCache(
+                            appContext,
+                            content.stream,
+                            item.title ?: "delivery_image_${item.id}",
+                        )
+                        writePreview(previewGeneration, PreviewState.ImageReady(item, decodeSampledBitmap(cache), cache))
+                    }
+                    else -> {
+                        saveDeliveryContent(
+                            context = appContext,
+                            isImage = false,
+                            displayName = item.title ?: "delivery_file_${item.id}",
+                            mimeType = item.mimeType,
+                            source = content.stream,
+                        )
+                        AppLogger.info(TAG, "投递文件已保存并焚毁 itemId=${item.id}")
+                        writePreview(previewGeneration, null)
+                        _toast.value = ToastEvent(R.string.toolbox_delivery_toast_saved_file)
+                        refreshNow()
+                    }
+                }
+                // 内容已到手，恢复「已取走 = 焚毁占位」语义
+                _retryableItemIds.value = _retryableItemIds.value - item.id
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: DeliveryException) {
+                AppLogger.warn(TAG, "内容获取业务拒绝 businessCode=${e.businessCode} itemId=${item.id}")
+                onContentDownloadFailure(generation, item, claimedNow, toastFor(e, R.string.toolbox_delivery_preview_error))
+            } catch (e: NetworkException) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.downloadItemContent: ${e.message}", e)
+                onContentDownloadFailure(
+                    generation,
+                    item,
+                    claimedNow,
+                    ToastEvent(R.string.toolbox_delivery_preview_error, informativeMessage(e.message)),
+                )
+            } catch (e: DeliveryMediaException) {
+                // 媒体库写入失败：内容流已到手（服务端随流焚毁，中断自动释放认领），非认领链路问题，
+                // 维持原提示口径——条目可待下次认领重试
+                AppLogger.error(TAG, "内容落盘媒体库写入失败 resId=${e.resId}", e)
+                closePreviewWithError(generation, ToastEvent(e.resId))
+            } catch (e: Exception) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.downloadItemContent: ${e.message}", e)
+                onContentDownloadFailure(generation, item, claimedNow, ToastEvent(R.string.toolbox_delivery_preview_error))
+            } finally {
+                _previewAction.value = RequestState.Idle
+            }
         }
+    }
+
+    /** 内容获取失败分流：认领未完成走原口径（收起弹窗提示）；认领已成功则转可重试错误态 */
+    private suspend fun onContentDownloadFailure(generation: Int, item: DeliveryItemVo, claimed: Boolean, event: ToastEvent) {
+        if (!claimed) {
+            closePreviewWithError(generation, event)
+            return
+        }
+        _retryableItemIds.value = _retryableItemIds.value + item.id
+        writePreview(generation, PreviewState.ContentFailed(item, claimed = true))
+        refreshNow()
     }
 
     /** 文本：复制即触发 take + 焚毁（认领响应的正文优先，兜底预览正文） */
@@ -455,7 +537,7 @@ class DeliverySessionViewModel @Inject constructor(
                 closePreviewWithError(generation, toastFor(e, R.string.toolbox_delivery_preview_error))
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "DeliverySessionViewModel.runPreviewAction: ${e.message}", e)
-                closePreviewWithError(generation, ToastEvent(R.string.toolbox_delivery_preview_error, e.message))
+                closePreviewWithError(generation, ToastEvent(R.string.toolbox_delivery_preview_error, informativeMessage(e.message)))
             } catch (e: DeliveryMediaException) {
                 // 媒体库写入失败：文案由 saver 以资源 id 携带，此处映射为 Toast（无硬编码中文）
                 AppLogger.error(TAG, "预览动作媒体库写入失败 resId=${e.resId}", e)
@@ -473,8 +555,13 @@ class DeliverySessionViewModel @Inject constructor(
         if (e.businessCode == DeliveryBusinessCode.CONFLICT) {
             ToastEvent(R.string.toolbox_delivery_item_taken_toast, e.message)
         } else {
-            ToastEvent(fallbackRes, e.message)
+            // 业务文案（如「投递会话不存在或已失效」）保留原文；泛化兜底词回退端侧文案
+            ToastEvent(fallbackRes, informativeMessage(e.message))
         }
+
+    /** 过滤后端泛化原文：保留有信息量的业务文案，泛化词返回 null 由调用方回退 resId 展示 */
+    private fun informativeMessage(message: String?): String? =
+        message?.takeIf { it.isNotBlank() && it !in GENERIC_BACKEND_MESSAGES }
 
     private suspend fun closePreviewWithError(generation: Int, event: ToastEvent) {
         writePreview(generation, null)

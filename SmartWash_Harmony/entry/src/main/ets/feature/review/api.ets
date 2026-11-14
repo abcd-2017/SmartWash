@@ -280,6 +280,8 @@ export class ReviewText {
   static get review_queue_count_format(): string { return resString('review_text_review_queue_count_format') }
   static get review_queue_breakdown_format(): string { return resString('review_text_review_queue_breakdown_format') }
   static get review_queue_action_start(): string { return resString('review_queue_action_start') }
+  /** 队列页头「资料」入口（队列非空时也要能进资料页建卡，修复可达性断路） */
+  static get review_queue_action_materials(): string { return resString('review_queue_action_materials') }
   static get review_queue_empty_message(): string { return resString('review_queue_empty_message') }
   static get review_queue_empty_action(): string { return resString('review_queue_empty_action') }
   static get review_card_new(): string { return resString('review_card_new') }

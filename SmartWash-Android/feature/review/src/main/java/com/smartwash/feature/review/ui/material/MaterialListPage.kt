@@ -162,8 +162,8 @@ fun MaterialListPage(
                         message = loadState.getMessage(context),
                         modifier = Modifier.fillMaxSize(),
                         action = {
+                            // 行动按钮与队列页/学习页统一 48dp 主按钮档（评审 P2：原 small 档跨页口径不一）
                             AppButton(
-                                small = true,
                                 text = stringResource(R.string.review_action_retry),
                                 onClick = { viewModel.load() },
                             )
@@ -265,10 +265,11 @@ private fun MaterialListContent(
                 EmptyState(
                     icon = Icons.Rounded.School,
                     message = stringResource(R.string.review_material_empty),
-                    modifier = Modifier.fillMaxWidth(),
+                    // 撑满视口让空态垂直居中，与队列页摆位一致（评审 P2）
+                    modifier = Modifier.fillParentMaxSize(),
                     action = {
+                        // 行动按钮与队列页/学习页统一 48dp 主按钮档（评审 P2：原 small 档跨页口径不一）
                         AppButton(
-                            small = true,
                             text = stringResource(R.string.review_material_action_new),
                             onClick = onToggleCreateForm,
                         )

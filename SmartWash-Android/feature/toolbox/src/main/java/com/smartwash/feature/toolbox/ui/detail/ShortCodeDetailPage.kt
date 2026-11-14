@@ -400,6 +400,9 @@ fun ShortCodeDetailPage(
                         sectionTitle = stringResource(R.string.toolbox_secret_link_label),
                         hint = stringResource(R.string.toolbox_secret_link_hint),
                         unavailableText = stringResource(R.string.toolbox_secret_link_unavailable),
+                        // 链接不可用（未配置 Web 域名）或秘密已终态（焚毁/过期，链接已失效）时
+                        // 禁用复制/打开——避免按钮可点却静默无效；终态语义已由状态行表达
+                        actionsEnabled = !secretTerminal && !vo.secretUrl.isNullOrBlank(),
                         onCopy = {
                             vo.secretUrl?.takeIf { it.isNotBlank() }?.let { url ->
                                 copyToClipboard(context, url)
@@ -422,6 +425,7 @@ fun ShortCodeDetailPage(
                             null
                         },
                         unavailableText = null,
+                        actionsEnabled = !vo.shortUrl.isNullOrBlank(),
                         onCopy = {
                             vo.shortUrl?.let { url ->
                                 copyToClipboard(context, url)
@@ -586,7 +590,8 @@ fun ShortCodeDetailPage(
 }
 
 /** 二维码卡：url 生成（默认线程池，组合期副作用收敛在 produceState）+ 复制/打开。
- *  私密文本传 secretUrl（链接不可用时降级提示文案，不再骨架空转） */
+ *  私密文本传 secretUrl（链接不可用时降级提示文案，不再骨架空转）；
+ *  [actionsEnabled] 为 false（链接不可用/终态）时按钮禁用、「查看行为」提示一并隐藏 */
 @Composable
 private fun QrCard(
     url: String?,
@@ -595,6 +600,7 @@ private fun QrCard(
     unavailableText: String?,
     onCopy: () -> Unit,
     onOpen: () -> Unit,
+    actionsEnabled: Boolean = true,
 ) {
     val qrBitmap by produceState<Bitmap?>(initialValue = null, key1 = url) {
         value = withContext(Dispatchers.Default) {
@@ -651,7 +657,9 @@ private fun QrCard(
                 .fillMaxWidth()
                 .padding(horizontal = AppDimens.spaceMd),
         )
-        if (hint != null) {
+        // 「查看行为」提示只在链接真实可用时展示——不可用降级/终态下与降级文案、状态行并存
+        // 会自相矛盾（链接已 410 还承诺「打开即可查看」）
+        if (hint != null && actionsEnabled) {
             Spacer(modifier = Modifier.height(AppDimens.spaceXs))
             Text(
                 text = hint,
@@ -667,12 +675,14 @@ private fun QrCard(
             AppButton(
                 text = stringResource(R.string.toolbox_action_copy),
                 onClick = onCopy,
+                enabled = actionsEnabled,
                 variant = AppButtonVariant.SECONDARY,
                 modifier = Modifier.weight(1f),
             )
             AppButton(
                 text = stringResource(R.string.toolbox_action_open),
                 onClick = onOpen,
+                enabled = actionsEnabled,
                 variant = AppButtonVariant.PRIMARY,
                 modifier = Modifier.weight(1f),
             )

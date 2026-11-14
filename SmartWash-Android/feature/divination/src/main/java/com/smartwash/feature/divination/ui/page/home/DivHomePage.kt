@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -34,6 +36,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,6 +67,7 @@ import com.smartwash.common.utils.pressable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -87,7 +91,21 @@ fun DivHomePage(
     val uiState by viewModel.uiState.collectAsState()
     val records by viewModel.recentRecords.collectAsState()
     val signSaving by viewModel.signSaving.collectAsState()
+    val signSaveFailed by viewModel.signSaveFailed.collectAsState()
     val view = currentView()
+    val context = LocalContext.current
+    // 今日一签入库失败提示（audit-11 #6 链路加固的用户可感知出口）：VM 本地建档异常兜底，
+    // Toast 属副作用放 LaunchedEffect（组合期禁止副作用），一次性事件消费后由 VM 复位
+    LaunchedEffect(signSaveFailed) {
+        if (signSaveFailed) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.div_sign_save_failed),
+                Toast.LENGTH_SHORT,
+            ).show()
+            viewModel.consumeSignSaveFailed()
+        }
+    }
 
     // 2026-11-01 缺陷 7a：本页是观象台唯一未包 DivinationScreen 的页面——状态栏裸顶（时辰被挡）、
     // LocalDivinationColors 落到默认玄墨（浅色系统下米白字画浅底）、导航栏/IME 也无避让。
@@ -284,7 +302,11 @@ fun DivHomePage(
 private fun LedgerRow(record: com.smartwash.feature.divination.database.DivRecordEntity) {
     val c = DivColors.current
     val dateText = remember(record.castAt) {
-        SimpleDateFormat("MM-dd", Locale.getDefault()).format(Date(record.castAt))
+        // 案卷日期统一东八区口径（2026-11-14 检查 report P2）：与天象头四柱（lunar 库东八区）
+        // 对齐，不随设备时区漂移——跨时区设备上同一「今天」不再呈现两个日期
+        SimpleDateFormat("MM-dd", Locale.getDefault()).apply {
+            timeZone = TimeZone.getTimeZone("Asia/Shanghai")
+        }.format(Date(record.castAt))
     }
     Row(
         Modifier

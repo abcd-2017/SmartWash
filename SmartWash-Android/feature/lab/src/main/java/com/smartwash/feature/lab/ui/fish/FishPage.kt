@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
@@ -143,6 +144,9 @@ fun FishPage(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+                // 水池底部避让系统手势区（与同模块泡泡纸/鼓/首页一致；ui-check P2：
+                // 原水池贴底，深色下鱼群与手势条同区重叠）
+                .navigationBarsPadding()
                 .padding(horizontal = AppDimens.pagePadding),
         ) {
             FishPool(

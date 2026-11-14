@@ -230,7 +230,11 @@ fun SubscriptionListPage(
                     pagingItems.itemCount == 0 && refreshState is LoadState.NotLoading -> {
                         EmptyState(
                             icon = Icons.Rounded.Autorenew,
-                            message = stringResource(R.string.subscription_empty_message),
+                            // 筛选态空结果用独立文案，避免「还没有订阅」误导用户以为数据被清空（评审 P1）
+                            message = stringResource(
+                                if (selectedFilter == null) R.string.subscription_empty_message
+                                else R.string.subscription_empty_filter_message
+                            ),
                             modifier = Modifier.fillMaxSize(),
                             action = {
                                 AppButton(

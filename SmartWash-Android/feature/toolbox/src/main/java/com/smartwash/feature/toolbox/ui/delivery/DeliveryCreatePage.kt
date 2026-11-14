@@ -54,6 +54,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonBlock
@@ -94,6 +95,12 @@ fun DeliveryCreatePage(
     val passwordError by viewModel.passwordError.collectAsState()
     val session by viewModel.session.collectAsState()
     val closeState by viewModel.closeState.collectAsState()
+
+    var showCloseConfirm by remember { mutableStateOf(false) }
+
+    // 从会话页返回时校验会话是否仍有效：会话页可能已关闭会话，避免发起页残留 stale 会话卡
+    //（返回即重进组合，LaunchedEffect(Unit) 语义同 onResume）
+    LaunchedEffect(Unit) { viewModel.onReturnFromSession() }
 
     // 手动关闭：成功（VM 已回表单态）提示；失败提示并复位
     LaunchedEffect(closeState) {
@@ -146,7 +153,8 @@ fun DeliveryCreatePage(
                     session = created,
                     closeLoading = closeState is RequestState.Loading,
                     onOpenSession = { navController.navigateToDeliverySession(created.code) },
-                    onClose = viewModel::closeSession,
+                    // 与会话页一致：危险动作二次确认，避免误点立即焚毁未取走条目
+                    onClose = { showCloseConfirm = true },
                     onCopyLink = {
                         created.enterUrl?.let { url ->
                             copyToClipboard(context, url)
@@ -157,6 +165,20 @@ fun DeliveryCreatePage(
                 )
             }
         }
+    }
+
+    if (showCloseConfirm) {
+        AppConfirmDialog(
+            title = stringResource(R.string.toolbox_delivery_confirm_close_title),
+            message = stringResource(R.string.toolbox_delivery_confirm_close_message),
+            isDanger = true,
+            confirmText = stringResource(R.string.toolbox_delivery_action_close),
+            onConfirm = {
+                showCloseConfirm = false
+                viewModel.closeSession()
+            },
+            onDismiss = { showCloseConfirm = false },
+        )
     }
 }
 

@@ -50,13 +50,15 @@ fun DivinationScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .imePadding()
+                    // 底部安全区必须留在滚动链外侧：放 verticalScroll 内侧时该内边距随内容
+                    // 滚动，内容略超一屏且停在顶部时免责脚注仍会压到手势条（2026-11-14 检查
+                    // report P1）——外置后滚动视口本身避让导航栏，脚注恒定落在手势条上方
+                    .navigationBarsPadding()
                     .then(
                         if (scrollable) {
-                            Modifier
-                                .verticalScroll(rememberScrollState())
-                                .navigationBarsPadding()
+                            Modifier.verticalScroll(rememberScrollState())
                         } else {
-                            Modifier.navigationBarsPadding()
+                            Modifier
                         }
                     ),
                 content = content,

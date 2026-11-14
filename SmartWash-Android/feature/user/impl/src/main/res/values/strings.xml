@@ -204,6 +204,10 @@
     <!-- 网络错误（error_network_fail 为跨域共享文案，app 侧同名保留） -->
     <string name="error_network_fail">请求失败</string>
 
+    <!-- 收货地址（用户页入口行：功能未立项，走查 P-501，Toast 兜底对齐 OrderDetailPage D-OD12 约定） -->
+    <string name="shipping_address">收货地址</string>
+    <string name="shipping_address_unavailable">收货地址功能暂未开放</string>
+
     <!-- 钱包流水（GET /web/auth/user/transactions；金额符号端上按 type 重算，绝对值展示） -->
     <string name="wallet_transactions">钱包流水</string>
     <string name="no_wallet_transactions">还没有流水，去充值或下单一笔试试</string>

@@ -11,12 +11,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,6 +34,7 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Redeem
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
@@ -49,15 +53,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -252,21 +260,344 @@ fun UserInfoPage(
                 LoadingState(modifier = Modifier.fillMaxSize())
             } else {
                 // 下拉刷新（A2）：断网失败后恢复网络，下拉即可重新拉取（此前本页无下拉，
-                // Toast 2 秒即逝后用户没有任何恢复入口）；tab 往返与 ON_RESUME 既有触发保持
-                PullToRefreshBox(
-                    isRefreshing = isRefreshing,
-                    onRefresh = { userInfoViewModel.getUserInfo() },
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    // 标题行（设计：状态栏下 16，行底距头像行 8）
+                // Toast 2 秒即逝后用户没有任何恢复入口）；tab 往返与 ON_RESUME 既有触发保持。
+                // 滚动收缩停靠：scrollState 提到页面级，进度在 graphicsLayer 绘制期读取，避免每帧重组。
+                val scrollState = rememberScrollState()
+                var hintHeight by remember { mutableStateOf(0.dp) }
+                val density = LocalDensity.current
+                // 提示条隐藏时按 0 计（hintHeight 会残留上次测量值，不能直接用作 padding/行程）
+                val effectiveHintHeight = if (showOfflineHint) hintHeight else 0.dp
+                // 停靠行程 = 栏高/2 + 提示条高 + 36dp（8dp 行顶距 + 28dp 半径）
+                val dockDistancePx = with(density) { (DockDistanceBase + effectiveHintHeight).toPx() }
+                val avatarDockShiftPx = with(density) { AvatarDockShift.toPx() }
+                val titleShiftPx = with(density) { TitleShift.toPx() }
+                // 名字左缘始终对齐「头像右缘 + 12dp」：位移 = (68 - 28p) dp
+                val nameShiftBasePx = with(density) { NameDockShiftBase.toPx() }
+                val nameShiftPerPx = with(density) { NameDockShiftPerP.toPx() }
+                val reduceMotion = LocalReduceMotion.current
+
+                // 内容最小高度 = 可视区 + 停靠行程：内容较短时也要能滚到完全停靠，
+                // 否则滚动驱动动画到不了终态（可视区高度 = 本页根高度 - 顶栏高）
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val viewportHeight = maxHeight - TopBarHeight
+                    val minContentHeight = viewportHeight + DockDistanceBase + effectiveHintHeight
+
+                    // 吸附：松手后吸附到展开/折叠端点，不停在中间态
+                    // 吸附：松手（isScrollInProgress 变 false）立即吸附到展开/折叠端点，不停在中间态
+                    // 吸附：松手（isScrollInProgress 变 false）立即吸附到展开/折叠端点，不停在中间态
+                    LaunchedEffect(scrollState) {
+                        snapshotFlow { scrollState.isScrollInProgress }
+                            .collect { scrolling ->
+                                if (!scrolling) {
+                                    val dockTarget = minOf(dockDistancePx, scrollState.maxValue.toFloat())
+                                    val target = if (scrollState.value > dockTarget / 2f) dockTarget else 0f
+                                    if (kotlin.math.abs(scrollState.value - target) > 1f) {
+                                        scrollState.scrollTo(target.toInt())
+                                    }
+                                }
+                            }
+                    }
+
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = { userInfoViewModel.getUserInfo() },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = TopBarHeight)
+                    ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState)
+                            .heightIn(min = minContentHeight)
+                            .padding(top = effectiveHintHeight + AvatarRowHeight)
+                    ) {
+                        // 数据卡片（画板实测 = 首页账户卡同款）：余额通栏在上
+                        // （上16 + label 16 + 4 + 大字 44），下方券/单两半格各居中、中间 1×40 发丝线。
+                        // A2：失败且无数据时以错误卡替代——「未加载」与「余额为 0 的合法状态」可区分
+                        if (showErrorCard) {
+                            EmptyState(
+                                // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位
+                                icon = Icons.Default.CreditCard,
+                                message = lastErrorMessage,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = AppDimens.spaceMd),
+                                action = {
+                                    AppButton(
+                                        small = true,
+                                        text = stringResource(R.string.user_action_retry),
+                                        onClick = { userInfoViewModel.getUserInfo() },
+                                        variant = AppButtonVariant.SECONDARY,
+                                    )
+                                }
+                            )
+                        } else GroupCard(
+                            modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                            // §3.1 卡片内边距 20dp（原纵向 16dp 不符）
+                            contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 20.dp)
+                        ) {
+                            Column {
+                                // 余额（点击去充值；防抖已注入，关闭叠加）
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .pressable(
+                                            onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.Recharge) },
+                                            debounce = false,
+                                        )
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.wallet_balance),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AppColors.colorScheme.textSecondary
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.currency_format, String.format(Locale.CHINA, "%.2f", userInfo?.balance ?: 0f)),
+                                        style = AppTextStyles.DataLarge,
+                                        // 设计稿余额大字取品牌绿 primary（深色模式 primary 即提亮绿，§6.5）
+                                        color = AppColors.colorScheme.primary,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    // 优惠券（点击进优惠券页；防抖已注入，关闭叠加）
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .pressable(
+                                                onClick = rememberDebouncedClick { navController.navigate(CouponRoute.Coupon) },
+                                                debounce = false,
+                                            ),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "${userInfo?.couponCount ?: 0}",
+                                            style = AppTextStyles.AmountMedium,
+                                            color = AppColors.colorScheme.textPrimary
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.coupon),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = AppColors.colorScheme.textSecondary
+                                        )
+                                    }
+                                    // 分隔线（设计：1px hairline，高 40）
+                                    Box(
+                                        modifier = Modifier
+                                            .width(1.dp)
+                                            .height(40.dp)
+                                            .background(AppColors.colorScheme.hairline)
+                                    )
+                                    // 累计订单
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "${userInfo?.orderCount ?: 0}",
+                                            style = AppTextStyles.AmountMedium,
+                                            color = AppColors.colorScheme.textPrimary
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.total_orders),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = AppColors.colorScheme.textSecondary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // 画板实测：数据卡底→账户卡 16
+                        Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+
+                        // 账户卡片（列表行卡：行 64 铺满，卡内边距仅水平 20 —— 画板卡高 = 行数 × 64）
+                        GroupCard(
+                            modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                            contentPadding = PaddingValues(horizontal = AppDimens.cardPadding)
+                        ) {
+                            SettingRow(
+                                icon = Icons.Default.CreditCard,
+                                containerColor = AppColors.colorScheme.iconContainerGreen,
+                                iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
+                                label = stringResource(R.string.campus_card),
+                                trailing = {
+                                    Text(
+                                        // A2：信息未加载时显示「未加载」而非「未绑定」——绑定状态是
+                                        // 服务端数据，失败态下不得用本地默认值冒充
+                                        text = when {
+                                            showErrorCard -> stringResource(R.string.user_info_unloaded)
+                                            userInfo?.campusCard != null -> stringResource(R.string.bound)
+                                            else -> stringResource(R.string.not_bound)
+                                        },
+                                        // 画板实测行尾值 12/400（caption 400 档）
+                                        style = MaterialTheme.typography.bodySmall,
+                                        // U-103：原「已绑定」用 brand green #2D9B6A on 白 3.50:1（§10 绿字红线
+                                        // 禁小号文字）→ 统一 textSecondary #6B6E73（on 白 5.12:1）
+                                        color = AppColors.colorScheme.textSecondary
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = AppColors.colorScheme.textTertiary
+                                    )
+                                },
+                                onClick = {
+                                    when {
+                                        showErrorCard -> Toast.makeText(
+                                            context,
+                                            context.getString(R.string.user_info_unloaded_toast),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        userInfo?.campusCard != null -> showUnbindDialog = true
+                                        else -> showBindDialog = true
+                                    }
+                                }
+                            )
+                            HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                            SettingRow(
+                                icon = Icons.Default.LocationOn,
+                                containerColor = AppColors.colorScheme.iconContainerOrange,
+                                iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
+                                label = stringResource(R.string.shipping_address),
+                                trailing = {
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = AppColors.colorScheme.textTertiary
+                                    )
+                                },
+                                // 待收货地址功能立项后接入（走查 P-501；全工程无地址页面/路由、后端无地址表，
+                                // 四端均未立项；对齐 OrderDetailPage D-OD12 约定：先以 Toast 兜底给用户明确反馈）
+                                onClick = { Toast.makeText(context, context.getString(R.string.shipping_address_unavailable), Toast.LENGTH_SHORT).show() }
+                            )
+                            HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                            // 钱包流水（充值/消费分页列表，GET /web/auth/user/transactions）
+                            SettingRow(
+                                icon = Icons.Default.AccountBalanceWallet,
+                                containerColor = AppColors.colorScheme.iconContainerTeal,
+                                iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
+                                label = stringResource(R.string.wallet_transactions),
+                                trailing = {
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = AppColors.colorScheme.textTertiary
+                                    )
+                                },
+                                onClick = { navController.navigate(UserRoute.WalletTransactions) }
+                            )
+                        }
+
+                        // 卡间距 16dp（规范 §2.3）
+                        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+
+                        // 功能卡片（列表行卡：内边距仅水平 20）
+                        GroupCard(
+                            modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                            contentPadding = PaddingValues(horizontal = AppDimens.cardPadding)
+                        ) {
+                            SettingRow(
+                                icon = Icons.Default.Inventory,
+                                containerColor = AppColors.colorScheme.iconContainerBlue,
+                                iconForegroundColor = AppColors.colorScheme.iconForegroundBlue,
+                                label = stringResource(R.string.my_orders),
+                                trailing = {
+                                    Text(
+                                        // A2：信息未加载时显示「未加载」而非「0 单」（与真实 0 单区分）
+                                        text = if (showErrorCard) {
+                                            stringResource(R.string.user_info_unloaded)
+                                        } else {
+                                            stringResource(R.string.my_orders_count_format, userInfo?.orderCount ?: 0)
+                                        },
+                                        // 画板实测行尾值 12/400（caption 400 档）；订单数是数量，开 tnum（规范 §2.2）
+                                        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                                        color = AppColors.colorScheme.textSecondary
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = AppColors.colorScheme.textTertiary
+                                    )
+                                },
+                                onClick = { navController.navigate(OrderRoute.Order(0)) }
+                            )
+                            HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                            // 签到有礼（扩展提案功能 17）：跨域经 points-api 的 PointsRoute（impl → 他人 api 合法），
+                            // 橙容器 = 通知/待办/营销奖励语义（规范 §3.2 六色浅底）
+                            SettingRow(
+                                icon = Icons.Default.Redeem,
+                                containerColor = AppColors.colorScheme.iconContainerOrange,
+                                iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
+                                label = stringResource(R.string.points_entry),
+                                trailing = {
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = AppColors.colorScheme.textTertiary
+                                    )
+                                },
+                                onClick = { navController.navigate(PointsRoute.Home) }
+                            )
+                            HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                            // 消息中心（扩展提案 #4）：跨域经 notice-api 的 NoticeRoute（impl → 他人 api 合法），
+                            // 橙容器 = 通知/提醒语义（规范 §3.2 六色浅底）；行尾未读数字角标（0 隐藏）
+                            SettingRow(
+                                icon = Icons.Default.Notifications,
+                                containerColor = AppColors.colorScheme.iconContainerOrange,
+                                iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
+                                label = stringResource(R.string.messages_entry),
+                                trailing = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        UnreadBadge(count = unreadCount)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.ChevronRight,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                            tint = AppColors.colorScheme.textTertiary
+                                        )
+                                    }
+                                },
+                                onClick = { navController.navigate(NoticeRoute.Inbox) }
+                            )
+                            HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                            SettingRow(
+                                icon = Icons.Default.Settings,
+                                containerColor = AppColors.colorScheme.iconContainerGreen,
+                                iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
+                                label = stringResource(R.string.settings),
+                                trailing = {
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = AppColors.colorScheme.textTertiary
+                                    )
+                                },
+                                onClick = { navController.navigate(UserRoute.Setting) }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+                    }
+
+                    // ===== 固定顶栏（标题 + 设置按钮）：不再随滚动消失 =====
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(TopBarHeight)
+                            .background(AppColors.colorScheme.background)
                             .padding(
                                 start = AppDimens.pagePadding,
                                 end = AppDimens.pagePadding,
@@ -276,11 +607,35 @@ fun UserInfoPage(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = stringResource(R.string.my_profile),
-                            style = AppTextStyles.RootTitle,
-                            color = AppColors.colorScheme.textPrimary
-                        )
+                        // 标题位：滚动 0 显示「我的」，停靠后切换为用户名（手机号），
+                        // 让顶栏左侧成为「头像 + 身份」整体，去掉无关的占位标题
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            val titleText = stringResource(R.string.my_profile)
+                            val nameText = userInfo?.phoneNumber
+                                ?.takeIf { it.isNotEmpty() }
+                                ?.let { maskPhone(it) }
+                                ?: stringResource(R.string.username)
+                            Text(
+                                text = titleText,
+                                style = AppTextStyles.RootTitle,
+                                color = AppColors.colorScheme.textPrimary,
+                                modifier = Modifier.graphicsLayer {
+                                    val p = (scrollState.value / dockDistancePx).coerceIn(0f, 1f)
+                                    if (!reduceMotion) translationX = titleShiftPx * p
+                                    alpha = 1f - p
+                                }
+                            )
+                            Text(
+                                text = nameText,
+                                style = AppTextStyles.RootTitle,
+                                color = AppColors.colorScheme.textPrimary,
+                                modifier = Modifier.graphicsLayer {
+                                    val p = (scrollState.value / dockDistancePx).coerceIn(0f, 1f)
+                                    if (!reduceMotion) translationX = nameShiftBasePx - nameShiftPerPx * p
+                                    alpha = p
+                                }
+                            )
+                        }
                         // 设计：48dp 圆形底 + 20dp 图标，兼作 48dp 热区（防抖已注入，关闭叠加）；
                         // §3.2 容器底色取六色浅底按语义（设置/账户 → 青），禁用灰底 surfaceVariant
                         Box(
@@ -303,404 +658,176 @@ fun UserInfoPage(
                         }
                     }
 
-                    // A2 离线提示（有上次成功数据但上次刷新失败）：轻量常驻条，刷新成功自动消失
-                    if (showOfflineHint) {
+                    // ===== 覆盖层：离线提示 + 头像行（z 序高于顶栏，头像才能停靠进栏）=====
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = TopBarHeight)
+                    ) {
+                        // A2 离线提示（有上次成功数据但上次刷新失败）：轻量常驻条，刷新成功自动消失。
+                        // onSizeChanged 测高 → 同步内容区顶 padding 与停靠行程。
+                        if (showOfflineHint) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onSizeChanged { size -> hintHeight = with(density) { size.height.toDp() } }
+                                    .padding(horizontal = AppDimens.pagePadding)
+                                    .clip(RoundedCornerShape(AppDimens.radiusMd))
+                                    .background(AppColors.colorScheme.warningContainer)
+                                    .padding(horizontal = AppDimens.spaceSm, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.user_offline_hint),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = AppColors.colorScheme.onWarningContainer
+                                )
+                            }
+                        }
+
+                        // 头像区域（设计：标题行下 8，行底距数据卡 16）
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = AppDimens.pagePadding)
-                                .clip(RoundedCornerShape(AppDimens.radiusMd))
-                                .background(AppColors.colorScheme.warningContainer)
-                                .padding(horizontal = AppDimens.spaceSm, vertical = 8.dp),
+                                .padding(
+                                    start = AppDimens.pagePadding,
+                                    end = AppDimens.pagePadding,
+                                    top = 8.dp,
+                                    bottom = 16.dp
+                                ),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = stringResource(R.string.user_offline_hint),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = AppColors.colorScheme.onWarningContainer
-                            )
-                        }
-                    }
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    // 滚动驱动：缩小 + 上移停靠进顶栏；reduced motion 仅淡出
+                                    .graphicsLayer {
+                                        val p = (scrollState.value / dockDistancePx).coerceIn(0f, 1f)
+                                        if (reduceMotion) {
+                                            alpha = 1f - p
+                                        } else {
+                                            scaleX = 1f - 0.5f * p
+                                            scaleY = 1f - 0.5f * p
+                                            translationX = -avatarDockShiftPx * p
+                                            translationY = -dockDistancePx * p
+                                        }
+                                    }
+                                    .pressable(onClick = {
+                                        imagePickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    }),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                // 三态（上传中 / 占位首字 / 网络图）交叉淡入，替代 0ms 硬切；
+                                // 180ms 淡入本身即 reduced motion 的降级形态（规范 §8）
+                                val avatarState = when {
+                                    avatarUploadState is RequestState.Loading -> AvatarVisual.Uploading
+                                    userInfo?.avatar.isNullOrBlank() -> AvatarVisual.Placeholder
+                                    else -> AvatarVisual.Remote
+                                }
+                                Crossfade(
+                                    targetState = avatarState,
+                                    animationSpec = tween(CROSSFADE_ALT_MS),
+                                    label = "avatarVisual",
+                                ) { visual ->
+                                    when (visual) {
+                                        AvatarVisual.Uploading -> Box(
+                                            modifier = Modifier
+                                                .size(56.dp)
+                                                .clip(CircleShape)
+                                                .background(AppColors.colorScheme.primaryLight),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            // 公共 ButtonSpinner（§7.8：reduced motion 退化为静态 270° 圆环）
+                                            ButtonSpinner(
+                                                size = 24.dp,
+                                                strokeWidth = 2.dp,
+                                                color = AppColors.colorScheme.primary,
+                                            )
+                                        }
 
-                    // 头像区域（设计：标题行下 8，行底距数据卡 16）
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                start = AppDimens.pagePadding,
-                                end = AppDimens.pagePadding,
-                                top = 8.dp,
-                                bottom = 16.dp
-                            ),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .pressable(onClick = {
-                                    imagePickerLauncher.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                    )
-                                }),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            // 三态（上传中 / 占位首字 / 网络图）交叉淡入，替代 0ms 硬切；
-                            // 180ms 淡入本身即 reduced motion 的降级形态（规范 §8）
-                            val avatarState = when {
-                                avatarUploadState is RequestState.Loading -> AvatarVisual.Uploading
-                                userInfo?.avatar.isNullOrBlank() -> AvatarVisual.Placeholder
-                                else -> AvatarVisual.Remote
-                            }
-                            Crossfade(
-                                targetState = avatarState,
-                                animationSpec = tween(CROSSFADE_ALT_MS),
-                                label = "avatarVisual",
-                            ) { visual ->
-                                when (visual) {
-                                    AvatarVisual.Uploading -> Box(
-                                        modifier = Modifier
-                                            .size(56.dp)
-                                            .clip(CircleShape)
-                                            .background(AppColors.colorScheme.primaryLight),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        // 公共 ButtonSpinner（§7.8：reduced motion 退化为静态 270° 圆环）
-                                        ButtonSpinner(
-                                            size = 24.dp,
-                                            strokeWidth = 2.dp,
-                                            color = AppColors.colorScheme.primary,
+                                        AvatarVisual.Placeholder -> Box(
+                                            modifier = Modifier
+                                                .size(56.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    // 设计 gradient.hero：对角线渐变（浅 #2D9B6A→#1E8C5C / 深 #2D9B6A→#5BC894）
+                                                    Brush.linearGradient(
+                                                        colors = listOf(
+                                                            AppColors.colorScheme.primary,
+                                                            AppColors.colorScheme.primaryDark
+                                                        ),
+                                                        start = Offset.Zero,
+                                                        end = Offset.Infinite
+                                                    )
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = userInfo?.phoneNumber?.firstOrNull()?.toString() ?: "U",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = MaterialTheme.colorScheme.onPrimary
+                                            )
+                                        }
+
+                                        AvatarVisual.Remote -> AsyncImage(
+                                            // 图片加载完成后的淡入；reduced motion 下取 0（直接显示）
+                                            model = ImageRequest.Builder(context)
+                                                .data(userInfo?.avatar)
+                                                .crossfade(if (LocalReduceMotion.current) 0 else CROSSFADE_ALT_MS)
+                                                .build(),
+                                            contentDescription = stringResource(R.string.avatar),
+                                            modifier = Modifier
+                                                .size(56.dp)
+                                                .clip(CircleShape),
+                                            contentScale = ContentScale.Crop
                                         )
                                     }
-
-                                    AvatarVisual.Placeholder -> Box(
-                                        modifier = Modifier
-                                            .size(56.dp)
-                                            .clip(CircleShape)
-                                            .background(
-                                                // 设计 gradient.hero：对角线渐变（浅 #2D9B6A→#1E8C5C / 深 #2D9B6A→#5BC894）
-                                                Brush.linearGradient(
-                                                    colors = listOf(
-                                                        AppColors.colorScheme.primary,
-                                                        AppColors.colorScheme.primaryDark
-                                                    ),
-                                                    start = Offset.Zero,
-                                                    end = Offset.Infinite
-                                                )
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = userInfo?.phoneNumber?.firstOrNull()?.toString() ?: "U",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onPrimary
-                                        )
-                                    }
-
-                                    AvatarVisual.Remote -> AsyncImage(
-                                        // 图片加载完成后的淡入；reduced motion 下取 0（直接显示）
-                                        model = ImageRequest.Builder(context)
-                                            .data(userInfo?.avatar)
-                                            .crossfade(if (LocalReduceMotion.current) 0 else CROSSFADE_ALT_MS)
-                                            .build(),
-                                        contentDescription = stringResource(R.string.avatar),
-                                        modifier = Modifier
-                                            .size(56.dp)
-                                            .clip(CircleShape),
-                                        contentScale = ContentScale.Crop
-                                    )
                                 }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.width(16.dp))
+                            Spacer(modifier = Modifier.width(16.dp))
 
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = userInfo?.phoneNumber
-                                    ?.takeIf { it.isNotEmpty() }
-                                    ?.let { maskPhone(it) }
-                                    ?: stringResource(R.string.username),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = AppColors.colorScheme.textPrimary
-                            )
-                            Text(
-                                // 学校未就绪时空值占位「—」，防空 Text 占位塌陷（AND-B-010）
-                                text = userInfo?.schoolVo?.schoolName?.takeIf { it.isNotBlank() }
-                                    ?: stringResource(R.string.user_school_placeholder),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.colorScheme.textSecondary,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
-
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = AppColors.colorScheme.textTertiary
-                        )
-                    }
-
-                    // 数据卡片（画板实测 = 首页账户卡同款）：余额通栏在上
-                    // （上16 + label 16 + 4 + 大字 44），下方券/单两半格各居中、中间 1×40 发丝线。
-                    // A2：失败且无数据时以错误卡替代——「未加载」与「余额为 0 的合法状态」可区分
-                    if (showErrorCard) {
-                        EmptyState(
-                            // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位
-                            icon = Icons.Default.CreditCard,
-                            message = lastErrorMessage,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = AppDimens.spaceMd),
-                            action = {
-                                AppButton(
-                                    small = true,
-                                    text = stringResource(R.string.user_action_retry),
-                                    onClick = { userInfoViewModel.getUserInfo() },
-                                    variant = AppButtonVariant.SECONDARY,
-                                )
-                            }
-                        )
-                    } else GroupCard(
-                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                        // §3.1 卡片内边距 20dp（原纵向 16dp 不符）
-                        contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 20.dp)
-                    ) {
-                        Column {
-                            // 余额（点击去充值；防抖已注入，关闭叠加）
                             Column(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .pressable(
-                                        onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.Recharge) },
-                                        debounce = false,
-                                    )
+                                    .weight(1f)
+                                    .graphicsLayer {
+                                        val p = (scrollState.value / dockDistancePx).coerceIn(0f, 1f)
+                                        alpha = 1f - p
+                                    }
                             ) {
                                 Text(
-                                    text = stringResource(R.string.wallet_balance),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.colorScheme.textSecondary
+                                    text = userInfo?.phoneNumber
+                                        ?.takeIf { it.isNotEmpty() }
+                                        ?.let { maskPhone(it) }
+                                        ?: stringResource(R.string.username),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = AppColors.colorScheme.textPrimary
                                 )
                                 Text(
-                                    text = stringResource(R.string.currency_format, String.format(Locale.CHINA, "%.2f", userInfo?.balance ?: 0f)),
-                                    style = AppTextStyles.DataLarge,
-                                    // 设计稿余额大字取品牌绿 primary（深色模式 primary 即提亮绿，§6.5）
-                                    color = AppColors.colorScheme.primary,
+                                    // 学校未就绪时空值占位「—」，防空 Text 占位塌陷（AND-B-010）
+                                    text = userInfo?.schoolVo?.schoolName?.takeIf { it.isNotBlank() }
+                                        ?: stringResource(R.string.user_school_placeholder),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.colorScheme.textSecondary,
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(modifier = Modifier.fillMaxWidth()) {
-                                // 优惠券（点击进优惠券页；防抖已注入，关闭叠加）
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .pressable(
-                                            onClick = rememberDebouncedClick { navController.navigate(CouponRoute.Coupon) },
-                                            debounce = false,
-                                        ),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = "${userInfo?.couponCount ?: 0}",
-                                        style = AppTextStyles.AmountMedium,
-                                        color = AppColors.colorScheme.textPrimary
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.coupon),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = AppColors.colorScheme.textSecondary
-                                    )
-                                }
-                                // 分隔线（设计：1px hairline，高 40）
-                                Box(
-                                    modifier = Modifier
-                                        .width(1.dp)
-                                        .height(40.dp)
-                                        .background(AppColors.colorScheme.hairline)
-                                )
-                                // 累计订单
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = "${userInfo?.orderCount ?: 0}",
-                                        style = AppTextStyles.AmountMedium,
-                                        color = AppColors.colorScheme.textPrimary
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.total_orders),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = AppColors.colorScheme.textSecondary
-                                    )
-                                }
-                            }
+
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .graphicsLayer {
+                                        val p = (scrollState.value / dockDistancePx).coerceIn(0f, 1f)
+                                        alpha = 1f - p
+                                    },
+                                tint = AppColors.colorScheme.textTertiary
+                            )
                         }
                     }
-
-                    // 画板实测：数据卡底→账户卡 16
-                    Spacer(modifier = Modifier.height(AppDimens.spaceMd))
-
-                    // 账户卡片（列表行卡：行 64 铺满，卡内边距仅水平 20 —— 画板卡高 = 行数 × 64）
-                    GroupCard(
-                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                        contentPadding = PaddingValues(horizontal = AppDimens.cardPadding)
-                    ) {
-                        SettingRow(
-                            icon = Icons.Default.CreditCard,
-                            containerColor = AppColors.colorScheme.iconContainerGreen,
-                            iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
-                            label = stringResource(R.string.campus_card),
-                            trailing = {
-                                Text(
-                                    // A2：信息未加载时显示「未加载」而非「未绑定」——绑定状态是
-                                    // 服务端数据，失败态下不得用本地默认值冒充
-                                    text = when {
-                                        showErrorCard -> stringResource(R.string.user_info_unloaded)
-                                        userInfo?.campusCard != null -> stringResource(R.string.bound)
-                                        else -> stringResource(R.string.not_bound)
-                                    },
-                                    // 画板实测行尾值 12/400（caption 400 档）
-                                    style = MaterialTheme.typography.bodySmall,
-                                    // U-103：原「已绑定」用 brand green #2D9B6A on 白 3.50:1（§10 绿字红线
-                                    // 禁小号文字）→ 统一 textSecondary #6B6E73（on 白 5.12:1）
-                                    color = AppColors.colorScheme.textSecondary
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = AppColors.colorScheme.textTertiary
-                                )
-                            },
-                            onClick = {
-                                when {
-                                    showErrorCard -> Toast.makeText(
-                                        context,
-                                        context.getString(R.string.user_info_unloaded_toast),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    userInfo?.campusCard != null -> showUnbindDialog = true
-                                    else -> showBindDialog = true
-                                }
-                            }
-                        )
-                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
-                        // 钱包流水（充值/消费分页列表，GET /web/auth/user/transactions）
-                        SettingRow(
-                            icon = Icons.Default.AccountBalanceWallet,
-                            containerColor = AppColors.colorScheme.iconContainerTeal,
-                            iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
-                            label = stringResource(R.string.wallet_transactions),
-                            trailing = {
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = AppColors.colorScheme.textTertiary
-                                )
-                            },
-                            onClick = { navController.navigate(UserRoute.WalletTransactions) }
-                        )
-                    }
-
-                    // 卡间距 16dp（规范 §2.3）
-                    Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
-
-                    // 功能卡片（列表行卡：内边距仅水平 20）
-                    GroupCard(
-                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                        contentPadding = PaddingValues(horizontal = AppDimens.cardPadding)
-                    ) {
-                        SettingRow(
-                            icon = Icons.Default.Inventory,
-                            containerColor = AppColors.colorScheme.iconContainerBlue,
-                            iconForegroundColor = AppColors.colorScheme.iconForegroundBlue,
-                            label = stringResource(R.string.my_orders),
-                            trailing = {
-                                Text(
-                                    // A2：信息未加载时显示「未加载」而非「0 单」（与真实 0 单区分）
-                                    text = if (showErrorCard) {
-                                        stringResource(R.string.user_info_unloaded)
-                                    } else {
-                                        stringResource(R.string.my_orders_count_format, userInfo?.orderCount ?: 0)
-                                    },
-                                    // 画板实测行尾值 12/400（caption 400 档）；订单数是数量，开 tnum（规范 §2.2）
-                                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                                    color = AppColors.colorScheme.textSecondary
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = AppColors.colorScheme.textTertiary
-                                )
-                            },
-                            onClick = { navController.navigate(OrderRoute.Order(0)) }
-                        )
-                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
-                        // 签到有礼（扩展提案功能 17）：跨域经 points-api 的 PointsRoute（impl → 他人 api 合法），
-                        // 橙容器 = 通知/待办/营销奖励语义（规范 §3.2 六色浅底）
-                        SettingRow(
-                            icon = Icons.Default.Redeem,
-                            containerColor = AppColors.colorScheme.iconContainerOrange,
-                            iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
-                            label = stringResource(R.string.points_entry),
-                            trailing = {
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = AppColors.colorScheme.textTertiary
-                                )
-                            },
-                            onClick = { navController.navigate(PointsRoute.Home) }
-                        )
-                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
-                        // 消息中心（扩展提案 #4）：跨域经 notice-api 的 NoticeRoute（impl → 他人 api 合法），
-                        // 橙容器 = 通知/提醒语义（规范 §3.2 六色浅底）；行尾未读数字角标（0 隐藏）
-                        SettingRow(
-                            icon = Icons.Default.Notifications,
-                            containerColor = AppColors.colorScheme.iconContainerOrange,
-                            iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
-                            label = stringResource(R.string.messages_entry),
-                            trailing = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    UnreadBadge(count = unreadCount)
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Icon(
-                                        imageVector = Icons.Default.ChevronRight,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp),
-                                        tint = AppColors.colorScheme.textTertiary
-                                    )
-                                }
-                            },
-                            onClick = { navController.navigate(NoticeRoute.Inbox) }
-                        )
-                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
-                        SettingRow(
-                            icon = Icons.Default.Settings,
-                            containerColor = AppColors.colorScheme.iconContainerGreen,
-                            iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
-                            label = stringResource(R.string.settings),
-                            trailing = {
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = AppColors.colorScheme.textTertiary
-                                )
-                            },
-                            onClick = { navController.navigate(UserRoute.Setting) }
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
                 }
             }
         }
@@ -815,3 +942,20 @@ private fun maskPhone(phone: String): String =
 
 /** 头像三态 — 作为 [Crossfade] 的 targetState，避免上传中/占位/网络图之间硬切 */
 private enum class AvatarVisual { Uploading, Placeholder, Remote }
+
+// ========== 头像滚动收缩停靠（scroll-driven docking）几何常量 ==========
+// 顶栏高（标题 + 设置按钮）：与原标题行 16 + 48 + 8 一致
+private val TopBarHeight = 72.dp
+// 头像行高：8 顶距 + 56 头像 + 16 底距
+private val AvatarRowHeight = 80.dp
+// 停靠时头像水平左移量（56→28 后视觉左缘对齐 pagePadding）
+private val AvatarDockShift = 14.dp
+// 标题右移让位量（停靠头像右缘 + 12dp 间距）
+private val TitleShift = 40.dp
+// 名字位移：左缘 = 头像右缘 + 12dp = (80 - 28p) dp，页边 24dp → 位移 (68 - 28p) dp
+private val NameDockShiftBase = 68.dp
+private val NameDockShiftPerP = 28.dp
+// 顶栏内容中心（padding top 16 + 内容高 48 / 2 = 40dp）：头像停靠时与标题/按钮同一水平线
+private val TopBarContentCenter = 40.dp
+// 停靠行程基准 = 头像初始圆心(栏高 + 8 行顶距 + 28dp 半径) - 顶栏内容中心 = 68dp
+private val DockDistanceBase = TopBarHeight + 8.dp + 28.dp - TopBarContentCenter

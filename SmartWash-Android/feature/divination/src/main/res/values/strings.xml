@@ -44,6 +44,8 @@
     <string name="div_sign_card_source">梅花时间卦</string>
     <!-- 今日一签保存中指示（audit-11 #6 轻量 loading 反馈） -->
     <string name="div_sign_saving">…</string>
+    <!-- 今日一签入库失败提示（VM 本地建档异常兜底的用户可感知出口） -->
+    <string name="div_sign_save_failed">今日一签保存失败，请重试</string>
 
     <!-- 案卷 / 卦历 -->
     <string name="div_home_ledger">案 卷</string>
@@ -52,6 +54,8 @@
     <string name="div_home_ledger_go_ask">去起卦</string>
     <string name="div_history_title">卦历 · 案卷</string>
     <string name="div_history_empty">案卷尚空，且去起一卦</string>
+    <!-- 卦历空态行动按钮（规范 §3.6 空态三要素）：跳观象台首页选术起卦 -->
+    <string name="div_history_go_home">去观象台起卦</string>
     <string name="div_history_note">复盘沿用原盘原时刻 · 不因当前日期重算</string>
     <string name="div_filter_all">全部</string>
 

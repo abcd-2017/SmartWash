@@ -267,6 +267,30 @@
                 @change="handleReadmePick"
               />
             </div>
+
+            <!-- 目录携带 levels.json：勾选随上传自动导入；解析失败仅提示，游戏本体照常上传 -->
+            <el-alert
+              v-if="levelsDraft && !levelsDraft.error"
+              class="levels-draft-alert"
+              type="info"
+              :closable="false"
+              show-icon
+            >
+              <template #title>
+                识别到关卡文件 levels.json（{{ levelsDraft.plan?.rows.length || 0 }} 关）
+              </template>
+              <el-checkbox v-model="levelsDraft.checked" class="levels-draft-check">
+                上传成功后自动导入{{ levelsDispositionText }}
+              </el-checkbox>
+            </el-alert>
+            <el-alert
+              v-else-if="levelsDraft?.error"
+              class="levels-draft-alert"
+              type="warning"
+              :closable="false"
+              show-icon
+              :title="`识别到 levels.json 但未随上传导入：${levelsDraft.error}`"
+            />
           </el-form-item>
 
           <el-form-item label="封面图">
@@ -444,6 +468,21 @@
         </div>
         <div class="upload-success-tip">
           可在新窗口预览游戏；确认无误后在列表中打开「下发」开关，App 游戏中心即会展示。
+        </div>
+        <!-- 关卡跟随导入结果：失败不回滚游戏上传，可到关卡管理重试 -->
+        <div
+          v-if="levelsDraft?.checked && !levelsDraft.error"
+          class="upload-success-levels"
+          :class="{ 'is-loading': levelsImporting }"
+        >
+          <template v-if="levelsImporting">正在导入关卡…</template>
+          <template v-else-if="levelsResult?.ok">
+            关卡已随本次上传导入：{{ levelsResult.created + levelsResult.updated }} 关（新增
+            {{ levelsResult.created }} · 覆盖 {{ levelsResult.updated }}）
+          </template>
+          <template v-else-if="levelsResult">
+            关卡导入失败：{{ levelsResult.message }}。可到「关卡管理」用同一 JSON 重新导入
+          </template>
         </div>
       </div>
 
@@ -648,7 +687,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Document, UploadFilled, CircleCheckFilled, Close, Picture } from '@element-plus/icons-vue';
 import {
@@ -660,12 +699,19 @@ import {
   deleteGame,
   uploadGameCover,
 } from '@/api/game';
+import { batchImportGameLevels, getGameLevels } from '@/api/gameData';
 import { formatTime, formatFileSize } from '@/utils/format';
 import logger from '@/utils/logger';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import BatchUploadDialog from './components/BatchUploadDialog.vue';
 import { relSegs, inspectGameDir, parseGameReadme, GAME_KEY_PATTERN } from './gameDirectory';
+import {
+  MAX_IMPORT_FILE_SIZE,
+  parseLevelImportText,
+  planLevelImport,
+  buildChunkedPayloads,
+} from './levelImportParser';
 import {
   GAME_CATEGORY_OPTIONS,
   GAME_ICON_OPTIONS,
@@ -850,6 +896,9 @@ const handleFileChange = (uploadFile) => {
     return;
   }
   selectedFile.value = raw;
+  // 手动选文件脱离了目录上下文：清除选目录时带来的关卡草稿，避免误导入
+  levelsDraft.value = null;
+  levelsResult.value = null;
   // 手动触发 file 项校验，清除上次的「请选择游戏文件」错误
   uploadFormRef.value?.validateField('file').catch(() => {});
 };
@@ -868,6 +917,50 @@ const handleExceed = (files) => {
 
 const dirInputRef = ref(null);
 const readmeInputRef = ref(null);
+
+// ---------- 关卡文件跟随导入（选目录时识别 levels.json，随上传自动导入） ----------
+// draft 为 null 表示本次上传不带关卡；error 非空时仅提示、不随上传导入（游戏本体不受影响）
+const levelsDraft = ref(null); // { fileName, items, plan, checked, error }
+const levelsImporting = ref(false);
+const levelsResult = ref(null); // { ok, created, updated, message }：成功态面板展示
+
+// 「覆盖 X · 新增 Y」分布文案（计划未算出时为空）
+const levelsDispositionText = computed(() => {
+  const plan = levelsDraft.value?.plan;
+  if (!plan) return '';
+  if (plan.created && plan.updated) return `（新增 ${plan.created} 关 · 覆盖 ${plan.updated} 关）`;
+  if (plan.created) return `（新增 ${plan.created} 关）`;
+  if (plan.updated) return `（覆盖 ${plan.updated} 关）`;
+  return '';
+});
+
+/**
+ * 按当前 gameKey 计算关卡处置分布：keyExists 时拉现有关卡按序号对齐（撞号覆盖、其余新增），
+ * 全新游戏按空表顺延分配序号。拉取失败保持空表顺延的分布（裸数据从 1 起，信封显式序号不受影响）。
+ */
+const refreshLevelsPlan = async () => {
+  const draft = levelsDraft.value;
+  if (!draft || draft.error) return;
+  let plan = planLevelImport(draft.items, []);
+  if (keyExists.value) {
+    const keyAtFetch = tempGame.gameKey;
+    try {
+      const existingLevels = await getGameLevels(tempGame.gameKey);
+      // 防抖窗口内 gameKey 又被改过：丢弃迟到响应，等 keyExists 重查后再对齐
+      if (tempGame.gameKey === keyAtFetch) {
+        plan = planLevelImport(draft.items, existingLevels);
+      }
+    } catch (err) {
+      logger.error('现有关卡获取失败，按空表顺延展示:', tempGame.gameKey, err);
+    }
+  }
+  levelsDraft.value = { ...draft, plan };
+};
+
+// keyExists（防抖重查完成）或所选目录变化后重算分布；draft.items 引用不变，不会自触发
+watch([keyExists, () => levelsDraft.value?.items], () => {
+  refreshLevelsPlan();
+});
 
 const handlePickDirectory = () => {
   dirInputRef.value?.click();
@@ -900,6 +993,9 @@ const handleReadmePick = (event) => {
     ElMessage.error('请选择 README.md');
     return;
   }
+  // 只选 README 路径没有目录上下文：清除可能残留的关卡草稿
+  levelsDraft.value = null;
+  levelsResult.value = null;
   file
     .text()
     .then((text) => {
@@ -913,7 +1009,8 @@ const handleReadmePick = (event) => {
 };
 
 // 选择目录：结构校验收敛到 gameDirectory.inspectGameDir（与批量导入同源规范）；
-// index.html 作为上传文件，README 解析后预填表单（匹配不到的字段留空），封面图自动识别
+// index.html 作为上传文件，README 解析后预填表单（匹配不到的字段留空），封面图自动识别，
+// levels.json 解析后进入关卡草稿（勾选随上传自动导入，解析失败仅提示不阻断）
 const handleDirImport = (event) => {
   const files = Array.from(event.target.files || []);
   event.target.value = ''; // 允许重复选择同一目录
@@ -942,6 +1039,41 @@ const handleDirImport = (event) => {
     ElMessage.success('已识别目录中的封面图');
   }
 
+  // levels.json（可选）：解析预览供勾选与处置展示；失败仅提示，游戏本体照常上传
+  levelsResult.value = null;
+  if (!inspect.levelsFile) {
+    levelsDraft.value = null;
+  } else if (inspect.levelsFile.size > MAX_IMPORT_FILE_SIZE) {
+    levelsDraft.value = {
+      checked: false,
+      items: null,
+      plan: null,
+      error: `关卡文件超过 ${MAX_IMPORT_FILE_SIZE / 1024 / 1024}MB 上限`,
+    };
+  } else {
+    inspect.levelsFile
+      .text()
+      .then((text) => {
+        const parsed = parseLevelImportText(text);
+        if (!parsed.ok) {
+          levelsDraft.value = { checked: false, items: null, plan: null, error: parsed.reason };
+          return;
+        }
+        levelsDraft.value = {
+          checked: true,
+          fileName: inspect.levelsFile.name,
+          items: parsed.items,
+          plan: null,
+          error: '',
+        };
+        return refreshLevelsPlan();
+      })
+      .catch((readError) => {
+        logger.error('levels.json 读取失败:', readError);
+        levelsDraft.value = { checked: false, items: null, plan: null, error: '关卡文件读取失败' };
+      });
+  }
+
   // README 可选：无则字段留空（gameKey 仍取目录名），有则解析预填
   if (!inspect.readme) {
     applyReadmeFields({ title: '', gameKey: dirName, category: '', description: '' });
@@ -963,6 +1095,9 @@ const handleDirImport = (event) => {
 const handleRemoveFile = () => {
   uploadRef.value?.clearFiles();
   selectedFile.value = null;
+  // 文件卡片移除后目录上下文不再完整，关卡草稿一并撤下
+  levelsDraft.value = null;
+  levelsResult.value = null;
   uploadFormRef.value?.validateField('file').catch(() => {});
 };
 
@@ -1015,6 +1150,8 @@ const handleCreate = () => {
   selectedFile.value = null;
   handleCoverRemove();
   keyEdited.value = false;
+  levelsDraft.value = null;
+  levelsResult.value = null;
   uploadKeySeed.value = Date.now().toString(36);
   Object.assign(tempGame, {
     id: null,
@@ -1038,6 +1175,9 @@ const handleUploadDialogClosed = () => {
   uploadResult.value = null;
   uploadPercent.value = 0;
   keyExists.value = false;
+  levelsDraft.value = null;
+  levelsResult.value = null;
+  levelsImporting.value = false;
   clearTimeout(keyCheckTimer);
 };
 
@@ -1089,6 +1229,37 @@ const submitUpload = async () => {
     ElMessage.success('上传成功');
     // 低频关键写操作成功留痕，业务键仅 gameKey/id，不含文件内容与请求体（敏感红线）
     logger.info('游戏上传成功', `gameKey=${tempGame.gameKey}`, `id=${res?.id ?? '-'}`);
+
+    // 关卡跟随导入（勾选草稿）：先游戏后关卡（后端 requireGame 要求游戏先入库），
+    // 按 500 一批串行提交；失败不回滚游戏上传，成功态面板独立展示，可到关卡管理重试
+    if (levelsDraft.value?.checked && !levelsDraft.value.error && levelsDraft.value.plan) {
+      levelsImporting.value = true;
+      try {
+        let created = 0;
+        let updated = 0;
+        const rows = levelsDraft.value.plan.rows.filter((r) => r.fate !== 'error');
+        for (const payload of buildChunkedPayloads(rows, {
+          gameKey: tempGame.gameKey,
+          replaceAll: false,
+        })) {
+          const importRes = await batchImportGameLevels(payload);
+          created += importRes.created || 0;
+          updated += importRes.updated || 0;
+        }
+        levelsResult.value = { ok: true, created, updated };
+        logger.info(
+          '关卡跟随导入成功',
+          `gameKey=${tempGame.gameKey}`,
+          `新增=${created}`,
+          `覆盖=${updated}`
+        );
+      } catch (importError) {
+        logger.error('关卡跟随导入失败:', `gameKey=${tempGame.gameKey}`, importError);
+        levelsResult.value = { ok: false, message: importError.message || '关卡导入失败' };
+      } finally {
+        levelsImporting.value = false;
+      }
+    }
     fetchData(); // 刷新列表（同 gameKey 覆盖场景也能看到最新元数据）
   } catch (error) {
     logger.error('游戏上传失败:', `gameKey=${tempGame.gameKey}`, error);
@@ -1106,6 +1277,8 @@ const handleReupload = () => {
   selectedFile.value = null;
   uploadPercent.value = 0;
   keyEdited.value = false;
+  levelsDraft.value = null;
+  levelsResult.value = null;
   uploadKeySeed.value = Date.now().toString(36);
   tempGame.gameKey = slugFromTitle(tempGame.title);
 };
@@ -1433,6 +1606,17 @@ onMounted(() => {
   margin-top: 4px;
 }
 
+/* 目录携带 levels.json 提示条：贴在文件选择区下方，与整个表单行同宽 */
+.levels-draft-alert {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.levels-draft-check {
+  height: auto;
+  margin-top: 2px;
+}
+
 /* 开关同行的行内说明 */
 .form-tip-inline {
   margin-left: 8px;
@@ -1638,5 +1822,17 @@ onMounted(() => {
 .upload-success-missing {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+/* 成功态面板的关卡跟随导入结果：加载态弱化为次要文本色 */
+.upload-success-levels {
+  font-size: 13px;
+  color: var(--text-body);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.upload-success-levels.is-loading {
+  color: var(--text-secondary);
 }
 </style>

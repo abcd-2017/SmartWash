@@ -7,6 +7,7 @@ import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.logic.DeliveryRules
+import com.smartwash.feature.toolbox.network.DeliveryBusinessCode
 import com.smartwash.feature.toolbox.network.DeliveryException
 import com.smartwash.feature.toolbox.network.DeliverySessionVo
 import com.smartwash.feature.toolbox.repository.DeliveryRepository
@@ -129,6 +130,33 @@ class DeliveryCreateViewModel @Inject constructor(
             } catch (e: Exception) {
                 AppLogger.error(TAG, "DeliveryCreateViewModel.closeSession: ${e.message}", e)
                 _closeState.value = RequestState.Error(R.string.toolbox_delivery_error_close)
+            }
+        }
+    }
+
+    /**
+     * 从会话页返回时校验会话是否仍有效：会话页可能已关闭会话（或已过期），
+     * 发起页 [session] 无失效回调会残留 stale 会话卡（读路径已 404）。
+     * 仍有效则同步最新会话信息；业务码 404（GONE）时清空回表单态；其余异常保留卡片待下次返回再试。
+     */
+    fun onReturnFromSession() {
+        val code = _session.value?.code ?: return
+        if (_closeState.value is RequestState.Loading || _createState.value is RequestState.Loading) return
+        viewModelScope.launch {
+            try {
+                val detail = repository.fetchSessionDetail(code)
+                _session.value = detail.session
+                AppLogger.info(TAG, "返回发起页：会话仍有效 code=$code")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: DeliveryException) {
+                if (e.businessCode == DeliveryBusinessCode.GONE) {
+                    AppLogger.info(TAG, "返回发起页：会话已失效，清除 stale 会话卡 code=$code")
+                    _session.value = null
+                }
+            } catch (e: Exception) {
+                // 网络异常等不清除（下次返回再试），避免误判
+                AppLogger.debug(TAG, "返回发起页：会话状态校验失败，保留会话卡 code=$code", e)
             }
         }
     }

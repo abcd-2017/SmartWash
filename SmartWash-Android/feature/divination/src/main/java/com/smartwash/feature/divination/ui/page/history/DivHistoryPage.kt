@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,13 +44,18 @@ import com.smartwash.feature.divination.ui.components.DivSeal
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.performHaptic
+import com.smartwash.common.utils.pressable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 /**
  * 卦历案卷（原型 History）：术数筛选 chips + 卦历卡列表；点击进只读复盘（原盘原时刻）。
@@ -61,6 +67,7 @@ fun DivHistoryPage(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val records by viewModel.records.collectAsState()
+    val view = currentView()
 
     DivinationScreen(scrollable = false) {
         // 颜色必须在 DivinationScreen 之内读取（默认玄墨，包根外读会让空态文案在浅色系统下不可见）
@@ -136,6 +143,28 @@ fun DivHistoryPage(
                             fontSize = 12.sp,
                             color = c.textTertiary,
                         )
+                        // 空态行动按钮（规范 §3.6 空态三要素，2026-11-14 检查 report P2）：
+                        // 深链直达本页的空账号用户无路径引导——补 CTA 跳观象台首页选术起卦
+                        Spacer(Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .heightIn(min = 48.dp)
+                                .pressable(onClick = {
+                                    view.performHaptic(HapticEffect.LIGHT)
+                                    navController.navigate(DivRoute.Home) {
+                                        launchSingleTop = true
+                                    }
+                                }),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.div_history_go_home),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 2.sp,
+                                color = c.goldText,
+                            )
+                        }
                     }
                 }
                 HistoryListState.READY -> LazyColumn(
@@ -146,7 +175,11 @@ fun DivHistoryPage(
                         HistoryCard(
                             record = record,
                             onClick = {
-                                navController.navigate(DivRoute.Chart(record.id, animate = false))
+                                // launchSingleTop 防重推栈：pressable 防抖窗口仅 500ms，跨窗口连点
+                                // 仍会重复入栈详情页、返回链耗尽直接退出应用（2026-11-14 检查 report P1）
+                                navController.navigate(DivRoute.Chart(record.id, animate = false)) {
+                                    launchSingleTop = true
+                                }
                             },
                             // 筛选切换的位移补间：reduced motion 取消（规范 §8）
                             // （animateItemPlacement 已废弃且需 OptIn 实验 API，改用其官方替代 animateItem）
@@ -175,10 +208,17 @@ private fun HistoryCard(
 ) {
     val c = DivColors.current
     val timeText = remember(record.castAt) {
-        SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(record.castAt))
+        // 案卷时间统一东八区口径（2026-11-14 检查 report P2）：与天象头四柱（lunar 库东八区）
+        // 对齐，不随设备时区漂移——跨时区设备上同一「今天」不再呈现两个日期
+        SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).apply {
+            timeZone = TimeZone.getTimeZone("Asia/Shanghai")
+        }.format(Date(record.castAt))
     }
     // @Composable 的 methodLabel 在字符串模板外先取值（Composable 调用须在组合上下文直呼）
     val methodText = methodLabel(DivMethod.fromId(record.method))
+    // 摘要行 Gson 解析缓存：与 timeText 同策略 remember，筛选切换/animateItem 位移/滚动
+    // 复用重组时不重复 decode chartJson（2026-11-14 检查 report P2）
+    val summaryText = remember(record.id) { record.summaryLine() }
     DivCard(modifier = modifier, onClick = onClick) {
         // 画板：卡高 60，印章距左 14；问句 14/20 偏上 12、元信息 12/14 间隔 2；› 距右 8
         Row(
@@ -198,7 +238,7 @@ private fun HistoryCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "$timeText · $methodText · ${record.summaryLine()}",
+                    text = "$timeText · $methodText · $summaryText",
                     fontSize = 12.sp,
                     // 行高维持画板 12/14 口径（观象台域既有画板豁免；v0.4 caption 12/16 留画板复核）
                     lineHeight = 14.sp,
