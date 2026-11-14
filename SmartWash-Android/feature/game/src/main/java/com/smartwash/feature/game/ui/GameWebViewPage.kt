@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -108,7 +109,13 @@ fun GameWebViewPage(
             chromeMode = chromeMode,
             onChromeChange = { chromeMode = it },
             whitelistHosts = whitelistHosts,
-            bridgeThemeMode = GameThemeBridgePolicy.resolveBridgeThemeMode(inAppThemeMode = null),
+            // A1 首屏闪烁修复：getTheme 首次取值即具体主题（不再经 'system' 让 H5 等推送），
+            // 深色用户开游戏不再「先浅色后变深」；uiMode 变化仍靠 SmartWashWebView 推送兜底
+            bridgeThemeMode = GameThemeBridgePolicy.resolveBridgeThemeMode(
+                inAppThemeMode = GameThemeBridgePolicy.resolveCurrentTheme(
+                    LocalConfiguration.current.uiMode,
+                ),
+            ),
             gameBridgeApi = gameBridgeApi,
             modifier = Modifier
                 .fillMaxSize()

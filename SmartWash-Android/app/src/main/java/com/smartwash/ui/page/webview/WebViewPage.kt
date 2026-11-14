@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -102,6 +103,18 @@ fun WebViewPage(
                 url = url,
                 chromeMode = chromeMode,
                 onChromeChange = { chromeMode = it },
+<<<<<<< HEAD
+=======
+                whitelistHosts = whitelistHosts,
+                // A1 首屏闪烁修复：getTheme 首次取值即具体主题（不再经 'system' 让 H5 等推送），
+            // 深色用户开游戏不再「先浅色后变深」；uiMode 变化仍靠 SmartWashWebView 推送兜底
+            bridgeThemeMode = GameThemeBridgePolicy.resolveBridgeThemeMode(
+                inAppThemeMode = GameThemeBridgePolicy.resolveCurrentTheme(
+                    LocalConfiguration.current.uiMode,
+                ),
+            ),
+                gameBridgeApi = gameBridgeApi,
+>>>>>>> 5250503a (fix(Android): 修复游戏深色首屏闪烁与游戏中心空描述占位)
                 modifier = Modifier
                     .fillMaxSize()
                     .navigationBarsPadding()
