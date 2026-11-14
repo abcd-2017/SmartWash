@@ -243,3 +243,41 @@
 
 实开中修复/裁撤的记录（详见 GAME-THEME.md）：主题切换基准 bug 与 SVG 无引号属性问题
 （初版按钮机制内发现，随按钮裁撤一并消解，教训留档 §5）。
+
+- **2026-11-14（impeccable 全指令评审 + 批 1 P0 修复）**：
+  50 款全部完成 impeccable critique/audit/layout/animate/typeset/clarify/harden 双轨评审（评审卡见
+  docs/游戏impeccable评审-2026-11-14.md，工作文档不入库）。发现 7 类系统性问题（对比度 token 配对、
+  reduced-motion 缺失、面板无过渡、隐藏页计时、焦点样式、stat 挤压、canvas 闭合类缺陷）与 6 项 P0。
+  批 1 已修复并验收：snake/breakout/flappy/gomoku 补 `</canvas>`（HTML 解析器不自动闭合 canvas，
+  未闭合导致覆盖层被吞成 fallback——breakout 曾完全无法开局）、word-search 启动补 `palLoad()`
+  （浅色模式棋盘纯黑）、magic-tower resize 补重绘；audit-gates 新增 ⑬a canvas 闭合配对硬检查。
+  `theme-gates` + `audit-gates` 50/50 全绿。
+
+- **2026-11-14（批 2 · P1 重大修复）**：S1 对比度系统修复——GAME-THEME §2 基线修订
+  （light `--g-primary-deep` → #17734A、`--g-danger` → #A83850，audit-gates 基线同步），
+  50 款规则级转换：.foot/.sec 提示 faint→muted、primary 底白字升 22px/700 大字档、
+  primary-deep 数值任意字号合规、warning 底改深色字、g2048/snake 记分盒与 billiards/moon-lander
+  记分盒改 deep 底（白字 5.15:1 全字号合规）、label 去 opacity 淡化、solitaire `.btn.sm` 深底、
+  `font:inherit` 缩写展开。D1/D2：air-hockey/invaders 主 CTA 新增 `.btn.primary` 绿底变体。
+  asteroids 操控钮 surface 底提对比。S2：50 款注入 prefers-reduced-motion 降级模板
+  （GAME-THEME §6.1 固化，注明与 §4 主题层禁令的层次区分）。
+  `impeccable detect` low-contrast **145 → 0**；audit-gates 50/50 全绿（含八档字号约束下的
+  22px 方案——19px 不在八档，弃用）。
+
+- **2026-11-14（批 3+4 · P2/P3 打磨收尾）**：S5 全库补 :focus-visible 焦点环；S3 五款
+  （breakout/bubble-shooter/flappy/suika/tile-tap）覆盖层补 0.25s 淡入；S4 三款计时游戏
+  （lianliankan/memory-cards/minesweeper）补 visibilitychange 暂停（恢复时平移时间基点，
+  隐藏期不计入用时）；S6 四款 stat 卡水平 padding 2px→8px；D3 lianliankan/mahjong-solitaire
+  重玩按钮降为 ghost 与提示同级；D5 solitaire 页脚 z-index+pointer-events 防牌堆遮挡；
+  D6 falling-sand FPS 收进 hidden；批 4：g2048/lights-out 零偏移光晕改带偏移阴影、
+  beat-tap canvas 字号 34/42 登记豁免、solitaire 牌背条纹登记素材豁免；
+  D4 撤销（面板内标题属面板内容，§5.1 仅禁页面级 h1）。
+  audit-gates 50/50 全绿；detect 除登记豁免外全绿。dots-boxes 棋盘居中经复核为已居中（关闭）。
+
+- **2026-11-14（封面全量重构 50 张 · 完成）**：50 款封面按 GAME-COVER.md 新规范全部重绘——
+  19 款新游戏自由设计 + 31 款存量沿用主体升级执行（粗描边 + 家族表情 + 三层背景质感）。
+  管线：SVG 精绘（源归档 covers-src/ 待部署后补齐乙批）→ Chrome headless 渲染 →
+  PS Unsharp 精修 → ffmpeg 轻颗粒 → 调色板压缩（颗粒掩盖量化痕迹，成品 91–119KB ≤120KB 预算，
+  色数按预案逐级下调 128→96→64/48/32，目检无色带）→ 双处部署
+  （games-library/<key>/<key>.png + drawable-nodpi/game_<key>.png，49 张字节一致核验通过，
+  suika 此前已完成）。独立抽检 snake/tetris/xiangqi 成品通过。
