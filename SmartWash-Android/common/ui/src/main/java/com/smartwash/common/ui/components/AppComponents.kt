@@ -467,8 +467,10 @@ fun AppButton(
             .then(if (small) Modifier.wrapContentWidth() else Modifier.fillMaxWidth())
             .then(if (active) Modifier.pressable(onClick = debouncedOnClick) else Modifier)
             .height(if (small) 36.dp else 48.dp)
-            .then(if (small) Modifier.padding(horizontal = AppDimens.spaceMd) else Modifier)
-            .then(containerModifier),
+            .then(containerModifier)
+            // 内容内边距必须在 background 之后（否则 padding 落到背景外侧，文字贴边——
+            // 2026-11-14 评审修复：原链序 padding 在 containerModifier 前，small 档全应用贴边）
+            .then(if (small) Modifier.padding(horizontal = AppDimens.spaceMd) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         // 文字 ↔ spinner 硬切 → 交叉淡变（规范 7.8 的 CrossfadeAlt 档）
