@@ -79,7 +79,18 @@ class ApkDownloadWorker @AssistedInject constructor(
         fun apkFile(context: Context, versionCode: Int): File =
             File(apkDir(context), "smartwash_update_$versionCode.apk")
 
-        fun apkDir(context: Context): File = File(context.filesDir, APK_DIR_NAME)
+        /**
+         * APK 落盘目录，并保证其存在。
+         *
+         * 必须创建：[doWork] 直接用 `FileOutputStream(apkFile)` 写文件，父目录缺失即抛
+         * `FileNotFoundException: open failed: ENOENT`（2026-11-15 用户反馈「更新下载失败」
+         * 的根因：首次安装 / 系统清理后必现）。`mkdirs` 幂等，目录已存在时为 no-op。
+         */
+        fun apkDir(context: Context): File = File(context.filesDir, APK_DIR_NAME).apply {
+            if (!exists() && !mkdirs() && !exists()) {
+                AppLogger.warn(TAG, "APK 下载目录创建失败：$absolutePath")
+            }
+        }
 
         /**
          * 清理旧版本安装包（保留当前版本）：安装包单文件常数十 MB，
