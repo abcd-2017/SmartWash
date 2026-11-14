@@ -15,10 +15,17 @@
     <description>SmartWash</description>
     <url/>
     <licenses>
-        <license/>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
     </licenses>
     <developers>
-        <developer/>
+        <developer>
+            <name>changge</name>
+            <email>2017809755lll@gmail.com</email>
+        </developer>
     </developers>
     <scm>
         <connection/>

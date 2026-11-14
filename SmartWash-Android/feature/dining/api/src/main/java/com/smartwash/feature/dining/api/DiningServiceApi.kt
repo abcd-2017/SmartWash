@@ -27,7 +27,7 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
- * 家庭点单域网络接口（路径/参数/响应结构以后端 WebDiningRecipeController /
+ * 吃啥域网络接口（路径/参数/响应结构以后端 WebDiningRecipeController /
  * WebDiningCategoryController / WebDiningOrderController 为契约源，接口需 ROLE_USER——
  * /web/auth 路径由 SecurityConfig 通配，@RequireAuthorization 注入 Bearer）。
  *

@@ -11,7 +11,7 @@
 | 目录 | 说明 | 技术栈 | 端别文档 |
 |------|------|--------|---------|
 | `SmartWash/` | Spring Boot 3.4 后端（MyBatis-Plus + MySQL + Redis + JWT） | Java 17 / Maven | [SmartWash/CLAUDE.md](SmartWash/CLAUDE.md) |
-| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：app 壳 + 5 common + 21 feature 子模块，api/impl 拆分） | [SmartWash-Android/CLAUDE.md](SmartWash-Android/CLAUDE.md) |
+| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：app 壳 + 5 common + 16 个 feature 域，api/impl 拆分后共 23 个子模块） | [SmartWash-Android/CLAUDE.md](SmartWash-Android/CLAUDE.md) |
 | `SmartWash_Harmony/` | 鸿蒙 NEXT 用户端 | ArkTS / ArkUI / Stage 模型 | [SmartWash_Harmony/CLAUDE.md](SmartWash_Harmony/CLAUDE.md) |
 | `SmartWashWeb/` | Web 管理后台 | Vue 3 / Vite / Element Plus / Pinia | [SmartWashWeb/CLAUDE.md](SmartWashWeb/CLAUDE.md) |
 | `smart_wash.sql` | MySQL 建表 + 种子数据（结构变更以本文件为准） | — | — |
@@ -50,14 +50,16 @@
 
 **库内 Skills**（`~/.agents/skills/`，共 40 个）：Android 端 `android-kotlin`、`android-jetpack-compose` 按 `.kt` 路径自动生效；鸿蒙按需调用 `arkts-development`、`arkts-syntax-assistant`、`harmonyos-app`；Web 视觉用 `frontend-design`/`design`；跨端通用方法论 `systematic-debugging`、`test-driven-development`、`verification-before-completion` 等。
 
-**各工程子代理**（位于各子项目 `.claude/agents/`，每端 1 个全栈代理，共 4 个）：
+**各工程子代理**（统一定义在根目录 `.zcode/agents/`，每端 1 个全栈代理，共 4 个）：
 
 | 工程 | 代理文件 | 覆盖职责 |
 |------|---------|---------|
-| 后端 | `SmartWash/.claude/agents/smartwash-backend.md` | 开发、审查、调试、测试、架构 |
-| Android | `SmartWash-Android/.claude/agents/smartwash-android.md` | 开发、审查、调试、测试、UI/动效 |
-| 鸿蒙 | `SmartWash_Harmony/.claude/agents/smartwash-harmony.md` | 开发、审查、调试、测试、ArkTS 语法 |
-| Web | `SmartWashWeb/.claude/agents/smartwash-web.md` | 开发、审查、调试、测试、性能 |
+| 后端 | `.zcode/agents/smartwash-backend.md` | 开发、审查、调试、测试、架构 |
+| Android | `.zcode/agents/smartwash-android.md` | 开发、审查、调试、测试、UI/动效 |
+| 鸿蒙 | `.zcode/agents/smartwash-harmony.md` | 开发、审查、调试、测试、ArkTS 语法 |
+| Web | `.zcode/agents/smartwash-web.md` | 开发、审查、调试、测试、性能 |
+
+> 各子项目 `.claude/agents/` 下存在同名早期副本，内容与根目录版本已漂移；一律以根目录 `.zcode/agents/` 为准。
 
 工作流统一采用 mattpocock-skills：`/implement`（内含 `/tdd`）→ `/code-review`，调试用 `/diagnosing-bugs`，架构用 `/improve-codebase-architecture`。
 
@@ -80,3 +82,15 @@ Issues 存放在本仓库 GitHub Issues，使用 `gh` CLI 操作。详见 `docs/
 ### Domain docs
 
 Single-context 布局：根目录一个 `GLOSSARY.md` + `docs/adr/`。详见 `docs/agents/domain.md`。
+
+### 工作文档归属（固定约束）
+
+**本仓库是公开仓库，工作文档不得入库。**
+
+| 文档类型 | 位置 | 是否进仓库 |
+|---|---|---|
+| **工作产物**（调研、评审、规划、方案、笔记） | `docs/`（根目录） | ❌ 已被 `.gitignore` 的 `/docs/*` 排除 |
+| **Agent 工作规则/约定**（供 agent 读取） | `.claude/docs/` | ✅ 入库（`.gitignore` 的 `!/.claude/docs/` 例外） |
+
+- 新产生的工作文档一律放 `docs/`，**禁止**放 `.claude/docs/`（会进公开仓库）
+- 判断标准：这份文档是「给别人看的项目说明」还是「我自己/团队的工作过程」？后者放 `docs/`

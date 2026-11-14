@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8934F"/>
+      <stop offset="0.55" stop-color="#E18844"/>
+      <stop offset="1" stop-color="#D8742F"/>
+    </linearGradient>
+    <linearGradient id="jar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.16"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#7A3D12" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部暖色地面带 -->
+  <rect y="392" width="800" height="58" fill="#C96A2C" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#B45E26" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g fill="#FFFFFF" opacity="0.5">
+    <path d="M96 96 h10 M101 91 v10" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M672 76 h12 M678 70 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M700 208 h9 M704.5 203.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M120 300 h9 M124.5 295.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#FFE3BE" opacity="0.5">
+    <circle cx="180" cy="150" r="4"/><circle cx="618" cy="330" r="3.4"/><circle cx="86" cy="220" r="3"/><circle cx="730" cy="150" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="415" cy="404" rx="228" ry="26" fill="#8F4A18" opacity="0.35"/>
+
+  <!-- 玻璃罐 -->
+  <g>
+    <path d="M238 148 Q238 128 262 126 L568 126 Q592 128 592 148 L592 372 Q592 398 564 398 L266 398 Q238 398 238 372 Z"
+          fill="url(#jar)" stroke="#3A2A1E" stroke-width="9"/>
+    <ellipse cx="415" cy="130" rx="177" ry="18" fill="#FFFFFF" opacity="0.5" stroke="#3A2A1E" stroke-width="9"/>
+    <!-- 玻璃高光 -->
+    <path d="M262 160 L262 350" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+    <path d="M286 168 L286 210" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.4"/>
+  </g>
+
+  <!-- 罐外滚落的橘子与柠檬 -->
+  <g>
+    <circle cx="640" cy="368" r="46" fill="#F2A93B" stroke="#3A2A1E" stroke-width="9"/>
+    <circle cx="640" cy="368" r="46" fill="url(#gloss)"/>
+    <circle cx="622" cy="350" r="10" fill="#FFD98A"/>
+    <circle cx="708" cy="402" r="34" fill="#F6D45C" stroke="#3A2A1E" stroke-width="9"/>
+    <circle cx="708" cy="402" r="34" fill="url(#gloss)"/>
+  </g>
+
+  <!-- 罐内水果堆 -->
+  <g>
+    <!-- 葡萄 -->
+    <g stroke="#3A2A1E" stroke-width="7">
+      <circle cx="330" cy="330" r="27" fill="#8C6BB8"/>
+      <circle cx="382" cy="322" r="27" fill="#A97FD1"/>
+      <circle cx="356" cy="368" r="27" fill="#7C58A6"/>
+      <circle cx="404" cy="366" r="26" fill="#9B72C4"/>
+      <circle cx="330" cy="376" r="25" fill="#8C6BB8"/>
+    </g>
+    <circle cx="372" cy="312" r="8" fill="#D9C2F0"/>
+    <circle cx="342" cy="322" r="7" fill="#CBB2E8"/>
+    <!-- 樱桃 -->
+    <g>
+      <path d="M452 322 Q470 296 494 306" stroke="#3A2A1E" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <path d="M496 330 Q500 314 494 306" stroke="#3A2A1E" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <circle cx="452" cy="342" r="26" fill="#D8465F" stroke="#3A2A1E" stroke-width="8"/>
+      <circle cx="500" cy="346" r="24" fill="#C23A52" stroke="#3A2A1E" stroke-width="8"/>
+      <circle cx="443" cy="333" r="8" fill="#F0919F"/>
+      <circle cx="492" cy="338" r="7" fill="#E97F8D"/>
+    </g>
+    <!-- 西瓜（主视觉）-->
+    <g>
+      <circle cx="415" cy="252" r="88" fill="#5FAE5B" stroke="#3A2A1E" stroke-width="10"/>
+      <path d="M357 200 Q352 252 358 304" stroke="#2F7A34" stroke-width="13" fill="none" stroke-linecap="round"/>
+      <path d="M415 164 L415 340" stroke="#2F7A34" stroke-width="13" fill="none" stroke-linecap="round"/>
+      <path d="M473 200 Q478 252 472 304" stroke="#2F7A34" stroke-width="13" fill="none" stroke-linecap="round"/>
+      <circle cx="380" cy="230" r="10" fill="#1F1A14"/>
+      <circle cx="446" cy="230" r="10" fill="#1F1A14"/>
+      <path d="M394 274 Q416 292 438 272" stroke="#1F1A14" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <circle cx="364" cy="212" r="14" fill="#FFFFFF" opacity="0.35"/>
+    </g>
+    <!-- 罐顶的小金橘 -->
+    <circle cx="415" cy="96" r="26" fill="#F2A93B" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="407" cy="88" r="7" fill="#FFD98A"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,5 +1,6 @@
 package com.smartwash.di
 
+import com.smartwash.common.ui.webview.GameBridgeApiProvider
 import com.smartwash.network.api.GameBridgeApi
 import dagger.Module
 import dagger.Provides
@@ -30,9 +31,12 @@ object GameBridgeModule {
 /**
  * 游戏桥 API 入口：Composable 经 EntryPointAccessors.fromActivity(...) 取用，
  * 避免为桥单独引入 ServiceLocator。
+ *
+ * 接口契约下沉 common:ui（[GameBridgeApiProvider]）——游戏域承载页与公共容器同源取用；
+ * @EntryPoint 实现留在 app（Hilt 注解不进 common）。
  */
 @EntryPoint
 @InstallIn(SingletonComponent::class)
-interface GameBridgeEntryPoint {
-    fun gameBridgeApi(): GameBridgeApi
+interface GameBridgeEntryPoint : GameBridgeApiProvider {
+    override fun gameBridgeApi(): GameBridgeApi
 }

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EAF5EE"/>
+      <stop offset="0.55" stop-color="#BFE0CC"/>
+      <stop offset="1" stop-color="#8FC7A8"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.6" stop-color="#1E2620" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E2620" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#6FA888" opacity="0.5"/>
+  <rect y="392" width="800" height="6" fill="#5A8F72" opacity="0.5"/>
+
+  <g fill="#FFFFFF" opacity="0.5">
+    <path d="M92 84 h11 M97.5 78.5 v11" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M706 90 h12 M712 84 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M668 300 h9 M672.5 295.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M124 250 h9 M128.5 245.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#F2FBF5" opacity="0.6">
+    <circle cx="176" cy="150" r="4"/><circle cx="628" cy="330" r="3.4"/><circle cx="86" cy="226" r="3"/><circle cx="748" cy="160" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="404" rx="238" ry="25" fill="#4E7D63" opacity="0.35"/>
+
+  <!-- 高塔 -->
+  <g stroke-linejoin="round">
+    <g stroke="#3A2A1E" stroke-width="5">
+      <rect x="190" y="358" width="420" height="30" rx="10" fill="#2D9B6A"/>
+      <rect x="209" y="324" width="382" height="30" rx="10" fill="#3BA8A0"/>
+      <rect x="228" y="290" width="344" height="30" rx="10" fill="#5AA7E8"/>
+      <rect x="247" y="256" width="306" height="30" rx="10" fill="#8E7CC3"/>
+      <rect x="266" y="222" width="268" height="30" rx="10" fill="#C9526B"/>
+      <rect x="285" y="188" width="230" height="30" rx="10" fill="#D98A26"/>
+      <rect x="304" y="154" width="192" height="30" rx="10" fill="#D9B13B"/>
+    </g>
+    <g fill="#FFFFFF" opacity="0.35">
+      <rect x="204" y="364" width="70" height="7" rx="3.5"/><rect x="223" y="330" width="64" height="7" rx="3.5"/>
+      <rect x="242" y="296" width="58" height="7" rx="3.5"/><rect x="261" y="262" width="52" height="7" rx="3.5"/>
+      <rect x="280" y="228" width="46" height="7" rx="3.5"/><rect x="299" y="194" width="40" height="7" rx="3.5"/>
+      <rect x="318" y="160" width="36" height="7" rx="3.5"/>
+    </g>
+  </g>
+
+  <!-- 顶部举手角色 -->
+  <g stroke-linejoin="round">
+    <path d="M414 120 L442 88" stroke="#1C1C1E" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="445" cy="85" r="6" fill="#F2C79B" stroke="#3A2A1E" stroke-width="5"/>
+    <path d="M386 122 L370 138" stroke="#1C1C1E" stroke-width="8" stroke-linecap="round"/>
+    <rect x="384" y="118" width="32" height="38" rx="12" fill="#E2A23B" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="400" cy="102" r="20" fill="#F2C79B" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="393" cy="99" r="4.4" fill="#1F1A14"/><circle cx="407" cy="99" r="4.4" fill="#1F1A14"/>
+    <path d="M393 109 Q400 116 407 109" stroke="#1F1A14" stroke-width="4.6" stroke-linecap="round" fill="none"/>
+    <ellipse cx="390" cy="92" rx="9" ry="6" fill="#FFFFFF" opacity="0.5" transform="rotate(-14 390 92)"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3568C4"/>
+      <stop offset="0.55" stop-color="#2854A6"/>
+      <stop offset="1" stop-color="#1D418A"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0E2145" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="396" width="800" height="54" fill="#16326B" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#112756" opacity="0.5"/>
+  <g opacity="0.5">
+    <path d="M110 92 h12 M116 86 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M690 320 h12 M696 314 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M170 330 h9 M174.5 325.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+    <path d="M640 80 h9 M644.5 75.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+  </g>
+  <g fill="#BFD4FF" opacity="0.5">
+    <circle cx="80" cy="200" r="4"/><circle cx="724" cy="180" r="3.4"/><circle cx="120" cy="260" r="3"/><circle cx="700" cy="140" r="2.6"/>
+  </g>
+
+  <ellipse cx="405" cy="406" rx="240" ry="20" fill="#0A1D3F" opacity="0.35"/>
+
+  <!-- 棋盘 -->
+  <rect x="246" y="74" width="318" height="300" rx="22" fill="#3A6BC8" stroke="#1E2620" stroke-width="10"/>
+  <g fill="#1E3E7E">
+    <circle cx="297" cy="114" r="21"/><circle cx="351" cy="114" r="21"/><circle cx="405" cy="114" r="21"/><circle cx="459" cy="114" r="21"/><circle cx="513" cy="114" r="21"/>
+    <circle cx="297" cy="161" r="21"/><circle cx="351" cy="161" r="21"/><circle cx="405" cy="161" r="21"/><circle cx="459" cy="161" r="21"/><circle cx="513" cy="161" r="21"/>
+    <circle cx="297" cy="208" r="21"/><circle cx="351" cy="208" r="21"/><circle cx="405" cy="208" r="21"/><circle cx="459" cy="208" r="21"/><circle cx="513" cy="208" r="21"/>
+    <circle cx="297" cy="255" r="21"/><circle cx="351" cy="255" r="21"/><circle cx="405" cy="255" r="21"/><circle cx="459" cy="255" r="21"/><circle cx="513" cy="255" r="21"/>
+    <circle cx="297" cy="302" r="21"/><circle cx="351" cy="302" r="21"/><circle cx="405" cy="302" r="21"/><circle cx="459" cy="302" r="21"/><circle cx="513" cy="302" r="21"/>
+    <circle cx="297" cy="349" r="21"/><circle cx="351" cy="349" r="21"/><circle cx="405" cy="349" r="21"/><circle cx="459" cy="349" r="21"/><circle cx="513" cy="349" r="21"/>
+  </g>
+
+  <!-- 落好的棋子 -->
+  <g stroke="#1E2620" stroke-width="6">
+    <circle cx="351" cy="255" r="19" fill="#E86A5A"/>
+    <circle cx="405" cy="255" r="19" fill="#E86A5A"/>
+    <circle cx="297" cy="302" r="19" fill="#E86A5A"/>
+    <circle cx="351" cy="302" r="19" fill="#F2C230"/>
+    <circle cx="405" cy="302" r="19" fill="#F2C230"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.4">
+    <circle cx="345" cy="249" r="5"/><circle cx="399" cy="249" r="5"/>
+    <circle cx="291" cy="296" r="5"/><circle cx="345" cy="296" r="5"/><circle cx="399" cy="296" r="5"/>
+  </g>
+
+  <!-- 下落棋子（家族表情） -->
+  <path d="M513 84 L513 118" stroke="#FFFFFF" stroke-width="5" stroke-dasharray="8 8" opacity="0.7" stroke-linecap="round"/>
+  <circle cx="513" cy="48" r="26" fill="#E86A5A" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="513" cy="48" r="26" fill="url(#gloss)"/>
+  <circle cx="505" cy="42" r="5" fill="#1F1A14"/>
+  <circle cx="522" cy="42" r="5" fill="#1F1A14"/>
+  <path d="M503 57 Q513 66 524 55" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -8,7 +8,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * 家庭点单域深链贡献者 JVM 单测（锚点，对齐 GameDeepLinkModuleTest 先例）：
+ * 吃啥域深链贡献者 JVM 单测（锚点，对齐 GameDeepLinkModuleTest 先例）：
  * dining host 映射订单列表路由（域首页，07 号票落位后由菜谱库占位重指向至此），
  * 忽略 path 段与 query；未登记 host 不在贡献表。
  *
@@ -68,21 +68,16 @@ class DiningDeepLinkModuleTest {
 
     @Test
     fun `路由串锚点`() {
+        // Navigation 2.8 类型安全路由契约：@SerialName 只含基础路径（path 参数按字段顺序自动追加），
+        // 占位符写法会使 navigate 生成的路由串残留 {placeholder} 无法匹配注册 pattern
         assertEquals("DiningOrderList", serializer<DiningRoute.OrderList>().descriptor.serialName)
         assertEquals("DiningOrderCreate", serializer<DiningRoute.OrderCreate>().descriptor.serialName)
-        assertEquals(
-            "DiningOrderDetail/{orderId}",
-            serializer<DiningRoute.OrderDetail>().descriptor.serialName,
-        )
-        assertEquals(
-            "DiningOrderShare/{orderId}",
-            serializer<DiningRoute.OrderShare>().descriptor.serialName,
-        )
-        assertEquals(
-            "DiningOrderJoin/{orderId}/{token}",
-            serializer<DiningRoute.OrderJoin>().descriptor.serialName,
-        )
+        assertEquals("DiningOrderDetail", serializer<DiningRoute.OrderDetail>().descriptor.serialName)
+        assertEquals("DiningOrderShare", serializer<DiningRoute.OrderShare>().descriptor.serialName)
+        assertEquals("DiningOrderJoin", serializer<DiningRoute.OrderJoin>().descriptor.serialName)
         assertEquals("DiningRecipeLibrary", serializer<DiningRoute.RecipeLibrary>().descriptor.serialName)
         assertEquals("DiningRecipeCreate", serializer<DiningRoute.RecipeCreate>().descriptor.serialName)
+        assertEquals("DiningShoppingList", serializer<DiningRoute.ShoppingList>().descriptor.serialName)
+        assertEquals("DiningRecipeDetail", serializer<DiningRoute.RecipeDetail>().descriptor.serialName)
     }
 }

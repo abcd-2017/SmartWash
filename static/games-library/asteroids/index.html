@@ -7,7 +7,7 @@
 <title>小行星</title>
 <style>
 /*token:GAME-THEME.md §2 基线 + §3 素材（sky/star/field/line）*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#1E8C5C;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-sky1:#101B30;--g-sky2:#22345C;--g-star:#E9EEF8;--g-field:#9C9488;--g-line:#DCD6CB;color-scheme:light}
+:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-sky1:#101B30;--g-sky2:#22345C;--g-star:#E9EEF8;--g-field:#9C9488;--g-line:#DCD6CB;color-scheme:light}
 :root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-sky1:#05070D;--g-sky2:#0C1424;--g-star:#8E9AB5;--g-field:#7D766B;--g-line:#A29B90;color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -15,15 +15,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","
 header{width:100%;max-width:430px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px 10px}
 .stats{display:flex;gap:10px;font-size:14px;color:var(--g-muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden}
 .stats span{flex:1;min-width:0}
-.stats b{color:var(--g-primary-deep);font-size:16px;font-variant-numeric:tabular-nums}
-.pbtn{min-width:60px;min-height:44px;border:0;border-radius:10px;background:var(--g-primary);color:var(--g-on-primary);font-size:16px;font-weight:600;padding:0 14px;cursor:pointer;font-family:inherit}
+.stats b{color:var(--g-primary-deep);font-size:18px;font-variant-numeric:tabular-nums}
+.pbtn{min-width:60px;min-height:44px;border:0;border-radius:10px;background:var(--g-primary);color:var(--g-on-primary);font-size:22px;font-weight:700;padding:0 14px;cursor:pointer;font-family:inherit}
 .pbtn:active{transform:scale(.96)}
 #stage{position:relative;width:100%;max-width:430px;flex:1;min-height:0;touch-action:none;overflow:hidden}
 canvas{display:block;width:100%;height:100%}
 .padbar{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;z-index:3}
 .cluster{display:flex;gap:8px}
-.ctl{min-width:64px;min-height:52px;border:1px solid var(--g-border);border-radius:14px;background:var(--g-surface2);color:var(--g-text);font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent}
-.ctl.fire{background:var(--g-primary);border-color:var(--g-primary);color:var(--g-on-primary)}
+.ctl{min-width:64px;min-height:52px;border:1px solid var(--g-border);border-radius:14px;background:var(--g-surface);color:var(--g-text);font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent}
+.ctl.fire{background:var(--g-primary);border-color:var(--g-primary);color:var(--g-on-primary);font-size:22px;font-weight:700}
 .ctl:active{opacity:.7}
 #toast{position:absolute;left:0;right:0;top:14px;text-align:center;font-size:22px;font-weight:600;color:var(--g-text);opacity:0;transition:opacity .25s;pointer-events:none;z-index:4}
 #toast.show{opacity:.95}
@@ -32,10 +32,34 @@ canvas{display:block;width:100%;height:100%}
 .overlay h2{font-size:22px;color:var(--g-primary-deep)}
 .overlay .big{font-size:18px}
 .overlay .small{font-size:12px;color:var(--g-muted);line-height:1.6}
-.btn{min-height:48px;min-width:150px;border:0;border-radius:14px;background:var(--g-primary);color:var(--g-on-primary);font-size:16px;font-weight:600;padding:0 26px;cursor:pointer;font-family:inherit}
+.btn{min-height:48px;min-width:150px;border:0;border-radius:14px;background:var(--g-primary);color:var(--g-on-primary);font-size:22px;font-weight:700;padding:0 26px;cursor:pointer;font-family:inherit}
 .btn:active{transform:scale(.96)}
 .btn.ghost{background:var(--g-surface2);border:1px solid var(--g-border);color:var(--g-text)}
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox，与 UI 令牌联动） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -46,7 +70,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>
@@ -65,12 +89,12 @@ paint(B||"light");
   <div id="toast" role="status" aria-live="polite"></div>
   <div class="padbar">
     <div class="cluster">
-      <button class="ctl" id="btnRotL" aria-label="左转">⟲ 左转</button>
-      <button class="ctl" id="btnRotR" aria-label="右转">⟳ 右转</button>
+      <button class="ctl" id="btnRotL" aria-label="左转"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;transform:scaleX(-1)" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg> 左转</button>
+      <button class="ctl" id="btnRotR" aria-label="右转"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg> 右转</button>
     </div>
     <div class="cluster">
-      <button class="ctl" id="btnThrust" aria-label="推进">▲ 推进</button>
-      <button class="ctl fire" id="btnFire" aria-label="射击">● 射击</button>
+      <button class="ctl" id="btnThrust" aria-label="推进"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="" aria-hidden="true"><path d="M12 5l8 15H4z"/></svg> 推进</button>
+      <button class="ctl fire" id="btnFire" aria-label="射击"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="" aria-hidden="true"><circle cx="12" cy="12" r="5.5"/></svg> 射击</button>
     </div>
   </div>
   <div id="ovStart" class="overlay">

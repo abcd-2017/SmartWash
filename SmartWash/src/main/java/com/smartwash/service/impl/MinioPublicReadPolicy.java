@@ -21,7 +21,7 @@ public final class MinioPublicReadPolicy {
      * <p>覆盖：游戏包(game/)、用户头像(avatar/)、默认头像(default/)、
      * 游戏封面(game-covers/)、工作台配图(workbench/covers/)、菜谱封面(dining/covers/)。
      * 前三者由端上 Coil 匿名直拉（不带 token），必须公共读，否则封面/配图 403。</p>
-     * <p><b>dining/covers/ 三端直链消费方评估（家庭点单菜谱封面，02 号票）：</b>
+     * <p><b>dining/covers/ 三端直链消费方评估（吃啥菜谱封面，02 号票）：</b>
      * <ul>
      *   <li>Web 管理后台：菜谱列表与编辑弹窗以 img 直拉封面（不带 Authorization 头）——需公共读；</li>
      *   <li>Android（后续批次）：菜谱库页/新增菜谱页按「库内存对象键、读时拼直链」现行标准由 Coil 匿名直拉——需公共读；</li>

@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9DAB9"/>
+      <stop offset="0.55" stop-color="#DECCA5"/>
+      <stop offset="1" stop-color="#D0BA90"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#7E683E" stop-opacity="0.26"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#BFA678" opacity="0.7"/>
+  <rect y="392" width="800" height="6" fill="#AA9164" opacity="0.6"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M112 108 h10 M117 103 v10" stroke-width="3"/>
+    <path d="M678 100 h12 M684 94 v12" stroke-width="3.4"/>
+    <path d="M708 248 h9 M712.5 243.5 v9" stroke-width="2.6" opacity="0.75"/>
+    <path d="M96 286 h9 M100.5 281.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFDF2" opacity="0.55">
+    <circle cx="194" cy="168" r="4"/><circle cx="646" cy="180" r="3.4"/><circle cx="78" cy="214" r="3"/><circle cx="726" cy="168" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="412" cy="400" rx="230" ry="24" fill="#8F7648" opacity="0.35"/>
+
+  <!-- 下层牌（先画） -->
+  <!-- 下1 白面萬 -->
+  <g>
+    <rect x="238" y="268" width="80" height="110" rx="12" fill="#F7F3E7" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="278" cy="312" r="27" fill="#FFFDF6" stroke="#C23A52" stroke-width="5"/>
+    <text x="278" y="324" font-family="Songti SC, STSong, SimSun, serif" font-weight="bold" font-size="30" fill="#C23A52" text-anchor="middle">萬</text>
+    <circle cx="256" cy="284" r="7" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+  <!-- 下2 白面萬 -->
+  <g>
+    <rect x="330" y="258" width="80" height="110" rx="12" fill="#F7F3E7" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="370" cy="302" r="27" fill="#FFFDF6" stroke="#C23A52" stroke-width="5"/>
+    <text x="370" y="314" font-family="Songti SC, STSong, SimSun, serif" font-weight="bold" font-size="30" fill="#C23A52" text-anchor="middle">萬</text>
+    <circle cx="348" cy="274" r="7" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+  <!-- 下3 绿背 -->
+  <g>
+    <rect x="422" y="266" width="80" height="110" rx="12" fill="#3E8A5B" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="434" y="278" width="56" height="86" rx="8" fill="none" stroke="#2E6E45" stroke-width="5"/>
+    <path d="M462 296 L482 321 L462 346 L442 321 Z" fill="#2E6E45"/>
+    <circle cx="442" cy="282" r="6" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+  <!-- 下4 白面萬（右） -->
+  <g>
+    <rect x="512" y="274" width="80" height="110" rx="12" fill="#F7F3E7" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="552" cy="318" r="27" fill="#FFFDF6" stroke="#C23A52" stroke-width="5"/>
+    <text x="552" y="330" font-family="Songti SC, STSong, SimSun, serif" font-weight="bold" font-size="30" fill="#C23A52" text-anchor="middle">萬</text>
+    <circle cx="530" cy="290" r="7" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+
+  <!-- 上层牌（叠在下层上方） -->
+  <!-- 上1 绿背表情牌 -->
+  <g>
+    <rect x="282" y="152" width="82" height="112" rx="12" fill="#43956283" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="282" y="152" width="82" height="112" rx="12" fill="#439562" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="294" y="164" width="58" height="88" rx="8" fill="none" stroke="#2E6E45" stroke-width="5"/>
+    <circle cx="310" cy="200" r="8" fill="#F7F3E7"/>
+    <circle cx="338" cy="200" r="8" fill="#F7F3E7"/>
+    <circle cx="312" cy="202" r="3.5" fill="#2E4A38"/>
+    <circle cx="340" cy="202" r="3.5" fill="#2E4A38"/>
+    <path d="M312 222 Q324 232 336 220" stroke="#F7F3E7" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="302" cy="170" r="7" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+  <!-- 上2 白面萬 -->
+  <g>
+    <rect x="374" y="142" width="82" height="112" rx="12" fill="#F7F3E7" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="415" cy="188" r="28" fill="#FFFDF6" stroke="#C23A52" stroke-width="5"/>
+    <text x="415" y="200" font-family="Songti SC, STSong, SimSun, serif" font-weight="bold" font-size="32" fill="#C23A52" text-anchor="middle">萬</text>
+    <circle cx="394" cy="160" r="7" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+  <!-- 上3 斜放白面萬 -->
+  <g transform="rotate(9 540 210)">
+    <rect x="498" y="152" width="82" height="112" rx="12" fill="#F7F3E7" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="539" cy="198" r="28" fill="#FFFDF6" stroke="#C23A52" stroke-width="5"/>
+    <text x="539" y="210" font-family="Songti SC, STSong, SimSun, serif" font-weight="bold" font-size="32" fill="#C23A52" text-anchor="middle">萬</text>
+    <circle cx="518" cy="170" r="7" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

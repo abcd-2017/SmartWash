@@ -426,6 +426,69 @@
       "buildFunction": "NoticeInboxBuilder",
       "data": {
       }
+    },
+    {
+      "name": "DiningOrderList",
+      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningOrderListPage.ets",
+      "buildFunction": "DiningOrderListBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DiningOrderCreate",
+      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningOrderCreatePage.ets",
+      "buildFunction": "DiningOrderCreateBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DiningOrderShare",
+      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningOrderSharePage.ets",
+      "buildFunction": "DiningOrderShareBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DiningOrderDetail",
+      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningOrderDetailPage.ets",
+      "buildFunction": "DiningOrderDetailBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DiningOrderJoin",
+      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningJoinPage.ets",
+      "buildFunction": "DiningOrderJoinBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DiningShoppingList",
+      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningShoppingListPage.ets",
+      "buildFunction": "DiningShoppingListBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DiningLibrary",
+      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningLibraryPage.ets",
+      "buildFunction": "DiningLibraryBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DiningRecipeDetail",
+      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningRecipeDetailPage.ets",
+      "buildFunction": "DiningRecipeDetailBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DiningRecipeCreate",
+      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningRecipeCreatePage.ets",
+      "buildFunction": "DiningRecipeCreateBuilder",
+      "data": {
+      }
     }
   ]
 }

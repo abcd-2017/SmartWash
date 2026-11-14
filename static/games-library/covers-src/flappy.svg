@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6AB6E8"/>
+      <stop offset="0.55" stop-color="#4E9FD8"/>
+      <stop offset="1" stop-color="#3E8CC8"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#164A6E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="396" width="800" height="54" fill="#2E6EA8" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#26609A" opacity="0.5"/>
+
+  <!-- 云 -->
+  <g fill="#FFFFFF" opacity="0.85">
+    <circle cx="130" cy="104" r="22"/><circle cx="158" cy="92" r="28"/><circle cx="188" cy="106" r="20"/>
+    <circle cx="648" cy="86" r="20"/><circle cx="674" cy="76" r="25"/><circle cx="698" cy="90" r="17"/>
+    <circle cx="712" cy="208" r="16" opacity="0.7"/><circle cx="734" cy="216" r="12" opacity="0.7"/>
+  </g>
+
+  <g opacity="0.5">
+    <path d="M110 300 h12 M116 294 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M240 336 h9 M244.5 331.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#DFF1FF" opacity="0.5">
+    <circle cx="80" cy="200" r="4"/><circle cx="70" cy="340" r="3"/>
+  </g>
+
+  <ellipse cx="400" cy="408" rx="240" ry="18" fill="#1E4E78" opacity="0.3"/>
+
+  <!-- 管道 -->
+  <rect x="565" y="0" width="80" height="166" fill="#43A056" stroke="#1E2620" stroke-width="8"/>
+  <rect x="548" y="156" width="114" height="32" rx="8" fill="#43A056" stroke="#1E2620" stroke-width="8"/>
+  <rect x="548" y="268" width="114" height="32" rx="8" fill="#43A056" stroke="#1E2620" stroke-width="8"/>
+  <rect x="565" y="300" width="80" height="150" fill="#43A056" stroke="#1E2620" stroke-width="8"/>
+  <path d="M580 12 L580 148" stroke="#FFFFFF" stroke-width="8" opacity="0.35" stroke-linecap="round"/>
+  <path d="M580 312 L580 438" stroke="#FFFFFF" stroke-width="8" opacity="0.35" stroke-linecap="round"/>
+
+  <!-- 速度线 -->
+  <g stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.55" fill="none">
+    <path d="M204 190 L252 190"/>
+    <path d="M226 214 L266 214"/>
+    <path d="M212 238 L248 238"/>
+  </g>
+
+  <!-- 小鸟（家族表情） -->
+  <circle cx="312" cy="216" r="52" fill="#E8913A" stroke="#1E2620" stroke-width="9"/>
+  <circle cx="312" cy="216" r="52" fill="url(#gloss)"/>
+  <ellipse cx="262" cy="248" rx="21" ry="13" fill="#C87530" stroke="#1E2620" stroke-width="6" transform="rotate(-22 262 248)"/>
+  <circle cx="306" cy="196" r="11" fill="#FFFFFF" stroke="#1E2620" stroke-width="4"/>
+  <circle cx="332" cy="196" r="11" fill="#FFFFFF" stroke="#1E2620" stroke-width="4"/>
+  <circle cx="308" cy="197" r="4.5" fill="#1F1A14"/>
+  <circle cx="334" cy="197" r="4.5" fill="#1F1A14"/>
+  <path d="M352 206 L386 217 L352 230 Z" fill="#E8622A" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M306 224 Q320 234 334 222" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

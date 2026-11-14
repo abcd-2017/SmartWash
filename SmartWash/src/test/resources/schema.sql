@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS div_usage_daily (
     CONSTRAINT uk_date_method UNIQUE (stat_date, method)
 );
 
--- 家庭点单-菜谱分类表（DiningCategoryAdminControllerIntegrationTest 的 /admin/dining/categories 端点验证用）
+-- 吃啥-菜谱分类表（DiningCategoryAdminControllerIntegrationTest 的 /admin/dining/categories 端点验证用）
 CREATE TABLE IF NOT EXISTS dining_category (
     id         bigint NOT NULL AUTO_INCREMENT,
     name       varchar(32) NOT NULL,
@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS dining_category (
     CONSTRAINT uk_dining_category_name UNIQUE (name)
 );
 
--- 家庭点单-菜谱表（DiningRecipeAdminControllerIntegrationTest 的 /admin/dining/recipes 端点验证用）
+-- 吃啥-菜谱表（DiningRecipeAdminControllerIntegrationTest 的 /admin/dining/recipes 端点验证用）
 -- ingredients 生产库为 MySQL JSON 类型，H2 用等价的 varchar 承载（MyBatis 两侧均按字符串映射）
 CREATE TABLE IF NOT EXISTS dining_recipe (
     id                  bigint NOT NULL AUTO_INCREMENT,
@@ -251,7 +251,7 @@ CREATE TABLE IF NOT EXISTS dining_recipe (
     PRIMARY KEY (id)
 );
 
--- 家庭点单-点单订单表（WebDiningOrderControllerIntegrationTest 的 /web/auth/dining/orders 端点验证用）
+-- 吃啥-点单订单表（WebDiningOrderControllerIntegrationTest 的 /web/auth/dining/orders 端点验证用）
 -- shopping_list 生产库为 MySQL JSON 类型，H2 用等价 varchar 承载（MyBatis 两侧均按字符串映射）
 CREATE TABLE IF NOT EXISTS dining_order (
     id              bigint NOT NULL AUTO_INCREMENT,
@@ -268,7 +268,7 @@ CREATE TABLE IF NOT EXISTS dining_order (
     CONSTRAINT uk_dining_order_token UNIQUE (join_token)
 );
 
--- 家庭点单-点单订单成员表（uk order+user：一人一单一条，重复加入兜底裁决）
+-- 吃啥-点单订单成员表（uk order+user：一人一单一条，重复加入兜底裁决）
 CREATE TABLE IF NOT EXISTS dining_order_member (
     id         bigint NOT NULL AUTO_INCREMENT,
     order_id   bigint NOT NULL,
@@ -279,7 +279,7 @@ CREATE TABLE IF NOT EXISTS dining_order_member (
     CONSTRAINT uk_dining_order_member UNIQUE (order_id, user_id)
 );
 
--- 家庭点单-本单菜单表（uk order+recipe：一道菜在本单只出现一次）
+-- 吃啥-本单菜单表（uk order+recipe：一道菜在本单只出现一次）
 CREATE TABLE IF NOT EXISTS dining_order_menu (
     id         bigint NOT NULL AUTO_INCREMENT,
     order_id   bigint NOT NULL,
@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS dining_order_menu (
     CONSTRAINT uk_dining_order_menu UNIQUE (order_id, recipe_id)
 );
 
--- 家庭点单-选菜记录表（uk order+recipe+user：一人一菜一条，取消即删行）
+-- 吃啥-选菜记录表（uk order+recipe+user：一人一菜一条，取消即删行）
 CREATE TABLE IF NOT EXISTS dining_order_item (
     id         bigint NOT NULL AUTO_INCREMENT,
     order_id   bigint NOT NULL,

@@ -48,9 +48,9 @@ const SHELL_RADIUS = new Set([16, 14, 12, 10]);
 // §2 基线值（浅/深；radius 系为常量）。用于 ⑯ token 基线值比对。
 const BASELINE_LIGHT = {
   "--g-bg": "#f5f6f3", "--g-surface": "#ffffff", "--g-surface2": "#eff1ee", "--g-primary": "#2d9b6a",
-  "--g-primary-deep": "#1e8c5c", "--g-primary-soft": "#e8f6ef", "--g-on-soft": "#0b3625",
+  "--g-primary-deep": "#17734a", "--g-primary-soft": "#e8f6ef", "--g-on-soft": "#0b3625",
   "--g-text": "#1c1c1e", "--g-muted": "#6b6e73", "--g-faint": "#a9aea9", "--g-border": "#e6e9e6",
-  "--g-hairline": "#eff1ee", "--g-danger": "#c9526b", "--g-warning": "#d98a26", "--g-success": "#2d9b6a",
+  "--g-hairline": "#eff1ee", "--g-danger": "#a83850", "--g-warning": "#d98a26", "--g-success": "#2d9b6a",
   "--g-water": "#4a9fd4", "--g-scrim": "rgba(245,246,243,0.9)",
   "--g-radius": "16px", "--g-radius-btn": "14px", "--g-radius-inner": "12px", "--g-gap": "16px", "--g-on-primary": "#ffffff"
 };
@@ -68,7 +68,7 @@ const SHADOW_OK = [
 
 // canvas 字号例外（§3 灰区：素材字号受素材尺寸硬约束，逐值登记）
 const CANVAS_FONT_EXEMPT = {
-  billiards: [9, 17], "moon-lander": [10, 13], beat_tap: [11, 13, 15],
+  billiards: [9, 17], "moon-lander": [10, 13], beat_tap: [11, 13, 15, 34, 42],
   "forest-run": [15], slingshot: [15], flappy: [38], breakout: [15]
 };
 
@@ -77,8 +77,9 @@ function themeRuntime(html) {
   const m = html.match(/<script>\s*(\/\/主题运行时[\s\S]*?)<\/script>/);
   return m ? m[1] : null;
 }
-// 严格比对前剥离 setChrome 行（全屏游戏按 §6#6 在运行时内追加，与范例差异仅此一行）
-function stripSetChrome(rt) { return rt ? rt.replace(/\n?\s*try\{SmartWashGameBridge&&SmartWashGameBridge\.setChrome\([^)]*\)\}catch\(e\)\{\}/g, "") : rt; }
+// 严格比对前剥离 setChrome 行（全屏游戏按 §6#6 在运行时内追加）与 __gRM 注入行
+// （2026-11-14 动效层注入，与主题运行时功能等价、不影响语义；2026-11-15 口径修正）
+function stripSetChrome(rt) { return rt ? rt.replace(/\n?\s*try\{SmartWashGameBridge&&SmartWashGameBridge\.setChrome\([^)]*\)\}catch\(e\)\{\}/g, "").replace(/\n?\s*window\.__gRM=\(function\(\)\{[\s\S]*?\}catch\(e\)\{\};/g, "") : rt; }
 const canonRuntime = themeRuntime(CANONICAL);
 
 // 颜色归一化：#abc→#aabbcc、#RRGGBBAA→rgba(...)、rgba 逗号归一、alpha 两位小数
@@ -327,10 +328,20 @@ function audit(name) {
   // ⑬ 零外链（全部硬性）
   if (/https?:\/\//.test(html)) fail.push("存在 http(s) 外链");
 
+  // ⑬a canvas 闭合配对（全部硬性）：DOM 解析器不自动闭合 <canvas>，未闭合会把后续节点吞成 fallback
+  const cvOpen = (html.match(/<canvas[\s>]/g) || []).length;
+  const cvClose = (html.match(/<\/canvas>/g) || []).length;
+  if (cvOpen !== cvClose) fail.push(`<canvas> 未闭合（open ${cvOpen} / close ${cvClose}）`);
+
   // ⑭ §4 裁撤残留（matchMedia/prefers-color-scheme/g-theme/切换按钮；全部硬性）
+  // ⑭ §4 裁撤残留（全部硬性）
+  // 2026-11-14 精确化：matchMedia 禁令仅限**主题层**（prefers-color-scheme）；
+  // prefers-reduced-motion 属动效层（§6.1 降级），允许使用，不再误报。
   const residue = [];
-  if (/matchMedia\(/.test(html)) residue.push("matchMedia");
   if (/prefers-color-scheme/.test(html)) residue.push("prefers-color-scheme");
+  if (/matchMedia\(/.test(html.replace(/matchMedia\(\s*["']?\(prefers-reduced-motion[^)]*\)/g, ""))) {
+    residue.push("matchMedia(非 reduced-motion)");
+  }
   if (/["']g-theme["']/.test(html)) residue.push("g-theme localStorage");
   if (/__gThemeToggle|g-theme-toggle|btnTheme/.test(html)) residue.push("切换按钮");
   if (residue.length) fail.push(`§4 裁撤残留: ${residue.join(",")}`);

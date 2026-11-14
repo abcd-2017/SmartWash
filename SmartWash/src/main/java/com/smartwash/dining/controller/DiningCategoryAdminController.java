@@ -19,11 +19,11 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 家庭点单-菜谱分类管理端控制器。
+ * 吃啥-菜谱分类管理端控制器。
  * 路径前缀 /admin/dining/categories，需 ROLE_ADMIN（SecurityConfig /admin/** 通配统一拦截，无需改权限配置）。
  * 写操作挂 @Audited（HMAC 审计链）——管理端写接口横切红线；分类为低频运营操作，无需 @RateLimit。
  */
-@Tag(name = "家庭点单-分类管理端", description = "家庭点单菜谱库分类目录管理（ROLE_ADMIN）")
+@Tag(name = "吃啥-分类管理端", description = "吃啥菜谱库分类目录管理（ROLE_ADMIN）")
 @Slf4j
 @Validated
 @RestController

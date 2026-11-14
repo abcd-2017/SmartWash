@@ -24,8 +24,12 @@ android {
         versionCode = project.hasProperty('versionCode') ? project.versionCode.toInteger() : 1
         versionName = project.hasProperty('versionName') ? project.versionName : "1.0"
         ndk {
+            // ABI 过滤由 Gradle 属性注入，仅发版打包使用（CI 传 -PabiFilters=arm64-v8a，逗号分隔可传多个）。
+            // 本地开发不带该参数：保留全部 ABI，模拟器（x86_64/arm64 镜像）与真机均可安装调试。
             //noinspection ChromeOsAbiSupport
-//            abiFilters 'arm64-v8a'
+            if (project.hasProperty('abiFilters')) {
+                abiFilters.addAll(project.abiFilters.split(',').collect { it.trim() }.findAll { it })
+            }
         }
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -168,6 +172,15 @@ dependencies {
     implementation project(":feature:order:impl")
     // 家庭点单（diningGraph 聚合；入口走深链 smartwash://dining 与后续工作台卡片，无底栏入口）
     implementation project(":feature:dining:impl")
+    // dining 对外契约（implementation 不传递）：壳层全局扫一扫经 DiningApi 归一加入链接
+    implementation project(":feature:dining:api")
+
+    // 全局扫一扫（壳层留守，工作台常驻入口）：CameraX 预览/取景 + ML Kit 离线 barcode 识别
+    implementation libs.androidx.camera.core
+    implementation libs.androidx.camera.camera2
+    implementation libs.androidx.camera.lifecycle
+    implementation libs.androidx.camera.view
+    implementation libs.mlkit.barcode.scanning
 
     //支付域对外契约（T6.2，含充值）：仅 PaymentRoute 路由常量（零跨模块数据消费）；
     //PageConstant 支付/充值四路由委托本模块，order-impl/user-impl 跨域跳转同源取值

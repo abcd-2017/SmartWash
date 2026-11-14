@@ -298,7 +298,7 @@ class MainActivity : ComponentActivity() {
                             pointsGraph(navController)
                             // 设备投递（入口走深链 smartwash://delivery 与工作台卡片，无底栏入口）
                             deliveryGraph(navController)
-                            // 家庭点单（入口走深链 smartwash://dining 与后端 workbench_entry
+                            // 吃啥（入口走深链 smartwash://dining 与后端 workbench_entry
                             // 配置的工作台卡片；域首页=订单列表页，07 号票已由菜谱库占位重指向，
                             // 菜谱三页入口在订单列表页右上角，无底栏入口）
                             diningGraph(navController)

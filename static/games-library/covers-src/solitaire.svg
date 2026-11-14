@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E7A5C"/>
+      <stop offset="0.55" stop-color="#26684E"/>
+      <stop offset="1" stop-color="#1D5640"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0C3A2C" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <g fill="#FFFFFF" opacity="0.07">
+    <circle cx="120" cy="110" r="3"/><circle cx="220" cy="80" r="3"/><circle cx="320" cy="120" r="3"/><circle cx="420" cy="70" r="3"/>
+    <circle cx="520" cy="110" r="3"/><circle cx="620" cy="80" r="3"/><circle cx="720" cy="120" r="3"/>
+    <circle cx="90" cy="200" r="3"/><circle cx="190" cy="230" r="3"/><circle cx="690" cy="210" r="3"/><circle cx="740" cy="250" r="3"/>
+    <circle cx="110" cy="320" r="3"/><circle cx="210" cy="350" r="3"/><circle cx="310" cy="390" r="3"/><circle cx="660" cy="330" r="3"/>
+    <circle cx="730" cy="380" r="3"/><circle cx="60" cy="260" r="3"/><circle cx="560" cy="400" r="3"/>
+  </g>
+  <rect y="396" width="800" height="54" fill="#174634" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#123A2C" opacity="0.5"/>
+  <g opacity="0.5">
+    <path d="M120 130 h12 M126 124 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M668 130 h12 M674 124 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M100 300 h9 M104.5 295.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+    <path d="M700 310 h9 M704.5 305.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+  </g>
+  <g fill="#C9E8D6" opacity="0.5">
+    <circle cx="80" cy="210" r="4"/><circle cx="726" cy="220" r="3.4"/><circle cx="160" cy="250" r="3"/><circle cx="748" cy="180" r="2.6"/>
+  </g>
+
+  <ellipse cx="415" cy="398" rx="215" ry="18" fill="#0F3A2A" opacity="0.35"/>
+
+  <!-- 左牌 -->
+  <rect x="250" y="170" width="140" height="176" rx="14" fill="#F8F6EE" stroke="#3A2A1E" stroke-width="9"/>
+  <rect x="296" y="200" width="36" height="13" rx="5" fill="#E04848"/>
+  <path d="M320 240 L344 270 L320 300 L296 270 Z" fill="#E04848" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- 中牌 K（皇冠） -->
+  <rect x="334" y="142" width="146" height="204" rx="14" fill="#F8F6EE" stroke="#3A2A1E" stroke-width="9"/>
+  <path d="M374 142 L374 116 L390 132 L407 106 L424 132 L440 116 L440 142 Z" fill="#F2C230" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+  <circle cx="407" cy="102" r="7" fill="#E04848" stroke="#3A2A1E" stroke-width="4"/>
+  <rect x="378" y="188" width="38" height="13" rx="5" fill="#2A2F38"/>
+  <path d="M407 228 L435 266 L407 304 L379 266 Z" fill="#2A2F38" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- 右牌 -->
+  <rect x="494" y="168" width="140" height="176" rx="14" fill="#F8F6EE" stroke="#3A2A1E" stroke-width="9"/>
+  <rect x="540" y="198" width="36" height="13" rx="5" fill="#E04848"/>
+  <path d="M564 238 L588 268 L564 298 L540 268 Z" fill="#E04848" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

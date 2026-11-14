@@ -1231,11 +1231,11 @@ INSERT INTO `div_rag_document` VALUES
 
 -- 开箱种子：拦截问题（拦截日志页演示数据；user_id 取最早注册用户，无用户时插 0 行，可重复执行）
 INSERT INTO `div_blocked_question` (user_id, question, method, reason, created_at)
-SELECT id, '我明天会死吗', 'liuyao', 'rule:high_risk', '2026-11-07 00:00:00' FROM `users` ORDER BY id LIMIT 1;
+SELECT user_id, '我明天会死吗', 'liuyao', 'rule:high_risk', '2026-11-07 00:00:00' FROM `users` ORDER BY user_id LIMIT 1;
 INSERT INTO `div_blocked_question` (user_id, question, method, reason, created_at)
-SELECT id, '帮我算算能不能中彩票', 'meihua', 'llm', '2026-11-07 00:00:00' FROM `users` ORDER BY id LIMIT 1;
+SELECT user_id, '帮我算算能不能中彩票', 'meihua', 'llm', '2026-11-07 00:00:00' FROM `users` ORDER BY user_id LIMIT 1;
 INSERT INTO `div_blocked_question` (user_id, question, method, reason, created_at)
-SELECT id, '分析一下这个人的命盘', 'qimen', 'rule:high_risk', '2026-11-07 00:00:00' FROM `users` ORDER BY id LIMIT 1;
+SELECT user_id, '分析一下这个人的命盘', 'qimen', 'rule:high_risk', '2026-11-07 00:00:00' FROM `users` ORDER BY user_id LIMIT 1;
 
 -- ----------------------------
 -- Table structure for div_platform_setting（平台全局设置）
@@ -1422,7 +1422,7 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
   ('subscription',       '订阅逃生舱',  3, 1, 'smartwash://subscription 打开订阅列表页', 1),
   ('delivery',           '设备投递',    3, 0, 'smartwash://delivery 打开设备投递发起页', 1),
   ('lab',                '解压实验舱',  3, 0, 'smartwash://lab 打开解压实验舱首页', 1),
-  ('dining',             '家庭点单',    3, 1, 'smartwash://dining 打开家庭点单订单列表页（域首页，工作台入口同 target）', 1),
+  ('dining',             '吃啥',        3, 1, 'smartwash://dining 打开吃啥订单列表页（域首页，工作台入口同 target）', 1),
   ('toolbox-secret',     '阅后即焚',    3, 1, 'smartwash://toolbox-secret 打开私密文本入口（短码列表页）', 1),
   ('s',                  '私密文本查看', 3, 0, 'scheme 说明：分享链接 {toolbox.web-base-url}/s/{code} 为 Web 公开查看页；smartwash://s/{code} 仅字典占位（端上经内置 WebView 打开）', 1),
   ('toolbox-asset-tag',  '物品标签',    3, 1, 'smartwash://toolbox-asset-tag 打开物品标签列表页', 1),
@@ -1439,7 +1439,7 @@ INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `col
   ('review',             '记忆复习',   'FSRS 复习卡片',                'book',    'blue',   'row',   '日常管理', 'smartwash://review',             '新', 1, 4, NULL),
   ('subscription',       '订阅逃生舱', '管理订阅与续费',               'link',    'orange', 'row',   '日常管理', 'smartwash://subscription',       '新', 1, 5, NULL),
   ('delivery',           '设备投递',   '手机与电脑互传文件',           'link',    'teal',   'row',   '日常管理', 'smartwash://delivery',           '新', 1, 6, NULL),
-  ('dining',             '家庭点单',   '发起点单 · 扫码一起选菜',      'chat',    'orange', 'row',   '日常管理', 'smartwash://dining',             NULL, 1, 7, NULL),
+  ('dining',             '吃啥',   '发起点单 · 扫码一起选菜',      'chat',    'orange', 'row',   '日常管理', 'smartwash://dining',             NULL, 1, 7, NULL),
   ('my-history',         '我的卦历',   NULL,                           'history', 'purple', 'row',   '日常管理', 'smartwash://divination-history', NULL, 1, 8, NULL),
   ('toolbox-short-code', '短链工具箱', '生成与管理短链',               'link',    'blue',   'tile',  '效率工具', 'smartwash://toolbox-short-code', NULL, 1, 9, NULL),
   ('ai-assistant',       'AI 助手',    NULL,                           'chat',    'blue',   'tile',  '效率工具', 'smartwash://ai-work',            NULL, 1, 10, NULL),
@@ -1878,7 +1878,7 @@ CREATE TABLE `notice_read` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信已读账本（懒创建）' ROW_FORMAT = Dynamic;
 
 -- =====================================================================
--- 家庭点单 —— dining 域（Web 后台维护公共菜谱库，用户端扫码加入点单）
+-- 吃啥 —— dining 域（Web 后台维护公共菜谱库，用户端扫码加入点单）
 -- 建表纪律：模块前缀 dining_，BIGINT 自增主键、snake_case、中文注释、
 -- created_at/updated_at、uk_/idx_ 索引命名、utf8mb4、无逻辑删除（物理删除）。
 -- =====================================================================
@@ -1898,7 +1898,7 @@ CREATE TABLE `dining_category` (
   `updated_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-菜谱分类';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-菜谱分类';
 
 -- ----------------------------
 -- Table structure for dining_recipe（菜谱）
@@ -1929,7 +1929,7 @@ CREATE TABLE `dining_recipe` (
   KEY `idx_category_id` (`category_id`) COMMENT '分类筛选与分类引用计数',
   KEY `idx_status` (`status`) COMMENT '客户端上架列表过滤',
   KEY `idx_name` (`name`) COMMENT '关键词模糊搜索'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-菜谱';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-菜谱';
 
 -- ----------------------------
 -- Table structure for dining_order（点单订单）
@@ -1954,7 +1954,7 @@ CREATE TABLE `dining_order` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_join_token` (`join_token`),
   KEY `idx_creator` (`creator_user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-点单订单';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-点单订单';
 
 -- ----------------------------
 -- Table structure for dining_order_member（点单订单成员）
@@ -1971,7 +1971,7 @@ CREATE TABLE `dining_order_member` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_order_user` (`order_id`,`user_id`),
   KEY `idx_user` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-点单订单成员';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-点单订单成员';
 
 -- ----------------------------
 -- Table structure for dining_order_menu（本单菜单）
@@ -1987,7 +1987,7 @@ CREATE TABLE `dining_order_menu` (
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_order_recipe` (`order_id`,`recipe_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-本单菜单（发起者编排）';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-本单菜单（发起者编排）';
 
 -- ----------------------------
 -- Table structure for dining_order_item（选菜记录）
@@ -2006,5 +2006,5 @@ CREATE TABLE `dining_order_item` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_order_recipe_user` (`order_id`,`recipe_id`,`user_id`),
   KEY `idx_order` (`order_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭点单-选菜记录（一人一菜一条，取消即删行）';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-选菜记录（一人一菜一条，取消即删行）';
 SET FOREIGN_KEY_CHECKS = 1;

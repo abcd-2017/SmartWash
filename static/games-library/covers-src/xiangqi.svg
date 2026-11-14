@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DFB276"/>
+      <stop offset="0.55" stop-color="#D1A164"/>
+      <stop offset="1" stop-color="#C29257"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#6E4A20" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#B07E45" opacity="0.75"/>
+  <rect y="392" width="800" height="6" fill="#9C6E3A" opacity="0.6"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M104 104 h10 M109 99 v10" stroke-width="3"/>
+    <path d="M684 96 h12 M690 90 v12" stroke-width="3.4"/>
+    <path d="M708 250 h9 M712.5 245.5 v9" stroke-width="2.6" opacity="0.75"/>
+    <path d="M90 280 h9 M94.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.5">
+    <circle cx="176" cy="160" r="4"/><circle cx="652" cy="176" r="3.4"/><circle cx="70" cy="212" r="3"/><circle cx="732" cy="164" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="402" cy="402" rx="275" ry="24" fill="#8A5E2E" opacity="0.35"/>
+
+  <!-- 棋盘 -->
+  <g>
+    <rect x="140" y="88" width="520" height="284" rx="16" fill="#E9CFA0" stroke="#4A2C15" stroke-width="9"/>
+    <rect x="140" y="88" width="520" height="284" rx="16" fill="url(#gloss)"/>
+    <!-- 网格线 -->
+    <g stroke="#8A6A3F" stroke-width="4" stroke-linecap="round" fill="none">
+      <path d="M190 106 L190 198 M260 106 L260 198 M330 106 L330 198 M400 106 L400 198 M470 106 L470 198 M540 106 L540 198 M610 106 L610 198"/>
+      <path d="M190 264 L190 356 M260 264 L260 356 M330 264 L330 356 M400 264 L400 356 M470 264 L470 356 M540 264 L540 356 M610 264 L610 356"/>
+      <path d="M190 106 L610 106 M190 142 L610 142 M190 178 L610 178"/>
+      <path d="M190 320 L610 320 M190 356 L610 356"/>
+      <path d="M190 198 L610 198 M190 264 L610 264"/>
+      <path d="M190 198 L190 264 M610 198 L610 264"/>
+    </g>
+    <!-- 中央格线（棋子后） -->
+    <path d="M190 288 L610 288" stroke="#8A6A3F" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <!-- 河界小棋子（表情） -->
+  <g>
+    <circle cx="402" cy="243" r="34" fill="#B08048" stroke="#4A2C15" stroke-width="6"/>
+    <circle cx="402" cy="231" r="34" fill="#EFD8A8" stroke="#4A2C15" stroke-width="7"/>
+    <circle cx="402" cy="231" r="34" fill="url(#gloss)"/>
+    <circle cx="391" cy="226" r="6.5" fill="#3A2A1E"/>
+    <circle cx="413" cy="226" r="6.5" fill="#3A2A1E"/>
+    <circle cx="393" cy="223.5" r="2.2" fill="#FFFFFF"/>
+    <circle cx="415" cy="223.5" r="2.2" fill="#FFFFFF"/>
+    <path d="M393 240 Q402 247 411 239" stroke="#3A2A1E" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="384" cy="236" r="5" fill="#E88A6A" opacity="0.55"/>
+    <circle cx="420" cy="236" r="5" fill="#E88A6A" opacity="0.55"/>
+    <circle cx="386" cy="212" r="7" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <!-- 红帥（上半区右侧） -->
+  <g>
+    <circle cx="510" cy="168" r="48" fill="#B08048" stroke="#4A2C15" stroke-width="7"/>
+    <circle cx="510" cy="152" r="48" fill="#E8D0A0" stroke="#4A2C15" stroke-width="8"/>
+    <circle cx="510" cy="152" r="48" fill="url(#gloss)"/>
+    <circle cx="510" cy="152" r="36" fill="none" stroke="#C23A52" stroke-width="4"/>
+    <text x="510" y="170" font-family="Songti SC, STSong, SimSun, serif" font-weight="bold" font-size="46" fill="#C23A52" text-anchor="middle">帥</text>
+    <path d="M482 122 Q490 114 502 112" stroke="#FFFFFF" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.6"/>
+  </g>
+
+  <!-- 黑車（下半区左侧） -->
+  <g>
+    <circle cx="298" cy="318" r="48" fill="#8C8268" stroke="#3A3A34" stroke-width="7"/>
+    <circle cx="298" cy="302" r="48" fill="#E8D0A0" stroke="#3A3A34" stroke-width="8"/>
+    <circle cx="298" cy="302" r="48" fill="url(#gloss)"/>
+    <circle cx="298" cy="302" r="36" fill="none" stroke="#2E3A4A" stroke-width="4"/>
+    <text x="298" y="320" font-family="Songti SC, STSong, SimSun, serif" font-weight="bold" font-size="46" fill="#2E3A4A" text-anchor="middle">車</text>
+    <path d="M270 272 Q278 264 290 262" stroke="#FFFFFF" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.6"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

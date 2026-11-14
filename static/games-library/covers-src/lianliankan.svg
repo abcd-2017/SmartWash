@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDF4DB"/>
+      <stop offset="0.55" stop-color="#F8E9C5"/>
+      <stop offset="1" stop-color="#EFDAB0"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#9A7E45" stop-opacity="0.26"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#E2C795" opacity="0.7"/>
+  <rect y="392" width="800" height="6" fill="#CFB27C" opacity="0.6"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M112 108 h10 M117 103 v10" stroke-width="3"/>
+    <path d="M676 100 h12 M682 94 v12" stroke-width="3.4"/>
+    <path d="M708 250 h9 M712.5 245.5 v9" stroke-width="2.6" opacity="0.75"/>
+    <path d="M96 288 h9 M100.5 283.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFDF2" opacity="0.55">
+    <circle cx="196" cy="170" r="4"/><circle cx="648" cy="180" r="3.4"/><circle cx="80" cy="216" r="3"/><circle cx="728" cy="170" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="405" cy="406" rx="260" ry="24" fill="#B49760" opacity="0.32"/>
+
+  <!-- 白色弯曲连接线（两个红圆牌之间） -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M185 170 C 185 240 245 225 245 290" stroke="#FFFFFF" stroke-width="13" opacity="0.9"/>
+    <path d="M185 170 C 185 240 245 225 245 290" stroke="#E8683A" stroke-width="0"/>
+    <circle cx="185" cy="170" r="8" fill="#FFFFFF" opacity="0.9"/>
+    <circle cx="245" cy="290" r="8" fill="#FFFFFF" opacity="0.9"/>
+  </g>
+
+  <!-- 行1 -->
+  <!-- 红圆牌 -->
+  <g>
+    <rect x="140" y="118" width="90" height="90" rx="14" fill="#F6D45C" stroke="#6B4A20" stroke-width="7"/>
+    <circle cx="185" cy="160" r="22" fill="#E8683A" stroke="#6B4A20" stroke-width="6"/>
+    <circle cx="177" cy="154" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <!-- 蓝三角牌 -->
+  <g>
+    <rect x="260" y="118" width="90" height="90" rx="14" fill="#F6D45C" stroke="#6B4A20" stroke-width="7"/>
+    <path d="M305 138 L327 180 L283 180 Z" fill="#6BA8E8" stroke="#6B4A20" stroke-width="6" stroke-linejoin="round"/>
+    <circle cx="292" cy="136" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <!-- 绿方牌 -->
+  <g>
+    <rect x="380" y="118" width="90" height="90" rx="14" fill="#F6D45C" stroke="#6B4A20" stroke-width="7"/>
+    <rect x="389" y="145" width="44" height="44" rx="8" fill="#7ECB7E" stroke="#6B4A20" stroke-width="6"/>
+    <circle cx="398" cy="136" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <!-- 紫菱牌 -->
+  <g>
+    <rect x="500" y="118" width="90" height="90" rx="14" fill="#F6D45C" stroke="#6B4A20" stroke-width="7"/>
+    <path d="M545 140 L567 163 L545 186 L523 163 Z" fill="#A97FD1" stroke="#6B4A20" stroke-width="6" stroke-linejoin="round"/>
+    <circle cx="530" cy="136" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <!-- 行2 -->
+  <!-- 红圆表情牌（连接线终点） -->
+  <g>
+    <rect x="200" y="248" width="90" height="90" rx="14" fill="#F6D45C" stroke="#6B4A20" stroke-width="7"/>
+    <circle cx="245" cy="293" r="24" fill="#E8683A" stroke="#6B4A20" stroke-width="6"/>
+    <circle cx="237" cy="288" r="5" fill="#3A2A1E"/>
+    <circle cx="253" cy="288" r="5" fill="#3A2A1E"/>
+    <circle cx="239" cy="286" r="2" fill="#FFFFFF"/>
+    <circle cx="255" cy="286" r="2" fill="#FFFFFF"/>
+    <path d="M238 300 Q245 306 252 299" stroke="#3A2A1E" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="234" cy="280" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <!-- 蓝三角牌 -->
+  <g>
+    <rect x="320" y="248" width="90" height="90" rx="14" fill="#F6D45C" stroke="#6B4A20" stroke-width="7"/>
+    <path d="M365 268 L387 310 L343 310 Z" fill="#6BA8E8" stroke="#6B4A20" stroke-width="6" stroke-linejoin="round"/>
+    <circle cx="352" cy="266" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <!-- 绿方牌 -->
+  <g>
+    <rect x="440" y="248" width="90" height="90" rx="14" fill="#F6D45C" stroke="#6B4A20" stroke-width="7"/>
+    <rect x="449" y="275" width="44" height="44" rx="8" fill="#7ECB7E" stroke="#6B4A20" stroke-width="6"/>
+    <circle cx="458" cy="266" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <!-- 紫菱牌 -->
+  <g>
+    <rect x="560" y="248" width="90" height="90" rx="14" fill="#F6D45C" stroke="#6B4A20" stroke-width="7"/>
+    <path d="M605 270 L627 293 L605 316 L583 293 Z" fill="#A97FD1" stroke="#6B4A20" stroke-width="6" stroke-linejoin="round"/>
+    <circle cx="590" cy="266" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

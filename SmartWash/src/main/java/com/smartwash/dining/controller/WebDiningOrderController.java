@@ -28,12 +28,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 家庭点单-订单用户端控制器。
+ * 吃啥-订单用户端控制器。
  * 路径前缀 /web/auth/dining/orders，需 ROLE_USER（SecurityConfig 的 /web/auth/** 通配统一拦截，无需改权限配置）。
  * 全部接口以当前登录用户为主体（UserContextHolder 注入 userId）。
  * 四端联动说明：本组为新增接口，不改动任何既有接口；Android/鸿蒙端后续接入（本次不消费）。
  */
-@Tag(name = "家庭点单-订单用户端", description = "创建/我的订单/详情轮询/加入前brief/加入/重置加入凭证/结束点单")
+@Tag(name = "吃啥-订单用户端", description = "创建/我的订单/详情轮询/加入前brief/加入/重置加入凭证/结束点单")
 @Slf4j
 @RestController
 @RequestMapping("/web/auth/dining/orders")

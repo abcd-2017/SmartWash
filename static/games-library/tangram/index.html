@@ -7,7 +7,7 @@
 <title>七巧板</title>
 <style>
   /*token:GAME-THEME.md §2 基线（UI 壳全走 token）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -37,12 +37,13 @@
     min-height: 44px; padding: 0 12px; flex: 1;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-primary); color: #fff;
-    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
   }
   .btn:active { opacity: .85; }
   .btn:disabled { opacity: .35; }
-  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .btn.ghost { background: var(--g-surface); border: 1px solid var(--g-border); color: var(--g-text); }
+  .tools .btn, .tools2 .btn { font-size: 16px; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
@@ -60,7 +61,30 @@
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
   .panel .btn { width: 100%; }
+
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox，与 UI 令牌联动） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -70,7 +94,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
   try{window.__gOnTheme(m)}catch(e){}}
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>
@@ -82,7 +106,7 @@ paint(B||"light");
     <div class="stat"><span class="label">用时</span><span class="val" id="stTime">0s</span></div>
     <div class="stat"><span class="label">红星</span><span class="val" id="stStar">0</span></div>
   </div>
-  <div class="stage" id="stage"><canvas id="cv" aria-label="七巧板拼图区" role="img"></canvas></div>
+  <div class="stage" id="stage"><canvas id="cv" tabindex="0" aria-label="七巧板拼图区，方向键移动选中块，回车吸附放置" role="img"></canvas></div>
   <p class="msg" id="msg" role="status" aria-live="polite">拖动板块进剪影，靠近正确位置会自动吸附</p>
   <div class="tools">
     <button class="btn ghost" id="btnRot" disabled>旋转 45°</button>
@@ -95,7 +119,7 @@ paint(B||"light");
   </div>
   <p class="foot">七块全部放入剪影且不重叠即过关 · 平行四边形可翻转 · 进度自动保存</p>
 </div>
-<div class="overlay" id="overlay">
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
   <div class="panel">
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
@@ -246,7 +270,7 @@ function fitsSilhouette(blockPoly,sil){
   return !polysProperIntersect(blockPoly,sil);
 }
 /* ---------- 关卡数据（DB 下发优先，本地缓存兜底；任一条非法整批放弃） ---------- */
-var DEFAULT_LEVELS=[{"name":"大三角·壹","sil":[[0,0],[16,0],[8,8]]},{"name":"大三角·贰","sil":[[8,0],[8,16],[0,8]]},{"name":"大三角·叁","sil":[[16,8],[0,8],[8,0]]},{"name":"大三角·肆","sil":[[0,16],[0,0],[8,8]]},{"name":"经典方·壹","sil":[[0,0],[8,0],[8,8],[0,8]]},{"name":"长桥·壹","sil":[[5,8],[3,6],[4,5],[0,5],[2,3],[6,3],[5,4],[7,6],[8,5],[8,1],[10,3],[13,0],[14,1],[18,1],[16,3],[17,4],[13,4],[13,8]]},{"name":"长桥·贰","sil":[[0,5],[2,3],[3,4],[3,0],[5,2],[5,6],[4,5],[2,7],[3,8],[7,8],[5,10],[8,13],[7,14],[7,18],[5,16],[4,17],[4,13],[0,13]]},{"name":"长桥·叁","sil":[[13,0],[15,2],[14,3],[18,3],[16,5],[12,5],[13,4],[11,2],[10,3],[10,7],[8,5],[5,8],[4,7],[0,7],[2,5],[1,4],[5,4],[5,0]]},{"name":"长桥·肆","sil":[[8,13],[6,15],[5,14],[5,18],[3,16],[3,12],[4,13],[6,11],[5,10],[1,10],[3,8],[0,5],[1,4],[1,0],[3,2],[4,1],[4,5],[8,5]]},{"name":"长桥·伍","sil":[[5,8],[5,4],[1,4],[2,3],[0,1],[4,1],[5,0],[8,3],[10,1],[10,5],[11,6],[13,4],[12,3],[16,3],[18,5],[14,5],[15,6],[13,8]]}];
+var DEFAULT_LEVELS=[{"name":"大三角·壹","difficulty":2,"sil":[[0,0],[16,0],[8,8]]},{"name":"大三角·贰","difficulty":3,"sil":[[8,0],[8,16],[0,8]]},{"name":"大三角·叁","difficulty":3,"sil":[[16,8],[0,8],[8,0]]},{"name":"大三角·肆","difficulty":4,"sil":[[0,16],[0,0],[8,8]]},{"name":"经典方·壹","difficulty":5,"sil":[[0,0],[8,0],[8,8],[0,8]]},{"name":"长桥·壹","difficulty":6,"sil":[[5,8],[3,6],[4,5],[0,5],[2,3],[6,3],[5,4],[7,6],[8,5],[8,1],[10,3],[13,0],[14,1],[18,1],[16,3],[17,4],[13,4],[13,8]]},{"name":"长桥·贰","difficulty":6,"sil":[[0,5],[2,3],[3,4],[3,0],[5,2],[5,6],[4,5],[2,7],[3,8],[7,8],[5,10],[8,13],[7,14],[7,18],[5,16],[4,17],[4,13],[0,13]]},{"name":"长桥·叁","difficulty":7,"sil":[[13,0],[15,2],[14,3],[18,3],[16,5],[12,5],[13,4],[11,2],[10,3],[10,7],[8,5],[5,8],[4,7],[0,7],[2,5],[1,4],[5,4],[5,0]]},{"name":"长桥·肆","difficulty":8,"sil":[[8,13],[6,15],[5,14],[5,18],[3,16],[3,12],[4,13],[6,11],[5,10],[1,10],[3,8],[0,5],[1,4],[1,0],[3,2],[4,1],[4,5],[8,5]]},{"name":"长桥·伍","difficulty":9,"sil":[[5,8],[5,4],[1,4],[2,3],[0,1],[4,1],[5,0],[8,3],[10,1],[10,5],[11,6],[13,4],[12,3],[16,3],[18,5],[14,5],[15,6],[13,8]]}];
 var LEVELS=DEFAULT_LEVELS.slice();
 var LEVELS_KEY="sw.tangram.v1.levels",LEVELS_VER_KEY="sw.tangram.v1.levels.ver";
 function parseTangramLevels(res){
@@ -274,7 +298,9 @@ function parseTangramLevels(res){
     A/=2;
     if(Math.abs(Math.abs(A)-64)>0.5)return null; /* 面积必须 = 64（八倍格基准） */
     if(A<0)pts.reverse();
-    out.push({name:d.name,sil:pts});
+    var df=parseInt(d.difficulty,10);
+    if(!isFinite(df)||df<1||df>10)df=5;//难度缺失/非法回落 5
+    out.push({name:d.name,sil:pts,difficulty:df});
   }
   return out;
 }
@@ -286,9 +312,15 @@ function applyLevels(list,version){
 }
 function loadCachedLevels(){
   try{
-    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
-    if(Array.isArray(list)&&list.length){LEVELS=list;return;}
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var raw=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(raw)&&raw.length){
+      var list=parseTangramLevels({levels:raw.map(function(e,i){
+        return{levelNo:i+1,dataJson:JSON.stringify(e)};}),version:v});
+      if(list&&list.length){LEVELS=list;return v;}
+    }
   }catch(e){}
+  return 0;
 }
 loadCachedLevels();
 function syncLevelsFromServer(){
@@ -312,7 +344,7 @@ function loadSave(){
   return{lv:0,stars:{},best:{}};
 }
 function save(){
-  var data={lv:cur,stars:stars,best:best};
+  var data={lv:Math.max(cur,saveData.lv||0),stars:stars,best:best};
   try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
   if(GB.available)GB.saveState("tangram",data).catch(function(){});
 }
@@ -344,7 +376,7 @@ function syncSaveFromServer(){
 function $(id){return document.getElementById(id)}
 var cv=$("cv"),ctx=cv.getContext("2d"),stage=$("stage");
 var cur=0,pieces=[],sil=[],sel=-1,won=false,dpr=1;
-var scale=16,viewW=0,viewH=0,startT=0,timerId=0,elapsed=0,rafId=0,dirty=true;
+var scale=16,viewW=0,viewH=0,startT=0,timerId=0,elapsed=0,rafId=0,dirty=true,hiddenAt=0;
 var worldW=16,worldH=24;
 var SNAP=0.85,SNAP2=SNAP*SNAP;
 /* ---------- 吸附 ---------- */
@@ -418,8 +450,12 @@ function pieceState(pc){
 function mulberry32(a){
   return function(){a|=0;a=(a+0x6D2B79F5)|0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};
 }
+function startTimer(){
+  if(timerId)clearInterval(timerId);
+  timerId=setInterval(function(){elapsed=Math.floor((Date.now()-startT)/1000);$("stTime").textContent=elapsed+"s";},500);
+}
 function startLevel(n){
-  cur=n;won=false;sel=-1;keyCache=null;
+  cur=n;won=false;sel=-1;keyCache=null;drag=null;
   var L=LEVELS[n];
   sil=L.sil.map(function(p){return [p[0],p[1]]});
   /* 剪影归一到非负象限 */
@@ -449,9 +485,8 @@ function startLevel(n){
   worldW=Math.max(silW,trayW);worldH=trayY+lineH+1.5;
   layout();
   hideOverlay();
-  startT=Date.now();elapsed=0;
-  if(timerId)clearInterval(timerId);
-  timerId=setInterval(function(){elapsed=Math.floor((Date.now()-startT)/1000);$("stTime").textContent=elapsed+"s";},500);
+  startT=Date.now();elapsed=0;hiddenAt=0;
+  startTimer();
   $("stTime").textContent="0s";
   say("第"+(n+1)+"关 · "+(L.name||"")+" · 把七块全部拼入剪影");
   updateStats();dirty=true;draw();
@@ -497,7 +532,8 @@ function drawPiece(pc,isSel){
   });
   ctx.closePath();
   ctx.fillStyle=PAL[pc.color]||PAL.primary;ctx.fill();
-  if(st===1){ctx.save();ctx.globalAlpha=.4;ctx.fillStyle=PAL.danger;ctx.fill();ctx.restore();}
+  if(st===1){ctx.save();ctx.globalAlpha=.4;ctx.fillStyle=PAL.danger;ctx.fill();ctx.restore();
+    if($("msg").textContent!==HINT_ILLEGAL)say(HINT_ILLEGAL);}
   if(st===2){ctx.save();ctx.globalAlpha=.18;ctx.fillStyle="#fff";ctx.fill();ctx.restore();/*恒白提亮*/}
   ctx.strokeStyle="rgba(0,0,0,.45)";ctx.lineWidth=1.5;ctx.stroke();/*恒暗描边*/
   if(sel>=0&&pieces[sel]&&pieces[sel].id===pc.id){
@@ -512,7 +548,7 @@ function kick(){if(rafId)return;rafId=requestAnimationFrame(function(){rafId=0;d
 function layout(){
   var availW=stage.clientWidth||360;
   var availH=Math.max(300,window.innerHeight-320);
-  scale=Math.min(availW/worldW,availH/worldH);
+  scale=Math.min(availW/(worldW+2),availH/(worldH+2));//内边距计入缩放，画布不溢出
   scale=Math.max(8,Math.min(scale,26));
   viewW=Math.ceil((worldW+2)*scale);viewH=Math.ceil((worldH+2)*scale);
   cv.style.width=viewW+"px";cv.style.height=viewH+"px";
@@ -595,12 +631,44 @@ $("btnRot").addEventListener("click",rotateSel);
 $("btnFlip").addEventListener("click",flipSel);
 window.addEventListener("keydown",function(e){
   if(sel<0||won)return;
-  if(e.key==="r"||e.key==="R"||e.key==="ArrowUp")rotateSel();
+  if(e.key==="r"||e.key==="R")rotateSel();
   else if(e.key==="f"||e.key==="F")flipSel();
   else return;
   e.preventDefault();
 });
+/* 键盘可操作：方向键移动选中块，Enter/Space 选中或吸附放置 */
+function firstFreeIndex(){
+  for(var i=0;i<pieces.length;i++)if(pieceState(pieces[i])!==2)return i;
+  return pieces.length?0:-1;
+}
+cv.addEventListener("keydown",function(e){
+  if(won)return;
+  var k=e.key;
+  if(k==="ArrowLeft"||k==="ArrowRight"||k==="ArrowUp"||k==="ArrowDown"){
+    e.preventDefault();
+    if(sel<0)sel=firstFreeIndex();
+    if(sel<0)return;
+    var pc=pieces[sel],step=0.5;
+    if(k==="ArrowLeft")pc.x-=step;
+    else if(k==="ArrowRight")pc.x+=step;
+    else if(k==="ArrowUp")pc.y-=step;
+    else pc.y+=step;
+    keyCache=null;
+    var s=snapPiece(pc);if(s){pc.x=s.x;pc.y=s.y;}
+    dirty=true;kick();checkWin();
+  }else if(k==="Enter"||k===" "){
+    e.preventDefault();
+    if(sel<0)sel=firstFreeIndex();
+    else{
+      var pq=pieces[sel],s2=snapPiece(pq);
+      if(s2){pq.x=s2.x;pq.y=s2.y;}
+      keyCache=null;checkWin();
+    }
+    dirty=true;kick();
+  }
+});
 /* ---------- 流程 ---------- */
+var HINT_ILLEGAL="位置无效：块需完全落在剪影内，且不能与其他块重叠";
 function say(t){$("msg").textContent=t}
 function checkWin(){
   if(won)return;
@@ -611,28 +679,38 @@ function checkWin(){
   $("btnRot").disabled=true;$("btnFlip").disabled=true;
   var secs=Math.max(1,Math.floor((Date.now()-startT)/1000));
   var ln=cur+1;
-  var par=25+ (LEVELS[cur].difficulty||5)*12;
+  var par=25+LEVELS[cur].difficulty*12;
   var st=secs<=par?3:(secs<=par*2.2?2:1);
   if(!(stars[ln]>=st))stars[ln]=st;
   if(best[ln]==null||secs<best[ln])best[ln]=secs;
+  if(cur+1>saveData.lv)saveData.lv=Math.min(cur+1,LEVELS.length-1);
   save();updateStats();
   var isLast=cur>=LEVELS.length-1;
-  $("ovTitle").textContent="过关！"+ "★".repeat(st)+"☆".repeat(3-st);
+  $("ovTitle").innerHTML="过关！"+SW_ICON('star','margin:0 2px').repeat(st)+SW_ICON('star-o','margin:0 2px').repeat(3-st);
   $("ovDesc").innerHTML="用时 <b>"+secs+"</b> 秒<br>最短纪录 <b>"+best[ln]+"</b> 秒";
   $("ovBtn").textContent=isLast?"再玩一遍":"下一关";
   showOverlay();
   if(GB.available)GB.reportScore("tangram",{metricValue:ln,metricExtra:secs}).catch(function(){});
 }
-function showOverlay(){$("overlay").classList.add("show")}
+function showOverlay(){$("overlay").classList.add("show");$("ovBtn").focus()}
 function hideOverlay(){$("overlay").classList.remove("show")}
-$("btnReset").addEventListener("click",function(){startLevel(cur);});
-$("btnPrev").addEventListener("click",function(){if(cur>0)startLevel(cur-1);});
-$("btnNext").addEventListener("click",function(){startLevel(cur<LEVELS.length-1?cur+1:0);});
+$("btnReset").addEventListener("click",function(){if(won)return;startLevel(cur);});
+$("btnPrev").addEventListener("click",function(){if(won||cur<=0)return;startLevel(cur-1);});
+$("btnNext").addEventListener("click",function(){if(won)return;startLevel(cur<LEVELS.length-1?cur+1:0);});
 $("ovBtn").addEventListener("click",function(){
   if(won){if(cur<LEVELS.length-1)startLevel(cur+1);else startLevel(0);}
 });
 window.addEventListener("resize",function(){layout();dirty=true;draw();});
-document.addEventListener("visibilitychange",function(){if(!document.hidden){dirty=true;draw();}});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){
+    hiddenAt=Date.now();
+    if(timerId){clearInterval(timerId);timerId=0;}//切后台暂停计时
+  }else{
+    if(hiddenAt){startT+=Date.now()-hiddenAt;hiddenAt=0;}//恢复时平移起点，计时无跳转
+    if(!timerId)startTimer();
+    dirty=true;draw();
+  }
+});
 /* ---------- 启动 ---------- */
 palLoad();
 startLevel(Math.min(saveData.lv,LEVELS.length-1));

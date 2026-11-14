@@ -1,3 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 家庭点单域对外契约模块（04 号票）：路由常量 + Gson 载荷 + 网络接口 + 跨域服务契约，无组件声明，manifest merger 合入宿主。 -->
+<!-- 吃啥域对外契约模块（04 号票）：路由常量 + Gson 载荷 + 网络接口 + 跨域服务契约，无组件声明，manifest merger 合入宿主。 -->
 <manifest />

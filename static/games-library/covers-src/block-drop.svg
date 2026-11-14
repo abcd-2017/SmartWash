@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6E4CC8"/>
+      <stop offset="0.55" stop-color="#5A39AC"/>
+      <stop offset="1" stop-color="#472B8C"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#221045" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <g stroke="#FFFFFF" stroke-width="2" opacity="0.05">
+    <path d="M100 0 V450 M200 0 V450 M300 0 V450 M400 0 V450 M500 0 V450 M600 0 V450 M700 0 V450" fill="none"/>
+    <path d="M0 90 H800 M0 180 H800 M0 270 H800 M0 360 H800" fill="none"/>
+  </g>
+  <rect y="396" width="800" height="54" fill="#38206E" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#2C1859" opacity="0.5"/>
+  <g opacity="0.5">
+    <path d="M120 220 h12 M126 214 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M690 320 h12 M696 314 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M630 60 h9 M634.5 55.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+  </g>
+  <g fill="#D9CCFF" opacity="0.5">
+    <circle cx="90" cy="140" r="4"/><circle cx="730" cy="150" r="3.4"/><circle cx="160" cy="320" r="3"/><circle cx="760" cy="90" r="2.6"/>
+  </g>
+
+  <ellipse cx="320" cy="404" rx="180" ry="18" fill="#241352" opacity="0.35"/>
+
+  <!-- 小型下落块 -->
+  <g stroke="#1E2620" stroke-width="7">
+    <rect x="216" y="64" width="46" height="46" rx="10" fill="#4EC9D4"/>
+    <rect x="216" y="114" width="46" height="46" rx="10" fill="#4EC9D4"/>
+  </g>
+  <rect x="224" y="72" width="30" height="14" rx="7" fill="#FFFFFF" opacity="0.35"/>
+  <rect x="224" y="122" width="30" height="14" rx="7" fill="#FFFFFF" opacity="0.35"/>
+
+  <!-- 主下落 T 块（家族表情） -->
+  <g stroke="#1E2620" stroke-width="7">
+    <rect x="465" y="92" width="46" height="46" rx="10" fill="#F5C531"/>
+    <rect x="565" y="92" width="46" height="46" rx="10" fill="#F5C531"/>
+    <rect x="515" y="142" width="46" height="46" rx="10" fill="#F5C531"/>
+  </g>
+  <rect x="515" y="92" width="46" height="46" rx="10" fill="#F5C531" stroke="#1E2620" stroke-width="7"/>
+  <rect x="473" y="100" width="30" height="14" rx="7" fill="#FFFFFF" opacity="0.35"/>
+  <rect x="573" y="100" width="30" height="14" rx="7" fill="#FFFFFF" opacity="0.35"/>
+  <rect x="523" y="150" width="30" height="14" rx="7" fill="#FFFFFF" opacity="0.35"/>
+  <circle cx="528" cy="109" r="5" fill="#1F1A14"/>
+  <circle cx="548" cy="109" r="5" fill="#1F1A14"/>
+  <path d="M526 124 Q538 133 550 122" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <path d="M500 208 Q496 224 500 238" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.4"/>
+  <path d="M552 208 Q556 224 552 238" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.4"/>
+
+  <!-- 底部堆叠 -->
+  <g stroke="#1E2620" stroke-width="7">
+    <rect x="244" y="350" width="46" height="46" rx="10" fill="#4EC9D4"/>
+    <rect x="292" y="350" width="46" height="46" rx="10" fill="#E8B62C"/>
+    <rect x="340" y="350" width="46" height="46" rx="10" fill="#9B6BD4"/>
+    <rect x="388" y="350" width="46" height="46" rx="10" fill="#4CAF6D"/>
+    <rect x="268" y="302" width="46" height="46" rx="10" fill="#E86A5A"/>
+    <rect x="316" y="302" width="46" height="46" rx="10" fill="#F2C230"/>
+    <rect x="364" y="302" width="46" height="46" rx="10" fill="#4EC9D4"/>
+    <rect x="316" y="254" width="46" height="46" rx="10" fill="#9B6BD4"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.3">
+    <rect x="252" y="358" width="30" height="14" rx="7"/>
+    <rect x="300" y="358" width="30" height="14" rx="7"/>
+    <rect x="348" y="358" width="30" height="14" rx="7"/>
+    <rect x="396" y="358" width="30" height="14" rx="7"/>
+    <rect x="276" y="310" width="30" height="14" rx="7"/>
+    <rect x="324" y="310" width="30" height="14" rx="7"/>
+    <rect x="372" y="310" width="30" height="14" rx="7"/>
+    <rect x="324" y="262" width="30" height="14" rx="7"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

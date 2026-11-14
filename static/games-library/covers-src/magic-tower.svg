@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A3468"/>
+      <stop offset="0.55" stop-color="#1F2A54"/>
+      <stop offset="1" stop-color="#16203F"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#10182E" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="420" width="800" height="30" fill="#10182E" opacity="0.7"/>
+  <rect y="420" width="800" height="5" fill="#0C1224" opacity="0.7"/>
+  <g opacity="0.5">
+    <path d="M120 110 h12 M126 104 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M600 200 h9 M604.5 195.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+    <path d="M170 260 h9 M174.5 255.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M660 330 h9 M664.5 325.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.55">
+    <circle cx="90" cy="180" r="3"/><circle cx="230" cy="90" r="2.4"/><circle cx="310" cy="150" r="2.6"/>
+    <circle cx="520" cy="110" r="2.4"/><circle cx="580" cy="280" r="2.6"/><circle cx="120" cy="330" r="2.4"/>
+    <circle cx="740" cy="200" r="2.6"/><circle cx="480" cy="60" r="2.2"/>
+  </g>
+
+  <!-- 月亮环 -->
+  <circle cx="676" cy="92" r="30" fill="#2A3468" stroke="#EFE8C8" stroke-width="13"/>
+
+  <ellipse cx="405" cy="424" rx="170" ry="11" fill="#0A1020" opacity="0.45"/>
+
+  <!-- 塔 -->
+  <rect x="400" y="34" width="7" height="34" fill="#8A94A8"/>
+  <path d="M407 36 L440 44 L407 54 Z" fill="#C94444" stroke="#1E2620" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M340 92 L340 60 L366 60 L366 78 L392 78 L392 60 L418 60 L418 78 L444 78 L444 60 L470 60 L470 92 Z"
+        fill="#5A6478" stroke="#1E2620" stroke-width="9" stroke-linejoin="round"/>
+  <rect x="340" y="90" width="130" height="330" fill="#5A6478" stroke="#1E2620" stroke-width="9"/>
+  <path d="M348 170 L462 170 M348 258 L462 258 M348 346 L462 346" stroke="#3E485C" stroke-width="5"/>
+
+  <!-- 黄窗 -->
+  <g fill="#F2C230" stroke="#1E2620" stroke-width="6">
+    <rect x="386" y="128" width="28" height="34" rx="5"/>
+    <rect x="386" y="216" width="28" height="34" rx="5"/>
+    <rect x="386" y="304" width="28" height="34" rx="5"/>
+  </g>
+  <rect x="391" y="133" width="10" height="10" rx="4" fill="#FFF3CF" opacity="0.8"/>
+
+  <!-- 拱门 -->
+  <path d="M410 420 L410 384 Q428 364 446 384 L446 420 Z" fill="#B8403C" stroke="#1E2620" stroke-width="7"/>
+
+  <!-- 史莱姆（家族表情） -->
+  <path d="M296 420 Q296 390 320 390 Q344 390 344 420 Z" fill="#4CAF6D" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+  <circle cx="312" cy="404" r="4.5" fill="#1F1A14"/>
+  <circle cx="328" cy="404" r="4.5" fill="#1F1A14"/>
+  <path d="M310 412 Q320 419 330 411" stroke="#1F1A14" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <circle cx="308" cy="396" r="6" fill="#FFFFFF" opacity="0.45"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

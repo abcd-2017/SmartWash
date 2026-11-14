@@ -22,12 +22,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 家庭点单-选菜用户端控制器（共享购物车：勾选/改备注/取消）。
+ * 吃啥-选菜用户端控制器（共享购物车：勾选/改备注/取消）。
  * 路径前缀 /web/auth/dining/orders/{orderId}/items，需 ROLE_USER。
  * 乐观并发契约：写请求携带客户端已知 version；与服务端不一致返回业务错误码 409
  * （message「订单已被他人更新，请刷新后重试」），客户端拉取最新详情后重放。
  */
-@Tag(name = "家庭点单-选菜用户端", description = "勾选菜品/修改备注/取消选菜（version 乐观并发）")
+@Tag(name = "吃啥-选菜用户端", description = "勾选菜品/修改备注/取消选菜（version 乐观并发）")
 @Slf4j
 @RestController
 @RequestMapping("/web/auth/dining/orders")

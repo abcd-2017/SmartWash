@@ -66,3 +66,23 @@ export function mapArray<T>(raw: Object | null | undefined,
   }
   return result
 }
+
+/**
+ * 字符串数组安全读取：仅当元素确为字符串时收进结果，其余跳过（空串保留，清洗由调用方裁决）。
+ * mapArray 只放行 object 元素，对 List<String> 载荷（如 dining_recipe.ingredients）会把
+ * 整组字符串项全部跳过——字符串数组必须走本函数。
+ */
+export function jsonStrArray(raw: Object | null | undefined): Array<string> {
+  if (raw === null || raw === undefined || !Array.isArray(raw)) {
+    return []
+  }
+  const arr: Array<Object | null> = raw as Array<Object | null>
+  const result: Array<string> = []
+  for (let i = 0; i < arr.length; i++) {
+    const item: Object | null = arr[i]
+    if (typeof item === 'string') {
+      result.push(item)
+    }
+  }
+  return result
+}

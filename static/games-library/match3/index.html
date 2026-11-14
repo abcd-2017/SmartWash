@@ -5,7 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F5F6F3">
 <title>宝石消除</title>
-<style>  :root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-bp1:#F2B843;--g-bp2:#7BC57B;--g-bp3:#5AA7E8;--g-bp4:#EE7E9C;--g-bp5:#9B7BE0;--g-bp6:#4FC3D9;--g-bshade:rgba(20,40,30,.10);color-scheme:light}:root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-bp1:#F5C45E;--g-bp2:#8FD68F;--g-bp3:#74BDF2;--g-bp4:#F293AC;--g-bp5:#AC8FEC;--g-bp6:#66D2E5;--g-bshade:rgba(0,0,0,.4);color-scheme:dark}*{box-sizing:border-box;}[hidden]{display:none !important;}html, body{margin:0;padding:0;}body{font-family:-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;background:var(--g-bg);color:var(--g-text);min-height:100vh;display:flex;justify-content:center;padding:16px 8px 30px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior:none;}.wrap{width:100%;max-width:480px;}header{margin-bottom:12px;padding:0 2px;}.sub{font-size:14px;color:var(--g-muted);}.stats{display:flex;gap:8px;margin-bottom:8px;}.stat{flex:1;background:var(--g-surface2);border-radius:var(--g-radius-inner);padding:6px 2px;text-align:center;line-height:1.3;}.stat .label{display:block;font-size:12px;color:var(--g-muted);}.stat .val{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--g-primary-deep);}.goalbar{display:flex;gap:8px;margin-bottom:10px;}.chip{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--g-surface2);border-radius:10px;padding:7px 4px;font-size:14px;font-variant-numeric:tabular-nums;line-height:1;}.chip i{display:inline-block;width:11px;height:11px;border-radius:50%;flex:none;}.chip i.ice{border-radius:3px;background:var(--g-surface);border:2px solid var(--g-water);}.chip i.star{width:9px;height:9px;border:2px solid var(--g-warning);background:none;}.chip.done{color:var(--g-success);font-weight:600;}.stage{position:relative;}canvas{display:block;width:100%;touch-action:none;border-radius:var(--g-radius-inner);}.msg{min-height:20px;margin:10px 2px;font-size:14px;color:var(--g-muted);text-align:center;}.tools{display:flex;gap:8px;}.btn{min-height:44px;padding:0 14px;flex:1;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font:inherit;font-size:16px;font-weight:600;cursor:pointer;}.btn:active{opacity:.85;}.btn.ghost{background:var(--g-surface2);color:var(--g-text);}.foot{margin:12px 2px 0;font-size:12px;color:var(--g-faint);text-align:center;line-height:1.6;}.overlay{position:fixed;inset:0;z-index:10;background:var(--g-scrim);display:none;align-items:center;justify-content:center;padding:20px;}.overlay.show{display:flex;}.panel{width:100%;max-width:320px;padding:22px 18px;background:var(--g-surface);border-radius:var(--g-radius);box-shadow:var(--g-shadow);text-align:center;animation:pop .25s ease-out;}@keyframes pop{from{transform:scale(.92);}to{transform:scale(1);opacity:1;}}.panel h2{margin:0 0 6px;font-size:22px;}.panel .desc{margin:0 0 16px;font-size:14px;color:var(--g-muted);line-height:1.6;}.panel .desc b{color:var(--g-primary-deep);font-size:22px;}.panel .btn{width:100%;}</style>
+<style>  :root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-bp1:#F2B843;--g-bp2:#7BC57B;--g-bp3:#5AA7E8;--g-bp4:#EE7E9C;--g-bp5:#9B7BE0;--g-bp6:#4FC3D9;--g-bshade:rgba(20,40,30,.10);color-scheme:light}:root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-bp1:#F5C45E;--g-bp2:#8FD68F;--g-bp3:#74BDF2;--g-bp4:#F293AC;--g-bp5:#AC8FEC;--g-bp6:#66D2E5;--g-bshade:rgba(0,0,0,.4);color-scheme:dark}*{box-sizing:border-box;}[hidden]{display:none !important;}html, body{margin:0;padding:0;}body{font-family:-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;background:var(--g-bg);color:var(--g-text);min-height:100vh;display:flex;justify-content:center;padding:16px 8px 30px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior:none;}.wrap{width:100%;max-width:480px;}header{margin-bottom:12px;padding:0 2px;}.sub{font-size:14px;color:var(--g-muted);}.stats{display:flex;gap:8px;margin-bottom:8px;}.stat{flex:1;background:var(--g-surface2);border-radius:var(--g-radius-inner);padding: 6px 8px;text-align:center;line-height:1.3;}.stat .label{display:block;font-size:12px;color:var(--g-muted);}.stat .val{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--g-primary-deep);}.goalbar{display:flex;gap:8px;margin-bottom:10px;}.chip{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--g-surface2);border-radius:10px;padding:7px 4px;font-size:14px;font-variant-numeric:tabular-nums;line-height:1;}.chip i{display:inline-block;width:11px;height:11px;border-radius:50%;flex:none;}.chip i.ice{border-radius:3px;background:var(--g-surface);border:2px solid var(--g-water);}.chip i.star{width:9px;height:9px;border:2px solid var(--g-warning);background:none;}.chip.done{color:var(--g-success);font-weight:600;}.stage{position:relative;}canvas{display:block;width:100%;touch-action:none;border-radius:var(--g-radius-inner);}.msg{min-height:20px;margin:10px 2px;font-size:14px;color:var(--g-muted);text-align:center;}.tools{display:flex;gap:8px;}.btn{min-height:44px;padding:0 14px;flex:1;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-family:inherit;font-size:22px;font-weight:700;cursor:pointer;}.btn:active{opacity:.85;}.btn.ghost{background:var(--g-surface2);color:var(--g-text);}.foot{margin:12px 2px 0;font-size:12px;color: var(--g-muted);text-align:center;line-height:1.6;}.overlay{position:fixed;inset:0;z-index:10;background:var(--g-scrim);display:none;align-items:center;justify-content:center;padding:20px;}.overlay.show{display:flex;}.panel{width:100%;max-width:320px;padding:22px 18px;background:var(--g-surface);border-radius:var(--g-radius);box-shadow:var(--g-shadow);text-align:center;animation:pop .25s ease-out;}@keyframes pop{from{transform:scale(.92);}to{transform:scale(1);opacity:1;}}.panel h2{margin:0 0 6px;font-size:22px;}.panel .desc{margin:0 0 16px;font-size:14px;color:var(--g-muted);line-height:1.6;}.panel .desc b{color:var(--g-primary-deep);font-size:22px;}.panel .btn{width:100%;}
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox，与 UI 令牌联动） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -15,7 +38,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
   try{window.__gOnTheme(m)}catch(e){}}
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>
@@ -27,7 +50,7 @@ paint(B||"light");
     <div class="stat"><span class="label">步数</span><span class="val" id="stMoves">0</span></div>
     <div class="stat"><span class="label">分数</span><span class="val" id="stScore">0</span></div>
   </div>
-  <div class="goalbar" id="goalBar" role="status" aria-live="polite"></div>
+  <div class="goalbar" id="goalBar"></div>
   <div class="stage"><canvas id="cv" aria-label="宝石消除棋盘" role="img"></canvas></div>
   <p class="msg" id="msg" role="status" aria-live="polite"></p>
   <div class="tools">
@@ -35,6 +58,7 @@ paint(B||"light");
     <button class="btn" id="btnNext" hidden>下一关</button>
   </div>
   <p class="foot">达成全部目标过关 · 剩余步数定星级 · 无可走步自动重排 · 进度自动保存</p>
+  <p class="foot" id="legend" hidden>特殊块图例：条纹块＝清整行/列 · 爆炸块＝炸 3×3 · 彩虹块＝与任意宝石交换清同色</p>
 </div>
 <div class="overlay" id="overlay">
   <div class="panel">
@@ -361,7 +385,7 @@ function palLoad(){
   var s=getComputedStyle(document.documentElement);
   function v(n){return s.getPropertyValue(n).trim()}
   PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
-    primary:v("--g-primary"),success:v("--g-success"),warning:v("--g-warning"),
+    text:v("--g-text"),primary:v("--g-primary"),success:v("--g-success"),warning:v("--g-warning"),
     bp:[v("--g-bp1"),v("--g-bp2"),v("--g-bp3"),v("--g-bp4"),v("--g-bp5"),v("--g-bp6")]};
 }
 window.__gOnTheme=function(){palLoad();};
@@ -442,7 +466,9 @@ function loadCachedLevels(){
   try{
     var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
     var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
-    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+    if(!Array.isArray(list)||!list.length)return 0;
+    var checked=parseMatch3Levels({levels:list.map(function(r){return{levelNo:r&&r.no,dataJson:JSON.stringify(r)}})});
+    if(checked&&checked.length){LEVELS=checked;return v;}
   }catch(e){}
   return 0;
 }
@@ -501,6 +527,7 @@ var TUT=[
 "教学·5 连生成彩虹块：与任意宝石交换清全场该色",
 "教学·特殊块互换出组合：条纹+条纹十字、条纹+爆炸三行三列",
 "教学·碎冰：消除冰格自身或相邻宝石破冰 1 层，清完所有冰过关"];
+var COLOR_NAMES=["黄","绿","蓝","粉","紫","青"];
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var L={W:0,H:0,cell:0,boardW:0,boardX:0,boardY:0};
 function $(id){return document.getElementById(id)}
@@ -575,6 +602,7 @@ function drawGem(color,spec,cx,cy,rad,alpha,scale){
 }
 function draw(now){
   if(!st)return;
+  var RM=window.__gRM;
   ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,L.W,L.H);
   rr(L.boardX-6,L.boardY-6,L.boardW+12,L.boardW+12,12);
   ctx.fillStyle=PAL.surface;ctx.fill();
@@ -597,11 +625,11 @@ function draw(now){
         var an=anims[r*M3.N+c];
         if(an){
           if(an.type==="fell"){
-            var k=(now-an.t0)/160;
+            var k=RM?1:(now-an.t0)/160;
             if(k>=1)delete anims[r*M3.N+c];
             else{var fromY=L.boardY+an.from*L.cell;pos.y=fromY+(pos.y-fromY)*easeOut(k);}
           }else if(an.type==="spawn"){
-            var k2=(now-an.t0)/200;
+            var k2=RM?1:(now-an.t0)/200;
             if(k2>=1)delete anims[r*M3.N+c];
             else{alpha=k2;scale=0.5+0.5*k2;}
           }
@@ -612,7 +640,7 @@ function draw(now){
     if(st.ice[r][c]>0)drawIce(px,py,r,c);
   }
   if(swapAnim){
-    var kk=(now-swapAnim.t0)/SWAP_MS;if(kk>1)kk=1;
+    var kk=RM?1:(now-swapAnim.t0)/SWAP_MS;if(kk>1)kk=1;
     var e=easeOut(kk),a=cellXY(swapAnim.ar,swapAnim.ac),b=cellXY(swapAnim.br,swapAnim.bc);
     var cA=st.grid[swapAnim.ar][swapAnim.ac],cB=st.grid[swapAnim.br][swapAnim.bc];
     var sA=st.spec[swapAnim.ar][swapAnim.ac],sB=st.spec[swapAnim.br][swapAnim.bc];
@@ -632,7 +660,7 @@ function draw(now){
     var p=popups[i],kp=(now-p.t0)/900;
     if(kp>=1)continue;
     ctx.globalAlpha=1-kp*kp;
-    ctx.fillStyle=p.big?PAL.warning:PAL.success;
+    ctx.fillStyle=p.big?PAL.text:PAL.success;
     ctx.font="700 18px -apple-system,'PingFang SC',sans-serif";
     ctx.fillText(p.text,p.x,p.y-kp*26);
     ctx.globalAlpha=1;
@@ -661,6 +689,14 @@ function applyEvents(ev){
     popups.push({text:"+"+ev.gain,x:cx,y:cy,t0:now,big:false});
     if(ev.depth>=2)popups.push({text:"连锁 x"+ev.depth,x:cx,y:cy+20,t0:now,big:true});
   }
+  var madeName={1:"条纹块！",2:"条纹块！",3:"爆炸块！",4:"彩虹块！"};
+  var madeTip={1:"合成条纹块：触发清整行",2:"合成条纹块：触发清整列",3:"合成爆炸块：触发炸 3×3",4:"合成彩虹块：与任意宝石交换清该色"};
+  for(i=0;i<ev.made.length;i++){
+    var mk=ev.made[i],mp=cellXY(mk.r,mk.c);
+    popups.push({text:madeName[mk.kind]||"特殊块！",x:mp.x+L.cell/2,y:mp.y+L.cell/2,t0:now,big:true});
+    anims[mk.r*M3.N+mk.c]={type:"spawn",t0:now};
+    say(madeTip[mk.kind]||"合成特殊块！");
+  }
   if(ev.reshuffled)say("无可走步，已自动重排");
   rebuildMoveSet();
 }
@@ -679,10 +715,13 @@ function isValidMove(ar,ac,br,bc){
   return !!moveSet[[ar,ac,br,bc].join(",")];
 }
 function updateGoals(){
-  var h="",gs=level.goals,i,g2,tgt;
+  var h="",gs=level.goals,i,g2,tgt,label;
   for(i=0;i<gs.length;i++){
     g2=st.goals[i];tgt=gs[i].type==="score"?gs[i].value:gs[i].count;
-    h+='<span class="chip'+(g2.n>=tgt?" done":"")+'">'+(gs[i].type==="collect"?'<i style="background:'+PAL.bp[gs[i].color]+'"></i>':gs[i].type==="ice"?'<i class="ice"></i>':'<i class="star"></i>')+(gs[i].type==="score"?st.score:g2.n)+"/"+tgt+"</span>";
+    if(gs[i].type==="collect")label="收集"+COLOR_NAMES[gs[i].color]+"色 "+g2.n+"/"+tgt;
+    else if(gs[i].type==="ice")label="清除冰层 "+g2.n+"/"+tgt;
+    else label="分数 "+st.score+"/"+tgt;
+    h+='<span class="chip'+(g2.n>=tgt?" done":"")+'" aria-label="'+label+'">'+(gs[i].type==="collect"?'<i style="background:'+PAL.bp[gs[i].color]+'"></i>':gs[i].type==="ice"?'<i class="ice"></i>':'<i class="star"></i>')+(gs[i].type==="score"?st.score:g2.n)+"/"+tgt+"</span>";
   }
   $("goalBar").innerHTML=h;
 }
@@ -702,6 +741,7 @@ function startLevel(n){
   rebuildMoveSet();
   updateStats();
   say(cur<TUT.length?TUT[cur]:level.name+" · "+level.moves+" 步内达成全部目标");
+  $("legend").hidden=cur<TUT.length;
   save();
   hideOverlay();
 }
@@ -714,7 +754,7 @@ function onWin(){
   if(GB.available)GB.reportScore("match3",{metricValue:cur+1,metricExtra:st.score}).catch(function(){});
   setTimeout(function(){
     if(!st||!st.won)return;
-    var stars="★★★".slice(0,s)+"☆☆☆".slice(0,3-s);
+    var stars="";for(var si=0;si<3;si++)stars+=SW_ICON(si<s?'star':'star-o');
     $("ovTitle").textContent="过关！";
     $("ovDesc").innerHTML="获得 <b>"+stars+"</b> 星<br>得分 "+st.score+" · 剩余 "+Math.max(0,st.movesLeft)+" 步"+(cur<LEVELS.length-1?"<br>已解锁第 "+(cur+2)+" 关":"<br>全部关卡完成！");
     $("ovBtn").textContent=cur<LEVELS.length-1?"下一关":"再玩一遍";

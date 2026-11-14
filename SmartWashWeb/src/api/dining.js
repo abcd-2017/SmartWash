@@ -1,5 +1,5 @@
 // src/api/dining.js
-// 家庭点单（dining）API 层
+// 吃啥（dining）API 层
 // 接口已与后端 DiningCategoryAdminController / DiningRecipeAdminController 对齐
 // （/admin/dining/**，ROLE_ADMIN）：字段名以 DiningCategoryVo / DiningRecipeVo
 // 及 Add·Update{DiningCategory,DiningRecipe}From 为准（驼峰）。

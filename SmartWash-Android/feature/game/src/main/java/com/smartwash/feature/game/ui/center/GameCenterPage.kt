@@ -401,14 +401,17 @@ private fun GameCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-                Text(
-                    text = game.description,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = scheme.textSecondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                // 空描述不占位（与有封面分支同规则：无内容不渲染空行，避免卡片底部空洞）
+                if (game.description.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+                    Text(
+                        text = game.description,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = scheme.textSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 // badge 角标（无封面构图）：主色浅底/深绿小字胶囊（语言对齐工作台 ToolTile）。
                 // 文字色取 textGreenOnTint（§10 对比度红线：primary 品牌绿在 primaryLight 浅底
                 // 小字号下仅 ≈3.3:1 不达 AA，textGreenOnTint ≈6.4:1 达标，深浅两主题均已定档）

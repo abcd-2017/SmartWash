@@ -7,7 +7,7 @@
 <title>层层叠</title>
 <style>
 /*token:GAME-THEME.md §2 基线（UI 壳走 token；塔层色相环由 primary 派生进 PAL）*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-radius-btn:14px;color-scheme:light}
+:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-radius-btn:14px;color-scheme:light}
 :root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -22,12 +22,36 @@ canvas{display:block;width:100%;height:100%}
 .overlay .big{font-size:18px}
 .overlay .big b{color:var(--g-primary-deep);font-variant-numeric:tabular-nums}
 .overlay .small{font-size:14px;color:var(--g-muted);line-height:1.6}
-.overlay .star{font-size:28px;color:var(--g-warning);letter-spacing:4px}
+.overlay .star{font-size:28px;color: var(--g-text);letter-spacing:4px}
 #ovOver h2{color:var(--g-danger)}
-.btn{min-height:48px;min-width:150px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-size:16px;font-weight:600;padding:0 26px;cursor:pointer;font-family:inherit}
+.btn{min-height:48px;min-width:150px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-size:22px;font-weight:700;padding:0 26px;cursor:pointer;font-family:inherit}
 .btn:active{transform:scale(.96)}
 .btn.alt{background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox，与 UI 令牌联动） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -38,7 +62,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>
@@ -53,14 +77,16 @@ paint(B||"light");
     <button id="btnStart" class="btn">开 始</button>
     <div class="small">悬空部分会被切掉，塔越切越窄<br>对齐塔沿触发连击，连击回补塔宽、得分翻涨</div>
   </div>
-  <div id="ovWin" class="overlay hide">
+  <div id="ovWin" class="overlay hide" role="status" aria-live="polite">
+    <span class="sr-only" id="winLive"></span>
     <h2 id="winTitle">过关！</h2>
-    <div class="star" id="starWin">★★☆</div>
+    <div class="star" id="starWin"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 2px" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 2px" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 2px" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></div>
     <div class="big">得分 <b id="scoreWin">0</b> · 塔宽 <b id="ratioWin">0%</b></div>
     <div class="big">完美 <b id="pfWin">0</b> 次</div>
     <button id="btnNext" class="btn">下一关</button>
   </div>
-  <div id="ovOver" class="overlay hide">
+  <div id="ovOver" class="overlay hide" role="status" aria-live="polite">
+    <span class="sr-only" id="overLive"></span>
     <h2>塔倒了</h2>
     <div class="big">得分 <b id="scoreOver">0</b> · 已叠 <b id="lyOver">0</b> 层</div>
     <div class="small" id="whyOver"></div>
@@ -329,6 +355,7 @@ function doTap(){
   var r=applyPlacement(s,w,top.a,top.b,L.perfectTol,combo,L.width,L.regainEvery);
   slab=null;
   if(r.res==='miss'){//整块错开：整板坠地
+    combo=0;
     debris.push(mkDebris(r.ia,r.ib,placed.length,0));
     phase='gone';goneT=0;
     return;
@@ -368,23 +395,28 @@ function finish(reached){
   if(score>saveData.best)saveData.best=score;
   save();
   if(GB.available)GB.reportScore('stack-up',{metricValue:cur+1,metricExtra:score}).catch(function(){});
-  $('starWin').textContent=('★★★').slice(0,st)+('☆☆☆').slice(0,3-st);
+  $('starWin').innerHTML=SW_ICON('star','margin:0 2px').repeat(st)+SW_ICON('star-o','margin:0 2px').repeat(3-st);
   $('scoreWin').textContent=String(score);
   $('pfWin').textContent=String(perfects);
-  $('ratioWin').textContent=Math.round((placed[placed.length-1].b-placed[placed.length-1].a)/L.width*100)+'%';
+  var ratioTxt=Math.round((placed[placed.length-1].b-placed[placed.length-1].a)/L.width*100)+'%';
+  $('ratioWin').textContent=ratioTxt;
   $('winTitle').textContent=cur>=LEVELS.length-1?'全部通关！':'过关！';
   $('btnNext').textContent=cur>=LEVELS.length-1?'再玩一遍':'下一关';
+  $('winLive').textContent=$('winTitle').textContent+'，得分 '+score+' 分，塔宽 '+ratioTxt+'，完美 '+perfects+' 次';
   state='win';ovWin.classList.remove('hide');
 }
 function gameOver(){
+  if(score>saveData.best)saveData.best=score;
+  save();
   $('scoreOver').textContent=String(score);
   $('lyOver').textContent=String(placed.length-1);
   $('whyOver').textContent='板子与塔沿完全错开，悬空坠落 · 对准塔沿再点按';
+  $('overLive').textContent='本局结束，得分 '+score+' 分，已叠 '+(placed.length-1)+' 层';
   state='over';ovOver.classList.remove('hide');
 }
 /* ---------- 更新 ---------- */
 function update(dt){
-  var i;
+  var i,rm=!!window.__gRM;
   if(state==='playing'){
     if(phase==='drop'&&drop){drop.t+=dt;if(drop.t>=SU.DROP)settlePlacement();}
     else if(phase==='settle'){settleT+=dt;if(settleT>=SU.SETTLE)spawnSlab();}
@@ -392,8 +424,10 @@ function update(dt){
     var focus=(placed.length+1.5)*SU.LAYER;
     var targ=Math.max(0,focus-(groundY-H*0.5)/scale);
     if(!camInit){camY=targ;camInit=true;}
+    else if(rm)camY=targ;//动效降级：相机直接到位，不做缓动
     else camY+=(targ-camY)*(1-Math.exp(-5*dt));
   }
+  if(rm)return;//动效降级：碎片/浮字/波纹等装饰模拟整体跳过（板与落块保留）
   for(i=debris.length-1;i>=0;i--){
     var d=debris[i];
     d.life-=dt*1.1;d.y+=d.vy*dt;d.vy-=SU.GRAV*dt;d.x+=d.vx*dt;d.rot+=d.vr*dt;

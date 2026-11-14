@@ -7,7 +7,7 @@
 <title>二十一点</title>
 <style>
   /*token:GAME-THEME.md §2（按需取用）+ 牌面素材 token --g-card*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-success:#2D9B6A;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-card:#FFFFFF;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-success:#2D9B6A;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-card:#FFFFFF;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-card:#262A27;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -27,7 +27,7 @@
   .stats { display: flex; gap: 8px; margin-bottom: 12px; }
   .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.plain { color: var(--g-text); }
   /* 牌桌 */
   .zone { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 12px; margin-bottom: 10px; }
@@ -62,7 +62,7 @@
     flex: 1; min-height: 44px;
     border: 1px dashed var(--g-primary); border-radius: 999px;
     background: var(--g-primary-soft); color: var(--g-on-soft);
-    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
   }
   .chip:active { opacity: .8; }
   .chip.clear { border-style: solid; border-color: var(--g-border); background: var(--g-surface2); color: var(--g-muted); flex: 0 0 30%; }
@@ -71,13 +71,13 @@
     min-height: 44px; padding: 0 14px; flex: 1;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-primary); color: #fff;
-    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
   }
   .btn:active { opacity: .85; }
   .btn:disabled { opacity: .4; cursor: default; }
   .btn.warn { background: var(--g-warning); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
@@ -95,6 +95,12 @@
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
   .panel .desc b { color: var(--g-primary-deep); }
   .panel .btn { width: 100%; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
@@ -105,7 +111,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
   try{window.__gOnTheme(m)}catch(e){}}
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>

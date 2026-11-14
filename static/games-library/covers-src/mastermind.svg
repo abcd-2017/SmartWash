@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3C5F4B"/>
+      <stop offset="0.55" stop-color="#31503E"/>
+      <stop offset="1" stop-color="#274132"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#152920" stop-opacity="0.32"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#1E3426" opacity="0.75"/>
+  <rect y="392" width="800" height="6" fill="#172A1F" opacity="0.6"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#D8E8DC" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M110 106 h10 M115 101 v10" stroke-width="3"/>
+    <path d="M678 96 h12 M684 90 v12" stroke-width="3.4"/>
+    <path d="M706 240 h9 M710.5 235.5 v9" stroke-width="2.6" opacity="0.75"/>
+    <path d="M96 280 h9 M100.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#D8E8DC" opacity="0.5">
+    <circle cx="192" cy="162" r="4"/><circle cx="644" cy="176" r="3.4"/><circle cx="76" cy="212" r="3"/><circle cx="724" cy="164" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="408" cy="402" rx="185" ry="23" fill="#12241A" opacity="0.4"/>
+
+  <!-- 猜谜底板 -->
+  <rect x="242" y="96" width="324" height="292" rx="22" fill="#F5EFDC" stroke="#1E3226" stroke-width="9"/>
+  <rect x="258" y="112" width="292" height="260" rx="14" fill="none" stroke="#C9BFA0" stroke-width="4"/>
+
+  <!-- 四个彩色圆钉（插在数字底座上） -->
+  <!-- 红钉 -->
+  <g>
+    <rect x="284" y="238" width="52" height="42" rx="9" fill="#E8D9B0" stroke="#1E3226" stroke-width="6"/>
+    <text x="310" y="268" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="24" fill="#1E3226" text-anchor="middle">1</text>
+    <rect x="300" y="218" width="20" height="24" fill="#8C8268" stroke="#1E3226" stroke-width="5"/>
+    <circle cx="310" cy="182" r="34" fill="#E8683A" stroke="#1E3226" stroke-width="7"/>
+    <circle cx="310" cy="182" r="34" fill="url(#gloss)"/>
+    <circle cx="298" cy="176" r="6" fill="#1E3226"/>
+    <circle cx="322" cy="176" r="6" fill="#1E3226"/>
+    <circle cx="300" cy="174" r="2" fill="#FFFFFF"/>
+    <circle cx="324" cy="174" r="2" fill="#FFFFFF"/>
+    <path d="M300 194 Q310 202 320 192" stroke="#1E3226" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="294" cy="164" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <!-- 蓝钉 -->
+  <g>
+    <rect x="364" y="238" width="52" height="42" rx="9" fill="#E8D9B0" stroke="#1E3226" stroke-width="6"/>
+    <text x="390" y="268" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="24" fill="#1E3226" text-anchor="middle">2</text>
+    <rect x="380" y="218" width="20" height="24" fill="#8C8268" stroke="#1E3226" stroke-width="5"/>
+    <circle cx="390" cy="182" r="34" fill="#6BA8E8" stroke="#1E3226" stroke-width="7"/>
+    <circle cx="390" cy="182" r="34" fill="url(#gloss)"/>
+    <circle cx="378" cy="176" r="6" fill="#1E3226"/>
+    <circle cx="402" cy="176" r="6" fill="#1E3226"/>
+    <circle cx="380" cy="174" r="2" fill="#FFFFFF"/>
+    <circle cx="404" cy="174" r="2" fill="#FFFFFF"/>
+    <path d="M380 194 Q390 202 400 192" stroke="#1E3226" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="374" cy="164" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <!-- 绿钉 -->
+  <g>
+    <rect x="444" y="238" width="52" height="42" rx="9" fill="#E8D9B0" stroke="#1E3226" stroke-width="6"/>
+    <text x="470" y="268" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="24" fill="#1E3226" text-anchor="middle">3</text>
+    <rect x="460" y="218" width="20" height="24" fill="#8C8268" stroke="#1E3226" stroke-width="5"/>
+    <circle cx="470" cy="182" r="34" fill="#7ECB7E" stroke="#1E3226" stroke-width="7"/>
+    <circle cx="470" cy="182" r="34" fill="url(#gloss)"/>
+    <circle cx="458" cy="176" r="6" fill="#1E3226"/>
+    <circle cx="482" cy="176" r="6" fill="#1E3226"/>
+    <circle cx="460" cy="174" r="2" fill="#FFFFFF"/>
+    <circle cx="484" cy="174" r="2" fill="#FFFFFF"/>
+    <path d="M460 194 Q470 202 480 192" stroke="#1E3226" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="454" cy="164" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <!-- 紫钉 -->
+  <g>
+    <rect x="524" y="238" width="52" height="42" rx="9" fill="#E8D9B0" stroke="#1E3226" stroke-width="6"/>
+    <text x="550" y="268" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="24" fill="#1E3226" text-anchor="middle">4</text>
+    <rect x="540" y="218" width="20" height="24" fill="#8C8268" stroke="#1E3226" stroke-width="5"/>
+    <circle cx="550" cy="182" r="34" fill="#A97FD1" stroke="#1E3226" stroke-width="7"/>
+    <circle cx="550" cy="182" r="34" fill="url(#gloss)"/>
+    <circle cx="538" cy="176" r="6" fill="#1E3226"/>
+    <circle cx="562" cy="176" r="6" fill="#1E3226"/>
+    <circle cx="540" cy="174" r="2" fill="#FFFFFF"/>
+    <circle cx="564" cy="174" r="2" fill="#FFFFFF"/>
+    <path d="M540 194 Q550 202 560 192" stroke="#1E3226" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="534" cy="164" r="6" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <!-- 反馈小白圈：两行 -->
+  <g stroke="#1E3226" stroke-width="4">
+    <circle cx="310" cy="322" r="10" fill="#E8683A"/>
+    <circle cx="390" cy="322" r="10" fill="#FFFDF6"/>
+    <circle cx="470" cy="322" r="10" fill="#FFFDF6"/>
+    <circle cx="550" cy="322" r="10" fill="none"/>
+    <circle cx="310" cy="350" r="10" fill="#FFFDF6"/>
+    <circle cx="390" cy="350" r="10" fill="none"/>
+    <circle cx="470" cy="350" r="10" fill="none"/>
+    <circle cx="550" cy="350" r="10" fill="none"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

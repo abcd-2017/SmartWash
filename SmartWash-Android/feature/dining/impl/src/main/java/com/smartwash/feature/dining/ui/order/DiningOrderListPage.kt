@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -77,7 +76,7 @@ private enum class OrderListContentState { Skeleton, Error, Content }
 private val FAB_SIZE = 56.dp
 
 /**
- * 订单列表页（家庭点单域首页，07 号票）：「我发起的 / 我参与的」分区 + 订单卡（标题/状态/
+ * 订单列表页（吃啥域首页，07 号票）：「我发起的 / 我参与的」分区 + 订单卡（标题/状态/
  * 时间/「再来一单」）+ 右下角 FAB 发起 + 右上角菜谱库入口（04 号票三页的可达性入口——深链
  * host "dining" 已重指向本页，菜谱库不再承载域首页落点）。
  *
@@ -131,21 +130,7 @@ fun DiningOrderListPage(
                 title = stringResource(R.string.dining_order_list_title),
                 onBack = { navController.navigateUp() },
                 actions = {
-                    // 扫码加入入口（08 号票）：受邀用户核心动作，与菜谱库并列于页头右上角
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .pressable(onClick = { navController.navigate(DiningRoute.Scan) }),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.QrCodeScanner,
-                            contentDescription = stringResource(R.string.dining_scan_entry),
-                            tint = AppColors.colorScheme.onBackground,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+                    // 扫码加入入口已上移壳层全局扫一扫（工作台常驻），此处不再占位
                     AppButton(
                         text = stringResource(R.string.dining_order_action_recipe_library),
                         onClick = { navController.navigate(DiningRoute.RecipeLibrary) },
@@ -210,7 +195,10 @@ fun DiningOrderListPage(
         // 右下角 FAB（自绘圆形 + Canvas 十字加号：规范 §7 禁 M3 交互组件/ripple，
         // 项目亦无 FAB 先例；品牌渐变底承担主 CTA 语义）
         CreateOrderFab(
-            onClick = { navController.navigate(DiningRoute.OrderCreate) },
+            // 带默认值参数的 data class 必须显式构造：裸写 OrderCreate 在 Kotlin 里是
+            // Companion 实例（泛型推断为 Companion 类型），运行时 Navigation 找不到其
+            // serializer 直接 SerializationException 崩溃（07 号票存量 bug）
+            onClick = { navController.navigate(DiningRoute.OrderCreate()) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(

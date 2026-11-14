@@ -10,7 +10,7 @@ import com.smartwash.common.utils.deeplink.DeepLinkAction
 import com.smartwash.common.utils.deeplink.DeepLinkParser
 import com.smartwash.common.utils.navigation.SmartWashRoute
 import com.smartwash.network.api.DeeplinkRouteDict
-import com.smartwash.ui.page.webview.GameChrome
+import com.smartwash.common.ui.webview.GameChrome
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton

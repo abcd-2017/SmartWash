@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -284,11 +284,13 @@ fun DiningOrderCreatePage(
             }
         }
 
-        // 底部固定 CTA（菜品多时滚动到底不可达由固定条解决；避让手势条）
+        // 底部固定 CTA（菜品多时滚动到底不可达由固定条解决）：
+        // navigationBarsPadding 整体抬升可点区域，背景延伸至屏底，避免按钮下半被手势区遮挡
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(AppColors.colorScheme.background)
+                .navigationBarsPadding()
                 .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceSm),
         ) {
             AppButton(
@@ -298,11 +300,6 @@ fun DiningOrderCreatePage(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        Spacer(
-            modifier = Modifier.height(
-                WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            )
-        )
     }
 }
 

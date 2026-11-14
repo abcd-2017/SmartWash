@@ -7,7 +7,7 @@
 <title>迷宫</title>
 <style>
   /*token:GAME-THEME.md §2 基线 + §3 素材 token（迷宫墙/地板/足迹/角色/终点旗）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-maze-wall:#3E4C45;--g-maze-floor:#FFFFFF;--g-maze-trail:#E8F6EF;--g-maze-player:#2D9B6A;--g-maze-goal:#C9526B;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-maze-wall:#3E4C45;--g-maze-floor:#FFFFFF;--g-maze-trail:#E8F6EF;--g-maze-player:#2D9B6A;--g-maze-goal:#C9526B;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-maze-wall:#4A5A52;--g-maze-floor:#1D201E;--g-maze-trail:#1D3229;--g-maze-player:#5BC894;--g-maze-goal:#DB7186;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -25,23 +25,23 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stage { position: relative; }
   canvas { display: block; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .pad { display: grid; grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(3, 50px); gap: 8px; justify-content: center; margin: 12px 0 10px; }
-  .pad button { min-height: 48px; border: 0; border-radius: 12px; background: var(--g-surface); color: var(--g-text); box-shadow: inset 0 0 0 1px var(--g-border); font: inherit; font-size: 22px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .pad button { min-height: 48px; border: 0; border-radius: 12px; background: var(--g-surface); color: var(--g-text); box-shadow: inset 0 0 0 1px var(--g-border); font-family: inherit; font-size: 22px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .pad button:active { opacity: .7; }
   .pad .empty { visibility: hidden; }
   .pad .center { display: flex; align-items: center; justify-content: center; color: var(--g-faint); font-size: 18px; }
   .tools { display: flex; gap: 8px; }
-  .btn { min-height: 44px; padding: 0 10px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: var(--g-on-primary); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn { min-height: 44px; padding: 0 10px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: var(--g-on-primary); font-family: inherit; font-size:22px; font-weight:700; cursor: pointer; }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
   .btn:disabled { opacity: .35; }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
   .overlay.show { display: flex; }
   .panel { width: 100%; max-width: 320px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
@@ -54,11 +54,35 @@
   .stars .f { color: var(--g-warning); }
   .stars .e { color: var(--g-faint); }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 46vh; overflow-y: auto; margin-bottom: 10px; }
-  .lvgrid button { min-height: 44px; border: 0; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .lvgrid button { min-height: 44px; border: 0; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
   .lvgrid button:disabled { opacity: .35; cursor: default; }
   .lvgrid button.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lvgrid button.cur { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox，与 UI 令牌联动） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -68,7 +92,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
   try{window.__gOnTheme(m)}catch(e){}}
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>
@@ -84,9 +108,9 @@ paint(B||"light");
   <div class="stage"><canvas id="cv" role="img" aria-label="迷宫棋盘"></canvas></div>
   <p class="msg" id="msg" role="status" aria-live="polite">点击相邻格或滑动移动</p>
   <div class="pad">
-    <div class="empty"></div><button type="button" id="btnUp" aria-label="上">▲</button><div class="empty"></div>
-    <button type="button" id="btnLeft" aria-label="左">◀</button><div class="center">·</div><button type="button" id="btnRight" aria-label="右">▶</button>
-    <div class="empty"></div><button type="button" id="btnDown" aria-label="下">▼</button><div class="empty"></div>
+    <div class="empty"></div><button type="button" id="btnUp" aria-label="上"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l8 15H4z"/></svg></button><div class="empty"></div>
+    <button type="button" id="btnLeft" aria-label="左"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l15-8v16z"/></svg></button><div class="center">·</div><button type="button" id="btnRight" aria-label="右"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12L4 4v16z"/></svg></button>
+    <div class="empty"></div><button type="button" id="btnDown" aria-label="下"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19l-8-15h16z"/></svg></button><div class="empty"></div>
   </div>
   <div class="tools">
     <button type="button" class="btn ghost" id="btnPrev">上一关</button>
@@ -435,7 +459,7 @@ function complete(){
   save();
   var stars=steps<=par?3:(steps<=Math.ceil(par*1.5)?2:1);
   var starHtml="";
-  for(var i=0;i<3;i++)starHtml+='<span class="'+(i<stars?"f":"e")+'">'+(i<stars?"★":"☆")+"</span>";
+  for(var i=0;i<3;i++)starHtml+='<span class="'+(i<stars?"f":"e")+'">'+SW_ICON(i<stars?"star":"star-o")+"</span>";
   $("panel").innerHTML="<h2>通关！</h2><div class=\"stars\">"+starHtml+"</div>"+
     "<p class=\"desc\">步数 <b>"+steps+"</b>（标准 "+par+"）<br>用时 <b>"+fmtTime(timeMs)+"</b>"+
     "<br>历史最佳 <b>"+doneSave[cur].s+" 步</b>"+(rec?"<br>新纪录！":"")+"</p>"+

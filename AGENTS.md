@@ -11,7 +11,7 @@
 | 目录 | 说明 | 技术栈 | 端别文档 |
 |------|------|--------|---------|
 | `SmartWash/` | Spring Boot 3.4 后端（MyBatis-Plus + MySQL + Redis + JWT） | Java 17 / Maven | [硬规则](SmartWash/CLAUDE.md) · [工程指南](SmartWash/AGENTS.md) |
-| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：app 壳 + 5 common + 21 feature 子模块，api/impl 拆分） | [硬规则](SmartWash-Android/CLAUDE.md) · [工程指南](SmartWash-Android/AGENTS.md) |
+| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：app 壳 + 5 common + 16 个 feature 域，api/impl 拆分后共 23 个子模块） | [硬规则](SmartWash-Android/CLAUDE.md) · [工程指南](SmartWash-Android/AGENTS.md) |
 | `SmartWash_Harmony/` | 鸿蒙 NEXT 用户端 | ArkTS / ArkUI / Stage 模型 | [硬规则](SmartWash_Harmony/CLAUDE.md) · [工程指南](SmartWash_Harmony/AGENTS.md) |
 | `SmartWashWeb/` | Web 管理后台 | Vue 3 / Vite / Element Plus / Pinia | [硬规则](SmartWashWeb/CLAUDE.md) · [工程指南](SmartWashWeb/AGENTS.md) |
 | `smart_wash.sql` | MySQL 建表 + 种子数据（结构变更以本文件为准） | — | — |
@@ -52,7 +52,7 @@
 
 **工作流方法论**（mattpocock-skills 系列，用户级 skill，与编码工具无关）：工作流统一采用 `implement`（内含 `tdd`）→ `code-review` 双轴审查，调试用 `diagnosing-bugs`，架构用 `improve-codebase-architecture` + `codebase-design`。
 
-**各工程子代理**（位于根目录 `.zcode/agents/`，每端 1 个全栈代理，共 4 个）：
+**各工程子代理**（统一定义在根目录 `.zcode/agents/`，每端 1 个全栈代理，共 4 个）：
 
 | 工程 | 代理文件 | 覆盖职责 |
 |------|---------|---------|
@@ -60,6 +60,8 @@
 | Android | `.zcode/agents/smartwash-android.md` | 开发、审查、调试、测试、UI/动效 |
 | 鸿蒙 | `.zcode/agents/smartwash-harmony.md` | 开发、审查、调试、测试、ArkTS 语法 |
 | Web | `.zcode/agents/smartwash-web.md` | 开发、审查、调试、测试、性能 |
+
+> 各子项目 `.claude/agents/` 下存在同名早期副本，内容与根目录版本已漂移；一律以根目录 `.zcode/agents/` 为准。
 
 ## 已知风险
 

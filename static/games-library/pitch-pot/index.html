@@ -9,9 +9,9 @@
   /*token:GAME-THEME.md §2 基线 + §3 素材（sky/cloud/field/gnd/grid/card/open/ball）*/
   :root {
     --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
-    --g-primary:#2D9B6A; --g-primary-deep:#1E8C5C; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
+    --g-primary:#2D9B6A; --g-primary-deep:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
     --g-text:#1C1C1E; --g-muted:#6B6E73; --g-faint:#A9AEA9; --g-border:#E6E9E6; --g-hairline:#EFF1EE;
-    --g-danger:#C9526B; --g-warning:#D98A26; --g-success:#2D9B6A; --g-water:#4A9FD4;
+    --g-danger:#A83850; --g-warning:#D98A26; --g-success:#2D9B6A; --g-water:#4A9FD4;
     --g-scrim:rgba(245,246,243,.9);
     --g-shadow:0 2px 12px rgba(20,40,30,.05);
     --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
@@ -58,9 +58,9 @@
   }
   .icon-btn:active { opacity: .8; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 2px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
-  .stat .val { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { display: block; font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stage { position: relative; }
   canvas {
     display: block; width: 100%; aspect-ratio: 390 / 520; height: auto;
@@ -74,12 +74,12 @@
     min-height: 44px; padding: 0 14px; flex: 1;
     border: 0; border-radius: 14px;
     background: var(--g-primary); color: var(--g-on-primary);
-    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
     touch-action: manipulation;
   }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: absolute; inset: 0; z-index: 5;
     border-radius: 12px; background: var(--g-scrim);
@@ -97,14 +97,20 @@
   .lv-chip {
     min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
     background: var(--g-surface); color: var(--g-text);
-    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
     touch-action: manipulation;
   }
   .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lv-chip.done { background: var(--g-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
   .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
-  .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background: var(--g-warning); color: var(--g-on-primary); font-size: 12px; font-weight: 700; }
+  .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background: var(--g-warning); color: var(--g-text); font-size: 12px; font-weight: 700; }
   .badge.show { display: inline-block; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
@@ -115,7 +121,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
   try{window.__gOnTheme(m)}catch(e){}}
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>

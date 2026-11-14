@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 家庭点单-点单订单。
+ * 吃啥-点单订单。
  * 一人发起（title + 从公共菜谱库勾选本单菜单）生成二维码分享，其他人扫码加入后各自勾选想吃的菜；
  * 发起者结束后锁定订单并写 shopping_list 快照（结束接口在 11 号票）。
  */

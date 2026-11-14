@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DB5240"/>
+      <stop offset="0.55" stop-color="#C74334"/>
+      <stop offset="1" stop-color="#AD3728"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#6E1F14" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#9C2F21" opacity="0.7"/>
+  <rect y="392" width="800" height="6" fill="#87261A" opacity="0.6"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFE9C9" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M104 110 h10 M109 105 v10" stroke-width="3"/>
+    <path d="M686 100 h12 M692 94 v12" stroke-width="3.4"/>
+    <path d="M716 260 h9 M720.5 255.5 v9" stroke-width="2.6" opacity="0.75"/>
+    <path d="M92 286 h9 M96.5 281.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFE9C9" opacity="0.5">
+    <circle cx="182" cy="160" r="4"/><circle cx="646" cy="180" r="3.4"/><circle cx="70" cy="220" r="3"/><circle cx="736" cy="176" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="404" rx="250" ry="25" fill="#6E1F14" opacity="0.35"/>
+
+  <!-- 左牌 -->
+  <g transform="rotate(-6 190 275)">
+    <rect x="118" y="148" width="144" height="254" rx="16" fill="#E9C87E" stroke="#4A2C15" stroke-width="8"/>
+    <rect x="118" y="148" width="144" height="254" rx="16" fill="url(#gloss)"/>
+    <rect x="130" y="160" width="120" height="230" rx="10" fill="none" stroke="#C9A45C" stroke-width="4"/>
+    <g font-family="Songti SC, STSong, SimSun, serif" font-weight="bold" text-anchor="middle" fill="#5E3A1C">
+      <text x="190" y="212" font-size="38">画</text>
+      <text x="190" y="254" font-size="38">龙</text>
+      <text x="190" y="296" font-size="38">点</text>
+      <text x="190" y="338" font-size="38">睛</text>
+    </g>
+    <circle cx="177" cy="368" r="6" fill="#4A2C15"/>
+    <circle cx="203" cy="368" r="6" fill="#4A2C15"/>
+    <path d="M182 380 Q190 386 198 379" stroke="#4A2C15" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="190" cy="146" r="9" fill="none" stroke="#4A2C15" stroke-width="7"/>
+  </g>
+
+  <!-- 右牌 -->
+  <g transform="rotate(6 610 275)">
+    <rect x="538" y="148" width="144" height="254" rx="16" fill="#E9C87E" stroke="#4A2C15" stroke-width="8"/>
+    <rect x="538" y="148" width="144" height="254" rx="16" fill="url(#gloss)"/>
+    <rect x="550" y="160" width="120" height="230" rx="10" fill="none" stroke="#C9A45C" stroke-width="4"/>
+    <g font-family="Songti SC, STSong, SimSun, serif" font-weight="bold" text-anchor="middle" fill="#5E3A1C">
+      <text x="610" y="212" font-size="38">守</text>
+      <text x="610" y="254" font-size="38">株</text>
+      <text x="610" y="296" font-size="38">待</text>
+      <text x="610" y="338" font-size="38">兔</text>
+    </g>
+    <circle cx="597" cy="368" r="6" fill="#4A2C15"/>
+    <circle cx="623" cy="368" r="6" fill="#4A2C15"/>
+    <path d="M602 380 Q610 386 618 379" stroke="#4A2C15" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="610" cy="146" r="9" fill="none" stroke="#4A2C15" stroke-width="7"/>
+  </g>
+
+  <!-- 中央大牌 -->
+  <g>
+    <rect x="322" y="96" width="164" height="290" rx="18" fill="#F3D68F" stroke="#4A2C15" stroke-width="9"/>
+    <rect x="322" y="96" width="164" height="290" rx="18" fill="url(#gloss)"/>
+    <rect x="336" y="110" width="136" height="262" rx="12" fill="none" stroke="#C9A45C" stroke-width="4"/>
+    <g font-family="Songti SC, STSong, SimSun, serif" font-weight="bold" text-anchor="middle" fill="#8A3A20">
+      <text x="404" y="162" font-size="44">一</text>
+      <text x="404" y="210" font-size="44">鸣</text>
+      <text x="404" y="258" font-size="44">惊</text>
+      <text x="404" y="306" font-size="44">人</text>
+    </g>
+    <circle cx="388" cy="338" r="7" fill="#4A2C15"/>
+    <circle cx="420" cy="338" r="7" fill="#4A2C15"/>
+    <circle cx="391" cy="335" r="2.5" fill="#F3D68F"/>
+    <circle cx="423" cy="335" r="2.5" fill="#F3D68F"/>
+    <path d="M392 352 Q404 361 416 350" stroke="#4A2C15" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="404" cy="94" r="10" fill="none" stroke="#4A2C15" stroke-width="8"/>
+  </g>
+
+  <!-- 金色链条：左牌-中牌 -->
+  <g>
+    <circle cx="252" cy="132" r="12" fill="none" stroke="#4A2C15" stroke-width="13"/>
+    <circle cx="252" cy="132" r="12" fill="none" stroke="#F2C14E" stroke-width="6"/>
+    <circle cx="312" cy="116" r="12" fill="none" stroke="#4A2C15" stroke-width="13"/>
+    <circle cx="312" cy="116" r="12" fill="none" stroke="#F2C14E" stroke-width="6"/>
+    <circle cx="368" cy="102" r="12" fill="none" stroke="#4A2C15" stroke-width="13"/>
+    <circle cx="368" cy="102" r="12" fill="none" stroke="#F2C14E" stroke-width="6"/>
+  </g>
+  <!-- 金色链条：中牌-右牌 -->
+  <g>
+    <circle cx="444" cy="102" r="12" fill="none" stroke="#4A2C15" stroke-width="13"/>
+    <circle cx="444" cy="102" r="12" fill="none" stroke="#F2C14E" stroke-width="6"/>
+    <circle cx="502" cy="116" r="12" fill="none" stroke="#4A2C15" stroke-width="13"/>
+    <circle cx="502" cy="116" r="12" fill="none" stroke="#F2C14E" stroke-width="6"/>
+    <circle cx="560" cy="134" r="12" fill="none" stroke="#4A2C15" stroke-width="13"/>
+    <circle cx="560" cy="134" r="12" fill="none" stroke="#F2C14E" stroke-width="6"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -37,4 +37,14 @@ sealed interface ShellRoute : SmartWashRoute {
         // chrome 默认值与 app 壳 GameChrome.FULL 取值一致（common:ui 禁止反向依赖 app，故就地写字面量）
         val chrome: String = "full",
     ) : ShellRoute
+
+    /**
+     * 扫码页（壳层留守，注册于壳层 shellGraph；无参对象路由 "Scan"）。
+     * 全局扫一扫入口（工作台常驻）：识别任意二维码后按内容分发
+     * （smartwash:// 深链 / dining 加入链接 / http(s) H5 / 纯文本复制），
+     * 不归属任何业务域——扫码结果是「输入」，业务承接在各域深链与壳层页面。
+     */
+    @Serializable
+    @SerialName("Scan")
+    data object Scan : ShellRoute
 }

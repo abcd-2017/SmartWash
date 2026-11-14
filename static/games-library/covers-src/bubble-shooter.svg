@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C4EBE6"/>
+      <stop offset="0.55" stop-color="#ABDFD9"/>
+      <stop offset="1" stop-color="#90CFC8"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3E6B67" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#79B7B1" opacity="0.7"/>
+  <rect y="392" width="800" height="6" fill="#67A19B" opacity="0.6"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M110 110 h10 M115 105 v10" stroke-width="3"/>
+    <path d="M676 96 h12 M682 90 v12" stroke-width="3.4"/>
+    <path d="M716 260 h9 M720.5 255.5 v9" stroke-width="2.6" opacity="0.75"/>
+    <path d="M96 290 h9 M100.5 285.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="200" cy="170" r="4"/><circle cx="640" cy="200" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="740" cy="170" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="405" cy="406" rx="180" ry="24" fill="#4E8580" opacity="0.38"/>
+
+  <!-- 彩色泡泡云（上方） -->
+  <g stroke="#2C4A47" stroke-width="7">
+    <circle cx="316" cy="150" r="44" fill="#F6D45C"/>
+    <circle cx="410" cy="112" r="52" fill="#F08CA8"/>
+    <circle cx="502" cy="158" r="46" fill="#6BA8E8"/>
+    <circle cx="452" cy="240" r="40" fill="#7ECB7E"/>
+    <circle cx="560" cy="104" r="34" fill="#F6D45C"/>
+    <circle cx="256" cy="222" r="30" fill="#6BA8E8"/>
+    <circle cx="568" cy="212" r="28" fill="#F08CA8"/>
+  </g>
+  <!-- 泡泡高光 -->
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="302" cy="136" r="12"/><circle cx="394" cy="96" r="14"/><circle cx="490" cy="144" r="12"/><circle cx="440" cy="226" r="10"/><circle cx="550" cy="94" r="9"/><circle cx="246" cy="212" r="8"/><circle cx="559" cy="202" r="7"/>
+  </g>
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" opacity="0.6">
+    <path d="M340 168 Q332 160 322 158" stroke-width="5"/>
+    <path d="M436 130 Q428 122 418 120" stroke-width="5"/>
+  </g>
+
+  <!-- 瞄准虚线 -->
+  <path d="M400 262 L400 234" stroke="#FFFFFF" stroke-width="6" stroke-dasharray="4 12" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- 拟人炮台 -->
+  <g>
+    <!-- 炮管 -->
+    <path d="M384 268 L384 214 Q384 200 398 200 L402 200 Q416 200 416 214 L416 268 Z" fill="#5B6E96" stroke="#2C4A47" stroke-width="8" stroke-linejoin="round"/>
+    <ellipse cx="400" cy="204" rx="17" ry="9" fill="#3D4E70" stroke="#2C4A47" stroke-width="7"/>
+    <!-- 炮身 -->
+    <circle cx="400" cy="330" r="56" fill="#F2994E" stroke="#2C4A47" stroke-width="9"/>
+    <circle cx="400" cy="330" r="56" fill="url(#gloss)"/>
+    <!-- 炮身表情 -->
+    <circle cx="382" cy="322" r="8.5" fill="#2C1A10"/>
+    <circle cx="418" cy="322" r="8.5" fill="#2C1A10"/>
+    <circle cx="385" cy="319" r="3" fill="#FFFFFF"/>
+    <circle cx="421" cy="319" r="3" fill="#FFFFFF"/>
+    <path d="M386 348 Q400 358 414 346" stroke="#2C1A10" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+    <!-- 左右小手 -->
+    <circle cx="338" cy="346" r="14" fill="#E8834A" stroke="#2C4A47" stroke-width="7"/>
+    <circle cx="462" cy="346" r="14" fill="#E8834A" stroke="#2C4A47" stroke-width="7"/>
+    <!-- 底座 -->
+    <path d="M340 382 L460 382 L478 402 L322 402 Z" fill="#4E5F82" stroke="#2C4A47" stroke-width="8" stroke-linejoin="round"/>
+    <!-- 身体高光 -->
+    <circle cx="366" cy="302" r="12" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -7,7 +7,7 @@
 <title>华容道</title>
 <style>
   /*token:GAME-THEME.md §2 基线 + §3 素材 token（棋盘/滑块，深色同色相压暗）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-on-primary:#fff;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-board:#EAE2D0;--g-board2:#DFD5BE;--g-grid:#C6B998;--g-cell:#2D9B6A;--g-cellhi:#1E8C5C;--g-celllo:#E8F6EF;--g-card:#D98A26;--g-card2:#B96F1C;--g-ball:#4A9FD4;--g-ballln:#2F7CB0;--g-open:#E8F6EF;--g-openln:#2D9B6A;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-on-primary:#fff;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-board:#EAE2D0;--g-board2:#DFD5BE;--g-grid:#C6B998;--g-cell:#2D9B6A;--g-cellhi:#1E8C5C;--g-celllo:#E8F6EF;--g-card:#D98A26;--g-card2:#B96F1C;--g-ball:#4A9FD4;--g-ballln:#2F7CB0;--g-open:#E8F6EF;--g-openln:#2D9B6A;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-board:#262A27;--g-board2:#1D201E;--g-grid:#3A3F3B;--g-cellhi:#5BC894;--g-celllo:#1D3229;--g-card:#E2A44E;--g-card2:#B97E3A;--g-ball:#6BB4DE;--g-ballln:#3F7CA6;--g-open:#1D3229;--g-openln:#2D9B6A;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -27,7 +27,7 @@
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
   .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stage { display: flex; justify-content: center; touch-action: none; }
   canvas { display: block; touch-action: none; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
@@ -36,12 +36,12 @@
     min-height: 44px; padding: 0 14px; flex: 1;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-primary); color: var(--g-on-primary);
-    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
   }
   .btn:active { opacity: .85; }
   .btn:disabled { opacity: .35; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
@@ -59,7 +59,31 @@
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
   .panel .btn { width: 100%; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox，与 UI 令牌联动） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -69,7 +93,7 @@ function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=them
   try{window.__gOnTheme(m)}catch(e){}}
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
-paint(B||"light");
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
 </head>

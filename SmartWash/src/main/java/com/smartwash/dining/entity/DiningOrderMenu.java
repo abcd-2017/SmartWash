@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 家庭点单-本单菜单。
+ * 吃啥-本单菜单。
  * 发起者从公共菜谱库勾选的菜品范围，参与者只能在此范围内选菜；
  * uk_order_recipe 保证一道菜在本单只出现一次。
  */

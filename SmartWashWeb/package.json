@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "author": "changge",
+  "license": "Apache-2.0",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

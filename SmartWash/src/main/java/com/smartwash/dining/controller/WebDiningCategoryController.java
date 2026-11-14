@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 家庭点单-菜谱分类用户端控制器。
+ * 吃啥-菜谱分类用户端控制器。
  * 路径前缀 /web/auth/dining/categories，需 ROLE_USER（SecurityConfig /web/auth/** 通配统一拦截）。
  * 用户端菜谱库分类筛选条的数据源：全量分类（量级小不分页），sort 升序与管理端列表一致。
  * 管理端写接口（增删改）不向用户端开放——用户只读分类目录。
  */
-@Tag(name = "家庭点单-菜谱分类用户端", description = "全量分类目录（只读，ROLE_USER）")
+@Tag(name = "吃啥-菜谱分类用户端", description = "全量分类目录（只读，ROLE_USER）")
 @Slf4j
 @RestController
 @RequestMapping("/web/auth/dining/categories")

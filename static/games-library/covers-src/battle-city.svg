@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C4E0AB"/>
+      <stop offset="0.55" stop-color="#8CC473"/>
+      <stop offset="1" stop-color="#5E9644"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.6" stop-color="#1E2620" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E2620" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#4E7A38" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#3F6630" opacity="0.5"/>
+
+  <g fill="#FFFFFF" opacity="0.5">
+    <path d="M92 92 h11 M97.5 86.5 v11" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M692 66 h13 M698.5 59.5 v13" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M726 210 h9 M730.5 205.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M118 262 h9 M122.5 257.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#EAF6DF" opacity="0.55">
+    <circle cx="176" cy="150" r="4"/><circle cx="640" cy="330" r="3.4"/><circle cx="80" cy="214" r="3"/><circle cx="746" cy="140" r="2.6"/>
+  </g>
+
+  <ellipse cx="402" cy="404" rx="238" ry="26" fill="#3F6630" opacity="0.35"/>
+
+  <!-- 砖墙 -->
+  <g>
+    <rect x="592" y="182" width="150" height="210" rx="6" fill="#B65B43" stroke="#3A2A1E" stroke-width="9"/>
+    <g stroke="#7E3A2A" stroke-width="4" stroke-linecap="round">
+      <path d="M596 217 H738"/>
+      <path d="M596 252 H738"/>
+      <path d="M596 287 H738"/>
+      <path d="M596 322 H738"/>
+      <path d="M596 357 H738"/>
+      <path d="M642 186 V217"/><path d="M690 186 V217"/>
+      <path d="M618 221 V252"/><path d="M666 221 V252"/><path d="M714 221 V252"/>
+      <path d="M642 256 V287"/><path d="M690 256 V287"/>
+      <path d="M618 291 V322"/><path d="M666 291 V322"/><path d="M714 291 V322"/>
+      <path d="M642 326 V357"/><path d="M690 326 V357"/>
+      <path d="M618 361 V388"/><path d="M666 361 V388"/><path d="M714 361 V388"/>
+    </g>
+    <rect x="604" y="196" width="26" height="14" rx="4" fill="#FFFFFF" opacity="0.22"/>
+  </g>
+
+  <!-- 弹道 -->
+  <path d="M612 232 Q664 176 714 196" stroke="#F2C25C" stroke-width="6" stroke-linecap="round" fill="none" stroke-dasharray="12 10" opacity="0.95"/>
+  <path d="M700 176 l14 14 M714 176 l-14 14" stroke="#F2C25C" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- 坦克 -->
+  <g stroke-linejoin="round">
+    <!-- 履带 -->
+    <rect x="214" y="312" width="332" height="80" rx="36" fill="#5A636B" stroke="#3A2A1E" stroke-width="10"/>
+    <rect x="234" y="328" width="292" height="48" rx="22" fill="#4A5158"/>
+    <g fill="#9AA3AD" stroke="#3A2A1E" stroke-width="6">
+      <circle cx="272" cy="352" r="14"/><circle cx="324" cy="352" r="14"/><circle cx="376" cy="352" r="14"/>
+      <circle cx="428" cy="352" r="14"/><circle cx="480" cy="352" r="14"/>
+    </g>
+    <!-- 车体 -->
+    <rect x="246" y="252" width="268" height="76" rx="18" fill="#E2A23B" stroke="#3A2A1E" stroke-width="10"/>
+    <!-- 炮塔 -->
+    <rect x="330" y="192" width="150" height="82" rx="26" fill="#E2A23B" stroke="#3A2A1E" stroke-width="10"/>
+    <!-- 炮管 -->
+    <rect x="466" y="218" width="126" height="28" rx="10" fill="#E2A23B" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="584" y="211" width="28" height="42" rx="9" fill="#B65B43" stroke="#3A2A1E" stroke-width="8"/>
+    <!-- 天线 -->
+    <path d="M362 192 L350 148" stroke="#3A2A1E" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <circle cx="349" cy="143" r="7" fill="#F2C25C" stroke="#3A2A1E" stroke-width="5"/>
+    <!-- 表情 -->
+    <circle cx="376" cy="228" r="10" fill="#1F1A14"/>
+    <circle cx="426" cy="228" r="10" fill="#1F1A14"/>
+    <path d="M386 252 Q401 267 416 251" stroke="#1F1A14" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <!-- 高光 -->
+    <ellipse cx="288" cy="272" rx="34" ry="13" fill="#FFFFFF" opacity="0.35" transform="rotate(-8 288 272)"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,6 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 家庭点单域模块：相机权限（扫码加入链路）+ 相机硬件非必需声明，manifest merger 合入宿主。 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
-</manifest>
+<!-- 吃啥域模块：扫码识别与分发已上移壳层全局扫一扫（相机权限随迁 app 壳），本模块无组件与权限声明，manifest merger 合入宿主。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

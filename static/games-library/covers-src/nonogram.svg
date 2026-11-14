@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2C4E9A"/>
+      <stop offset="0.55" stop-color="#223C7C"/>
+      <stop offset="1" stop-color="#182C60"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0A1E3C" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="404" width="800" height="46" fill="#142452" opacity="0.55"/>
+  <rect y="404" width="800" height="5" fill="#101E44" opacity="0.5"/>
+  <g opacity="0.5">
+    <path d="M110 120 h12 M116 114 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M690 140 h12 M696 134 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M140 320 h9 M144.5 315.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+    <path d="M676 320 h9 M680.5 315.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+  </g>
+  <g fill="#BFD4FF" opacity="0.5">
+    <circle cx="76" cy="220" r="4"/><circle cx="724" cy="220" r="3.4"/><circle cx="120" cy="260" r="3"/><circle cx="740" cy="260" r="2.6"/>
+  </g>
+
+  <!-- 行星小点 -->
+  <circle cx="712" cy="76" r="9" fill="#3E7BE8" opacity="0.85"/>
+  <circle cx="734" cy="92" r="5" fill="#3E7BE8" opacity="0.6"/>
+
+  <ellipse cx="400" cy="408" rx="230" ry="16" fill="#0A1E3C" opacity="0.35"/>
+
+  <!-- 提示点 -->
+  <g fill="#F2C230">
+    <circle cx="372" cy="62" r="5"/><circle cx="436" cy="62" r="5"/>
+    <circle cx="186" cy="116" r="5"/><circle cx="186" cy="176" r="5"/><circle cx="186" cy="236" r="5"/>
+  </g>
+
+  <!-- 面板 -->
+  <rect x="200" y="72" width="400" height="330" rx="16" fill="#1A2238" stroke="#1E2620" stroke-width="9"/>
+  <g stroke="#4A6AA8" stroke-width="3">
+    <path d="M276 86 L276 386"/>
+    <path d="M340 86 L340 386"/>
+    <path d="M404 86 L404 386"/>
+    <path d="M468 86 L468 386"/>
+    <path d="M532 86 L532 386"/>
+    <path d="M212 146 L588 146"/>
+    <path d="M212 206 L588 206"/>
+    <path d="M212 266 L588 266"/>
+    <path d="M212 326 L588 326"/>
+  </g>
+
+  <!-- 填充块 -->
+  <g stroke="#1E2620" stroke-width="6">
+    <rect x="344" y="90" width="56" height="52" rx="8" fill="#4EC9D4"/>
+    <rect x="408" y="90" width="56" height="52" rx="8" fill="#4EC9D4"/>
+    <rect x="216" y="150" width="56" height="52" rx="8" fill="#4EC9D4"/>
+    <rect x="216" y="210" width="56" height="52" rx="8" fill="#4EC9D4"/>
+    <rect x="408" y="330" width="56" height="52" rx="8" fill="#37A8B8"/>
+    <rect x="472" y="330" width="56" height="52" rx="8" fill="#37A8B8"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.35">
+    <rect x="352" y="97" width="26" height="10" rx="5"/>
+    <rect x="416" y="97" width="26" height="10" rx="5"/>
+    <rect x="224" y="157" width="26" height="10" rx="5"/>
+    <rect x="224" y="217" width="26" height="10" rx="5"/>
+    <rect x="416" y="337" width="26" height="10" rx="5"/>
+    <rect x="480" y="337" width="26" height="10" rx="5"/>
+  </g>
+
+  <!-- 排除 X -->
+  <g stroke="#E86A5A" stroke-width="9" stroke-linecap="round">
+    <path d="M424 164 L448 188 M448 164 L424 188"/>
+    <path d="M488 164 L512 188 M512 164 L488 188"/>
+    <path d="M296 344 L320 368 M320 344 L296 368"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

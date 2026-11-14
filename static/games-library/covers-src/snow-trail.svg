@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E5A9E"/>
+      <stop offset="0.55" stop-color="#24488A"/>
+      <stop offset="1" stop-color="#1C3872"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#10203C" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <g opacity="0.5">
+    <path d="M110 92 h12 M116 86 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M660 80 h12 M666 74 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M560 150 h9 M564.5 145.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M200 150 h9 M204.5 145.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.55">
+    <circle cx="80" cy="180" r="3"/><circle cx="240" cy="90" r="2.4"/><circle cx="330" cy="130" r="2.6"/>
+    <circle cx="500" cy="110" r="2.4"/><circle cx="740" cy="150" r="2.6"/><circle cx="690" cy="220" r="2.4"/>
+    <circle cx="150" cy="240" r="2.4"/><circle cx="420" cy="70" r="2.2"/><circle cx="760" cy="90" r="2.4"/><circle cx="60" cy="120" r="2.4"/>
+  </g>
+
+  <!-- 雪山 -->
+  <path d="M60 352 L250 142 L440 352 Z" fill="#DFE7EF" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M215 178 L250 142 L285 178 L270 196 L252 180 L236 200 Z" fill="#FFFFFF" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M400 352 L590 108 L780 352 Z" fill="#DFE7EF" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M550 152 L590 108 L630 152 L612 174 L592 154 L574 178 Z" fill="#FFFFFF" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- 雪地 -->
+  <path d="M0 352 Q400 318 800 352 L800 450 L0 450 Z" fill="#EDF2F6"/>
+  <path d="M0 352 Q400 318 800 352" stroke="#1E2620" stroke-width="8" fill="none"/>
+
+  <!-- 松树 -->
+  <rect x="149" y="316" width="12" height="30" fill="#7A4A24" stroke="#1E2620" stroke-width="5"/>
+  <path d="M118 326 L155 250 L192 326 Z" fill="#2E8A5E" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+  <rect x="654" y="330" width="14" height="34" fill="#7A4A24" stroke="#1E2620" stroke-width="5"/>
+  <path d="M618 342 L661 258 L704 342 Z" fill="#2E8A5E" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+
+  <!-- 雪雾 -->
+  <g fill="#FFFFFF" opacity="0.6">
+    <circle cx="318" cy="368" r="8"/><circle cx="340" cy="364" r="6"/><circle cx="298" cy="372" r="5"/>
+  </g>
+
+  <!-- 滑雪者（家族表情） -->
+  <ellipse cx="400" cy="420" rx="72" ry="9" fill="#9FB2C4" opacity="0.5"/>
+  <path d="M362 398 L442 398" stroke="#1E2620" stroke-width="11" stroke-linecap="round"/>
+  <path d="M398 342 L390 392" stroke="#2A3C5C" stroke-width="10" stroke-linecap="round"/>
+  <path d="M408 342 L420 392" stroke="#2A3C5C" stroke-width="10" stroke-linecap="round"/>
+  <path d="M428 320 L458 360" stroke="#1E2620" stroke-width="6" stroke-linecap="round"/>
+  <rect x="388" y="302" width="24" height="46" rx="9" fill="#E04848" stroke="#1E2620" stroke-width="7"/>
+  <circle cx="400" cy="284" r="17" fill="#E8913A" stroke="#1E2620" stroke-width="6"/>
+  <path d="M383 282 Q400 266 417 282 L417 276 Q400 262 383 276 Z" fill="#F2F4F0" stroke="#1E2620" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="394" cy="288" r="3.5" fill="#1F1A14"/>
+  <circle cx="407" cy="288" r="3.5" fill="#1F1A14"/>
+  <path d="M392 295 Q400 301 409 294" stroke="#1F1A14" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

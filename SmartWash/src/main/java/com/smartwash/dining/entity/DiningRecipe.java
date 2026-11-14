@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 家庭点单-菜谱。
+ * 吃啥-菜谱。
  * 平台公共菜谱库的正片条目：Web 管理端维护（增删改查/上下架/封面上传），用户端浏览上架列表
  * 并在点单菜单按菜谱勾选；购买清单由所选菜谱的食材名并集去重生成（后续批次）。
  * 封面存 MinIO 对象键（dining/covers/ 前缀），直链由 MinioConfig.urlOf 拼装——端点变更不必刷库。
