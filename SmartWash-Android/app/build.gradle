@@ -145,13 +145,17 @@ dependencies {
     //清氧设计系统 + 共享 UI 组件（T2.5）：theme（AppDesign/Color/Theme/Type）+ ui/common 组件
     implementation project(":common:ui")
 
-    //应用热更新链路（T3.1）：版本检查/下载/安装；弹窗 UI 留壳层，MainActivity/SettingPage
-    //消费 UpdateViewModel/UpdateState/AppVersionVo/ApkInstaller（app → feature 依赖方向）
-    implementation project(":feature:update")
+    //热更新对外契约（api/impl 拆分）：AppVersionVo + AppUpdateApi
+    implementation project(":feature:update:api")
+    //热更新实现（T3.1）：版本检查/下载/安装；弹窗 UI 留壳层，MainActivity/SettingPage
+    //消费 UpdateViewModel/UpdateState/UpdateEventBus/ApkInstaller（app → feature 依赖方向）
+    implementation project(":feature:update:impl")
 
-    //观象台占卜子系统（T4.1）：四套算法内核+卦历库+解读网关+7 页面整模块迁入；
-    //MainActivity NavHost / HomePage 问卜页签消费页面 composable，PageConstant.Div* 委托 DivRoute
-    implementation project(":feature:divination")
+    //观象台对外契约（api/impl 拆分）：DivRoute 路由常量 + DivinationApi/VO（WorkbenchPage 跳转）
+    implementation project(":feature:divination:api")
+    //观象台实现（T4.1）：四套算法内核+卦历库+解读网关+7 页面；
+    //MainActivity NavHost / HomePage 问卜页签消费页面 composable
+    implementation project(":feature:divination:impl")
 
     //用户域对外契约（T5.3）：app 壳（MainActivity 会话事件/登录页注册）与 home/index/
     //laundry 消费方一律注入 UserApi（isLogin/getUserInfo 缓存/loginEvents），不触碰 impl
@@ -219,26 +223,36 @@ dependencies {
     //+ 深链 host "messages" 贡献；app 壳仅剩 NavHost 一行 noticeGraph 聚合
     implementation project(":feature:notice:impl")
 
-    //工具箱子系统（短链首批）：列表/创建/详情独立路由，经 MainActivity NavHost 一行
-    //toolboxGraph 聚合；工作台入口走深链（smartwash://toolbox-short-code）
-    implementation project(":feature:toolbox")
+    //工具箱对外契约（api/impl 拆分）：ToolboxRoute/Constant + 短码/资产标签/投递三套 Api/VO
+    implementation project(":feature:toolbox:api")
+    //工具箱实现（短链 + 设备投递）：列表/创建/详情独立路由，经 MainActivity NavHost 一行
+    //toolboxGraph / deliveryGraph 聚合；工作台入口走深链（smartwash://toolbox-short-code）
+    implementation project(":feature:toolbox:impl")
 
-    //游戏中心子系统（H5 小游戏）：GameCenterPage 独立路由，经 MainActivity NavHost 一行
+    //游戏中心对外契约（api/impl 拆分）：GameRoute 路由常量 + GameApi/GameVo
+    implementation project(":feature:game:api")
+    //游戏中心实现（H5 小游戏）：GameCenterPage 独立路由，经 MainActivity NavHost 一行
     //gameGraph 聚合；游戏页承载复用壳层 WebView 路由（零新建容器），
     //入口走深链 smartwash://game-center 与后端 workbench_entry 配置的工作台卡片
-    implementation project(":feature:game")
+    implementation project(":feature:game:impl")
 
-    //记忆复习域（FSRS 调度在后端，客户端只传评分）：今日队列/复习评分/资料卡片三页面，
-    //路由常量 ReviewRoute 为模块内单一事实来源；MainActivity NavHost 一行 reviewGraph 聚合，
+    //记忆复习对外契约（api/impl 拆分）：ReviewRoute/ReviewConstant + ReviewApi/VO
+    implementation project(":feature:review:api")
+    //记忆复习实现（FSRS 调度在后端，客户端只传评分）：今日队列/复习评分/资料卡片三页面，
+    //经 MainActivity NavHost 一行 reviewGraph 聚合，
     //入口走深链 smartwash://review 与后端 workbench_entry 配置的工作台卡片
-    implementation project(":feature:review")
+    implementation project(":feature:review:impl")
 
-    //订阅逃生舱子系统：列表/添加编辑/详情/提醒独立路由，经 MainActivity NavHost 一行
+    //订阅逃生舱对外契约（api/impl 拆分）：SubscriptionRoute/Constant/Enums + SubscriptionApi/VO
+    implementation project(":feature:subscription:api")
+    //订阅逃生舱实现：列表/添加编辑/详情/提醒独立路由，经 MainActivity NavHost 一行
     //subscriptionGraph 聚合；入口走深链 smartwash://subscription 与工作台卡片
-    implementation project(":feature:subscription")
+    implementation project(":feature:subscription:impl")
 
-    //解压实验舱子系统（纯本地玩具）：泡泡纸/呼吸引导/指尖鱼群等十个玩具页，
+    //解压实验舱对外契约（api/impl 拆分）：LabRoute 路由常量 + LabToy 入口枚举
+    implementation project(":feature:lab:api")
+    //解压实验舱实现（纯本地玩具）：泡泡纸/呼吸引导/指尖鱼群等十个玩具页，
     //经 MainActivity NavHost 一行 labGraph 聚合；模块内无网络/无存储，
     //入口走深链 smartwash://lab 与后端 workbench_entry 配置的工作台卡片
-    implementation project(":feature:lab")
+    implementation project(":feature:lab:impl")
 }

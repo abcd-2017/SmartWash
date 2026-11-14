@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.smartwash.R
-import com.smartwash.feature.update.model.AppVersionVo
+import com.smartwash.feature.update.api.model.AppVersionVo
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.ButtonSpinner

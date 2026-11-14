@@ -1,0 +1,17 @@
+// :feature:update:api —— 热更新对外契约（api/impl 拆分）。
+// AppVersionVo + AppUpdateApi；零 Hilt 运行时、零 Android 组件（铁律 1/2）。
+apply from: "$rootDir/config/android-library.gradle"
+
+android {
+    namespace 'com.smartwash.feature.update.api'
+}
+
+dependencies {
+    implementation libs.kotlinx.coroutines.core
+    // @Keep（AppVersionVo 防混淆）
+    implementation libs.androidx.annotation
+    // ApiResult 响应信封
+    implementation project(':common:utils')
+    // retrofit 经 common:network 传递
+    implementation project(':common:network')
+}

@@ -100,7 +100,7 @@ import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
-import com.smartwash.feature.divination.DivRoute
+import com.smartwash.feature.divination.api.DivRoute
 import kotlinx.coroutines.delay
 
 /** 工具网格列数（tile 两列卡） */
