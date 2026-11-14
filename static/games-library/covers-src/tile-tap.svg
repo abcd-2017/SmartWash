@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#212D52"/>
+      <stop offset="0.55" stop-color="#192344"/>
+      <stop offset="1" stop-color="#121A34"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0A1126" stop-opacity="0.32"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#0D1428" opacity="0.8"/>
+  <rect y="392" width="800" height="6" fill="#080E20" opacity="0.7"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#9FB4E0" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M108 110 h10 M113 105 v10" stroke-width="3"/>
+    <path d="M678 100 h12 M684 94 v12" stroke-width="3.4"/>
+    <path d="M700 250 h9 M704.5 245.5 v9" stroke-width="2.6" opacity="0.75"/>
+    <path d="M92 290 h9 M96.5 285.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#9FB4E0" opacity="0.5">
+    <circle cx="180" cy="170" r="4"/><circle cx="650" cy="180" r="3.4"/><circle cx="70" cy="216" r="3"/><circle cx="730" cy="164" r="2.6"/>
+  </g>
+
+  <!-- 四条竖行音轨 -->
+  <g fill="#FFFFFF" opacity="0.09">
+    <rect x="230" y="24" width="76" height="368" rx="10"/>
+    <rect x="318" y="24" width="76" height="368" rx="10"/>
+    <rect x="406" y="24" width="76" height="368" rx="10"/>
+    <rect x="494" y="24" width="76" height="368" rx="10"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.14">
+    <rect x="308" y="24" width="4" height="368" rx="2"/>
+    <rect x="396" y="24" width="4" height="368" rx="2"/>
+    <rect x="484" y="24" width="4" height="368" rx="2"/>
+  </g>
+
+  <!-- 亮绿判定线 -->
+  <rect x="222" y="322" width="340" height="20" rx="10" fill="#7ECB7E" opacity="0.3"/>
+  <rect x="228" y="327" width="328" height="10" rx="5" fill="#8FD98A"/>
+  <rect x="228" y="327" width="120" height="10" rx="5" fill="#FFFFFF" opacity="0.4"/>
+
+  <!-- 下落方块 -->
+  <g stroke="#6BA8E8" stroke-width="4" stroke-linejoin="round">
+    <rect x="232" y="132" width="72" height="56" rx="10" fill="#10182E"/>
+    <rect x="320" y="58" width="72" height="56" rx="10" fill="#10182E"/>
+    <rect x="496" y="112" width="72" height="56" rx="10" fill="#10182E"/>
+    <rect x="320" y="196" width="72" height="56" rx="10" fill="#10182E"/>
+    <rect x="496" y="252" width="72" height="56" rx="10" fill="#10182E"/>
+    <rect x="232" y="256" width="72" height="56" rx="10" fill="#10182E"/>
+  </g>
+  <!-- 方块顶部高光 -->
+  <g stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.35">
+    <path d="M244 144 L292 144"/>
+    <path d="M332 70 L380 70"/>
+    <path d="M508 124 L556 124"/>
+    <path d="M332 208 L380 208"/>
+    <path d="M508 264 L556 264"/>
+    <path d="M244 268 L292 268"/>
+  </g>
+
+  <!-- 即将击打的方块（表情） -->
+  <g>
+    <rect x="408" y="244" width="72" height="56" rx="10" fill="#10182E" stroke="#8FD98A" stroke-width="4"/>
+    <path d="M420 256 L468 256" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
+    <circle cx="430" cy="278" r="6" fill="#FFFFFF"/>
+    <circle cx="456" cy="278" r="6" fill="#FFFFFF"/>
+    <circle cx="432" cy="280" r="3" fill="#10182E"/>
+    <circle cx="458" cy="280" r="3" fill="#10182E"/>
+    <path d="M432 290 Q443 297 454 289" stroke="#FFFFFF" stroke-width="4" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 击打光效 -->
+  <circle cx="444" cy="334" r="14" fill="#8FD98A" opacity="0.4"/>
+  <circle cx="444" cy="334" r="7" fill="#CFF0C8" opacity="0.5"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

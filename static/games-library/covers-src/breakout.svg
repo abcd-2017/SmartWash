@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#274680"/>
+      <stop offset="0.55" stop-color="#1B3260"/>
+      <stop offset="1" stop-color="#122344"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#081228" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="396" width="800" height="54" fill="#0F1F3E" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#0B1730" opacity="0.5"/>
+  <g opacity="0.5">
+    <path d="M108 322 h12 M114 316 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M686 296 h12 M692 290 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M148 84 h9 M152.5 79.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M648 76 h9 M652.5 71.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#BFD4FF" opacity="0.5">
+    <circle cx="70" cy="180" r="4"/><circle cx="730" cy="200" r="3.4"/><circle cx="90" cy="240" r="3"/><circle cx="716" cy="120" r="2.6"/>
+  </g>
+
+  <!-- 砖墙 -->
+  <g stroke="#1E2620" stroke-width="7">
+    <rect x="150" y="118" width="92" height="34" rx="10" fill="#E86A5A"/>
+    <rect x="252" y="118" width="92" height="34" rx="10" fill="#E86A5A"/>
+    <rect x="354" y="118" width="92" height="34" rx="10" fill="#E86A5A"/>
+    <rect x="456" y="118" width="92" height="34" rx="10" fill="#E86A5A"/>
+    <rect x="150" y="168" width="92" height="34" rx="10" fill="#F2C230"/>
+    <rect x="252" y="168" width="92" height="34" rx="10" fill="#F2C230"/>
+    <rect x="354" y="168" width="92" height="34" rx="10" fill="#F2C230"/>
+    <rect x="558" y="168" width="92" height="34" rx="10" fill="#F2C230"/>
+    <rect x="150" y="218" width="92" height="34" rx="10" fill="#4EC9D4"/>
+    <rect x="354" y="218" width="92" height="34" rx="10" fill="#4EC9D4"/>
+    <rect x="456" y="218" width="92" height="34" rx="10" fill="#4EC9D4"/>
+    <rect x="558" y="218" width="92" height="34" rx="10" fill="#4EC9D4"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.35">
+    <rect x="160" y="125" width="34" height="10" rx="5"/>
+    <rect x="262" y="125" width="34" height="10" rx="5"/>
+    <rect x="364" y="125" width="34" height="10" rx="5"/>
+    <rect x="466" y="125" width="34" height="10" rx="5"/>
+    <rect x="160" y="175" width="34" height="10" rx="5"/>
+    <rect x="262" y="175" width="34" height="10" rx="5"/>
+    <rect x="364" y="175" width="34" height="10" rx="5"/>
+    <rect x="568" y="175" width="34" height="10" rx="5"/>
+    <rect x="160" y="225" width="34" height="10" rx="5"/>
+    <rect x="364" y="225" width="34" height="10" rx="5"/>
+    <rect x="466" y="225" width="34" height="10" rx="5"/>
+    <rect x="568" y="225" width="34" height="10" rx="5"/>
+  </g>
+
+  <!-- 碎片 -->
+  <path d="M694 150 L716 144 L706 166 Z" fill="#F2C230" stroke="#1E2620" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M668 236 L690 234 L676 252 Z" fill="#F2C230" stroke="#1E2620" stroke-width="5" stroke-linejoin="round"/>
+
+  <!-- 球（家族表情） -->
+  <circle cx="432" cy="272" r="11" fill="#FFFFFF" opacity="0.3"/>
+  <circle cx="402" cy="250" r="7" fill="#FFFFFF" opacity="0.22"/>
+  <circle cx="470" cy="300" r="25" fill="#FFFFFF" stroke="#1E2620" stroke-width="7"/>
+  <circle cx="470" cy="300" r="25" fill="url(#gloss)"/>
+  <circle cx="462" cy="294" r="4.5" fill="#1F1A14"/>
+  <circle cx="480" cy="294" r="4.5" fill="#1F1A14"/>
+  <path d="M460 308 Q471 317 483 306" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- 挡板 -->
+  <rect x="340" y="352" width="180" height="28" rx="14" fill="#C7D3E2" stroke="#1E2620" stroke-width="7"/>
+  <rect x="354" y="360" width="70" height="10" rx="5" fill="#FFFFFF" opacity="0.5"/>
+
+  <ellipse cx="430" cy="404" rx="250" ry="20" fill="#081228" opacity="0.35"/>
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

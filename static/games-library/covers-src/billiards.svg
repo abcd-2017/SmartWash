@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#33845A"/>
+      <stop offset="0.55" stop-color="#29704A"/>
+      <stop offset="1" stop-color="#1F5C3A"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0A2C1A" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="396" width="800" height="54" fill="#17482C" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#123A23" opacity="0.5"/>
+  <g opacity="0.5">
+    <path d="M96 90 h12 M102 84 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M150 320 h9 M154.5 315.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+    <path d="M700 90 h9 M704.5 85.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+  </g>
+  <g fill="#BFE6CF" opacity="0.5">
+    <circle cx="170" cy="180" r="4"/><circle cx="730" cy="200" r="3.4"/><circle cx="90" cy="260" r="3"/><circle cx="240" cy="80" r="2.6"/>
+  </g>
+
+  <ellipse cx="405" cy="402" rx="266" ry="22" fill="#0E3A22" opacity="0.35"/>
+
+  <!-- 球杆 -->
+  <path d="M754 212 L640 306" stroke="#1E2620" stroke-width="20" stroke-linecap="round" fill="none"/>
+  <path d="M754 212 L640 306" stroke="#C89A5B" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <path d="M640 306 L622 319" stroke="#1E2620" stroke-width="20" stroke-linecap="round" fill="none"/>
+  <path d="M640 306 L622 319" stroke="#EFE0C8" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <circle cx="616" cy="324" r="8" fill="#4EC9D4" stroke="#1E2620" stroke-width="5"/>
+
+  <!-- 三角球阵 -->
+  <g stroke="#1E2620" stroke-width="8">
+    <circle cx="280" cy="129" r="29" fill="#F2C230"/>
+    <circle cx="280" cy="181" r="29" fill="#E04848"/>
+    <circle cx="280" cy="233" r="29" fill="#3FA34D"/>
+    <circle cx="280" cy="285" r="29" fill="#3E7BE8"/>
+    <circle cx="280" cy="337" r="29" fill="#E04848"/>
+    <circle cx="340" cy="155" r="29" fill="#3E7BE8"/>
+    <circle cx="340" cy="207" r="29" fill="#E04848"/>
+    <circle cx="340" cy="259" r="29" fill="#F28C28"/>
+    <circle cx="340" cy="311" r="29" fill="#3FA34D"/>
+    <circle cx="400" cy="181" r="29" fill="#9B6BD4"/>
+    <circle cx="400" cy="233" r="29" fill="#3E7BE8"/>
+    <circle cx="400" cy="285" r="29" fill="#F2C230"/>
+    <circle cx="460" cy="207" r="29" fill="#F2C230"/>
+    <circle cx="460" cy="259" r="29" fill="#3FA34D"/>
+    <circle cx="520" cy="233" r="29" fill="#F28C28"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.45">
+    <circle cx="270" cy="119" r="9"/><circle cx="270" cy="171" r="9"/><circle cx="270" cy="223" r="9"/><circle cx="270" cy="275" r="9"/><circle cx="270" cy="327" r="9"/>
+    <circle cx="330" cy="145" r="9"/><circle cx="330" cy="197" r="9"/><circle cx="330" cy="249" r="9"/><circle cx="330" cy="301" r="9"/>
+    <circle cx="390" cy="171" r="9"/><circle cx="390" cy="223" r="9"/><circle cx="390" cy="275" r="9"/>
+    <circle cx="450" cy="197" r="9"/><circle cx="450" cy="249" r="9"/>
+    <circle cx="510" cy="223" r="9"/>
+  </g>
+
+  <!-- 母球（家族表情） -->
+  <circle cx="596" cy="196" r="31" fill="#FFFFFF" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="585" cy="186" r="5.5" fill="#1F1A14"/>
+  <circle cx="607" cy="186" r="5.5" fill="#1F1A14"/>
+  <path d="M584 206 Q597 217 611 204" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <g fill="#FFFFFF">
+    <circle cx="648" cy="190" r="9" opacity="0.3"/>
+    <circle cx="674" cy="184" r="6" opacity="0.22"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5846A8"/>
+      <stop offset="0.55" stop-color="#48389A"/>
+      <stop offset="1" stop-color="#382A80"/>
+    </linearGradient>
+    <radialGradient id="cellGlow" cx="0.5" cy="0.5" r="0.7">
+      <stop offset="0" stop-color="#F8E96E"/>
+      <stop offset="1" stop-color="#E8C828"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1A1038" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="404" width="800" height="46" fill="#2E2160" opacity="0.55"/>
+  <rect y="404" width="800" height="5" fill="#241A52" opacity="0.5"/>
+  <g opacity="0.5">
+    <path d="M120 96 h12 M126 90 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M676 320 h12 M682 314 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M660 90 h9 M664.5 85.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M100 300 h9 M104.5 295.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#D9CCFF" opacity="0.5">
+    <circle cx="76" cy="180" r="4"/><circle cx="724" cy="180" r="3.4"/><circle cx="140" cy="240" r="3"/><circle cx="690" cy="150" r="2.6"/>
+  </g>
+
+  <!-- 面板发光底 -->
+  <rect x="222" y="62" width="356" height="316" rx="26" fill="#F8E96E" opacity="0.16"/>
+  <ellipse cx="400" cy="394" rx="212" ry="18" fill="#1A1038" opacity="0.35"/>
+
+  <!-- 面板 -->
+  <rect x="230" y="70" width="340" height="300" rx="24" fill="#2A2440" stroke="#1E2620" stroke-width="10"/>
+
+  <!-- 亮格 -->
+  <g stroke="#B8961E" stroke-width="6">
+    <rect x="248" y="88" width="94" height="88" rx="14" fill="url(#cellGlow)"/>
+    <rect x="458" y="88" width="94" height="88" rx="14" fill="url(#cellGlow)"/>
+    <rect x="248" y="186" width="94" height="88" rx="14" fill="url(#cellGlow)"/>
+    <rect x="353" y="186" width="94" height="88" rx="14" fill="url(#cellGlow)"/>
+    <rect x="248" y="284" width="94" height="88" rx="14" fill="url(#cellGlow)"/>
+    <rect x="458" y="284" width="94" height="88" rx="14" fill="url(#cellGlow)"/>
+  </g>
+  <g fill="#FFF7CE">
+    <circle cx="295" cy="132" r="17"/>
+    <circle cx="505" cy="132" r="17"/>
+    <circle cx="295" cy="230" r="17"/>
+    <circle cx="400" cy="230" r="17"/>
+    <circle cx="295" cy="328" r="17"/>
+    <circle cx="505" cy="328" r="17"/>
+  </g>
+  <!-- 灭格 -->
+  <g fill="none" stroke="#7A68C8" stroke-width="5">
+    <rect x="353" y="88" width="94" height="88" rx="14"/>
+    <rect x="458" y="186" width="94" height="88" rx="14"/>
+    <rect x="353" y="284" width="94" height="88" rx="14"/>
+  </g>
+  <g fill="#3A3158">
+    <rect x="353" y="88" width="94" height="88" rx="14"/>
+    <rect x="458" y="186" width="94" height="88" rx="14"/>
+    <rect x="353" y="284" width="94" height="88" rx="14"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C6E7EE"/>
+      <stop offset="0.55" stop-color="#ACD8E1"/>
+      <stop offset="1" stop-color="#93C9D4"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#4E7A86" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 草地 -->
+  <rect y="384" width="800" height="66" fill="#7EB56A"/>
+  <rect y="384" width="800" height="8" fill="#6BA357" opacity="0.8"/>
+  <!-- 草丛点缀 -->
+  <g stroke="#4E8A3E" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M96 402 Q92 390 96 382 M96 402 Q102 392 106 386"/>
+    <path d="M172 412 Q168 400 172 392 M172 412 Q178 402 182 396"/>
+    <path d="M560 406 Q556 394 560 386 M560 406 Q566 396 570 390"/>
+    <path d="M690 416 Q686 404 690 396 M690 416 Q696 406 700 400"/>
+    <path d="M300 428 Q296 416 300 408 M300 428 Q306 418 310 412"/>
+  </g>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M120 110 h10 M125 105 v10" stroke-width="3"/>
+    <path d="M664 92 h12 M670 86 v12" stroke-width="3.4"/>
+    <path d="M700 240 h9 M704.5 235.5 v9" stroke-width="2.6" opacity="0.75"/>
+    <path d="M104 280 h9 M108.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="200" cy="170" r="4"/><circle cx="620" cy="200" r="3.4"/><circle cx="84" cy="212" r="3"/><circle cx="720" cy="170" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="410" cy="390" rx="130" ry="20" fill="#4E7A2E" opacity="0.35"/>
+
+  <!-- 空中箭 2（左） -->
+  <g>
+    <path d="M272 82 L346 138" stroke="#6B4A20" stroke-width="8" stroke-linecap="round"/>
+    <path d="M346 138 L316 134 L334 108 Z" fill="#8C8268" stroke="#4A3520" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M272 82 L252 70 L262 92 Z" fill="#F2994E" stroke="#4A3520" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M276 96 L256 92 L270 106 Z" fill="#F2994E" stroke="#4A3520" stroke-width="4.5" stroke-linejoin="round"/>
+  </g>
+  <!-- 空中箭 3（右） -->
+  <g>
+    <path d="M552 62 L486 130" stroke="#6B4A20" stroke-width="8" stroke-linecap="round"/>
+    <path d="M486 130 L512 122 L496 98 Z" fill="#8C8268" stroke="#4A3520" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M552 62 L572 50 L564 72 Z" fill="#F2994E" stroke="#4A3520" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M546 76 L566 72 L552 86 Z" fill="#F2994E" stroke="#4A3520" stroke-width="4.5" stroke-linejoin="round"/>
+  </g>
+
+  <!-- 投壶 -->
+  <g>
+    <!-- 双耳 -->
+    <path d="M356 246 Q314 254 328 296" stroke="#4A3520" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M356 246 Q314 254 328 296" stroke="#A87944" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <path d="M460 246 Q502 254 488 296" stroke="#4A3520" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M460 246 Q502 254 488 296" stroke="#A87944" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <!-- 壶足 -->
+    <rect x="374" y="352" width="68" height="24" rx="8" fill="#8F6435" stroke="#4A3520" stroke-width="7"/>
+    <!-- 壶身 -->
+    <path d="M388 182 L384 238 Q346 264 346 304 Q346 344 388 358 L428 358 Q470 344 470 304 Q470 264 432 238 L428 182 Z"
+          fill="#B98A4E" stroke="#4A3520" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M388 182 L384 238 Q346 264 346 304 Q346 344 388 358 L428 358 Q470 344 470 304 Q470 264 432 238 L428 182 Z"
+          fill="url(#gloss)"/>
+    <!-- 弦纹 -->
+    <path d="M366 268 Q408 282 450 268" stroke="#8F6435" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- 口沿 -->
+    <ellipse cx="408" cy="180" rx="38" ry="12" fill="#C79A5C" stroke="#4A3520" stroke-width="8"/>
+    <!-- 表情 -->
+    <circle cx="390" cy="308" r="9" fill="#3A2A1E"/>
+    <circle cx="426" cy="308" r="9" fill="#3A2A1E"/>
+    <circle cx="393" cy="305" r="3" fill="#FFFFFF"/>
+    <circle cx="429" cy="305" r="3" fill="#FFFFFF"/>
+    <path d="M396 328 Q408 338 420 326" stroke="#3A2A1E" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="376" cy="320" r="7" fill="#E88A6A" opacity="0.5"/>
+    <circle cx="440" cy="320" r="7" fill="#E88A6A" opacity="0.5"/>
+  </g>
+
+  <!-- 入壶的箭 1 -->
+  <g>
+    <path d="M408 210 L408 106" stroke="#6B4A20" stroke-width="8" stroke-linecap="round"/>
+    <path d="M398 110 L408 88 L418 110 Z" fill="#8C8268" stroke="#4A3520" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M396 132 L420 132" stroke="#E8683A" stroke-width="8" stroke-linecap="round"/>
+    <path d="M398 122 L418 122" stroke="#F2A93B" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

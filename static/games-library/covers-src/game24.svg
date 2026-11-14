@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2F6E52"/>
+      <stop offset="0.55" stop-color="#275C44"/>
+      <stop offset="1" stop-color="#1F4C37"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0E2A1E" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#1A4030" opacity="0.75"/>
+  <rect y="392" width="800" height="6" fill="#153527" opacity="0.6"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#CFE8D8" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M104 106 h10 M109 101 v10" stroke-width="3"/>
+    <path d="M690 96 h12 M696 90 v12" stroke-width="3.4"/>
+    <path d="M714 250 h9 M718.5 245.5 v9" stroke-width="2.6" opacity="0.75"/>
+    <path d="M92 300 h9 M96.5 295.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#CFE8D8" opacity="0.5">
+    <circle cx="180" cy="170" r="4"/><circle cx="650" cy="180" r="3.4"/><circle cx="70" cy="220" r="3"/><circle cx="740" cy="190" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="402" cy="400" rx="255" ry="26" fill="#0E2A1E" opacity="0.38"/>
+
+  <!-- 漂浮运算符 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.7">
+    <path d="M138 132 h22 M149 121 v22" stroke-width="7"/>
+    <path d="M652 116 h22" stroke-width="7"/>
+    <path d="M692 292 L714 314 M714 292 L692 314" stroke-width="7"/>
+    <path d="M104 330 h22" stroke-width="7"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.7">
+    <circle cx="115" cy="322" r="4.5"/><circle cx="115" cy="338" r="4.5"/>
+    <circle cx="655" cy="308" r="4.5"/><circle cx="655" cy="324" r="4.5"/>
+  </g>
+
+  <!-- 卡片阴影 -->
+  <g fill="#122E22" opacity="0.4">
+    <rect x="146" y="150" width="120" height="174" rx="18" transform="rotate(-7 206 237)"/>
+    <rect x="278" y="144" width="120" height="174" rx="18" transform="rotate(-2.5 338 231)"/>
+    <rect x="408" y="144" width="120" height="174" rx="18" transform="rotate(2.5 468 231)"/>
+    <rect x="538" y="150" width="120" height="174" rx="18" transform="rotate(7 598 237)"/>
+  </g>
+
+  <!-- 卡1 -->
+  <g transform="rotate(-7 206 237)">
+    <rect x="146" y="150" width="120" height="174" rx="18" fill="#FFFDF6" stroke="#1E3A2C" stroke-width="8"/>
+    <rect x="146" y="150" width="120" height="174" rx="18" fill="url(#gloss)"/>
+    <text x="206" y="268" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="bold" fill="#3E9E56" text-anchor="middle">1</text>
+    <circle cx="176" cy="182" r="8" fill="#FFFFFF" opacity="0.55"/>
+  </g>
+  <!-- 卡2 -->
+  <g transform="rotate(-2.5 338 231)">
+    <rect x="278" y="144" width="120" height="174" rx="18" fill="#FFFDF6" stroke="#1E3A2C" stroke-width="8"/>
+    <rect x="278" y="144" width="120" height="174" rx="18" fill="url(#gloss)"/>
+    <text x="338" y="268" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="bold" fill="#E8683A" text-anchor="middle">2</text>
+    <circle cx="308" cy="176" r="8" fill="#FFFFFF" opacity="0.55"/>
+  </g>
+  <!-- 卡3 -->
+  <g transform="rotate(2.5 468 231)">
+    <rect x="408" y="144" width="120" height="174" rx="18" fill="#FFFDF6" stroke="#1E3A2C" stroke-width="8"/>
+    <rect x="408" y="144" width="120" height="174" rx="18" fill="url(#gloss)"/>
+    <text x="468" y="268" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="bold" fill="#3E77B8" text-anchor="middle">6</text>
+    <circle cx="438" cy="176" r="8" fill="#FFFFFF" opacity="0.55"/>
+  </g>
+  <!-- 卡4 -->
+  <g transform="rotate(7 598 237)">
+    <rect x="538" y="150" width="120" height="174" rx="18" fill="#FFFDF6" stroke="#1E3A2C" stroke-width="8"/>
+    <rect x="538" y="150" width="120" height="174" rx="18" fill="url(#gloss)"/>
+    <text x="598" y="268" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="bold" fill="#F2A93B" text-anchor="middle">6</text>
+    <circle cx="568" cy="182" r="8" fill="#FFFFFF" opacity="0.55"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

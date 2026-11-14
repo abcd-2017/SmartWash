@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2C4070"/>
+      <stop offset="0.55" stop-color="#1F3055"/>
+      <stop offset="1" stop-color="#15223D"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#081226" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#0F1B33" opacity="0.75"/>
+  <rect y="392" width="800" height="6" fill="#0A1428" opacity="0.6"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 100 h10 M101 95 v10" stroke-width="3"/>
+    <path d="M700 90 h12 M706 84 v12" stroke-width="3.4"/>
+    <path d="M724 240 h9 M728.5 235.5 v9" stroke-width="2.6" opacity="0.75"/>
+    <path d="M118 288 h9 M122.5 283.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#CFE0F5" opacity="0.5">
+    <circle cx="180" cy="180" r="4"/><circle cx="620" cy="350" r="3.4"/><circle cx="80" cy="220" r="3"/><circle cx="742" cy="170" r="2.6"/><circle cx="255" cy="70" r="3"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="405" cy="406" rx="205" ry="24" fill="#050C1B" opacity="0.4"/>
+
+  <!-- 小行星：左上 -->
+  <g stroke="#1E2620" stroke-width="7" stroke-linejoin="round">
+    <path d="M150 78 L196 96 L214 140 L192 176 L146 186 L108 156 L104 112 Z" fill="#7E8AA5"/>
+  </g>
+  <circle cx="142" cy="120" r="13" fill="#626D88" stroke="#1E2620" stroke-width="5"/>
+  <circle cx="176" cy="152" r="9" fill="#626D88" stroke="#1E2620" stroke-width="4.5"/>
+  <circle cx="122" cy="96" r="7" fill="#98A3BC"/>
+
+  <!-- 小行星：右上 -->
+  <g stroke="#1E2620" stroke-width="7" stroke-linejoin="round">
+    <path d="M656 84 L700 102 L716 142 L694 172 L650 178 L618 148 L618 108 Z" fill="#68748F"/>
+  </g>
+  <circle cx="668" cy="122" r="11" fill="#525D78" stroke="#1E2620" stroke-width="4.5"/>
+  <circle cx="646" cy="102" r="6" fill="#8B96B0"/>
+
+  <!-- 小行星：左下（小） -->
+  <g stroke="#1E2620" stroke-width="6" stroke-linejoin="round">
+    <path d="M118 318 L150 330 L158 358 L134 374 L106 366 L96 340 Z" fill="#8B96B0"/>
+  </g>
+  <circle cx="126" cy="344" r="8" fill="#6B7691" stroke="#1E2620" stroke-width="4"/>
+
+  <!-- 小行星：右下 -->
+  <g stroke="#1E2620" stroke-width="7" stroke-linejoin="round">
+    <path d="M662 300 L706 318 L718 356 L692 384 L648 386 L622 354 L628 316 Z" fill="#77839E"/>
+  </g>
+  <circle cx="676" cy="344" r="12" fill="#5B6680" stroke="#1E2620" stroke-width="4.5"/>
+  <circle cx="652" cy="322" r="6" fill="#97A2BC"/>
+
+  <!-- 尾焰三点 -->
+  <g stroke="#1E2620" stroke-width="6">
+    <circle cx="308" cy="288" r="17" fill="#E8683A"/>
+    <circle cx="284" cy="308" r="13" fill="#F2A93B"/>
+    <circle cx="264" cy="326" r="9" fill="#F6D45C"/>
+  </g>
+
+  <!-- 飞船 -->
+  <g>
+    <!-- 机身 -->
+    <ellipse cx="405" cy="248" rx="96" ry="70" fill="#DFE6F2" stroke="#1E2620" stroke-width="9"/>
+    <ellipse cx="405" cy="248" rx="96" ry="70" fill="url(#gloss)"/>
+    <!-- 侧翼 -->
+    <path d="M322 276 Q296 292 292 318 Q318 314 340 296 Z" fill="#4E5F82" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M488 276 Q514 292 518 318 Q492 314 470 296 Z" fill="#4E5F82" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+    <!-- 舷窗（脸） -->
+    <circle cx="405" cy="236" r="38" fill="#B9D6EA" stroke="#1E2620" stroke-width="8"/>
+    <circle cx="392" cy="230" r="8" fill="#1E2620"/>
+    <circle cx="418" cy="230" r="8" fill="#1E2620"/>
+    <circle cx="395" cy="227" r="3" fill="#FFFFFF"/>
+    <circle cx="421" cy="227" r="3" fill="#FFFFFF"/>
+    <path d="M394 252 Q405 261 417 250" stroke="#1E2620" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+    <!-- 舷窗高光 -->
+    <path d="M378 214 Q384 206 394 204" stroke="#FFFFFF" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.75"/>
+    <!-- 机身高光 -->
+    <circle cx="348" cy="196" r="15" fill="#FFFFFF" opacity="0.45"/>
+    <!-- 顶部天线 -->
+    <path d="M405 178 L405 156" stroke="#1E2620" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="405" cy="148" r="9" fill="#F2A93B" stroke="#1E2620" stroke-width="6"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

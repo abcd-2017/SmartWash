@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E8468"/>
+      <stop offset="0.55" stop-color="#26705A"/>
+      <stop offset="1" stop-color="#1E5C48"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0C3A2C" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="396" width="800" height="54" fill="#17523F" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#124434" opacity="0.5"/>
+  <g opacity="0.5">
+    <path d="M130 96 h12 M136 90 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M690 130 h12 M696 124 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M110 300 h9 M114.5 295.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+    <path d="M706 330 h9 M710.5 325.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+  </g>
+  <g fill="#C9E8D6" opacity="0.5">
+    <circle cx="84" cy="200" r="4"/><circle cx="730" cy="220" r="3.4"/><circle cx="160" cy="250" r="3"/><circle cx="748" cy="180" r="2.6"/>
+  </g>
+
+  <ellipse cx="410" cy="398" rx="215" ry="18" fill="#123A2C" opacity="0.35"/>
+
+  <!-- 田字格纸卡（家族表情） -->
+  <rect x="250" y="86" width="300" height="270" rx="16" fill="#F6F3E8" stroke="#3A2A1E" stroke-width="9"/>
+  <path d="M400 102 L400 340" stroke="#B8A888" stroke-width="4"/>
+  <path d="M264 222 L536 222" stroke="#B8A888" stroke-width="4"/>
+  <circle cx="316" cy="152" r="6" fill="#1F1A14"/>
+  <circle cx="346" cy="152" r="6" fill="#1F1A14"/>
+  <path d="M312 176 Q331 190 351 174" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- 数字「1」 -->
+  <g fill="#3A3F3D">
+    <rect x="447" y="118" width="22" height="74"/>
+    <rect x="425" y="186" width="62" height="18"/>
+  </g>
+
+  <!-- 印章 -->
+  <circle cx="514" cy="126" r="22" fill="#D8402E" stroke="#A83020" stroke-width="5"/>
+  <rect x="504" y="116" width="20" height="20" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+
+  <!-- 笔画提示点 -->
+  <g fill="#B8A888" opacity="0.9">
+    <circle cx="292" cy="268" r="4"/><circle cx="316" cy="268" r="4"/><circle cx="340" cy="268" r="4"/>
+    <circle cx="292" cy="296" r="4"/><circle cx="316" cy="296" r="4"/><circle cx="340" cy="296" r="4"/>
+    <circle cx="292" cy="324" r="4"/><circle cx="316" cy="324" r="4"/>
+  </g>
+
+  <!-- 毛笔 -->
+  <path d="M566 276 L664 356" stroke="#1E2620" stroke-width="19" stroke-linecap="round" fill="none"/>
+  <path d="M566 276 L664 356" stroke="#C89A5B" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <path d="M566 276 L538 248 L566 298 Z" fill="#3A3A34" stroke="#1E2620" stroke-width="5" stroke-linejoin="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

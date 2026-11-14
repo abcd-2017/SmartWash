@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C98A3A"/>
+      <stop offset="0.55" stop-color="#B87728"/>
+      <stop offset="1" stop-color="#9C6220"/>
+    </linearGradient>
+    <linearGradient id="funnel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#B8CCE4"/>
+      <stop offset="1" stop-color="#7E96B8"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#5E3A10" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <g opacity="0.5">
+    <path d="M140 84 h12 M146 78 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M640 128 h12 M646 122 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M96 200 h9 M100.5 195.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+    <path d="M706 208 h9 M710.5 203.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+  </g>
+  <g fill="#FFDFAE" opacity="0.5">
+    <circle cx="80" cy="140" r="4"/><circle cx="720" cy="160" r="3.4"/><circle cx="180" cy="230" r="3"/><circle cx="620" cy="90" r="2.6"/>
+  </g>
+
+  <!-- 沙丘地面 -->
+  <path d="M0 316 Q400 266 800 316 L800 450 L0 450 Z" fill="#E3C188"/>
+  <path d="M0 316 Q400 266 800 316" stroke="#3A2A1E" stroke-width="8" fill="none"/>
+  <path d="M60 320 Q400 280 740 320" stroke="#F2DFB2" stroke-width="7" fill="none" opacity="0.7" stroke-linecap="round"/>
+
+  <!-- 沙尖 -->
+  <ellipse cx="400" cy="352" rx="70" ry="11" fill="#8A5A20" opacity="0.35"/>
+  <path d="M368 352 L400 316 L432 352 Z" fill="#F2C873" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- 漏斗（家族表情） -->
+  <path d="M280 90 L520 90 L430 200 L370 200 Z" fill="url(#funnel)" stroke="#1E2620" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M292 100 L368 194" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.4"/>
+  <rect x="362" y="200" width="76" height="28" rx="6" fill="#64789A" stroke="#1E2620" stroke-width="7"/>
+  <circle cx="384" cy="140" r="6" fill="#1F1A14"/>
+  <circle cx="416" cy="140" r="6" fill="#1F1A14"/>
+  <path d="M380 160 Q400 172 420 158" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- 沙流 -->
+  <g fill="#F2C873">
+    <circle cx="400" cy="242" r="6"/>
+    <circle cx="403" cy="262" r="5.5"/>
+    <circle cx="397" cy="281" r="5"/>
+    <circle cx="401" cy="299" r="4.5"/>
+    <circle cx="399" cy="310" r="4"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DAE5D6"/>
+      <stop offset="0.55" stop-color="#C9D8C6"/>
+      <stop offset="1" stop-color="#B7CAB4"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#6E8268" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#A2B89E" opacity="0.7"/>
+  <rect y="392" width="800" height="6" fill="#8EA38A" opacity="0.6"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M112 106 h10 M117 101 v10" stroke-width="3"/>
+    <path d="M678 98 h12 M684 92 v12" stroke-width="3.4"/>
+    <path d="M706 244 h9 M710.5 239.5 v9" stroke-width="2.6" opacity="0.75"/>
+    <path d="M96 282 h9 M100.5 277.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="192" cy="164" r="4"/><circle cx="646" cy="178" r="3.4"/><circle cx="76" cy="212" r="3"/><circle cx="726" cy="166" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="406" rx="195" ry="23" fill="#7A8E74" opacity="0.35"/>
+
+  <!-- 棋盘底板 -->
+  <rect x="232" y="58" width="336" height="336" rx="22" fill="#EDF2E6" stroke="#2E3A2E" stroke-width="8"/>
+  <!-- 网格淡线 -->
+  <g stroke="#D3DCCB" stroke-width="3">
+    <path d="M310 70 L310 382 M386 70 L386 382 M462 70 L462 382"/>
+    <path d="M244 136 L556 136 M244 212 L556 212 M244 288 L556 288"/>
+  </g>
+
+  <!-- 行1：圆 三角 菱 方 -->
+  <g stroke="#2E3A2E" stroke-width="6" stroke-linejoin="round">
+    <circle cx="274" cy="98" r="23" fill="#E8683A"/>
+    <path d="M350 78 L372 120 L328 120 Z" fill="#6BA8E8"/>
+    <path d="M426 76 L448 98 L426 120 L404 98 Z" fill="#A97FD1"/>
+    <rect x="483" y="79" width="38" height="38" rx="8" fill="#7ECB7E"/>
+  </g>
+  <!-- 行2：三角 红圆(交换) 蓝三角(交换) 方 -->
+  <g stroke="#2E3A2E" stroke-width="6" stroke-linejoin="round">
+    <path d="M274 156 L296 198 L252 198 Z" fill="#6BA8E8"/>
+  </g>
+  <!-- 交换发光 -->
+  <circle cx="364" cy="178" r="52" fill="#FFF3B8" opacity="0.5"/>
+  <circle cx="414" cy="178" r="52" fill="#FFF3B8" opacity="0.5"/>
+  <!-- 红圆（向右偏移） -->
+  <g transform="translate(12 0)">
+    <circle cx="350" cy="178" r="25" fill="#E8683A" stroke="#2E3A2E" stroke-width="6"/>
+    <circle cx="350" cy="178" r="25" fill="url(#gloss)"/>
+    <circle cx="342" cy="172" r="5" fill="#3A2A1E"/>
+    <circle cx="358" cy="172" r="5" fill="#3A2A1E"/>
+    <circle cx="344" cy="170" r="1.8" fill="#FFFFFF"/>
+    <circle cx="360" cy="170" r="1.8" fill="#FFFFFF"/>
+    <path d="M343 186 Q350 192 357 185" stroke="#3A2A1E" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="340" cy="166" r="5" fill="#FFFFFF" opacity="0.55"/>
+  </g>
+  <!-- 蓝三角（向左偏移） -->
+  <g transform="translate(-12 0)">
+    <path d="M426 152 L450 202 L402 202 Z" fill="#6BA8E8" stroke="#2E3A2E" stroke-width="6" stroke-linejoin="round"/>
+    <circle cx="420" cy="172" r="5" fill="#2E3A2E"/>
+    <circle cx="432" cy="172" r="5" fill="#2E3A2E"/>
+    <circle cx="422" cy="170" r="1.8" fill="#FFFFFF"/>
+    <circle cx="434" cy="170" r="1.8" fill="#FFFFFF"/>
+    <path d="M419 184 Q426 190 433 183" stroke="#2E3A2E" stroke-width="4" fill="none" stroke-linecap="round"/>
+  </g>
+  <!-- 行2列4 方 -->
+  <g stroke="#2E3A2E" stroke-width="6" stroke-linejoin="round">
+    <rect x="483" y="159" width="38" height="38" rx="8" fill="#7ECB7E"/>
+  </g>
+  <!-- 行3：菱 方 圆 三角 -->
+  <g stroke="#2E3A2E" stroke-width="6" stroke-linejoin="round">
+    <path d="M274 232 L296 254 L274 276 L252 254 Z" fill="#A97FD1"/>
+    <rect x="331" y="235" width="38" height="38" rx="8" fill="#7ECB7E"/>
+    <circle cx="426" cy="254" r="23" fill="#E8683A"/>
+    <path d="M502 234 L524 276 L480 276 Z" fill="#6BA8E8"/>
+  </g>
+  <!-- 行4：方 圆 三角 菱 -->
+  <g stroke="#2E3A2E" stroke-width="6" stroke-linejoin="round">
+    <rect x="255" y="311" width="38" height="38" rx="8" fill="#7ECB7E"/>
+    <circle cx="350" cy="330" r="23" fill="#E8683A"/>
+    <path d="M426 310 L448 352 L404 352 Z" fill="#6BA8E8"/>
+    <path d="M502 308 L524 330 L502 352 L480 330 Z" fill="#A97FD1"/>
+  </g>
+  <!-- 各宝石高光 -->
+  <g fill="#FFFFFF" opacity="0.45">
+    <circle cx="266" cy="90" r="6"/><circle cx="342" cy="88" r="5"/><circle cx="418" cy="86" r="5"/><circle cx="492" cy="88" r="5"/>
+    <circle cx="266" cy="166" r="5"/><circle cx="475" cy="168" r="5"/>
+    <circle cx="266" cy="242" r="5"/><circle cx="340" cy="244" r="5"/><circle cx="418" cy="246" r="6"/><circle cx="494" cy="244" r="5"/>
+    <circle cx="264" cy="320" r="5"/><circle cx="342" cy="322" r="6"/><circle cx="418" cy="320" r="5"/><circle cx="494" cy="318" r="5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C97E2F"/>
+      <stop offset="0.55" stop-color="#B56B24"/>
+      <stop offset="1" stop-color="#98571B"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#5E3310" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="396" width="800" height="54" fill="#7E4A15" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#6B3D11" opacity="0.5"/>
+  <g opacity="0.5">
+    <path d="M108 84 h12 M114 78 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M664 86 h12 M670 80 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M716 300 h9 M720.5 295.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M96 318 h9 M100.5 313.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#FFDFAE" opacity="0.5">
+    <circle cx="170" cy="180" r="4"/><circle cx="620" cy="210" r="3.4"/><circle cx="80" cy="240" r="3"/><circle cx="740" cy="160" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="406" rx="248" ry="20" fill="#5E3310" opacity="0.35"/>
+
+  <!-- 同心节奏环 -->
+  <g fill="none" stroke="#FFE9C9">
+    <circle cx="400" cy="234" r="158" stroke-width="7" opacity="0.5"/>
+    <circle cx="400" cy="234" r="108" stroke-width="7" opacity="0.55"/>
+    <circle cx="400" cy="234" r="62" stroke-width="7" opacity="0.6"/>
+  </g>
+  <circle cx="400" cy="234" r="48" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-dasharray="14 12" opacity="0.7"/>
+
+  <!-- 均衡器柱 -->
+  <g fill="#FFE9C9" opacity="0.45">
+    <rect x="150" y="366" width="20" height="32" rx="8"/>
+    <rect x="192" y="344" width="20" height="54" rx="8"/>
+    <rect x="234" y="334" width="20" height="64" rx="8"/>
+    <rect x="276" y="358" width="20" height="40" rx="8"/>
+    <rect x="318" y="340" width="20" height="58" rx="8"/>
+    <rect x="360" y="328" width="20" height="70" rx="8"/>
+    <rect x="402" y="350" width="20" height="48" rx="8"/>
+    <rect x="444" y="336" width="20" height="62" rx="8"/>
+    <rect x="486" y="356" width="20" height="42" rx="8"/>
+    <rect x="528" y="332" width="20" height="66" rx="8"/>
+    <rect x="570" y="360" width="20" height="38" rx="8"/>
+    <rect x="612" y="344" width="20" height="54" rx="8"/>
+  </g>
+
+  <!-- 节拍球 -->
+  <circle cx="268" cy="140" r="36" fill="none" stroke="#3FC9A0" stroke-width="5" opacity="0.55"/>
+  <circle cx="268" cy="140" r="27" fill="#3FC9A0" stroke="#3A2A1E" stroke-width="8"/>
+  <circle cx="259" cy="130" r="8" fill="#C5F2E2"/>
+  <circle cx="556" cy="142" r="36" fill="none" stroke="#9B6BD4" stroke-width="5" opacity="0.55"/>
+  <circle cx="556" cy="142" r="27" fill="#9B6BD4" stroke="#3A2A1E" stroke-width="8"/>
+  <circle cx="547" cy="132" r="8" fill="#DCC8F5"/>
+  <circle cx="322" cy="318" r="32" fill="none" stroke="#E86A6A" stroke-width="5" opacity="0.55"/>
+  <circle cx="322" cy="318" r="24" fill="#E86A6A" stroke="#3A2A1E" stroke-width="8"/>
+  <circle cx="314" cy="309" r="7" fill="#F8C0C0"/>
+
+  <!-- 中心节拍盘 -->
+  <circle cx="400" cy="234" r="36" fill="#FFF7EA" stroke="#3A2A1E" stroke-width="8"/>
+  <circle cx="400" cy="234" r="36" fill="url(#gloss)"/>
+  <circle cx="390" cy="226" r="5.5" fill="#1F1A14"/>
+  <circle cx="412" cy="226" r="5.5" fill="#1F1A14"/>
+  <path d="M388 244 Q401 255 415 242" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

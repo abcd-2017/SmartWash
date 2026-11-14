@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4A3A8E"/>
+      <stop offset="0.55" stop-color="#3A2B74"/>
+      <stop offset="1" stop-color="#2A1E58"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.04"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1A1038" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="404" width="800" height="46" fill="#221748" opacity="0.6"/>
+  <rect y="404" width="800" height="5" fill="#1A1240" opacity="0.5"/>
+  <g opacity="0.5">
+    <path d="M120 82 h12 M126 76 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M690 96 h12 M696 90 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M640 330 h9 M644.5 325.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+    <path d="M148 300 h9 M152.5 295.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.55">
+    <circle cx="80" cy="160" r="3"/><circle cx="210" cy="120" r="2.4"/><circle cx="320" cy="76" r="3"/><circle cx="540" cy="140" r="2.4"/>
+    <circle cx="720" cy="210" r="3"/><circle cx="600" cy="60" r="2.2"/><circle cx="90" cy="260" r="2.4"/><circle cx="760" cy="130" r="2.2"/>
+    <circle cx="270" cy="250" r="2"/><circle cx="500" cy="300" r="2"/><circle cx="700" cy="280" r="2.4"/><circle cx="360" cy="330" r="2"/>
+  </g>
+
+  <!-- 外星人（像素风） -->
+  <g fill="#3FC060">
+    <rect x="130" y="150" width="64" height="30" rx="6"/>
+    <rect x="118" y="140" width="16" height="14" rx="4"/>
+    <rect x="190" y="140" width="16" height="14" rx="4"/>
+    <rect x="130" y="180" width="12" height="14" rx="4"/>
+    <rect x="152" y="180" width="12" height="14" rx="4"/>
+    <rect x="174" y="180" width="12" height="14" rx="4"/>
+    <rect x="196" y="180" width="12" height="14" rx="4"/>
+    <rect x="606" y="150" width="64" height="30" rx="6"/>
+    <rect x="594" y="140" width="16" height="14" rx="4"/>
+    <rect x="666" y="140" width="16" height="14" rx="4"/>
+    <rect x="606" y="180" width="12" height="14" rx="4"/>
+    <rect x="628" y="180" width="12" height="14" rx="4"/>
+    <rect x="650" y="180" width="12" height="14" rx="4"/>
+    <rect x="672" y="180" width="12" height="14" rx="4"/>
+  </g>
+  <g fill="#FFFFFF">
+    <rect x="146" y="160" width="10" height="10" rx="3"/>
+    <rect x="168" y="160" width="10" height="10" rx="3"/>
+    <rect x="622" y="160" width="10" height="10" rx="3"/>
+    <rect x="644" y="160" width="10" height="10" rx="3"/>
+  </g>
+
+  <!-- 掩体 -->
+  <g fill="#3FC060">
+    <rect x="128" y="372" width="34" height="22" rx="6"/>
+    <rect x="166" y="372" width="34" height="22" rx="6"/>
+    <rect x="147" y="390" width="34" height="20" rx="6"/>
+    <rect x="618" y="372" width="34" height="22" rx="6"/>
+    <rect x="656" y="372" width="34" height="22" rx="6"/>
+    <rect x="637" y="390" width="34" height="20" rx="6"/>
+  </g>
+
+  <!-- 光束 -->
+  <path d="M354 152 L446 152 L520 404 L280 404 Z" fill="url(#beam)"/>
+
+  <!-- UFO（家族表情） -->
+  <path d="M354 108 A46 40 0 0 1 446 108 Z" fill="#F5D5CC" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="384" cy="86" r="7" fill="#1F1A14"/>
+  <circle cx="416" cy="86" r="7" fill="#1F1A14"/>
+  <path d="M380 102 Q400 114 421 100" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <ellipse cx="400" cy="122" rx="112" ry="36" fill="#E04848" stroke="#1E2620" stroke-width="9"/>
+  <ellipse cx="400" cy="122" rx="112" ry="36" fill="url(#gloss)"/>
+  <g fill="#FFE9D9">
+    <circle cx="330" cy="134" r="7"/>
+    <circle cx="366" cy="144" r="7"/>
+    <circle cx="434" cy="144" r="7"/>
+    <circle cx="470" cy="134" r="7"/>
+  </g>
+
+  <!-- 中央外星人 -->
+  <g fill="#3FC060">
+    <rect x="368" y="212" width="64" height="30" rx="6"/>
+    <rect x="356" y="202" width="16" height="14" rx="4"/>
+    <rect x="428" y="202" width="16" height="14" rx="4"/>
+    <rect x="368" y="242" width="12" height="14" rx="4"/>
+    <rect x="390" y="242" width="12" height="14" rx="4"/>
+    <rect x="412" y="242" width="12" height="14" rx="4"/>
+    <rect x="434" y="242" width="12" height="14" rx="4"/>
+  </g>
+  <g fill="#FFFFFF">
+    <rect x="384" y="222" width="10" height="10" rx="3"/>
+    <rect x="406" y="222" width="10" height="10" rx="3"/>
+  </g>
+
+  <!-- 炮台 -->
+  <path d="M400 250 L400 300" stroke="#7FE3EC" stroke-width="6" stroke-linecap="round"/>
+  <rect x="366" y="300" width="68" height="42" rx="10" fill="#4EC9D4" stroke="#1E2620" stroke-width="7"/>
+  <rect x="378" y="308" width="24" height="10" rx="5" fill="#FFFFFF" opacity="0.5"/>
+  <ellipse cx="400" cy="410" rx="96" ry="12" fill="#171035" opacity="0.4"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

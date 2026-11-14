@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A2A6E"/>
+      <stop offset="0.55" stop-color="#2E2060"/>
+      <stop offset="1" stop-color="#241850"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1A1038" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <g opacity="0.5">
+    <path d="M120 86 h12 M126 80 v12" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <path d="M560 66 h9 M564.5 61.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+    <path d="M96 260 h9 M100.5 255.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+    <path d="M716 240 h9 M720.5 235.5 v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.55">
+    <circle cx="80" cy="150" r="3"/><circle cx="200" cy="110" r="2.4"/><circle cx="300" cy="80" r="3"/><circle cx="460" cy="120" r="2.4"/>
+    <circle cx="700" cy="170" r="3"/><circle cx="620" cy="60" r="2.2"/><circle cx="150" cy="320" r="2.4"/><circle cx="750" cy="120" r="2.2"/>
+    <circle cx="260" cy="210" r="2"/><circle cx="560" cy="200" r="2"/><circle cx="360" cy="160" r="2"/><circle cx="700" cy="300" r="2"/>
+    <circle cx="240" cy="300" r="2.4"/><circle cx="520" cy="90" r="2.4"/>
+  </g>
+
+  <!-- 行星 -->
+  <circle cx="640" cy="112" r="56" fill="#4E7BE8" opacity="0.25"/>
+  <circle cx="640" cy="112" r="44" fill="#3E7BE8" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="626" cy="100" r="12" fill="#3FA34D"/>
+  <circle cx="652" cy="124" r="9" fill="#3FA34D"/>
+  <circle cx="634" cy="126" r="6" fill="#8FB4F2" opacity="0.9"/>
+
+  <!-- 月面 -->
+  <path d="M0 382 Q400 328 800 382 L800 450 L0 450 Z" fill="#C8C8C2"/>
+  <path d="M0 382 Q400 328 800 382" stroke="#1E2620" stroke-width="8" fill="none"/>
+  <ellipse cx="190" cy="424" rx="28" ry="11" fill="#ADADA5"/>
+  <ellipse cx="330" cy="438" rx="18" ry="7" fill="#ADADA5"/>
+  <ellipse cx="530" cy="430" rx="24" ry="9" fill="#ADADA5"/>
+  <ellipse cx="680" cy="416" rx="22" ry="9" fill="#ADADA5"/>
+  <ellipse cx="400" cy="412" rx="120" ry="12" fill="#8A8A82" opacity="0.5"/>
+
+  <!-- 天线 -->
+  <path d="M442 236 L470 190" stroke="#3E485C" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="475" cy="184" r="9" fill="#E04848" stroke="#1E2620" stroke-width="5"/>
+
+  <!-- 着陆器（家族表情） -->
+  <g stroke="#3E485C" stroke-width="10" stroke-linecap="round">
+    <path d="M366 330 L330 406"/>
+    <path d="M434 330 L470 406"/>
+  </g>
+  <circle cx="330" cy="408" r="8" fill="#3E485C"/>
+  <circle cx="470" cy="408" r="8" fill="#3E485C"/>
+  <rect x="355" y="225" width="90" height="88" rx="16" fill="#E8E8E2" stroke="#1E2620" stroke-width="9"/>
+  <circle cx="400" cy="252" r="13" fill="#4E8ED8" stroke="#1E2620" stroke-width="6"/>
+  <circle cx="396" cy="248" r="4" fill="#AFD0F2"/>
+  <circle cx="384" cy="284" r="5.5" fill="#1F1A14"/>
+  <circle cx="416" cy="284" r="5.5" fill="#1F1A14"/>
+  <path d="M380 294 Q400 306 422 292" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <rect x="358" y="313" width="84" height="20" rx="7" fill="#E8963A" stroke="#1E2620" stroke-width="7"/>
+  <path d="M378 313 L378 333 M400 313 L400 333 M422 313 L422 333" stroke="#B86E22" stroke-width="4"/>
+
+  <!-- 火焰 -->
+  <path d="M400 344 L417 378 L400 400 L383 378 Z" fill="#E8913A" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M400 356 L410 378 L400 392 L390 378 Z" fill="#F8D048"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>
