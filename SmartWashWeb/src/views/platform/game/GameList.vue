@@ -107,13 +107,15 @@
                   class="icon-block"
                   :style="{ backgroundColor: gameColorHex(row.color) }"
                 />
-                <span class="title-main">{{ row.title || '-' }}</span>
+                <span class="title-main" :title="row.title || '-'">{{ row.title || '-' }}</span>
                 <el-tag v-if="row.badge" size="small" type="warning" effect="plain">
                   {{ row.badge }}
                 </el-tag>
                 <el-tag size="small" type="info">{{ row.icon || 'default' }}</el-tag>
               </div>
-              <span v-if="row.description" class="title-sub">{{ row.description }}</span>
+              <span v-if="row.description" class="title-sub" :title="row.description">{{
+                row.description
+              }}</span>
             </div>
           </template>
         </el-table-column>
@@ -151,6 +153,7 @@
                 :active-value="1"
                 :inactive-value="0"
                 :loading="togglingId === row.id"
+                :aria-label="`下发「${row.title || row.gameKey}」`"
                 @change="handleToggleEnabled(row)"
               />
               <!-- 后端下发会过滤空 url 的游戏包：已勾选下发但缺可玩地址时如实提示 -->
@@ -201,7 +204,7 @@
     <el-dialog
       title="上传游戏"
       v-model="uploadDialogVisible"
-      width="760px"
+      width="min(760px, 94vw)"
       :close-on-click-modal="false"
       :show-close="!uploading"
       @closed="handleUploadDialogClosed"
@@ -280,7 +283,7 @@
               />
             </div>
 
-            <!-- 目录携带 levels.json：勾选随上传自动导入；解析失败仅提示，游戏本体照常上传 -->
+            <!-- 目录携带 .levels.json / levels.json：勾选随上传自动导入；解析失败仅提示，游戏本体照常上传 -->
             <el-alert
               v-if="levelsDraft && !levelsDraft.error"
               class="levels-draft-alert"
@@ -289,7 +292,7 @@
               show-icon
             >
               <template #title>
-                识别到关卡文件 levels.json（{{ levelsDraft.plan?.rows.length || 0 }} 关）
+                识别到关卡文件（{{ levelsDraft.fileName || 'levels.json' }}，{{ levelsDraft.plan?.rows.length || 0 }} 关）
               </template>
               <el-checkbox v-model="levelsDraft.checked" class="levels-draft-check">
                 上传成功后自动导入{{ levelsDispositionText }}
@@ -301,7 +304,7 @@
               type="warning"
               :closable="false"
               show-icon
-              :title="`识别到 levels.json 但未随上传导入：${levelsDraft.error}`"
+              :title="`识别到关卡文件（{{ levelsDraft.fileName || 'levels.json' }}）但未随上传导入：${levelsDraft.error}`"
             />
           </el-form-item>
 
@@ -519,7 +522,7 @@
     <el-dialog
       title="编辑游戏"
       v-model="editDialogVisible"
-      width="640px"
+      width="min(640px, 94vw)"
       @closed="handleEditDialogClosed"
     >
       <el-form ref="editFormRef" :model="tempGame" label-width="90px" :rules="rules">
@@ -1067,6 +1070,7 @@ const handleDirImport = (event) => {
   } else if (inspect.levelsFile.size > MAX_IMPORT_FILE_SIZE) {
     levelsDraft.value = {
       checked: false,
+      fileName: inspect.levelsFile.name,
       items: null,
       plan: null,
       error: `关卡文件超过 ${MAX_IMPORT_FILE_SIZE / 1024 / 1024}MB 上限`,
@@ -1077,7 +1081,13 @@ const handleDirImport = (event) => {
       .then((text) => {
         const parsed = parseLevelImportText(text);
         if (!parsed.ok) {
-          levelsDraft.value = { checked: false, items: null, plan: null, error: parsed.reason };
+          levelsDraft.value = {
+            checked: false,
+            fileName: inspect.levelsFile.name,
+            items: null,
+            plan: null,
+            error: parsed.reason,
+          };
           return;
         }
         levelsDraft.value = {
@@ -1091,7 +1101,13 @@ const handleDirImport = (event) => {
       })
       .catch((readError) => {
         logger.error('levels.json 读取失败:', readError);
-        levelsDraft.value = { checked: false, items: null, plan: null, error: '关卡文件读取失败' };
+        levelsDraft.value = {
+          checked: false,
+          fileName: inspect.levelsFile.name,
+          items: null,
+          plan: null,
+          error: '关卡文件读取失败',
+        };
       });
   }
 
@@ -1582,14 +1598,23 @@ onMounted(() => {
   gap: 6px;
 }
 
+/* 长标题/长描述一律单行省略：列表页行高恒定（长内容撑高整行会让表格
+   行高失衡、搜索命中超长数据时整页视觉跳变）；完整内容经原生 title 悬浮可见 */
 .title-main {
   color: var(--text-primary);
   font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .title-sub {
   color: var(--text-muted);
   font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 图标色块（端上按色组 key 渲染 16dp 圆角块，此处用色点示意） */

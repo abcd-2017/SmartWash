@@ -1,9 +1,9 @@
 // src/views/platform/game/gameDirectory.js
 // games-library 游戏目录规范共享逻辑：目录结构校验 + README 解析。
 // 单目录导入（GameList）与父目录批量导入（BatchUploadDialog）共用同一套规范，避免两处漂移。
-// 规范：游戏目录根层只允许 index.html（必须入口）+ README.md（可选元数据）+ levels.json
-//（可选关卡文件，随上传自动导入）+ 封面图（可选），子目录与其余文件一律不合规
-//（多文件游戏请打包 .zip 走手动上传）。
+// 规范：游戏目录根层只允许 index.html（必须入口）+ README.md（可选元数据）+ .levels.json / levels.json
+//（可选关卡文件，随上传自动导入；仓库约定 .levels.json 隐藏名防静态部署暴露）+ 封面图（可选），
+// 子目录与其余文件一律不合规（多文件游戏请打包 .zip 走手动上传）。
 import { GAME_CATEGORY_OPTIONS } from '@/constants/dict';
 
 /** gameKey 规则：小写字母开头，3-64 位小写字母/数字/下划线/中划线（与后端 UploadGameFrom 校验对齐） */
@@ -15,10 +15,22 @@ export const GAME_KEY_SOURCE = GAME_KEY_PATTERN.source.replace(/^\^/, '').replac
 
 /** 目录规范提示文案（错误信息尾部统一拼接） */
 export const GAME_DIR_RULES =
-  '目录仅支持「index.html（+ 可选 README.md / levels.json / 封面图 png/jpg/jpeg/webp）」，含其他文件请打包 .zip 手动上传';
+  '目录仅支持「index.html（+ 可选 README.md / .levels.json 或 levels.json / 封面图 png/jpg/jpeg/webp）」，含其他文件请打包 .zip 手动上传';
 
 /** 封面图扩展名（命名兼容 cover.png 与 games-library 规范 <game-key>.png） */
 const COVER_EXTS = ['.png', '.jpg', '.jpeg', '.webp'];
+
+/**
+ * games-library 关卡源文件命名：仓库约定 .levels.json（隐藏名，避免随 static 部署
+ * 把关卡源暴露到线上——运行时关卡走后端 API）；levels.json 为兼容写法，两者等价。
+ */
+const LEVELS_FILE_NAMES = ['.levels.json', 'levels.json'];
+
+/** 关卡文件名判定（levels.json 大小写不敏感；.levels.json 按约定精确匹配） */
+const isLevelsFile = (name) => {
+  const lower = name.toLowerCase();
+  return LEVELS_FILE_NAMES.some((n) => (n.startsWith('.') ? name === n : lower === n));
+};
 
 /** 文件相对路径段（webkitdirectory 选择时浏览器提供 webkitRelativePath） */
 export const relSegs = (file) => (file.webkitRelativePath || file.name).split('/');
@@ -52,8 +64,16 @@ export function splitGameDirs(files) {
  *          不合规时 ok=false 且 reason 给出可展示的原因；合规时返回各入口文件（readme/cover/levels 可能为 null）
  */
 export function inspectGameDir(dirName, files, baseDepth) {
-  // 忽略隐藏文件/目录（.DS_Store、.git 等），与单目录导入行为一致
-  const visible = files.filter((f) => relSegs(f).every((seg) => !seg.startsWith('.')));
+  // 忽略隐藏文件/目录（.DS_Store、.git 等），与单目录导入行为一致；
+  // 例外：根层 .levels.json 是 games-library 约定的关卡源文件（隐藏名防静态部署暴露），
+  // 作为可选文件参与预检（透传 levelsFile 供随上传导入）
+  const visible = files.filter((f) => {
+    const segs = relSegs(f);
+    return segs.every((seg, idx) => {
+      if (!seg.startsWith('.')) return true;
+      return idx === segs.length - 1 && seg === '.levels.json';
+    });
+  });
   if (visible.some((f) => relSegs(f).length > baseDepth + 1)) {
     return { ok: false, reason: `「${dirName}」含子目录或多余文件。${GAME_DIR_RULES}` };
   }
@@ -61,7 +81,9 @@ export function inspectGameDir(dirName, files, baseDepth) {
   const isCover = (f) => COVER_EXTS.some((ext) => f.name.toLowerCase().endsWith(ext));
   const illegal = rootFiles.find((f) => {
     const name = f.name.toLowerCase();
-    return !['index.html', 'readme.md', 'levels.json'].includes(name) && !isCover(f);
+    return !['index.html', 'readme.md', 'levels.json'].includes(name)
+      && !isLevelsFile(f.name)
+      && !isCover(f);
   });
   if (illegal) {
     return { ok: false, reason: `「${dirName}」含不支持的文件 ${illegal.name}。${GAME_DIR_RULES}` };
@@ -76,7 +98,7 @@ export function inspectGameDir(dirName, files, baseDepth) {
     indexHtml,
     readme: rootFiles.find((f) => f.name.toLowerCase() === 'readme.md') || null,
     coverFile: rootFiles.find(isCover) || null,
-    levelsFile: rootFiles.find((f) => f.name.toLowerCase() === 'levels.json') || null,
+    levelsFile: rootFiles.find((f) => isLevelsFile(f.name)) || null,
   };
 }
 

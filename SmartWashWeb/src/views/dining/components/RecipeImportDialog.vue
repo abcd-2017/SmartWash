@@ -2,7 +2,7 @@
   <el-dialog
     v-model="visible"
     title="批量导入菜谱"
-    width="860px"
+    width="min(860px, 94vw)"
     :close-on-click-modal="false"
     @closed="resetState"
   >

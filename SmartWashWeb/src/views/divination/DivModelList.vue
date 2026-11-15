@@ -60,6 +60,7 @@
         default-expand-all
         fit
         highlight-current-row
+        empty-text="暂无模型配置，点击「新增模型」开始接入"
       >
         <el-table-column prop="vendor" label="厂商" min-width="200">
           <template #default="{ row }">
@@ -110,7 +111,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="连通性" min-width="150">
+        <el-table-column label="连通性" min-width="190">
           <template #default="{ row }">
             <template v-if="row._isVendor">
               <span class="vendor-aggregate">{{ vendorConnectivityText(row) }}</span>
@@ -130,7 +131,7 @@
             {{ formatTime(row._isVendor ? row._latestUpdatedAt : row.updatedAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <!-- 厂商父节点为分组行，不提供行级操作 -->
             <template v-if="!row._isVendor">

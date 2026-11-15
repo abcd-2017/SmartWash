@@ -50,7 +50,7 @@
               <span class="host-chip" :title="row.host ? `smartwash://${row.host}` : ''">
                 {{ row.host || '-' }}
               </span>
-              <span v-if="row.name" class="host-sub">{{ row.name }}</span>
+              <span v-if="row.name" class="host-sub" :title="row.name">{{ row.name }}</span>
             </div>
           </template>
         </el-table-column>
@@ -423,6 +423,11 @@ const handleDelete = async (row) => {
 
 .host-chip {
   display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
   align-self: flex-start;
   padding: 2px 8px;
   border-radius: 6px;
@@ -437,6 +442,9 @@ const handleDelete = async (row) => {
 .host-sub {
   color: var(--text-muted);
   font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 表单项下的辅助说明 */

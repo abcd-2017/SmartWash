@@ -92,7 +92,7 @@
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="lockerId" label="ID" min-width="80" />
-        <el-table-column label="学校" min-width="180">
+        <el-table-column label="学校" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
             {{ schoolMap[row.schoolId]?.schoolName || '-' }}
           </template>
@@ -247,7 +247,7 @@
     </el-dialog>
 
     <!-- 柜码标签打印弹窗：A4 网格排版（学校/柜号 + 二维码 + 扫码地址），借 ATA「生成→排版→打印」玩法 -->
-    <el-dialog title="柜码标签" v-model="tagDialogVisible" width="860px" class="locker-tag-dialog">
+    <el-dialog title="柜码标签" v-model="tagDialogVisible" width="min(860px, 94vw)" class="locker-tag-dialog">
       <div id="locker-tag-print">
         <div class="tag-sheet-title">{{ tagSchoolName }} · 储物柜资产码标签</div>
         <div class="tag-grid">
