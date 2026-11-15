@@ -70,7 +70,7 @@ import kotlinx.coroutines.withContext
  * {origin}/dining/join/{orderId}?t={join_token}）+ 复制加入链接。
  *
  * token 仅创建链路携带（后端详情/列表接口不回传）：从列表进入时二维码区降级提示，
- * 重置凭证入口为后续票。二维码生成对齐取件码/短链详情先例（produceState +
+ * 重置凭证入口已接线（发起者限定，二次确认 → reset → 重建二维码）。二维码生成对齐取件码/短链详情先例（produceState +
  * Dispatchers.Default，生成期占位，组合期零阻塞）。
  */
 @Composable
