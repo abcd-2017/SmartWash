@@ -3,7 +3,9 @@ package com.smartwash.feature.dining.ui.order
 import android.widget.Toast
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,11 +14,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,9 +34,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -47,9 +58,11 @@ import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.pressable
 import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.logic.DiningRecipeShopping
 import com.smartwash.feature.dining.logic.DiningShoppingListResult
+import com.smartwash.feature.dining.logic.buildShoppingListText
 
 /** 双视图 Tab 索引（0=按食材买菜，1=按菜备菜） */
 private const val TAB_INGREDIENTS = 0
@@ -68,8 +81,11 @@ fun DiningOrderShoppingListPage(
     viewModel: DiningOrderShoppingListViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val loadState by viewModel.loadState.collectAsState()
     val result by viewModel.result.collectAsState()
+    val orderTitle by viewModel.orderTitle.collectAsState()
+    val checked by viewModel.checked.collectAsState()
 
     // 双视图切换（纯 UI 态；不参与网络请求）
     var tab by remember { mutableStateOf(TAB_INGREDIENTS) }
@@ -85,6 +101,21 @@ fun DiningOrderShoppingListPage(
         }
     }
 
+    // 复制清单：勾选态 + 按菜视图拼成文本，发给家人/自己对着买
+    val copyList: () -> Unit = {
+        val current = result
+        if (current != null) {
+            clipboardManager.setText(
+                AnnotatedString(buildShoppingListText(orderTitle, current, checked)),
+            )
+            Toast.makeText(
+                context,
+                R.string.dining_shopping_list_copy_done,
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -93,6 +124,13 @@ fun DiningOrderShoppingListPage(
         PageHeader(
             title = stringResource(R.string.dining_shopping_list_title),
             onBack = { navController.navigateUp() },
+            actions = {
+                AppButton(
+                    text = stringResource(R.string.dining_shopping_list_copy),
+                    onClick = copyList,
+                    variant = AppButtonVariant.TEXT,
+                )
+            },
         )
 
         val current = result
@@ -100,6 +138,8 @@ fun DiningOrderShoppingListPage(
             current != null -> ShoppingListContent(
                 tab = tab,
                 result = current,
+                checked = checked,
+                onToggleChecked = viewModel::toggleChecked,
                 onTabSelected = { tab = it },
             )
 
@@ -131,6 +171,8 @@ fun DiningOrderShoppingListPage(
 private fun ShoppingListContent(
     tab: Int,
     result: DiningShoppingListResult,
+    checked: Set<String>,
+    onToggleChecked: (String) -> Unit,
     onTabSelected: (Int) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -148,7 +190,11 @@ private fun ShoppingListContent(
             label = "diningShoppingListTab",
         ) { index ->
             if (index == TAB_INGREDIENTS) {
-                IngredientsView(ingredients = result.ingredients)
+                IngredientsView(
+                    ingredients = result.ingredients,
+                    checked = checked,
+                    onToggle = onToggleChecked,
+                )
             } else {
                 PerRecipeView(perRecipe = result.perRecipe)
             }
@@ -156,9 +202,17 @@ private fun ShoppingListContent(
     }
 }
 
-/** 按食材买菜视图：食材名并集清单（保序，带序号） */
+/**
+ * 按食材买菜视图：食材名并集清单（保序），行首自绘勾选框标记「已买」。
+ * 勾选为本地态（按订单持久化），便于买菜时对照勾掉；仅影响展示与导出文本。
+ */
 @Composable
-private fun IngredientsView(ingredients: List<String>) {
+private fun IngredientsView(
+    ingredients: List<String>,
+    checked: Set<String>,
+    onToggle: (String) -> Unit,
+) {
+    val checkedCount = ingredients.count { it in checked }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -169,7 +223,11 @@ private fun IngredientsView(ingredients: List<String>) {
     ) {
         item(key = "ingredients_header") {
             Text(
-                text = stringResource(R.string.dining_shopping_list_ingredients_section),
+                text = stringResource(
+                    R.string.dining_shopping_list_ingredients_progress_format,
+                    checkedCount,
+                    ingredients.size,
+                ),
                 style = MaterialTheme.typography.titleSmall,
                 color = AppColors.colorScheme.textSecondary,
             )
@@ -183,8 +241,12 @@ private fun IngredientsView(ingredients: List<String>) {
                         color = AppColors.colorScheme.textTertiary,
                     )
                 } else {
-                    ingredients.forEachIndexed { index, name ->
-                        IngredientRow(index = index + 1, name = name)
+                    ingredients.forEach { name ->
+                        IngredientRow(
+                            name = name,
+                            checked = name in checked,
+                            onToggle = { onToggle(name) },
+                        )
                     }
                 }
             }
@@ -192,21 +254,60 @@ private fun IngredientsView(ingredients: List<String>) {
     }
 }
 
-/** 食材行：序号（tnum 对齐）+ 食材名 */
+/** 食材行：自绘勾选框 + 食材名（整行可点切换已买；已买降级为次要文字） */
 @Composable
-private fun IngredientRow(index: Int, name: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = index.toString(),
-            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-            color = AppColors.colorScheme.textTertiary,
-            textAlign = TextAlign.End,
-            modifier = Modifier.width(24.dp),
-        )
+private fun IngredientRow(
+    name: String,
+    checked: Boolean,
+    onToggle: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .pressable(onClick = onToggle, debounce = false)
+            .semantics { contentDescription = name }
+            .padding(vertical = AppDimens.spaceXs),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .then(
+                    if (checked) {
+                        Modifier.background(
+                            color = AppColors.colorScheme.primary,
+                            shape = RoundedCornerShape(AppDimens.radiusSmall),
+                        )
+                    } else {
+                        Modifier
+                            .background(
+                                color = AppColors.colorScheme.surface,
+                                shape = RoundedCornerShape(AppDimens.radiusSmall),
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = AppColors.colorScheme.outline,
+                                shape = RoundedCornerShape(AppDimens.radiusSmall),
+                            )
+                    },
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (checked) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
         Text(
             text = name,
             style = MaterialTheme.typography.bodyLarge,
-            color = AppColors.colorScheme.textPrimary,
+            color = if (checked) AppColors.colorScheme.textTertiary
+            else AppColors.colorScheme.textPrimary,
         )
     }
 }
