@@ -201,7 +201,8 @@ struct DeliveryCreatePage {
     }
     try {
       const res = await fetchDeliverySessionDetail(code)
-      if (res.code === HttpStatusCode.Ok && res.data !== null && res.data.session !== null) {
+      if (res.code === HttpStatusCode.Ok && res.data !== null
+        && res.data.session !== null && res.data.session !== undefined) {
         this.session = res.data.session
         this.updateRemain()
         return

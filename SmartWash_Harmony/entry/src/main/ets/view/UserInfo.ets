@@ -448,7 +448,7 @@ export struct UserInfo {
                   "", $r('app.color.TEXT_SECONDARY'),
                   () => {
                     // 文案对齐安卓 shipping_address_unavailable
-                    promptAction.showToast({ message: resString('shipping_address_unavailable') })
+                    showToastSafety(resString('shipping_address_unavailable'))
                   })
 
                 Divider()

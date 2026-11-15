@@ -597,14 +597,20 @@ struct ApiConfigPage {
             // ---- 选择模式（目录模式默认）----
             this.FormLabel(resString('api_config_mode_label'))
             Row({ space: DesignDimens.SPACE_SM }) {
-              this.EditModeChip(resString('api_config_mode_catalog'), this.editModeCatalog, (): void => {
-                this.switchMode(true)
-              })
-                .layoutWeight(1)
-              this.EditModeChip(resString('api_config_mode_custom'), !this.editModeCatalog, (): void => {
-                this.switchMode(false)
-              })
-                .layoutWeight(1)
+              Column() {
+                this.EditModeChip(resString('api_config_mode_catalog'), this.editModeCatalog, (): void => {
+                  this.switchMode(true)
+                })
+              }
+              .width('100%')
+              .layoutWeight(1)
+              Column() {
+                this.EditModeChip(resString('api_config_mode_custom'), !this.editModeCatalog, (): void => {
+                  this.switchMode(false)
+                })
+              }
+              .width('100%')
+              .layoutWeight(1)
             }
             .width('100%')
             .margin({ top: DesignDimens.SPACE_MD })
@@ -639,7 +645,7 @@ struct ApiConfigPage {
                   subtitles: this.vendorSubtitles(),
                   selectedIndex: this.selectedVendorIndex,
                   placeholder: resString('api_config_catalog_vendor_placeholder'),
-                  enabled: true,
+                  interactive: true,
                   isError: this.fieldError === 'MODEL_CONFIG',
                   onSelect: (index: number): void => {
                     this.selectVendor(index)
@@ -654,7 +660,7 @@ struct ApiConfigPage {
                   placeholder: this.selectedGroup() === null
                     ? resString('api_config_catalog_model_disabled_hint')
                     : resString('api_config_catalog_model_placeholder'),
-                  enabled: this.selectedGroup() !== null,
+                  interactive: this.selectedGroup() !== null,
                   isError: this.fieldError === 'MODEL_CONFIG',
                   onSelect: (index: number): void => {
                     this.selectModel(index)
@@ -972,7 +978,7 @@ struct ApiConfigDropdown {
   @Prop subtitles: Array<string> = []
   @Prop selectedIndex: number = -1
   @Prop placeholder: string = ''
-  @Prop enabled: boolean = true
+  @Prop interactive: boolean = true
   @Prop isError: boolean = false
   @State expanded: boolean = false
   onSelect: (index: number) => void = () => {
@@ -1013,9 +1019,9 @@ struct ApiConfigDropdown {
         width: 1,
         color: this.isError ? $r('app.color.DANGER') : $r('app.color.OUTLINE')
       })
-      .opacity(this.enabled ? 1 : 0.5)
+      .opacity(this.interactive ? 1 : 0.5)
       .onClick(() => {
-        if (this.enabled) {
+        if (this.interactive) {
           this.expanded = !this.expanded
         }
       })
