@@ -5553,6 +5553,18 @@
       "value": "食材清单"
     },
     {
+      "name": "dining_shopping_list_ingredients_progress_format",
+      "value": "食材清单 · 已买 %d/%s"
+    },
+    {
+      "name": "dining_shopping_list_copy",
+      "value": "复制清单"
+    },
+    {
+      "name": "dining_shopping_list_copy_done",
+      "value": "清单已复制"
+    },
+    {
       "name": "dining_shopping_list_empty_ingredients",
       "value": "还没有需要购买的食材"
     },

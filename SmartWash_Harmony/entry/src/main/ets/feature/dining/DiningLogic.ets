@@ -592,6 +592,46 @@ export function toDiningShoppingResult(snapshot: DiningShoppingListSnapshot,
   return { ingredients: snapshot.ingredientNames, perRecipe: perRecipe }
 }
 
+/**
+ * 购买清单文本导出（纯函数）：订单标题 + 「按食材买菜」勾选态（[x] 已买 / [ ] 未买）
+ * + 「按菜备菜」选菜人（含备注）。跨端同口径（对齐 Android DiningShoppingListText.kt），
+ * 供「复制清单」发给家人/自己对着买。
+ */
+export function buildShoppingListText(orderTitle: string, result: DiningShoppingResult,
+  checked: Array<string>): string {
+  const lines: string[] = []
+  lines.push('吃啥 · 购买清单')
+  if (orderTitle.trim().length > 0) {
+    lines.push(`订单：${orderTitle}`)
+  }
+  lines.push('')
+  lines.push('【按食材买菜】')
+  if (result.ingredients.length === 0) {
+    lines.push('（无）')
+  } else {
+    result.ingredients.forEach((name: string): void => {
+      lines.push(`${checked.indexOf(name) >= 0 ? '[x] ' : '[ ] '}${name}`)
+    })
+  }
+  lines.push('')
+  lines.push('【按菜备菜】')
+  if (result.perRecipe.length === 0) {
+    lines.push('（无）')
+  } else {
+    result.perRecipe.forEach((recipe: DiningRecipeShopping): void => {
+      let line = `- ${recipe.recipeName}`
+      if (recipe.selectors.length > 0) {
+        const who = recipe.selectors.map((selector: DiningSelectorShopping): string =>
+          selector.note.length > 0 ? `${selector.label}（${selector.note}）` : selector.label
+        ).join('、')
+        line = `${line}：${who}`
+      }
+      lines.push(line)
+    })
+  }
+  return lines.join('\n')
+}
+
 // ========== 展示辅助 ==========
 
 /**
