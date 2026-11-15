@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -179,12 +178,13 @@ fun ScanPage(
         }
 
         // 顶部返回栏（相机黑底上自绘白字白箭头，不复用 PageHeader 的浅色主题色）
+        // 尺寸链必须先 align 再定型：若保留 fillMaxWidth，Box 会占满整宽，
+        // contentAlignment=Center 把返回箭头居中，压在中置标题「扫一扫」上。
         Box(
             modifier = Modifier
-                .fillMaxWidth()
+                .align(Alignment.TopStart)
                 .statusBarsPadding()
                 .padding(top = 12.dp, start = 12.dp)
-                .align(Alignment.TopStart)
                 .size(48.dp)
                 .pressable(onClick = { navController.navigateUp() }),
             contentAlignment = Alignment.Center,
