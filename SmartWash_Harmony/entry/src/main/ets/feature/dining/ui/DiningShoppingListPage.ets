@@ -4,6 +4,7 @@
 // JSON（结束点单时后端聚合写入，本页不重复聚合）；选菜人标识经参与者脱敏手机号回填，
 // 当前用户标记「我」。FINISHED 订单从列表/点单页进入；快照缺失/未聚合给空态。
 
+import { pasteboard } from '@kit.BasicServicesKit'
 import { RouteNames } from '../../../constant/RouteNames'
 import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
@@ -13,6 +14,7 @@ import {
   DiningRecipeShopping,
   DiningSelectorShopping,
   DiningShoppingResult,
+  buildShoppingListText,
   diningOrderStatusFromCode,
   diningTimeLabel,
   parseDiningShoppingList,
@@ -20,12 +22,13 @@ import {
   toDiningShoppingResult
 } from '../DiningLogic'
 import { DiningText } from '../DiningText'
-import { DiningStatusTag } from './DiningUiCommon'
+import { DiningCheckbox, DiningStatusTag } from './DiningUiCommon'
 import { AppTabBar, EmptyState, SkeletonBlock } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
 import { getNumberParam, pathStack } from '../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
+import { getValue, setValue } from '../../../utils/StorageUtil'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
 /** 日志 TAG */
@@ -51,6 +54,8 @@ struct DiningShoppingListPage {
   @Local isLoading: boolean = true
   @Local isError: boolean = false
   @Local activeTab: number = TAB_INGREDIENTS
+  /** 已买食材（本地态，按订单持久化）：买菜时勾选，重启仍在；仅影响展示与导出文本 */
+  @Local checked: string[] = []
 
   async aboutToAppear(): Promise<void> {
     this.orderId = getNumberParam(RouteNames.DINING_SHOPPING_LIST) ?? 0
@@ -61,6 +66,7 @@ struct DiningShoppingListPage {
       return
     }
     await this.loadDetail()
+    await this.loadChecked()
     this.isLoading = false
   }
 
@@ -89,6 +95,15 @@ struct DiningShoppingListPage {
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .layoutWeight(1)
+
+            Text(DiningText.dining_shopping_list_copy)
+              .fontSize(DesignFontSize.BUTTON_TEXT)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor($r('app.color.TEXT_GREEN'))
+              .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 6, bottom: 6 })
+              .onClick(() => {
+                this.copyList()
+              })
           }
           .width('100%')
           .height(56)
@@ -163,7 +178,7 @@ struct DiningShoppingListPage {
     .hideTitleBar(true)
   }
 
-  /** 按食材买菜视图（食材名并集去重，保序编号列表） */
+  /** 按食材买菜视图（食材名并集去重，保序）：行首自绘勾选框标记「已买」，买菜时对着勾掉 */
   @Builder
   IngredientsView() {
     if (this.result === null || this.result.ingredients.length === 0) {
@@ -174,18 +189,27 @@ struct DiningShoppingListPage {
       .layoutWeight(1)
     } else {
       List({ space: 0 }) {
-        ForEach(this.result.ingredients, (ingredient: string, index: number) => {
+        ListItem() {
+          Text(DiningText.shoppingCheckedProgress(this.checkedCountOf(), this.result.ingredients.length))
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontColor($r('app.color.TEXT_SECONDARY'))
+            .width('100%')
+            .padding({
+              left: DesignDimens.PAGE_PADDING,
+              right: DesignDimens.PAGE_PADDING,
+              top: DesignDimens.SPACE_SM,
+              bottom: DesignDimens.SPACE_XS
+            })
+        }
+        ForEach(this.result.ingredients, (ingredient: string) => {
           ListItem() {
             Row({ space: DesignDimens.SPACE_MD }) {
-              Text(`${index + 1}`)
-                .fontSize(DesignFontSize.BODY_SMALL)
-                .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor($r('app.color.PRIMARY'))
-                .width(24)
-                .textAlign(TextAlign.Center)
+              DiningCheckbox({ checked: this.checked.indexOf(ingredient) >= 0, boxSize: 22 })
               Text(ingredient)
                 .fontSize(DesignFontSize.BODY)
-                .fontColor($r('app.color.TEXT_PRIMARY'))
+                .fontColor(this.checked.indexOf(ingredient) >= 0
+                  ? $r('app.color.TEXT_TERTIARY')
+                  : $r('app.color.TEXT_PRIMARY'))
                 .layoutWeight(1)
             }
             .width('100%')
@@ -195,6 +219,9 @@ struct DiningShoppingListPage {
               right: DesignDimens.PAGE_PADDING,
               top: DesignDimens.SPACE_MD,
               bottom: DesignDimens.SPACE_MD
+            })
+            .onClick(() => {
+              this.toggleChecked(ingredient)
             })
           }
         }, (ingredient: string) => `ing_${ingredient}`)
@@ -318,6 +345,81 @@ struct DiningShoppingListPage {
       logger.error(TAG, '购买清单加载异常', err instanceof Error ? err.message : '')
       this.isError = true
       showToastSafety('', DiningText.dining_shopping_list_load_failed)
+    }
+  }
+
+  /** 已买食材数（与当前清单交集，避免陈旧项撑大进度） */
+  private checkedCountOf(): number {
+    const result = this.result
+    if (result === null) {
+      return 0
+    }
+    let count = 0
+    result.ingredients.forEach((ingredient: string): void => {
+      if (this.checked.indexOf(ingredient) >= 0) {
+        count++
+      }
+    })
+    return count
+  }
+
+  /** 已买态存储键（按订单隔离） */
+  private checkedKey(): string {
+    return `dining_shopping_checked_${this.orderId}`
+  }
+
+  /** 读取本单已买食材（换行分隔；缺失/读取失败降级空集，不崩溃） */
+  private async loadChecked(): Promise<void> {
+    try {
+      const raw = await getValue(this.checkedKey(), '')
+      if (typeof raw === 'string' && raw.length > 0) {
+        this.checked = raw.split('\n')
+      }
+    } catch (err) {
+      logger.debug(TAG, '已买态读取失败，降级空集')
+    }
+  }
+
+  /** 切换「已买」并落盘（写失败仅不落盘，不阻断勾选交互） */
+  private async toggleChecked(ingredient: string): Promise<void> {
+    const next: string[] = []
+    let found = false
+    this.checked.forEach((item: string): void => {
+      if (item === ingredient) {
+        found = true
+      } else {
+        next.push(item)
+      }
+    })
+    if (!found) {
+      next.push(ingredient)
+    }
+    this.checked = next
+    try {
+      await setValue(this.checkedKey(), next.join('\n'))
+    } catch (err) {
+      logger.debug(TAG, '已买态保存失败')
+    }
+  }
+
+  /** 复制清单：勾选态 + 按菜视图拼文本，发给家人/自己对着买 */
+  private copyList(): void {
+    const result = this.result
+    if (result === null) {
+      return
+    }
+    const detail = this.detail
+    const title = detail !== null ? detail.title : ''
+    const text = buildShoppingListText(title, result, this.checked)
+    try {
+      const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
+      pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
+        showToastSafety(DiningText.dining_shopping_list_copy_done)
+      }).catch(() => {
+        showToastSafety(DiningText.dining_copy_failed)
+      })
+    } catch (err) {
+      showToastSafety(DiningText.dining_copy_failed)
     }
   }
 }

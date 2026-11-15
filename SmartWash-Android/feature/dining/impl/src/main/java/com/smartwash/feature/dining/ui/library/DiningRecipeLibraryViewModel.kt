@@ -14,13 +14,20 @@ import com.smartwash.feature.dining.logic.toRecipeItem
 import com.smartwash.feature.dining.repository.DiningRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 /** 菜谱库分页大小（后端 BaseSearchFrom 默认 10、上限 100；菜谱卡片大图取 12 平衡首屏与流量） */
 private const val PAGE_SIZE = 12
+
+/** 关键词搜索防抖时长（对齐 pagingFlow 先例：输入停顿后再打请求） */
+private const val KEYWORD_DEBOUNCE_MS = 300L
 
 /**
  * 菜谱库页 ViewModel。
@@ -56,7 +63,17 @@ class DiningRecipeLibraryViewModel @Inject constructor(
     private val _selectedCategoryId = MutableStateFlow<Long?>(null)
     val selectedCategoryId = _selectedCategoryId.asStateFlow()
 
+    /** 关键词（菜名模糊，空串=全库；与分类筛选叠加） */
+    private val _keyword = MutableStateFlow("")
+    val keyword = _keyword.asStateFlow()
+
     private var currentPage = 1
+
+    /** 首页拉取串行锁：首载/切分类/关键词搜索共用，防并发响应交错覆盖 */
+    private val fetchMutex = Mutex()
+
+    /** 关键词搜索防抖任务（新输入取消上一次） */
+    private var keywordJob: Job? = null
 
     /** 首载/重试/下拉刷新（防重：加载中直接忽略；分类条与列表并行独立拉取） */
     fun load() {
@@ -64,11 +81,7 @@ class DiningRecipeLibraryViewModel @Inject constructor(
         viewModelScope.launch {
             _listState.value = RequestState.Loading
             try {
-                val page = diningRepository.getRecipes(1, PAGE_SIZE, _selectedCategoryId.value)
-                currentPage = 1
-                _recipes.value = page.records.map { it.toRecipeItem() }
-                _hasMore.value = _recipes.value.size < page.total
-                _listState.value = RequestState.Success
+                fetchFirstPage()
             } catch (e: CancellationException) {
                 // 取消不作为网络错误，直接上抛
                 throw e
@@ -78,6 +91,35 @@ class DiningRecipeLibraryViewModel @Inject constructor(
             }
         }
         loadCategories()
+    }
+
+    /** 关键词输入：防抖 300ms 重载首页（空串=全库；分类叠加） */
+    fun onKeywordChange(value: String) {
+        _keyword.value = value
+        keywordJob?.cancel()
+        keywordJob = viewModelScope.launch {
+            delay(KEYWORD_DEBOUNCE_MS)
+            _listState.value = RequestState.Loading
+            try {
+                fetchFirstPage()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: NetworkException) {
+                AppLogger.error(TAG, "onKeywordChange: ${e.message}", e)
+                _listState.value = RequestState.Error(e.resId, e.message)
+            }
+        }
+    }
+
+    /** 首页拉取（分类 + 关键词 + 分页基准；互斥串行，成功后才推进页码） */
+    private suspend fun fetchFirstPage() = fetchMutex.withLock {
+        val page = diningRepository.getRecipes(
+            1, PAGE_SIZE, _selectedCategoryId.value, _keyword.value.trim(),
+        )
+        currentPage = 1
+        _recipes.value = page.records.map { it.toRecipeItem() }
+        _hasMore.value = _recipes.value.size < page.total
+        _listState.value = RequestState.Success
     }
 
     /** 分类条独立拉取（失败仅留痕，筛选条隐藏，不拖垮列表主流程） */
@@ -102,11 +144,7 @@ class DiningRecipeLibraryViewModel @Inject constructor(
         viewModelScope.launch {
             _listState.value = RequestState.Loading
             try {
-                val page = diningRepository.getRecipes(1, PAGE_SIZE, categoryId)
-                currentPage = 1
-                _recipes.value = page.records.map { it.toRecipeItem() }
-                _hasMore.value = _recipes.value.size < page.total
-                _listState.value = RequestState.Success
+                fetchFirstPage()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
@@ -123,7 +161,9 @@ class DiningRecipeLibraryViewModel @Inject constructor(
             _loadMoreState.value = RequestState.Loading
             try {
                 val nextPage = currentPage + 1
-                val page = diningRepository.getRecipes(nextPage, PAGE_SIZE, _selectedCategoryId.value)
+                val page = diningRepository.getRecipes(
+                    nextPage, PAGE_SIZE, _selectedCategoryId.value, _keyword.value.trim(),
+                )
                 currentPage = nextPage
                 _recipes.value = _recipes.value + page.records.map { it.toRecipeItem() }
                 _hasMore.value = _recipes.value.size < page.total

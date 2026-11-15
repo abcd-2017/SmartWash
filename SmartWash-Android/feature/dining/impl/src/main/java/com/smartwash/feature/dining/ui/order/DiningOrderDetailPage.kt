@@ -225,6 +225,9 @@ fun DiningOrderDetailPage(
                     scope.launch { listState.scrollToItem(link.scrollTargetIndex(categoryId)) }
                 },
                 onFinish = { showFinishConfirm = true },
+                onViewRecipe = { recipeId ->
+                    navController.navigate(DiningRoute.RecipeDetail(recipeId))
+                },
                 onViewShoppingList = {
                     navController.navigate(DiningRoute.ShoppingList(orderId = pageDetail.id))
                 },
@@ -295,6 +298,7 @@ private fun OrderDetailContent(
     onNoteClick: (DiningMenuItem) -> Unit,
     onCategoryClick: (Long?) -> Unit,
     onFinish: () -> Unit,
+    onViewRecipe: (Long) -> Unit,
     onViewShoppingList: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -315,6 +319,7 @@ private fun OrderDetailContent(
                 readOnly = readOnly,
                 onToggle = onToggle,
                 onNoteTarget = onNoteClick,
+                onViewRecipe = onViewRecipe,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -438,6 +443,7 @@ private fun DishList(
     readOnly: Boolean,
     onToggle: (Long) -> Unit,
     onNoteTarget: (DiningMenuItem) -> Unit,
+    onViewRecipe: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (sections.isEmpty()) {
@@ -477,6 +483,7 @@ private fun DishList(
                     readOnly = readOnly,
                     onToggle = { onToggle(dish.recipeId) },
                     onNote = { onNoteTarget(dish) },
+                    onViewRecipe = { onViewRecipe(dish.recipeId) },
                 )
             }
         }
@@ -497,6 +504,7 @@ private fun DishRow(
     readOnly: Boolean,
     onToggle: () -> Unit,
     onNote: () -> Unit,
+    onViewRecipe: () -> Unit,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -570,6 +578,20 @@ private fun DishRow(
                     ),
             )
             Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+        }
+        // 做法入口（独立热区，跳菜谱详情看做法步骤；已结束只读态也可看）
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(AppDimens.radiusFull))
+                .background(AppColors.colorScheme.surfaceVariant)
+                .pressable(onClick = onViewRecipe, debounce = false)
+                .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXxs),
+        ) {
+            Text(
+                text = stringResource(R.string.dining_order_detail_recipe_action),
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.colorScheme.textSecondary,
+            )
         }
         // 备注入口（独立热区，点击不触发整行勾选）；只读态隐藏
         if (!readOnly) {

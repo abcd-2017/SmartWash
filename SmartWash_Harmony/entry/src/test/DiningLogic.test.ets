@@ -11,8 +11,11 @@ import { describe, it, expect } from '@ohos/hypium';
 import {
   DiningJoinEntryDecision,
   DiningJoinUrlKind,
+  DiningRecipeShopping,
   DiningScanKind,
+  DiningShoppingResult,
   buildDiningJoinUrl,
+  buildShoppingListText,
   decideDiningJoinEntry,
   maskDiningPhone,
   normalizeDiningScan,
@@ -159,6 +162,44 @@ export default function diningLogicTest() {
       expect(parseDiningShoppingList(null).ingredientNames.length).assertEqual(0)
       expect(parseDiningShoppingList('').perRecipe.length).assertEqual(0)
       expect(parseDiningShoppingList('not-json{{{').ingredientNames.length).assertEqual(0)
+    })
+
+    // ---------- buildShoppingListText ----------
+
+    it('shoppingListText-标题勾选态与按菜选菜人', 0, () => {
+      const result: DiningShoppingResult = {
+        ingredients: ['西红柿', '鸡蛋', '葱'],
+        perRecipe: [
+          {
+            recipeName: '番茄炒蛋',
+            selectors: [
+              { label: '139****0001', note: '不要辣', isMe: true },
+              { label: '138****0002', note: '', isMe: false }
+            ]
+          },
+          {
+            recipeName: '凉拌西红柿',
+            selectors: [{ label: '139****0001', note: '少糖', isMe: true }]
+          }
+        ]
+      }
+      const text = buildShoppingListText('周五晚火锅', result, ['鸡蛋'])
+      const expected = '吃啥 · 购买清单\n订单：周五晚火锅\n\n【按食材买菜】\n[ ] 西红柿\n[x] 鸡蛋\n[ ] 葱\n\n' +
+        '【按菜备菜】\n- 番茄炒蛋：139****0001（不要辣）、138****0002\n- 凉拌西红柿：139****0001（少糖）'
+      expect(text).assertEqual(expected)
+    })
+    it('shoppingListText-空标题省略订单行与空清单降级', 0, () => {
+      const empty: DiningShoppingResult = { ingredients: [], perRecipe: [] }
+      const text = buildShoppingListText('  ', empty, [])
+      expect(text.indexOf('订单：')).assertEqual(-1)
+      expect(text.indexOf('【按食材买菜】\n（无）')).assertLarger(0)
+      expect(text.indexOf('【按菜备菜】\n（无）')).assertLarger(0)
+    })
+    it('shoppingListText-无选菜人的菜只出菜名', 0, () => {
+      const recipe: DiningRecipeShopping = { recipeName: '白米饭', selectors: [] }
+      const text = buildShoppingListText('家宴', { ingredients: [], perRecipe: [recipe] }, [])
+      expect(text.indexOf('- 白米饭')).assertLarger(0)
+      expect(text.indexOf('白米饭：')).assertEqual(-1)
     })
   })
 }

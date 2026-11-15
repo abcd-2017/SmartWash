@@ -4,7 +4,7 @@
 
 - **Gradle 坐标**: `:feature:dining:impl`
 - **包名**: `com.smartwash.feature.dining`（注意：实际包路径短于 Gradle 路径，与模块路径解耦）
-- **职责**: 吃啥域实现——订单六页（07 号票发起链路：订单列表[域首页] → 创建订单 → 分享视图；09 号票点单页；11 号票购买清单结果页；12 号票站内信深链加入入口）+ 菜谱三页（04 号票：菜谱库/详情/新增，入口在订单列表页右上角）+ 共享购物车同步（10 号票：SyncChannel 抽象 + 轮询 + 版本乐观并发）+ 结束点单（11 号票：finish 接线 + FINISHED 只读态）+ 历史菜单复用（13 号票：列表卡「再来一单」→ 创建页复用模式带 fromOrderId）；对外经 `:feature:dining:api` 的 `DiningRoute` + `DiningApi` 暴露（di `@Binds`）。
+- **职责**: 吃啥域实现——订单六页（07 号票发起链路：订单列表[域首页] → 创建订单 → 分享视图；09 号票点单页；11 号票购买清单结果页；12 号票站内信深链加入入口）+ 菜谱三页（04 号票：菜谱库/详情/新增，入口在订单列表页右上角）+ 共享购物车同步（10 号票：SyncChannel 抽象 + 轮询 + 版本乐观并发）+ 结束点单（11 号票：finish 接线 + FINISHED 只读态）+ 历史菜单复用（13 号票：列表卡「再来一单」→ 创建页复用模式带 fromOrderId）+ 买菜清单可勾选已买/复制导出（本地态）+ 点单页「做法」入口（跳菜谱详情）；对外经 `:feature:dining:api` 的 `DiningRoute` + `DiningApi` 暴露（di `@Binds`）。
 
 ## 包结构
 
@@ -63,6 +63,8 @@ src/main/java/com/smartwash/feature/dining/
 - **防重**: 列表加载中忽略重复 load；提交/封面上传 Loading 期间忽略；菜品行切换勾选 `debounce = false`（连续快触）。
 - **输入控件**: `OutlinedTextField` + `tokenTextFieldColors()` 令牌色（subscription/toolbox 先例），正文 16sp（规范 §3.7）。
 - **共享购物车同步（10 号票）**: `DiningOrderSyncChannel` 为传输层可替换抽象（业务只依赖它），首实现 `PollingDiningOrderSyncChannel` 在页面可见时约 3s 带 knownVersion 轮询、unchanged 轻量；VM 经 `DiningSyncLifecycle`（纯状态机）启停收集（页面不可见即停，防泄露）。写操作携带已知 version，`DiningCartSyncCoordinator` 以「服务端真相 + 本地意图」差分光重放：409 → 拉取最新（含他人变更）→ 在新基准重放本地意图（他人变更永不覆盖）；失败经全量刷新按最新真相回滚本地意图并提示。`DiningRepository` 把写接口信封 409 转译为 `DiningVersionConflictException`。
+- **买菜清单交互（2026-11-15）**: 按食材视图行首自绘勾选框标记「已买」，本地按订单持久化（DataStore，键 `dining_shopping_checked_{orderId}`，JSON 数组），买菜时对着勾掉；顶部「复制清单」经 `buildShoppingListText` 纯函数拼文本（勾选态 + 按菜选菜人）写剪贴板。已买仅本地态，不回写服务端。
+- **做法入口（2026-11-15）**: 点单页菜品行新增「做法」独立热区 → `DiningRoute.RecipeDetail(recipeId)`；只读态（已结束）也可看。
 - **未决视觉区分**: 本地未决操作期间，底部栏显示「同步中…」，菜品行尾加静态橙色小点（非动效）；取舍：同步状态机以「本地意图」为单一事实，未决是全局态，故用轻量全局提示 + 行级小点而非逐行骨架/动效，避免 3s 轮询窗口内闪烁。
 - **结束点单（11 号票）**: 发起者点击「结束点单」→ 确认弹窗 → `finishOrder` → 成功后 `popUpTo(OrderDetail) { inclusive = true }` 进购买清单结果页（不可逆动作用二次确认）。FINISHED 详情（轮询/快照）到达后点单页进入只读态：`readOnly = !isOngoing` 隐藏整行勾选/备注/结束/分享入口，底部栏改为「查看购买清单」；购买清单快照经 `parseDiningShoppingList` + `toShoppingListResult` 纯函数映射双视图（结果页不重复聚合）。
 - **站内信深链（12 号票）**: 后端 DINING_JOIN/DINING_FINISH 的 `deep_link` 统一为 `smartwash://dining/order/{orderId}?t={joinToken}`（携带加入凭证，与 `DiningJoinUrlBuilder` 的 token 同源）。端上 `DiningDeepLinkModule` 在 host "dining" 内解析：`order/{orderId}` + query `t` → `DiningRoute.OrderJoin`（加入入口页）；无路径/非法 orderId → 域首页订单列表。加入入口页经 brief 判重（`DiningJoinEntry` 纯函数）：成员直达详情，非成员展示标题预览 + 「加入」→ join 后进详情；未登录由壳层深链守卫落登录页。改深链串必须同步后端 `buildOrderDeepLink`、`DiningDeepLinkModuleTest` 与本节。
@@ -70,7 +72,7 @@ src/main/java/com/smartwash/feature/dining/
 ## 已知坑
 
 - **深链 host**: `dining` 未进壳层 `PUBLIC_DEEP_LINK_HOSTS`，未登录由壳层拦截落登录页（对齐受保护 host 语义）；站内信深链落 `OrderJoin`（见内部约定「站内信深链」）。
-- **joinToken 可见性**: 创建响应必得；发起者的详情全量响应也回传（09 号票修补），参与者响应与轻量响应不回传——参与者从列表进分享视图二维码区降级提示；重置凭证入口为后续票。
+- **joinToken 可见性**: 创建响应必得；发起者的详情全量响应也回传（09 号票修补），参与者响应与轻量响应不回传——参与者从列表进分享视图二维码区降级提示；重置凭证入口已在分享页接线（发起者限定，二次确认）。
 - **写失败回滚必须全量刷新**: 失败写不前进 version，带 knownVersion 拉取会返回 unchanged 而拿不到最新选菜记录；故写循环的 `refreshFromServer` 固定 knownVersion=null（写频率低，全量可接受）。
 - **分享视图二维码 host 的环境语义**: demo BASE_URL 为明文 http，二维码内容同为 http（usesCleartextTraffic 现状一致）；生产注入 https BASE_URL 后同源变 https。
 - **创建页全量拉取**: 菜谱分页循环取满（page 递增至 total，每页 100，防御上限 100 页）；分类目录失败随主流程进错误态（分类名缺失会让分组残缺）。

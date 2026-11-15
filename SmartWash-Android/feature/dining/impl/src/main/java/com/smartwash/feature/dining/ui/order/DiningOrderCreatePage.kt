@@ -24,6 +24,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -33,7 +35,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -92,6 +96,9 @@ fun DiningOrderCreatePage(
     val sourceTitle by viewModel.sourceTitle.collectAsState()
     val sourceMenuCount by viewModel.sourceMenuCount.collectAsState()
 
+    // 菜品搜索关键词（本地过滤：本页已全量拉取菜谱，输入即筛，无需再请求）
+    var keyword by remember { mutableStateOf("") }
+
     // 首载（栈上重组不重放；失败重试显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
 
@@ -102,10 +109,17 @@ fun DiningOrderCreatePage(
         else -> CreateContentState.Content
     }
 
-    // 分组派生（组合期纯计算）：按分类目录排序分组，未分类/孤儿分类归「未分类」组收尾
+    // 分组派生（组合期纯计算）：按分类目录排序分组，未分类/孤儿分类归「未分类」组收尾；
+    // 关键词非空时先本地过滤（复用模式菜单只读，不参与搜索）
     val uncategorizedLabel = stringResource(R.string.dining_order_create_menu_uncategorized)
-    val groups = remember(categories, recipes, uncategorizedLabel) {
-        groupRecipesByCategory(recipes, categories, uncategorizedLabel)
+    val visibleRecipes = if (keyword.isBlank() || viewModel.isReuseMode) {
+        recipes
+    } else {
+        val trimmed = keyword.trim()
+        recipes.filter { it.safeName.contains(trimmed, ignoreCase = true) }
+    }
+    val groups = remember(categories, visibleRecipes, uncategorizedLabel) {
+        groupRecipesByCategory(visibleRecipes, categories, uncategorizedLabel)
     }
 
     // 提交成功：进分享视图（携带创建响应的 orderId + joinToken——token 的唯一来源）。
@@ -216,6 +230,21 @@ fun DiningOrderCreatePage(
                             )
                         }
 
+                        // 菜品搜索（本地过滤；复用模式菜单只读，不给搜索）
+                        if (!viewModel.isReuseMode) {
+                            DishSearchField(
+                                value = keyword,
+                                onValueChange = { keyword = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = AppDimens.pagePadding,
+                                        end = AppDimens.pagePadding,
+                                        top = AppDimens.spaceSm,
+                                    ),
+                            )
+                        }
+
                         // 复用模式提示（13 号票）：菜单按源单整份复制、只读回显，不可修改
                         if (viewModel.isReuseMode) {
                             Text(
@@ -266,7 +295,15 @@ fun DiningOrderCreatePage(
                         if (groups.isEmpty()) {
                             EmptyState(
                                 icon = Icons.Default.Restaurant,
-                                message = stringResource(R.string.dining_recipe_list_empty),
+                                // 搜索无果与全库空区分：前者引导换词，后者引导新增
+                                message = if (keyword.isNotBlank()) {
+                                    stringResource(
+                                        R.string.dining_recipe_list_empty_search,
+                                        keyword.trim(),
+                                    )
+                                } else {
+                                    stringResource(R.string.dining_recipe_list_empty)
+                                },
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .padding(horizontal = AppDimens.pagePadding),
@@ -457,3 +494,47 @@ private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedContainerColor = AppColors.colorScheme.surfaceVariant,
     unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
 )
+
+/** 菜品搜索输入框（§3.7：前缀 16dp 搜索图标 .5 透明度 + 48dp 自绘清空热区） */
+@Composable
+private fun DishSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = { Text(stringResource(R.string.dining_order_create_search_hint)) },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Rounded.Search,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = AppColors.colorScheme.textSecondary.copy(alpha = 0.5f),
+            )
+        },
+        trailingIcon = {
+            if (value.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .pressable(onClick = { onValueChange("") }, debounce = false),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Clear,
+                        contentDescription = stringResource(R.string.dining_action_clear),
+                        modifier = Modifier.size(20.dp),
+                        tint = AppColors.colorScheme.textSecondary,
+                    )
+                }
+            }
+        },
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyLarge,
+        shape = RoundedCornerShape(AppDimens.radiusMd),
+        colors = tokenTextFieldColors(),
+        modifier = modifier,
+    )
+}

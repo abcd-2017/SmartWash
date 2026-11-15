@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -24,8 +25,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -83,6 +89,7 @@ fun DiningRecipeLibraryPage(
     val loadMoreState by viewModel.loadMoreState.collectAsState()
     val chips by viewModel.chips.collectAsState()
     val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
+    val keyword by viewModel.keyword.collectAsState()
 
     // 首载（返回本页经 LaunchedEffect(Unit) 不重放——栈上重组，列表保留；
     // 下拉刷新/切分类由显式动作触发）
@@ -93,6 +100,15 @@ fun DiningRecipeLibraryPage(
         recipes.isEmpty() && listState is RequestState.Idle -> LibraryContentState.Skeleton
         recipes.isEmpty() && listState is RequestState.Error -> LibraryContentState.Error
         else -> LibraryContentState.Content
+    }
+
+    // 空态文案：搜索无果 / 分类无果 / 全库空（引导新增）
+    val emptyMessage = when {
+        keyword.isNotBlank() -> stringResource(
+            R.string.dining_recipe_list_empty_search, keyword.trim(),
+        )
+        selectedCategoryId != null -> stringResource(R.string.dining_recipe_list_empty_filtered)
+        else -> stringResource(R.string.dining_recipe_list_empty)
     }
 
     Column(
@@ -110,6 +126,15 @@ fun DiningRecipeLibraryPage(
                     variant = AppButtonVariant.TEXT,
                 )
             },
+        )
+
+        // 关键词搜索（菜名模糊，与分类筛选叠加；防抖 300ms 重载）
+        RecipeSearchField(
+            value = keyword,
+            onValueChange = viewModel::onKeywordChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
         )
 
         // 分类筛选条（加载失败仅留痕隐藏；chips 为空不占位）
@@ -152,7 +177,7 @@ fun DiningRecipeLibraryPage(
                     hasMore = hasMore,
                     loadMoreState = loadMoreState,
                     isRefreshing = listState is RequestState.Loading,
-                    filtered = selectedCategoryId != null,
+                    emptyMessage = emptyMessage,
                     onRefresh = { viewModel.load() },
                     onLoadMore = { viewModel.loadMore() },
                     onRecipeClick = { recipe ->
@@ -211,7 +236,7 @@ private fun RecipeList(
     hasMore: Boolean,
     loadMoreState: RequestState,
     isRefreshing: Boolean,
-    filtered: Boolean,
+    emptyMessage: String,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
     onRecipeClick: (DiningRecipeItem) -> Unit,
@@ -220,12 +245,8 @@ private fun RecipeList(
         EmptyState(
             // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位
             icon = Icons.Default.Restaurant,
-            // 引导式文案：全库空引导去新增；分类筛选空引导换分类
-            message = if (filtered) {
-                stringResource(R.string.dining_recipe_list_empty_filtered)
-            } else {
-                stringResource(R.string.dining_recipe_list_empty)
-            },
+            // 引导式文案由页面按「搜索无果 / 分类无果 / 全库空」就近选择
+            message = emptyMessage,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = AppDimens.pagePadding),
@@ -349,3 +370,59 @@ private fun RecipeCard(
         }
     }
 }
+
+/**
+ * 菜谱搜索输入框（§3.7 输入控件标准）：前缀 16dp 搜索图标（透明度 .5），
+ * 有内容时尾缀 48dp 自绘清空热区（禁 M3 IconButton 涟漪），正文 16sp。
+ */
+@Composable
+private fun RecipeSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = { Text(stringResource(R.string.dining_recipe_search_hint)) },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Rounded.Search,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = AppColors.colorScheme.textSecondary.copy(alpha = 0.5f),
+            )
+        },
+        trailingIcon = {
+            if (value.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .pressable(onClick = { onValueChange("") }, debounce = false),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Clear,
+                        contentDescription = stringResource(R.string.dining_action_clear),
+                        modifier = Modifier.size(20.dp),
+                        tint = AppColors.colorScheme.textSecondary,
+                    )
+                }
+            }
+        },
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyLarge,
+        shape = RoundedCornerShape(AppDimens.radiusMd),
+        colors = tokenTextFieldColors(),
+        modifier = modifier,
+    )
+}
+
+/** 输入框令牌色（与新增菜谱/创建点单页同款：r12 + outline 描边 + surfaceVariant 底） */
+@Composable
+private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = AppColors.colorScheme.primary,
+    unfocusedBorderColor = AppColors.colorScheme.outline,
+    focusedContainerColor = AppColors.colorScheme.surfaceVariant,
+    unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
+)

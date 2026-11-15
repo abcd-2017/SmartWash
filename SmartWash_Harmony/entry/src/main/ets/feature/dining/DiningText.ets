@@ -92,6 +92,7 @@ export class DiningText {
   static get dining_order_detail_uncategorized(): string { return resString('dining_order_detail_uncategorized') }
   static get dining_order_detail_empty_menu(): string { return resString('dining_order_detail_empty_menu') }
   static get dining_order_detail_note_action(): string { return resString('dining_order_detail_note_action') }
+  static get dining_order_detail_recipe_action(): string { return resString('dining_order_detail_recipe_action') }
   static get dining_order_detail_note_title(): string { return resString('dining_order_detail_note_title') }
   static get dining_order_detail_note_save(): string { return resString('dining_order_detail_note_save') }
   static get dining_order_detail_note_hint(): string { return resString('dining_order_detail_note_hint') }
@@ -125,6 +126,14 @@ export class DiningText {
   static get dining_shopping_list_tab_ingredients(): string { return resString('dining_shopping_list_tab_ingredients') }
   static get dining_shopping_list_tab_per_recipe(): string { return resString('dining_shopping_list_tab_per_recipe') }
   static get dining_shopping_list_ingredients_section(): string { return resString('dining_shopping_list_ingredients_section') }
+  static get dining_shopping_list_copy(): string { return resString('dining_shopping_list_copy') }
+  static get dining_shopping_list_copy_done(): string { return resString('dining_shopping_list_copy_done') }
+
+  /** 食材清单 · 已买 %d/%s */
+  static shoppingCheckedProgress(checked: number, total: number): string {
+    const template = resString('dining_shopping_list_ingredients_progress_format')
+    return template.replace('%d', `${checked}`).replace('%s', `${total}`)
+  }
   static get dining_shopping_list_empty_ingredients(): string { return resString('dining_shopping_list_empty_ingredients') }
   static get dining_shopping_list_empty_per_recipe(): string { return resString('dining_shopping_list_empty_per_recipe') }
   static get dining_shopping_list_load_failed(): string { return resString('dining_shopping_list_load_failed') }
