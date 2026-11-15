@@ -180,7 +180,10 @@ jobs:
           SMART_WASH_KEY_PASSWORD: ${{ secrets.SMART_WASH_KEY_PASSWORD }}
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%03d%03d", $1, $2, $3}')
+          # 算术化而非字符串拼接：%03d 拼出的是「0001009」这类带前导零的字符串，
+          # 注入 version.json 会变成非法 JSON 数字（JSON 不允许前导零），
+          # 使发版在 python3 -m json.tool 校验处失败、deploy 被 skip。
+          VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{print $1*1000000 + $2*1000 + $3}')
           # ABI 过滤：发版仅打 arm64-v8a（ML Kit 扫码引擎不再打入 x86/x86_64/armeabi-v7a 副本，省 ~15MB）。
           # 本地开发不带 -PabiFilters，保留全 ABI 供模拟器调试。
           # flavor 名首字母大写拼进 Gradle 任务名：full → assembleFullRelease。
@@ -372,7 +375,10 @@ jobs:
       - name: Generate version.json
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%03d%03d", $1, $2, $3}')
+          # 算术化而非字符串拼接：%03d 拼出的是「0001009」这类带前导零的字符串，
+          # 注入 version.json 会变成非法 JSON 数字（JSON 不允许前导零），
+          # 使发版在 python3 -m json.tool 校验处失败、deploy 被 skip。
+          VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{print $1*1000000 + $2*1000 + $3}')
 
           FULL_APK_NAME="${{ needs.android.outputs.full_apk_name }}"
           LITE_APK_NAME="${{ needs.android.outputs.lite_apk_name }}"
@@ -388,7 +394,7 @@ jobs:
             "versionCode": ${VERSION_CODE},
             "versionName": "${VERSION}",
             "forceUpdate": false,
-            "minVersionCode": 1000000,
+            "minVersionCode": 0,
             "changelog": "详见 GitHub Release",
             "releaseDate": "$(date +%Y-%m-%d)",
             "fileName": "${FULL_APK_NAME}",
