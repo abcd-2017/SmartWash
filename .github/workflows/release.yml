@@ -128,9 +128,26 @@ jobs:
     permissions:
       contents: read
 
+    # 两个 flavor 各自产出产物信息，供 release job 生成 version.json 与上传 MinIO。
+    # 不把带 tag 的 apk 文件名放进 matrix（会被当成表达式求值），文件名在步骤内按 flavor 拼装。
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - flavor: full
+            channel: full
+          - flavor: lite
+            channel: lite
+
+    # matrix 每个分支把自己的产物信息写进 <flavor>_xxx 键（互不覆盖），
+    # release job 经 needs.android.outputs 读取后合成 version.json。
     outputs:
-      sha256: ${{ steps.calc-sha256.outputs.sha256 }}
-      apk_name: ${{ steps.rename.outputs.apk_name }}
+      full_apk_name: ${{ steps.meta.outputs.full_apk_name }}
+      full_sha256: ${{ steps.meta.outputs.full_sha256 }}
+      full_file_size: ${{ steps.meta.outputs.full_file_size }}
+      lite_apk_name: ${{ steps.meta.outputs.lite_apk_name }}
+      lite_sha256: ${{ steps.meta.outputs.lite_sha256 }}
+      lite_file_size: ${{ steps.meta.outputs.lite_file_size }}
 
     defaults:
       run:
@@ -154,7 +171,7 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.SMART_WASH_STORE_BASE64 }}" | base64 -d > /tmp/smartwash.jks
 
-      - name: Build release APK
+      - name: Build release APK (${{ matrix.flavor }})
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
           SMART_WASH_STORE_FILE: /tmp/smartwash.jks
@@ -166,72 +183,107 @@ jobs:
           VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%03d%03d", $1, $2, $3}')
           # ABI 过滤：发版仅打 arm64-v8a（ML Kit 扫码引擎不再打入 x86/x86_64/armeabi-v7a 副本，省 ~15MB）。
           # 本地开发不带 -PabiFilters，保留全 ABI 供模拟器调试。
-          ./gradlew assembleRelease \
+          # flavor 名首字母大写拼进 Gradle 任务名：full → assembleFullRelease。
+          # 不用 capitalize() 是为了避开 Python 对后续字母的小写化（当前 flavor 均为小写，等价）。
+          FLAVOR="${{ matrix.flavor }}"
+          FLAVOR_TASK="$(printf '%s' "$FLAVOR" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')"
+          echo "Building assemble${FLAVOR_TASK}Release"
+          ./gradlew "assemble${FLAVOR_TASK}Release" \
             -PversionCode=$VERSION_CODE \
             -PversionName=$VERSION \
             -PbaseUrl=$BASE_URL \
             -PabiFilters=arm64-v8a
 
-      - name: Rename APK
+      - name: Rename APK (${{ matrix.flavor }})
         id: rename
         run: |
           VERSION=${GITHUB_REF_NAME#v}
+          FLAVOR="${{ matrix.flavor }}"
 
-          echo "Looking for built APK..."
-          find app/build/outputs/apk -type f -name "*.apk" -print
+          # flavor 构建产物目录：app/build/outputs/apk/<flavor>/release/
+          APK_DIR="app/build/outputs/apk/${FLAVOR}/release"
+          echo "Looking for built APK in ${APK_DIR}..."
+          find "$APK_DIR" -maxdepth 1 -type f -name "*.apk" -print
 
           APK_FILES=()
           while IFS= read -r -d '' file; do
             APK_FILES+=("$file")
           done < <(
-            find app/build/outputs/apk \
-              -type f \
-              -name "*.apk" \
-              -print0
+            find "$APK_DIR" -maxdepth 1 -type f -name "*.apk" -print0
           )
 
           if [ "${#APK_FILES[@]}" -eq 0 ]; then
-            echo "ERROR: No APK file found."
+            echo "ERROR: No APK file found for flavor ${FLAVOR}."
             echo "Available build outputs:"
-            find app/build/outputs -type f -print
+            find app/build/outputs -type f -name "*.apk" -print
             exit 1
           fi
 
           if [ "${#APK_FILES[@]}" -gt 1 ]; then
-            echo "WARNING: Multiple APK files found:"
+            echo "ERROR: Multiple APK files found for flavor ${FLAVOR}:"
             printf '%s\n' "${APK_FILES[@]}"
-            echo "Using the first one."
+            exit 1
+          fi
+
+          # full → app-<version>.apk；lite → app-lite-<version>.apk（与后端 channels.<channel>.fileName 对齐）
+          if [ "$FLAVOR" = "full" ]; then
+            TARGET_NAME="app-${VERSION}.apk"
+          else
+            TARGET_NAME="app-${FLAVOR}-${VERSION}.apk"
           fi
 
           APK="${APK_FILES[0]}"
-          APK_DIR="$(dirname "$APK")"
-          TARGET="${APK_DIR}/app-${VERSION}.apk"
+          TARGET="${APK_DIR}/${TARGET_NAME}"
 
           echo "Source APK : $APK"
           echo "Target APK : $TARGET"
 
-          mv "$APK" "$TARGET"
+          if [ "$APK" != "$TARGET" ]; then
+            mv "$APK" "$TARGET"
+          fi
 
           echo "APK renamed successfully:"
           ls -lh "$TARGET"
 
-          echo "apk_name=app-${VERSION}.apk" >> "$GITHUB_OUTPUT"
+          echo "apk_name=${TARGET_NAME}" >> "$GITHUB_OUTPUT"
 
-      - name: Calculate SHA256
-        id: calc-sha256
+      - name: Calculate SHA256 and size (${{ matrix.flavor }})
+        id: calc
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          SHA=$(sha256sum \
-            app/build/outputs/apk/release/app-${VERSION}.apk \
-            | awk '{print $1}')
-          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+          FLAVOR="${{ matrix.flavor }}"
+          if [ "$FLAVOR" = "full" ]; then
+            TARGET_NAME="app-${VERSION}.apk"
+          else
+            TARGET_NAME="app-${FLAVOR}-${VERSION}.apk"
+          fi
 
-      - name: Upload APK artifact
+          APK="app/build/outputs/apk/${FLAVOR}/release/${TARGET_NAME}"
+          SHA=$(sha256sum "$APK" | awk '{print $1}')
+          SIZE=$(stat -c%s "$APK")
+
+          echo "sha256=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "file_size=${SIZE}" >> "$GITHUB_OUTPUT"
+          echo "${FLAVOR}: sha256=${SHA} size=${SIZE} file=${TARGET_NAME}"
+
+      # 每个 flavor 用独立 artifact 名，避免同名覆盖（upload-artifact v4 同名会报错）
+      - name: Upload APK artifact (${{ matrix.flavor }})
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: SmartWash-Android/app/build/outputs/apk/release/app-*.apk
+          name: android-apk-${{ matrix.flavor }}
+          path: SmartWash-Android/app/build/outputs/apk/${{ matrix.flavor }}/release/app-*.apk
           retention-days: 30
+
+      # 本 flavor 的产物信息写入 job 级 output：matrix 每个分支各自写自己的键
+      # （full_sha256 / lite_sha256 ...），互不覆盖，release job 直接读取。
+      - name: Export flavor metadata
+        id: meta
+        run: |
+          FLAVOR="${{ matrix.flavor }}"
+          echo "${FLAVOR}_apk_name=${{ steps.rename.outputs.apk_name }}" >> "$GITHUB_OUTPUT"
+          echo "${FLAVOR}_sha256=${{ steps.calc.outputs.sha256 }}" >> "$GITHUB_OUTPUT"
+          echo "${FLAVOR}_file_size=${{ steps.calc.outputs.file_size }}" >> "$GITHUB_OUTPUT"
+          echo "${FLAVOR}: apk=${{ steps.rename.outputs.apk_name }} sha256=${{ steps.calc.outputs.sha256 }} size=${{ steps.calc.outputs.file_size }}"
 
 
   # =========================================================
@@ -253,86 +305,115 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Download APK artifact
+      # 两个 flavor 的 APK 分别下载到独立子目录，避免同名冲突
+      - name: Download full APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: android-apk
-          path: release-assets
+          name: android-apk-full
+          path: release-assets/full
 
-      - name: Generate release metadata
+      - name: Download lite APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk-lite
+          path: release-assets/lite
+
+      - name: Prepare APKs
+        run: |
+          FULL_APK_NAME="${{ needs.android.outputs.full_apk_name }}"
+          LITE_APK_NAME="${{ needs.android.outputs.lite_apk_name }}"
+          if [ -z "$FULL_APK_NAME" ] || [ -z "$LITE_APK_NAME" ]; then
+            echo "ERROR: android job 未产出 apk_name（full='${FULL_APK_NAME}', lite='${LITE_APK_NAME}'）"
+            exit 1
+          fi
+
+          # 期望文件名：full → app-<v>.apk，lite → app-lite-<v>.apk
+          FULL_TARGET="release-assets/${FULL_APK_NAME}"
+          LITE_TARGET="release-assets/${LITE_APK_NAME}"
+
+          # download-artifact 会保留一层 artifact 名目录，故从对应子目录取
+          prepare_one() {
+            local dir="$1" target="$2" label="$3"
+            local src
+            src=$(find "$dir" -type f -name "*.apk" | head -1)
+            if [ -z "$src" ]; then
+              echo "ERROR: ${label} APK not found in ${dir}"
+              find release-assets -type f -print
+              exit 1
+            fi
+            if [ "$src" != "$target" ]; then
+              mv "$src" "$target"
+            fi
+            echo "${label}: $(ls -lh "$target")"
+          }
+
+          prepare_one "release-assets/full" "$FULL_TARGET" "full"
+          prepare_one "release-assets/lite" "$LITE_TARGET" "lite"
+
+          # 兜底校验：实际文件名的 sha256 必须与 android job 计算值一致
+          FULL_SHA=$(sha256sum "$FULL_TARGET" | awk '{print $1}')
+          LITE_SHA=$(sha256sum "$LITE_TARGET" | awk '{print $1}')
+          EXPECTED_FULL_SHA="${{ needs.android.outputs.full_sha256 }}"
+          EXPECTED_LITE_SHA="${{ needs.android.outputs.lite_sha256 }}"
+          if [ -z "$EXPECTED_FULL_SHA" ] || [ -z "$EXPECTED_LITE_SHA" ]; then
+            echo "ERROR: android job 未产出 sha256（full='${EXPECTED_FULL_SHA}', lite='${EXPECTED_LITE_SHA}'）"
+            exit 1
+          fi
+          if [ "$FULL_SHA" != "$EXPECTED_FULL_SHA" ]; then
+            echo "ERROR: full APK sha256 与 android job 产出不一致（local=$FULL_SHA expected=$EXPECTED_FULL_SHA）"
+            exit 1
+          fi
+          if [ "$LITE_SHA" != "$EXPECTED_LITE_SHA" ]; then
+            echo "ERROR: lite APK sha256 与 android job 产出不一致（local=$LITE_SHA expected=$EXPECTED_LITE_SHA）"
+            exit 1
+          fi
+          echo "sha256 校验通过（full/lite）"
+
+      - name: Generate version.json
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%03d%03d", $1, $2, $3}')
 
-          mkdir -p release-assets
+          FULL_APK_NAME="${{ needs.android.outputs.full_apk_name }}"
+          LITE_APK_NAME="${{ needs.android.outputs.lite_apk_name }}"
 
-          # 计算 APK 文件大小（字节），供 Android 端更新弹窗展示
-          APK_PATH=$(find release-assets -name "*.apk" -type f | head -1)
-          if [[ -z "$APK_PATH" ]]; then
-            echo "ERROR: APK file not found in release-assets"
-            exit 1
-          fi
-          FILE_SIZE=$(stat -c%s "$APK_PATH")
-          echo "APK file size: ${FILE_SIZE} bytes"
+          # 大小取 android job 的实测值（与 sha256 同源），避免重复统计口径漂移
+          FULL_SIZE=${{ needs.android.outputs.full_file_size }}
+          LITE_SIZE=${{ needs.android.outputs.lite_file_size }}
 
+          # 顶层字段 = full 渠道产物（兼容旧清单/旧端：fileName/fileSize/sha256 等价 channels.full）
+          # channels 按 channel 分组，lite 只认 channels.lite（后端 AppVersionServiceImpl.artifactOf）
           cat > release-assets/version.json << EOF
           {
             "versionCode": ${VERSION_CODE},
             "versionName": "${VERSION}",
-            "fileName": "app-${VERSION}.apk",
-            "fileSize": ${FILE_SIZE},
-            "sha256": "${{ needs.android.outputs.sha256 }}",
             "forceUpdate": false,
             "minVersionCode": 1000000,
             "changelog": "详见 GitHub Release",
             "releaseDate": "$(date +%Y-%m-%d)",
+            "fileName": "${FULL_APK_NAME}",
+            "fileSize": ${FULL_SIZE},
+            "sha256": "${{ needs.android.outputs.full_sha256 }}",
+            "channels": {
+              "full": {
+                "fileName": "${FULL_APK_NAME}",
+                "fileSize": ${FULL_SIZE},
+                "sha256": "${{ needs.android.outputs.full_sha256 }}"
+              },
+              "lite": {
+                "fileName": "${LITE_APK_NAME}",
+                "fileSize": ${LITE_SIZE},
+                "sha256": "${{ needs.android.outputs.lite_sha256 }}"
+              }
+            },
             "backendDigest": "${{ needs.backend.outputs.digest }}",
             "webDigest": "${{ needs.web.outputs.digest }}"
           }
           EOF
 
-      - name: Prepare APK
-        run: |
-          VERSION=${GITHUB_REF_NAME#v}
-
-          echo "Looking for APK in release-assets..."
-
-          APK_FILES=()
-          while IFS= read -r -d '' file; do
-            APK_FILES+=("$file")
-          done < <(
-            find release-assets \
-              -type f \
-              -name "*.apk" \
-              -print0
-          )
-
-          if [ "${#APK_FILES[@]}" -eq 0 ]; then
-            echo "ERROR: No APK file found."
-            echo "Available files:"
-            find release-assets -type f -print
-            exit 1
-          fi
-
-          if [ "${#APK_FILES[@]}" -gt 1 ]; then
-            echo "ERROR: Multiple APK files found:"
-            printf '%s\n' "${APK_FILES[@]}"
-            exit 1
-          fi
-
-          APK="${APK_FILES[0]}"
-          APK_DIR="$(dirname "$APK")"
-          TARGET="${APK_DIR}/app-${VERSION}.apk"
-
-          echo "Source APK : $APK"
-          echo "Target APK : $TARGET"
-
-          if [ "$APK" != "$TARGET" ]; then
-            mv "$APK" "$TARGET"
-          fi
-
-          echo "APK ready:"
-          ls -lh "$TARGET"
+          echo "--- version.json ---"
+          cat release-assets/version.json
+          python3 -m json.tool release-assets/version.json > /dev/null && echo "JSON 校验通过"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
@@ -342,8 +423,18 @@ jobs:
           generate_release_notes: true
           files: |
             release-assets/app-*.apk
+            release-assets/app-lite-*.apk
             release-assets/version.json
 
+      # =========================================================
+      # 4.1 产物落 MinIO（由服务器端完成，不在 CI）
+      #     CI 只负责构建 + 上传 GitHub Release；服务器端在部署时
+      #     从 Release 拉取 APK 并同步到 MinIO、生成/更新 version.json
+      #     （后端读容器内本地文件 APP_VERSION_FILEPATH，非从 MinIO 读）。
+      #     对象键约定（须与后端配置一致，否则预签名 URL 404）：
+      #       full → ${APP_APK_OBJECT_PREFIX:-android}/app-<v>.apk
+      #       lite → ${APP_APK_OBJECT_PREFIX_LITE:-android-lite}/app-lite-<v>.apk
+      # =========================================================
 
   # =========================================================
   # 5. 通知服务器执行部署
