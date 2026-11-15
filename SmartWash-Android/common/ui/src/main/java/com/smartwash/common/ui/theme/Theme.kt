@@ -77,13 +77,35 @@ private val AppShapes = Shapes(
     extraLarge = RoundedCornerShape(999.dp)
 )
 
+/**
+ * 应用主题（品牌维度）。
+ *
+ * @param brand 品牌：[AppBrand.SmartWash]（默认，清氧绿，全 Application 不变）/
+ *              [AppBrand.TodayEat]（吃啥 lite，暖橙）。由壳层按 `BuildConfig.APP_CHANNEL`
+ *              注入，common 层不感知 flavor。
+ * @param darkTheme 深色模式（默认跟随系统）。
+ */
 @Composable
 fun SmartWashAndroidTheme(
+    brand: AppBrand = AppBrand.SmartWash,
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    val appColorScheme = if (darkTheme) DarkAppColorScheme else LightAppColorScheme
+    val todayEat = brand == AppBrand.TodayEat
+    // MaterialTheme 配色与 AppColorScheme 必须成对切换：Material 组件（Divider/TabRow/
+    // PullToRefresh/TextField 等）直读 MaterialTheme，只换 AppColors 会残留旧品牌色。
+    val colorScheme = when {
+        todayEat && darkTheme -> LiteDarkColorScheme
+        todayEat -> LiteLightColorScheme
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
+    val appColorScheme = when {
+        todayEat && darkTheme -> DarkLiteAppColorScheme
+        todayEat -> LiteAppColorScheme
+        darkTheme -> DarkAppColorScheme
+        else -> LightAppColorScheme
+    }
 
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -93,7 +115,10 @@ fun SmartWashAndroidTheme(
         }
     }
 
-    CompositionLocalProvider(LocalAppColors provides appColorScheme) {
+    CompositionLocalProvider(
+        LocalAppColors provides appColorScheme,
+        LocalAppBrand provides brand,
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = AppTypography,

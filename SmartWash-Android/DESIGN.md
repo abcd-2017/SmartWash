@@ -341,6 +341,32 @@ Hero 卡、按钮、深色卡一律不加投影——层级由渐变/描边/深�
 - 时长层级：micro 200ms / card 300ms / screen 400ms，退出时长 ≈ 进入的 60–70%（`enterTween` 减速进 / `exitTween` 加速出）。
 - 列表逐项入场间隔 ≤60ms、总时长 ≤400ms；页面转场用 NavHost 默认 + fade。
 
+## 品牌维度（变体：full / lite）
+
+设计系统按**品牌**区分，而不是全 App 一套：
+
+| 品牌 | 变体 | 设计语言 | 色板入口 |
+|---|---|---|---|
+| SmartWash | `full`（`com.smartwash`） | 清氧呼吸舱（绿） | `LightAppColorScheme` / `DarkAppColorScheme` |
+| 吃啥 TodayEat | `lite`（`com.todayeat.app`） | 暖橙（独立品牌） | `LiteAppColorScheme` / `DarkLiteAppColorScheme` |
+
+- **机制**：`common:ui/theme/Brand.kt` 定义 `AppBrand` + `LocalAppBrand` 与 lite 色板；
+  `SmartWashAndroidTheme(brand = ...)` 按品牌选 **AppColorScheme 与 MaterialTheme 配色**
+  （两者必须成对切换，否则 Divider/TabRow/PullToRefresh 等 Material 组件残留旧品牌色）。
+  壳层 `MainActivity` 按 `BuildConfig.APP_CHANNEL` 注入，common 层不感知 flavor。
+- **换色成本**：业务页零改动——全项目颜色引用走 `AppColors` 令牌（dining/game 域 `Color(0x...)` 计数为 0）。
+- **只有配色差异时不需要给 feature 模块加 flavor 维度**；仅当某域页面布局/字段真要分变体，
+  才用该域 impl 的 `src/full` / `src/lite` 源集（见 `docs/lite变体-改进方案-2026-11-15.md`）。
+- **lite 色板**（暖橙 + 米白，与清氧绿彻底区隔）：
+  - 主色 `#EA580C`（橙-600）；深档/渐变暗端 `#C2410C`（橙-700，白字 5.2:1）；
+    浅底 `#FFF7ED`（橙-50）；选中底 `#FDF0E7`；onPrimarySoft `#7C2D12`。
+  - 页面底 `#FFFBF7`；卡片 `#FFFFFF`；文本 `#292524` / `#57534E` / `#A8A29E`。
+  - 文字强调档（`textGreen` 语义位）`#C2410C`（on 白 5.2:1）。
+  - 危险色 **独立深红 `#B3261E`**，不与主橙混淆；进行中 `#B45309`；成功 `#1F7A4D`（少量）。
+  - 图标容器六色槽位保留（语义重映射）：主橙 / 蓝（加入·二维码）/ 橙（进行中）/ 粉（异常）/ 绿（账户）/ 紫（游戏）。
+  - 暗色：主色提亮 `#FB923C`，文字反转为深橙 `#431407`；底 `#1C1917` / 卡 `#292524`。
+  - 认证页渐变：`#EA580C` → `#C2410C` → `#9A3412`。
+
 ## Do's and Don'ts
 
 ### Do:
@@ -354,7 +380,7 @@ Hero 卡、按钮、深色卡一律不加投影——层级由渐变/描边/深�
 ### Don't:
 - **Don't** 引入 Lottie / Rive / Shimmer / Vico 等动画库，或引入任何外部图标库（已调研否决，见规范 §4.1）；自绘图标仅限 tab 8 + 动效 4 + 品牌标识 2。
 - **Don't** 新增 `Icons.*` 使用点；存量 104 处 Material 内置图标保持现状，不替换、不重绘。
-- **Don't** 改主色 #2D9B6A（玄墨子主题除外）；微信/支付宝图标与品牌色不得换成通用组件。
+- **Don't** 改 full 品牌主色 #2D9B6A（玄墨子主题除外）；**lite 走独立暖橙色板**（见「品牌维度」章节），不得让 lite 继续透清氧绿，也不得把 lite 的橙色反灌回 full。微信/支付宝图标与品牌色不得换成通用组件。
 - **Don't** 使用第二种卡片画法（灰底卡/裸白卡/0.5dp 描边卡）、第三种阴影、字阶外的夹档字号、五档外的圆角。
 - **Don't** 伪造状态动画（支付成功/订单完成必须由真实接口返回触发）；订单没在「清洗中」时转动滚筒/泡沫图标。
 - **Don't** 在页面里写动效魔法数值（改 `AnimationUtils.kt` 等于全应用换手感）、写死色值/URL、用位图图标或 AI 生图直入。

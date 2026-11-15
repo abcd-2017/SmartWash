@@ -24,6 +24,15 @@ class RequestInterceptor @Inject constructor(
      * 拼进 User-Agent，避免 common 层硬编码品牌导致 lite 变体请求头暴露旧品牌。
      */
     @Named("appName") private val appName: String,
+    /**
+     * 宿主 app 的项目渠道（变体差异：full=full / lite=lite，app 经 @Named 提供）。
+     *
+     * 与 [PLATFORM] 正交：X-Platform 表达「端别」（android/ios/harmonyos/web，后端 ADR-0011
+     * 封闭合法集），本头表达「同一端上的哪个 App 变体」，后端落 login_log.app_channel，
+     * 供运营区分 SmartWash 与吃啥的登录来源。缺省不应硬编码——library 层臆断会让 lite
+     * 请求落错渠道。
+     */
+    @Named("appChannel") private val appChannel: String,
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
@@ -34,9 +43,11 @@ class RequestInterceptor @Inject constructor(
         val method = tag?.method()
         val annotated = method?.annotations?.any { it is RequireAuthorization }
 
-        // 平台标识头：全变体统一注入（与后端/Web/鸿蒙口径一致），供网关区分端别与版本
+        // 平台/项目标识头：全变体统一注入（与后端/Web 口径一致），供网关区分端别、项目与版本。
+        // X-Platform 是端别（android），X-App-Channel 是同端上的 App 变体（full/lite），两者正交。
         val builder = request.newBuilder()
             .header("X-Platform", PLATFORM)
+            .header("X-App-Channel", appChannel)
             .header("X-App-Version", appVersionName)
             .header("X-Network-Type", networkTypeResolver.current().wireName)
             .header("User-Agent", buildUserAgent(appName, appVersionName))

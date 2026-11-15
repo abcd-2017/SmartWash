@@ -24,6 +24,7 @@ class ClientContextFilterTest {
     void doFilter_setsContextDuringChain() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(ClientContext.HEADER_PLATFORM, "android");
+        request.addHeader(ClientContext.HEADER_APP_CHANNEL, "lite");
         request.addHeader(ClientContext.HEADER_APP_VERSION, "1.0.0");
         request.addHeader(ClientContext.HEADER_NETWORK_TYPE, "wifi");
         request.addHeader(ClientContext.HEADER_USER_AGENT, "test-ua");
@@ -34,6 +35,7 @@ class ClientContextFilterTest {
             chainInvoked[0] = true;
             ClientContext context = ClientContextHolder.get();
             assertEquals("android", context.getPlatform());
+            assertEquals("lite", context.getAppChannel());
             assertEquals("1.0.0", context.getAppVersion());
             assertEquals("wifi", context.getNetworkType());
             assertEquals("test-ua", context.getUserAgent());
@@ -54,6 +56,7 @@ class ClientContextFilterTest {
         FilterChain chain = (req, res) -> {
             ClientContext context = ClientContextHolder.get();
             assertEquals("unknown", context.getPlatform());
+            assertEquals("unknown", context.getAppChannel());
             assertEquals("unknown", context.getNetworkType());
             assertNull(context.getAppVersion());
             assertNull(context.getUserAgent());

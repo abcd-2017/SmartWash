@@ -27,6 +27,23 @@
           </el-select>
         </el-form-item>
 
+        <el-form-item label="项目渠道">
+          <el-select
+            v-model="listQuery.appChannel"
+            placeholder="全部渠道"
+            clearable
+            style="width: 150px"
+            @change="handleSearch"
+          >
+            <el-option
+              v-for="item in LOGIN_APP_CHANNEL_OPTIONS"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="结果">
           <el-select
             v-model="listQuery.result"
@@ -89,6 +106,9 @@
             }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="项目渠道" min-width="120">
+          <template #default="{ row }">{{ appChannelOf(row) }}</template>
+        </el-table-column>
         <el-table-column label="App 版本" min-width="110">
           <template #default="{ row }">{{ appVersionOf(row) }}</template>
         </el-table-column>
@@ -139,18 +159,21 @@ import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
 import {
   LOGIN_PLATFORM_OPTIONS,
+  LOGIN_APP_CHANNEL_OPTIONS,
   LOGIN_RESULT_OPTIONS,
   loginPlatformTagType,
   loginPlatformText,
+  loginAppChannelText,
   loginResultTagType,
   loginResultText,
   loginNetworkTypeText,
 } from '@/constants/dict';
 
-// 后端契约字段为下划线口径（app_version/created_at/user_id/network_type），
+// 后端契约字段为下划线口径（app_version/created_at/user_id/network_type/app_channel），
 // 而现有 Java 接口序列化多为驼峰（参考 AuditLogList 的 createdAt）。
 // 此处两种命名都兼容，待后端联调确定口径后收敛。
 const appVersionOf = (row) => row.appVersion ?? row.app_version ?? '-';
+const appChannelOf = (row) => loginAppChannelText(row.appChannel ?? row.app_channel);
 const userIdOf = (row) => row.userId ?? row.user_id ?? '-';
 const loginTime = (row) => formatTime(row.createdAt ?? row.created_at);
 
@@ -170,6 +193,7 @@ const {
   fetchApi: getLoginLogs,
   baseQuery: {
     platform: null,
+    appChannel: null,
     result: null,
     startTime: null,
     endTime: null,
@@ -177,6 +201,7 @@ const {
   buildParams: (q) => ({
     ...q,
     platform: q.platform || undefined,
+    appChannel: q.appChannel || undefined,
     result: q.result || undefined,
   }),
   errorMsg: '获取登录日志失败',

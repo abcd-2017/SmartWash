@@ -10,7 +10,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * 客户端平台上下文过滤器：解析统一请求头（X-Platform / X-App-Version / X-Network-Type / User-Agent），
+ * 客户端平台上下文过滤器：解析统一请求头（X-Platform / X-App-Channel / X-App-Version / X-Network-Type / User-Agent），
  * 产出不可变 {@link ClientContext} 并写入 {@link ClientContextHolder}（ThreadLocal + MDC）。
  *
  * <p><b>职责边界</b>：只解析、只赋值，不校验、不拦截。任何缺失/非法头均退化为默认值，
@@ -33,6 +33,7 @@ public class ClientContextFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         ClientContext context = ClientContext.fromHeaders(
                 request.getHeader(ClientContext.HEADER_PLATFORM),
+                request.getHeader(ClientContext.HEADER_APP_CHANNEL),
                 request.getHeader(ClientContext.HEADER_APP_VERSION),
                 request.getHeader(ClientContext.HEADER_NETWORK_TYPE),
                 request.getHeader(ClientContext.HEADER_USER_AGENT));

@@ -19,6 +19,9 @@ public class LoginLogVo {
 
     private String platform;
 
+    /** 项目渠道：full/lite/unknown */
+    private String appChannel;
+
     private String appVersion;
 
     private String ua;

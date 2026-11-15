@@ -35,13 +35,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.work.WorkManager
+import com.smartwash.BuildConfig
 import com.smartwash.R
 import com.smartwash.common.ui.navigation.LocalSharedTransitionScope
 import com.smartwash.common.ui.navigation.NavGraphAmbient
 import com.smartwash.common.ui.navigation.NavGraphContributor
 import com.smartwash.common.ui.navigation.ShellRoute
+import com.smartwash.common.ui.theme.AppBrand
 import com.smartwash.common.ui.theme.AuthGradientBottom
 import com.smartwash.common.ui.theme.AuthGradientTop
+import com.smartwash.common.ui.theme.LiteAuthGradientBottom
+import com.smartwash.common.ui.theme.LiteAuthGradientTop
 import com.smartwash.common.ui.theme.SmartWashAndroidTheme
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.HapticEffect
@@ -235,7 +239,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            SmartWashAndroidTheme {
+            SmartWashAndroidTheme(brand = appBrand) {
                 // 全应用动效降级开关（规范 7.8）：叶子节点经 motionSpec()/LocalReduceMotion 消费
                 CompositionLocalProvider(LocalReduceMotion provides reduceMotion) {
                     // 更新流程（事件收集 → 下载调度 → 弹窗展示；T8.1 自本文件抽至壳层 UpdateFlow）：
@@ -277,7 +281,14 @@ class MainActivity : ComponentActivity() {
                                     popExitTransition = { shellExitTransition(reduceMotion) },
                                     modifier = Modifier.background(
                                         if (isAuthRoute) {
-                                            Brush.verticalGradient(listOf(AuthGradientTop, AuthGradientBottom))
+                                            // 认证渐变随品牌：full 清氧绿 / lite 暖橙
+                                            Brush.verticalGradient(
+                                                if (appBrand == AppBrand.TodayEat) {
+                                                    listOf(LiteAuthGradientTop, LiteAuthGradientBottom)
+                                                } else {
+                                                    listOf(AuthGradientTop, AuthGradientBottom)
+                                                }
+                                            )
                                         } else {
                                             SolidColor(MaterialTheme.colorScheme.background)
                                         }
@@ -312,8 +323,18 @@ class MainActivity : ComponentActivity() {
             ?.let { pendingDeepLinkUri = it }
     }
 
+    /**
+     * 当前变体品牌：由 flavor 写入的 [BuildConfig.APP_CHANNEL] 决定（full=SmartWash / lite=TodayEat）。
+     * 主题层据此切换色板；不在 common 层硬编码品牌（common 不可见 app 的 BuildConfig）。
+     */
+    private val appBrand: AppBrand
+        get() = if (BuildConfig.APP_CHANNEL == CHANNEL_LITE) AppBrand.TodayEat else AppBrand.SmartWash
+
     private companion object {
         /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "MainActivity"
+
+        /** lite 变体渠道名（与 app/build.gradle 的 flavor `buildConfigField "APP_CHANNEL"` 同源） */
+        const val CHANNEL_LITE = "lite"
     }
 }

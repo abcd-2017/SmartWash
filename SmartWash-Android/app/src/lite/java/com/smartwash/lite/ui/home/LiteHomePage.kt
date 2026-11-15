@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
@@ -27,7 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,24 +55,25 @@ import com.smartwash.feature.game.api.GameRoute
 import com.smartwash.feature.user.api.UserRoute
 
 /**
- * lite 首页（占位骨架）——单卡片结构，核心入口为「点餐」。
+ * lite 首页（吃啥）——**无底栏**，聚焦点单：发起点单 / 我的点单 / 菜谱库 + 游戏 + 设置。
  *
- * 布局：顶部品牌区（吃啥 / Today Eat，品牌渐变 hero）→ 主卡「点餐」→ 次卡「游戏」
- * → 底部「设置」入口。路由常量复用 dining:api 的 [DiningRoute.OrderList]、
- * game:api 的 [GameRoute.Center]、user:api 的 [UserRoute.Setting]。
+ * 布局：顶部品牌 hero（品牌渐变 + 一句话）→ 主入口「发起点单」→ 次入口「我的点单 / 菜谱库」
+ * → 次级「游戏」→ 底部「设置」。路由常量复用 dining:api 的 [DiningRoute.OrderCreate] /
+ * [DiningRoute.OrderList] / [DiningRoute.RecipeLibrary]、game:api 的 [GameRoute.Center]、
+ * user:api 的 [UserRoute.Setting]。
  *
- * 视觉全部取自清氧令牌（[AppColors] / [AppDimens] / [AppTextStyles]），未自创色值/间距/圆角；
- * 图标为 Material 内置（未引外部图标库）；入场动效经 [motionSpec] 提供 reduced motion 降级
- * （降级时位移归零，仅保留 180ms 淡入）。
+ * 视觉全部取自品牌令牌（[AppColors] / [AppDimens] / [AppTextStyles]），未自创色值/间距/圆角；
+ * 图标为 Material 内置。入场动效经 [motionSpec] 提供 reduced motion 降级
+ * （降级时位移归零，仅保留淡入）。主/次/次级入口使用递减位移分量，保持层级。
  */
 @Composable
 fun LiteHomePage(navController: NavController) {
     val reduceMotion = LocalReduceMotion.current
     // 入场状态：一次性触发，reduced motion 时位移分量归零
-    var entered by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { entered = true }
+    var entered by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) { entered = 1 }
     val entranceAlpha by animateFloatAsState(
-        targetValue = if (entered) 1f else 0f,
+        targetValue = if (entered == 1) 1f else 0f,
         animationSpec = motionSpec(defaultSpring()),
         label = "liteHomeEntranceAlpha"
     )
@@ -110,28 +112,63 @@ fun LiteHomePage(navController: NavController) {
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.82f)
                 )
+                Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+                Text(
+                    text = stringResource(R.string.lite_home_hero_line),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
 
-        // 主卡「点餐」— 核心入口
+        // 主入口「发起点单」— 核心动作，入场位移分量最大
         LiteHomeCard(
             icon = Icons.Filled.Restaurant,
             iconContainerColor = AppColors.colorScheme.iconContainerGreen,
             iconTint = AppColors.colorScheme.iconForegroundGreen,
-            title = stringResource(R.string.lite_home_order),
-            description = stringResource(R.string.lite_home_order_desc),
-            onClick = { navController.navigate(DiningRoute.OrderList) },
-            modifier = Modifier.graphicsLayer {
-                alpha = entranceAlpha
-                translationY = if (reduceMotion) 0f else (1f - entranceAlpha) * 16f * density
-            }
+            title = stringResource(R.string.lite_home_create),
+            description = stringResource(R.string.lite_home_create_desc),
+            onClick = { navController.navigate(DiningRoute.OrderCreate()) },
+            entranceAlpha = entranceAlpha,
+            entranceShift = 16f,
+            reduceMotion = reduceMotion,
         )
 
         Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
 
-        // 次卡「游戏」
+        // 次入口「我的点单」— 复看进行中的点单 / 历史单
+        LiteHomeCard(
+            icon = Icons.Filled.ReceiptLong,
+            iconContainerColor = AppColors.colorScheme.iconContainerBlue,
+            iconTint = AppColors.colorScheme.iconForegroundBlue,
+            title = stringResource(R.string.lite_home_orders),
+            description = stringResource(R.string.lite_home_orders_desc),
+            onClick = { navController.navigate(DiningRoute.OrderList) },
+            entranceAlpha = entranceAlpha,
+            entranceShift = 12f,
+            reduceMotion = reduceMotion,
+        )
+
+        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+
+        // 次入口「菜谱库」— 公共菜谱浏览；发起页勾选菜品也来自同一份数据
+        LiteHomeCard(
+            icon = Icons.Filled.Restaurant,
+            iconContainerColor = AppColors.colorScheme.iconContainerOrange,
+            iconTint = AppColors.colorScheme.iconForegroundOrange,
+            title = stringResource(R.string.lite_home_recipes),
+            description = stringResource(R.string.lite_home_recipes_desc),
+            onClick = { navController.navigate(DiningRoute.RecipeLibrary) },
+            entranceAlpha = entranceAlpha,
+            entranceShift = 12f,
+            reduceMotion = reduceMotion,
+        )
+
+        Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+
+        // 次级「游戏」— 非点单主流程，入场位移分量最小
         LiteHomeCard(
             icon = Icons.Filled.SportsEsports,
             iconContainerColor = AppColors.colorScheme.iconContainerPurple,
@@ -139,15 +176,14 @@ fun LiteHomePage(navController: NavController) {
             title = stringResource(R.string.lite_home_game),
             description = stringResource(R.string.lite_home_game_desc),
             onClick = { navController.navigate(GameRoute.Center) },
-            modifier = Modifier.graphicsLayer {
-                alpha = entranceAlpha
-                translationY = if (reduceMotion) 0f else (1f - entranceAlpha) * 16f * density
-            }
+            entranceAlpha = entranceAlpha,
+            entranceShift = 8f,
+            reduceMotion = reduceMotion,
         )
 
         Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
 
-        // 底部「设置」入口 — 轻量行卡，与主/次卡区分层级
+        // 底部「设置」入口 — 轻量行卡，与主/次卡区分层级（无副文案）
         LiteHomeCard(
             icon = Icons.Filled.Settings,
             iconContainerColor = AppColors.colorScheme.iconContainerTeal,
@@ -155,10 +191,9 @@ fun LiteHomePage(navController: NavController) {
             title = stringResource(R.string.lite_home_setting),
             description = null,
             onClick = { navController.navigate(UserRoute.Setting) },
-            modifier = Modifier.graphicsLayer {
-                alpha = entranceAlpha
-                translationY = if (reduceMotion) 0f else (1f - entranceAlpha) * 16f * density
-            }
+            entranceAlpha = entranceAlpha,
+            entranceShift = 8f,
+            reduceMotion = reduceMotion,
         )
 
         Spacer(modifier = Modifier.height(AppDimens.spaceXxl))
@@ -166,8 +201,11 @@ fun LiteHomePage(navController: NavController) {
 }
 
 /**
- * lite 首页入口卡 — 复用清氧唯一卡片画法（[AppCard]）+ 图标容器（六色浅底按语义取色）。
+ * lite 首页入口卡 — 复用唯一卡片画法（[AppCard]）+ 图标容器（六色浅底按语义取色）。
  * [description] 为 null 时只渲染单行（用于「设置」这类轻入口）。
+ *
+ * @param entranceShift 入场位移分量（dp）：主入口 > 次入口 > 次级，形成主次层级；
+ *                      reduced motion 时归零，只保留淡入。
  */
 @Composable
 private fun LiteHomeCard(
@@ -177,17 +215,24 @@ private fun LiteHomeCard(
     title: String,
     description: String?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    entranceAlpha: Float,
+    entranceShift: Float,
+    reduceMotion: Boolean,
 ) {
     AppCard(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                alpha = entranceAlpha
+                translationY = if (reduceMotion) 0f else (1f - entranceAlpha) * entranceShift * density
+            },
         onClick = onClick,
     ) {
         Row(
             modifier = Modifier.padding(AppDimens.cardPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 图标容器：44dp / 12dp 圆角（规范 §3.2 主容器档），复用清氧共享组件
+            // 图标容器：44dp / 12dp 圆角（规范 §3.2 主容器档），复用共享组件
             IconBox(
                 icon = icon,
                 size = 44.dp,

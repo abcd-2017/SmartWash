@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 登录日志（四端平台标识 + 登录结果）。
+ * 登录日志（四端平台标识 + 项目渠道 + 登录结果）。
  *
  * <p>由登录/注册成功与失败路径写入，管理端分页查询；独立于 users 主档，避免污染高频更新表。
  */
@@ -34,6 +34,9 @@ public class LoginLog implements Serializable {
 
     /** 平台标识：android/ios/harmonyos/web/unknown */
     private String platform;
+
+    /** 项目渠道：full/lite/unknown（同一 Android 工程的两个 product flavor） */
+    private String appChannel;
 
     /** App 版本号 */
     private String appVersion;
