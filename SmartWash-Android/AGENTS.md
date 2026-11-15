@@ -31,7 +31,9 @@
 
 ## 二、模块结构
 
-项目已从单模块重构为 **36 个 Gradle 模块**（1 app + 5 common + 30 feature 子模块），**15 个业务域全部采用 api/impl 拆分**（契约与实现分离）。
+项目已从单模块重构为 **37 个 Gradle 模块**（1 app + 5 common + 31 feature 子模块），**15 个业务域全部采用 api/impl 拆分**（契约与实现分离）。
+
+**变体（flavors）**：`app` 模块有 `full`（`com.smartwash`，scheme `smartwash://`）与 `lite`（吃啥 / Today Eat，`com.todayeat.app`，scheme `todayeat://`）两个 flavor；lite 只含 `common:* + user/game/dining`，其余域经 `fullImplementation` 裁剪。页面注册经 `NavGraphContributor`（`@IntoSet`）按变体聚合，UI 差异放 `app/src/full` 与 `app/src/lite` 源集。详见 [app/AGENTS.md](app/AGENTS.md) 与 ADR-0010。
 
 ### 模块地图
 

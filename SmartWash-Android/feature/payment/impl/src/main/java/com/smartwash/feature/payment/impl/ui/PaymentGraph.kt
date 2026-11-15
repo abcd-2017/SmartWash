@@ -11,6 +11,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.smartwash.common.ui.navigation.NavGraphAmbient
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.DURATION_MICRO_MS
@@ -28,42 +29,43 @@ import com.smartwash.feature.payment.impl.ui.recharge.RechargeRecordPage
  * [PaymentRoute]（单一事实来源）。本域 4 页面统一走「底部上滑 + 淡入」转场，
  * 进入用卡片级减速 tween、退出用进入时长 67% 的加速 tween；pop 返回按层级方向反转
  * （自下滑出 / 自上淡入回位，MD hierarchy-motion）；reduceMotion 时位移归零，
- * 只保留 180ms 淡入淡出（规范 §8）。
+ * 只保留 180ms 淡入淡出（规范 §8）。reduceMotion 在转场 lambda 内读取
+ * [NavGraphAmbient.reduceMotion] 快照（NavHost builder 非组合上下文，快照由壳层组合期写入）。
  */
-fun NavGraphBuilder.paymentGraph(navController: NavHostController, reduceMotion: Boolean) {
+fun NavGraphBuilder.paymentGraph(navController: NavHostController) {
     composable<PaymentRoute.Recharge>(
-        enterTransition = { slideEnter(reduceMotion) },
-        exitTransition = { slideExit(reduceMotion) },
+        enterTransition = { slideEnter(NavGraphAmbient.reduceMotion) },
+        exitTransition = { slideExit(NavGraphAmbient.reduceMotion) },
         // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
-        popEnterTransition = { slideEnterFromTop(reduceMotion) },
-        popExitTransition = { slideExitToBottom(reduceMotion) },
+        popEnterTransition = { slideEnterFromTop(NavGraphAmbient.reduceMotion) },
+        popExitTransition = { slideExitToBottom(NavGraphAmbient.reduceMotion) },
     ) {
         RechargePage(navController)
     }
     composable<PaymentRoute.RechargeRecord>(
-        enterTransition = { slideEnter(reduceMotion) },
-        exitTransition = { slideExit(reduceMotion) },
+        enterTransition = { slideEnter(NavGraphAmbient.reduceMotion) },
+        exitTransition = { slideExit(NavGraphAmbient.reduceMotion) },
         // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
-        popEnterTransition = { slideEnterFromTop(reduceMotion) },
-        popExitTransition = { slideExitToBottom(reduceMotion) },
+        popEnterTransition = { slideEnterFromTop(NavGraphAmbient.reduceMotion) },
+        popExitTransition = { slideExitToBottom(NavGraphAmbient.reduceMotion) },
     ) {
         RechargeRecordPage(navController)
     }
     composable<PaymentRoute.Payment>(
-        enterTransition = { slideEnter(reduceMotion) },
-        exitTransition = { slideExit(reduceMotion) },
+        enterTransition = { slideEnter(NavGraphAmbient.reduceMotion) },
+        exitTransition = { slideExit(NavGraphAmbient.reduceMotion) },
         // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
-        popEnterTransition = { slideEnterFromTop(reduceMotion) },
-        popExitTransition = { slideExitToBottom(reduceMotion) },
+        popEnterTransition = { slideEnterFromTop(NavGraphAmbient.reduceMotion) },
+        popExitTransition = { slideExitToBottom(NavGraphAmbient.reduceMotion) },
     ) { entry ->
         PaymentPage(navController, entry.toRoute<PaymentRoute.Payment>().orderId)
     }
     composable<PaymentRoute.PaySuccess>(
-        enterTransition = { slideEnter(reduceMotion) },
-        exitTransition = { slideExit(reduceMotion) },
+        enterTransition = { slideEnter(NavGraphAmbient.reduceMotion) },
+        exitTransition = { slideExit(NavGraphAmbient.reduceMotion) },
         // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
-        popEnterTransition = { slideEnterFromTop(reduceMotion) },
-        popExitTransition = { slideExitToBottom(reduceMotion) },
+        popEnterTransition = { slideEnterFromTop(NavGraphAmbient.reduceMotion) },
+        popExitTransition = { slideExitToBottom(NavGraphAmbient.reduceMotion) },
     ) { entry ->
         PaySuccessPage(navController, entry.toRoute<PaymentRoute.PaySuccess>().orderId)
     }

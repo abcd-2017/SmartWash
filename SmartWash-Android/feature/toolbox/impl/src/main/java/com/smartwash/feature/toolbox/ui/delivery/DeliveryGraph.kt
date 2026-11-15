@@ -6,9 +6,8 @@ import androidx.navigation.compose.composable
 import com.smartwash.feature.toolbox.api.ToolboxRoute
 
 /**
- * 设备投递路由聚合（独立新函数，**不改动**既有 ToolboxGraph 路由表与 app 壳导航——
- * 导航入口一律不加，由使用方后续分配）：接入时在宿主 NavHost 追加一行
- * `deliveryGraph(navController)`（可与 toolboxGraph 并列），入口跳转
+ * 设备投递路由聚合（独立函数，与 [toolboxGraph] 并列）：经 ToolboxGraphModule 以
+ * `NavGraphContributor @IntoSet` 汇入壳层 NavHost（不再由壳层静态调用），入口跳转
  * ToolboxRoute.Delivery。类型安全路由单一事实来源在 [ToolboxRoute]。
  */
 fun NavGraphBuilder.deliveryGraph(navController: NavHostController) {

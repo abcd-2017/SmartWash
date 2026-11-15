@@ -55,4 +55,7 @@ dependencies {
     implementation libs.androidx.annotation
     // SchoolRepository 的 Mutex / ViewModel 协程 launch
     implementation libs.kotlinx.coroutines.android
+
+    // JVM 单测（EntityMappers：缓存 Entity ↔ 网络 VO 映射锚点）
+    testImplementation libs.junit
 }

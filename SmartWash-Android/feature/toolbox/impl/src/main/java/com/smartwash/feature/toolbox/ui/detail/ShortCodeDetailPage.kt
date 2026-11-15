@@ -15,7 +15,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,6 +70,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.components.SkeletonList
 import com.smartwash.common.ui.components.dialogEnterMotion
+import com.smartwash.common.ui.navigation.LocalSharedTransitionScope
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
@@ -112,10 +112,11 @@ fun ShortCodeDetailPage(
     navController: NavHostController,
     // 一镜到底：共享元素 scope（2026-11-01）
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
-    sharedTransitionScope: SharedTransitionScope? = null,
     viewModel: ShortCodeDetailViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    // 一镜到底：共享元素 scope 从 CompositionLocal 读取（壳层 SharedTransitionLayout 内 provides）
+    val sharedTransitionScope = LocalSharedTransitionScope.current
     val vo = viewModel.shortCode
     val updateState by viewModel.updateState.collectAsState()
     val deleteState by viewModel.deleteState.collectAsState()
