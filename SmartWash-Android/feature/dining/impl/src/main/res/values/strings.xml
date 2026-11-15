@@ -12,6 +12,9 @@
     <string name="dining_category_load_failed">分类加载失败</string>
     <string name="dining_recipe_list_empty">还没有菜谱，点右上角「新增」把拿手菜放进菜谱库</string>
     <string name="dining_recipe_list_empty_filtered">这个分类下还没有菜谱，看看别的分类吧</string>
+    <string name="dining_recipe_list_empty_search">没有找到「%1$s」相关菜谱，换个关键词试试</string>
+    <string name="dining_recipe_search_hint">搜索菜名</string>
+    <string name="dining_action_clear">清空</string>
     <string name="dining_recipe_action_retry">重试</string>
     <string name="dining_recipe_action_create">新增</string>
     <string name="dining_load_more">加载更多</string>
@@ -68,6 +71,7 @@
     <string name="dining_order_create_title_label">点单标题</string>
     <string name="dining_order_create_title_hint">比如：周五晚火锅</string>
     <string name="dining_order_create_menu_label">勾选本单菜品</string>
+    <string name="dining_order_create_search_hint">搜索菜品</string>
     <string name="dining_order_create_menu_uncategorized">未分类</string>
     <string name="dining_order_create_selected_count_format">已选 %1$d 道菜</string>
     <string name="dining_order_create_submit">发起点单</string>
