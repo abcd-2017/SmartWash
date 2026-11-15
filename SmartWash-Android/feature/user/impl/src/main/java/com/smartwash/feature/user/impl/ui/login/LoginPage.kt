@@ -111,8 +111,8 @@ fun LoginPage(
 
     // 已有 token 直接进首页（suspend 读取，不阻塞主线程；T5.3 起经 ViewModel 自取，
     // 不再由宿主传 SessionManager——app 壳不触碰用户域实现类型）。
-    // 重启时学校信息检查也在此处一并完成（startDestination 恒为登录页，本分支即
-    // 「已登录用户重启 app」的唯一入口），避免壳层并行检查造成双跳转竞态。
+    // 冷启动已改为首页恒为第一页、由壳层启动守卫拦截未登录（见 MainActivity），
+    // 本分支现为兜底：已登录用户经深链/二次进入登录页时直接送首页，避免停留。
     LaunchedEffect(Unit) {
         if (loginViewModel.hasSavedToken()) {
             // 确认未填写才强制补填；网络失败无法确认（null）时放行进首页，不误拦截

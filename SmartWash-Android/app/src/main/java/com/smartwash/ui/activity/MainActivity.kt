@@ -36,6 +36,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.work.WorkManager
 import com.smartwash.R
+import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AuthGradientBottom
 import com.smartwash.common.ui.theme.AuthGradientTop
 import com.smartwash.common.ui.theme.SmartWashAndroidTheme
@@ -133,6 +134,20 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val context = LocalContext.current
             val view = LocalView.current
+
+            // 登录页统一跳转：replace 语义（清空到首页根再压登录页）+ 去重（已在登录页则不动）。
+            // 供启动守卫、受保护深链守卫与 NEED_LOGIN / UNAUTHORIZED 会话事件共用，
+            // 避免多处 push 登录页造成堆叠或在登录页上重复压栈。
+            val goLogin = {
+                if (navController.currentBackStackEntry?.destination
+                        ?.hasRoute<UserRoute.Login>() != true
+                ) {
+                    navController.navigate(UserRoute.Login) {
+                        popUpTo<ShellRoute.Home> { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }
             // reduced motion 随导航刷新 — 既避免在组合期反复做 ContentResolver 查询，
             // 又能让用户在系统设置里改完「移除动画」切回应用后立即生效。
             val backStackEntry by navController.currentBackStackEntryAsState()
@@ -158,15 +173,8 @@ class MainActivity : ComponentActivity() {
                             context.getString(R.string.please_login),
                             Toast.LENGTH_SHORT
                         ).show()
-                        // 冷启动未登录时当前即登录页（startDestination），不重复压栈；
-                        // 其余残留页面场景补跳登录页（launchSingleTop 防堆叠）
-                        if (navController.currentBackStackEntry?.destination
-                                ?.hasRoute<UserRoute.Login>() == false
-                        ) {
-                            navController.navigate(UserRoute.Login) {
-                                launchSingleTop = true
-                            }
-                        }
+                        // replace 语义落登录页（goLogin 内已去重 + 清空到首页根）
+                        goLogin()
                         return@LaunchedEffect
                     }
                     deepLinkHandler.navigate(navController, action)
@@ -179,6 +187,12 @@ class MainActivity : ComponentActivity() {
                     AppLogger.debug(TAG, "深链消费意外异常，降级不支持提示：uri=$uri", e)
                     deepLinkHandler.navigate(navController, DeepLinkAction.Unknown(uri))
                 }
+            }
+
+            // 启动登录守卫：首页恒为第一页（startDestination=Home），仅未登录才拦截落登录页。
+            // 已登录冷启动不再「先闪登录页 → 登录页自动跳首页」；未登录时首页首帧后即替换为登录页。
+            LaunchedEffect(Unit) {
+                if (!userApi.hasSession()) goLogin()
             }
 
             // 收集用户域登录态事件（UserApi.loginEvents，T5.3 自 SessionEventBus 切换）：
@@ -197,10 +211,7 @@ class MainActivity : ComponentActivity() {
                                     context.getString(R.string.please_login),
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                navController.popBackStack()
-                                navController.navigate(UserRoute.Login) {
-                                    launchSingleTop = true
-                                }
+                                goLogin()
                             }
 
                             LogoutReason.UNAUTHORIZED -> {
@@ -214,10 +225,7 @@ class MainActivity : ComponentActivity() {
                                     context.getString(R.string.please_re_login),
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                navController.popBackStack()
-                                navController.navigate(UserRoute.Login) {
-                                    launchSingleTop = true
-                                }
+                                goLogin()
                             }
 
                             // 主动登出：设置页自理导航，壳层不响应
@@ -253,7 +261,8 @@ class MainActivity : ComponentActivity() {
                         val sharedTransitionScope = this
                         NavHost(
                             navController = navController,
-                            startDestination = UserRoute.Login,
+                            // 首页恒为第一页：已登录直接落首页；未登录由上方启动守卫 replace 到登录页
+                            startDestination = ShellRoute.Home,
                             enterTransition = { shellEnterTransition(reduceMotion) },
                             exitTransition = { shellExitTransition(reduceMotion) },
                             popEnterTransition = { shellEnterTransition(reduceMotion) },
