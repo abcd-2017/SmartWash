@@ -115,6 +115,7 @@
     <string name="dining_order_detail_finish_confirm_title">结束点单</string>
     <string name="dining_order_detail_finish_confirm_message">结束后将锁定点单并生成购买清单，确定结束吗？</string>
     <string name="dining_order_detail_view_shopping_list">查看购买清单</string>
+    <string name="dining_order_detail_recipe_action">做法</string>
     <string name="dining_order_detail_finished_locked">点单已结束，无法再改选菜</string>
     <string name="dining_order_detail_write_failed">操作保存失败，请稍后重试</string>
     <string name="dining_order_detail_load_failed">点单加载失败</string>
