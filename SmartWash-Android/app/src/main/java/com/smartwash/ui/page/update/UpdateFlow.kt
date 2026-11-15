@@ -62,7 +62,7 @@ import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.update.event.UpdateEvent
 import com.smartwash.feature.update.event.UpdateEventBus
-import com.smartwash.feature.update.model.AppVersionVo
+import com.smartwash.feature.update.api.model.AppVersionVo
 import com.smartwash.feature.update.service.ApkDownloadWorker
 import com.smartwash.feature.update.service.ApkInstaller
 import com.smartwash.feature.update.service.InstallRequestResult

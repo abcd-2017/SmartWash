@@ -31,7 +31,7 @@
 
 ## 二、模块结构
 
-项目已从单模块重构为 **26 个 Gradle 模块**（1 app + 5 common + 20 feature 子模块），采用 api/impl 分离与单模块域混合模式。
+项目已从单模块重构为 **36 个 Gradle 模块**（1 app + 5 common + 30 feature 子模块），**15 个业务域全部采用 api/impl 拆分**（契约与实现分离）。
 
 ### 模块地图
 
@@ -42,13 +42,20 @@
 :common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / 401 单飞续签 / SSE 客户端 / @RequireAuthorization / NetworkException
 :common:database                Room 主缓存库(AppDatabase v3)：洗衣项目/学校/优惠券三表（共库，T8.2 决策不拆）
 :common:ui                      清氧设计系统(theme) + 共享组件(components) + ShellRoute 壳层路由契约
-:feature:update                 热更新全链路 + UpdateInitTask
-:feature:divination             观象台占卜子系统（四套算法内核 + 卦历库 + SSE 解读网关 + BYOK + 7 页面 + 独立库）
-:feature:game                   游戏中心（封面网格 + WebView 承载，单模块）
-:feature:lab                    解压实验舱（10 个纯本地玩具，单模块，零网络/零存储）
-:feature:review                 记忆复习（FSRS 队列/学习/资料，单模块）
-:feature:subscription           订阅逃生舱（列表/编辑/详情/提醒，单模块）
-:feature:toolbox                工具箱（短链 + 设备投递会话，单模块）
+:feature:update:api             AppVersionVo + AppUpdateApi 契约
+:feature:update:impl            热更新全链路（Worker/Installer/InitTask/ViewModel）
+:feature:divination:api         DivRoute + DivinationApi/VO 契约
+:feature:divination:impl        观象台（四套算法内核 + 卦历库 + SSE 解读网关 + BYOK + 7 页面）
+:feature:game:api               GameRoute + GameApi/GameVo 契约
+:feature:game:impl              游戏中心（封面网格 + WebView 承载）
+:feature:lab:api                LabRoute + LabToy 契约
+:feature:lab:impl               解压实验舱（10 个纯本地玩具，零网络/零存储）
+:feature:review:api             ReviewRoute/Constant + ReviewApi/VO 契约
+:feature:review:impl            记忆复习（FSRS 队列/学习/资料）
+:feature:subscription:api       SubscriptionRoute/Constant/Enums + SubscriptionApi/VO 契约
+:feature:subscription:impl      订阅逃生舱（列表/编辑/详情/提醒）
+:feature:toolbox:api            ToolboxRoute/Constant + 短码/资产标签/投递三套 Api/VO 契约
+:feature:toolbox:impl           工具箱（短链 + 设备投递会话）
 :feature:user:api               UserApi 契约 + User 模型 + UserRoute（登录态/用户信息/登录事件）
 :feature:user:impl              SessionManager + UserRepository + 登录/注册/重置修改密码/用户中心/资料编辑/设置/权限/钱包流水
 :feature:order:api              OrderApi 契约 + 订单模型 + OrderRoute（含寄件取件路由常量）
@@ -66,7 +73,34 @@
 build-logic                     convention plugin（smartwash.android.library / smartwash.compose / smartwash.hilt）
 ```
 
-> **孤儿目录**：`feature/ai`、`feature/lostfound`、`common/security` 仅有历史 `build/` 残留，无源码/无 `build.gradle`/未被 include，**不是模块**。
+> **无孤儿目录**：历史残留（`feature/{ai,lostfound,accounting,almanac,bookshelf,habit,memo,poem,readlater,rss,studycenter}`、`common/security`）的 `build/` 已清理；当前 `feature/` 下 15 个域均为 api/impl 模块。
+
+### 新增模块 SOP（必须使用脚手架）
+
+**新增任何 Gradle 模块一律经 `scripts/scaffold-module.py` 创建，禁止手搓目录。** 脚本对齐 `kmp-ohos-template/script/scaffold-module.py`，已适配本仓库架构（Groovy + `config/` convention + Hilt / NavGraph / 深链贡献 / 每模块 `AGENTS.md`）。
+
+```bash
+# 业务域：单模块（默认）
+python scripts/scaffold-module.py --type feature --name game
+# 业务域：api/impl 拆分
+python scripts/scaffold-module.py --type feature --name order --split
+# 通用库（按需追加 compose / hilt / serialization）
+python scripts/scaffold-module.py --type common --name util --with-compose
+# 只看不建（验证模板落点）
+python scripts/scaffold-module.py --type feature --name demo --dry-run
+# 删除（settings 注销 + app 依赖移除 + git rm）
+python scripts/scaffold-module.py --type feature --name game --delete --yes
+```
+
+- Unix / Git Bash 用 `scripts/scaffold-module.sh`，Windows 用 `scripts/scaffold-module.bat`（均薄包装调用 Python 核心）。
+- **脚本自动完成**：目录与包结构、`build.gradle`（apply `config/` convention）、`AndroidManifest.xml`、`AGENTS.md` 骨架、`settings.gradle` 注册、`app/build.gradle` 实现模块依赖注入、`git add`。
+- **脚本不代劳的收尾**（创建后必须手工做）：
+  1. `MainActivity` 加 `import com.smartwash.feature.<name>.ui.<name>Graph` 与 NavHost 内一行 `<name>Graph(navController)`；
+  2. 与后端对齐 `<Class>ServiceApi` 的路径/参数/返回（返回统一 `ApiResult<T>`）；
+  3. 补全模块 `AGENTS.md`；
+  4. 运行 `./scripts/check-deps.sh` 校验依赖铁律。
+- **深链 host**：默认等于模块名，可 `--host` 指定；落点为 `<Class>Route.Home`。
+- **api/impl 拆分判断**：本仓库 15 个业务域已全部 api/impl 拆分；新域一律 `--split`（契约与实现分离，见「4.2 api/impl 服务化」）。
 
 ### 各模块独立文档
 
@@ -94,13 +128,13 @@ build-logic                     convention plugin（smartwash.android.library / 
 | `:feature:points:impl` | [feature/points/impl/AGENTS.md](feature/points/impl/AGENTS.md) |
 | `:feature:notice:api` | [feature/notice/api/AGENTS.md](feature/notice/api/AGENTS.md) |
 | `:feature:notice:impl` | [feature/notice/impl/AGENTS.md](feature/notice/impl/AGENTS.md) |
-| `:feature:divination` | [feature/divination/AGENTS.md](feature/divination/AGENTS.md) |
-| `:feature:game` | [feature/game/AGENTS.md](feature/game/AGENTS.md) |
-| `:feature:lab` | [feature/lab/AGENTS.md](feature/lab/AGENTS.md) |
-| `:feature:review` | [feature/review/AGENTS.md](feature/review/AGENTS.md) |
-| `:feature:subscription` | [feature/subscription/AGENTS.md](feature/subscription/AGENTS.md) |
-| `:feature:toolbox` | [feature/toolbox/AGENTS.md](feature/toolbox/AGENTS.md) |
-| `:feature:update` | [feature/update/AGENTS.md](feature/update/AGENTS.md) |
+| `:feature:divination:api` / `:impl` | [feature/divination/api/AGENTS.md](feature/divination/api/AGENTS.md) / [impl](feature/divination/impl/AGENTS.md) |
+| `:feature:game:api` / `:impl` | [feature/game/api/AGENTS.md](feature/game/api/AGENTS.md) / [impl](feature/game/impl/AGENTS.md) |
+| `:feature:lab:api` / `:impl` | [feature/lab/api/AGENTS.md](feature/lab/api/AGENTS.md) / [impl](feature/lab/impl/AGENTS.md) |
+| `:feature:review:api` / `:impl` | [feature/review/api/AGENTS.md](feature/review/api/AGENTS.md) / [impl](feature/review/impl/AGENTS.md) |
+| `:feature:subscription:api` / `:impl` | [feature/subscription/api/AGENTS.md](feature/subscription/api/AGENTS.md) / [impl](feature/subscription/impl/AGENTS.md) |
+| `:feature:toolbox:api` / `:impl` | [feature/toolbox/api/AGENTS.md](feature/toolbox/api/AGENTS.md) / [impl](feature/toolbox/impl/AGENTS.md) |
+| `:feature:update:api` / `:impl` | [feature/update/api/AGENTS.md](feature/update/api/AGENTS.md) / [impl](feature/update/impl/AGENTS.md) |
 ```
 
 ### 各模块内关键文件

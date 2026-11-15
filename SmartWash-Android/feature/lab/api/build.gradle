@@ -1,0 +1,13 @@
+// :feature:lab:api —— 解压实验舱对外契约（api/impl 拆分）。
+// LabRoute 路由常量 + LabToy 入口枚举；零 Hilt 运行时、零 feature 依赖（铁律 1/2）。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/serialization.gradle"
+
+android {
+    namespace 'com.smartwash.feature.lab.api'
+}
+
+dependencies {
+    // SmartWashRoute 类型安全路由契约（LabRoute 实现该接口）
+    implementation project(':common:utils')
+}

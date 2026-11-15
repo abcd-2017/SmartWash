@@ -5,7 +5,7 @@
       // 模块级自定义构建参数兜底值：debug/未单独覆盖 buildOptionSet 的场景使用。
       // BASE_URL 必须经 BuildProfile 注入，源码禁止硬编码服务器地址（根 AGENTS.md 环境红线）。
       "buildProfileFields": {
-        "BASE_URL": "http://10.0.2.2:8080"
+        "BASE_URL": "https://your-domain.com/"
       }
     }
   },
@@ -14,8 +14,8 @@
       "name": "debug",
       "arkOptions": {
         "buildProfileFields": {
-          // dev/联调：演示服务器（明文 HTTP，仅限内网联调，禁止随生产发布）
-          "BASE_URL": "http://10.0.2.2:8080"
+          // dev/联调：经构建参数注入联调地址,仓库不携带真实服务器 IP
+          "BASE_URL": "https://your-domain.com/"
         }
       }
     },
