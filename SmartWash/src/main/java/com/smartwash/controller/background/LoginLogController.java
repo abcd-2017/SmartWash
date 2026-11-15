@@ -28,7 +28,7 @@ public class LoginLogController {
 
     private final ILoginLogService loginLogService;
 
-    @Operation(summary = "分页查询登录日志", description = "按账号/平台/结果/时间范围分页查询登录日志，按登录时间倒序")
+    @Operation(summary = "分页查询登录日志", description = "按账号/平台/渠道/结果/时间范围分页查询登录日志，按登录时间倒序")
     @GetMapping("/page")
     public Result<Page<LoginLogVo>> page(SearchLoginLogFrom from) {
         return Result.ok(loginLogService.pageLoginLogs(from));

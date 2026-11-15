@@ -825,3 +825,19 @@ export const LOGIN_NETWORK_TYPE_TEXT = {
 };
 
 export const loginNetworkTypeText = (type) => LOGIN_NETWORK_TYPE_TEXT[type] || type || '-';
+
+/**
+ * 项目渠道 → 文案（login_log.app_channel，取值 full/lite/unknown；未知值回显原始编码）
+ */
+export const LOGIN_APP_CHANNEL_TEXT = {
+  full: '全量版',
+  lite: '吃啥精简版',
+  unknown: '未知渠道',
+};
+
+/** 项目渠道筛选下拉由字典派生，保证下拉与表格文案同源 */
+export const LOGIN_APP_CHANNEL_OPTIONS = Object.entries(LOGIN_APP_CHANNEL_TEXT).map(
+  ([value, label]) => ({ value, label })
+);
+
+export const loginAppChannelText = (channel) => LOGIN_APP_CHANNEL_TEXT[channel] || channel || '-';

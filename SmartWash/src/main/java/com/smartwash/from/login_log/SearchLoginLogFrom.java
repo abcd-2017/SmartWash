@@ -22,6 +22,9 @@ public class SearchLoginLogFrom extends BaseSearchFrom {
     /** 平台标识：android/ios/harmonyos/web/unknown */
     private String platform;
 
+    /** 项目渠道：full/lite/unknown */
+    private String appChannel;
+
     /** 登录结果：success/fail */
     private String result;
 

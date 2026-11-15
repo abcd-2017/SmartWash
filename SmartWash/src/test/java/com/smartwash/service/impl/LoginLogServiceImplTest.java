@@ -45,9 +45,9 @@ class LoginLogServiceImplTest {
     }
 
     @Test
-    @DisplayName("请求上下文存在：platform/版本/UA/网络写入日志")
+    @DisplayName("请求上下文存在：platform/渠道/版本/UA/网络写入日志")
     void recordLoginLog_withContext_mapsAllFields() {
-        ClientContextHolder.set(ClientContext.fromHeaders("android", "1.2.3", "wifi", "test-ua"));
+        ClientContextHolder.set(ClientContext.fromHeaders("android", "lite", "1.2.3", "wifi", "test-ua"));
 
         service.recordLoginLog("13800138000", 42L, "203.0.113.1", LoginResult.SUCCESS);
 
@@ -57,18 +57,20 @@ class LoginLogServiceImplTest {
         assertEquals("203.0.113.1", log.getIp());
         assertEquals("success", log.getResult());
         assertEquals("android", log.getPlatform());
+        assertEquals("lite", log.getAppChannel());
         assertEquals("1.2.3", log.getAppVersion());
         assertEquals("test-ua", log.getUa());
         assertEquals("wifi", log.getNetworkType());
     }
 
     @Test
-    @DisplayName("无请求上下文（非 Web 线程）：平台/网络退化为 unknown，不抛异常")
+    @DisplayName("无请求上下文（非 Web 线程）：平台/渠道/网络退化为 unknown，不抛异常")
     void recordLoginLog_withoutContext_defaultsUnknown() {
         service.recordLoginLog("admin", null, "127.0.0.1", LoginResult.FAIL);
 
         LoginLog log = captureInserted();
         assertEquals("unknown", log.getPlatform());
+        assertEquals("unknown", log.getAppChannel());
         assertEquals("unknown", log.getNetworkType());
         assertNull(log.getAppVersion());
         assertNull(log.getUa());

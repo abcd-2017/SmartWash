@@ -34,11 +34,13 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
         loginLog.setResult(result == null ? LoginResult.FAIL.getStatus() : result.getStatus());
         if (context != null) {
             loginLog.setPlatform(context.getPlatform());
+            loginLog.setAppChannel(context.getAppChannel());
             loginLog.setAppVersion(context.getAppVersion());
             loginLog.setUa(context.getUserAgent());
             loginLog.setNetworkType(context.getNetworkType());
         } else {
             loginLog.setPlatform(ClientContext.PLATFORM_UNKNOWN);
+            loginLog.setAppChannel(ClientContext.CHANNEL_UNKNOWN);
             loginLog.setNetworkType(ClientContext.NETWORK_TYPE_UNKNOWN);
         }
         save(loginLog);
@@ -51,6 +53,7 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
         queryWrapper.eq(from.getUserId() != null, LoginLog::getUserId, from.getUserId());
         queryWrapper.like(StringUtils.hasText(from.getPhone()), LoginLog::getPhone, from.getPhone());
         queryWrapper.eq(StringUtils.hasText(from.getPlatform()), LoginLog::getPlatform, from.getPlatform());
+        queryWrapper.eq(StringUtils.hasText(from.getAppChannel()), LoginLog::getAppChannel, from.getAppChannel());
         queryWrapper.eq(StringUtils.hasText(from.getResult()), LoginLog::getResult, from.getResult());
         queryWrapper.ge(from.getStartTime() != null, LoginLog::getCreatedAt, from.getStartTime());
         queryWrapper.le(from.getEndTime() != null, LoginLog::getCreatedAt, from.getEndTime());

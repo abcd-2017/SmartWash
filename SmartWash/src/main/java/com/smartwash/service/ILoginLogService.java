@@ -15,7 +15,7 @@ public interface ILoginLogService extends IService<LoginLog> {
     /**
      * 写入一条登录日志。
      *
-     * <p>平台标识 / App 版本 / UA / 网络类型统一从 {@link com.smartwash.common.client.ClientContextHolder}
+     * <p>平台标识 / 项目渠道 / App 版本 / UA / 网络类型统一从 {@link com.smartwash.common.client.ClientContextHolder}
      * 取（由 ClientContextFilter 在请求进入时解析），调用方只需提供账号、用户 ID、IP 与结果，
      * 避免各登录分支重复读取请求头。
      *
