@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<meta name="description" content="蜘蛛纸牌单文件 H5：经典 10 列牌阵，同花 K→A 递减叠放，收满 8 组即胜。">
+<title>蜘蛛纸牌</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（UI 壳全部走 token；纯 DOM 无 canvas）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-success:#2D9B6A;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); white-space: nowrap; }
+  .stat .val.plain { color: var(--g-text); }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: #fff;
+    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .btn.sm { min-height: 44px; padding: 0 12px; font-size: 14px; flex: 0 0 auto; background: var(--g-primary-deep); color: #fff; }
+  .btn:disabled { opacity: .4; }
+  /* 牌桌 */
+  .dock { display: flex; gap: 8px; align-items: stretch; margin-bottom: 8px; }
+  .stock {
+    position: relative; width: 56px; min-height: 64px; border-radius: var(--g-radius-inner);
+    border: 1px solid var(--g-primary); cursor: pointer; overflow: hidden; flex: 0 0 auto;
+    background: repeating-linear-gradient(45deg, var(--g-primary-soft), var(--g-primary-soft) 5px, var(--g-surface) 5px, var(--g-surface) 10px);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--g-primary); font-size: 22px; font-weight: 700;
+  }
+  .stock.empty { border: 1px dashed var(--g-border); background: var(--g-surface2); color: var(--g-faint); font-size: 14px; cursor: default; }
+  .stock .cnt {
+    position: absolute; right: 2px; bottom: 2px; min-width: 20px; height: 18px; padding: 0 4px;
+    border-radius: 10px; background: var(--g-primary-soft); color: var(--g-on-soft);
+    font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .stock.disallows { opacity: .55; }
+  .fnds { flex: 1; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+  .fnd {
+    border: 1px dashed var(--g-border); border-radius: 8px; background: var(--g-surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--g-faint); min-height: 44px;
+  }
+  .fnd.full { border-style: solid; border-color: var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .board { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; --cardH: 44px; }
+  .col { position: relative; border-radius: 8px; cursor: pointer; min-width: 0; }
+  .col.hintdst { box-shadow: inset 0 0 0 2px var(--g-warning); }
+  .col-empty {
+    height: var(--cardH); border-radius: 8px; border: 1px dashed var(--g-border);
+    background: var(--g-surface2); display: flex; align-items: center; justify-content: center;
+    color: var(--g-faint); font-size: 14px;
+  }
+  .card {
+    position: absolute; left: 0; right: 0; height: var(--cardH);
+    border-radius: 8px; background: var(--g-surface); border: 1px solid var(--g-border);
+    box-shadow: 0 1px 0 var(--g-border); color: var(--g-text);
+    pointer-events: none;
+  }
+  .card.red { color: var(--g-danger); }
+  .card.down {
+    background: repeating-linear-gradient(45deg, var(--g-primary-soft), var(--g-primary-soft) 4px, var(--g-surface) 4px, var(--g-surface) 8px);
+    border-color: var(--g-primary); color: var(--g-primary);
+  }
+  .card .rk { position: absolute; top: 2px; left: 4px; font-size: 12px; font-weight: 700; line-height: 1; }
+  .card .st { position: absolute; top: 15px; left: 4px; font-size: 12px; line-height: 1; }
+  .card .cen { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; opacity: .85; }
+  .card.down .cen { font-size: 16px; opacity: .5; }
+  .card.sel { outline: 2px solid var(--g-primary); outline-offset: 1px; }
+  .card.hintsrc { outline: 2px solid var(--g-warning); outline-offset: 1px; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .msg.err { color: var(--g-danger); }
+  .msg.win { color: var(--g-success); }
+  .tools { display: flex; gap: 8px; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); }
+  .panel .btn { width: 100%; }
+
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="sub">同花 K→A 递减叠放 · 收满 8 组获胜</span>
+    <button class="btn sm" id="btnNew">重开</button>
+  </header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/120</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val plain" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">用时</span><span class="val plain" id="stTime">00:00</span></div>
+    <div class="stat"><span class="label">已收</span><span class="val" id="stDone">0/8</span></div>
+  </div>
+  <div class="dock">
+    <div class="stock" id="stock" role="button" aria-label="发牌"></div>
+    <div class="fnds" id="fnds"></div>
+  </div>
+  <div class="board" id="board"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点列选牌，再点目标列放下</p>
+  <div class="tools">
+    <button class="btn ghost" id="btnUndo">撤销</button>
+    <button class="btn ghost" id="btnHint">提示</button>
+  </div>
+  <p class="foot">牌堆每次发 10 张（需无空列）· 整组移动须同花递减 · 空列可放任意牌<br>牌局由关卡种子决定，可能无解——可随时撤销或重开</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">蜘蛛纸牌</h2>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn" id="ovBtn">开始游戏</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+window.__gOnTheme=function(){};//纯 DOM 游戏：颜色随 CSS 变量自动生效，无需重绘
+/* ---------- 包内默认关卡（与 .levels.json 前 10 条逐字一致） ---------- */
+var DEFAULT_LEVELS=[{"name":"单色·入门01","suits":1,"seed":1101,"deck":[0,0,0,0,0,0,12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,1,1,1,1,1,0,6,6,6,7,7,7,7,7,2,0,5,5,5,6,6,6,6,6,2,1,4,4,4,5,5,5,5,5,2,1,3,3,3,4,4,4,4,4,2,1,2,2,2,3,3,3,3,3,2]},{"name":"单色·入门02","suits":1,"seed":1202,"deck":[12,11,10,9,8,7,0,0,0,0,0,0,12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,1,1,1,1,1,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,6,0,6,6,7,2,7,7,7,7,5,0,5,5,6,2,6,6,6,6,4,1,4,4,5,2,5,5,5,5,3,1,3,3,4,2,4,4,4,4,2,1,2,2,3,2,3,3,3,3]},{"name":"单色·入门03","suits":1,"seed":1303,"deck":[0,0,0,0,0,0,12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,1,1,1,1,1,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,0,6,6,6,7,2,7,7,7,7,0,5,5,5,6,2,6,6,6,6,1,4,4,4,5,2,5,5,5,5,1,3,3,3,4,2,4,4,4,4,1,2,2,2,3,2,3,3,3,3]},{"name":"单色·入门04","suits":1,"seed":101407,"deck":[0,0,0,0,0,0,12,11,10,9,8,7,1,1,1,1,1,2,12,11,10,9,8,7,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,0,6,2,6,7,7,7,7,7,7,0,5,2,5,6,6,6,6,6,6,1,4,2,4,5,5,5,5,5,5,1,3,2,3,4,4,4,4,4,4,1,2,2,2,3,3,3,3,3,3]},{"name":"单色·入门05","suits":1,"seed":1505,"deck":[0,0,0,0,0,0,12,11,10,9,8,7,12,11,10,9,8,7,1,1,1,1,1,2,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,0,6,6,2,7,7,7,7,7,7,0,5,5,2,6,6,6,6,6,6,1,4,4,2,5,5,5,5,5,5,1,3,3,2,4,4,4,4,4,4,1,2,2,2,3,3,3,3,3,3]},{"name":"单色·入门06","suits":1,"seed":1606,"deck":[0,0,0,0,0,0,12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,1,1,1,1,1,12,11,10,9,8,12,11,10,9,8,0,6,6,6,7,7,7,2,7,7,0,5,5,5,6,6,6,2,6,6,1,4,4,4,5,5,5,2,5,5,1,3,3,3,4,4,4,2,4,4,1,2,2,2,3,3,3,2,3,3]},{"name":"单色·入门07","suits":1,"seed":1707,"deck":[12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,7,0,0,0,0,0,12,11,10,9,8,1,1,1,1,1,12,11,10,9,8,12,11,10,9,8,12,11,10,9,8,6,6,6,6,0,7,1,7,7,7,5,5,5,5,0,6,2,6,6,6,4,4,4,4,0,5,2,5,5,5,3,3,3,3,1,4,2,4,4,4,2,2,2,2,1,3,2,3,3,3]},{"name":"单色·入门08","suits":1,"seed":1808,"deck":[12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,7,12,11,10,9,8,0,0,0,0,0,12,11,10,9,8,1,1,1,1,1,12,11,10,9,8,12,11,10,9,8,6,6,6,6,7,0,7,1,7,7,5,5,5,5,6,0,6,2,6,6,4,4,4,4,5,0,5,2,5,5,3,3,3,3,4,1,4,2,4,4,2,2,2,2,3,1,3,2,3,3]},{"name":"单色·第01局","suits":1,"seed":1},{"name":"单色·第02局","suits":1,"seed":2}];
+var LEVELS=DEFAULT_LEVELS.slice();
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底；任一条非法整批放弃） ---------- */
+var LEVELS_KEY="sw.spidersolitaire.v1.levels",LEVELS_VER_KEY="sw.spidersolitaire.v1.levels.ver";
+function validDeckCodes(deck,suits){
+  if(!Array.isArray(deck)||deck.length!==104)return false;
+  var cnt={},i,cd;
+  for(i=0;i<deck.length;i++){
+    cd=deck[i];
+    if(!Number.isInteger(cd)||cd<0||cd>=suits*13)return false;
+    cnt[cd]=(cnt[cd]||0)+1;
+  }
+  var expect=8/suits;
+  for(var k in cnt)if(cnt[k]!==expect)return false;
+  return Object.keys(cnt).length===13*suits;
+}
+function validateLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return null;
+  if(typeof d.name!=="string"||!d.name.length||d.name.length>32)return null;
+  if(d.suits!==1&&d.suits!==2&&d.suits!==4)return null;
+  var hasSeed=Number.isInteger(d.seed)&&d.seed>=1;
+  var hasDeck=Array.isArray(d.deck);
+  if(!hasSeed&&!hasDeck)return null;
+  if(!hasDeck&&d.deck!==undefined)return null;//deck 字段存在但形态错误
+  var out={name:d.name,suits:d.suits};
+  if(hasSeed)out.seed=d.seed;
+  if(hasDeck){if(!validDeckCodes(d.deck,d.suits))return null;out.deck=d.deck.slice();}
+  return out;
+}
+/* 解析 DB 下发的关卡批次：任一条非法即整批放弃（返回 null） */
+function parseLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var seen={},list=[],i,it,no,d;
+  for(i=0;i<res.levels.length;i++){
+    it=res.levels[i];
+    if(!it||typeof it!=="object")return null;
+    no=it.levelNo;
+    if(typeof no!=="number"||!Number.isInteger(no)||no<1||seen[no])return null;
+    var raw=it.dataJson;
+    if(typeof raw==="string"){try{d=JSON.parse(raw);}catch(e){return null;}}
+    else if(raw&&typeof raw==="object"&&!Array.isArray(raw)){d=raw;}
+    else return null;
+    d=validateLevelData(d);
+    if(!d)return null;
+    seen[no]=true;
+    list.push({no:no,d:d});
+  }
+  list.sort(function(a,b){return a.no-b.no;});
+  return list.map(function(x){return x.d;});
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){
+      var ok=true;
+      for(var i=0;i<list.length;i++){if(!validateLevelData(list[i])){ok=false;break;}}
+      if(ok){LEVELS=list;return v;}
+    }
+  }catch(e){}
+  return 0;
+}
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("spider-solitaire").then(function(res){
+    var list=parseLevels(res);
+    if(!list)return;
+    if(state==="play")return;//对局进行中不打断
+    if(applyLevels(list,res.version||0)){
+      if(cur>=LEVELS.length)cur=LEVELS.length-1;
+      buildLevel(cur);
+      showIntro();
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档 ---------- */
+var KEY="sw.spidersolitaire.v1";
+function loadSave(){
+  try{var s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s==="object")return{lv:Math.max(0,parseInt(s.lv,10)||0),
+      stars:s.stars&&typeof s.stars==="object"?s.stars:{},
+      best:s.best&&typeof s.best==="object"?s.best:{}};
+  }catch(e){}
+  return{lv:0,stars:{},best:{}};
+}
+var saveData=loadSave();
+function save(){
+  var data={lv:saveData.lv,stars:saveData.stars,best:saveData.best};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("spider-solitaire",data).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("spider-solitaire").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rl=Math.max(0,parseInt(r.lv,10)||0);
+      if(rl>saveData.lv){saveData.lv=Math.min(LEVELS.length-1,rl);changed=true;}
+      if(r.stars&&typeof r.stars==="object")for(var k in r.stars){
+        var v=Math.max(0,parseInt(r.stars[k],10)||0);
+        if(v>(parseInt(saveData.stars[k],10)||0)){saveData.stars[k]=v;changed=true;}
+      }
+      if(r.best&&typeof r.best==="object")for(var k2 in r.best){
+        var b=Math.max(0,parseInt(r.best[k2],10)||0);
+        var mine=parseInt(saveData.best[k2],10)||0;
+        if(b>0&&(mine===0||b<mine)){saveData.best[k2]=b;changed=true;}
+      }
+      if(changed){save();if(state!=="play"){if(cur>=LEVELS.length)cur=LEVELS.length-1;buildLevel(cur);showIntro();}}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 常量与工具 ---------- */
+var RANKS=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+var SUITS=["♠","♥","♦","♣"];
+var RED=[false,true,true,false];
+var SUIT_NAMES=["黑桃","红桃","方块","梅花"];
+var NCOL=10,NWIN=8;
+function mulberry32(seed){
+  var a=seed>>>0;
+  return function(){
+    a|=0;a=(a+0x6d2b79f5)|0;
+    var t=Math.imul(a^(a>>>15),1|a);
+    t=(t+Math.imul(t^(t>>>7),61|t))^t;
+    return((t^(t>>>14))>>>0)/4294967296;
+  };
+}
+function $(id){return document.getElementById(id);}
+function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"");}
+function fmt(ms){var s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;return(m<10?"0":"")+m+":"+(s<10?"0":"")+s;}
+function isRed(c){return RED[c.s];}
+function cardName(c){return SUITS[c.s]+RANKS[c.r];}
+/* ---------- 规则（与生成器 model.mjs 同口径） ---------- */
+function runValid(col,i){
+  if(i<0||i>=col.length)return false;
+  var prev=col[i];
+  if(!prev.up)return false;
+  for(var k=i+1;k<col.length;k++){
+    var c=col[k];
+    if(!c.up||c.s!==prev.s||c.r!==prev.r-1)return false;
+    prev=c;
+  }
+  return true;
+}
+function movableStarts(col){
+  var out=[];
+  for(var i=0;i<col.length;i++)if(runValid(col,i))out.push(i);
+  return out;
+}
+function canPlace(dst,first){return !dst.length||dst[dst.length-1].r===first.r+1;}
+function collectRuns(){
+  var n=0;
+  for(var i=0;i<NCOL;i++){
+    var col=tab[i];
+    if(col.length<13)continue;
+    var seg=col.slice(col.length-13);
+    if(seg[0].r===12&&seg.every(function(c,k){return c.s===seg[0].s&&c.r===12-k;})){
+      tab[i]=col.slice(0,col.length-13);
+      var top=tab[i][tab[i].length-1];
+      if(top&&!top.up)top.up=true;
+      n++;
+    }
+  }
+  done+=n;
+  return n;
+}
+function flipExposed(c){
+  var col=tab[c];
+  if(col.length&&!col[col.length-1].up)col[col.length-1].up=true;
+}
+function hasAnyMove(){
+  for(var i=0;i<NCOL;i++){
+    var starts=movableStarts(tab[i]);
+    for(var a=0;a<starts.length;a++){
+      var run=tab[i].slice(starts[a]);
+      for(var j=0;j<NCOL;j++){
+        if(j===i)continue;
+        if(canPlace(tab[j],run[0]))return true;
+      }
+    }
+  }
+  return false;
+}
+/* ---------- 状态 ---------- */
+var cur=0,tab=[],stock=[],done=0,sel=null,moves=0,undos=0,hints=0;
+var state="idle",history=[],hintMark=null;
+var t0=0,accum=0,running=false,timerId=null;
+var offsets=[],colEls=[];
+var boardEl=$("board"),msgEl=$("msg");
+/* ---------- 计时 ---------- */
+function startTimer(){if(running||state!=="play")return;running=true;t0=Date.now();timerId=setInterval(tick,250);}
+function tick(){if(running)$("stTime").textContent=fmt(elapsed());}
+function elapsed(){return accum+(running?Date.now()-t0:0);}
+function stopTimer(){if(running){accum+=Date.now()-t0;running=false;}if(timerId){clearInterval(timerId);timerId=null;}}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){if(running){accum+=Date.now()-t0;running=false;}}
+  else{if(state==="play"&&!running){t0=Date.now();running=true;}}
+});
+/* ---------- 建局 ---------- */
+function makeCards(d){
+  var i;
+  if(d.deck){
+    var out=new Array(d.deck.length);
+    for(i=0;i<d.deck.length;i++)out[i]={d:i,s:Math.floor(d.deck[i]/13),r:d.deck[i]%13,up:false};
+    return out;
+  }
+  var copies=8/d.suits,arr=[],s,r,c;
+  for(s=0;s<d.suits;s++)for(r=0;r<13;r++)for(c=0;c<copies;c++)arr.push({d:arr.length,s:s,r:r,up:false});
+  var rng=mulberry32(d.seed);
+  for(i=arr.length-1;i>0;i--){var j=Math.floor(rng()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t;}
+  return arr;
+}
+function buildLevel(n){
+  if(n<0)n=0;if(n>=LEVELS.length)n=LEVELS.length-1;
+  cur=n;
+  var d=LEVELS[n];
+  var cards=makeCards(d);
+  tab=[];var p=0;
+  for(var i=0;i<NCOL;i++){
+    var cnt=i<4?6:5;
+    var col=cards.slice(p,p+cnt);p+=cnt;
+    col[col.length-1].up=true;
+    tab.push(col);
+  }
+  stock=cards.slice(p);
+  done=0;sel=null;moves=0;undos=0;hints=0;history=[];hintMark=null;
+  state="idle";
+  stopTimer();accum=0;running=false;
+  $("stTime").textContent="00:00";
+  buildCols();
+  render();
+  updateStats();
+  say("第"+(n+1)+"关 · "+d.name+" · 点列选牌，再点目标列");
+}
+function buildCols(){
+  boardEl.innerHTML="";colEls=[];
+  for(var i=0;i<NCOL;i++){
+    var el=document.createElement("div");
+    el.className="col";el.setAttribute("data-col",i);
+    boardEl.appendChild(el);colEls.push(el);
+  }
+}
+/* ---------- 渲染 ---------- */
+function cardH(){
+  var w=(boardEl.clientWidth-36)/10;
+  return Math.max(30,Math.round(w*1.4));
+}
+function render(){
+  var H=cardH(),stepDown=9,stepUp=18;
+  boardEl.style.setProperty("--cardH",H+"px");
+  offsets=[];
+  for(var i=0;i<NCOL;i++){
+    var el=colEls[i],col=tab[i],html="",y=0,k;
+    var offs=[];
+    if(col.length){
+      for(k=0;k<col.length;k++){
+        offs.push(y);
+        var c=col[k];
+        var selOn=sel&&sel.col===i&&k>=sel.idx&&c.up;
+        var hintOn=hintMark&&hintMark.from===i&&k>=hintMark.idx;
+        html+='<div class="card'+(c.up?(isRed(c)?" red":""):" down")+(selOn?" sel":"")+(hintOn?" hintsrc":"")+'" style="top:'+y+'px">';
+        if(c.up)html+='<span class="rk">'+RANKS[c.r]+'</span><span class="st">'+SUITS[c.s]+'</span><span class="cen">'+SUITS[c.s]+'</span>';
+        else html+='<span class="cen">✦</span>';
+        html+='</div>';
+        if(k<col.length-1)y+=c.up?stepUp:stepDown;
+      }
+    }else{
+      html='<div class="col-empty">空</div>';
+    }
+    el.innerHTML=html;
+    el.style.height=(col.length?offs[offs.length-1]+H:H)+"px";
+    if(hintMark&&hintMark.to===i)el.classList.add("hintdst");else el.classList.remove("hintdst");
+    offsets.push(offs);
+  }
+  renderDock();
+  updateStats();
+}
+function renderDock(){
+  var s=$("stock");
+  if(stock.length){
+    s.className="stock";
+    s.innerHTML='<span>'+SUITS[0]+'</span><span class="cnt">'+stock.length+'</span>';
+  }else{
+    s.className="stock empty";
+    s.innerHTML='<span>牌堆已空</span>';
+  }
+  var f=$("fnds");
+  if(!f.children.length){
+    for(var i=0;i<NWIN;i++){var d=document.createElement("div");d.className="fnd";f.appendChild(d);}
+  }
+  for(var k=0;k<NWIN;k++){
+    var el=f.children[k];
+    if(k<done){el.className="fnd full";el.textContent="✓";}
+   else{el.className="fnd";el.textContent=SUITS[k%4];}
+  }
+}
+function updateStats(){
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stMoves").textContent=moves;
+  $("stDone").textContent=done+"/"+NWIN;
+  $("btnUndo").disabled=!history.length||state!=="play";
+}
+/* ---------- 操作 ---------- */
+function snapshot(){
+  return{tab:tab.map(function(col){return col.map(function(c){return[c.d,c.s,c.r,c.up];});}),
+    stockLen:stock.length,done:done,moves:moves};
+}
+function restore(s){
+  tab=s.tab.map(function(col){return col.map(function(a){return{d:a[0],s:a[1],r:a[2],up:a[3]};});});
+  stock=stock.slice(0,s.stockLen);
+  done=s.done;moves=s.moves;
+}
+function pushHistory(){history.push(snapshot());if(history.length>300)history.shift();}
+function afterAction(){
+  sel=null;hintMark=null;
+  render();
+  if(done>=NWIN){win();return;}
+  if(!hasAnyMove()&&!stock.length)say("无棋可走：可撤销或重开本关","err");
+}
+function doDeal(){
+  if(state!=="play")return;
+  if(!stock.length){say("牌堆已空","err");return;}
+  for(var i=0;i<NCOL;i++)if(!tab[i].length){say("有空列时不能发牌，请先填满空列","err");return;}
+  pushHistory();
+  for(var c=0;c<NCOL;c++){
+    var card=stock[c];
+    card.up=true;
+    tab[c].push(card);
+  }
+  stock=stock.slice(NCOL);
+  moves++;
+  collectRuns();
+  afterAction();
+}
+function doMove(from,idx,to){
+  if(from===to)return false;
+  var src=tab[from],dst=tab[to];
+  if(!runValid(src,idx))return false;
+  var run=src.slice(idx);
+  if(!canPlace(dst,run[0]))return false;
+  pushHistory();
+  tab[from]=src.slice(0,idx);
+  tab[to]=dst.concat(run);
+  flipExposed(from);
+  moves++;
+  collectRuns();
+  return true;
+}
+function findHint(){
+  var best=null,bestScore=-1;
+  for(var i=0;i<NCOL;i++){
+    var starts=movableStarts(tab[i]);
+    for(var a=0;a<starts.length;a++){
+      var idx=starts[a],run=tab[i].slice(idx);
+      for(var j=0;j<NCOL;j++){
+        if(j===i)continue;
+        if(!canPlace(tab[j],run[0]))continue;
+        var sc=1;
+        for(var k=0;k<idx;k++)if(!tab[i][k].up){sc+=100;break;}
+        if(tab[j].length&&tab[j][tab[j].length-1].s===run[0].s)sc+=30;
+        if(sc>bestScore){bestScore=sc;best={from:i,idx:idx,to:j};}
+      }
+    }
+  }
+  return best;
+}
+/* ---------- 胜利 ---------- */
+function countCompleted(){var n=0;for(var k in saveData.stars)if(saveData.stars[k]>0)n++;return n;}
+function sumStars(){var n=0;for(var k in saveData.stars)n+=parseInt(saveData.stars[k],10)||0;return n;}
+function win(){
+  state="over";stopTimer();
+  var stars=(hints+undos)===0?3:(hints+undos<=3?2:1);
+  var key=String(cur);
+  saveData.stars[key]=Math.max(parseInt(saveData.stars[key],10)||0,stars);
+  var prev=parseInt(saveData.best[key],10)||0;
+  if(!prev||moves<prev)saveData.best[key]=moves;
+  saveData.lv=Math.max(saveData.lv,Math.min(cur+1,LEVELS.length-1));
+  save();
+  var completed=countCompleted(),totalStars=sumStars();
+  if(GB.available)GB.reportScore("spider-solitaire",{metricValue:completed,metricExtra:totalStars}).catch(function(){});
+  var isLast=cur>=LEVELS.length-1;
+  $("ovTitle").textContent=isLast?"全部通关！":"过关！";
+  $("ovDesc").innerHTML="「"+LEVELS[cur].name+"」用步 <b>"+moves+"</b> · 用时 <b>"+fmt(elapsed())+"</b><br>"
+    +"星级 "+"★".repeat(stars)+"☆".repeat(3-stars)+"（提示/撤销会扣星）<br>"
+    +"已通关 "+completed+" 关 · 累计 "+totalStars+" 星";
+  $("ovBtn").textContent=isLast?"回到第一关":"下一关";
+  showOverlay("win");
+}
+/* ---------- 浮层 ---------- */
+var overlayMode="intro";
+function showOverlay(mode){
+  overlayMode=mode;
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show");}
+function showIntro(){
+  state="idle";stopTimer();
+  var d=LEVELS[cur];
+  var suitText=d.suits===1?"单色（8 套同花）":d.suits===2?"双色（各 4 套）":"四色（各 2 套）";
+  $("ovTitle").textContent="第 "+(cur+1)+" 关 · "+d.name;
+  $("ovDesc").innerHTML=suitText+"<br>10 列牌阵 · 收满 <b>8</b> 组同花 K→A 获胜<br>点列选牌再点目标列放下，牌堆发牌需无空列";
+  $("ovBtn").textContent="开始游戏";
+  showOverlay("intro");
+}
+/* ---------- 输入 ---------- */
+function idxFromY(col,y){
+  var offs=offsets[col];
+  if(!offs||!offs.length)return -1;
+  for(var i=offs.length-1;i>=0;i--)if(y>=offs[i])return i;
+  return offs.length-1;
+}
+boardEl.addEventListener("click",function(e){
+  if(state!=="play")return;
+  var colEl=e.target.closest?e.target.closest(".col"):null;
+  if(!colEl)return;
+  var c=parseInt(colEl.getAttribute("data-col"),10);
+  var rect=colEl.getBoundingClientRect();
+  var idx=idxFromY(c,e.clientY-rect.top);
+  handleColTap(c,idx);
+});
+function handleColTap(c,idx){
+  if(sel){
+    if(sel.col===c){sel=null;render();return;}
+    if(doMove(sel.col,sel.idx,c)){say("已移动");afterAction();return;}
+    sel=null;render();
+    say("非法移动：整组须同花递减，且目标顶牌比它大 1（空列任意）","err");
+    return;
+  }
+  var col=tab[c];
+  var start=-1;
+  if(idx>=0&&idx<col.length&&runValid(col,idx))start=idx;
+  else{
+    var ms=movableStarts(col);
+    start=ms.length?ms[ms.length-1]:-1;
+  }
+  if(start<0){say("这一列没有可移动的明牌","err");return;}
+  sel={col:c,idx:start};
+  say("已选中 "+cardName(col[start])+" 起的 "+(col.length-start)+" 张，点目标列放下");
+  render();
+}
+$("stock").addEventListener("click",function(){if(state==="play")doDeal();});
+$("btnNew").addEventListener("click",function(){
+  hideOverlay();buildLevel(cur);state="play";startTimer();render();
+  say("本关已重开");
+});
+$("btnUndo").addEventListener("click",function(){
+  if(state!=="play"||!history.length)return;
+  restore(history.pop());undos++;sel=null;hintMark=null;render();
+  say("已撤销一步");
+});
+$("btnHint").addEventListener("click",function(){
+  if(state!=="play")return;
+  var h=findHint();
+  if(!h){say("当前没有可走的棋，试试发牌或重开","err");return;}
+  hints++;hintMark=h;render();
+  say("提示：把 "+cardName(tab[h.from][h.idx])+" 放到第 "+(h.to+1)+" 列");
+  setTimeout(function(){hintMark=null;render();},1500);
+});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(overlayMode==="win"){
+    buildLevel(cur<LEVELS.length-1?cur+1:0);
+  }else{
+    buildLevel(cur);
+  }
+  state="play";startTimer();render();
+});
+window.addEventListener("resize",function(){render();});
+/* ---------- 启动 ---------- */
+loadCachedLevels();
+var startIdx=Math.min(Math.max(saveData.lv,0),LEVELS.length-1);
+buildLevel(startIdx);
+showIntro();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+</body>
+</html>

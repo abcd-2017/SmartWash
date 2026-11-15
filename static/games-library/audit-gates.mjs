@@ -33,7 +33,8 @@ const STRICT = new Set([
   "hanoi",
   "tangram",
   "one-stroke", "battle-city",
-  "flow-connect", "bomberman", "poem-fill", "peg-solitaire", "matchstick"
+  "flow-connect", "bomberman", "poem-fill", "peg-solitaire", "matchstick",
+  "spider-solitaire", "mini-golf", "penalty", "riddle", "ballz-bounce"
 ]);
 
 // §2 基础 token + §3 已登记素材 token 前缀
