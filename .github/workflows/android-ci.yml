@@ -25,5 +25,13 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: Build debug APK
-        run: ./gradlew assembleDebug
+
+      # 两个 flavor 分别构建（full=com.smartwash / lite=com.todayeat.app），
+      # 并各跑单元测试；任一变体失败即 CI 失败，避免只验 full 而漏掉 lite 的编译断裂。
+      - name: Build debug APKs (full + lite)
+        run: |
+          ./gradlew \
+            assembleFullDebug \
+            assembleLiteDebug \
+            testFullDebugUnitTest \
+            testLiteDebugUnitTest
