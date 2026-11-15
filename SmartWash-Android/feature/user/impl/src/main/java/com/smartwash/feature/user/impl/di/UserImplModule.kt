@@ -9,7 +9,6 @@ import com.smartwash.feature.user.api.UserApi
 import com.smartwash.feature.user.impl.UserApiImpl
 import com.smartwash.feature.user.impl.init.HapticSettingsInitTask
 import com.smartwash.feature.user.impl.init.SessionInitTask
-import com.smartwash.feature.user.impl.network.api.DivSettingApi
 import com.smartwash.feature.user.impl.network.api.UserAccountApi
 import com.smartwash.feature.user.impl.session.SessionEventBus
 import com.smartwash.feature.user.impl.session.SessionManager
@@ -47,8 +46,9 @@ abstract class UserImplModule {
 }
 
 /**
- * 用户域网络供给（T5.2 自 app/di/NetworkModule 拆出）：UserAccountApi 实例随用户域迁入，
- * 其余业务 API（order/payment/laundry/coupon/school）仍留 app，待各自 feature 阶段迁移。
+ * 用户域网络供给（T5.2 自 app/di/NetworkModule 拆出）：UserAccountApi 实例随用户域迁入。
+ * 观象台 BYOK 的 DivSettingApi 随设置页/配置页下沉 app/src/full（full 专属），
+ * 其 @Provides 见 app/src/full 的 UserFlavorModule。
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -57,11 +57,6 @@ object UserAccountApiModule {
     @Provides
     fun provideUserAccountApi(retrofit: Retrofit): UserAccountApi =
         retrofit.create(UserAccountApi::class.java)
-
-    /** 观象台 BYOK 接口（设置页「解读模型」入口，issue #79；观象台模块属 #78 范围不在此动） */
-    @Provides
-    fun provideDivSettingApi(retrofit: Retrofit): DivSettingApi =
-        retrofit.create(DivSettingApi::class.java)
 }
 
 /**

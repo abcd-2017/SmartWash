@@ -5,6 +5,8 @@
 apply from: "$rootDir/config/android-library.gradle"
 apply from: "$rootDir/config/compose.gradle"
 apply from: "$rootDir/config/serialization.gradle"
+// NavGraphContributor 多绑定契约（@Multibinds 声明空集）需要 Hilt 注解与 KSP 处理
+apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.common.ui'
@@ -21,6 +23,10 @@ dependencies {
     // 本模块须自持（release variant 编译曾因此失败，debug 因传递差异侥幸通过）
     implementation libs.androidx.core.ktx
     implementation libs.androidx.activity.compose
+    // NavGraphContributor 契约（NavGraphBuilder/NavHostController 类型签名）
+    implementation libs.androidx.navigation.compose
+    // LocalSharedTransitionScope（SharedTransitionScope 类型；animation 虽经 material3 传递，显式声明）
+    implementation libs.androidx.compose.animation
     // 统一网络配图（调研 C4）：SmartWashAsyncImage 供各域复用，避免每模块各自声明 Coil
     implementation libs.coil.compose
 }
