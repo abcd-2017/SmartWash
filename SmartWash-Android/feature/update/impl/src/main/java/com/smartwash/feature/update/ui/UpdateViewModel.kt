@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.common.utils.AppLogger
-import com.smartwash.feature.update.R
+import com.smartwash.feature.update.core.R
 import com.smartwash.feature.update.api.model.AppVersionVo
 import com.smartwash.feature.update.repository.AppUpdateRepository
 import com.smartwash.feature.update.settings.UpdateSettingsStore

@@ -8,7 +8,7 @@
 
 ## 基本规则
 
-- **新增页面必须注册路由** — 各域页面在本域 `*Graph.kt`（如 `OrderGraph.kt`）中注册 composable，壳层 `MainActivity` 经 `NavGraphBuilder.xxxGraph` 聚合；壳层留守页面（取件页等）注册于 `shellGraph`。路由常量以各域 `*Route` 密封类为单一事实来源（`OrderRoute`/`PaymentRoute`/`UserRoute`/`LaundryRoute`/`CouponRoute`/`DivRoute`）。
+- **新增页面必须注册路由** — 各域页面在本域 `*Graph.kt` 注册 composable，并经 **`NavGraphContributor`（`@Provides @IntoSet`）** 贡献，壳层 `MainActivity` 注入 `Set<NavGraphContributor>` 统一注册（禁止硬编码 `xxxGraph` 调用）；变体专属页面注册在 `app/src/full` 或 `app/src/lite` 源集。路由常量以各域 `*Route` 密封类为单一事实来源。
 - **API 接口遵循既有模式** — 需要认证的接口加 `@RequireAuthorization` 注解；返回值统一 `ApiResult<T>` 包装。
 - **异步状态统一使用 `RequestState`** — ViewModel 中所有网络请求状态用 `RequestState`（Idle/Loading/Success/Error）管理，页面通过 `StateFlow` 收集。
 - **遵循 MVVM 模式** — 每个页面一个 `*Page.kt` + 一个 `*ViewModel.kt`，ViewModel 通过 Repository（或跨域经 api 接口）访问数据，Page 只负责 UI 渲染。
@@ -22,8 +22,9 @@
 ## 构建与运行
 
 ```bash
-./gradlew assembleDebug    # Debug APK
-./gradlew assembleRelease  # Release APK（ProGuard 混淆 + 资源收缩）
+./gradlew assembleFullDebug    # full 变体 Debug APK
+./gradlew assembleLiteDebug    # lite（吃啥）变体 Debug APK
+./gradlew assembleFullRelease / assembleLiteRelease  # Release APK（ProGuard 混淆 + 资源收缩）
 ./gradlew test             # JVM 单元测试
 ./gradlew lint             # 代码检查
 ./gradlew feature:divination:test  # 观象台算法锚点单测（亦含于全量 test）
@@ -38,7 +39,9 @@
 
 ## 项目架构
 
-智慧校园洗衣服务 App，**多模块 Gradle 项目**，MVVM + Jetpack Compose + Hilt。模块化重构后共 **36 个 Gradle 模块**（1 app + 5 common + 30 feature 子模块，15 个业务域全部 api/impl 拆分）。
+智慧校园洗衣服务 App，**多模块 Gradle 项目**，MVVM + Jetpack Compose + Hilt。模块化重构后共 **37 个 Gradle 模块**（1 app + 5 common + 31 feature 子模块，15 个业务域全部 api/impl 拆分）。
+
+**变体（flavors）**：`full`（`com.smartwash`，scheme `smartwash://`）与 `lite`（吃啥 / Today Eat，`com.todayeat.app`，scheme `todayeat://`）；lite 只含 `common:* + user/game/dining`，其余域经 `fullImplementation` 裁剪。构建命令为 `assembleFullDebug` / `assembleLiteDebug`（release 同理）。
 
 ### 模块地图
 

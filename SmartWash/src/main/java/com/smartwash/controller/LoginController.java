@@ -1,6 +1,7 @@
 package com.smartwash.controller;
 
 import com.smartwash.common.DefaultConstant;
+import com.smartwash.common.LoginResult;
 import com.smartwash.common.Result;
 import com.smartwash.common.ResultCodeEnum;
 import com.smartwash.common.ratelimit.RateLimit;
@@ -14,11 +15,13 @@ import com.smartwash.from.users.ResetPasswordFrom;
 import com.smartwash.from.users.UserLoginFrom;
 import com.smartwash.from.users.UserRegisterFrom;
 import com.smartwash.service.IAdminUsersService;
+import com.smartwash.service.ILoginLogService;
 import com.smartwash.service.IUsersService;
 import com.smartwash.service.ISysConfigService;
 import com.smartwash.service.JwtBlacklistService;
 import com.smartwash.service.SmsService;
 import com.smartwash.utils.JwtUtil;
+import com.smartwash.utils.LoginUser;
 import com.smartwash.vo.LoginVo;
 import com.smartwash.vo.TokenPairVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -116,8 +119,9 @@ public class LoginController {
     private final SmsService smsService;
     private final JwtBlacklistService jwtBlacklistService;
     private final ISysConfigService sysConfigService;
+    private final ILoginLogService loginLogService;
 
-    public LoginController(IAdminUsersService adminUsersService, IUsersService usersService, JwtUtil jwtUtil, AuthenticationManager authenticationManager, StringRedisTemplate redisTemplate, SmsService smsService, JwtBlacklistService jwtBlacklistService, ISysConfigService sysConfigService) {
+    public LoginController(IAdminUsersService adminUsersService, IUsersService usersService, JwtUtil jwtUtil, AuthenticationManager authenticationManager, StringRedisTemplate redisTemplate, SmsService smsService, JwtBlacklistService jwtBlacklistService, ISysConfigService sysConfigService, ILoginLogService loginLogService) {
         this.adminUsersService = adminUsersService;
         this.usersService = usersService;
         this.jwtUtil = jwtUtil;
@@ -126,6 +130,7 @@ public class LoginController {
         this.smsService = smsService;
         this.jwtBlacklistService = jwtBlacklistService;
         this.sysConfigService = sysConfigService;
+        this.loginLogService = loginLogService;
     }
 
     @Operation(summary = "管理员登录", description = "管理员通过用户名和密码登录，返回JWT令牌与角色")
@@ -137,6 +142,7 @@ public class LoginController {
         String lockKey = "login:lock:admin:" + userLoginFrom.getUsername();
         String attemptKey = "login:attempt:admin:" + userLoginFrom.getUsername();
         if (isLocked(lockKey) || isLocked(LOGIN_IP_LOCK_KEY_PREFIX + clientIp)) {
+            recordLoginLog(userLoginFrom.getUsername(), null, clientIp, LoginResult.FAIL);
             return Result.failMsg("登录尝试过于频繁，请稍后再试");
         }
 
@@ -149,6 +155,7 @@ public class LoginController {
             log.warn("管理员登录认证失败: {}", e.getMessage());
             recordFailedAttempt(attemptKey, lockKey);
             recordIpFailedAttempt(LOGIN_IP_ATTEMPT_KEY_PREFIX + clientIp, LOGIN_IP_LOCK_KEY_PREFIX + clientIp, clientIp);
+            recordLoginLog(userLoginFrom.getUsername(), null, clientIp, LoginResult.FAIL);
             return Result.failMsg("用户名或密码错误");
         }
         redisTemplate.delete(attemptKey);
@@ -161,6 +168,7 @@ public class LoginController {
         // 角色取该管理员在 roles 表中实际绑定的角色名，不硬编码（供 Web 管理后台按角色渲染）
         String role = adminUsersService.getAdminRoleName(userLoginFrom.getUsername());
         log.info("管理员登录成功, username: {}, role: {}", userLoginFrom.getUsername(), role);
+        recordLoginLog(userLoginFrom.getUsername(), resolveLoginUserId(authenticate), clientIp, LoginResult.SUCCESS);
         return Result.ok(new LoginVo(token, refreshToken, role));
     }
 
@@ -173,6 +181,7 @@ public class LoginController {
         String lockKey = "login:lock:user:" + userLoginFrom.getPhoneNumber();
         String attemptKey = "login:attempt:user:" + userLoginFrom.getPhoneNumber();
         if (isLocked(lockKey) || isLocked(LOGIN_IP_LOCK_KEY_PREFIX + clientIp)) {
+            recordLoginLog(userLoginFrom.getPhoneNumber(), null, clientIp, LoginResult.FAIL);
             return Result.failMsg("登录尝试过于频繁，请稍后再试");
         }
 
@@ -184,6 +193,7 @@ public class LoginController {
             // 手机号未注册同样计入 IP 失败计数：该分支对外与密码错误不可区分，
             // 不计数会被用于绕过账号锁定做手机号枚举/爆破
             recordIpFailedAttempt(LOGIN_IP_ATTEMPT_KEY_PREFIX + clientIp, LOGIN_IP_LOCK_KEY_PREFIX + clientIp, clientIp);
+            recordLoginLog(userLoginFrom.getPhoneNumber(), null, clientIp, LoginResult.FAIL);
             return Result.failMsg("用户名或密码错误");
         }
         String username = String.format("%s-%s", DefaultConstant.USER_LOGIN_TYPE, userLoginFrom.getPhoneNumber());
@@ -195,6 +205,7 @@ public class LoginController {
             log.warn("用户登录认证失败: {}", e.getMessage());
             recordFailedAttempt(attemptKey, lockKey);
             recordIpFailedAttempt(LOGIN_IP_ATTEMPT_KEY_PREFIX + clientIp, LOGIN_IP_LOCK_KEY_PREFIX + clientIp, clientIp);
+            recordLoginLog(userLoginFrom.getPhoneNumber(), null, clientIp, LoginResult.FAIL);
             return Result.failMsg("用户名或密码错误");
         }
         redisTemplate.delete(attemptKey);
@@ -205,6 +216,7 @@ public class LoginController {
         String token = jwtUtil.generatorAccessToken(username);
         String refreshToken = jwtUtil.generatorRefreshToken(username);
         log.info("用户登录成功, phone: {}", maskPhone(userLoginFrom.getPhoneNumber()));
+        recordLoginLog(userLoginFrom.getPhoneNumber(), resolveLoginUserId(authenticate), clientIp, LoginResult.SUCCESS);
         return Result.ok(new LoginVo(token, refreshToken, DefaultConstant.USER_LOGIN_TYPE));
     }
 
@@ -217,6 +229,7 @@ public class LoginController {
         String clientIp = getClientIp(request);
         // IP 维度统一风控：与登录共享同一 IP 锁，达到阈值后一刀切限流
         if (isLocked(LOGIN_IP_LOCK_KEY_PREFIX + clientIp)) {
+            recordLoginLog(phone, null, clientIp, LoginResult.FAIL);
             return Result.failMsg("操作过于频繁，请稍后再试");
         }
         // 已注册手机号无法注册成功：发码接口会为其签发重置密码用途的验证码（见 getCaptcha 的 purpose 推断），
@@ -225,12 +238,14 @@ public class LoginController {
         if (usersService.getUserByPhone(phone) != null) {
             log.warn("注册拒绝：手机号已注册, phone: {}, ip: {}", maskPhone(phone), clientIp);
             recordIpFailedAttempt(LOGIN_IP_ATTEMPT_KEY_PREFIX + clientIp, LOGIN_IP_LOCK_KEY_PREFIX + clientIp, clientIp);
+            recordLoginLog(phone, null, clientIp, LoginResult.FAIL);
             return Result.failMsg("该手机号已注册，请直接登录或使用忘记密码找回");
         }
         // 使用注册用途（register）的独立 key 校验，杜绝重置密码场景的验证码跨场景使用
         CaptchaVerifyResult verifyResult = verifyCaptcha(CAPTCHA_PURPOSE_REGISTER, phone, userRegisterFrom.getCode());
         if (verifyResult != CaptchaVerifyResult.SUCCESS) {
             log.warn("注册验证码校验失败[{}], phone: {}", verifyResult.getDesc(), maskPhone(phone));
+            recordLoginLog(phone, null, clientIp, LoginResult.FAIL);
             return Result.failMsg(verifyResult.getDesc());
         }
 
@@ -238,12 +253,22 @@ public class LoginController {
         if (usersService.registerUser(userRegisterFrom)) {
             String username = String.format("%s-%s", DefaultConstant.USER_LOGIN_TYPE, phone);
             log.info("用户注册成功, phone: {}", maskPhone(phone));
+            // 注册成功落库后回查用户 ID 供登录日志关联；回查异常不得影响已完成的注册主流程，仅 userId 为空
+            Long registeredUserId = null;
+            try {
+                var registered = usersService.getUserByPhone(phone);
+                registeredUserId = registered == null ? null : registered.getUserId();
+            } catch (Exception e) {
+                log.warn("注册成功后回查用户 ID 失败，登录日志 userId 记为空, phone: {}", maskPhone(phone), e);
+            }
+            recordLoginLog(phone, registeredUserId, clientIp, LoginResult.SUCCESS);
             // 注册即自动登录：响应与登录同构（双 token + 角色），角色固定为 user
             return Result.ok(new LoginVo(
                     jwtUtil.generatorAccessToken(username),
                     jwtUtil.generatorRefreshToken(username),
                     DefaultConstant.USER_LOGIN_TYPE));
         }
+        recordLoginLog(phone, null, clientIp, LoginResult.FAIL);
         return Result.failMsg("注册失败");
     }
 
@@ -471,6 +496,29 @@ public class LoginController {
             return "";
         }
         return phone.replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2");
+    }
+
+    /**
+     * 写入登录日志（成功/失败均记录，账号/平台/版本/UA/网络来自请求上下文）。
+     * 登录日志是旁路审计信息：写入异常不得影响登录/注册主流程，仅 warn 留痕。
+     */
+    private void recordLoginLog(String account, Long userId, String ip, LoginResult result) {
+        try {
+            loginLogService.recordLoginLog(account, userId, ip, result);
+        } catch (Exception e) {
+            log.warn("登录日志写入失败, account: {}, result: {}", maskPhone(account), result, e);
+        }
+    }
+
+    /**
+     * 从认证结果取登录用户内部 ID（用户端 = users.user_id，管理端 = admin_users.admin_id）。
+     * 认证失败/主体不可识别时返回 null，由登录日志以 userId 可空承载。
+     */
+    private Long resolveLoginUserId(Authentication authentication) {
+        if (authentication != null && authentication.getPrincipal() instanceof LoginUser loginUser) {
+            return loginUser.getUserId();
+        }
+        return null;
     }
 
     /**

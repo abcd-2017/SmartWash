@@ -919,6 +919,32 @@ CREATE TABLE `order_reviews` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
+-- Table structure for login_log（登录日志：四端平台标识 + 登录结果）
+-- 由 LoginController 管理员登录/用户登录/注册的成功与失败路径写入；
+-- user_id 语义：用户端 = users.user_id，管理端 = admin_users.admin_id，失败可空；
+-- phone 语义：用户端 = 手机号，管理端 = 用户名，失败时记录尝试账号。
+-- ----------------------------
+DROP TABLE IF EXISTS `login_log`;
+CREATE TABLE `login_log` (
+  `id`           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '日志 ID',
+  `user_id`      BIGINT       NULL DEFAULT NULL COMMENT '登录用户ID(用户端=users.user_id;管理端=admin_users.admin_id;失败可空)',
+  `phone`        VARCHAR(100) NULL DEFAULT NULL COMMENT '登录账号(用户端=手机号;管理端=用户名;失败时记录尝试账号)',
+  `platform`     VARCHAR(16)  NOT NULL DEFAULT 'unknown' COMMENT '平台标识(android/ios/harmonyos/web/unknown)',
+  `app_version`  VARCHAR(64)  NULL DEFAULT NULL COMMENT 'App版本号(X-App-Version)',
+  `ua`           VARCHAR(500) NULL DEFAULT NULL COMMENT 'User-Agent(清洗换行,超500截断)',
+  `network_type` VARCHAR(16)  NOT NULL DEFAULT 'unknown' COMMENT '网络类型(wifi/cellular/none/unknown)',
+  `ip`           VARCHAR(64)  NULL DEFAULT NULL COMMENT '登录来源IP(按可信代理规则解析)',
+  `result`       VARCHAR(16)  NOT NULL COMMENT '登录结果(success/fail)',
+  `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '登录时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_login_log_user_id` (`user_id`),
+  KEY `idx_login_log_phone` (`phone`),
+  KEY `idx_login_log_platform` (`platform`),
+  KEY `idx_login_log_result` (`result`),
+  KEY `idx_login_log_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='登录日志(四端平台标识与登录结果)';
+
+-- ----------------------------
 -- Indexes & Constraints
 -- ----------------------------
 CREATE INDEX idx_lockers_school_id ON lockers(school_id);

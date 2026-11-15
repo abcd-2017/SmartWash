@@ -14,7 +14,10 @@ com.smartwash.common.ui
 │   ├── PasswordInput.kt    — 密码输入框
 │   └── PhoneNumberInput.kt — 手机号输入框
 ├── navigation/
-│   └── ShellRoute.kt       — 壳层路由契约
+│   ├── ShellRoute.kt            — 壳层路由契约
+│   ├── NavGraphContributor.kt   — 页面注册贡献者（fun interface + @IntoSet）
+│   ├── NavGraphAmbient.kt       — 图注册期组合值快照（reduceMotion）
+│   └── LocalSharedTransitionScope.kt — 共享元素转场 scope 的 CompositionLocal
 └── theme/
     ├── AppDesign.kt        — 设计 Token + 可复用组件
     ├── Color.kt            — 颜色定义（自然绿 #2D9B6A 等）
@@ -26,6 +29,8 @@ com.smartwash.common.ui
 - `AppDesign` — 设计系统入口（卡片、间距、圆角等 Token）
 - `AppButton / AppCard / AppTabBar / PageHeader` — 通用组件
 - `ShellRoute` — 壳层路由契约接口
+- `NavGraphContributor` — 页面注册贡献者契约（各域/变体 `@Provides @IntoSet`，壳层 `MainActivity` 注入 `Set` 统一注册；替代硬编码 `xxxGraph` 调用）
+- `LocalSharedTransitionScope` — 共享元素转场 scope 的 CompositionLocal（消费页读取，null 时退化为普通转场）
 - `SmartWashTheme` — Compose 主题包装
 
 ## 依赖关系
@@ -39,6 +44,8 @@ com.smartwash.common.ui
   - 新页面必须遵循现有 token，禁止自定义颜色/间距
 - 组件默认使用 AppDesign 中的 token，覆写需传参而非硬编码
 - ShellRoute 定义壳层导航结构，feature 模块实现具体路由
+- **页面注册统一走 `NavGraphContributor`**：域 impl 或 flavor 源集用 `@Provides @IntoSet` 贡献，`MainActivity` 注入 `Set<NavGraphContributor>` 后统一 `register(navController)`；禁止在壳层硬编码逐个 `xxxGraph` 调用。
+- `NavGraphBuilder` 不是组合上下文，图内无法读 `LocalReduceMotion`；`NavGraphAmbient` 在组合期快照该值，转场 lambda 在导航调用时读取。
 
 ## 已知坑
 - 组件默认样式在深色模式下可能未完全适配（token 覆盖不全）

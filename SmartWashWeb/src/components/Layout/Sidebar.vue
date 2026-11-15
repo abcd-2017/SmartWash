@@ -217,7 +217,7 @@ const MENU_GROUP_CONFIG = [
   {
     title: '系统与安全',
     icon: 'Lock',
-    paths: ['/roles', '/adminUsers', '/audit-logs', '/captcha', '/sysconfig'],
+    paths: ['/roles', '/adminUsers', '/audit-logs', '/login-logs', '/captcha', '/sysconfig'],
   },
   { title: '订阅', icon: 'AlarmClock', paths: ['/subscriptions'] },
   { title: '系统与安全', icon: 'Lock', paths: ['/audit-logs'] },

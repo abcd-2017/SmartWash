@@ -758,3 +758,70 @@ export const COUPON_STATUS_OPTIONS = [
   { value: 'ACTIVE', label: '可用' },
   { value: 'INACTIVE', label: '已失效' },
 ];
+
+// ---------- 登录日志（ADR-0011 平台标识 / login_log） ----------
+
+/** 平台 → 文案（与 ADR-0011 X-Platform 取值对齐；未知值回显原始编码） */
+export const LOGIN_PLATFORM_TEXT = {
+  android: 'Android',
+  ios: 'iOS',
+  harmonyos: '鸿蒙',
+  web: 'Web',
+};
+
+/** 平台筛选下拉由字典派生，保证下拉与表格文案同源 */
+export const LOGIN_PLATFORM_OPTIONS = Object.entries(LOGIN_PLATFORM_TEXT).map(
+  ([value, label]) => ({ value, label })
+);
+
+export const loginPlatformText = (platform) => LOGIN_PLATFORM_TEXT[platform] || platform || '-';
+
+/** 平台标签配色：管理端自身为 info，移动端按端别区分（未知回退 info） */
+export const LOGIN_PLATFORM_TAG_TYPES = {
+  android: 'success',
+  ios: 'warning',
+  harmonyos: 'primary',
+  web: 'info',
+};
+
+export const loginPlatformTagType = (platform) => dictValue(LOGIN_PLATFORM_TAG_TYPES, platform);
+
+/**
+ * 登录结果 → 文案。契约未固定 result 取值，兼容常见两种口径：
+ * 字符串 success/fail(failure) 与布尔/数字 1/0(true/false)，未知值回显原始值不猜文案。
+ */
+export const LOGIN_RESULT_TEXT = {
+  success: '成功',
+  fail: '失败',
+  failure: '失败',
+  1: '成功',
+  0: '失败',
+  true: '成功',
+  false: '失败',
+};
+
+/** 结果筛选下拉（以后端口径为准；后端若用数字口径，此处为显示契约的遗留项） */
+export const LOGIN_RESULT_OPTIONS = [
+  { value: 'success', label: '成功' },
+  { value: 'fail', label: '失败' },
+];
+
+export const loginResultText = (result) => {
+  if (result === null || result === undefined || result === '') return '-';
+  return LOGIN_RESULT_TEXT[result] || String(result);
+};
+
+export const loginResultTagType = (result) => {
+  if (['success', 1, true, '1', 'true'].includes(result)) return 'success';
+  if (['fail', 'failure', 0, false, '0', 'false'].includes(result)) return 'danger';
+  return 'info';
+};
+
+/** 网络类型 → 文案（与 ADR-0011 X-Network-Type 取值对齐） */
+export const LOGIN_NETWORK_TYPE_TEXT = {
+  wifi: 'WiFi',
+  cellular: '移动网络',
+  none: '无网络',
+};
+
+export const loginNetworkTypeText = (type) => LOGIN_NETWORK_TYPE_TEXT[type] || type || '-';

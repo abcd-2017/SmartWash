@@ -1,5 +1,6 @@
 package com.smartwash.config;
 
+import com.smartwash.common.client.ClientContextFilter;
 import com.smartwash.common.log.AccessLogFilter;
 import com.smartwash.common.log.RequestLogProperties;
 import com.smartwash.common.log.TraceIdFilter;
@@ -16,15 +17,18 @@ import org.springframework.core.Ordered;
  * <p>过滤器执行顺序（order 越小越靠外层、越先执行）：
  * <pre>
  * TraceIdFilter(HIGHEST_PRECEDENCE)
- *   → springSecurityFilterChain(SecurityProperties.DEFAULT_FILTER_ORDER = -100)
- *     → JwtAuthenticationFilter（安全链内）
- *     → AccessLogFilter(-99，安全链内层)
- *       → DispatcherServlet
+ *   → ClientContextFilter(HIGHEST_PRECEDENCE + 1)
+ *     → springSecurityFilterChain(SecurityProperties.DEFAULT_FILTER_ORDER = -100)
+ *       → JwtAuthenticationFilter（安全链内）
+ *       → AccessLogFilter(-99，安全链内层)
+ *         → DispatcherServlet
  * </pre>
  * <ul>
  *   <li>TraceIdFilter 必须是链条第一个执行的过滤器（早于安全过滤链与 JWT 过滤器），
  *       才能让包括 JWT 校验失败 warn 在内的全部日志行携带 request_id，故取
  *       {@link Ordered#HIGHEST_PRECEDENCE}；</li>
+ *   <li>ClientContextFilter 紧随其后（+1），早于安全链，使安全链内（含登录/鉴权接口）
+ *       的业务代码与日志都能读到平台上下文；只解析不拦截，缺失头退化为默认值；</li>
  *   <li>AccessLogFilter 必须位于安全过滤链【内层】（order 大于 -100）：安全链最外层的
  *       SecurityContextHolderFilter 会在链返回时清理 SecurityContext，只有内层过滤器
  *       在 finally 中仍能取到登录用户，用于访问日志的 userId 字段。</li>
@@ -38,6 +42,14 @@ public class LoggingFilterConfig {
     public FilterRegistrationBean<TraceIdFilter> traceIdFilterRegistration(TraceIdFilter traceIdFilter) {
         FilterRegistrationBean<TraceIdFilter> registration = new FilterRegistrationBean<>(traceIdFilter);
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<ClientContextFilter> clientContextFilterRegistration(ClientContextFilter clientContextFilter) {
+        FilterRegistrationBean<ClientContextFilter> registration = new FilterRegistrationBean<>(clientContextFilter);
+        // 紧随 TraceIdFilter 之后：request_id 已就绪，且早于安全链（-100）使登录接口可读平台上下文
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
         return registration;
     }
 

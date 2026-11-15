@@ -33,7 +33,48 @@ android {
         }
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // 深链 scheme 兜底（full 与 lite 两个 flavor 各自覆盖，见下方 productFlavors）。
+        // Manifest 的 <data android:scheme="${deepLinkScheme}"/> 在合并期取本占位符。
+        manifestPlaceholders = [deepLinkScheme: "smartwash"]
     }
+
+    // ===== 变体维度（app flavors）=====
+    // full：完整功能变体（applicationId com.smartwash，深链 scheme smartwash）
+    // lite：轻量变体「吃啥」（applicationId com.todayeat.app，深链 scheme todayeat），
+    //       仅保留 common:* + user/game/dining 域，其余业务域经 fullImplementation 裁剪。
+    flavorDimensions "app"
+    productFlavors {
+        full {
+            dimension "app"
+            applicationId "com.smartwash"
+            manifestPlaceholders = [deepLinkScheme: "smartwash"]
+            resValue "string", "app_name", "SmartWash"
+            // 深链 scheme 的编译期镜像（与上方 manifestPlaceholders 同源）：
+            // DeepLinkParser/DeepLinkHandler 运行期判定本端 scheme，非本端 scheme 一律 Unknown。
+            // 两处必须一致，否则会出现「Manifest 收 todayeat:// 但解析器只认 smartwash://」的静默失配。
+            buildConfigField "String", "DEEP_LINK_SCHEME", '"smartwash"'
+            // 品牌名（User-Agent 等平台标识用）：与 resValue app_name 同源，供 common:network
+            // 的 RequestInterceptor 注入 @Named("appName") 拼接 UA（library 不可见 app BuildConfig）。
+            // lite 必须与 full 取不同值，否则 lite 请求头会暴露旧品牌 SmartWash。
+            buildConfigField "String", "APP_NAME", '"SmartWash"'
+            // OTA 分发渠道：后端 GET /web/app/version|download 按 channel 分组下发产物。
+            // 与 flavor 名同源，供 :feature:update:core 的 AppUpdateRepository 经
+            // @Named("appChannel") 注入后透传（library 不可见 app BuildConfig）。
+            buildConfigField "String", "APP_CHANNEL", '"full"'
+        }
+        lite {
+            dimension "app"
+            applicationId "com.todayeat.app"
+            manifestPlaceholders = [deepLinkScheme: "todayeat"]
+            resValue "string", "app_name", "吃啥"
+            buildConfigField "String", "DEEP_LINK_SCHEME", '"todayeat"'
+            buildConfigField "String", "APP_NAME", '"TodayEat"'
+            // OTA 分发渠道：lite 走后端 android-lite/ 对象前缀，与 full 的产物清单隔离
+            buildConfigField "String", "APP_CHANNEL", '"lite"'
+        }
+    }
+
 
     // Release 签名配置：优先读取 Gradle 属性（本地 ~/.gradle/gradle.properties），
     // 其次读取环境变量（CI 传入），均无则回退到 'none'（构建即失败，强制必须配置）。
@@ -122,7 +163,7 @@ dependencies {
     implementation libs.coil.compose
 
     // APK 后台下载（WorkManager：MainActivity 调度/监听进度用；@HiltWorker 与
-    // androidx hilt-compiler 已随 ApkDownloadWorker 迁入 :feature:update）。
+    // androidx hilt-compiler 已随 ApkDownloadWorker 迁入 :feature:update:core）。
     // hilt-work 供 App 注入 HiltWorkerFactory（feature 的 implementation 依赖不传递，app 需自行声明）
     implementation libs.androidx.work.runtime.ktx
     implementation libs.androidx.hilt.work
@@ -145,36 +186,39 @@ dependencies {
     //清氧设计系统 + 共享 UI 组件（T2.5）：theme（AppDesign/Color/Theme/Type）+ ui/common 组件
     implementation project(":common:ui")
 
-    //热更新对外契约（api/impl 拆分）：AppVersionVo + AppUpdateApi
+    //热更新对外契约（api/impl 拆分）：AppVersionVo + AppUpdateApi。
+    //两变体共用（lite 手动检查更新也消费本契约），故保留 implementation 而非 fullImplementation。
     implementation project(":feature:update:api")
-    //热更新实现（T3.1）：版本检查/下载/安装；弹窗 UI 留壳层，MainActivity/SettingPage
-    //消费 UpdateViewModel/UpdateState/UpdateEventBus/ApkInstaller（app → feature 依赖方向）
-    implementation project(":feature:update:impl")
+    //热更新内核（下载/安装/版本比较，不含 InitTask）：两变体共用（lite 手动检查复用下载链路）
+    implementation project(":feature:update:core")
+    //热更新实现（full 专属）：UpdateInitTask 启动静默检查 + UpdateViewModel/UpdateEventBus。
+    //lite 不依赖本模块，Hilt @IntoSet 注册随之消失，即「lite 不注册 UpdateInitTask」。
+    fullImplementation project(":feature:update:impl")
 
     //观象台对外契约（api/impl 拆分）：DivRoute 路由常量 + DivinationApi/VO（WorkbenchPage 跳转）
-    implementation project(":feature:divination:api")
+    fullImplementation project(":feature:divination:api")
     //观象台实现（T4.1）：四套算法内核+卦历库+解读网关+7 页面；
     //MainActivity NavHost / HomePage 问卜页签消费页面 composable
-    implementation project(":feature:divination:impl")
+    fullImplementation project(":feature:divination:impl")
 
     //用户域对外契约（T5.3）：app 壳（MainActivity 会话事件/登录页注册）与 home/index/
     //laundry 消费方一律注入 UserApi（isLogin/getUserInfo 缓存/loginEvents），不触碰 impl
     implementation project(":feature:user:api")
 
     //用户域实现（T5.2）：会话+用户网络链路+登录/注册/用户中心/资料编辑/设置页面迁入；
-    //app 壳仅剩 NavHost 页面注册（LoginPage/RegisterPage/SettingPage/UpdateUserInfoPage，
-    //T8.1 拆 NavGraphBuilder 聚合后摘除）
+    //两变体共用（lite 仍需登录/会话/设置），保留 implementation
     implementation project(":feature:user:impl")
 
     //订单域对外契约（T6.1）：app 壳留守页面（detail/index/laundry/pickup/payment）与
     //UserImplSeamModule 一律注入 OrderApi（详情/试算/下单/计数/寄件取件/分页源），
     //不触碰 impl；OrderVo→OrderBrief、OrderStatus/ShowOrderStatus 枚举同随本模块
-    implementation project(":feature:order:api")
+    fullImplementation project(":feature:order:api")
 
     //订单域实现（T6.1）：订单网络链路（OrderServiceApi/OrderRepository）+ 订单页迁入；
-    //app 壳仅剩 NavHost 页面注册（OrderPage，T8.1 拆 NavGraphBuilder 聚合后摘除）
-    implementation project(":feature:order:impl")
+    //lite 不含订单域
+    fullImplementation project(":feature:order:impl")
     // 家庭点单（diningGraph 聚合；入口走深链 smartwash://dining 与后续工作台卡片，无底栏入口）
+    // 两变体共用，保留 implementation
     implementation project(":feature:dining:impl")
     // dining 对外契约（implementation 不传递）：壳层全局扫一扫经 DiningApi 归一加入链接
     implementation project(":feature:dining:api")
@@ -187,72 +231,61 @@ dependencies {
     implementation libs.mlkit.barcode.scanning
 
     //支付域对外契约（T6.2，含充值）：仅 PaymentRoute 路由常量（零跨模块数据消费）；
-    //PageConstant 支付/充值四路由委托本模块，order-impl/user-impl 跨域跳转同源取值
-    implementation project(":feature:payment:api")
+    //lite 不含支付域
+    fullImplementation project(":feature:payment:api")
 
-    //支付域实现（T6.2）：支付+充值网络链路与页面迁入；app 壳仅剩 NavHost 页面注册
-    //（PaymentPage/PaySuccessPage/RechargePage/RechargeRecordPage，T8.1 拆聚合后摘除）
-    implementation project(":feature:payment:impl")
+    //支付域实现（T6.2）：支付+充值网络链路与页面迁入
+    fullImplementation project(":feature:payment:impl")
 
-    //洗衣域对外契约（T7.1，含 School 域）：LaundryRoute 路由常量（PageConstant 洗衣/服务
-    //两路由委托本模块）+ SchoolSearchSource 学校搜索契约（user-impl 资料编辑页消费）
-    implementation project(":feature:laundry:api")
+    //洗衣域对外契约（T7.1，含 School 域）：LaundryRoute 路由常量 + SchoolSearchSource
+    //学校搜索契约（user-impl 资料编辑页消费）
+    fullImplementation project(":feature:laundry:api")
 
-    //洗衣域实现（T7.1）：洗衣+学校网络链路与页面（服务 tab 页/洗衣预约页）迁入；
-    //app 壳仅剩 NavHost 页面注册与 HomePage 服务 tab 内嵌（T8.1 拆聚合后摘除）
-    implementation project(":feature:laundry:impl")
+    //洗衣域实现（T7.1）：洗衣+学校网络链路与页面（服务 tab 页/洗衣预约页）迁入
+    fullImplementation project(":feature:laundry:impl")
 
-    //优惠券域对外契约（T7.2，按域嵌套 feature/coupon/{api,impl}）：CouponRoute 路由常量
-    //（PageConstant 优惠券路由委托本模块）+ CouponApi 服务契约（payment-impl 支付页选券消费）
-    implementation project(":feature:coupon:api")
+    //优惠券域对外契约（T7.2）：CouponRoute 路由常量 + CouponApi 服务契约
+    //（payment-impl 支付页选券消费）；lite 不含优惠券域
+    fullImplementation project(":feature:coupon:api")
 
-    //优惠券域实现（T7.2）：优惠券网络链路与优惠券页迁入；app 壳仅剩 NavHost 页面注册
-    //（CouponPage，T8.1 拆聚合后摘除）；CouponSource seam 与 PaymentImplSeamModule 已删
-    implementation project(":feature:coupon:impl")
+    //优惠券域实现（T7.2）：优惠券网络链路与优惠券页迁入
+    fullImplementation project(":feature:coupon:impl")
 
-    //积分域对外契约（扩展提案功能 17，按域嵌套 feature/points/{api,impl}）：PointsRoute
-    //路由常量 + Gson 载荷 + PointsServiceApi 网络接口（@RequireAuthorization）；
-    //无跨模块消费方，契约整体随 api 模块
-    implementation project(":feature:points:api")
+    //积分域对外契约（扩展提案功能 17）：PointsRoute 路由常量 + Gson 载荷 + PointsServiceApi
+    fullImplementation project(":feature:points:api")
 
-    //积分域实现（扩展提案功能 17）：积分仓库 + 签到有礼页（签到/余额/月榜/流水单页），
-    //经 MainActivity NavHost 一行 pointsGraph 聚合；入口走我的页「签到有礼」行与
-    //深链 smartwash://points
-    implementation project(":feature:points:impl")
-    //站内信域实现（扩展提案 #4）：消息中心收件箱页 + 未读角标跨域契约（user-impl 消费）
-    //+ 深链 host "messages" 贡献；app 壳仅剩 NavHost 一行 noticeGraph 聚合
-    implementation project(":feature:notice:impl")
+    //积分域实现（扩展提案功能 17）：积分仓库 + 签到有礼页
+    fullImplementation project(":feature:points:impl")
+    //站内信域对外契约（扩展提案 #4）：NoticeRoute + NoticeApi（我的页未读角标消费）。
+    //full 专属：契约类型由 app/src/full 的 UserInfoViewModel 直接注入，故随 impl 一起
+    //fullImplementation（impl 的 implementation 不传递，app 需自行声明）。
+    fullImplementation project(":feature:notice:api")
+    //站内信域实现（扩展提案 #4）：消息中心收件箱页 + 深链 host "messages" 贡献
+    fullImplementation project(":feature:notice:impl")
 
     //工具箱对外契约（api/impl 拆分）：ToolboxRoute/Constant + 短码/资产标签/投递三套 Api/VO
-    implementation project(":feature:toolbox:api")
-    //工具箱实现（短链 + 设备投递）：列表/创建/详情独立路由，经 MainActivity NavHost 一行
-    //toolboxGraph / deliveryGraph 聚合；工作台入口走深链（smartwash://toolbox-short-code）
-    implementation project(":feature:toolbox:impl")
+    fullImplementation project(":feature:toolbox:api")
+    //工具箱实现（短链 + 设备投递）
+    fullImplementation project(":feature:toolbox:impl")
 
     //游戏中心对外契约（api/impl 拆分）：GameRoute 路由常量 + GameApi/GameVo
+    //两变体共用，保留 implementation
     implementation project(":feature:game:api")
-    //游戏中心实现（H5 小游戏）：GameCenterPage 独立路由，经 MainActivity NavHost 一行
-    //gameGraph 聚合；游戏页承载复用壳层 WebView 路由（零新建容器），
-    //入口走深链 smartwash://game-center 与后端 workbench_entry 配置的工作台卡片
+    //游戏中心实现（H5 小游戏）：游戏页承载复用壳层 WebView 路由（零新建容器）
     implementation project(":feature:game:impl")
 
     //记忆复习对外契约（api/impl 拆分）：ReviewRoute/ReviewConstant + ReviewApi/VO
-    implementation project(":feature:review:api")
-    //记忆复习实现（FSRS 调度在后端，客户端只传评分）：今日队列/复习评分/资料卡片三页面，
-    //经 MainActivity NavHost 一行 reviewGraph 聚合，
-    //入口走深链 smartwash://review 与后端 workbench_entry 配置的工作台卡片
-    implementation project(":feature:review:impl")
+    fullImplementation project(":feature:review:api")
+    //记忆复习实现（FSRS 调度在后端，客户端只传评分）
+    fullImplementation project(":feature:review:impl")
 
     //订阅逃生舱对外契约（api/impl 拆分）：SubscriptionRoute/Constant/Enums + SubscriptionApi/VO
-    implementation project(":feature:subscription:api")
-    //订阅逃生舱实现：列表/添加编辑/详情/提醒独立路由，经 MainActivity NavHost 一行
-    //subscriptionGraph 聚合；入口走深链 smartwash://subscription 与工作台卡片
-    implementation project(":feature:subscription:impl")
+    fullImplementation project(":feature:subscription:api")
+    //订阅逃生舱实现：列表/添加编辑/详情/提醒独立路由
+    fullImplementation project(":feature:subscription:impl")
 
     //解压实验舱对外契约（api/impl 拆分）：LabRoute 路由常量 + LabToy 入口枚举
-    implementation project(":feature:lab:api")
-    //解压实验舱实现（纯本地玩具）：泡泡纸/呼吸引导/指尖鱼群等十个玩具页，
-    //经 MainActivity NavHost 一行 labGraph 聚合；模块内无网络/无存储，
-    //入口走深链 smartwash://lab 与后端 workbench_entry 配置的工作台卡片
-    implementation project(":feature:lab:impl")
+    fullImplementation project(":feature:lab:api")
+    //解压实验舱实现（纯本地玩具）
+    fullImplementation project(":feature:lab:impl")
 }

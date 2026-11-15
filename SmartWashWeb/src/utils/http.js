@@ -3,6 +3,13 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 import logger from '@/utils/logger';
+import pkg from '../../package.json';
+
+// 平台标识（ADR-0011）：四端请求头统一注入，后端 ClientContextFilter 解析入 ClientContext/MDC。
+// User-Agent 不在此覆盖，交由浏览器默认携带（前端拿不到完整 UA 也不应伪造）。
+const PLATFORM = 'web';
+// 应用版本：优先构建时环境变量 VITE_APP_VERSION（发版可覆盖），否则取 package.json 的 version
+const APP_VERSION = import.meta.env.VITE_APP_VERSION || pkg.version || 'unknown';
 
 // baseURL 从环境变量读取：开发环境为 /api（走 vite 代理转发），
 // 生产环境由 .env.production 注入完整地址；生产建议改用 Nginx 反代 + HTTPS 域名
@@ -29,6 +36,11 @@ const http = axios.create({
 export const envelopeHttp = axios.create({
   baseURL,
   timeout: 30000,
+  // 公开页同源下发平台标识：后端按请求属性记录/统计，不依赖登录态
+  headers: {
+    'X-Platform': PLATFORM,
+    'X-App-Version': APP_VERSION,
+  },
 });
 
 // 从登录态 store 获取 token；pinia 未激活的极端场景（如单测环境）回退读持久化层
@@ -145,6 +157,10 @@ function processUnauthorized(config, originalError) {
 // 请求拦截器
 http.interceptors.request.use(
   (config) => {
+    // 统一平台标识头（ADR-0011）：主实例所有请求（含续签重试）都带，
+    // 后端据此做登录/注册留痕与分端统计
+    config.headers['X-Platform'] = PLATFORM;
+    config.headers['X-App-Version'] = APP_VERSION;
     // 统一附加认证头，token 从登录态 store 读取
     const token = getToken();
     if (token) {

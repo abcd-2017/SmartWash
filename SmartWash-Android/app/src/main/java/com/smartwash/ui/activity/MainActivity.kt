@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,13 +30,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.work.WorkManager
 import com.smartwash.R
+import com.smartwash.common.ui.navigation.LocalSharedTransitionScope
+import com.smartwash.common.ui.navigation.NavGraphAmbient
+import com.smartwash.common.ui.navigation.NavGraphContributor
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AuthGradientBottom
 import com.smartwash.common.ui.theme.AuthGradientTop
@@ -47,43 +50,27 @@ import com.smartwash.common.utils.deeplink.DeepLinkAction
 import com.smartwash.common.utils.isReduceMotionEnabled
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.deeplink.DeepLinkHandler
-import com.smartwash.feature.coupon.ui.couponGraph
-import com.smartwash.feature.dining.ui.diningGraph
-import com.smartwash.feature.divination.ui.divinationGraph
-import com.smartwash.feature.game.ui.gameGraph
-import com.smartwash.feature.lab.ui.labGraph
-import com.smartwash.feature.laundry.ui.laundryGraph
-import com.smartwash.feature.notice.ui.noticeGraph
-import com.smartwash.feature.order.impl.ui.orderGraph
-import com.smartwash.feature.payment.impl.ui.paymentGraph
-import com.smartwash.feature.points.ui.pointsGraph
-import com.smartwash.feature.review.ui.reviewGraph
-import com.smartwash.feature.subscription.ui.subscriptionGraph
-import com.smartwash.feature.toolbox.ui.delivery.deliveryGraph
-import com.smartwash.feature.toolbox.ui.toolboxGraph
-import com.smartwash.feature.update.event.UpdateEventBus
-import com.smartwash.feature.update.ui.UpdateViewModel
 import com.smartwash.feature.user.api.UserApi
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.api.model.LoginEvent
 import com.smartwash.feature.user.api.model.LogoutReason
-import com.smartwash.feature.user.impl.ui.userGraph
+import com.smartwash.feature.user.impl.ui.LocalCheckUpdateContent
 import com.smartwash.ui.navigation.shellEnterTransition
 import com.smartwash.ui.navigation.shellExitTransition
-import com.smartwash.ui.navigation.shellGraph
-import com.smartwash.ui.page.update.UpdateFlow
-import com.smartwash.ui.page.update.UpdateSettingRows
+import com.smartwash.ui.page.update.UpdateFlowHost
+import com.smartwash.ui.page.update.rememberCheckUpdateContent
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 /**
- * 单 Activity 壳（T8.1 拆路由后）：NavHost 只做聚合——壳层留守页面在
- * [shellGraph]，各 feature 域经 NavGraphBuilder.xxxGraph 扩展自注册
- * （路由常量单一事实来源在各域 api 模块）；壳层另持更新流程（[UpdateFlow]）、
- * 深链分发（[DeepLinkHandler]，host 由各域贡献者注册、壳层自持注册表，
- * Manifest 声明 smartwash:// scheme）与 401/登录态事件收集三项壳职责。
+ * 单 Activity 壳（T8.1 拆路由后）：NavHost 只做聚合——壳层留守页面与各 feature 域
+ * 经 [NavGraphContributor] 多绑定自注册（各域 impl 以 `@IntoSet` 贡献 `xxxGraph`，
+ * 路由常量单一事实来源在各域 api 模块）；壳层另持更新流程（变体入口 [UpdateFlowHost]，
+ * full 组装热更新链路 / lite 空实现）、深链分发（[DeepLinkHandler]，host 由各域贡献者注册、
+ * 壳层自持注册表，Manifest 声明 scheme 由变体 manifestPlaceholders 注入）
+ * 与 401/登录态事件收集三项壳职责。
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -91,8 +78,14 @@ class MainActivity : ComponentActivity() {
     // 用户域经 UserApi 契约消费（T5.3）：会话事件收集 + 登录态判断，不触碰 impl 类型
     @Inject lateinit var userApi: UserApi
     @Inject lateinit var workManager: WorkManager
-    @Inject lateinit var updateEventBus: UpdateEventBus
     @Inject lateinit var deepLinkHandler: DeepLinkHandler
+
+    /**
+     * 各域导航图贡献者（Hilt @IntoSet 多绑定，common:ui 的 [NavGraphContributor] 契约）。
+     * 替代原先壳层硬编码的静态 import + 逐个 `xxxGraph(navController)` 调用。
+     */
+    @Inject
+    lateinit var navGraphContributors: Set<@JvmSuppressWildcards NavGraphContributor>
 
     /**
      * 待处理深链 URI（VIEW intent 的 data）。冷启动（onCreate）与热启动（onNewIntent，
@@ -148,6 +141,10 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+
+            // 设置页「检查更新」插槽（变体入口）：full 注入更新区块，lite 为 null（隐藏区块）。
+            // 符号在 app/src/full 与 app/src/lite 各有一份同签名实现，main 只按契约调用。
+            val checkUpdateContent = rememberCheckUpdateContent()
             // reduced motion 随导航刷新 — 既避免在组合期反复做 ContentResolver 查询，
             // 又能让用户在系统设置里改完「移除动画」切回应用后立即生效。
             val backStackEntry by navController.currentBackStackEntryAsState()
@@ -243,9 +240,9 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(LocalReduceMotion provides reduceMotion) {
                     // 更新流程（事件收集 → 下载调度 → 弹窗展示；T8.1 自本文件抽至壳层 UpdateFlow）：
                     // 必须在主题包装内组合——否则更新弹窗位于 SmartWashAndroidTheme 之外，
-                    // MaterialTheme/AppColors 均回落浅色默认值，深色模式下弹窗仍显示浅色样式
-                    val updateViewModel: UpdateViewModel = hiltViewModel()
-                    UpdateFlow(context, workManager, updateViewModel, updateEventBus)
+                    // MaterialTheme/AppColors 均回落浅色默认值，深色模式下弹窗仍显示浅色样式。
+                    // 变体入口：full 组装真实链路；lite 为空实现（无更新域）。
+                    UpdateFlowHost(context, workManager)
 
                     Surface(modifier = Modifier.fillMaxSize()) {
                         // 转场露底色跟随当前目的地：导航命令执行时 currentBackStackEntry 即更新，
@@ -254,64 +251,47 @@ class MainActivity : ComponentActivity() {
                         val currentDestination = backStackEntry?.destination
                         val isAuthRoute = currentDestination?.hasRoute<UserRoute.Login>() == true ||
                             currentDestination?.hasRoute<UserRoute.Register>() == true
+                        // 图注册/转场所需的组合期环境值快照（NavHost builder 非组合上下文，
+                        // 各域图无法直接读 LocalReduceMotion；转场 lambda 调用时读最新值）。
+                        // 写入放 SideEffect：避免组合期副作用，且晚于本次组合的图注册执行。
+                        SideEffect {
+                            NavGraphAmbient.reduceMotion = reduceMotion
+                        }
                         // 共享元素转场容器（2026-11-01）：承载「短链 item → 详情页」一镜到底。
                         // 仅当进出两侧存在相同 key 的 sharedElement 时才激活，不影响其余页面转场。
                         SharedTransitionLayout {
-                        // 共享元素转场所需 scope（仅工具箱短链 item→详情使用）
-                        val sharedTransitionScope = this
-                        NavHost(
-                            navController = navController,
-                            // 首页恒为第一页：已登录直接落首页；未登录由上方启动守卫 replace 到登录页
-                            startDestination = ShellRoute.Home,
-                            enterTransition = { shellEnterTransition(reduceMotion) },
-                            exitTransition = { shellExitTransition(reduceMotion) },
-                            popEnterTransition = { shellEnterTransition(reduceMotion) },
-                            popExitTransition = { shellExitTransition(reduceMotion) },
-                            modifier = Modifier.background(
-                                if (isAuthRoute) {
-                                    Brush.verticalGradient(listOf(AuthGradientTop, AuthGradientBottom))
-                                } else {
-                                    SolidColor(MaterialTheme.colorScheme.background)
+                            // 共享元素转场 scope 下传各域图（当前仅工具箱短链 item→详情消费）
+                            val sharedTransitionScope = this
+                            CompositionLocalProvider(
+                                LocalSharedTransitionScope provides sharedTransitionScope,
+                                // 检查更新行插槽（变体入口注入；lite 为 null → 设置页隐藏更新区块）
+                                LocalCheckUpdateContent provides checkUpdateContent,
+                            ) {
+                                NavHost(
+                                    navController = navController,
+                                    // 首页恒为第一页：已登录直接落首页；未登录由上方启动守卫 replace 到登录页
+                                    startDestination = ShellRoute.Home,
+                                    enterTransition = { shellEnterTransition(reduceMotion) },
+                                    exitTransition = { shellExitTransition(reduceMotion) },
+                                    popEnterTransition = { shellEnterTransition(reduceMotion) },
+                                    popExitTransition = { shellExitTransition(reduceMotion) },
+                                    modifier = Modifier.background(
+                                        if (isAuthRoute) {
+                                            Brush.verticalGradient(listOf(AuthGradientTop, AuthGradientBottom))
+                                        } else {
+                                            SolidColor(MaterialTheme.colorScheme.background)
+                                        }
+                                    )
+                                ) {
+                                    // 各域图经 Hilt @IntoSet 多绑定贡献，壳层不再硬编码静态调用；
+                                    // 集合顺序不作路由语义承诺（路由之间无先后依赖）。
+                                    for (contributor in navGraphContributors) {
+                                        with(contributor) {
+                                            register(navController)
+                                        }
+                                    }
                                 }
-                            )
-                        ) {
-                            // 壳层留守页面：主页壳 / 订单详情 / 寄件取件 / 取件
-                            shellGraph(navController)
-                            // 检查更新行插槽注入（feature:update 归壳层聚合，user-impl 不依赖它）
-                            userGraph(
-                                navController,
-                                reduceMotion,
-                                checkUpdateContent = { UpdateSettingRows(updateViewModel) }
-                            )
-                            orderGraph(navController)
-                            paymentGraph(navController, reduceMotion)
-                            laundryGraph(navController)
-                            couponGraph(navController)
-                            // 消息中心（扩展提案 #4；入口走我的页功能卡与深链 smartwash://messages）
-                            noticeGraph(navController)
-                            divinationGraph(navController)
-                            // 工具箱短链（独立路由；工作台入口走深链 smartwash://toolbox-short-code）
-                            toolboxGraph(navController, sharedTransitionScope)
-                            // 游戏中心（独立路由；入口走深链 smartwash://game-center 与
-                            // 后端 workbench_entry 配置的工作台卡片，无底栏入口）
-                            gameGraph(navController)
-                            // 解压实验舱（纯本地玩具：泡泡纸/呼吸引导/指尖鱼群；入口走深链
-                            // smartwash://lab 与后端 workbench_entry 配置的工作台卡片，无底栏入口）
-                            labGraph(navController)
-                            // 记忆复习（入口走深链 smartwash://review 与工作台卡片，无底栏入口）
-                            reviewGraph(navController)
-                            // 订阅逃生舱（入口走深链 smartwash://subscription 与工作台卡片，无底栏入口）
-                            subscriptionGraph(navController)
-                            // 签到有礼（扩展提案功能 17；入口走我的页「签到有礼」行与
-                            // 深链 smartwash://points，无底栏入口）
-                            pointsGraph(navController)
-                            // 设备投递（入口走深链 smartwash://delivery 与工作台卡片，无底栏入口）
-                            deliveryGraph(navController)
-                            // 吃啥（入口走深链 smartwash://dining 与后端 workbench_entry
-                            // 配置的工作台卡片；域首页=订单列表页，07 号票已由菜谱库占位重指向，
-                            // 菜谱三页入口在订单列表页右上角，无底栏入口）
-                            diningGraph(navController)
-                        }
+                            }
                         }
                     }
                 }

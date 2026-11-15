@@ -701,6 +701,36 @@
 
 ---
 
+## 11. 变体与平台标识
+
+### 11.1 变体（full / lite）
+
+- **代码标识**：`flavorDimensions "app"`、`full` / `lite`
+- **定义**：同一 Android 工程经 product flavors 产出两个 App。`full` = 全量（`com.smartwash`）；`lite` = 精简（品牌「吃啥 / Today Eat」，`com.todayeat.app`），只含点餐 / 游戏 / 登录 / 设置。
+- **四端对应物**：Android（flavors）；后端 / Web 无感（同一套接口）。
+- **易混淆点**：lite 与 full 是**两个独立 App**（不同 applicationId / scheme），不是权限或内购差异。
+
+### 11.2 Today Eat（吃啥）
+
+- **代码标识**：`com.todayeat.app`、lite flavor、`todayeat://`
+- **定义**：精简版产品名（中文「吃啥」，英文 Today Eat）。点单业务旧称「家庭点单」已更名「吃啥」，代码标识仍为 `dining`。
+- **易混淆点**：`dining` 是域代码名，产品名是「吃啥」。
+
+### 11.3 平台标识（platform / ClientContext）
+
+- **代码标识**：`X-Platform`、`X-App-Version`、`X-Network-Type`、`ClientContext`
+- **定义**：请求来源端别，取值 `android | ios | harmonyos | web`；端上注入请求头，后端 `ClientContextFilter` 解析。
+- **四端对应物**：Android / 鸿蒙 / Web 管理后台注入；后端解析入 MDC；登录日志字段。
+- **易混淆点**：platform 是**请求属性**，与 JWT `sub` 前缀（admin/user 端别）不是一回事。
+
+### 11.4 登录日志（login_log）
+
+- **代码标识**：`login_log`
+- **定义**：登录 / 注册的平台与设备留痕表，字段含 platform / app_version / ua / network_type / ip / result。
+- **易混淆点**：与管理端 `admin_audit_log`（操作审计）不同。
+
+---
+
 ## 附录 A：四端枚举对照速查
 
 | 概念 | 后端 | Android | 鸿蒙 | Web |

@@ -2,14 +2,12 @@ package com.smartwash.feature.user.impl.network.api
 
 import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.network.annotation.RequireAuthorization
-import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.user.impl.network.entity.user.ChangePasswordRequest
 import com.smartwash.feature.user.impl.network.entity.user.LoginUser
 import com.smartwash.feature.user.impl.network.entity.user.RegisterUser
 import com.smartwash.feature.user.impl.network.entity.user.ResetPasswordRequest
 import com.smartwash.feature.user.impl.network.entity.user.UpdateUserInfo
 import com.smartwash.feature.user.impl.network.vo.user.LoginVo
-import com.smartwash.feature.user.impl.network.vo.user.TransactionVo
 import com.smartwash.feature.user.impl.network.vo.user.UserInfoVo
 import okhttp3.MultipartBody
 import retrofit2.http.Body
@@ -54,16 +52,6 @@ interface UserAccountApi {
     suspend fun login(
         @Body loginUser: LoginUser,
     ): ApiResult<LoginVo>
-
-    /**
-     * 钱包流水（分页；pageSize 上限 50）
-     */
-    @RequireAuthorization
-    @GET("/web/auth/user/transactions")
-    suspend fun getTransactions(
-        @Query("page") page: Int?,
-        @Query("pageSize") pageSize: Int? = 20,
-    ): ApiResult<PageData<TransactionVo>>
 
     /**
      * 修改密码（原密码不正确时后端回业务失败信封 code=201，ResponseInterceptor

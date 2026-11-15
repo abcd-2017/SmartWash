@@ -55,6 +55,7 @@ import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
+import com.smartwash.common.ui.navigation.LocalSharedTransitionScope
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
@@ -81,10 +82,11 @@ fun ToolboxListPage(
     navController: NavHostController,
     // 一镜到底：NavHost 条目 scope（2026-11-01），供列表卡 sharedElement
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
-    sharedTransitionScope: SharedTransitionScope? = null,
     viewModel: ToolboxListViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    // 一镜到底：共享元素 scope 从 CompositionLocal 读取（壳层 SharedTransitionLayout 内 provides）
+    val sharedTransitionScope = LocalSharedTransitionScope.current
     val pagingItems = viewModel.pagingFlow.collectAsLazyPagingItems()
 
     // 刷新会话门控（2026-11-06 闪空态回归）：下拉刷新 / 变更重建都会先把列表清空为 0 项，

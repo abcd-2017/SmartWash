@@ -26,6 +26,23 @@ describe('http.js', () => {
     expect(config.headers.Authorization).toBeUndefined();
   });
 
+  it('请求拦截器统一注入平台标识头（ADR-0011）', async () => {
+    const { default: http } = await import('@/utils/http');
+
+    const config = http.interceptors.request.handlers[0].fulfilled({ headers: {} });
+    expect(config.headers['X-Platform']).toBe('web');
+    expect(config.headers['X-App-Version']).toBeTruthy();
+    // User-Agent 交由浏览器默认携带，前端不得覆盖
+    expect(config.headers['User-Agent']).toBeUndefined();
+  });
+
+  it('公开信封实例默认携带平台标识头', async () => {
+    const { envelopeHttp } = await import('@/utils/http');
+
+    expect(envelopeHttp.defaults.headers['X-Platform']).toBe('web');
+    expect(envelopeHttp.defaults.headers['X-App-Version']).toBeTruthy();
+  });
+
   it('响应拦截器对 code !== 200 返回 reject', async () => {
     const { default: http } = await import('@/utils/http');
 

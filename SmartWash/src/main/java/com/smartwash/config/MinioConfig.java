@@ -22,6 +22,12 @@ public class MinioConfig {
     private String endpoint;
     /** MinIO 外部访问端点（用于生成预签名 URL，可选） */
     private String externalEndpoint;
+    /**
+     * MinIO 区域（region）。minio SDK 8.5.7 生成预签名 URL 时若未指定 region，
+     * 会先向服务端发起 region 查询请求——服务端不可达时整个下载接口失败；
+     * 显式配置后签名纯本地完成，不再依赖该查询。
+     */
+    private String region;
     /** 访问密钥 */
     private String accessKey;
     /** 秘密密钥 */
@@ -85,9 +91,13 @@ public class MinioConfig {
 
     @Bean
     public MinioClient minioClient() {
-        return MinioClient.builder()
+        MinioClient.Builder builder = MinioClient.builder()
                 .endpoint(endpoint)
-                .credentials(accessKey, secretKey)
-                .build();
+                .credentials(accessKey, secretKey);
+        // 显式 region：避免 SDK 在预签名时回退发起 region 查询请求（服务端不可达即下载接口失败）
+        if (region != null && !region.isBlank()) {
+            builder.region(region);
+        }
+        return builder.build();
     }
 }

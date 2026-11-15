@@ -56,6 +56,9 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
+    // element-plus 冷加载约 5s（按需引入 + 样式内联），避免 import('@/utils/http') 触发
+    // 首次 element-plus 加载时撞上默认 5s 超时（既有性能特征，非断言失败）
+    testTimeout: 20000,
     // Node 22 实验性全局 localStorage 会遮蔽 happy-dom 注入，测试统一兜底内存版 stub
     setupFiles: ['src/__tests__/setup.dom.js'],
     server: {

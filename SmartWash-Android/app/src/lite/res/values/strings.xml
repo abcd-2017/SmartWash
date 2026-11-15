@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  lite 变体（吃啥 / Today Eat）专属文案。
+  注意：
+  - app_name 由 app/build.gradle 的 flavor resValue 注入（lite=吃啥），此处不定义；
+  - 错误提示等通用文案复用 :feature:user:impl / :common:ui 的既有资源，不在此重复。
+-->
+<resources>
+    <!-- 品牌 -->
+    <string name="lite_brand_name">吃啥</string>
+    <string name="lite_brand_subtitle">Today Eat</string>
+
+    <!-- 首页 -->
+    <string name="lite_home_order">点餐</string>
+    <string name="lite_home_order_desc">和室友一起点，今天吃什么</string>
+    <string name="lite_home_game">游戏</string>
+    <string name="lite_home_game_desc">休闲一下，放松心情</string>
+    <string name="lite_home_setting">设置</string>
+
+    <!-- 登录 -->
+    <string name="lite_login_title">登 录</string>
+    <string name="lite_login_subtitle">登录后同步你的点单</string>
+    <string name="lite_no_account">没有账号？</string>
+    <string name="lite_register_now">立即注册</string>
+
+    <!-- 注册 -->
+    <string name="lite_register_title">注 册</string>
+    <string name="lite_register_subtitle">注册即登录，开始点餐</string>
+    <string name="lite_has_account">已有账号？</string>
+    <string name="lite_login_now">立即登录</string>
+
+    <!-- 设置 -->
+    <string name="lite_setting_title">设置</string>
+    <string name="lite_setting_section_account">账户</string>
+    <string name="lite_setting_account_phone">手机号</string>
+    <string name="lite_setting_section_general">通用</string>
+    <string name="lite_setting_check_update">检查更新</string>
+    <string name="lite_setting_check_update_desc">当前版本 v%s</string>
+    <string name="lite_setting_logout">退出登录</string>
+</resources>

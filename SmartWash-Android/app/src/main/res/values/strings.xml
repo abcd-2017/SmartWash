@@ -1,5 +1,6 @@
 <resources>
-    <string name="app_name">SmartWash</string>
+    <!-- app_name 由变体注入（full=SmartWash / lite=吃啥，见 app/build.gradle 的 resValue），
+         不在 main 定义，避免与 flavor resValue 重复资源冲突 -->
 
     <!-- ==================== 通用（back/phone_number/password/invalid_* 为 common:ui 同值副本，
          app 侧零引用随 T8.2 删除；no_data/login 同为零引用删除） ==================== -->
