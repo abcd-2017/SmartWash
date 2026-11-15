@@ -61,6 +61,21 @@ CREATE TABLE IF NOT EXISTS users (
     CONSTRAINT uk_user_phone UNIQUE (phone_number)
 );
 
+-- 登录日志表（四端平台标识 + 登录结果，与 smart_wash.sql 的 login_log 对齐）
+CREATE TABLE IF NOT EXISTS login_log (
+    id           bigint NOT NULL AUTO_INCREMENT,
+    user_id      bigint DEFAULT NULL,
+    phone        varchar(100) DEFAULT NULL,
+    platform     varchar(16) NOT NULL DEFAULT 'unknown',
+    app_version  varchar(64) DEFAULT NULL,
+    ua           varchar(500) DEFAULT NULL,
+    network_type varchar(16) NOT NULL DEFAULT 'unknown',
+    ip           varchar(64) DEFAULT NULL,
+    `result`     varchar(16) NOT NULL,
+    created_at   timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+
 -- 寄存柜表
 CREATE TABLE IF NOT EXISTS lockers (
     locker_id     bigint NOT NULL AUTO_INCREMENT,
