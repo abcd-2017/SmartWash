@@ -301,9 +301,14 @@ onMounted(() => {
 
 <style scoped>
 /* 摘要单元格：指针提示可悬浮查看全文 */
+/* 摘要「前 40 字 → 后 40 字」较长：单行省略 + 原生 title 悬浮看全文（cursor:help 语义保留） */
 .payload-cell {
+  display: block;
   cursor: help;
   color: var(--el-text-color-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* tooltip 内 JSON 摘要：等宽字体 + 可换行，超长不撑破气泡 */

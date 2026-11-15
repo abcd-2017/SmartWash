@@ -85,7 +85,7 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增菜谱分类' : '编辑菜谱分类'"
       v-model="dialogVisible"
-      width="480px"
+      width="min(480px, 94vw)"
       @closed="handleDialogClosed"
     >
       <el-form ref="formRef" :model="tempCategory" label-width="90px" :rules="rules">

@@ -81,7 +81,7 @@
     <el-dialog
       v-model="levelDialogVisible"
       :title="levelForm.levelNo ? `编辑关卡 #${levelForm.levelNo}` : '新建关卡'"
-      width="640px"
+      width="min(640px, 94vw)"
       :close-on-click-modal="false"
       @closed="resetLevelForm"
     >

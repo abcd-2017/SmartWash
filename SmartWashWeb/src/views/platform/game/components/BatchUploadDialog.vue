@@ -2,7 +2,7 @@
   <el-dialog
     title="批量导入游戏"
     v-model="visible"
-    width="880px"
+    width="min(880px, 94vw)"
     :close-on-click-modal="false"
     :close-on-press-escape="phase !== 'running'"
     :show-close="phase !== 'running'"
@@ -88,12 +88,18 @@
             <!-- 状态优先级：跳过 > 上传结果 > 预检标记（新增/覆盖） -->
             <el-tag v-if="row.skipReason" type="info" effect="plain">跳过</el-tag>
             <el-tag v-else-if="row.result?.ok" type="success" effect="plain">成功</el-tag>
-            <el-tag v-else-if="row.result && !row.result.ok" type="danger" effect="plain">
-              {{ row.result.message }}
-            </el-tag>
+            <el-tooltip
+              v-else-if="row.result && !row.result.ok"
+              :content="row.result.message"
+              placement="top"
+            >
+              <el-tag type="danger" effect="plain" class="batch-error-tag">失败</el-tag>
+            </el-tooltip>
             <el-tag v-else-if="row.willOverwrite" type="warning" effect="plain">覆盖更新</el-tag>
             <el-tag v-else type="success" effect="plain">新增</el-tag>
-            <span v-if="row.skipReason" class="batch-reason">{{ row.skipReason }}</span>
+            <el-tooltip v-if="row.skipReason" :content="row.skipReason" placement="top">
+              <span class="batch-reason">{{ row.skipReason }}</span>
+            </el-tooltip>
           </template>
         </el-table-column>
         <el-table-column min-width="170">
@@ -555,9 +561,22 @@ const handleClosed = () => {
 }
 
 .batch-reason {
+  display: inline-block;
+  max-width: 100%;
   margin-left: 8px;
   font-size: 12px;
   color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.batch-error-tag {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 关卡列：列头「关卡 + 全选」同行；单元格勾选框与处置 tag 对齐排布 */

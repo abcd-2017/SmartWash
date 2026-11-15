@@ -79,12 +79,14 @@
         </el-table-column>
         <el-table-column label="菜名" min-width="150">
           <template #default="{ row }">
-            <span class="recipe-name">{{ row.name }}</span>
+            <span class="recipe-name" :title="row.name">{{ row.name }}</span>
           </template>
         </el-table-column>
         <el-table-column label="分类" min-width="110">
           <template #default="{ row }">
-            <el-tag v-if="row.categoryName" effect="plain">{{ row.categoryName }}</el-tag>
+            <el-tooltip v-if="row.categoryName" :content="row.categoryName" placement="top">
+              <el-tag effect="plain">{{ row.categoryName }}</el-tag>
+            </el-tooltip>
             <span v-else class="text-muted">未分类</span>
           </template>
         </el-table-column>
@@ -120,6 +122,7 @@
             <el-switch
               :model-value="row.status === 1"
               :loading="statusSwitchingId === row.id"
+              :aria-label="`上架「${row.name}」`"
               @change="(val) => handleStatusChange(row, val)"
             />
           </template>
@@ -159,7 +162,7 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增菜谱' : '编辑菜谱'"
       v-model="dialogVisible"
-      width="640px"
+      width="min(640px, 94vw)"
       @closed="handleDialogClosed"
     >
       <el-form ref="formRef" :model="tempRecipe" label-width="90px" :rules="rules">
@@ -585,8 +588,12 @@ const handleDelete = async (row) => {
 
 <style scoped>
 .recipe-name {
+  display: block;
   color: var(--text-primary);
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .text-muted {

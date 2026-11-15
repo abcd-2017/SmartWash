@@ -111,12 +111,12 @@
             {{ row.userVo?.phoneNumber || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="学校" min-width="180">
+        <el-table-column label="学校" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
             {{ row.schoolsVo?.schoolName || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="洗护套餐" min-width="180">
+        <el-table-column label="洗护套餐" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
             {{ row.laundryPackageVo?.itemName || '-' }}
           </template>

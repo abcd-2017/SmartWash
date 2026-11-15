@@ -153,6 +153,7 @@
                 :active-value="1"
                 :inactive-value="0"
                 :loading="togglingId === row.id"
+                :aria-label="`下发「${row.title || row.gameKey}」`"
                 @change="handleToggleEnabled(row)"
               />
               <!-- 后端下发会过滤空 url 的游戏包：已勾选下发但缺可玩地址时如实提示 -->
@@ -203,7 +204,7 @@
     <el-dialog
       title="上传游戏"
       v-model="uploadDialogVisible"
-      width="760px"
+      width="min(760px, 94vw)"
       :close-on-click-modal="false"
       :show-close="!uploading"
       @closed="handleUploadDialogClosed"
@@ -521,7 +522,7 @@
     <el-dialog
       title="编辑游戏"
       v-model="editDialogVisible"
-      width="640px"
+      width="min(640px, 94vw)"
       @closed="handleEditDialogClosed"
     >
       <el-form ref="editFormRef" :model="tempGame" label-width="90px" :rules="rules">

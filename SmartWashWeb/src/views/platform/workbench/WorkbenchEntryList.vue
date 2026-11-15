@@ -49,8 +49,10 @@
         <el-table-column label="标题" min-width="180">
           <template #default="{ row }">
             <div class="title-cell">
-              <span class="title-main">{{ row.title || '-' }}</span>
-              <span v-if="row.description" class="title-sub">{{ row.description }}</span>
+              <span class="title-main" :title="row.title || '-'">{{ row.title || '-' }}</span>
+              <span v-if="row.description" class="title-sub" :title="row.description">{{
+                row.description
+              }}</span>
             </div>
           </template>
         </el-table-column>
@@ -770,14 +772,22 @@ const handleDelete = async (row) => {
   gap: 2px;
 }
 
+/* 长标题/长描述单行省略（与游戏库同模式）：完整内容原生 title 悬浮可见 */
 .title-main {
   color: var(--text-primary);
   font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .title-sub {
   color: var(--text-secondary);
   font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 图标 + 色组两行单元格：固定左对齐，行间节奏与标题列一致 */

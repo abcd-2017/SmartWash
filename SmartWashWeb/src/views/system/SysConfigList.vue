@@ -19,7 +19,7 @@
             <span class="config-key">{{ row.configKey }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="configValue" label="参数值" min-width="120" />
+        <el-table-column prop="configValue" label="参数值" min-width="120" show-overflow-tooltip />
         <el-table-column prop="remark" label="说明" min-width="260" show-overflow-tooltip />
         <el-table-column prop="updatedAt" label="最近修改" width="170">
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
