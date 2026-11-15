@@ -8,15 +8,22 @@ import java.net.URLDecoder
  *
  * 内建判定仅两类，其余全部交给 [routeLookup]（host → 路由对象，由壳层合并各域贡献者实现）：
  * 1. `http://` / `https://` → [DeepLinkAction.WebViewUrl]（URI 原样，不做改写/解码）；
- * 2. `smartwash://web`：query `url` 必填、`title` 可选（均百分号解码），url 必须为 http/https；
+ * 2. `{scheme}://web`：query `url` 必填、`title` 可选（均百分号解码），url 必须为 http/https；
  * 3. 其余 host → [routeLookup](host, pathSegments, query)：
  *    命中 → [DeepLinkAction.NativeRoute]；未命中 → [DeepLinkAction.Unknown]。
  *    `t/{code}` 等带 path 段的 host 同样走 lookup（如 toolbox 贡献者自校验 code 格式）。
- * 非 smartwash scheme / 畸形输入 → [DeepLinkAction.Unknown]。
+ * 非本端 scheme / 畸形输入 → [DeepLinkAction.Unknown]。
+ *
+ * ## scheme 可配置（变体支持）
+ *
+ * [SCHEME] 是 full 变体的默认值（`smartwash`）；lite 变体（吃啥）经 [parse]/[hostOf] 的
+ * `scheme` 参数传入 `todayeat`。**不接受任意 scheme**——外部 app 的自定义 scheme 一律
+ * Unknown（与 Manifest 只声明本端 scheme 的语义一致，也避免 `intent://` 等通用 scheme 误命中）。
+ * 需要新增变体时，在宿主壳层注入该变体的 scheme 即可，解析器零改动。
  */
 object DeepLinkParser {
 
-    /** 自有 scheme（大小写不敏感） */
+    /** full 变体自有 scheme（大小写不敏感）；lite 变体经参数传入（见类注释） */
     const val SCHEME = "smartwash"
 
     /** 内建 host：WebView 分支（query 携带 url/title），不经 routeLookup */
@@ -31,14 +38,16 @@ object DeepLinkParser {
      * @param uri 待解析深链
      * @param routeLookup host → 路由对象查找（host 已小写；pathSegments 保留原始大小写；
      *   query value 已百分号解码）。由壳层 DeepLinkRegistry 合并各域贡献者后提供。
+     * @param scheme 本端自有 scheme（缺省 [SCHEME]，即 full 变体；lite 传 `todayeat`）
      */
     fun parse(
         uri: String,
         routeLookup: (host: String, pathSegments: List<String>, query: Map<String, String>) -> SmartWashRoute?,
+        scheme: String = SCHEME,
     ): DeepLinkAction {
         if (uri.isBlank()) return DeepLinkAction.Unknown(uri)
         return try {
-            parseInternal(uri.trim(), routeLookup)
+            parseInternal(uri.trim(), routeLookup, scheme)
         } catch (e: Exception) {
             // 兜底：解析逻辑自身的意外异常也降级为 Unknown，保证调用方无需 try-catch
             DeepLinkAction.Unknown(uri)
@@ -46,12 +55,14 @@ object DeepLinkParser {
     }
 
     /**
-     * 提取 smartwash:// 的 host（供壳层 Handler 未命中时查后端字典兜底）；
-     * 非 smartwash scheme 或无 host 返回 null。
+     * 提取本端 scheme 的 host（供壳层 Handler 未命中时查后端字典兜底）；
+     * 非本端 scheme 或无 host 返回 null。
+     *
+     * @param scheme 本端自有 scheme（缺省 [SCHEME]；lite 传 `todayeat`）
      */
-    fun hostOf(uri: String): String? {
+    fun hostOf(uri: String, scheme: String = SCHEME): String? {
         val trimmed = uri.trim()
-        val prefix = SCHEME + SCHEME_SEPARATOR
+        val prefix = scheme.lowercase() + SCHEME_SEPARATOR
         if (!trimmed.lowercase().startsWith(prefix)) return null
         val rest = trimmed.substring(prefix.length)
         val queryStart = rest.indexOf('?')
@@ -64,21 +75,22 @@ object DeepLinkParser {
     private fun parseInternal(
         uri: String,
         routeLookup: (host: String, pathSegments: List<String>, query: Map<String, String>) -> SmartWashRoute?,
+        scheme: String,
     ): DeepLinkAction {
         val schemeEnd = uri.indexOf(SCHEME_SEPARATOR)
         if (schemeEnd <= 0) return DeepLinkAction.Unknown(uri)
-        val scheme = uri.substring(0, schemeEnd).lowercase()
+        val actualScheme = uri.substring(0, schemeEnd).lowercase()
         val rest = uri.substring(schemeEnd + SCHEME_SEPARATOR.length)
         if (rest.isEmpty()) return DeepLinkAction.Unknown(uri)
-        return when (scheme) {
+        return when (actualScheme) {
             "http", "https" -> DeepLinkAction.WebViewUrl(url = uri, title = null)
-            SCHEME -> parseSmartwash(rest, uri, routeLookup)
+            scheme.lowercase() -> parseOwnScheme(rest, uri, routeLookup)
             else -> DeepLinkAction.Unknown(uri)
         }
     }
 
-    /** smartwash://host/path?query：web 为内建分支，其余 host 全部交给 routeLookup */
-    private fun parseSmartwash(
+    /** `{scheme}://host/path?query`：web 为内建分支，其余 host 全部交给 routeLookup */
+    private fun parseOwnScheme(
         rest: String,
         rawUri: String,
         routeLookup: (host: String, pathSegments: List<String>, query: Map<String, String>) -> SmartWashRoute?,

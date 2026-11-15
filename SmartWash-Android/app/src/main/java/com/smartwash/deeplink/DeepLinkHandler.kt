@@ -1,6 +1,5 @@
 package com.smartwash.deeplink
 
-import android.net.Uri
 import android.widget.Toast
 import androidx.navigation.NavHostController
 import com.smartwash.R
@@ -13,22 +12,30 @@ import com.smartwash.network.api.DeeplinkRouteDict
 import com.smartwash.common.ui.webview.GameChrome
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
  * 深链处理器（壳层导航聚合点自持，@Singleton 经 Hilt 注入）：
- * - [resolve]：解析深链为 [DeepLinkAction]（可挂起——本地未命中的 smartwash:// 会查后端字典缓存）；
+ * - [resolve]：解析深链为 [DeepLinkAction]（可挂起——本地未命中的本端 scheme 会查后端字典缓存）；
  * - [navigate]：按动作导航（NativeRoute → 路由跳转；WebViewUrl → 壳层 WebView 页；Unknown → Toast）。
+ *
+ * ## scheme 变体注入
+ *
+ * 自有 scheme 由宿主经 `@Named("deepLinkScheme")` 注入（full=`smartwash`、lite=`todayeat`），
+ * 与 Manifest 的 `${deepLinkScheme}` 占位符同源（app/build.gradle 的 manifestPlaceholders）。
+ * 非本端 scheme 一律 [DeepLinkAction.Unknown]——解析器不接受任意自定义 scheme。
  */
 @Singleton
 class DeepLinkHandler @Inject constructor(
     private val deepLinkRegistry: DeepLinkRegistry,
     private val deepLinkRepository: DeepLinkRepository,
+    @Named("deepLinkScheme") private val scheme: String,
 ) {
 
     /**
-     * 解析深链：先走本地解析（web 内建分支 + 各域贡献者注册表）；未命中且是
-     * smartwash:// 时查后端路由字典（首次使用拉取 + 内存缓存，失败静默）判断
+     * 解析深链：先走本地解析（web 内建分支 + 各域贡献者注册表）；未命中且是本端
+     * scheme 时查后端路由字典（首次使用拉取 + 内存缓存，失败静默）判断
      * host 是否合法：
      * - host 在字典中且启用且面向 Android（platform 1/3）→ 合法但端上未注册，
      *   属端上版本能力缺口，仍回 Unknown（导航语义一致，升级引导留待后续迭代）；
@@ -36,11 +43,11 @@ class DeepLinkHandler @Inject constructor(
      * 本步顺带完成字典预热，日志留痕便于排查线上未知 host。
      */
     suspend fun resolve(uri: String): DeepLinkAction {
-        val action = DeepLinkParser.parse(uri, deepLinkRegistry::lookup)
+        val action = DeepLinkParser.parse(uri, deepLinkRegistry::lookup, scheme)
         if (action !is DeepLinkAction.Unknown) return action
 
-        // http/https 恒为 WebView 分支不会 Unknown；仅 smartwash:// 有「字典合法性」概念
-        val host = DeepLinkParser.hostOf(uri) ?: return action
+        // http/https 恒为 WebView 分支不会 Unknown；仅本端 scheme 有「字典合法性」概念
+        val host = DeepLinkParser.hostOf(uri, scheme) ?: return action
         val routes = try {
             deepLinkRepository.getRoutes()
         } catch (e: CancellationException) {
@@ -92,11 +99,12 @@ class DeepLinkHandler @Inject constructor(
      * 深链登录守卫判定（P-2001）：动作是否指向公开页面（未登录可放行）。
      *
      * 公开范围（逐 host 核对页面入口的数据消费后圈定）：
-     * - [DeepLinkAction.WebViewUrl]：内置浏览器分支（http/https 与 smartwash://web），
+     * - [DeepLinkAction.WebViewUrl]：内置浏览器分支（http/https 与本端 scheme 的 web），
      *   WebView 页自身不消费应用鉴权接口；
      * - [DeepLinkAction.Unknown]：仅 Toast「暂不支持」，无导航，无拦截意义；
      * - NativeRoute 中 host ∈ [PUBLIC_DEEP_LINK_HOSTS]：login / register（认证页自身，
      *   拦截即循环跳登录）与 lab（解压实验舱，纯本地玩具零网络请求）。
+     *   lite 变体未注册 lab，命中时深链解析为 Unknown（不在此放行），语义不受影响。
      *
      * 其余 host（pickup / ai-work / order / coupon / laundry / recharge / recharge-record /
      * divination / divination-history / game-center / review / subscription / dining /
@@ -110,7 +118,7 @@ class DeepLinkHandler @Inject constructor(
         is DeepLinkAction.WebViewUrl -> true
         is DeepLinkAction.Unknown -> true
         is DeepLinkAction.NativeRoute ->
-            DeepLinkParser.hostOf(uri)?.let { it in PUBLIC_DEEP_LINK_HOSTS } ?: false
+            DeepLinkParser.hostOf(uri, scheme)?.let { it in PUBLIC_DEEP_LINK_HOSTS } ?: false
     }
 
     private fun navigateSafely(navController: NavHostController, route: SmartWashRoute) {

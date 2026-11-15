@@ -5,8 +5,11 @@ package com.smartwash.feature.user.impl
  *
  * ⚠️ [TOKEN]/[USER_ROLE] 是 DataStore 持久化键，取值与 app 单模块时期完全一致
  * （user_token / user_role），**不得改动**——改了等于丢登录态，需要数据迁移。
+ *
+ * public（原 internal）：[SEND_CAPTCHA] 被 app 两个变体的注册页消费
+ * （full 的 RegisterPage 与 lite 的 LiteRegisterPage），跨源集/跨模块引用需 public。
  */
-internal object UserImplConstant {
+object UserImplConstant {
 
     /** 日志 TAG（对齐 app 的 AppConstant.APP_NAME） */
     const val APP_NAME = "SmartWash"

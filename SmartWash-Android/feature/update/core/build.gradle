@@ -1,0 +1,45 @@
+// :feature:update:core —— 热更新内核（下载 / 安装 / 版本比较），不含 InitTask。
+// 两变体共用：full 经 :feature:update:impl 的 UpdateInitTask 自动检查；
+// lite 不依赖 impl，仅按需在壳层手动检查并复用本模块的下载/安装链路。
+// 包名保持 com.smartwash.feature.update.*（与模块路径解耦，namespace 独立生成 R）。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/hilt.gradle"
+
+android {
+    namespace 'com.smartwash.feature.update.core'
+    // Robolectric 单测需读取模块 Manifest/资源（FileProvider 的 @xml/file_paths 解析依赖）
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+}
+
+dependencies {
+    // 对外契约（AppVersionVo + AppUpdateApi）
+    implementation project(':feature:update:api')
+
+    // 响应信封 ApiResult / AppLogger
+    implementation project(':common:utils')
+    // NetworkException 与 Retrofit（AppUpdateRepository 消费）
+    implementation project(':common:network')
+
+    // NotificationCompat（ApkDownloadWorker 前台服务通知栏进度）
+    implementation libs.androidx.core.ktx
+
+    // APK 后台下载（WorkManager + @HiltWorker）
+    implementation libs.androidx.work.runtime.ktx
+    implementation libs.androidx.hilt.work
+    // HiltWorker 的 androidx 注解处理器（smartwash.hilt convention plugin 只带 dagger 的）
+    ksp libs.androidx.hilt.compiler
+
+    // ApkDownloadWorker 直接消费 OkHttp（下载执行）
+    implementation libs.okhttp
+    //ApkDownloadWorker/UpdateSettingsStore 的协程与 Flow
+    implementation libs.kotlinx.coroutines.core
+
+    // 安装/下载链路回归测试（ApkInstaller 的 FileProvider 竞态、通知 ID 不变量、落盘目录）
+    testImplementation libs.junit
+    testImplementation libs.robolectric
+    testImplementation libs.androidx.test.core
+}

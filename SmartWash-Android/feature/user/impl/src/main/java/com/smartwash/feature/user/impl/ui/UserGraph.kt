@@ -1,90 +1,41 @@
 package com.smartwash.feature.user.impl.ui
 
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.runtime.Composable
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import com.smartwash.common.utils.CROSSFADE_ALT_MS
-import com.smartwash.common.utils.DURATION_CARD_MS
-import com.smartwash.common.utils.DURATION_MICRO_MS
-import com.smartwash.common.utils.defaultSpring
-import com.smartwash.common.utils.enterTween
-import com.smartwash.common.utils.exitTween
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.ui.changepassword.ChangePasswordPage
-import com.smartwash.feature.user.impl.ui.login.LoginPage
 import com.smartwash.feature.user.impl.ui.permission.PermissionManagementPage
-import com.smartwash.feature.user.impl.ui.register.RegisterPage
 import com.smartwash.feature.user.impl.ui.resetpassword.ResetPasswordPage
-import com.smartwash.feature.user.impl.ui.setting.ApiConfigPage
-import com.smartwash.feature.user.impl.ui.setting.SettingPage
-import com.smartwash.feature.user.impl.ui.update_userinfo.UpdateUserInfoPage
-import com.smartwash.feature.user.impl.ui.wallet.WalletTransactionsPage
-
-/** 退出时长 — 动效语言 v0.4：退出 ≈ 进入的 70%（由 vocabulary 派生，不写裸时长） */
-private val AUTH_EXIT_MS = DURATION_MICRO_MS * 7 / 10
 
 /**
- * 用户域路由聚合（T8.1）：本域 4 页面的 composable 注册自 app 壳 MainActivity
+ * 用户域路由聚合（T8.1）：本域页面的 composable 注册自 app 壳 MainActivity
  * NavHost 迁入，宿主侧一行 [userGraph] 完成聚合。路由常量取 user-api 的
  * [UserRoute]（单一事实来源）。
  *
- * 登录 ↔ 注册带方向语义（T8.1 后补充）：前进（登录 → 注册）新页自右侧 1/12 屏宽
- * 滑入 + 淡入、旧页向左侧滑出；返回（注册 → 登录）全部反向。位移用
- * `defaultSpring()`（可中断），淡入淡出走卡片级/微交互级 tween。
- * reduceMotion 时位移归零，四个方向统一 180ms 纯淡入淡出（规范 §8）。
+ * **登录 / 注册 / 设置三路由不在此注册**（变体路由归属，见函数内注释）：full 由
+ * app/src/full 的 flavor 图贡献者注册，lite 由 app/src/lite 的 liteGraph 注册。
  *
- * @param reduceMotion 全应用动效降级开关（壳层 MainActivity 提供，与 NavHost 全局转场同源）
- * @param checkUpdateContent 设置页「检查更新」行插槽（feature:update 归壳层聚合，
- *   user-impl 不依赖它；壳层经参数注入，T5.2 插槽模式保持不变）
+ * reduceMotion 在转场 lambda 内读取 [NavGraphAmbient.reduceMotion] 快照（NavHost builder
+ * 非组合上下文，无法读 [com.smartwash.common.utils.LocalReduceMotion]；快照由壳层组合期写入，
+ * 与全局转场同源）。设置页「检查更新」插槽由 [SettingPage] 经 [LocalCheckUpdateContent]
+ * 自行读取（壳层在 NavHost 外注入），图侧不再透传。
  */
-fun NavGraphBuilder.userGraph(
-    navController: NavHostController,
-    reduceMotion: Boolean,
-    checkUpdateContent: (@Composable () -> Unit)? = null,
-) {
-    composable<UserRoute.Login>(
-        // 前进离场：向左滑出（与 Register 的右侧滑入同一方向语义）；
-        // 返回入场：自左侧滑回。降级时纯淡入淡出
-        exitTransition = { forwardExit(reduceMotion) },
-        popEnterTransition = { backwardEnter(reduceMotion) },
-    ) {
-        LoginPage(navController)
-    }
-    composable<UserRoute.Register>(
-        enterTransition = { forwardEnter(reduceMotion) },
-        popEnterTransition = { forwardEnter(reduceMotion) },
-        exitTransition = { forwardExit(reduceMotion) },
-        popExitTransition = { backwardExit(reduceMotion) },
-    ) {
-        RegisterPage(navController)
-    }
-    composable<UserRoute.UpdateUserInfo> {
-        UpdateUserInfoPage(navController)
-    }
-    composable<UserRoute.Setting> {
-        SettingPage(
-            navController,
-            checkUpdateContent = checkUpdateContent,
-        )
-    }
-    composable<UserRoute.ApiConfig> {
-        ApiConfigPage(navController)
-    }
+fun NavGraphBuilder.userGraph(navController: NavHostController) {
+    // 登录 / 注册 / 设置三路由**不在本图注册**：它们是两变体共用的路由常量，但页面实现
+    // 分属 full（本模块）与 lite（app/src/lite）——同路由重复注册在 Navigation 2.8 是
+    // 「后注册覆盖」，胜出者取决于 Hilt @IntoSet 聚合顺序（未保证）。故这三条路由的注册
+    // 随页面实现走：full 由 app/src/full 的 UserFlavorGraphModule 注册（含认证转场），
+    // lite 由 app/src/lite 的 liteGraph 注册。
+    //
+    // 本图只注册**两变体共用实现**的页面：权限管理 / 修改密码 / 重置密码（无 lite 副本，
+    // 且不依赖 full 专属域）。资料编辑 / 解读模型 / 钱包流水 / 我的页虽在 user-impl 包内，
+    // 但实现已下沉 app/src/full（依赖 laundry-api / notice-api / payment-api 等 full 专属
+    // 契约），其路由注册同在 app/src/full 的 UserFlavorGraphModule。
     composable<UserRoute.PermissionManagement> {
         PermissionManagementPage(navController)
     }
-    // 以下三页走 NavHost 全局默认转场（与 Setting/PermissionManagement 同档）
-    composable<UserRoute.WalletTransactions> {
-        WalletTransactionsPage(navController)
-    }
+    // 以下两页走 NavHost 全局默认转场（与 Setting/PermissionManagement 同档）
     composable<UserRoute.ChangePassword> {
         ChangePasswordPage(navController)
     }
@@ -92,42 +43,3 @@ fun NavGraphBuilder.userGraph(
         ResetPasswordPage(navController)
     }
 }
-
-/**
- * 前进入场：自右侧 1/12 屏宽滑入 + 卡片级 300ms 减速淡入。
- * reduceMotion 时位移归零，只留 180ms 纯淡入。
- */
-private fun forwardEnter(reduceMotion: Boolean): EnterTransition =
-    if (reduceMotion) {
-        fadeIn(animationSpec = tween(CROSSFADE_ALT_MS))
-    } else {
-        fadeIn(animationSpec = enterTween(DURATION_CARD_MS)) +
-            slideInHorizontally(initialOffsetX = { it / 12 }, animationSpec = defaultSpring())
-    }
-
-/** 前进离场：向左侧滑出 + 加速淡出（进入时长的 70%）；reduceMotion 时纯淡出 */
-private fun forwardExit(reduceMotion: Boolean): ExitTransition =
-    if (reduceMotion) {
-        fadeOut(animationSpec = tween(CROSSFADE_ALT_MS))
-    } else {
-        fadeOut(animationSpec = exitTween(AUTH_EXIT_MS)) +
-            slideOutHorizontally(targetOffsetX = { -it / 12 }, animationSpec = defaultSpring())
-    }
-
-/** 返回入场：自左侧 1/12 屏宽滑回 + 卡片级淡入（前进的镜像）；reduceMotion 时纯淡入 */
-private fun backwardEnter(reduceMotion: Boolean): EnterTransition =
-    if (reduceMotion) {
-        fadeIn(animationSpec = tween(CROSSFADE_ALT_MS))
-    } else {
-        fadeIn(animationSpec = enterTween(DURATION_CARD_MS)) +
-            slideInHorizontally(initialOffsetX = { -it / 12 }, animationSpec = defaultSpring())
-    }
-
-/** 返回离场：向右侧滑出 + 加速淡出（前进离场的镜像）；reduceMotion 时纯淡出 */
-private fun backwardExit(reduceMotion: Boolean): ExitTransition =
-    if (reduceMotion) {
-        fadeOut(animationSpec = tween(CROSSFADE_ALT_MS))
-    } else {
-        fadeOut(animationSpec = exitTween(AUTH_EXIT_MS)) +
-            slideOutHorizontally(targetOffsetX = { it / 12 }, animationSpec = defaultSpring())
-    }

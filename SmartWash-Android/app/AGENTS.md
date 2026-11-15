@@ -4,58 +4,46 @@
 
 - **Gradle 坐标**：`:app`
 - **包名**：`com.smartwash`
-- **职责**：单 Activity 壳——聚合各域 NavGraph 路由注册、留守跨域页面（主页壳/订单详情/取件/内置浏览器）、更新流程（事件收集→弹窗）、深链分发（smartwash:// scheme：解析契约在 common:utils，host 由各域贡献者 @IntoSet 注册，壳层自持注册表与处理器）、登录态/401 事件分发、Hilt 全局注入（BASE_URL / HiltWorkerFactory）、InitEngine 启动调度、工作台入口下发（壳层 tab 页自持网络链路）。
+- **变体**：`full`（SmartWash，applicationId `com.smartwash`，scheme `smartwash`）/ `lite`（吃啥，applicationId `com.todayeat.app`，scheme `todayeat`）。
+- **职责**：单 Activity 壳——聚合各域 NavGraph 路由注册、深链分发（解析契约在 common:utils，host 由各域贡献者 @IntoSet 注册，壳层自持注册表与处理器）、登录态/401 事件分发、Hilt 全局注入（BASE_URL / deepLinkScheme / HiltWorkerFactory）、InitEngine 启动调度。
+
+**变体源集分工**（关键：main 只放两变体共享的基座）：
+
+| 源集 | 内容 |
+|------|------|
+| `app/src/main` | MainActivity 骨架、深链聚合（Registry/Handler/Repository 绑定/字典 Api）、BaseUrl/GameBridge/ServerConfig 供给、壳层全局转场。**不得引用 full 专属域**（order/payment/laundry/coupon/points/notice/divination/lab/review/subscription/toolbox/update:impl）。 |
+| `app/src/full` | full 专属页面与图贡献者：壳层留守页（主页壳/首页/订单详情/取件/AI 工具台/内置浏览器/工作台/扫一扫）、`ShellGraphModule`、`UserFlavorGraphModule`（含 Login/Register/Setting 与资料编辑/解读模型/钱包流水注册）、`UserFlavorModule`（DivSettingApi/TransactionApi 供给）、更新弹窗与 full 更新入口。 |
+| `app/src/lite` | lite 专属四页（首页/登录/注册/设置）+ `LiteGraphModule` + lite 更新入口（手动检查更新，复用 `:feature:update:core`）。 |
+
+**路由唯一性**：`ShellRoute.Home` 与 `UserRoute.Login/Register/Setting` 是两变体共用的路由常量，但页面实现分属两变体——**注册必须与页面实现同源**（full → `UserFlavorGraphModule`/`ShellGraphModule`，lite → `LiteGraphModule`），避免 Navigation 2.8「同路由后注册覆盖」的胜出页不确定。`userGraph` 只注册两变体共用实现且无 lite 副本的页面（权限管理/修改密码/重置密码）。
 
 ## 2. 包结构
 
 ```
 com.smartwash
-├── App.kt                           # @HiltAndroidApp Application，InitEngine 启动 + WorkManager 按需初始化
-├── deeplink/                        # 深链壳层聚合（解析契约在 common:utils/deeplink）
-│   ├── DeepLinkRegistry.kt          # 注入 Set<DeepLinkContributor> 合并 host 总表（重复 host 告警忽略后到者）
-│   ├── DeepLinkHandler.kt           # resolve（挂起，未命中查后端字典兜底）+ navigate（三态分发）
-│   └── DeepLinkRepository.kt        # 路由字典拉取 + 内存缓存（失败静默返回空列表）
-├── di/
-│   ├── BaseUrlModule.kt             # BASE_URL 注入（BuildConfig 兜底演示地址，生产 -PbaseUrl 切换）
-│   ├── DeepLinkModule.kt            # DeepLinkApi 供给 + Repository 绑定 + 壳层自有贡献者（pickup/ai-work @IntoSet）
-│   └── WorkbenchModule.kt           # 工作台入口 Api/Repository 供给（壳层自有页面）
-├── network/
-│   └── api/
-│       ├── WorkbenchEntryApi.kt     # GET /web/auth/workbench/entries + WorkbenchEntryVo（壳层自有）
-│       └── DeepLinkApi.kt           # GET /web/deeplink/routes + DeeplinkRouteVo（公开接口）
-├── repository/
-│   ├── WorkbenchEntryRepository.kt       # 工作台入口数据契约
-│   └── WorkbenchEntryRepositoryImpl.kt   # 实现（失败抛 NetworkException 交 VM 兜底）
-└── ui/
-    ├── activity/
-    │   └── MainActivity.kt          # 单 Activity，NavHost 聚合所有 xxxGraph + 深链冷/热启动收集
-    ├── navigation/
-    │   └── ShellGraph.kt            # shellGraph 路由聚合（含 WebView 页）+ 壳层全局转场动画
-    └── page/
-        ├── PageConstant.kt          # 壳层路由常量（Pickup/AiWork/WebView）+ HomePageConstant（底部 tab）
-        ├── detail/                  # 订单详情（跨域留守）
-        │   ├── OrderDetailPage.kt
-        │   └── OrderDetailViewModel.kt
-        ├── home/                    # 主页框架（底部导航 + 嵌套 NavHost）
-        │   ├── HomePage.kt
-        │   └── HomeViewModel.kt
-        ├── index/                   # 首页 Tab
-        │   ├── IndexPage.kt
-        │   └── IndexViewModel.kt
-        ├── pickup/                  # 取件留守页
-        │   ├── PickupPage.kt
-        │   ├── PickupViewModel.kt
-        │   ├── PickupDeliveryPage.kt
-        │   └── PickupDeliveryViewModel.kt
-        ├── webview/                 # 内置浏览器页（深链 web 分支承载；AndroidView 包原生 WebView）
-        │   └── WebViewPage.kt
-        ├── workbench/               # 工作台 tab 根页（入口下发 + 深链点击分发）
-        │   ├── WorkbenchPage.kt
-        │   ├── WorkbenchTool.kt
-        │   └── WorkbenchViewModel.kt
-        └── update/                  # 更新弹窗（壳层 UI）
-            ├── UpdateDialog.kt
-            └── UpdateFlow.kt
+├── [main] App.kt                     # @HiltAndroidApp Application，InitEngine 启动 + WorkManager 按需初始化
+├── [main] deeplink/                  # 深链壳层聚合（解析契约在 common:utils/deeplink）
+│   ├── DeepLinkRegistry.kt           # 注入 Set<DeepLinkContributor> 合并 host 总表（重复 host 告警忽略后到者）
+│   ├── DeepLinkHandler.kt            # resolve（挂起，未命中查后端字典兜底）+ navigate（三态分发）
+│   └── DeepLinkRepository.kt         # 路由字典拉取 + 内存缓存（失败静默返回空列表）
+├── [main] di/
+│   ├── BaseUrlModule.kt              # BASE_URL + deepLinkScheme 注入（BuildConfig，生产 -PbaseUrl 切换）
+│   ├── DeepLinkRepositoryModule.kt   # DeepLinkApi 供给 + Repository 绑定（两变体共用）
+│   ├── GameBridgeModule.kt           # GameBridgeApi 供给 + EntryPoint（lite 的游戏 H5 页也消费）
+│   └── ServerConfigModule.kt         # ServerConfigApi 供给 + ServerConfigInitTask（lite 的游戏页读白名单）
+├── [main] init/ServerConfigInitTask.kt   # GET /web/config 预热（MinIO 端点/短链域名）
+├── [main] network/api/
+│   ├── DeepLinkApi.kt                # GET /web/deeplink/routes + DeeplinkRouteVo（公开接口）
+│   └── ServerConfigApi.kt            # GET /web/config + ServerConfigVo
+├── [main] ui/
+│   ├── activity/MainActivity.kt      # 单 Activity，NavHost 聚合所有 xxxGraph + 深链冷/热启动收集
+│   └── navigation/ShellTransitions.kt # 壳层全局转场（两变体共享）
+├── [full] di/                        # ShellGraphModule / UserFlavorGraphModule / UserFlavorModule / DeepLinkModule / WorkbenchModule
+├── [full] network/api/               # WorkbenchEntryApi（GET /web/auth/workbench/entries）
+├── [full] repository/                # WorkbenchEntryRepository(Impl)
+├── [full] ui/navigation/ShellGraph.kt    # shellGraph 路由聚合（含 WebView/Scan 页）
+├── [full] ui/page/                   # PageConstant / home / index / detail / pickup / ai / webview / workbench / scan / update
+└── [lite] lite/ui/                   # LiteGraph / home / login / register / setting（含 LiteUpdateSection 手动检查更新）
 ```
 
 ## 3. 公开 API
