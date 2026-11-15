@@ -57,12 +57,15 @@ cors:
 
 # 应用版本更新配置
 # version.json 路径：默认指向容器内 config 卷挂载位置，可通过环境变量覆盖
+# 清单按 channel 分组（channels.full / channels.lite），顶层 fileName/fileSize/sha256 为兼容旧清单保留
 app:
   version:
     file-path: ${APP_VERSION_FILEPATH:/app/config/releases/latest/version.json}
   apk:
-    # APK 在 MinIO 桶下的对象前缀，与 deploy.sh 的 MINIO_APK_PATH 保持一致
+    # full 渠道（com.smartwash）APK 在 MinIO 桶下的对象前缀，与 deploy.sh 的 MINIO_APK_PATH 保持一致
     object-prefix: ${APP_APK_OBJECT_PREFIX:android/}
+    # lite 渠道（吃啥 com.todayeat.app）APK 对象前缀，与 full 分目录存放，避免互推错包
+    object-prefix-lite: ${APP_APK_OBJECT_PREFIX_LITE:android-lite/}
 
 # MinIO 对象存储配置
 minio:
@@ -70,7 +73,12 @@ minio:
   # demo 默认凭据，生产环境必须通过 MINIO_ACCESS_KEY / MINIO_SECRET_KEY 覆盖
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  # 区域：minio SDK 8.5.7 预签名未指定 region 时会先发起 region 查询请求，
+  # 服务端不可达将导致 APK 下载接口失败；显式配置后签名纯本地完成
+  region: ${MINIO_REGION:us-east-1}
   bucket-name: ${MINIO_BUCKET:smartwash}
+  # APK 下载专用桶（与上传用的 bucket-name 分开）；历史遗漏配置会导致预签名落到 null 桶，此处补齐
+  apk-bucket-name: ${MINIO_APK_BUCKET:${MINIO_BUCKET:smartwash}}
 
 # 观象台（占卜模块）配置
 # 密钥一律走环境变量注入（DIV_MASTER_KEY）；模型目录在管理端维护（div_model_config），

@@ -48,6 +48,10 @@ minio:
   access-key: test-access-key
   secret-key: test-secret-key
   bucket-name: smartwash-test
+  # APK 预签名下载桶（与上传桶分开），占位值避免 apkBucketName 为 null
+  apk-bucket-name: smartwash-apk-test
+  # 固定 region：避免 SDK 预签名时回退发起 region 查询请求（测试环境不联网）
+  region: us-east-1
 
 # 限流组件测试环境关闭：安全集成测试同 IP 高频请求不应被限流拦截（限流自身行为有独立单测覆盖）
 smartwash:
