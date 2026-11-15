@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>诗词填空</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（UI 壳全部走 token；纯 DOM 无 canvas）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
+  .starbox { font-size: 14px; font-weight: 600; color: var(--g-warning); white-space: nowrap; }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); white-space: nowrap; }
+  .board { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); padding: 14px 12px; margin-bottom: 10px; text-align: center; }
+  .poem { font-size: 14px; color: var(--g-muted); margin-bottom: 10px; }
+  .verse { margin: 4px 0 8px; }
+  .line { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; margin: 4px 0; }
+  .ch { min-width: 30px; height: 44px; line-height: 44px; font-size: 28px; font-weight: 600; color: var(--g-text); text-align: center; }
+  .slot { min-width: 30px; height: 44px; line-height: 42px; padding: 0 2px; border: 1px solid var(--g-border); border-radius: 10px; background: var(--g-surface2); color: var(--g-primary-deep); font-family: inherit; font-size: 28px; font-weight: 600; cursor: pointer; box-shadow: inset 0 1px 0 var(--g-border); }
+  .slot.empty { color: var(--g-faint); border-style: dashed; }
+  .slot.active { border-color: var(--g-primary-deep); box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+  .slot.lock { background: var(--g-primary-soft); border-color: transparent; color: var(--g-on-soft); cursor: default; box-shadow: none; }
+  .prompt-line { font-size: 28px; font-weight: 600; line-height: 1.6; color: var(--g-text); }
+  .ask { font-size: 14px; color: var(--g-muted); margin-top: 6px; }
+  .hint { margin: 8px 0 0; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .cands { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: #fff;
+    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .btn:disabled { opacity: .4; }
+  .btn.cand { min-height: 56px; padding: 0 4px; flex: none; width: 100%; font-size: 22px; font-weight: 600; background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); box-shadow: 0 1px 0 var(--g-border); }
+  .btn.cand:active { opacity: .8; }
+  .btn.cand.ok { background: var(--g-primary-soft); color: var(--g-on-soft); border-color: transparent; box-shadow: none; }
+  .btn.cand.bad { animation: shake .26s ease-in-out; border-color: var(--g-danger); color: var(--g-danger); }
+  .btn.cand.link { min-height: 44px; height: auto; padding: 8px 10px; font-size: 16px; font-weight: 500; line-height: 1.4; white-space: normal; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .tools { display: flex; gap: 8px; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .btn { width: 100%; }
+
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="sub" id="sub">补全诗句或接上句 · 限时限错</span>
+    <span class="starbox" id="stStar">★ 0</span>
+  </header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/10</span></div>
+    <div class="stat"><span class="label">时间</span><span class="val" id="stTime">01:00</span></div>
+    <div class="stat"><span class="label">机会</span><span class="val" id="stLife">3</span></div>
+  </div>
+  <div class="board">
+    <div class="poem" id="poem"></div>
+    <div class="verse" id="verse"></div>
+    <p class="hint" id="hint"></p>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+  <div class="cands" id="cands"></div>
+  <div class="tools">
+    <button class="btn ghost" id="btnReset">重玩本关</button>
+  </div>
+  <p class="foot">填句：点字块填入高亮空缺，点对自动锁定<br>接句：选出与上句相接的下一句 · 进度自动保存</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">诗词填空</h2>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn" id="ovBtn">开始游戏</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+window.__gOnTheme=function(){};//纯 DOM 游戏：颜色随 CSS 变量自动生效，无需重绘
+/* ---------- 包内默认关卡（与 .levels.json 前 10 条逐字一致） ---------- */
+var DEFAULT_LEVELS=[{"name":"第001关·望洞庭","type":"fill","poem":"《望洞庭》·刘禹锡","hint":"湖光秋月两相和，白银盘里一青螺。","lines":["湖光秋月两相和"],"blanks":[{"line":0,"pos":1,"answer":"光","options":["光","咣","胱"]}],"time":60,"mistakes":3},{"name":"第002关·送杜少府之任蜀州","type":"fill","poem":"《送杜少府之任蜀州》·王勃","hint":"知己远在天涯，也如近邻一般。","lines":["海内存知己"],"blanks":[{"line":0,"pos":0,"answer":"海","options":["海","梅","每"]}],"time":60,"mistakes":3},{"name":"第003关·鸟鸣涧","type":"fill","poem":"《鸟鸣涧》·王维","hint":"人闲夜静，月出惊起山鸟。","lines":["月出惊山鸟"],"blanks":[{"line":0,"pos":4,"answer":"鸟","options":["鸟","鸣","鸭"]}],"time":60,"mistakes":3},{"name":"第004关·接下句","type":"link","poem":"《观书有感》·朱熹","hint":"方塘清澈，因有源头活水。","prompt":"半亩方塘一鉴开","answer":"天光云影共徘徊","options":["天光云影共徘徊","远近高低各不同","只缘身在此山中"],"time":50,"mistakes":3},{"name":"第005关·题都城南庄","type":"fill","poem":"《题都城南庄》·崔护","hint":"人面不知何处去，桃花依旧笑春风。","lines":["去年今日此门中"],"blanks":[{"line":0,"pos":0,"answer":"去","options":["去","罢","丢"]}],"time":60,"mistakes":3},{"name":"第006关·登鹳雀楼","type":"fill","poem":"《登鹳雀楼》·王之涣","hint":"登楼远眺，山河壮阔催人更上层楼。","lines":["白日依山尽"],"blanks":[{"line":0,"pos":3,"answer":"山","options":["山","仙","讪"]}],"time":60,"mistakes":3},{"name":"第007关·送友人","type":"fill","poem":"《送友人》·李白","hint":"浮云游子意，落日故人情。","lines":["浮云游子意"],"blanks":[{"line":0,"pos":1,"answer":"云","options":["云","耘","芸"]}],"time":60,"mistakes":3},{"name":"第008关·接下句","type":"link","poem":"《清明》·杜牧","hint":"清明细雨，牧童遥指杏花村。","prompt":"借问酒家何处有","answer":"牧童遥指杏花村","options":["牧童遥指杏花村","篱落疏疏一径深","立根原在破岩中"],"time":50,"mistakes":3},{"name":"第009关·晓出净慈寺送林子方","type":"fill","poem":"《晓出净慈寺送林子方》·杨万里","hint":"六月西湖，莲叶接天映日别样红。","lines":["接天莲叶无穷碧"],"blanks":[{"line":0,"pos":1,"answer":"天","options":["天","太","大"]}],"time":60,"mistakes":3},{"name":"第010关·客中行","type":"fill","poem":"《客中行》·李白","hint":"兰陵美酒郁金香，醉客不知他乡。","lines":["但使主人能醉客"],"blanks":[{"line":0,"pos":3,"answer":"人","options":["人","仁","八"]}],"time":60,"mistakes":3}];
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底；任一条非法整批放弃） ---------- */
+var LEVELS_KEY="sw.poemfill.v1.levels",LEVELS_VER_KEY="sw.poemfill.v1.levels.ver";
+var LEVELS=DEFAULT_LEVELS.slice();
+function validateLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return null;
+  if(typeof d.name!=="string"||d.name.length<1||d.name.length>32)return null;
+  if(d.type!=="fill"&&d.type!=="link")return null;
+  if(typeof d.poem!=="string"||!d.poem)return null;
+  if(typeof d.hint!=="string")return null;
+  if(!Number.isInteger(d.time)||d.time<10||d.time>300)return null;
+  if(!Number.isInteger(d.mistakes)||d.mistakes<1||d.mistakes>5)return null;
+  var i,b,t,key,seen,opts,ansCnt,out;
+  if(d.type==="fill"){
+    if(!Array.isArray(d.lines)||!d.lines.length)return null;
+    for(i=0;i<d.lines.length;i++){if(typeof d.lines[i]!=="string"||!d.lines[i].length)return null;}
+    if(!Array.isArray(d.blanks)||d.blanks.length<1||d.blanks.length>3)return null;
+    seen={};out=[];
+    for(i=0;i<d.blanks.length;i++){
+      b=d.blanks[i];
+      if(!b||typeof b!=="object")return null;
+      if(!Number.isInteger(b.line)||b.line<0||b.line>=d.lines.length)return null;
+      t=d.lines[b.line];
+      if(!Number.isInteger(b.pos)||b.pos<0||b.pos>=t.length)return null;
+      key=b.line+","+b.pos;if(seen[key])return null;seen[key]=true;
+      if(typeof b.answer!=="string"||b.answer.length!==1)return null;
+      if(t[b.pos]!==b.answer)return null;
+      if(!Array.isArray(b.options)||b.options.length<3||b.options.length>6)return null;
+      for(var c=0;c<b.options.length;c++){if(typeof b.options[c]!=="string"||b.options[c].length!==1)return null;}
+      opts=new Set(b.options);if(opts.size!==b.options.length)return null;
+      ansCnt=0;for(c=0;c<b.options.length;c++){if(b.options[c]===b.answer)ansCnt++;}
+      if(ansCnt!==1)return null;
+      out.push({line:b.line,pos:b.pos,answer:b.answer,options:b.options.slice()});
+    }
+    return {name:d.name,type:"fill",poem:d.poem,hint:d.hint,lines:d.lines.slice(),blanks:out,time:d.time,mistakes:d.mistakes};
+  }
+  if(typeof d.prompt!=="string"||!d.prompt)return null;
+  if(typeof d.answer!=="string"||!d.answer)return null;
+  if(!Array.isArray(d.options)||d.options.length<3||d.options.length>6)return null;
+  for(i=0;i<d.options.length;i++){if(typeof d.options[i]!=="string"||!d.options[i].length)return null;}
+  opts=new Set(d.options);if(opts.size!==d.options.length)return null;
+  ansCnt=0;for(i=0;i<d.options.length;i++){if(d.options[i]===d.answer)ansCnt++;}
+  if(ansCnt!==1)return null;
+  if(d.options.indexOf(d.prompt)>=0)return null;
+  return {name:d.name,type:"link",poem:d.poem,hint:d.hint,prompt:d.prompt,answer:d.answer,options:d.options.slice(),time:d.time,mistakes:d.mistakes};
+}
+/* 解析 DB 下发的关卡批次：任一条非法即整批放弃（返回 null） */
+function parseLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var seen={},list=[],i,it,no,d;
+  for(i=0;i<res.levels.length;i++){
+    it=res.levels[i];
+    if(!it||typeof it!=="object")return null;
+    no=it.levelNo;
+    if(typeof no!=="number"||!Number.isInteger(no)||no<1||seen[no])return null;
+    if(typeof it.dataJson==="string"){try{d=JSON.parse(it.dataJson);}catch(e){return null;}}
+    else if(it.dataJson&&typeof it.dataJson==="object"){d=it.dataJson;}
+    else{return null;}
+    d=validateLevelData(d);
+    if(!d)return null;
+    seen[no]=true;
+    list.push({no:no,d:d});
+  }
+  list.sort(function(a,b){return a.no-b.no;});
+  return list.map(function(x){return x.d;});
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){
+      var ok=true;
+      for(var i=0;i<list.length;i++){if(!validateLevelData(list[i])){ok=false;break;}}
+      if(ok){LEVELS=list;return v;}
+    }
+  }catch(e){}
+  return 0;
+}
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("poem-fill").then(function(res){
+    var list=parseLevels(res);
+    if(!list)return;
+    if(state!=="idle"&&state!=="ready")return;//对局进行中不打断
+    if(applyLevels(list,res.version||0)){
+      if(cur>=LEVELS.length)cur=LEVELS.length-1;
+      startLevel(cur);
+      if(overlayMode==="start"){state="idle";stopTimer();}
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档 ---------- */
+var KEY="sw.poemfill.v1";
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object")return{lv:Math.max(0,parseInt(s.lv,10)||0),done:s.done&&typeof s.done==="object"?s.done:{},total:Math.max(0,parseInt(s.total,10)||0)};}catch(e){}return{lv:0,done:{},total:0};}
+var saveData=loadSave();
+function save(){
+  var data={lv:saveData.lv,done:saveData.done,total:saveData.total};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("poem-fill",data).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("poem-fill").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rl=Math.max(0,parseInt(r.lv,10)||0),rt=Math.max(0,parseInt(r.total,10)||0);
+      if(rl>saveData.lv){saveData.lv=Math.min(LEVELS.length-1,rl);changed=true;}
+      if(rt>saveData.total){saveData.total=rt;changed=true;}
+      if(r.done&&typeof r.done==="object"){
+        for(var k in r.done){
+          var rv=parseInt(r.done[k],10)||0,mv=parseInt(saveData.done[k],10)||0;
+          if(rv>mv){saveData.done[k]=rv;changed=true;}
+        }
+      }
+      if(changed){save();if(cur>=LEVELS.length)cur=LEVELS.length-1;startLevel(cur);
+        if(overlayMode==="start"){state="idle";stopTimer();}}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var cur=0,L=null,type="",state="idle",over=true,paused=false;
+var blanks=[],activeBlank=-1,mistakesLeft=0,timeLeft=0,timerId=null,lastTs=0,overlayMode="start";
+var doneSave=saveData.done,totalScore=saveData.total;
+function $(id){return document.getElementById(id);}
+function say(t){$("msg").textContent=t;}
+function fmtTime(t){var v=Math.max(0,Math.ceil(t)),m=Math.floor(v/60),s=v%60;return(m<10?"0":"")+m+":"+(s<10?"0":"")+s;}
+function mulberry(seed){var s=seed>>>0;return function(){s|=0;s=(s+0x6d2b79f5)|0;var t=Math.imul(s^(s>>>15),1|s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+function shuffle(arr,rng){for(var k=arr.length-1;k>0;k--){var j=Math.floor(rng()*(k+1)),t=arr[k];arr[k]=arr[j];arr[j]=t;}return arr;}
+function stopTimer(){if(timerId){clearInterval(timerId);timerId=null;}}
+function startTimer(){
+  stopTimer();lastTs=performance.now();
+  timerId=setInterval(function(){
+    var now=performance.now(),dt=(now-lastTs)/1000;lastTs=now;
+    if(paused||state!=="play")return;
+    timeLeft-=dt;
+    if(timeLeft<=0){timeLeft=0;updateStats();lose("时间到了");return;}
+    updateStats();
+  },200);
+}
+function updateStats(){
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  $("stTime").textContent=fmtTime(timeLeft);
+  $("stLife").textContent=mistakesLeft;
+  var stars=0;for(var k in doneSave){if(parseInt(doneSave[k],10)>0)stars++;}
+  $("stStar").textContent="★ "+stars;
+  $("btnReset").disabled=state==="idle";
+}
+/* ---------- 渲染 ---------- */
+function startLevel(n){
+  if(n<0)n=0;if(n>=LEVELS.length)n=LEVELS.length-1;
+  cur=n;L=LEVELS[cur];type=L.type;
+  if(type==="fill"){
+    // 深拷贝：不把「已填/点错」状态写回关卡数据，保证重玩与切关互不串味
+    blanks=L.blanks.slice().sort(function(a,b){return a.line-b.line||a.pos-b.pos;}).map(function(b){
+      return {line:b.line,pos:b.pos,answer:b.answer,options:b.options.slice(),filled:null,wrong:null};
+    });
+    activeBlank=0;
+  }else{
+    blanks=[];activeBlank=-1;
+  }
+  mistakesLeft=L.mistakes;timeLeft=L.time;over=false;state="play";paused=false;
+  renderBoard();renderCands();updateStats();
+  say(type==="fill"?"点字块填入高亮空缺":"选出与上句相接的下一句");
+  if(L.blanks&&L.blanks.length===0){win();return;}
+  startTimer();
+}
+function renderBoard(){
+  $("poem").textContent=L.poem;
+  $("hint").textContent=L.hint||"";
+  var box=$("verse");box.innerHTML="";
+  if(type==="fill"){
+    for(var li=0;li<L.lines.length;li++){
+      var row=document.createElement("div");row.className="line";
+      for(var ci=0;ci<L.lines[li].length;ci++){
+        var bi=blankIndexAt(li,ci);
+        if(bi<0){
+          var sp=document.createElement("span");sp.className="ch";sp.textContent=L.lines[li][ci];row.appendChild(sp);
+        }else{
+          var bt=document.createElement("button");bt.className="slot"+((blanks[bi].filled?" lock":" empty")+(bi===activeBlank?" active":""));
+          bt.textContent=blanks[bi].filled||"";
+          bt.setAttribute("data-bi",String(bi));
+          bt.addEventListener("click",function(){pickSlot(parseInt(this.getAttribute("data-bi"),10));});
+          row.appendChild(bt);
+        }
+      }
+      box.appendChild(row);
+    }
+  }else{
+    var pl=document.createElement("div");pl.className="prompt-line";pl.textContent=L.prompt;box.appendChild(pl);
+    var ask=document.createElement("div");ask.className="ask";ask.textContent="请选出正确的下一句";box.appendChild(ask);
+  }
+}
+function blankIndexAt(li,ci){
+  for(var i=0;i<blanks.length;i++){if(blanks[i].line===li&&blanks[i].pos===ci)return i;}
+  return -1;
+}
+function renderCands(){
+  var box=$("cands");box.innerHTML="";
+  if(type==="fill"){
+    if(activeBlank<0||activeBlank>=blanks.length)return;
+    var opts=blanks[activeBlank].options;
+    for(var i=0;i<opts.length;i++){
+      var b=document.createElement("button");b.className="btn cand";b.textContent=opts[i];b.setAttribute("data-ch",opts[i]);
+      if(blanks[activeBlank].wrong&&blanks[activeBlank].wrong.indexOf(opts[i])>=0)b.disabled=true;
+      b.addEventListener("click",function(){pickOption(this.getAttribute("data-ch"),this);});
+      box.appendChild(b);
+    }
+  }else{
+    for(var j=0;j<L.options.length;j++){
+      var bb=document.createElement("button");bb.className="btn cand link";bb.textContent=L.options[j];bb.setAttribute("data-ch",L.options[j]);
+      bb.addEventListener("click",function(){pickOption(this.getAttribute("data-ch"),this);});
+      box.appendChild(bb);
+    }
+  }
+}
+/* ---------- 交互 ---------- */
+function pickSlot(bi){
+  if(over||state!=="play")return;
+  if(bi<0||bi>=blanks.length||blanks[bi].filled)return;
+  activeBlank=bi;renderBoard();renderCands();
+  say("已选中第 "+(bi+1)+" 处空缺");
+}
+function pickOption(ch,btn){
+  if(over||state!=="play")return;
+  if(type==="fill"){
+    if(activeBlank<0)return;
+    var b=blanks[activeBlank];
+    if(ch===b.answer){
+      b.filled=b.answer;btn.classList.add("ok");btn.disabled=true;
+      var nx=-1;
+      for(var i=0;i<blanks.length;i++){if(!blanks[i].filled){nx=i;break;}}
+      activeBlank=nx;
+      renderBoard();renderCands();updateStats();
+      if(nx<0){win();return;}
+      say("「"+b.answer+"」填对了！继续下一处");
+    }else{
+      mistakesLeft--;wrongMark(b,ch);btn.disabled=true;btn.classList.add("bad");
+      setTimeout(function(){btn.classList.remove("bad");},260);
+      updateStats();
+      if(mistakesLeft<=0){lose("机会用完了");return;}
+      say("「"+ch+"」不对，再想想");
+    }
+  }else{
+    if(ch===L.answer){
+      btn.classList.add("ok");btn.disabled=true;
+      win();return;
+    }
+    mistakesLeft--;btn.disabled=true;btn.classList.add("bad");
+    setTimeout(function(){btn.classList.remove("bad");},260);
+    updateStats();
+    if(mistakesLeft<=0){lose("机会用完了");return;}
+    say("这句接不上，再想想");
+  }
+}
+function wrongMark(b,ch){
+  if(!b.wrong)b.wrong=[];
+  if(b.wrong.indexOf(ch)<0)b.wrong.push(ch);
+}
+/* ---------- 结算 ---------- */
+function calcStars(){
+  var frac=timeLeft/L.time;
+  var s=1;
+  if(frac>=0.35)s++;
+  if(mistakesLeft===L.mistakes)s++;
+  return Math.min(3,s);
+}
+function win(){
+  over=true;state="over";stopTimer();
+  var stars=calcStars();
+  var gained=100+Math.max(0,Math.ceil(timeLeft))*2+mistakesLeft*30;
+  totalScore+=gained;
+  var prev=parseInt(doneSave[String(cur)],10)||0;
+  if(stars>prev)doneSave[String(cur)]=stars;
+  if(cur+1<LEVELS.length)saveData.lv=Math.max(saveData.lv,cur+1);
+  save();
+  var doneCount=0;for(var k in doneSave){if(parseInt(doneSave[k],10)>0)doneCount++;}
+  if(GB.available)GB.reportScore("poem-fill",{metricValue:doneCount,metricExtra:totalScore}).catch(function(){});
+  var starTxt="";for(var i=0;i<stars;i++)starTxt+="★";
+  $("ovTitle").textContent="过关！";
+  $("ovDesc").innerHTML=(type==="fill"?(L.lines[0]||""):(L.prompt+" → "+L.answer))+"<br>星级 "+starTxt+" · 本关 "+gained+" 分 · 累计 "+totalScore;
+  $("ovBtn").textContent=cur+1<LEVELS.length?"下一关":"再玩一次";
+  overlayMode="win";showOverlay();updateStats();
+}
+function lose(reason){
+  over=true;state="over";stopTimer();
+  $("ovTitle").textContent="本关失败";
+  $("ovDesc").innerHTML=reason+"<br>已完成 "+(type==="fill"?(blanks.filter(function(b){return !!b.filled;}).length+"/"+blanks.length):"0/1")+" · 累计总分 "+totalScore;
+  $("ovBtn").textContent="重试本关";
+  overlayMode="lose";showOverlay();updateStats();
+}
+function showOverlay(){$("overlay").classList.add("show");}
+function hideOverlay(){$("overlay").classList.remove("show");}
+/* ---------- 按钮 ---------- */
+$("btnReset").addEventListener("click",function(){if(state==="idle")return;startLevel(cur);say("本关已重置");});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(overlayMode==="start"){state="play";startTimer();}
+  else if(overlayMode==="win"){startLevel(cur+1<LEVELS.length?cur+1:cur);}
+  else{startLevel(cur);}
+});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden)paused=true;
+  else{paused=false;lastTs=performance.now();}
+});
+/* ---------- 启动 ---------- */
+loadCachedLevels();
+var startIdx=Math.min(Math.max(saveData.lv,0),LEVELS.length-1);
+startLevel(startIdx);
+state="idle";stopTimer();
+$("ovTitle").textContent="诗词填空";
+$("ovDesc").innerHTML="规则：有的关卡给出一句诗的空缺，从候选字中选正确的字填入；有的关卡给出上句，选出相连的下一句。<br>限时完成、点错扣机会；剩余时间与机会决定星级。";
+$("ovBtn").textContent="开始游戏";
+overlayMode="start";showOverlay();updateStats();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+</body>
+</html>

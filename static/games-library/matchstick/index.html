@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>火柴棒算式</title>
+<style>
+/*token:GAME-THEME.md §2 基线（纯 DOM + 内联 SVG，颜色随 CSS 变量自动切换，无 canvas 素材色）*/
+:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light}
+:root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",sans-serif;background:var(--g-bg);color:var(--g-text);min-height:100vh;display:flex;justify-content:center;padding:16px 8px 30px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior:none}
+.wrap{width:100%;max-width:480px}
+header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;padding:0 2px;gap:8px}
+.sub{font-size:14px;color:var(--g-muted)}
+.stats{display:flex;gap:8px;margin-bottom:10px}
+.stat{flex:1;background:var(--g-surface2);border-radius:var(--g-radius-inner);padding:6px 4px;text-align:center;line-height:1.3}
+.stat .label{display:block;font-size:12px;color:var(--g-muted)}
+.stat .val{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--g-primary-deep)}
+.expr{overflow-x:auto;padding:6px 2px;min-height:96px;display:flex;border:1px solid var(--g-border);border-radius:var(--g-radius-inner);background:var(--g-surface);margin-bottom:10px}
+.expr-inner{display:flex;gap:4px;margin:auto;padding:2px}
+.glyph{flex:0 0 auto;width:44px;height:72px;border:1px solid var(--g-border);border-radius:12px;background:var(--g-bg);color:var(--g-warning);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:0}
+.glyph:active{background:var(--g-surface2)}
+.glyph.sel{border-color:var(--g-primary-deep);box-shadow:inset 0 0 0 2px var(--g-primary-deep)}
+.glyph.carried{color:var(--g-primary)}
+.msg{min-height:20px;margin:8px 2px;font-size:14px;color:var(--g-muted);text-align:center}
+.msg.warn{color:var(--g-danger)}
+.tools{display:flex;gap:8px}
+.btn{min-height:44px;padding:0 14px;flex:1;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-family:inherit;font-size:22px;font-weight:700;cursor:pointer}
+.btn:active{opacity:.85}
+.btn.ghost{background:var(--g-surface2);color:var(--g-text)}
+.btn:disabled{opacity:.3}
+.foot{margin:12px 2px 0;font-size:12px;color:var(--g-muted);text-align:center;line-height:1.6}
+.overlay{position:fixed;inset:0;z-index:10;background:var(--g-scrim);display:flex;align-items:center;justify-content:center;padding:20px}
+.overlay.hide{display:none}
+.panel{width:100%;max-width:340px;padding:22px 18px;background:var(--g-surface);border-radius:var(--g-radius);box-shadow:var(--g-shadow);text-align:center}
+.panel h2{margin:0 0 6px;font-size:22px;color:var(--g-text)}
+.panel .big{font-size:18px;color:var(--g-text);margin:6px 0}
+.panel .desc{margin:0 0 14px;font-size:14px;color:var(--g-muted);line-height:1.6}
+.panel .btn{width:100%;margin-top:8px}
+.panel .row{display:flex;gap:8px}
+.lv-row{width:100%;max-width:320px;max-height:170px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;padding:4px;margin:10px 0}
+.lv-chip{min-width:44px;min-height:44px;border:1px solid var(--g-border);border-radius:10px;background:var(--g-surface);color:var(--g-text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.lv-chip.on{background:var(--g-primary);border-color:transparent;color:#fff}
+.lv-chip:disabled{opacity:.35;cursor:default}
+.sheet{position:fixed;inset:0;z-index:11;background:var(--g-scrim);display:flex;align-items:flex-end;justify-content:center}
+.sheet.hide{display:none}
+.sheet-in{width:100%;max-width:480px;background:var(--g-surface);border-radius:16px 16px 0 0;padding:16px 14px 22px;box-shadow:var(--g-shadow);text-align:center}
+.sheet-in .title{font-size:18px;font-weight:700;color:var(--g-text);margin-bottom:4px}
+.sheet-in .tip{font-size:14px;color:var(--g-muted);margin-bottom:10px;line-height:1.6}
+.cands{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px}
+.cand{min-width:56px;min-height:56px;border:1px solid var(--g-border);border-radius:12px;background:var(--g-bg);color:var(--g-warning);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:inherit;padding:2px}
+.cand:active{background:var(--g-surface2)}
+.cand .cap{font-size:12px;color:var(--g-muted)}
+.cand.cancel{background:var(--g-surface2);color:var(--g-muted);min-width:120px}
+
+/* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+@media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+/* P2: 键盘焦点可见（S5） */
+:focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvReq">移动 1 根火柴</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/120</span></div>
+    <div class="stat"><span class="label">已用</span><span class="val" id="stUsed">0/1</span></div>
+    <div class="stat"><span class="label">最佳</span><span class="val" id="stBest">--</span></div>
+  </div>
+  <div class="expr" id="expr"><div class="expr-inner" id="exprInner"></div></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点一个字符拆出一根火柴</p>
+  <div class="tools">
+    <button class="btn ghost" id="btnUndo">撤销</button>
+    <button class="btn ghost" id="btnReset">重置</button>
+    <button class="btn" id="btnSubmit">提交答案</button>
+  </div>
+  <p class="foot">移动：先点源字符拆出一根，再点目标字符放上去（点原字符=原地平移）· 添加 / 移除关卡点字符直接变换</p>
+</div>
+<div class="overlay" id="ovStart">
+  <div class="panel">
+    <h2>火柴棒算式</h2>
+    <div class="big" id="startInfo">第 1 关</div>
+    <p class="desc" id="startDesc">按指定方式移动 / 添加 / 移除火柴，使等式成立</p>
+    <div class="lv-row" id="lvRow"></div>
+    <button class="btn" id="btnStart">开始挑战</button>
+  </div>
+</div>
+<div class="overlay hide" id="ovWin">
+  <div class="panel">
+    <h2>过关！</h2>
+    <div class="big" id="winInfo">用了 1 根</div>
+    <p class="desc" id="winDesc"></p>
+    <div class="row">
+      <button class="btn ghost" id="btnReplay">重玩本关</button>
+      <button class="btn" id="btnNext">下一关</button>
+    </div>
+  </div>
+</div>
+<div class="sheet hide" id="ovPick">
+  <div class="sheet-in">
+    <div class="title" id="pickTitle">选择结果</div>
+    <div class="tip" id="pickTip"></div>
+    <div class="cands" id="cands"></div>
+    <button class="btn ghost cancel" id="btnCancel">取消</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+function read(k,d){try{var v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}}
+function write(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+var $=function(id){return document.getElementById(id)};
+
+/* ========== 模型块（与 docs/level-gen/tools/matchstick/model.mjs 同口径） ========== */
+/*MS-MODEL-BEGIN*/
+var MS_GLYPHS=["0","1","2","3","4","5","6","7","8","9","+","-","="];
+var MS_SEGS={
+  "0":"abcdef","1":"bc","2":"abged","3":"abgcd","4":"fgbc","5":"afgcd","6":"afedcg",
+  "7":"abc","8":"abcdefg","9":"abcdfg","+":"gv","-":"g","=":"ag"
+};
+function msCount(g){return MS_SEGS[g].length;}
+function msDigit(g){return g>="0"&&g<="9";}
+function msOp(g){return g==="+"||g==="-";}
+function msSubset(a,b){for(var i=0;i<a.length;i++)if(b.indexOf(a[i])<0)return false;return true;}
+function msSymDiff(a,b){var n=0,i;for(i=0;i<a.length;i++)if(b.indexOf(a[i])<0)n++;for(i=0;i<b.length;i++)if(a.indexOf(b[i])<0)n++;return n;}
+function msAddTo(g){
+  var out=[],h;
+  for(h of MS_GLYPHS){if(h===g||msCount(h)!==msCount(g)+1)continue;if(msSubset(MS_SEGS[g],MS_SEGS[h]))out.push(h);}
+  return out;
+}
+function msRemoveTo(g){
+  var out=[],h;
+  for(h of MS_GLYPHS){if(h===g||msCount(h)!==msCount(g)-1)continue;if(msSubset(MS_SEGS[h],MS_SEGS[g]))out.push(h);}
+  return out;
+}
+function msRelocateTo(g){
+  var out=[],h;
+  for(h of MS_GLYPHS){if(h===g||msCount(h)!==msCount(g))continue;if(msSymDiff(MS_SEGS[g],MS_SEGS[h])===2)out.push(h);}
+  return out;
+}
+function msTotal(arr){var s=0,i;for(i=0;i<arr.length;i++)s+=msCount(arr[i]);return s;}
+function msTemplate(arr){var t=[],i;for(i=0;i<arr.length;i++)t.push(arr[i]==="="?"=":(msDigit(arr[i])?"d":"o"));return t.join("");}
+function msStructureOk(arr,template){
+  if(!Array.isArray(arr)||arr.length!==template.length)return false;
+  var i,j;
+  for(i=0;i<arr.length;i++){
+    var g=arr[i];
+    if(MS_GLYPHS.indexOf(g)<0)return false;
+    if(template[i]==="="){if(g!=="=")return false;}
+    else if(template[i]==="o"){if(!msOp(g))return false;}
+    else if(!msDigit(g))return false;
+  }
+  var run=0;
+  for(j=0;j<=arr.length;j++){
+    var d=j<arr.length&&msDigit(arr[j]);
+    if(d)run++;
+    else{if(run>1&&arr[j-run]==="0")return false;run=0;}
+  }
+  return true;
+}
+function msEvaluate(arr){
+  var eq=arr.indexOf("=");
+  if(eq<0)return null;
+  var lhs=arr.slice(0,eq),rhs=arr.slice(eq+1);
+  if(!lhs.length||!rhs.length)return null;
+  var nums=[],ops=[],cur="",i,g;
+  for(i=0;i<lhs.length;i++){
+    g=lhs[i];
+    if(msDigit(g)){cur+=g;if(cur.length>1&&cur[0]==="0")return null;}
+    else if(msOp(g)){if(!cur)return null;nums.push(parseInt(cur,10));ops.push(g);cur="";}
+    else return null;
+  }
+  if(!cur)return null;
+  nums.push(parseInt(cur,10));
+  var rcur="";
+  for(i=0;i<rhs.length;i++){g=rhs[i];if(!msDigit(g))return null;rcur+=g;if(rcur.length>1&&rcur[0]==="0")return null;}
+  if(!rcur)return null;
+  var rhsVal=parseInt(rcur,10),val=nums[0];
+  for(i=0;i<ops.length;i++){val=ops[i]==="+"?val+nums[i+1]:val-nums[i+1];if(val<0)return null;}
+  return val===rhsVal;
+}
+function msIsCorrect(arr){return msEvaluate(arr)===true;}
+/* 绝对语法：恰好一个等号；左式为「数字 (运算符 数字)+」，右式为纯数字 */
+function msGrammarOk(arr){
+  var eq=arr.indexOf("=");
+  if(eq<0||arr.indexOf("=",eq+1)>=0)return false;
+  var lhs=arr.slice(0,eq),rhs=arr.slice(eq+1),i=0,expectNum=true;
+  if(!lhs.length||!rhs.length)return false;
+  while(i<lhs.length){
+    if(expectNum){
+      if(!msDigit(lhs[i]))return false;
+      while(i<lhs.length&&msDigit(lhs[i]))i++;
+      expectNum=false;
+    }else{
+      if(!msOp(lhs[i]))return false;
+      i++;expectNum=true;
+    }
+  }
+  if(expectNum)return false;
+  for(i=0;i<rhs.length;i++)if(!msDigit(rhs[i]))return false;
+  return true;
+}
+function msValidLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.length||d.name.length>32)return false;
+  if(typeof d.expr!=="string"||!d.expr.length||d.expr.length>24)return false;
+  for(var i=0;i<d.expr.length;i++)if(MS_GLYPHS.indexOf(d.expr[i])<0)return false;
+  if(d.op!=="move"&&d.op!=="add"&&d.op!=="remove")return false;
+  if(!Number.isInteger(d.count)||d.count<1||d.count>5)return false;
+  var arr=d.expr.split("");
+  if(!msGrammarOk(arr))return false;
+  if(!msStructureOk(arr,msTemplate(arr)))return false;
+  if(msIsCorrect(arr))return false;
+  return true;
+}
+/*MS-MODEL-END*/
+
+/* ========== 关卡数据（DB 下发优先，本地缓存兜底，任一条非法整批放弃） ========== */
+var DEFAULT_LEVELS=[{"name":"入门·01","expr":"1+2=4","op":"move","count":1},{"name":"入门·02","expr":"4+3=13","op":"add","count":1},{"name":"入门·03","expr":"3+8=9","op":"remove","count":1},{"name":"入门·04","expr":"1+9=8","op":"move","count":1},{"name":"入门·05","expr":"5+8=12","op":"move","count":1},{"name":"入门·06","expr":"8-2=1","op":"move","count":1},{"name":"入门·07","expr":"1+3=70","op":"move","count":1},{"name":"入门·08","expr":"0+1=8","op":"move","count":1},{"name":"入门·09","expr":"9-2=3","op":"remove","count":1},{"name":"入门·10","expr":"1-7=2","op":"move","count":1}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY="sw.matchstick.v1.levels",LEVELS_VER_KEY="sw.matchstick.v1.levels.ver";
+function msSig(d){return d.expr+"|"+d.op+"|"+d.count;}
+function parseMatchstickLevels(res){
+  if(!res||typeof res!=="object"||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seenNo={},seenSig={},i;
+  for(i=0;i<res.levels.length;i++){
+    var item=res.levels[i];
+    if(!item||typeof item!=="object")return null;
+    var raw=item.dataJson;
+    if(typeof raw!=="string"||raw.length>65535)return null;
+    var d;
+    try{d=JSON.parse(raw);}catch(e){return null;}
+    if(!msValidLevelData(d))return null;
+    var no=parseInt(item.levelNo,10);
+    if(!isFinite(no)||no<1)no=i+1;
+    if(seenNo[no])return null;
+    seenNo[no]=true;
+    var sig=msSig(d);
+    if(seenSig[sig])return null;
+    seenSig[sig]=1;
+    list.push({no:no,name:String(d.name),expr:String(d.expr),op:d.op,count:d.count});
+  }
+  list.sort(function(a,b){return a.no-b.no;});
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){
+      var ok=list.every(function(d){return d&&typeof d==="object"&&msValidLevelData({name:d.name,expr:d.expr,op:d.op,count:d.count});});
+      if(ok){LEVELS=list;return v;}
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("matchstick").then(function(res){
+    var list=parseMatchstickLevels(res);
+    if(!list||!list.length)return;
+    if(applyLevels(list,(res&&res.version)||0)){
+      if(saveData.lv>LEVELS.length-1)saveData.lv=LEVELS.length-1;
+      if(state==='ready')refreshStart();
+      else if(cur>LEVELS.length-1)startLevel(LEVELS.length-1);
+    }
+  }).catch(function(){});
+}
+
+/* ========== 存档（本地 + 账号双写，取优合并） ========== */
+var KEY="sw.matchstick.v1";
+function loadSave(){
+  try{
+    var s=JSON.parse(read(KEY,null));
+    if(s&&typeof s==="object"){
+      var stars={};
+      if(s.stars&&typeof s.stars==="object"&&!Array.isArray(s.stars)){
+        for(var k in s.stars){var v=parseInt(s.stars[k],10);if(v>=1&&v<=3)stars[k]=v;}
+      }
+      return{lv:parseInt(s.lv,10)||0,best:parseInt(s.best,10)||0,stars:stars};
+    }
+  }catch(e){}
+  return{lv:0,best:0,stars:{}};
+}
+var saveData=loadSave();
+function totalStars(){var s=0,k;for(k in saveData.stars)s+=saveData.stars[k];return s;}
+function save(){
+  write(KEY,JSON.stringify(saveData));
+  if(GB.available)GB.saveState('matchstick',saveData).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState('matchstick').then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson);
+      if(!r||typeof r!=="object")return;
+      var ch=false;
+      var rlv=parseInt(r.lv,10)||0;
+      if(rlv>saveData.lv){saveData.lv=Math.min(rlv,LEVELS.length-1);ch=true;}
+      var rb=parseInt(r.best,10)||0;
+      if(rb>(saveData.best||0)){saveData.best=rb;ch=true;}
+      if(r.stars&&typeof r.stars==="object"&&!Array.isArray(r.stars)){
+        for(var k in r.stars){
+          var rv=parseInt(r.stars[k],10);
+          if(rv>=1&&rv<=3&&(parseInt(saveData.stars[k],10)||0)<rv){saveData.stars[k]=rv;ch=true;}
+        }
+      }
+      if(ch){save();if(state==='ready')refreshStart();}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ========== 状态 ========== */
+var cur=0,pending=0,state='ready';
+var glyphs=[],initial=[],tmpl='',op='move',N=1,initialTotal=0;
+var carried=false,lastPick=null;
+var moved=0,added=0,removed=0;
+var history=[];
+var statusTimer=0;
+
+var exprInner=$('exprInner'),msgEl=$('msg');
+function say(t,warn){
+  msgEl.textContent=t;
+  msgEl.className='msg'+(warn?' warn':'');
+  if(statusTimer)clearTimeout(statusTimer);
+  statusTimer=setTimeout(function(){msgEl.textContent='';},2600);
+}
+function unlocked(i){return i===0||(parseInt(saveData.stars[i-1],10)||0)>0;}
+
+/* ========== SVG 字形（内联自绘，fill=currentColor 随主题） ========== */
+function glyphSVG(g){
+  var s="";
+  function R(x,y,w,h){return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="3"/>';}
+  function V(x,y,w,h){return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="3"/>';}
+  var seg=MS_SEGS[g]||"";
+  if(msDigit(g)){
+    if(seg.indexOf("a")>=0)s+=R(8,4,24,6);
+    if(seg.indexOf("g")>=0)s+=R(8,29,24,6);
+    if(seg.indexOf("d")>=0)s+=R(8,54,24,6);
+    if(seg.indexOf("f")>=0)s+=V(4,8,6,22);
+    if(seg.indexOf("b")>=0)s+=V(30,8,6,22);
+    if(seg.indexOf("e")>=0)s+=V(4,34,6,22);
+    if(seg.indexOf("c")>=0)s+=V(30,34,6,22);
+  }else if(g==="+"){
+    s+=R(8,29,24,6)+V(17,12,6,40);
+  }else if(g==="-"){
+    s+=R(8,29,24,6);
+  }else if(g==="="){
+    s+=R(8,18,24,6)+R(8,42,24,6);
+  }
+  return '<svg viewBox="0 0 40 64" width="32" height="52" fill="currentColor" aria-hidden="true">'+s+'</svg>';
+}
+
+/* ========== 渲染 ========== */
+function render(){
+  var i;
+  exprInner.innerHTML="";
+  for(i=0;i<glyphs.length;i++){
+    (function(i){
+      var b=document.createElement('button');
+      b.className='glyph'+(carried&&lastPick&&lastPick.pos===i?' carried':'');
+      b.setAttribute('data-pos',String(i));
+      b.setAttribute('aria-label','字符 '+glyphs[i]);
+      b.innerHTML=glyphSVG(glyphs[i]);
+      b.addEventListener('click',function(){openPicker(i);});
+      exprInner.appendChild(b);
+    })(i);
+  }
+  var used=op==='move'?moved:op==='add'?added:removed;
+  $('stUsed').textContent=used+'/'+N;
+  $('stLv').textContent=(cur+1)+'/'+LEVELS.length;
+  $('stBest').textContent=saveData.best>0?String(saveData.best):'--';
+  var req=op==='move'?'移动':op==='add'?'添加':'移除';
+  $('lvReq').textContent=req+' '+N+' 根火柴';
+  if(state==='playing'){
+    if(carried)say('已拿起一根火柴 · 点目标字符放上去（点原字符可放回）');
+    else if(op==='move')say('点一个字符拆出一根火柴');
+    else if(op==='add')say('点一个字符添加一根火柴');
+    else say('点一个字符移除一根火柴');
+  }
+  updateState();
+}
+function renderChips(){
+  var box=$('lvRow');box.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement('button');
+      b.className='lv-chip'+(i===pending?' on':'');
+      b.textContent=String(i+1);
+      b.disabled=!unlocked(i);
+      b.setAttribute('aria-label','第 '+(i+1)+' 关');
+      b.addEventListener('click',function(){if(unlocked(i)){pending=i;refreshStart();startLevel(i);}});
+      box.appendChild(b);
+    })(i);
+  }
+}
+function refreshStart(){
+  var n=Math.min(saveData.lv,LEVELS.length-1);
+  pending=n;
+  $('startInfo').textContent='第 '+(n+1)+' 关'+(LEVELS[n]&&LEVELS[n].name?' · '+LEVELS[n].name:'');
+  $('startDesc').textContent='按指定方式移动 / 添加 / 移除火柴，使等式成立';
+  $('stLv').textContent=(n+1)+'/'+LEVELS.length;
+  $('stBest').textContent=saveData.best>0?String(saveData.best):'--';
+  renderChips();
+}
+function updateState(){
+  var used=op==='move'?moved:op==='add'?added:removed;
+  window.__MS_STATE__={
+    state:state,cur:cur+1,glyphs:glyphs.join(""),op:op,count:N,
+    moved:moved,added:added,removed:removed,carried:carried,used:used,
+    correct:msIsCorrect(glyphs)
+  };
+}
+
+/* ========== 选择器 ========== */
+function showCands(title,tip,list){
+  $('pickTitle').textContent=title;
+  $('pickTip').textContent=tip;
+  var box=$('cands');box.innerHTML="";
+  list.forEach(function(c){
+    var b=document.createElement('button');
+    b.className='cand';
+    b.setAttribute('data-kind',c.kind);
+    b.setAttribute('data-to',c.to);
+    b.innerHTML=glyphSVG(c.to)+(c.cap?'<span class="cap">'+c.cap+'</span>':'');
+    b.addEventListener('click',function(){applyCand(c.pos,c.kind,c.to);});
+    box.appendChild(b);
+  });
+  $('ovPick').classList.remove('hide');
+}
+function closePicker(){$('ovPick').classList.add('hide');}
+function openPicker(pos){
+  if(state!=='playing')return;
+  var g=glyphs[pos];
+  if(op==='move'){
+    if(carried){
+      var adds=msAddTo(g);
+      if(!adds.length){say('「'+g+'」放不下这根火柴',true);return;}
+      showCands('放到「'+g+'」上','选择放上后变成的形状',adds.map(function(to){return{pos:pos,kind:'add',to:to};}));
+    }else{
+      var rems=msRemoveTo(g),rels=msRelocateTo(g);
+      if(!rems.length&&!rels.length){say('「'+g+'」拆不出火柴',true);return;}
+      var list=[];
+      rems.forEach(function(to){list.push({pos:pos,kind:'remove',to:to,cap:'拆出'});});
+      rels.forEach(function(to){list.push({pos:pos,kind:'reloc',to:to,cap:'原地'});});
+      showCands('操作「'+g+'」','拆出后再点目标字符放上去；或直接原地移动一根',list);
+    }
+  }else if(op==='add'){
+    var aa=msAddTo(g);
+    if(!aa.length){say('「'+g+'」加不上一根火柴',true);return;}
+    showCands('给「'+g+'」加一根','选择加上后变成的形状',aa.map(function(to){return{pos:pos,kind:'add',to:to};}));
+  }else{
+    var rr=msRemoveTo(g);
+    if(!rr.length){say('「'+g+'」拆不出一根火柴',true);return;}
+    showCands('从「'+g+'」拆一根','选择拆掉后变成的形状',rr.map(function(to){return{pos:pos,kind:'remove',to:to};}));
+  }
+}
+function pushHistory(){
+  history.push({
+    glyphs:glyphs.slice(),carried:carried,lastPick:lastPick?{pos:lastPick.pos,from:lastPick.from}:null,
+    moved:moved,added:added,removed:removed
+  });
+  if(history.length>200)history.shift();
+}
+function applyCand(pos,kind,to){
+  pushHistory();
+  if(kind==='add'){
+    if(op==='move'&&carried){
+      glyphs[pos]=to;carried=false;lastPick=null;moved++;
+    }else if(op==='add'){
+      glyphs[pos]=to;added++;
+    }else{
+      glyphs[pos]=to;removed++;
+    }
+  }else if(kind==='remove'){
+    if(op==='move'){
+      lastPick={pos:pos,from:glyphs[pos]};
+      glyphs[pos]=to;carried=true;
+    }else{
+      glyphs[pos]=to;removed++;
+    }
+  }else if(kind==='reloc'){
+    glyphs[pos]=to;moved++;
+  }
+  closePicker();
+  render();
+}
+function undo(){
+  if(state!=='playing')return;
+  if(!history.length){say('没有可以撤销的操作');return;}
+  var s=history.pop();
+  glyphs=s.glyphs.slice();carried=s.carried;
+  lastPick=s.lastPick?s.lastPick:null;
+  moved=s.moved;added=s.added;removed=s.removed;
+  closePicker();
+  render();
+}
+function resetLevel(){
+  if(state!=='playing')return;
+  glyphs=initial.slice();carried=false;lastPick=null;
+  moved=0;added=0;removed=0;history=[];
+  closePicker();
+  render();
+  say('本关已重置');
+}
+
+/* ========== 流程 ========== */
+function startLevel(n){
+  if(!LEVELS.length)return;
+  n=Math.max(0,Math.min(n,LEVELS.length-1));
+  var L=LEVELS[n];
+  cur=n;
+  glyphs=L.expr.split("");
+  initial=glyphs.slice();
+  tmpl=msTemplate(glyphs);
+  op=L.op;N=L.count;
+  initialTotal=msTotal(glyphs);
+  carried=false;lastPick=null;moved=0;added=0;removed=0;history=[];
+  state='playing';
+  $('ovStart').classList.add('hide');
+  $('ovWin').classList.add('hide');
+  closePicker();
+  $('lvTag').textContent='第 '+(n+1)+' 关 · '+(L.name||('第'+(n+1)+'关'));
+  render();
+  save();
+}
+function finishWin(used){
+  var stars=used<=1?3:(used<=2?2:1);
+  var prev=parseInt(saveData.stars[cur],10)||0;
+  if(stars>prev)saveData.stars[cur]=stars;
+  if(cur+1>saveData.lv)saveData.lv=Math.min(cur+1,LEVELS.length-1);
+  var ts=totalStars();
+  if(ts>saveData.best)saveData.best=ts;
+  save();
+  if(GB.available)GB.reportScore('matchstick',{metricValue:cur+1,metricExtra:used}).catch(function(){});
+  $('winInfo').textContent='用了 '+used+' 根 · '+stars+' 星';
+  $('winDesc').textContent='第 '+(cur+1)+' 关完成 · 累计 '+ts+' 星';
+  $('btnNext').textContent=cur>=LEVELS.length-1?'再玩一遍':'下一关';
+  state='win';
+  $('ovWin').classList.remove('hide');
+  renderChips();
+  updateState();
+}
+function submit(){
+  if(state!=='playing')return;
+  if(carried){say('还有一根火柴没放好，请先放下或撤销',true);return;}
+  if(!msIsCorrect(glyphs)){say('等式还没成立',true);return;}
+  var used=op==='move'?moved:op==='add'?added:removed;
+  if(used<1){say('还没有操作',true);return;}
+  if(used>N){say('用掉的火柴超出限制',true);return;}
+  if(op==='move'&&msTotal(glyphs)!==initialTotal){say('移动关卡火柴总数不能变',true);return;}
+  finishWin(used);
+}
+
+/* ========== 按钮绑定 ========== */
+$('btnStart').addEventListener('click',function(){startLevel(Math.min(pending,LEVELS.length-1));});
+$('btnReplay').addEventListener('click',function(){startLevel(cur);});
+$('btnNext').addEventListener('click',function(){startLevel(cur>=LEVELS.length-1?0:cur+1);});
+$('btnUndo').addEventListener('click',undo);
+$('btnReset').addEventListener('click',resetLevel);
+$('btnSubmit').addEventListener('click',submit);
+$('btnCancel').addEventListener('click',closePicker);
+
+/* ========== 启动 ========== */
+window.__MS_STATE__={state:'ready'};
+refreshStart();
+render();
+syncLevelsFromServer();
+syncSaveFromServer();
+})();
+</script>
+</body>
+</html>
