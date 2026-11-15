@@ -97,14 +97,15 @@ fun AppPillTabRow(
             val selected = selectedIndex == index
             // 设计稿「优惠券」画板实测：选中 = primary 实底 + 白字，未选中 = surface 白底
             // + 1px outline 描边 + textSecondary（与订单列表筛选胶囊同语言）
-            // P09 深色板裁定：选中胶囊深色 = primary 深绿 #2D9B6A 底 + 白字（规范 §6.5
-            // 「primary 深色 #2D9B6A 选中底/描边不变」；DarkPrimary #5BC894 是主 CTA 按钮深色底，
-            // 与选中态需保持层次差）。仅本组件内固定取值，不改全局 DarkPrimary 令牌（消费点过多）
+            // P09 深色板裁定：选中胶囊深色 = 品牌原色底 + 白字（规范 §6.5
+            // 「primary 深色选中底/描边不变」；深色主题下 primaryDark 是主 CTA 的提亮档，
+            // 与选中态需保持层次差，故取跨深浅稳定的 [AppColorScheme.brandBase]）。
+            // 品牌维度：full 清氧绿 / lite 暖橙，随主题自动切换，组件内不再硬编码色值。
             val isDark = isSystemInDarkTheme()
             val containerColor = selectedColor(
                 when {
                     !selected -> AppColors.colorScheme.surface
-                    isDark -> Color(0xFF2D9B6A)
+                    isDark -> AppColors.colorScheme.brandBase
                     else -> AppColors.colorScheme.primary
                 }
             )

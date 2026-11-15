@@ -35,6 +35,9 @@ data class AppColorScheme(
     val primarySoft: Color,
     val onPrimarySoft: Color,
     val primaryDark: Color,
+    /** 品牌原色（跨深浅稳定）。用于深色态下需要与主 CTA 拉开层次的场景（如选中胶囊底），
+     *  避免沿用 [primaryDark]——后者在深色主题下是「提亮档」，与 CTA 同值。 */
+    val brandBase: Color,
     val heroGradientStart: Color,
     val heroGradientEnd: Color,
     val background: Color,
@@ -85,6 +88,7 @@ val LightAppColorScheme = AppColorScheme(
     primarySoft = PrimarySoft,
     onPrimarySoft = OnPrimarySoft,
     primaryDark = PrimaryDark,
+    brandBase = Primary,
     heroGradientStart = HeroGradientStart,
     heroGradientEnd = PrimaryDark,
     background = Background,
@@ -134,6 +138,7 @@ val DarkAppColorScheme = AppColorScheme(
     primarySoft = DarkPrimarySoft,
     onPrimarySoft = DarkOnPrimarySoft,
     primaryDark = DarkPrimaryDark,
+    brandBase = Primary,
     heroGradientStart = HeroGradientStart,
     heroGradientEnd = DarkPrimary,
     background = DarkBackground,
