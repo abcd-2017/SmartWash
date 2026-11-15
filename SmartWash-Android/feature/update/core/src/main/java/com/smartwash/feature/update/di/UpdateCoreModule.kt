@@ -17,6 +17,9 @@ import javax.inject.Singleton
  * - [WorkManager]：APK 下载任务入队 / 进度监听（壳层与 Worker 共用）
  *
  * 两变体共用，故置本模块（core）而非 impl。
+ *
+ * 注：本模块**不**提供 `@Named("appChannel")`——channel 是变体差异，只能由 app 壳层
+ * 按 flavor 注入（见 `app/src/main/.../di/BaseUrlModule.kt`），library 不可见 app BuildConfig。
  */
 @Module
 @InstallIn(SingletonComponent::class)

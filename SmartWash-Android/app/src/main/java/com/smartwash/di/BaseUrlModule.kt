@@ -34,4 +34,26 @@ object BaseUrlModule {
     @Provides
     @Named("deepLinkScheme")
     fun provideDeepLinkScheme(): String = BuildConfig.DEEP_LINK_SCHEME
+
+    /**
+     * 本端品牌名（变体差异）：full=`SmartWash`、lite=`TodayEat`。
+     *
+     * common:network 的 RequestInterceptor 注入后拼接 User-Agent（`$appName/$version ...`）。
+     * 硬编码在 common 层会让 lite 变体的请求头暴露旧品牌，故由壳层按 flavor 注入
+     * （与 resValue `app_name` 同源，但 UA 用英文品牌名，与界面文案「吃啥」不同）。
+     */
+    @Provides
+    @Named("appName")
+    fun provideAppName(): String = BuildConfig.APP_NAME
+
+    /**
+     * 本端 OTA 分发渠道（变体差异）：full=`full`、lite=`lite`。
+     *
+     * 后端 `GET /web/app/version` 与 `GET /web/app/download` 按 channel 分组下发产物
+     * （lite 走 `android-lite/` 对象前缀），两个渠道是独立 App，必须各取各的清单，
+     * 否则会互推错包。由 `:feature:update:core` 的 `AppUpdateRepository` 注入后透传。
+     */
+    @Provides
+    @Named("appChannel")
+    fun provideAppChannel(): String = BuildConfig.APP_CHANNEL
 }

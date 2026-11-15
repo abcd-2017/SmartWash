@@ -9,7 +9,7 @@ import kotlinx.coroutines.CancellationException
 
 /**
  * 钱包流水分页源（参照 :feature:payment 的 RechargeRecordPagingSource 范式）。
- * full 变体专属：数据经 [TransactionApi] 下发（该接口随本分页源下沉 app/src/full）。
+ * full 变体专属：数据经 [TransactionApi] 下发（该接口与本分页源同在本模块 src/full 源集）。
  */
 class TransactionPagingSource(
     private val transactionApi: TransactionApi,

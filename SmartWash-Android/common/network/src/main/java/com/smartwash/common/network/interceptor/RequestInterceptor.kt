@@ -19,6 +19,11 @@ class RequestInterceptor @Inject constructor(
     private val networkTypeResolver: NetworkTypeResolver,
     /** 宿主 app 的 versionName（app 变体经 @Named 提供，common:network 不可见 app BuildConfig） */
     @Named("appVersionName") private val appVersionName: String,
+    /**
+     * 宿主 app 的品牌名（变体差异：full=SmartWash / lite=TodayEat，app 经 @Named 提供）。
+     * 拼进 User-Agent，避免 common 层硬编码品牌导致 lite 变体请求头暴露旧品牌。
+     */
+    @Named("appName") private val appName: String,
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
@@ -34,7 +39,7 @@ class RequestInterceptor @Inject constructor(
             .header("X-Platform", PLATFORM)
             .header("X-App-Version", appVersionName)
             .header("X-Network-Type", networkTypeResolver.current().wireName)
-            .header("User-Agent", buildUserAgent(appVersionName))
+            .header("User-Agent", buildUserAgent(appName, appVersionName))
 
         if (annotated == true) {
             // 同步读进程内 token 缓存，不再 runBlocking 读 DataStore
@@ -55,8 +60,8 @@ class RequestInterceptor @Inject constructor(
         return chain.proceed(builder.build())
     }
 
-    /**  UA 含 App 版本 / OS 版本 / 机型（覆盖 OkHttp 默认 okhttp/x.y.z） */
-    private fun buildUserAgent(version: String): String {
+    /**  UA 含品牌 / App 版本 / OS 版本 / 机型（覆盖 OkHttp 默认 okhttp/x.y.z） */
+    private fun buildUserAgent(appName: String, version: String): String {
         val manufacturer = Build.MANUFACTURER.trim().trimStart()
         val model = Build.MODEL.trim()
         val device = when {
@@ -66,7 +71,7 @@ class RequestInterceptor @Inject constructor(
             else -> "$manufacturer $model"
         }
         val os = Build.VERSION.RELEASE ?: "unknown"
-        return "SmartWash/$version (Android $os; $device)"
+        return "$appName/$version (Android $os; $device)"
     }
 
     private companion object {

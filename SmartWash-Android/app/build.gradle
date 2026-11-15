@@ -54,6 +54,14 @@ android {
             // DeepLinkParser/DeepLinkHandler 运行期判定本端 scheme，非本端 scheme 一律 Unknown。
             // 两处必须一致，否则会出现「Manifest 收 todayeat:// 但解析器只认 smartwash://」的静默失配。
             buildConfigField "String", "DEEP_LINK_SCHEME", '"smartwash"'
+            // 品牌名（User-Agent 等平台标识用）：与 resValue app_name 同源，供 common:network
+            // 的 RequestInterceptor 注入 @Named("appName") 拼接 UA（library 不可见 app BuildConfig）。
+            // lite 必须与 full 取不同值，否则 lite 请求头会暴露旧品牌 SmartWash。
+            buildConfigField "String", "APP_NAME", '"SmartWash"'
+            // OTA 分发渠道：后端 GET /web/app/version|download 按 channel 分组下发产物。
+            // 与 flavor 名同源，供 :feature:update:core 的 AppUpdateRepository 经
+            // @Named("appChannel") 注入后透传（library 不可见 app BuildConfig）。
+            buildConfigField "String", "APP_CHANNEL", '"full"'
         }
         lite {
             dimension "app"
@@ -61,6 +69,9 @@ android {
             manifestPlaceholders = [deepLinkScheme: "todayeat"]
             resValue "string", "app_name", "吃啥"
             buildConfigField "String", "DEEP_LINK_SCHEME", '"todayeat"'
+            buildConfigField "String", "APP_NAME", '"TodayEat"'
+            // OTA 分发渠道：lite 走后端 android-lite/ 对象前缀，与 full 的产物清单隔离
+            buildConfigField "String", "APP_CHANNEL", '"lite"'
         }
     }
 

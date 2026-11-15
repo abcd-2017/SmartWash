@@ -22,9 +22,9 @@ import com.smartwash.lite.ui.setting.LiteSettingPage
  *    再委托 [com.smartwash.feature.game.ui.gameGraph] /
  *    [com.smartwash.feature.dining.ui.diningGraph] 会造成同路由重复注册。
  * 3. **userGraph 已不注册 Login/Register/Setting**：这三条路由的注册随页面实现走
- *    （full → app/src/full 的 UserFlavorGraphModule，lite → 本图），故 lite classpath 下
- *    [UserRoute.Login] 只有本图一处注册，不存在「后注册覆盖」的胜出页不确定性。
- *    lite 不需要 user 域的其余页面（用户中心/钱包/密码等），本图不委托 userGraph。
+ *    （full → :feature:user:impl 的 src/full 源集 UserFlavorGraphModule，lite → 本图），
+ *    故 lite classpath 下 [UserRoute.Login] 只有本图一处注册，不存在「后注册覆盖」的
+ *    胜出页不确定性。lite 不需要 user 域的其余页面（用户中心/钱包/密码等），本图不委托 userGraph。
  */
 fun NavGraphBuilder.liteGraph(navController: NavHostController) {
     composable<ShellRoute.Home> {

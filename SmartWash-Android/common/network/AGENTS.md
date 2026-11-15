@@ -34,6 +34,11 @@ com.smartwash.common.network
 - ⚠️ **双契约模式**: TokenProvider + SessionEventNotifier 必须由壳层注入实现，模块本身只定义接口
 - API 接口方法需标注 `@RequireAuthorization` 才会自动携带 Bearer Token
 - RequestInterceptor 通过 Invocation tag 检测注解，未标注不注入 Token
+- **平台标识头由壳层注入**：`X-App-Version`（`@Named("appVersionName")`）与 `User-Agent`
+  （`@Named("appName")` + version，形如 `$appName/$version (Android $os; $device)`）都由 app 的
+  `BaseUrlModule` 经 `@Named` 提供。**禁止在本模块硬编码品牌名**——library 变体跟随 app flavor，
+  硬编码会让 lite 变体（TodayEat）请求头暴露旧品牌 SmartWash。新增需要变体差异的请求头时，
+  同样走 `@Named` 注入。
 - 401 响应（HTTP/业务码两通道）由 ResponseInterceptor 拦截：非 /auth/ 前缀且未重试过的请求先经
   `TokenRefresher.refreshBlocking()` 单飞续签，成功换新 token 重试一次（okhttp tag 打已重试标记防死循环），
   失败/认证接口自身 401/重试再 401 → 清 token + SessionEventNotifier 通知跳登录

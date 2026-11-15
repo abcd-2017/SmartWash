@@ -3,7 +3,10 @@
 ## 模块身份
 
 - **Gradle 坐标**: `:feature:user:impl`
-- **职责**: 用户域实现——会话管理（SessionManager/SessionEventBus）、用户网络链路（UserAccountApi/UserRepository）、5 组页面（登录/注册/用户中心/资料编辑/设置）；对外仅经 `:feature:user:api` 的 `UserApi` 契约暴露。
+- **职责**: 用户域实现——会话管理（SessionManager/SessionEventBus）、用户网络链路（UserAccountApi/UserRepository）、登录/注册/用户中心/资料编辑/设置/权限/钱包流水页面；对外仅经 `:feature:user:api` 的 `UserApi` 契约暴露。
+- **变体源集**（与 app 模块同维度 `app`，full/lite 两 flavor）:
+  - `src/main`：**两变体共用**——会话、网络链路、权限管理/修改密码/重置密码页；
+  - `src/full`：**full 专属**——登录/注册/设置/我的页/资料编辑/解读模型/钱包流水页及其网络链路（DivSettingApi/TransactionApi）与图贡献者（UserFlavorGraphModule）。这些页面依赖 laundry/order/payment/coupon/points/notice 等 full 专属契约，故对应依赖一律 `fullImplementation`（放进 `implementation` 会让 lite 编译缺符号）。
 
 ## 包结构
 
@@ -15,7 +18,8 @@ com.smartwash.feature.user.impl
 │   ├── UserImplModule.kt         # Hilt 模块（UserApi/TokenProvider/SessionEventNotifier 绑定 + UserAccountApi 供给 + SessionInitTask 注册）
 │   └── DeepLinkModule.kt         # 深链贡献者（@IntoSet：login/register/setting → UserRoute，模式同 InitTask 注册）
 ├── init/
-│   └── SessionInitTask.kt        # 阻塞高优先级 InitTask（priority=10），预热 token/role
+│   ├── SessionInitTask.kt        # 阻塞高优先级 InitTask（priority=10），预热 token/role
+│   └── HapticSettingsInitTask.kt # 触感反馈开关预热（非阻塞，priority=200）
 ├── network/
 │   ├── api/
 │   │   └── UserAccountApi.kt     # Retrofit 接口（验证码/注册/登录/资料/校园卡/头像）
@@ -35,26 +39,28 @@ com.smartwash.feature.user.impl
 │   ├── TokenRefresherImpl.kt     # 双 token 续签（TokenRefresher 实现）：单飞 + 裸客户端调 /auth/refresh
 │   └── SessionEventBus.kt        # 会话事件总线（SessionEventNotifier 实现）：四类事件 + 去重窗口
 └── ui/
-    ├── UserGraph.kt              # NavGraphBuilder.userGraph 路由注册（4 页面聚合）
-    ├── login/
-    │   ├── LoginPage.kt          # 登录页 Composable
-    │   └── LoginViewModel.kt     # 登录页 ViewModel
-    ├── register/
-    │   ├── RegisterPage.kt       # 注册页 Composable
-    │   └── RegisterViewModel.kt  # 注册页 ViewModel
-    ├── setting/
-    │   ├── SettingPage.kt        # 设置页 Composable（登出入口）
-    │   └── SettingViewModel.kt   # 设置页 ViewModel
-    ├── permission/
-    │   ├── PermissionManagementPage.kt        # 权限管理页 Composable
-    │   └── PermissionManagementViewModel.kt   # 触感反馈开关（DataStore 持久化）
-    ├── update_userinfo/
-    │   ├── UpdateUserInfoPage.kt  # 资料编辑页 Composable
-    │   └── UpdateUserInfoViewModel.kt
-    └── userinfo/
-        ├── UserInfoPage.kt       # 用户中心主页 Composable
-        ├── UserInfoViewModel.kt  # 用户中心主页 ViewModel
-        └── UnreadBadgeFormatter.kt # 未读角标文案格式化（纯 JVM：0/负数隐藏，>99 封顶 99+）
+    ├── UserGraph.kt              # NavGraphBuilder.userGraph 路由注册（仅两变体共用页面）
+    ├── LocalCheckUpdateContent.kt # 设置页「检查更新」插槽（壳层注入，feature:update 归壳层聚合）
+    ├── changepassword/           # 修改密码页（两变体共用）
+    ├── permission/               # 权限管理页（两变体共用，含触感反馈开关）
+    ├── resetpassword/            # 重置密码页（两变体共用）
+    └── [src/full] 以下为 full 专属页面与网络链路（包名同上，源集在 src/full）
+        ├── di/
+        │   ├── UserFlavorGraphModule.kt # full 图贡献者（Login/Register/Setting/UpdateUserInfo/ApiConfig/WalletTransactions 注册 + 认证转场）
+        │   └── UserFlavorModule.kt      # full 网络供给（DivSettingApi/TransactionApi 的 @Provides）
+        ├── network/
+        │   ├── api/{DivSettingApi,TransactionApi}.kt
+        │   ├── entity/div/SaveUserApiConfig.kt
+        │   └── vo/div/{PlatformModelVo,UserApiConfigVo}.kt, vo/user/TransactionVo.kt
+        ├── paging/TransactionPagingSource.kt
+        ├── repository/DivSettingRepository.kt
+        └── ui/
+            ├── login/{LoginPage,LoginViewModel}.kt
+            ├── register/{RegisterPage,RegisterViewModel}.kt
+            ├── setting/{SettingPage,SettingViewModel,ApiConfigPage}.kt
+            ├── update_userinfo/{UpdateUserInfoPage,UpdateUserInfoViewModel}.kt
+            ├── userinfo/{UserInfoPage,UserInfoViewModel,UnreadBadgeFormatter}.kt
+            └── wallet/{WalletTransactionsPage,WalletTransactionsViewModel}.kt
 ```
 
 ## 公开 API
@@ -72,20 +78,27 @@ com.smartwash.feature.user.impl
 ## 依赖关系
 
 ### 本模块依赖
+
+**两变体共用（`implementation`，src/main）**:
 - `:feature:user:api`（UserApi / UserRoute / LoginEvent / UserInfo）
-- `:feature:payment:api`（PaymentRoute — 用户中心「去充值」跨域跳转）
-- `:feature:order:api`（OrderApi/OrderRoute/ShowOrderStatus — 用户中心订单计数与跳订单页）
-- `:feature:laundry:api`（SchoolSearchSource/SchoolOption — 资料编辑页搜学校）
-- `:feature:coupon:api`（CouponRoute — 用户中心「优惠券」入口）
-- `:feature:notice:api`（NoticeRoute / NoticeApi — 用户中心「消息中心」入口跨域跳转 + 未读角标消费未读数）
-- `:common:utils`（ApiResult / RequestState）
+- `:common:utils`（ApiResult / RequestState / SharePreferenceUtils / 触感反馈）
 - `:common:network`（Retrofit / @RequireAuthorization / NetworkException / TokenProvider / SessionEventNotifier）
 - `:common:ui`（清氧设计系统）
-- `:common:utils`（SharePreferenceUtils / 触感反馈）
 - `:common:init`（InitTask 基类）
 
+**full 专属（`fullImplementation`，src/full）**:
+- `:feature:laundry:api`（SchoolSearchSource/SchoolOption — 资料编辑页搜学校）
+- `:feature:order:api`（OrderRoute — 我的页「我的订单」入口跨域跳转）
+- `:feature:payment:api`（PaymentRoute — 我的页/钱包流水页「去充值」跨域跳转）
+- `:feature:coupon:api`（CouponRoute — 我的页「优惠券」入口）
+- `:feature:points:api`（PointsRoute — 我的页「签到有礼」入口）
+- `:feature:notice:api`（NoticeRoute / NoticeApi — 我的页「消息中心」入口 + 未读角标消费未读数）
+- Paging 3（钱包流水分页）/ Coil（头像加载）/ compose-animation（认证转场）
+
+> 依赖方向恒为 impl → 他人 api（铁律 2），无任何 impl → impl；`fullImplementation` 只是把跨域契约挡在 lite classpath 之外，不改变方向。
+
 ### 谁依赖本模块
-- **无**——impl 模块禁止被其他 feature-impl 依赖（依赖铁律）。仅 app 壳聚合 `userGraph`。
+- **无**——impl 模块禁止被其他 feature-impl 依赖（依赖铁律）。仅 app 壳经 `implementation project(':feature:user:impl')` 聚合 `userGraph`（app 的 full/lite flavor 自动匹配本模块同名 flavor）。
 
 ## 内部约定
 
@@ -106,3 +119,5 @@ com.smartwash.feature.user.impl
 - **预热竞态**: `SessionInitTask`（blocking=true, priority=10）保证预热先于 UpdateInitTask（900）完成；早期请求若早于预热完成，`currentToken()` 返回空串 → 请求未带鉴权 → 服务端 401 → 走重新登录流程（行为可恢复）
 - **头像上传 okhttp 依赖**: 直接消费 `okhttp3.MultipartBody.Part`，按惯例显式声明 `implementation libs.okhttp`（不依赖 common:network 的 api 传递）
 - **SessionEvent 四类**: NeedLogin/Unauthorized（网络层触发，走去重） + LoggedIn/LoggedOut（用户操作触发，不走去重）——新增事件类型须明确归类
+- **flavor 源集与依赖配置必须成对**: 在 `src/full` 新增引用 full 专属契约的代码时，对应依赖必须加 `fullImplementation`；加进 `implementation` 会让 lite 变体编译缺符号。新增 full 专属页面时，路由注册放 `src/full` 的 `UserFlavorGraphModule`（与页面实现同源），不要放 `src/main` 的 `UserGraph`——Login/Register/Setting 三条路由在 lite 由 `app/src/lite` 的 `liteGraph` 注册，同路由重复注册在 Navigation 2.8 是「后注册覆盖」。
+- **本模块 flavor 维度名固定 `app`**: 与 app 模块一致，改名会导致 app 的 `project(':feature:user:impl')` 无法匹配变体。

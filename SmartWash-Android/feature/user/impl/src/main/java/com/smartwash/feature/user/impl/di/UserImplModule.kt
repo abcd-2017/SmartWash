@@ -47,8 +47,9 @@ abstract class UserImplModule {
 
 /**
  * 用户域网络供给（T5.2 自 app/di/NetworkModule 拆出）：UserAccountApi 实例随用户域迁入。
- * 观象台 BYOK 的 DivSettingApi 随设置页/配置页下沉 app/src/full（full 专属），
- * 其 @Provides 见 app/src/full 的 UserFlavorModule。
+ * 观象台 BYOK 的 DivSettingApi 与钱包流水的 TransactionApi 是 full 专属（随设置页/
+ * 配置页/钱包流水页落在本模块 src/full 源集），其 @Provides 见 src/full 的
+ * UserFlavorModule。
  */
 @Module
 @InstallIn(SingletonComponent::class)

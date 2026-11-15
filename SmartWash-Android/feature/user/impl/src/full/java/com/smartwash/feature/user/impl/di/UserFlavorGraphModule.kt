@@ -1,4 +1,4 @@
-package com.smartwash.di
+package com.smartwash.feature.user.impl.di
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -37,16 +37,16 @@ private val AUTH_EXIT_MS = DURATION_MICRO_MS * 7 / 10
 /**
  * full 变体用户域认证/设置页图贡献者（flavor 源集专属，仅 full classpath 存在）。
  *
- * 为什么在 app 壳而不在 :feature:user:impl：[UserRoute.Login] / [Register] / [Setting]
- * 三条路由的页面实现分属两个变体——full 用 user-impl 的 LoginPage/RegisterPage/SettingPage，
- * lite 用 app/src/lite 的 LiteLoginPage/LiteRegisterPage/LiteSettingPage。同路由重复注册在
- * Navigation 2.8 是「后注册覆盖」，胜出者取决于 Hilt `@IntoSet` 聚合顺序（未保证），
- * 故路由注册必须与页面实现同源、每变体唯一。userGraph 因此不再注册这三条，
- * 改由本模块（full）与 liteGraph（lite）各自注册。
+ * [UserRoute.Login] / [Register] / [Setting] 三条路由的页面实现分属两个变体——full 用
+ * 本模块 src/full 的 LoginPage/RegisterPage/SettingPage，lite 用 app/src/lite 的
+ * LiteLoginPage/LiteRegisterPage/LiteSettingPage。同路由重复注册在 Navigation 2.8 是
+ * 「后注册覆盖」，胜出者取决于 Hilt `@IntoSet` 聚合顺序（未保证），故路由注册必须与
+ * 页面实现同源、每变体唯一。userGraph 因此不再注册这三条，改由本模块（full）与
+ * liteGraph（lite）各自注册。
  *
  * 同源集还承载另外三条 full 专属 user 页面的注册（资料编辑 / 解读模型 / 钱包流水）：
- * 其实现（含 DivSettingApi/Repository、SchoolSearchSource、notice/payment 契约）已下沉
- * app/src/full，留在 user-impl 会让 lite classpath 缺类。
+ * 其实现依赖 laundry-api / notice-api / payment-api 等 full 专属契约，故一并放
+ * src/full（放进 src/main 会让 lite classpath 缺类）。
  *
  * 登录 ↔ 注册带方向语义：前进（登录 → 注册）新页自右侧 1/12 屏宽滑入 + 淡入、旧页向左侧
  * 滑出；返回（注册 → 登录）全部反向。位移用 `defaultSpring()`（可中断），淡入淡出走
@@ -86,8 +86,8 @@ fun NavGraphBuilder.userFlavorGraph(navController: NavHostController) {
     composable<UserRoute.Setting> {
         SettingPage(navController)
     }
-    // 以下三页的实现已下沉本源集（依赖 laundry-api / notice-api / payment-api 等 full 专属
-    // 契约），注册随之走本模块；lite 无这些页面，不存在同路由重复注册。
+    // 以下三页的实现在本模块 src/full 源集（依赖 laundry-api / notice-api / payment-api
+    // 等 full 专属契约），注册随之走本模块；lite 无这些页面，不存在同路由重复注册。
     composable<UserRoute.UpdateUserInfo> {
         UpdateUserInfoPage(navController)
     }

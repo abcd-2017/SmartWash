@@ -1,4 +1,4 @@
-package com.smartwash.di
+package com.smartwash.feature.user.impl.di
 
 import com.smartwash.feature.user.impl.network.api.DivSettingApi
 import com.smartwash.feature.user.impl.network.api.TransactionApi
@@ -12,12 +12,12 @@ import javax.inject.Singleton
 /**
  * full 变体用户域网络供给（flavor 源集专属，仅 full classpath 存在）。
  *
- * 随 full 专属页面下沉本源集的 Retrofit 接口供给：
+ * full 专属页面的 Retrofit 接口供给：
  * - [DivSettingApi]：观象台 BYOK（设置页「解读模型」入口，issue #79）；
  * - [TransactionApi]：钱包流水分页（钱包流水页）。
  *
- * 两者都是 full 专属页面的依赖，留在 :feature:user:impl 会让 lite classpath 缺类，
- * 故接口与 @Provides 一并下沉本源集。
+ * 两者都是 full 专属页面的依赖，故接口与 @Provides 一并放本模块 src/full 源集
+ * （放进 src/main 会让 lite classpath 引用 full 专属类型）。
  */
 @Module
 @InstallIn(SingletonComponent::class)

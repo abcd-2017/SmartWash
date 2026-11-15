@@ -8,15 +8,21 @@ import com.smartwash.feature.update.api.network.AppUpdateApi
 import com.smartwash.feature.update.core.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
  * 应用更新数据层
  * 提供最新版本信息查询与本地版本比对逻辑
+ *
+ * @param channel 本端分发渠道（full / lite），由 app 壳层经 `@Named("appChannel")`
+ *   按 flavor 注入（与 `@Named("appVersionName")` 同模式：library 不可见 app BuildConfig）。
+ *   两个渠道是独立 App，版本清单与 APK 产物按渠道分组，故两个端点都显式带上 channel。
  */
 @Singleton
 class AppUpdateRepository @Inject constructor(
     private val appUpdateApi: AppUpdateApi,
+    @Named("appChannel") private val channel: String,
     @ApplicationContext private val context: Context,
 ) {
     /**
@@ -31,18 +37,18 @@ class AppUpdateRepository @Inject constructor(
     }.getOrNull()
 
     /**
-     * 从服务端获取最新版本信息，data 为空抛异常
+     * 从服务端获取最新版本信息（按 [channel] 下发），data 为空抛异常
      */
     suspend fun getLatestVersion(): AppVersionVo {
-        return appUpdateApi.getLatestVersion().data
+        return appUpdateApi.getLatestVersion(channel).data
             ?: throw NetworkException("版本信息为空", R.string.update_check_failed)
     }
 
     /**
-     * 从服务端获取 APK 预签名下载地址
+     * 从服务端获取 APK 预签名下载地址（按 [channel] 选对象前缀）
      */
     suspend fun getPresignedDownloadUrl(): String {
-        val response = appUpdateApi.getPresignedDownloadUrl()
+        val response = appUpdateApi.getPresignedDownloadUrl(channel)
         return response.data ?: throw NetworkException("下载地址为空", R.string.download_url_empty)
     }
 

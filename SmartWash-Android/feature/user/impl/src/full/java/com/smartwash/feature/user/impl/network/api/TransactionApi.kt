@@ -8,12 +8,12 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 /**
- * 钱包流水 Retrofit 接口（full 变体专属，随钱包流水页下沉 app/src/full）。
+ * 钱包流水 Retrofit 接口（full 变体专属，随钱包流水页落在本模块 src/full 源集）。
  *
- * 为什么不在 :feature:user:impl 的 [UserAccountApi]：钱包流水页（WalletTransactionsPage）
- * 是 full 专属页面（依赖 payment-api 的 PaymentRoute），其分页数据契约（[TransactionVo]）
- * 与分页源（TransactionPagingSource）一并下沉，避免 user-impl 在 lite classpath 下
- * 引用 full 专属类型。接口路径与后端契约不变（GET /web/auth/user/transactions）。
+ * 为什么不在 [UserAccountApi]：钱包流水页（WalletTransactionsPage）是 full 专属页面
+ * （依赖 payment-api 的 PaymentRoute），其分页数据契约（[TransactionVo]）与分页源
+ * （TransactionPagingSource）一并放 src/full，避免 user-impl 的 lite 变体引用 full
+ * 专属类型。接口路径与后端契约不变（GET /web/auth/user/transactions）。
  */
 interface TransactionApi {
 

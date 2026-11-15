@@ -12,10 +12,10 @@
 | 源集 | 内容 |
 |------|------|
 | `app/src/main` | MainActivity 骨架、深链聚合（Registry/Handler/Repository 绑定/字典 Api）、BaseUrl/GameBridge/ServerConfig 供给、壳层全局转场。**不得引用 full 专属域**（order/payment/laundry/coupon/points/notice/divination/lab/review/subscription/toolbox/update:impl）。 |
-| `app/src/full` | full 专属页面与图贡献者：壳层留守页（主页壳/首页/订单详情/取件/AI 工具台/内置浏览器/工作台/扫一扫）、`ShellGraphModule`、`UserFlavorGraphModule`（含 Login/Register/Setting 与资料编辑/解读模型/钱包流水注册）、`UserFlavorModule`（DivSettingApi/TransactionApi 供给）、更新弹窗与 full 更新入口。 |
+| `app/src/full` | full 专属**壳层留守**页面与图贡献者：主页壳/首页/订单详情/取件/AI 工具台/内置浏览器/工作台/扫一扫、`ShellGraphModule`、`DeepLinkModule`（pickup/ai-work host）、`WorkbenchModule` + WorkbenchEntryApi/Repository、更新弹窗与 full 更新入口。**用户域 full 页面已归位 `:feature:user:impl` 的 `src/full` 源集**（含 `UserFlavorGraphModule`/`UserFlavorModule`），app 不再持有用户页面。 |
 | `app/src/lite` | lite 专属四页（首页/登录/注册/设置）+ `LiteGraphModule` + lite 更新入口（手动检查更新，复用 `:feature:update:core`）。 |
 
-**路由唯一性**：`ShellRoute.Home` 与 `UserRoute.Login/Register/Setting` 是两变体共用的路由常量，但页面实现分属两变体——**注册必须与页面实现同源**（full → `UserFlavorGraphModule`/`ShellGraphModule`，lite → `LiteGraphModule`），避免 Navigation 2.8「同路由后注册覆盖」的胜出页不确定。`userGraph` 只注册两变体共用实现且无 lite 副本的页面（权限管理/修改密码/重置密码）。
+**路由唯一性**：`ShellRoute.Home` 与 `UserRoute.Login/Register/Setting` 是两变体共用的路由常量，但页面实现分属两变体——**注册必须与页面实现同源**（full → `:feature:user:impl` 的 `src/full` 源集 `UserFlavorGraphModule`，lite → `LiteGraphModule`），避免 Navigation 2.8「同路由后注册覆盖」的胜出页不确定。`userGraph`（`:feature:user:impl` 的 `src/main`）只注册两变体共用实现且无 lite 副本的页面（权限管理/修改密码/重置密码）。
 
 ## 2. 包结构
 
@@ -27,7 +27,7 @@ com.smartwash
 │   ├── DeepLinkHandler.kt            # resolve（挂起，未命中查后端字典兜底）+ navigate（三态分发）
 │   └── DeepLinkRepository.kt         # 路由字典拉取 + 内存缓存（失败静默返回空列表）
 ├── [main] di/
-│   ├── BaseUrlModule.kt              # BASE_URL + deepLinkScheme 注入（BuildConfig，生产 -PbaseUrl 切换）
+│   ├── BaseUrlModule.kt              # BASE_URL + deepLinkScheme + appName + appChannel 注入（BuildConfig，生产 -PbaseUrl 切换）
 │   ├── DeepLinkRepositoryModule.kt   # DeepLinkApi 供给 + Repository 绑定（两变体共用）
 │   ├── GameBridgeModule.kt           # GameBridgeApi 供给 + EntryPoint（lite 的游戏 H5 页也消费）
 │   └── ServerConfigModule.kt         # ServerConfigApi 供给 + ServerConfigInitTask（lite 的游戏页读白名单）
@@ -38,13 +38,15 @@ com.smartwash
 ├── [main] ui/
 │   ├── activity/MainActivity.kt      # 单 Activity，NavHost 聚合所有 xxxGraph + 深链冷/热启动收集
 │   └── navigation/ShellTransitions.kt # 壳层全局转场（两变体共享）
-├── [full] di/                        # ShellGraphModule / UserFlavorGraphModule / UserFlavorModule / DeepLinkModule / WorkbenchModule
+├── [full] di/                        # ShellGraphModule / DeepLinkModule / WorkbenchModule
 ├── [full] network/api/               # WorkbenchEntryApi（GET /web/auth/workbench/entries）
 ├── [full] repository/                # WorkbenchEntryRepository(Impl)
 ├── [full] ui/navigation/ShellGraph.kt    # shellGraph 路由聚合（含 WebView/Scan 页）
 ├── [full] ui/page/                   # PageConstant / home / index / detail / pickup / ai / webview / workbench / scan / update
 └── [lite] lite/ui/                   # LiteGraph / home / login / register / setting（含 LiteUpdateSection 手动检查更新）
 ```
+
+> **用户域 full 页面归位**：登录/注册/设置/我的页/资料编辑/解读模型/钱包流水与其网络链路（DivSettingApi/TransactionApi）、图贡献者（`UserFlavorGraphModule`/`UserFlavorModule`）现位于 `:feature:user:impl` 的 `src/full` 源集，不在 app。app 的 `src/full` 只保留壳层留守页。
 
 ## 3. 公开 API
 
@@ -81,10 +83,12 @@ com.smartwash
 2. **路由常量单一事实来源**：各域路由归位各域 `Route` 常量（UserRoute/OrderRoute/PaymentRoute/LaundryRoute/CouponRoute/DivRoute/ShellRoute）；`PageConstant` 仅保留壳层留守页面（Pickup/AiWork/WebView，其中 WebView 委托 `ShellRoute.WEB_VIEW`）；`HomePageConstant` 委托各域 Route 值。
 3. **域模块经 NavGraphBuilder.xxxGraph 自注册**：壳层不内联各页面 composable，一行 `xxxGraph(navController)` 完成聚合。
 4. **BASE_URL 注入**：`BaseUrlModule` 读 `BuildConfig.BASE_URL`（debug/release 同值），生产经 Gradle 属性 `-PbaseUrl=https://your-domain.com/`（保留末尾斜杠）切换，并同步删除 `network_security_config.xml` 中对应明文放行。
-5. **会话事件去重**：`UserApi.loginEvents` 已由拦截器幂等清 token + 事件源去重 + `navigate(launchSingleTop)`，壳层不重复清 token。
-6. **更新弹窗事件驱动**：`UpdateFlow` 收集 `UpdateEventBus`（replay=1），不反向调用 `:feature:update` 检查时机；4 态弹窗分流（强制/可选/已关闭/最新）在壳层自理。
-7. **深链消费时机**：`resolve` 是挂起函数（未命中本地注册表会查后端字典），只在 `LaunchedEffect(pendingDeepLinkUri)` 内调用（NavHost 组合完成后），catch 分支必须先 rethrow `CancellationException`；onCreate/onNewIntent 只写 `pendingDeepLinkUri` state，不做解析。
-8. **工作台数据流**：WorkbenchViewModel → WorkbenchEntryRepository（壳层自有，app/di 供给）→ `GET /web/auth/workbench/entries`；失败/空列表回落本地兜底（含观象台品牌位之外的 7 项）；点击 target 经 `DeepLinkHandler` 分发，观象台玄墨特色卡为端上固定品牌位不参与下发。
+5. **品牌名注入（UA）**：`BaseUrlModule` 另经 `@Named("appName")` 提供 `BuildConfig.APP_NAME`（full=`SmartWash` / lite=`TodayEat`，由 app/build.gradle 的 flavor `buildConfigField` 写入），`:common:network` 的 `RequestInterceptor` 注入后拼 User-Agent（`$appName/$version (Android ...)`）。**不要在 common 层硬编码品牌名**——那会让 lite 变体的请求头暴露旧品牌。
+6. **OTA 渠道注入**：`BaseUrlModule` 另经 `@Named("appChannel")` 提供 `BuildConfig.APP_CHANNEL`（full=`full` / lite=`lite`，由 app/build.gradle 的 flavor `buildConfigField` 写入），`:feature:update:core` 的 `AppUpdateRepository` 注入后透传给 `GET /web/app/version|download`（后端按 channel 分组下发产物，lite 走 `android-lite/` 前缀）。**不要在 library 层硬编码渠道**——两个 flavor 是独立 App，写死会互推错包。
+7. **会话事件去重**：`UserApi.loginEvents` 已由拦截器幂等清 token + 事件源去重 + `navigate(launchSingleTop)`，壳层不重复清 token。
+8. **更新弹窗事件驱动**：`UpdateFlow` 收集 `UpdateEventBus`（replay=1），不反向调用 `:feature:update` 检查时机；4 态弹窗分流（强制/可选/已关闭/最新）在壳层自理。
+9. **深链消费时机**：`resolve` 是挂起函数（未命中本地注册表会查后端字典），只在 `LaunchedEffect(pendingDeepLinkUri)` 内调用（NavHost 组合完成后），catch 分支必须先 rethrow `CancellationException`；onCreate/onNewIntent 只写 `pendingDeepLinkUri` state，不做解析。
+10. **工作台数据流**：WorkbenchViewModel → WorkbenchEntryRepository（壳层自有，app/di 供给）→ `GET /web/auth/workbench/entries`；失败/空列表回落本地兜底（含观象台品牌位之外的 7 项）；点击 target 经 `DeepLinkHandler` 分发，观象台玄墨特色卡为端上固定品牌位不参与下发。
 
 ## 5.1 深链章节（smartwash:// scheme）
 
