@@ -14,7 +14,8 @@
         <p class="batch-guide-title">选择包含多个游戏目录的父目录，按规范逐个上传：</p>
         <p>
           · 每个游戏目录 = index.html（必须入口）+ README.md（可选，自动解析标题 / gameKey / 分类 /
-          玩法）+ levels.json（可选，关卡文件，勾选后随上传自动导入）+ 封面图（可选）
+          玩法）+ .levels.json 或 levels.json（可选，关卡文件，勾选后随上传自动导入；仓库约定 .levels.json
+          隐藏名防静态部署暴露）+ 封面图（可选）
         </p>
         <p>
           · levels.json 为顶层数组（裸数据或 {data, levelNo?, name?…} 信封可混用）：
