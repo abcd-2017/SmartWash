@@ -721,6 +721,15 @@ struct DiningOrderDetailPage {
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .layoutWeight(1)
 
+        // 做法入口（独立热区，跳菜谱详情看做法步骤；只读态也可看）
+        Text(DiningText.dining_order_detail_recipe_action)
+          .fontSize(DesignFontSize.BUTTON_TEXT)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontColor($r('app.color.TEXT_GREEN'))
+          .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 6, bottom: 6 })
+          .onClick(() => {
+            pathStack.pushPathByName(RouteNames.DINING_RECIPE_DETAIL, row.recipeId)
+          })
         if (!this.readOnly && this.isChecked(row.recipeId)) {
           Text(DiningText.dining_order_detail_note_action)
             .fontSize(DesignFontSize.BUTTON_TEXT)

@@ -5517,6 +5517,10 @@
       "value": "查看购买清单"
     },
     {
+      "name": "dining_order_detail_recipe_action",
+      "value": "做法"
+    },
+    {
       "name": "dining_order_detail_finished_locked",
       "value": "点单已结束，无法再改选菜"
     },

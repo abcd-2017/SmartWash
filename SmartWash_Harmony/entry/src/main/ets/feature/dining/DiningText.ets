@@ -92,6 +92,7 @@ export class DiningText {
   static get dining_order_detail_uncategorized(): string { return resString('dining_order_detail_uncategorized') }
   static get dining_order_detail_empty_menu(): string { return resString('dining_order_detail_empty_menu') }
   static get dining_order_detail_note_action(): string { return resString('dining_order_detail_note_action') }
+  static get dining_order_detail_recipe_action(): string { return resString('dining_order_detail_recipe_action') }
   static get dining_order_detail_note_title(): string { return resString('dining_order_detail_note_title') }
   static get dining_order_detail_note_save(): string { return resString('dining_order_detail_note_save') }
   static get dining_order_detail_note_hint(): string { return resString('dining_order_detail_note_hint') }
