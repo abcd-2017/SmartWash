@@ -381,6 +381,18 @@ const routes = [
         },
       },
       {
+        // 登录日志：登录/注册的平台与设备留痕（ADR-0011），只读列表
+        path: '/login-logs',
+        name: 'LoginLogList',
+        component: () => import('@/views/system/LoginLogList.vue'),
+        meta: {
+          title: '登录日志',
+          showInMenu: true,
+          icon: 'Lock',
+          requiresAuth: true,
+        },
+      },
+      {
         // 演示工具：验证码查询，仅供演示环境快速取码，生产应考虑下线
         path: '/captcha',
         name: 'CaptchaQuery',
