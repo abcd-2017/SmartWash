@@ -403,7 +403,7 @@ function drawTrail(ts){
 }
 function draw(ts){
   ctx.save();
-  if(shake>0)ctx.translate((Math.random()-0.5)*6,(Math.random()-0.5)*6);
+  if(shake>0&&!window.__gRM)ctx.translate((Math.random()-0.5)*6,(Math.random()-0.5)*6);
   ctx.fillStyle=PAL.bg;ctx.fillRect(-8,-8,L.W+16,L.H+16);
   ctx.fillStyle=PAL.faint;//背景装饰圆点
   dots.forEach(function(d){ctx.globalAlpha=0.5;ctx.beginPath();ctx.arc(d.x*L.W,d.y*L.H,d.r,0,7);ctx.fill()});
@@ -424,7 +424,7 @@ function draw(ts){
     text(f.t,f.x,f.y-k*24,14,f.c);
     ctx.globalAlpha=1;
   });
-  if(flash>0){ctx.globalAlpha=flash*0.35;ctx.fillStyle=PAL.danger;ctx.fillRect(-8,-8,L.W+16,L.H+16);ctx.globalAlpha=1}
+  if(flash>0&&!window.__gRM){ctx.globalAlpha=flash*0.35;ctx.fillStyle=PAL.danger;ctx.fillRect(-8,-8,L.W+16,L.H+16);ctx.globalAlpha=1}
   ctx.restore();
 }
 /* ---------- 主循环 ---------- */

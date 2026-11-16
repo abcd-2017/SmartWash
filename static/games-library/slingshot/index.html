@@ -588,7 +588,7 @@ function draw(){
   ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
   ctx.save();
   ctx.translate(offX,offY);ctx.scale(S,S);
-  if(shakeT>0)ctx.translate(rand(-1,1)*shakeT*8,rand(-1,1)*shakeT*8);
+  if(shakeT>0&&!window.__gRM)ctx.translate(rand(-1,1)*shakeT*8,rand(-1,1)*shakeT*8);
   if(!grads)buildGrads();
   ctx.fillStyle=grads.sky;ctx.fillRect(0,0,NW,GROUND);
   /*云*/

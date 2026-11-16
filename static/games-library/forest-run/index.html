@@ -501,7 +501,7 @@ function update(dt){
 function draw(){
   ctx.clearRect(0,0,W,H);
   ctx.save();
-  if(shakeT>0)ctx.translate(rand(-1,1)*shakeT*13,rand(-1,1)*shakeT*13);
+  if(shakeT>0&&!window.__gRM)ctx.translate(rand(-1,1)*shakeT*13,rand(-1,1)*shakeT*13);
   var gy=gyY();
   if(gradCache.gy!==gy)buildGrads(gy);
   ctx.fillStyle=gradCache.sky;ctx.fillRect(0,-8,W,gy+8);

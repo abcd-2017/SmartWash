@@ -222,6 +222,7 @@ var LEVELS=DEFAULT_LEVELS;
 var LEVELS_KEY="sw.memory.v1.levels",LEVELS_VER_KEY="sw.memory.v1.levels.ver";
 function applyLevels(list,version){
   if(!Array.isArray(list)||!list.length)return false;
+  for(var i=0;i<list.length;i++){var L=list[i];if(typeof L!=="object"||!L||!(L.p>0)||!(L.cols>0))return false;}
   LEVELS=list;
   try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
   return true;
@@ -230,7 +231,7 @@ function loadCachedLevels(){
   try{
     var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
     var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
-    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+    var ok=Array.isArray(list)&&list.length;for(var i=0;i<list.length;i++){var L=list[i];if(typeof L!=="object"||!L||!(L.p>0)||!(L.cols>0)){ok=false;break;}}if(ok){LEVELS=list;return v;}
   }catch(e){}
   return 0;
 }

@@ -163,13 +163,13 @@ function parseDbLevels(res){
   return out;
 }
 function applyLevels(list,version){
-  LEVELS=list;
+  if(!Array.isArray(list))return;for(var i=0;i<list.length;i++){var L=list[i];if(typeof L!=="object"||!L||typeof L.name!=="string"||!isFinite(L.depth)||!isFinite(L.handicap))return false;}LEVELS=list;
   try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
 }
 function loadCachedLevels(){
   try{
     var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
-    if(Array.isArray(list)&&list.length){LEVELS=list;}
+    var ok=Array.isArray(list)&&list.length;for(var i=0;i<list.length;i++){var L=list[i];if(typeof L!=="object"||!L||typeof L.name!=="string"||!isFinite(L.depth)||!isFinite(L.handicap)){ok=false;break;}}if(ok){LEVELS=list;}
   }catch(e){}
 }
 loadCachedLevels();

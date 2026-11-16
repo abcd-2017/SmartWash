@@ -627,7 +627,7 @@ function drawTimer(now){
 function draw(now){
   ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,L2.W,L2.H);
   ctx.save();
-  if(shake>0.3)ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);
+  if(shake>0.3&&!window.__gRM)ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);
   ctx.fillStyle=PAL.field;ctx.fillRect(-12,-12,L2.W+24,L2.H+24);
   ctx.fillStyle=PAL.field2;
   for(var r=0;r<L2.rows;r++){

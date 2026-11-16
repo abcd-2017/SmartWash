@@ -250,6 +250,12 @@ var GB=(function(){
     timer = setTimeout(tick, speed);
   }
 
+  //切后台暂停：清除调度，回前台若仍在进行则恢复，避免「回来已死」
+  document.addEventListener("visibilitychange",function(){
+    if(document.hidden){ if(timer){clearTimeout(timer);timer=null;} }
+    else if(state==="running"){ schedule(); }
+  });
+
   function tick() {
     if (state !== "running") return;
     step();

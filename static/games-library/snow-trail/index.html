@@ -429,7 +429,7 @@ function syY(e){return skY()-(e.d-traveled)}
 function draw(){
   ctx.clearRect(0,0,W,H);
   ctx.save();
-  if(shakeT>0)ctx.translate(rand(-1,1)*shakeT*13,rand(-1,1)*shakeT*13);
+  if(shakeT>0&&!window.__gRM)ctx.translate(rand(-1,1)*shakeT*13,rand(-1,1)*shakeT*13);
   var skyH=H*0.2;
   if(gradCache.skyH!==skyH)buildGrads(skyH);
   ctx.fillStyle=gradCache.sky;ctx.fillRect(0,-8,W,skyH+8);
