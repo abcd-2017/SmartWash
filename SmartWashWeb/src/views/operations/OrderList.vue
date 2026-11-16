@@ -324,10 +324,9 @@ const statusForm = reactive({
   newStatus: '',
   payPrice: null,
 });
-onMounted(async () => {
-  await fetchStatus();
-  await fetchSchools();
-  await fetchLaundry();
+onMounted(() => {
+  // 筛选项与列表互不依赖，并行发出：串行 await 首屏要多等 2-3 倍 RTT（同 PaymentList）
+  Promise.allSettled([fetchStatus(), fetchSchools(), fetchLaundry()]);
   fetchData();
 });
 

@@ -161,8 +161,9 @@ const {
   errorMsg: '获取数据失败',
 });
 
-onMounted(async () => {
-  await fetchCoupons();
+onMounted(() => {
+  // 券下拉与列表互不依赖，并行发出：串行 await 首屏多等一个 RTT（同 PaymentList）
+  fetchCoupons();
   fetchData();
 });
 
