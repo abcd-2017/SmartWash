@@ -310,7 +310,7 @@ function tryStep(i,dx,dy){
   var b=blocks[i];
   if(!canMove(b,dx,dy))return false;
   b.x+=dx;b.y+=dy;steps++;
-  anims.push({i:i,dx:-dx,dy:-dy,t0:performance.now(),dur:110});
+  if(!window.__gRM)anims.push({i:i,dx:-dx,dy:-dy,t0:performance.now(),dur:110});
   updateStats();kick();checkWin();
   return true;
 }

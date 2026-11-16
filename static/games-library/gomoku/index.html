@@ -175,7 +175,7 @@ function render(now){
     ctx.fill();
   }
   var animating=false,scale=1;
-  if(now&&anim&&now-anim.t0<180){
+  if(now&&anim&&!window.__gRM&&now-anim.t0<180){
     animating=true;
     var t=(now-anim.t0)/180;
     t=t*(2-t);

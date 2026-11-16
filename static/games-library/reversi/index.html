@@ -387,7 +387,7 @@ function draw(){
   }
   /* 可行位置高亮（仅人类回合） */
   var now=performance.now();
-  var animK=anim?Math.min(1,(now-anim.t)/220):1;
+  var animK=(anim&&!window.__gRM)?Math.min(1,(now-anim.t)/220):1;
   if(!over&&turn===BLACK&&!anim){
     var moves=movesOf(board,BLACK);
     ctx.globalAlpha=.5;
