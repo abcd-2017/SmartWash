@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5A4580"/>
+      <stop offset="0.55" stop-color="#473566"/>
+      <stop offset="1" stop-color="#372A50"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1B1430" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+
+  <!-- 蛛网（左上） -->
+  <g stroke="#FFFFFF" stroke-width="2" opacity="0.13" fill="none" stroke-linecap="round">
+    <path d="M0 0 L238 72 M0 0 L186 152 M0 0 L92 214"/>
+    <path d="M62 22 Q98 46 122 80"/>
+    <path d="M124 46 Q164 76 194 122"/>
+    <path d="M184 84 Q220 122 246 168"/>
+  </g>
+  <!-- 蛛网（右下） -->
+  <g stroke="#FFFFFF" stroke-width="2" opacity="0.1" fill="none" stroke-linecap="round">
+    <path d="M800 450 L640 402 M800 450 L700 352 M800 450 L772 298"/>
+    <path d="M742 414 Q712 392 696 364"/>
+    <path d="M700 372 Q672 350 660 322"/>
+  </g>
+
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#2A2040" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#231B36" opacity="0.55"/>
+
+  <!-- 星尘点缀 -->
+  <g stroke="#E6DEF2" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 108 h10 M101 103 v10" stroke-width="3"/>
+    <path d="M690 96 h12 M696 90 v12" stroke-width="3.4"/>
+    <path d="M716 250 h9 M720.5 245.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M88 300 h9 M92.5 295.5 v9" stroke-width="2.6" opacity="0.6"/>
+  </g>
+  <g fill="#E6DEF2" opacity="0.5">
+    <circle cx="176" cy="172" r="4"/><circle cx="648" cy="182" r="3.4"/>
+    <circle cx="70" cy="222" r="3"/><circle cx="744" cy="192" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="402" cy="402" rx="248" ry="24" fill="#241B3A" opacity="0.38"/>
+
+  <!-- 左牌（方块） -->
+  <g transform="rotate(-8 295 255)">
+    <rect x="225" y="165" width="140" height="180" rx="14" fill="#F8F6EE" stroke="#1E2620" stroke-width="9"/>
+    <rect x="225" y="165" width="140" height="180" rx="14" fill="url(#gloss)"/>
+    <path d="M295 213 L327 255 L295 297 L263 255 Z" fill="#2A2F38" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+    <rect x="248" y="188" width="30" height="11" rx="4" fill="#E04848"/>
+    <circle cx="238" cy="182" r="7" fill="#FFFFFF" opacity="0.55"/>
+  </g>
+
+  <!-- 右牌（红桃） -->
+  <g transform="rotate(8 525 255)">
+    <rect x="455" y="165" width="140" height="180" rx="14" fill="#F8F6EE" stroke="#1E2620" stroke-width="9"/>
+    <rect x="455" y="165" width="140" height="180" rx="14" fill="url(#gloss)"/>
+    <g stroke="#1E2620" stroke-width="6" stroke-linejoin="round">
+      <path d="M525 288 C500 268 486 252 486 236 C486 222 497 214 509 214 C517 214 523 219 525 226 C527 219 533 214 541 214 C553 214 564 222 564 236 C564 252 550 268 525 288 Z" fill="#E04848"/>
+    </g>
+    <rect x="542" y="188" width="30" height="11" rx="4" fill="#2A2F38"/>
+    <circle cx="468" cy="182" r="7" fill="#FFFFFF" opacity="0.55"/>
+  </g>
+
+  <!-- 中牌（蜘蛛趴在上面） -->
+  <rect x="327" y="132" width="146" height="208" rx="14" fill="#F8F6EE" stroke="#1E2620" stroke-width="9"/>
+  <rect x="327" y="132" width="146" height="208" rx="14" fill="url(#gloss)"/>
+  <rect x="350" y="152" width="30" height="11" rx="4" fill="#3B3350"/>
+
+  <!-- 蜘蛛腿 -->
+  <g stroke="#1E2620" stroke-width="9" stroke-linecap="round" fill="none">
+    <path d="M362 198 Q322 172 296 142"/>
+    <path d="M354 224 Q306 212 276 200"/>
+    <path d="M354 252 Q306 266 278 286"/>
+    <path d="M366 276 Q330 306 310 332"/>
+    <path d="M438 198 Q478 172 504 142"/>
+    <path d="M446 224 Q494 212 524 200"/>
+    <path d="M446 252 Q494 266 522 286"/>
+    <path d="M434 276 Q470 306 490 332"/>
+  </g>
+
+  <!-- 蜘蛛身体（家族表情） -->
+  <circle cx="400" cy="230" r="52" fill="#3B3350" stroke="#1E2620" stroke-width="9"/>
+  <circle cx="400" cy="230" r="52" fill="url(#gloss)"/>
+  <circle cx="384" cy="217" r="8.5" fill="#F8F6EE"/>
+  <circle cx="416" cy="217" r="8.5" fill="#F8F6EE"/>
+  <path d="M384 244 Q400 258 416 244" stroke="#F8F6EE" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

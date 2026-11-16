@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8DFC8"/>
+      <stop offset="0.55" stop-color="#D3C5A8"/>
+      <stop offset="1" stop-color="#B8A788"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#6E5C3C" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#A89478" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#968368" opacity="0.55"/>
+
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 104 h10 M101 99 v10" stroke-width="3"/>
+    <path d="M690 92 h12 M696 86 v12" stroke-width="3.4"/>
+    <path d="M716 220 h9 M720.5 215.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M84 260 h9 M88.5 255.5 v9" stroke-width="2.6" opacity="0.6"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.55">
+    <circle cx="170" cy="168" r="4"/><circle cx="648" cy="176" r="3.4"/>
+    <circle cx="70" cy="216" r="3"/><circle cx="748" cy="186" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="402" rx="250" ry="22" fill="#9A8468" opacity="0.4"/>
+
+  <!-- 卷轴纸 -->
+  <rect x="212" y="122" width="376" height="238" fill="#FBF7E8" stroke="#3A2A1E" stroke-width="8"/>
+  <!-- 木轴 -->
+  <rect x="190" y="104" width="420" height="18" rx="9" fill="#6B4A2C" stroke="#3A2A1E" stroke-width="6"/>
+  <rect x="190" y="358" width="420" height="18" rx="9" fill="#6B4A2C" stroke="#3A2A1E" stroke-width="6"/>
+  <circle cx="196" cy="113" r="11" fill="#3A2A1E"/>
+  <circle cx="604" cy="113" r="11" fill="#3A2A1E"/>
+  <circle cx="196" cy="367" r="11" fill="#3A2A1E"/>
+  <circle cx="604" cy="367" r="11" fill="#3A2A1E"/>
+
+  <!-- 汉字（内容） -->
+  <text x="400" y="286" font-family="KaiTi, STKaiti, Kai, serif" font-size="132"
+        font-weight="bold" fill="#2A2F38" text-anchor="middle">诗</text>
+
+  <!-- 毛笔 -->
+  <g transform="rotate(28 560 320)">
+    <rect x="548" y="238" width="24" height="150" rx="11" fill="#8A5A30" stroke="#3A2A1E" stroke-width="6"/>
+    <path d="M560 388 C548 404 548 420 560 432 C572 420 572 404 560 388 Z" fill="#2A2F38" stroke="#3A2A1E" stroke-width="5"/>
+  </g>
+  <ellipse cx="566" cy="414" rx="36" ry="10" fill="#9A8468" opacity="0.4"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

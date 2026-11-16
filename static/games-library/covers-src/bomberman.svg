@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C4703A"/>
+      <stop offset="0.55" stop-color="#A8542C"/>
+      <stop offset="1" stop-color="#8A4222"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#5A2810" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#7A3A1E" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#68321A" opacity="0.55"/>
+
+  <!-- 星尘点缀 -->
+  <g stroke="#FBE3CF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 104 h10 M101 99 v10" stroke-width="3"/>
+    <path d="M690 92 h12 M696 86 v12" stroke-width="3.4"/>
+    <path d="M716 220 h9 M720.5 215.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M84 260 h9 M88.5 255.5 v9" stroke-width="2.6" opacity="0.6"/>
+  </g>
+  <g fill="#FBE3CF" opacity="0.5">
+    <circle cx="170" cy="168" r="4"/><circle cx="648" cy="176" r="3.4"/>
+    <circle cx="70" cy="216" r="3"/><circle cx="748" cy="186" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="402" rx="250" ry="24" fill="#6E3418" opacity="0.38"/>
+
+  <!-- 左侧砖墙 -->
+  <g stroke="#3A2A1E" stroke-width="7">
+    <rect x="176" y="292" width="72" height="46" rx="8" fill="#D9A066"/>
+    <rect x="176" y="346" width="72" height="46" rx="8" fill="#C98F54"/>
+    <rect x="256" y="292" width="72" height="46" rx="8" fill="#C98F54"/>
+    <rect x="256" y="346" width="72" height="46" rx="8" fill="#D9A066"/>
+  </g>
+  <g stroke="#A9703C" stroke-width="3" opacity="0.8">
+    <path d="M176 315 h72 M256 315 h72 M176 369 h72 M256 369 h72"/>
+  </g>
+
+  <!-- 右侧砖墙 -->
+  <g stroke="#3A2A1E" stroke-width="7">
+    <rect x="472" y="292" width="72" height="46" rx="8" fill="#C98F54"/>
+    <rect x="472" y="346" width="72" height="46" rx="8" fill="#D9A066"/>
+    <rect x="552" y="292" width="72" height="46" rx="8" fill="#D9A066"/>
+    <rect x="552" y="346" width="72" height="46" rx="8" fill="#C98F54"/>
+  </g>
+  <g stroke="#A9703C" stroke-width="3" opacity="0.8">
+    <path d="M472 315 h72 M552 315 h72 M472 369 h72 M552 369 h72"/>
+  </g>
+
+  <!-- 火焰（十字） -->
+  <g stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round">
+    <path d="M400 318 C378 336 378 362 400 380 C422 362 422 336 400 318 Z" fill="#F28C28"/>
+    <path d="M400 340 C390 350 390 362 400 370 C410 362 410 350 400 340 Z" fill="#F2C230"/>
+  </g>
+
+  <!-- 炸弹（家族表情） -->
+  <circle cx="400" cy="222" r="72" fill="#2A2F38" stroke="#3A2A1E" stroke-width="10"/>
+  <circle cx="400" cy="222" r="72" fill="url(#gloss)"/>
+  <!-- 引信 -->
+  <path d="M400 150 Q396 124 420 112" stroke="#3A2A1E" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M420 112 L432 104 M420 112 L434 116 M420 112 L424 100" stroke="#F2C230" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="420" cy="112" r="9" fill="#F28C28" stroke="#3A2A1E" stroke-width="4"/>
+  <!-- 表情 -->
+  <circle cx="376" cy="212" r="10" fill="#F8F6EE"/>
+  <circle cx="424" cy="212" r="10" fill="#F8F6EE"/>
+  <path d="M380 244 Q400 260 420 244" stroke="#F8F6EE" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>
