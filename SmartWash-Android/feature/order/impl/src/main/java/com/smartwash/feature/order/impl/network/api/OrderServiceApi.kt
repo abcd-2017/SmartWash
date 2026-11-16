@@ -21,9 +21,6 @@ import retrofit2.http.Query
  * 模式同 user-impl 的 UserAccountApi）。端点与参数零改动。
  */
 interface OrderServiceApi {
-    /**
-     * 创建预约
-     */
     @RequireAuthorization
     @POST("/web/auth/orders/reservation")
     suspend fun reservationLaundry(

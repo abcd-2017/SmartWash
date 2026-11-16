@@ -70,8 +70,6 @@ data class SoundChannelUiState(
 )
 
 /**
- * 声景混音器 UI 状态快照。
- *
  * [playing] 由引擎回投（[SoundscapeEngine.playing]），避免主线程轮询；
  * [timerRemainingMs] 为睡眠定时剩余毫秒（0 表示无定时）。
  */

@@ -40,11 +40,9 @@ class AssetTagDetailViewModel @Inject constructor(
         lastScannedAt = savedStateHandle.get<String>(ARG_LAST_SCANNED)?.ifBlank { null },
     )
 
-    /** 状态流转提交状态 */
     private val _updateState = MutableStateFlow<RequestState>(RequestState.Idle)
     val updateState = _updateState.asStateFlow()
 
-    /** 删除提交状态 */
     private val _deleteState = MutableStateFlow<RequestState>(RequestState.Idle)
     val deleteState = _deleteState.asStateFlow()
 

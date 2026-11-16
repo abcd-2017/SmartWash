@@ -17,8 +17,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 /**
- * 掌上星图 UI 状态快照。
- *
  * [rotationMatrix] 为已按屏幕方向重映射的 3x3 姿态矩阵（行主序，世界 = R × 设备）；
  * 无传感器时为 null，页面回退到 [StarMapEngine.fallbackRotationMatrix] 的静态星空。
  * [selectedName] / [selectedMagnitude] 为点星选中的天体（null 表示未选中）。

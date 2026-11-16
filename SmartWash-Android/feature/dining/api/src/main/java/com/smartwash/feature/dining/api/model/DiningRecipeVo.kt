@@ -19,7 +19,6 @@ data class DiningRecipeVo(
     val categoryId: Long? = null,
     /** 所属分类名称（后端联查回填，未分类为 null） */
     val categoryName: String? = null,
-    /** 菜名 */
     val name: String? = null,
     /** 封面对外直链，null=未上传（后端按对象键拼装，端上不存/不拼 URL） */
     val coverUrl: String? = null,

@@ -114,7 +114,6 @@ class DiningOrderJoinViewModel @Inject constructor(
     }
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "DiningOrderJoinViewModel"
 
         /** 类型安全路由参数键（DiningRoute.OrderJoin 属性名即键名） */

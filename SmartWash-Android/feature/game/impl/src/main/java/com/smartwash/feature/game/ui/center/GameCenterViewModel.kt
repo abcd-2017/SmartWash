@@ -23,8 +23,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * 游戏中心 ViewModel。
- *
  * 数据流：init 拉取 `GET /web/auth/game/list`（经 [GameRepository]）——
  * Success → GameVo 映射 [GameItem]（icon/color/category 白名单枚举映射，未知值兜底）；
  * 失败 → Error 态（页面展示错误重试）；空列表 → Success + 空列表（页面展示空态）。
@@ -91,7 +89,6 @@ class GameCenterViewModel @Inject constructor(
         _selectedCategory.value = category
     }
 
-    // ---------- 映射与兜底 ----------
 
     /** 后端游戏 VO → 卡片模型：gameKey 兼作列表稳定 key（空值防御回退 index key） */
     private fun GameVo.toItem(index: Int): GameItem = GameItem(

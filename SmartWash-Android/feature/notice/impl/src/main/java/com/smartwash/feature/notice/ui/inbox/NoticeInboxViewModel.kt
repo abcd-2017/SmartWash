@@ -18,8 +18,6 @@ import javax.inject.Inject
 private const val PAGE_SIZE = 20
 
 /**
- * 收件箱页 ViewModel。
- *
  * 状态划分（请求状态全程 [RequestState]）：
  * - [listState]：首页列表（骨架/错误/内容），下拉刷新复用；
  * - [loadMoreState]：加载更多独立态，失败不影响已加载列表；
@@ -167,7 +165,6 @@ class NoticeInboxViewModel @Inject constructor(
     }
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "NoticeInboxViewModel"
     }
 }

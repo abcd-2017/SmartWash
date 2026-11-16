@@ -20,10 +20,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/** 六爻起卦方式 */
 enum class LiuYaoCastMode { SHAKE, MANUAL, LINES }
 
-/** 梅花起卦方式 */
 enum class MeiHuaCastMode { TIME, NUMBERS }
 
 data class DivAskUiState(
@@ -86,7 +84,6 @@ class DivAskViewModel @Inject constructor(
         }
     }
 
-    /** 梅花报数卦 */
     fun castMeiHuaNumbers(a: Int, b: Int, onSaved: (Long) -> Unit) {
         if (_uiState.value.saving) return
         viewModelScope.launch {
@@ -95,7 +92,6 @@ class DivAskViewModel @Inject constructor(
         }
     }
 
-    /** 奇门起局 */
     fun castQiMen(onSaved: (Long) -> Unit) {
         if (_uiState.value.saving) return
         viewModelScope.launch {
@@ -104,7 +100,6 @@ class DivAskViewModel @Inject constructor(
         }
     }
 
-    /** 大六壬起课 */
     fun castLiuRen(onSaved: (Long) -> Unit) {
         if (_uiState.value.saving) return
         viewModelScope.launch {

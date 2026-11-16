@@ -78,7 +78,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
 
-/** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
 private const val TAG = "UpdateFlow"
 
 /**

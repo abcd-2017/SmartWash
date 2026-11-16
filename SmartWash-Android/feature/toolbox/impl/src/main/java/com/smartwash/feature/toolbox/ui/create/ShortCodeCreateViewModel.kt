@@ -41,7 +41,6 @@ class ShortCodeCreateViewModel @Inject constructor(
         val isPublic: Boolean = true,
         val preset: ShortCodeRules.ExpiryPreset = ShortCodeRules.ExpiryPreset.PERMANENT,
         val customDate: LocalDate? = null,
-        // ---------- 私密文本 ----------
         val content: String = "",
         val passwordEnabled: Boolean = false,
         val password: String = "",

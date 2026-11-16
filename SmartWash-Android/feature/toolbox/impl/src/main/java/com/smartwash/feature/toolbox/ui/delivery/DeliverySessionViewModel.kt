@@ -79,7 +79,6 @@ class DeliverySessionViewModel @Inject constructor(
         /** 轮询基准间隔（契约 2-3s，取中值） */
         private const val POLL_INTERVAL_MS = 2500L
 
-        /** 连续失败指数退避封顶 */
         private const val MAX_POLL_INTERVAL_MS = 10_000L
 
         private const val TAG = "DeliverySessionViewModel"
@@ -135,7 +134,6 @@ class DeliverySessionViewModel @Inject constructor(
     private val _retryableItemIds = MutableStateFlow<Set<Long>>(emptySet())
     val retryableItemIds = _retryableItemIds.asStateFlow()
 
-    /** 关闭会话提交状态 */
     private val _closeState = MutableStateFlow<RequestState>(RequestState.Idle)
     val closeState = _closeState.asStateFlow()
 

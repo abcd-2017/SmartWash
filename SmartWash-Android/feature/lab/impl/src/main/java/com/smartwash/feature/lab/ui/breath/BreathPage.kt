@@ -43,7 +43,6 @@ import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.feature.lab.R
 
-/** 呼吸圆环画布边长 */
 private val BREATH_RING_SIZE = 240.dp
 
 /** 呼吸圆基准半径占画布比例（放大 1.4 倍后仍不出轨道环外） */

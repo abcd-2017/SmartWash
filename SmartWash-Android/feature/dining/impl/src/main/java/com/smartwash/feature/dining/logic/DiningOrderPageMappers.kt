@@ -5,13 +5,10 @@ import com.smartwash.feature.dining.api.model.DiningOrderStatus
 
 /** 点单页参与者模型（参与者区渲染单元） */
 data class DiningParticipant(
-    /** 用户 ID */
     val userId: Long,
     /** 标识（脱敏手机号；缺失兜底为「用户 {id}」） */
     val label: String,
-    /** 是否发起者 */
     val isCreator: Boolean,
-    /** 是否当前用户 */
     val isMe: Boolean,
 )
 
@@ -20,9 +17,7 @@ data class DiningParticipant(
  * 在映射层一次性消化 safe 兜底、分类分段、选菜人标识与「我的选菜」识别。
  */
 data class DiningOrderPageDetail(
-    /** 订单 ID */
     val id: Long,
-    /** 订单标题 */
     val title: String,
     /** 订单状态（白名单外/缺失保守降级 FINISHED） */
     val status: DiningOrderStatus,

@@ -438,7 +438,6 @@ private fun DetailContent(
         ),
         modifier = Modifier.fillMaxSize(),
     ) {
-        // ---------- 续费信息卡 ----------
         item(key = "info") {
             GroupCard(modifier = Modifier.padding(bottom = AppDimens.cardSpacing)) {
                 // 卡顶泛订阅概念头图（本地自绘；服务端头图字段落地前先展示本地资产）
@@ -575,7 +574,6 @@ private fun DetailContent(
             }
         }
 
-        // ---------- 近 90 天使用统计 ----------
         item(key = "stats") {
             GroupCard(modifier = Modifier.padding(bottom = AppDimens.cardSpacing)) {
                 Text(
@@ -710,7 +708,6 @@ private fun DetailContent(
             }
         }
 
-        // ---------- 取消路径（折叠卡） ----------
         item(key = "cancel_path") {
             CancelPathCard(
                 cancelUrl = vo.cancelUrl,

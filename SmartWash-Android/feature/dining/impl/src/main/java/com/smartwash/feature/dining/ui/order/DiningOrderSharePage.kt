@@ -219,7 +219,6 @@ private fun ShareContent(
         }
         Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
 
-        // 加入二维码卡
         GroupCard(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.dining_order_share_qr_section),

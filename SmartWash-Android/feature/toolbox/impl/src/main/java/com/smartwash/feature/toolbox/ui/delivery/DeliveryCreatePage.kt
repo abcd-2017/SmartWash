@@ -182,7 +182,6 @@ fun DeliveryCreatePage(
     }
 }
 
-// ---------- 表单态 ----------
 
 @Composable
 private fun DeliveryCreateForm(
@@ -196,7 +195,6 @@ private fun DeliveryCreateForm(
     var showPassword by remember { mutableStateOf(false) }
 
     GroupCard {
-        // ---------- 有效期 ----------
         FormLabel(stringResource(R.string.toolbox_delivery_duration_label))
         // 横向可滚动：窄屏（≈360dp）下 chips 超宽时不挤压末位 chip——固定 Row 会把
         // 「2 小时」压到文字竖排折行；配合 chip 文本 maxLines=1 任何宽度都单行完整显示
@@ -328,7 +326,6 @@ private fun DeliveryCreateForm(
     )
 }
 
-// ---------- 会话态 ----------
 
 /**
  * 已创建会话卡：投递码数据大字（本页唯一锚点，tnum）+ 二维码（enterUrl 本地生成）+

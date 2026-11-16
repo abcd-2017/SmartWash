@@ -152,7 +152,6 @@ fun SubscriptionEditPage(
                         .navigationBarsPadding()
                 ) {
                     GroupCard {
-                        // ---------- 名称 ----------
                         FormLabel(stringResource(R.string.subscription_form_name_label))
                         OutlinedTextField(
                             value = form.name,
@@ -177,7 +176,6 @@ fun SubscriptionEditPage(
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-                        // ---------- 每期金额 ----------
                         FormLabel(stringResource(R.string.subscription_form_amount_label))
                         OutlinedTextField(
                             value = form.amount,
@@ -219,7 +217,6 @@ fun SubscriptionEditPage(
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-                        // ---------- 间隔期数 ----------
                         FormLabel(stringResource(R.string.subscription_form_interval_label))
                         OutlinedTextField(
                             value = form.interval,
@@ -245,7 +242,6 @@ fun SubscriptionEditPage(
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-                        // ---------- 下次续费日 ----------
                         FormLabel(stringResource(R.string.subscription_form_next_renew_label))
                         AppButton(
                             text = form.nextRenewDate?.let(SubscriptionRules::formatDate)
@@ -289,7 +285,6 @@ fun SubscriptionEditPage(
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-                        // ---------- 自动续费 ----------
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
@@ -311,7 +306,6 @@ fun SubscriptionEditPage(
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-                        // ---------- 提醒提前天数 ----------
                         FormLabel(stringResource(R.string.subscription_form_remind_label))
                         OutlinedTextField(
                             value = form.remindDays,
@@ -385,7 +379,6 @@ fun SubscriptionEditPage(
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-                        // ---------- 取消步骤多行备忘 ----------
                         FormLabel(stringResource(R.string.subscription_form_cancel_steps_label))
                         OutlinedTextField(
                             value = form.cancelSteps,
@@ -407,7 +400,6 @@ fun SubscriptionEditPage(
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-                        // ---------- 备注 ----------
                         FormLabel(stringResource(R.string.subscription_form_note_label))
                         OutlinedTextField(
                             value = form.note,

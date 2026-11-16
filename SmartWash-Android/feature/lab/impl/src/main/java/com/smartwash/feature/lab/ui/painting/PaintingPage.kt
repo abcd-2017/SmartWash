@@ -265,7 +265,6 @@ fun PaintingPage(
     }
 }
 
-// ---------- 调色板 ----------
 
 /**
  * 画作调色板：全部取清氧令牌，禁止写死色值（深浅主题各自成立）。
@@ -371,7 +370,6 @@ private fun DrawScope.drawMistBand(band: MistBand, palette: PaintingPalette, w: 
     )
 }
 
-/** 水面淡墨横线 */
 private fun DrawScope.drawWaterLine(line: WaterLine, palette: PaintingPalette, w: Float, h: Float) {
     drawLine(
         color = palette.colorOf(line.role).copy(alpha = line.alpha),
@@ -524,7 +522,6 @@ private fun DrawScope.drawSeal(seal: Seal, palette: PaintingPalette, w: Float, h
     drawLine(ink, Offset(left, bottom), Offset(right, bottom), strokeWidth = stroke, cap = StrokeCap.Round)
 }
 
-// ---------- 离屏渲染与保存 ----------
 
 /**
  * 离屏渲染：把同一套 [drawPainting] 绘制到 [ImageBitmap]，再转 Android [Bitmap]。

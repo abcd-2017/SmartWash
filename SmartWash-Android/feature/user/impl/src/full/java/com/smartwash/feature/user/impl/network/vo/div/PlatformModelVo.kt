@@ -15,7 +15,6 @@ import androidx.annotation.Keep
 data class PlatformVendorGroupVo(
     /** 厂商名（目录模式第一步分组名） */
     val vendor: String? = null,
-    /** 供应商标识 */
     val provider: String? = null,
     /** OpenAI 兼容接入点（目录模式由服务端取用，端上仅展示不回填输入框） */
     val baseUrl: String? = null,

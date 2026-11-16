@@ -30,7 +30,6 @@ import java.util.concurrent.CancellationException
 import javax.inject.Named
 
 /**
- * APK 后台下载 Worker
  * 通过 WorkManager 调度，下载更新包到 filesDir/update（按 versionCode 命名），每 5% 回调进度。
  * 前台服务通知：经 setForeground 提升为前台服务在通知栏展示下载进度，防止下载被系统杀死；
  * targetSdk 34+ 前台服务必须带类型启动，类型统一由 buildForegroundInfo 注入
@@ -133,7 +132,6 @@ class ApkDownloadWorker @AssistedInject constructor(
         // 前台服务类型（minSdk 30，常量可直接引用；须与 Manifest 声明一致）
         private const val FGS_TYPE = ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
 
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         private const val TAG = "ApkDownloadWorker"
 
         /**
@@ -251,7 +249,6 @@ class ApkDownloadWorker @AssistedInject constructor(
                                     KEY_DOWNLOADED_BYTES to downloadedBytes,
                                     KEY_TOTAL_BYTES to totalBytes,
                                 ))
-                                // 更新通知栏进度
                                 setProgressNotification(progress, downloadedBytes, totalBytes)
                             }
                         }
@@ -373,9 +370,6 @@ class ApkDownloadWorker @AssistedInject constructor(
         }
     }
 
-    /**
-     * 构建下载进度通知
-     */
     private fun buildProgressNotification(progress: Int, downloaded: Long, total: Long): Notification {
         val contentText = if (total > 0) {
             applicationContext.getString(
@@ -399,9 +393,6 @@ class ApkDownloadWorker @AssistedInject constructor(
             .build()
     }
 
-    /**
-     * 构建下载失败通知
-     */
     private fun buildFailedNotification(error: String): Notification {
         return NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)

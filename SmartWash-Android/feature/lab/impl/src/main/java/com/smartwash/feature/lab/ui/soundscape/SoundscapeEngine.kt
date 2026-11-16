@@ -88,7 +88,6 @@ class SoundscapeEngine {
         volumes = next
     }
 
-    /** 开关某路声道 */
     fun setChannelEnabled(channel: SoundChannel, isEnabled: Boolean) {
         val next = enabled.copyOf()
         next[channel.ordinal] = isEnabled
@@ -138,7 +137,6 @@ class SoundscapeEngine {
         fadeDurationMs = 0
     }
 
-    // ==================== 渲染内核 ====================
 
     private fun runEngine(gen: Int) {
         val track = createTrack() ?: run {
@@ -208,7 +206,6 @@ class SoundscapeEngine {
         SoundChannel.MURMUR -> renderMurmur(state, volume, rng)
     }
 
-    // ==================== 噪声合成 ====================
 
     /** 白噪音：均匀分布随机样本 */
     private fun renderWhite(state: ChannelState, volume: Float, rng: Random): Float {
@@ -232,7 +229,6 @@ class SoundscapeEngine {
         return state.brown * BROWN_SCALE * volume * BROWN_GAIN
     }
 
-    // ==================== 自然声 ====================
 
     /**
      * 雨声：低通 + 高通滤波噪声做"雨幕底"，叠加随机雨滴脉冲
@@ -287,7 +283,6 @@ class SoundscapeEngine {
         return (body + foam) * volume * OCEAN_GAIN
     }
 
-    // ==================== 室内纹理 ====================
 
     /** 篝火：低通噪声做底，叠加随机噼啪脉冲串（高频短促）与偶发低频次爆裂 */
     private fun renderCampfire(state: ChannelState, volume: Float, rng: Random): Float {
@@ -394,7 +389,6 @@ class SoundscapeEngine {
         return out * volume * MURMUR_GAIN
     }
 
-    // ==================== 基础设施 ====================
 
     private fun fadeFactor(): Float {
         val duration = fadeDurationMs
@@ -436,7 +430,6 @@ class SoundscapeEngine {
         }
     }
 
-    // ==================== 状态容器 ====================
 
     /** 单路脉冲池：固定容量、按需触发、指数衰减包络（雨滴 / 篝火 / 翻书 / 键盘共用） */
     private class PulsePool(val size: Int) {
@@ -497,38 +490,29 @@ class SoundscapeEngine {
         /** 全局时间（秒），驱动慢速 LFO / 周期包络 */
         var t = 0f
 
-        // 粉噪音三阶滤波状态
         var pinkB0 = 0f
         var pinkB1 = 0f
         var pinkB2 = 0f
 
-        // 棕噪音漏积分状态
         var brown = 0f
 
-        // 雨声滤波状态 + 雨滴池
         var rainLp = 0f
         var rainHp = 0f
         val rainDrops = PulsePool(8)
 
-        // 风声滤波状态
         var windLp = 0f
 
-        // 海浪滤波状态
         var oceanLp = 0f
         var oceanHp = 0f
 
-        // 篝火滤波状态 + 脉冲池
         var fireLp = 0f
         val fireCrackles = PulsePool(10)
 
-        // 翻书滤波状态 + 脉冲池
         var pageLp = 0f
         val pageSwishes = PulsePool(4)
 
-        // 键盘脉冲池
         val keyTaps = PulsePool(8)
 
-        // 远处交谈：两路低通 + 音节包络
         var murmurLp1 = 0f
         var murmurLp2 = 0f
         var murmurEnv1 = 0f
@@ -569,31 +553,26 @@ class SoundscapeEngine {
         private const val KEY_GAIN = 0.9f
         private const val MURMUR_GAIN = 0.9f
 
-        // ==================== 噪声参数 ====================
         private const val PINK_SCALE = 0.22f
         private const val BROWN_SCALE = 3.5f
 
-        // ==================== 雨声参数 ====================
         private const val RAIN_LP_ALPHA = 0.12f
         private const val RAIN_HP_ALPHA = 0.35f
 
         /** 雨滴触发率（个 / 秒） */
         private const val RAIN_DROP_RATE = 40f
 
-        // ==================== 风声参数 ====================
         private const val WIND_LP_MIN = 0.02f
         private const val WIND_LP_MAX = 0.05f
         private const val WIND_LFO_HZ = 0.07f
         private const val WIND_GUST_HZ = 0.043f
 
-        // ==================== 海浪参数 ====================
         private const val OCEAN_LP_ALPHA = 0.02f
         private const val OCEAN_HP_ALPHA = 0.05f
 
         /** 海浪周期 ≈12 秒 */
         private const val OCEAN_WAVE_HZ = 1f / 12f
 
-        // ==================== 篝火参数 ====================
         private const val FIRE_LP_ALPHA = 0.01f
 
         /** 噼啪触发率（个 / 秒） */
@@ -602,18 +581,15 @@ class SoundscapeEngine {
         /** 低频次爆裂触发率（个 / 秒） */
         private const val FIRE_POP_RATE = 6f
 
-        // ==================== 翻书参数 ====================
         private const val PAGE_LP_ALPHA = 0.15f
 
         /** 翻书哗啦触发率（次 / 秒） */
         private const val PAGE_SWISH_RATE = 18f
 
-        // ==================== 键盘参数 ====================
 
         /** 敲击触发率（个 / 秒） */
         private const val KEY_TAP_RATE = 66f
 
-        // ==================== 远处交谈参数 ====================
         private const val MURMUR_LP_ALPHA = 0.03f
         private const val MURMUR_ENV_SLEW = 0.002f
         private const val MURMUR_VOICE1_HZ = 3.2f

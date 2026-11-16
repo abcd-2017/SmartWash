@@ -331,7 +331,6 @@ class MainActivity : ComponentActivity() {
         get() = if (BuildConfig.APP_CHANNEL == CHANNEL_LITE) AppBrand.TodayEat else AppBrand.SmartWash
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "MainActivity"
 
         /** lite 变体渠道名（与 app/build.gradle 的 flavor `buildConfigField "APP_CHANNEL"` 同源） */

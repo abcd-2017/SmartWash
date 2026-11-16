@@ -92,7 +92,6 @@ fun LiteSettingPage(
                 onBack = { navController.navigateUp() }
             )
 
-            // 账户（只读）
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             SectionLabel(text = stringResource(R.string.lite_setting_section_account))
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -112,7 +111,6 @@ fun LiteSettingPage(
                 )
             }
 
-            // 通用
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             SectionLabel(text = stringResource(R.string.lite_setting_section_general))
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))

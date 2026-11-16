@@ -14,7 +14,6 @@ data class DiningShoppingListResult(
 
 /** 按菜备菜视图条目：一道菜及其全部选菜人 */
 data class DiningRecipeShopping(
-    /** 菜名 */
     val recipeName: String,
     /** 选菜人（按勾选顺序） */
     val selectors: List<DiningSelectorShopping>,
@@ -26,7 +25,6 @@ data class DiningSelectorShopping(
     val label: String,
     /** 个人备注（空串=未写备注） */
     val note: String,
-    /** 是否当前用户 */
     val isMe: Boolean,
 )
 

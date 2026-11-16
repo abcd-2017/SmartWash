@@ -90,7 +90,6 @@ class ResetPasswordViewModel @Inject constructor(
     }
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "ResetPasswordViewModel"
     }
 }

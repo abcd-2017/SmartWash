@@ -12,7 +12,6 @@ package com.smartwash.feature.dining.logic
 
 /** 把服务端状态对齐到本地意图所需的最小写操作 */
 sealed interface DiningCartReplayOp {
-    /** 菜谱 ID */
     val recipeId: Long
 
     /** 本地意图选中而服务端没有：补勾（note 空串=无备注） */

@@ -122,7 +122,6 @@ fun GameCenterPage(
             )
 
             when {
-                // 首刷失败：说明发生了什么 + 重试（规范 §3.6 错误态）
                 listState is RequestState.Error -> {
                     // 文案消费状态携带的 resId（单一事实源：VM 按错误类型区分文案时页面自动跟随）
                     val error = listState as RequestState.Error

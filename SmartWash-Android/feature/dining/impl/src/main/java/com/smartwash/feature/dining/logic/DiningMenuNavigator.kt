@@ -12,13 +12,11 @@ package com.smartwash.feature.dining.logic
  * 约定：分类 ID 为 null 表示「未分类」段（收尾渲染）；分段顺序即右列表的渲染顺序。
  */
 data class DiningSelector(
-    /** 选菜人用户 ID */
     val userId: Long,
     /** 选菜人标识（脱敏手机号；缺失时调用方给兜底文案） */
     val label: String,
     /** 该选菜人的备注（可空） */
     val note: String,
-    /** 是否当前用户 */
     val isMe: Boolean,
 )
 
@@ -26,13 +24,11 @@ data class DiningSelector(
 data class DiningMenuItem(
     /** 菜谱 ID（列表 key / 勾选参数） */
     val recipeId: Long,
-    /** 菜名 */
     val name: String,
     /** 封面直链（空串=无封面，渲染占位底） */
     val coverUrl: String,
     /** 所属分类 ID，null=未分类 */
     val categoryId: Long?,
-    /** 是否当前用户已勾选 */
     val selectedByMe: Boolean,
     /** 当前用户备注（未勾选/无备注为空串） */
     val myNote: String,

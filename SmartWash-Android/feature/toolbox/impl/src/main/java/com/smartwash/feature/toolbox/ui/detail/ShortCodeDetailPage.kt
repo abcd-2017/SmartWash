@@ -251,7 +251,6 @@ fun ShortCodeDetailPage(
             ),
             modifier = Modifier.fillMaxSize(),
         ) {
-            // ---------- 基础信息 ----------
             item(key = "info") {
                 val now = remember { LocalDateTime.now() }
                 val expiryState = ShortCodeRules.expiryStateOf(vo.expireAt, now)
@@ -395,7 +394,6 @@ fun ShortCodeDetailPage(
                 }
             }
 
-            // ---------- 二维码与动作 ----------
             item(key = "qr") {
                 if (isSecret) {
                     QrCard(
@@ -446,7 +444,6 @@ fun ShortCodeDetailPage(
                 }
             }
 
-            // ---------- 访问明细 ----------
             item(key = "stats_header") {
                 Text(
                     text = stringResource(R.string.toolbox_stats_title),
@@ -457,7 +454,6 @@ fun ShortCodeDetailPage(
             item(key = "stats") {
                 GroupCard {
                     when {
-                        // 首刷失败：说明 + 重试（规范 §3.6 错误态）。
                         // 错误分支前置：门控不得掩盖真实错误（否则失败时先闪一帧骨架）
                         statsItems.itemCount == 0 && statsRefreshState is LoadState.Error -> {
                             Text(
@@ -544,7 +540,6 @@ fun ShortCodeDetailPage(
         }
     }
 
-    // ---------- 续期弹窗 ----------
     if (showRenewDialog) {
         RenewDialog(
             preset = renewPreset,
@@ -576,7 +571,6 @@ fun ShortCodeDetailPage(
         )
     }
 
-    // ---------- 删除确认 ----------
     if (showDeleteDialog) {
         com.smartwash.common.ui.components.AppConfirmDialog(
             title = stringResource(R.string.toolbox_confirm_delete_title),

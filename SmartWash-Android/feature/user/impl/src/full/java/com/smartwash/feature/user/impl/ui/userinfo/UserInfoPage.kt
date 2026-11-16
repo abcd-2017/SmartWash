@@ -390,7 +390,6 @@ fun UserInfoPage(
                                             .height(40.dp)
                                             .background(AppColors.colorScheme.hairline)
                                     )
-                                    // 累计订单
                                     Column(
                                         modifier = Modifier.weight(1f),
                                         horizontalAlignment = Alignment.CenterHorizontally
@@ -833,7 +832,6 @@ fun UserInfoPage(
         }
     }
 
-    // 绑定校园卡弹窗
     if (showBindDialog) {
         AppInputDialog(
             title = stringResource(R.string.bind_campus_card),
@@ -851,7 +849,6 @@ fun UserInfoPage(
         )
     }
 
-    // 解绑校园卡弹窗
     if (showUnbindDialog) {
         AppConfirmDialog(
             title = stringResource(R.string.unbind_campus_card),

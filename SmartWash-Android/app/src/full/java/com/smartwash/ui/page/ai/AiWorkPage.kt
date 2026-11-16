@@ -96,7 +96,6 @@ fun AiWorkPage(
             // 区块间距 32（ui-spec §2.3，sectionSpacing 令牌；原 spaceMd 16 偏小）
             verticalArrangement = Arrangement.spacedBy(AppDimens.sectionSpacing)
         ) {
-            // 快捷任务
             item(key = "quick_tasks") {
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 Text(
@@ -151,7 +150,6 @@ fun AiWorkPage(
                 }
             }
 
-            // 最近工作
             item(key = "recent_work") {
                 Text(
                     text = stringResource(R.string.ai_recent_work),

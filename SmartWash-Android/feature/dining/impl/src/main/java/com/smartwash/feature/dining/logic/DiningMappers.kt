@@ -17,7 +17,6 @@ import java.time.format.DateTimeFormatter
 data class DiningRecipeItem(
     /** 菜谱 ID（列表 key / 详情路由参数；id 缺失按 0 兜底，列表项点击守卫不跳转） */
     val id: Long,
-    /** 菜名 */
     val name: String,
     /** 分类名（未分类/缺失为空串，列表隐藏分类角标） */
     val categoryName: String,
@@ -40,7 +39,6 @@ data class DiningCategoryChip(
 data class DiningOrderListItem(
     /** 订单 ID（分享视图路由参数；id 缺失按 0 兜底，列表项点击守卫不跳转） */
     val id: Long,
-    /** 订单标题 */
     val title: String,
     /** 订单状态（白名单外/缺失保守降级为 FINISHED——展示与交互均按不可写处理） */
     val status: DiningOrderStatus,
@@ -70,13 +68,11 @@ data class DiningOrderBriefUi(
 data class DiningOrderShareDetail(
     /** 订单 ID（0=详情拉取失败降级） */
     val id: Long,
-    /** 订单标题 */
     val title: String,
     /** 订单状态（白名单外/缺失保守降级为 FINISHED） */
     val status: DiningOrderStatus,
     /** 本单菜单菜品数（轻量响应/字段缺失兜底 0） */
     val menuCount: Int,
-    /** 参与者人数 */
     val memberCount: Int,
     /** 加入凭证（仅发起者详情下发；空串=不可分享，页面降级提示） */
     val joinToken: String,

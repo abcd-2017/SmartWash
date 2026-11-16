@@ -68,7 +68,6 @@ fun DrumMark(
             }
         }
 
-        // 内环
         if (innerRingTint != null) {
             drawCircle(
                 color = innerRingTint,

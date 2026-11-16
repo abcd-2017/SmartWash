@@ -90,7 +90,6 @@ class FluidRenderer : GLSurfaceView.Renderer {
     private var seeded = false
     private var lastFrameTime = 0L
 
-    // ---------- GL 对象 ----------
     private var vao = 0
     private var vbo = 0
     private var textureInternalFormat = GLES30.GL_RGBA16F
@@ -179,7 +178,6 @@ class FluidRenderer : GLSurfaceView.Renderer {
         _state.value = FluidRenderState(ready = false, failed = false)
     }
 
-    // ---------- GLSurfaceView.Renderer ----------
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         if (initialized) releaseGfx()
@@ -234,7 +232,6 @@ class FluidRenderer : GLSurfaceView.Renderer {
         renderDisplay()
     }
 
-    // ---------- 初始化 ----------
 
     private fun initGfx() {
         val extensions = IntArray(1)
@@ -375,7 +372,6 @@ class FluidRenderer : GLSurfaceView.Renderer {
         return if (canvasWidth >= canvasHeight) max to min else min to max
     }
 
-    // ---------- 模拟步进 ----------
 
     private fun stepSimulation(dt: Float) {
         GLES30.glDisable(GLES30.GL_BLEND)
@@ -458,7 +454,6 @@ class FluidRenderer : GLSurfaceView.Renderer {
         blit(null)
     }
 
-    // ---------- 注入 / 种子 ----------
 
     private fun drainSplats() {
         var count = 0
@@ -538,7 +533,6 @@ class FluidRenderer : GLSurfaceView.Renderer {
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
     }
 
-    // ---------- GL 工具 ----------
 
     private fun blit(target: FBO?) {
         if (target == null) {
@@ -627,7 +621,6 @@ class FluidRenderer : GLSurfaceView.Renderer {
         return Program(program)
     }
 
-    // ---------- 内部类 ----------
 
     private class Program(val id: Int) {
         private val uniforms = HashMap<String, Int>()
@@ -853,7 +846,6 @@ void main() {
         /** 染料纹理长边分辨率（高分辨率保锐利） */
         private const val DYE_RESOLUTION = 512
 
-        /** Jacobi 压力迭代次数 */
         private const val PRESSURE_ITERATIONS = 20
 
         /** 压力衰减（每帧乘算，防止压力累积） */
@@ -919,7 +911,6 @@ void main() {
          */
         private const val DYE_INTENSITY = 0.20f
 
-        /** 静态种子注入次数 */
         private const val SEED_SPLATS = 8
 
         /** 单帧最多应用的注入点数（防积压） */

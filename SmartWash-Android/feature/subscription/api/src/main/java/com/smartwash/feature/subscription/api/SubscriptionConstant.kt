@@ -16,23 +16,17 @@ object SubscriptionConstant {
     const val FLAG_ON = 1
     const val FLAG_OFF = 0
 
-    /** 名称长度上限 */
     const val NAME_MAX = 100
 
-    /** 备注长度上限 */
     const val NOTE_MAX = 500
 
-    /** 取消步骤备忘长度上限 */
     const val CANCEL_STEPS_MAX = 1000
 
-    /** 取消网址长度上限 */
     const val CANCEL_URL_MAX = 500
 
-    /** 间隔期数范围 */
     const val CYCLE_INTERVAL_MIN = 1
     const val CYCLE_INTERVAL_MAX = 36
 
-    /** 提醒提前天数范围 */
     const val REMIND_DAYS_MIN = 0
     const val REMIND_DAYS_MAX = 60
 }

@@ -164,7 +164,6 @@ fun DiningRecipeCreatePage(
             }
             Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
 
-            // 菜名
             SectionLabel(stringResource(R.string.dining_create_name_label))
             GroupCard(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
@@ -261,7 +260,6 @@ fun DiningRecipeCreatePage(
                         }
                     }
                 }
-                // 食材校验错误就近提示
                 if (formError == DiningRecipeFormError.INGREDIENT_EMPTY ||
                     formError == DiningRecipeFormError.INGREDIENT_TOO_LONG ||
                     formError == DiningRecipeFormError.INGREDIENT_TOO_MANY
@@ -276,7 +274,6 @@ fun DiningRecipeCreatePage(
             }
             Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
 
-            // 步骤（多行）
             SectionLabel(stringResource(R.string.dining_create_steps_label))
             GroupCard(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(

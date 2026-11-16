@@ -50,7 +50,6 @@ class TransactionPagingSource(
         /** 每页条数（后端 pageSize 上限 50，取 20 平衡流量与翻页频率） */
         const val PAGE_SIZE = 20
 
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         private const val TAG = "TransactionPagingSource"
     }
 }

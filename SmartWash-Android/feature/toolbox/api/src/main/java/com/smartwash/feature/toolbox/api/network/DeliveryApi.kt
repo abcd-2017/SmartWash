@@ -92,7 +92,6 @@ data class DeliverySessionVo(
     val clickCount: Long = 0L,
     val hasPassword: Boolean = false,
     val itemCount: Int = 0,
-    /** 未取走条目数 */
     val pendingCount: Int = 0,
     /** 电脑浏览器打开的 H5 页地址（{TOOLBOX_PUBLIC_BASE_URL}/d/{code}），二维码内容即该 URL */
     val enterUrl: String? = null,

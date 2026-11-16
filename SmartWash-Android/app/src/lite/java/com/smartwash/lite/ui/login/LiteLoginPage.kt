@@ -130,7 +130,6 @@ fun LiteLoginPage(
     ) {
         Spacer(modifier = Modifier.height(AppDimens.spaceXxl))
 
-        // 品牌区
         IconBox(
             icon = Icons.Filled.Restaurant,
             size = 44.dp,

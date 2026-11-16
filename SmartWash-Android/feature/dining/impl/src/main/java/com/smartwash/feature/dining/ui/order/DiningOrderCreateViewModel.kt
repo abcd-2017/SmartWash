@@ -261,7 +261,6 @@ class DiningOrderCreateViewModel @Inject constructor(
     }
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "DiningOrderCreateViewModel"
 
         /** 分页循环防御上限（100×100=1 万道菜，远超现实量级；触发即数据异常） */

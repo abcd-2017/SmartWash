@@ -14,8 +14,6 @@ import retrofit2.http.Query
  */
 interface AppUpdateApi {
     /**
-     * 获取最新版本信息
-     *
      * @param channel 分发渠道（full / lite），由调用方注入
      */
     @GET("/web/app/version")

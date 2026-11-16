@@ -167,7 +167,6 @@ class SandSimulator(
         return renderBuffer
     }
 
-    // ---------- 反应 ----------
 
     private fun react() {
         for (row in 0 until rows) {
@@ -241,7 +240,6 @@ class SandSimulator(
         return -1
     }
 
-    // ---------- 运动 ----------
 
     /** 下落 / 侧流：自底向上遍历，斜落方向随机；水在被堵后左右侧流 */
     private fun moveFall() {
@@ -379,7 +377,6 @@ class SandSimulator(
         }
     }
 
-    // ---------- 衰老 ----------
 
     /** 寿命推进：泡沫/火归零变空；蒸汽到顶或寿命到变水 */
     private fun age() {
@@ -402,7 +399,6 @@ class SandSimulator(
         }
     }
 
-    // ---------- 基础工具 ----------
 
     /** 写入元素并初始化其辅助状态（寿命 / 溶解抗性） */
     private fun replace(index: Int, element: SandElement, lifetime: Int) {
@@ -410,7 +406,6 @@ class SandSimulator(
         aux[index] = lifetime
     }
 
-    /** 新元素对应的初始辅助状态 */
     private fun lifetimeOf(element: SandElement): Int = when (element) {
         SandElement.FOAM -> params.foamLife
         SandElement.STEAM -> params.steamLife
@@ -422,7 +417,6 @@ class SandSimulator(
     private fun isEmpty(index: Int): Boolean =
         index >= 0 && index < cells.size && cells[index] == SandElement.EMPTY.id.toByte()
 
-    /** 交换两格元素与辅助状态 */
     private fun swap(a: Int, b: Int) {
         val cell = cells[a]
         cells[a] = cells[b]

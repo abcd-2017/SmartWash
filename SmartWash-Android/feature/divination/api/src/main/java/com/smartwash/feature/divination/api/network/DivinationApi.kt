@@ -190,7 +190,6 @@ data class DivVendorGroupVo(
     val provider: String? = null,
     /** OpenAI 兼容接入点（服务端取用，端上仅展示不回填输入） */
     val baseUrl: String? = null,
-    /** 平台调度优先级 */
     val priority: Int? = null,
     /** 该厂商下的模型条目（目录树二级） */
     val models: List<DivModelVo> = emptyList(),
@@ -230,7 +229,6 @@ data class DivUserApiConfigVo(
     val modelName: String? = null,
     /** 自定义接入点地址（目录模式为 null） */
     val customBaseUrl: String? = null,
-    /** 自定义模型名称 */
     val customModel: String? = null,
     /** 密钥掩码（如 sk-****abc4；空 = 未配置有效密钥） */
     val apiKeyMask: String? = null,

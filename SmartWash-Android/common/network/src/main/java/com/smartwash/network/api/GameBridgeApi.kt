@@ -46,7 +46,6 @@ interface GameBridgeApi {
     suspend fun getLevels(@Query("gameKey") gameKey: String): ApiResult<GameBridgeLevelsVo>
 }
 
-// ==================== 请求体 ====================
 
 /** 存档写入请求（对齐后端 GameStateUpdateFrom） */
 @Keep
@@ -65,7 +64,6 @@ data class GameBridgeScoreReportBody(
     val metricJson: String? = null,
 )
 
-// ==================== 响应 VO ====================
 
 /** 存档视图（对齐后端 GameStateVo） */
 @Keep
@@ -104,7 +102,6 @@ data class GameBridgeLeaderboardVo(
     val my: GameBridgeMyRankVo? = null,
 )
 
-/** 榜内条目 */
 @Keep
 data class GameBridgeLeaderboardEntryVo(
     val rank: Int = 0,
@@ -115,7 +112,6 @@ data class GameBridgeLeaderboardEntryVo(
     val metricExtra: Long? = null,
 )
 
-/** 我的排名 */
 @Keep
 data class GameBridgeMyRankVo(
     val rank: Int? = null,

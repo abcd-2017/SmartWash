@@ -64,7 +64,6 @@ class SubscriptionDetailViewModel @Inject constructor(
     private val _checkInState = MutableStateFlow<RequestState>(RequestState.Idle)
     val checkInState = _checkInState.asStateFlow()
 
-    /** 撤销打卡提交状态 */
     private val _undoState = MutableStateFlow<RequestState>(RequestState.Idle)
     val undoState = _undoState.asStateFlow()
 

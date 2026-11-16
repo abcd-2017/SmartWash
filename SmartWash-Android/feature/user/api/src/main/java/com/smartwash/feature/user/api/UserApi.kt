@@ -14,8 +14,6 @@ import kotlinx.coroutines.flow.SharedFlow
 interface UserApi {
 
     /**
-     * 当前是否已登录。
-     *
      * 语义 = 会话 token 非空（SessionManager.currentToken().isNotEmpty() 的内存同步读，
      * 无 IO、无挂起）。注意预热完成前 token 可能尚未从 DataStore 载入——
      * 启动早期判断登录态的场景应由实现方保证预热时序（SessionInitTask，T5.2）。

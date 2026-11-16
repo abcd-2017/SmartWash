@@ -110,7 +110,6 @@ interface SubscriptionApi {
     suspend fun getStats(): ApiResult<SubscriptionStatsVo>
 }
 
-// ==================== 请求体 ====================
 
 /**
  * 创建请求。cycleType ∈ month|year（原值直传）；autoRenew 0|1；
@@ -156,7 +155,6 @@ data class AddUsageRequest(
     val usageDate: String? = null,
 )
 
-// ==================== 响应 VO ====================
 
 /**
  * 订阅 VO（列表项/详情）。原值字段（status/cycleType/autoRenew）由 UI 层经

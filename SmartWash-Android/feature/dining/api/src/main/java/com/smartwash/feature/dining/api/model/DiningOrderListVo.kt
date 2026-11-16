@@ -14,13 +14,10 @@ import androidx.annotation.Keep
 data class DiningOrderListVo(
     /** 订单 ID（列表 key / 分享视图路由参数） */
     val id: Long? = null,
-    /** 订单标题 */
     val title: String? = null,
     /** 订单状态：ONGOING / FINISHED（白名单外脏数据由映射层保守降级） */
     val status: String? = null,
-    /** 是否我发起的 */
     val isCreator: Boolean? = null,
-    /** 发起者用户 ID */
     val creatorUserId: Long? = null,
     /** 创建时间（ISO 字符串原文，如 2026-11-13T20:30:00） */
     val createdAt: String? = null,

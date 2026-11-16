@@ -32,7 +32,6 @@ data class LeaderboardEntryVo(
     val maskedPhone: String? = null,
     /** 头像 URL（可空，空则端上占位） */
     val avatar: String? = null,
-    /** 月内签到积分 */
     val points: Int? = null,
 ) {
     val safeRank: Int get() = rank ?: 0
@@ -45,7 +44,6 @@ data class LeaderboardEntryVo(
 data class MyRankVo(
     /** 名次（1 起，未上榜=null） */
     val rank: Int? = null,
-    /** 月内签到积分 */
     val points: Int? = null,
 ) {
     val safeRank: Int get() = rank ?: 0

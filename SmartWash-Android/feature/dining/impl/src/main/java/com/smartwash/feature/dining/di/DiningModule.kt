@@ -41,7 +41,6 @@ abstract class DiningModule {
     abstract fun bindDiningOrderSyncChannel(impl: PollingDiningOrderSyncChannel): DiningOrderSyncChannel
 }
 
-/** 吃啥域网络供给 */
 @Module
 @InstallIn(SingletonComponent::class)
 object DiningApiModule {

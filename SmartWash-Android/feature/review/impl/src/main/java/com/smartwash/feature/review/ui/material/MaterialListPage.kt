@@ -666,7 +666,6 @@ private fun LoadMoreRow(loadMoreState: RequestState, onClick: () -> Unit) {
     }
 }
 
-// ---------- 建卡弹窗 ----------
 
 /**
  * 添加问答卡弹窗：问题 + 答案（multiline，§3.7 输入正文 16sp）；确认提交（loading 态按钮

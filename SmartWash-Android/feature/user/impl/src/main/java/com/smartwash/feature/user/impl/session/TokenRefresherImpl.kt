@@ -150,7 +150,6 @@ class TokenRefresherImpl @Inject constructor(
         /** 刷新端点（后端公开认证域，SecurityConfig 放行，无前缀变更感知） */
         const val REFRESH_PATH = "/auth/refresh"
 
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "TokenRefresher"
     }
 }

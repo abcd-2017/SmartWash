@@ -145,7 +145,6 @@ class DrumEngine {
         executor.shutdownNow()
     }
 
-    // ==================== 调度内核 ====================
 
     private fun runScheduler(gen: Int) {
         val track = createTrack() ?: run {
@@ -303,7 +302,6 @@ class DrumEngine {
 
     private fun lookaheadFrames(): Long = SAMPLE_RATE * LOOKAHEAD_MS / 1000L
 
-    // ==================== 合成 ====================
 
     private fun createTrack(): AudioTrack? {
         val minBuffer = AudioTrack.getMinBufferSize(

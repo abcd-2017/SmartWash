@@ -183,7 +183,6 @@ fun LaundryPage(
                 // 2026-11-01 阴影裁剪修复：见 PickupPage 同项
                 contentPadding = PaddingValues(horizontal = AppDimens.pagePadding)
             ) {
-                // 投递柜选择
                 item {
                     Text(
                         text = stringResource(R.string.delivery_locker),
@@ -250,7 +249,6 @@ fun LaundryPage(
                     }
                 }
 
-                // 套餐选择
                 item {
                     Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
                     Text(
@@ -317,7 +315,6 @@ private fun LaundryTypeItem(
     cardClick: () -> Unit,
 ) {
     val view = currentView()
-    // 选中态颜色过渡动画
     val bgColor by animateColorAsState(
         targetValue = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
         animationSpec = defaultSpring(),

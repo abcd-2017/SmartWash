@@ -5,6 +5,5 @@ package com.smartwash.feature.coupon
  */
 internal object CouponImplConstant {
 
-    /** 日志 TAG（对齐 app 的 AppConstant.APP_NAME） */
     const val APP_NAME = "SmartWash"
 }

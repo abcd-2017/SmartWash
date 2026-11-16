@@ -15,10 +15,8 @@ data class DiningCartState(
     /** 当前用户选菜：recipeId → note（空串=无备注） */
     val selections: Map<Long, String> = emptyMap(),
 ) {
-    /** 已选数量 */
     val count: Int get() = selections.size
 
-    /** 是否已选该菜 */
     fun isSelected(recipeId: Long): Boolean = selections.containsKey(recipeId)
 
     /** 该菜的本地备注（未选/无备注返回空串） */

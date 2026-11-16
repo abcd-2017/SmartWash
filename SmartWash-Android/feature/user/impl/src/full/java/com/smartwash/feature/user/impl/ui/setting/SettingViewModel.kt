@@ -107,7 +107,6 @@ class SettingViewModel @Inject constructor(
         sessionEventBus.notifyLoggedOut()
     }
 
-    // -------------------- BYOK：查询与建议目录 --------------------
 
     /**
      * 拉取最新 BYOK 配置（配置页打开与保存/删除成功后调用；设置页回到前台亦调用以刷新行内回显）。
@@ -292,7 +291,6 @@ class SettingViewModel @Inject constructor(
     }
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "SettingViewModel"
     }
 }

@@ -67,7 +67,6 @@ private val DI_ZHI_HAI: Map<DiZhi, DiZhi> = mapOf(
     DiZhi.YOU to DiZhi.XU, DiZhi.XU to DiZhi.YOU,
 )
 
-/** 关系类型 */
 enum class RelType(val label: String) {
     TIAN_GAN_HE("天干五合"),
     DI_ZHI_LIU_HE("六合"),
@@ -113,40 +112,34 @@ object RelationEngine {
             if (seen.add(keyStr)) result.add(r)
         }
 
-        // 六合
         for ((a, b) in DI_ZHI_LIU_HE) {
             if (zhis.contains(a) && zhis.contains(b)) {
                 add(Relation(RelType.DI_ZHI_LIU_HE, zhis = listOf(a, b)))
             }
         }
-        // 三合局
         for (set in DI_ZHI_SAN_HE) {
             val contained = zhis.filter { it in set }
             if (contained.size >= 2) {
                 add(Relation(RelType.DI_ZHI_SAN_HE, zhis = contained.sortedBy { it.ordinal }))
             }
         }
-        // 三会方
         for (set in DI_ZHI_SAN_HUI) {
             val contained = zhis.filter { it in set }
             if (contained.size >= 2) {
                 add(Relation(RelType.DI_ZHI_SAN_HUI, zhis = contained.sortedBy { it.ordinal }))
             }
         }
-        // 六冲
         for ((a, b) in DI_ZHI_CHONG) {
             if (zhis.contains(a) && zhis.contains(b)) {
                 add(Relation(RelType.CHONG, zhis = listOf(a, b)))
             }
         }
-        // 三刑
         for (set in DI_ZHI_XING) {
             val contained = zhis.filter { it in set }
             if (contained.size >= 2) {
                 add(Relation(RelType.XING, zhis = contained.sortedBy { it.ordinal }))
             }
         }
-        // 自刑
         for (z in DI_ZHI_ZI_XING) {
             if (zhis.count { it == z } >= 2) {
                 add(Relation(RelType.ZI_XING, zhis = listOf(z, z)))

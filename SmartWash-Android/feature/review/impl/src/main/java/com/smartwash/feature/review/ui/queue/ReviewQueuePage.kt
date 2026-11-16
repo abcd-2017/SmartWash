@@ -126,7 +126,6 @@ fun ReviewQueuePage(
                     RequestState.Loading, RequestState.Idle -> {
                         QueueSkeleton(modifier = Modifier.fillMaxSize())
                     }
-                    // 首刷失败：说明 + 重试按钮
                     is RequestState.Error -> {
                         EmptyState(
                             icon = Icons.Rounded.School,

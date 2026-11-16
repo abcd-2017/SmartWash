@@ -18,8 +18,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * 签到有礼页 ViewModel。
- *
  * 三路状态独立（请求状态全程 [RequestState]）：
  * - [loadState]：/me 概览（余额/签到/最近流水），决定整页骨架/错误/内容；
  * - [leaderboardState]：月榜独立加载——榜单失败不拖垮签到/余额/流水区块（区块内小态 + 重试）；
@@ -136,7 +134,6 @@ class PointsViewModel @Inject constructor(
     }
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "PointsViewModel"
     }
 }

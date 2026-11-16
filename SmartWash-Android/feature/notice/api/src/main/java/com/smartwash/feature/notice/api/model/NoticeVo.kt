@@ -16,7 +16,6 @@ import androidx.annotation.Keep
 data class NoticeVo(
     /** 公告 ID（列表 item key） */
     val id: Long? = null,
-    /** 标题 */
     val title: String? = null,
     /** 正文（可含换行，列表展示摘要） */
     val content: String? = null,

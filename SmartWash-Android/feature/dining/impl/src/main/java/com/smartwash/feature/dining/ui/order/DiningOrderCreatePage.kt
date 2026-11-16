@@ -277,7 +277,6 @@ fun DiningOrderCreatePage(
                                 start = AppDimens.pagePadding + 4.dp,
                             ),
                         )
-                        // 菜单就近错误提示
                         if (formError == DiningOrderFormError.MENU_EMPTY ||
                             formError == DiningOrderFormError.MENU_TOO_MANY
                         ) {

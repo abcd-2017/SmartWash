@@ -16,7 +16,6 @@ import retrofit2.http.Path
  */
 interface CouponServiceApi {
 
-    //查询所有优惠券页面
     @GET("/web/auth/coupon/allCoupon")
     @RequireAuthorization
     suspend fun getAllCoupon(): ApiResult<List<CouponVo>>

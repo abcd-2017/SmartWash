@@ -91,7 +91,6 @@ fun DivAskPage(
     // 颜色经参数传入：DivColors.current 必须在 DivinationScreen 之内读取，
     // 在包根外读会拿到默认玄墨（浅色系统下问题输入框文字与提示不可见）
     val askForm: @Composable (DivinationColorScheme) -> Unit = { c ->
-        // 问题卡
         DivCard(Modifier.padding(horizontal = 20.dp)) {
             Column(Modifier.padding(14.dp)) {
                 Text(
@@ -267,7 +266,6 @@ fun DivAskPage(
                 onDismiss = { showLinesDialog = false },
             )
         }
-        // 梅花报数弹窗
         if (showNumbersDialog) {
             NumbersDialog(
                 onConfirm = { a, b ->

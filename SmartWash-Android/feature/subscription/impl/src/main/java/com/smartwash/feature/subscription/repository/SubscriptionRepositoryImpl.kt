@@ -16,9 +16,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * 订阅数据实现：薄封装 SubscriptionApi，统一「data 为 null 即失败」语义
- * （业务失败已被 ResponseInterceptor 转译为 NetworkException 抛出，
- * 这里只兜住 code=200 但 data 缺失的分支）；动作类端点成功以 code=200 为准。
+ * 订阅数据实现：薄封装 SubscriptionApi，统一「data 为 null 即失败」语义。
  */
 @Singleton
 class SubscriptionRepositoryImpl @Inject constructor(

@@ -11,7 +11,6 @@ package com.smartwash.feature.user.impl
  */
 object UserImplConstant {
 
-    /** 日志 TAG（对齐 app 的 AppConstant.APP_NAME） */
     const val APP_NAME = "SmartWash"
 
     /** token 的 DataStore 键（沿用 app 时期取值，无数据迁移） */
@@ -23,6 +22,5 @@ object UserImplConstant {
     /** refreshToken 的 DataStore 键（双 token 契约新增；新 key 无历史数据，无迁移问题） */
     const val REFRESH_TOKEN = "user_refresh_token"
 
-    /** 发送验证码的倒计时秒数 */
     const val SEND_CAPTCHA = 60
 }

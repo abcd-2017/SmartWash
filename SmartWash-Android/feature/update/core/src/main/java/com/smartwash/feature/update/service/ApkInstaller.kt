@@ -18,12 +18,10 @@ sealed interface InstallRequestResult {
 }
 
 /**
- * APK 安装器
  * 封装 FileProvider URI 获取、安装 Intent 跳转、权限检查等逻辑
  */
 object ApkInstaller {
 
-    /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
     private const val TAG = "ApkInstaller"
 
     /**
