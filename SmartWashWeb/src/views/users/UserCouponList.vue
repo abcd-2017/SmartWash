@@ -186,15 +186,17 @@ const fetchCoupons = async () => {
 };
 
 const handleDelete = async (row) => {
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）；
-  // 文案带对象标识（券名 + 手机号），误删时无从核对的问题收敛
-  const confirmed = await useConfirm(
-    `确认删除领取记录吗？持有人 ${row.phoneNumber || '-'}，券「${row.couponVo?.title || '-'}」删除后不可恢复。`,
-    '删除领取记录'
-  );
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列（对齐全站入口守卫范式）
+  if (deletingId.value) return;
   deletingId.value = row.userCouponId;
   try {
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）；
+    // 文案带对象标识（券名 + 手机号），误删时无从核对的问题收敛
+    const confirmed = await useConfirm(
+      `确认删除领取记录吗？持有人 ${row.phoneNumber || '-'}，券「${row.couponVo?.title || '-'}」删除后不可恢复。`,
+      '删除领取记录'
+    );
+    if (!confirmed) return;
     await deleteUserCoupon(row.userCouponId);
     ElMessage.success('删除成功');
     // 写操作成功留痕：业务键仅 userCouponId，手机号不入日志（敏感红线）

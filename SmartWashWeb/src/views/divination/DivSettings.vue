@@ -118,6 +118,8 @@ const fetchSettings = async () => {
 const submitForm = async () => {
   try {
     await formRef.value.validate();
+    // 入口锁：validate 期间双击不再重复提交
+    if (submitting.value) return;
     submitting.value = true;
     await updatePlatformSettings({ ...settings });
     // settings 不含密钥字段，业务键可安全入日志

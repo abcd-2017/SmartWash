@@ -129,6 +129,7 @@
             :auto-upload="false"
             :limit="1"
             :on-change="handleFileChange"
+            :on-remove="handleFileRemove"
             :on-exceed="handleExceed"
             accept=".txt,.md,.docx"
           >
@@ -245,6 +246,11 @@ const handleFileChange = (file) => {
   selectedFile.value = file.raw;
 };
 
+// 手动移除已选文件时同步清掉草稿，否则校验仍通过、提交会带 上已删除的文件
+const handleFileRemove = () => {
+  selectedFile.value = null;
+};
+
 const handleExceed = (files) => {
   // limit=1 时用新文件替换已选文件，与提示文案「已替换当前选择」保持一致
   uploadRef.value?.clearFiles();
@@ -255,6 +261,8 @@ const submitUpload = async () => {
   try {
     // 未选文件统一交由表单 file 校验提示（validator 已有「请选择文件」message），不再早退
     await formRef.value.validate();
+    // 入口锁：validate 期间双击不再重复触发上传
+    if (uploading.value) return;
     uploading.value = true;
     const formData = new FormData();
     formData.append('file', selectedFile.value);

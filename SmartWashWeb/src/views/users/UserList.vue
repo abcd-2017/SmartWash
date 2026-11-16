@@ -222,6 +222,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -328,17 +329,19 @@ const submitForm = async () => {
   const valid = await formRef.value.validate().catch(() => false);
   if (!valid) return;
 
-  // 修改密码静默提交无确认（评审 P3）：填了非空密码时二次确认，防止误改锁定用户
-  if (dialogType.value === 'edit' && tempUser.password) {
-    const confirmed = await useConfirm(
-      `确认修改用户 ${tempUser.phoneNumber} 的登录密码吗？`,
-      '修改密码'
-    );
-    if (!confirmed) return;
-  }
-
+  // 入口锁：validate 期间双击不再叠加确认弹窗或重复提交（对齐 SysConfigList 的锁先于 validate 语义）
+  if (submitting.value) return;
   submitting.value = true;
   try {
+    // 修改密码静默提交无确认（评审 P3）：填了非空密码时二次确认，防止误改锁定用户
+    if (dialogType.value === 'edit' && tempUser.password) {
+      const confirmed = await useConfirm(
+        `确认修改用户 ${tempUser.phoneNumber} 的登录密码吗？`,
+        '修改密码'
+      );
+      if (!confirmed) return;
+    }
+
     if (dialogType.value === 'create') {
       await addUser(tempUser);
       ElMessage.success('新增成功');
@@ -379,7 +382,7 @@ const handleDelete = async (row) => {
     await deleteUser(row.userId);
     ElMessage.success('删除成功');
     logger.info('删除学生成功', `userId=${row.userId}`);
-    fetchData();
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除学生失败:', `userId=${row.userId}`, error);
     ElMessage.error(error.message || '删除失败');
