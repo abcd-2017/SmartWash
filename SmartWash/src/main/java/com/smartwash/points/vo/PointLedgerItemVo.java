@@ -23,7 +23,6 @@ public class PointLedgerItemVo {
     /** 业务日期维度（签到类=签到日） */
     private LocalDate refDate;
 
-    /** 本笔变动后余额快照 */
     private Integer balanceAfter;
 
     private LocalDateTime createdAt;

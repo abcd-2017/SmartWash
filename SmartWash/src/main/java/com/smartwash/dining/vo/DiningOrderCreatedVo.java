@@ -13,7 +13,6 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 public class DiningOrderCreatedVo {
 
-    /** 新订单 ID */
     private Long orderId;
 
     /** 加入凭证（发起者重置后需重新生成二维码） */

@@ -47,7 +47,6 @@ public class GameDataAdminController {
     private final GameUserSaveService gameUserSaveService;
     private final GameScoreService gameScoreService;
 
-    // ==================== 关卡 ====================
 
     @Operation(summary = "关卡列表", description = "按 gameKey 返回全部关卡（含未启用），按 sort / levelNo 排序")
     @GetMapping("/levels")
@@ -80,7 +79,6 @@ public class GameDataAdminController {
         return Result.ok("删除成功");
     }
 
-    // ==================== 存档 / 成绩 ====================
 
     @Operation(summary = "存档列表", description = "按 gameKey / userId 筛选，联表补脱敏手机号与游戏名，按更新时间倒序")
     @GetMapping("/saves")

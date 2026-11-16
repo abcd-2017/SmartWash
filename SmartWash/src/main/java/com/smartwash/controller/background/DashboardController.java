@@ -16,9 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * 工作台统计控制器
- */
 @Tag(name = "仪表盘", description = "后台工作台统计数据")
 @Slf4j
 @RestController

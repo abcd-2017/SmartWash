@@ -27,14 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
-/**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Tag(name = "用户端-用户信息", description = "用户端个人信息管理接口")
 @Slf4j
 @RestController
@@ -137,7 +129,6 @@ public class WebUsersController {
             return Result.failMsg(invalidReason);
         }
 
-        // 获取当前用户
         LoginUser loginUser = UserContextHolder.getUser();
         Users user = usersService.getById(loginUser.getUserId());
         if (user == null) {
@@ -152,7 +143,6 @@ public class WebUsersController {
         // 上传新头像：DB 存对象键（端点变更不必刷库），响应仍返回绝对 URL 供端上立即展示
         String avatarObjectKey = fileStorageService.uploadFile(file, "avatar");
 
-        // 更新用户头像
         user.setAvatar(avatarObjectKey);
         usersService.updateById(user);
 

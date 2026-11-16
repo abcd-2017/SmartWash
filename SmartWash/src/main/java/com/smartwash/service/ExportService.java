@@ -6,9 +6,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.time.LocalDateTime;
 
-/**
- * 数据导出服务接口
- */
 public interface ExportService {
 
     /**

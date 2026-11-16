@@ -33,7 +33,6 @@ public interface ToolboxShortCodeService extends IService<ToolboxShortCode> {
     /** 删除短码（物理删除 + 清缓存） */
     void deleteShortCode(Long id, Long ownerUserId);
 
-    /** 当前用户短码的访问明细分页 */
     IPage<ShortCodeStatsVo> pageVisits(Long id, Long ownerUserId, long page, long size);
 
     /** 公开跳转解析（私有码一律 404，不暴露存在性） */

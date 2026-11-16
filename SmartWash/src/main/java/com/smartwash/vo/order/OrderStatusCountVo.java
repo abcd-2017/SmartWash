@@ -16,6 +16,5 @@ public class OrderStatusCountVo {
     /** 订单状态码（见 OrderStatus 枚举） */
     private String status;
 
-    /** 该状态下的订单数量 */
     private Long count;
 }

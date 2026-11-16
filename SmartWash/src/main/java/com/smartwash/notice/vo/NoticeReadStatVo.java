@@ -17,7 +17,6 @@ public class NoticeReadStatVo {
     /** 发送总数（= 全平台用户数） */
     private Long totalUsers;
 
-    /** 已读数 */
     private Long readCount;
 
     /** 已读率（如 "33.3%"），保留 1 位小数 */

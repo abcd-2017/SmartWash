@@ -34,7 +34,6 @@ public class DivModelConfig implements Serializable {
 
     private String baseUrl;
 
-    /** 供应商模型标识 */
     private String modelId;
 
     /** AES-256-GCM 密文 v{ver}:{iv}:{ct} */
@@ -48,7 +47,6 @@ public class DivModelConfig implements Serializable {
 
     private Integer enabled;
 
-    /** 加密主密钥版本 */
     private Integer keyVersion;
 
     private LocalDateTime lastTestAt;

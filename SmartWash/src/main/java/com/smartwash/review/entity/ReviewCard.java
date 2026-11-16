@@ -46,13 +46,11 @@ public class ReviewCard implements Serializable {
     /** 难度 D（1-10） */
     private BigDecimal difficulty;
 
-    /** 下次到期时刻 */
     private LocalDateTime dueAt;
 
     /** NULL=从未复习的新卡 */
     private LocalDateTime lastReviewAt;
 
-    /** 累计复习次数 */
     private Integer reps;
 
     /** Again 次数（遗忘次数） */

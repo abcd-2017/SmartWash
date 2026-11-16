@@ -27,7 +27,6 @@ public class Notice implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    /** 标题 */
     private String title;
 
     /** 正文（TEXT，可含换行） */

@@ -45,9 +45,6 @@ public class DivUsageService {
         return count != null && count <= dailyLimit;
     }
 
-    /**
-     * 检查并递增 IP 每日解读次数。
-     */
     public boolean tryConsumeIpLimit(String ip, int dailyLimit) {
         String date = LocalDate.now().format(DATE_FMT);
         String key = String.format(KEY_IP_LIMIT, ip, date);
@@ -58,9 +55,6 @@ public class DivUsageService {
         return count != null && count <= dailyLimit;
     }
 
-    /**
-     * 获取用户当日已用次数。
-     */
     public long getUserUsedCount(Long userId) {
         String date = LocalDate.now().format(DATE_FMT);
         String key = String.format(KEY_USER_LIMIT, userId, date);

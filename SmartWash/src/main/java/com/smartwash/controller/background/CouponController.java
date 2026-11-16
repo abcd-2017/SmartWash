@@ -20,14 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
 
-/**
- * <p>
- * 优惠券模板 前端控制器
- * </p>
- *
- * @author
- * @since 2025-04-06
- */
 @Tag(name = "优惠券管理", description = "优惠券模板的增删改查")
 @Slf4j
 @RestController

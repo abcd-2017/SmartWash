@@ -49,9 +49,6 @@ public class DivSafetyService {
         return null;
     }
 
-    /**
-     * 记录拦截问题日志。
-     */
     public void recordBlocked(Long userId, String question, String method, String reason) {
         DivBlockedQuestion blocked = new DivBlockedQuestion();
         blocked.setUserId(userId);

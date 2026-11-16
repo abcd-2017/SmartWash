@@ -13,14 +13,6 @@ import com.smartwash.vo.order.ShowOrderVo;
 import java.util.List;
 import java.util.Map;
 
-/**
- * <p>
- * 服务类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 public interface IOrdersService extends IService<Orders> {
 
     Page<OrdersVo> getAllOrders(SearchOrderFrom searchOrderFrom);
@@ -33,7 +25,6 @@ public interface IOrdersService extends IService<Orders> {
 
     List<ShowOrderVo> getOrderList(OrderListFrom orderListFrom, LoginUser loginUser);
 
-    //获取各状态订单数量
     OrderItemCountVo getOrderItemCount(OrderItemCountFrom itemCountFrom, Long userId);
 
     Boolean updateOrderStatus(UpdateOrderStatus orderStatus);

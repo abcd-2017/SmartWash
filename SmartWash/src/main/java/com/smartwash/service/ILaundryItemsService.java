@@ -11,14 +11,6 @@ import jakarta.validation.Valid;
 
 import java.util.List;
 
-/**
- * <p>
- * 服务类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 public interface ILaundryItemsService extends IService<LaundryItems> {
 
     Page<LaundryPackageVo> getAllLaundryPackage(SearchLaundryItemsFrom laundryPackageFrom);

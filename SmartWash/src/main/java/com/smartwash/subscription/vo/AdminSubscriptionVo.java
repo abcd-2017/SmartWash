@@ -23,10 +23,8 @@ public class AdminSubscriptionVo {
     /** 用户手机号（脱敏，如 138****5678） */
     private String userPhone;
 
-    /** 订阅名称 */
     private String name;
 
-    /** 每期金额 */
     private BigDecimal amount;
 
     /** 计费周期 month/year */

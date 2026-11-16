@@ -7,9 +7,6 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-/**
- * 订阅提醒记录 Mapper。
- */
 public interface SubscriptionReminderLogMapper extends BaseMapper<SubscriptionReminderLog> {
 
     /**

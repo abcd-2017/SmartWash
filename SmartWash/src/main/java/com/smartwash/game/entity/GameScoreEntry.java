@@ -30,7 +30,6 @@ public class GameScoreEntry implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    /** 所属用户 */
     private Long userId;
 
     /** 游戏标识（game_config.game_key） */
@@ -45,10 +44,8 @@ public class GameScoreEntry implements Serializable {
     /** 详情（评级 / 关卡快照等，JSON 字符串，结构由游戏自定） */
     private String metricJson;
 
-    /** 累计上报次数 */
     private Integer playedCount;
 
-    /** 最近一次上报时间 */
     private LocalDateTime lastPlayedAt;
 
     private LocalDateTime createdAt;

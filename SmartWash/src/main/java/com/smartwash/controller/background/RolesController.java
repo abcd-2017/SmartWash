@@ -20,14 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
 
-/**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author
- * @since 2025-03-09
- */
 @Tag(name = "角色管理", description = "系统角色的增删改查")
 @Slf4j
 @RestController

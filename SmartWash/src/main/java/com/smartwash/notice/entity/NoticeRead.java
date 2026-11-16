@@ -33,6 +33,5 @@ public class NoticeRead implements Serializable {
     /** notice.id */
     private Long noticeId;
 
-    /** 首次标记已读时间 */
     private LocalDateTime readAt;
 }

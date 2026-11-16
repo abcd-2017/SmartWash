@@ -20,14 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
 
-/**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Tag(name = "学校管理", description = "学校的增删改查")
 @Slf4j
 @RestController

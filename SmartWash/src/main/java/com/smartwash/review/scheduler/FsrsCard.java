@@ -24,7 +24,6 @@ public class FsrsCard {
     /** 难度 D（1-10），新卡未复习前为 null */
     private Double difficulty;
 
-    /** 下次到期时刻 */
     private LocalDateTime due;
 
     /** 最近一次复习时刻，新卡为 null */

@@ -15,11 +15,9 @@ import lombok.Data;
 @Data
 public class UpdateWorkbenchEntryFrom {
 
-    /** 入口记录 id */
     @NotNull(message = "入口 id 不能为空")
     private Long id;
 
-    /** 入口标题 */
     @Size(max = 32, message = "标题过长（上限32字符）")
     private String title;
 
@@ -31,7 +29,6 @@ public class UpdateWorkbenchEntryFrom {
     @Pattern(regexp = "^(calendar|search|book|calculate|history|chat|link|science|gamepad|default)$", message = "图标 key 不在白名单内")
     private String icon;
 
-    /** 图标色组 key */
     @Pattern(regexp = "^(green|blue|orange|pink|teal|purple)$", message = "色组 key 须为 green/blue/orange/pink/teal/purple")
     private String color;
 

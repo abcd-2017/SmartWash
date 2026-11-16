@@ -21,14 +21,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Tag(name = "用户端-支付", description = "用户端支付相关接口")
 @Slf4j
 @RestController

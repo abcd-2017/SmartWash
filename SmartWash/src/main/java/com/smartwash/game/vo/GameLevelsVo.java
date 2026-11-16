@@ -13,7 +13,6 @@ import java.util.List;
 @Accessors(chain = true)
 public class GameLevelsVo {
 
-    /** 游戏标识 */
     private String gameKey;
 
     /** 关卡数据版本号（game_config.levels_version） */

@@ -66,7 +66,6 @@ import java.util.regex.Pattern;
 @Service
 public class DiningRecipeImportServiceImpl implements DiningRecipeImportService {
 
-    // ==================== 契约常量 ====================
 
     /** 单次导入数据行上限（对齐关卡批量导入 500 上限惯例，防超大请求） */
     public static final int MAX_IMPORT_ROWS = 500;
@@ -109,13 +108,11 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
     @Autowired
     private SecurityUtil securityUtil;
 
-    // ==================== 模板生成 ====================
 
     @Override
     public byte[] buildTemplate() {
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("菜谱导入");
-            // 表头
             Row header = sheet.createRow(0);
             for (int i = 0; i < 5; i++) {
                 header.createCell(i).setCellValue(switch (i) {
@@ -368,7 +365,6 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         return map;
     }
 
-    /** 当前登录管理员 ID */
     private Long currentAdminId() {
         LoginUser currentUser = (LoginUser) securityUtil.getCurrentUser();
         if (currentUser == null) {
@@ -469,7 +465,6 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         }
     }
 
-    // ==================== 表头与单元格工具 ====================
 
     /** 表头按列名匹配（顺序无关，重复列名取首个），缺任一必需列整体拒绝；返回 列名 → 列下标 */
     private Map<String, Integer> resolveHeader(List<String> headerRow) {

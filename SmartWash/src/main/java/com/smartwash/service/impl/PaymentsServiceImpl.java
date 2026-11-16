@@ -39,14 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * <p>
- * 服务实现类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Slf4j
 @Service
 public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> implements IPaymentsService {
@@ -175,7 +167,6 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
             if (coupon == null) {
                 throw new CustomExceptions("优惠券不存在");
             }
-            // 校验优惠券使用门槛
             if (orders.getTotalPrice().compareTo(coupon.getThreshold()) < 0) {
                 throw new CustomExceptions("未到达优惠券使用门槛");
             }

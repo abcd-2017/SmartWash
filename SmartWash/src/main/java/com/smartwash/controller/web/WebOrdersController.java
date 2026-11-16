@@ -32,14 +32,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
-/**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Tag(name = "用户端-订单", description = "用户端订单的创建、查询、状态变更等接口")
 @Slf4j
 @RestController

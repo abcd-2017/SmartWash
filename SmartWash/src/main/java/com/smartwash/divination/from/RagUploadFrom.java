@@ -3,9 +3,6 @@ package com.smartwash.divination.from;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-/**
- * 上传古籍文档请求 DTO。
- */
 @Data
 public class RagUploadFrom {
 

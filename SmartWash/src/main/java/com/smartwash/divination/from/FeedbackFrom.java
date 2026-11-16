@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-/**
- * 反馈 + 应验回填请求 DTO。
- */
 @Data
 public class FeedbackFrom {
 

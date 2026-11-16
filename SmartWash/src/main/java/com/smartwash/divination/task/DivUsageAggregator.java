@@ -34,7 +34,6 @@ public class DivUsageAggregator {
     private final DivBlockedQuestionMapper blockedQuestionMapper;
     private final DivUsageDailyMapper usageDailyMapper;
 
-    /** 支持的术数方法 */
     private static final String[] METHODS = {"liuyao", "meihua", "qimen", "liuren"};
 
     /**

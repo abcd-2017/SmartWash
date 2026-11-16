@@ -176,7 +176,6 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
         throw new CustomExceptions("短码生成繁忙，请重试");
     }
 
-    // ==================== 用户端管理 ====================
 
     @Override
     public IPage<ShortCodeVo> listMyShortCodes(SearchShortCodeFrom from, Long ownerUserId) {
@@ -237,7 +236,6 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
         return voPage;
     }
 
-    // ==================== 跳转解析 ====================
 
     @Override
     public ResolveResult resolveForRedirect(String code) {
@@ -349,7 +347,6 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
         return new SecretViewVo().setContent(plaintext).setExpireAt(record.getExpireAt());
     }
 
-    // ==================== 管理端 ====================
 
     @Override
     public IPage<AdminShortCodeVo> adminPage(SearchShortCodeFrom from) {
@@ -414,7 +411,6 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
         log.info("管理端删除短码, code: {}", record.getCode());
     }
 
-    // ==================== 内部方法 ====================
 
     private LambdaQueryWrapper<ToolboxShortCode> ownerWrapper(SearchShortCodeFrom from, Long ownerUserId) {
         LambdaQueryWrapper<ToolboxShortCode> wrapper = new LambdaQueryWrapper<>();

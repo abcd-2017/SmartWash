@@ -14,14 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * <p>
- * 衣物套餐
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Tag(name = "用户端-洗衣项目", description = "用户端洗衣项目查询接口")
 @Slf4j
 @RestController

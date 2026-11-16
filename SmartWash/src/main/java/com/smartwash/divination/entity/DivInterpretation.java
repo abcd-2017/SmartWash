@@ -33,7 +33,6 @@ public class DivInterpretation implements Serializable {
     /** first/followup */
     private String kind;
 
-    /** 追问时的子问题 */
     private String question;
 
     private String provider;
@@ -46,7 +45,6 @@ public class DivInterpretation implements Serializable {
     /** 模型配置 id（平台目录或用户 BYOK） */
     private Long configId;
 
-    /** 解读正文 Markdown */
     private String contentMd;
 
     private Integer tokensIn;

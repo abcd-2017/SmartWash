@@ -45,7 +45,6 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
      */
     private static final BigDecimal MAX_RECHARGE_AMOUNT = new BigDecimal("10000");
 
-    //获取所有充值记录
     @Override
     public Page<RechargeRecordsVo> getAllRecords(SearchRechargeRecordsFrom rechargeRecordsFrom) {
         Page<RechargeRecords> page = new Page<>(rechargeRecordsFrom.getPage(), rechargeRecordsFrom.getSize());
@@ -77,7 +76,6 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
         return rechargeRecordsVoPage;
     }
 
-    //获取当前用户充值记录
     @Override
     public Page<RechargeRecordsVo> getUserRechargeRecords(Long userId, BaseSearchFrom searchFrom) {
         Page<RechargeRecords> page = new Page<>(searchFrom.getPage(), searchFrom.getSize());

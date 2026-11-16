@@ -28,7 +28,6 @@ public class GameUserSave implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    /** 所属用户 */
     private Long userId;
 
     /** 游戏标识（game_config.game_key） */

@@ -6,19 +6,15 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class Result<T> {
-    //返回码
     private Integer code;
 
-    //返回消息
     private String message;
 
-    //返回数据
     private T data;
 
     public Result() {
     }
 
-    // 返回数据
     public static <T> Result<T> build(T data) {
         Result<T> result = new Result<T>();
         if (data != null) result.setData(data);
@@ -39,13 +35,6 @@ public class Result<T> {
         return result;
     }
 
-    /**
-     * 操作成功
-     *
-     * @param data baseCategory1List
-     * @param <T>
-     * @return
-     */
     public static <T> Result<T> ok(T data) {
         return build(data, ResultCodeEnum.SUCCESS);
     }
@@ -58,13 +47,6 @@ public class Result<T> {
         return build(null, ResultCodeEnum.FAIL.getCode(), msg);
     }
 
-    /**
-     * 操作失败
-     *
-     * @param data
-     * @param <T>
-     * @return
-     */
     public static <T> Result<T> fail(T data) {
         return build(data, ResultCodeEnum.FAIL);
     }

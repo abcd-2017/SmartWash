@@ -10,14 +10,6 @@ import com.smartwash.vo.coupon.CouponVo;
 
 import java.util.List;
 
-/**
- * <p>
- * 优惠券模板 服务类
- * </p>
- *
- * @author
- * @since 2025-04-06
- */
 public interface ICouponService extends IService<Coupon> {
     Page<CouponVo> getAllCoupon(SearchCouponFrom searchCouponFrom);
 

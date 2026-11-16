@@ -29,9 +29,7 @@ public class ExceptionControllerAdvice {
         BindingResult bindingResult = e.getBindingResult();
         StringBuilder sb = new StringBuilder();
         bindingResult.getFieldErrors().forEach(item -> {
-            //获取错误信息
             String message = item.getDefaultMessage();
-            //获取错误的属性名字
             String field = item.getField();
             sb.append(field).append(":").append(message).append(" ");
         });
@@ -70,9 +68,6 @@ public class ExceptionControllerAdvice {
         return ResponseEntity.ok(Result.build(null, ResultCodeEnum.FAIL.getCode(), e.getMessage()));
     }
 
-    /**
-     * 用户token校验失败异常捕获
-     */
     @ExceptionHandler(value = UserAuthenticationException.class)
     public Result<String> handleUserAuthenticationException(UserAuthenticationException e) {
         log.warn("用户登录状态异常：{}，异常类型：{}", e.getMessage(), e.getClass());

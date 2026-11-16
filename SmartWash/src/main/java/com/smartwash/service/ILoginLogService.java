@@ -7,9 +7,6 @@ import com.smartwash.entity.LoginLog;
 import com.smartwash.from.login_log.SearchLoginLogFrom;
 import com.smartwash.vo.login_log.LoginLogVo;
 
-/**
- * 登录日志服务。
- */
 public interface ILoginLogService extends IService<LoginLog> {
 
     /**

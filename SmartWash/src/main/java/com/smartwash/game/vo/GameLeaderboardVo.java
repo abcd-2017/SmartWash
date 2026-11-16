@@ -12,7 +12,6 @@ import java.util.List;
 @Data
 public class GameLeaderboardVo {
 
-    /** 游戏标识 */
     private String gameKey;
 
     /** 榜单列名（最高分/最少步数/最高关卡） */
@@ -31,7 +30,6 @@ public class GameLeaderboardVo {
     public static class EntryVo {
         /** 名次（1 起） */
         private Integer rank;
-        /** 用户 ID */
         private Long userId;
         /** 脱敏手机号（138****1234） */
         private String maskedPhone;

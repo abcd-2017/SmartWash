@@ -14,19 +14,15 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class GameLevelSaveFrom {
 
-    /** 游戏标识 */
     @NotBlank(message = "gameKey 不能为空")
     private String gameKey;
 
-    /** 关卡序号 */
     @NotNull(message = "关卡序号不能为空")
     @Min(value = 1, message = "关卡序号必须为正整数")
     private Integer levelNo;
 
-    /** 关卡名 */
     private String name;
 
-    /** 关卡定义 JSON 字符串 */
     @NotBlank(message = "关卡数据不能为空")
     private String dataJson;
 
@@ -39,6 +35,5 @@ public class GameLevelSaveFrom {
     /** 排序，越小越靠前（可空按关卡序号×10） */
     private Integer sort;
 
-    /** 备注 */
     private String remark;
 }

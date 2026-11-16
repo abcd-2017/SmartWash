@@ -31,7 +31,6 @@ public class DiningOrderMember implements Serializable {
     /** 成员用户 ID(users.user_id) */
     private Long userId;
 
-    /** 加入时间 */
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

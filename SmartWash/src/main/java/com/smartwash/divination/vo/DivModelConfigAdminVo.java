@@ -16,7 +16,6 @@ public class DivModelConfigAdminVo {
     /** 厂商名（客户端两级选择的一级分组） */
     private String vendor;
 
-    /** 模型显示名 */
     private String name;
 
     /** 接入协议（当前仅 openai_compat） */
@@ -24,7 +23,6 @@ public class DivModelConfigAdminVo {
 
     private String baseUrl;
 
-    /** 供应商模型标识 */
     private String modelId;
 
     /** 掩码 sk-****abc4（目录模式密钥由用户自带，恒为空） */

@@ -14,7 +14,6 @@ import lombok.Data;
 @Data
 public class UpdateDeeplinkRouteFrom {
 
-    /** 路由记录 id */
     @NotNull(message = "路由 id 不能为空")
     private Long id;
 

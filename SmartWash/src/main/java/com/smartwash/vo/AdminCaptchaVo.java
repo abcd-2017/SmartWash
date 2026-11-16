@@ -38,7 +38,6 @@ public class AdminCaptchaVo {
         /** 验证码明文（仅演示接口返回） */
         private String code;
 
-        /** 剩余有效秒数 */
         private Long remainSeconds;
     }
 }

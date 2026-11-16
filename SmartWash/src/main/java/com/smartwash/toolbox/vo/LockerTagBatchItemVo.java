@@ -3,9 +3,6 @@ package com.smartwash.toolbox.vo;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-/**
- * 按校批量生成柜码的逐柜结果项。
- */
 @Data
 @Accessors(chain = true)
 public class LockerTagBatchItemVo {

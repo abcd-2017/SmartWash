@@ -36,7 +36,6 @@ public class ToolboxDeliveryItem implements Serializable {
     /** 1文本 2图片 3文件 */
     private Integer kind;
 
-    /** 文件名或文本摘要 */
     private String title;
 
     /** kind=1:文本正文;焚毁后置 NULL */
@@ -45,7 +44,6 @@ public class ToolboxDeliveryItem implements Serializable {
     /** kind=2/3:MinIO对象名 delivery/{code}/{uuid}.{ext} */
     private String objectKey;
 
-    /** 字节数 */
     private Long objectSize;
 
     private String mimeType;

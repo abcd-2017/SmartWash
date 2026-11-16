@@ -5,9 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 系统参数更新表单
- */
 @Data
 public class UpdateSysConfigFrom {
 

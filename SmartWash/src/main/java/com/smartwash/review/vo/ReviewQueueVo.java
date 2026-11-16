@@ -10,10 +10,8 @@ import java.util.List;
 @Data
 public class ReviewQueueVo {
 
-    /** 到期卡张数 */
     private int dueCount;
 
-    /** 注入的新卡张数 */
     private int newCount;
 
     /** 合并后的队列（到期卡 + 新卡） */

@@ -20,14 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * <p>
- * 用户领取优惠券记录表 前端控制器
- * </p>
- *
- * @author
- * @since 2025-04-06
- */
 @Tag(name = "用户端-用户优惠券", description = "用户端优惠券领取和使用相关接口")
 @Slf4j
 @RestController

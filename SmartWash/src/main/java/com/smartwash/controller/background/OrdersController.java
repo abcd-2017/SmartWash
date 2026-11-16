@@ -23,14 +23,6 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.Map;
 
-/**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Tag(name = "订单管理", description = "后台订单的查询、删除及状态更新")
 @Slf4j
 @RestController

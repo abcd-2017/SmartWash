@@ -115,7 +115,6 @@ public class ToolboxLockerTagServiceImpl implements ToolboxLockerTagService {
                 .setSchoolLocation(school == null ? null : school.getLocation());
     }
 
-    // ==================== 内部方法 ====================
 
     private Lockers requireLocker(Long lockerId) {
         Lockers locker = lockersMapper.selectById(lockerId);

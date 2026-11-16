@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class GameBatchResultVo {
 
-    /** 游戏 ID */
     private Long id;
 
     /** 是否生效（含幂等命中：已是目标状态也计成功） */

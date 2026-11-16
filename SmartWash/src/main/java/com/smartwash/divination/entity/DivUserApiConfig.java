@@ -37,7 +37,6 @@ public class DivUserApiConfig implements Serializable {
     /** AES-256-GCM 密文 */
     private String apiKeyCipher;
 
-    /** 掩码 */
     private String apiKeyMask;
 
     private Integer keyVersion;

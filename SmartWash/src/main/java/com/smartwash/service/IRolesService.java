@@ -8,14 +8,6 @@ import com.smartwash.from.roles.SearchRolesFrom;
 import com.smartwash.from.roles.UpdateRolesFrom;
 import com.smartwash.vo.roles.RolesVo;
 
-/**
- * <p>
- * 服务类
- * </p>
- *
- * @author
- * @since 2025-03-09
- */
 public interface IRolesService extends IService<Roles> {
 
     Page<RolesVo> getAllRoles(SearchRolesFrom rolesFrom);

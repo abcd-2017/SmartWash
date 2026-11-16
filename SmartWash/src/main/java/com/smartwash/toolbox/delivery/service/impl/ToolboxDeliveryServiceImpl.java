@@ -297,7 +297,6 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
         log.info("过期投递会话清理完成, 共 {} 个会话", expiredSessions.size());
     }
 
-    // ==================== 内部方法 ====================
 
     private DeliveryItemVo publishTextItem(ToolboxShortCode session, int direction, PublishDeliveryTextFrom from) {
         checkItemQuota(session.getCode());

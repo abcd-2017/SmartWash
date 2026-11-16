@@ -11,14 +11,6 @@ import lombok.experimental.Accessors;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-/**
- * <p>
- * 用户领取优惠券记录表
- * </p>
- *
- * @author
- * @since 2025-04-06
- */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
@@ -27,9 +19,6 @@ public class UserCoupon implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * 用户优惠券记录 ID
-     */
     @TableId(value = "user_coupon_id", type = IdType.AUTO)
     private Long userCouponId;
 
@@ -40,27 +29,15 @@ public class UserCoupon implements Serializable {
     private Long couponId;
 
 
-    /**
-     * 是否已使用
-     */
     @TableField("is_used")
     private Boolean isUsed;
 
-    /**
-     * 优惠券实际过期时间
-     */
     @TableField("expired_at")
     private LocalDateTime expiredAt;
 
-    /**
-     * 使用时间
-     */
     @TableField("used_at")
     private LocalDateTime usedAt;
 
-    /**
-     * 领取时间
-     */
     @TableField("received_at")
     private LocalDateTime receivedAt;
 

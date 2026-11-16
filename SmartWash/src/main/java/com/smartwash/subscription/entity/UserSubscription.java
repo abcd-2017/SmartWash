@@ -31,10 +31,8 @@ public class UserSubscription implements Serializable {
     /** users.id，数据完全以当前登录用户为主体隔离 */
     private Long userId;
 
-    /** 订阅名称 */
     private String name;
 
-    /** 每期金额 */
     private BigDecimal amount;
 
     /** 计费周期 month/year */
@@ -58,16 +56,13 @@ public class UserSubscription implements Serializable {
     /** active生效中/paused已暂停/canceled已取消/finished已结束 */
     private String status;
 
-    /** 取消入口网址 */
     private String cancelUrl;
 
-    /** 取消路径步骤备忘 */
     private String cancelSteps;
 
     /** 续费/试用截止前提醒天数 */
     private Integer remindDaysBefore;
 
-    /** 备注 */
     private String note;
 
     private LocalDateTime createdAt;

@@ -39,9 +39,6 @@ public class DivPromptService {
         return promptVersionMapper.selectPage(page, wrapper);
     }
 
-    /**
-     * 保存 prompt 版本。
-     */
     public Long save(DivPromptVersion version) {
         if (version.getId() != null) {
             promptVersionMapper.updateById(version);
@@ -67,7 +64,6 @@ public class DivPromptService {
         update.setStatus(2);
         promptVersionMapper.update(update, wrapper);
 
-        // 指定版本激活
         version.setStatus(1);
         promptVersionMapper.updateById(version);
         log.info("激活 prompt 版本, id: {}, method: {}, version: {}", id, version.getMethod(), version.getVersion());

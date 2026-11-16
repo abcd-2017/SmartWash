@@ -12,10 +12,8 @@ import java.util.Arrays;
 @Getter
 public enum DiningOrderStatus {
 
-    /** 进行中 */
     ONGOING("ONGOING", "进行中"),
 
-    /** 已结束 */
     FINISHED("FINISHED", "已结束");
 
     private final String code;

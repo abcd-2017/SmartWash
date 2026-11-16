@@ -10,7 +10,6 @@ import lombok.Getter;
 @Getter
 public class GameServiceException extends RuntimeException {
 
-    /** 参数或包内容不合法 */
     public static final int BAD_REQUEST = 400;
     /** 权限不足 / 路径穿越拒绝 */
     public static final int FORBIDDEN = 403;
@@ -18,12 +17,9 @@ public class GameServiceException extends RuntimeException {
     public static final int NOT_FOUND = 404;
     /** game_key 并发唯一索引冲突 */
     public static final int CONFLICT = 409;
-    /** 上传文件或解压体积超限 */
     public static final int PAYLOAD_TOO_LARGE = 413;
-    /** 存储服务等系统故障 */
     public static final int INTERNAL_ERROR = 500;
 
-    /** Result 信封业务码 */
     private final int code;
 
     public GameServiceException(int code, String message) {

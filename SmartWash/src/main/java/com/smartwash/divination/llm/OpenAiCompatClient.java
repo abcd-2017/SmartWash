@@ -74,7 +74,6 @@ public class OpenAiCompatClient {
                 .build();
     }
 
-    // ==================== 对外入口 ====================
 
     /**
      * 流式对话 + 一次非流式回退。
@@ -199,7 +198,6 @@ public class OpenAiCompatClient {
         }
     }
 
-    // ==================== 内部实现 ====================
 
     /**
      * 流式调用：逐事件解析并实时回调 deltaConsumer，累积完整文本与 usage。

@@ -4,9 +4,6 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-/**
- * 解读记录视图。
- */
 @Data
 public class InterpretationVo {
 

@@ -4,14 +4,6 @@ import com.smartwash.entity.Payments;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
-/**
- * <p>
- *  Mapper 接口
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 public interface PaymentsMapper extends BaseMapper<Payments> {
 
     /**

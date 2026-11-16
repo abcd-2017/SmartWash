@@ -41,7 +41,6 @@ public class DiningRecipeImportConfirmFrom {
         @Size(max = 32, message = "分类名过长（上限32字符）")
         private String categoryName;
 
-        /** 菜名 */
         @NotBlank(message = "菜名不能为空")
         @Size(max = 64, message = "菜名过长（上限64字符）")
         private String name;

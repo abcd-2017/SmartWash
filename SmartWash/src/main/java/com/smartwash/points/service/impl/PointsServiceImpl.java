@@ -75,7 +75,6 @@ public class PointsServiceImpl implements IPointsService {
     private static final Duration SIGNIN_ATTEMPT_TTL = Duration.ofHours(25);
     private static final DateTimeFormatter DAY_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    // ==================== 签到 ====================
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -194,7 +193,6 @@ public class PointsServiceImpl implements IPointsService {
         return vo;
     }
 
-    // ==================== 我的积分概览 ====================
 
     @Override
     public PointsOverviewVo getOverview(Long userId) {
@@ -264,7 +262,6 @@ public class PointsServiceImpl implements IPointsService {
         }
     }
 
-    // ==================== 月榜 ====================
 
     @Override
     public LeaderboardVo getMonthLeaderboard(String scope, Long userId) {
@@ -386,7 +383,6 @@ public class PointsServiceImpl implements IPointsService {
         }
     }
 
-    // ==================== 防刷 ====================
 
     /**
      * 轻量防刷：Redis 每日尝试计数（对齐 DivUsageService increment+TTL 风格）。

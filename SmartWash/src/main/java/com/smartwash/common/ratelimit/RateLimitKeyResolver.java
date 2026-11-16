@@ -47,8 +47,6 @@ public class RateLimitKeyResolver {
     }
 
     /**
-     * 解析客户端标识。
-     *
      * @param method 目标方法（SpEL 参数名发现）
      * @param args   方法实际入参
      * @param spel   注解配置的 SpEL 表达式（可为空）

@@ -11,6 +11,5 @@ public class SubscriptionGroupCountVo {
 
     private Long subscriptionId;
 
-    /** 计数值 */
     private Long cnt;
 }

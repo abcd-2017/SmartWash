@@ -91,11 +91,9 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         return removeByIds(idList);
     }
 
-    //获取所有可以领取的优惠券
     @Override
     @Cacheable(value = "coupon", key = "'valid:' + #userId")
     public List<CouponVo> getAllValidCoupon(Long userId) {
-        //查询所有可领取的优惠券
         LambdaQueryWrapper<Coupon> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Coupon::getStatus, CouponStatus.ACTIVE.getStatus());
         LocalDateTime nowTime = LocalDateTime.now();
@@ -103,7 +101,6 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         queryWrapper.and(q -> q.ge(Coupon::getEndTime, nowTime));
         List<Coupon> couponList = list(queryWrapper);
 
-        //判断所有可以领取的优惠券，用户是否已经领取过
         List<Long> couponIds = userCouponMapper.getCouponIdsByUserId(userId);
         HashSet<Long> couponSet = new HashSet<>(couponIds);
         return couponList.stream().map(it -> {

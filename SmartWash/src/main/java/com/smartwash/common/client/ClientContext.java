@@ -28,15 +28,11 @@ import java.util.Set;
  */
 public final class ClientContext {
 
-    /** 平台标识请求头 */
     public static final String HEADER_PLATFORM = "X-Platform";
     /** 项目渠道请求头（full=全量版 / lite=吃啥精简版） */
     public static final String HEADER_APP_CHANNEL = "X-App-Channel";
-    /** App 版本号请求头 */
     public static final String HEADER_APP_VERSION = "X-App-Version";
-    /** 网络类型请求头 */
     public static final String HEADER_NETWORK_TYPE = "X-Network-Type";
-    /** 标准 User-Agent 请求头 */
     public static final String HEADER_USER_AGENT = "User-Agent";
 
     /** 平台缺省值：未携带或非法 */

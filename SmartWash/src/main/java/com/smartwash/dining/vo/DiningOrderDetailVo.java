@@ -16,7 +16,6 @@ import java.util.List;
 @Accessors(chain = true)
 public class DiningOrderDetailVo {
 
-    /** 订单 ID */
     private Long id;
 
     /** 服务端当前 version（轮询协议基准） */
@@ -33,7 +32,6 @@ public class DiningOrderDetailVo {
     /** 订单状态：ONGOING / FINISHED */
     private String status;
 
-    /** 发起者用户 ID */
     private Long creatorUserId;
 
     /** 本单菜单（发起者编排的选菜范围，按加入菜单顺序） */
@@ -42,7 +40,6 @@ public class DiningOrderDetailVo {
     /** 全部选菜记录（共享购物车明细，按勾选顺序） */
     private List<OrderItem> items;
 
-    /** 参与者列表 */
     private List<OrderMember> members;
 
     private LocalDateTime finishedAt;
@@ -83,14 +80,12 @@ public class DiningOrderDetailVo {
         private String note;
     }
 
-    /** 参与者条目 */
     @Data
     @Accessors(chain = true)
     public static class OrderMember {
 
         private Long userId;
 
-        /** 是否发起者 */
         private Boolean isCreator;
 
         /** 脱敏手机号（如 139****9000），端上作选菜人标识 */

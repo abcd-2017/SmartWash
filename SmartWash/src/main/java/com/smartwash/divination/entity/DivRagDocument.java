@@ -10,9 +10,6 @@ import lombok.experimental.Accessors;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-/**
- * RAG 语料：古籍文档。
- */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)

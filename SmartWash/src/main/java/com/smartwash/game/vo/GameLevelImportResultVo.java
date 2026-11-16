@@ -13,10 +13,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class GameLevelImportResultVo {
 
-    /** 本次导入条目总数 */
     private int total;
 
-    /** 新增关卡数 */
     private int created;
 
     /** 覆盖更新关卡数（replaceAll=true 时恒为 0） */

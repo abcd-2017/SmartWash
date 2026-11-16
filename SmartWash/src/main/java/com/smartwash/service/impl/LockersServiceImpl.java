@@ -28,20 +28,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * <p>
- * 服务实现类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> implements ILockersService {
 
-    //获取所有存储柜
     @Override
     public Page<LockersVo> getAllLockers(SearchLockersFrom lockersFrom) {
         Page<Lockers> page = new Page<>(lockersFrom.getPage(), lockersFrom.getSize());
@@ -70,7 +61,6 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
         return queryWrapper;
     }
 
-    //添加存储柜
     @Override
     public Boolean addLockers(AddLockerFrom lockerFrom) {
         Lockers Lockers = new Lockers();
@@ -80,7 +70,6 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
         return result;
     }
 
-    //批量新增存储柜
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BatchAddLockerVo batchAddLockers(BatchAddLockerFrom from) {
@@ -130,7 +119,6 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
         return result;
     }
 
-    //根据学校id删除存储柜
     @Override
     public Boolean deleteLockersBySchoolId(Long schoolId) {
         log.info("根据学校删除寄存柜, schoolId: {}", schoolId);
@@ -138,7 +126,6 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
         return remove(queryWrapper);
     }
 
-    //判断当前学校的这个柜号有没有被使用
     @Override
     public Lockers getLockerById(Long schoolId, Integer lockerNumber) {
         LambdaQueryWrapper<Lockers> queryWrapper = new LambdaQueryWrapper<Lockers>().
@@ -146,7 +133,6 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
         return getOne(queryWrapper);
     }
 
-    //修改存储柜
     @Override
     public Boolean updateLockers(UpdateLockerFrom lockersFrom) {
         log.info("修改寄存柜, lockerId: {}", lockersFrom.getLockerId());
@@ -158,7 +144,6 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
         return updateById(locker);
     }
 
-    //删除存储柜
     @Override
     public Boolean deleteLockers(String ids) {
         log.info("删除寄存柜, ids: {}", ids);

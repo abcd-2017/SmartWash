@@ -13,14 +13,6 @@ import com.smartwash.vo.locker.LockersVo;
 
 import java.util.List;
 
-/**
- * <p>
- * 服务类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 public interface ILockersService extends IService<Lockers> {
 
     Page<LockersVo> getAllLockers(SearchLockersFrom lockersFrom);

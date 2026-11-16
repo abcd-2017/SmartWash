@@ -14,18 +14,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * JWT工具类
- */
 @Slf4j
 @Component
 public class JwtUtil {
 
     /** 令牌分型 claim 名：access=访问令牌（访问受保护端点），refresh=刷新令牌（仅用于 /auth/refresh 换发） */
     public static final String CLAIM_TYP = "typ";
-    /** 令牌分型取值：访问令牌 */
     public static final String TOKEN_TYPE_ACCESS = "access";
-    /** 令牌分型取值：刷新令牌 */
     public static final String TOKEN_TYPE_REFRESH = "refresh";
 
     /** 访问令牌有效期：2 小时 */
@@ -62,8 +57,6 @@ public class JwtUtil {
     }
 
     /**
-     * 初始化负载内数据
-     *
      * @param username  用户名
      * @param tokenType 令牌分型（access / refresh）
      * @param ttlMillis 有效期（毫秒）
@@ -138,7 +131,6 @@ public class JwtUtil {
      * @return 负载
      */
     public Claims getPayloadFromToken(String token) {
-        //密钥实例
         return Jwts.parser()
                    .verifyWith(key)
                    .build()
@@ -147,8 +139,6 @@ public class JwtUtil {
     }
 
     /**
-     * 从Token中获取用户名
-     *
      * @param token token
      * @return 用户名
      */
@@ -165,8 +155,6 @@ public class JwtUtil {
 
 
     /**
-     * 生成失效时间
-     *
      * @param ttlMillis 有效期（毫秒）
      * @return 预计失效时间
      */
@@ -175,8 +163,6 @@ public class JwtUtil {
         return new Date(System.currentTimeMillis() + ttlMillis);
     }
     /**
-     * 从负载中读取令牌分型
-     *
      * @param claims JWT 负载
      * @return typ 取值（access / refresh）；旧格式（无 typ）返回 null，由调用方按 access 兼容处理
      */

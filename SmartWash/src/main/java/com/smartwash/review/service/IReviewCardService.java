@@ -17,7 +17,6 @@ public interface IReviewCardService extends IService<ReviewCard> {
     /** 在资料下手动建卡（初始 state=Learning, step=0, due=now），返回卡片 id */
     Long addCard(Long materialId, AddCardFrom from, Long userId);
 
-    /** 按资料分页查询当前用户的卡片 */
     Page<ReviewCardVo> pageCards(Long materialId, Integer page, Integer size, Long userId);
 
     /** 今日队列：到期卡（state,due 升序，上限 50）+ 新卡注入队尾（每日配额 20） */

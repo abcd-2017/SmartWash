@@ -14,7 +14,6 @@ import lombok.Data;
 @Data
 public class UpdateGameFrom {
 
-    /** 游戏名 */
     @Size(max = 32, message = "标题过长（上限32字符）")
     private String title;
 
@@ -26,11 +25,9 @@ public class UpdateGameFrom {
     @Pattern(regexp = "^(gamepad|arcade|puzzle|grid|board|word|default)$", message = "图标 key 须为 gamepad/arcade/puzzle/grid/board/word/default")
     private String icon;
 
-    /** 图标色组 key */
     @Pattern(regexp = "^(green|blue|orange|pink|teal|purple)$", message = "色组 key 须为 green/blue/orange/pink/teal/purple")
     private String color;
 
-    /** 分类 */
     @Pattern(regexp = "^(puzzle|arcade|word|board|other)$", message = "分类须为 puzzle/arcade/word/board/other")
     private String category;
 

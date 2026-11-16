@@ -12,12 +12,10 @@ import lombok.Data;
 @Data
 public class AddNoticeFrom {
 
-    /** 标题 */
     @NotBlank(message = "标题不能为空")
     @Size(max = 100, message = "标题过长（上限100字符）")
     private String title;
 
-    /** 正文 */
     @NotBlank(message = "内容不能为空")
     @Size(max = 2000, message = "内容过长（上限2000字符）")
     private String content;

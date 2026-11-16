@@ -176,7 +176,6 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
 
     @Override
     public Boolean registerUser(UserRegisterFrom userRegisterFrom) {
-        // 检查手机号是否已注册
         Users existingUser = getUserByPhone(userRegisterFrom.getPhoneNumber());
         if (existingUser != null) {
             throw new CustomExceptions("该手机号已注册");

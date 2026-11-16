@@ -153,7 +153,6 @@ public class LiuYaoEngine {
         return result;
     }
 
-    /** 纳甲干支 */
     private List<Map<String, String>> calcNaJia(String upperGua, String lowerGua, List<Integer> lines) {
         List<Map<String, String>> result = new ArrayList<>();
         // 下卦（初爻到三爻）纳甲
@@ -168,7 +167,6 @@ public class LiuYaoEngine {
         return result;
     }
 
-    /** 六亲计算 */
     private List<String> calcLiuqin(String upperGua, String lowerGua, List<Map<String, String>> naJia) {
         // 以卦宫五行为"我"
         String gongWuxing = GanZhi.BAGUA_WUXING[baguaIndex(lowerGua)];

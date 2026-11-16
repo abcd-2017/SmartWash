@@ -29,7 +29,6 @@ public class ToolboxAssetTag implements Serializable {
     /** 标签码，关联 toolbox_short_code.code（content_type=8），uk_tag_code 唯一 */
     private String code;
 
-    /** 物品名称 */
     private String itemName;
 
     /** 物品描述（可选） */

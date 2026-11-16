@@ -23,7 +23,6 @@ public class DiningRecipeVo {
     /** 所属分类名称（服务层联查回填，未分类为 null） */
     private String categoryName;
 
-    /** 菜名 */
     private String name;
 
     /** 封面对象键（编辑回传用），null=未上传 */

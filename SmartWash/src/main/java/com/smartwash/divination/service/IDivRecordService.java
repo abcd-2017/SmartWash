@@ -22,9 +22,6 @@ public interface IDivRecordService {
      */
     Long createRecord(CreateRecordFrom from, Long userId);
 
-    /**
-     * 卦历分页查询。
-     */
     Page<RecordVo> searchRecords(SearchRecordFrom from, Long userId);
 
     /**
@@ -37,8 +34,5 @@ public interface IDivRecordService {
      */
     RecordDetailVo getTodayRecord(Long userId);
 
-    /**
-     * 反馈 + 应验回填。
-     */
     void addFeedback(Long recordId, FeedbackFrom from, Long userId);
 }

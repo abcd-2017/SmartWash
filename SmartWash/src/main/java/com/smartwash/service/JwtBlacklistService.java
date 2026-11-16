@@ -52,9 +52,6 @@ public class JwtBlacklistService {
         log.info("JWT 已加入黑名单, jti: {}, ttl: {}s", jti, ttlSeconds);
     }
 
-    /**
-     * 检查 jti 是否在黑名单中
-     */
     public boolean isBlacklisted(String jti) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(BLACKLIST_PREFIX + jti));
     }

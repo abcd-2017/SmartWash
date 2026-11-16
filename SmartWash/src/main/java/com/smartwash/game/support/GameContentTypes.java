@@ -9,7 +9,6 @@ import java.util.Map;
  */
 public final class GameContentTypes {
 
-    /** HTML 入口与页面 */
     public static final String TEXT_HTML = "text/html";
 
     private static final Map<String, String> MIME_MAP = Map.ofEntries(

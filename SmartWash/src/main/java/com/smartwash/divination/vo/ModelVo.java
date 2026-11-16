@@ -12,7 +12,6 @@ public class ModelVo {
     /** div_model_config.id——用户保存配置时回传此 id（目录模式） */
     private Long id;
 
-    /** 模型显示名 */
     private String name;
 
     /** 供应商模型标识（发给 LLM API 的 model 字段） */
@@ -21,6 +20,5 @@ public class ModelVo {
     /** 模型排序权重（升序） */
     private Integer priority;
 
-    /** 当前用户是否正在使用该模型 */
     private Boolean active;
 }

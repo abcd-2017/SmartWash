@@ -28,9 +28,7 @@ public class MinioConfig {
      * 显式配置后签名纯本地完成，不再依赖该查询。
      */
     private String region;
-    /** 访问密钥 */
     private String accessKey;
-    /** 秘密密钥 */
     private String secretKey;
     /** 存储桶名称（上传用） */
     private String bucketName;

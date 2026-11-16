@@ -6,9 +6,6 @@ import com.smartwash.toolbox.mapper.ToolboxShortVisitMapper;
 import com.smartwash.toolbox.service.ToolboxShortVisitService;
 import org.springframework.stereotype.Service;
 
-/**
- * 短码访问明细服务实现。
- */
 @Service
 public class ToolboxShortVisitServiceImpl extends ServiceImpl<ToolboxShortVisitMapper, ToolboxShortVisit>
         implements ToolboxShortVisitService {

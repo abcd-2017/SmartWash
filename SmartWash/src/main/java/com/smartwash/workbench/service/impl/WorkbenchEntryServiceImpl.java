@@ -61,7 +61,6 @@ public class WorkbenchEntryServiceImpl extends ServiceImpl<WorkbenchEntryMapper,
     /** 配图类型白名单 */
     private static final Set<String> IMAGE_CONTENT_TYPES = Set.of("image/png", "image/jpeg", "image/webp");
 
-    // ==================== 管理端 ====================
 
     @Override
     public Page<AdminWorkbenchEntryVo> adminPage(SearchWorkbenchEntryFrom from) {
@@ -202,7 +201,6 @@ public class WorkbenchEntryServiceImpl extends ServiceImpl<WorkbenchEntryMapper,
         }
     }
 
-    // ==================== 用户端 ====================
 
     @Override
     public List<WorkbenchEntryVo> listEnabledEntries() {
@@ -221,7 +219,6 @@ public class WorkbenchEntryServiceImpl extends ServiceImpl<WorkbenchEntryMapper,
         return this.list(wrapper).stream().map(this::buildVo).toList();
     }
 
-    // ==================== 内部方法 ====================
 
     private WorkbenchEntry getByEntryKey(String entryKey) {
         // 直查 baseMapper（与 toolbox 内核一致），单测 mock 路径确定

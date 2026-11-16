@@ -100,7 +100,6 @@ public class DivRecordServiceImpl extends ServiceImpl<DivRecordMapper, DivRecord
         for (DivRecord record : recordPage.getRecords()) {
             RecordVo vo = new RecordVo();
             BeanUtils.copyProperties(record, vo);
-            // 填充最近一次解读摘要
             vo.setLatestInterpretation(null);
             records.add(vo);
         }
@@ -117,7 +116,6 @@ public class DivRecordServiceImpl extends ServiceImpl<DivRecordMapper, DivRecord
         RecordDetailVo vo = new RecordDetailVo();
         BeanUtils.copyProperties(record, vo);
 
-        // 查询最近一次解读
         LambdaQueryWrapper<DivInterpretation> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DivInterpretation::getRecordId, id);
         wrapper.orderByDesc(DivInterpretation::getCreatedAt);

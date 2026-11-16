@@ -13,18 +13,13 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * 创建订阅请求 DTO。
- */
 @Data
 public class AddSubscriptionFrom {
 
-    /** 订阅名称 */
     @NotBlank(message = "订阅名称不能为空")
     @Size(max = 100, message = "订阅名称过长（上限100字符）")
     private String name;
 
-    /** 每期金额 */
     @NotNull(message = "金额不能为空")
     @DecimalMin(value = "0.01", message = "金额必须大于0")
     @Digits(integer = 8, fraction = 2, message = "金额格式非法（整数8位小数2位）")

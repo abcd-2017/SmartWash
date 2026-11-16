@@ -43,7 +43,6 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
     @Autowired
     private SchoolsServiceImpl self;
 
-    //获取所有学校
     @Override
     public Page<SchoolsVo> getAllSchools(SearchSchoolsFrom schoolsFrom) {
         Page<Schools> page = new Page<>(schoolsFrom.getPage(), schoolsFrom.getSize());
@@ -69,7 +68,6 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
         return schoolsVoPage;
     }
 
-    //添加学校
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "schools", allEntries = true)
@@ -77,10 +75,8 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
         Schools schools = new Schools();
         BeanUtils.copyProperties(addSchoolsFrom, schools);
 
-        //添加学校
         save(schools);
 
-        //批量插入寄存柜
         List<Lockers> lockerList = new ArrayList<>();
         for (int i = 1; i <= addSchoolsFrom.getLockerCount(); i++) {
             Lockers locker = new Lockers();
@@ -94,7 +90,6 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
         return true;
     }
 
-    //修改学校
     @Override
     @CacheEvict(value = "schools", allEntries = true)
     public Boolean updateSchool(UpdateSchoolsFrom schoolsFrom) {
@@ -107,7 +102,6 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
         return updateById(school);
     }
 
-    //删除学校
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "schools", allEntries = true)
@@ -116,7 +110,6 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
         String[] idList = ids.split(",");
         for (String id : idList) {
             Long schoolId = Long.parseLong(id);
-            // 检查该校是否有未完成的订单
             long activeOrderCount = ordersMapper.selectCount(
                     new LambdaQueryWrapper<Orders>()
                             .eq(Orders::getSchoolId, schoolId)

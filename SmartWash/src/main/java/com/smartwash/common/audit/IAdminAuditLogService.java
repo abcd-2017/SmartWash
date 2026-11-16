@@ -3,9 +3,6 @@ package com.smartwash.common.audit;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 
-/**
- * 管理端审计日志服务。
- */
 public interface IAdminAuditLogService extends IService<AdminAuditLog> {
 
     /**

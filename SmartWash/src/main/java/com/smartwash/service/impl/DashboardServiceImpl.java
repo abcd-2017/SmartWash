@@ -21,9 +21,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DashboardServiceImpl implements IDashboardService {
 
-    /** 趋势默认统计天数 */
     static final int DEFAULT_TREND_DAYS = 30;
-    /** 趋势统计天数上限 */
     static final int MAX_TREND_DAYS = 90;
 
     private final DashboardMapper dashboardMapper;

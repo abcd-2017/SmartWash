@@ -67,7 +67,6 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
 
     private final NoticeReadMapper noticeReadMapper;
 
-    // ==================== 管理端 ====================
 
     @Override
     public Long publish(AddNoticeFrom from, Long creatorAdminId) {
@@ -145,7 +144,6 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
         return distinctUserIds.size();
     }
 
-    // ==================== 用户端 ====================
 
     @Override
     public Page<NoticeVo> pageInbox(SearchNoticeFrom from, Long userId) {
@@ -231,7 +229,6 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
         return inserted;
     }
 
-    // ==================== 内部方法 ====================
 
     /**
      * 「广播或定向给我」可见性条件（未读数 / 收件箱 / 全部已读共用同一口径）：

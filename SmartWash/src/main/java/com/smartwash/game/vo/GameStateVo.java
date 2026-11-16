@@ -13,13 +13,11 @@ import java.time.LocalDateTime;
 @Accessors(chain = true)
 public class GameStateVo {
 
-    /** 游戏标识 */
     private String gameKey;
 
     /** 游戏自定义存档 JSON 字符串（无存档时 null） */
     private String stateJson;
 
-    /** 存档结构版本 */
     private Integer schemaVer;
 
     /** 最近更新时间（无存档时 null） */

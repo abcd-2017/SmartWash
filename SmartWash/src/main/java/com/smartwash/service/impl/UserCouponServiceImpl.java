@@ -54,7 +54,6 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
         return baseMapper.searchUserCouponByStatus(pageObj, status, userId);
     }
 
-    //领取优惠券
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "coupon", key = "'valid:' + #userId")
@@ -74,7 +73,6 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
         UserCoupon userCoupon = new UserCoupon();
         userCoupon.setCouponId(couponId);
         userCoupon.setUserId(userId);
-        //设置优惠券过期时间
         LocalDateTime expiredTime = LocalDateTime.now().plusDays(coupon.getValidDays());
         userCoupon.setExpiredAt(expiredTime);
         try {

@@ -34,9 +34,7 @@ public class AdminCaptchaController {
     /** 手机号格式正则：可选 +86 前缀，1 开头，第二位 3-9，共 11 位 */
     private static final String PHONE_REGEX = "^(\\+86)?1[3-9]\\d{9}$";
 
-    /** 验证码用途：注册 */
     private static final String PURPOSE_REGISTER = "register";
-    /** 验证码用途：重置密码 */
     private static final String PURPOSE_RESET = "reset";
 
     /** 验证码 Redis key 前缀，格式：captcha:{purpose}:{phone} */
@@ -71,13 +69,11 @@ public class AdminCaptchaController {
 
         List<CaptchaInfo> captchas = new ArrayList<>();
 
-        // 查询注册用途验证码
         CaptchaInfo registerInfo = queryCaptchaByPurpose(PURPOSE_REGISTER, phoneNumber);
         if (registerInfo != null) {
             captchas.add(registerInfo);
         }
 
-        // 查询重置密码用途验证码
         CaptchaInfo resetInfo = queryCaptchaByPurpose(PURPOSE_RESET, phoneNumber);
         if (resetInfo != null) {
             captchas.add(resetInfo);
@@ -134,9 +130,6 @@ public class AdminCaptchaController {
         return CAPTCHA_KEY_PREFIX + purpose + ":" + phone;
     }
 
-    /**
-     * 验证码用途中文描述映射
-     */
     private String purposeDesc(String purpose) {
         return switch (purpose) {
             case PURPOSE_REGISTER -> "注册";

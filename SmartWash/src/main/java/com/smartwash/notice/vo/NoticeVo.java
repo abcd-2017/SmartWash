@@ -26,7 +26,6 @@ public class NoticeVo {
     /** 深链跳转目标，空表示纯文案公告 */
     private String deepLink;
 
-    /** 当前用户是否已读 */
     private Boolean isRead;
 
     private LocalDateTime createdAt;

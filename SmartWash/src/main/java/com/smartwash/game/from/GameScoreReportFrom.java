@@ -13,7 +13,6 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class GameScoreReportFrom {
 
-    /** 游戏标识 */
     @NotBlank(message = "gameKey 不能为空")
     private String gameKey;
 
