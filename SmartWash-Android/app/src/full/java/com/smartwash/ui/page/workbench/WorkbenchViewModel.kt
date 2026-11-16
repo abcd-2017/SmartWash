@@ -182,7 +182,9 @@ class WorkbenchViewModel @Inject constructor(
         val key = "${tool.entryKey}:$badge"
         if (key in _seenBadges.value) return
         _seenBadges.value = _seenBadges.value + key
-        prefs.saveData(KEY_SEEN_BADGES, _seenBadges.value.joinToString(","))
+        viewModelScope.launch {
+            prefs.saveData(KEY_SEEN_BADGES, _seenBadges.value.joinToString(","))
+        }
     }
 
     /** 关闭公告条：内存集合即时生效 + DataStore 持久化（下次启动仍过滤） */
