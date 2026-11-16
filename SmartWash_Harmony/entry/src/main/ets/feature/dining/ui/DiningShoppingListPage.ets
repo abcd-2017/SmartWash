@@ -31,7 +31,6 @@ import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { getValue, setValue } from '../../../utils/StorageUtil'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
-/** 日志 TAG */
 const TAG: string = 'diningShoppingList'
 
 /** 双视图页签下标 */

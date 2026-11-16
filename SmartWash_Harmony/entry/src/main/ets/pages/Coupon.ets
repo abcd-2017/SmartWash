@@ -69,7 +69,6 @@ struct Coupon {
   }
 
   aboutToDisappear() {
-    // 页面销毁前清理未触发的节流任务（定时器硬规则）
     this.receiveDebouncer.cancel()
   }
 
@@ -93,7 +92,6 @@ struct Coupon {
         showToastSafety(res.message, resString('coupon_load_failed'))
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
       this.isLoading = false
       this.loadFailed = true
       showToastSafety(resString('coupon_2'))
@@ -122,7 +120,6 @@ struct Coupon {
     try {
       vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 不支持触感（模拟器 / 部分设备）时忽略
     }
   }
 
@@ -155,7 +152,6 @@ struct Coupon {
         showToastSafety(res.message, resString('coupon_3'))
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并按失败提示，避免 claimingCouponId 卡死
       showToastSafety(resString('coupon_2'))
     } finally {
       this.claimingCouponId = null
@@ -241,9 +237,6 @@ struct Coupon {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // ========== 页头（公共 PageHeader：22/600 + 48 热区返回，对齐安卓 CouponPage.kt:148） ==========
@@ -310,7 +303,6 @@ struct Coupon {
       }
       .width("100%")
       .height("100%")
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }
@@ -367,7 +359,6 @@ struct AvailableCouponCard {
     try {
       vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 不支持触感（模拟器 / 部分设备）时忽略
     }
   }
 

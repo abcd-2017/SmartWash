@@ -13,7 +13,6 @@ import { ThemeRefresh } from '../view/common/ThemeRefresh'
 import { resColor } from '../utils/ResourceColor'
 import { resString } from '../utils/ResourceString'
 
-// 分页每页条数
 const PAGE_SIZE: number = 10
 
 @Builder
@@ -95,7 +94,6 @@ struct RechargeRecord {
       showToastSafety(res.message, resString('recharge_record_2'))
       return false
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并按失败页返回，避免 isLoadingFirst 卡死永久骨架
       if (page === 1) {
         this.recordList = []
       }
@@ -178,9 +176,6 @@ struct RechargeRecord {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 页头（公共 PageHeader：22/600 标题 + 48dp 返回热区，对齐安卓 PageHeader / recap G4）
@@ -226,7 +221,6 @@ struct RechargeRecord {
       }
       .width("100%")
       .height("100%")
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       }
     }

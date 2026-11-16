@@ -8,12 +8,10 @@ async function getAllCoupons(): Promise<BaseResponse<AllCouponsVo>> {
   return httpUtil.get<AllCouponsVo>(`/web/auth/userCoupon/allCoupons`);
 }
 
-//领取优惠券
 async function receiveCoupon(couponId: number): Promise<BaseResponse<boolean>> {
   return httpUtil.post<boolean>(`/web/auth/userCoupon/receiveCoupon/${couponId}`);
 }
 
-//判断当前订单可以使用的优惠券
 async function getCanUseCoupon(orderId: number): Promise<BaseResponse<Array<UserCouponVo>>> {
   return httpUtil.get<Array<UserCouponVo>>(`/web/auth/userCoupon/available/${orderId}`);
 }

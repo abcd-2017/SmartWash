@@ -6,7 +6,6 @@
 
 import { WuXing } from './GanZhi';
 
-/** 起卦方法 */
 export class DivMethod {
   readonly id: string;
 

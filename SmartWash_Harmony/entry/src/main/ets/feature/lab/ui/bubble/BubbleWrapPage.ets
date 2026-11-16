@@ -29,7 +29,6 @@ class Bubble {
   }
 }
 
-/** 页面文案 */
 class BubbleText {
   static get title(): string { return resString('lab_toy_bubble_wrap') }
   static get poppedFormat(): string { return resString('bubble_text_popped_format') }
@@ -60,7 +59,6 @@ const HIGHLIGHT_SHIFT: number = 0.35
 /** 戳破淡出时长（ms，对齐安卓 DURATION_MICRO_MS） */
 const POP_DURATION_MS: number = 200
 
-/** 泡泡大小档位数 */
 const BUBBLE_TIERS: number = 3
 
 /** 半径系数（小 0.62 / 中 0.81 / 大 1.0） */
@@ -278,9 +276,6 @@ export struct BubbleWrapPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，画布 onReady 重绘与 资源色直读点
-      // 重读新值（静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets；
       // 戳破动画帧循环 startAnimLoop 保持在宿主之外，页面组件本体不在子树内）
       ThemeRefreshV2() {
       Column() {

@@ -135,7 +135,6 @@ function mapStrStr(raw: Object, key: string): Map<string, string> {
   return out
 }
 
-// ========== 内核类型还原 ==========
 
 function wuXingOf(label: string): WuXing {
   const all: WuXing[] = [WuXing.MU, WuXing.HUO, WuXing.TU, WuXing.JIN, WuXing.SHUI]
@@ -218,7 +217,6 @@ function tiYongField(raw: Object, key: string): TiYongRelation {
   return tiYongOf(mustString(child, 'label'))
 }
 
-// ========== 六爻 ==========
 
 function liuYaoLineOf(raw: Object): LiuYaoLine {
   const yaoRaw = get(raw, 'yao')
@@ -265,7 +263,6 @@ function liuYaoHiddenOf(raw: Object): LiuYaoHidden {
   return new LiuYaoHidden(mustString(raw, 'gongName'), seats)
 }
 
-/** 六爻卦盘还原 */
 export function readLiuYaoChart(chartJson: string): LiuYaoChart {
   const raw = decodeChartJson(chartJson)
   const rowsRaw = getArray(raw, 'rows')
@@ -306,9 +303,7 @@ export function readLiuYaoChart(chartJson: string): LiuYaoChart {
     mustString(raw, 'lunarText'))
 }
 
-// ========== 梅花 ==========
 
-/** 梅花卦盘还原 */
 export function readMeiHuaChart(chartJson: string): MeiHuaChart {
   const raw = decodeChartJson(chartJson)
   return new MeiHuaChart(
@@ -330,9 +325,7 @@ export function readMeiHuaChart(chartJson: string): MeiHuaChart {
     getString(raw, 'derivation'))
 }
 
-// ========== 奇门 ==========
 
-/** 奇门遁甲卦盘还原 */
 export function readQiMenChart(chartJson: string): QiMenChart {
   const raw = decodeChartJson(chartJson)
   return new QiMenChart(
@@ -360,7 +353,6 @@ export function readQiMenChart(chartJson: string): QiMenChart {
     mustNumber(raw, 'maGong'))
 }
 
-// ========== 六壬 ==========
 
 function liuRenCourseOf(raw: Object): LiuRenCourse {
   return new LiuRenCourse(
@@ -372,7 +364,6 @@ function liuRenCourseOf(raw: Object): LiuRenCourse {
     mustBoolean(raw, 'xiaZeShang'))
 }
 
-/** 大六壬卦盘还原 */
 export function readLiuRenChart(chartJson: string): LiuRenChart {
   const raw = decodeChartJson(chartJson)
   const coursesRaw = getArray(raw, 'courses')

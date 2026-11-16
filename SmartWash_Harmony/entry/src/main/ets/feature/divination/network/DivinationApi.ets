@@ -35,7 +35,6 @@ import { resString } from '../../../utils/ResourceString'
 // 平台模型目录与 BYOK 设置同属 /web/auth/div 域，已由 #81 在 DivSettingsApi 实现，此处转发复用（勿重复定义）
 export { getDivModels, DivModelVo, DivVendorGroupVo } from './DivSettingsApi'
 
-// ========== 请求体 ==========
 
 /** 追问页聊天单轮（user/assistant 本地聊天流渲染用；追问请求只发当前问题，历史由服务端拼） */
 export interface DivMessage {

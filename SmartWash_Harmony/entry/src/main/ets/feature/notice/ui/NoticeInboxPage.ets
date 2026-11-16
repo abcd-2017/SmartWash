@@ -292,7 +292,6 @@ struct NoticeInboxPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容
       ThemeRefresh() {
       Column() {
         NoticePageHeader({
@@ -396,7 +395,6 @@ struct NoticeInboxPage {
       }
       .width('100%')
       .height('100%')
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }

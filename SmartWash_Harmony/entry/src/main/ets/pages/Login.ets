@@ -74,7 +74,6 @@ struct Login {
       vibrator.startVibration({ type: 'time', duration: error ? HAPTIC_ERROR_MS : HAPTIC_MS },
         { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 忽略不支持的设备（与 AppComponents 一致）
     }
   }
 
@@ -163,9 +162,6 @@ struct Login {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       // 全屏渐变背景
       Column() {

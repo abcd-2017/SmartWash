@@ -40,7 +40,6 @@ import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
-/** 日志 TAG */
 const TAG: string = 'diningOrderCreate'
 
 /** 菜谱分页防御上限（对齐 Android 创建页全量拉取 100 页防御） */

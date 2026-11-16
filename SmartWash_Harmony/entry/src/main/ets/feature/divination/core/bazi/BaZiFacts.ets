@@ -87,7 +87,6 @@ export class BaZiFacts {
     const dayWx = dayGan.wuXing;
     const monthWx = monthZhi.wuXing;
 
-    // ---- 1. 天干透出分 ----
     const tianScore = new Map<WuXing, number>();
     for (const wx of WU_XING_ALL) {
       tianScore.set(wx, 0);
@@ -99,7 +98,6 @@ export class BaZiFacts {
       tianScore.set(g.wuXing, BaZiFacts.valueOf(tianScore, g.wuXing) + 1.0);
     }
 
-    // ---- 2. 地支藏干通根分 ----
     const zhiScore = new Map<WuXing, number>();
     for (const wx of WU_XING_ALL) {
       zhiScore.set(wx, 0);
@@ -112,7 +110,6 @@ export class BaZiFacts {
       }
     }
 
-    // ---- 3. 月令加权 ----
     const factor = new Map<WuXing, number>();
     for (const wx of WU_XING_ALL) {
       const ws = WangShuaiUtil.of(monthWx, wx);
@@ -254,7 +251,6 @@ export class BaZiFacts {
     return null;
   }
 
-  // ---- 用神/忌神候选 ----
   private static yongShen(dayWx: WuXing, strength: Strength,
     scores: Map<WuXing, WuXingScore>): YongShenCandidate[] {
     const result: YongShenCandidate[] = [];

@@ -43,11 +43,9 @@ import { logger } from '../../../../../utils/Logger'
 import { DivChartParam } from '../../DivChartParam'
 import { resString } from '../../../../../utils/ResourceString'
 
-/** 六爻起卦方式 */
 const LIU_YAO_MODE_SHAKE: string = 'shake'
 const LIU_YAO_MODE_LINES: string = 'lines'
 
-/** 梅花起卦方式 */
 const MEI_HUA_MODE_TIME: string = 'time'
 const MEI_HUA_MODE_NUMBERS: string = 'numbers'
 
@@ -240,7 +238,6 @@ struct DivAskPage {
     pathStack.pushPathByName(RouteNames.DIV_CHART, chartParam)
   }
 
-  // ========== 弹窗控制器 ==========
   //
   // 控制器必须由结构体字段持有（与 Setting.ets / DivCastPage.ets 同款）：
   // 在方法内临时 new 的控制器，框架不会把 controller 注入弹窗内容实例，
@@ -281,7 +278,6 @@ struct DivAskPage {
     this.numbersDialogController.open()
   }
 
-  // ========== 辅助 ==========
 
   private methodTail(): string {
     if (this.method === DivMethod.LIU_YAO.id) {

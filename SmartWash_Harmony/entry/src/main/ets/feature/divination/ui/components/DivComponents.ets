@@ -245,7 +245,6 @@ export class DivHaptic {
     try {
       vibrator.startVibration({ type: 'time', duration: duration }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 不支持触感（模拟器 / 部分设备）时忽略
     }
   }
 }
@@ -1023,7 +1022,6 @@ export struct CompassDial {
   }
 
   aboutToDisappear(): void {
-    // 定时器硬规则：页面销毁必须清理（CLAUDE.md 已知坑）
     if (this.timerId !== -1) {
       clearInterval(this.timerId)
       this.timerId = -1

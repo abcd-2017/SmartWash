@@ -24,7 +24,6 @@ import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 import BuildProfile from 'entry/BuildProfile'
 
-/** 日志 TAG */
 const TAG: string = 'diningOrderShare'
 
 /** 二维码显示尺寸（vp） */

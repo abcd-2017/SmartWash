@@ -12,14 +12,12 @@ function fmt(template: string, value: string): string {
 }
 
 export class DiningText {
-  // 通用
   static get dining_action_retry(): string { return resString('dining_action_retry') }
   static get dining_load_more(): string { return resString('dining_load_more') }
   static get dining_load_all_loaded(): string { return resString('dining_load_all_loaded') }
   static get dining_copy_failed(): string { return resString('dining_copy_failed') }
   static get dining_selected_none(): string { return resString('dining_selected_none') }
 
-  // 订单列表（域首页）
   static get dining_title(): string { return resString('dining_title') }
   static get dining_order_section_created(): string { return resString('dining_order_section_created') }
   static get dining_order_section_joined(): string { return resString('dining_order_section_joined') }
@@ -31,7 +29,6 @@ export class DiningText {
   static get dining_order_list_empty(): string { return resString('dining_order_list_empty') }
   static get dining_order_list_load_failed(): string { return resString('dining_order_list_load_failed') }
 
-  // 创建订单
   static get dining_order_create_title(): string { return resString('dining_order_create_title') }
   static get dining_order_create_title_label(): string { return resString('dining_order_create_title_label') }
   static get dining_order_create_title_hint(): string { return resString('dining_order_create_title_hint') }
@@ -62,7 +59,6 @@ export class DiningText {
     return fmt(resString('dining_recipe_ingredients_count_format'), `${count}`)
   }
 
-  // 分享视图
   static get dining_order_share_title(): string { return resString('dining_order_share_title') }
   static get dining_order_share_qr_section(): string { return resString('dining_order_share_qr_section') }
   static get dining_order_share_qr_hint(): string { return resString('dining_order_share_qr_hint') }
@@ -86,7 +82,6 @@ export class DiningText {
     return fmt(resString('dining_order_share_member_count_format'), `${count}`)
   }
 
-  // 点单页
   static get dining_order_detail_title(): string { return resString('dining_order_detail_title') }
   static get dining_order_detail_share(): string { return resString('dining_order_detail_share') }
   static get dining_order_detail_uncategorized(): string { return resString('dining_order_detail_uncategorized') }
@@ -121,7 +116,6 @@ export class DiningText {
     return fmt(resString('dining_order_detail_selected_count_format'), `${count}`)
   }
 
-  // 购买清单
   static get dining_shopping_list_title(): string { return resString('dining_shopping_list_title') }
   static get dining_shopping_list_tab_ingredients(): string { return resString('dining_shopping_list_tab_ingredients') }
   static get dining_shopping_list_tab_per_recipe(): string { return resString('dining_shopping_list_tab_per_recipe') }
@@ -143,7 +137,6 @@ export class DiningText {
     return fmt(resString('dining_shopping_list_selector_note_format'), note)
   }
 
-  // 加入入口
   static get dining_order_join_title(): string { return resString('dining_order_join_title') }
   static get dining_order_join_unknown_title(): string { return resString('dining_order_join_unknown_title') }
   static get dining_order_join_action(): string { return resString('dining_order_join_action') }
@@ -163,7 +156,6 @@ export class DiningText {
     return fmt(resString('dining_order_join_recipe_count_format'), `${count}`)
   }
 
-  // 菜谱三页
   static get dining_recipe_library_title(): string { return resString('dining_recipe_library_title') }
   static get dining_recipe_detail_title(): string { return resString('dining_recipe_detail_title') }
   static get dining_recipe_create_title(): string { return resString('dining_recipe_create_title') }

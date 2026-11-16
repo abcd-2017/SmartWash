@@ -22,9 +22,6 @@ export function ComingSoonBuilder() {
 struct ComingSoon {
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         PageHeader({ title: resString('coming_soon_1') })
@@ -38,7 +35,6 @@ struct ComingSoon {
       }
       .width("100%")
       .height("100%")
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }

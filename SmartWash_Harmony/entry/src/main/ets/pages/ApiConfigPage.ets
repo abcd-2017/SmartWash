@@ -131,7 +131,6 @@ struct ApiConfigPage {
     try {
       vibrator.startVibration({ type: "time", duration: 30 }, { id: 0, usage: "unknown" })
     } catch (err) {
-      // 忽略不支持的设备
     }
   }
 
@@ -521,7 +520,6 @@ struct ApiConfigPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 公共页头 — 22/600 标题 + 48dp 返回热区（对齐安卓 PageHeader）
@@ -800,7 +798,6 @@ struct ApiConfigPage {
               .width('100%')
               .margin({ top: DesignDimens.SPACE_XS })
 
-            // ---- 测试连接即时反馈 ----
             if (this.testFeedback !== '') {
               Row({ space: DesignDimens.SPACE_XXS }) {
                 SymbolGlyph(this.testFeedbackOk
@@ -818,7 +815,6 @@ struct ApiConfigPage {
               .margin({ top: DesignDimens.SPACE_MD })
             }
 
-            // ---- 操作按钮：测试连接 + 保存 ----
             Row({ space: DesignDimens.SPACE_SM }) {
               AppButton({
                 text: resString('api_config_test'),

@@ -8,7 +8,6 @@
 
 import { curves } from '@kit.ArkUI'
 
-// ========== 颜色常量 ==========
 
 /**
  * 将 ARGB 数值色（0xAARRGGBB）转为 ArkUI 通用资源色可接受的 rgba() 字符串。
@@ -23,7 +22,6 @@ export function toColorString(color: number): string {
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`
 }
 
-// ========== 设计 Token ==========
 
 /**
  * 清氧设计系统尺寸常量（对齐 Android AppDimens）
@@ -32,7 +30,6 @@ export function toColorString(color: number): string {
 export class DesignDimens {
   // 页面边距（规范 §2.3）
   static readonly PAGE_PADDING: number = 24
-  // 卡片体系
   static readonly CARD_PADDING: number = 20
   static readonly CARD_SPACING: number = 16
   static readonly SECTION_SPACING: number = 32
@@ -42,7 +39,6 @@ export class DesignDimens {
   static readonly CARD_RADIUS: number = 16  // 卡片（唯一值，= Android radiusLg；Hero 卡同档，见 U-110）
   static readonly RADIUS_XL: number = 20    // 大容器（= Android radiusXl；Hero 卡不用此档，收敛到 CARD_RADIUS 16）
   static readonly RADIUS_FULL: number = 999 // 头像、胶囊
-  // 按钮 / 输入
   static readonly BUTTON_RADIUS: number = 14
   static readonly INPUT_RADIUS: number = 14
   static readonly ICON_CONTAINER_RADIUS: number = 12
@@ -59,7 +55,6 @@ export class DesignDimens {
   static readonly SPACE_XXL: number = 32
 }
 
-// ========== 海拔层级 (Elevation Levels) ==========
 
 /**
  * 清氧设计系统海拔层级常量（对齐 Android AppElevation：0/1/3/6/12 + 浮层档 10）
@@ -101,7 +96,6 @@ export class MotionTiming {
   static readonly ENTER: AnimateParam = { duration: 220, curve: curves.springMotion(0.4, 1) }
 }
 
-// ========== 字体大小常量 ==========
 
 /**
  * 清氧设计系统字阶（DESIGN-SPEC v0.4：收敛为 8 档，weight 仅 400/500/600/700）
@@ -123,7 +117,6 @@ export class DesignFontSize {
   static readonly PAGE_HEADER: number = 18
   static readonly CARD_TITLE: number = 18
   static readonly SECTION_TITLE: number = 18
-  /** bodyLarge — 正文 */
   static readonly BODY: number = 16
   /** body — 列表行主文案（§3.4 特许，配 FontWeight.MEDIUM） */
   static readonly BODY_SMALL: number = 14
@@ -136,7 +129,6 @@ export class DesignFontSize {
   // 按钮文字字距已废（U-116：DESIGN-SPEC v0.4 字阶不再设字距，对齐安卓 AppButton）
 }
 
-// ========== 字体粗细常量 ==========
 
 /**
  * 清氧设计系统字体粗细常量（对齐 Android：只允许 400/500/600/700）
@@ -148,7 +140,6 @@ export class DesignFontWeight {
   static readonly NORMAL: number = 400
 }
 
-// ========== 字体特征常量 ==========
 
 /**
  * 清氧设计系统字体特征常量（DESIGN.md「数字等宽规则 tnum Rule」）。
@@ -156,6 +147,5 @@ export class DesignFontWeight {
  * ArkUI `Text.fontFeature(value)` 自 API 12 起支持（SDK 5.0.5(17) 满足），取值同 OpenType feature tag。
  */
 export class DesignFontFeature {
-  /** tabular numbers — 数字等宽 */
   static readonly TNUM: string = 'tnum'
 }

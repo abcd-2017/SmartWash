@@ -10,7 +10,6 @@
 
 /** 五行（木火土金水），含生克关系推演 */
 export class WuXing {
-  /** 五行名（木/火/土/金/水） */
   readonly label: string;
 
   private constructor(label: string) {
@@ -154,7 +153,6 @@ export class TianGan {
     TianGan.JI, TianGan.GENG, TianGan.XIN, TianGan.REN, TianGan.GUI,
   ];
 
-  /** 阳干 / 阴干 */
   get isYang(): boolean {
     return this.ordinal % 2 === 0;
   }
@@ -295,7 +293,6 @@ export class GanZhi {
     return [DiZhi.ALL[(startZhi + 10) % 12], DiZhi.ALL[(startZhi + 11) % 12]];
   }
 
-  /** 按六十甲子序构造 */
   static fromJiaZiIndex(index: number): GanZhi {
     const n = ((index % 60) + 60) % 60;
     return new GanZhi(TianGan.ALL[n % 10], DiZhi.ALL[n % 12]);

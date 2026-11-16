@@ -8,7 +8,6 @@
 import { DiningOrderBriefVo } from '../../network/vo/DiningVo'
 import { diningShoppingListFromJSON, DiningShoppingListSnapshot } from '../../network/vo/DiningVo'
 
-// ========== 点单订单状态 ==========
 
 /** 点单订单状态全集（后端 dining_order.status 白名单；文案见 DiningText） */
 export enum DiningOrderStatus {
@@ -29,7 +28,6 @@ export function diningOrderStatusFromCode(code: string | null): DiningOrderStatu
   return DiningOrderStatus.FINISHED
 }
 
-// ========== 加入二维码内容构造 ==========
 
 /** 二维码路径前缀（与深链 host "dining" 对齐；端内扫码/解析侧按此 path 识别加入链路） */
 export const DINING_JOIN_PATH_PREFIX: string = '/dining/join/'
@@ -250,7 +248,6 @@ export function decideDiningJoinEntry(brief: DiningOrderBriefVo | null): DiningJ
   return DiningJoinEntryDecision.ORDER_FINISHED
 }
 
-// ========== 创建订单表单校验 ==========
 
 /** 标题长度上限（对齐后端 @Size(max = 64)） */
 export const DINING_TITLE_MAX_LENGTH: number = 64
@@ -315,7 +312,6 @@ function invalidDiningOrderForm(error: DiningOrderFormError): DiningOrderFormVal
   return { valid: false, error: error, normalizedTitle: '', normalizedRecipeIds: [] }
 }
 
-// ========== 新增菜谱表单校验 ==========
 
 /** 菜名长度上限（对齐后端 @Size(max = 64)） */
 export const DINING_RECIPE_NAME_MAX_LENGTH: number = 64
@@ -388,7 +384,6 @@ export function validateDiningRecipeForm(name: string, ingredients: Array<string
   }
 }
 
-// ========== 手机号脱敏与「我的选菜」识别 ==========
 
 /**
  * 手机号脱敏（镜像后端 DiningOrderServiceImpl.maskPhone 规则，纯函数便于单测）：
@@ -513,7 +508,6 @@ function categoryNameOf(categories: Array<DiningCategoryName>, categoryId: numbe
   return fallback
 }
 
-// ========== 购买清单快照解析 ==========
 
 /** 空快照（解析失败兜底；展示层据此给空态） */
 export function emptyDiningShoppingList(): DiningShoppingListSnapshot {
@@ -537,7 +531,6 @@ export function parseDiningShoppingList(json: string | null): DiningShoppingList
   }
 }
 
-// ========== 购买清单结果页模型映射 ==========
 
 /** 选菜人展示条目：谁选的（脱敏手机号）+ 备注 + 是否当前用户 */
 export interface DiningSelectorShopping {
@@ -632,7 +625,6 @@ export function buildShoppingListText(orderTitle: string, result: DiningShopping
   return lines.join('\n')
 }
 
-// ========== 展示辅助 ==========
 
 /**
  * ISO 时间（yyyy-MM-dd'T'HH:mm:ss / yyyy-MM-dd HH:mm:ss 均兼容）→ 展示串：

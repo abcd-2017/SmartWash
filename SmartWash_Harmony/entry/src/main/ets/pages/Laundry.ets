@@ -124,7 +124,6 @@ struct Laundry {
         this.loadFailed = true
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 pageLoading 卡死永久骨架
       showToastSafety(resString('laundry_3'))
       this.loadFailed = true
     } finally {
@@ -137,7 +136,6 @@ struct Laundry {
     try {
       vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 不支持触感（模拟器 / 部分设备）时忽略
     }
   }
 
@@ -286,9 +284,6 @@ struct Laundry {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack({ alignContent: Alignment.Bottom }) {
         Scroll() {

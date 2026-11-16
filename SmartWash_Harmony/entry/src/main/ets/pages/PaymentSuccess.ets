@@ -97,7 +97,6 @@ struct PaymentSuccess {
         this.loadFailed = true
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
       this.loadFailed = true
       showToastSafety(resString('payment_success_2'))
     } finally {
@@ -170,9 +169,6 @@ struct PaymentSuccess {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack() {
         Column() {
@@ -314,7 +310,6 @@ struct PaymentSuccess {
 
         }
         .width("100%")
-        // 沉浸式：内容避让状态栏 + 底部安全区（背景延伸）
         .padding({
           left: DesignDimens.PAGE_PADDING,
           right: DesignDimens.PAGE_PADDING,
@@ -370,7 +365,6 @@ struct PaymentSuccess {
         .height("100%")
         .padding({ top: safeTopVp() })
 
-        // 加载态
         if (this.isLoading) {
           // 加载态（对齐安卓 LoadingState：骨架屏，§3.6 禁转圈）；遮罩淡入淡出近似 Crossfade（recap §4-I1）
           LoadingState()

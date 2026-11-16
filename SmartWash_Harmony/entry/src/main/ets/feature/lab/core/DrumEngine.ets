@@ -17,13 +17,10 @@ export const DRUM_STEP_COUNT: number = 16
 /** 声部数量（8 种鼓声） */
 export const DRUM_VOICE_COUNT: number = 8
 
-/** BPM 下限 */
 export const DRUM_MIN_BPM: number = 60
 
-/** BPM 上限 */
 export const DRUM_MAX_BPM: number = 180
 
-/** 默认 BPM */
 export const DRUM_DEFAULT_BPM: number = 120
 
 /** 鼓声部枚举（顺序即网格行序，与合成器 voice 表一致） */
@@ -41,7 +38,6 @@ export enum DrumVoice {
 /** 各声部时长（秒） */
 const VOICE_DURATION_SEC: number[] = [0.28, 0.22, 0.09, 0.28, 0.32, 0.28, 0.06, 0.95]
 
-/** 采样率 */
 const SAMPLE_RATE: number = 44100
 
 /** 调度 lookahead（ms） */
@@ -214,7 +210,6 @@ export class DrumEngine {
     this.voices = []
   }
 
-  // ==================== 调度内核 ====================
 
   private schedulerTick(): void {
     if (!this.playingValue) {
@@ -310,7 +305,6 @@ export class DrumEngine {
     return 60000 / this.bpmValue / 4
   }
 
-  // ==================== 合成 ====================
 
   private ensureVoices(): void {
     if (this.voices.length > 0) {

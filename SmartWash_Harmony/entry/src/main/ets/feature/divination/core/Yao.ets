@@ -91,7 +91,6 @@ export class CoinTosser {
     return this.randomSource.nextBoolean();
   }
 
-  /** 一掷三币得爻值 */
   tossLine(): YaoValue {
     let backs = 0;
     for (let i = 0; i < 3; i++) {

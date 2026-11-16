@@ -12,7 +12,6 @@ import { resString } from '../../utils/ResourceString'
 function emptyContent() {
 }
 
-// ========== PageHeader 页面头部 ==========
 
 @ComponentV2
 export struct PageHeader {
@@ -121,7 +120,6 @@ export struct CircleIconBox {
   }
 }
 
-// ========== AppCard 统一卡片容器 ==========
 
 /**
  * 统一卡片容器 — DESIGN-SPEC v0.4 §3.1 唯一卡片画法：
@@ -222,7 +220,6 @@ export struct AppButton {
     try {
       vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 忽略不支持的设备
     }
     this.click()
   }
@@ -395,7 +392,6 @@ export struct AppInfoDialog {
   }
 }
 
-// ========== AppTabBar 标签栏 ==========
 
 /**
  * 标签栏（下划线指示条形态，对齐安卓 AppTabBar）
@@ -490,7 +486,6 @@ export struct AppPillTabRow {
             try {
               vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
             } catch (err) {
-              // 忽略不支持的设备
             }
             this.tabSelected(index)
           })
@@ -738,7 +733,6 @@ export struct DrumMark {
       }
     }
 
-    // 内环
     const innerRing: number | null = this.innerRingTint
     if (innerRing !== null) {
       this.ctx.lineWidth = 2 * scaleFactor
@@ -779,7 +773,6 @@ export struct DrumMark {
   }
 }
 
-// ========== EmptyState 空状态占位 ==========
 
 /**
  * 空状态占位（规范 §3.6）— 滚筒圆母题（DrumMark）静止态 + 一句引导文案 + 可选行动按钮。
@@ -842,7 +835,6 @@ export struct EmptyState {
   }
 }
 
-// ========== AppConfirmDialog 确认弹窗 ==========
 
 /**
  * 确认弹窗

@@ -18,7 +18,6 @@ import { ThemeRefresh } from '../view/common/ThemeRefresh'
 import { resColor } from '../utils/ResourceColor'
 import { resString } from '../utils/ResourceString'
 
-// 分页每页条数
 const PAGE_SIZE: number = 10
 
 @Builder
@@ -107,7 +106,6 @@ struct PickUp {
     try {
       vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 忽略不支持的设备
     }
     const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, code)
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
@@ -324,9 +322,6 @@ struct PickUp {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 页头（recap G4：22/600 + 48 返回热区，复用公共 PageHeader）
@@ -408,7 +403,6 @@ struct PickUp {
       }
       .width("100%")
       .height("100%")
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }

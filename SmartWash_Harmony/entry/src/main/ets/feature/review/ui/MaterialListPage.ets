@@ -53,7 +53,6 @@ export function MaterialListBuilder() {
 
 @Component
 struct MaterialListPage {
-  // ---------- 资料列表 ----------
   @State materials: Array<MaterialVo> = []
   @State total: number = 0
   @State isLoadingFirst: boolean = true
@@ -61,7 +60,6 @@ struct MaterialListPage {
   @State isRefreshing: boolean = false
   @State isLoadingMore: boolean = false
   @State loadMoreError: boolean = false
-  // ---------- 展开的卡片区 ----------
   @State expandedMaterialId: number = -1
   @State cards: Array<ReviewCardVo> = []
   @State cardsLoading: boolean = false
@@ -70,13 +68,11 @@ struct MaterialListPage {
   @State cardsHasMore: boolean = false
   @State cardsLoadingMore: boolean = false
   @State cardsAppendError: boolean = false
-  // ---------- 建资料内联表单 ----------
   @State createVisible: boolean = false
   @State formTitle: string = ''
   @State formRawText: string = ''
   @State creating: boolean = false
   @State createError: string = ''
-  // ---------- 建卡弹窗 ----------
   private dialogController: CustomDialogController | null = null
 
   async aboutToAppear(): Promise<void> {
@@ -336,7 +332,6 @@ struct MaterialListPage {
     }
   }
 
-  // ==================== 局部Builder ====================
 
   /** 建资料内联表单：标题（必填 ≤100）+ 原文粘贴（可选 multiline）；错误仅提交后内联展示 */
   @Builder
@@ -475,9 +470,6 @@ struct MaterialListPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         ReviewPageHeader({
@@ -565,7 +557,6 @@ struct MaterialListPage {
       }
       .width('100%')
       .height('100%')
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }

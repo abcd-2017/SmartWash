@@ -31,7 +31,6 @@ function emptyContent() {
 /** 六爻行显示顺序（自上爻到初爻） */
 const DISPLAY_INDEXES: number[] = [5, 4, 3, 2, 1, 0]
 
-/** 三传标签 */
 function CHUAN_LABELS(): string[] { return [resString('div_panels_1'), resString('div_panels_2'), resString('div_panels_3')] }
 
 /** 九宫布局（巽四 离九 坤二 / 震三 中五 兑七 / 艮八 坎一 乾六） */
@@ -325,7 +324,6 @@ export struct DivMiniCard {
   }
 }
 
-// ========== 梅花本互变三卡 ==========
 
 @ComponentV2
 export struct MeiHuaTripleCards {
@@ -440,7 +438,6 @@ export struct MeiHuaTripleCards {
   }
 }
 
-// ========== 奇门九宫格 ==========
 
 @ComponentV2
 export struct QimenGrid {
@@ -716,7 +713,6 @@ export struct LiurenPan {
   }
 }
 
-// ========== 六壬四课 / 三传 ==========
 
 @ComponentV2
 export struct LiurenCourses {

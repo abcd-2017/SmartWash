@@ -101,7 +101,6 @@ export interface NoticeTimeParts {
   year: number
 }
 
-/** 两位补零 */
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : `${n}`
 }

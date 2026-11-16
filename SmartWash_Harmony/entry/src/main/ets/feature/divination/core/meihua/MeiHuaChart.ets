@@ -55,9 +55,7 @@ export class MeiHuaChart {
   readonly bianName: string;
   /** 动爻 1..6 */
   readonly movingYao: number;
-  /** 上卦 */
   readonly upper: Trigram;
-  /** 下卦 */
   readonly lower: Trigram;
   /** 体卦（静卦） */
   readonly ti: Trigram;

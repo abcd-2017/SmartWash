@@ -362,7 +362,6 @@ export function toolboxClicksFormat(clickCount: number): string {
   return `${clickCount} ${ToolboxText.toolbox_clicks_unit}`
 }
 
-// ==================== 六接口封装 ====================
 
 /**
  * 创建短码。target 必填（http/https）；expireAt 不传 = 永久。

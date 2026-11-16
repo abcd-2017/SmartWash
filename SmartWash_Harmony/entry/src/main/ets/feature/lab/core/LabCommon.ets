@@ -40,7 +40,6 @@ export class LabHaptic {
     try {
       vibrator.startVibration({ type: 'time', duration: duration }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 不支持触感（模拟器 / 部分设备）时忽略
     }
   }
 }

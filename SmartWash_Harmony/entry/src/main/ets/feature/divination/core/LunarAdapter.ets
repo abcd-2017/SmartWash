@@ -44,19 +44,16 @@ export class LunarInfo {
 }
 
 export class LunarAdapter {
-  /** 由公历年月日时分秒取历法要素 */
   static fromYmdHms(year: number, month: number, day: number,
     hour: number, minute: number, second: number): LunarInfo {
     return LunarAdapter.of(Solar.fromYmdHms(year, month, day, hour, minute, second));
   }
 
-  /** 由 Solar 取历法要素 */
   static of(solar: Solar): LunarInfo {
     const lunar: Lunar = solar.getLunar();
     return LunarAdapter.ofLunar(lunar);
   }
 
-  /** 由 Lunar 取历法要素 */
   static ofLunar(lunar: Lunar): LunarInfo {
     const bazi = lunar.getBaZi();
     const siZhu = new SiZhu(

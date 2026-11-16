@@ -75,7 +75,6 @@ const DI_ZHI_HAI: Record<string, DiZhi> = {
   '酉': DiZhi.XU, '戌': DiZhi.YOU,
 };
 
-/** 关系类型 */
 export class RelType {
   readonly label: string;
 
@@ -93,7 +92,6 @@ export class RelType {
   static readonly HAI: RelType = new RelType('六害');
 }
 
-/** 一条支（或干）间的关系 */
 export class Relation {
   readonly type: RelType;
   /** 参与的天干（天干五合） */
@@ -108,7 +106,6 @@ export class Relation {
   }
 }
 
-/** 干支关系引擎 */
 export class RelationEngine {
   /** 天干五合：给定三四个天干，找相合对 */
   static tianGanHe(gans: TianGan[]): Relation[] {
@@ -139,7 +136,6 @@ export class RelationEngine {
 
     const contains = (list: DiZhi[], z: DiZhi): boolean => list.indexOf(z) >= 0;
 
-    // 六合
     for (const key of Object.keys(DI_ZHI_LIU_HE)) {
       const a = DiZhi.fromChar(key.charAt(0));
       const b = DI_ZHI_LIU_HE[key];
@@ -147,21 +143,18 @@ export class RelationEngine {
         add(new Relation(RelType.DI_ZHI_LIU_HE, [], [a, b]));
       }
     }
-    // 三合局
     for (const set of DI_ZHI_SAN_HE) {
       const contained = zhis.filter((z) => contains(set, z));
       if (contained.length >= 2) {
         add(new Relation(RelType.DI_ZHI_SAN_HE, [], RelationEngine.sortByOrdinal(contained)));
       }
     }
-    // 三会方
     for (const set of DI_ZHI_SAN_HUI) {
       const contained = zhis.filter((z) => contains(set, z));
       if (contained.length >= 2) {
         add(new Relation(RelType.DI_ZHI_SAN_HUI, [], RelationEngine.sortByOrdinal(contained)));
       }
     }
-    // 六冲
     for (const key of Object.keys(DI_ZHI_CHONG)) {
       const a = DiZhi.fromChar(key.charAt(0));
       const b = DI_ZHI_CHONG[key];
@@ -169,14 +162,12 @@ export class RelationEngine {
         add(new Relation(RelType.CHONG, [], [a, b]));
       }
     }
-    // 三刑
     for (const set of DI_ZHI_XING) {
       const contained = zhis.filter((z) => contains(set, z));
       if (contained.length >= 2) {
         add(new Relation(RelType.XING, [], RelationEngine.sortByOrdinal(contained)));
       }
     }
-    // 自刑
     for (const z of DI_ZHI_ZI_XING) {
       let count = 0;
       for (const item of zhis) {

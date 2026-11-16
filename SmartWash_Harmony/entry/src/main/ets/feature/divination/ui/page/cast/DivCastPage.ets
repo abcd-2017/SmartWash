@@ -133,7 +133,6 @@ struct DivCastPage {
   }
 
   aboutToDisappear(): void {
-    // 定时器硬规则：页面销毁必须清理
     if (this.coinTimerId !== -1) {
       clearInterval(this.coinTimerId)
       this.coinTimerId = -1
@@ -418,7 +417,6 @@ struct DivCastPage {
     ctx.fillText(text, cx - metrics.width / 2, cy + metrics.actualBoundingBoxAscent / 2)
   }
 
-  // ========== 子午线节点 ==========
 
   /**
    * 子午线单节点（对齐安卓 CoinAndMeridian.kt MeridianNode，含 2026-11-05 修复⑥）：

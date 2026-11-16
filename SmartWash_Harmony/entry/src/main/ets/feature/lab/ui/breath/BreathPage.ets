@@ -14,7 +14,6 @@ import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
 import { resColor } from '../../../../utils/ResourceColor'
 import { resString } from '../../../../utils/ResourceString'
 
-/** 呼吸相位类型 */
 enum BreathPhaseType {
   INHALE,
   HOLD,
@@ -56,7 +55,6 @@ function phasesOf(mode: BreathMode): BreathPhase[] {
   ]
 }
 
-/** 页面文案 */
 class BreathText {
   static get title(): string { return resString('lab_toy_breath') }
   static get modeSleep(): string { return resString('lab_breath_mode_sleep') }
@@ -400,9 +398,6 @@ export struct BreathPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，画布 onReady 重绘与 资源色直读点
-      // 重读新值（静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets；
       // 相位状态机节拍器（setInterval onTick）保持在宿主之外，页面组件本体不在子树内）
       ThemeRefreshV2() {
       Column() {

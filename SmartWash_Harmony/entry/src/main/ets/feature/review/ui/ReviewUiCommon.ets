@@ -27,7 +27,6 @@ import { logger } from '../../../utils/Logger'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { resColor } from '../../../utils/ResourceColor'
 
-// ==================== 静态标签 chip ====================
 
 /** 静态标签 chip —— 胶囊（radiusFull）+ caption 12/500 + 行高 16，纵向内边距 4 对齐安卓 chip 高 24（跨端矩阵 #14/#15） */
 @ComponentV2
@@ -108,7 +107,6 @@ export struct CardStateChip {
   }
 }
 
-// ==================== 评分按钮 / 进度条 ====================
 
 /** 评分按钮禁用态透明度（规范 §3.1：禁用 = 内容 38% 透明度，M3 口径） */
 const RATING_DISABLED_ALPHA: number = 0.38
@@ -160,7 +158,6 @@ export function reviewRatingLabel(rating: ReviewRating): string {
   }
 }
 
-/** 评分档 → 中文语义文案 */
 export function reviewRatingSemanticLabel(rating: ReviewRating): string {
   switch (rating) {
     case ReviewRating.AGAIN:
@@ -248,7 +245,6 @@ export struct StudyProgressBar {
   }
 }
 
-// ==================== 页面头 / 错误态 ====================
 
 /**
  * 页面头（对齐安卓 PageHeader）：返回箭头 48 热区 + 标题 22/600 + 可选右侧文字动作。
@@ -340,7 +336,6 @@ export struct ReviewErrorState {
   }
 }
 
-// ==================== 建卡弹窗 ====================
 
 /** 建卡提交结果（页面回调返回；success=false 时 errorMessage 由弹窗内联展示） */
 export interface ReviewCardSubmitResult {

@@ -89,7 +89,6 @@ export function isReminderCancelStatus(status: string | null | undefined): boole
     || status === OrderStatusEnum.REFUNDED
 }
 
-/** 提醒动作决策结果 */
 export enum ReminderAction {
   /** 无动作（中间态 / 已按当前口径处理过） */
   NONE = 0,

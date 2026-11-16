@@ -158,7 +158,6 @@ struct SubscriptionDetailPage {
     }
   }
 
-  // ---------- 使用打卡 ----------
 
   private async resetUsages(): Promise<void> {
     this.usageAppendError = false
@@ -202,7 +201,6 @@ struct SubscriptionDetailPage {
     }
   }
 
-  // ---------- 状态机操作 ----------
 
   /** 状态流转（pause/resume/cancel/finish）：成功后 toast + bump 变更信号（tick 驱动本页/列表刷新） */
   private async doTransition(action: string): Promise<void> {
@@ -311,7 +309,6 @@ struct SubscriptionDetailPage {
     }
   }
 
-  // ---------- 弹窗 ----------
   // 控制器必须由结构体字段持有（与 Setting.ets / DivCastPage.ets 同款）：
   // 在方法内临时 new 的控制器，框架不会把 controller 注入弹窗内容实例，
   // 弹窗内 this.controller 为 undefined，点击「确认」即抛
@@ -438,7 +435,6 @@ struct SubscriptionDetailPage {
     }
   }
 
-  // ---------- 派生 ----------
 
   private isTerminal(): boolean {
     return this.detail !== null &&
@@ -471,9 +467,6 @@ struct SubscriptionDetailPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         SubscriptionPageHeader({
@@ -516,7 +509,6 @@ struct SubscriptionDetailPage {
           // 整页 List 虚拟化（DESIGN-SPEC §8，audit-15 #11）：各卡/打卡行拆 ListItem，
           // 打卡行铺平为独立项（key=usageId）承接复用；触底加载复用既有 PagingController
           List({ space: DesignDimens.CARD_SPACING }) {
-              // ---------- 续费信息卡 ----------
               ListItem() {
               Column() {
                 Row() {
@@ -664,7 +656,6 @@ label: SubscriptionText.subscription_detail_note,
                 }
               }
 
-              // ---------- 近 90 天使用统计 ----------
               ListItem() {
               Column() {
                 SubscriptionSectionTitle({ text: SubscriptionText.subscription_stats_title })
@@ -1026,7 +1017,6 @@ label: SubscriptionText.subscription_detail_note,
       }
       .width('100%')
       .height('100%')
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }

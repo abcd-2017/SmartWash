@@ -8,7 +8,6 @@ export class Debouncer {
   private timerId: number = -1
   private lastThrottleAt: number = 0
 
-  /** 是否有待触发的防抖任务 */
   isPending(): boolean {
     return this.timerId !== -1
   }

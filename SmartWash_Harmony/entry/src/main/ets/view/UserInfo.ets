@@ -30,7 +30,7 @@ function maskPhone(phone: string | null): string {
 // ========== 头像滚动收缩停靠（scroll-driven docking）几何常量（对齐安卓 UserInfoPage.kt） ==========
 const TOP_BAR_HEIGHT: number = 72          // 顶栏高（标题 + 设置按钮）
 const AVATAR_ROW_HEIGHT: number = 80      // 头像行高：8 顶距 + 56 头像 + 16 底距
-const AVATAR_SIZE: number = 56            // 头像尺寸
+const AVATAR_SIZE: number = 56
 const DOCK_DISTANCE_BASE: number = 68     // 停靠行程基准（对齐顶栏内容中心 40vp）
 const TITLE_SHIFT: number = 40            // 标题右移让位量
 const NAME_SHIFT_BASE: number = 68        // 名字位移基准：左缘 = 头像右缘 + 12vp
@@ -41,7 +41,6 @@ const AVATAR_DOCK_SHIFT: number = 14      // 停靠时头像水平左移量
 export struct UserInfo {
   private scroller: Scroller = new Scroller()
   @State userInfo: UserInfoVo | null = null
-  // 首载失败标记：网络异常/401 拒绝时 promise 会 throw，兜住后进错误态，避免「我的」tab 永久骨架
   @State loadFailed: boolean = false
   // 自增 tick（问题3）：布尔标记重复 setOrCreate(true) 不产生变更事件，@Watch 不触发
   @StorageLink(USER_INFO_TICK_KEY) @Watch("onUserInfoChange") userInfoTick: number = 0
@@ -113,7 +112,6 @@ export struct UserInfo {
         showToastSafety(res.message, resString('user_info_1'))
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：置失败态由 UI 出重试，不再让骨架常驻
       this.loadFailed = true
     }
   }
@@ -143,7 +141,6 @@ export struct UserInfo {
     }
   }
 
-  // 选择图片并上传头像
   async selectAndUploadAvatar() {
     try {
       let picker = new photoAccessHelper.PhotoViewPicker()
@@ -178,7 +175,6 @@ export struct UserInfo {
     }
   }
 
-  //跳转到订单列表页
   jumpToOrderList(index: number) {
     pathStack.pushPath({
       name: RouteNames.ORDER_LIST, param: index

@@ -17,7 +17,6 @@ import { httpUtil } from '../../network/HttpUtil'
 import { FormData, Type } from '@ohos/axios'
 import { resString } from '../../utils/ResourceString'
 
-// ==================== 常量 ====================
 
 /** 有效期预设（分钟），对齐安卓 DeliveryCreateViewModel.DURATION_PRESETS 与契约 1-120、缺省 30 */
 export const DELIVERY_DURATION_PRESETS: number[] = [10, 30, 60, 120]
@@ -40,7 +39,6 @@ export const DELIVERY_POLL_INTERVAL_MS: number = 2500
 /** 连续失败指数退避封顶（对齐安卓 MAX_POLL_INTERVAL_MS） */
 export const DELIVERY_MAX_POLL_INTERVAL_MS: number = 10000
 
-// ==================== 业务码 ====================
 
 export const DELIVERY_BIZ_FAIL: number = 201
 export const DELIVERY_BIZ_WRONG_PASSWORD: number = 403
@@ -48,7 +46,6 @@ export const DELIVERY_BIZ_GONE: number = 404
 export const DELIVERY_BIZ_CONFLICT: number = 409
 export const DELIVERY_BIZ_TOO_LARGE: number = 413
 
-// ==================== 枚举 ====================
 
 /** 发布方向：1 手机→电脑（owner 发布）、2 电脑→手机（对端发布）；未知码防御为对端发布 */
 export enum DeliveryDirection {
@@ -63,7 +60,6 @@ export enum DeliveryItemKind {
   FILE = 3
 }
 
-// ==================== VO / 表单 ====================
 
 /** 投递会话视图对象（会话元信息不含 password_hash，仅回是否已设密） */
 export interface DeliverySessionVo {
@@ -328,7 +324,6 @@ export function clicksFormat(clickCount: number): string {
   return `${clickCount} 次进入`
 }
 
-// ==================== 接口封装 ====================
 
 /**
  * 创建投递会话。durationMinutes 1-120（不传 = 后端缺省 30），password 可选 4-64 位

@@ -32,7 +32,6 @@ class FluidSplatPoint {
 }
 
 export class FluidSimulator {
-  // ---------- 网格规格 ----------
   private simCols: number = 0
   private simRows: number = 0
   private dyeCols: number = 0
@@ -55,7 +54,6 @@ export class FluidSimulator {
   private dyeG0: Float32Array = new Float32Array(0)
   private dyeB0: Float32Array = new Float32Array(0)
 
-  // ---------- 画布与注入 ----------
   private canvasWidth: number = 0
   private canvasHeight: number = 0
   private seeded: boolean = false
@@ -63,7 +61,6 @@ export class FluidSimulator {
   private palette: number[][] = [[1, 1, 1]]
   private baseColor: number[] = [0, 0, 0]
 
-  // ---------- 规格 ----------
 
   get dyeColumns(): number {
     return this.dyeCols
@@ -128,7 +125,6 @@ export class FluidSimulator {
     this.dyeB0 = new Float32Array(dyeCount)
   }
 
-  // ---------- 配色注入 ----------
 
   /** 注入染料调色板（页面从设计令牌映射为 [r,g,b] 0..1；渲染层不写死色值） */
   setPalette(palette: number[][]): void {
@@ -140,7 +136,6 @@ export class FluidSimulator {
     this.baseColor = color
   }
 
-  // ---------- 注入 / 重置 ----------
 
   /**
    * 入队一次手触注入（像素坐标 + 像素位移；内部归一化为 uv 与速度单位）。
@@ -175,7 +170,6 @@ export class FluidSimulator {
     this.clearFields()
   }
 
-  // ---------- 帧推进 ----------
 
   /** 单帧：静态种子（首帧）→ 出队注入 → 模拟步进（playing=false 时仅响应注入与种子） */
   frame(dt: number, playing: boolean): void {
@@ -204,7 +198,6 @@ export class FluidSimulator {
     this.advectDye(dt)
   }
 
-  // ---------- 1/2. 涡量与涡量约束 ----------
 
   private computeCurl(): void {
     const cols: number = this.simCols
@@ -248,7 +241,6 @@ export class FluidSimulator {
     this.swapVelocity()
   }
 
-  // ---------- 3~6. 压力求解与投影 ----------
 
   private computeDivergence(): void {
     const cols: number = this.simCols
@@ -314,7 +306,6 @@ export class FluidSimulator {
     this.swapVelocity()
   }
 
-  // ---------- 7/8. 半拉格朗日平流 ----------
 
   private advectVelocity(dt: number): void {
     const cols: number = this.simCols
@@ -377,7 +368,6 @@ export class FluidSimulator {
     return top + (bottom - top) * ty
   }
 
-  // ---------- 注入 / 种子 ----------
 
   private drainSplats(): void {
     let count: number = 0
@@ -460,7 +450,6 @@ export class FluidSimulator {
     }
   }
 
-  // ---------- 渲染支持 ----------
 
   /**
    * 把染料场（加法叠底色）写入 RGBA8888 缓冲（每通道 0..255，alpha 恒 255）。
@@ -483,7 +472,6 @@ export class FluidSimulator {
     }
   }
 
-  // ---------- 工具 ----------
 
   private randomColor(): number[] {
     const index: number = Math.floor(Math.random() * this.palette.length)

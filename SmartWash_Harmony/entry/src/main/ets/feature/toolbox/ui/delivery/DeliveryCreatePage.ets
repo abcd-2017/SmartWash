@@ -48,7 +48,6 @@ export function DeliveryCreateBuilder() {
 
 @Component
 struct DeliveryCreatePage {
-  // ---------- 表单态 ----------
   @State durationMinutes: number = 30
   @State password: string = ''
   @State showPassword: boolean = false
@@ -58,7 +57,6 @@ struct DeliveryCreatePage {
   // 密码字段级校验错误（红描边 + helper 行切 error 色，网络类错误仍走表单底行 errorMessage；
   // 对齐安卓 passwordError/isError 分流，compare-07 #6）
   @State passwordError: boolean = false
-  // ---------- 会话态 ----------
   @State session: DeliverySessionVo | null = null
   @State closing: boolean = false
   @State remainSeconds: number | null = null
@@ -389,9 +387,6 @@ struct DeliveryCreatePage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Scroll() {
         Column() {
@@ -424,7 +419,6 @@ struct DeliveryCreatePage {
           // 内容区统一 24 页留白 + 上 8（原页头位于 padded Column 内又被加 12，返回钮落到 36vp）
           Column() {
             if (this.session === null) {
-              // ---------- 表单态 ----------
             Column() {
               this.FormLabel(DeliveryText.toolbox_delivery_duration_label)
               // 4 枚 chip 在窄屏（364.6vp）总宽超出卡内容宽（274.9vp）：改横向 Scroll，
@@ -564,7 +558,6 @@ struct DeliveryCreatePage {
               }
             })
           } else {
-            // ---------- 会话态 ----------
             Column() {
               this.CreatedSessionCard(this.session)
             }

@@ -94,7 +94,6 @@ struct PickupDelivery {
           showToastSafety(detailRes.message, resString('pickup_delivery_1'))
         }
       } catch (err) {
-        // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
         this.orderInfo = null
         this.loadFailed = true
         showToastSafety(resString('pickup_delivery_2'))
@@ -138,7 +137,6 @@ struct PickupDelivery {
         this.qrFailed = true
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 qrLoading 卡死骨架常驻
       showToastSafety(resString('pickup_delivery_2'))
       this.qrFailed = true
     } finally {
@@ -184,7 +182,6 @@ struct PickupDelivery {
         try {
           vibrator.startVibration({ type: 'time', duration: 30 }, { id: 0, usage: 'unknown' })
         } catch (err) {
-          // 忽略不支持的设备
         }
         showToastSafety(resString('pickup_delivery_4'))
         pathStack.pop()
@@ -195,7 +192,6 @@ struct PickupDelivery {
           `code=${res.code} message=${res.message ?? ""}`)
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并提示，避免 confirming/submitting 卡死
       showToastSafety(resString('pickup_delivery_2'))
     } finally {
       this.confirming = false
@@ -536,9 +532,6 @@ struct PickupDelivery {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 页头（recap G4：22/600 + 48 返回热区，复用公共 PageHeader）
@@ -616,7 +609,6 @@ struct PickupDelivery {
       }
       .width("100%")
       .height("100%")
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }

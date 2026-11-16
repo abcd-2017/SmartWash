@@ -102,7 +102,6 @@ struct ToolboxShortCodeDetail {
   // 转场兜底定时器（customTransition 事件未触发时保证信息卡可见）
   private fallbackTimer: number = -1
 
-  // ========== 弹窗控制器 ==========
   // 控制器必须由结构体字段持有（对齐 DivAskPage.ets:244 / SubscriptionDetailPage.ets:313）：
   // 在方法内临时 new 的控制器，框架不会把 controller 注入弹窗内容实例，弹窗内 this.controller
   // 为 undefined，点击「确定/删除」即抛「Cannot read property close of undefined」jscrash。
@@ -354,7 +353,6 @@ struct ToolboxShortCodeDetail {
       showToastSafety(res.message, ToolboxText.toolbox_stats_error_load)
       throw new Error(ToolboxText.toolbox_stats_error_load)
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：与「追加失败」同语义（reject 供分页器记失败页）；
       // 首刷则进错误态，避免 statsLoadingFirst 卡死明细骨架常驻
       if (page === 1) {
         this.statsError = true
@@ -833,13 +831,9 @@ struct ToolboxShortCodeDetail {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 页面标题 + 右上「删除」危险文字按钮（对齐安卓 PageHeader：删除 18/600 dangerInk + 48 热区）
-        // 沉浸式：内容避让状态栏（背景延伸）
         Row() {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
@@ -1000,7 +994,6 @@ struct ToolboxShortCodeDetail {
       }
       .width('100%')
       .height('100%')
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }

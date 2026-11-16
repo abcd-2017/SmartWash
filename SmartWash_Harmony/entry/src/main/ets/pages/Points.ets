@@ -289,7 +289,6 @@ export struct PointsPage {
         showToastSafety(res.message, PointsText.loadFailed)
       }
     } catch (err) {
-      // 网络异常/401 拒绝：promise 会 throw，首载进错误态（已成功加载过则保留内容仅提示）
       const e: BusinessError = err as BusinessError
       logger.warn('pointsPage', `积分概览加载异常 err=${e.message}`)
       if (this.overview === null) {
@@ -391,7 +390,6 @@ export struct PointsPage {
     }
   }
 
-  // ========== Hero 余额卡渲染辅助 ==========
 
   /** 余额大字（无账户/缺字段兜底 0） */
   private balanceText(): string {
@@ -447,7 +445,6 @@ export struct PointsPage {
     return this.overview?.recentLedger ?? []
   }
 
-  // ========== 渲染 ==========
 
   /** 签到 CTA —— hero 白色胶囊（规范 §3.1 Hero 变体，对齐安卓 PointsHeroCard 自绘 CTA）：
    *  未签 = 纯白底 + 文字绿深档（TEXT_GREEN，安卓 AuthCtaText #177A4C 等值）15/600/tnum；
@@ -735,7 +732,6 @@ export struct PointsPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容（机制见 ThemeRefresh.ets）
       ThemeRefreshV2() {
         Column() {
           PageHeader({ title: PointsText.title })
@@ -791,7 +787,6 @@ export struct PointsPage {
         }
         .width('100%')
         .height('100%')
-        // 沉浸式：内容避让状态栏（背景延伸）
         .padding({ top: safeTopVp() })
         .backgroundColor($r('app.color.BACKGROUND'))
       }

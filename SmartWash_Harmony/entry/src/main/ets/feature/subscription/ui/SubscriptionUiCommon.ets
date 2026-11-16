@@ -25,7 +25,6 @@ export interface SubscriptionBadgeColors {
   content: ResourceColor
 }
 
-// ==================== 页面头 ====================
 
 /**
  * 页面头（对齐安卓 PageHeader）：返回箭头 48 热区 + 标题 22/600 + 可选两个右侧文字动作。
@@ -100,7 +99,6 @@ export struct SubscriptionPageHeader {
   }
 }
 
-// ==================== chip / 开关 / 进度环 ====================
 
 /** 静态标签 chip —— 胶囊（radiusFull），用于条目上的状态/类型/角标标注 */
 @ComponentV2
@@ -351,7 +349,6 @@ export struct SubscriptionStatusDot {
   }
 }
 
-// ==================== 日期选择弹窗 ====================
 
 /**
  * 日期选择弹窗（下次续费日/试用截止共用）。
@@ -603,7 +600,6 @@ export function subscriptionStatusIcon(status: SubscriptionStatus): Resource {
   }
 }
 
-/** 状态图标盒浅底色 */
 export function subscriptionStatusContainerColor(status: SubscriptionStatus): ResourceColor {
   switch (status) {
     case SubscriptionStatus.PAUSED:
@@ -617,7 +613,6 @@ export function subscriptionStatusContainerColor(status: SubscriptionStatus): Re
   }
 }
 
-/** 状态图标前景色 */
 export function subscriptionStatusIconColor(status: SubscriptionStatus): ResourceColor {
   switch (status) {
     case SubscriptionStatus.PAUSED:
@@ -631,7 +626,6 @@ export function subscriptionStatusIconColor(status: SubscriptionStatus): Resourc
   }
 }
 
-/** 状态 chip 底色 */
 export function subscriptionStatusChipContainer(status: SubscriptionStatus): ResourceColor {
   switch (status) {
     case SubscriptionStatus.PAUSED:
@@ -657,7 +651,6 @@ export function subscriptionStatusChipContent(status: SubscriptionStatus): Resou
   }
 }
 
-/** 提醒类型文案 */
 export function subscriptionReminderTypeText(type: SubscriptionReminderType): string {
   return type === SubscriptionReminderType.TRIAL_END
     ? SubscriptionText.subscription_reminder_type_trial_end
@@ -671,28 +664,24 @@ export function subscriptionReminderIcon(type: SubscriptionReminderType): Resour
     : $r('sys.symbol.bell')
 }
 
-/** 提醒类型图标盒浅底色 */
 export function subscriptionReminderContainerColor(type: SubscriptionReminderType): ResourceColor {
   return type === SubscriptionReminderType.TRIAL_END
     ? $r('app.color.ICON_CONTAINER_PINK')
     : $r('app.color.ICON_CONTAINER_ORANGE')
 }
 
-/** 提醒类型图标前景色 */
 export function subscriptionReminderIconColor(type: SubscriptionReminderType): ResourceColor {
   return type === SubscriptionReminderType.TRIAL_END
     ? $r('app.color.ICON_FOREGROUND_PINK')
     : $r('app.color.ICON_FOREGROUND_ORANGE')
 }
 
-/** 提醒类型 chip 底色 */
 export function subscriptionReminderChipContainer(type: SubscriptionReminderType): ResourceColor {
   return type === SubscriptionReminderType.TRIAL_END
     ? $r('app.color.ICON_CONTAINER_PINK')
     : $r('app.color.WARNING_CONTAINER')
 }
 
-/** 提醒类型 chip 文字色 */
 export function subscriptionReminderChipContent(type: SubscriptionReminderType): ResourceColor {
   return type === SubscriptionReminderType.TRIAL_END
     ? $r('app.color.DANGER_INK')

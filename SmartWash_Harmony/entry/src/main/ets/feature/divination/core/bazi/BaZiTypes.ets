@@ -193,7 +193,6 @@ export class GeJu {
   static readonly CONG_RUO: GeJu = new GeJu('从弱格');
   static readonly CONG_WANG: GeJu = new GeJu('从旺格');
   static readonly CONG_QING: GeJu = new GeJu('从强格');
-  // 特殊
   static readonly QU_ZHI: GeJu = new GeJu('曲直格');
   static readonly YAN_SHANG: GeJu = new GeJu('炎上格');
   static readonly JIA_SE: GeJu = new GeJu('稼穑格');

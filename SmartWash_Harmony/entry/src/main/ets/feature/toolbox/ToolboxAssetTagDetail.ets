@@ -237,7 +237,6 @@ struct ToolboxAssetTagDetail {
 
           Scroll() {
             Column({ space: DesignDimens.CARD_SPACING }) {
-              // ---------- 信息卡 ----------
               Column() {
                 InfoRow({ label: ToolboxText.asset_tag_item_name_label, value: this.param?.itemName ?? '', valueColor: $r('app.color.TEXT_PRIMARY'), valueTnum: false })
                 Row() {
@@ -311,7 +310,6 @@ struct ToolboxAssetTagDetail {
                 offsetY:  2
               })
 
-              // ---------- 标签链接卡 ----------
               Column() {
                 Text(ToolboxText.asset_tag_link_label)
                   .fontSize(DesignFontSize.CARD_TITLE)

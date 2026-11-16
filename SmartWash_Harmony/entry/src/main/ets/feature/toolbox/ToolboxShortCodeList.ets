@@ -3,8 +3,6 @@
 // 分页：鸿蒙无 Paging 3 等价物，按 02 文档结论用 PagingController 手动 loadMore（每页 10，无人工延时）。
 // 四态：首刷 loading / 首刷失败重试 / 空态 / 列表 + 尾部（加载中/失败重试）。
 // 刷新：创建/续期/删除成功回列表后由变更信号（ToolboxChangeSignal）重拉，等价安卓 savedStateHandle CHANGED_KEY。
-// 刷新会话门控（对齐安卓 2026-11-06 闪空态回归修复）：刷新中不清空旧数据、空态仅在
-// 「非刷新中且列表为空」时展示、下拉指示器保持到本轮加载返回再复位。
 // 条目点击进详情：全量字段随路由携带（详情页不再请求）。
 // 卡片右列含「复制短链」描边按钮（对齐安卓 CopyPillButton）。
 
@@ -146,9 +144,6 @@ struct ToolboxShortCodeList {
 
   /**
    * 整列表重置重拉（下拉刷新 + 变更信号回列表刷新共用）。
-   * 刷新会话门控（对齐安卓 2026-11-06 闪空态回归修复）：开启会话后不清空旧数据、
-   * 空态分支被门控（走骨架），下拉指示器保持到本轮加载返回（有数据/封底/失败）再复位，
-   * 杜绝「清空后、新数据未返回」帧闪「还没有短链」空态。
    */
   refreshList(): void {
     this.refreshingSession = true
@@ -459,9 +454,6 @@ struct ToolboxShortCodeList {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 页面标题 + 「新建」文字按钮（对齐安卓 PageHeader：标题 22/600，动作 18/600 primaryDark + 48 热区）
@@ -593,7 +585,6 @@ struct ToolboxShortCodeList {
       }
       .width('100%')
       .height('100%')
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }

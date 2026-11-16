@@ -40,23 +40,17 @@ export const SUBSCRIPTION_REMINDER_LIMIT: number = 200
 export const SUBSCRIPTION_FLAG_ON: number = 1
 export const SUBSCRIPTION_FLAG_OFF: number = 0
 
-/** 名称长度上限 */
 export const SUBSCRIPTION_NAME_MAX: number = 100
 
-/** 备注长度上限 */
 export const SUBSCRIPTION_NOTE_MAX: number = 500
 
-/** 取消步骤备忘长度上限 */
 export const SUBSCRIPTION_CANCEL_STEPS_MAX: number = 1000
 
-/** 取消网址长度上限 */
 export const SUBSCRIPTION_CANCEL_URL_MAX: number = 500
 
-/** 间隔期数范围 */
 export const SUBSCRIPTION_CYCLE_INTERVAL_MIN: number = 1
 export const SUBSCRIPTION_CYCLE_INTERVAL_MAX: number = 36
 
-/** 提醒提前天数范围 */
 export const SUBSCRIPTION_REMIND_DAYS_MIN: number = 0
 export const SUBSCRIPTION_REMIND_DAYS_MAX: number = 60
 
@@ -251,7 +245,6 @@ export interface AddUsageForm {
   usageDate?: string | null
 }
 
-// ==================== JSON → VO 显式映射 ====================
 // 背景见 network/vo/JsonParse.ets：Jackson 可能省略字段，interface 运行时不填充，
 // 消费点一律经 jsonStr/jsonNum/mapArray 兜底，避免 undefined 透传。
 
@@ -517,7 +510,6 @@ export class SubscriptionText {
   static get subscription_date_cancel(): string { return resString('subscription_date_cancel') }
 }
 
-// ==================== 接口封装 ====================
 
 /** 创建订阅（初始 active）。成功返回新订阅 VO。 */
 export async function createSubscription(form: SaveSubscriptionForm): Promise<BaseResponse<SubscriptionVo>> {

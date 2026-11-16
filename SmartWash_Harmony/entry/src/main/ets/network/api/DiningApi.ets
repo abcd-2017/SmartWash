@@ -68,7 +68,6 @@ export {
 /** 上架菜谱分页大小（菜谱库/创建页列表复用；Android 端每页 100 取满同量级） */
 export const DINING_PAGE_SIZE: number = 50
 
-// ========== 分类 ==========
 
 /** 全部分类（sort 升序、id 升序；量级小不分页） */
 export async function getDiningCategories(): Promise<BaseResponse<Array<DiningCategoryVo>>> {
@@ -96,7 +95,6 @@ function diningPageDataLikeToList<T>(raw: Object, mapper: (item: Object) => T): 
   return result
 }
 
-// ========== 菜谱 ==========
 
 /** 上架菜谱分页（categoryId 精确，0/null=不过滤；keyword 菜名模糊，空串=不过滤） */
 export async function getDiningRecipes(page: number, size: number, categoryId: number,
@@ -166,7 +164,6 @@ export async function uploadDiningCover(fileName: string, mimeType: string,
   return httpUtil.upload<string>('/web/auth/dining/recipes/cover', formData)
 }
 
-// ========== 订单 ==========
 
 /** 创建点单订单请求体（与后端 from/CreateDiningOrderFrom 对应；recipeIds 与 fromOrderId 二选一） */
 export interface CreateDiningOrderForm {

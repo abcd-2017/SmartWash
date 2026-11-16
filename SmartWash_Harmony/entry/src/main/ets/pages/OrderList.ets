@@ -20,7 +20,6 @@ import { ThemeRefresh } from '../view/common/ThemeRefresh'
 import { resColor } from '../utils/ResourceColor'
 import { resString } from '../utils/ResourceString'
 
-// 分页每页条数
 const PAGE_SIZE: number = 10
 
 /** 月份分组段（对齐安卓 OrderListItem 混合列表项：月份标题 + 整月订单组） */
@@ -138,7 +137,6 @@ struct OrderList {
       this.contentOpacity = 1
       return false
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并复位加载态，避免 isLoading 卡死永久骨架
       logger.warn('orderList', `订单列表请求异常 page=${page} status=${statusSnapshot}`)
       if (page === 1 && this.orderStatus === statusSnapshot) {
         this.sections = []
@@ -288,7 +286,6 @@ struct OrderList {
         showToastSafety(res.message, resString('order_list_4'))
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并提示，避免 pendingCancelOrderId 卡死
       showToastSafety(resString('order_list_3'))
     } finally {
       this.pendingCancelOrderId = null
@@ -364,7 +361,6 @@ struct OrderList {
               try {
                 vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
               } catch (err) {
-                // 忽略不支持的设备
               }
               this.currIndex = index
               this.orderStatus = this.list[index]
@@ -398,9 +394,6 @@ struct OrderList {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 自定义页面标题
@@ -512,7 +505,6 @@ struct OrderList {
       }
       .width("100%")
       .height("100%")
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }

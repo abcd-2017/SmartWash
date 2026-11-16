@@ -130,8 +130,6 @@ struct SubscriptionListPage {
       if (res.code === BizCode.SUCCESS && res.data !== null) {
         const records: Array<SubscriptionVo> = res.data.records
         if (page === 1) {
-          // 刷新会话门控：新数据就绪后才替换旧列表（等待网络期间保留旧数据防闪「空态 + 去新建」）；
-          // 空结果也在此放行（会话结束 → 真实空态）
           this.isFirstError = false
           this.isRefreshSession = false
           this.list = records
@@ -158,7 +156,6 @@ struct SubscriptionListPage {
       showToastSafety(res.message, SubscriptionText.subscription_error_load)
       throw new Error(SubscriptionText.subscription_error_load)
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：与「追加失败」同语义（reject 供分页器记失败页）
       if (page === 1) {
         this.isFirstError = true
         this.isRefreshSession = false
@@ -173,8 +170,6 @@ struct SubscriptionListPage {
 
   /**
    * 整列表重置重拉（变更信号/筛选切换/下拉刷新/错误重试共用，不亮 Refresh 指示器）。
-   * 刷新会话门控：不在请求前清空列表（旧数据保留防闪空态），新数据在 fetchPage 成功后整体替换；
-   * 会话开闭由各入口置位、fetchPage(1) 成功/失败复位。
    */
   async loadFirst(): Promise<void> {
     this.appendError = false
@@ -267,9 +262,6 @@ struct SubscriptionListPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         SubscriptionPageHeader({
@@ -366,7 +358,6 @@ struct SubscriptionListPage {
       }
       .width('100%')
       .height('100%')
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }
