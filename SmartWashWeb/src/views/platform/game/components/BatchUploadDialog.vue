@@ -26,7 +26,9 @@
         <p>· 与已有游戏同 gameKey 时会先标记「覆盖更新」，确认后才会执行</p>
       </div>
       <div class="batch-choose-action">
-        <el-button type="primary" @click="handlePickDir">选择父目录</el-button>
+        <el-button type="primary" :loading="checking" @click="handlePickDir">
+          {{ checking ? '预检中…' : '选择父目录' }}
+        </el-button>
         <input
           ref="dirInputRef"
           type="file"
@@ -36,6 +38,8 @@
           @change="handleDirChosen"
         />
       </div>
+      <!-- 预检含多轮文件读取与网络比对，期间无界面切换，必须给出阶段文案否则形似卡死 -->
+      <p v-if="checking" class="batch-checking">{{ checkingText }}</p>
     </div>
 
     <template v-else>
@@ -224,6 +228,11 @@ const dirInputRef = ref(null);
 const phase = ref('choose'); // choose → preview → running → done
 const queue = ref([]); // 预检后的上传队列（含跳过项，用于结果展示）
 const checking = ref(false);
+const checkingText = ref(''); // 预检阶段文案：解析目录 → 比对库内 → 关卡预览
+const resetChecking = () => {
+  checking.value = false;
+  checkingText.value = '';
+};
 const abortFlag = ref(false);
 const current = ref(null);
 const currentPercent = ref(0);
@@ -296,6 +305,7 @@ const handleDirChosen = async (event) => {
   }
 
   checking.value = true;
+  checkingText.value = '正在解析所选目录…';
   try {
     // 逐目录校验 + README 解析（读文件是异步的，统一 Promise.all）
     const items = await Promise.all(
@@ -375,35 +385,44 @@ const handleDirChosen = async (event) => {
     }
 
     // 库内覆盖预检：已有同 key 标记「覆盖更新」，开始上传前统一确认
+    checkingText.value = '正在比对库内已有游戏…';
     const existing = await fetchAllGameKeys();
     for (const it of items) {
       if (!it.skipReason) it.willOverwrite = existing.has(it.gameKey);
     }
 
     // 关卡分布预检：覆盖游戏拉现有关卡算「撞号覆盖 / 其余新增」；全新游戏按空表顺延分配序号。
-    // 现有关卡获取失败时该行关卡导入禁用（游戏本体不受影响）
-    for (const it of items) {
-      if (it.skipReason || !it.levels.items) continue;
-      if (it.willOverwrite) {
-        try {
-          it.levels.plan = planLevelImport(it.levels.items, await getGameLevels(it.gameKey));
-        } catch (err) {
-          logger.error('批量导入现有关卡获取失败:', `gameKey=${it.gameKey}`, err);
-          it.levels.items = null;
-          it.levels.error = '现有关卡获取失败，无法预览覆盖分布';
+    // 现有关卡获取失败时该行关卡导入禁用（游戏本体不受影响）。
+    // 并行拉取：覆盖目录多时串行会让预检时长线性叠加，此处请求互相独立可同时发出
+    checkingText.value = '正在生成关卡覆盖预览…';
+    await Promise.all(
+      items.map(async (it) => {
+        if (it.skipReason || !it.levels.items) return;
+        if (it.willOverwrite) {
+          try {
+            it.levels.plan = planLevelImport(it.levels.items, await getGameLevels(it.gameKey));
+          } catch (err) {
+            logger.error('批量导入现有关卡获取失败:', `gameKey=${it.gameKey}`, err);
+            it.levels.items = null;
+            it.levels.error = '现有关卡获取失败，无法预览覆盖分布';
+          }
+        } else {
+          it.levels.plan = planLevelImport(it.levels.items, []);
         }
-      } else {
-        it.levels.plan = planLevelImport(it.levels.items, []);
-      }
-    }
+      })
+    );
 
     queue.value = items;
     phase.value = 'preview';
     if (!uploadTargets.value.length) {
       ElMessage.warning('所选目录中没有符合规范的游戏目录，请检查目录结构');
     }
+  } catch (err) {
+    // 预检网络失败（比对/关卡拉取）兜底：不提示会停在 choose 形似卡死
+    logger.error('批量导入预检失败:', err);
+    ElMessage.error(err.message || '预检失败，请重新选择目录');
   } finally {
-    checking.value = false;
+    resetChecking();
   }
 };
 
@@ -508,6 +527,7 @@ const handleClosed = () => {
   current.value = null;
   doneCount.value = 0;
   abortFlag.value = false;
+  resetChecking();
 };
 </script>
 
@@ -540,6 +560,13 @@ const handleClosed = () => {
   display: flex;
   justify-content: center;
   padding-bottom: 8px;
+}
+
+.batch-checking {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .batch-summary {
