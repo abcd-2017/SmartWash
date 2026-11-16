@@ -237,8 +237,9 @@ fun WorkbenchPage(
     val hasSections = remember(blocks) { blocks.any { it is WorkbenchBlock.Section } }
     val searchRows = remember(visibleTools) { visibleTools.chunked(GRID_COLUMNS) }
 
-    // 统一点击入口：兜底占位项提示建设中，其余走深链（并记最近使用）
+    // 统一点击入口：角标即读（首次点击即隐藏，含建设中占位项），兜底占位项提示建设中，其余走深链（并记最近使用）
     val handleToolClick: (WorkbenchTool) -> Unit = { tool ->
+        workbenchViewModel.markBadgeSeen(tool)
         if (tool.target.isBlank()) {
             Toast.makeText(
                 context,
