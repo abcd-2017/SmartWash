@@ -7,7 +7,7 @@ import { PickupDeliveryParam } from "./PickupDelivery"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
-import { PagingController } from "../utils/PagingUtil"
+import { LazyListDataSource, PagingController } from "../utils/PagingUtil"
 import { BusinessError, pasteboard } from "@kit.BasicServicesKit"
 import vibrator from "@ohos.vibrator"
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
@@ -38,6 +38,9 @@ struct PickUp {
   // 卡片按压态：按 orderId 标记，动作按钮按下时行不缩放（对齐安卓 pressable）
   @State pressedOrderId: number | null = null
   @State actionPressed: boolean = false
+  // LazyForEach 数据源（读取 orderList，实例稳定不可重建，避免整表重建）
+  private dataSource: LazyListDataSource<OrderInfo> =
+    new LazyListDataSource<OrderInfo>(() => this.orderList)
   // 轻量分页封装：触底加载/上锁防重/封底判定统一收敛（差异分析 01 §3.3）
   private paging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
@@ -65,17 +68,27 @@ struct PickUp {
         page: page, size: PAGE_SIZE
       })
       if (res.code === HttpStatusCode.Ok) {
-        // 第 1 页整体替换（stale-while-revalidate：请求期间保留旧列表，返回后整体换）
-        if (page === 1) {
-          this.orderList = []
-        }
-        if (res.data === null || res.data.length === 0) {
-          if (page > 1 && this.orderList.length > 0) {
+        const records: Array<OrderInfo> = res.data ?? []
+        if (records.length === 0) {
+          // 第 1 页空结果：整体清空（stale-while-revalidate 语义不变）
+          if (page === 1) {
+            this.orderList = []
+            this.dataSource.notifyReload()
+          } else if (this.orderList.length > 0) {
             showToastSafety(resString('pick_up_1'))
           }
           return false
         }
-        this.orderList.push(...res.data)
+        if (page === 1) {
+          // 第 1 页整体替换（请求期间保留旧列表，返回后整体换）
+          this.orderList = records
+          this.dataSource.notifyReload()
+        } else {
+          // 追加按新索引逐项通知，避免整表重建
+          const startIndex: number = this.orderList.length
+          this.orderList.push(...records)
+          this.dataSource.notifyAppend(startIndex, records.length)
+        }
         return true
       }
       logger.warn('pickup', `可取订单加载失败 page=${page} ` +
@@ -362,7 +375,7 @@ struct PickUp {
 
             Refresh({ refreshing: $$this.isRefreshing }) {
               List({ space: DesignDimens.CARD_SPACING }) {
-                ForEach(this.orderList, (order: OrderInfo) => {
+                LazyForEach(this.dataSource, (order: OrderInfo) => {
                   ListItem() {
                     this.PickupOrderCard(order)
                   }
@@ -375,7 +388,8 @@ struct PickUp {
               .height("100%")
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
               .onScrollIndex((start: number, end: number) => {
-                this.paging.onScrollIndex(end, this.orderList.length)
+                // listLength 为 ListItem 真实数量（订单卡 + LoadingFooter）
+                this.paging.onScrollIndex(end, this.orderList.length + 1)
               }).onScrollFrameBegin((offset: number, state: ScrollState) => {
                 this.paging.onScrollFrameBegin(offset)
                 return { offsetRemain: offset }

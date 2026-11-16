@@ -47,7 +47,7 @@ import {
 } from './SubscriptionUiCommon'
 import { AppButton, EmptyState, IconBox, SkeletonBlock, SkeletonList } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
-import { PagingController } from '../../../utils/PagingUtil'
+import { LazyListDataSource, PagingController } from '../../../utils/PagingUtil'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { SUBSCRIPTION_TICK_KEY } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
@@ -85,6 +85,9 @@ struct SubscriptionListPage {
   // 跨页刷新信号（自增 tick）：新建/编辑/删除/状态流转/标记已读成功后 bump
   @StorageLink(SUBSCRIPTION_TICK_KEY) @Watch('onSubscriptionTick') subscriptionTick: number = 0
   private hasShown: boolean = false
+  // LazyForEach 数据源（读取 list，实例稳定不可重建，否则整表重建）
+  private listSource: LazyListDataSource<SubscriptionVo> =
+    new LazyListDataSource<SubscriptionVo>(() => this.list)
   private paging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
       return this.fetchPage(page)
@@ -133,6 +136,12 @@ struct SubscriptionListPage {
           this.isFirstError = false
           this.isRefreshSession = false
           this.list = records
+          this.listSource.notifyReload()
+        } else if (records.length > 0) {
+          // 追加页：concat 后按新索引通知，避免整表重建（原实现漏追加，触底数据不显示）
+          const startIndex: number = this.list.length
+          this.list = this.list.concat(records)
+          this.listSource.notifyAppend(startIndex, records.length)
         }
         if (records.length === 0) {
           logger.debug(TAG, `分页封底 page=${page} 本页无数据`)
@@ -299,7 +308,7 @@ struct SubscriptionListPage {
           Refresh({ refreshing: $$this.isRefreshing }) {
             // space = 卡片间距 16（对齐安卓 spacedBy(cardSpacing)，缺失时卡片贴死）
             List({ space: DesignDimens.CARD_SPACING }) {
-              ForEach(this.list, (vo: SubscriptionVo) => {
+              LazyForEach(this.listSource, (vo: SubscriptionVo) => {
                 ListItem() {
                   SubscriptionCard({
                     vo: vo,
@@ -344,7 +353,8 @@ struct SubscriptionListPage {
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 8, bottom: 8 + safeBottomVp() })
             .divider({ strokeWidth: 0, color: Color.Transparent })
             .onScrollIndex((start: number, end: number) => {
-              this.paging.onScrollIndex(end, this.list.length)
+              // listLength 为 ListItem 真实数量（订阅卡 + 尾部 footer）
+              this.paging.onScrollIndex(end, this.list.length + 1)
             })
             .onScrollFrameBegin((offset: number) => {
               this.paging.onScrollFrameBegin(offset)

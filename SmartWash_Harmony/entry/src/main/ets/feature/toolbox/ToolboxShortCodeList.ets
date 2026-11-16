@@ -34,7 +34,7 @@ import {
 import { consumeShortCodeChanged } from './ToolboxChangeSignal'
 import { AppButton, EmptyState, IconBox, SkeletonBlock, SkeletonList } from '../../view/common/AppComponents'
 import { logger } from '../../utils/Logger'
-import { PagingController } from '../../utils/PagingUtil'
+import { LazyListDataSource, PagingController } from '../../utils/PagingUtil'
 import { pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../utils/SafeArea'
@@ -66,6 +66,9 @@ struct ToolboxShortCodeList {
   @State pressedKey: string = ''
   // onShown 首次即触发，首屏加载由 aboutToAppear 承担；加锁避免首屏重复请求
   private hasShown: boolean = false
+  // LazyForEach 数据源（读取 list，实例稳定不可重建，否则整表重建）
+  private listSource: LazyListDataSource<ShortCodeVo> =
+    new LazyListDataSource<ShortCodeVo>(() => this.list)
   private paging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
       return this.fetchPage(page)
@@ -98,6 +101,7 @@ struct ToolboxShortCodeList {
             this.list = []
             this.isFirstError = false
             this.appendError = false
+            this.listSource.notifyReload()
             return false
           }
           if (this.list.length > 0) {
@@ -107,10 +111,14 @@ struct ToolboxShortCodeList {
           return false
         }
         if (page === 1) {
-          this.list = []
+          this.list = records
           this.isFirstError = false
+          this.listSource.notifyReload()
+        } else {
+          const startIndex: number = this.list.length
+          this.list = this.list.concat(records)
+          this.listSource.notifyAppend(startIndex, records.length)
         }
-        this.list.push(...records)
         this.appendError = false
         logger.debug(TAG, `分页加载成功 page=${page} count=${records.length} total=${res.data.total}`)
         return true
@@ -513,7 +521,7 @@ struct ToolboxShortCodeList {
           Refresh({ refreshing: $$this.isRefreshing }) {
             // 卡片间距对齐安卓 LazyColumn spacedBy(cardSpacing)（原 List 无 space，卡紧贴）
             List({ space: DesignDimens.CARD_SPACING }) {
-              ForEach(this.list, (vo: ShortCodeVo) => {
+              LazyForEach(this.listSource, (vo: ShortCodeVo) => {
                 ListItem() {
                   this.ShortCodeCard(vo)
                 }
@@ -571,7 +579,8 @@ struct ToolboxShortCodeList {
               if (this.refreshingSession) {
                 return
               }
-              this.paging.onScrollIndex(end, this.list.length)
+              // listLength 为 ListItem 真实数量（短链卡 + 尾部 footer）
+              this.paging.onScrollIndex(end, this.list.length + 1)
             })
             .onScrollFrameBegin((offset: number) => {
               this.paging.onScrollFrameBegin(offset)

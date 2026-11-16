@@ -19,7 +19,7 @@ import {
 import { consumeAssetTagChanged } from './ToolboxChangeSignal'
 import { AppButton, EmptyState, IconBox, SkeletonBlock, SkeletonList } from '../../view/common/AppComponents'
 import { logger } from '../../utils/Logger'
-import { PagingController } from '../../utils/PagingUtil'
+import { LazyListDataSource, PagingController } from '../../utils/PagingUtil'
 import { pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../utils/SafeArea'
@@ -45,6 +45,9 @@ struct ToolboxAssetTagList {
   @State appendError: boolean = false
   @State pressedKey: string = ''
   private hasShown: boolean = false
+  // LazyForEach 数据源（读取 list，实例稳定不可重建，否则整表重建）
+  private listSource: LazyListDataSource<AssetTagVo> =
+    new LazyListDataSource<AssetTagVo>(() => this.list)
   private paging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
       return this.fetchPage(page)
@@ -70,16 +73,21 @@ struct ToolboxAssetTagList {
             this.list = []
             this.isFirstError = false
             this.appendError = false
+            this.listSource.notifyReload()
             return false
           }
           this.appendError = false
           return false
         }
         if (page === 1) {
-          this.list = []
+          this.list = records
           this.isFirstError = false
+          this.listSource.notifyReload()
+        } else {
+          const startIndex: number = this.list.length
+          this.list = this.list.concat(records)
+          this.listSource.notifyAppend(startIndex, records.length)
         }
-        this.list.push(...records)
         this.appendError = false
         logger.debug(TAG, `分页加载成功 page=${page} count=${records.length}`)
         return true
@@ -327,7 +335,7 @@ struct ToolboxAssetTagList {
           } else {
             Refresh({ refreshing: $$this.isRefreshing }) {
               List({ space: DesignDimens.CARD_SPACING }) {
-                ForEach(this.list, (vo: AssetTagVo) => {
+                LazyForEach(this.listSource, (vo: AssetTagVo) => {
                   ListItem() {
                     this.ShortCodeCard(vo)
                   }
@@ -365,7 +373,8 @@ struct ToolboxAssetTagList {
                 if (this.refreshingSession) {
                   return
                 }
-                this.paging.onScrollIndex(end, this.list.length)
+                // listLength 为 ListItem 真实数量（标签卡 + 尾部 footer）
+                this.paging.onScrollIndex(end, this.list.length + 1)
               })
               .onScrollFrameBegin((offset: number) => {
                 this.paging.onScrollFrameBegin(offset)

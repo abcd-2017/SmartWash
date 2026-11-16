@@ -36,6 +36,7 @@ import {
 } from './ReviewUiCommon'
 import { AppButton, EmptyState, SkeletonBlock, SkeletonList } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
+import { LazyListDataSource } from '../../../utils/PagingUtil'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { bumpReviewRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
@@ -74,6 +75,9 @@ struct MaterialListPage {
   @State creating: boolean = false
   @State createError: string = ''
   private dialogController: CustomDialogController | null = null
+  // LazyForEach 数据源（读取 materials，实例稳定不可重建，否则整表重建）
+  private materialsSource: LazyListDataSource<MaterialVo> =
+    new LazyListDataSource<MaterialVo>(() => this.materials)
 
   async aboutToAppear(): Promise<void> {
     await this.loadFirst()
@@ -94,6 +98,7 @@ struct MaterialListPage {
         this.materials = res.data.records
         this.total = res.data.total
         this.isFirstError = false
+        this.materialsSource.notifyReload()
       } else {
         logger.warn(TAG, `资料首刷失败 code=${res.code ?? 0} msg=${res.message ?? ''}`)
         this.isFirstError = true
@@ -119,8 +124,11 @@ struct MaterialListPage {
     try {
       const res = await pageMaterials(nextPage, REVIEW_PAGE_SIZE)
       if (res.code === BizCode.SUCCESS && res.data !== null) {
+        // 追加页：concat 后按新索引通知，避免整表重建
+        const startIndex: number = this.materials.length
         this.materials = this.materials.concat(res.data.records)
         this.total = res.data.total
+        this.materialsSource.notifyAppend(startIndex, res.data.records.length)
       } else {
         logger.warn(TAG, `资料加载更多失败 page=${nextPage} code=${res.code ?? 0}`)
         this.loadMoreError = true
@@ -508,7 +516,7 @@ struct MaterialListPage {
                   this.MaterialEmpty()
                 }
               } else {
-                ForEach(this.materials, (material: MaterialVo) => {
+                LazyForEach(this.materialsSource, (material: MaterialVo) => {
                   ListItem() {
                     MaterialCard({
                       material: material,

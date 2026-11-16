@@ -47,7 +47,7 @@ import { ToolboxRenewDialog } from './ToolboxRenewDialog'
 import { AppButton, AppButtonVariant, AppConfirmDialog, SkeletonBlock, SkeletonList } from '../../view/common/AppComponents'
 import { InfoRow } from '../../view/common/InfoRow'
 import { logger } from '../../utils/Logger'
-import { PagingController } from '../../utils/PagingUtil'
+import { LazyListDataSource, PagingController } from '../../utils/PagingUtil'
 import { getObjectParam, pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../utils/SafeArea'
@@ -76,6 +76,9 @@ struct ToolboxShortCodeDetail {
   @State statsLoadingMore: boolean = false
   // 追加失败内联错误态（对齐安卓 footer 内联错误可重试）
   @State statsAppendError: boolean = false
+  // LazyForEach 数据源（读取 statsList，实例稳定不可重建，否则整表重建）
+  private statsSource: LazyListDataSource<ShortCodeStatsVo> =
+    new LazyListDataSource<ShortCodeStatsVo>(() => this.statsList)
   private statsPaging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
       return this.fetchStats(page)
@@ -332,10 +335,14 @@ struct ToolboxShortCodeDetail {
           return false
         }
         if (page === 1) {
-          this.statsList = []
+          this.statsList = records
           this.statsError = false
+          this.statsSource.notifyReload()
+        } else {
+          const startIndex: number = this.statsList.length
+          this.statsList = this.statsList.concat(records)
+          this.statsSource.notifyAppend(startIndex, records.length)
         }
-        this.statsList.push(...records)
         this.statsAppendError = false
         logger.debug(TAG, `访问明细加载成功 page=${page} count=${records.length}`)
         return true
@@ -829,6 +836,204 @@ struct ToolboxShortCodeDetail {
     .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
   }
 
+  /** 明细区是否存在尾部项（加载骨架 / 内联重试，可各占一项） */
+  private hasStatsFooter(): boolean {
+    return this.statsLoadingMore || this.statsAppendError || this.statsError
+  }
+
+  /** 明细行是否末行（无尾部项时最后一行承底边圆角/描边） */
+  private isLastStatsRow(index: number): boolean {
+    return index === this.statsList.length - 1 && !this.hasStatsFooter()
+  }
+
+  /** 明细卡拼合圆角：首项顶圆角、末项底圆角（ListItem 以 OUTLINE 为底 + 内层 1px 留边） */
+  private statsCardRadius(isFirst: boolean, isLast: boolean): BorderRadiuses {
+    return {
+      topLeft: isFirst ? DesignDimens.CARD_RADIUS : 0,
+      topRight: isFirst ? DesignDimens.CARD_RADIUS : 0,
+      bottomLeft: isLast ? DesignDimens.CARD_RADIUS : 0,
+      bottomRight: isLast ? DesignDimens.CARD_RADIUS : 0
+    }
+  }
+
+  /**
+   * 明细区 ListItem 总数（供触底判定）：
+   * 非数据态（骨架 / 首刷失败 / 空态）各 1 项；
+   * 数据态 = 明细行 + （加载骨架 1）+ （内联重试 1）。
+   */
+  private statsCardItemCount(): number {
+    if (this.statsLoadingFirst) {
+      return 1
+    }
+    if (this.statsError && this.statsList.length === 0) {
+      return 1
+    }
+    if (this.statsList.length === 0) {
+      return 1
+    }
+    let count: number = this.statsList.length
+    if (this.statsLoadingMore) {
+      count += 1
+    }
+    if (this.statsAppendError || this.statsError) {
+      count += 1
+    }
+    return count
+  }
+
+  /**
+   * 访问明细卡内容（LazyForEach 须为 List 直接子项，故与标题拆项；
+   * 明细行平铺为独立 ListItem，用「ListItem 描边 + 首/末行圆角 + 内层白底留边」拼回整卡外观）。
+   */
+  @Builder
+  StatsCard() {
+    if (this.statsLoadingFirst) {
+      ListItem() {
+        Column() {
+          SkeletonList({ rows: 3 })
+        }
+        .width('100%')
+        .padding(DesignDimens.CARD_PADDING)
+        .backgroundColor($r('app.color.SURFACE'))
+        .margin({ left: 1, right: 1, top: 1, bottom: 1 })
+      }
+      .backgroundColor($r('app.color.OUTLINE'))
+      .borderRadius(this.statsCardRadius(true, true))
+      .clip(true)
+    } else if (this.statsError && this.statsList.length === 0) {
+      ListItem() {
+        Column() {
+          Text(ToolboxText.toolbox_stats_error_load)
+            .fontSize(DesignFontSize.BODY)
+            .fontColor($r('app.color.TEXT_SECONDARY'))
+            .width('100%')
+            .textAlign(TextAlign.Center)
+            .padding({ top: 8 })
+          // 重试热区 48（对齐安卓 padding vertical spaceMd，audit-18：原 8×2 = 32 不达标）
+          Text(ToolboxText.toolbox_action_retry)
+            .fontSize(DesignFontSize.CAPTION)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor($r('app.color.PRIMARY'))
+            .width('100%')
+            .textAlign(TextAlign.Center)
+            .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
+            .onClick((): void => {
+              this.statsPaging.reset()
+              this.fetchStats(1)
+            })
+        }
+        .width('100%')
+        .padding(DesignDimens.CARD_PADDING)
+        .backgroundColor($r('app.color.SURFACE'))
+        .margin({ left: 1, right: 1, top: 1, bottom: 1 })
+      }
+      .backgroundColor($r('app.color.OUTLINE'))
+      .borderRadius(this.statsCardRadius(true, true))
+      .clip(true)
+    } else if (this.statsList.length === 0) {
+      ListItem() {
+        Column() {
+          // 字号对齐安卓 bodyMedium 14sp（原 BODY 16fp）；空态属可读状态正文：
+          // textTertiary ≈2.3:1 不达标（§10），与同页骨架/错误分支一致降档 textSecondary（audit-18）
+          Text(ToolboxText.toolbox_stats_empty)
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontColor($r('app.color.TEXT_SECONDARY'))
+            .width('100%')
+            .textAlign(TextAlign.Center)
+            .padding({ top: 16, bottom: 16 })
+        }
+        .width('100%')
+        .padding(DesignDimens.CARD_PADDING)
+        .backgroundColor($r('app.color.SURFACE'))
+        .margin({ left: 1, right: 1, top: 1, bottom: 1 })
+      }
+      .backgroundColor($r('app.color.OUTLINE'))
+      .borderRadius(this.statsCardRadius(true, true))
+      .clip(true)
+    } else {
+      LazyForEach(this.statsSource, (stat: ShortCodeStatsVo, index: number) => {
+        ListItem() {
+          Column() {
+            if (index > 0) {
+              Divider()
+                .strokeWidth(0.5)
+                .color($r('app.color.HAIRLINE'))
+            }
+            this.StatRow(stat)
+          }
+          .width('100%')
+          .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+          .backgroundColor($r('app.color.SURFACE'))
+          .margin({
+            left: 1,
+            right: 1,
+            top: index === 0 ? 1 : 0,
+            bottom: this.isLastStatsRow(index) ? 1 : 0
+          })
+        }
+        .backgroundColor($r('app.color.OUTLINE'))
+        .borderRadius(this.statsCardRadius(index === 0, this.isLastStatsRow(index)))
+        .clip(true)
+      }, (stat: ShortCodeStatsVo, index: number) => `${index}`)
+      if (this.statsLoadingMore) {
+        ListItem() {
+          Column() {
+            // 追加加载：通宽骨架条（对齐安卓 append SkeletonBlock 14 高）
+            SkeletonBlock()
+              .width('100%')
+              .height(14)
+          }
+          .width('100%')
+          .padding({
+            left: DesignDimens.CARD_PADDING,
+            right: DesignDimens.CARD_PADDING,
+            top: DesignDimens.SPACE_SM,
+            bottom: DesignDimens.SPACE_SM
+          })
+          .backgroundColor($r('app.color.SURFACE'))
+          .margin({
+            left: 1,
+            right: 1,
+            top: 0,
+            bottom: (this.statsAppendError || this.statsError) ? 0 : 1
+          })
+        }
+        .backgroundColor($r('app.color.OUTLINE'))
+        .borderRadius(this.statsCardRadius(false, !(this.statsAppendError || this.statsError)))
+        .clip(true)
+      }
+      if (this.statsAppendError || this.statsError) {
+        ListItem() {
+          Column() {
+            // footer 内联错误可重试（对齐安卓 statsRefresh Error + itemCount > 0）：
+            // 已有数据补拉失败用含解决指引的独立文案（audit-18）；热区 48（16×2 + 行高）
+            Text(ToolboxText.toolbox_stats_error_retry)
+              .fontSize(DesignFontSize.CAPTION)
+              .fontColor($r('app.color.DANGER_INK'))
+              .width('100%')
+              .textAlign(TextAlign.Center)
+              .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
+              .onClick((): void => {
+                if (this.statsError) {
+                  this.statsPaging.reset()
+                  this.fetchStats(1)
+                } else {
+                  this.statsPaging.retry()
+                }
+              })
+          }
+          .width('100%')
+          .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+          .backgroundColor($r('app.color.SURFACE'))
+          .margin({ left: 1, right: 1, top: 0, bottom: 1 })
+        }
+        .backgroundColor($r('app.color.OUTLINE'))
+        .borderRadius(this.statsCardRadius(false, true))
+        .clip(true)
+      }
+    }
+  }
+
   build() {
     NavDestination() {
       ThemeRefresh() {
@@ -877,15 +1082,18 @@ struct ToolboxShortCodeDetail {
         .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
         .alignItems(VerticalAlign.Center)
 
-        // 卡片间距统一 16（对齐安卓 LazyColumn spacedBy(cardSpacing)）
-        List({ space: DesignDimens.CARD_SPACING }) {
+        // 卡片间距统一 16（对齐安卓 LazyColumn spacedBy(cardSpacing)）；明细卡内容平铺为
+        // ListItem（LazyForEach 须为 List 直接子项），故 space 置 0，间距由前三个卡片项自带
+        List({ space: 0 }) {
           ListItem() {
             this.InfoCard()
           }
+          .margin({ bottom: DesignDimens.CARD_SPACING })
 
           ListItem() {
             this.QrCard()
           }
+          .margin({ bottom: DesignDimens.CARD_SPACING })
 
           ListItem() {
             Text(ToolboxText.toolbox_stats_title)
@@ -894,98 +1102,19 @@ struct ToolboxShortCodeDetail {
               .fontColor($r('app.color.TEXT_PRIMARY'))
               .width('100%')
           }
+          .margin({ bottom: DesignDimens.CARD_SPACING })
 
-          ListItem() {
-            Column() {
-              if (this.statsLoadingFirst) {
-                // 统计首刷骨架（对齐安卓 ShortCodeDetailPage：SkeletonList(rows=3)，§3.6 禁转圈）
-                SkeletonList({ rows: 3 })
-              } else if (this.statsError && this.statsList.length === 0) {
-                Text(ToolboxText.toolbox_stats_error_load)
-                  .fontSize(DesignFontSize.BODY)
-                  .fontColor($r('app.color.TEXT_SECONDARY'))
-                  .width('100%')
-                  .textAlign(TextAlign.Center)
-                  .padding({ top: 8 })
-                // 重试热区 48（对齐安卓 padding vertical spaceMd，audit-18：原 8×2 = 32 不达标）
-                Text(ToolboxText.toolbox_action_retry)
-                  .fontSize(DesignFontSize.CAPTION)
-                  .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor($r('app.color.PRIMARY'))
-                  .width('100%')
-                  .textAlign(TextAlign.Center)
-                  .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
-                  .onClick(() => {
-                    this.statsPaging.reset()
-                    this.fetchStats(1)
-                  })
-              } else if (this.statsList.length === 0) {
-                // 字号对齐安卓 bodyMedium 14sp（原 BODY 16fp）；空态属可读状态正文：
-                // textTertiary ≈2.3:1 不达标（§10），与同页骨架/错误分支一致降档 textSecondary（audit-18）
-                Text(ToolboxText.toolbox_stats_empty)
-                  .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor($r('app.color.TEXT_SECONDARY'))
-                  .width('100%')
-                  .textAlign(TextAlign.Center)
-                  .padding({ top: 16, bottom: 16 })
-              } else {
-                ForEach(this.statsList, (stat: ShortCodeStatsVo, index: number) => {
-                  if (index > 0) {
-                    Divider()
-                      .strokeWidth(0.5)
-                      .color($r('app.color.HAIRLINE'))
-                  }
-                  this.StatRow(stat)
-                }, (stat: ShortCodeStatsVo, index: number) => `${index}`)
-                if (this.statsLoadingMore) {
-                  // 追加加载：通宽骨架条（对齐安卓 append SkeletonBlock 14 高）
-                  SkeletonBlock()
-                    .width('100%')
-                    .height(14)
-                }
-                if (this.statsAppendError || this.statsError) {
-                  // footer 内联错误可重试（对齐安卓 statsRefresh Error + itemCount > 0）：
-                  // 已有数据补拉失败用含解决指引的独立文案（audit-18）；热区 48（16×2 + 行高）
-                  Text(ToolboxText.toolbox_stats_error_retry)
-                    .fontSize(DesignFontSize.CAPTION)
-                    .fontColor($r('app.color.DANGER_INK'))
-                    .width('100%')
-                    .textAlign(TextAlign.Center)
-                    .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
-                    .onClick(() => {
-                      if (this.statsError) {
-                        this.statsPaging.reset()
-                        this.fetchStats(1)
-                      } else {
-                        this.statsPaging.retry()
-                      }
-                    })
-                }
-              }
-            }
-            .width('100%')
-            .alignItems(HorizontalAlign.Start)
-            .padding(DesignDimens.CARD_PADDING)
-            .backgroundColor($r('app.color.SURFACE'))
-            .borderRadius(DesignDimens.CARD_RADIUS)
-            // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
-            .border({ width: 1, color: $r('app.color.OUTLINE') })
-            .shadow({
-              radius: DesignElevation.LEVEL_1,
-              color: $r('app.color.SHADOW_COLOR_CARD'),
-              offsetX: 0,
-              offsetY: 2
-            })
-          }
+          // 明细卡内容（平铺为 ListItem / LazyForEach，见 StatsCard）
+          this.StatsCard()
         }
         .width('100%')
         .layoutWeight(1)
         .scrollBar(BarState.Off)
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM + safeBottomVp() })
         .divider({ strokeWidth: 0, color: Color.Transparent })
-        // 触底加载：列表项 = 信息卡 + 二维码卡 + 明细标题 + 明细行
+        // 触底加载：列表项 = 信息卡 + 二维码卡 + 明细标题 + 明细区（行 + 尾部）
         .onScrollIndex((start: number, end: number) => {
-          this.statsPaging.onScrollIndex(end, 3 + this.statsList.length)
+          this.statsPaging.onScrollIndex(end, 3 + this.statsCardItemCount())
         })
         .onScrollFrameBegin((offset: number) => {
           this.statsPaging.onScrollFrameBegin(offset)

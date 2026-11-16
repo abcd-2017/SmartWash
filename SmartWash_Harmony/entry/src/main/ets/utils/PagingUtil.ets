@@ -15,6 +15,62 @@
 export type FetchPageFn = (page: number) => Promise<boolean>
 export type LoadingChangeFn = (loading: boolean) => void
 
+/**
+ * LazyForEach 数据源（通用）：以「provider 闭包读取的数组」为唯一数据源，实现 IDataSource。
+ *
+ * 背景：LazyForEach 必须作用于 List/Grid/WaterFlow/Swiper 等懒加载容器，且需要 IDataSource
+ * 提供 totalCount/getData 与变化通知；页面侧的 @State 数组负责驱动空态/计数等 UI 状态，
+ * 本数据源经闭包读取同一数组，避免「状态数组」与「列表数据」两份数据不一致。
+ *
+ * 用法：
+ * - 页面 private 字段持有稳定实例（不可每次 build 重建，否则 LazyForEach 会整表重建）；
+ * - 数组整体替换后调 notifyReload()（第 1 页/刷新）；
+ * - 追加后调 notifyAppend(startIndex, count)（触底加载）。
+ * @param provider 读取页面 @State 数组的闭包
+ */
+export class LazyListDataSource<T> implements IDataSource {
+  private readonly provider: () => Array<T>
+  private listeners: Array<DataChangeListener> = []
+
+  constructor(provider: () => Array<T>) {
+    this.provider = provider
+  }
+
+  totalCount(): number {
+    return this.provider().length
+  }
+
+  getData(index: number): T {
+    return this.provider()[index]
+  }
+
+  registerDataChangeListener(listener: DataChangeListener): void {
+    if (this.listeners.indexOf(listener) < 0) {
+      this.listeners.push(listener)
+    }
+  }
+
+  unregisterDataChangeListener(listener: DataChangeListener): void {
+    const index: number = this.listeners.indexOf(listener)
+    if (index >= 0) {
+      this.listeners.splice(index, 1)
+    }
+  }
+
+  /** 全量替换后通知（对应 ForEach 整体换数组，LazyForEach 重建全部可见项） */
+  notifyReload(): void {
+    this.listeners.forEach((listener: DataChangeListener): void => listener.onDataReloaded())
+  }
+
+  /** 追加后按新索引逐项通知（触底 append，避免整表重建） */
+  notifyAppend(startIndex: number, count: number): void {
+    for (let i = 0; i < count; i++) {
+      const index: number = startIndex + i
+      this.listeners.forEach((listener: DataChangeListener): void => listener.onDataAdd(index))
+    }
+  }
+}
+
 /** onScrollFrameBegin 判定为"向下滑动"的偏移阈值（vp），沿用各页原实现 */
 const SCROLL_OFFSET_THRESHOLD: number = 5
 

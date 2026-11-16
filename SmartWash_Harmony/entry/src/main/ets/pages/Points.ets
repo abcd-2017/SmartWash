@@ -14,7 +14,13 @@
  */
 
 import { BizCode } from '../network/HttpUtil'
-import { getPointsLeaderboard, getPointsOverview, signInToday } from '../network/api/PointsApi'
+import {
+  POINTS_LEDGER_PAGE_SIZE,
+  getPointsLeaderboard,
+  getPointsLedger,
+  getPointsOverview,
+  signInToday
+} from '../network/api/PointsApi'
 import { LeaderboardEntryVo, LeaderboardVo, PointLedgerItemVo, PointsOverviewVo } from '../network/vo/PointsVo'
 import {
   LeaderboardMonth,
@@ -34,6 +40,8 @@ import { showToastSafety } from '../utils/ToastUtil'
 import { logger } from '../utils/Logger'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { AppButton, AppButtonVariant, DrumMark, EmptyState, LoadingState, PageHeader, SkeletonBlock } from '../view/common/AppComponents'
+import { LoadingFooter } from '../view/LoadingFooter'
+import { LazyListDataSource, PagingController } from '../utils/PagingUtil'
 import { ThemeRefreshV2 } from '../view/common/ThemeRefresh'
 import { resColor } from '../utils/ResourceColor'
 import { resString } from '../utils/ResourceString'
@@ -263,11 +271,32 @@ export struct PointsPage {
   @Local leaderboardError: boolean = false
   /** 签到防重锁（CTA loading 禁点为第一层，后端幂等为最终兜底） */
   @Local signingIn: boolean = false
+  /** 积分流水列表（ledger 分页接口，时间倒序；与 ledgerSource 经闭包共享同一数组） */
+  @Local ledgerItems: Array<PointLedgerItemVo> = []
+  /** 流水首屏是否已返回（未返回时卡内展示骨架，避免空态闪烁） */
+  @Local ledgerLoaded: boolean = false
+  /** 流水首屏失败（无数据时卡内错误小态 + 重试；有旧数据时保留旧数据仅日志） */
+  @Local ledgerError: boolean = false
+  /** 流水触底加载态（footer spinner） */
+  @Local ledgerLoadingMore: boolean = false
+  /** LazyForEach 数据源：读取 ledgerItems（实例稳定，避免整表重建） */
+  private ledgerSource: LazyListDataSource<PointLedgerItemVo> =
+    new LazyListDataSource<PointLedgerItemVo>(() => this.ledgerItems)
+  /** 流水触底分页控制器（复用 PagingUtil，行为对齐订单列表） */
+  private ledgerPaging: PagingController = new PagingController(
+    (page: number): Promise<boolean> => {
+      return this.fetchLedgerPage(page)
+    },
+    (loading: boolean): void => {
+      this.ledgerLoadingMore = loading
+    }
+  )
 
   aboutToAppear(): void {
-    logger.debug('pointsPage', '签到有礼页挂载，并行拉取概览与月榜')
+    logger.debug('pointsPage', '签到有礼页挂载，并行拉取概览、月榜与流水首页')
     this.loadOverview()
     this.loadLeaderboard()
+    this.fetchLedgerPage(1)
   }
 
   /**
@@ -325,6 +354,53 @@ export struct PointsPage {
       }
     }
     this.leaderboardLoading = false
+  }
+
+  /**
+   * 按页拉取积分流水（时间倒序）。第 1 页整体替换并 notifyReload，后续页追加并 notifyAppend。
+   * @returns 本页是否有数据（供 PagingController 判断是否封底）
+   */
+  private async fetchLedgerPage(page: number): Promise<boolean> {
+    const isFirst: boolean = page === 1
+    if (isFirst) {
+      this.ledgerError = false
+      // 无旧数据的重拉（首载/错误重试）回骨架，避免空态闪烁；有旧数据走 stale-while-revalidate
+      if (this.ledgerItems.length === 0) {
+        this.ledgerLoaded = false
+      }
+    }
+    try {
+      const res = await getPointsLedger(page, POINTS_LEDGER_PAGE_SIZE)
+      if (res.code === BizCode.SUCCESS && res.data !== null) {
+        const records: Array<PointLedgerItemVo> = res.data.records
+        if (isFirst) {
+          this.ledgerItems = records
+          this.ledgerSource.notifyReload()
+          this.ledgerLoaded = true
+        } else if (records.length > 0) {
+          const startIndex: number = this.ledgerItems.length
+          this.ledgerItems = this.ledgerItems.concat(records)
+          this.ledgerSource.notifyAppend(startIndex, records.length)
+        }
+        logger.debug('pointsPage', `积分流水加载成功 page=${page} count=${records.length}`)
+        return records.length > 0
+      }
+      logger.warn('pointsPage', `积分流水未生效 page=${page} code=${res.code} message=${res.message ?? ''}`)
+      // 首屏失败且无旧数据：卡内错误态给重试；刷新失败保留旧数据仅日志
+      if (isFirst && this.ledgerItems.length === 0) {
+        this.ledgerError = true
+        this.ledgerLoaded = true
+      }
+      return false
+    } catch (err) {
+      const e: BusinessError = err as BusinessError
+      logger.warn('pointsPage', `积分流水加载异常 page=${page} err=${e.message}`)
+      if (isFirst && this.ledgerItems.length === 0) {
+        this.ledgerError = true
+        this.ledgerLoaded = true
+      }
+      return false
+    }
   }
 
   /**
@@ -388,6 +464,9 @@ export struct PointsPage {
     } catch (err) {
       logger.warn('pointsPage', '签到后静默刷新月榜失败')
     }
+    // 流水以服务端为准：重置分页后重拉首页（失败保留旧数据，仅日志留痕）
+    this.ledgerPaging.reset()
+    this.fetchLedgerPage(1)
   }
 
 
@@ -440,9 +519,23 @@ export struct PointsPage {
     return [0, 1]
   }
 
-  /** 流水列表（overview 缺失兜底空数组，收敛 build 内取链） */
-  private ledgerItems(): Array<PointLedgerItemVo> {
-    return this.overview?.recentLedger ?? []
+  /** 流水内容区 ListItem 数（骨架/错误/空态各占 1 项，数据态为流水条数） */
+  private ledgerContentItemCount(): number {
+    if (!this.ledgerLoaded || (this.ledgerError && this.ledgerItems.length === 0)
+      || this.ledgerItems.length === 0) {
+      return 1
+    }
+    return this.ledgerItems.length
+  }
+
+  /** 页面 List 的 ListItem 总数（hero + 榜单 + 流水标题 + 流水内容 + footer），供触底判定 */
+  private pageListItemCount(): number {
+    return 3 + this.ledgerContentItemCount() + 1
+  }
+
+  /** 流水行是否末行（用于卡片底边圆角/描边） */
+  private isLastLedgerRow(index: number): boolean {
+    return index === this.ledgerItems.length - 1
   }
 
 
@@ -678,26 +771,51 @@ export struct PointsPage {
     .margin({ top: DesignDimens.SPACE_XXL })
   }
 
+  /**
+   * 流水区块标题（独立 ListItem，与卡片间距 8 由 margin bottom 给出；
+   * 标题在卡片外，与安卓 LedgerSection 的 Column 结构一致）。
+   */
   @Builder
-  LedgerSection() {
-    Column() {
-      // 区块标题（无角标；同上内联，规避 @Builder 按值传参定格坑）
-      Row() {
-        Text(PointsText.ledgerTitle)
-          .fontSize(DesignFontSize.SECTION_TITLE)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor($r('app.color.TEXT_PRIMARY'))
-        Blank()
+  LedgerTitle() {
+    Row() {
+      Text(PointsText.ledgerTitle)
+        .fontSize(DesignFontSize.SECTION_TITLE)
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
+        .fontColor($r('app.color.TEXT_PRIMARY'))
+      Blank()
+    }
+    .width('100%')
+    .alignItems(VerticalAlign.Center)
+    // 区块间距 32（对齐安卓 sectionSpacing）+ 标题到卡片 8（对齐安卓 Spacer spaceXs）
+    .margin({ top: DesignDimens.SPACE_XXL, bottom: DesignDimens.SPACE_XS })
+  }
+
+  /**
+   * 流水内容区（LazyForEach 须为 List 直接子项，故与标题拆成两个 ListItem）：
+   * 首屏骨架 / 首屏失败 / 空态各占 1 项；数据态按 ledgerItems 懒加载。
+   */
+  @Builder
+  LedgerListContent() {
+    if (!this.ledgerLoaded) {
+      // 首屏未返回：卡内骨架（禁止转圈，规范 §3.6），避免空态闪烁
+      ListItem() {
+        this.LedgerSkeleton()
       }
-      .width('100%')
-      .alignItems(VerticalAlign.Center)
-      Column() {
-        if (this.ledgerItems().length === 0) {
-          // 空流水：卡内滚筒母题空态引导（对齐安卓 audit-20 #7，points_ledger_empty 文案；
-          // 区块恒驻不再整块隐藏，新用户也有签到引导）
-          EmptyState({ message: PointsText.ledgerEmpty })
-        } else {
-          ForEach(this.ledgerItems(), (item: PointLedgerItemVo, index: number) => {
+    } else if (this.ledgerError && this.ledgerItems.length === 0) {
+      // 首屏失败且无数据：卡内错误小态 + 重试（不伪装成空流水）
+      ListItem() {
+        this.LedgerErrorState()
+      }
+    } else if (this.ledgerItems.length === 0) {
+      // 空流水：卡内滚筒母题空态引导（对齐安卓 audit-20 #7，points_ledger_empty 文案；
+      // 区块恒驻不再整块隐藏，新用户也有签到引导）
+      ListItem() {
+        this.LedgerEmptyState()
+      }
+    } else {
+      LazyForEach(this.ledgerSource, (item: PointLedgerItemVo, index: number) => {
+        ListItem() {
+          Column() {
             if (index > 0) {
               this.RowDivider()
             }
@@ -707,27 +825,94 @@ export struct PointsPage {
               createdAt: item.createdAt ?? '',
               delta: item.delta ?? 0
             })
-          }, (item: PointLedgerItemVo, index: number) => `${index}_${item.createdAt ?? ''}_${item.delta ?? 0}`)
+          }
+          .width('100%')
+          // 行内容距描边 20（对齐安卓 GroupCard contentPadding horizontal cardPadding）
+          .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+          .backgroundColor($r('app.color.SURFACE'))
+          // 1px 外描边：ListItem 以 OUTLINE 为底，内层四周留 1px 露出边框（首行上边/末行下边）
+          .margin({
+            left: 1,
+            right: 1,
+            top: index === 0 ? 1 : 0,
+            bottom: this.isLastLedgerRow(index) ? 1 : 0
+          })
         }
-      }
-      .width('100%')
-      .margin({ top: DesignDimens.SPACE_XS })
-      // 行内容距描边 20（对齐安卓 GroupCard contentPadding horizontal cardPadding）
-      .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-      .backgroundColor($r('app.color.SURFACE'))
-      .borderRadius(DesignDimens.CARD_RADIUS)
-      .border({ width: 1, color: $r('app.color.OUTLINE') })
-      .shadow({
-        radius: DesignElevation.CARD_SHADOW_RADIUS,
-        color: $r('app.color.SHADOW_COLOR_CARD'),
-        offsetX: 0,
-        offsetY: DesignElevation.CARD_SHADOW_OFFSET
-      })
-      .clip(true)
+        .backgroundColor($r('app.color.OUTLINE'))
+        .borderRadius(index === 0
+          ? { topLeft: DesignDimens.CARD_RADIUS, topRight: DesignDimens.CARD_RADIUS, bottomLeft: 0, bottomRight: 0 }
+          : (this.isLastLedgerRow(index)
+            ? { topLeft: 0, topRight: 0, bottomLeft: DesignDimens.CARD_RADIUS, bottomRight: DesignDimens.CARD_RADIUS }
+            : { topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0 }))
+        .clip(true)
+      }, (item: PointLedgerItemVo, index: number) => `${index}_${item.createdAt ?? ''}_${item.delta ?? 0}`)
+    }
+  }
+
+  /** 流水卡骨架（形状对齐真实流水行：左权重条 + 右数值块） */
+  @Builder
+  LedgerSkeleton() {
+    Column() {
+      ForEach(this.skeletonRows(), (row: number) => {
+        Row() {
+          SkeletonBlock()
+            .height(DesignDimens.SPACE_MD)
+            .layoutWeight(1)
+          SkeletonBlock()
+            .width(DesignDimens.SPACE_XL)
+            .height(DesignDimens.SPACE_MD)
+            .margin({ left: DesignDimens.SPACE_MD })
+        }
+        .width('100%')
+        .height(56)
+        .alignItems(VerticalAlign.Center)
+      }, (row: number) => row.toString())
     }
     .width('100%')
-    // 区块间距 32（对齐安卓 sectionSpacing）
-    .margin({ top: DesignDimens.SPACE_XXL })
+    .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+    .backgroundColor($r('app.color.SURFACE'))
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
+    .clip(true)
+  }
+
+  /** 空流水卡（滚筒母题空态，恒驻引导） */
+  @Builder
+  LedgerEmptyState() {
+    Column() {
+      EmptyState({ message: PointsText.ledgerEmpty })
+    }
+    .width('100%')
+    .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+    .backgroundColor($r('app.color.SURFACE'))
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
+    .clip(true)
+  }
+
+  /** 流水首屏失败卡（说明 + 重试，不伪装成空态） */
+  @Builder
+  LedgerErrorState() {
+    Column() {
+      Text(PointsText.loadFailed)
+        .fontSize(DesignFontSize.BODY_SMALL)
+        .fontColor($r('app.color.TEXT_SECONDARY'))
+      AppButton({
+        text: PointsText.actionRetry,
+        variant: AppButtonVariant.SECONDARY,
+        click: (): void => {
+          this.fetchLedgerPage(1)
+        }
+      })
+        .margin({ top: DesignDimens.SPACE_MD })
+    }
+    .width('100%')
+    .padding({ top: DesignDimens.CARD_PADDING, bottom: DesignDimens.CARD_PADDING })
+    .alignItems(HorizontalAlign.Center)
+    .backgroundColor($r('app.color.SURFACE'))
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
+    .clip(true)
   }
 
   build() {
@@ -760,29 +945,46 @@ export struct PointsPage {
             .layoutWeight(1)
             .justifyContent(FlexAlign.Center)
           } else {
-            Scroll() {
-              Column() {
+            // 页面整体为一个 List：LazyForEach 只能作用于 List/Grid/WaterFlow/Swiper，
+            // 故由 Scroll+Column 改为 List，hero/榜单/流水标题各占一个 ListItem，
+            // 流水行懒加载并触底翻页（页脚 LoadingFooter）。
+            List() {
+              ListItem() {
                 this.HeroCard()
-                this.LeaderboardSection()
-                // 最近流水（append-only 时间倒序）：区块恒驻，空时卡内空态引导
-                //（对齐安卓 audit-20 #7，条件渲染整块消失会导致新用户页面无引导）
-                this.LedgerSection()
               }
-              .width('100%')
-              .padding({
-                left: DesignDimens.PAGE_PADDING,
-                right: DesignDimens.PAGE_PADDING,
-                // 顶距 12：对齐安卓 PageHeader 节奏补偿先例（安卓 top=spaceSm）
-                top: DesignDimens.SPACE_SM,
-                // 底部 = 导航条高度 + 24 基数（对齐安卓 spaceXl + navigationBars，
-                // 无导航条设备末卡不贴屏幕底）
-                bottom: safeBottomVp() + DesignDimens.SPACE_XL
-              })
+              ListItem() {
+                this.LeaderboardSection()
+              }
+              ListItem() {
+                this.LedgerTitle()
+              }
+              // 流水（append-only 时间倒序）：LazyForEach + 触底加载，空时卡内空态引导
+              //（对齐安卓 audit-20 #7，条件渲染整块消失会导致新用户页面无引导）
+              this.LedgerListContent()
+              ListItem() {
+                LoadingFooter({ isLoading: this.ledgerLoadingMore })
+              }
             }
             .width('100%')
-            .height('100%')
+            .layoutWeight(1)
+            .padding({
+              left: DesignDimens.PAGE_PADDING,
+              right: DesignDimens.PAGE_PADDING,
+              // 顶距 12：对齐安卓 PageHeader 节奏补偿先例（安卓 top=spaceSm）
+              top: DesignDimens.SPACE_SM,
+              // 底部 = 导航条高度 + 24 基数（对齐安卓 spaceXl + navigationBars，
+              // 无导航条设备末卡不贴屏幕底）
+              bottom: safeBottomVp() + DesignDimens.SPACE_XL
+            })
+            .onScrollIndex((start: number, end: number) => {
+              // listLength 必须是 ListItem 真实数量（hero + 榜单 + 流水标题 + 流水内容 + footer）
+              this.ledgerPaging.onScrollIndex(end, this.pageListItemCount())
+            })
+            .onScrollFrameBegin((offset: number, state: ScrollState) => {
+              this.ledgerPaging.onScrollFrameBegin(offset)
+              return { offsetRemain: offset }
+            })
             .scrollBar(BarState.Off)
-            .align(Alignment.TopStart)
           }
         }
         .width('100%')

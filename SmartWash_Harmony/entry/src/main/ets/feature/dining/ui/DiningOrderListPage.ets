@@ -8,23 +8,40 @@
 import { RouteNames } from '../../../constant/RouteNames'
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
-import { DiningOrderListVo, getMyDiningOrders } from '../../../network/api/DiningApi'
+import { DiningOrderListVo, pageMyDiningOrders } from '../../../network/api/DiningApi'
 import { diningOrderStatusFromCode, DiningOrderStatus, diningTimeLabel } from '../DiningLogic'
 import { DiningOrderCreateParam } from '../api'
 import { DiningText } from '../DiningText'
 import { DiningStatusTag } from './DiningUiCommon'
 import { AppButton, AppButtonVariant, EmptyState, SkeletonList } from '../../../view/common/AppComponents'
+import { LoadingFooter } from '../../../view/LoadingFooter'
 import { logger } from '../../../utils/Logger'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { LazyListDataSource, PagingController } from '../../../utils/PagingUtil'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'diningOrderList'
 
 /** FAB 尺寸（vp）：对齐 Android dining FAB 56dp 圆形自绘 */
 const FAB_SIZE: number = 56
+
+/** 订单列表分页大小（后端 BaseSearchFrom 默认 10，上限 100） */
+const PAGE_SIZE: number = 10
+
+/**
+ * LazyForEach 数据源条目：分区标题或订单卡。
+ * 单一数据源承载「我发起的 / 我参与的」分组，避免在 List 中混排多个 LazyForEach。
+ */
+interface DiningOrderListEntry {
+  /** 稳定唯一 key（框架按 key 复用子组件） */
+  key: string
+  isHeader: boolean
+  title: string
+  order: DiningOrderListVo | null
+}
 
 @Builder
 export function DiningOrderListBuilder() {
@@ -37,15 +54,31 @@ struct DiningOrderListPage {
   @Local createdOrders: Array<DiningOrderListVo> = []
   /** 我参与的订单 */
   @Local joinedOrders: Array<DiningOrderListVo> = []
+  /** LazyForEach 数据源条目（分区标题 + 订单卡，由分区数组派生） */
+  @Local entries: Array<DiningOrderListEntry> = []
   @Local isLoading: boolean = true
   @Local isError: boolean = false
+  // 触底加载更多态（驱动 LoadingFooter）
+  @Local isLoadingMore: boolean = false
   // 按压反馈 key（对齐项目口径：onTouch Down/Up + scale 0.97）
   @Local pressedKey: string = ''
+  /** LazyForEach 数据源（读取 entries，实例稳定不可重建） */
+  private dataSource: LazyListDataSource<DiningOrderListEntry> =
+    new LazyListDataSource<DiningOrderListEntry>(() => this.entries)
+  /** 轻量分页封装：触底加载/上锁防重/封底判定（复用 OrderList 同款） */
+  private paging: PagingController = new PagingController(
+    (page: number): Promise<boolean> => {
+      return this.fetchOrderPage(page)
+    },
+    (loading: boolean): void => {
+      this.isLoadingMore = loading
+    }
+  )
   private hasShown: boolean = false
 
   aboutToAppear(): void {
     logger.debug(TAG, '订单列表页挂载，开始首载')
-    this.load()
+    this.reloadFirstPage()
   }
 
   build() {
@@ -106,7 +139,7 @@ struct DiningOrderListPage {
                       text: DiningText.dining_action_retry,
                       variant: AppButtonVariant.SECONDARY,
                       click: () => {
-                        this.load()
+                        this.reloadFirstPage()
                       }
                     })
                   }
@@ -123,31 +156,36 @@ struct DiningOrderListPage {
               .width('100%')
               .layoutWeight(1)
             } else {
-              Scroll() {
-                Column() {
-                  if (this.createdOrders.length > 0) {
-                    this.SectionHeader(DiningText.dining_order_section_created)
-                    ForEach(this.createdOrders, (order: DiningOrderListVo) => {
-                      this.OrderCard(order)
-                    }, (order: DiningOrderListVo) => `created_${order.id}`)
+              // 真数据列表改 LazyForEach 懒加载（分区标题 + 订单卡统一走数据源）
+              List() {
+                LazyForEach(this.dataSource, (entry: DiningOrderListEntry) => {
+                  ListItem() {
+                    if (entry.isHeader) {
+                      this.SectionHeader(entry.title)
+                    } else if (entry.order !== null) {
+                      this.OrderCard(entry.order)
+                    }
                   }
-                  if (this.joinedOrders.length > 0) {
-                    this.SectionHeader(DiningText.dining_order_section_joined)
-                    ForEach(this.joinedOrders, (order: DiningOrderListVo) => {
-                      this.OrderCard(order)
-                    }, (order: DiningOrderListVo) => `joined_${order.id}`)
-                  }
-                  Column() {
-                  }
-                  .height(Math.max(safeBottomVp() + FAB_SIZE, DesignDimens.SPACE_XXL))
+                }, (entry: DiningOrderListEntry) => entry.key)
+                ListItem() {
+                  LoadingFooter({ isLoading: this.isLoadingMore })
                 }
-                .width('100%')
               }
               .scrollBar(BarState.Off)
               .width('100%')
               .height('100%')
               .align(Alignment.TopStart)
               .edgeEffect(EdgeEffect.Spring)
+              // 底部留白避开 FAB 遮挡（原 Scroll 内占位 Column 的等价迁移）
+              .padding({ bottom: Math.max(safeBottomVp() + FAB_SIZE, DesignDimens.SPACE_XXL) })
+              .onScrollIndex((start: number, end: number) => {
+                // listLength 为 ListItem 真实数量（数据源条目 + LoadingFooter）
+                this.paging.onScrollIndex(end, this.dataSource.totalCount() + 1)
+              })
+              .onScrollFrameBegin((offset: number, state: ScrollState) => {
+                this.paging.onScrollFrameBegin(offset)
+                return { offsetRemain: offset }
+              })
             }
           }
           .width('100%')
@@ -206,7 +244,7 @@ struct DiningOrderListPage {
         return
       }
       logger.debug(TAG, '列表页重回可见，重拉订单')
-      this.load()
+      this.reloadFirstPage()
     })
   }
 
@@ -314,36 +352,109 @@ struct DiningOrderListPage {
     })
   }
 
-  /** 拉取我的订单并按 isCreator 派生分区 */
-  private async load(): Promise<void> {
-    this.isLoading = this.createdOrders.length === 0 && this.joinedOrders.length === 0
+  /** 重置分页并重拉第 1 页（首载 / 离栈再回 / 失败重试） */
+  private reloadFirstPage(): void {
+    this.paging.reset()
+    this.fetchOrderPage(1)
+  }
+
+  /**
+   * 按页拉取我的订单并按 isCreator 派生分区。
+   * @returns 本页是否有数据（供 PagingController 判断是否封底）
+   */
+  private async fetchOrderPage(page: number): Promise<boolean> {
+    this.isLoading = page === 1 && this.createdOrders.length === 0 && this.joinedOrders.length === 0
     this.isError = false
     try {
-      const res = await getMyDiningOrders()
+      const res = await pageMyDiningOrders(page, PAGE_SIZE)
       if (res.code === BizCode.SUCCESS && res.data !== null) {
-        const created: Array<DiningOrderListVo> = []
-        const joined: Array<DiningOrderListVo> = []
-        res.data.forEach((order: DiningOrderListVo): void => {
-          if (order.isCreator) {
-            created.push(order)
-          } else {
-            joined.push(order)
-          }
-        })
-        this.createdOrders = created
-        this.joinedOrders = joined
-        logger.debug(TAG, `订单列表加载成功 发起=${created.length} 参与=${joined.length}`)
-      } else {
-        logger.warn(TAG, `订单列表未生效 code=${res.code} message=${res.message ?? ''}`)
-        this.isError = true
-        showToastSafety(res.message, DiningText.dining_order_list_load_failed)
+        const records: Array<DiningOrderListVo> = res.data.records
+        if (page === 1) {
+          this.createdOrders = []
+          this.joinedOrders = []
+        }
+        this.appendOrders(records)
+        this.syncDataSource()
+        logger.debug(TAG, `订单列表加载成功 page=${page} 本页=${records.length} ` +
+          `发起=${this.createdOrders.length} 参与=${this.joinedOrders.length}`)
+        return records.length > 0
       }
+      logger.warn(TAG, `订单列表未生效 page=${page} code=${res.code} message=${res.message ?? ''}`)
+      if (page === 1) {
+        this.isError = true
+      }
+      showToastSafety(res.message, DiningText.dining_order_list_load_failed)
+      return false
     } catch (err) {
       logger.error(TAG, '订单列表加载异常', err instanceof Error ? err.message : '')
-      this.isError = true
+      if (page === 1) {
+        this.isError = true
+      }
       showToastSafety('', DiningText.dining_order_list_load_failed)
+      return false
+    } finally {
+      if (page === 1) {
+        this.isLoading = false
+      }
     }
-    this.isLoading = false
+  }
+
+  /**
+   * 追加分页记录到对应分区：按 id 去重（防触底/重拉并发重复），
+   * 并按 createdAt 倒序重排（后端分页原序为倒序，合并后保持稳定顺序）。
+   */
+  private appendOrders(records: Array<DiningOrderListVo>): void {
+    const seen = new Set<number>()
+    for (const order of this.createdOrders) {
+      seen.add(order.id)
+    }
+    for (const order of this.joinedOrders) {
+      seen.add(order.id)
+    }
+    for (const order of records) {
+      if (seen.has(order.id)) {
+        continue
+      }
+      seen.add(order.id)
+      if (order.isCreator) {
+        this.createdOrders.push(order)
+      } else {
+        this.joinedOrders.push(order)
+      }
+    }
+    this.createdOrders.sort((a: DiningOrderListVo, b: DiningOrderListVo) =>
+      (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+    this.joinedOrders.sort((a: DiningOrderListVo, b: DiningOrderListVo) =>
+      (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+  }
+
+  /** 由分区数组重建 LazyForEach 数据源（分区标题 + 订单卡，键稳定） */
+  private syncDataSource(): void {
+    const listEntries: Array<DiningOrderListEntry> = []
+    if (this.createdOrders.length > 0) {
+      listEntries.push({
+        key: 'header_created',
+        isHeader: true,
+        title: DiningText.dining_order_section_created,
+        order: null
+      })
+      for (const order of this.createdOrders) {
+        listEntries.push({ key: `created_${order.id}`, isHeader: false, title: '', order: order })
+      }
+    }
+    if (this.joinedOrders.length > 0) {
+      listEntries.push({
+        key: 'header_joined',
+        isHeader: true,
+        title: DiningText.dining_order_section_joined,
+        order: null
+      })
+      for (const order of this.joinedOrders) {
+        listEntries.push({ key: `joined_${order.id}`, isHeader: false, title: '', order: order })
+      }
+    }
+    this.entries = listEntries
+    this.dataSource.notifyReload()
   }
 
   /** 卡片点击：进行中 → 点单页；已结束/未知 → 购买清单结果页（未知态保守降级同 FINISHED） */

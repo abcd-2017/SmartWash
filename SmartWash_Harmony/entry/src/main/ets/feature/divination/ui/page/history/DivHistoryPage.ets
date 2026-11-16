@@ -29,6 +29,7 @@ import { pathStack } from '../../../../../utils/PathStackUtil'
 import { logger } from '../../../../../utils/Logger'
 import { resString } from '../../../../../utils/ResourceString'
 import { Debouncer } from '../../../../../utils/DebounceUtil'
+import { LazyListDataSource } from '../../../../../utils/PagingUtil'
 
 /** 术数筛选选项（「全部」+ 四术） */
 const FILTER_ALL = 'all'
@@ -53,6 +54,9 @@ export struct DivHistoryPage {
   @Local isLoading: boolean = true
   // 连点防抖（对齐安卓 rememberDebouncedClick）：navigate 无 launchSingleTop，窗口内只推一次栈
   private debouncer: Debouncer = new Debouncer()
+  // LazyForEach 数据源（本地全量数组经 filter 派生；实例稳定不可重建）
+  private dataSource: LazyListDataSource<DivRecordRow> =
+    new LazyListDataSource<DivRecordRow>(() => this.filtered())
 
   aboutToAppear(): void {
     this.refresh()
@@ -64,10 +68,12 @@ export struct DivHistoryPage {
     try {
       const all = await DivRecordRepository.observeAll()
       this.records = all
+      this.dataSource.notifyReload()
       // 全量拉取（无分页），成功仅 debug 留痕
       logger.debug('divHistoryPage', `卦历加载完成 total=${all.length}`)
     } catch (err) {
       this.records = []
+      this.dataSource.notifyReload()
       logger.warn('divHistoryPage', `卦历加载失败，按空态呈现, ${err instanceof Error ? err.message : ''}`)
     }
     this.isLoading = false
@@ -186,6 +192,7 @@ export struct DivHistoryPage {
               horizontalPadding: 14,
               onAction: () => {
                 this.filter = FILTER_ALL
+                this.dataSource.notifyReload()
               }
             })
             ForEach(METHODS, (method: string) => {
@@ -195,6 +202,7 @@ export struct DivHistoryPage {
                 horizontalPadding: 14,
                 onAction: () => {
                   this.filter = method
+                  this.dataSource.notifyReload()
                 }
               })
             }, (method: string) => method)
@@ -259,7 +267,7 @@ export struct DivHistoryPage {
 
           // 列表层（画板：卡间距 8 · 卡高 60，compare-08 #9 勿用全局 CARD_SPACING=16）
           List({ space: 8 }) {
-            ForEach(this.filtered(), (row: DivRecordRow) => {
+            LazyForEach(this.dataSource, (row: DivRecordRow) => {
               ListItem() {
                 DivCard({
                   clickable: true,
@@ -311,7 +319,8 @@ export struct DivHistoryPage {
                   .alignItems(VerticalAlign.Center)
                 }
               }
-            }, (row: DivRecordRow) => row.id.toString())
+            // 键含建档状态指纹：refresh 整表替换对象后键不变会复用旧子组件（同步标记滞后）
+            }, (row: DivRecordRow) => `${row.id.toString()}_${row.serverRecordId}`)
           }
           .width('100%')
           .height('100%')

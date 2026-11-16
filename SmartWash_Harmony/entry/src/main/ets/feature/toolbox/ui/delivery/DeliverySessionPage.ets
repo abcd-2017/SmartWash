@@ -28,6 +28,7 @@ import {
   DeliveryItemVo,
   DeliverySessionVo,
   DeliveryText,
+  fetchDeliveryItems,
   fetchDeliverySessionDetail,
   fetchDeliveryTextContent,
   formatRemaining,
@@ -39,6 +40,7 @@ import {
 } from '../../DeliveryApi'
 import { DeliveryItemRow } from './DeliveryComponents'
 import { AppButton, AppConfirmDialog, EmptyState, SkeletonList } from '../../../../view/common/AppComponents'
+import { LoadingFooter } from '../../../../view/LoadingFooter'
 import { logger } from '../../../../utils/Logger'
 import { getStringParam, pathStack } from '../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../utils/ToastUtil'
@@ -46,9 +48,13 @@ import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../../view/common/ThemeRefresh'
 import { resColor } from '../../../../utils/ResourceColor'
 import { resString } from '../../../../utils/ResourceString'
+import { LazyListDataSource, PagingController } from '../../../../utils/PagingUtil'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'deliverySession'
+
+/** 条目明细分页大小（后端 BaseSearchFrom 默认 10，上限 100） */
+const PAGE_SIZE: number = 10
 
 @Builder
 export function DeliverySessionBuilder() {
@@ -63,6 +69,8 @@ struct DeliverySessionPage {
   @State isLoadingFirst: boolean = true
   @State isFirstError: boolean = false
   @State pollFailed: boolean = false
+  // 触底加载更多态
+  @State isLoadingMore: boolean = false
   @State draft: string = ''
   @State sending: boolean = false
   @State sendError: string = ''
@@ -77,6 +85,18 @@ struct DeliverySessionPage {
   private goneHandled: boolean = false
   // 页面销毁标记：防止在途 poll 完成后又排下一轮定时器（定时器泄漏）
   private isDestroyed: boolean = false
+  /** 条目流 LazyForEach 数据源（读取 items，条目按 createdAt 正序；实例稳定不可重建） */
+  private itemDataSource: LazyListDataSource<DeliveryItemVo> =
+    new LazyListDataSource<DeliveryItemVo>(() => this.items)
+  /** 轻量分页封装：触底加载历史页（与轮询最新页合并去重） */
+  private paging: PagingController = new PagingController(
+    (page: number): Promise<boolean> => {
+      return this.fetchItemsPage(page)
+    },
+    (loading: boolean): void => {
+      this.isLoadingMore = loading
+    }
+  )
 
   // 关闭会话确认弹窗（静态文案，字段持有）
   private closeDialogController: CustomDialogController = new CustomDialogController({
@@ -109,6 +129,9 @@ struct DeliverySessionPage {
       return
     }
     logger.debug(TAG, `会话页挂载 code=${this.code}`)
+    // 首屏：条目明细分页接口第 1 页（懒加载数据源），会话元信息仍走轮询详情
+    this.paging.reset()
+    this.fetchItemsPage(1)
     this.startPolling()
   }
 
@@ -146,7 +169,11 @@ struct DeliverySessionPage {
     }, delay)
   }
 
-  /** 拉取会话详情 + 条目流；404 = 会话失效立即退出，其余失败退避重试 */
+  /**
+   * 拉取会话详情（会话元信息）+ 按 itemCount 拉取最新一页条目合并；
+   * 404 = 会话失效立即退出，其余失败退避重试。
+   * 条目流实时性由本轮「最新页」轮询保证，历史明细则由分页接口触底追加。
+   */
   private async poll(): Promise<void> {
     if (this.isPolling) {
       return
@@ -156,7 +183,6 @@ struct DeliverySessionPage {
       const res = await fetchDeliverySessionDetail(this.code)
       if (res.code === HttpStatusCode.Ok && res.data !== null) {
         this.session = res.data.session ?? null
-        this.items = res.data.items ?? []
         this.isLoadingFirst = false
         this.isFirstError = false
         this.pollFailed = false
@@ -166,6 +192,16 @@ struct DeliverySessionPage {
         if (remain !== null && remain <= 0) {
           this.markSessionGone(DeliveryText.toolbox_delivery_session_gone_toast)
           return
+        }
+        // 实时性：拉取最新一页（条目按 createdAt 正序，最新页含新条目/状态变化），合并去重保序
+        const itemCount = this.session?.itemCount ?? 0
+        const lastPage = Math.max(1, Math.ceil(itemCount / PAGE_SIZE))
+        const records = await this.requestItems(lastPage)
+        if (this.isDestroyed) {
+          return
+        }
+        if (records !== null) {
+          this.mergeItems(records)
         }
         this.schedulePoll(this.pollInterval)
       } else if (res.code === DELIVERY_BIZ_GONE) {
@@ -183,6 +219,122 @@ struct DeliverySessionPage {
     }
   }
 
+  /**
+   * 拉取一页条目明细（原始结果，失败/业务拒绝返回 null，不抛错）。
+   * 首屏与触底走 fetchItemsPage（带首屏态），轮询走本方法（静默合并）。
+   */
+  private async requestItems(page: number): Promise<Array<DeliveryItemVo> | null> {
+    try {
+      const res = await fetchDeliveryItems(this.code, page, PAGE_SIZE)
+      if (res.code === HttpStatusCode.Ok && res.data !== null) {
+        return res.data.records
+      }
+      logger.warn(TAG, `条目分页未生效 page=${page} code=${res.code ?? 0} msg=${res.message ?? ''}`)
+      return null
+    } catch (err) {
+      logger.error(TAG, '条目分页请求异常', err instanceof Error ? err.message : '')
+      return null
+    }
+  }
+
+  /**
+   * PagingController 消费：拉页 + 合并 + 首屏态收尾。
+   * @returns 本页是否有数据（供 PagingController 判断是否封底）
+   */
+  private async fetchItemsPage(page: number): Promise<boolean> {
+    const records = await this.requestItems(page)
+    if (records === null) {
+      if (page === 1 && this.items.length === 0) {
+        logger.error(TAG, '首次拉取条目流失败')
+        this.isFirstError = true
+        this.isLoadingFirst = false
+      }
+      return false
+    }
+    this.mergeItems(records)
+    if (page === 1) {
+      this.isLoadingFirst = false
+    }
+    return records.length > 0
+  }
+
+  /**
+   * 合并条目到列表（去重 + 全局 createdAt 升序，与后端条目流同序）。
+   * 轮询最新页可能先于触底加载的较早页到达，故不能只往末尾追加，需按序归并：
+   * - 既有条目在归并后仍占据相同下标（仅末尾追加/原位更新）→ 增量通知，避免整表 reload 跳动；
+   * - 较早页插入中间导致既有条目下标漂移 → 整表 reload（键稳定，框架复用子组件）。
+   */
+  private mergeItems(incoming: Array<DeliveryItemVo>): void {
+    if (incoming.length === 0) {
+      return
+    }
+    const byId = new Map<number, DeliveryItemVo>()
+    for (const item of this.items) {
+      const id = item.id ?? 0
+      if (!byId.has(id)) {
+        byId.set(id, item)
+      }
+    }
+    let changed = false
+    for (const item of incoming) {
+      const id = item.id ?? 0
+      const old = byId.get(id)
+      if (old === undefined || this.isItemChanged(old, item)) {
+        byId.set(id, item)
+        changed = true
+      }
+    }
+    if (!changed) {
+      return
+    }
+    const merged: Array<DeliveryItemVo> = Array.from(byId.values())
+    merged.sort((a: DeliveryItemVo, b: DeliveryItemVo) => {
+      const cmp = (a.createdAt ?? '').localeCompare(b.createdAt ?? '')
+      return cmp !== 0 ? cmp : (a.id ?? 0) - (b.id ?? 0)
+    })
+    const oldItems = this.items
+    const oldCount = oldItems.length
+    // 既有条目在 merged 中是否仍占据相同下标（是 = 仅末尾追加/原位更新）
+    let samePrefix = merged.length >= oldCount
+    if (samePrefix) {
+      for (let i = 0; i < oldCount; i++) {
+        if ((merged[i].id ?? 0) !== (oldItems[i].id ?? 0)) {
+          samePrefix = false
+          break
+        }
+      }
+    }
+    let hasChange = false
+    if (samePrefix) {
+      for (let i = 0; i < oldCount; i++) {
+        if (this.isItemChanged(oldItems[i], merged[i])) {
+          hasChange = true
+          break
+        }
+      }
+    }
+    this.items = merged
+    if (samePrefix && !hasChange && merged.length > oldCount) {
+      // 仅末尾追加 → 增量通知，避免整表 reload 造成可见区域跳动
+      this.itemDataSource.notifyAppend(oldCount, merged.length - oldCount)
+    } else {
+      // 中间插入 / 原位状态变化 → 整表通知（键稳定，框架按 key 复用子组件）
+      this.itemDataSource.notifyReload()
+    }
+    if (this.items.length > 0) {
+      this.isLoadingFirst = false
+      this.isFirstError = false
+    }
+  }
+
+  /** 条目展示字段是否变化（用于轮询合并时单点刷新） */
+  private isItemChanged(oldItem: DeliveryItemVo, newItem: DeliveryItemVo): boolean {
+    return oldItem.taken !== newItem.taken
+      || oldItem.title !== newItem.title
+      || oldItem.takenAt !== newItem.takenAt
+      || oldItem.hasContent !== newItem.hasContent
+  }
+
   private nextBackoff(): number {
     const next = this.pollInterval * 2
     this.pollInterval = next > DELIVERY_MAX_POLL_INTERVAL_MS ? DELIVERY_MAX_POLL_INTERVAL_MS : next
@@ -190,7 +342,7 @@ struct DeliverySessionPage {
   }
 
   private onPollFailure(message: string | null | undefined): void {
-    if (this.isLoadingFirst) {
+    if (this.isLoadingFirst && this.items.length === 0) {
       logger.error(TAG, `首次拉取条目流失败 message=${message ?? ''}`)
       this.isFirstError = true
       this.isLoadingFirst = false
@@ -686,6 +838,8 @@ struct DeliverySessionPage {
                   click: () => {
                     this.isLoadingFirst = true
                     this.isFirstError = false
+                    this.paging.reset()
+                    this.fetchItemsPage(1)
                     this.startPolling()
                   }
                 })
@@ -707,7 +861,7 @@ struct DeliverySessionPage {
           // 条目流包白卡容器（compare-07 #7，对齐安卓 GroupCard：白底 + 描边 + 卡片阴影 + 卡内水平 20）
           Column() {
             List() {
-              ForEach(this.items, (item: DeliveryItemVo, index: number) => {
+              LazyForEach(this.itemDataSource, (item: DeliveryItemVo, index: number) => {
                 ListItem() {
                   Column() {
                     DeliveryItemRow({
@@ -716,7 +870,7 @@ struct DeliverySessionPage {
                         this.openItem(item)
                       }
                     })
-                    if (index < this.items.length - 1) {
+                    if (index < this.itemDataSource.totalCount() - 1) {
                       // 卡内发丝线随图标缩进：32 图标容器 + 12 间距（安卓 divider start=44，compare-07 #23；
                       // ArkUI List.divider 不支持行内缩进，改为行间手绘近似）
                       Divider()
@@ -727,9 +881,20 @@ struct DeliverySessionPage {
                   }
                 }
               }, (item: DeliveryItemVo) => `${item.id ?? 0}`)
+              ListItem() {
+                LoadingFooter({ isLoading: this.isLoadingMore })
+              }
             }
             .width('100%')
             .layoutWeight(1)
+            .onScrollIndex((start: number, end: number) => {
+              // listLength 为 ListItem 真实数量（条目 + LoadingFooter）
+              this.paging.onScrollIndex(end, this.itemDataSource.totalCount() + 1)
+            })
+            .onScrollFrameBegin((offset: number, state: ScrollState) => {
+              this.paging.onScrollFrameBegin(offset)
+              return { offsetRemain: offset }
+            })
           }
           .width('100%')
           .layoutWeight(1)

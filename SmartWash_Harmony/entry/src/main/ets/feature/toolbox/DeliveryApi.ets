@@ -107,6 +107,14 @@ export interface DeliverySessionDetailVo {
   items?: Array<DeliveryItemVo>
 }
 
+/** 投递条目分页信封（后端 MyBatis-Plus IPage 序列化：records/total/size/current） */
+export interface DeliveryPageData<T> {
+  records: Array<T>
+  total: number
+  size: number
+  current: number
+}
+
 /** 取走条目响应（文本=认领+焚毁一步完成，正文随响应返回；文件=仅原子认领） */
 export interface DeliveryItemTakenVo {
   id?: number
@@ -345,6 +353,20 @@ export async function createDeliverySession(form: AddDeliverySessionForm)
 export async function fetchDeliverySessionDetail(code: string)
   : Promise<BaseResponse<DeliverySessionDetailVo>> {
   return httpUtil.get<DeliverySessionDetailVo>(`/web/auth/toolbox/delivery/sessions/${code}`)
+}
+
+/**
+ * 会话条目明细分页（owner 视角，创建时间正序，含已焚毁占位）。
+ * 与详情条目流同序；后端 BaseSearchFrom：page 默认 1、size 默认 10 上限 100。
+ * 用于首屏加载 + 触底追加；轮询侧按 itemCount 拉最新页合并新条目。
+ */
+export async function fetchDeliveryItems(code: string, page: number, size: number)
+  : Promise<BaseResponse<DeliveryPageData<DeliveryItemVo>>> {
+  const params: Record<string, Object> = {}
+  params['page'] = page
+  params['size'] = size
+  return httpUtil.get<DeliveryPageData<DeliveryItemVo>>(
+    `/web/auth/toolbox/delivery/sessions/${code}/items`, params)
 }
 
 /** 关闭会话：expire_at 前置为当前时刻，读路径立即失效（data=null，成功以 code=200 为准） */

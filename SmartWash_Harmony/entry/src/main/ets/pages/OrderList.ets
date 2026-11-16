@@ -8,7 +8,7 @@ import { PickupDeliveryParam } from "./PickupDelivery"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
-import { PagingController } from "../utils/PagingUtil"
+import { LazyListDataSource, PagingController } from "../utils/PagingUtil"
 import { AppConfirmDialog, EmptyState, LoadingState } from "../view/common/AppComponents"
 import { DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { logger } from "../utils/Logger"
@@ -28,6 +28,18 @@ interface MonthSection {
   orders: Array<OrderInfo>
 }
 
+/**
+ * LazyForEach 数据源条目：月份标题或整月订单卡。
+ * 每个月份段渲染「月头 + 月卡」2 个 ListItem，扁平化为单一数据源，避免在 List 中混排多个 LazyForEach。
+ */
+interface OrderListEntry {
+  /** 稳定唯一 key（框架按 key 复用子组件） */
+  key: string
+  isHeader: boolean
+  monthKey: string
+  orders: Array<OrderInfo>
+}
+
 @Builder
 export function OrderListBuilder() {
   OrderList()
@@ -36,6 +48,11 @@ export function OrderListBuilder() {
 @Component
 struct OrderList {
   @State sections: Array<MonthSection> = []
+  // LazyForEach 数据源条目（由 sections 派生：月头 + 月卡），与 sections 保持同步
+  @State entries: Array<OrderListEntry> = []
+  /** LazyForEach 数据源（读取 entries，实例稳定不可重建，否则整表重建） */
+  private dataSource: LazyListDataSource<OrderListEntry> =
+    new LazyListDataSource<OrderListEntry>(() => this.entries)
   private list = OrderStatusList()
   private orderStatus: string = "001"
   @State currIndex: number = 0
@@ -116,6 +133,7 @@ struct OrderList {
               this.sectionCache.set(statusSnapshot, [])
             } else {
               this.sections = []
+              this.syncEntries()
               this.sectionCache.set(this.orderStatus, [])
             }
           } else if (this.orderListLength() > 0) {
@@ -140,6 +158,7 @@ struct OrderList {
       logger.warn('orderList', `订单列表请求异常 page=${page} status=${statusSnapshot}`)
       if (page === 1 && this.orderStatus === statusSnapshot) {
         this.sections = []
+        this.syncEntries()
       }
       showToastSafety(resString('order_list_3'))
       this.isLoading = false
@@ -158,13 +177,27 @@ struct OrderList {
   }
 
   /**
-   * List 真实项数（供 PagingController 判定触底）：每个月份段渲染「月头 + 月卡」2 个 ListItem，
-   * 末尾另有 1 个 LoadingFooter。
-   * 不能用 orderListLength()（订单条数）当 listLength——onScrollIndex 的 endIndex 是 ListItem
-   * 下标，恒小于订单数（如 20 条订单只对应 3~5 个 ListItem），page2 永不触发。
+   * 由月份分段重建 LazyForEach 数据源（月头 + 月卡统一走单一数据源）。
+   * 订单按 createdAt 重排后月份分组顺序可能变化，故整体重建 + notifyReload（对齐 DiningOrderListPage）。
+   * 仅驱动当前页签 UI 时调用；跨页签响应只写缓存，不得触发当前列表重建。
    */
-  private listItemCount(): number {
-    return this.sections.length * 2 + 1
+  private syncEntries(): void {
+    const list: Array<OrderListEntry> = []
+    for (const section of this.sections) {
+      // 月份标题项
+      list.push({ key: `header_${section.monthKey}`, isHeader: true, monthKey: section.monthKey, orders: [] })
+      // 整月订单卡项
+      // 键含数据指纹（订单 id 串）：同月订单集变化（刷新/切页签回切）后键变触发重建，
+      // 否则复用旧 OrderMonthCard 且不重执行 itemGenerator，@Param orders 不同步 → UI 停留旧数据
+      list.push({
+        key: `${section.monthKey}:${section.orders.map((o: OrderInfo) => o.orderId ?? 0).join(",")}`,
+        isHeader: false,
+        monthKey: section.monthKey,
+        orders: section.orders
+      })
+    }
+    this.entries = list
+    this.dataSource.notifyReload()
   }
 
   /**
@@ -212,6 +245,7 @@ struct OrderList {
     // 仅快照页签仍为当前页签时才驱动 UI（跨页签响应不覆盖当前列表）
     if (mergingCurrent) {
       this.sections = next
+      this.syncEntries()
     }
     this.syncPickupReminders(flat)
   }
@@ -372,12 +406,14 @@ struct OrderList {
               if (cached !== undefined) {
                 // 已加载页签：直接复用缓存（对齐安卓 VM 按状态保留列表）
                 this.sections = cached
+                this.syncEntries()
                 this.clearFadeTimer()
                 this.fadeTimer = setTimeout(() => {
                   this.contentOpacity = 1
                 }, 200)
               } else {
                 this.sections = []
+                this.syncEntries()
                 this.fetchOrderPage(1, true)
               }
             }
@@ -418,64 +454,63 @@ struct OrderList {
           } else if (this.orderListLength() > 0) {
             Refresh({ refreshing: $$this.isRefreshing }) {
               List({ space: DesignDimens.CARD_SPACING }) {
-                ForEach(this.sections, (section: MonthSection) => {
-                  // 月份标题（对齐安卓 labelSmall 12/Medium/ls0.3，卡间距由 List space 统一给出）
+                // 月份标题 + 整月订单卡统一走单一 LazyForEach 数据源（每段 2 个 ListItem）
+                LazyForEach(this.dataSource, (entry: OrderListEntry) => {
                   ListItem() {
-                    Text(this.monthLabel(section.monthKey))
-                      .fontSize(DesignFontSize.CAPTION)
-                      .fontWeight(DesignFontWeight.MEDIUM)
-                      .fontColor($r('app.color.TEXT_SECONDARY'))
-                      .letterSpacing(0.3)
-                      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+                    if (entry.isHeader) {
+                      // 月份标题（对齐安卓 labelSmall 12/Medium/ls0.3，卡间距由 List space 统一给出）
+                      Text(this.monthLabel(entry.monthKey))
+                        .fontSize(DesignFontSize.CAPTION)
+                        .fontWeight(DesignFontWeight.MEDIUM)
+                        .fontColor($r('app.color.TEXT_SECONDARY'))
+                        .letterSpacing(0.3)
+                    } else {
+                      // 整月订单合并卡
+                      OrderMonthCard({
+                        orders: entry.orders,
+                        cancelClick: (order: OrderInfo) => {
+                          this.pendingCancelOrderId = order.orderId
+                          this.confirmCancelController.open()
+                        },
+                        paymentClick: (order: OrderInfo) => {
+                          // 返回时刷新交给 NavDestination.onShown（pop() 无 result 时 onPop 不触发，评审 #8）
+                          pathStack.pushPathByName(RouteNames.PAYMENT, order.orderId)
+                        },
+                        shipmentClick: (order: OrderInfo) => {
+                          const param: PickupDeliveryParam = new PickupDeliveryParam()
+                          param.order = order
+                          param.isPickup = false
+                          pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
+                        },
+                        pickupClick: (order: OrderInfo) => {
+                          const param: PickupDeliveryParam = new PickupDeliveryParam()
+                          param.order = order
+                          param.isPickup = true
+                          pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
+                        },
+                        itemClick: (order: OrderInfo) => {
+                          pathStack.pushPathByName(RouteNames.ORDER_DETAIL, order.orderId)
+                        },
+                      })
+                    }
                   }
-
-                  // 整月订单合并卡
-                  ListItem() {
-                    OrderMonthCard({
-                      orders: section.orders,
-                      cancelClick: (order: OrderInfo) => {
-                        this.pendingCancelOrderId = order.orderId
-                        this.confirmCancelController.open()
-                      },
-                      paymentClick: (order: OrderInfo) => {
-                        // 返回时刷新交给 NavDestination.onShown（pop() 无 result 时 onPop 不触发，评审 #8）
-                        pathStack.pushPathByName(RouteNames.PAYMENT, order.orderId)
-                      },
-                      shipmentClick: (order: OrderInfo) => {
-                        const param: PickupDeliveryParam = new PickupDeliveryParam()
-                        param.order = order
-                        param.isPickup = false
-                        pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
-                      },
-                      pickupClick: (order: OrderInfo) => {
-                        const param: PickupDeliveryParam = new PickupDeliveryParam()
-                        param.order = order
-                        param.isPickup = true
-                        pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
-                      },
-                      itemClick: (order: OrderInfo) => {
-                        pathStack.pushPathByName(RouteNames.ORDER_DETAIL, order.orderId)
-                      },
-                    })
-                  }
+                  // 水平内边距统一放在 ListItem：月头文字与月卡左缘对齐（原为各自 padding，视觉等价）
                   .padding({
                     left: DesignDimens.PAGE_PADDING,
                     right: DesignDimens.PAGE_PADDING
                   })
-                  // 键值必须含数据指纹：仅用 monthKey 时，同月订单集变化（下拉刷新换新数组、
-                  // 切页签回切缓存）后 ForEach 键相同会复用旧 OrderMonthCard 实例且不重执行
-                  // itemGenerator，@Param orders 不同步 → UI 停留旧数据（实测 3 条列表显示 1 条）。
-                  // 拼接订单 id 串后，数据变则键变触发重建，数据不变键不变仍复用。
-                }, (section: MonthSection) =>
-                  `${section.monthKey}:${section.orders.map((o: OrderInfo) => o.orderId ?? 0).join(",")}`)
+                  // 键含数据指纹：同月订单集变化后键变触发重建，否则复用旧 OrderMonthCard
+                  // 且不重执行 itemGenerator，@Param orders 不同步 → UI 停留旧数据（实测 3 条列表显示 1 条）。
+                }, (entry: OrderListEntry) => entry.key)
 
                 ListItem() {
                   LoadingFooter({ isLoading: !!this.isLoadingMore })
                 }
               }
               .onScrollIndex((start: number, end: number) => {
-                // listLength 必须是 ListItem 真实数量（月头 + 月卡 + footer），不是订单条数
-                this.paging.onScrollIndex(end, this.listItemCount())
+                // listLength 必须是 ListItem 真实数量（月头 + 月卡 + footer），不是订单条数：
+                // endIndex 是 ListItem 下标，用订单数当 listLength 会提前触发触底
+                this.paging.onScrollIndex(end, this.dataSource.totalCount() + 1)
               })
               .onScrollFrameBegin((offset: number, state: ScrollState) => {
                 this.paging.onScrollFrameBegin(offset)

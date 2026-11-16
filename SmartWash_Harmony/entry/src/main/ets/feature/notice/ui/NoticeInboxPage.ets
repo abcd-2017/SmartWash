@@ -27,7 +27,7 @@ import {
 import { NoticeErrorState, NoticePageHeader, NoticeTagChip } from './NoticeUiCommon'
 import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, LoadingDots, SkeletonList } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
-import { PagingController } from '../../../utils/PagingUtil'
+import { LazyListDataSource, PagingController } from '../../../utils/PagingUtil'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { bumpNoticeRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
@@ -62,6 +62,9 @@ struct NoticeInboxPage {
   @State readAllLoading: boolean = false
   @State isLoadingMore: boolean = false
   @State appendError: boolean = false
+  // LazyForEach 数据源（读取 list，实例稳定不可重建，避免整表重建）
+  private dataSource: LazyListDataSource<NoticeVo> =
+    new LazyListDataSource<NoticeVo>(() => this.list)
   private paging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
       return this.fetchPage(page)
@@ -100,11 +103,13 @@ struct NoticeInboxPage {
     this.appendError = false
     this.paging.reset()
     this.list = []
+    this.dataSource.notifyReload()
     this.isFirstError = false
     try {
       const res = await getNotices(1, NOTICE_PAGE_SIZE)
       if (res.code === BizCode.SUCCESS && res.data !== null) {
         this.list = res.data.records
+        this.dataSource.notifyReload()
         logger.debug(TAG, `收件箱首载成功 count=${this.list.length} total=${res.data.total}`)
       } else {
         logger.warn(TAG, `收件箱首载失败 code=${res.code ?? 0} msg=${res.message ?? ''}`)
@@ -133,7 +138,10 @@ struct NoticeInboxPage {
           logger.debug(TAG, `分页封底 page=${page} 本页无数据`)
           return false
         }
+        // 追加按新索引逐项通知，避免整表重建
+        const startIndex: number = this.list.length
         this.list.push(...records)
+        this.dataSource.notifyAppend(startIndex, records.length)
         logger.debug(TAG, `分页加载成功 page=${page} count=${records.length} total=${res.data.total}`)
         return true
       }
@@ -213,6 +221,7 @@ struct NoticeInboxPage {
       return
     }
     this.list = this.listWithRead(index, true)
+    this.dataSource.notifyReload()
     this.unreadCount = Math.max(0, this.unreadCount - 1)
     try {
       await markNoticeRead(id)
@@ -222,6 +231,7 @@ struct NoticeInboxPage {
       const currentIndex = this.indexOfNotice(id)
       if (currentIndex >= 0) {
         this.list = this.listWithRead(currentIndex, false)
+        this.dataSource.notifyReload()
       }
       this.loadUnreadCount()
     }
@@ -237,6 +247,7 @@ struct NoticeInboxPage {
       const res = await readAllNotices()
       if (res.code === BizCode.SUCCESS) {
         this.list = this.list.map((vo: NoticeVo): NoticeVo => this.noticeWithRead(vo, true))
+        this.dataSource.notifyReload()
         this.unreadCount = 0
         bumpNoticeRefresh()
         showToastSafety(NoticeText.notice_read_all_success)
@@ -331,7 +342,7 @@ struct NoticeInboxPage {
         } else {
           Refresh({ refreshing: $$this.isRefreshing }) {
             List() {
-              ForEach(this.list, (vo: NoticeVo) => {
+              LazyForEach(this.dataSource, (vo: NoticeVo) => {
                 ListItem() {
                   NoticeCard({
                     vo: vo,
@@ -342,9 +353,11 @@ struct NoticeInboxPage {
                 }
                 // 卡片间距 16（对齐安卓 cardSpacing）：零间距时相邻卡片描边/阴影相贴、列表不可扫读
                 .margin({ bottom: DesignDimens.CARD_SPACING })
-              }, (vo: NoticeVo) => `notice_${vo.id}_${vo.createdAt}`)
+              }, (vo: NoticeVo) => `notice_${vo.id}_${vo.createdAt}_${vo.isRead ? 1 : 0}`)
               // key 叠加 createdAt 兜底：后端异常返回多条 id=null 时 id 同为 0，
-              // 纯 id 作 key 会复用渲染异常（对齐安卓 key 修复）
+              // 纯 id 作 key 会复用渲染异常（对齐安卓 key 修复）；
+              // 再叠加 isRead 指纹：标记已读/全部已读替换对象后键变触发重建，
+              // 否则复用旧 NoticeCard 实例、@Param vo 不同步 → 卡片停留未读样式
 
               // 尾部：加载中三点 / 失败重试（对齐安卓 append LoadState：LoadingDots /
               // SECONDARY 小按钮；触底自动加载口径保留，仅补齐形态，纵向 16 对齐安卓 spaceMd）
@@ -381,7 +394,8 @@ struct NoticeInboxPage {
             })
             .divider({ strokeWidth: 0, color: Color.Transparent })
             .onScrollIndex((start: number, end: number) => {
-              this.paging.onScrollIndex(end, this.list.length)
+              // listLength 为 ListItem 真实数量（通知卡 + 尾部加载/重试项）
+              this.paging.onScrollIndex(end, this.list.length + 1)
             })
             .onScrollFrameBegin((offset: number) => {
               this.paging.onScrollFrameBegin(offset)

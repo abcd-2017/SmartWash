@@ -51,7 +51,7 @@ import {
 } from './SubscriptionUiCommon'
 import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, IconBox, SkeletonBlock, SkeletonList } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
-import { PagingController } from '../../../utils/PagingUtil'
+import { LazyListDataSource, PagingController } from '../../../utils/PagingUtil'
 import { getNumberParam, pathStack } from '../../../utils/PathStackUtil'
 import { SUBSCRIPTION_TICK_KEY, bumpSubscriptionRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
@@ -90,6 +90,9 @@ struct SubscriptionDetailPage {
   // 跨页刷新信号（自增 tick）：编辑/删除/状态流转/打卡/标记已读成功后 bump
   @StorageLink(SUBSCRIPTION_TICK_KEY) @Watch('onSubscriptionTick') subscriptionTick: number = 0
   private subscriptionId: number = -1
+  // LazyForEach 数据源（读取 usageList，实例稳定不可重建，否则整表重建）
+  private usageSource: LazyListDataSource<UsageLogVo> =
+    new LazyListDataSource<UsageLogVo>(() => this.usageList)
   private paging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
       return this.fetchUsagePage(page)
@@ -163,6 +166,7 @@ struct SubscriptionDetailPage {
     this.usageAppendError = false
     this.paging.reset()
     this.usageList = []
+    this.usageSource.notifyReload()
     this.isLoadingUsageFirst = true
     await this.fetchUsagePage(1)
     this.isLoadingUsageFirst = false
@@ -174,14 +178,18 @@ struct SubscriptionDetailPage {
       if (res.code === BizCode.SUCCESS && res.data !== null) {
         const records: Array<UsageLogVo> = res.data.records
         if (page === 1) {
-          this.usageList = []
+          this.usageList = records
           this.isUsageFirstError = false
+          this.usageSource.notifyReload()
+        } else if (records.length > 0) {
+          const startIndex: number = this.usageList.length
+          this.usageList = this.usageList.concat(records)
+          this.usageSource.notifyAppend(startIndex, records.length)
         }
         if (records.length === 0) {
           this.usageAppendError = false
           return false
         }
-        this.usageList.push(...records)
         this.usageAppendError = false
         return true
       }
@@ -463,6 +471,23 @@ struct SubscriptionDetailPage {
   /** 打卡日期是否今天（yyyy-MM-dd 字符串直比，与 formatDate 同构，免时区解析偏差） */
   private isUsageToday(usageDate: string): boolean {
     return usageDate === formatDate(new Date())
+  }
+
+  /**
+   * 详情页 List 的 ListItem 总数（供触底判定）：
+   * 固定项 = 信息卡 1 + 统计卡 1 + 打卡卡头 1 + 取消路径卡 1；
+   * 非终态额外含状态操作卡 1；打卡行 usageList.length；
+   * 尾部项仅在有打卡数据且（加载中 / 追加失败）时存在。
+   */
+  private listItemCount(): number {
+    let count: number = 4 + this.usageList.length
+    if (!this.isTerminal()) {
+      count += 1
+    }
+    if (this.usageList.length > 0 && (this.isLoadingMoreUsage || this.usageAppendError)) {
+      count += 1
+    }
+    return count
   }
 
   build() {
@@ -790,7 +815,7 @@ label: SubscriptionText.subscription_detail_note,
               }
 
               // ---------- 使用记录行（铺平为独立 ListItem 承接虚拟化，DESIGN-SPEC §8，audit-15 #11） ----------
-              ForEach(this.usageList, (log: UsageLogVo, index: number) => {
+              LazyForEach(this.usageSource, (log: UsageLogVo, index: number) => {
                 ListItem() {
                   Column() {
                     if (index > 0) {
@@ -1005,9 +1030,8 @@ label: SubscriptionText.subscription_detail_note,
           })
           .divider({ strokeWidth: 0, color: Color.Transparent })
           .onScrollIndex((start: number, end: number) => {
-            // 触底加载下一页打卡（复用既有 PagingController）：固定项 = 信息卡 + 统计卡 +
-            // 打卡卡头 + 取消路径卡 = 4（非终态另含状态操作项，endIndex 峰值判定仍成立）
-            this.paging.onScrollIndex(end, 4 + this.usageList.length)
+            // 触底加载下一页打卡（复用既有 PagingController）：listLength 为 ListItem 真实数量
+            this.paging.onScrollIndex(end, this.listItemCount())
           })
           .onScrollFrameBegin((offset: number) => {
             this.paging.onScrollFrameBegin(offset)
