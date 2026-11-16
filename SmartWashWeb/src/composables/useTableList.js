@@ -41,6 +41,8 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
 
   const fetchData = async () => {
     const mySeq = ++fetchSeq;
+    // 发起即清错误态：重试点击后错误占位立刻让位给表格的 v-loading，否则加载中无任何反馈
+    listLoadError.value = '';
     listLoading.value = true;
     listError.value = false;
     try {

@@ -344,14 +344,5 @@ onMounted(() => {
   font-size: 12px;
 }
 
-/* 列表加载失败占位：与空态区分，居中提示 + 重试入口（同 SysConfigList） */
-.load-error {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 32px 0;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
+/* .load-error 失败占位样式全局化在 src/assets/pages.css，此处不再重复定义 */
 </style>
