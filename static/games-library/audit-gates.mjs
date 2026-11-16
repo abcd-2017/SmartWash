@@ -41,7 +41,8 @@ const STRICT = new Set([
 const BASE_TOKENS = new Set([
   "--g-bg", "--g-surface", "--g-surface2", "--g-primary", "--g-primary-deep", "--g-primary-soft", "--g-on-soft",
   "--g-text", "--g-muted", "--g-faint", "--g-border", "--g-hairline", "--g-danger", "--g-warning", "--g-success",
-  "--g-water", "--g-scrim", "--g-shadow", "--g-radius", "--g-radius-btn", "--g-radius-inner", "--g-gap", "--g-on-primary"
+  "--g-water", "--g-scrim", "--g-shadow", "--g-radius", "--g-radius-btn", "--g-radius-inner", "--g-gap", "--g-on-primary",
+  "--g-btn-primary"
 ]);
 const MATERIAL_PREFIX = /^--g-(bp|bshade|field|grid|snake|food|sky|sky1|sky2|cloud|cld|gnd|gnl|pipe|pipecap|pipeln|bird1|bird2|birdln|wing|beak|bd|line|star|ball|ballln|maze|card|cell|cellhi|celllo|open|openln|n[1-8]|fs-|felt|felt2|rail|pocket|fr-|ss-|moon|moon2|board|tilesuper|st-|mt-)/;
 const FONT_TIER = new Set([36, 28, 22, 18, 16, 14, 12]);
@@ -52,9 +53,10 @@ const BASELINE_LIGHT = {
   "--g-bg": "#f5f6f3", "--g-surface": "#ffffff", "--g-surface2": "#eff1ee", "--g-primary": "#2d9b6a",
   "--g-primary-deep": "#17734a", "--g-primary-soft": "#e8f6ef", "--g-on-soft": "#0b3625",
   "--g-text": "#1c1c1e", "--g-muted": "#6b6e73", "--g-faint": "#a9aea9", "--g-border": "#e6e9e6",
-  "--g-hairline": "#eff1ee", "--g-danger": "#a83850", "--g-warning": "#d98a26", "--g-success": "#2d9b6a",
+  "--g-hairline": "#eff1ee", "--g-danger": "#a83850", "--g-warning": "#9a6210", "--g-success": "#17734a",
   "--g-water": "#4a9fd4", "--g-scrim": "rgba(245,246,243,0.9)",
-  "--g-radius": "16px", "--g-radius-btn": "14px", "--g-radius-inner": "12px", "--g-gap": "16px", "--g-on-primary": "#ffffff"
+  "--g-radius": "16px", "--g-radius-btn": "14px", "--g-radius-inner": "12px", "--g-gap": "16px", "--g-on-primary": "#ffffff",
+  "--g-btn-primary": "#17734a"
 };
 const BASELINE_DARK = {
   "--g-bg": "#141614", "--g-surface": "#1d201e", "--g-surface2": "#262a27", "--g-primary": "#2d9b6a",

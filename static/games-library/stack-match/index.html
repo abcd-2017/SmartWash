@@ -7,7 +7,7 @@
 <title>叠叠消</title>
 <style>
   /*token:GAME-THEME.md §2 基线 + §3 素材 token（牌面图案色板）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;
     --g-bp1:#F2B843;--g-bp2:#7BC57B;--g-bp3:#5AA7E8;--g-bp4:#EE7E9C;--g-bp5:#9B7BE0;--g-bp6:#4FC3D9;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);
     --g-bp1:#F5C45E;--g-bp2:#8FD68F;--g-bp3:#74BDF2;--g-bp4:#F293AC;--g-bp5:#AC8FEC;--g-bp6:#66D2E5;color-scheme:dark }
@@ -37,8 +37,8 @@
   .btn {
     min-height: 44px; padding: 0 10px; flex: 1;
     border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-primary); color: #fff;
-    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
+    background: var(--g-btn-primary); color: #fff;
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
   }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
@@ -68,7 +68,7 @@
     background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
   }
   .lvbtn:active { opacity: .8; }
-  .lvbtn.on { background: var(--g-primary); border-color: transparent; color: #fff; ;font-weight:700}
+  .lvbtn.on { background: var(--g-btn-primary); border-color: transparent; color: #fff; ;font-weight:700}
   .lvbtn:disabled { opacity: .35; cursor: default; }
 
   /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
@@ -128,14 +128,14 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <p class="foot">被压住的牌要先拿开上层 · 盲堆从堆顶逐张翻出 · 场上与盲堆清空即过关 · 进度自动保存</p>
 </div>
-<div class="overlay" id="overlay">
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
     <h2 id="ovTitle">过关</h2>
     <p class="desc" id="ovDesc"></p>
     <button class="btn" id="ovBtn">下一关</button>
   </div>
 </div>
-<div class="overlay" id="lvOverlay">
+<div class="overlay" role="dialog" aria-modal="true" id="lvOverlay">
   <div class="panel">
     <h2>选择关卡</h2>
     <p class="desc" id="lvDesc"></p>
@@ -869,6 +869,14 @@ startLevel(cur);
 loop();
 syncLevelsFromServer();syncSaveFromServer();
 })();
+</script>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
+(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
+function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}
+for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}})();
 </script>
 </body>
 </html>

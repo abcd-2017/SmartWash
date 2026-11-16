@@ -7,7 +7,7 @@
 <title>2048</title>
 <style>
   /*token:GAME-THEME.md*/
-  :root { --g-bg:#F5F6F3;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-scrim:rgba(245,246,243,.9);--g-board:#BBADA0;--g-cell:#EEE4DA59;--g-tilesuper:#3C3A32;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-scrim:rgba(245,246,243,.9);--g-board:#BBADA0;--g-cell:#EEE4DA59;--g-tilesuper:#3C3A32;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-primary-deep:#5BC894;--g-scrim:rgba(20,22,20,.9);--g-board:#433A32;--g-cell:#FFFFFF12;--g-tilesuper:#6B6E73;color-scheme:dark }
   :root { --gap: clamp(6px, 2.2vw, 10px); }
   * { box-sizing: border-box; }
@@ -32,7 +32,7 @@
   header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; }
   .scores { display: flex; gap: 8px; }
   .score-box {
-    background: var(--g-primary-deep); color: var(--g-on-primary); border-radius: 12px;
+    background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
     min-width: 78px; padding: 5px 12px; text-align: center; line-height: 1.3;
   }
   .score-box .label { display: block; font-size: 12px; opacity: .85; }
@@ -42,8 +42,8 @@
   .btn {
     min-height: 44px; padding: 0 18px;
     border: 0; border-radius: 10px;
-    background: var(--g-primary); color: var(--g-on-primary);
-    font-size:22px; font-weight:700; font-family: inherit;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    font-size: 16px; font-weight: 600; font-family: inherit;
     cursor: pointer;
   }
   .btn:active { opacity: .85; }
@@ -160,7 +160,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <div class="board-wrap">
     <div class="grid" id="grid"></div>
-    <div class="overlay" id="overlay">
+    <div class="overlay" role="dialog" aria-modal="true" id="overlay">
       <p class="ov-title" id="ovTitle" role="status" aria-live="assertive"></p>
       <p class="ov-sub" id="ovSub"></p>
       <button class="btn" id="ovMain">重新开始</button>
@@ -439,6 +439,14 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   restart();
   syncSaveFromServer();
 })();
+</script>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
+(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
+function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}
+for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}})();
 </script>
 </body>
 </html>

@@ -7,7 +7,7 @@
 <title>迷你高尔夫</title>
 <style>
   /*token:GAME-THEME.md §2 基线；素材 token：felt/felt2/rail/pocket（与 billiards 同语义）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-felt:#2F8A66;--g-felt2:#379871;--g-rail:#C9B691;--g-pocket:#1A221D;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-felt:#2F8A66;--g-felt2:#379871;--g-rail:#C9B691;--g-pocket:#1A221D;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-felt:#27604A;--g-felt2:#2E6E55;--g-rail:#4E4636;--g-pocket:#0B0E0C;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -49,7 +49,7 @@
   .msg { min-height: 20px; margin: 8px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .toolbar { display: flex; gap: 10px; margin-top: 4px; }
   .toolbar .btn { flex: 1; }
-  .btn { min-height: 44px; padding: 0 16px; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: var(--g-on-primary); font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer; }
+  .btn { min-height: 44px; padding: 0 16px; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: var(--g-on-primary); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
   .foot { margin: 12px 2px 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; }
@@ -82,7 +82,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <div class="stage">
     <canvas id="cv" role="img" aria-label="迷你高尔夫球场"></canvas>
-    <div class="overlay" id="ov" aria-live="assertive"><div class="card" id="ovCard"></div></div>
+    <div class="overlay" role="dialog" aria-modal="true" id="ov" aria-live="assertive"><div class="card" id="ovCard"></div></div>
   </div>
   <p class="msg" id="msg" role="status" aria-live="polite"></p>
   <div class="toolbar">
@@ -739,6 +739,14 @@ startLevel(Math.min(saveData.lv,LEVELS.length-1));
 requestAnimationFrame(loop);
 syncLevelsFromServer();syncSaveFromServer();
 })();
+</script>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
+(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
+function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}
+for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}})();
 </script>
 </body>
 </html>

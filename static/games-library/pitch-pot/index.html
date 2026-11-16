@@ -2,16 +2,16 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F5F6F3">
 <title>投壶</title>
 <style>
   /*token:GAME-THEME.md §2 基线 + §3 素材（sky/cloud/field/gnd/grid/card/open/ball）*/
   :root {
     --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
-    --g-primary:#2D9B6A; --g-primary-deep:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
+    --g-primary:#2D9B6A; --g-primary-deep:#17734A;--g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
     --g-text:#1C1C1E; --g-muted:#6B6E73; --g-faint:#A9AEA9; --g-border:#E6E9E6; --g-hairline:#EFF1EE;
-    --g-danger:#A83850; --g-warning:#D98A26; --g-success:#2D9B6A; --g-water:#4A9FD4;
+    --g-danger:#A83850; --g-warning:#9A6210; --g-success:#17734A; --g-water:#4A9FD4;
     --g-scrim:rgba(245,246,243,.9);
     --g-shadow:0 2px 12px rgba(20,40,30,.05);
     --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
@@ -73,8 +73,8 @@
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
     border: 0; border-radius: 14px;
-    background: var(--g-primary); color: var(--g-on-primary);
-    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
     touch-action: manipulation;
   }
   .btn:active { opacity: .85; }
@@ -101,7 +101,7 @@
     touch-action: manipulation;
   }
   .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
-  .lv-chip.done { background: var(--g-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
+  .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
   .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
   .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background: var(--g-warning); color: var(--g-text); font-size: 12px; font-weight: 700; }
   .badge.show { display: inline-block; }
@@ -141,7 +141,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <div class="stage" id="stage">
     <canvas id="cv" aria-label="投壶游戏画面" role="img"></canvas>
-    <div class="overlay" id="ovWin">
+    <div class="overlay" role="dialog" aria-modal="true" id="ovWin">
       <span class="badge" id="ovNew">新纪录</span>
       <h2 class="ov-title">过关！</h2>
       <p class="ov-sub" id="ovWinDesc"></p>
@@ -151,7 +151,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         <button class="btn ghost" id="btnSelectWin" type="button">选关</button>
       </div>
     </div>
-    <div class="overlay" id="ovFail">
+    <div class="overlay" role="dialog" aria-modal="true" id="ovFail">
       <h2 class="ov-title">箭已用尽</h2>
       <p class="ov-sub" id="ovFailDesc"></p>
       <div class="btn-row">
@@ -159,7 +159,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         <button class="btn ghost" id="btnSelectFail" type="button">选关</button>
       </div>
     </div>
-    <div class="overlay" id="ovSelect">
+    <div class="overlay" role="dialog" aria-modal="true" id="ovSelect">
       <h2 class="ov-title">选择关卡</h2>
       <div class="lv-wrap"><div class="lv-grid" id="lvGrid"></div></div>
       <div class="btn-row"><button class="btn ghost" id="btnCloseSelect" type="button">关闭</button></div>
@@ -811,6 +811,14 @@ startLevel(cur);
 requestAnimationFrame(frame);
 syncLevelsFromServer();syncSaveFromServer();
 })();
+</script>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
+(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
+function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}
+for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}})();
 </script>
 </body>
 </html>

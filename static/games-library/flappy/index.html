@@ -7,7 +7,7 @@
 <title>指尖小鸟</title>
 <style>
 /*token:GAME-THEME.md*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFF;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-border:#E6E9E6;--g-scrim:rgba(245,246,243,.9);--g-sky1:#BFE7FB;--g-sky2:#EAF8FF;--g-cld:rgba(255,255,255,.85);--g-gnd:#E8D9A6;--g-gnd2:#D9C683;--g-gnl:#7CB85C;--g-pipe:#63C26A;--g-pipecap:#4DB057;--g-pipeln:#3F9D4F;--g-bird1:#FFE27A;--g-bird2:#F5B73D;--g-birdln:#D99B26;--g-wing:#FFF3C4;--g-beak:#FF8F3C;--g-primary-deep:#17734A;color-scheme:light}
+:root{--g-bg:#F5F6F3;--g-surface:#FFF;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-border:#E6E9E6;--g-scrim:rgba(245,246,243,.9);--g-sky1:#BFE7FB;--g-sky2:#EAF8FF;--g-cld:rgba(255,255,255,.85);--g-gnd:#E8D9A6;--g-gnd2:#D9C683;--g-gnl:#7CB85C;--g-pipe:#63C26A;--g-pipecap:#4DB057;--g-pipeln:#3F9D4F;--g-bird1:#FFE27A;--g-bird2:#F5B73D;--g-birdln:#D99B26;--g-wing:#FFF3C4;--g-beak:#FF8F3C;--g-primary-deep:#17734A;--g-btn-primary:#17734A;color-scheme:light}
 :root[data-theme=dark]{--g-bg:#141614;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-border:#2C312D;--g-scrim:rgba(20,22,20,.9);--g-sky1:#232B31;--g-sky2:#181D21;--g-cld:rgba(255,255,255,.25);--g-gnd:#4A4433;--g-gnd2:#3E3929;--g-gnl:#5E7A48;--g-primary-deep:#5BC894;color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -21,7 +21,7 @@ canvas{display:block;width:100%;height:100%}
 .overlay h2{font-size:22px;color:var(--g-text)}
 .overlay .big{font-size:18px}
 .overlay .small{font-size:14px;color:var(--g-muted)}
-.btn{min-height:48px;min-width:150px;border:0;border-radius:14px;background:var(--g-primary);color:#fff;font-size:22px;font-weight:700;padding:0 26px;cursor:pointer;font-family:inherit}
+.btn{min-height:48px;min-width:150px;border:0;border-radius:14px;background:var(--g-btn-primary);color:#fff;font-size: 16px;font-weight: 600;padding:0 26px;cursor:pointer;font-family:inherit}
 .btn:active{transform:scale(.96)}
 .btn.alt{background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text)}
 
@@ -390,6 +390,14 @@ elBestStart.textContent=String(best);
 requestAnimationFrame(frame);
 syncSaveFromServer();
 })();
+</script>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
+(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
+function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}
+for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}})();
 </script>
 </body>
 </html>

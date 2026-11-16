@@ -7,7 +7,7 @@
 <title>密码破译</title>
 <style>
   /*token:GAME-THEME.md §2 基线 + §3 素材（bp1..bp8 已登记前缀，八色棋子）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-on-primary:#FFF;--g-bp1:#D94F4F;--g-bp2:#2E7DD1;--g-bp3:#2E9B6A;--g-bp4:#8A5CC7;--g-bp5:#B26B1B;--g-bp6:#0F9AA8;--g-bp7:#C9526B;--g-bp8:#5A7A2B;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-on-primary:#FFF;--g-bp1:#D94F4F;--g-bp2:#2E7DD1;--g-bp3:#2E9B6A;--g-bp4:#8A5CC7;--g-bp5:#B26B1B;--g-bp6:#0F9AA8;--g-bp7:#C9526B;--g-bp8:#5A7A2B;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-bp1:#E87272;--g-bp2:#6BA8E8;--g-bp3:#5BC894;--g-bp4:#AC8FEC;--g-bp5:#E2A44E;--g-bp6:#4FC3D9;--g-bp7:#DB7186;--g-bp8:#A8C66C;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -62,7 +62,7 @@
   [data-theme=dark] .chip { color: var(--g-bg); }
   .tools { display: flex; gap: 8px; margin-top: 10px; }
   .tools + .tools { margin-top: 8px; }
-  .btn { min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: var(--g-on-primary); font-family: inherit; font-size:22px; font-weight:700; cursor: pointer; }
+  .btn { min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: var(--g-on-primary); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
   .btn:active { opacity: .85; }
   .btn:disabled { opacity: .4; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }

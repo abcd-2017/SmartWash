@@ -7,7 +7,7 @@
 <title>华容道</title>
 <style>
   /*token:GAME-THEME.md §2 基线 + §3 素材 token（棋盘/滑块，深色同色相压暗）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-on-primary:#fff;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-board:#EAE2D0;--g-board2:#DFD5BE;--g-grid:#C6B998;--g-cell:#2D9B6A;--g-cellhi:#1E8C5C;--g-celllo:#E8F6EF;--g-card:#D98A26;--g-card2:#B96F1C;--g-ball:#4A9FD4;--g-ballln:#2F7CB0;--g-open:#E8F6EF;--g-openln:#2D9B6A;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-on-primary:#fff;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-board:#EAE2D0;--g-board2:#DFD5BE;--g-grid:#C6B998;--g-cell:#2D9B6A;--g-cellhi:#1E8C5C;--g-celllo:#E8F6EF;--g-card:#D98A26;--g-card2:#B96F1C;--g-ball:#4A9FD4;--g-ballln:#2F7CB0;--g-open:#E8F6EF;--g-openln:#2D9B6A;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-board:#262A27;--g-board2:#1D201E;--g-grid:#3A3F3B;--g-cellhi:#5BC894;--g-celllo:#1D3229;--g-card:#E2A44E;--g-card2:#B97E3A;--g-ball:#6BB4DE;--g-ballln:#3F7CA6;--g-open:#1D3229;--g-openln:#2D9B6A;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -35,8 +35,8 @@
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
     border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-primary); color: var(--g-on-primary);
-    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
   }
   .btn:active { opacity: .85; }
   .btn:disabled { opacity: .35; }
@@ -115,7 +115,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <p class="foot">绿色大块的曹操移到下方虚线出口即过关 · 步数越少越好 · 进度自动保存</p>
 </div>
-<div class="overlay" id="overlay">
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
@@ -526,6 +526,14 @@ palLoad();resize();
 startLevel(Math.min(saveData.lv,LEVELS.length-1));
 syncLevelsFromServer();syncSaveFromServer();
 })();
+</script>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
+(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
+function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}
+for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}})();
 </script>
 </body>
 </html>

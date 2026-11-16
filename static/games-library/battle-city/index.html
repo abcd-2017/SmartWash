@@ -7,7 +7,7 @@
 <title>坦克大战</title>
 <style>
 /*token:GAME-THEME.md §2 基线；素材 token：field/grid/bd（前缀已登记）*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-field-bg:#E9EDE5;--g-grid-line:#DFE4DA;--g-bd-body:#B65B43;--g-bd-mortar:#7E3A2A;--g-bd-steel:#9AA3AD;--g-field-grass:#7CB85C;--g-field-grass2:#5E9644;color-scheme:light}
+:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-field-bg:#E9EDE5;--g-grid-line:#DFE4DA;--g-bd-body:#B65B43;--g-bd-mortar:#7E3A2A;--g-bd-steel:#9AA3AD;--g-field-grass:#7CB85C;--g-field-grass2:#5E9644;color-scheme:light}
 :root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-field-bg:#1D201E;--g-grid-line:#2C312D;--g-bd-body:#8A4030;--g-bd-mortar:#5E2C20;--g-bd-steel:#4A5158;--g-field-grass:#3E5A34;--g-field-grass2:#2E4527;color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -31,7 +31,7 @@ canvas{display:block;width:100%;height:100%}
 .overlay h2{font-size:22px;color:var(--g-text)}
 .overlay .big{font-size:18px;color:var(--g-text)}
 .overlay .small{font-size:14px;color:var(--g-muted);line-height:1.6}
-.btn{min-height:48px;min-width:150px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-size:22px;font-weight:700;padding:0 22px;cursor:pointer;font-family:inherit}
+.btn{min-height:48px;min-width:150px;border:0;border-radius:var(--g-radius-btn);background:var(--g-btn-primary);color:#fff;font-size: 16px;font-weight: 600;padding:0 22px;cursor:pointer;font-family:inherit}
 .btn:active{transform:scale(.96)}
 .btn.alt{background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text)}
 .row{display:flex;gap:10px}
@@ -91,14 +91,14 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <span></span><button class="key" data-dir="2" aria-label="下"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="" aria-hidden="true"><path d="M12 19l-8-15h16z"/></svg></button><span></span>
   </div>
   <button class="fire" id="btnFire" aria-label="开火">开火</button>
-  <div class="overlay" id="ovStart">
+  <div class="overlay" role="dialog" aria-modal="true" id="ovStart">
     <h2>坦克大战</h2>
     <div class="big" id="startInfo">第 1 关</div>
     <div class="small" id="startDesc">摧毁全部敌方坦克即可过关</div>
     <button class="btn" id="btnStart">开始战斗</button>
     <div class="small">虚拟方向键移动 · 开火键射击 · 保护底部基地</div>
   </div>
-  <div class="overlay hide" id="ovWin">
+  <div class="overlay hide" role="dialog" aria-modal="true" id="ovWin">
     <h2>过关！</h2>
     <div class="big" id="winInfo">得分 0</div>
     <div class="small" id="winDesc"></div>
@@ -107,7 +107,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
       <button class="btn" id="btnNext">下一关</button>
     </div>
   </div>
-  <div class="overlay hide" id="ovOver">
+  <div class="overlay hide" role="dialog" aria-modal="true" id="ovOver">
     <h2>战斗结束</h2>
     <div class="big" id="overInfo">得分 0</div>
     <div class="small" id="overDesc"></div>
@@ -116,7 +116,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
       <button class="btn" id="btnRetry">再次挑战</button>
     </div>
   </div>
-  <div class="overlay hide" id="ovPause">
+  <div class="overlay hide" role="dialog" aria-modal="true" id="ovPause">
     <h2>已暂停</h2>
     <button class="btn" id="btnResume">继续战斗</button>
   </div>
@@ -1027,6 +1027,14 @@ requestAnimationFrame(frame);
 syncLevelsFromServer();
 syncSaveFromServer();
 })();
+</script>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
+(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
+function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}
+for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}})();
 </script>
 </body>
 </html>

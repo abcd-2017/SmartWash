@@ -25,14 +25,15 @@ v0.4 覆写优先：浅色 `background=#F5F6F3`、`surfaceVariant=#EFF1EE`、`ou
 | `--g-primary-deep` | `#1E8C5C` → **`#17734A`**（2026-11-14 AA 对比度修订，原值对 surface2/bg 仅 3.7:1） | `#5BC894` | primaryDeep（深色=文字强调提亮） |
 | `--g-primary-soft` | `#E8F6EF` | `#1D3229` | primarySoft |
 | `--g-on-soft` | `#0B3625` | `#B9E8CF` | onPrimarySoft |
+| `--g-btn-primary` | `#17734A` | 同（继承，不提亮） | 主 CTA 底：取 primaryDeep 浅色值，深色端不变，白字 **5.85:1**（2026-11-16 登记） |
 | `--g-text` | `#1C1C1E` | `#E6E9E6` | textPrimary |
 | `--g-muted` | `#6B6E73` | `#A9AEA9` | textSecondary |
 | `--g-faint` | `#A9AEA9` | `#7E837D` | v0.4 textTertiary |
 | `--g-border` | `#E6E9E6` | `#2C312D` | v0.4 outline / §6.5 outline |
 | `--g-hairline` | `#EFF1EE` | `#262A27` | hairline |
 | `--g-danger` | `#C9526B` → **`#A83850`**（2026-11-14 AA 对比度修订，原值对 surface2 仅 3.8:1） | `#DB7186` | danger / §6.5 提亮 |
-| `--g-warning` | `#D98A26` | `#E2A44E` | ongoing / §6.5 提亮 |
-| `--g-success` | `#2D9B6A` | `#4ADE6E` | success / §6.5 done 提亮 |
+| `--g-warning` | `#D98A26` → **`#9A6210`**（2026-11-16 AA 修订，原值小字对 bg 仅 2.54:1） | `#E2A44E` | ongoing / §6.5 提亮 |
+| `--g-success` | `#2D9B6A` → **`#17734A`**（2026-11-16 AA 修订，原值小字对 bg 仅 3.22:1） | `#4ADE6E` | success / §6.5 done 提亮 |
 | `--g-water` | `#4A9FD4` | `#6BB4DE` | water / 深色按「提亮一档」推导（D4） |
 | `--g-scrim` | `rgba(245,246,243,.9)` | `rgba(20,22,20,.9)` | = bg 90% 透明（覆盖层用，D4） |
 | `--g-shadow` | `0 2px 12px rgba(20,40,30,.05)` | `0 2px 12px rgba(0,0,0,.28)` | §2.4 两档阴影之卡片档 |
@@ -225,9 +226,11 @@ HTML/CSS、`__gThemeToggle`、`g-theme` 读写、matchMedia 监听及按钮让�
    游戏 `<header>` 只放记分/状态/玩法提示/操作按钮。
 5. **字号入八档**（36/28/22/18/16/14/12，weight 仅 400/500/600/700），圆角只用
    16/14/12/10（见 §2 与 Android `ui-design-spec.md` v0.4）。
-   **对比度约束（2026-11-14 增补）**：`--g-primary` 绿底上的白字一律用 22px/700（八档内且满足
-   WCAG 大字档 3:1；16px 白字对品牌绿仅 3.5:1 不合规）。小字号文本禁止用 `--g-faint` 承载
-   有意义信息（faint 对 bg 仅 2.1:1）——提示/页脚一律 `--g-muted`，faint 只作装饰与禁用态。
+   **对比度约束（2026-11-16 修订，原 2026-11-14 版作废）**：主 CTA 一律用 `--g-btn-primary`
+   (#17734A) 底 + 白字 **16px/600**（5.85:1，普通文本档即达标，字号回到八档 bodyLarge）；
+   若确需 `--g-primary` 绿底白字，字号须 **≥19px/700**（进大字档 3:1；16px 白字对品牌绿仅
+   3.5:1 不合规）。小字号文本禁止用 `--g-faint` 承载有意义信息（faint 对 bg 仅 2.1:1）——
+   提示/页脚一律 `--g-muted`，faint 只作装饰与禁用态。
    `prefers-reduced-motion` 动效降级分支为**必写项**（见 §6.1），它属于动效层指令，
    不受 §4 主题层 matchMedia 禁令约束。
 5.1. **§6.1 动效降级模板**（置于 `</style>` 前）：

@@ -2,12 +2,12 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F5F6F3">
 <title>弹球砖块</title>
 <style>
 /*token:GAME-THEME.md §2 基线 + §3 素材 token（bp 色板 / bshade / ball 系列，前缀已登记）*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-primary:#FFFFFF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;
+:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-primary:#FFFFFF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;
 --g-bp1:#F2B843;--g-bp2:#7BC57B;--g-bp3:#5AA7E8;--g-bp4:#EE7E9C;--g-bp5:#9B7BE0;--g-bp6:#4FC3D9;--g-bp7:#F08A5A;--g-bp8:#A8C66C;
 --g-bshade:rgba(20,40,30,.10);--g-ball:#FFFFFF;--g-ballln:rgba(90,110,150,.6);color-scheme:light}
 :root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);
@@ -44,7 +44,7 @@ canvas{display:block;touch-action:none;border-radius:var(--g-radius-inner)}
 .lv-chip.sel{border-color:var(--g-primary);background:var(--g-primary-soft);color:var(--g-on-soft)}
 .lv-chip.done{background:var(--g-primary-soft);border-color:transparent;color:var(--g-on-soft)}
 .lv-chip:disabled{opacity:.35;cursor:not-allowed}
-.btn{min-height:48px;padding:0 16px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:var(--g-on-primary);font-family:inherit;font-size:22px;font-weight:700;cursor:pointer}
+.btn{min-height:48px;padding:0 16px;border:0;border-radius:var(--g-radius-btn);background:var(--g-btn-primary);color:var(--g-on-primary);font-family:inherit;font-size: 16px;font-weight: 600;cursor:pointer}
 .btn:active{opacity:.85}
 .btn.ghost{background:var(--g-surface2);color:var(--g-text);border:1px solid var(--g-border)}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
@@ -85,7 +85,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="sub" id="hint">拖动瞄准 · 松手发射 · 清空砖块或撑过目标回合即过关</p>
   <div class="stage" id="stage">
     <canvas id="cv" role="img" aria-label="弹球砖块游戏画布"></canvas>
-    <div class="overlay show" id="ovReady">
+    <div class="overlay show" role="dialog" aria-modal="true" id="ovReady">
       <div class="panel">
         <h2>弹球砖块</h2>
         <p class="desc">按住画布<strong>拖动瞄准</strong>，松手发射一整排弹球。<br>数字砖块被命中会减 1，归零消除；命中 <b>+</b> 道具球下回合多 1 球。<br>每回合结束砖阵下压一行，<strong>触碰警戒线即失败</strong>；清空全部砖块或撑过目标回合数即过关。</p>
@@ -94,7 +94,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         <p class="foot" id="readyFoot">最高分 <span id="sBest">0</span> · 已通关 <span id="readyDone">0</span> 关</p>
       </div>
     </div>
-    <div class="overlay" id="ovWin">
+    <div class="overlay" role="dialog" aria-modal="true" id="ovWin">
       <div class="panel">
         <h2 id="winTitle">过关！</h2>
         <p class="desc" id="winDesc">本局得分 0</p>
@@ -105,7 +105,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         </div>
       </div>
     </div>
-    <div class="overlay" id="ovLose">
+    <div class="overlay" role="dialog" aria-modal="true" id="ovLose">
       <div class="panel">
         <h2>挑战失败</h2>
         <p class="desc" id="loseDesc">砖块压到了警戒线</p>
@@ -843,6 +843,14 @@ requestAnimationFrame(frame);
 syncLevelsFromServer();
 syncSaveFromServer();
 })();
+</script>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
+(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
+function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}
+for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}})();
 </script>
 </body>
 </html>

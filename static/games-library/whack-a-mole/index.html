@@ -7,7 +7,7 @@
 <title>打地鼠</title>
 <style>
   /*token:GAME-THEME.md §2 + §3 素材 token（草地 / 洞口 / 鼠身）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-field:#E4F0DA;--g-field2:#D2E4C2;--g-cell:#8A6244;--g-cellhi:#E0C9A6;--g-board:#A4714B;--g-board2:#7C5236;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-field:#E4F0DA;--g-field2:#D2E4C2;--g-cell:#8A6244;--g-cellhi:#E0C9A6;--g-board:#A4714B;--g-board2:#7C5236;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-field:#22331F;--g-field2:#2A3D27;--g-cell:#4A3524;--g-cellhi:#8A6B4E;--g-board:#7A5334;--g-board2:#5A3B25;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -35,8 +35,8 @@
   .btn {
     min-height: 44px; padding: 0 10px; flex: 1;
     border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-primary); color: #fff;
-    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
+    background: var(--g-btn-primary); color: #fff;
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
   }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
@@ -128,7 +128,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <button class="btn daily" id="btnDaily" type="button">每日挑战</button>
   <p class="foot">普通鼠 +10 · 黄金鼠 +30 · 炸弹 -15 · 漏掉地鼠 -5</p>
 </div>
-<div class="overlay" id="overlay">
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel" id="panel"></div>
 </div>
 <script>
@@ -756,6 +756,14 @@ startLevel(saveData.lv<LEVELS.length?saveData.lv:0);
 loop();
 syncLevelsFromServer();syncSaveFromServer();
 })();
+</script>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
+(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
+function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}
+for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}})();
 </script>
 </body>
 </html>
