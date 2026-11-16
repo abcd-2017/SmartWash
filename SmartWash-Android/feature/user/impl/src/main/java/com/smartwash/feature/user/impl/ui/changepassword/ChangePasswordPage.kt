@@ -35,9 +35,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppPasswordTextField
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
-import com.smartwash.common.ui.components.PasswordInput
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.ClickDebouncer
@@ -65,9 +65,6 @@ fun ChangePasswordPage(
     var oldPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var showOldPassword by remember { mutableStateOf(false) }
-    var showNewPassword by remember { mutableStateOf(false) }
-    var showConfirmPassword by remember { mutableStateOf(false) }
     // 行内错误（仅提交时报错，输入即清除——§3.7「输入中不报错」）
     var isOldPasswordError by remember { mutableStateOf(false) }
     var isNewPasswordError by remember { mutableStateOf(false) }
@@ -125,16 +122,23 @@ fun ChangePasswordPage(
                 contentPadding = PaddingValues(horizontal = AppDimens.cardPadding)
             ) {
                 Column(modifier = Modifier.padding(vertical = 20.dp)) {
-                    PasswordInput(
-                        password = oldPassword,
-                        isPasswordError = false,
-                        showPassword = showOldPassword,
-                        showVisibility = { showOldPassword = !showOldPassword },
-                        label = stringResource(R.string.old_password)
-                    ) {
-                        oldPassword = it
-                        isOldPasswordError = false
-                    }
+                    Text(
+                        text = stringResource(R.string.old_password),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    AppPasswordTextField(
+                        value = oldPassword,
+                        onValueChange = {
+                            oldPassword = it
+                            isOldPasswordError = false
+                        },
+                        // 最大位数由组件 maxLength 固定 16
+                        isError = false,
+                        modifier = Modifier.height(48.dp)
+                    )
                     // 行内错误淡入 + 纵向展开（对齐注册页同场景，AND-B-012），不再 0ms 硬切
                     InlineError(
                         visible = isOldPasswordError,
@@ -143,30 +147,54 @@ fun ChangePasswordPage(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    PasswordInput(
-                        password = newPassword,
-                        isPasswordError = isNewPasswordError,
-                        showPassword = showNewPassword,
-                        showVisibility = { showNewPassword = !showNewPassword },
-                        label = stringResource(R.string.new_password)
-                    ) {
-                        newPassword = it
-                        isNewPasswordError = false
-                        isMismatchError = false
-                    }
+                    Text(
+                        text = stringResource(R.string.new_password),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    AppPasswordTextField(
+                        value = newPassword,
+                        onValueChange = {
+                            newPassword = it
+                            isNewPasswordError = false
+                            isMismatchError = false
+                        },
+                        // 最大位数由组件 maxLength 固定 16
+                        isError = isNewPasswordError,
+                        supportingText = if (isNewPasswordError) {
+                            {
+                                Text(
+                                    text = stringResource(com.smartwash.common.ui.R.string.invalid_password),
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp,
+                                    color = AppColors.colorScheme.error
+                                )
+                            }
+                        } else null,
+                        modifier = Modifier.height(48.dp)
+                    )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    PasswordInput(
-                        password = confirmPassword,
-                        isPasswordError = false,
-                        showPassword = showConfirmPassword,
-                        showVisibility = { showConfirmPassword = !showConfirmPassword },
-                        label = stringResource(R.string.confirm_new_password)
-                    ) {
-                        confirmPassword = it
-                        isMismatchError = false
-                    }
+                    Text(
+                        text = stringResource(R.string.confirm_new_password),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    AppPasswordTextField(
+                        value = confirmPassword,
+                        onValueChange = {
+                            confirmPassword = it
+                            isMismatchError = false
+                        },
+                        // 最大位数由组件 maxLength 固定 16
+                        isError = false,
+                        modifier = Modifier.height(48.dp)
+                    )
                     InlineError(
                         visible = isMismatchError,
                         text = stringResource(R.string.error_password_mismatch)

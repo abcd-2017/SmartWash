@@ -11,8 +11,9 @@ com.smartwash.common.ui
 │   ├── AppComponents.kt    — PageHeader, AppCard, AppButton, AppTabBar, SettingRow
 │   ├── InfoRow.kt          — 信息行组件
 │   ├── InfoSection.kt      — 信息分组卡片
-│   ├── PasswordInput.kt    — 密码输入框
-│   └── PhoneNumberInput.kt — 手机号输入框
+│   ├── AppTextField.kt            — 统一输入框（规范 §3.7 唯一标准）
+│   ├── AppPasswordTextField.kt    — 密码输入框（尾缀图标化）
+│   └── AppVerificationCodeField.kt — 验证码输入框（描边发送按钮）
 ├── navigation/
 │   ├── ShellRoute.kt            — 壳层路由契约
 │   ├── NavGraphContributor.kt   — 页面注册贡献者（fun interface + @IntoSet）

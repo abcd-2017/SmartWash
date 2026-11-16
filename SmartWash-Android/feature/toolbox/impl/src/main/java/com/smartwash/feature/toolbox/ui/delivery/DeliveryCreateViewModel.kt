@@ -65,7 +65,7 @@ class DeliveryCreateViewModel @Inject constructor(
     }
 
     fun updatePassword(value: String) {
-        // 超上限直接截断不报错（与 PasswordInput 既有惯例一致），提交时校验下限
+        // 超上限直接截断不报错（与 AppTextField 系列 maxLength 惯例一致），提交时校验下限
         _form.value = _form.value.copy(password = value.take(DeliveryRules.MAX_PASSWORD_LENGTH))
         // 输入即清除字段错误（规范 §3.7：输入中不报错）
         _passwordError.value = false

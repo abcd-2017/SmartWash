@@ -18,14 +18,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Autorenew
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,12 +37,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
@@ -153,48 +150,29 @@ fun SubscriptionEditPage(
                 ) {
                     GroupCard {
                         FormLabel(stringResource(R.string.subscription_form_name_label))
-                        OutlinedTextField(
+                        AppTextField(
                             value = form.name,
                             onValueChange = viewModel::updateName,
-                            placeholder = {
-                                Text(
-                                    text = stringResource(R.string.subscription_form_name_hint),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = AppColors.colorScheme.textSecondary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            },
-                            textStyle = MaterialTheme.typography.bodyLarge,
+                            placeholder = stringResource(R.string.subscription_form_name_hint),
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.inputRadius),
-                            colors = tokenTextFieldColors(),
                         )
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
                         FormLabel(stringResource(R.string.subscription_form_amount_label))
-                        OutlinedTextField(
+                        AppTextField(
                             value = form.amount,
                             onValueChange = viewModel::updateAmount,
-                            placeholder = {
-                                Text(
-                                    text = stringResource(R.string.subscription_form_amount_hint),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = AppColors.colorScheme.textSecondary,
-                                )
-                            },
+                            placeholder = stringResource(R.string.subscription_form_amount_hint),
                             textStyle = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.inputRadius),
-                            colors = tokenTextFieldColors(),
                         )
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
@@ -218,7 +196,7 @@ fun SubscriptionEditPage(
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
                         FormLabel(stringResource(R.string.subscription_form_interval_label))
-                        OutlinedTextField(
+                        AppTextField(
                             value = form.interval,
                             onValueChange = viewModel::updateInterval,
                             textStyle = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
@@ -227,8 +205,6 @@ fun SubscriptionEditPage(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.inputRadius),
-                            colors = tokenTextFieldColors(),
                         )
                         // helper 是指导用户填写的可读正文：装饰档 textTertiary #A9AEA9 仅 2.25:1
                         // 踩对比度红线（DESIGN-SPEC §10），12sp 弱化下限为 textSecondary（4.9:1）。
@@ -307,7 +283,7 @@ fun SubscriptionEditPage(
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
                         FormLabel(stringResource(R.string.subscription_form_remind_label))
-                        OutlinedTextField(
+                        AppTextField(
                             value = form.remindDays,
                             onValueChange = viewModel::updateRemindDays,
                             textStyle = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
@@ -316,8 +292,6 @@ fun SubscriptionEditPage(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.inputRadius),
-                            colors = tokenTextFieldColors(),
                         )
                         Text(
                             text = stringResource(R.string.subscription_form_remind_helper),
@@ -330,25 +304,15 @@ fun SubscriptionEditPage(
 
                         // ---------- 取消网址（可一键打开浏览器/复制） ----------
                         FormLabel(stringResource(R.string.subscription_form_cancel_url_label))
-                        OutlinedTextField(
+                        AppTextField(
                             value = form.cancelUrl,
                             onValueChange = viewModel::updateCancelUrl,
-                            placeholder = {
-                                Text(
-                                    text = stringResource(R.string.subscription_form_cancel_url_hint),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = AppColors.colorScheme.textSecondary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            },
+                            placeholder = stringResource(R.string.subscription_form_cancel_url_hint),
                             textStyle = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.inputRadius),
-                            colors = tokenTextFieldColors(),
                         )
                         Text(
                             text = stringResource(R.string.subscription_form_cancel_url_helper),
@@ -380,43 +344,27 @@ fun SubscriptionEditPage(
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
                         FormLabel(stringResource(R.string.subscription_form_cancel_steps_label))
-                        OutlinedTextField(
+                        AppTextField(
                             value = form.cancelSteps,
                             onValueChange = viewModel::updateCancelSteps,
-                            placeholder = {
-                                Text(
-                                    text = stringResource(R.string.subscription_form_cancel_steps_hint),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = AppColors.colorScheme.textSecondary,
-                                )
-                            },
-                            textStyle = MaterialTheme.typography.bodyLarge,
+                            placeholder = stringResource(R.string.subscription_form_cancel_steps_hint),
+                            singleLine = false,
                             minLines = 2,
                             maxLines = 5,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(AppDimens.inputRadius),
-                            colors = tokenTextFieldColors(),
                         )
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
                         FormLabel(stringResource(R.string.subscription_form_note_label))
-                        OutlinedTextField(
+                        AppTextField(
                             value = form.note,
                             onValueChange = viewModel::updateNote,
-                            placeholder = {
-                                Text(
-                                    text = stringResource(R.string.subscription_form_note_hint),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = AppColors.colorScheme.textSecondary,
-                                )
-                            },
-                            textStyle = MaterialTheme.typography.bodyLarge,
+                            placeholder = stringResource(R.string.subscription_form_note_hint),
+                            singleLine = false,
                             minLines = 2,
                             maxLines = 5,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(AppDimens.inputRadius),
-                            colors = tokenTextFieldColors(),
                         )
                     }
 
@@ -500,16 +448,6 @@ private fun InlineTextAction(text: String, onClick: () -> Unit) {
         )
     }
 }
-
-/** 输入框令牌配色（对齐 ShortCodeCreatePage 先例：r12 + surfaceVariant 底 + outline 描边） */
-@Composable
-private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AppColors.colorScheme.primary,
-    unfocusedBorderColor = AppColors.colorScheme.outline,
-    errorBorderColor = AppColors.colorScheme.error,
-    focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-    unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-)
 
 /** 浏览器打开（App 内不拦截跳转；无浏览器兜底提示） */
 internal fun openInBrowser(context: android.content.Context, url: String) {

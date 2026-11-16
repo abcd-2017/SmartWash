@@ -30,8 +30,6 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -49,6 +47,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingDots
@@ -370,7 +369,7 @@ private fun RecipeCard(
 }
 
 /**
- * 菜谱搜索输入框（§3.7 输入控件标准）：前缀 16dp 搜索图标（透明度 .5），
+ * 菜谱搜索输入框（§3.7 输入控件标准）：前缀 16dp 搜索图标（组件统一 textSecondary），
  * 有内容时尾缀 48dp 自绘清空热区（禁 M3 IconButton 涟漪），正文 16sp。
  */
 @Composable
@@ -379,18 +378,11 @@ private fun RecipeSearchField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    OutlinedTextField(
+    AppTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(stringResource(R.string.dining_recipe_search_hint)) },
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Rounded.Search,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = AppColors.colorScheme.textSecondary.copy(alpha = 0.5f),
-            )
-        },
+        placeholder = stringResource(R.string.dining_recipe_search_hint),
+        leadingIcon = Icons.Rounded.Search,
         trailingIcon = {
             if (value.isNotEmpty()) {
                 Box(
@@ -409,18 +401,6 @@ private fun RecipeSearchField(
             }
         },
         singleLine = true,
-        textStyle = MaterialTheme.typography.bodyLarge,
-        shape = RoundedCornerShape(AppDimens.radiusMd),
-        colors = tokenTextFieldColors(),
         modifier = modifier,
     )
 }
-
-/** 输入框令牌色（与新增菜谱/创建点单页同款：r12 + outline 描边 + surfaceVariant 底） */
-@Composable
-private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AppColors.colorScheme.primary,
-    unfocusedBorderColor = AppColors.colorScheme.outline,
-    focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-    unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-)

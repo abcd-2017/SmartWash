@@ -10,11 +10,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,11 +20,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
@@ -81,75 +78,42 @@ fun AssetTagCreatePage(
             GroupCard {
                 // ---------- 物品名称 ----------
                 FormLabel(stringResource(R.string.asset_tag_item_name_label))
-                OutlinedTextField(
+                AppTextField(
                     value = form.itemName,
                     onValueChange = viewModel::updateItemName,
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.asset_tag_item_name_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.colorScheme.textTertiary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    textStyle = MaterialTheme.typography.bodyLarge,
+                    placeholder = stringResource(R.string.asset_tag_item_name_hint),
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    shape = RoundedCornerShape(AppDimens.radiusMd),
-                    colors = tokenTextFieldColors(),
                 )
 
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
                 // ---------- 物品描述（可选） ----------
                 FormLabel(stringResource(R.string.asset_tag_item_desc_label))
-                OutlinedTextField(
+                AppTextField(
                     value = form.itemDesc,
                     onValueChange = viewModel::updateItemDesc,
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.asset_tag_item_desc_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.colorScheme.textTertiary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    textStyle = MaterialTheme.typography.bodyLarge,
+                    placeholder = stringResource(R.string.asset_tag_item_desc_hint),
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    shape = RoundedCornerShape(AppDimens.radiusMd),
-                    colors = tokenTextFieldColors(),
                 )
 
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
                 // ---------- 联系方式（可选） ----------
                 FormLabel(stringResource(R.string.asset_tag_contact_label))
-                OutlinedTextField(
+                AppTextField(
                     value = form.contact,
                     onValueChange = viewModel::updateContact,
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.asset_tag_contact_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.colorScheme.textTertiary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    textStyle = MaterialTheme.typography.bodyLarge,
+                    placeholder = stringResource(R.string.asset_tag_contact_hint),
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    shape = RoundedCornerShape(AppDimens.radiusMd),
-                    colors = tokenTextFieldColors(),
                 )
                 Text(
                     text = stringResource(R.string.asset_tag_contact_desc),
@@ -162,25 +126,14 @@ fun AssetTagCreatePage(
 
                 // ---------- 自定义标签码（可选） ----------
                 FormLabel(stringResource(R.string.asset_tag_custom_code_label))
-                OutlinedTextField(
+                AppTextField(
                     value = form.customCode,
                     onValueChange = viewModel::updateCustomCode,
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.toolbox_custom_code_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.colorScheme.textTertiary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    textStyle = MaterialTheme.typography.bodyLarge,
+                    placeholder = stringResource(R.string.toolbox_custom_code_hint),
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    shape = RoundedCornerShape(AppDimens.radiusMd),
-                    colors = tokenTextFieldColors(),
                 )
             }
 
@@ -214,13 +167,3 @@ private fun FormLabel(text: String) {
         modifier = Modifier.padding(bottom = AppDimens.spaceXs),
     )
 }
-
-/** 输入框令牌配色（对齐短链创建页 tokenTextFieldColors） */
-@Composable
-private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AppColors.colorScheme.primary,
-    unfocusedBorderColor = AppColors.colorScheme.outline,
-    errorBorderColor = AppColors.colorScheme.error,
-    focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-    unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-)

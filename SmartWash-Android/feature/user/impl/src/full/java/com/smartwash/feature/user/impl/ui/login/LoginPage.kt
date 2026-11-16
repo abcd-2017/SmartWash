@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -51,6 +53,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,11 +61,12 @@ import androidx.core.view.WindowCompat
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.smartwash.common.ui.components.AppPasswordTextField
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.AuthCtaButton
-import com.smartwash.common.ui.components.PasswordInput
-import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.common.ui.navigation.ShellRoute
+import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.ClickDebouncer
 import com.smartwash.common.utils.model.RequestState
@@ -99,7 +103,6 @@ fun LoginPage(
     var password by remember { mutableStateOf("") }
     var isPhoneError by remember { mutableStateOf(false) }
     var isPasswordError by remember { mutableStateOf(false) }
-    var showPassword by remember { mutableStateOf(false) }
     val passwordFocusRequester = remember { FocusRequester() }
 
     val loginState by loginViewModel.loginState.collectAsState()
@@ -132,7 +135,6 @@ fun LoginPage(
     LaunchedEffect(loginState) {
         when (loginState) {
             is RequestState.Success -> {
-                showPassword = false
                 Toast.makeText(context, context.getString(R.string.login_success), Toast.LENGTH_SHORT).show()
                 // 顺序不能颠倒：先在本协程完成去向检查（此刻 key 仍为 Success，协程存活，
                 // 网络挂起安全），完成导航后才 resetLoginState。若先 reset，key 变化会取消
@@ -231,22 +233,41 @@ fun LoginPage(
                     .border(1.dp, GlassBorderSubtle, glassShape)
                     .padding(horizontal = 16.dp, vertical = 20.dp)
             ) {
-                PhoneNumberInput(
-                    phone = phone,
-                    isPhoneError = isPhoneError,
-                    contentColor = Color.White,
-                    // [P01] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
-                    // label 文案与占位同为字段名，复用 common:ui 既有 string 资源（nonTransitiveRClass 全限定引用）
-                    label = stringResource(com.smartwash.common.ui.R.string.phone_hint),
-                ) {
-                    if (it.length <= 11) phone = it
-                    // 实时校验：只在已显示错误后实时更新，避免输入中就报错
-                    isPhoneError = if (it.length == 11) !isValidPhone(it) else isPhoneError
-                    // 输入完成自动跳转到密码框
-                    if (it.length == 11 && isValidPhone(it)) {
-                        passwordFocusRequester.requestFocus()
-                    }
-                }
+                // [P01] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
+                // label 文案与占位同为字段名，复用 common:ui 既有 string 资源（nonTransitiveRClass 全限定引用）
+                Text(
+                    text = stringResource(com.smartwash.common.ui.R.string.phone_hint),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                AppTextField(
+                    value = phone,
+                    onValueChange = {
+                        if (it.length <= 11) phone = it
+                        // 实时校验：只在已显示错误后实时更新，避免输入中就报错
+                        isPhoneError = if (it.length == 11) !isValidPhone(it) else isPhoneError
+                        // 输入完成自动跳转到密码框
+                        if (it.length == 11 && isValidPhone(it)) {
+                            passwordFocusRequester.requestFocus()
+                        }
+                    },
+                    modifier = Modifier.height(48.dp),
+                    isError = isPhoneError,
+                    leadingIcon = Icons.Rounded.Phone,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    supportingText = if (isPhoneError) {
+                        {
+                            Text(
+                                text = stringResource(com.smartwash.common.ui.R.string.invalid_phone),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                color = AppColors.colorScheme.error
+                            )
+                        }
+                    } else null
+                )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -261,23 +282,37 @@ fun LoginPage(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                PasswordInput(
-                    password = password,
-                    isPasswordError = isPasswordError,
-                    showPassword = showPassword,
-                    showVisibility = { showPassword = !showPassword },
-                    contentColor = Color.White,
-                    // [P01] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
-                    label = stringResource(com.smartwash.common.ui.R.string.password_hint),
-                    modifier = Modifier.focusRequester(passwordFocusRequester)
-                ) {
-                    // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测）
-                    if (it.length <= 16) password = it
-                    // 对齐手机号框的实时清除机制：输入补足有效长度（6–16 位，超长已在组件内
-                    // 截断）即重新校验、立即清除行内错误，不再残留至下次点登录；
-                    // 不足 6 位不新增报错（避免输入中就报错，错误仍由点击登录时检测）
-                    isPasswordError = if (it.length >= 6) false else isPasswordError
-                }
+                // [P01] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
+                Text(
+                    text = stringResource(com.smartwash.common.ui.R.string.password_hint),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                AppPasswordTextField(
+                    value = password,
+                    onValueChange = {
+                        // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测；超长由组件 maxLength 截断）
+                        password = it
+                        // 对齐手机号框的实时清除机制：输入补足有效长度（6–16 位）即重新校验、
+                        // 立即清除行内错误，不再残留至下次点登录；不足 6 位不新增报错
+                        isPasswordError = if (it.length >= 6) false else isPasswordError
+                    },
+                    // 最大位数由组件 maxLength 固定 16，无需页面截断
+                    modifier = Modifier.focusRequester(passwordFocusRequester),
+                    isError = isPasswordError,
+                    supportingText = if (isPasswordError) {
+                        {
+                            Text(
+                                text = stringResource(com.smartwash.common.ui.R.string.invalid_password),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                color = AppColors.colorScheme.error
+                            )
+                        }
+                    } else null
+                )
 
                 Spacer(modifier = Modifier.height(8.dp))
 

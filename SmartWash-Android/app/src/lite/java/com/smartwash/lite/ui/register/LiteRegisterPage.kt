@@ -2,7 +2,6 @@ package com.smartwash.lite.ui.register
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,18 +14,14 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.Key
+import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,8 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -54,14 +47,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.R
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppPasswordTextField
+import com.smartwash.common.ui.components.AppTextField
+import com.smartwash.common.ui.components.AppVerificationCodeField
 import com.smartwash.common.ui.components.GroupCard
-import com.smartwash.common.ui.components.PasswordInput
-import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
-import com.smartwash.common.ui.theme.ErrorLight
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.isValidPhone
@@ -98,7 +91,6 @@ fun LiteRegisterPage(
     var isPhoneError by remember { mutableStateOf(false) }
     var isCodeError by remember { mutableStateOf(false) }
     var isPasswordError by remember { mutableStateOf(false) }
-    var showPassword by remember { mutableStateOf(false) }
     var countDown by remember { mutableStateOf(0) }
     var countDownJob by remember { mutableStateOf<Job?>(null) }
 
@@ -215,34 +207,49 @@ fun LiteRegisterPage(
         Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
 
         GroupCard(modifier = Modifier.fillMaxWidth()) {
-            PhoneNumberInput(
-                phone = phone,
-                isPhoneError = isPhoneError,
-                contentColor = AppColors.colorScheme.textPrimary,
-                label = stringResource(com.smartwash.common.ui.R.string.phone_hint),
-            ) {
-                if (it.length <= 11) phone = it
-                isPhoneError = when {
-                    it.isEmpty() -> false
-                    it.length == 11 -> !isValidPhone(it)
-                    else -> isPhoneError
-                }
-                if (it.length == 11 && isValidPhone(it)) {
-                    codeFocusRequester.requestFocus()
-                }
-            }
+            // 字段标签行（设计稿：label 位于输入行上方，间距 4dp）
+            Text(
+                text = stringResource(com.smartwash.common.ui.R.string.phone_hint),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = AppColors.colorScheme.textPrimary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            AppTextField(
+                value = phone,
+                onValueChange = {
+                    if (it.length <= 11) phone = it
+                    isPhoneError = when {
+                        it.isEmpty() -> false
+                        it.length == 11 -> !isValidPhone(it)
+                        else -> isPhoneError
+                    }
+                    if (it.length == 11 && isValidPhone(it)) {
+                        codeFocusRequester.requestFocus()
+                    }
+                },
+                modifier = Modifier.height(48.dp),
+                isError = isPhoneError,
+                leadingIcon = Icons.Rounded.Phone,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                supportingText = if (isPhoneError) {
+                    {
+                        Text(
+                            text = stringResource(com.smartwash.common.ui.R.string.invalid_phone),
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            color = AppColors.colorScheme.error
+                        )
+                    }
+                } else null
+            )
 
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
             HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
 
-            LiteVerificationCodeRow(
-                code = verificationCode,
-                isCodeError = isCodeError,
-                countDown = countDown,
-                captchaLoading = captchaState is RequestState.Loading,
-                contentColor = AppColors.colorScheme.textPrimary,
-                focusRequester = codeFocusRequester,
+            AppVerificationCodeField(
+                value = verificationCode,
                 onValueChange = { newValue ->
                     val filtered = newValue.filter { it.isDigit() }
                     if (filtered.length <= 6) {
@@ -251,6 +258,8 @@ fun LiteRegisterPage(
                     }
                     if (filtered.length == 6) passwordFocusRequester.requestFocus()
                 },
+                sendText = stringResource(com.smartwash.feature.user.impl.R.string.get_verification_code),
+                countdownText = stringResource(com.smartwash.feature.user.impl.R.string.countdown_format, countDown),
                 onSendCaptcha = {
                     if (isValidPhone(phone)) {
                         registerViewModel.getCaptcha(phone)
@@ -268,23 +277,54 @@ fun LiteRegisterPage(
                         isPhoneError = true
                     }
                 },
+                modifier = Modifier
+                    .height(48.dp)
+                    .focusRequester(codeFocusRequester),
+                placeholder = stringResource(com.smartwash.feature.user.impl.R.string.verification_code_hint),
+                isError = isCodeError,
+                countDown = countDown,
+                sendEnabled = countDown == 0 && captchaState !is RequestState.Loading,
+                supportingText = if (isCodeError) {
+                    {
+                        Text(
+                            text = stringResource(com.smartwash.feature.user.impl.R.string.invalid_verification_code),
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            color = AppColors.colorScheme.error
+                        )
+                    }
+                } else null
             )
 
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
             HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
 
-            PasswordInput(
-                password = password,
-                isPasswordError = isPasswordError,
-                showPassword = showPassword,
-                showVisibility = { showPassword = !showPassword },
-                contentColor = AppColors.colorScheme.textPrimary,
-                label = stringResource(com.smartwash.feature.user.impl.R.string.password_hint_register),
+            Text(
+                text = stringResource(com.smartwash.feature.user.impl.R.string.password_hint_register),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = AppColors.colorScheme.textPrimary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            AppPasswordTextField(
+                value = password,
+                onValueChange = {
+                    if (it.length <= 16) password = it
+                },
                 modifier = Modifier.focusRequester(passwordFocusRequester),
-            ) {
-                if (it.length <= 16) password = it
-            }
+                isError = isPasswordError,
+                supportingText = if (isPasswordError) {
+                    {
+                        Text(
+                            text = stringResource(com.smartwash.common.ui.R.string.invalid_password),
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            color = AppColors.colorScheme.error
+                        )
+                    }
+                } else null
+            )
         }
 
         Spacer(modifier = Modifier.height(AppDimens.spaceXl))
@@ -329,109 +369,5 @@ fun LiteRegisterPage(
         }
 
         Spacer(modifier = Modifier.height(AppDimens.spaceXxl))
-    }
-}
-
-/**
- * 验证码输入行 — 对齐 §3.7：输入正文 16sp、前缀图标 16dp、尾缀发送为描边按钮
- * （1dp 描边 + 12dp 圆角 + 高 40dp + 横向 14dp），倒计时/加载禁用态降至 .55 透明度。
- */
-@Composable
-private fun LiteVerificationCodeRow(
-    code: String,
-    isCodeError: Boolean,
-    countDown: Int,
-    captchaLoading: Boolean,
-    contentColor: Color,
-    focusRequester: FocusRequester,
-    onValueChange: (String) -> Unit,
-    onSendCaptcha: () -> Unit,
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Key,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = if (isCodeError) ErrorLight else contentColor.copy(alpha = 0.5f)
-            )
-            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-            BasicTextField(
-                value = code,
-                onValueChange = onValueChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(focusRequester),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textStyle = LocalTextStyle.current.copy(
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp,
-                    color = contentColor
-                ),
-                cursorBrush = SolidColor(if (isCodeError) ErrorLight else contentColor),
-                decorationBox = { innerTextField ->
-                    Box {
-                        if (code.isEmpty()) {
-                            Text(
-                                text = stringResource(com.smartwash.feature.user.impl.R.string.verification_code_hint),
-                                fontSize = 16.sp,
-                                lineHeight = 24.sp,
-                                color = contentColor.copy(alpha = 0.45f)
-                            )
-                        }
-                        innerTextField()
-                    }
-                }
-            )
-            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-
-            val sendEnabled = countDown == 0 && !captchaLoading
-            Box(
-                modifier = Modifier
-                    .height(40.dp)
-                    .then(
-                        if (sendEnabled) Modifier.pressable(onClick = onSendCaptcha, debounce = false)
-                        else Modifier
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = if (sendEnabled) contentColor.copy(alpha = 0.3f)
-                        else contentColor.copy(alpha = 0.3f * 0.55f),
-                        shape = RoundedCornerShape(AppDimens.radiusMd)
-                    )
-                    .padding(horizontal = 14.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = if (countDown > 0) {
-                        stringResource(com.smartwash.feature.user.impl.R.string.countdown_format, countDown)
-                    } else {
-                        stringResource(com.smartwash.feature.user.impl.R.string.get_verification_code)
-                    },
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontFeatureSettings = "tnum"
-                    ),
-                    color = contentColor.copy(
-                        alpha = if (sendEnabled) 0.92f else 0.92f * 0.55f
-                    )
-                )
-            }
-        }
-
-        if (isCodeError) {
-            Text(
-                text = stringResource(com.smartwash.feature.user.impl.R.string.invalid_verification_code),
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                color = ErrorLight,
-                modifier = Modifier.padding(top = AppDimens.spaceXxs)
-            )
-        }
     }
 }

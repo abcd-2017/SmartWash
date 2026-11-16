@@ -25,8 +25,6 @@ import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +53,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppConfirmDialog
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonBlock
@@ -222,17 +221,10 @@ private fun DeliveryCreateForm(
 
         // ---------- 进入密码（可选） ----------
         FormLabel(stringResource(R.string.toolbox_delivery_password_label))
-        OutlinedTextField(
+        AppTextField(
             value = form.password,
             onValueChange = onPasswordChange,
-            placeholder = {
-                Text(
-                    text = stringResource(R.string.toolbox_delivery_password_hint),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = AppColors.colorScheme.textSecondary,
-                )
-            },
-            textStyle = MaterialTheme.typography.bodyLarge,
+            placeholder = stringResource(R.string.toolbox_delivery_password_hint),
             singleLine = true,
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             // P1-4：密码端侧校验错误挂到字段本身（isError 红描边 §3.1），错误文案显示在字段
@@ -273,8 +265,6 @@ private fun DeliveryCreateForm(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
-            shape = RoundedCornerShape(AppDimens.inputRadius),
-            colors = tokenTextFieldColors(),
         )
         Text(
             text = stringResource(
@@ -490,13 +480,3 @@ private fun FormLabel(text: String) {
         modifier = Modifier.padding(bottom = AppDimens.spaceXs),
     )
 }
-
-/** 输入框令牌配色（规范 §3.7：inputRadius 14dp + surfaceVariant 底 + outline 描边） */
-@Composable
-private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AppColors.colorScheme.primary,
-    unfocusedBorderColor = AppColors.colorScheme.outline,
-    errorBorderColor = AppColors.colorScheme.error,
-    focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-    unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-)
