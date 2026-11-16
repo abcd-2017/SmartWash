@@ -209,7 +209,7 @@ describe('BatchUploadDialog 上传（关卡跟随导入）', () => {
     // 行内结果：maze 关卡已导入；beat-tap 未勾选 → 未导入；snake 未携带
     const after = Object.fromEntries(wrapper.vm.queue.map((it) => [it.dirName, it]));
     expect(after.maze.result.ok).toBe(true);
-    expect(after.maze.levels.result).toEqual({ ok: true, created: 3, updated: 0 });
+    expect(after.maze.levels.result).toEqual({ ok: true, created: 3, updated: 0, skipped: 0 });
     expect(after['beat-tap'].result.ok).toBe(true);
     expect(after['beat-tap'].levels.result).toBeNull();
     expect(after.snake.levels.result).toBeNull();

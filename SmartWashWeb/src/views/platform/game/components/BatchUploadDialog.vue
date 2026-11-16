@@ -136,6 +136,9 @@
                 effect="plain"
               >
                 已导入 {{ row.levels.result.created + row.levels.result.updated }} 关
+                <template v-if="row.levels.result.skipped">
+                  · {{ row.levels.result.skipped }} 行未导入
+                </template>
               </el-tag>
               <el-tooltip
                 v-else-if="row.levels.result"
@@ -490,7 +493,10 @@ const startUpload = async () => {
         try {
           let created = 0;
           let updated = 0;
-          const rows = item.levels.plan.rows.filter((r) => r.fate !== 'error');
+          const planRows = item.levels.plan.rows;
+          const rows = planRows.filter((r) => r.fate !== 'error');
+          // 错误行不参与导入但须随结果展示，否则行内「已导入 N 关」呈现全部导入的假象
+          const skipped = planRows.length - rows.length;
           for (const payload of buildChunkedPayloads(rows, {
             gameKey: item.gameKey,
             replaceAll: false,
@@ -499,7 +505,7 @@ const startUpload = async () => {
             created += importRes.created || 0;
             updated += importRes.updated || 0;
           }
-          item.levels.result = { ok: true, created, updated };
+          item.levels.result = { ok: true, created, updated, skipped };
           logger.info(
             '批量导入关卡成功',
             `gameKey=${item.gameKey}`,

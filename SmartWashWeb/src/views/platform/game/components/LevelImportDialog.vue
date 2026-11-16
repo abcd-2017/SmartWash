@@ -4,6 +4,8 @@
     title="批量导入关卡"
     width="min(860px, 94vw)"
     :close-on-click-modal="false"
+    :close-on-press-escape="!submitting"
+    :show-close="!submitting"
     @closed="resetState"
   >
     <template v-if="stage === 'input'">
