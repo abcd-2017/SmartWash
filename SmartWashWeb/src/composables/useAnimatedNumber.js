@@ -1,7 +1,7 @@
 // src/composables/useAnimatedNumber.js
 // 数字滚动动效（评审 T4）：从 0（或上一个值）tween 到目标值，全程 requestAnimationFrame。
 // 由真实数据变化触发；尊重 prefers-reduced-motion，关闭时直接落定终值。
-import { readonly, ref, watch } from 'vue';
+import { onScopeDispose, readonly, ref, watch } from 'vue';
 
 // 数字滚动时长（呼应 --motion-slow，与样式 Token 对齐）
 const DURATION_MS = 320;
@@ -54,6 +54,11 @@ export function useAnimatedNumber(targetSource, options = {}) {
     (v) => set(v),
     { immediate: true }
   );
+
+  // 卸载时取消在途 rAF：tween 最长 320ms，期间卸载不应继续写已脱离组件的 ref
+  onScopeDispose(() => {
+    cancelAnimationFrame(rafId);
+  });
 
   return { value: readonly(current), set };
 }
