@@ -417,12 +417,37 @@ syncSaveFromServer();
 })();
 </script>
 <script>
-/* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
-(function(){var els=document.querySelectorAll(".overlay, .sheet");if(!els.length)return;
-function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
-function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
-function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}
-for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}})();
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
 </script>
 </body>
 </html>
