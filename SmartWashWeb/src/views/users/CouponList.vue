@@ -284,6 +284,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -387,7 +388,7 @@ const handleBatchDelete = async () => {
     ElMessage.success('删除成功');
     // 写操作成功留痕：业务键仅优惠券 ID 串与条数
     logger.info('批量删除优惠券成功', `count=${count}`, `couponIds=${ids}`);
-    fetchData();
+    fetchDataAfterDelete();
     tableRef.value.clearSelection();
   } catch (error) {
     logger.error('批量删除优惠券失败:', `count=${count}`, error);
@@ -483,7 +484,7 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功');
     // 写操作成功留痕：业务键仅 couponId/title
     logger.info('删除优惠券成功', `couponId=${row.couponId}`, `title=${row.title}`);
-    fetchData();
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除优惠券失败:', `couponId=${row.couponId}`, error);
     ElMessage.error(friendlyErrorMessage(error, '删除失败'));

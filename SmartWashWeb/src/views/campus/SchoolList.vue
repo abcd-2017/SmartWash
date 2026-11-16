@@ -269,6 +269,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -451,7 +452,7 @@ const handleDelete = async (row) => {
     logger.info('删除学校成功', `schoolId=${row.schoolId}`, `schoolName=${row.schoolName}`);
     // 学校下拉缓存同步失效（评审 #15 的失效入口）
     schoolOptionsCache.invalidate();
-    fetchData();
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除学校失败:', `schoolId=${row.schoolId}`, error);
     ElMessage.error(friendlyErrorMessage(error, '删除失败'));

@@ -336,6 +336,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -584,7 +585,7 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功');
     // 写操作成功留痕：业务键仅 lockerId/lockerNumber
     logger.info('删除寄存柜成功', `lockerId=${row.lockerId}`, `lockerNumber=${row.lockerNumber}`);
-    fetchData();
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除寄存柜失败:', `lockerId=${row.lockerId}`, error);
     ElMessage.error(friendlyErrorMessage(error, '删除失败'));

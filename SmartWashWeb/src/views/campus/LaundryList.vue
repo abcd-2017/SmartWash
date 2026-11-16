@@ -163,6 +163,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -280,7 +281,7 @@ const handleDelete = async (row) => {
     logger.info('删除套餐成功', `itemId=${row.itemId}`, `itemName=${row.itemName}`);
     // 套餐下拉缓存同步失效（评审 #15 的失效入口）
     laundryOptionsCache.invalidate();
-    fetchData();
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除套餐失败:', `itemId=${row.itemId}`, error);
     ElMessage.error(friendlyErrorMessage(error, '删除失败'));
