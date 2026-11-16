@@ -224,7 +224,8 @@ fun DeliverySessionPage(
                 )
             }
             else -> {
-                // 分页列表：LazyColumn 填满列表区（空态/骨架/错误分支同用 weight(1f) 撑满以便居中）
+                // 分页列表：卡随内容收缩（weight fill=false，上限仍为剩余空间）——
+                // 原 weight(1f) 强制拉满，条目少时卡内出现大片空白（用户反馈"投递后下半屏空白"）
                 DeliveryItemList(
                     items = items,
                     retryableIds = retryableIds,
@@ -232,7 +233,7 @@ fun DeliverySessionPage(
                     loadMoreState = loadMoreState,
                     onLoadMore = viewModel::loadMore,
                     onItem = viewModel::openItem,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    modifier = Modifier.weight(1f, fill = false).fillMaxWidth(),
                 )
             }
         }
