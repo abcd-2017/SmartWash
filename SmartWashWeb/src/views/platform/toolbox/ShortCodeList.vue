@@ -298,20 +298,29 @@ const deletingId = ref(null);
 const detailVisible = ref(false);
 const detailLoading = ref(false);
 const detail = ref(null);
+// 竞态守卫：快速连点两行详情，旧响应后到不得覆盖新抽屉（同 useTableList fetchSeq 模式）
+let detailSeq = 0;
 
 const handleDetail = async (row) => {
+  const mySeq = ++detailSeq;
   detailVisible.value = true;
   detailLoading.value = true;
   detail.value = null;
   try {
-    detail.value = await getShortCodeDetail(row.id);
+    const res = await getShortCodeDetail(row.id);
+    if (mySeq !== detailSeq) return;
+    detail.value = res;
   } catch (error) {
     // 页面自有 catch（列表拉取失败已由 useTableList/拦截器留痕，这里只兜底详情请求）
+    if (mySeq !== detailSeq) return;
     logger.error('短码详情获取失败:', `id=${row.id}`, error);
     ElMessage.error(error.message || '获取短码详情失败');
     detailVisible.value = false;
   } finally {
-    detailLoading.value = false;
+    // 被丢弃的旧响应不得关掉最新请求的 loading
+    if (mySeq === detailSeq) {
+      detailLoading.value = false;
+    }
   }
 };
 

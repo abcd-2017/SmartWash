@@ -237,17 +237,25 @@ const summary = reactive({
   successAmount: 0,
 });
 const summaryLoading = ref(false);
+// 竞态守卫：快速连改日期范围时旧区间响应后到会覆盖新汇总（列表侧 useTableList 已有同款）
+let summarySeq = 0;
 
 const fetchSummary = async () => {
+  const mySeq = ++summarySeq;
   summaryLoading.value = true;
   try {
     const data = await getRechargeSummary(buildRangeParams());
+    if (mySeq !== summarySeq) return;
     Object.assign(summary, data);
   } catch (error) {
+    if (mySeq !== summarySeq) return;
     logger.error('充值汇总加载失败:', error);
     ElMessage.error(error.message || '获取充值汇总失败');
   } finally {
-    summaryLoading.value = false;
+    // 被丢弃的旧响应不得关掉最新请求的 loading
+    if (mySeq === summarySeq) {
+      summaryLoading.value = false;
+    }
   }
 };
 

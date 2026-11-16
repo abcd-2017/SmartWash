@@ -294,22 +294,31 @@ const stat = reactive({
   readRateText: '-',
 });
 
+// 竞态守卫：A 行统计在途时点 B 行，旧响应后到不得覆盖新弹窗（同 useTableList fetchSeq 模式）
+let statSeq = 0;
+
 const handleShowStat = async (row) => {
+  const mySeq = ++statSeq;
   statLoadingId.value = row.id;
   statVisible.value = true;
   statLoading.value = true;
   try {
     const data = (await getNoticeReadStat(row.id)) || {};
+    if (mySeq !== statSeq) return;
     stat.totalUsers = Number(data.totalUsers) || 0;
     stat.readCount = Number(data.readCount) || 0;
     stat.readRateText = data.readRateText || '-';
   } catch (error) {
+    if (mySeq !== statSeq) return;
     logger.error('公告送达统计加载失败:', `id=${row.id}`, error);
     ElMessage.error(error.message || '获取送达统计失败');
     statVisible.value = false;
   } finally {
-    statLoading.value = false;
-    statLoadingId.value = null;
+    // 被丢弃的旧响应不得关掉最新请求的 loading
+    if (mySeq === statSeq) {
+      statLoading.value = false;
+      statLoadingId.value = null;
+    }
   }
 };
 
