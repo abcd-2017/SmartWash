@@ -18,10 +18,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
@@ -45,6 +46,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,9 +63,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
+import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
 import com.smartwash.common.ui.theme.AppColors
@@ -94,6 +98,8 @@ fun DeliverySessionPage(
     val session by viewModel.session.collectAsState()
     val items by viewModel.items.collectAsState()
     val loadState by viewModel.loadState.collectAsState()
+    val hasMore by viewModel.hasMore.collectAsState()
+    val loadMoreState by viewModel.loadMoreState.collectAsState()
     val pollFailed by viewModel.pollFailed.collectAsState()
     val sessionGone by viewModel.sessionGone.collectAsState()
     val draft by viewModel.draft.collectAsState()
@@ -207,7 +213,7 @@ fun DeliverySessionPage(
                         AppButton(
                             small = true,
                             text = stringResource(R.string.toolbox_delivery_action_retry),
-                            onClick = viewModel::refreshNow,
+                            onClick = viewModel::retry,
                         )
                     },
                 )
@@ -220,13 +226,15 @@ fun DeliverySessionPage(
                 )
             }
             else -> {
-                // 条目少时卡片高度包裹内容（weight 不强制占满，稀疏留白优于整屏空白卡）；
-                // 空态/骨架/错误分支仍用 weight(1f) 撑满以便居中
+                // 分页列表：LazyColumn 填满列表区（空态/骨架/错误分支同用 weight(1f) 撑满以便居中）
                 DeliveryItemList(
                     items = items,
                     retryableIds = retryableIds,
+                    hasMore = hasMore,
+                    loadMoreState = loadMoreState,
+                    onLoadMore = viewModel::loadMore,
                     onItem = viewModel::openItem,
-                    modifier = Modifier.weight(1f, fill = false).fillMaxWidth(),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
             }
         }
@@ -335,30 +343,50 @@ private fun SessionStrip(
     }
 }
 
+/** 触底预取阈值：距列表末尾还有 N 项时即触发加载更多（避免用户滚到最底才发起请求） */
+private const val LOAD_MORE_PREFETCH_ITEMS = 2
+
 /**
  * 双向条目流：单卡容器 + 行间发丝线（规范 §1.3 只在卡内），正序展示，新条目且已到底部时跟随滚动。
- * 用 [verticalScroll] 普通列而非 LazyColumn：条目少时卡片高度包裹内容（外层 weight(fill=false)），
- * 稀疏留白优于整屏空白卡；条目超出可视区时列内滚动（与 review 弹窗同型）。
+ * LazyColumn + key=id：历史分页（[loadMore]）与轮询新条目都按 id 正序合并，key 唯一稳定；
+ * 触底自动加载更多，页脚承载加载中/失败重试。
  */
 @Composable
 private fun DeliveryItemList(
     items: List<DeliveryItemVo>,
     retryableIds: Set<Long>,
+    hasMore: Boolean,
+    loadMoreState: RequestState,
+    onLoadMore: () -> Unit,
     onItem: (DeliveryItemVo) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val scrollState = rememberScrollState()
+    val listState = rememberLazyListState()
     val reduceMotion = LocalReduceMotion.current
+
+    // 新条目到达且用户已读到底部时跟随滚动（不打断回看）；等一帧让新条目完成布局
     LaunchedEffect(items.size) {
         if (items.isEmpty()) return@LaunchedEffect
-        // 等一帧让新条目完成布局后再取 maxValue（否则滚不到真正底部）
         withFrameNanos { }
-        // 只在用户已阅读到底部时跟随新条目，不打断回看
-        if (!scrollState.canScrollForward) {
-            val target = scrollState.maxValue
-            if (reduceMotion) scrollState.scrollTo(target) else scrollState.animateScrollTo(target)
+        if (!listState.canScrollForward) {
+            val target = items.lastIndex
+            if (reduceMotion) listState.scrollToItem(target) else listState.animateScrollToItem(target)
         }
     }
+
+    // 触底自动加载更多（接近末尾即预取）；totalItemsCount 含页脚，故用布局信息而非 items 快照。
+    // 失败态不自动重试（避免布局抖动触发死循环），由页脚按钮手动重试。
+    LaunchedEffect(listState, hasMore, loadMoreState) {
+        if (!hasMore || loadMoreState is RequestState.Error) return@LaunchedEffect
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            lastVisible to layoutInfo.totalItemsCount
+        }.collect { (lastVisible, total) ->
+            if (total > 0 && lastVisible >= total - 1 - LOAD_MORE_PREFETCH_ITEMS) onLoadMore()
+        }
+    }
+
     // 卡片阴影与描边统一走 GroupCard（softCardShadow），与创建页同一画法（规范 §2.4 / §3.1）；
     // 列表行卡按 GroupCard 约定只给水平 20dp（行自带高度铺满，纵向不再加内边距）
     GroupCard(
@@ -366,12 +394,11 @@ private fun DeliveryItemList(
             .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
         contentPadding = PaddingValues(horizontal = AppDimens.cardPadding),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(scrollState),
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            items.forEachIndexed { index, item ->
+            itemsIndexed(items, key = { _, item -> item.id }) { index, item ->
                 DeliveryItemRow(item = item, retryable = item.id in retryableIds, onClick = { onItem(item) })
                 if (index < items.lastIndex) {
                     HorizontalDivider(
@@ -382,6 +409,41 @@ private fun DeliveryItemList(
                     )
                 }
             }
+            if (hasMore) {
+                item(key = "load_more") {
+                    LoadMoreFooter(state = loadMoreState, onClick = onLoadMore)
+                }
+            }
+        }
+    }
+}
+
+/** 加载更多页脚：加载中 [LoadingDots] / 失败给重试按钮 / 待触发给手动入口 */
+@Composable
+private fun LoadMoreFooter(
+    state: RequestState,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AppDimens.spaceSm),
+        contentAlignment = Alignment.Center,
+    ) {
+        when (state) {
+            is RequestState.Loading -> LoadingDots()
+            is RequestState.Error -> AppButton(
+                small = true,
+                text = stringResource(R.string.toolbox_delivery_load_more_retry),
+                onClick = onClick,
+                variant = AppButtonVariant.SECONDARY,
+            )
+            else -> AppButton(
+                small = true,
+                text = stringResource(R.string.toolbox_delivery_load_more),
+                onClick = onClick,
+                variant = AppButtonVariant.TEXT,
+            )
         }
     }
 }

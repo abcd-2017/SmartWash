@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,9 +26,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,6 +63,7 @@ import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppPillTabRow
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.feature.coupon.ui.coupon.tab.AvailableCouponsTab
@@ -92,13 +96,26 @@ fun CouponPage(
     val pagerState = rememberPagerState(pageCount = { COUPON_TAB_COUNT })
     val loadState by couponViewModel.loadState.collectAsState()
     val availableCoupons by couponViewModel.availableCoupons.collectAsState()
+    val availableSource by couponViewModel.availableSource.collectAsState()
     val claimedCoupons by couponViewModel.claimedCoupons.collectAsState()
+    val claimedState by couponViewModel.claimedState.collectAsState()
+    val claimedHasMore by couponViewModel.claimedHasMore.collectAsState()
+    val claimedLoadMoreState by couponViewModel.claimedLoadMoreState.collectAsState()
     val historicalCoupons by couponViewModel.historicalCoupons.collectAsState()
-    // 三组数据降级来源（A5）：null = 尚未有成功加载（走骨架/整页错误态），各 tab 不渲染降级小态
-    val loadSources by couponViewModel.loadSources.collectAsState()
-    val availableSource = loadSources?.available?.source ?: CouponSource.NETWORK
-    val claimedSource = loadSources?.claimed?.source ?: CouponSource.NETWORK
-    val historicalSource = loadSources?.historical?.source ?: CouponSource.NETWORK
+    val historicalState by couponViewModel.historicalState.collectAsState()
+    val historicalHasMore by couponViewModel.historicalHasMore.collectAsState()
+    val historicalLoadMoreState by couponViewModel.historicalLoadMoreState.collectAsState()
+    // 已领取/历史无本地缓存表：首载失败且无数据即 FAILED（NETWORK 为正常态）
+    val claimedSource = if (claimedState is RequestState.Error && claimedCoupons.isEmpty()) {
+        CouponSource.FAILED
+    } else {
+        CouponSource.NETWORK
+    }
+    val historicalSource = if (historicalState is RequestState.Error && historicalCoupons.isEmpty()) {
+        CouponSource.FAILED
+    } else {
+        CouponSource.NETWORK
+    }
     // 领券进行中（页面局部 UI 状态）：按钮原位换圆环并禁点，阻断重复提交
     var claimingId by remember { mutableStateOf<Long?>(null) }
     // D-C1：可用 tab 文案带真实计数
@@ -226,12 +243,18 @@ fun CouponPage(
                                 1 -> ClaimedCouponsTab(
                                     claimedCoupons = claimedCoupons,
                                     source = claimedSource,
+                                    hasMore = claimedHasMore,
+                                    loadMoreState = claimedLoadMoreState,
                                     onRetry = { couponViewModel.loadAllCoupons() },
+                                    onLoadMore = { couponViewModel.loadMoreClaimed() },
                                 )
                                 else -> HistoricalCouponsTab(
                                     historicalCoupons = historicalCoupons,
                                     source = historicalSource,
+                                    hasMore = historicalHasMore,
+                                    loadMoreState = historicalLoadMoreState,
                                     onRetry = { couponViewModel.loadAllCoupons() },
+                                    onLoadMore = { couponViewModel.loadMoreHistorical() },
                                 )
                             }
                         }
@@ -427,6 +450,57 @@ internal fun CouponSectionError(onRetry: () -> Unit, modifier: Modifier = Modifi
             )
         },
     )
+}
+
+/**
+ * 触底自动加载更多：列表无法继续前滚（到达底部）时触发一次；
+ * snapshotFlow 仅在状态翻转时发射，追加后列表重新可滚不会连环触发（防抖由 VM 的 Loading 守卫兜底）。
+ */
+@Composable
+internal fun CouponLoadMoreTrigger(
+    listState: LazyListState,
+    hasMore: Boolean,
+    onLoadMore: () -> Unit,
+) {
+    val atListEnd by remember { derivedStateOf { !listState.canScrollForward } }
+    LaunchedEffect(hasMore) {
+        snapshotFlow { atListEnd }.collect { atEnd ->
+            if (atEnd && hasMore) onLoadMore()
+        }
+    }
+}
+
+/**
+ * 列表底部加载更多 footer：LoadingDots / 失败重试 / 手动加载更多。
+ * 触底自动加载为主，按钮作为失败重试与极端场景（内容不足一屏）的兜底。
+ */
+@Composable
+internal fun CouponLoadMoreFooter(
+    loadMoreState: RequestState,
+    onRetry: () -> Unit,
+    onLoadMore: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AppDimens.spaceMd),
+        contentAlignment = Alignment.Center,
+    ) {
+        when (loadMoreState) {
+            is RequestState.Loading -> LoadingDots()
+            is RequestState.Error -> AppButton(
+                text = stringResource(R.string.coupon_load_more_failed),
+                onClick = onRetry,
+                variant = AppButtonVariant.SECONDARY,
+                small = true,
+            )
+            else -> AppButton(
+                text = stringResource(R.string.coupon_load_more),
+                onClick = onLoadMore,
+                variant = AppButtonVariant.TEXT,
+            )
+        }
+    }
 }
 
 /**

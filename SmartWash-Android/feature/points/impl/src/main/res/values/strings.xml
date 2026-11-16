@@ -25,9 +25,10 @@
     <string name="points_my_rank_format" formatted="false">我的排名 #%1$d · %2$d 积分</string>
     <string name="points_my_rank_none">本月暂未上榜，签到赢积分</string>
 
-    <!-- 最近流水 -->
+    <!-- 最近流水（分页：触底加载更多 + footer） -->
     <string name="points_ledger_title">积分明细</string>
     <string name="points_ledger_empty">暂无积分记录，签到得积分</string>
+    <string name="points_ledger_load_more">加载更多</string>
     <string name="points_reason_sign_in">每日签到</string>
     <string name="points_reason_streak_bonus">连签奖励</string>
     <string name="points_reason_unknown">积分变动</string>

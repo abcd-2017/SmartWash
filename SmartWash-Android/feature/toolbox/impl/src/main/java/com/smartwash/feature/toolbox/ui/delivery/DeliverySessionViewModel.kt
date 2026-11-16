@@ -30,8 +30,14 @@ import java.io.File
 import javax.inject.Inject
 
 /**
- * 设备投递会话 ViewModel：2-3s 轮询条目流（契约 docs/delivery-api.md §一「轮询」；
- * coroutine loop + delay，随 ViewModel 离开自动取消，连续失败指数退避封顶 10s），
+ * 设备投递会话 ViewModel：条目流「分页加载 + 轮询增量」双轨（契约 docs/delivery-api.md §一）。
+ *
+ * - 首屏：新分页接口拉第一页（[loadFirstPage]），详情仅取会话元数据与最新 id 基准；
+ * - 触底：[loadMore] 按正序加载后续页，去重后追加/插入，保持 id 正序；
+ * - 实时：2-3s 轮询详情（coroutine loop + delay，随 ViewModel 离开自动取消，连续失败指数
+ *   退避封顶 10s），只合并 id 大于 [lastPollMaxId] 的新条目并原地更新已加载条目状态，
+ *   不把未加载的历史页一次性灌满，兼顾实时性与分页加载目标。
+ *
  * 发布（文本/图片/文件）与取走（预览→复制/保存→焚毁）动作完成后立即补拉一次免等下轮。
  *
  * 失效语义：轮询遇业务码 404（过期/关闭）即置 [sessionGone]，页面提示后退出——
@@ -76,6 +82,9 @@ class DeliverySessionViewModel @Inject constructor(
     companion object {
         const val ARG_CODE = "code"
 
+        /** 条目分页大小（后端 BaseSearchFrom 上限 100；短时会话取 20 平衡首屏与请求数） */
+        private const val PAGE_SIZE = 20
+
         /** 轮询基准间隔（契约 2-3s，取中值） */
         private const val POLL_INTERVAL_MS = 2500L
 
@@ -91,6 +100,17 @@ class DeliverySessionViewModel @Inject constructor(
     private var sessionCode: String? = null
     private var pollingJob: Job? = null
 
+    /** 已加载分页状态：当前页码 / 条目总数（后端 itemCount 口径） */
+    private var currentPage = 1
+    private var totalCount = 0L
+
+    /**
+     * 轮询增量基准：上次轮询所见到的最大条目 id。
+     * 只合并 id 大于该值的条目，避免轮询把未分页加载的历史一次性灌满列表；
+     * 未加载的历史由触底 [loadMore] 按需补齐（id 单调递增，追加即保持正序）。
+     */
+    private var lastPollMaxId = 0L
+
     /** 路由入参还原：会话码经 query 携带（DeliveryGraph 统一 Uri.encode） */
     private val routeCode: String = savedStateHandle.get<String>(ARG_CODE).orEmpty()
 
@@ -102,6 +122,14 @@ class DeliverySessionViewModel @Inject constructor(
 
     private val _items = MutableStateFlow<List<DeliveryItemVo>>(emptyList())
     val items = _items.asStateFlow()
+
+    /** 是否还有未加载的历史页（触底加载更多依据；条目总数 − 已加载条目数） */
+    private val _hasMore = MutableStateFlow(false)
+    val hasMore = _hasMore.asStateFlow()
+
+    /** 加载更多独立态（失败不影响已加载列表，页脚重试） */
+    private val _loadMoreState = MutableStateFlow<RequestState>(RequestState.Idle)
+    val loadMoreState = _loadMoreState.asStateFlow()
 
     /** 首次加载状态（骨架屏/错误重试承载）；轮询后续失败不改写（由 [pollFailed] 横幅表达） */
     private val _loadState = MutableStateFlow<RequestState>(RequestState.Idle)
@@ -140,30 +168,37 @@ class DeliverySessionViewModel @Inject constructor(
     private val _toast = MutableStateFlow<ToastEvent?>(null)
     val toast = _toast.asStateFlow()
 
-    /** 进入会话页启动轮询（重复调用幂等；页面 LaunchedEffect(Unit) 触发） */
+    /** 进入会话页启动加载 + 轮询（重复调用幂等；页面 LaunchedEffect(Unit) 触发） */
     fun start() {
         if (routeCode.isBlank()) return
         if (sessionCode == routeCode && pollingJob?.isActive == true) return
         sessionCode = routeCode
         _loadState.value = RequestState.Loading
-        startPolling()
+        startPolling(initial = true)
     }
 
-    private fun startPolling() {
+    /**
+     * 轮询循环（随 ViewModel 离开自动取消，连续失败指数退避封顶 10s）。
+     * [initial]=true 时首轮走 [loadFirstPage]（分页首屏 + 会话元数据），之后每轮 [pollOnce]（增量合并）。
+     */
+    private fun startPolling(initial: Boolean) {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
             var intervalMs = POLL_INTERVAL_MS
+            var pendingInitial = initial
             while (isActive) {
                 val code = sessionCode ?: break
                 try {
-                    val detail = repository.fetchSessionDetail(code)
-                    _session.value = detail.session
-                    _items.value = detail.items
-                    _loadState.value = RequestState.Success
+                    if (pendingInitial) {
+                        loadFirstPage(code)
+                        pendingInitial = false
+                    } else {
+                        pollOnce(code)
+                    }
                     _pollFailed.value = false
                     intervalMs = POLL_INTERVAL_MS
                     // 防御：倒计时归零即刻退出，不等下一次 404（后端读路径到期即失效）
-                    val remaining = DeliveryRules.remainingSeconds(detail.session?.expireAt)
+                    val remaining = DeliveryRules.remainingSeconds(_session.value?.expireAt)
                     if (remaining != null && remaining <= 0L) {
                         markSessionGone(null)
                         break
@@ -194,6 +229,88 @@ class DeliverySessionViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 首屏：新分页接口拉第一页 + 详情拿会话元数据（expireAt / 进入地址）与最新 id 基准。
+     * 详情的 items 不直接入列表（首屏走分页），仅取 max id 作为轮询增量基准，
+     * 避免首轮轮询把未加载的历史全量灌入。
+     */
+    private suspend fun loadFirstPage(code: String) {
+        val detail = repository.fetchSessionDetail(code)
+        val page = repository.pageItems(code = code, page = 1, size = PAGE_SIZE)
+        _session.value = detail.session
+        lastPollMaxId = detail.items.maxOfOrNull { it.id } ?: 0L
+        currentPage = 1
+        totalCount = page.total
+        _items.value = page.records
+        _hasMore.value = page.records.size < page.total
+        _loadMoreState.value = RequestState.Idle
+        _loadState.value = RequestState.Success
+    }
+
+    /** 轮询：详情拿会话元数据 + 全量条目，按 id 增量合并（新条目追加，已有条目原地更新） */
+    private suspend fun pollOnce(code: String) {
+        val detail = repository.fetchSessionDetail(code)
+        _session.value = detail.session
+        totalCount = detail.session?.itemCount?.toLong() ?: totalCount
+        mergePollItems(detail.items)
+        _hasMore.value = _items.value.size < totalCount
+    }
+
+    /**
+     * 轮询条目合并（去重 + 保序）：
+     * - id > [lastPollMaxId]：新条目，追加（id 单调递增，追加即保持正序）；
+     * - id ≤ [lastPollMaxId] 且已在列表：原地更新（取走/焚毁等状态变化）；
+     * - 未加载的历史分页不在此处补，交给触底 [loadMore]，避免轮询退化成全量加载。
+     */
+    private fun mergePollItems(fresh: List<DeliveryItemVo>) {
+        val byId = _items.value.associateBy { it.id }.toMutableMap()
+        for (item in fresh) {
+            if (item.id > lastPollMaxId) {
+                byId[item.id] = item
+            } else if (byId.containsKey(item.id)) {
+                byId[item.id] = item
+            }
+        }
+        lastPollMaxId = maxOf(lastPollMaxId, fresh.maxOfOrNull { it.id } ?: 0L)
+        _items.value = byId.values.sortedBy { it.id }
+    }
+
+    /** 触底加载下一页（正序追加；已存在的 id 原地更新，天然去重） */
+    fun loadMore() {
+        val code = sessionCode ?: return
+        if (_loadMoreState.value is RequestState.Loading || !_hasMore.value) return
+        viewModelScope.launch {
+            _loadMoreState.value = RequestState.Loading
+            try {
+                val nextPage = currentPage + 1
+                val page = repository.pageItems(code = code, page = nextPage, size = PAGE_SIZE)
+                val byId = _items.value.associateBy { it.id }.toMutableMap()
+                page.records.forEach { byId[it.id] = it }
+                _items.value = byId.values.sortedBy { it.id }
+                currentPage = nextPage
+                totalCount = page.total
+                lastPollMaxId = maxOf(lastPollMaxId, page.records.maxOfOrNull { it.id } ?: 0L)
+                _hasMore.value = _items.value.size < page.total
+                _loadMoreState.value = RequestState.Success
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: DeliveryException) {
+                AppLogger.warn(TAG, "加载更多业务拒绝 businessCode=${e.businessCode}")
+                if (e.businessCode == DeliveryBusinessCode.GONE) {
+                    markSessionGone(e.message)
+                } else {
+                    _loadMoreState.value = RequestState.Error(R.string.toolbox_delivery_error_load, e.message)
+                }
+            } catch (e: NetworkException) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.loadMore: ${e.message}", e)
+                _loadMoreState.value = RequestState.Error(e.resId, e.message)
+            } catch (e: Exception) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.loadMore: ${e.message}", e)
+                _loadMoreState.value = RequestState.Error(R.string.toolbox_delivery_error_load)
+            }
+        }
+    }
+
     private fun onPollFailure(message: String?) {
         if (_loadState.value is RequestState.Loading) {
             // 首次加载即失败（非轮询途中自愈场景），error 留痕
@@ -209,9 +326,16 @@ class DeliverySessionViewModel @Inject constructor(
         _sessionGone.value = ToastEvent(R.string.toolbox_delivery_session_gone_toast, message)
     }
 
-    /** 动作完成后立即补拉一次条目流（重启轮询循环，退避一并复位） */
+    /** 动作完成后立即补拉一次（重启轮询循环，退避一并复位；保留已加载分页，只走增量合并） */
     fun refreshNow() {
-        if (sessionCode != null) startPolling()
+        if (sessionCode != null) startPolling(initial = false)
+    }
+
+    /** 首屏失败后重试（回到分页首屏，重置页码与增量基准；防重：加载中忽略） */
+    fun retry() {
+        if (sessionCode == null || _loadState.value is RequestState.Loading) return
+        _loadState.value = RequestState.Loading
+        startPolling(initial = true)
     }
 
     fun updateDraft(value: String) {

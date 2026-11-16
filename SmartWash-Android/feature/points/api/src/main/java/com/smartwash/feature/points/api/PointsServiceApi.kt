@@ -2,6 +2,8 @@ package com.smartwash.feature.points.api
 
 import com.smartwash.common.network.annotation.RequireAuthorization
 import com.smartwash.common.utils.model.ApiResult
+import com.smartwash.common.utils.model.PageData
+import com.smartwash.feature.points.api.model.PointLedgerItemVo
 import com.smartwash.feature.points.api.model.PointsLeaderboardVo
 import com.smartwash.feature.points.api.model.PointsOverviewVo
 import com.smartwash.feature.points.api.model.SignInResultVo
@@ -36,4 +38,15 @@ interface PointsServiceApi {
     @GET("/web/auth/points/leaderboard")
     @RequireAuthorization
     suspend fun getLeaderboard(@Query("scope") scope: String): ApiResult<PointsLeaderboardVo>
+
+    /**
+     * 积分流水分页（时间倒序；page 从 1 起，size 上限 50）。
+     * 流水不再内嵌于 [getOverview] 的 recentLedger，改由本接口按需分页加载。
+     */
+    @GET("/web/auth/points/ledger")
+    @RequireAuthorization
+    suspend fun getLedger(
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+    ): ApiResult<PageData<PointLedgerItemVo>>
 }

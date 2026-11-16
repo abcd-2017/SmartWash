@@ -3,6 +3,7 @@ package com.smartwash.feature.toolbox.api.network
 import androidx.annotation.Keep
 import com.smartwash.common.network.annotation.RequireAuthorization
 import com.smartwash.common.utils.model.ApiResult
+import com.smartwash.common.utils.model.PageData
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.Body
@@ -11,6 +12,7 @@ import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 /**
  * 设备投递接口（owner 侧）—— 契约见根目录 docs/delivery-api.md（v1 后端定稿）。
@@ -29,10 +31,26 @@ interface DeliveryApi {
     @RequireAuthorization
     suspend fun createSession(@Body body: AddDeliverySessionRequest): ApiResult<DeliverySessionVo>
 
-    /** 会话详情 + 全量条目（owner 视角；条目按 createdAt 正序，含已焚毁占位行，轮询消费） */
+    /**
+     * 会话详情 + 全量条目（owner 视角；条目按 createdAt 正序，含已焚毁占位行）。
+     * 端上不再用其 items 做首屏渲染，仅用于轮询会话元数据（expireAt/itemCount）与
+     * 增量合并基准（最新 id），见 impl 模块 DeliverySessionViewModel。
+     */
     @GET("web/auth/toolbox/delivery/sessions/{code}")
     @RequireAuthorization
     suspend fun fetchSessionDetail(@Path("code") code: String): ApiResult<DeliverySessionDetailVo>
+
+    /**
+     * 条目明细分页（owner 视角；与详情条目流同序：创建时间正序、id 正序兜底，含已焚毁占位行）。
+     * page 从 1 起，size 上限 100（后端 BaseSearchFrom）；归属不符按 404 语义。
+     */
+    @GET("web/auth/toolbox/delivery/sessions/{code}/items")
+    @RequireAuthorization
+    suspend fun pageItems(
+        @Path("code") code: String,
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+    ): ApiResult<PageData<DeliveryItemVo>>
 
     /** 关闭会话：expire_at 前置为当前时刻，读路径立即失效（data=null，成功以 code=200 为准） */
     @POST("web/auth/toolbox/delivery/sessions/{code}/close")

@@ -60,6 +60,7 @@ src/main/java/com/smartwash/feature/dining/api/
 - **仅上架契约**: 菜谱列表与详情后端固定过滤 status=1，本 api 无 status 入参——下架菜谱对端上不可见。
 - **分类哨兵协议**: 菜谱新增/修改传 `null`/`0` 均为未分类、`>0` 由后端校验存在（GLOSSARY 10.10）。
 - **DiningApi 类型面收窄**: 只暴露上架菜谱分页；跨域所需其他读取面按需扩展。
+- **我的订单分页**: `my` 为分页接口（`?page=&size=`，默认 10/上限 100，返回 `PageData<DiningOrderListVo>`），由订单列表页手动分页消费（触底加载更多，非全量）。
 - **订单接口消费面**: create/my/orderDetail 为 07 号票消费面；brief/join 为 08 号票扫码加入消费；选菜增改删为 09/10 号票点单页消费（写接口携带 version，409 冲突重放）；finish 为 11 号票结束点单消费（仅发起者，幂等返回快照，端上据此进购买清单结果页）；create 的 fromOrderId 复用为 13 号票「再来一单」消费（订单列表卡入口）。
 
 ## 已知坑

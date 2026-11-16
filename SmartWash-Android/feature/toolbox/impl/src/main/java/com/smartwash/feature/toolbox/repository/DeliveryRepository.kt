@@ -1,5 +1,6 @@
 package com.smartwash.feature.toolbox.repository
 
+import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.toolbox.api.network.DeliveryItemVo
 import com.smartwash.feature.toolbox.api.network.DeliverySessionDetailVo
 import com.smartwash.feature.toolbox.api.network.DeliverySessionVo
@@ -23,8 +24,11 @@ interface DeliveryRepository {
     /** 关闭会话（expire_at 前置，读路径立即失效；后端 data=null，成功以 code=200 为准） */
     suspend fun closeSession(code: String)
 
-    /** 会话详情 + 全量条目（含已焚毁占位行，轮询消费，条目按 createdAt 正序） */
+    /** 会话详情 + 全量条目（含已焚毁占位行，条目按 createdAt 正序；轮询消费，端上只取会话元数据与最新 id） */
     suspend fun fetchSessionDetail(code: String): DeliverySessionDetailVo
+
+    /** 条目明细分页（与详情条目流同序：创建时间正序；page 从 1 起，size 上限 100） */
+    suspend fun pageItems(code: String, page: Int, size: Int): PageData<DeliveryItemVo>
 
     /** 发布文本条目（title 可空 = 后端截取正文前 30 字） */
     suspend fun publishText(code: String, textContent: String, title: String?): DeliveryItemVo

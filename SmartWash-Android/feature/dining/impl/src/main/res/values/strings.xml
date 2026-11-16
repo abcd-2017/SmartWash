@@ -63,6 +63,7 @@
     <string name="dining_order_status_finished">已结束</string>
     <string name="dining_order_list_empty">还没有点单，点右下角发起一场</string>
     <string name="dining_order_list_load_failed">订单加载失败</string>
+    <string name="dining_order_load_more_failed">加载更多失败，点击重试</string>
     <string name="dining_order_creator_badge">发起</string>
     <string name="dining_order_action_reuse">再来一单</string>
 

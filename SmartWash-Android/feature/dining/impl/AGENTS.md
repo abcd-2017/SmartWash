@@ -53,7 +53,7 @@ src/main/java/com/smartwash/feature/dining/
 
 ## 内部约定
 
-- **状态划分**: 订单列表页 `listState`（首载/刷新复用，分区派生放页面 remember）；创建页 `loadState`（分类+菜谱首载）/ `submitState`（提交动作态防重）独立；分享页 `detailState` 独立于二维码生成（produceState 异步，生成期占位）。
+- **状态划分**: 订单列表页 `listState`（首载/刷新复用，分区派生放页面 remember）+ `hasMore`/`loadMoreState`（手动分页：`load()` 取第 1 页，`loadMore()` 追加下一页，加载更多失败不封底、footer 内联重试；首载/刷新与加载更多互斥防响应交错）；创建页 `loadState`（分类+菜谱首载）/ `submitState`（提交动作态防重）独立；分享页 `detailState` 独立于二维码生成（produceState 异步，生成期占位）。
 - **表单校验两层**: 端上 `DiningOrderFormValidator` / `DiningRecipeFormValidator` 先拦（错误枚举 → strings.xml 文案就近提示），后端 Bean Validation + service 兜底；分类存在性不做端上校验（后端裁决）。
 - **订单卡/菜品行**: GroupCard 唯一画法 + `pressable`（规范 §7 禁 M3 交互组件/ripple）；勾选框自绘（border/primary 实底 + Check 图标），FAB 自绘（圆形 + 品牌渐变 + Canvas 十字，项目无 M3 FAB 先例）。
 - **创建链路**: 提交成功 → `consumeCreatedResult()` 一次性取走创建响应（orderId + joinToken）→ navigate 分享视图并 `popUpTo(OrderCreate) { inclusive = true }`（分享返回直回列表）。
@@ -75,7 +75,7 @@ src/main/java/com/smartwash/feature/dining/
 - **joinToken 可见性**: 创建响应必得；发起者的详情全量响应也回传（09 号票修补），参与者响应与轻量响应不回传——参与者从列表进分享视图二维码区降级提示；重置凭证入口已在分享页接线（发起者限定，二次确认）。
 - **写失败回滚必须全量刷新**: 失败写不前进 version，带 knownVersion 拉取会返回 unchanged 而拿不到最新选菜记录；故写循环的 `refreshFromServer` 固定 knownVersion=null（写频率低，全量可接受）。
 - **分享视图二维码 host 的环境语义**: demo BASE_URL 为明文 http，二维码内容同为 http（usesCleartextTraffic 现状一致）；生产注入 https BASE_URL 后同源变 https。
-- **创建页全量拉取**: 菜谱分页循环取满（page 递增至 total，每页 100，防御上限 100 页）；分类目录失败随主流程进错误态（分类名缺失会让分组残缺）。
+- **创建页按需分页**: 常规模式首屏拉第 1 页（每页 20），触底加载更多（footer 三态：加载中/失败重试/无更多）；搜索改服务端模糊查询（防抖 300ms）并重置分页。仅「历史菜单复用」模式为只读回显源单勾选态，保留全量拉取（每页 100、上限 100 页）；分类目录失败随主流程进错误态（分类名缺失会让分组残缺）。
 - **列表刷新时机**: 订单列表 `LaunchedEffect(Unit)` 只兜首载；返回本页（离栈再回）/回前台由 `LocalLifecycleOwner` 的 `ON_RESUME` 观察者触发 `load()`（13 号票修「列表返回不刷新」遗留）——首载时 nav entry 已 RESUMED，观察者收不到事件，故两条路径并存。
 - **包名与模块路径解耦**: 实际包名 `com.smartwash.feature.dining`（非 `com.smartwash.feature.dining.impl`）。
 - **local.properties**: worktree 首次构建需自建 `sdk.dir`（.gitignore 已忽略，不入库）。

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -55,6 +57,7 @@ import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
+import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
@@ -91,6 +94,8 @@ fun DiningOrderListPage(
     val context = LocalContext.current
     val listState by viewModel.listState.collectAsState()
     val orders by viewModel.orders.collectAsState()
+    val hasMore by viewModel.hasMore.collectAsState()
+    val loadMoreState by viewModel.loadMoreState.collectAsState()
 
     // 首载（返回本页经 LaunchedEffect(Unit) 不重放——栈上重组，列表保留；下拉刷新显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
@@ -168,8 +173,11 @@ fun DiningOrderListPage(
                     OrderListContentState.Content -> OrderListContent(
                         createdOrders = createdOrders,
                         joinedOrders = joinedOrders,
+                        hasMore = hasMore,
+                        loadMoreState = loadMoreState,
                         isRefreshing = listState is RequestState.Loading,
                         onRefresh = { viewModel.load() },
+                        onLoadMore = { viewModel.loadMore() },
                         onOrderClick = { order ->
                             if (order.id > 0) {
                                 // 列表卡进点单页（09 号票）；分享视图由点单页顶部分享入口进入
@@ -210,14 +218,23 @@ fun DiningOrderListPage(
     }
 }
 
-/** 列表区：分区（我发起的/我参与的）+ 下拉刷新 + 空态；两区可独立为空（隐藏空区标题） */
+/**
+ * 列表区：分区（我发起的/我参与的）+ 下拉刷新 + 触底加载更多 footer + 空态；
+ * 两区可独立为空（隐藏空区标题）。
+ *
+ * 触底加载：footer 进入视口（末两项可见）即自动调 [onLoadMore]，无需手动点按；
+ * footer 三态（加载点/失败重试/加载更多）与加载更多独立态同源，失败不封底。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun OrderListContent(
     createdOrders: List<DiningOrderListItem>,
     joinedOrders: List<DiningOrderListItem>,
+    hasMore: Boolean,
+    loadMoreState: RequestState,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
     onOrderClick: (DiningOrderListItem) -> Unit,
     onReuse: (DiningOrderListItem) -> Unit,
 ) {
@@ -240,7 +257,25 @@ private fun OrderListContent(
         // 列表底部避让手势条/三键导航——末卡呼吸空间 = FAB 高(56dp) + 底距(spaceLg) + 空隙(spaceLg)，
         // 保证滚动到底不遮挡末卡
         val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val listState = rememberLazyListState()
+
+        // 触底探测：末两项可见即认为到达底部（footer 出现前提前半屏触发，滚动更顺）；
+        // 仅在还有下一页且非加载中时触发，加载更多失败保留 footer 重试入口
+        val shouldLoadMore by remember {
+            derivedStateOf {
+                val info = listState.layoutInfo
+                val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+                info.totalItemsCount > 0 && lastVisible >= info.totalItemsCount - 2
+            }
+        }
+        LaunchedEffect(shouldLoadMore) {
+            if (shouldLoadMore && hasMore && loadMoreState !is RequestState.Loading) {
+                onLoadMore()
+            }
+        }
+
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = AppDimens.pagePadding,
@@ -264,6 +299,32 @@ private fun OrderListContent(
                     onOrderClick = onOrderClick,
                     onReuse = onReuse,
                 )
+            }
+            if (hasMore) {
+                item(key = "load_more") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = AppDimens.spaceMd),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        when (loadMoreState) {
+                            // 触底已自动触发，正常态按钮仅作失败后的手动重试入口
+                            is RequestState.Loading -> LoadingDots()
+                            is RequestState.Error -> AppButton(
+                                text = stringResource(R.string.dining_order_load_more_failed),
+                                onClick = onLoadMore,
+                                variant = AppButtonVariant.SECONDARY,
+                                small = true,
+                            )
+                            else -> AppButton(
+                                text = stringResource(R.string.dining_load_more),
+                                onClick = onLoadMore,
+                                variant = AppButtonVariant.TEXT,
+                            )
+                        }
+                    }
+                }
             }
         }
     }

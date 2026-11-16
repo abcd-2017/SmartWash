@@ -196,6 +196,8 @@
     <string name="toolbox_delivery_poll_error">条目同步失败，正在自动重试</string>
     <string name="toolbox_delivery_error_load">条目加载失败</string>
     <string name="toolbox_delivery_action_retry">重试</string>
+    <string name="toolbox_delivery_load_more">加载更多</string>
+    <string name="toolbox_delivery_load_more_retry">加载失败，点击重试</string>
     <string name="toolbox_delivery_direction_out">发出</string>
     <string name="toolbox_delivery_direction_in">收到</string>
     <string name="toolbox_delivery_kind_text">文本</string>

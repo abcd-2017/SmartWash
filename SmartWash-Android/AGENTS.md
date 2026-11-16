@@ -69,7 +69,7 @@
 :feature:coupon:api             CouponApi 契约 + 优惠券模型 + CouponRoute
 :feature:coupon:impl            CouponRepository + 三 Tab 优惠券页
 :feature:points:api             PointsRoute + 积分 Gson 载荷（全可空容错）+ PointsServiceApi 网络接口
-:feature:points:impl            PointsRepository + 签到有礼页（签到/余额/月榜/流水单页）+ 深链 host "points"
+:feature:points:impl            PointsRepository + 签到有礼页（签到/余额/月榜/明细分页）+ 深链 host "points"
 :feature:notice:api             NoticeApi 契约 + 站内信模型 + NoticeRoute + NoticeServiceApi
 :feature:notice:impl            NoticeRepository + 消息中心收件箱页（未读高亮/全部已读/深链 messages）
 build-logic                     convention plugin（smartwash.android.library / smartwash.compose / smartwash.hilt）
@@ -755,8 +755,9 @@ Repository 层（各域 impl 模块）实现缓存优先：
 使用 Paging 3，`pagingFlow()` 统一封装在 `:common:utils/PagingUtils.kt`（debounce + flatMapLatest + cachedIn）：
 
 - `OrderPagingSource` — 订单列表（`:feature:order:impl`）
-- `UserCouponPagingSource` — 用户优惠券（`:feature:coupon:impl`）
 - `RechargeRecordPagingSource` — 充值记录（`:feature:payment:impl`）
+
+> 站内信 / 积分流水 / 优惠券（已领取·历史）为**手写分页**（page 累积 + `hasMore` + 触底加载），不走 Paging 3，模式见 `NoticeInboxViewModel`。
 
 ### 4.7 导航
 
@@ -867,10 +868,10 @@ object XxxInitModule {
 
 | 方法 | 端点 | 鉴权 | 说明 |
 |------|------|------|------|
-| GET | `/web/auth/coupon/allCoupon` | 是 | 所有可领取优惠券 |
+| GET | `/web/auth/coupon/allCoupon` | 是 | 所有可领取优惠券（可领取 tab，Room cache-first 降级） |
+| GET | `/web/auth/userCoupon/getUserCoupon?status=&page=&size=` | 是 | 用户优惠券分页（status=0 已领取 / 1 历史；时间倒序） |
 | POST | `/web/auth/userCoupon/receiveCoupon/{couponId}` | 是 | 领取优惠券 |
-| GET | `/web/auth/userCoupon/available/{orderId}` | 是 | 可用优惠券（支付时） |
-| GET | `/web/auth/userCoupon/allCoupons` | 是 | 聚合接口（可领+已领+历史） |
+| GET | `/web/auth/userCoupon/available/{orderId}` | 是 | 可用优惠券（支付时，本次未改） |
 
 ### 充值模块（RechargeApi）— 2 个端点
 
@@ -925,15 +926,16 @@ object XxxInitModule {
 | POST | `/web/auth/notices/{id}/read` | 是 | 标记已读（幂等） |
 | POST | `/web/auth/notices/read-all` | 是 | 全部已读（幂等） |
 
-### 积分模块（PointsServiceApi）— 3 个端点
+### 积分模块（PointsServiceApi）— 4 个端点
 
-> 接口类位置：`:feature:points/api/PointsServiceApi.kt`
+> 接口类位置：`:feature:points:api/PointsServiceApi.kt`
 
 | 方法 | 端点 | 鉴权 | 说明 |
 |------|------|------|------|
-| GET | `/web/auth/points/me` | 是 | 概览（余额/连签/流水） |
+| GET | `/web/auth/points/me` | 是 | 概览（余额/连签/内嵌最近流水，页面流水卡已改走 ledger） |
 | POST | `/web/auth/points/sign-in` | 是 | 签到（幂等，重复返回 `alreadySigned=true`） |
-| GET | `/web/auth/points/leaderboard?scope=month` | 是 | 月榜 |
+| GET | `/web/auth/points/leaderboard?scope=month` | 是 | 月榜（TOP 50 有界，不分页） |
+| GET | `/web/auth/points/ledger?page=&size=` | 是 | 积分流水分页（时间倒序，size 上限 50） |
 
 ### 观象台模块（DivinationApi）— 7 个端点 + 2 个 SSE
 

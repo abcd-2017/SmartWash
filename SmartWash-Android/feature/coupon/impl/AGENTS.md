@@ -4,7 +4,7 @@
 
 - **Gradle 坐标**: `:feature:coupon:impl`
 - **包名**: `com.smartwash.feature.coupon`（注意：实际包路径短于 Gradle 路径，与模块路径解耦）
-- **职责**: 优惠券域实现——优惠券网络链路与页面（三 tab：可领取/已领取/历史），对外经 `:feature:coupon:api` 的 `CouponRoute` + `CouponApi` 暴露（di `@Binds`）。
+- **职责**: 优惠券域实现——优惠券网络链路与页面（三 tab：可领取/已领取/历史，已领取与历史分页），对外经 `:feature:coupon:api` 的 `CouponRoute` + `CouponApi` 暴露（di `@Binds`）。
 
 ## 包结构
 
@@ -17,14 +17,13 @@ src/main/java/com/smartwash/feature/coupon/
 │   └── DeepLinkModule.kt                # 深链贡献者（@IntoSet：coupon → CouponRoute，模式同 InitTask 注册）
 ├── network/
 │   ├── api/
-│   │   └── CouponServiceApi.kt          # Retrofit 接口（getAllCoupon/receiveCoupon/getCanUseCoupon/getAllCoupons）
+│   │   └── CouponServiceApi.kt          # Retrofit 接口（getAllCoupon/getUserCoupon/receiveCoupon/getCanUseCoupon）
 │   └── vo/coupon/
-│       ├── AllCouponsVo.kt              # 聚合响应 VO（available/claimed/historical）
 │       ├── CouponVo.kt                  # 优惠券 VO
 │       └── UserCouponVo.kt              # 用户优惠券 VO
 ├── repository/
 │   ├── CouponApiImpl.kt                 # CouponApi @Binds 实现
-│   ├── CouponRepository.kt              # 优惠券仓库（Room 缓存 + cache-first 降级）
+│   ├── CouponRepository.kt              # 优惠券仓库（可用券 Room 缓存降级 + 已领/历史分页）
 │   └── EntityMappers.kt                 # VO ↔ Entity 映射
 └── ui/
     ├── CouponGraph.kt                   # 路由聚合（couponGraph）
@@ -54,10 +53,11 @@ src/main/java/com/smartwash/feature/coupon/
 ## 内部约定
 
 - **@Binds 实现**: `CouponApiImpl` 实现 `CouponApi`，类型面收窄为 `UsableCoupon`（不泄漏优惠券域 VO）。
-- **Cache-first 降级**: `getAllCoupon`/`getAllCoupons` 网络失败时可用券降级为 Room 缓存（已领/历史无本地缓存表置空）；无缓存抛异常。
+- **Cache-first 降级**: `getAllCoupon`（可用券）网络失败时降级为 Room 缓存（`CouponSource.CACHE`）；无缓存抛异常，由 VM 标 `FAILED`。已领/历史无本地缓存表（`:common:database` 仅 `CouponVo` 一张券表），不做离线降级。
+- **分页**: 已领取 tab → `getUserCoupon(status=0)`，历史 tab → `getUserCoupon(status=1)`（page 从 1 起，size=10）；各自首载态 + hasMore + 加载更多态，UI 触底自动加载（`LazyListState` + `canScrollForward`）+ footer 兜底。可领取 tab 为运营目录量小，不分页。
 - **事务保护**: `deleteAll + insertAll` 包进 `appDatabase.withTransaction`。
 - **取消传播**: `catch` 先 `rethrow CancellationException`。
-- **聚合接口**: `getAllCoupons` 一次拉取三类数据，无分页需求；`getAllCoupon` 仅维护可用券缓存表。
+- **聚合接口**: `allCoupons` 聚合接口已不再消费（可用券改走 `getAllCoupon` 的 cache-first 链路，避免重复拉取已领/历史）。
 - **鉴权**: 所有接口加 `@RequireAuthorization`。
 - **CouponStatus 留 impl**: 仅本域可领取 tab 消费，无跨模块消费方，不进 coupon-api（对比 OrderStatus 迁 api 是因 order-impl 与 app 壳双侧消费）。
 

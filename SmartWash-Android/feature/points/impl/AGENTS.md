@@ -4,7 +4,7 @@
 
 - **Gradle 坐标**: `:feature:points:impl`
 - **包名**: `com.smartwash.feature.points`（实际包路径短于 Gradle 路径，与模块路径解耦，同 coupon 先例）
-- **职责**: 积分域实现——积分仓库 + 签到有礼页（签到 / 余额 / 月榜 / 最近流水单页），深链 host `points` 贡献。
+- **职责**: 积分域实现——积分仓库 + 签到有礼页（签到 / 余额 / 月榜 / 积分明细分页），深链 host `points` 贡献。
 
 ## 包结构
 
@@ -16,12 +16,12 @@ src/main/java/com/smartwash/feature/points/
 ├── di/
 │   └── PointsModule.kt                  # PointsServiceApi 供给（retrofit.create）+ 深链贡献者（@IntoSet host "points"）
 ├── repository/
-│   └── PointsRepository.kt              # 积分仓库（data null → NetworkException 上抛，对齐 coupon 模式）
+│   └── PointsRepository.kt              # 积分仓库（概览/月榜/流水分页；data null → NetworkException 上抛）
 └── ui/
     ├── PointsGraph.kt                   # 路由聚合（pointsGraph）
     └── points/
-        ├── PointsPage.kt                # 签到有礼页（hero 余额卡 + 月榜卡 + 明细卡，LazyColumn 分区）
-        └── PointsViewModel.kt           # 三路 RequestState（loadState/leaderboardState/signInState）
+        ├── PointsPage.kt                # 签到有礼页（hero 余额卡 + 月榜卡 + 明细分页卡，LazyColumn 分区 + 触底加载）
+        └── PointsViewModel.kt           # 四路 RequestState（loadState/leaderboardState/ledgerState/signInState）
 └── res/values/strings.xml               # 模块文案（全量入资源，无硬编码）
 ```
 
@@ -38,8 +38,9 @@ src/main/java/com/smartwash/feature/points/
 
 ## 内部约定
 
-- **三路状态独立**: `loadState`（/me 整页骨架/错误/内容）、`leaderboardState`（月榜独立，失败卡内小态不拖垮整页）、`signInState`（签到动作，Loading 期间 VM 忽略重复调用 = 防重第一层，后端幂等兜底）。
-- **签到成功链路**: SignInResultVo 乐观并入概览（`updatedWith`：余额/连签/已签/累计获得立即生效）→ 静默刷新概览与月榜（流水与名次以后端为准，失败仅日志留痕）。
+- **四路状态独立**: `loadState`（/me 概览整页骨架/错误/内容）、`leaderboardState`（月榜独立，失败卡内小态不拖垮整页）、`ledgerState`/`ledgerLoadMoreState`（流水分页首载 + 加载更多独立，失败仅卡内小态 + 重试）、`signInState`（签到动作，Loading 期间 VM 忽略重复调用 = 防重第一层，后端幂等兜底）。
+- **流水分页**: `GET /web/auth/points/ledger` 分页（page 从 1 起，size=10），时间倒序累积；页面 `LazyListState` 触底（`!canScrollForward`）自动加载下一页，footer 承载 LoadingDots/失败重试/手动兜底。`/me` 仍提供余额/连签/概览，其 `recentLedger` 不再被页面消费。
+- **签到成功链路**: SignInResultVo 乐观并入概览（`updatedWith`：余额/连签/已签/累计获得立即生效）→ 静默刷新概览、月榜与流水首页（流水与名次以后端为准，失败仅日志留痕）。
 - **纯逻辑归 domain/**: `PointsDomainLogic.kt` 全部 internal 纯 JVM 函数（禁止 Android 框架类型），配 JVM 锚点单测。
 - **取消传播**: 所有 catch 先 `rethrow CancellationException`。
 - **错误文案**: `RequestState.Error.getMessage(context)` 消费 ResponseInterceptor 转译的 data 语义；重试按钮走 AppButton SECONDARY。

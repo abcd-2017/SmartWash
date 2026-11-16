@@ -6,6 +6,7 @@ import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.utils.model.HttpStatusCode
+import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.toolbox.R as ToolboxR
 import com.smartwash.feature.toolbox.api.network.AddDeliverySessionRequest
 import com.smartwash.feature.toolbox.api.network.AddDeliveryTextRequest
@@ -65,6 +66,10 @@ class DeliveryRepositoryImpl @Inject constructor(
 
     override suspend fun fetchSessionDetail(code: String): DeliverySessionDetailVo {
         return deliveryApi.fetchSessionDetail(code).requireDeliveryData("投递条目流为空")
+    }
+
+    override suspend fun pageItems(code: String, page: Int, size: Int): PageData<DeliveryItemVo> {
+        return deliveryApi.pageItems(code, page, size).requireDeliveryData("投递条目分页数据为空")
     }
 
     override suspend fun publishText(code: String, textContent: String, title: String?): DeliveryItemVo {
