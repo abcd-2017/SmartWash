@@ -65,6 +65,7 @@
       <el-table
         v-else
         ref="tableRef"
+        v-else
         v-loading="listLoading"
         :data="couponList"
         fit

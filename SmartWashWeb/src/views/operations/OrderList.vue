@@ -96,7 +96,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与空态区分，给出重试入口 -->
+      <div v-if="listError" class="list-error">
+        <span>订单列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="orderList"
         fit
@@ -285,6 +291,7 @@ const {
   list: orderList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,

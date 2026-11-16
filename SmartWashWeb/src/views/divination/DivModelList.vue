@@ -51,7 +51,13 @@
 
     <!-- 数据表格（树形：厂商为一级分组、模型为二级子行） -->
     <div class="table-card">
+      <!-- 加载失败态：与空态区分，给出重试入口 -->
+      <div v-if="listError" class="list-error">
+        <span>模型管理列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="treeData"
         row-key="id"
@@ -301,6 +307,7 @@ const {
   list: modelList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,

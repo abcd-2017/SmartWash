@@ -38,7 +38,13 @@
         </div>
 
         <div class="table-card">
+          <!-- 加载失败态：与空态区分，给出重试入口 -->
+          <div v-if="listError" class="list-error">
+            <span>玩家数据列表加载失败，请检查网络后重试</span>
+            <el-button size="small" @click="fetchSaves">重试</el-button>
+          </div>
           <el-table
+            v-else
             v-loading="saveListLoading"
             :data="saveList"
             border
@@ -103,7 +109,13 @@
         </div>
 
         <div class="table-card">
+          <!-- 加载失败态：与空态区分，给出重试入口 -->
+          <div v-if="scoreLoadError" class="list-error">
+            <span>{{ scoreLoadError }}</span>
+            <el-button size="small" @click="fetchScores">重试</el-button>
+          </div>
           <el-table
+            v-else
             v-loading="scoreListLoading"
             :data="scoreList"
             border
@@ -183,6 +195,7 @@ const {
   list: saveList,
   total: saveTotal,
   listLoading: saveListLoading,
+  listError,
   listQuery: saveListQuery,
   pageSizes,
   fetchData: fetchSaves,
@@ -205,6 +218,7 @@ const {
   list: scoreList,
   total: scoreTotal,
   listLoading: scoreListLoading,
+  listLoadError: scoreLoadError,
   listQuery: scoreListQuery,
   fetchData: fetchScores,
   handleSearch: handleScoreSearch,
