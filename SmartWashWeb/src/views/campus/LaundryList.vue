@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="套餐ID">
@@ -33,7 +32,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -78,7 +76,6 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增套餐' : '编辑套餐'"
       v-model="dialogVisible"
@@ -141,7 +138,6 @@ const dialogVisible = ref(false);
 const dialogType = ref('create');
 const submitting = ref(false); // 确认按钮 loading，防连点
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: laundryList,
   total,
@@ -166,7 +162,6 @@ const {
   errorMsg: '获取数据失败',
 });
 
-// 表单数据
 const tempLaundry = reactive({
   itemId: null,
   itemName: '',
@@ -174,7 +169,6 @@ const tempLaundry = reactive({
   description: '',
 });
 
-// 验证规则
 const rules = reactive({
   itemName: [
     { required: true, message: '请输入套餐名称', trigger: 'blur' },
@@ -186,12 +180,10 @@ const rules = reactive({
   ],
 });
 
-// 初始化数据
 onMounted(() => {
   fetchData();
 });
 
-// 打开新增弹窗
 const handleCreate = () => {
   dialogType.value = 'create';
   dialogVisible.value = true;
@@ -203,14 +195,12 @@ const handleCreate = () => {
   });
 };
 
-// 打开编辑弹窗
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
   Object.assign(tempLaundry, { ...row });
 };
 
-// 提交表单
 const submitForm = async () => {
   submitting.value = true;
   try {
@@ -243,7 +233,6 @@ const submitForm = async () => {
   }
 };
 
-// 删除套餐
 const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
   const confirmed = await useConfirm(`确认删除套餐 ${row.itemName} 吗？`);

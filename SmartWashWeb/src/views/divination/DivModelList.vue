@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="厂商">
@@ -190,7 +189,6 @@
       </div>
     </div>
 
-    <!-- 批量导入弹窗 -->
     <el-dialog title="批量导入模型目录" v-model="importVisible" width="min(640px, 94vw)">
       <p class="import-tip">
         粘贴 JSON 数组（每条含 <code>vendor / name / baseUrl / modelId</code>，可选
@@ -208,7 +206,6 @@
       </template>
     </el-dialog>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增模型' : '编辑模型'"
       v-model="dialogVisible"
@@ -294,11 +291,11 @@ const dialogVisible = ref(false);
 const dialogType = ref('create');
 const testingId = ref(null);
 const submitting = ref(false); // 弹窗确认按钮 loading，防连点
-const togglingId = ref(null); // 行内「停用/启用」按钮 loading
-const deletingId = ref(null); // 行内「删除」按钮 loading
-const importVisible = ref(false); // 批量导入弹窗
-const importing = ref(false); // 批量导入提交 loading
-const importJson = ref(''); // 粘贴的目录 JSON 原文
+const togglingId = ref(null);
+const deletingId = ref(null);
+const importVisible = ref(false);
+const importing = ref(false);
+const importJson = ref('');
 
 const {
   list: modelList,

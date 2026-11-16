@@ -16,9 +16,9 @@ export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
  * @param {String}   [options.errorMsg='获取数据失败'] 拉取失败的兜底提示文案
  */
 export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg = '获取数据失败' }) {
-  const list = ref([]); // 当页数据
-  const total = ref(0); // 总条数
-  const listLoading = ref(false); // 加载状态
+  const list = ref([]);
+  const total = ref(0);
+  const listLoading = ref(false);
   // 分页组件可选项（透传给 el-pagination 的 :page-sizes）
   const pageSizes = PAGE_SIZE_OPTIONS;
 
@@ -35,7 +35,6 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
   // 是否已完成过首次加载（首次加载不触发回顶，页面本来就在顶部）
   let hasFetchedOnce = false;
 
-  // 获取数据
   const fetchData = async () => {
     const mySeq = ++fetchSeq;
     listLoading.value = true;
@@ -88,7 +87,6 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
     handleSearch();
   };
 
-  // 页码变化
   const handlePageChange = (val) => {
     listQuery.page = val;
     fetchData();

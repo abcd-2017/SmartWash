@@ -118,7 +118,6 @@ async function searchDistrict(keyword, level) {
   }
 }
 
-// 在 options 树中查找节点
 function findNode(list, name) {
   return list.find((item) => item.name === name);
 }
@@ -152,7 +151,6 @@ async function loadFullPath(path) {
   }
 }
 
-// 初始化省份数据
 onMounted(async () => {
   loading.value = true;
   try {

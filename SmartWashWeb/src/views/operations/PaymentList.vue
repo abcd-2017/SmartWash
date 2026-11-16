@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="支付ID">
@@ -90,7 +89,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -159,7 +157,6 @@ import logger from '@/utils/logger';
 const payTypeOptions = ref({});
 const payStatusOptions = ref({});
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: paymentList,
   total,
@@ -191,7 +188,6 @@ const {
   errorMsg: '获取数据失败',
 });
 
-// 时间范围处理（评审 #14：抽离为公共 composable）
 const timeRange = useTimeRange(listQuery);
 
 // 初始化数据：枚举与列表无依赖，并行发起（串行会让首屏多等一个 RTT）
@@ -203,7 +199,6 @@ onMounted(() => {
 // 金额单元格：空值整格 '-'，非空才带 ￥ 前缀
 const formatPayAmount = (amount) => (amount == null ? '-' : `￥${formatAmount(amount)}`);
 
-// 获取支付类型
 const fetchPayTypes = async () => {
   try {
     const res = await getPayTypes();
@@ -215,7 +210,6 @@ const fetchPayTypes = async () => {
   }
 };
 
-// 获取支付状态
 const fetchPayStatus = async () => {
   try {
     const res = await getPayStatus();

@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="角色名称">
@@ -23,7 +22,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -86,7 +84,6 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增角色' : '编辑角色'"
       v-model="dialogVisible"
@@ -141,7 +138,6 @@ const dialogType = ref('create');
 const submitting = ref(false); // 确认按钮 loading，防连点
 const deletingId = ref(null); // 删除请求在途的行 ID，行内删除按钮 loading，防连点
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: roleList,
   total,
@@ -162,14 +158,12 @@ const {
   errorMsg: '获取数据失败',
 });
 
-// 表单数据
 const tempRole = reactive({
   roleId: null,
   roleName: '',
   description: '',
 });
 
-// 验证规则
 const rules = reactive({
   roleName: [
     { required: true, message: '请输入角色名称', trigger: 'blur' },
@@ -177,12 +171,10 @@ const rules = reactive({
   ],
 });
 
-// 初始化数据
 onMounted(() => {
   fetchData();
 });
 
-// 打开新增弹窗
 const handleCreate = () => {
   dialogType.value = 'create';
   dialogVisible.value = true;
@@ -193,14 +185,12 @@ const handleCreate = () => {
   });
 };
 
-// 打开编辑弹窗
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
   Object.assign(tempRole, { ...row });
 };
 
-// 提交表单
 const submitForm = async () => {
   submitting.value = true;
   try {
@@ -233,7 +223,6 @@ const submitForm = async () => {
   }
 };
 
-// 删除角色
 const handleDelete = async (row) => {
   // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
   if (deletingId.value) return;

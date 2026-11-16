@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="优惠券ID">
@@ -56,7 +55,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         ref="tableRef"
@@ -125,7 +123,6 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增优惠券' : '编辑优惠券'"
       v-model="dialogVisible"
@@ -259,7 +256,6 @@ const dialogType = ref('create');
 const multipleSelection = ref([]);
 const submitting = ref(false); // 确认按钮 loading，防连点
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: couponList,
   total,
@@ -285,7 +281,6 @@ const {
   errorMsg: '获取数据失败',
 });
 
-// 表单数据
 const tempCoupon = reactive({
   couponId: null,
   title: '',
@@ -299,7 +294,6 @@ const tempCoupon = reactive({
   status: 'ACTIVE',
 });
 
-// 验证规则
 const rules = reactive({
   title: [
     { required: true, message: '请输入标题', trigger: 'blur' },
@@ -343,17 +337,14 @@ const rules = reactive({
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 });
 
-// 初始化数据
 onMounted(() => {
   fetchData();
 });
 
-// 处理多选
 const handleSelectionChange = (val) => {
   multipleSelection.value = val;
 };
 
-// 批量删除
 const handleBatchDelete = async () => {
   const count = multipleSelection.value.length;
   // 已发放数量提示：券在用户手中时删除会使其失效，需让运营明确影响面
@@ -380,7 +371,6 @@ const handleBatchDelete = async () => {
   }
 };
 
-// 打开新增弹窗
 const handleCreate = () => {
   dialogType.value = 'create';
   dialogVisible.value = true;
@@ -398,7 +388,6 @@ const handleCreate = () => {
   });
 };
 
-// 打开编辑弹窗
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
@@ -412,7 +401,6 @@ const handleEdit = (row) => {
   });
 };
 
-// 提交表单
 const submitForm = async () => {
   submitting.value = true;
   try {
@@ -448,7 +436,6 @@ const submitForm = async () => {
   }
 };
 
-// 删除优惠券
 const handleDelete = async (row) => {
   // 已发放数量提示：券在用户手中时删除会使其失效，需让运营明确影响面
   const issuedCount = Number(row.issuedCount) || 0;

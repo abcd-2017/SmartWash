@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="记录ID">
@@ -97,7 +96,6 @@
       </div>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -168,7 +166,6 @@ import logger from '@/utils/logger';
 // 充值类型选项（枚举字典统一维护，评审 #16）
 const rechargeTypeOptions = RECHARGE_TYPE_OPTIONS;
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: rechargeList,
   total,
@@ -226,7 +223,6 @@ const buildRangeParams = () => {
   return params;
 };
 
-// ---------- 充值汇总 ----------
 const summary = reactive({
   totalCount: 0,
   successCount: 0,
@@ -269,7 +265,6 @@ const resetSearch = () => {
   fetchData();
 };
 
-// ---------- 导出 ----------
 const exporting = ref(false);
 
 const handleExport = async () => {

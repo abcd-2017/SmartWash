@@ -1,5 +1,4 @@
 // src/api/audit.js
-// 操作审计管理端 API 层
 // 接口路径与后端 AdminAuditLogController 对齐（/admin/audit-logs，ROLE_ADMIN）。
 // 四端联动说明：本组为新增接口，消费方仅 Web 管理后台，Android/鸿蒙不消费。
 import request from '@/utils/http';

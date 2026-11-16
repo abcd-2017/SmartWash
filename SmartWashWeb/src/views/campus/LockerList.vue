@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="寄存柜ID">
@@ -82,7 +81,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -130,7 +128,6 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增寄存柜' : '编辑寄存柜'"
       v-model="dialogVisible"
@@ -183,7 +180,6 @@
       </template>
     </el-dialog>
 
-    <!-- 批量新增弹窗 -->
     <el-dialog
       title="批量新增寄存柜"
       v-model="batchDialogVisible"
@@ -289,13 +285,12 @@ import { useTimeRange } from '@/composables/useTimeRange';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 
-// 数据
-const statusOptions = ref({}); // 状态选项（键值对格式）
-const schoolOptions = ref([]); // 学校选项
-const schoolMap = ref({}); // 学校ID到名称的映射
-const dialogVisible = ref(false); // 弹窗显示状态
-const dialogType = ref('create'); // 弹窗类型（新增/编辑）
-const formRef = ref(null); // 引用表单组件
+const statusOptions = ref({});
+const schoolOptions = ref([]);
+const schoolMap = ref({});
+const dialogVisible = ref(false);
+const dialogType = ref('create');
+const formRef = ref(null);
 
 // 主弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
 // 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
@@ -305,7 +300,6 @@ const handleMainDialogClosed = () => {
 };
 const submitting = ref(false); // 确认按钮 loading，防连点
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: lockerList,
   total,
@@ -337,10 +331,8 @@ const {
   errorMsg: '获取数据失败',
 });
 
-// 时间范围处理（评审 #14：抽离为公共 composable）
 const timeRange = useTimeRange(listQuery);
 
-// 表单数据
 const tempLocker = reactive({
   lockerId: null,
   schoolId: null,
@@ -348,7 +340,6 @@ const tempLocker = reactive({
   status: '0', // 默认状态为“空闲”
 });
 
-// 验证规则
 const rules = reactive({
   schoolId: [
     { required: true, message: '请选择学校', trigger: 'change' },
@@ -361,7 +352,6 @@ const rules = reactive({
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 });
 
-// 批量新增弹窗状态
 const batchDialogVisible = ref(false);
 const batchFormRef = ref(null);
 const batchSubmitting = ref(false);
@@ -393,14 +383,12 @@ const batchRules = reactive({
   ],
 });
 
-// 初始化数据
 onMounted(async () => {
   await fetchStatus();
   await fetchSchools();
   fetchData();
 });
 
-// 获取状态枚举
 const fetchStatus = async () => {
   try {
     const res = await getLockerStatus();
@@ -428,7 +416,6 @@ const fetchSchools = async () => {
   }
 };
 
-// 打开批量新增弹窗
 const handleBatchCreate = () => {
   batchDialogVisible.value = true;
   Object.assign(tempBatchLocker, {
@@ -438,7 +425,6 @@ const handleBatchCreate = () => {
   });
 };
 
-// 提交批量新增
 const submitBatchForm = async () => {
   batchSubmitting.value = true;
   try {
@@ -469,7 +455,6 @@ const submitBatchForm = async () => {
   }
 };
 
-// 打开新增弹窗
 const handleCreate = () => {
   dialogType.value = 'create';
   dialogVisible.value = true;
@@ -481,14 +466,12 @@ const handleCreate = () => {
   });
 };
 
-// 打开编辑弹窗
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
   Object.assign(tempLocker, { ...row });
 };
 
-// 提交表单
 const submitForm = async () => {
   submitting.value = true;
   try {
@@ -530,7 +513,6 @@ const submitForm = async () => {
   }
 };
 
-// 删除寄存柜
 const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
   const confirmed = await useConfirm(`确认删除寄存柜 ${row.lockerNumber} 吗？`);
@@ -547,7 +529,6 @@ const handleDelete = async (row) => {
   }
 };
 
-// 状态文本转换
 const formatStatus = (status) => {
   return statusOptions.value[status] || '未知状态';
 };

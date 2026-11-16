@@ -1,11 +1,8 @@
 <template>
   <div class="layout-container">
-    <!-- 左侧菜单栏 -->
     <Sidebar />
 
-    <!-- 右侧内容区域 -->
     <div class="main-container">
-      <!-- 顶部导航栏 -->
       <Navbar />
 
       <!-- 子页面：路由切换淡入滑动（进出场方向性一致，mode=out-in 先离后进避免重叠） -->
@@ -59,7 +56,7 @@ watch(
 .app-main {
   flex: 1;
   padding: 20px;
-  overflow-y: auto; /* 垂直滚动 */
+  overflow-y: auto;
   background-color: var(--bg-page);
 }
 

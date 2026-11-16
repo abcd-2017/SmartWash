@@ -26,7 +26,6 @@
         class="settings-form"
         v-loading="loading"
       >
-        <!-- 功能开关 -->
         <el-divider content-position="left">AI 解读</el-divider>
 
         <el-form-item label="AI 解读开关" prop="divUseEnabled">
@@ -49,7 +48,6 @@
           <span class="form-tip">次/用户/天（解读费用由用户自带的 API Key 承担）</span>
         </el-form-item>
 
-        <!-- 操作按钮 -->
         <el-form-item>
           <el-button type="primary" @click="submitForm" :loading="submitting" :disabled="!loaded"
             >保存设置</el-button
@@ -58,7 +56,6 @@
         </el-form-item>
       </el-form>
 
-      <!-- 主密钥轮换 -->
       <el-divider content-position="left">主密钥轮换</el-divider>
       <div class="rotate-key-section">
         <p class="form-tip">当前版本轮换仅记录审计，密钥重加密任务尚未实现。</p>

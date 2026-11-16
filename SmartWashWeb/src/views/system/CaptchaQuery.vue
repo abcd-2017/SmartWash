@@ -1,13 +1,11 @@
 <template>
   <div class="page-container">
-    <!-- 说明卡片 -->
     <el-alert title="演示工具" type="info" :closable="false" show-icon>
       <template #default>
         查询指定手机号当前有效的短信验证码。验证码有效期 10 分钟，一次性使用（校验成功后立即销毁）。
       </template>
     </el-alert>
 
-    <!-- 查询区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="form" @submit.prevent="handleQuery">
         <el-form-item label="手机号" :error="phoneError">
@@ -39,7 +37,6 @@
       </template>
     </el-alert>
 
-    <!-- 结果区域 -->
     <div v-if="queryState === 'done' && result" class="table-card">
       <el-descriptions title="查询结果" :column="1" border>
         <el-descriptions-item label="手机号">{{ result.phone }}</el-descriptions-item>

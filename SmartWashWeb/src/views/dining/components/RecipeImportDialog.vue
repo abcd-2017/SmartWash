@@ -185,12 +185,9 @@ const resetState = () => {
   result.value = { total: 0, successCount: 0, failedCount: 0, rolledBack: false, rows: [] };
 };
 
-// 弹窗重开时复位（closed 已触发 resetState，这里兜底）
 watch(visible, (v) => {
   if (v) resetState();
 });
-
-// ---------- 下载模板 ----------
 
 const handleDownloadTemplate = async () => {
   templateDownloading.value = true;
@@ -204,8 +201,6 @@ const handleDownloadTemplate = async () => {
     templateDownloading.value = false;
   }
 };
-
-// ---------- 上传与解析 ----------
 
 const handleFileChange = (uploadFile) => {
   const raw = uploadFile?.raw;
@@ -259,7 +254,7 @@ const handleSubmit = async () => {
     result.value = data;
     stage.value = 'result';
     if (!data.rolledBack && data.successCount > 0) {
-      emit('success'); // 刷新菜谱列表
+      emit('success');
     }
   } catch (error) {
     logger.error('菜谱批量导入提交失败:', error);

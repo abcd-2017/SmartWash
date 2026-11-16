@@ -110,7 +110,6 @@ const goHome = () => {
   color: var(--text-secondary);
 }
 
-/* 出路按钮组：主/次按钮横排居中 */
 .not-found-actions {
   display: flex;
   justify-content: center;

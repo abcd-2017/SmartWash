@@ -7,7 +7,6 @@
       </template>
     </el-alert>
 
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="平台">
@@ -177,7 +176,6 @@ const appChannelOf = (row) => loginAppChannelText(row.appChannel ?? row.app_chan
 const userIdOf = (row) => row.userId ?? row.user_id ?? '-';
 const loginTime = (row) => formatTime(row.createdAt ?? row.created_at);
 
-// ===== 列表查询与分页：统一由 useTableList 承载 =====
 const {
   list: loginLogList,
   total,

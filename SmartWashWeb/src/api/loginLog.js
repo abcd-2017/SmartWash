@@ -1,5 +1,4 @@
 // src/api/loginLog.js
-// 登录日志管理端 API 层
 // 接口路径与后端登录日志分页接口对齐（/admin/login-logs/page，ROLE_ADMIN）。
 // 四端联动说明：本组为新增接口，消费方仅 Web 管理后台，Android/鸿蒙不消费。
 // 契约（后端并行实现中）：入参 page/size + platform/appChannel/result/startTime/endTime 可选筛选，

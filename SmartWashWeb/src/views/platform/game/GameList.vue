@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="关键词">
@@ -76,7 +75,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -200,7 +198,6 @@
       </div>
     </div>
 
-    <!-- 上传弹窗 -->
     <el-dialog
       title="上传游戏"
       v-model="uploadDialogVisible"
@@ -742,7 +739,6 @@ import {
 const togglingId = ref(null);
 const deletingId = ref(null);
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: gameList,
   total,
@@ -831,8 +827,6 @@ const rules = reactive({
   ],
   category: [{ required: true, message: '请选择分类', trigger: 'change' }],
 });
-
-// ---------- 上传弹窗 ----------
 
 const uploadDialogVisible = ref(false);
 const uploadFormRef = ref(null);
@@ -1180,7 +1174,6 @@ watch(
   }
 );
 
-// 打开上传弹窗
 const handleCreate = () => {
   uploadDialogVisible.value = true;
   uploadResult.value = null;
@@ -1339,8 +1332,6 @@ const handleOpenBatchUpload = () => {
   uploadDialogVisible.value = false;
   batchDialogVisible.value = true;
 };
-
-// ---------- 行内下发开关 ----------
 
 const handleToggleEnabled = async (row) => {
   // el-switch 触发 change 时 v-model 已同步更新为目标值（Element Plus 源码 UPDATE 先于 CHANGE emit），
@@ -1555,8 +1546,6 @@ const submitEdit = async () => {
   }
 };
 
-// ---------- 删除 ----------
-
 const handleDelete = async (row) => {
   // 确认弹窗：如实说明影响范围——仅删游戏包与展示条目，关卡/存档/成绩数据保留，
   // 同 gameKey 重新上传会继承历史数据（confirmation-dialogs）
@@ -1570,7 +1559,7 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功');
     // 低频关键写操作成功留痕，业务键仅 id/gameKey
     logger.info('游戏删除成功', `id=${row.id}`, `gameKey=${row.gameKey}`);
-    fetchData(); // 刷新当前页
+    fetchData();
   } catch (error) {
     logger.error('游戏删除失败:', `id=${row.id}`, `gameKey=${row.gameKey}`, error);
     ElMessage.error(error.message || '删除失败');
@@ -1585,7 +1574,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 游戏 + 描述两行单元格 */
 .title-cell {
   display: flex;
   flex-direction: column;
@@ -1626,7 +1614,6 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-/* 下发列：开关与「已下发但不可玩」提示上下排布 */
 .enabled-cell {
   display: flex;
   flex-direction: column;
@@ -1651,7 +1638,6 @@ onMounted(() => {
   margin-right: 6px;
 }
 
-/* 表单项下的辅助说明 */
 .form-tip {
   width: 100%;
   font-size: 12px;
@@ -1676,7 +1662,6 @@ onMounted(() => {
   margin-top: 2px;
 }
 
-/* 开关同行的行内说明 */
 .form-tip-inline {
   margin-left: 8px;
   font-size: 12px;
@@ -1752,7 +1737,6 @@ onMounted(() => {
   display: none;
 }
 
-/* 已选文件卡片 */
 .cover-thumb {
   width: 44px;
   height: 25px;
@@ -1823,7 +1807,6 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-/* 上传进度面板 */
 .progress-panel {
   margin-top: 4px;
   padding: 12px 16px;
@@ -1838,7 +1821,6 @@ onMounted(() => {
   text-align: center;
 }
 
-/* 上传成功面板 */
 .upload-success {
   display: flex;
   flex-direction: column;

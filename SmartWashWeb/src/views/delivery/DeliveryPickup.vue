@@ -80,7 +80,6 @@
       </div>
     </div>
 
-    <!-- 视图二：会话页 -->
     <DeliverySession
       v-else-if="view === 'session'"
       :code="activeCode"
@@ -88,7 +87,6 @@
       @expired="handleExpired"
     />
 
-    <!-- 视图三：失效态 -->
     <div v-else class="gone-card">
       <el-icon class="gone-icon" :size="44"><CircleClose /></el-icon>
       <h1 class="gone-title">会话不存在或已失效</h1>
@@ -348,7 +346,6 @@ function handleBackToEnter() {
   color: var(--text-secondary);
 }
 
-/* --- 失效态 --- */
 .gone-icon {
   color: var(--color-danger);
   margin-bottom: 12px;

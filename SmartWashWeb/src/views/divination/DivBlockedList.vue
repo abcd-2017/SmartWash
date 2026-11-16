@@ -1,7 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
-    <!-- 搜索区域 -->
     <!-- 筛选区(live 打磨 v1):关键词输入定宽成组、动作右置,消除原 705px 行尾空洞 -->
     <div class="filter-container blocked-filter">
       <el-form
@@ -26,7 +24,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"

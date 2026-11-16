@@ -1,5 +1,4 @@
 // src/api/toolbox.js
-// 工具箱管理端 API 层
 // 接口路径与后端 ToolboxAdminController 对齐（/admin/toolbox/short-codes，ROLE_ADMIN）。
 import request from '@/utils/http';
 

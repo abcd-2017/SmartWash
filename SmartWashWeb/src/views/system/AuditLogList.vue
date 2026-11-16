@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="操作人">
@@ -152,7 +151,6 @@
       </div>
     </div>
 
-    <!-- 链完整性校验结果弹窗 -->
     <el-dialog v-model="verifyVisible" title="链完整性校验结果" width="min(560px, 94vw)">
       <el-descriptions v-if="verifyResult" :column="1" border>
         <el-descriptions-item label="校验结果">
@@ -201,7 +199,6 @@ import logger from '@/utils/logger';
 // 动作/目标类型字典已统一收敛到 constants/dict.js（AUDIT_*）：
 // 与后端 @Audited 注解全集对齐，未知动作/类型回显原始编码，不猜文案。
 
-// ===== 操作前后摘要 =====
 // 单元格内前/后各截 40 字符防撑破布局，完整内容经 tooltip 展开（纯文本插值，无 v-html）
 const PAYLOAD_TRUNCATE = 40;
 const truncatePayload = (text) =>
@@ -213,7 +210,6 @@ const payloadSummary = (row) => {
   return parts.join(' → ');
 };
 
-// ===== 列表查询与分页：统一由 useTableList 承载 =====
 const {
   list: auditList,
   total,
@@ -272,7 +268,6 @@ const timeShortcuts = [
   },
 ];
 
-// ===== 链完整性校验 =====
 // 后端默认 500、上限 5000，此处提供常用档位
 const VERIFY_LIMIT_OPTIONS = [100, 500, 1000, 5000];
 const verifyLimit = ref(500);

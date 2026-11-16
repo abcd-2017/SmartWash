@@ -74,7 +74,6 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 基础数据 =====
       {
         path: '/schools',
         name: 'SchoolList',
@@ -108,7 +107,6 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 业务管理 =====
       {
         path: '/orders',
         name: 'OrderList',
@@ -142,7 +140,6 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 用户运营 =====
       {
         path: '/users',
         name: 'Users',
@@ -188,7 +185,6 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 平台模块 =====
       {
         path: '/toolbox/short-codes',
         name: 'ShortCodeList',
@@ -268,7 +264,6 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 观象台（占卜模块）管理端 =====
       {
         path: '/divination/prompts',
         name: 'DivPromptList',
@@ -346,7 +341,6 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 系统与安全 =====
       {
         path: '/roles',
         name: 'RoleList',
@@ -416,7 +410,6 @@ const routes = [
           requiresAuth: true,
         },
       },
-      // ===== 吃啥（dining 域）=====
       {
         path: '/dining/categories',
         name: 'DiningCategoryList',
