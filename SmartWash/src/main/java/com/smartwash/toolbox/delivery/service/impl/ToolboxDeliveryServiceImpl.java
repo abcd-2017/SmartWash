@@ -4,8 +4,10 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.exception.CustomExceptions;
+import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.toolbox.delivery.entity.ToolboxDeliveryItem;
 import com.smartwash.toolbox.delivery.from.CreateDeliverySessionFrom;
 import com.smartwash.toolbox.delivery.from.PublishDeliveryTextFrom;
@@ -128,6 +130,21 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
     public DeliverySessionDetailVo ownerSessionDetail(String code, Long ownerUserId) {
         ToolboxShortCode session = getOwnedSession(code, ownerUserId);
         return buildDetailVo(session);
+    }
+
+    @Override
+    public Page<DeliveryItemVo> pageOwnerItems(String code, BaseSearchFrom from, Long ownerUserId) {
+        // 归属 + 读路径失效校验：非本人/不存在/已过期或已关闭一律 404 语义
+        getOwnedSession(code, ownerUserId);
+        Page<ToolboxDeliveryItem> page = this.page(new Page<>(from.getPage(), from.getSize()),
+                new LambdaQueryWrapper<ToolboxDeliveryItem>()
+                        .eq(ToolboxDeliveryItem::getSessionCode, code)
+                        // 与 ownerSessionDetail 条目流同序：创建时间正序，id 正序兜底稳定分页
+                        .orderByAsc(ToolboxDeliveryItem::getCreatedAt)
+                        .orderByAsc(ToolboxDeliveryItem::getId));
+        Page<DeliveryItemVo> voPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        voPage.setRecords(page.getRecords().stream().map(this::buildItemVo).collect(Collectors.toList()));
+        return voPage;
     }
 
     @Override

@@ -1,11 +1,13 @@
 package com.smartwash.points.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.points.config.PointsProperties;
 import com.smartwash.points.constant.PointReason;
 import com.smartwash.points.entity.PointAccount;
 import com.smartwash.points.entity.PointLedger;
 import com.smartwash.points.entity.PointSignIn;
+import com.smartwash.points.from.SearchPointLedgerFrom;
 import com.smartwash.points.mapper.PointAccountMapper;
 import com.smartwash.points.mapper.PointLedgerMapper;
 import com.smartwash.points.mapper.PointSignInMapper;
@@ -36,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 平台积分服务实现。
@@ -74,6 +77,10 @@ public class PointsServiceImpl implements IPointsService {
     private static final String SIGNIN_ATTEMPT_KEY = "points:rl:signin:%d:%s";
     private static final Duration SIGNIN_ATTEMPT_TTL = Duration.ofHours(25);
     private static final DateTimeFormatter DAY_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    /** 积分流水分页单页条数上限（超出截断，避免大页拉取打满内存） */
+    private static final int LEDGER_PAGE_SIZE_MAX = 50;
+    /** 积分流水分页默认单页条数（与 BaseSearchFrom 默认值一致） */
+    private static final int LEDGER_PAGE_SIZE_DEFAULT = 10;
 
 
     @Override
@@ -237,18 +244,36 @@ public class PointsServiceImpl implements IPointsService {
 
     private List<PointLedgerItemVo> buildRecentLedger(Long userId, int limit) {
         List<PointLedger> ledgers = ledgerMapper.selectRecentByUserId(userId, limit);
-        List<PointLedgerItemVo> items = new ArrayList<>(ledgers.size());
-        for (PointLedger ledger : ledgers) {
-            PointLedgerItemVo item = new PointLedgerItemVo();
-            item.setDelta(ledger.getDelta());
-            item.setReason(ledger.getReason());
-            item.setReasonDesc(resolveReasonDesc(ledger.getReason()));
-            item.setRefDate(ledger.getRefDate());
-            item.setBalanceAfter(ledger.getBalanceAfter());
-            item.setCreatedAt(ledger.getCreatedAt());
-            items.add(item);
-        }
-        return items;
+        return ledgers.stream().map(this::buildLedgerItem).collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<PointLedgerItemVo> pageLedger(Long userId, SearchPointLedgerFrom from) {
+        // 防御性归一：from 由 @Valid 约束 page/size >= 1，此处再兜底 null/越界，
+        // 单页上限收口为 50（BaseSearchFrom 通用上限 100 不适用于流水页）
+        int pageNo = (from.getPage() == null || from.getPage() < 1) ? 1 : from.getPage();
+        int pageSize = (from.getSize() == null || from.getSize() < 1)
+                ? LEDGER_PAGE_SIZE_DEFAULT
+                : Math.min(from.getSize(), LEDGER_PAGE_SIZE_MAX);
+
+        Page<PointLedger> page = ledgerMapper.selectPageByUserId(new Page<>(pageNo, pageSize), userId);
+        Page<PointLedgerItemVo> voPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        voPage.setRecords(page.getRecords().stream().map(this::buildLedgerItem).collect(Collectors.toList()));
+        return voPage;
+    }
+
+    /**
+     * 实体 → 流水条目 VO（/me 最近流水与 /ledger 分页共用同一映射口径）。
+     */
+    private PointLedgerItemVo buildLedgerItem(PointLedger ledger) {
+        PointLedgerItemVo item = new PointLedgerItemVo();
+        item.setDelta(ledger.getDelta());
+        item.setReason(ledger.getReason());
+        item.setReasonDesc(resolveReasonDesc(ledger.getReason()));
+        item.setRefDate(ledger.getRefDate());
+        item.setBalanceAfter(ledger.getBalanceAfter());
+        item.setCreatedAt(ledger.getCreatedAt());
+        return item;
     }
 
     /**

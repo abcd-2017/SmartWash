@@ -49,9 +49,9 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
     }
 
     @Override
-    public List<UserCouponVo> getUserCouponByStatus(String status, Long userId, Integer page, Integer pageSize) {
-        Page<UserCouponVo> pageObj = new Page<>(page, pageSize);
-        return baseMapper.searchUserCouponByStatus(pageObj, status, userId);
+    public Page<UserCouponVo> getUserCouponByStatus(String status, Long userId, Integer page, Integer pageSize) {
+        // 直接返回分页对象（含 total），避免只回 List 丢失总数导致端上无法判断 hasMore
+        return baseMapper.searchUserCouponByStatus(new Page<>(page, pageSize), status, userId);
     }
 
     @Override

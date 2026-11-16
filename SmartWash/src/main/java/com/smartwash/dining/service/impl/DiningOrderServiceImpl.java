@@ -3,6 +3,7 @@ package com.smartwash.dining.service.impl;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.dining.constant.DiningOrderStatus;
 import com.smartwash.dining.core.ShoppingListAssembler;
@@ -26,6 +27,7 @@ import com.smartwash.dining.vo.DiningOrderDetailVo;
 import com.smartwash.dining.vo.DiningOrderFinishVo;
 import com.smartwash.dining.vo.DiningOrderListVo;
 import com.smartwash.entity.Users;
+import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.notice.constant.NoticeType;
@@ -40,7 +42,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -97,21 +98,13 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
     }
 
     @Override
-    public List<DiningOrderListVo> listMy(Long userId) {
-        // 我参与的（创建即首个成员，成员表已覆盖我发起的单）；发起人直查兜底防御历史脏数据
-        LinkedHashSet<Long> orderIds = memberMapper.selectList(new LambdaQueryWrapper<DiningOrderMember>()
-                        .eq(DiningOrderMember::getUserId, userId))
-                .stream().map(DiningOrderMember::getOrderId)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        this.list(new LambdaQueryWrapper<DiningOrder>().eq(DiningOrder::getCreatorUserId, userId))
-                .forEach(order -> orderIds.add(order.getId()));
-
-        if (orderIds.isEmpty()) {
-            return List.of();
-        }
-        return this.listByIds(orderIds).stream()
-                .sorted(Comparator.comparing(DiningOrder::getCreatedAt,
-                        Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+    public Page<DiningOrderListVo> pageMy(BaseSearchFrom from, Long userId) {
+        // 「我发起 + 我参与」的合并与倒序由 mapper 单条 SQL 完成（EXISTS 走成员表 idx_user），
+        // 不再先全量反查 orderId 再内存排序，避免深分页时内存与 IO 放大
+        Page<DiningOrder> page = orderMapper.selectMyOrderPage(
+                new Page<>(from.getPage(), from.getSize()), userId);
+        Page<DiningOrderListVo> voPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        voPage.setRecords(page.getRecords().stream()
                 .map(order -> new DiningOrderListVo()
                         .setId(order.getId())
                         .setTitle(order.getTitle())
@@ -120,7 +113,8 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
                         .setCreatorUserId(order.getCreatorUserId())
                         .setCreatedAt(order.getCreatedAt())
                         .setFinishedAt(order.getFinishedAt()))
-                .toList();
+                .toList());
+        return voPage;
     }
 
     @Override

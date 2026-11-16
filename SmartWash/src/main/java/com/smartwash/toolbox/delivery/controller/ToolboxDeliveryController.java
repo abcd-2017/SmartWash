@@ -1,6 +1,8 @@
 package com.smartwash.toolbox.delivery.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.toolbox.delivery.from.CreateDeliverySessionFrom;
 import com.smartwash.toolbox.delivery.from.PublishDeliveryTextFrom;
 import com.smartwash.toolbox.delivery.service.ToolboxDeliveryService;
@@ -49,6 +51,14 @@ public class ToolboxDeliveryController {
     public Result<DeliverySessionDetailVo> detail(@PathVariable("code") String code) {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(toolboxDeliveryService.ownerSessionDetail(code, user.getUserId()));
+    }
+
+    @Operation(summary = "会话条目分页", description = "owner 视角条目明细分页（含已焚毁占位），与详情条目流同序"
+            + "（创建时间正序）；page 默认 1、size 默认 10 上限 100；归属不符按 404 语义")
+    @GetMapping("/sessions/{code}/items")
+    public Result<Page<DeliveryItemVo>> items(@PathVariable("code") String code, @Valid BaseSearchFrom from) {
+        LoginUser user = UserContextHolder.getUser();
+        return Result.ok(toolboxDeliveryService.pageOwnerItems(code, from, user.getUserId()));
     }
 
     @Operation(summary = "关闭会话", description = "expire_at 前置为当前时刻，读路径立即失效；物理数据由定时清理回收")

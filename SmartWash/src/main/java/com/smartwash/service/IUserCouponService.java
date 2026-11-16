@@ -14,7 +14,7 @@ public interface IUserCouponService extends IService<UserCoupon> {
 
     Boolean deleteCoupon(String ids);
 
-    List<UserCouponVo> getUserCouponByStatus(String status, Long userId, Integer page, Integer pageSize);
+    Page<UserCouponVo> getUserCouponByStatus(String status, Long userId, Integer page, Integer pageSize);
 
     Boolean receiveCoupon(Long couponId, Long userId);
 

@@ -1,5 +1,7 @@
 package com.smartwash.toolbox.delivery.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.toolbox.delivery.entity.ToolboxDeliveryItem;
 import com.smartwash.toolbox.delivery.from.CreateDeliverySessionFrom;
 import com.smartwash.toolbox.delivery.from.PublishDeliveryTextFrom;
@@ -26,6 +28,13 @@ public interface ToolboxDeliveryService {
 
     /** owner 会话详情 + 全量条目（含已焚毁占位），校验归属，不符按 404 语义 */
     DeliverySessionDetailVo ownerSessionDetail(String code, Long ownerUserId);
+
+    /**
+     * owner 条目明细分页（含已焚毁占位），校验归属，不符按 404 语义。
+     * 排序与详情条目流一致：按创建时间正序（id 正序兜底稳定分页）。
+     * page 默认 1、size 默认 10 上限 100（{@link BaseSearchFrom}）。
+     */
+    Page<DeliveryItemVo> pageOwnerItems(String code, BaseSearchFrom from, Long ownerUserId);
 
     /** 关闭会话（owner）：expire_at 前置为当前时刻（条件 UPDATE 判影响行数），读路径立即失效 */
     void closeSession(String code, Long ownerUserId);

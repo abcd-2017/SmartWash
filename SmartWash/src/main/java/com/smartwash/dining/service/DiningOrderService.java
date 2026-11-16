@@ -1,5 +1,6 @@
 package com.smartwash.dining.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.dining.entity.DiningOrder;
 import com.smartwash.dining.from.CreateDiningOrderFrom;
@@ -9,8 +10,7 @@ import com.smartwash.dining.vo.DiningOrderCreatedVo;
 import com.smartwash.dining.vo.DiningOrderDetailVo;
 import com.smartwash.dining.vo.DiningOrderFinishVo;
 import com.smartwash.dining.vo.DiningOrderListVo;
-
-import java.util.List;
+import com.smartwash.from.BaseSearchFrom;
 
 /**
  * 点单订单服务：创建（含复用历史菜单）/ 我的订单列表 / 详情（version 轮询协议）/
@@ -25,8 +25,11 @@ public interface DiningOrderService extends IService<DiningOrder> {
      */
     DiningOrderCreatedVo create(CreateDiningOrderFrom from, Long userId);
 
-    /** 我的订单列表（我发起的 + 我参与的，按创建时间倒序） */
-    List<DiningOrderListVo> listMy(Long userId);
+    /**
+     * 我的订单分页（我发起的 + 我参与的，按创建时间倒序，带 isCreator 标记）。
+     * 分页参数走 {@link BaseSearchFrom}（page 默认 1、size 默认 10 上限 100）。
+     */
+    Page<DiningOrderListVo> pageMy(BaseSearchFrom from, Long userId);
 
     /**
      * 订单详情（轮询主接口）：客户端带已知 version（knownVersion），与服务端一致时返回

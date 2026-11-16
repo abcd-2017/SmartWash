@@ -1,8 +1,11 @@
 package com.smartwash.points.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.points.from.SearchPointLedgerFrom;
 import com.smartwash.points.service.IPointsService;
 import com.smartwash.points.vo.LeaderboardVo;
+import com.smartwash.points.vo.PointLedgerItemVo;
 import com.smartwash.points.vo.PointsOverviewVo;
 import com.smartwash.points.vo.SignInResultVo;
 import com.smartwash.utils.LoginUser;
@@ -10,6 +13,7 @@ import com.smartwash.utils.UserContextHolder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,6 +48,13 @@ public class PointsWebController {
     public Result<SignInResultVo> signIn() {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(pointsService.signIn(user.getUserId()));
+    }
+
+    @Operation(summary = "积分流水分页", description = "当前用户积分流水分页（时间倒序）；page 默认 1，size 默认 10、上限 50")
+    @GetMapping("/ledger")
+    public Result<Page<PointLedgerItemVo>> ledger(@Valid SearchPointLedgerFrom from) {
+        LoginUser user = UserContextHolder.getUser();
+        return Result.ok(pointsService.pageLedger(user.getUserId(), from));
     }
 
     @Operation(summary = "积分月榜", description = "Redis 月榜 TOP 50（手机号脱敏展示）+ 我的排名；当前仅支持 scope=month")
