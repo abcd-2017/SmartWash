@@ -70,7 +70,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 <header><p>板子左右往返 · 看准了点按落块 · 对齐塔沿连击回补塔宽</p></header>
 <div id="stage">
   <canvas id="cv" role="img" aria-label="层层叠游戏画面"></canvas>
-  <div id="ovStart" class="overlay">
+  <div id="ovStart" class="overlay" role="dialog" aria-modal="true">
     <h2>准备堆塔</h2>
     <div class="big">第 <span id="lvStart">1</span> 关 · 目标 <span id="tgStart">0</span> 层</div>
     <div class="big">历史最高 <span id="bestStart">0</span> 分</div>
@@ -92,7 +92,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <div class="small" id="whyOver"></div>
     <button id="btnRetry" class="btn">再来一次</button>
   </div>
-  <div id="ovPause" class="overlay hide">
+  <div id="ovPause" class="overlay hide" role="dialog" aria-modal="true">
     <h2>已暂停</h2>
     <button id="btnResume" class="btn alt">继续游戏</button>
   </div>
@@ -594,7 +594,7 @@ syncLevelsFromServer();syncSaveFromServer();
 </script>
 <script>
 /* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
-(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+(function(){var els=document.querySelectorAll(".overlay, .sheet");if(!els.length)return;
 function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
 function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
 function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}

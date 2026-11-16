@@ -420,7 +420,7 @@ function draw(){
   if(playing&&!over&&!paused&&offset<=0){
     ctx.fillStyle=PAL.muted;ctx.font="700 22px system-ui,sans-serif";
     ctx.fillText("第 "+(cur+1)+" 关 · "+L.name,W/2,H*0.4);
-    ctx.fillStyle=PAL.faint;ctx.font="400 14px system-ui,sans-serif";
+    ctx.fillStyle=PAL.muted;ctx.font="400 14px system-ui,sans-serif";
     ctx.fillText("准备…",W/2,H*0.4+28);
   }
   for(i=0;i<ripples.length;i++){

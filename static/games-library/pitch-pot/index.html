@@ -103,7 +103,7 @@
   .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
   .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
-  .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background: var(--g-warning); color: var(--g-text); font-size: 12px; font-weight: 700; }
+  .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background:var(--g-surface2);color:var(--g-warning); font-size: 12px; font-weight: 700; }
   .badge.show { display: inline-block; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
@@ -814,7 +814,7 @@ syncLevelsFromServer();syncSaveFromServer();
 </script>
 <script>
 /* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
-(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+(function(){var els=document.querySelectorAll(".overlay, .sheet");if(!els.length)return;
 function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
 function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
 function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}

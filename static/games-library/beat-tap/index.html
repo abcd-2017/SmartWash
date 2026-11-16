@@ -46,7 +46,7 @@
   .grade.g-S{color:var(--g-warning)} .grade.g-A{color:var(--g-primary-deep)} .grade.g-B{color:var(--g-water)} .grade.g-C{color:var(--g-muted)}
   .rscore{margin:6px 0 0;text-align:center;font-size:14px;color:var(--g-muted)}
   .rscore b{font-size:22px;color:var(--g-text);font-variant-numeric:tabular-nums}
-  .newrec{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:16px;background:var(--g-warning);color: var(--g-text);font-size:12px;font-weight:700;vertical-align:2px}
+  .newrec{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:16px;background:var(--g-surface2);color:var(--g-warning);font-size:12px;font-weight:700;vertical-align:2px}
   .rstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0}
   .rstats span{display:flex;justify-content:space-between;padding:8px 10px;border-radius:10px;background:var(--g-surface2);font-size:14px;color:var(--g-muted)}
   .rstats b{color:var(--g-text);font-variant-numeric:tabular-nums}
@@ -644,7 +644,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         ctx.globalAlpha = padFlash[i] * 0.28; ctx.fillStyle = PAL.lane[i];
         ctx.fillRect(i * lw + 1, 0, lw - 2, ly); ctx.globalAlpha = 1;
       }
-      ctx.fillStyle = PAL.faint; ctx.font = "600 12px " + FONT;
+      ctx.fillStyle = PAL.muted; ctx.font = "600 12px " + FONT;
       ctx.fillText(LANE_KEYS[i], laneX(i), ly + 22);
     }
     const size = Math.min(64, lw * 0.7);

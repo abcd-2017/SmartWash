@@ -358,7 +358,7 @@ function draw(ts){
   var pw=L.cell*2.6;
   rr(L.W-L.pad-pw-8,L.pad,pw+8,L.cell*2.6,10);
   ctx.fillStyle=PAL.surface2;ctx.fill();
-  text("下一个",L.pad+2,L.pad+L.cell*1.3,12,PAL.faint);
+  text("下一个",L.pad+2,L.pad+L.cell*1.3,12,PAL.muted);
   if(next){
     var m=next.m,s2=L.cell*0.52;
     var px0=L.W-L.pad-(pw+8)/2-m[0].length*s2/2,py0=L.pad+L.cell*1.3-m.length*s2/2;

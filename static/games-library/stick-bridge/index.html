@@ -67,27 +67,27 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 <header><p>按住屏幕伸棍 · 松手放倒木棍搭桥 · 棍头停在台面中心双倍分</p></header>
 <div id="stage">
   <canvas id="cv" role="img" aria-label="木棍过桥游戏画面"></canvas>
-  <div id="ovStart" class="overlay">
+  <div id="ovStart" class="overlay" role="dialog" aria-modal="true">
     <h2>准备过桥</h2>
     <div class="big">第 <span id="lvStart">1</span> 关 · 目标 <span id="tgStart">0</span> 分</div>
     <div class="big">最高 <span id="bestStart">0</span> 分 · 宝石 <span id="gemStart">0</span></div>
     <button id="btnStart" class="btn">开 始</button>
     <div class="small">按住越久木棍伸得越长，松手放倒搭向对岸<br>棍头落进台面中心圈为完美，连击加分翻倍</div>
   </div>
-  <div id="ovWin" class="overlay hide">
+  <div id="ovWin" class="overlay hide" role="dialog" aria-modal="true">
     <h2 id="winTitle">过关！</h2>
     <div class="star" id="starWin"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 2px" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 2px" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 2px" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></div>
     <div class="big">得分 <span id="scoreWin" role="status" aria-live="assertive">0</span> / 目标 <span id="tgWin">0</span></div>
     <div class="small" id="winSub"></div>
     <button id="btnNext" class="btn">下一关</button>
   </div>
-  <div id="ovOver" class="overlay hide">
+  <div id="ovOver" class="overlay hide" role="dialog" aria-modal="true">
     <h2>本局结束</h2>
     <div class="big">得分 <span id="scoreOver">0</span> / 目标 <span id="tgOver">0</span></div>
     <div class="small" id="whyOver"></div>
     <button id="btnRetry" class="btn">再来一次</button>
   </div>
-  <div id="ovPause" class="overlay hide">
+  <div id="ovPause" class="overlay hide" role="dialog" aria-modal="true">
     <h2>已暂停</h2>
     <button id="btnResume" class="btn alt">继续游戏</button>
   </div>
@@ -681,7 +681,7 @@ syncLevelsFromServer();syncSaveFromServer();
 </script>
 <script>
 /* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
-(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+(function(){var els=document.querySelectorAll(".overlay, .sheet");if(!els.length)return;
 function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
 function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
 function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}

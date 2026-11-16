@@ -326,6 +326,7 @@ function mulberry32(seed){
   };
 }
 function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
 function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"");}
 function fmt(ms){var s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;return(m<10?"0":"")+m+":"+(s<10?"0":"")+s;}
 function isRed(c){return RED[c.s];}
@@ -580,7 +581,7 @@ function win(){
   if(GB.available)GB.reportScore("spider-solitaire",{metricValue:completed,metricExtra:totalStars}).catch(function(){});
   var isLast=cur>=LEVELS.length-1;
   $("ovTitle").textContent=isLast?"全部通关！":"过关！";
-  $("ovDesc").innerHTML="「"+LEVELS[cur].name+"」用步 <b>"+moves+"</b> · 用时 <b>"+fmt(elapsed())+"</b><br>"
+  $("ovDesc").innerHTML="「"+esc(LEVELS[cur].name)+"」用步 <b>"+moves+"</b> · 用时 <b>"+fmt(elapsed())+"</b><br>"
     +"星级 "+"★".repeat(stars)+"☆".repeat(3-stars)+"（提示/撤销会扣星）<br>"
     +"已通关 "+completed+" 关 · 累计 "+totalStars+" 星";
   $("ovBtn").textContent=isLast?"回到第一关":"下一关";
@@ -676,7 +677,7 @@ syncLevelsFromServer();syncSaveFromServer();
 </script>
 <script>
 /* 覆盖层焦点管理：显示时聚焦首个可操作元素（dialog 语义配套，全库统一模板） */
-(function(){var els=document.querySelectorAll(".overlay");if(!els.length)return;
+(function(){var els=document.querySelectorAll(".overlay, .sheet");if(!els.length)return;
 function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
 function focusFirst(el){if(el.dataset.foc)return;el.dataset.foc="1";var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();}
 function watch(el){try{new MutationObserver(function(){if(shown(el))focusFirst(el);else delete el.dataset.foc}).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}}
