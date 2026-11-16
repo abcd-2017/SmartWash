@@ -130,7 +130,6 @@ fun DivChartPage(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 4.dp),
         )
-        // 奇门口径徽标
         if (method == DivMethod.QI_MEN) {
             bundle.qimen?.let { qimen ->
                 Text(

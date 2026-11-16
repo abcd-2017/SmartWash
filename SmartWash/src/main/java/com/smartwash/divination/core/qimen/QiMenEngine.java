@@ -27,17 +27,14 @@ public class QiMenEngine {
             "坎一", "坤二", "震三", "巽四", "中五", "乾六", "兑七", "艮八", "离九"
     };
 
-    /** 九星 */
     private static final String[] STARS = {
             "天蓬", "天芮", "天冲", "天辅", "天禽", "天心", "天柱", "天任", "天英"
     };
 
-    /** 八门 */
     private static final String[] DOORS = {
             "休门", "死门", "伤门", "杜门", "中五", "开门", "惊门", "生门", "景门"
     };
 
-    /** 八神 */
     private static final String[] GODS = {
             "值符", "螣蛇", "太阴", "六合", "白虎", "玄武", "九地", "九天"
     };
@@ -45,7 +42,6 @@ public class QiMenEngine {
     /** 三奇六仪（戊己庚辛壬癸丁丙乙） */
     private static final String[] QIYI = {"戊", "己", "庚", "辛", "壬", "癸", "丁", "丙", "乙"};
 
-    /** 旬首遁干 */
     private static final String[] XUNSHOU = {"甲子戊", "甲戌己", "甲申庚", "甲午辛", "甲辰壬", "甲寅癸"};
 
     public Map<String, Object> cast(long castAt, int tzOffset, String castMethod) {

@@ -111,7 +111,6 @@ class BoidsSimulator(
         }
     }
 
-    // ---------- 指针交互 ----------
 
     /** 按下：吸引模式（指针位置固定为按下点） */
     fun pointerDown(x: Float, y: Float) {

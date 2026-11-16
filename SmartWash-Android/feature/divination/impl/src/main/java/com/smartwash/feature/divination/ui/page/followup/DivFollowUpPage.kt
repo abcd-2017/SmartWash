@@ -69,7 +69,6 @@ import com.smartwash.common.utils.pressScale
 import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.user.api.UserRoute
 
-/** 新气泡首帧淡入时长 */
 private const val BUBBLE_FADE_MS = 120
 
 /**
@@ -252,7 +251,6 @@ fun DivFollowUpPage(
                 }
             }
 
-            // 底部输入框
             val pending = state.followUpState is RequestState.Loading
             FollowUpInputBar(
                 value = input,

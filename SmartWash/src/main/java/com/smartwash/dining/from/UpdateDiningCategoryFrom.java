@@ -12,7 +12,6 @@ import lombok.Data;
 @Data
 public class UpdateDiningCategoryFrom {
 
-    /** 分类记录 id */
     @NotNull(message = "分类 id 不能为空")
     private Long id;
 

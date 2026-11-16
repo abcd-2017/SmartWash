@@ -35,7 +35,7 @@ com.smartwash.feature.toolbox/（契约在 :feature:toolbox:api）
     └── delivery/
         ├── DeliveryGraph.kt       # deliveryGraph 聚合投递 2 页
         ├── DeliveryCreatePage.kt  # 创建投递会话
-        ├── DeliverySessionPage.kt # 会话页（发布 / 取走 / 轮询）
+        ├── DeliverySessionPage.kt # 会话页（发布 / 取走 / 分页 + 轮询）
         ├── DeliveryComponents.kt
         ├── DeliveryCountdown.kt
         ├── DeliveryDeviceSaver.kt
@@ -71,12 +71,13 @@ com.smartwash.feature.toolbox/（契约在 :feature:toolbox:api）
 | GET | `web/auth/toolbox/short-codes/{id}/stats?page=&size=` | 访问统计 |
 | GET | `web/auth/toolbox/short-codes/resolve?code=` | 短码解析 |
 
-**DeliveryApi（设备投递，7 个）**
+**DeliveryApi（设备投递，8 个）**
 
 | 方法 | 端点 | 说明 |
 |------|------|------|
 | POST | `web/auth/toolbox/delivery/sessions` | 创建会话 |
-| GET | `web/auth/toolbox/delivery/sessions/{code}` | 会话详情 |
+| GET | `web/auth/toolbox/delivery/sessions/{code}` | 会话详情（轮询消费：取会话元数据 + 最新 id 基准） |
+| GET | `web/auth/toolbox/delivery/sessions/{code}/items?page=&size=` | 条目明细分页（创建时间正序，含已焚毁占位；首屏 / 触底加载） |
 | POST | `web/auth/toolbox/delivery/sessions/{code}/close` | 关闭会话 |
 | POST | `web/auth/toolbox/delivery/sessions/{code}/items` | 发布文本 |
 | POST | `web/auth/toolbox/delivery/sessions/{code}/items/file` | 发布文件（Multipart） |
@@ -90,7 +91,7 @@ com.smartwash.feature.toolbox/（契约在 :feature:toolbox:api）
 1. **短码规则**：`code` 7 位随机或 4-16 位自定义别名；`contentType` 1-5（1 短链 / 2 活码 / 3 交付箱 / 4 图床 / 5 时间胶囊），当前端上主要消费短链。
 2. **短链对外地址**：后端返回的 `shortUrl` 即完整地址（`{shortLinkBaseUrl}/web/t/{code}`），端上**只展示、不拼接**。
 3. **二维码兜底**：无网络 / 加载失败时用 `QrFallback` 本地生成，禁止空白占位。
-4. **投递会话轮询**：会话页条目流按 2-3s 轮询，页面不可见时停止；`take` 后本地移除条目。
+4. **投递会话分页 + 轮询**：首屏走 items 分页接口（page=1，size=20），触底 `loadMore` 正序追加（LazyColumn key=id）；2-3s 轮询详情拿会话元数据与最新 id，只合并 `id > lastPollMaxId` 的新条目并原地更新已加载条目，未加载的历史页交给触底加载，兼顾实时性与分页目标。
 5. **跨页同步**：创建 / 更新 / 删除成功后经 `ToolboxRoute.CHANGED_KEY`（savedStateHandle 信号）通知列表重拉。
 6. **动效**：只允许 `:common:utils` AnimationUtils vocabulary，且每个动效必须有 `LocalReduceMotion` 降级分支；短链列表 → 详情支持一镜到底共享元素转场。
 7. **文案**：用户可见文本一律进本模块 `res/values/strings.xml`。

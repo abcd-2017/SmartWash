@@ -23,18 +23,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * <p>
- * 服务实现类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Slf4j
 @Service
 public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, LaundryItems> implements ILaundryItemsService {
-    //获取所有洗衣套餐
     @Override
     public Page<LaundryPackageVo> getAllLaundryPackage(SearchLaundryItemsFrom LaundryItemsFrom) {
         Page<LaundryItems> page = new Page<>(LaundryItemsFrom.getPage(), LaundryItemsFrom.getSize());
@@ -55,7 +46,6 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
         return LaundryPackageVoPage;
     }
 
-    //添加洗衣套餐
     @Override
     @CacheEvict(value = "laundryItems", allEntries = true)
     public Boolean addLaundryPackage(AddLaundryItemsFrom addLaundryItemsFrom) {
@@ -66,7 +56,6 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
         return result;
     }
 
-    //修改洗衣套餐
     @Override
     @CacheEvict(value = "laundryItems", allEntries = true)
     public Boolean updateLaundryPackage(UpdateLaundryItemsFrom LaundryItemsFrom) {
@@ -79,7 +68,6 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
         return updateById(item);
     }
 
-    //删除洗衣套餐
     @Override
     @CacheEvict(value = "laundryItems", allEntries = true)
     public Boolean deleteLaundryPackage(String ids) {

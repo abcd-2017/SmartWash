@@ -36,7 +36,6 @@ public class PromptAssembler {
     /** 追问上下文总长上限（字符数）：首次解读全文优先保留，超出时自旧向新舍弃追问轮次（最近一轮始终保留） */
     private static final int FOLLOWUP_CONTEXT_MAX_CHARS = 8000;
 
-    /** 更早追问轮次的截断占位文案 */
     private static final String OLDER_FOLLOWUP_PLACEHOLDER = "（更早追问略）";
 
     private final DivPromptService promptService;

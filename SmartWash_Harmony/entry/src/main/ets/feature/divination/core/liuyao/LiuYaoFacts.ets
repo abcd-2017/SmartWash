@@ -9,7 +9,6 @@ import { DiZhi, WuXing, ShengKeRelation } from '../GanZhi';
 import { DivCategory } from '../DivinationCommon';
 import { LiuYaoChart, LiuYaoLine } from './LiuYaoChart';
 
-/** 六爻断法事实标记 */
 export class LiuYaoFacts {
   /** 用神爻位（1..6）与描述，如 "妻财丙子水 · 五爻" */
   readonly yongShenPosition: number | null;

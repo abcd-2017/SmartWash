@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 游戏选择与操作 -->
     <div class="filter-container">
       <el-form :inline="true">
         <el-form-item label="游戏">
@@ -39,7 +38,6 @@
       style="margin-bottom: 12px"
     />
 
-    <!-- 关卡表格 -->
     <div class="table-card">
       <el-table
         v-loading="levelLoading"
@@ -77,7 +75,6 @@
       </el-table>
     </div>
 
-    <!-- 关卡编辑弹窗 -->
     <el-dialog
       v-model="levelDialogVisible"
       :title="levelForm.levelNo ? `编辑关卡 #${levelForm.levelNo}` : '新建关卡'"
@@ -150,15 +147,11 @@ import LevelImportDialog from './components/LevelImportDialog.vue';
 
 defineOptions({ name: 'LevelManage' });
 
-// ==================== 批量导入 ====================
-
 const importDialogVisible = ref(false);
 // 弹窗标题展示用：取当前选中游戏的标题（未选中时兜底 gameKey）
 const currentGameTitle = computed(
   () => gameOptions.value.find((g) => g.gameKey === levelGameKey.value)?.title || levelGameKey.value
 );
-
-// ==================== 游戏选项 ====================
 
 const gameOptions = ref([]);
 
@@ -171,8 +164,6 @@ const loadGameOptions = async () => {
     gameOptions.value = [];
   }
 };
-
-// ==================== 关卡列表 ====================
 
 const levelGameKey = ref('');
 const levelList = ref([]);
@@ -201,8 +192,6 @@ const fetchLevels = async () => {
     }
   }
 };
-
-// ==================== 关卡编辑 ====================
 
 const levelDialogVisible = ref(false);
 const levelSubmitting = ref(false);

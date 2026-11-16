@@ -49,10 +49,8 @@ public class ReviewCardServiceImpl extends ServiceImpl<ReviewCardMapper, ReviewC
     /** 新卡每日注入配额（每次队列最多带出的未学新卡数） */
     private static final int DAILY_NEW_LIMIT = 20;
 
-    /** 到期卡单次拉取上限 */
     private static final int DUE_LIMIT = 50;
 
-    /** 统计回看天数 */
     private static final int STATS_DAYS = 30;
 
     /** FSRS 调度器（生产构造：默认权重 + fuzz 开启） */
@@ -163,7 +161,6 @@ public class ReviewCardServiceImpl extends ServiceImpl<ReviewCardMapper, ReviewC
         FsrsCard updated = result.card();
         FsrsReviewLog fsrsLog = result.log();
 
-        // 更新卡片 FSRS 状态
         card.setState(updated.getState().getCode());
         card.setStep(updated.getStep());
         card.setStability(updated.getStability() == null ? null : BigDecimal.valueOf(updated.getStability())
@@ -229,7 +226,6 @@ public class ReviewCardServiceImpl extends ServiceImpl<ReviewCardMapper, ReviewC
         return vo;
     }
 
-    // ==================== 私有转换 ====================
 
     /** 实体 → 调度器内存卡（字段名对齐 py-fsrs Card） */
     private FsrsCard toFsrsCard(ReviewCard card) {

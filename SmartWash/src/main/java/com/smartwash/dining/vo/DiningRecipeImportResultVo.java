@@ -14,13 +14,11 @@ import java.util.List;
 @Accessors(chain = true)
 public class DiningRecipeImportResultVo {
 
-    /** 本次提交行数 */
     private int total;
 
     /** 成功写入行数（整批回滚时恒为 0） */
     private int successCount;
 
-    /** 失败行数 */
     private int failedCount;
 
     /** 是否整批回滚（任一行失败即全批不落库） */
@@ -29,15 +27,12 @@ public class DiningRecipeImportResultVo {
     /** 逐行结果明细（按行号升序） */
     private List<ResultRow> rows;
 
-    /** 单行结果条目 */
     @Data
     @Accessors(chain = true)
     public static class ResultRow {
 
-        /** 原文件行号 */
         private Integer rowNo;
 
-        /** 菜名 */
         private String name;
 
         /** 该行是否成功写入 */

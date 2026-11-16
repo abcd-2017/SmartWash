@@ -15,10 +15,8 @@ public class GameVo {
     /** 业务唯一标识，端上与转发 URL 引用用 */
     private String gameKey;
 
-    /** 游戏名 */
     private String title;
 
-    /** 一句话玩法描述 */
     private String description;
 
     /** 图标 key（端上白名单枚举映射） */

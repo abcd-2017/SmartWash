@@ -53,7 +53,6 @@ import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
-/** 日志 TAG */
 const TAG: string = 'diningOrderDetail'
 
 /** 轮询间隔（毫秒）：对齐 Android PollingDiningOrderSyncChannel 基准 3s */
@@ -272,7 +271,6 @@ struct DiningOrderDetailPage {
     return this.myItems.length
   }
 
-  // ---------- 数据加载 ----------
 
   /** 首载：详情全量 + 分类目录（分组名回填，失败不致命）+ 当前手机号（定位「我的选菜」） */
   private async loadFirst(): Promise<void> {
@@ -358,7 +356,6 @@ struct DiningOrderDetailPage {
     this.activeSectionIndex = 0
   }
 
-  // ---------- 轮询同步 ----------
 
   private startPollingIfNeeded(): void {
     if (this.readOnly || this.pollTimer !== -1 || this.orderId <= 0) {
@@ -420,7 +417,6 @@ struct DiningOrderDetailPage {
     this.syncing = false
   }
 
-  // ---------- 写操作 ----------
 
   /** 勾选/取消（乐观更新 → 写服务端；失败回滚 + 全量刷新） */
   private toggleRecipe(recipeId: number): void {
@@ -559,7 +555,6 @@ struct DiningOrderDetailPage {
     pathStack.pushPathByName(RouteNames.DINING_ORDER_SHARE, param)
   }
 
-  // ---------- 行级派生 ----------
 
   /** 行的选菜人展示（含「我」标记与备注；他人按成员目录映射） */
   private selectorLabelsOf(recipeId: number): Array<SelectorLabel> {
@@ -582,7 +577,6 @@ struct DiningOrderDetailPage {
     return labels
   }
 
-  // ---------- 子视图 ----------
 
   /** 参与者区（横向头像位 + 脱敏手机号 + 发起标记） */
   @Builder

@@ -79,7 +79,6 @@ class SessionEventBus @Inject constructor() : SessionEventNotifier {
     private companion object {
         const val DEDUP_INTERVAL_MS = 1500L
 
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "SessionEventBus"
     }
 }

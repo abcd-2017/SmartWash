@@ -185,27 +185,22 @@ data class LiuYaoChart(
 
             fun shiYao(shi: Int): Pair<Int, Int> = shi to (if (shi > 3) shi - 3 else shi + 3)
 
-            // 天同二世天变五
             if (same(2)) {
                 if (!same(1) && !same(0)) return shiYao(2)
             } else {
                 if (same(1) && same(0)) return shiYao(5)
             }
-            // 人同游魂人变归
             if (same(1)) {
                 if (!same(0) && !same(2)) return shiYao(4)
             } else {
                 if (same(0) && same(2)) return shiYao(3)
             }
-            // 地同四世地变初
             if (same(0)) {
                 if (!same(1) && !same(2)) return shiYao(4)
             } else {
                 if (same(1) && same(2)) return shiYao(1)
             }
-            // 本宫六世
             if (wai == nei) return shiYao(6)
-            // 三世异
             return shiYao(3)
         }
 
@@ -215,9 +210,7 @@ data class LiuYaoChart(
             val wai = mark.substring(3, 6)
             val hun = soulOf(mark)
 
-            // 归魂内卦是本宫
             if (hun == "归魂") return Trigram.fromBinary(nei)
-            // 一二三六外卦宫
             if (shiYao in listOf(1, 2, 3, 6)) return Trigram.fromBinary(wai)
             // 四五游魂内变更（内卦取反）
             if (shiYao in listOf(4, 5) || hun == "游魂") {

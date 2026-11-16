@@ -86,7 +86,6 @@ class RequestInterceptor @Inject constructor(
     }
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "RequestInterceptor"
 
         /** 端别标识（Android 用户端，后端按此区分 Web/鸿蒙） */

@@ -139,7 +139,6 @@ fun DivCastPage(
                         .padding(top = 6.dp, bottom = 20.dp),
                 )
 
-                // 三币
                 CoinTossRow(
                     faces = faces,
                     tossId = tossId,

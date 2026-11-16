@@ -76,7 +76,6 @@ object DivMarkdownParser {
         )
     }
 
-    // ---- 内部 ----
 
     private data class Block(
         val title: String,

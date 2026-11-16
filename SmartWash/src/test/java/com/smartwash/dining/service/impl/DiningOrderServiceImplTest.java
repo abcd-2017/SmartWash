@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.dining.entity.DiningOrder;
 import com.smartwash.dining.entity.DiningOrderItem;
 import com.smartwash.dining.entity.DiningOrderMember;
@@ -20,6 +21,7 @@ import com.smartwash.dining.vo.DiningOrderFinishVo;
 import com.smartwash.dining.vo.DiningOrderListVo;
 import com.smartwash.entity.Users;
 import com.smartwash.exception.CustomExceptions;
+import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.notice.constant.NoticeType;
 import com.smartwash.notice.service.NoticeService;
@@ -460,36 +462,42 @@ class DiningOrderServiceImplTest {
     // ==================== 我的订单列表 ====================
 
     @Test
-    @DisplayName("列表：我发起 + 我参与合并，按创建时间倒序，带 isCreator 标记")
-    void listMy_mergesCreatedAndJoined() {
-        // JOINER 参与 881（他人发起）、发起 880（创建即成员，成员表兜底直查覆盖）
-        DiningOrderMember membership = new DiningOrderMember().setOrderId(881L).setUserId(JOINER);
-        when(memberMapper.selectList(any(Wrapper.class))).thenReturn(List.of(membership));
-        DiningOrder createdOrder = order(880L, "ONGOING", "t2", 0, JOINER);
-        createdOrder.setCreatedAt(java.time.LocalDateTime.of(2026, 1, 1, 10, 0));
-        when(orderMapper.selectList(any(Wrapper.class))).thenReturn(List.of(createdOrder));
-
+    @DisplayName("列表分页：透传 page/size，转换 VO 保持库内倒序并按 isCreator 标记（我发起/我参与）")
+    void pageMy_mapsVoWithIsCreator() {
+        // JOINER 参与 881（他人发起）、发起 880；合并与倒序由 mapper SQL 负责，服务层透传并转换
         DiningOrder joinedNewer = order(881L, "ONGOING", "t1", 2, CREATOR);
-        joinedNewer.setCreatedAt(java.time.LocalDateTime.of(2026, 1, 2, 10, 0));
-        doReturn(List.of(joinedNewer, createdOrder)).when(orderMapper).selectBatchIds(anyCollection());
+        DiningOrder createdOrder = order(880L, "ONGOING", "t2", 0, JOINER);
+        Page<DiningOrder> entityPage = new Page<>(1, 10, 2);
+        entityPage.setRecords(List.of(joinedNewer, createdOrder));
+        when(orderMapper.selectMyOrderPage(any(Page.class), eq(JOINER))).thenReturn(entityPage);
 
-        List<DiningOrderListVo> result = service.listMy(JOINER);
+        Page<DiningOrderListVo> result = service.pageMy(new BaseSearchFrom(), JOINER);
 
-        assertEquals(2, result.size());
-        // 倒序：参与的新单（1月2日）在前，发起的旧单（1月1日）在后
-        assertEquals(881L, result.get(0).getId());
-        assertFalse(result.get(0).getIsCreator());
-        assertEquals(880L, result.get(1).getId());
-        assertTrue(result.get(1).getIsCreator());
+        assertEquals(2L, result.getTotal());
+        // 转换保持库内倒序：参与的新单在前，发起的旧单在后
+        assertEquals(881L, result.getRecords().get(0).getId());
+        assertFalse(result.getRecords().get(0).getIsCreator());
+        assertEquals(880L, result.getRecords().get(1).getId());
+        assertTrue(result.getRecords().get(1).getIsCreator());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Page<DiningOrder>> pageCaptor = ArgumentCaptor.forClass(Page.class);
+        verify(orderMapper).selectMyOrderPage(pageCaptor.capture(), eq(JOINER));
+        assertEquals(1L, pageCaptor.getValue().getCurrent());
+        assertEquals(10L, pageCaptor.getValue().getSize());
     }
 
     @Test
-    @DisplayName("列表：无任何订单时返回空列表")
-    void listMy_empty() {
-        when(memberMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
-        when(orderMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
+    @DisplayName("列表分页：无任何订单时返回空页（total=0）")
+    void pageMy_empty() {
+        Page<DiningOrder> empty = new Page<>(1, 10, 0);
+        empty.setRecords(List.of());
+        when(orderMapper.selectMyOrderPage(any(Page.class), eq(JOINER))).thenReturn(empty);
 
-        assertTrue(service.listMy(JOINER).isEmpty());
+        Page<DiningOrderListVo> result = service.pageMy(new BaseSearchFrom(), JOINER);
+
+        assertEquals(0L, result.getTotal());
+        assertTrue(result.getRecords().isEmpty());
     }
 
     // ==================== 结束点单 ====================

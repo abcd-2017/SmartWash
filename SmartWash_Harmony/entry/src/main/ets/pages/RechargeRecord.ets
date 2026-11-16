@@ -8,12 +8,11 @@ import { HttpStatusCode } from "@ohos/axios"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
-import { PagingController } from "../utils/PagingUtil"
+import { LazyListDataSource, PagingController } from "../utils/PagingUtil"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
 import { resColor } from '../utils/ResourceColor'
 import { resString } from '../utils/ResourceString'
 
-// 分页每页条数
 const PAGE_SIZE: number = 10
 
 @Builder
@@ -27,6 +26,9 @@ struct RechargeRecord {
   @State isLoadingMore: boolean = false
   // 首屏加载态：数据返回前展示占位，避免页面空白（对齐安卓 RechargeRecordPage.kt:111-120）
   @State isLoadingFirst: boolean = true
+  // LazyForEach 数据源（读取 recordList，实例稳定不可重建，避免整表重建）
+  private dataSource: LazyListDataSource<RechargeRecordVo> =
+    new LazyListDataSource<RechargeRecordVo>(() => this.recordList)
   // 轻量分页封装：触底加载/上锁防重/封底判定统一收敛（差异分析 01 §3.3）
   private paging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
@@ -83,10 +85,14 @@ struct RechargeRecord {
         if (page === 1) {
           // stale-while-revalidate（对齐安卓）：刷新成功才整体替换，刷新期间旧内容保持可读
           this.recordList = records
+          this.dataSource.notifyReload()
           logger.debug('rechargeRecord', `充值记录首页加载成功 count=${records.length}`)
           return true
         }
+        // 追加按新索引逐项通知，避免整表重建
+        const startIndex: number = this.recordList.length
         this.recordList.push(...records)
+        this.dataSource.notifyAppend(startIndex, records.length)
         logger.debug('rechargeRecord', `充值记录分页加载成功 page=${page} count=${records.length}`)
         return true
       }
@@ -95,9 +101,9 @@ struct RechargeRecord {
       showToastSafety(res.message, resString('recharge_record_2'))
       return false
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并按失败页返回，避免 isLoadingFirst 卡死永久骨架
       if (page === 1) {
         this.recordList = []
+        this.dataSource.notifyReload()
       }
       showToastSafety(resString('recharge_record_3'))
       return false
@@ -178,9 +184,6 @@ struct RechargeRecord {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 页头（公共 PageHeader：22/600 标题 + 48dp 返回热区，对齐安卓 PageHeader / recap G4）
@@ -196,7 +199,7 @@ struct RechargeRecord {
         } else if (this.recordList.length > 0) {
           // 安卓 RechargeRecordPage 的 LazyColumn 无下拉刷新入口，此处同步移除 Refresh 包裹
           List({ space: DesignDimens.CARD_SPACING }) {
-            ForEach(this.recordList, (record: RechargeRecordVo) => {
+            LazyForEach(this.dataSource, (record: RechargeRecordVo) => {
               ListItem() {
                 this.RecordCard(record)
               }
@@ -209,7 +212,8 @@ struct RechargeRecord {
           .height("100%")
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, bottom: safeBottomVp() })
           .onScrollIndex((start: number, end: number) => {
-            this.paging.onScrollIndex(end, this.recordList?.length ?? 0)
+            // listLength 为 ListItem 真实数量（记录卡 + LoadingFooter）
+            this.paging.onScrollIndex(end, (this.recordList?.length ?? 0) + 1)
           })
           .onScrollFrameBegin((offset: number, state: ScrollState) => {
             this.paging.onScrollFrameBegin(offset)
@@ -226,7 +230,6 @@ struct RechargeRecord {
       }
       .width("100%")
       .height("100%")
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       }
     }

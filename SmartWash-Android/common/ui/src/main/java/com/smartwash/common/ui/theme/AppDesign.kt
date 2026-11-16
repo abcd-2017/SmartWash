@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-// ========== 清氧设计系统 — 主题感知颜色 ==========
 
 @Immutable
 data class AppColorScheme(
@@ -189,7 +188,6 @@ object AppColors {
         get() = LocalAppColors.current
 }
 
-// ========== 清氧设计系统 — 设计 Token ==========
 // 容器层级：Canvas(暖白底) → Group(浅灰分组) → ListRow(分隔线) → HeroCard(主焦点) → InlineAction(行内)
 
 object AppDimens {
@@ -225,7 +223,6 @@ object AppDimens {
     val spaceXxl = 32.dp
 }
 
-// ========== 海拔层级 (Elevation Levels) ==========
 object AppElevation {
     val level0 = 0.dp   // 平面（背景）
     val level1 = 1.dp   // 轻微浮起（普通卡片）
@@ -235,7 +232,6 @@ object AppElevation {
     val floatLayer = 10.dp  // 浮层（弹窗/对话框）— 规范 §2.4 浮层档 0 10px 24px rgba(20,40,30,.10)；Compose shadow 无法精确还原 CSS，取最近似档位
 }
 
-// ========== 可复用组件 ==========
 
 @Composable
 fun SectionTitle(
@@ -326,7 +322,6 @@ fun StatusDot(
     )
 }
 
-// ==================== 观象台（占卜模块）— 玄墨子主题（追加） ====================
 // 模块级子主题：进模块换氛围、退出即回清氧；照 LocalAppColors 模式，不污染全局 MaterialTheme。
 
 @Immutable

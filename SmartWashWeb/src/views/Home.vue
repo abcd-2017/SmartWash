@@ -1,6 +1,5 @@
 <template>
   <div class="page-container dashboard">
-    <!-- 页面标题区 -->
     <div class="page-header">
       <h2>工作台</h2>
       <p>欢迎使用 SmartWash 智能洗衣管理系统</p>
@@ -69,7 +68,6 @@
       </div>
     </div>
 
-    <!-- 快捷操作区 -->
     <div class="quick-actions">
       <h3 class="quick-actions__title">快捷操作</h3>
       <div class="quick-actions__chips">
@@ -179,7 +177,6 @@ const fetchStats = async () => {
 
 onMounted(fetchStats);
 
-// ---------- 趋势分析 ----------
 // 近 N 天逐日趋势：一次请求同时产出收入与订单量两条序列（后端已补零成连续日期）
 const TREND_DAYS_OPTIONS = [7, 30, 90];
 const trendDays = ref(30);
@@ -228,7 +225,6 @@ onMounted(fetchTrend);
 </script>
 
 <style scoped>
-/* 统计卡片网格 */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -351,7 +347,6 @@ onMounted(fetchTrend);
   min-width: 0;
 }
 
-/* 趋势卡失败态：面板内居中提示 + 重试入口 */
 .trend-card__error {
   display: flex;
   align-items: center;
@@ -370,7 +365,6 @@ onMounted(fetchTrend);
   color: var(--text-secondary);
 }
 
-/* 快捷操作区 */
 .quick-actions {
   padding: 20px;
   background: var(--bg-card);

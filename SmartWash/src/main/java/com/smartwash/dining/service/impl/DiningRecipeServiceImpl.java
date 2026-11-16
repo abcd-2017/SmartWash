@@ -66,11 +66,9 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
     @Autowired
     private MinioConfig minioConfig;
 
-    /** 当前登录上下文 */
     @Autowired
     private SecurityUtil securityUtil;
 
-    // ==================== 管理端 ====================
 
     @Override
     public Page<DiningRecipeVo> adminPage(SearchDiningRecipeFrom from) {
@@ -182,7 +180,6 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         }
     }
 
-    // ==================== 用户端 ====================
 
     @Override
     public Page<DiningRecipeVo> userPage(SearchWebDiningRecipeFrom from) {
@@ -236,7 +233,6 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
                 recipe.getId(), recipe.getName(), recipe.getCategoryId(), recipe.getCreatedByUserId());
     }
 
-    // ==================== 内部方法 ====================
 
     /** 分类存在性校验（null=未分类，合法放行） */
     private void checkCategoryExists(Long categoryId) {

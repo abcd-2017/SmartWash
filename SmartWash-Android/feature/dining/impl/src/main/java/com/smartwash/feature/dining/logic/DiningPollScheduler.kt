@@ -33,7 +33,6 @@ class DiningPollScheduler(
         /** 基准轮询间隔（spec：点单页可见时约 3s） */
         const val DEFAULT_INTERVAL_MS = 3_000L
 
-        /** 连续失败退避封顶 */
         const val MAX_BACKOFF_MS = 15_000L
 
         /** 退避倍数上限（2^6=64 倍，远超封顶，仅防移位溢出） */

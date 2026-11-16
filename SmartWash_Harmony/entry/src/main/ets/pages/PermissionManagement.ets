@@ -75,7 +75,6 @@ struct PermissionManagement {
       try {
         vibrator.startVibration({ type: "time", duration: 30 }, { id: 0, usage: "unknown" })
       } catch (err) {
-        // 忽略不支持的设备
       }
     }
   }
@@ -115,9 +114,6 @@ struct PermissionManagement {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       // 沉浸式：根容器避让状态栏（内容位置不变，背景延伸）
       Column() {

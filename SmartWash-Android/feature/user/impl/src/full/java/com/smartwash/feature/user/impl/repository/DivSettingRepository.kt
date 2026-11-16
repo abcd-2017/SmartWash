@@ -28,7 +28,6 @@ class DivSettingRepository @Inject constructor(
         api.saveApiConfig(request)
     }
 
-    /** 删除配置 */
     suspend fun deleteApiConfig() {
         api.deleteApiConfig()
     }

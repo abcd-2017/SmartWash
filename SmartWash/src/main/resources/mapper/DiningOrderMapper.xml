@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.dining.mapper.DiningOrderMapper">
+
+    <!-- 我的订单分页：我发起的（creator_user_id）+ 我参与的（dining_order_member 存在记录）
+         按创建时间倒序、id 倒序兜底（同毫秒创建时保持稳定分页） -->
+    <select id="selectMyOrderPage" resultType="com.smartwash.dining.entity.DiningOrder">
+        SELECT o.*
+        FROM dining_order o
+        WHERE o.creator_user_id = #{userId}
+           OR EXISTS (
+                SELECT 1 FROM dining_order_member m
+                WHERE m.order_id = o.id AND m.user_id = #{userId}
+           )
+        ORDER BY o.created_at DESC, o.id DESC
+    </select>
+
+</mapper>

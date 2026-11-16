@@ -73,7 +73,6 @@ public class LlmGateway {
         return provider.getCircuitKey() != null ? provider.getCircuitKey() : provider.getName();
     }
 
-    /** 判断供应商是否熔断中 */
     public boolean isCircuitBroken(String providerName) {
         ErrorWindow window = circuitWindows.get(providerName);
         if (window == null) return false;

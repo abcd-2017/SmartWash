@@ -4,9 +4,6 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-/**
- * 充值记录汇总统计
- */
 @Data
 public class RechargeSummaryVo {
 

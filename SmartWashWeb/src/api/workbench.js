@@ -1,5 +1,4 @@
 // src/api/workbench.js
-// 工作台入口配置 API 层
 // 接口已与后端 WorkbenchEntryAdminController 对齐（/admin/workbench/entries，ROLE_ADMIN）：
 // 字段名以 AdminWorkbenchEntryVo / Add·UpdateWorkbenchEntryFrom 为准（驼峰，enabled 为 1/0）。
 import request from '@/utils/http';

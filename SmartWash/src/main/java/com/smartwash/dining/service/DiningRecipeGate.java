@@ -33,7 +33,6 @@ public interface DiningRecipeGate {
      */
     Map<Long, List<String>> getIngredients(Collection<Long> recipeIds);
 
-    /** 菜谱简要信息 */
     record RecipeBrief(Long id, String name, Long categoryId) {
     }
 }

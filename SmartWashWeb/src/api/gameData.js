@@ -3,8 +3,6 @@
 // 与 api/game.js 分开：game.js 管游戏包与元数据（上传/上下架），本模块管运行期数据。
 import request from '@/utils/http';
 
-// ==================== 关卡 ====================
-
 /** 关卡列表：按 gameKey 返回全部关卡（含未启用），按 sort / levelNo 排序 */
 export function getGameLevels(gameKey) {
   return request({
@@ -40,8 +38,6 @@ export function deleteGameLevel(gameKey, levelNo) {
     params: { gameKey, levelNo },
   });
 }
-
-// ==================== 存档 / 成绩 ====================
 
 /** 存档分页列表：gameKey / userId 筛选（可空），按更新时间倒序 */
 export function getGameSaves(params) {

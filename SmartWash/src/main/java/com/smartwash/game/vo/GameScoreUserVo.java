@@ -9,7 +9,6 @@ import lombok.Data;
 @Data
 public class GameScoreUserVo {
 
-    /** 用户 ID */
     private Long userId;
 
     /** 脱敏手机号（138****1234） */

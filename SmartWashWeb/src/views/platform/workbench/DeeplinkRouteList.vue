@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="Host">
@@ -34,7 +33,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -113,7 +111,6 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增跳转路由' : '编辑跳转路由'"
       v-model="dialogVisible"
@@ -209,7 +206,6 @@ const submitting = ref(false); // 确认按钮 loading，防连点
 const togglingId = ref(null); // 行内启停开关 loading，防连点
 const deletingId = ref(null); // 行内删除按钮 loading，防连点
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: routeList,
   total,
@@ -250,7 +246,6 @@ const tempRoute = reactive({
 // host 段规则：小写字母开头，仅小写字母/数字/中划线，2-64 位（与后端 AddDeeplinkRouteFrom 对齐）
 const HOST_PATTERN = /^[a-z][a-z0-9-]{1,63}$/;
 
-// 验证规则
 const rules = reactive({
   host: [
     { required: true, message: '请输入 host', trigger: 'blur' },
@@ -266,8 +261,6 @@ const rules = reactive({
   ],
   platform: [{ required: true, message: '请选择平台', trigger: 'change' }],
 });
-
-// ---------- 行内启停 ----------
 
 // 编辑场景按行数据组装完整更新体（update 为全量字段语义，避免只传 id+enabled 清空其余字段；
 // host 后端不可修改，更新体不携带）
@@ -300,13 +293,10 @@ const handleToggleEnabled = async (row) => {
   }
 };
 
-// ---------- 初始化与弹窗 ----------
-
 onMounted(() => {
   fetchData();
 });
 
-// 打开新增弹窗
 const handleCreate = () => {
   dialogType.value = 'create';
   dialogVisible.value = true;
@@ -321,14 +311,12 @@ const handleCreate = () => {
   });
 };
 
-// 打开编辑弹窗
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
   Object.assign(tempRoute, { ...row });
 };
 
-// 弹窗关闭 — 清除验证状态
 const handleDialogClosed = () => {
   formRef.value?.resetFields();
   formRef.value?.clearValidate();
@@ -349,7 +337,6 @@ const buildSubmitPayload = () => {
   return { id: tempRoute.id, ...payload };
 };
 
-// 提交表单
 const submitForm = async () => {
   submitting.value = true;
   try {
@@ -390,7 +377,6 @@ const submitForm = async () => {
   }
 };
 
-// 删除路由
 const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
   const confirmed = await useConfirm(
@@ -447,7 +433,6 @@ const handleDelete = async (row) => {
   white-space: nowrap;
 }
 
-/* 表单项下的辅助说明 */
 .form-tip {
   width: 100%;
   font-size: 12px;
@@ -455,7 +440,6 @@ const handleDelete = async (row) => {
   color: var(--text-secondary);
 }
 
-/* 开关同行的行内说明 */
 .form-tip-inline {
   margin-left: 8px;
   font-size: 12px;

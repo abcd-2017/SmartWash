@@ -88,11 +88,11 @@ class DiningRepository @Inject constructor(
                 throw NetworkException("创建订单结果为空", R.string.error_network_fail)
             }
 
-    /** 我的订单列表（我发起的 + 我参与的，创建时间倒序；data 缺失按失败上抛） */
-    suspend fun getMyOrders(): List<DiningOrderListVo> =
-        diningServiceApi.myOrders().data
+    /** 我的订单分页（我发起的 + 我参与的，创建时间倒序；data 缺失按失败上抛） */
+    suspend fun getMyOrders(page: Int, size: Int): PageData<DiningOrderListVo> =
+        diningServiceApi.myOrders(page, size).data
             ?: run {
-                AppLogger.warn(TAG, "getMyOrders 响应 data 为空，按失败上抛")
+                AppLogger.warn(TAG, "getMyOrders 响应 data 为空，按失败上抛（page=$page）")
                 throw NetworkException("订单列表为空", R.string.error_network_fail)
             }
 
@@ -172,7 +172,6 @@ class DiningRepository @Inject constructor(
     }
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "DiningRepository"
     }
 }

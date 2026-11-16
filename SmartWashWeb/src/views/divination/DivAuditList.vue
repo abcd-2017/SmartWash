@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="审计状态">
@@ -26,7 +25,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -76,7 +74,6 @@
       </div>
     </div>
 
-    <!-- 审计详情弹窗 -->
     <el-dialog title="审计详情" v-model="detailDialogVisible" width="min(760px, 94vw)">
       <div v-if="currentAudit" class="audit-detail">
         <el-descriptions :column="2" border>

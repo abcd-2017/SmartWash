@@ -32,13 +32,11 @@ public class ChannelVersionVo {
     /** 该渠道的 APK SHA-256 校验值 */
     private String sha256;
 
-    /** 是否强制更新 */
     private Boolean forceUpdate;
 
     /** 强制更新的最低版本号 */
     private Integer minVersionCode;
 
-    /** 更新日志 */
     private String changelog;
 
     /** 发布日期（格式 yyyy-MM-dd） */

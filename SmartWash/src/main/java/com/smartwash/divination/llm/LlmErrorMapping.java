@@ -27,7 +27,6 @@ public final class LlmErrorMapping {
     private static final Pattern DOT_SEPARATED_KEY_PATTERN =
             Pattern.compile("[A-Za-z0-9]{16,}\\.[A-Za-z0-9]{16,}");
 
-    /** Bearer token 模式 */
     private static final Pattern BEARER_PATTERN = Pattern.compile("(?i)bearer\\s+[A-Za-z0-9._\\-]{6,}");
 
     /** 脱敏后最大长度（SSE data 为单行，避免超长破坏帧） */

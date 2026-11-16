@@ -209,7 +209,6 @@ class PaintingGenerator(private val seed: PaintingSeed) {
     )
 }
 
-// ---------- 种子 ----------
 
 /**
  * 画作种子：一个 Long 数字。日期种子（如 20261103）人类可读可分享，
@@ -229,7 +228,6 @@ value class PaintingSeed(val value: Long) {
     }
 }
 
-// ---------- 随机数 ----------
 
 /**
  * SplitMix64 伪随机数生成器（纯 Kotlin，确定性）。
@@ -306,7 +304,6 @@ data class MistBand(
     val alpha: Float,
 )
 
-/** 水面淡墨横线 */
 data class WaterLine(
     val x: Float,
     val y: Float,

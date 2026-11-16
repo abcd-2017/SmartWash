@@ -12,9 +12,6 @@ import javax.inject.Named
 import javax.inject.Singleton
 
 /**
- * 应用更新数据层
- * 提供最新版本信息查询与本地版本比对逻辑
- *
  * @param channel 本端分发渠道（full / lite），由 app 壳层经 `@Named("appChannel")`
  *   按 flavor 注入（与 `@Named("appVersionName")` 同模式：library 不可见 app BuildConfig）。
  *   两个渠道是独立 App，版本清单与 APK 产物按渠道分组，故两个端点都显式带上 channel。
@@ -75,7 +72,6 @@ class AppUpdateRepository @Inject constructor(
         getCurrentVersionCode() < remoteVo.minVersionCode
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "AppUpdateRepository"
     }
 }

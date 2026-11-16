@@ -99,7 +99,6 @@ fun ServicePage(
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                // 洗护分类标题
                 item {
                     // 原搜索胶囊为纯静态装饰（无输入无过滤，调研 2026-11-01）已移除；
                     // 首个内容块顶距取原「搜索胶囊顶距 8 + 胶囊 48 + 间距 36」的剩余节奏

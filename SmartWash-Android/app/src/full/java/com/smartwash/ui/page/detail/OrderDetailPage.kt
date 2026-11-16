@@ -647,7 +647,6 @@ private fun DrumIllustration() {
             cubicTo(58f * unit, 72.5f * unit, 62f * unit, 77f * unit, 66f * unit, 74f * unit)
         }
         drawPath(wave, color = brand, style = Stroke(width = 2.2f * unit, cap = StrokeCap.Round))
-        // 高光两点
         drawCircle(highlight, radius = 2.6f * unit, center = Offset(51f * unit, 66f * unit))
         drawCircle(highlight, radius = 2.2f * unit, center = Offset(70f * unit, 87f * unit))
     }

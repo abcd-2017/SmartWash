@@ -127,7 +127,6 @@ struct OrderDetail {
         showToastSafety(res.message, resString('order_detail_2'))
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
       this.loadFailed = true
       showToastSafety(resString('order_detail_3'))
     } finally {
@@ -550,9 +549,6 @@ struct OrderDetail {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack({ alignContent: Alignment.TopStart }) {
         Column() {
@@ -619,7 +615,6 @@ struct OrderDetail {
         }
         .width("100%")
         .height("100%")
-        // 沉浸式：内容避让状态栏（背景延伸）
         .padding({ top: safeTopVp() })
         .backgroundColor($r('app.color.BACKGROUND'))
         // 骨架↔内容 Crossfade 近似（对齐安卓 Crossfade 300ms）：加载态整列淡隐 + 禁命中，
@@ -628,7 +623,6 @@ struct OrderDetail {
         .animation({ duration: 300, curve: Curve.EaseInOut })
         .enabled(!this.isLoading)
 
-        // 加载态
         if (this.isLoading) {
           // 加载态（对齐安卓 LoadingState：骨架屏，§3.6 禁转圈）
           LoadingState()
@@ -706,7 +700,6 @@ export struct PickupCodeDialog {
     try {
       vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 忽略不支持的设备
     }
     const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, this.pickupCode)
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {

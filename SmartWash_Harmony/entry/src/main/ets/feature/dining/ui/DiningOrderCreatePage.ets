@@ -34,17 +34,15 @@ import { DiningText } from '../DiningText'
 import { DiningCheckbox } from './DiningUiCommon'
 import { DiningOrderCreateParam, DiningOrderShareParam } from '../api'
 import { AppButton, EmptyState, SkeletonList } from '../../../view/common/AppComponents'
+import { LoadingFooter } from '../../../view/LoadingFooter'
 import { logger } from '../../../utils/Logger'
+import { LazyListDataSource, PagingController } from '../../../utils/PagingUtil'
 import { getObjectParam, pathStack } from '../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
-/** 日志 TAG */
 const TAG: string = 'diningOrderCreate'
-
-/** 菜谱分页防御上限（对齐 Android 创建页全量拉取 100 页防御） */
-const PAGE_LIMIT: number = 100
 
 @Builder
 export function DiningOrderCreateBuilder() {
@@ -71,8 +69,22 @@ struct DiningOrderCreatePage {
   // 复用模式：源单只读回显
   @Local reuseSections: Array<DiningMenuSection> = []
   @Local reuseRecipeCount: number = 0
-  // 常规模式：分类筛选后的分页拉满进行中
-  private loadingRecipes: boolean = false
+  // 常规模式：触底加载更多态 / 追加失败态（驱动列表 footer）
+  @Local isLoadingMore: boolean = false
+  @Local appendError: boolean = false
+  /** LazyForEach 数据源（读取 recipes，实例稳定不可重建，避免整表重建） */
+  private dataSource: LazyListDataSource<DiningRecipeVo> =
+    new LazyListDataSource<DiningRecipeVo>(() => this.recipes)
+  /** 轻量分页封装：首屏第 1 页 + 触底加载 / 上锁防重 / 封底与失败重试 */
+  private paging: PagingController = new PagingController(
+    (page: number): Promise<boolean> => {
+      return this.fetchRecipePage(page)
+    },
+    (loading: boolean): void => {
+      this.isLoadingMore = loading
+    }
+  )
+  /** 筛选切换序号：过期响应整体丢弃，避免旧分类结果污染新列表 */
   private recipeSeq: number = 0
 
   async aboutToAppear(): Promise<void> {
@@ -148,51 +160,74 @@ struct DiningOrderCreatePage {
     .hideTitleBar(true)
   }
 
-  /** 表单体：标题输入 →（复用提示 | 分类+菜品列表）→ 底部 CTA */
+  /** 标题输入（TextInput 单行；占位与标签对齐安卓 dining_order_create_* 文案） */
+  @Builder
+  TitleInput() {
+    Text(DiningText.dining_order_create_title_label)
+      .fontSize(DesignFontSize.BODY_SMALL)
+      .fontWeight(DesignFontWeight.MEDIUM)
+      .fontColor($r('app.color.TEXT_PRIMARY'))
+      .width('100%')
+    TextInput({ text: this.titleInput, placeholder: DiningText.dining_order_create_title_hint })
+      .placeholderColor($r('app.color.TEXT_TERTIARY'))
+      .placeholderFont({ size: DesignFontSize.BODY })
+      .caretColor($r('app.color.PRIMARY'))
+      .backgroundColor($r('app.color.SURFACE_VARIANT'))
+      .borderRadius(DesignDimens.INPUT_RADIUS)
+      .fontSize(DesignFontSize.BODY)
+      .fontColor($r('app.color.TEXT_PRIMARY'))
+      .maxLength(64)
+      .width('100%')
+      .height(48)
+      .margin({ top: DesignDimens.SPACE_XS })
+      .onChange((value: string) => {
+        this.titleInput = value
+      })
+  }
+
+  /** 表单体：标题输入 →（复用提示+只读菜单 | 分类+菜品列表）→ 底部 CTA */
   @Builder
   FormBody() {
     Column() {
-      Scroll() {
+      if (this.isReuseMode) {
+        // 复用模式：源单菜单只读且可能较长，整体滚动（视觉与改造前一致）
+        Scroll() {
+          Column() {
+            this.TitleInput()
+            this.ReuseHint()
+            this.ReuseMenu()
+            Column() {
+            }
+            .height(DesignDimens.SPACE_MD)
+          }
+          .width('100%')
+          .padding({
+            left: DesignDimens.PAGE_PADDING,
+            right: DesignDimens.PAGE_PADDING,
+            top: DesignDimens.SPACE_SM,
+            bottom: DesignDimens.SPACE_MD
+          })
+        }
+        .scrollBar(BarState.Off)
+        .layoutWeight(1)
+        .align(Alignment.TopStart)
+        .edgeEffect(EdgeEffect.Spring)
+      } else {
+        // 固定头部：标题输入 + 菜单标签 + 分类 chips + 已选计数（不随列表滚动）
         Column() {
-          // 标题输入（ TextInput 单行；占位与标签对齐安卓 dining_order_create_* 文案）
-          Text(DiningText.dining_order_create_title_label)
+          this.TitleInput()
+          Text(DiningText.dining_order_create_menu_label)
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor($r('app.color.TEXT_PRIMARY'))
             .width('100%')
-          TextInput({ text: this.titleInput, placeholder: DiningText.dining_order_create_title_hint })
-            .placeholderColor($r('app.color.TEXT_TERTIARY'))
-            .placeholderFont({ size: DesignFontSize.BODY })
-            .caretColor($r('app.color.PRIMARY'))
-            .backgroundColor($r('app.color.SURFACE_VARIANT'))
-            .borderRadius(DesignDimens.INPUT_RADIUS)
-            .fontSize(DesignFontSize.BODY)
-            .fontColor($r('app.color.TEXT_PRIMARY'))
-            .maxLength(64)
+            .margin({ top: DesignDimens.SPACE_MD })
+          this.CategoryChips()
+          Text(DiningText.selectedCount(this.selectedIds.length))
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .width('100%')
-            .height(48)
-            .margin({ top: DesignDimens.SPACE_XS })
-            .onChange((value: string) => {
-              this.titleInput = value
-            })
-
-          if (this.isReuseMode) {
-            this.ReuseHint()
-            this.ReuseMenu()
-          } else {
-            Text(DiningText.dining_order_create_menu_label)
-              .fontSize(DesignFontSize.BODY_SMALL)
-              .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor($r('app.color.TEXT_PRIMARY'))
-              .width('100%')
-              .margin({ top: DesignDimens.SPACE_MD })
-            this.CategoryChips()
-            this.RecipeList()
-          }
-
-          Column() {
-          }
-          .height(DesignDimens.SPACE_MD)
+            .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XS })
         }
         .width('100%')
         .padding({
@@ -201,11 +236,48 @@ struct DiningOrderCreatePage {
           top: DesignDimens.SPACE_SM,
           bottom: DesignDimens.SPACE_MD
         })
+
+        // 菜品列表（List + LazyForEach 懒加载；首屏第 1 页，触底按需加载更多）
+        List({ space: DesignDimens.SPACE_XS }) {
+          if (this.recipes.length === 0) {
+            ListItem() {
+              Text(DiningText.dining_recipe_list_empty_filtered)
+                .fontSize(DesignFontSize.BODY)
+                .fontColor($r('app.color.TEXT_SECONDARY'))
+                .width('100%')
+                .padding({ top: DesignDimens.SPACE_XL, bottom: DesignDimens.SPACE_XL })
+            }
+          }
+
+          LazyForEach(this.dataSource, (recipe: DiningRecipeVo) => {
+            ListItem() {
+              this.RecipeRow(recipe)
+            }
+          // 键含勾选状态指纹：勾选变化若键不变，LazyForEach 复用旧子组件导致勾选框不刷新
+          }, (recipe: DiningRecipeVo) => `recipe_${recipe.id}_${this.selectedIds.indexOf(recipe.id) >= 0 ? 1 : 0}`)
+
+          ListItem() {
+            this.ListFooter()
+          }
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .scrollBar(BarState.Off)
+        .edgeEffect(EdgeEffect.Spring)
+        .padding({
+          left: DesignDimens.PAGE_PADDING,
+          right: DesignDimens.PAGE_PADDING,
+          bottom: DesignDimens.SPACE_MD
+        })
+        .onScrollIndex((start: number, end: number) => {
+          // listLength 为 ListItem 真实数量（菜品行 + footer）
+          this.paging.onScrollIndex(end, this.dataSource.totalCount() + 1)
+        })
+        .onScrollFrameBegin((offset: number) => {
+          this.paging.onScrollFrameBegin(offset)
+          return { offsetRemain: offset }
+        })
       }
-      .scrollBar(BarState.Off)
-      .layoutWeight(1)
-      .align(Alignment.TopStart)
-      .edgeEffect(EdgeEffect.Spring)
 
       // 底部 CTA（复用模式只校验标题；常规模式校验标题+菜单）
       AppButton({
@@ -223,6 +295,31 @@ struct DiningOrderCreatePage {
     }
     .width('100%')
     .layoutWeight(1)
+  }
+
+  /** 列表 footer：加载更多 spinner / 失败重试 / 已全部加载 */
+  @Builder
+  ListFooter() {
+    if (this.isLoadingMore) {
+      LoadingFooter({ isLoading: true })
+    } else if (this.appendError) {
+      Text(DiningText.dining_order_create_load_failed)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor($r('app.color.DANGER_INK'))
+        .width('100%')
+        .textAlign(TextAlign.Center)
+        .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
+        .onClick(() => {
+          this.paging.retry()
+        })
+    } else if (this.recipes.length > 0) {
+      Text(DiningText.dining_load_all_loaded)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor($r('app.color.TEXT_TERTIARY'))
+        .width('100%')
+        .textAlign(TextAlign.Center)
+        .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
+    }
   }
 
   /** 复用提示条（浅绿胶囊提示历史菜单按原单复制不可修改） */
@@ -317,31 +414,6 @@ struct DiningOrderCreatePage {
     })
   }
 
-  /** 菜品列表（当前分类筛选；勾选行 + 已选计数） */
-  @Builder
-  RecipeList() {
-    Column({ space: DesignDimens.SPACE_XS }) {
-      Text(DiningText.selectedCount(this.selectedIds.length))
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor($r('app.color.TEXT_SECONDARY'))
-        .width('100%')
-        .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XS })
-
-      if (this.recipes.length === 0) {
-        Text(DiningText.dining_recipe_list_empty_filtered)
-          .fontSize(DesignFontSize.BODY)
-          .fontColor($r('app.color.TEXT_SECONDARY'))
-          .width('100%')
-          .padding({ top: DesignDimens.SPACE_XL, bottom: DesignDimens.SPACE_XL })
-      }
-      ForEach(this.recipes, (recipe: DiningRecipeVo) => {
-        this.RecipeRow(recipe)
-      }, (recipe: DiningRecipeVo) => `recipe_${recipe.id}_${this.selectedIds.indexOf(recipe.id) >= 0 ? 1 : 0}`)
-    }
-    .width('100%')
-    .margin({ top: DesignDimens.SPACE_XS })
-  }
-
   /** 菜品行：勾选框 + 菜名 + 食材数 */
   @Builder
   RecipeRow(recipe: DiningRecipeVo) {
@@ -398,43 +470,67 @@ struct DiningOrderCreatePage {
     await this.reloadRecipes()
   }
 
-  /** 按当前分类重拉菜谱（分页循环取满：新菜谱在前；防御上限 100 页） */
+  /**
+   * 按当前分类重拉菜谱首屏（重置分页到第 1 页，整体替换数据源）。
+   * 触底加载由 PagingController 驱动 fetchRecipePage(page>1)。
+   */
   private async reloadRecipes(): Promise<void> {
     this.recipeSeq++
-    const seq = this.recipeSeq
+    this.paging.reset()
     this.recipes = []
-    this.loadingRecipes = true
+    this.appendError = false
+    this.dataSource.notifyReload()
+    await this.fetchRecipePage(1)
+  }
+
+  /**
+   * 按页拉取菜谱（PagingController 触底追加；第 1 页整体替换）。
+   * @returns 本页是否有数据（供 PagingController 判断是否封底）
+   */
+  private async fetchRecipePage(page: number): Promise<boolean> {
+    const seq = this.recipeSeq
     try {
-      let page = 1
-      while (page <= PAGE_LIMIT) {
-        const res = await getDiningRecipes(page, DINING_PAGE_SIZE, this.selectedCategoryId, '')
-        if (seq !== this.recipeSeq) {
-          return // 筛选已切换，过期响应整体丢弃
-        }
-        if (res.code !== BizCode.SUCCESS || res.data === null) {
-          logger.warn(TAG, `菜谱加载失败 page=${page} code=${res.code}`)
-          showToastSafety(res.message, DiningText.dining_order_create_load_failed)
-          if (this.recipes.length === 0) {
-            this.isError = true
-            this.loadErrorMessage = DiningText.dining_order_create_load_failed
-          }
-          return
-        }
-        this.recipes = this.recipes.concat(res.data.records)
-        if (res.data.records.length < DINING_PAGE_SIZE) {
-          break
-        }
-        page++
+      const res = await getDiningRecipes(page, DINING_PAGE_SIZE, this.selectedCategoryId, '')
+      if (seq !== this.recipeSeq) {
+        return false // 筛选已切换，过期响应整体丢弃
       }
+      if (res.code !== BizCode.SUCCESS || res.data === null) {
+        logger.warn(TAG, `菜谱分页未生效 page=${page} code=${res.code} message=${res.message ?? ''}`)
+        if (page === 1) {
+          this.isError = true
+          this.loadErrorMessage = DiningText.dining_order_create_load_failed
+          showToastSafety(res.message, DiningText.dining_order_create_load_failed)
+          return false
+        }
+        this.appendError = true
+        // 抛出以便 PagingController 记录失败页，footer 提供重试
+        throw new Error(`菜谱第 ${page} 页加载失败`)
+      }
+      const records = res.data.records
+      if (page === 1) {
+        this.recipes = records
+        this.dataSource.notifyReload()
+      } else if (records.length > 0) {
+        const startIndex: number = this.recipes.length
+        this.recipes = this.recipes.concat(records)
+        this.dataSource.notifyAppend(startIndex, records.length)
+      }
+      this.appendError = false
+      logger.debug(TAG, `菜谱分页加载成功 page=${page} count=${records.length} total=${res.data.total}`)
+      return records.length > 0
     } catch (err) {
-      logger.error(TAG, '菜谱加载异常', err instanceof Error ? err.message : '')
-      showToastSafety('', DiningText.dining_order_create_load_failed)
-      if (this.recipes.length === 0) {
+      if (seq !== this.recipeSeq) {
+        return false
+      }
+      logger.error(TAG, `菜谱分页加载异常 page=${page}`, err instanceof Error ? err.message : '')
+      if (page === 1) {
         this.isError = true
         this.loadErrorMessage = DiningText.dining_order_create_load_failed
+        showToastSafety('', DiningText.dining_order_create_load_failed)
+        return false
       }
-    } finally {
-      this.loadingRecipes = false
+      this.appendError = true
+      throw new Error(err instanceof Error ? err.message : '菜谱加载失败')
     }
   }
 

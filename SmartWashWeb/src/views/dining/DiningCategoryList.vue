@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="分类名称">
@@ -22,7 +21,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -81,7 +79,6 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增菜谱分类' : '编辑菜谱分类'"
       v-model="dialogVisible"
@@ -132,7 +129,6 @@ const dialogType = ref('create');
 const submitting = ref(false); // 确认按钮 loading，防连点
 const deletingId = ref(null); // 行内删除按钮 loading，防连点
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: categoryList,
   total,
@@ -182,13 +178,10 @@ const invalidateCategoryCache = () => {
   diningCategoryOptionsCache.invalidate();
 };
 
-// ---------- 初始化与弹窗 ----------
-
 onMounted(() => {
   fetchData();
 });
 
-// 打开新增弹窗
 const handleCreate = () => {
   dialogType.value = 'create';
   dialogVisible.value = true;
@@ -199,14 +192,12 @@ const handleCreate = () => {
   });
 };
 
-// 打开编辑弹窗
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
   Object.assign(tempCategory, { ...row });
 };
 
-// 弹窗关闭 — 清除验证状态
 const handleDialogClosed = () => {
   formRef.value?.resetFields();
   formRef.value?.clearValidate();
@@ -266,7 +257,7 @@ const handleDelete = async (row) => {
     logger.info('菜谱分类删除成功', `id=${row.id}`, `name=${row.name}`);
     ElMessage.success('删除成功');
     invalidateCategoryCache();
-    fetchData(); // 刷新当前页
+    fetchData();
   } catch (error) {
     logger.error('菜谱分类删除失败:', `id=${row.id}`, `name=${row.name}`, error);
     // 引用冲突（如「分类「家常菜」已被 3 个菜谱引用，无法删除」）与普通失败统一透出后端 message
@@ -283,7 +274,6 @@ const handleDelete = async (row) => {
   font-weight: 500;
 }
 
-/* 开关同行的行内说明 */
 .form-tip-inline {
   margin-left: 8px;
   font-size: 12px;

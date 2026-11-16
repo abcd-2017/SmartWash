@@ -493,7 +493,6 @@ private fun OrderRow(
             iconTint = foreground
         )
         Spacer(modifier = Modifier.width(4.dp))
-        // 主体信息
         Column(modifier = Modifier.weight(1f)) {
             // 状态角标胶囊（设计稿 badge：24dp 高、radiusFull、底色/文字成对取语义色）
             val (badgeContainer, badgeContent) = when (order.status) {

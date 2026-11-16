@@ -75,7 +75,6 @@ struct SubscriptionEditPage {
   @State cancelUrl: string = ''
   @State cancelSteps: string = ''
   @State note: string = ''
-  // ---------- 状态 ----------
   @State isLoadingDetail: boolean = false
   @State isLoadError: boolean = false
   @State isSubmitting: boolean = false
@@ -266,7 +265,6 @@ struct SubscriptionEditPage {
     }
   }
 
-  // ========== 日期选择弹窗控制器 ==========
   // 控制器必须由结构体字段持有（与 Setting.ets / DivCastPage.ets 同款）：
   // 在方法内临时 new 的控制器，框架不会把 controller 注入弹窗内容实例，
   // 弹窗内 this.controller 为 undefined，点击「确定」即抛
@@ -364,9 +362,6 @@ struct SubscriptionEditPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         SubscriptionPageHeader({
@@ -401,7 +396,6 @@ struct SubscriptionEditPage {
           Scroll() {
             Column() {
               Column() {
-                // ---------- 名称 ----------
                 this.FormLabel(SubscriptionText.subscription_form_name_label)
                 TextInput({ text: this.name, placeholder: SubscriptionText.subscription_form_name_hint })
                   .height(48)
@@ -423,7 +417,6 @@ struct SubscriptionEditPage {
 
                 Column().height(DesignDimens.SPACE_LG)
 
-                // ---------- 每期金额 ----------
                 this.FormLabel(SubscriptionText.subscription_form_amount_label)
                 TextInput({ text: this.amount, placeholder: SubscriptionText.subscription_form_amount_hint })
                   .height(48)
@@ -448,7 +441,6 @@ struct SubscriptionEditPage {
 
                 Column().height(DesignDimens.SPACE_LG)
 
-                // ---------- 计费周期 ----------
                 this.FormLabel(SubscriptionText.subscription_form_cycle_label)
                 Row({ space: DesignDimens.SPACE_XS }) {
                   SubscriptionSelectableChip({
@@ -469,7 +461,6 @@ struct SubscriptionEditPage {
 
                 Column().height(DesignDimens.SPACE_LG)
 
-                // ---------- 间隔期数 ----------
                 this.FormLabel(SubscriptionText.subscription_form_interval_label)
                 TextInput({ text: this.interval, placeholder: '1' })
                   .height(48)
@@ -500,7 +491,6 @@ struct SubscriptionEditPage {
 
                 Column().height(DesignDimens.SPACE_LG)
 
-                // ---------- 下次续费日 ----------
                 this.FormLabel(SubscriptionText.subscription_form_next_renew_label)
                 AppButton({
                   text: this.nextRenewDate.length > 0
@@ -549,7 +539,6 @@ struct SubscriptionEditPage {
 
                 Column().height(DesignDimens.SPACE_LG)
 
-                // ---------- 自动续费 ----------
                 Row() {
                   Column() {
                     Text(SubscriptionText.subscription_form_auto_renew_label)
@@ -576,7 +565,6 @@ struct SubscriptionEditPage {
 
                 Column().height(DesignDimens.SPACE_LG)
 
-                // ---------- 提醒提前天数 ----------
                 this.FormLabel(SubscriptionText.subscription_form_remind_label)
                 TextInput({ text: this.remindDays, placeholder: '3' })
                   .height(48)
@@ -605,7 +593,6 @@ struct SubscriptionEditPage {
 
                 Column().height(DesignDimens.SPACE_LG)
 
-                // ---------- 取消网址 ----------
                 this.FormLabel(SubscriptionText.subscription_form_cancel_url_label)
                 TextInput({ text: this.cancelUrl, placeholder: SubscriptionText.subscription_form_cancel_url_hint })
                   .height(48)
@@ -664,7 +651,6 @@ struct SubscriptionEditPage {
 
                 Column().height(DesignDimens.SPACE_LG)
 
-                // ---------- 取消步骤备忘 ----------
                 // 多行可换行输入（对齐安卓 minLines=2/maxLines=5，audit-14 #8）：TextArea 自适应高度，
                 // minHeight 96 兜底 2 行起点，maxLines 5 封顶内部滚动；描边/圆角/聚焦样式同单行档
                 this.FormLabel(SubscriptionText.subscription_form_cancel_steps_label)
@@ -690,7 +676,6 @@ struct SubscriptionEditPage {
 
                 Column().height(DesignDimens.SPACE_LG)
 
-                // ---------- 备注 ----------
                 this.FormLabel(SubscriptionText.subscription_form_note_label)
                 TextArea({ text: this.note, placeholder: SubscriptionText.subscription_form_note_hint })
                   // TextArea 高度默认自适应内容（SDK 17 无 autoHeight 属性，编译核实）

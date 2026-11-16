@@ -62,7 +62,6 @@ const DRUM_PRESETS: DrumPreset[] = [
   ]),
 ]
 
-/** 页面文案 */
 class DrumText {
   static get title(): string { return resString('lab_toy_drum') }
   static readonly bpmLabel: string = 'BPM'
@@ -91,7 +90,6 @@ class DrumText {
   static get voiceCymbal(): string { return resString('lab_drum_voice_cymbal') }
 }
 
-/** 节奏型数量 */
 const PATTERN_COUNT: number = 4
 
 /** 步进格宽（vp） */
@@ -262,7 +260,6 @@ export struct DrumPage {
     ctx.fillStyle = resColor('PRIMARY')
     this.roundRect(0, trackY - trackHeight / 2, width * fraction, trackHeight, trackHeight / 2)
     ctx.fill()
-    // 拇指
     const thumbX: number = width * fraction
     const thumbR: number = 10
     ctx.fillStyle = resColor('SURFACE')
@@ -576,9 +573,6 @@ export struct DrumPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，滑杆画布 onAreaChange/onReady 重绘与资源色直读点
-      // 静态令牌直读点重读新值（静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets；
       // 音频引擎（aboutToAppear 初始化 + setStepListener）保持在宿主之外，页面组件本体不在子树内）
       ThemeRefreshV2() {
       Column() {

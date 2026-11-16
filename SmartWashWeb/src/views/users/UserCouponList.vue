@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="手机号">
@@ -37,7 +36,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -118,7 +116,7 @@ import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 
-const couponOptions = ref([]); // 优惠券选项
+const couponOptions = ref([]);
 const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
 
 // 使用状态三态展示（评审 P1）：已过期未使用的券此前被渲染成绿色「未使用」，
@@ -138,7 +136,6 @@ const userCouponStatusTagType = (row) => {
   return 'success';
 };
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: couponList,
   total,
@@ -164,13 +161,11 @@ const {
   errorMsg: '获取数据失败',
 });
 
-// 初始化数据
 onMounted(async () => {
   await fetchCoupons();
   fetchData();
 });
 
-// 获取优惠券列表
 const fetchCoupons = async () => {
   try {
     const res = await getCouponList();
@@ -182,7 +177,6 @@ const fetchCoupons = async () => {
   }
 };
 
-// 删除记录
 const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）；
   // 文案带对象标识（券名 + 手机号），误删时无从核对的问题收敛

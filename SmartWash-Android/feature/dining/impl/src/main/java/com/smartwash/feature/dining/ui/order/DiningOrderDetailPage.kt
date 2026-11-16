@@ -81,7 +81,6 @@ import kotlinx.coroutines.launch
 /** 左栏宽度（分类名短词为主，84dp 兼顾两行折行） */
 private val RAIL_WIDTH = 84.dp
 
-/** 菜品封面缩略图尺寸 */
 private val DISH_COVER_SIZE = 56.dp
 
 /**
@@ -112,7 +111,6 @@ fun DiningOrderDetailPage(
     val message by viewModel.message.collectAsState()
     val finishState by viewModel.finishState.collectAsState()
 
-    // 首载（返回本页经 LaunchedEffect(Unit) 不重放；失败重试显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
 
     // 结束点单结果（成功进购买清单结果页并弹掉本页；失败 Toast 提示后可重试）

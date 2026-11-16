@@ -72,10 +72,8 @@ import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.feature.coupon.CouponStatus
 import com.smartwash.feature.coupon.ui.coupon.TicketShape
 
-/** 领券进行中圆环直径 */
 private val ClaimingRingSize = 14.dp
 
-/** 领券进行中圆环描边宽 */
 private val ClaimingRingStroke = 2.dp
 
 @Composable

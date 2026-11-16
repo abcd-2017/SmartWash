@@ -129,7 +129,6 @@ fun SettingPage(
         ) {
             PageHeader(title = stringResource(R.string.settings), onBack = { navController.navigateUp() })
 
-            // 观象台
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.divination),
@@ -199,7 +198,6 @@ fun SettingPage(
                 )
             }
 
-            // 其他
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.other),

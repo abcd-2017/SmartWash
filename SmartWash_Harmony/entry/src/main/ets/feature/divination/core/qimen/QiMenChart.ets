@@ -13,7 +13,6 @@ import { DiZhi, GanZhi, SiZhu } from '../GanZhi';
 import { Solar } from '../lunar/lunar';
 import { LunarAdapter } from '../LunarAdapter';
 
-/** 三奇六仪 */
 const SAN_QI_LIU_YI: string[] = ['戊', '己', '庚', '辛', '壬', '癸', '丁', '丙', '乙'];
 
 /** 洛书飞宫顺序（不含中宫5） */
@@ -68,17 +67,12 @@ export class QiMenChart {
   readonly siZhu: SiZhu;
   /** 最近节气（定局依据） */
   readonly jieQiName: string;
-  /** "阴遁" / "阳遁" */
   readonly yinYang: string;
-  /** 局数 1..9 */
   readonly juNumber: number;
-  /** 上元 / 中元 / 下元 */
   readonly yuan: string;
   /** 旬首六仪（时柱旬） */
   readonly xunShouYi: string;
-  /** 地盘干：宫 → 干 */
   readonly diPan: Map<number, string>;
-  /** 天盘干：宫 → 干 */
   readonly tianPan: Map<number, string>;
   /** 九星（坤二宫寄宫记"禽芮"，中宫空） */
   readonly jiuXing: Map<number, string>;
@@ -86,15 +80,12 @@ export class QiMenChart {
   readonly baMen: Map<number, string>;
   /** 八神（中宫无神） */
   readonly baShen: Map<number, string>;
-  /** 暗干 */
   readonly anGan: Map<number, string>;
-  /** 值符星 */
   readonly zhiFuXing: string;
   /** 值符落宫（转动后，即时干落宫） */
   readonly zhiFuLuoGong: number;
   /** 值符原宫（旬首六仪地盘宫） */
   readonly zhiFuYuanGong: number;
-  /** 值使门 */
   readonly zhiShiMen: string;
   /** 值使门落宫（显示宫，中五寄坤二） */
   readonly zhiShiGong: number;
@@ -104,9 +95,7 @@ export class QiMenChart {
   readonly kongWangZhi: string[];
   /** 空亡宫 */
   readonly kongWangGong: number[];
-  /** 驿马地支 */
   readonly maZhi: string;
-  /** 驿马宫 */
   readonly maGong: number;
 
   constructor(siZhu: SiZhu, jieQiName: string, yinYang: string, juNumber: number, yuan: string,

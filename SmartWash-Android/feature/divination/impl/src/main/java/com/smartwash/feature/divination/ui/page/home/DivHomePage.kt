@@ -137,7 +137,6 @@ fun DivHomePage(
                 modifier = Modifier.padding(top = 6.dp),
             )
         }
-        // 罗盘
         Box(
             Modifier
                 .fillMaxWidth()
@@ -181,7 +180,6 @@ fun DivHomePage(
             }
         }
 
-        // 今日一签
         val sign = uiState.todaySign
         if (sign != null) {
             // 保存中（audit-11 #6）：禁用点击防重复提交 + 尾缀省略号作轻量 loading 反馈，
@@ -226,7 +224,6 @@ fun DivHomePage(
             }
         }
 
-        // 案卷
         DivSectionTitle(
             title = stringResource(R.string.div_home_ledger),
             tail = stringResource(R.string.div_home_ledger_more),

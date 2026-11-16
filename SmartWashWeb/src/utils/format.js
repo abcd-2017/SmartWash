@@ -2,7 +2,6 @@
 // 通用格式化工具（评审 #13：收敛 11 个列表页逐字重复的 formatTime）
 import dayjs from 'dayjs';
 
-// 默认时间格式
 export const DEFAULT_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
 /**

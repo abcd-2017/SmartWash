@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
  */
 public final class LogMasker {
 
-    /** 敏感值统一掩码占位符 */
     public static final String MASK = "***";
 
     /** 默认敏感字段清单（全小写小写归一化形式）。code 为验证码字段（UserRegisterFrom/ResetPasswordFrom 的 code） */
@@ -54,7 +53,6 @@ public final class LogMasker {
     /** 掩码后的字段集合（已归一化），contains 语义匹配 */
     private final Set<String> sensitiveFields;
 
-    /** 默认清单构造 */
     public LogMasker() {
         this(null);
     }

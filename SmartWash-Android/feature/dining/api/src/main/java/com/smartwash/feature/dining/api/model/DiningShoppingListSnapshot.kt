@@ -25,7 +25,6 @@ data class DiningShoppingListSnapshot(
     /** 按菜视图条目：一道菜及其全部选菜人 */
     @Keep
     data class RecipeView(
-        /** 菜名 */
         val recipeName: String? = null,
         /** 选菜人列表（按勾选顺序） */
         val selectors: List<SelectorView>? = null,
@@ -37,7 +36,6 @@ data class DiningShoppingListSnapshot(
     /** 选菜人条目：谁选的 + 个人备注 */
     @Keep
     data class SelectorView(
-        /** 选菜人用户 ID */
         val userId: Long? = null,
         /** 个人备注（如 不要辣），可空 */
         val note: String? = null,

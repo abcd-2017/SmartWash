@@ -61,7 +61,6 @@ public class FsrsScheduler {
     private static final double MIN_DIFFICULTY = 1.0;
     private static final double MAX_DIFFICULTY = 10.0;
 
-    /** 一天的秒数 */
     private static final long SECONDS_PER_DAY = 86400L;
 
     /** fuzz 抖动区间，对齐 py-fsrs FUZZ_RANGES（end=inf 表示上不封顶） */
@@ -185,7 +184,6 @@ public class FsrsScheduler {
         return Math.pow(1.0 + factor * elapsedDays / card.getStability(), decay);
     }
 
-    // ==================== 三态处理 ====================
 
     /** Learning 态：分钟级短步长，走完最后一步或 Easy 进 Review */
     private long reviewLearning(FsrsCard c, FsrsRating rating, Long daysSince, LocalDateTime now) {
@@ -387,7 +385,6 @@ public class FsrsScheduler {
         return (int) Math.max(1, Math.min(days, maximumInterval));
     }
 
-    // ==================== 内部工具 ====================
 
     private void toReviewState(FsrsCard c) {
         c.setState(FsrsState.REVIEW);

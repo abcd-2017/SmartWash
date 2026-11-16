@@ -114,7 +114,6 @@ function errorCorrectPolynomial(errorCount: number): QrPolynomial {
   return poly
 }
 
-// ==================== 位缓冲 ====================
 
 class QrBitBuffer {
   readonly buffer: Array<number> = []
@@ -254,7 +253,6 @@ function maskFn(pattern: number, i: number, j: number): boolean {
   return (((i * j) % 3) + ((i + j) % 2)) % 2 === 0
 }
 
-// ==================== 编码结果与码字生成 ====================
 
 export interface QrMatrixResult {
   /** modules[行][列]，true = 暗 */
@@ -326,7 +324,6 @@ function createCodeWords(buffer: QrBitBuffer, rsBlocks: Array<QrRsBlock>): Array
   return data
 }
 
-// ==================== 矩阵构建 ====================
 
 class QrModel {
   readonly typeNumber: number

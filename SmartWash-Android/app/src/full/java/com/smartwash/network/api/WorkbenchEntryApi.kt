@@ -28,7 +28,6 @@ data class WorkbenchEntryVo(
     /** 业务唯一标识，端上兜底列表对齐用（兼作列表稳定 key） */
     val entryKey: String = "",
 
-    /** 入口标题 */
     val title: String = "",
 
     /** 副标题描述（后端 DEFAULT NULL，空文案如实下发 null，端上映射层兜底空串） */

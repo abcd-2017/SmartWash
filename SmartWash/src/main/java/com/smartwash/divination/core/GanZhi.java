@@ -8,25 +8,20 @@ public final class GanZhi {
 
     private GanZhi() {}
 
-    /** 十天干 */
     public static final String[] TIANGAN = {
             "甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"
     };
 
-    /** 十二地支 */
     public static final String[] DIZHI = {
             "子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"
     };
 
-    /** 五行 */
     public static final String[] WUXING = {"木", "火", "土", "金", "水"};
 
-    /** 天干对应五行 */
     public static final String[] TIANGAN_WUXING = {
             "木", "木", "火", "火", "土", "土", "金", "金", "水", "水"
     };
 
-    /** 地支对应五行 */
     public static final String[] DIZHI_WUXING = {
             "水", "土", "木", "木", "土", "火", "火", "土", "金", "金", "土", "水"
     };
@@ -36,7 +31,6 @@ public final class GanZhi {
             "乾", "兑", "离", "震", "巽", "坎", "艮", "坤"
     };
 
-    /** 八卦对应五行 */
     public static final String[] BAGUA_WUXING = {
             "金", "金", "火", "木", "木", "水", "土", "土"
     };

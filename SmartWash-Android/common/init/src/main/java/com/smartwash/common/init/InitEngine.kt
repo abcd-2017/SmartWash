@@ -38,7 +38,6 @@ class InitEngine(
     val report: StateFlow<InitReport?> = _report.asStateFlow()
 
     /**
-     * 执行全部初始化任务。
      * 阻塞任务全部成功后即返回；非阻塞任务已在后台启动。
      */
     suspend fun executeAll() {
@@ -154,12 +153,10 @@ class InitEngine(
     }
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 LogCore 统一拼接） */
         const val TAG = "InitEngine"
     }
 }
 
-// ========== 状态与结果 ==========
 
 sealed class InitProgress {
     data object Idle : InitProgress()

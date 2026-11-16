@@ -38,7 +38,6 @@ public class LoginLog implements Serializable {
     /** 项目渠道：full/lite/unknown（同一 Android 工程的两个 product flavor） */
     private String appChannel;
 
-    /** App 版本号 */
     private String appVersion;
 
     /** User-Agent（截断至 500 字符） */

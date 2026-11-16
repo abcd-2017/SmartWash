@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="状态">
@@ -72,7 +71,6 @@
       <p class="summary-card__note">统计范围为全部订阅，不随下方筛选变化</p>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -169,7 +167,6 @@ const isOverdue = (row) =>
   !!row.nextRenewDate &&
   dayjs(row.nextRenewDate).isBefore(dayjs(), 'day');
 
-// 列表查询：分页/搜索/翻页统一由 useTableList 承载。
 // 后端 AdminSearchSubscriptionFrom 继承 BaseSearchFrom（page/size），与仓库其他列表分页参数一致
 const {
   list,
@@ -201,7 +198,6 @@ const {
 // 日期范围双向绑定（dateFrom/dateTo 直传 yyyy-MM-dd，后端 DATE 字段无需时分秒边界）
 const dateRange = useTimeRange(listQuery, 'dateFrom', 'dateTo');
 
-// ---------- 订阅汇总 ----------
 const summary = reactive({
   activeCount: 0,
   expiredCount: 0,
@@ -310,7 +306,6 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
-/* 状态列：状态标签 + 已逾期弱化标识换行排布 */
 .status-cell {
   display: flex;
   align-items: center;

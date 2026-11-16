@@ -4,9 +4,6 @@ import com.smartwash.from.BaseSearchFrom;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 管理端成绩分页查询 DTO。
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class GameScoreSearchFrom extends BaseSearchFrom {

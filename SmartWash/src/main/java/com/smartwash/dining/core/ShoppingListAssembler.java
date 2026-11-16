@@ -41,8 +41,6 @@ public final class ShoppingListAssembler {
     }
 
     /**
-     * 聚合购买清单。
-     *
      * @param recipes    本单菜单对应菜谱（顺序即菜单编排序，按菜视图沿用该顺序）
      * @param selections 全部选菜记录
      * @return 食材名并集去重（保序）+ 按菜视图（仅含被勾选过的菜）

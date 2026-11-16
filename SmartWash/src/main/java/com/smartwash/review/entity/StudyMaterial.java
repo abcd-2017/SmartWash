@@ -28,7 +28,6 @@ public class StudyMaterial implements Serializable {
 
     private String title;
 
-    /** 粘贴的原文 */
     private String rawText;
 
     private LocalDateTime createdAt;

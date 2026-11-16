@@ -178,7 +178,6 @@ struct ChangePassword {
         showToastSafety(res.message, resString('change_password_2'))
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw（401 已由网络层统一清理并跳登录）
       showToastSafety(resString('change_password_3'))
     } finally {
       this.submitting = false
@@ -200,9 +199,6 @@ struct ChangePassword {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 公共页头 — 22/600 标题 + 48dp 返回热区

@@ -28,9 +28,6 @@ import retrofit2.http.Query
  * 对外服务契约见 com.smartwash.feature.user.api.UserApi（UserApiImpl 经本接口取数）。
  */
 interface UserAccountApi {
-    /**
-     * 根据手机号获取验证码
-     */
     @GET("/auth/user/captcha/{phoneNumber}")
     suspend fun getCaptcha(
         @Path("phoneNumber") phoneNumber: String,
@@ -71,18 +68,12 @@ interface UserAccountApi {
         @Body request: ResetPasswordRequest,
     ): ApiResult<String>
 
-    /**
-     * 完善用户信息
-     */
     @RequireAuthorization
     @POST("/web/auth/user/updateUserInfo")
     suspend fun updateUserInfo(
         @Body updateUser: UpdateUserInfo,
     ): ApiResult<String>
 
-    /**
-     * 获取当前登录用户学校id
-     */
     @RequireAuthorization
     @GET("/web/auth/user/school")
     suspend fun getUserSchoolId(): ApiResult<Long>
@@ -96,32 +87,20 @@ interface UserAccountApi {
         @Query("studentId") studentId: String,
     ): ApiResult<Boolean>
 
-    /**
-     * 获取用户详细信息
-     */
     @RequireAuthorization
     @GET("/web/auth/user/getUserInfo")
     suspend fun getUserInfo(): ApiResult<UserInfoVo>
 
-    /**
-     * 绑定校园卡
-     */
     @RequireAuthorization
     @POST("/web/auth/user/bingCampus/{campusCard}")
     suspend fun bindCampus(
         @Path("campusCard") campusCard: String,
     ): ApiResult<Boolean>
 
-    /**
-     * 解绑校园卡
-     */
     @RequireAuthorization
     @POST("/web/auth/user/unBingCampus")
     suspend fun unBindCampus(): ApiResult<Boolean>
 
-    /**
-     * 上传头像
-     */
     @RequireAuthorization
     @Multipart
     @POST("/web/auth/user/avatar")

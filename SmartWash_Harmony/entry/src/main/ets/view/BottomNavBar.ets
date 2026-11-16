@@ -121,7 +121,6 @@ export struct BottomNavItem {
     try {
       vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 忽略不支持触感的设备
     }
     this.onItemClick()
   }

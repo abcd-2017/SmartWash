@@ -26,16 +26,13 @@ public class UserSubscriptionUsageLog implements Serializable {
     @TableId(value = "usage_id", type = IdType.AUTO)
     private Long usageId;
 
-    /** 订阅 ID */
     private Long subscriptionId;
 
     /** users.id（冗余，按用户隔离统计） */
     private Long userId;
 
-    /** 使用日期 */
     private LocalDate usageDate;
 
-    /** 使用备注 */
     private String note;
 
     private LocalDateTime createdAt;

@@ -34,7 +34,6 @@ public class DivPlatformSetting implements Serializable {
     @Max(value = 1, message = "AI 解读开关仅支持 0/1")
     private Integer divUseEnabled;
 
-    /** 每用户每日解读次数限额 */
     @Min(value = 1, message = "每日解读限额最小为 1")
     @Max(value = 999, message = "每日解读限额最大为 999")
     private Integer byokDailyLimit;

@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 筛选区域 -->
     <div class="filter-container">
       <el-form :inline="true">
         <el-form-item label="日期范围">
@@ -31,7 +30,6 @@
       </el-form>
     </div>
 
-    <!-- 统计卡片 -->
     <div class="stats-row" v-loading="loading">
       <!-- 查询失败占位：替代统计卡区域，避免失败后残留旧数据伪装正常 -->
       <div v-if="queryError" class="stats-error">
@@ -292,7 +290,6 @@ const fetchStats = async () => {
     queryError.value = false;
     const res = await getUsageStats(params);
 
-    // 汇总数据
     const records = res.records || [];
     summary.recordCount = records.reduce((s, r) => s + (r.recordCount || 0), 0);
     summary.interpretCount = records.reduce((s, r) => s + (r.interpretCount || 0), 0);
@@ -337,7 +334,6 @@ const renderCharts = (rawRecords) => {
   const animation = buildAnimation();
   const chartColors = buildChartColors();
 
-  // 每日用量趋势
   trendChart.setOption({
     ...animation,
     color: chartColors,
@@ -358,7 +354,6 @@ const renderCharts = (rawRecords) => {
     ],
   });
 
-  // 术数方法分布（按 method 聚合）
   const methodMap = {};
   records.forEach((r) => {
     if (!methodMap[r.method]) methodMap[r.method] = 0;
@@ -386,7 +381,6 @@ const renderCharts = (rawRecords) => {
     ],
   });
 
-  // Token 消耗
   tokenChart.setOption({
     ...animation,
     color: chartColors,
@@ -401,7 +395,6 @@ const renderCharts = (rawRecords) => {
     ],
   });
 
-  // 缓存命中率
   const cacheRates = records.map((r) => {
     if (!r.interpretCount) return 0;
     return ((r.cacheHitCount / r.interpretCount) * 100).toFixed(1);
@@ -514,7 +507,6 @@ const renderCharts = (rawRecords) => {
   gap: 16px;
 }
 
-/* 查询失败占位：独占统计卡整行，图标+文案+重试按钮纵向居中 */
 .stats-error {
   grid-column: 1 / -1;
   display: flex;

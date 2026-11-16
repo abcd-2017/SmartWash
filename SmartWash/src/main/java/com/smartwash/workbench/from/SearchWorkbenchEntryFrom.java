@@ -12,7 +12,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class SearchWorkbenchEntryFrom extends BaseSearchFrom {
 
-    /** 标题模糊筛选 */
     private String title;
 
     /** 启用状态筛选：1启用 0停用，空=全部 */

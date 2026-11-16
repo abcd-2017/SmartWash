@@ -126,9 +126,7 @@ data class ReviewCardVo(
 
 @Keep
 data class ReviewQueueVo(
-    /** 到期卡张数 */
     val dueCount: Int = 0,
-    /** 注入的新卡张数 */
     val newCount: Int = 0,
     /** 合并后的队列（到期卡 + 新卡） */
     val cards: List<ReviewCardVo> = emptyList(),
@@ -145,7 +143,6 @@ data class ReviewStatsVo(
     data class DailyCount(
         /** 统计日（ISO LocalDate，yyyy-MM-dd） */
         val date: String? = null,
-        /** 当日复习次数 */
         val count: Long = 0L,
     )
 
@@ -153,7 +150,6 @@ data class ReviewStatsVo(
     data class RatingShare(
         /** 1=Again 2=Hard 3=Good 4=Easy */
         val rating: Int = 0,
-        /** 该评分次数 */
         val count: Long = 0L,
     )
 }

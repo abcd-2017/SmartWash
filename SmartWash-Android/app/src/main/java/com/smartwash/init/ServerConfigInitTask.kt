@@ -7,8 +7,6 @@ import com.smartwash.common.init.InitTask
 import com.smartwash.common.utils.AppLogger
 
 /**
- * 服务端公开配置预热启动任务。
- *
  * 拉 `GET /web/config` 把 MinIO 对外端点 / 短链对外域名写入 [ServerConfig]，
  * 供 WebView 深色主题桥白名单等运行期读取——替代原编译期注入（BuildConfig.MINIO_ENDPOINT），
  * MinIO 域名变更不再需要重新发版。

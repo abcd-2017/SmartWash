@@ -58,7 +58,6 @@ fun DiningOrderJoinPage(
     val joinState by viewModel.joinState.collectAsState()
     val navigateToDetail by viewModel.navigateToDetail.collectAsState()
 
-    // 首载（返回本页经 LaunchedEffect(Unit) 不重放；失败重试显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
 
     // 成员判重/加入成功 → 直达点单页；弹掉加入入口页（返回键不回此中间页）

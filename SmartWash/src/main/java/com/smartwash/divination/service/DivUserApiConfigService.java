@@ -124,7 +124,6 @@ public class DivUserApiConfigService {
             throw new CustomExceptions("连通性校验失败：请检查模型与 API Key 是否正确");
         }
 
-        // 加密
         String encrypted = cipher.encrypt(from.getApiKey(), 1);
         String mask = cipher.mask(from.getApiKey());
 
@@ -155,9 +154,6 @@ public class DivUserApiConfigService {
                 userId, modelConfigId != null ? "catalog:" + modelConfigId : "custom");
     }
 
-    /**
-     * 删除用户模型配置。
-     */
     public void deleteUserConfig(Long userId) {
         LambdaQueryWrapper<DivUserApiConfig> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DivUserApiConfig::getUserId, userId);

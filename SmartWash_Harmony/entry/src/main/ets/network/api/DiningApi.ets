@@ -8,7 +8,7 @@
 //          POST /web/auth/dining/recipes/add          （source=USER 直上架）
 //          POST /web/auth/dining/recipes/cover        （multipart 封面上传，返回对象键）
 //   订单   POST /web/auth/dining/orders/create        （title+recipeIds 或 fromOrderId 复用）
-//          GET  /web/auth/dining/orders/my            （我发起的 + 我参与的）
+//          GET  /web/auth/dining/orders/my            （我发起的 + 我参与的，分页 page/size）
 //          GET  /web/auth/dining/orders/{id}          （轮询主接口，knownVersion 轻量协议）
 //          GET  /web/auth/dining/orders/brief/{token} （加入前预览）
 //          POST /web/auth/dining/orders/{id}/join
@@ -68,7 +68,6 @@ export {
 /** 上架菜谱分页大小（菜谱库/创建页列表复用；Android 端每页 100 取满同量级） */
 export const DINING_PAGE_SIZE: number = 50
 
-// ========== 分类 ==========
 
 /** 全部分类（sort 升序、id 升序；量级小不分页） */
 export async function getDiningCategories(): Promise<BaseResponse<Array<DiningCategoryVo>>> {
@@ -96,7 +95,6 @@ function diningPageDataLikeToList<T>(raw: Object, mapper: (item: Object) => T): 
   return result
 }
 
-// ========== 菜谱 ==========
 
 /** 上架菜谱分页（categoryId 精确，0/null=不过滤；keyword 菜名模糊，空串=不过滤） */
 export async function getDiningRecipes(page: number, size: number, categoryId: number,
@@ -166,7 +164,6 @@ export async function uploadDiningCover(fileName: string, mimeType: string,
   return httpUtil.upload<string>('/web/auth/dining/recipes/cover', formData)
 }
 
-// ========== 订单 ==========
 
 /** 创建点单订单请求体（与后端 from/CreateDiningOrderFrom 对应；recipeIds 与 fromOrderId 二选一） */
 export interface CreateDiningOrderForm {
@@ -196,11 +193,18 @@ export async function createDiningOrder(form: CreateDiningOrderForm)
   }
 }
 
-/** 我的订单列表（我发起的 + 我参与的，按创建时间倒序） */
-export async function getMyDiningOrders(): Promise<BaseResponse<Array<DiningOrderListVo>>> {
-  const res = await httpUtil.get<Object>('/web/auth/dining/orders/my')
+/**
+ * 我的订单明细分页（我发起的 + 我参与的，按创建时间倒序，带 isCreator）。
+ * 后端 BaseSearchFrom：page 默认 1、size 默认 10 上限 100。
+ */
+export async function pageMyDiningOrders(page: number, size: number)
+  : Promise<BaseResponse<DiningPageData<DiningOrderListVo>>> {
+  const params: Record<string, Object> = {}
+  params['page'] = page
+  params['size'] = size
+  const res = await httpUtil.get<Object>('/web/auth/dining/orders/my', params)
   return {
-    data: res.data === null ? null : diningPageDataLikeToList(res.data, diningOrderListVoFromJSON),
+    data: res.data === null ? null : diningPageDataFromJSON<DiningOrderListVo>(res.data, diningOrderListVoFromJSON),
     code: res.code,
     message: res.message
   }

@@ -3,8 +3,10 @@ package com.smartwash.feature.points.repository
 import com.smartwash.common.network.R
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.common.utils.AppLogger
+import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.points.api.POINTS_LEADERBOARD_SCOPE_MONTH
 import com.smartwash.feature.points.api.PointsServiceApi
+import com.smartwash.feature.points.api.model.PointLedgerItemVo
 import com.smartwash.feature.points.api.model.PointsLeaderboardVo
 import com.smartwash.feature.points.api.model.PointsOverviewVo
 import com.smartwash.feature.points.api.model.SignInResultVo
@@ -52,8 +54,18 @@ class PointsRepository @Inject constructor(
                 throw NetworkException("积分月榜数据为空", R.string.error_network_fail)
             }
 
+    /**
+     * 积分流水分页（时间倒序；page 从 1 起）。
+     * data 为 null 按失败处理上抛，与概览/榜单一致。
+     */
+    suspend fun getLedger(page: Int, size: Int): PageData<PointLedgerItemVo> =
+        pointsServiceApi.getLedger(page, size).data
+            ?: run {
+                AppLogger.warn(TAG, "getLedger 响应 data 为空，按失败处理上抛（page=$page, size=$size）")
+                throw NetworkException("积分流水数据为空", R.string.error_network_fail)
+            }
+
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "PointsRepository"
     }
 }

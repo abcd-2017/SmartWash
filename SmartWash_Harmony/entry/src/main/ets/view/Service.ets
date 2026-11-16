@@ -49,7 +49,6 @@ export struct Service {
         this.loadFailed = true
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
       showToastSafety(resString('service_2'))
       this.loadFailed = true
     } finally {
@@ -121,7 +120,6 @@ export struct Service {
     try {
       vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 不支持触感（模拟器 / 部分设备）时忽略
     }
   }
 

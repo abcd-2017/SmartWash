@@ -72,7 +72,6 @@ import kotlinx.coroutines.delay
 /** 章节卡逐项淡入的间隔 — ≤60ms（规范 7） */
 private const val SECTION_STAGGER_MS = 60L
 
-/** 章节卡逐项淡入的单卡时长 */
 private const val SECTION_FADE_MS = 120
 
 /** 章节卡总入场时长上限（规范 7：总时长 ≤400ms） */

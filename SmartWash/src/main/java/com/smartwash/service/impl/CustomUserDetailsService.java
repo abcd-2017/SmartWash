@@ -35,7 +35,6 @@ public class CustomUserDetailsService implements UserDetailsService {
             }
             // 每请求都会触发，高频日志降为 debug 防刷屏（评审报告后端 #37）
             log.debug("管理员认证成功, username: {}", split[1]);
-            //将信息添加到User也可以说是UserDetails 对象中
             return new LoginUser(adminUsers.getAdminId(), adminUsers.getUsername(), adminUsers.getPasswordHash(),
                     null, split[0], List.of(new SimpleGrantedAuthority(String.format("ROLE_%s", split[0]))));
         } else if (split[0].equals(DefaultConstant.USER_LOGIN_TYPE)) {
@@ -46,7 +45,6 @@ public class CustomUserDetailsService implements UserDetailsService {
             }
             // 每请求都会触发，高频日志降为 debug 防刷屏（评审报告后端 #37）
             log.debug("用户认证成功, phone: {}", split[1].replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
-            //将信息添加到User也可以说是UserDetails 对象中
             return new LoginUser(user.getUserId(), null, user.getPassword(),
                     user.getPhoneNumber(), split[0], List.of(new SimpleGrantedAuthority(String.format("ROLE_%s", split[0]))));
         } else {

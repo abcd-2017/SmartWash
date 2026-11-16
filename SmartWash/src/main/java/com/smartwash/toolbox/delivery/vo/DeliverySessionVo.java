@@ -21,18 +21,15 @@ public class DeliverySessionVo {
     /** 累计进入次数（对端凭码进入时原子自增） */
     private Long clickCount;
 
-    /** 是否已设置进入密码 */
     private Boolean hasPassword;
 
     /** 条目总数（含已焚毁占位） */
     private Long itemCount;
 
-    /** 未取走条目数 */
     private Long pendingCount;
 
     /** 对端 H5 页地址（拼 {public-base-url}/d/{code}，二维码内容由端侧生成） */
     private String enterUrl;
 
-    /** 会话创建时刻 */
     private LocalDateTime createdAt;
 }

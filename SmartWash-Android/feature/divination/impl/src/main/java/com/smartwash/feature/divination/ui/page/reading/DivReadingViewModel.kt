@@ -32,7 +32,6 @@ data class DivReadingUiState(
     /** SSE delta 累积原文（流式逐段上屏；done 后切分为 reading） */
     val streamText: String = "",
     val loadingRecord: Boolean = true,
-    /** 应验反馈提交中 */
     val feedbackSubmitting: Boolean = false,
     /** 反馈已提交（成功后隐藏评分入口） */
     val feedbackSubmitted: Boolean = false,

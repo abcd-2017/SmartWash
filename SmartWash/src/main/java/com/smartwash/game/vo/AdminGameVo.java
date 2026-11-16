@@ -18,13 +18,10 @@ public class AdminGameVo {
     /** 业务唯一标识（创建后不可修改） */
     private String gameKey;
 
-    /** 游戏名 */
     private String title;
 
-    /** 一句话玩法描述 */
     private String description;
 
-    /** 图标 key */
     private String icon;
 
     /** 图标色组 key：green/blue/orange/pink/teal/purple */
@@ -60,7 +57,6 @@ public class AdminGameVo {
     /** 排序，越小越靠前 */
     private Integer sort;
 
-    /** 备注 */
     private String remark;
 
     private LocalDateTime createdAt;

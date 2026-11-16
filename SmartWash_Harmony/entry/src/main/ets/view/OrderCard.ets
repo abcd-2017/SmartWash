@@ -48,7 +48,6 @@ export struct OrderMonthCard {
     try {
       vibrator.startVibration({ type: 'time', duration: duration }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 忽略不支持的设备
     }
   }
 

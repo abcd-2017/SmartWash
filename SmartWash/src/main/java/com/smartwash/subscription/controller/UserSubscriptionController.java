@@ -49,7 +49,6 @@ public class UserSubscriptionController {
     private final UserSubscriptionUsageLogService userSubscriptionUsageLogService;
     private final SubscriptionReminderLogService subscriptionReminderLogService;
 
-    // ==================== CRUD + 状态机 ====================
 
     @Operation(summary = "创建订阅", description = "初始状态 active；金额/周期(month|year)/下次续费日必填")
     @PostMapping
@@ -110,7 +109,6 @@ public class UserSubscriptionController {
         return Result.ok(null);
     }
 
-    // ==================== 使用打卡 ====================
 
     @Operation(summary = "使用打卡", description = "不传日期默认今天，不允许未来日期；每订阅每天一条，同日重复拒绝（可撤销后重打）")
     @PostMapping("/{id}/usages")
@@ -132,7 +130,6 @@ public class UserSubscriptionController {
         return Result.ok(null);
     }
 
-    // ==================== 提醒 ====================
 
     @Operation(summary = "我的提醒列表", description = "unread=true 只看未读；按应提醒日倒序，上限200条；含订阅名称")
     @GetMapping("/reminders")
@@ -147,7 +144,6 @@ public class UserSubscriptionController {
         return Result.ok(null);
     }
 
-    // ==================== 统计 ====================
 
     @Operation(summary = "订阅统计", description = "月度应收总额（按周期折算）+ 各活跃订阅近90天使用次数与单次折算成本")
     @GetMapping("/stats")

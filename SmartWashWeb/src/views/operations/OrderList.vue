@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="手机号">
@@ -96,7 +95,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -223,8 +221,7 @@ import { useTimeRange } from '@/composables/useTimeRange';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 
-// 数据
-const statusOptions = ref({}); // 状态选项
+const statusOptions = ref({});
 
 // 订单状态机合法转移表（与后端 OrdersServiceImpl.VALID_TRANSITIONS + adminCancelOrder 取消链路对齐）。
 // -1 已退款为退款链路内部产物：只能经「取消已支付订单」触达，前端不提供直达项；
@@ -273,10 +270,9 @@ const irreversibleWarningText = computed(() =>
     ? '目标状态为取消（终态），操作不可逆，请确认后再执行'
     : `取消已支付订单将按实付金额 ${refundAmountText.value} 退款至用户余额并还原所用优惠券，操作不可逆，请核对资金状态后再执行`
 );
-const schoolOptions = ref([]); // 学校选项
-const laundryOptions = ref([]); // 洗护套餐选项
+const schoolOptions = ref([]);
+const laundryOptions = ref([]);
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: orderList,
   total,
@@ -308,10 +304,8 @@ const {
   errorMsg: '获取数据失败',
 });
 
-// 时间范围处理（评审 #14：抽离为公共 composable）
 const timeRange = useTimeRange(listQuery);
 
-// 状态更新相关
 const statusDialogVisible = ref(false);
 const submitting = ref(false); // 确认按钮 loading，防连点
 const statusForm = reactive({
@@ -321,7 +315,6 @@ const statusForm = reactive({
   newStatus: '',
   payPrice: null,
 });
-// 初始化数据
 onMounted(async () => {
   await fetchStatus();
   await fetchSchools();
@@ -329,7 +322,6 @@ onMounted(async () => {
   fetchData();
 });
 
-// 获取状态枚举
 const fetchStatus = async () => {
   try {
     const res = await getOrderStatus();
@@ -363,7 +355,6 @@ const fetchLaundry = async () => {
   }
 };
 
-// 删除订单
 const handleDelete = async (row) => {
   // 确认弹窗：列明订单号与金额，明确不可恢复（订单含支付金额，删除即资金对账盲区；
   // 后端为最终裁决，四端联动评审后建议改为作废语义）
@@ -384,7 +375,6 @@ const handleDelete = async (row) => {
   }
 };
 
-// 打开修改状态对话框
 const handleUpdateStatus = (row) => {
   statusForm.orderId = row.orderId;
   statusForm.orderNo = row.orderNo;
@@ -394,7 +384,6 @@ const handleUpdateStatus = (row) => {
   statusDialogVisible.value = true;
 };
 
-// 确认更新状态
 const confirmUpdateStatus = async () => {
   if (!statusForm.newStatus) {
     ElMessage.warning('请选择新状态');
@@ -436,7 +425,6 @@ const confirmUpdateStatus = async () => {
   }
 };
 
-// 状态文本转换
 const formatStatus = (status) => {
   return statusOptions.value[status] || '未知状态';
 };

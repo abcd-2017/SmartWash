@@ -314,13 +314,11 @@ private fun ScanOverlay(
         val right = left + side
         val bottom = top + side
 
-        // 四边遮罩
         drawRect(SCAN_SCRIM, size = Size(size.width, top))
         drawRect(SCAN_SCRIM, topLeft = Offset(0f, bottom), size = Size(size.width, size.height - bottom))
         drawRect(SCAN_SCRIM, topLeft = Offset(0f, top), size = Size(left, side))
         drawRect(SCAN_SCRIM, topLeft = Offset(right, top), size = Size(size.width - right, side))
 
-        // 取景框圆角描边
         drawRoundRect(
             color = Color.White.copy(alpha = 0.9f),
             topLeft = Offset(left, top),
@@ -333,16 +331,12 @@ private fun ScanOverlay(
         val corner = 24.dp.toPx()
         val stroke = 2.5.dp.toPx()
         val cap = StrokeCap.Round
-        // 左上
         drawLine(primaryColor, Offset(left, top + corner), Offset(left, top), stroke, cap)
         drawLine(primaryColor, Offset(left, top), Offset(left + corner, top), stroke, cap)
-        // 右上
         drawLine(primaryColor, Offset(right - corner, top), Offset(right, top), stroke, cap)
         drawLine(primaryColor, Offset(right, top), Offset(right, top + corner), stroke, cap)
-        // 左下
         drawLine(primaryColor, Offset(left, bottom - corner), Offset(left, bottom), stroke, cap)
         drawLine(primaryColor, Offset(left, bottom), Offset(left + corner, bottom), stroke, cap)
-        // 右下
         drawLine(primaryColor, Offset(right - corner, bottom), Offset(right, bottom), stroke, cap)
         drawLine(primaryColor, Offset(right, bottom - corner), Offset(right, bottom), stroke, cap)
     }

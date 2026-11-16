@@ -161,9 +161,6 @@ struct AiWorkPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         PageHeader({
@@ -177,7 +174,6 @@ struct AiWorkPage {
         // 提示文案仍由快捷任务/发送的 toast 承载）
         Scroll() {
           Column() {
-            // ---------- 快捷任务 ----------
             // 标题上下各留 12（对齐安卓标题前后 Spacer(spaceSm)，原标题→网格 gap 为 0）
             Text(AiText.ai_quick_tasks)
               .fontSize(DesignFontSize.SECTION_TITLE)

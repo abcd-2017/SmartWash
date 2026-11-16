@@ -16,7 +16,6 @@
         <div class="brand-footer">SmartWash Admin Console</div>
       </aside>
 
-      <!-- 右侧表单区 -->
       <section class="form-panel">
         <h1 class="form-title">欢迎回来</h1>
         <p class="form-sub">请使用管理员账号登录</p>
@@ -208,7 +207,6 @@ const handleLogin = async () => {
   color: var(--sidebar-text-sub); /* 暗面板弱化字：不再混用亮侧 --text-muted（外壳即墨色规则） */
 }
 
-/* --- 右侧表单区 --- */
 .form-panel {
   flex: 1;
   display: flex;

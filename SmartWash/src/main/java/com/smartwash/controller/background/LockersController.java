@@ -26,14 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Tag(name = "寄存柜管理", description = "寄存柜的增删改查及状态查询")
 @Slf4j
 @RestController

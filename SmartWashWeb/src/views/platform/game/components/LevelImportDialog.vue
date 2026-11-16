@@ -6,7 +6,6 @@
     :close-on-click-modal="false"
     @closed="resetState"
   >
-    <!-- ==================== 输入态 ==================== -->
     <template v-if="stage === 'input'">
       <el-alert type="info" :closable="false" class="rule-tip">
         <template #title>
@@ -60,7 +59,6 @@
       </div>
     </template>
 
-    <!-- ==================== 预览态 ==================== -->
     <template v-else>
       <div class="preview-summary">
         <span>

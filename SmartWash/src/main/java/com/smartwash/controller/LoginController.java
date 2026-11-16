@@ -100,9 +100,7 @@ public class LoginController {
     private static final String CAPTCHA_FAIL_KEY_PREFIX = "captcha:fail:";
     /** 验证码发送频控 key 前缀，格式：captcha:rate:{phone}（一次发送同时覆盖注册/重置两种校验场景，按手机号限频比按 purpose+phone 更严格） */
     private static final String CAPTCHA_RATE_KEY_PREFIX = "captcha:rate:";
-    /** 验证码用途标识：注册 */
     private static final String CAPTCHA_PURPOSE_REGISTER = "register";
-    /** 验证码用途标识：重置密码 */
     private static final String CAPTCHA_PURPOSE_RESET = "reset";
     /** 单个验证码最大校验失败次数，达到即销毁验证码并拒绝（防穷举） */
     private static final int CAPTCHA_MAX_FAIL_ATTEMPTS = 5;
@@ -446,9 +444,6 @@ public class LoginController {
         return CaptchaVerifyResult.MISMATCH;
     }
 
-    /**
-     * 销毁指定用途的验证码及其失败计数
-     */
     private void destroyCaptcha(String purpose, String phone) {
         redisTemplate.delete(captchaKey(purpose, phone));
         redisTemplate.delete(captchaFailKey(purpose, phone));
@@ -521,11 +516,7 @@ public class LoginController {
         return null;
     }
 
-    /**
-     * 验证码校验结果
-     */
     private enum CaptchaVerifyResult {
-        /** 校验成功 */
         SUCCESS("验证成功"),
         /** 未找到有效验证码（不存在或已过期） */
         EXPIRED("验证码已过期，请重新获取"),

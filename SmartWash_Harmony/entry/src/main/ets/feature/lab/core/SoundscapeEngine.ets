@@ -31,7 +31,6 @@ export enum SoundChannel {
   MURMUR = 9,
 }
 
-/** 声道总数 */
 export const SOUND_CHANNEL_COUNT: number = 10
 
 /** 默认音量（0..100），仅用于未显式设置的声道 */
@@ -449,7 +448,6 @@ export class SoundscapeEngine {
     this.volumes = next
   }
 
-  /** 开关某路声道 */
   setChannelEnabled(channel: SoundChannel, isEnabled: boolean): void {
     const next: boolean[] = this.enabled.slice()
     next[channel] = isEnabled
@@ -552,7 +550,6 @@ export class SoundscapeEngine {
     }
   }
 
-  // ==================== 调度内核 ====================
 
   private schedulerTick(): void {
     if (!this.playingValue) {

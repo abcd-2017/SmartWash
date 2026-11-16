@@ -1,5 +1,6 @@
 package com.smartwash.points.mapper;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.points.entity.PointLedger;
 import org.apache.ibatis.annotations.Param;
 
@@ -21,4 +22,10 @@ public interface PointLedgerMapper {
      * 个人最近流水（按时间倒序，idx_ledger_user_time 覆盖）
      */
     List<PointLedger> selectRecentByUserId(@Param("userId") Long userId, @Param("limit") int limit);
+
+    /**
+     * 个人流水分页（按时间倒序，idx_ledger_user_time 覆盖）。
+     * 由 MyBatis-Plus 分页插件追加 LIMIT 并执行 COUNT，XML 不手写分页。
+     */
+    Page<PointLedger> selectPageByUserId(Page<PointLedger> page, @Param("userId") Long userId);
 }

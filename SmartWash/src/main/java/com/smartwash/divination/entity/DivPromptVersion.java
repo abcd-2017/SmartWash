@@ -32,7 +32,6 @@ public class DivPromptVersion implements Serializable {
 
     private String systemPrompt;
 
-    /** 领域分析方法文本 */
     private String methodText;
 
     /** temperature/max_tokens 等 */

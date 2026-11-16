@@ -16,14 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * <p>
- * 优惠券模板 前端控制器
- * </p>
- *
- * @author
- * @since 2025-04-06
- */
 @Tag(name = "用户端-优惠券", description = "用户端优惠券相关接口")
 @Slf4j
 @RestController

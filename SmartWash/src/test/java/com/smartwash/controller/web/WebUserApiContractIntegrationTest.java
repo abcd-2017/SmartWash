@@ -125,7 +125,7 @@ class WebUserApiContractIntegrationTest {
                         .header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.length()").value(1));
+                .andExpect(jsonPath("$.data.records.length()").value(1));
     }
 
     @Test
@@ -138,7 +138,7 @@ class WebUserApiContractIntegrationTest {
                         .header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.length()").value(2));
+                .andExpect(jsonPath("$.data.records.length()").value(2));
     }
 
     private void seedTwoCoupons() {

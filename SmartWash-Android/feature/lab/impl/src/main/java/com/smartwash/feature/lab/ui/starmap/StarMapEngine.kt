@@ -35,7 +35,6 @@ import kotlin.math.tan
  */
 object StarMapEngine {
 
-    // ==================== 对外常量 ====================
 
     /** 默认观测纬度（度，北纬为正）——MVP 固定观测点，不申请定位权限 */
     const val DEFAULT_LATITUDE_DEG = 39.9f
@@ -136,7 +135,6 @@ object StarMapEngine {
         CelestialBody("仙女座α", 2.06f, 0.1398f, 29.091f),
     )
 
-    // ==================== 姿态解算 ====================
 
     /**
      * 由加速度计（重力）与磁力计求设备姿态旋转矩阵（行主序，映射 世界 = R × 设备）。
@@ -213,7 +211,6 @@ object StarMapEngine {
         altitudeDeg = 45f,
     )
 
-    // ==================== 投影 ====================
 
     /**
      * 把当前视场内的天体投影到屏幕。
@@ -308,7 +305,6 @@ object StarMapEngine {
         return best
     }
 
-    // ==================== 时间 / 坐标变换 ====================
 
     /** 儒略日（UT） */
     private fun julianDate(epochMillis: Long): Double =
@@ -347,7 +343,6 @@ object StarMapEngine {
         return floatArrayOf(east.toFloat(), north.toFloat(), up.toFloat())
     }
 
-    // ==================== 太阳 / 月亮 / 行星 ====================
 
     /** 太阳视位置（地球绕日开普勒根数的反向） */
     private fun sunBody(jd: Double): CelestialBody {
@@ -490,7 +485,6 @@ object StarMapEngine {
         return (raDeg / 15.0).toFloat() to decDeg.toFloat()
     }
 
-    // ==================== 绘制参数映射 ====================
 
     /** 星等 → 圆点半径（dp 基准，调用方乘密度） */
     private fun magnitudeToRadius(magnitude: Float): Float = when {
@@ -513,7 +507,6 @@ object StarMapEngine {
         else -> 0.55f
     }
 
-    // ==================== 私有工具 ====================
 
     private fun normalize3(v: FloatArray): FloatArray? {
         val norm = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
@@ -580,7 +573,6 @@ object StarMapEngine {
         return v
     }
 
-    // ==================== 常量 ====================
 
     /** 投影保留的屏幕外边距（px），避免边缘星体被硬切 */
     private const val STAR_MARGIN_PX = 64f

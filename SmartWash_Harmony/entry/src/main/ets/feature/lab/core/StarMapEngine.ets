@@ -162,7 +162,6 @@ const PLANETS: PlanetElements[] = [
 
 export class StarMapEngine {
 
-  // ==================== 对外常量 ====================
 
   /** 默认观测纬度（度，北纬为正）——MVP 固定观测点，不申请定位权限 */
   static readonly DEFAULT_LATITUDE_DEG: number = 39.9
@@ -245,7 +244,6 @@ export class StarMapEngine {
     new CelestialBody('仙女座α', 2.06, 0.1398, 29.091),
   ]
 
-  // ==================== 姿态解算 ====================
 
   /**
    * 由加速度计（重力）与磁力计求设备姿态旋转矩阵（行主序，映射 世界 = R × 设备）。
@@ -322,7 +320,6 @@ export class StarMapEngine {
     return StarMapEngine.rotationMatrixFromOrientation(0, 45)
   }
 
-  // ==================== 投影 ====================
 
   /**
    * 把当前视场内的天体投影到屏幕。
@@ -410,7 +407,6 @@ export class StarMapEngine {
     return best
   }
 
-  // ==================== 时间 / 坐标变换 ====================
 
   /** 儒略日（UT） */
   private static julianDate(epochMillis: number): number {
@@ -443,7 +439,6 @@ export class StarMapEngine {
     return [east, north, up]
   }
 
-  // ==================== 太阳 / 月亮 / 行星 ====================
 
   /** 太阳视位置（地球绕日开普勒根数的反向） */
   private static sunBody(jd: number): CelestialBody {
@@ -582,7 +577,6 @@ export class StarMapEngine {
     return result
   }
 
-  // ==================== 绘制参数映射 ====================
 
   /** 星等 → 圆点半径（vp 基准） */
   private static magnitudeToRadius(magnitude: number): number {
@@ -627,7 +621,6 @@ export class StarMapEngine {
     return 0.55
   }
 
-  // ==================== 私有工具 ====================
 
   private static normalize3(v: number[]): number[] | null {
     const norm: number = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])

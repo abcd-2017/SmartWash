@@ -38,7 +38,6 @@ public class DiningOrderItem implements Serializable {
     /** 个人备注（如 不要辣），可空；null = 未写备注（改备注传 null 即清空） */
     private String note;
 
-    /** 勾选时间 */
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

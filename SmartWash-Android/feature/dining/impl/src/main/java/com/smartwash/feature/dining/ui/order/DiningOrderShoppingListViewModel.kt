@@ -105,11 +105,9 @@ class DiningOrderShoppingListViewModel @Inject constructor(
             ?: emptySet()
     }
 
-    /** 本单已买态存储键 */
     private fun checkedKey(): String = CHECKED_KEY_PREFIX + orderId
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "DiningOrderShoppingListViewModel"
 
         /** 类型安全路由参数键（DiningRoute.ShoppingList 属性名即键名） */

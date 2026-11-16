@@ -122,7 +122,6 @@ export struct StarMapPage {
     }
   }
 
-  // ==================== 传感器 ====================
 
   /** 开始采样；不可用（模拟器 / 无磁力计）时标记降级，不崩溃。
    * 权限说明：加速度计需 module.json5 声明 ohos.permission.ACCELEROMETER（已声明）；
@@ -208,7 +207,6 @@ export struct StarMapPage {
     this.rotationMatrix = StarMapEngine.remapForScreenRotation(matrix, rotation)
   }
 
-  // ==================== 帧驱动 / 绘制 ====================
 
   private startLoop(): void {
     if (this.timerId !== -1) {

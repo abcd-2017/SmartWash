@@ -33,7 +33,6 @@ export function diningPageDataFromJSON<T>(raw: Object | null | undefined,
   }
 }
 
-// ========== 分类 ==========
 
 /** 菜谱分类（GET /web/auth/dining/categories/all 载荷，sort 升序） */
 export interface DiningCategoryVo {
@@ -52,7 +51,6 @@ export function diningCategoryVoFromJSON(raw: Object): DiningCategoryVo {
   }
 }
 
-// ========== 菜谱 ==========
 
 /** 菜谱（GET /web/auth/dining/recipes/all 与 /{id} 载荷；用户端仅返回上架） */
 export interface DiningRecipeVo {
@@ -91,7 +89,6 @@ export function diningRecipeVoFromJSON(raw: Object): DiningRecipeVo {
   }
 }
 
-// ========== 订单列表 ==========
 
 /** 我的订单列表条目（GET /web/auth/dining/orders/my 载荷：我发起的 + 我参与的，创建时间倒序） */
 export interface DiningOrderListVo {
@@ -122,7 +119,6 @@ export function diningOrderListVoFromJSON(raw: Object): DiningOrderListVo {
   }
 }
 
-// ========== 创建响应 ==========
 
 /** 创建点单订单返回（POST /web/auth/dining/orders/create 载荷；joinToken 是拼二维码唯一来源） */
 export interface DiningOrderCreatedVo {
@@ -243,7 +239,6 @@ export function diningOrderDetailVoFromJSON(raw: Object): DiningOrderDetailVo {
   }
 }
 
-// ========== 加入前预览 ==========
 
 /** 加入前预览 brief（GET /web/auth/dining/orders/brief/{token} 载荷，确认弹窗数据源） */
 export interface DiningOrderBriefVo {
@@ -272,7 +267,6 @@ export function diningOrderBriefVoFromJSON(raw: Object): DiningOrderBriefVo {
   }
 }
 
-// ========== 结束点单响应 ==========
 
 /** 结束点单响应（POST /web/auth/dining/orders/{id}/finish 载荷；幂等返回库内原快照） */
 export interface DiningOrderFinishVo {
@@ -296,7 +290,6 @@ export function diningOrderFinishVoFromJSON(raw: Object): DiningOrderFinishVo {
   }
 }
 
-// ========== 购买清单快照 ==========
 
 /** 选菜人条目：谁选的 + 个人备注 */
 export interface DiningShoppingSelector {

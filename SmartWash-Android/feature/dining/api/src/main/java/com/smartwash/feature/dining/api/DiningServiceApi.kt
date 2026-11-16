@@ -35,7 +35,7 @@ import retrofit2.http.Query
  * 域内 impl 直接消费，跨模块消费方（后续订单域）经 [DiningApi] 领域契约访问，
  * 不直连本接口；依赖方向 api → common:network 合法（铁律 1）。
  *
- * 订单接口消费面（07 号票发起链路）：创建 / 我的订单 / 详情（首次全量拉取）；
+ * 订单接口消费面（07 号票发起链路）：创建 / 我的订单（分页）/ 详情（首次全量拉取）；
  * 选菜增改删（09 号票点单页本地勾选最小接入，version 冲突重放为 10 号票）；
  * brief / join / 重置凭证为扫码加入链路后续票消费。
  */
@@ -77,10 +77,13 @@ interface DiningServiceApi {
     @RequireAuthorization
     suspend fun createOrder(@retrofit2.http.Body request: CreateDiningOrderRequest): ApiResult<DiningOrderCreatedVo>
 
-    /** 我的订单列表（我发起的 + 我参与的，按创建时间倒序，带 isCreator 标记） */
+    /** 我的订单分页（我发起的 + 我参与的，按创建时间倒序，带 isCreator 标记；page 从 1 起） */
     @GET("/web/auth/dining/orders/my")
     @RequireAuthorization
-    suspend fun myOrders(): ApiResult<List<DiningOrderListVo>>
+    suspend fun myOrders(
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+    ): ApiResult<PageData<DiningOrderListVo>>
 
     /** 订单详情（轮询主接口；[knownVersion] 与服务端一致返回 unchanged=true 轻量响应，null=首次全量拉取） */
     @GET("/web/auth/dining/orders/{id}")

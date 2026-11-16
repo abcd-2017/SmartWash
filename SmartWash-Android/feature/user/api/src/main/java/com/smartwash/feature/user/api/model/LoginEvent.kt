@@ -18,7 +18,6 @@ sealed class LoginEvent {
     data class LoggedOut(val reason: LogoutReason) : LoginEvent()
 }
 
-/** 登出原因 */
 enum class LogoutReason {
     /** 用户主动登出（现状 SettingPage 的 clearToken 路径，T5.2 桥接时补发事件） */
     LOGOUT,

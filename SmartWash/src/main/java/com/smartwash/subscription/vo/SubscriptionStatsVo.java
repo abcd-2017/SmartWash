@@ -18,10 +18,8 @@ public class SubscriptionStatsVo {
     /** 月度应收总额（active 订阅折算月度金额之和，2位小数） */
     private BigDecimal monthlyPayable;
 
-    /** 活跃订阅数 */
     private Integer activeCount;
 
-    /** 各活跃订阅明细 */
     private List<Item> items;
 
     @Data
@@ -35,10 +33,8 @@ public class SubscriptionStatsVo {
         /** 计费周期 month/year */
         private String cycleType;
 
-        /** 间隔期数 */
         private Integer cycleInterval;
 
-        /** 每期金额 */
         private BigDecimal amount;
 
         /** 折算月度金额（2位小数） */

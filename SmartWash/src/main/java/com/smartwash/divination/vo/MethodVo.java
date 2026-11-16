@@ -15,6 +15,5 @@ public class MethodVo {
 
     private String description;
 
-    /** 免责声明文案 */
     private String disclaimer;
 }

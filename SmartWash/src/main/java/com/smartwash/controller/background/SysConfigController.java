@@ -18,9 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * 系统参数配置管理端接口
- */
 @Tag(name = "系统参数", description = "系统参数的查询与实时修改（修改落库并立即生效）")
 @Slf4j
 @RestController

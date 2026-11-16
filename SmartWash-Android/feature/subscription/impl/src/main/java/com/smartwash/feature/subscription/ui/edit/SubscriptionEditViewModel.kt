@@ -56,7 +56,6 @@ class SubscriptionEditViewModel @Inject constructor(
     private val _form = MutableStateFlow(FormState(nextRenewDate = LocalDate.now()))
     val form = _form.asStateFlow()
 
-    /** 编辑模式回填状态 */
     private val _loadState = MutableStateFlow<RequestState>(RequestState.Idle)
     val loadState = _loadState.asStateFlow()
 

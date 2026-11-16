@@ -230,7 +230,6 @@ class DiningOrderDetailViewModel @Inject constructor(
         super.onCleared()
     }
 
-    // ==================== 订阅生命周期 ====================
 
     private fun onLifecycle(event: Event) {
         when (syncLifecycle.onEvent(event)) {
@@ -370,7 +369,6 @@ class DiningOrderDetailViewModel @Inject constructor(
         }
     }
 
-    // ==================== 辅助 ====================
 
     /** 由详情选菜记录取当前用户条目（他人记录一律排除——重放永不覆盖他人变更） */
     private fun myItemsOf(vo: DiningOrderDetailVo, myId: Long?): Map<Long, String> {
@@ -380,7 +378,6 @@ class DiningOrderDetailViewModel @Inject constructor(
             .associate { it.safeRecipeId to it.safeNote }
     }
 
-    /** 推送本地意图与未决标识到页面 */
     private fun publishCart() {
         _cart.value = coordinator.cart
         _pendingRecipeIds.value = coordinator.pendingRecipeIds()
@@ -416,7 +413,6 @@ class DiningOrderDetailViewModel @Inject constructor(
     }
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "DiningOrderDetailViewModel"
 
         /** 类型安全路由参数键（DiningRoute.OrderDetail 属性名即键名） */

@@ -174,7 +174,6 @@ export struct SoundscapePage {
     }
   }
 
-  // ==================== 交互 ====================
 
   /** 播放 / 停止切换（停止时同时取消睡眠定时与淡出） */
   private togglePlay(): void {
@@ -294,7 +293,6 @@ export struct SoundscapePage {
     }
   }
 
-  // ==================== 条形动画 ====================
 
   private startBars(): void {
     // reduced motion：条形静止（规范 §8：取消无限动画，保留状态可读性）
@@ -348,7 +346,6 @@ export struct SoundscapePage {
     }
   }
 
-  // ==================== 文案 / 视觉映射 ====================
 
   private channelLabel(channel: SoundChannel): string {
     switch (channel) {
@@ -454,12 +451,9 @@ export struct SoundscapePage {
     return `剩余 ${minutes}:${secondText}`
   }
 
-  // ==================== 构建 ====================
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值，
       // 子树内滑杆等画布经重建后的 onReady/onAreaChange 以新令牌重绘
       // （机制见 view/common/ThemeRefresh.ets；播放启停保持在宿主之外不受重建影响）
       ThemeRefreshV2() {
@@ -927,7 +921,6 @@ struct VolumeSlider {
     ctx.fillStyle = resColor('PRIMARY')
     this.roundRect(0, trackY - trackHeight / 2, width * fraction, trackHeight, trackHeight / 2)
     ctx.fill()
-    // 拇指
     const thumbX: number = width * fraction
     const thumbR: number = 8
     ctx.fillStyle = resColor('SURFACE')

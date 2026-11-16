@@ -18,16 +18,12 @@ public class AdminWorkbenchEntryVo {
     /** 业务唯一标识 */
     private String entryKey;
 
-    /** 入口标题 */
     private String title;
 
-    /** 副标题描述 */
     private String description;
 
-    /** 图标 key */
     private String icon;
 
-    /** 图标色组 key */
     private String color;
 
     /** 卡片类型 key：tile/wide/row/notice */
@@ -36,10 +32,8 @@ public class AdminWorkbenchEntryVo {
     /** 分组标题：端上分组边界渲染区块标题 */
     private String sectionTitle;
 
-    /** 配图直链 */
     private String imageUrl;
 
-    /** 跳转 URI */
     private String target;
 
     /** 角标文案，空则不显示 */
@@ -51,7 +45,6 @@ public class AdminWorkbenchEntryVo {
     /** 排序，越小越靠前 */
     private Integer sort;
 
-    /** 备注 */
     private String remark;
 
     private LocalDateTime createdAt;

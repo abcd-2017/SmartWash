@@ -59,7 +59,6 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
     /** 来源类型：2外链 */
     private static final int SOURCE_TYPE_EXTERNAL = 2;
 
-    /** MinIO 游戏对象根前缀 */
     private static final String OBJECT_ROOT = "game/";
 
     /** 封面上传大小上限（与工作台配图一致） */
@@ -78,7 +77,6 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
     private final MinioConfig minioConfig;
     private final com.smartwash.game.storage.GameCoverStorage gameCoverStorage;
 
-    // ==================== 管理端：上传 ====================
 
     @Override
     @CacheEvict(value = CACHE_NAME, allEntries = true)
@@ -253,7 +251,6 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
         return StrUtil.isBlank(config.getCoverUrl()) ? null : minioConfig.urlOf(config.getCoverUrl());
     }
 
-    // ==================== 管理端：分页 / 编辑 / 开关 / 删除 ====================
 
     @Override
     public Page<AdminGameVo> adminPage(SearchGameFrom from) {
@@ -364,7 +361,6 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
                 id, config.getGameKey(), config.getObjectKey());
     }
 
-    // ==================== 用户端 ====================
 
     @Override
     public List<GameVo> listEnabledGames() {
@@ -394,7 +390,6 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
         return playable;
     }
 
-    // ==================== 内部方法 ====================
 
     /** 覆盖上传前清理旧前缀（fail-closed：失败中止上传，防新旧包混挂）；对象不存在时存储层幂等静默 */
     private void removeOldPrefix(String prefix) {

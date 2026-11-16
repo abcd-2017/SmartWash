@@ -5,9 +5,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * 枚举工具类
- */
 public class EnumUtils {
 
     /**

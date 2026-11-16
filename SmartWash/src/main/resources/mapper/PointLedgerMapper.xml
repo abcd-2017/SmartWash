@@ -17,4 +17,13 @@
         order by created_at desc, ledger_id desc
         limit #{limit}
     </select>
+
+    <!-- 个人流水分页：与 selectRecentByUserId 同序（时间倒序 + ledger_id 兜底）；
+         分页 LIMIT 与 COUNT 由 MyBatis-Plus 分页插件处理，XML 不写死页码 -->
+    <select id="selectPageByUserId" resultType="com.smartwash.points.entity.PointLedger">
+        select ledger_id, user_id, delta, reason, ref_date, balance_after, created_at
+        from point_ledger
+        where user_id = #{userId}
+        order by created_at desc, ledger_id desc
+    </select>
 </mapper>

@@ -148,7 +148,6 @@ struct Payment {
         this.loadFailed = true
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
       this.loadFailed = true
       showToastSafety(resString('payment_2'))
     } finally {
@@ -207,7 +206,6 @@ struct Payment {
 
   /**
    * 金额/券淡入：60ms 后 180ms EaseOut，近似安卓 fadeIn(enterTween 200) togetherWith fadeOut(exitTween 120)。
-   * 定时器在 aboutToDisappear 中清理（定时器硬规则）。
    */
   private fadeAmountIn(): void {
     if (this.amountFadeTimer !== -1) {
@@ -527,9 +525,6 @@ struct Payment {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack() {
         Column() {
@@ -783,7 +778,6 @@ struct Payment {
         }
         .width("100%")
         .height("100%")
-        // 沉浸式：内容避让状态栏（背景延伸）
         .padding({ top: safeTopVp() })
         .backgroundColor($r('app.color.BACKGROUND'))
 

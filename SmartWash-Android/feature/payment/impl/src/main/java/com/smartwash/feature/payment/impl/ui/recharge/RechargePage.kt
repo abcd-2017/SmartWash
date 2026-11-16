@@ -322,7 +322,6 @@ fun RechargePage(
                     }
                 }
 
-                // 支付方式
                 item(key = "payment") {
                     Text(
                         text = stringResource(R.string.payment_method),
@@ -686,7 +685,6 @@ private fun PaymentMethodCard(
     }
 }
 
-/** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
 private const val TAG = "RechargePage"
 
 // LazyColumn 固定条目序号（余额 0 / 金额 1 / 支付方式 2）：校验失败自动滚动定位用（修复②）

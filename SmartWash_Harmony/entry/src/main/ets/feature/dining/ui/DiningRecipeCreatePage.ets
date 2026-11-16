@@ -25,7 +25,6 @@ import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
-/** 日志 TAG */
 const TAG: string = 'diningRecipeCreate'
 
 /** 封面上限（与后端 RecipeImageValidator 一致：5MB） */

@@ -16,7 +16,6 @@ export const DEEPLINK_SCHEME: string = 'smartwash'
 /** 内建 host：WebView 分支（query 携带 url/title），不经 routeLookup */
 export const DEEPLINK_HOST_WEB: string = 'web'
 
-/** scheme 分隔符 */
 const SCHEME_SEPARATOR: string = '://'
 
 /**
@@ -123,7 +122,6 @@ export function hostOf(uri: string): string | null {
   return host.length > 0 ? host.toLowerCase() : null
 }
 
-// ---------- 内部实现 ----------
 
 function parseInternal(uri: string, routeLookup: DeepLinkRouteLookup): DeepLinkResult {
   const schemeEnd = uri.indexOf(SCHEME_SEPARATOR)

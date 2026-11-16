@@ -184,7 +184,6 @@ fun AssetTagCreatePage(
                 )
             }
 
-            // ---------- 提交错误 ----------
             val errorMessage = (submitState as? RequestState.Error)?.getMessage(context)
             if (errorMessage != null) {
                 Text(

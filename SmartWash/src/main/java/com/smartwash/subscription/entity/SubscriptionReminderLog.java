@@ -27,7 +27,6 @@ public class SubscriptionReminderLog implements Serializable {
     @TableId(value = "reminder_id", type = IdType.AUTO)
     private Long reminderId;
 
-    /** 订阅 ID */
     private Long subscriptionId;
 
     /** users.id */

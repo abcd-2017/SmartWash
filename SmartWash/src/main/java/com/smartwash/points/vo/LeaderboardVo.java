@@ -29,7 +29,6 @@ public class LeaderboardVo {
     public static class EntryVo {
         /** 名次（1 起） */
         private Integer rank;
-        /** 用户 ID */
         private Long userId;
         /** 脱敏手机号（138****1234，对齐既有 maskPhone 口径） */
         private String maskedPhone;

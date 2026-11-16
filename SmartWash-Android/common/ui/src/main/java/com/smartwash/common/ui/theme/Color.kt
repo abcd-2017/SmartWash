@@ -2,7 +2,6 @@ package com.smartwash.common.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ========== 清氧设计系统 — 亮色主题 ==========
 
 // 主色 — 自然绿
 val Primary = Color(0xFF2D9B6A)
@@ -10,7 +9,6 @@ val OnPrimary = Color(0xFFFFFFFF)
 val PrimaryContainer = Color(0xFFF0FBF4)
 val OnPrimaryContainer = Color(0xFF17322B)
 
-// 主色变体
 val PrimaryLight = Color(0xFFF0FBF4)    // 超浅绿（图标盒/票券底，画板逐值 #F0FBF4）
 val PrimarySoft = Color(0xFFE8F6EF)     // primarySoft 选中底（规范 §2.1；与图标盒 #F0FBF4 是两个绿，
                                         // 支付画板选中卡实测 #E8F6EF，勿再合并）
@@ -21,19 +19,16 @@ val PrimaryDark = Color(0xFF1E8C5C)     // 深绿，按下态
 // 浅色 #2D9B6A→#1E8C5C、深色 #2D9B6A→#5BC894——起点两主题均为品牌绿原色）
 val HeroGradientStart = Color(0xFF2D9B6A)
 
-// 次要色
 val Secondary = Color(0xFF8E8E93)
 val OnSecondary = Color(0xFFFFFFFF)
 val SecondaryContainer = Color(0xFFF2F2F7)
 val OnSecondaryContainer = Color(0xFF1C1C1E)
 
-// 第三色
 val Tertiary = Color(0xFF6B7280)
 val OnTertiary = Color(0xFFFFFFFF)
 val TertiaryContainer = Color(0xFFF2F2F7)
 val OnTertiaryContainer = Color(0xFF1C1C1E)
 
-// 背景 & 表面
 val Background = Color(0xFFF5F6F3)       // 微绿调米白页面底色（规范 §1.2，与 surfaceVariant 互换回规范值）
 val OnBackground = Color(0xFF1C1C1E)
 val Surface = Color(0xFFFFFFFF)          // 纯白卡片
@@ -43,17 +38,14 @@ val OnSurfaceVariant = Color(0xFF6B6E73)
 val GroupBackground = Color(0xFFE7EAE4)  // 分组容器底（比页面底再深一档）
 val Hairline = Color(0xFFEFF1EE)        // 容器内部行分隔线底色
 
-// 边框 & 辅助
 val Outline = Color(0xFFE6E9E6)         // 卡片描边（1px，规范 §1.4 收敛 #E3E7E2→#E6E9E6）
 val OutlineVariant = Color(0xFFEFF1EE)
 
-// 错误
 val Error = Color(0xFFA8435A)            // 规范 §1.4 收敛单一 error 角色（弃 iOS 红 #FF3B30）
 val OnError = Color(0xFFFFFFFF)
 val ErrorContainer = Color(0xFFF7E9EC)
 val OnErrorContainer = Color(0xFFA8435A)
 
-// 警告
 val Warning = Color(0xFFD98A26)          // 规范语义橙（iOS 系统橙 on 白对比度不足，已废弃）
 val OnWarning = Color(0xFFFFFFFF)
 val WarningContainer = Color(0xFFFDF3E7)
@@ -65,13 +57,11 @@ val OngoingInk = Color(0xFFD98A26)
 val Danger = Color(0xFFA8435A)
 val DangerInk = Color(0xFFA8435A)
 
-// 成功
 val Success = Color(0xFF2D9B6A)
 val OnSuccess = Color(0xFFFFFFFF)
 val SuccessContainer = Color(0xFFF0FBF4)
 val OnSuccessContainer = Color(0xFF17322B)
 
-// 文字色阶
 val TextPrimary = Color(0xFF1C1C1E)
 val TextSecondary = Color(0xFF6B6E73)   // 次文本（对比度更高）
 val TextTertiary = Color(0xFFA9AEA9)    // 弱文本（规范 §1.4 收敛 #9A9DA3→#A9AEA9）
@@ -84,7 +74,6 @@ val TextTertiary = Color(0xFFA9AEA9)    // 弱文本（规范 §1.4 收敛 #9A9D
 val TextGreen = Color(0xFF177A4C)
 val TextGreenOnTint = Color(0xFF146841)
 
-// 分隔线
 val Divider = Color(0xFFEFF1EE)
 
 // 水意象（次要强调、进度、水滴）
@@ -107,7 +96,6 @@ val IconForegroundPink = Color(0xFFC9526B)
 val IconForegroundTeal = Color(0xFF3F9D78)
 val IconForegroundPurple = Color(0xFF7C3AED)
 
-// ========== 清氧设计系统 — 暗色主题 ==========
 
 // 主色 — 自然绿（规范 §1.4：深色模式主色提亮 #5BC894）
 val DarkPrimary = Color(0xFF5BC894)
@@ -115,19 +103,16 @@ val DarkOnPrimary = Color(0xFF17322B)
 val DarkPrimaryContainer = Color(0xFF17322B)
 val DarkOnPrimaryContainer = Color(0xFFF0FBF4)
 
-// 主色变体
 val DarkPrimaryLight = Color(0xFF17322B)     // 浅绿背景 → 深色模式用深绿底
 val DarkPrimarySoft = Color(0xFF1D3229)      // primarySoft 深色值（规范 §6.5）
 val DarkOnPrimarySoft = Color(0xFFB9E8CF)    // onPrimarySoft 深色值（规范 §6.5）
 val DarkPrimaryDark = Color(0xFF5BC894)      // 按下态稍亮（primaryDeep 深色值）
 
-// 次要色
 val DarkSecondary = Color(0xFFA9AEA9)
 val DarkOnSecondary = Color(0xFF141614)
 val DarkSecondaryContainer = Color(0xFF262A27)
 val DarkOnSecondaryContainer = Color(0xFFE6E9E6)
 
-// 第三色
 val DarkTertiary = Color(0xFFA9AEA9)
 val DarkOnTertiary = Color(0xFF141614)
 val DarkTertiaryContainer = Color(0xFF262A27)
@@ -143,29 +128,24 @@ val DarkOnSurfaceVariant = Color(0xFFA9AEA9)
 val DarkGroupBackground = Color(0xFF1A1E1B)  // 分组容器底（bg 与 surface 之间的绿灰中间档）
 val DarkHairline = Color(0xFF262A27)         // 容器内部行分隔线底色
 
-// 边框 & 辅助
 val DarkOutline = Color(0xFF2C312D)
 val DarkOutlineVariant = Color(0xFF262A27)
 
-// 错误
 val DarkError = Color(0xFFE795A5)
 val DarkOnError = Color(0xFF141614)
 val DarkErrorContainer = Color(0xFF3A1F28)
 val DarkOnErrorContainer = Color(0xFFE795A5)
 
-// 警告
 val DarkWarning = Color(0xFFE5AC5C)
 val DarkOnWarning = Color(0xFF141614)
 val DarkWarningContainer = Color(0xFF332917)
 val DarkOnWarningContainer = Color(0xFFECB36A)
 
-// 成功
 val DarkSuccess = Color(0xFF5BC894)
 val DarkOnSuccess = Color(0xFF141614)
 val DarkSuccessContainer = Color(0xFF17322B)
 val DarkOnSuccessContainer = Color(0xFFF0FBF4)
 
-// 文字色阶
 val DarkTextPrimary = Color(0xFFE6E9E6)
 val DarkTextSecondary = Color(0xFFA9AEA9)
 val DarkTextTertiary = Color(0xFF7E837D)
@@ -174,7 +154,6 @@ val DarkTextTertiary = Color(0xFF7E837D)
 val DarkTextGreen = Color(0xFF5BC894)
 val DarkTextGreenOnTint = Color(0xFF5BC894)
 
-// 分隔线
 val DarkDivider = Color(0xFF262A27)
 
 // 水意象（暗色下保持可读性）
@@ -208,7 +187,6 @@ val AuthGradientTop = Color(0xFF1A9E6E)
 val AuthGradientMid = Color(0xFF0D7A4A)
 val AuthGradientBottom = Color(0xFF0B5C3A)
 
-// ========== 毛玻璃效果色 ==========
 val GlassBgCard = Color.White.copy(alpha = 0.08f)       // 玻璃卡底色（设计稿登录/注册画板 .glass 卡 rgba(255,255,255,.08)）
 val GlassBgSubtle = Color.White.copy(alpha = 0.10f)     // 极淡底色（设计稿品牌圆 bg 为 rgba(255,255,255,.10)）
 val GlassBg = Color.White.copy(alpha = 0.15f)           // 标准底色
@@ -220,18 +198,15 @@ val GlassTextHint = Color.White.copy(alpha = 0.6f)      // 提示文字
 val GlassTextDisabled = Color.White.copy(alpha = 0.7f)   // 禁用文字
 val GlassTextActive = Color.White.copy(alpha = 0.8f)     // 激活文字
 
-// ========== 错误色变体 ==========
 val ErrorLight = Color(0xFFFFB4AB)   // 输入框错误态
 
 // ========== 认证页 CTA（玻璃卡白色按钮的文字绿，两页共用） ==========
 // 2026-11-06 评审 R17/R22：原 #1E8C5C on 白 4.23:1 不足 AA → 改文字绿深档 #177A4C（≈5.1:1）
 val AuthCtaText = Color(0xFF177A4C)
 
-// ========== 第三方品牌色 ==========
 val WeChatGreen = Color(0xFF07C160)
 val AlipayBlue = Color(0xFF1677FF)
 
-// ========== 服务类型色彩 ==========
 val ServiceWash = Color(0xFF2D9B6A)       // 标准洗 — 自然绿
 val ServiceWashLight = Color(0xFFF0FBF4)
 val ServiceDry = Color(0xFF7C3AED)        // 干洗 — 优雅紫

@@ -12,11 +12,9 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class GameStateUpdateFrom {
 
-    /** 游戏标识 */
     @NotBlank(message = "gameKey 不能为空")
     private String gameKey;
 
-    /** 游戏自定义存档 JSON 字符串 */
     @NotBlank(message = "存档内容不能为空")
     private String stateJson;
 

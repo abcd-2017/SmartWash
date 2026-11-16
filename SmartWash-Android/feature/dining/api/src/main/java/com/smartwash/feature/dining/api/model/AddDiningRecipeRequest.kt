@@ -11,11 +11,9 @@ import androidx.annotation.Keep
  */
 @Keep
 data class AddDiningRecipeRequest(
-    /** 菜名（必填） */
     val name: String,
     /** 所属分类 ID：null 或 0=未分类 */
     val categoryId: Long? = null,
-    /** 食材名数组 */
     val ingredients: List<String>? = null,
     /** 做法步骤（纯文本） */
     val steps: String? = null,

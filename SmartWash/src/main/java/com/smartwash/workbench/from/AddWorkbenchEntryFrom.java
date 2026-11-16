@@ -19,7 +19,6 @@ public class AddWorkbenchEntryFrom {
     @Pattern(regexp = "^[a-z][a-z0-9_-]{2,63}$", message = "entry_key 须为小写字母开头、2-63位小写字母/数字/_/-")
     private String entryKey;
 
-    /** 入口标题 */
     @NotBlank(message = "标题不能为空")
     @Size(max = 32, message = "标题过长（上限32字符）")
     private String title;
@@ -32,7 +31,6 @@ public class AddWorkbenchEntryFrom {
     @Pattern(regexp = "^(calendar|search|book|calculate|history|chat|link|science|gamepad|default)$", message = "图标 key 不在白名单内")
     private String icon = "default";
 
-    /** 图标色组 key */
     @Pattern(regexp = "^(green|blue|orange|pink|teal|purple)$", message = "色组 key 须为 green/blue/orange/pink/teal/purple")
     private String color = "green";
 
@@ -67,7 +65,6 @@ public class AddWorkbenchEntryFrom {
     @Min(value = 0, message = "排序不能为负数")
     private Integer sort = 100;
 
-    /** 备注 */
     @Size(max = 255, message = "备注过长（上限255字符）")
     private String remark;
 }

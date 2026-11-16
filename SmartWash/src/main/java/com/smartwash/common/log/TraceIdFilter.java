@@ -41,7 +41,6 @@ public class TraceIdFilter extends OncePerRequestFilter {
     /** MDC 中 request_id 的 key，logback pattern 以 %X{request_id} 引用 */
     public static final String REQUEST_ID_KEY = "request_id";
 
-    /** 上游透传与响应回写的头名称 */
     public static final String REQUEST_ID_HEADER = "X-Request-Id";
 
     /** 上游透传值白名单：字母数字与 -/_，长度 8~64（满足常见 UUID/网关 id 形态，拒日志注入字符） */

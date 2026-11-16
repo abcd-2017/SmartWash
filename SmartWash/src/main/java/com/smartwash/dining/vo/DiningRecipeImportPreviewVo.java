@@ -21,7 +21,6 @@ public class DiningRecipeImportPreviewVo {
     /** 通过校验、可提交导入的行数 */
     private int validCount;
 
-    /** 校验失败行数 */
     private int errorCount;
 
     /** 逐行预览明细（按行号升序，含失败行的错误原因） */
@@ -41,13 +40,11 @@ public class DiningRecipeImportPreviewVo {
         /** 匹配到的分类 ID（分类不存在时为 null，errors 中给出行级错误） */
         private Long categoryId;
 
-        /** 菜名 */
         private String name;
 
         /** 食材名数组（按模板分隔符切分、去空白后的归一结果） */
         private List<String> ingredients;
 
-        /** 做法步骤 */
         private String steps;
 
         /** 封面链接原文（当前版本仅校验格式不落库，封面走 Web 端单独上传） */

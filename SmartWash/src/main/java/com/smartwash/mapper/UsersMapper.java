@@ -8,14 +8,6 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * <p>
- * Mapper 接口
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 public interface UsersMapper extends BaseMapper<Users> {
     Users getUserByPhoneNumber(@Param("phoneNumber") String phoneNumber);
 

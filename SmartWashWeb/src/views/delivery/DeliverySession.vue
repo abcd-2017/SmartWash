@@ -1,6 +1,5 @@
 <template>
   <div class="session-page">
-    <!-- 顶部：会话信息卡 -->
     <header class="session-card">
       <div class="session-head">
         <div class="session-title">
@@ -28,7 +27,6 @@
       </p>
     </header>
 
-    <!-- 中部：条目流 -->
     <section ref="listRef" class="item-list" v-loading="firstLoading">
       <TransitionGroup v-if="items.length" name="item">
         <article
@@ -87,7 +85,6 @@
       <el-empty v-else-if="!firstLoading" description="暂无条目，等待手机端投递" :image-size="80" />
     </section>
 
-    <!-- 底部：发送区 -->
     <footer class="composer-card">
       <el-input
         v-model="draftText"
@@ -151,7 +148,6 @@ const props = defineProps({
 
 const emit = defineEmits(['expired']);
 
-// ---------- 条目流与轮询 ----------
 const POLL_INTERVAL = 2500; // 契约 2-3s 轮询，取中值
 const items = ref([]);
 const firstLoading = ref(true);
@@ -241,7 +237,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 
-// ---------- 倒计时 ----------
 const remainingMs = ref(0);
 const expireAt = computed(() =>
   props.session?.expireAt ? new Date(props.session.expireAt) : null
@@ -280,7 +275,6 @@ watch(
   }
 );
 
-// ---------- 取走（take + 焚毁） ----------
 const actingId = ref(null);
 
 // 文本条目「复制内容」= take 认领并焚毁，正文随响应返回后写入剪贴板
@@ -404,7 +398,6 @@ function triggerSave(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
-// ---------- 发送区 ----------
 const draftText = ref('');
 const sendingText = ref(false);
 const uploading = ref(false);
@@ -483,7 +476,6 @@ async function handleFilesSelected(event) {
   }
 }
 
-// ---------- 展示映射 ----------
 const KIND_ICONS = { 1: Document, 2: Picture, 3: Paperclip };
 const KIND_CLASSES = { 1: 'kind-text', 2: 'kind-image', 3: 'kind-file' };
 
@@ -524,7 +516,6 @@ function formatSize(bytes) {
   min-height: 100vh;
 }
 
-/* --- 顶部会话信息卡 --- */
 .session-card {
   padding: 20px 24px;
   background: var(--bg-card);
@@ -599,7 +590,6 @@ function formatSize(bytes) {
   color: var(--text-muted);
 }
 
-/* --- 条目流 --- */
 .item-list {
   position: relative; /* TransitionGroup 离场条目 absolute 定位的包含块 */
   flex: 1;
@@ -741,7 +731,6 @@ function formatSize(bytes) {
   transition: transform var(--motion-base) var(--ease-standard);
 }
 
-/* --- 发送区 --- */
 .composer-card {
   padding: 16px;
   background: var(--bg-card);

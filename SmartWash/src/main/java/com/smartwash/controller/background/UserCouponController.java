@@ -14,14 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * <p>
- * 用户领取优惠券记录表 前端控制器
- * </p>
- *
- * @author
- * @since 2025-04-06
- */
 @Tag(name = "用户优惠券管理", description = "后台管理用户领取的优惠券记录")
 @Slf4j
 @RestController

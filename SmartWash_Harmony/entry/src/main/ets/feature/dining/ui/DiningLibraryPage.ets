@@ -22,13 +22,12 @@ import {
   SkeletonList
 } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
-import { PagingController } from '../../../utils/PagingUtil'
+import { LazyListDataSource, PagingController } from '../../../utils/PagingUtil'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
-/** 日志 TAG */
 const TAG: string = 'diningLibrary'
 
 @Builder
@@ -57,6 +56,9 @@ struct DiningLibraryPage {
       this.isLoadingMore = loading
     }
   )
+  /** LazyForEach 数据源（读取 list，实例稳定不可重建，避免整表重建） */
+  private dataSource: LazyListDataSource<DiningRecipeVo> =
+    new LazyListDataSource<DiningRecipeVo>(() => this.list)
   private hasShown: boolean = false
 
   async aboutToAppear(): Promise<void> {
@@ -193,7 +195,7 @@ struct DiningLibraryPage {
           } else {
             Refresh({ refreshing: $$this.isRefreshing }) {
               List({ space: DesignDimens.CARD_SPACING }) {
-                ForEach(this.list, (recipe: DiningRecipeVo) => {
+                LazyForEach(this.dataSource, (recipe: DiningRecipeVo) => {
                   ListItem() {
                     this.RecipeCard(recipe)
                   }
@@ -382,8 +384,11 @@ struct DiningLibraryPage {
         const records = res.data.records
         if (page === 1) {
           this.list = records
-        } else {
+          this.dataSource.notifyReload()
+        } else if (records.length > 0) {
+          const startIndex: number = this.list.length
           this.list = this.list.concat(records)
+          this.dataSource.notifyAppend(startIndex, records.length)
         }
         this.appendError = false
         logger.debug(TAG, `菜谱分页加载成功 page=${page} count=${records.length} total=${res.data.total}`)

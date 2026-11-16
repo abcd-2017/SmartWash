@@ -61,7 +61,6 @@ object GameThemeBridgePolicy {
             android.content.res.Configuration.UI_MODE_NIGHT_YES
         ) GameThemeMode.DARK else GameThemeMode.LIGHT
 
-    // ==================== 游戏数据桥（存档 / 成绩 / 排行榜）纯逻辑 ====================
 
     /** 排行榜 limit 非法（<= 0）时的缺省 TOP N */
     const val DEFAULT_LEADERBOARD_LIMIT = 20
@@ -177,7 +176,6 @@ class SmartWashGameBridge(
         onChromeChange(mode)
     }
 
-    // ==================== 游戏数据代理（存档 / 成绩 / 关卡） ====================
 
     /** 读存档：H5 传 gameKey + 回调 id，原生带 token 请求后回传 */
     @JavascriptInterface

@@ -67,6 +67,35 @@ export function pointLedgerItemFromJSON(raw: Object | null | undefined): PointLe
   return vo
 }
 
+/**
+ * 积分流水分页壳（对齐后端 GET /web/auth/points/ledger → Result<Page<PointLedgerItemVo>>，
+ * MyBatis-Plus IPage 序列化：records/total/size/current）。字段口径与 PageData /
+ * TransactionPageData / NoticePageData 一致。
+ */
+export interface PointLedgerPageData {
+  /** 当前页流水（时间倒序） */
+  records: Array<PointLedgerItemVo>
+  /** 总条数（供端上判断是否还有更多） */
+  total: number
+  size: number
+  current: number
+}
+
+/** JSON → 积分流水分页壳；raw 缺失兜底空页 */
+export function pointLedgerPageFromJSON(raw: Object | null | undefined): PointLedgerPageData {
+  if (raw === null || raw === undefined) {
+    return { records: [], total: 0, size: 0, current: 0 }
+  }
+  const obj: Record<string, Object> = raw as Record<string, Object>
+  return {
+    records: mapArray(obj['records'],
+      (item: Object): PointLedgerItemVo => pointLedgerItemFromJSON(item)),
+    total: jsonNum(obj['total']) ?? 0,
+    size: jsonNum(obj['size']) ?? 0,
+    current: jsonNum(obj['current']) ?? 0
+  }
+}
+
 /** 我的积分概览（对齐后端 PointsOverviewVo） */
 export interface PointsOverviewVo {
   /** 当前积分余额（无账户=0） */

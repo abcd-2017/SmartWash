@@ -186,7 +186,6 @@ public class GameScoreServiceImpl extends ServiceImpl<GameScoreEntryMapper, Game
         return vo;
     }
 
-    // ==================== 缓存 ====================
 
     /** 缓存读：命中返回榜单，未命中/异常返回 null（由调用方回源 DB） */
     private List<GameScoreEntry> readFromCache(String gameKey, int size, String order) {
@@ -280,7 +279,6 @@ public class GameScoreServiceImpl extends ServiceImpl<GameScoreEntryMapper, Game
         return LEADERBOARD_KEY_PREFIX + gameKey;
     }
 
-    // ==================== 工具 ====================
 
     private GameConfig requireLeaderboardEnabled(String gameKey) {
         GameConfig config = gameConfigMapper.selectOne(new LambdaQueryWrapper<GameConfig>()

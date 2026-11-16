@@ -20,23 +20,19 @@ import androidx.annotation.Keep
  */
 @Keep
 data class DiningOrderDetailVo(
-    /** 订单 ID */
     val id: Long? = null,
     /** 服务端当前 version（轮询协议基准） */
     val version: Long? = null,
     /** 轮询结果标志：true=与已知 version 一致（轻量响应，其余字段 null）；null 按 false 兜底 */
     val unchanged: Boolean? = null,
-    /** 订单标题 */
     val title: String? = null,
     /** 订单状态：ONGOING / FINISHED */
     val status: String? = null,
-    /** 发起者用户 ID */
     val creatorUserId: Long? = null,
     /** 本单菜单（发起者编排的选菜范围，按加入菜单顺序；端上按分类组织左侧分类栏） */
     val menu: List<MenuRecipe>? = null,
     /** 全部选菜记录（共享购物车明细，按勾选顺序） */
     val items: List<OrderItem>? = null,
-    /** 参与者列表 */
     val members: List<OrderMember>? = null,
     /** 结束时间（进行中为 null，ISO 字符串原文） */
     val finishedAt: String? = null,
@@ -70,7 +66,6 @@ data class DiningOrderDetailVo(
     data class MenuRecipe(
         /** 菜谱 ID（点单页选菜操作参数） */
         val recipeId: Long? = null,
-        /** 菜名 */
         val name: String? = null,
         /** 分类 ID，null=未分类 */
         val categoryId: Long? = null,
@@ -83,7 +78,6 @@ data class DiningOrderDetailVo(
     @Keep
     data class OrderItem(
         val recipeId: Long? = null,
-        /** 选菜人用户 ID */
         val userId: Long? = null,
         /** 个人备注（如 不要辣），可空 */
         val note: String? = null,
@@ -97,7 +91,6 @@ data class DiningOrderDetailVo(
     @Keep
     data class OrderMember(
         val userId: Long? = null,
-        /** 是否发起者 */
         val isCreator: Boolean? = null,
         /** 脱敏手机号（如 139****9000），端上作选菜人标识 */
         val phoneMasked: String? = null,

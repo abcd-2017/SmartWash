@@ -390,7 +390,6 @@ private fun DrawScope.drawPet(
             center = Offset.Zero,
             style = Stroke(width = 1.dp.toPx()),
         )
-        // 高光
         drawCircle(
             color = scheme.surface.copy(alpha = 0.8f),
             radius = radius * 0.16f,

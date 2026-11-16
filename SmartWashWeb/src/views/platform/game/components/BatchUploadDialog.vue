@@ -8,7 +8,6 @@
     :show-close="phase !== 'running'"
     @closed="handleClosed"
   >
-    <!-- 步骤 1：选择父目录 -->
     <div v-if="phase === 'choose'" class="batch-choose">
       <div class="batch-guide">
         <p class="batch-guide-title">选择包含多个游戏目录的父目录，按规范逐个上传：</p>
@@ -39,7 +38,6 @@
       </div>
     </div>
 
-    <!-- 步骤 2/3/4：预检队列 / 上传中 / 结果 -->
     <template v-else>
       <div class="batch-summary">
         <template v-if="phase === 'preview'">
@@ -225,9 +223,9 @@ const emit = defineEmits(['success']);
 const dirInputRef = ref(null);
 const phase = ref('choose'); // choose → preview → running → done
 const queue = ref([]); // 预检后的上传队列（含跳过项，用于结果展示）
-const checking = ref(false); // 覆盖预检请求中
+const checking = ref(false);
 const abortFlag = ref(false);
-const current = ref(null); // 当前上传项
+const current = ref(null);
 const currentPercent = ref(0);
 const doneCount = ref(0);
 
@@ -501,10 +499,9 @@ const startUpload = async () => {
     doneCount.value += 1;
   }
   phase.value = 'done';
-  emit('success'); // 通知列表刷新（新增与覆盖都会改变列表内容）
+  emit('success');
 };
 
-// 关闭即重置：下次打开从选目录开始，避免上一次的队列残留
 const handleClosed = () => {
   phase.value = 'choose';
   queue.value = [];
@@ -579,7 +576,6 @@ const handleClosed = () => {
   white-space: nowrap;
 }
 
-/* 关卡列：列头「关卡 + 全选」同行；单元格勾选框与处置 tag 对齐排布 */
 .levels-header {
   display: inline-flex;
   align-items: center;

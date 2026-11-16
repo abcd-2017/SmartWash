@@ -11,14 +11,6 @@ import com.smartwash.vo.recharge_records.RechargeSummaryVo;
 
 import java.time.LocalDateTime;
 
-/**
- * <p>
- * 服务类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 public interface IRechargeRecordsService extends IService<RechargeRecords> {
 
     Page<RechargeRecordsVo> getAllRecords(SearchRechargeRecordsFrom rechargeRecordsFrom);
@@ -32,9 +24,7 @@ public interface IRechargeRecordsService extends IService<RechargeRecords> {
      */
     RechargeSummaryVo getRechargeSummary(LocalDateTime dateFrom, LocalDateTime dateTo);
 
-    //用户充值
     boolean userRecharge(UserRechargeFrom vo, Long userId);
 
-    //获取当前用户充值记录
     Page<RechargeRecordsVo> getUserRechargeRecords(Long userId, BaseSearchFrom searchFrom);
 }

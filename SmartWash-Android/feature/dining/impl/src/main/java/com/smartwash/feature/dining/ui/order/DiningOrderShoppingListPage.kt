@@ -90,7 +90,6 @@ fun DiningOrderShoppingListPage(
     // 双视图切换（纯 UI 态；不参与网络请求）
     var tab by remember { mutableStateOf(TAB_INGREDIENTS) }
 
-    // 首载（返回本页经 LaunchedEffect(Unit) 不重放；失败重试显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
 
     // 失败反馈（Toast 收进 effect——组合期禁副作用）

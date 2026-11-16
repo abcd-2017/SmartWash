@@ -68,11 +68,9 @@ export class LiuRenChart {
   readonly keTi: string | null;
   /** 九宗门：贼克/比用（未实现宗门为 null） */
   readonly jiuZongMen: string | null;
-  /** 暂不支持说明 */
   readonly unsupportedNote: string | null;
   /** 贵人地支 */
   readonly guiRen: string;
-  /** 昼占/夜占 */
   readonly isDay: boolean;
   /** 天盘支 → 天将 */
   readonly tianJiang: Map<string, string>;
@@ -316,7 +314,6 @@ export class LiuRenChart {
     );
   }
 
-  /** 三传结果 */
   static resolveSanChuan(dayGanZhi: GanZhi, tianPan: Map<DiZhi, DiZhi>,
     courses: LiuRenCourse[]): ChuanResult {
     // 伏吟/返吟盘先判（ZhouYiLab 口径）

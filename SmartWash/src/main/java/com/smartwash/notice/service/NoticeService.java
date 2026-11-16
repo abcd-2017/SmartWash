@@ -18,7 +18,6 @@ import java.util.List;
  */
 public interface NoticeService extends IService<Notice> {
 
-    // ==================== 管理端 ====================
 
     /** 发送站内信（creatorAdminId 取登录上下文） */
     Long publish(AddNoticeFrom from, Long creatorAdminId);
@@ -38,7 +37,6 @@ public interface NoticeService extends IService<Notice> {
      */
     int publishTargeted(NoticeType type, String title, String content, String deepLink, List<Long> userIds);
 
-    // ==================== 用户端 ====================
 
     /** 我的收件箱分页（每条带当前用户 is_read，按创建时间倒序） */
     Page<NoticeVo> pageInbox(SearchNoticeFrom from, Long userId);

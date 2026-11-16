@@ -1,7 +1,6 @@
 <template>
   <div class="page-container">
     <el-tabs v-model="activeTab" @tab-click="handleTabClick">
-      <!-- ==================== 存档记录 ==================== -->
       <el-tab-pane label="存档记录" name="saves" lazy>
         <div class="filter-container">
           <el-form :inline="true" @keyup.enter="handleSaveSearch">
@@ -76,7 +75,6 @@
         </div>
       </el-tab-pane>
 
-      <!-- ==================== 成绩榜 ==================== -->
       <el-tab-pane label="成绩榜" name="scores" lazy>
         <div class="filter-container">
           <el-form :inline="true" @keyup.enter="handleScoreSearch">
@@ -165,8 +163,6 @@ const handleTabClick = (tab) => {
   }
 };
 
-// ==================== 游戏选项 ====================
-
 const gameOptions = ref([]);
 
 const loadGameOptions = async () => {
@@ -177,8 +173,6 @@ const loadGameOptions = async () => {
     gameOptions.value = [];
   }
 };
-
-// ==================== 存档记录 ====================
 
 const {
   list: saveList,
@@ -201,8 +195,6 @@ const {
     userId: q.userId || undefined,
   }),
 });
-
-// ==================== 成绩榜 ====================
 
 const {
   list: scoreList,

@@ -40,10 +40,8 @@ object GameChrome {
      */
     fun normalize(mode: String?): String = mode?.takeIf { it in MODES } ?: FULL
 
-    /** 是否显示原生标题返回栏 */
     fun shouldShowHeader(mode: String): Boolean = mode != NONE
 
-    /** 是否显示系统状态栏 */
     fun shouldShowStatusBar(mode: String): Boolean = mode == FULL
 
     /**

@@ -30,10 +30,8 @@ public class GameConfig implements Serializable {
     /** 业务唯一标识：管理端、端上与转发 URL 共同引用，uk_game_key 唯一索引裁决 */
     private String gameKey;
 
-    /** 游戏名 */
     private String title;
 
-    /** 一句话玩法描述 */
     private String description;
 
     /** 图标 key，端上白名单枚举映射，未知值显示默认图标 */
@@ -88,7 +86,6 @@ public class GameConfig implements Serializable {
     /** 关卡数据版本号（后台改关卡时递增，供 H5 缓存判断） */
     private Integer levelsVersion;
 
-    /** 备注 */
     private String remark;
 
     private LocalDateTime createdAt;

@@ -91,8 +91,6 @@ fun DiningRecipeLibraryPage(
     val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
     val keyword by viewModel.keyword.collectAsState()
 
-    // 首载（返回本页经 LaunchedEffect(Unit) 不重放——栈上重组，列表保留；
-    // 下拉刷新/切分类由显式动作触发）
     LaunchedEffect(Unit) { viewModel.load() }
 
     val contentState = when {

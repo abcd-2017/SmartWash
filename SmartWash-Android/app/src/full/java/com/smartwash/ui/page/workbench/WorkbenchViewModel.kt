@@ -26,8 +26,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * 工作台页 ViewModel。
- *
  * 数据流：init 拉取 `GET /web/auth/workbench/entries`（经 [WorkbenchEntryRepository]）——
  * Success → 服务端下发列表映射 [WorkbenchTool]（icon/color/type 白名单枚举映射，未知值兜底）。
  * 2026-11-01 缺陷 6：移除本地兜底假列表（洗衣黄历等 7 项静态工具），失败给真实错误态 +
@@ -182,7 +180,6 @@ class WorkbenchViewModel @Inject constructor(
         }
     }
 
-    // ---------- 映射与兜底 ----------
 
     /**
      * entryKey 稳定性防御：服务端配置理论上唯一（业务唯一标识），但网格按 entryKey
@@ -217,7 +214,6 @@ class WorkbenchViewModel @Inject constructor(
     )
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "WorkbenchViewModel"
 
         /** DataStore key：最近使用入口（entryKey 逗号连接，新的在前） */

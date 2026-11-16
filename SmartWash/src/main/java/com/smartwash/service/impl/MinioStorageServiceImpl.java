@@ -60,7 +60,6 @@ public class MinioStorageServiceImpl implements FileStorageService {
         try {
             ensureBucketExists();
 
-            // 生成唯一的文件名
             String originalFilename = file.getOriginalFilename();
             String extension = "";
             if (originalFilename != null && originalFilename.contains(".")) {
@@ -68,7 +67,6 @@ public class MinioStorageServiceImpl implements FileStorageService {
             }
             String objectName = directory + "/" + UUID.randomUUID() + extension;
 
-            // 上传文件到 MinIO
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(minioConfig.getBucketName())
@@ -115,9 +113,6 @@ public class MinioStorageServiceImpl implements FileStorageService {
         }
     }
 
-    /**
-     * 确保存储桶存在，不存在则创建
-     */
     private void ensureBucketExists() throws Exception {
         String bucketName = minioConfig.getBucketName();
         boolean exists = minioClient.bucketExists(
@@ -176,7 +171,6 @@ public class MinioStorageServiceImpl implements FileStorageService {
     private void initDefaultAvatar() {
 String objectName = "default/avatar.png";
         try {
-            // 检查默认头像是否已存在
             minioClient.statObject(
                     StatObjectArgs.builder()
                             .bucket(minioConfig.getBucketName())

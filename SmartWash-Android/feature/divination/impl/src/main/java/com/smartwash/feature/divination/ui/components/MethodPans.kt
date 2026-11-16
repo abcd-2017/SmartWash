@@ -185,7 +185,6 @@ private fun PalaceCell(chart: QiMenChart, gong: Int, modifier: Modifier = Modifi
             .padding(8.dp)
     ) {
         if (isCenter) {
-            // 中宫寄坤二宫
             Column(
                 Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -199,7 +198,6 @@ private fun PalaceCell(chart: QiMenChart, gong: Int, modifier: Modifier = Modifi
                 // 八神（鎏金）
                 Text(chart.baShen[gong] ?: "", fontSize = 10.sp, letterSpacing = 1.sp, color = c.gold)
                 Spacer(Modifier.height(4.dp))
-                // 九星
                 Text(chart.jiuXing[gong] ?: "", style = divSerif(13.sp, FontWeight.Medium, 1.sp), color = c.textPrimary)
                 // 天盘干（鎏金大字）
                 Text(chart.tianPan[gong] ?: "", style = divSerif(15.sp, FontWeight.SemiBold, 0.sp), color = c.gold)
@@ -274,7 +272,6 @@ fun LiurenPan(chart: LiuRenChart, modifier: Modifier = Modifier) {
         val rOuter = size.minDimension / 2f
         val rInner = rOuter * 0.54f
 
-        // 外环天盘 / 内环地盘
         drawCircle(color = c.goldLine, radius = rOuter - 1.dp.toPx() / 2, center = center, style = Stroke(1.2.dp.toPx()))
         drawCircle(color = c.goldHair, radius = rOuter * 0.72f, center = center, style = Stroke(1.dp.toPx()))
         drawCircle(color = c.goldLine, radius = rInner, center = center, style = Stroke(1.dp.toPx()))
@@ -313,7 +310,6 @@ fun LiurenPan(chart: LiuRenChart, modifier: Modifier = Modifier) {
             )
             drawText(measured, topLeft = pos - measured.size.center.toOffset())
         }
-        // 四正刻线
         listOf(0f, 90f, 180f, 270f).forEach { deg ->
             val rad = Math.toRadians(deg.toDouble())
             val from = center + Offset(
@@ -326,7 +322,6 @@ fun LiurenPan(chart: LiuRenChart, modifier: Modifier = Modifier) {
             )
             drawLine(c.goldHair, from, to, strokeWidth = 1.dp.toPx())
         }
-        // 天心
         drawCircle(color = c.gold, radius = 3.5.dp.toPx(), center = center)
     }
 }
@@ -336,7 +331,6 @@ fun LiurenPan(chart: LiuRenChart, modifier: Modifier = Modifier) {
 fun LiurenCourses(chart: LiuRenChart, modifier: Modifier = Modifier) {
     val c = DivColors.current
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // 四课
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             chart.courses.forEach { course ->
                 DivCard(Modifier.weight(1f), borderColor = c.goldHair) {

@@ -40,7 +40,6 @@ object AppBrandTokens {
         get() = LocalAppBrand.current
 }
 
-// ========== 吃啥（TodayEat）品牌色板 — 亮色 ==========
 // 暖橙 + 米白：食欲感、与清氧绿彻底区隔；危险色改用独立深红 #B3261E，避免与主橙混淆。
 // 文字强调档 [TextGreen]/[TextGreenOnTint] 沿用「深档用于小号文字」的既有约定（on 白 ≥ 4.5:1）。
 
@@ -113,7 +112,6 @@ private val LiteIconForegroundPink = Color(0xFFC9526B)
 private val LiteIconForegroundTeal = Color(0xFF1F7A4D)
 private val LiteIconForegroundPurple = Color(0xFF7C3AED)
 
-// ========== 吃啥（TodayEat）品牌色板 — 暗色 ==========
 // 结构令牌下移两档、强调色提亮一档（与清氧·夜同策略）；主色提亮为橙-400 #FB923C，
 // 主按钮文字反转为深橙 #431407 保证对比度。
 
@@ -235,7 +233,6 @@ val LiteAppColorScheme = AppColorScheme(
     iconForegroundPurple = LiteIconForegroundPurple,
 )
 
-/** 吃啥 · 暗色设计令牌。 */
 val DarkLiteAppColorScheme = AppColorScheme(
     primary = DarkLitePrimary,
     onPrimary = DarkLiteOnPrimary,
@@ -320,7 +317,6 @@ val LiteLightColorScheme = lightColorScheme(
     onErrorContainer = LiteOnErrorContainer,
 )
 
-/** 吃啥 · 暗色 Material3 配色。 */
 val LiteDarkColorScheme = darkColorScheme(
     primary = DarkLitePrimary,
     onPrimary = DarkLiteOnPrimary,

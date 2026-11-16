@@ -7,14 +7,6 @@ import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
 
-/**
- * <p>
- *  Mapper 接口
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 public interface RechargeRecordsMapper extends BaseMapper<RechargeRecords> {
 
     /**

@@ -1,8 +1,6 @@
 package com.smartwash.common.init
 
 /**
- * 初始化任务基类
- *
  * 各模块通过继承本类定义启动时执行的初始化逻辑，并在自己的 Hilt Module 中
  * 以 `@Provides @IntoSet` 注册（或 `@Inject` 构造 + `@IntoSet`），
  * [InitEngine] 会自动收集全部任务，按依赖拓扑 + 优先级统一执行。
@@ -40,7 +38,6 @@ abstract class InitTask {
     }
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 LogCore 统一拼接） */
         const val TAG = "InitTask"
     }
 }

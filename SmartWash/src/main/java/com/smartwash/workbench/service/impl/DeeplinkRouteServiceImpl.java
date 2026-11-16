@@ -45,7 +45,6 @@ public class DeeplinkRouteServiceImpl extends ServiceImpl<AppDeeplinkRouteMapper
     @Autowired
     private DeeplinkRouteServiceImpl self;
 
-    // ==================== 管理端 ====================
 
     @Override
     public Page<DeeplinkRouteVo> adminPage(SearchDeeplinkRouteFrom from) {
@@ -143,7 +142,6 @@ public class DeeplinkRouteServiceImpl extends ServiceImpl<AppDeeplinkRouteMapper
         return this.list(wrapper).stream().map(this::buildVo).toList();
     }
 
-    // ==================== 内部方法 ====================
 
     private AppDeeplinkRoute getByHost(String host) {
         // 直查 baseMapper（与 toolbox 内核一致），单测 mock 路径确定

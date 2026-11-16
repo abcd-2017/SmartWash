@@ -142,7 +142,6 @@ struct Setting {
     try {
       vibrator.startVibration({ type: "time", duration: 30 }, { id: 0, usage: "unknown" })
     } catch (err) {
-      // 忽略不支持的设备
     }
   }
 
@@ -225,9 +224,6 @@ struct Setting {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 公共页头 — 22/600 标题 + 48dp 返回热区 + 内置连击防抖（对齐安卓 PageHeader）
@@ -236,7 +232,6 @@ struct Setting {
         // 滚动内容
         Scroll(this.scroller) {
           Column() {
-            // ===== 通用 =====
             Text($r('app.string.general'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
@@ -259,7 +254,6 @@ struct Setting {
               })
             }
 
-            // ===== 观象台 =====
             Text($r('app.string.workbench_divination_name'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
@@ -302,7 +296,6 @@ struct Setting {
               })
             }
 
-            // ===== 其他 =====
             Text($r('app.string.div_category_other'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)

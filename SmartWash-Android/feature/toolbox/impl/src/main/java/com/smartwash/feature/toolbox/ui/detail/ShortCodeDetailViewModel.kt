@@ -49,17 +49,14 @@ class ShortCodeDetailViewModel @Inject constructor(
         secretUrl = savedStateHandle.get<String>(ARG_SECRET_URL)?.ifBlank { null },
     )
 
-    /** 访问明细分页 */
     private val _statsTrigger = MutableStateFlow("")
     val statsPagingFlow = pagingFlow(_statsTrigger) {
         ShortCodeStatsPagingSource(repository, shortCode.id)
     }
 
-    /** 续期提交状态 */
     private val _updateState = MutableStateFlow<RequestState>(RequestState.Idle)
     val updateState = _updateState.asStateFlow()
 
-    /** 删除提交状态 */
     private val _deleteState = MutableStateFlow<RequestState>(RequestState.Idle)
     val deleteState = _deleteState.asStateFlow()
 

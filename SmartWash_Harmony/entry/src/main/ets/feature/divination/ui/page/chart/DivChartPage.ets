@@ -129,7 +129,6 @@ struct DivChartPage {
     }
   }
 
-  // ========== 头部文案 ==========
 
   private sealText(): string {
     if (this.method === 'liuyao') {
@@ -301,7 +300,6 @@ struct DivChartPage {
     pathStack.pushPathByName(RouteNames.DIV_READING, localRecordId)
   }
 
-  // ========== 六爻：事实小卡内容 ==========
 
   private factsText(): string {
     const facts = this.liuYaoFacts
@@ -335,13 +333,11 @@ struct DivChartPage {
     return parts.join('、')
   }
 
-  // ========== 奇门：宫位事实 ==========
 
   private qimenGongName(gong: number): string {
     return GONG_NAMES[gong] ?? `${gong}宫`
   }
 
-  // ========== 渲染 ==========
 
   /** 用神说明副行（含旺衰·爻位；无则空串） */
   private yongShenExtraText(): string {

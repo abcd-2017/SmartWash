@@ -25,9 +25,6 @@ public class OpenAiSseLineParser {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * 解析单行 SSE 数据。
-     */
     public Event parse(String line) {
         if (line == null) {
             return Event.ignore();
@@ -62,7 +59,6 @@ public class OpenAiSseLineParser {
         if (!root.isObject()) {
             return Event.ignore();
         }
-        // 错误帧
         JsonNode error = root.get("error");
         if (error != null && error.isObject()) {
             Integer code = error.hasNonNull("code") && error.get("code").isNumber()

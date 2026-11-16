@@ -48,10 +48,6 @@ sealed interface UpdateState {
     ) : UpdateState
 }
 
-/**
- * 应用更新 ViewModel
- * 管理版本检查、下载进度、安装触发等状态
- */
 @HiltViewModel
 class UpdateViewModel @Inject constructor(
     private val repository: AppUpdateRepository,
@@ -94,7 +90,6 @@ class UpdateViewModel @Inject constructor(
     private val _downloadUrl = MutableStateFlow<String?>(null)
     val downloadUrl: StateFlow<String?> = _downloadUrl.asStateFlow()
 
-    /** 防重复触发检查 */
     private var isChecking = false
 
     /**
@@ -112,7 +107,6 @@ class UpdateViewModel @Inject constructor(
     private var dismissedVersionCode: Int? = null
 
     /**
-     * 检查更新
      * @param silent 静默模式（启动检查，出错不展示提示）
      */
     fun checkForUpdate(silent: Boolean = true) {
@@ -285,9 +279,6 @@ class UpdateViewModel @Inject constructor(
         _downloadUrl.value = null
     }
 
-    /**
-     * 下载进度回调
-     */
     fun onDownloadProgress(progress: Int, downloadedBytes: Long, totalBytes: Long) {
         _state.value = UpdateState.Downloading(progress, downloadedBytes, totalBytes)
     }
@@ -307,9 +298,6 @@ class UpdateViewModel @Inject constructor(
         _backgroundDownload.value = true
     }
 
-    /**
-     * 下载失败回调
-     */
     fun onDownloadFailed(message: String) {
         _backgroundDownload.value = false
         // 失败要让用户看到错误弹窗（含重试），不能被静默态压制
@@ -317,9 +305,6 @@ class UpdateViewModel @Inject constructor(
         _state.value = UpdateState.Error(message, ErrorSource.Download)
     }
 
-    /**
-     * 安装开始
-     */
     fun onInstallStarted() {
         _state.value = UpdateState.Installing
     }
@@ -337,18 +322,11 @@ class UpdateViewModel @Inject constructor(
         isChecking = false
     }
 
-    /**
-     * 获取当前版本名称
-     */
     fun getCurrentVersionName(): String = repository.getCurrentVersionName()
 
-    /**
-     * 获取缓存的最新版本信息
-     */
     fun getLatestVersion(): AppVersionVo? = latestVersion
 
     private companion object {
-        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "UpdateViewModel"
     }
 }

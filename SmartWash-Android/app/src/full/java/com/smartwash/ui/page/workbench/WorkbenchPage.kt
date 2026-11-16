@@ -489,7 +489,6 @@ fun WorkbenchPage(
                 }
 
                 item(key = "wb_footer") {
-                    // 页脚弱提示
                     // U-105：原 textTertiary #A9AEA9 on #F5F6F3 仅 2.08:1（§10 正文红线 ≥4.5）；
                     // 改 textSecondary #6B6E73（实测 4.72:1）
                     Text(
@@ -1181,7 +1180,6 @@ private fun DivinationCompass(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val stroke = 2.dp.toPx()
         val hairStroke = 1.5.dp.toPx()
-        // 外环
         drawCircle(
             color = gold.copy(alpha = 0.45f),
             radius = 26.dp.toPx(),
@@ -1199,7 +1197,6 @@ private fun DivinationCompass(modifier: Modifier = Modifier) {
                 )
             )
         )
-        // 内环
         drawCircle(
             color = gold.copy(alpha = 0.5f),
             radius = 9.dp.toPx(),
@@ -1234,7 +1231,6 @@ private fun DivinationCompass(modifier: Modifier = Modifier) {
             color = goldHi,
             style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
         )
-        // 中心点
         drawCircle(color = gold, radius = 2.5.dp.toPx(), center = center)
     }
 }

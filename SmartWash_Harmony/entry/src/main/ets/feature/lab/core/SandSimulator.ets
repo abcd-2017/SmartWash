@@ -162,7 +162,6 @@ export class SandSimulator {
     this.age()
   }
 
-  // ---------- 反应 ----------
 
   private react(): void {
     for (let row = 0; row < this.rowsValue; row++) {
@@ -245,7 +244,6 @@ export class SandSimulator {
     return -1
   }
 
-  // ---------- 运动 ----------
 
   /** 下落 / 侧流：自底向上遍历，斜落方向随机；水在被堵后左右侧流 */
   private moveFall(): void {
@@ -406,7 +404,6 @@ export class SandSimulator {
     }
   }
 
-  // ---------- 衰老 ----------
 
   /** 寿命推进：泡沫/火归零变空；蒸汽到顶或寿命到变水 */
   private age(): void {
@@ -431,7 +428,6 @@ export class SandSimulator {
     }
   }
 
-  // ---------- 基础工具 ----------
 
   /** 写入元素并初始化其辅助状态（寿命 / 溶解抗性） */
   private replace(index: number, element: SandElement, lifetime: number): void {

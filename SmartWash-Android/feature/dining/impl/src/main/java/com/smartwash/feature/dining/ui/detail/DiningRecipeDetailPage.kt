@@ -143,7 +143,6 @@ private fun DetailContent(
         )
         Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
-        // 菜名 + 分类行
         Text(
             text = vo.name,
             style = MaterialTheme.typography.titleLarge,
@@ -159,7 +158,6 @@ private fun DetailContent(
         }
         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-        // 食材分组卡
         GroupCard(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.dining_recipe_detail_ingredients_section),

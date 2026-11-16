@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container user-filter">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="用户ID">
@@ -60,7 +59,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -116,7 +114,6 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增用户' : '编辑用户'"
       v-model="dialogVisible"
@@ -202,7 +199,6 @@ const dialogVisible = ref(false);
 const dialogType = ref('create');
 const submitting = ref(false); // 确认按钮 loading，防连点
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: userList,
   total,
@@ -234,7 +230,6 @@ const {
 // 学校下拉选项（模块级缓存：首次拉取后复用，不再每次进页面 size:1000 全量拉取）
 const schoolOptions = ref([]);
 
-// 表单数据
 const tempUser = reactive({
   userId: null,
   schoolId: null,
@@ -245,7 +240,6 @@ const tempUser = reactive({
   balance: 0,
 });
 
-// 验证规则
 const rules = reactive({
   schoolId: [{ required: true, message: '请选择学校', trigger: 'change' }],
   phoneNumber: [
@@ -275,13 +269,11 @@ const rules = reactive({
   ],
 });
 
-// 初始化数据
 onMounted(() => {
   fetchSchools();
   fetchData();
 });
 
-// 获取学校列表
 const fetchSchools = async () => {
   try {
     schoolOptions.value = await schoolOptionsCache.load();
@@ -292,7 +284,6 @@ const fetchSchools = async () => {
   }
 };
 
-// 打开新增弹窗
 const handleCreate = () => {
   dialogType.value = 'create';
   dialogVisible.value = true;
@@ -307,7 +298,6 @@ const handleCreate = () => {
   });
 };
 
-// 打开编辑弹窗
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
@@ -318,7 +308,6 @@ const handleEdit = (row) => {
   });
 };
 
-// 提交表单
 const submitForm = async () => {
   const valid = await formRef.value.validate().catch(() => false);
   if (!valid) return;
@@ -363,7 +352,6 @@ const submitForm = async () => {
   }
 };
 
-// 删除用户
 const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
   const confirmed = await useConfirm(`确认删除用户 ${row.phoneNumber} 吗？`);

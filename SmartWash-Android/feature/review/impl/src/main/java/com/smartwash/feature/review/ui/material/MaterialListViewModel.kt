@@ -30,29 +30,24 @@ class MaterialListViewModel @Inject constructor(
 ) : ViewModel() {
 
     data class UiState(
-        // ---------- 资料列表 ----------
         val loadState: RequestState = RequestState.Idle,
         val materials: List<MaterialVo> = emptyList(),
         val total: Long = 0L,
         val loadMoreState: RequestState = RequestState.Idle,
-        // ---------- 展开的卡片区 ----------
         val expandedMaterialId: Long? = null,
         val cards: List<ReviewCardVo> = emptyList(),
         val cardsState: RequestState = RequestState.Idle,
         val cardsTotal: Long = 0L,
         val cardsHasMore: Boolean = false,
-        // ---------- 建资料内联表单 ----------
         val createFormVisible: Boolean = false,
         val formTitle: String = "",
         val formRawText: String = "",
         val createState: RequestState = RequestState.Idle,
-        // ---------- 建卡弹窗 ----------
         val cardDialogMaterialId: Long? = null,
         val dialogQuestion: String = "",
         val dialogAnswer: String = "",
         val addCardState: RequestState = RequestState.Idle,
     ) {
-        /** 资料是否还有下一页 */
         val materialsHasMore: Boolean get() = materials.size.toLong() < total
         /** 当前展开资料的标题（弹窗副标题展示） */
         val expandedMaterial: MaterialVo?
@@ -66,7 +61,6 @@ class MaterialListViewModel @Inject constructor(
         load()
     }
 
-    // ---------- 资料列表 ----------
 
     fun load() {
         // 已有列表的重拉（建资料成功后刷新）：保留旧列表静默刷新，避免整页骨架闪切（审查矩阵 #6）；
@@ -124,7 +118,6 @@ class MaterialListViewModel @Inject constructor(
         }
     }
 
-    // ---------- 展开卡片列表 ----------
 
     /** 展开/收起某份资料的卡片列表（展开即拉卡片首页） */
     fun toggleExpand(materialId: Long) {
@@ -212,7 +205,6 @@ class MaterialListViewModel @Inject constructor(
         }
     }
 
-    // ---------- 建资料（内联表单） ----------
 
     fun toggleCreateForm() {
         _state.update {
@@ -288,7 +280,6 @@ class MaterialListViewModel @Inject constructor(
         }
     }
 
-    // ---------- 建卡弹窗 ----------
 
     fun showAddCardDialog(materialId: Long) {
         _state.update {

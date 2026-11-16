@@ -22,7 +22,6 @@ import java.util.List;
 @Accessors(chain = true)
 public class GameLevelBatchFrom {
 
-    /** 游戏标识 */
     @NotBlank(message = "gameKey 不能为空")
     private String gameKey;
 
@@ -40,12 +39,10 @@ public class GameLevelBatchFrom {
     @Accessors(chain = true)
     public static class LevelItem {
 
-        /** 关卡序号 */
         @NotNull(message = "关卡序号不能为空")
         @Min(value = 1, message = "关卡序号必须为正整数")
         private Integer levelNo;
 
-        /** 关卡名 */
         @Size(max = 32, message = "关卡名最长 32 字")
         private String name;
 
@@ -63,7 +60,6 @@ public class GameLevelBatchFrom {
         /** 排序，越小越靠前（可空按关卡序号×10） */
         private Integer sort;
 
-        /** 备注 */
         @Size(max = 255, message = "备注最长 255 字")
         private String remark;
     }

@@ -37,7 +37,6 @@ public class GameLevel implements Serializable {
     /** 关卡序号（游戏内展示顺序） */
     private Integer levelNo;
 
-    /** 关卡名 */
     private String name;
 
     /** 关卡定义（JSON 字符串，结构由游戏自定） */
@@ -52,7 +51,6 @@ public class GameLevel implements Serializable {
     /** 排序，越小越靠前 */
     private Integer sort;
 
-    /** 备注 */
     private String remark;
 
     private LocalDateTime createdAt;

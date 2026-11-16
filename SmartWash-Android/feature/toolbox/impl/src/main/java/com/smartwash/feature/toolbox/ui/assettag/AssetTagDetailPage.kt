@@ -145,7 +145,6 @@ fun AssetTagDetailPage(
                 .padding(top = AppDimens.spaceSm, bottom = AppDimens.spaceLg),
             verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
         ) {
-            // ---------- 信息卡 ----------
             GroupCard {
                 InfoRows(vo = vo)
                 Spacer(modifier = Modifier.height(AppDimens.spaceXs))
@@ -181,7 +180,6 @@ fun AssetTagDetailPage(
                 )
             }
 
-            // ---------- 标签链接与分享 ----------
             TagLinkCard(
                 vo = vo,
                 onCopy = {

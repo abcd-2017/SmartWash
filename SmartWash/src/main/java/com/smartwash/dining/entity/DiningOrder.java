@@ -44,7 +44,6 @@ public class DiningOrder implements Serializable {
     /** 购买清单快照（结束时写入：食材名并集去重 + 按菜视图），本票仅定义列，11 号票写入 */
     private String shoppingList;
 
-    /** 结束时间 */
     private LocalDateTime finishedAt;
 
     private LocalDateTime createdAt;

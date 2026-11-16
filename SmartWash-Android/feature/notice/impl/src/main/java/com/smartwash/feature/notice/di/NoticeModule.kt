@@ -29,7 +29,6 @@ abstract class NoticeModule {
     abstract fun bindNoticeApi(impl: NoticeApiImpl): NoticeApi
 }
 
-/** 站内信域网络供给 */
 @Module
 @InstallIn(SingletonComponent::class)
 object NoticeApiModule {

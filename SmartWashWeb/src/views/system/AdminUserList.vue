@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="管理员ID">
@@ -58,7 +57,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         ref="tableRef"
@@ -102,7 +100,6 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增管理员' : '编辑管理员'"
       v-model="dialogVisible"
@@ -184,9 +181,8 @@ const dialogVisible = ref(false);
 const dialogType = ref('create');
 const multipleSelection = ref([]);
 const submitting = ref(false); // 确认按钮 loading，防连点
-const roleOptions = ref([]); // 角色选项列表
+const roleOptions = ref([]);
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: adminList,
   total,
@@ -214,7 +210,6 @@ const {
   errorMsg: '获取数据失败',
 });
 
-// 表单数据
 const tempAdmin = reactive({
   adminId: null,
   username: '',
@@ -222,7 +217,6 @@ const tempAdmin = reactive({
   roleId: null,
 });
 
-// 验证规则
 const rules = reactive({
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -251,10 +245,9 @@ const rules = reactive({
   ],
 });
 
-// 初始化数据
 onMounted(() => {
   fetchData();
-  fetchRoles(); // 加载角色选项
+  fetchRoles();
 });
 
 // 获取角色列表（模块级缓存：首次拉取后复用，评审 #15）
@@ -268,12 +261,10 @@ const fetchRoles = async () => {
   }
 };
 
-// 处理多选
 const handleSelectionChange = (val) => {
   multipleSelection.value = val;
 };
 
-// 批量删除
 const handleBatchDelete = async () => {
   const count = multipleSelection.value.length;
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
@@ -293,7 +284,6 @@ const handleBatchDelete = async () => {
   }
 };
 
-// 打开创建弹窗
 const handleCreate = () => {
   dialogType.value = 'create';
   dialogVisible.value = true;
@@ -305,19 +295,17 @@ const handleCreate = () => {
   });
 };
 
-// 打开编辑弹窗
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
   Object.assign(tempAdmin, {
     adminId: row.adminId,
     username: row.username,
-    password: '', // 清空密码字段
-    roleId: row.roles?.roleId || null, // 正确设置角色ID
+    password: '',
+    roleId: row.roles?.roleId || null,
   });
 };
 
-// 提交表单
 const submitForm = async () => {
   submitting.value = true;
   try {
@@ -360,7 +348,6 @@ const submitForm = async () => {
   }
 };
 
-// 删除单个管理员
 const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
   const confirmed = await useConfirm(`确认删除管理员 ${row.username} 吗？`);

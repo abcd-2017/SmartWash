@@ -5,6 +5,5 @@ package com.smartwash.feature.laundry
  */
 internal object LaundryImplConstant {
 
-    /** 日志 TAG（对齐 app 的 AppConstant.APP_NAME） */
     const val APP_NAME = "SmartWash"
 }

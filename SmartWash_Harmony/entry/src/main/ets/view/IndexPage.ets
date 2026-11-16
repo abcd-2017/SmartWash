@@ -482,7 +482,6 @@ export struct IndexPage {
     .width("100%")
     .height("100%")
     .align(Alignment.TopStart)
-    // 沉浸式：内容避让状态栏（背景延伸）
     .padding({ top: safeTopVp() })
     .backgroundColor($r('app.color.BACKGROUND'))
   }

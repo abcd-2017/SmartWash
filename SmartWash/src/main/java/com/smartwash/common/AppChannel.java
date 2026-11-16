@@ -14,7 +14,6 @@ import java.util.Arrays;
 @Getter
 public enum AppChannel {
 
-    /** 全量版 */
     FULL("full", "全量版"),
     /** 精简版（吃啥 / Today Eat） */
     LITE("lite", "吃啥精简版");

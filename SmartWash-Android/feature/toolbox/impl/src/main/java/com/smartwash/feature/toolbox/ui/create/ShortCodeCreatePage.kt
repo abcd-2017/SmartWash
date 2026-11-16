@@ -149,7 +149,6 @@ fun ShortCodeCreatePage(
 
                 when (form.mode) {
                     ShortCodeCreateViewModel.CreateMode.SHORT_LINK -> {
-                        // ---------- 目标链接 ----------
                         FormLabel(stringResource(R.string.toolbox_target_label))
                         OutlinedTextField(
                             value = form.target,
@@ -346,7 +345,6 @@ fun ShortCodeCreatePage(
 
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-                // ---------- 有效期 / 时效预设 ----------
                 when (form.mode) {
                     ShortCodeCreateViewModel.CreateMode.SHORT_LINK -> {
                         FormLabel(stringResource(R.string.toolbox_expiry_label))

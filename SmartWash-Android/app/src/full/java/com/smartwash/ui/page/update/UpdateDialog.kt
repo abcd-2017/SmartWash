@@ -110,7 +110,6 @@ fun UpdateAvailableDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 更新内容
                 Text(
                     text = stringResource(R.string.update_content),
                     style = MaterialTheme.typography.labelLarge,
@@ -165,7 +164,6 @@ fun UpdateAvailableDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 按钮区
                 if (isForce) {
                     // 强制更新：仅「立即更新」按钮，不可取消
                     AppButton(
@@ -292,8 +290,6 @@ fun DownloadPreparingDialog() {
 }
 
 /**
- * 下载进度弹窗。
- *
  * 进度展示 = 规范 §5「环的填充度 = 真实进度」：滚筒圆进度环由 [DrumMark.progress]
  * 承载（WorkManager 真实进度驱动），替代历史上的 emoji + LinearProgressIndicator。
  * 下载进度每 1% 硬跳 → 弹簧平滑到目标值；reduced motion 经 motionSpec 降级为

@@ -77,7 +77,6 @@ struct AddSchool {
   }
 
   aboutToDisappear() {
-    // 页面销毁前清理未触发的防抖定时器，避免页面销毁后仍回调（定时器硬规则）
     this.searchDebouncer.cancel()
     this.dismissDebouncer.cancel()
   }
@@ -151,7 +150,6 @@ struct AddSchool {
     try {
       this.getUIContext().getFocusController().clearFocus()
     } catch (err) {
-      // 忽略不支持的设备
     }
   }
 
@@ -234,9 +232,6 @@ struct AddSchool {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       // 修复（问题4）：原 Stack 内 layoutWeight 失效 + .align(Alignment.Bottom) 只作用于自身子组件，
       // 导致滚动内容收成内容高并居中、CTA 栏叠在表单中间。改 Column：Scroll 撑满余量，CTA 栏固定底部。

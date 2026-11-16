@@ -168,7 +168,6 @@ async function emitMockStream(markdown: string, cb: DivLlmCallbacks): Promise<vo
   cb.onDone(0, false)
 }
 
-// ========== 对外入口 ==========
 
 /**
  * 解读：对服务端卦例 recordId 发起 SSE 解读。

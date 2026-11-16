@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="分类">
@@ -55,7 +54,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -158,7 +156,6 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增菜谱' : '编辑菜谱'"
       v-model="dialogVisible"
@@ -306,7 +303,6 @@ const statusSwitchingId = ref(null); // 行内上下架开关 loading，防连�
 // 批量导入弹窗可见性（导入成功后由对话框 emit success → fetchData 刷新列表）
 const importDialogVisible = ref(false);
 
-// 列表查询与分页：统一由 useTableList 承载
 const {
   list: recipeList,
   total,
@@ -376,8 +372,6 @@ const rules = reactive({
   ],
 });
 
-// ---------- 封面上传 ----------
-
 const coverUploading = ref(false);
 const coverPreviewUrl = ref(null); // 预览直链（新上传用 ObjectURL，编辑回显用 coverUrl）
 const coverObjectUrl = ref(null); // 本地生成的 ObjectURL，换图/移除/关闭时统一回收
@@ -433,8 +427,6 @@ const handleRemoveCover = () => {
   coverPreviewUrl.value = null;
 };
 
-// ---------- 食材编辑 ----------
-
 const ingredientInput = ref('');
 
 const addIngredient = () => {
@@ -452,14 +444,11 @@ const addIngredient = () => {
   ingredientInput.value = '';
 };
 
-// ---------- 初始化与弹窗 ----------
-
 onMounted(() => {
   fetchData();
   loadCategoryOptions();
 });
 
-// 打开新增弹窗
 const handleCreate = () => {
   dialogType.value = 'create';
   dialogVisible.value = true;
@@ -544,8 +533,6 @@ const submitForm = async () => {
     submitting.value = false;
   }
 };
-
-// ---------- 行内上下架 ----------
 
 // 上下架：专用状态接口；失败时恢复开关原值
 const handleStatusChange = async (row, val) => {
@@ -659,14 +646,12 @@ const handleDelete = async (row) => {
   align-items: center;
 }
 
-/* 开关同行的行内说明 */
 .form-tip-inline {
   margin-left: 8px;
   font-size: 12px;
   color: var(--text-secondary);
 }
 
-/* 加载失败等异常态行内说明 */
 .form-tip-inline--error {
   color: var(--color-danger);
 }

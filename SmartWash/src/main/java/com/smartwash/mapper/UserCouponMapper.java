@@ -10,21 +10,13 @@ import com.smartwash.vo.user_coupon.UserCouponVo;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * <p>
- * 用户领取优惠券记录表 Mapper 接口
- * </p>
- *
- * @author
- * @since 2025-04-06
- */
 public interface UserCouponMapper extends BaseMapper<UserCoupon> {
 
     Page<UserCouponVo> searchUserCoupon(Page<UserCouponVo> page, SearchUserCouponFrom couponFrom);
 
     List<Long> getCouponIdsByUserId(Long userId);
 
-    List<UserCouponVo> searchUserCouponByStatus(Page<UserCouponVo> page, String status, Long userId);
+    Page<UserCouponVo> searchUserCouponByStatus(Page<UserCouponVo> page, String status, Long userId);
 
     List<UserCouponVo> getCanUseCoupon(@Param("userId") Long userId, @Param("totalPrice") BigDecimal totalPrice);
 

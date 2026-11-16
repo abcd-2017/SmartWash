@@ -204,7 +204,6 @@ fun SubscriptionListPage(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 when {
-                    // 首刷失败：说明 + 重试按钮（规范 §3.6 错误态）。
                     // 错误分支前置：会话门控不得掩盖真实错误（否则刷新失败时先闪一帧骨架）
                     pagingItems.itemCount == 0 && refreshState is LoadState.Error -> {
                         EmptyState(

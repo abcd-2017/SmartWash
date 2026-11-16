@@ -12,6 +12,5 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class SearchDiningCategoryFrom extends BaseSearchFrom {
 
-    /** 分类名称模糊筛选 */
     private String name;
 }

@@ -55,7 +55,6 @@ struct ResetPassword {
   // 导航防抖（返回节流，防连点弹空导航栈）
   private navDebouncer: Debouncer = new Debouncer()
 
-  // 页面销毁时清理验证码倒计时定时器，避免泄漏（定时器硬规则）
   aboutToDisappear() {
     if (this.timer !== -1) {
       clearInterval(this.timer)
@@ -139,9 +138,6 @@ struct ResetPassword {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack({ alignContent: Alignment.Top }) {
         // 全屏渐变背景（与 Login/Register 同一渐变，认证域视觉一致）
@@ -458,7 +454,6 @@ struct ResetPassword {
         .width("100%")
         .height("100%")
         .alignItems(HorizontalAlign.Center)
-        // 沉浸式：内容按状态栏/底部导航条避让，背景渐变由 Stack 底层全屏承载（对齐 Register）
         .padding({ left: 24, right: 24, top: safeTopVp(), bottom: safeBottomVp() })
       }
       .width("100%")

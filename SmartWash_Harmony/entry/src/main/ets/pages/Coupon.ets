@@ -1,11 +1,20 @@
 import { HttpStatusCode } from "@ohos/axios"
-import { getAllCoupons, receiveCoupon } from "../network/api/CouponApi"
+import {
+  COUPON_PAGE_SIZE,
+  COUPON_STATUS_USABLE,
+  COUPON_STATUS_USED,
+  getAllCoupons,
+  getUserCoupon,
+  receiveCoupon
+} from "../network/api/CouponApi"
 import { CouponVo } from "../network/vo/CouponVo"
 import { UserCouponVo } from "../network/vo/UserCouponVo"
 import { CouponStatus } from "../constant/CouponStatus"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { Debouncer } from "../utils/DebounceUtil"
+import { LazyListDataSource, PagingController } from "../utils/PagingUtil"
+import { LoadingFooter } from "../view/LoadingFooter"
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { AppButton, AppButtonVariant, AppPillTabRow, EmptyState, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { TicketDashedLine, TicketNotch } from "../view/TicketNotchShape"
@@ -57,8 +66,35 @@ struct Coupon {
   @State loadFailed: boolean = false
   // 领取请求进行中的券 ID（逐券标记，对齐安卓 claimingId；全页 receiving 会误伤其他卡）
   @State claimingCouponId: number | null = null
+  // 已领取/历史触底加载态（各 tab 独立 footer spinner）
+  @State claimedLoadingMore: boolean = false
+  @State historicalLoadingMore: boolean = false
   // 领取点击节流（防抖第一道防线）
   private receiveDebouncer: Debouncer = new Debouncer()
+  // LazyForEach 数据源（实例稳定，读取对应 @State 数组）
+  private availableSource: LazyListDataSource<CouponVo> =
+    new LazyListDataSource<CouponVo>(() => this.availableCoupons)
+  private claimedSource: LazyListDataSource<UserCouponVo> =
+    new LazyListDataSource<UserCouponVo>(() => this.claimedCoupons)
+  private historicalSource: LazyListDataSource<UserCouponVo> =
+    new LazyListDataSource<UserCouponVo>(() => this.historicalCoupons)
+  // 已领取/历史分页控制器（可领取为有界全量，无分页）
+  private claimedPaging: PagingController = new PagingController(
+    (page: number): Promise<boolean> => {
+      return this.fetchUserCouponPage(COUPON_STATUS_USABLE, page)
+    },
+    (loading: boolean): void => {
+      this.claimedLoadingMore = loading
+    }
+  )
+  private historicalPaging: PagingController = new PagingController(
+    (page: number): Promise<boolean> => {
+      return this.fetchUserCouponPage(COUPON_STATUS_USED, page)
+    },
+    (loading: boolean): void => {
+      this.historicalLoadingMore = loading
+    }
+  )
 
   // Tab 标题（可用 tab 的计数在 tabLabel 中动态拼接；第三 tab 文案对齐安卓 historical_coupons「历史」）
   private readonly tabTitles: string[] = [resString('coupon_1'), resString('claimed_coupons'), resString('historical_coupons')]
@@ -69,34 +105,79 @@ struct Coupon {
   }
 
   aboutToDisappear() {
-    // 页面销毁前清理未触发的节流任务（定时器硬规则）
     this.receiveDebouncer.cancel()
   }
 
   /**
-   * 一次拉取三类券（对齐安卓 CouponViewModel.loadAllCoupons → /web/auth/userCoupon/allCoupons）。
-   * 领券成功后复用本方法全量刷新，保证已领取/历史 tab 计数一致。
+   * 首屏加载：可领取仍走聚合接口 allCoupons（量小、为 tab 计数），
+   * 已领取/历史改走分页接口 getUserCoupon(status) 首屏（对齐后端分页改造）。
+   * 领券成功后复用本方法全量刷新，保证可用 tab 计数与已领取/历史列表一致。
    */
   async loadAllCoupons() {
     this.isLoading = true
     try {
       let res = await getAllCoupons()
-      this.isLoading = false
       if (res.code === HttpStatusCode.Ok && res.data !== null) {
         this.loadFailed = false
         this.availableCoupons = res.data.available ?? []
-        this.claimedCoupons = res.data.claimed ?? []
-        this.historicalCoupons = res.data.historical ?? []
+        this.availableSource.notifyReload()
       } else {
         logger.warn('coupon', `优惠券列表加载失败 code=${res.code} message=${res.message ?? ""}`)
         this.loadFailed = true
         showToastSafety(res.message, resString('coupon_load_failed'))
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
-      this.isLoading = false
       this.loadFailed = true
       showToastSafety(resString('coupon_2'))
+    }
+    // 已领取/历史首屏（并行；失败仅日志 + 空态，不拖垮可领取 tab）
+    // 先重置分页：领券后重拉首页，避免控制器残留旧页码导致触底跳页
+    this.claimedPaging.reset()
+    this.historicalPaging.reset()
+    await Promise.all([
+      this.fetchUserCouponPage(COUPON_STATUS_USABLE, 1),
+      this.fetchUserCouponPage(COUPON_STATUS_USED, 1)
+    ])
+    this.isLoading = false
+  }
+
+  /**
+   * 按状态分页拉取用户优惠券（0-可用，1-已使用或过期）。
+   * 第 1 页整体替换并 notifyReload，后续页追加并 notifyAppend。
+   * @returns 本页是否有数据（供 PagingController 判断是否封底）
+   */
+  async fetchUserCouponPage(status: string, page: number): Promise<boolean> {
+    try {
+      const res = await getUserCoupon(status, page, COUPON_PAGE_SIZE)
+      if (res.code === HttpStatusCode.Ok && res.data !== null) {
+        const records: Array<UserCouponVo> = res.data.records
+        if (page === 1) {
+          if (status === COUPON_STATUS_USABLE) {
+            this.claimedCoupons = records
+            this.claimedSource.notifyReload()
+          } else {
+            this.historicalCoupons = records
+            this.historicalSource.notifyReload()
+          }
+        } else if (records.length > 0) {
+          if (status === COUPON_STATUS_USABLE) {
+            const startIndex: number = this.claimedCoupons.length
+            this.claimedCoupons = this.claimedCoupons.concat(records)
+            this.claimedSource.notifyAppend(startIndex, records.length)
+          } else {
+            const startIndex: number = this.historicalCoupons.length
+            this.historicalCoupons = this.historicalCoupons.concat(records)
+            this.historicalSource.notifyAppend(startIndex, records.length)
+          }
+        }
+        logger.debug('coupon', `用户优惠券分页加载成功 status=${status} page=${page} count=${records.length}`)
+        return records.length > 0
+      }
+      logger.warn('coupon', `用户优惠券分页未生效 status=${status} page=${page} code=${res.code}`)
+      return false
+    } catch (err) {
+      logger.warn('coupon', `用户优惠券分页异常 status=${status} page=${page}`)
+      return false
     }
   }
 
@@ -122,7 +203,6 @@ struct Coupon {
     try {
       vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 不支持触感（模拟器 / 部分设备）时忽略
     }
   }
 
@@ -155,7 +235,6 @@ struct Coupon {
         showToastSafety(res.message, resString('coupon_3'))
       }
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：兜住并按失败提示，避免 claimingCouponId 卡死
       showToastSafety(resString('coupon_2'))
     } finally {
       this.claimingCouponId = null
@@ -174,13 +253,14 @@ struct Coupon {
   }
 
   // ========== 可领取 tab（Swiper 第 0 页，常驻保留滚动位置） ==========
+  // 可领取为 allCoupons 全量（量小），无分页；仍用 LazyForEach 懒加载渲染。
   @Builder
   availablePage() {
     if (this.availableCoupons.length === 0) {
       this.emptyPlaceholder(resString('no_coupons_available'))
     } else {
       List({ space: DesignDimens.CARD_SPACING }) {
-        ForEach(this.availableCoupons, (coupon: CouponVo) => {
+        LazyForEach(this.availableSource, (coupon: CouponVo) => {
           ListItem() {
             AvailableCouponCard({
               coupon: coupon,
@@ -191,7 +271,7 @@ struct Coupon {
             })
           }
         // 键必须含状态指纹（问题5 根因）：领取成功 loadAllCoupons 整表替换对象，
-        // 仅用 couponId 时键不变 → ForEach 复用旧子组件、@Param 不同步 → 按钮定格「立即领取」
+        // 仅用 couponId 时键不变 → 复用旧子组件、@Param 不同步 → 按钮定格「立即领取」
         }, (coupon: CouponVo, index: number) => `${coupon.couponId ?? index}:${coupon.status ?? ""}`)
       }
       .width("100%")
@@ -200,50 +280,71 @@ struct Coupon {
     }
   }
 
-  // ========== 已领取 tab（Swiper 第 1 页） ==========
+  // ========== 已领取 tab（Swiper 第 1 页，分页 status=0 触底加载） ==========
   @Builder
   claimedPage() {
     if (this.claimedCoupons.length === 0) {
       this.emptyPlaceholder(resString('no_coupons_available'))
     } else {
       List({ space: DesignDimens.CARD_SPACING }) {
-        ForEach(this.claimedCoupons, (userCoupon: UserCouponVo) => {
+        LazyForEach(this.claimedSource, (userCoupon: UserCouponVo) => {
           ListItem() {
             CouponTicketCard({ userCoupon: userCoupon, isHistorical: false })
           }
-        }, (userCoupon: UserCouponVo, index: number) => `${userCoupon.userCouponId ?? index}`)
+        // 键含 isUsed 指纹：刷新换对象后键不变会复用旧子组件（同可用 tab 键问题）
+        }, (userCoupon: UserCouponVo, index: number) =>
+          `${userCoupon.userCouponId ?? index}:${userCoupon.isUsed ? 1 : 0}`)
+        ListItem() {
+          LoadingFooter({ isLoading: this.claimedLoadingMore })
+        }
       }
       .width("100%")
       .height("100%")
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.CARD_SPACING, bottom: safeBottomVp() })
+      .onScrollIndex((start: number, end: number) => {
+        // listLength 为 ListItem 真实数量（券卡 + footer），不是数据条数
+        this.claimedPaging.onScrollIndex(end, this.claimedCoupons.length + 1)
+      })
+      .onScrollFrameBegin((offset: number, state: ScrollState) => {
+        this.claimedPaging.onScrollFrameBegin(offset)
+        return { offsetRemain: offset }
+      })
     }
   }
 
-  // ========== 历史 tab（Swiper 第 2 页） ==========
+  // ========== 历史 tab（Swiper 第 2 页，分页 status=1 触底加载） ==========
   @Builder
   historicalPage() {
     if (this.historicalCoupons.length === 0) {
       this.emptyPlaceholder(resString('no_historical_coupons'))
     } else {
       List({ space: DesignDimens.CARD_SPACING }) {
-        ForEach(this.historicalCoupons, (userCoupon: UserCouponVo) => {
+        LazyForEach(this.historicalSource, (userCoupon: UserCouponVo) => {
           ListItem() {
             CouponTicketCard({ userCoupon: userCoupon, isHistorical: true })
           }
         // 键含 isUsed 指纹：核销状态变化后对象替换、键不变会复用旧子组件（同可用 tab 键问题）
-        }, (userCoupon: UserCouponVo, index: number) => `${userCoupon.userCouponId ?? index}:${userCoupon.isUsed ? 1 : 0}`)
+        }, (userCoupon: UserCouponVo, index: number) =>
+          `${userCoupon.userCouponId ?? index}:${userCoupon.isUsed ? 1 : 0}`)
+        ListItem() {
+          LoadingFooter({ isLoading: this.historicalLoadingMore })
+        }
       }
       .width("100%")
       .height("100%")
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.CARD_SPACING, bottom: safeBottomVp() })
+      .onScrollIndex((start: number, end: number) => {
+        this.historicalPaging.onScrollIndex(end, this.historicalCoupons.length + 1)
+      })
+      .onScrollFrameBegin((offset: number, state: ScrollState) => {
+        this.historicalPaging.onScrollFrameBegin(offset)
+        return { offsetRemain: offset }
+      })
     }
   }
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // ========== 页头（公共 PageHeader：22/600 + 48 热区返回，对齐安卓 CouponPage.kt:148） ==========
@@ -310,7 +411,6 @@ struct Coupon {
       }
       .width("100%")
       .height("100%")
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }
@@ -367,7 +467,6 @@ struct AvailableCouponCard {
     try {
       vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
     } catch (err) {
-      // 不支持触感（模拟器 / 部分设备）时忽略
     }
   }
 

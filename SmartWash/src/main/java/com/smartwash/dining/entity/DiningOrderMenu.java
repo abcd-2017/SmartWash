@@ -32,7 +32,6 @@ public class DiningOrderMenu implements Serializable {
     /** 菜谱 ID(dining_recipe.id) */
     private Long recipeId;
 
-    /** 加入菜单时间 */
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

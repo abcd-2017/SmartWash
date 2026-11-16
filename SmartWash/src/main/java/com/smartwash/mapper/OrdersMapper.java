@@ -12,14 +12,6 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
-/**
- * <p>
- * Mapper 接口
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 public interface OrdersMapper extends BaseMapper<Orders> {
 
     @Select("SELECT * FROM orders WHERE order_id = #{orderId} FOR UPDATE")

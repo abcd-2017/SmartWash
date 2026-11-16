@@ -15,10 +15,8 @@ public class WorkbenchEntryVo {
     /** 业务唯一标识，端上兜底列表对齐用 */
     private String entryKey;
 
-    /** 入口标题 */
     private String title;
 
-    /** 副标题描述 */
     private String description;
 
     /** 图标 key（端上白名单枚举映射） */

@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-/**
- * 复习评分请求 DTO。
- */
 @Data
 public class AnswerFrom {
 

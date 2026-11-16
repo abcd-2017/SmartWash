@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="标题">
@@ -34,7 +33,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -154,7 +152,6 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增工作台入口' : '编辑工作台入口'"
       v-model="dialogVisible"
@@ -162,7 +159,6 @@
       @closed="handleDialogClosed"
     >
       <el-form ref="formRef" :model="tempEntry" label-width="min(100px, 94vw)" :rules="rules">
-        <!-- 基本内容 -->
         <el-divider content-position="left">基本内容</el-divider>
 
         <el-form-item label="入口标识" prop="entryKey">
@@ -230,7 +226,6 @@
           />
         </el-form-item>
 
-        <!-- 跳转与样式 -->
         <el-divider content-position="left">跳转与样式</el-divider>
 
         <el-form-item label="卡片类型" prop="type">
@@ -395,7 +390,6 @@ const submitting = ref(false); // 确认按钮 loading，防连点
 const togglingId = ref(null); // 行内启停开关 loading，防连点
 const deletingId = ref(null); // 行内删除按钮 loading，防连点
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: entryList,
   total,
@@ -444,7 +438,6 @@ const tempEntry = reactive({
 const ENTRY_KEY_PATTERN = /^[a-z][a-z0-9_-]{2,63}$/;
 const TARGET_PATTERN = /^(smartwash:\/\/|https?:\/\/)\S+$/;
 
-// 验证规则
 const rules = reactive({
   entryKey: [
     { required: true, message: '请输入入口标识', trigger: 'blur' },
@@ -487,8 +480,6 @@ const handleTypeChange = () => {
     formRef.value?.validateField('target').catch(() => {});
   }
 };
-
-// ---------- 配图上传 ----------
 
 const coverUploading = ref(false);
 
@@ -551,8 +542,6 @@ const handleRoutePick = (val) => {
   }
 };
 
-// ---------- 行内启停 ----------
-
 // 编辑场景按行数据组装完整更新体（update 为全量字段语义，避免只传 id+enabled 清空其余字段；
 // entryKey 后端不可修改，更新体不携带）
 const buildRowUpdatePayload = (row, overrides = {}) => ({
@@ -602,8 +591,6 @@ const handleToggleEnabled = async (row) => {
   }
 };
 
-// ---------- 复制 target ----------
-
 const handleCopyTarget = async (text) => {
   try {
     await navigator.clipboard.writeText(text);
@@ -614,13 +601,10 @@ const handleCopyTarget = async (text) => {
   }
 };
 
-// ---------- 初始化与弹窗 ----------
-
 onMounted(() => {
   fetchData();
 });
 
-// 打开新增弹窗
 const handleCreate = () => {
   dialogType.value = 'create';
   dialogVisible.value = true;
@@ -644,7 +628,6 @@ const handleCreate = () => {
   loadRouteOptions();
 };
 
-// 打开编辑弹窗
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
@@ -653,7 +636,6 @@ const handleEdit = (row) => {
   loadRouteOptions();
 };
 
-// 弹窗关闭 — 清除验证状态
 const handleDialogClosed = () => {
   formRef.value?.resetFields();
   formRef.value?.clearValidate();
@@ -681,7 +663,6 @@ const buildSubmitPayload = () => {
   return { id: tempEntry.id, ...payload };
 };
 
-// 提交表单
 const submitForm = async () => {
   submitting.value = true;
   try {
@@ -726,7 +707,6 @@ const submitForm = async () => {
   }
 };
 
-// 删除入口
 const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
   const confirmed = await useConfirm(
@@ -765,7 +745,6 @@ const handleDelete = async (row) => {
   line-height: 20px;
 }
 
-/* 标题 + 副标题两行单元格 */
 .title-cell {
   display: flex;
   flex-direction: column;
@@ -798,7 +777,6 @@ const handleDelete = async (row) => {
   gap: 4px;
 }
 
-/* 色组行：色点 + 中文文案 */
 .color-line {
   display: flex;
   align-items: center;
@@ -832,7 +810,6 @@ const handleDelete = async (row) => {
   white-space: nowrap;
 }
 
-/* 表单项下的辅助说明 */
 .form-tip {
   width: 100%;
   font-size: 12px;

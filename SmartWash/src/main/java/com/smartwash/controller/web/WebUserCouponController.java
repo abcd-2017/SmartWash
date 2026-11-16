@@ -1,6 +1,7 @@
 package com.smartwash.controller.web;
 
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,14 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * <p>
- * 用户领取优惠券记录表 前端控制器
- * </p>
- *
- * @author
- * @since 2025-04-06
- */
 @Tag(name = "用户端-用户优惠券", description = "用户端优惠券领取和使用相关接口")
 @Slf4j
 @RestController
@@ -38,9 +31,9 @@ public class WebUserCouponController {
     @Autowired
     private ICouponService couponService;
 
-    @Operation(summary = "获取用户优惠券列表", description = "获取当前用户已领取的优惠券列表，按状态筛选")
+    @Operation(summary = "获取用户优惠券分页", description = "分页获取当前用户已领取的优惠券列表，按状态筛选（含 total，供端上判断 hasMore）")
     @GetMapping("/auth/userCoupon/getUserCoupon")
-    public Result<List<UserCouponVo>> getUserCoupon(@RequestParam(value = "status", defaultValue = "0") @Parameter(description = "优惠券状态：0-可用，1-已使用或过期", example = "0") String status,
+    public Result<Page<UserCouponVo>> getUserCoupon(@RequestParam(value = "status", defaultValue = "0") @Parameter(description = "优惠券状态：0-可用，1-已使用或过期", example = "0") String status,
                                                     @RequestParam(value = "page", defaultValue = "1") @Parameter(description = "页码", example = "1") Integer page,
                                                     @RequestParam(value = "size", defaultValue = "10") @Parameter(description = "每页数量", example = "10") Integer size) {
         LoginUser user = UserContextHolder.getUser();

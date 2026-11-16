@@ -21,7 +21,6 @@ public class DeliveryItemVo {
     /** 1文本 2图片 3文件 */
     private Integer kind;
 
-    /** 文件名或文本摘要 */
     private String title;
 
     /** 0未取走 1已取走（焚毁占位） */

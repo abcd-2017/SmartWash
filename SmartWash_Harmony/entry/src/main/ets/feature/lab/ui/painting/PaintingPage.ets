@@ -547,8 +547,6 @@ export struct PaintingPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值，
       // 画布经重建后的 onAreaChange 以新令牌重绘（机制见 view/common/ThemeRefresh.ets）
       ThemeRefreshV2() {
       Column() {

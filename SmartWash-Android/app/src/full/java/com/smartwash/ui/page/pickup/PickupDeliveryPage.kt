@@ -232,7 +232,6 @@ fun PickupDeliveryPage(
                             .verticalScroll(rememberScrollState())
                             .padding(horizontal = AppDimens.pagePadding)
                     ) {
-                        // 寄件注意事项
                         if (type == PickupDeliveryType.DELIVERY.type) {
                             Surface(
                                 modifier = Modifier.fillMaxWidth().softCardShadow(),
@@ -269,7 +268,6 @@ fun PickupDeliveryPage(
                             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
                         }
 
-                        // 二维码卡
                         Surface(
                             modifier = Modifier.fillMaxWidth().softCardShadow(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),

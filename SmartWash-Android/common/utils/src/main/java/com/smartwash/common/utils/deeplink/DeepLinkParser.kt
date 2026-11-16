@@ -29,7 +29,6 @@ object DeepLinkParser {
     /** 内建 host：WebView 分支（query 携带 url/title），不经 routeLookup */
     const val HOST_WEB = "web"
 
-    /** scheme 分隔符 */
     private const val SCHEME_SEPARATOR = "://"
 
     /**
@@ -70,7 +69,6 @@ object DeepLinkParser {
         return pathPart.substringBefore('/').lowercase().ifBlank { null }
     }
 
-    // ---------- 内部实现 ----------
 
     private fun parseInternal(
         uri: String,

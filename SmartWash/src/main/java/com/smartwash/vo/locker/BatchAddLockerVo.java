@@ -8,12 +8,9 @@ import lombok.Data;
 @Data
 public class BatchAddLockerVo {
 
-    /** 实际新增数量 */
     private Integer addedCount;
 
-    /** 实际生成的最小柜号 */
     private Integer firstNumber;
 
-    /** 实际生成的最大柜号 */
     private Integer lastNumber;
 }

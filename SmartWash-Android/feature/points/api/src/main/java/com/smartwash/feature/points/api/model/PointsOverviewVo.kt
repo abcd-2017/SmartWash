@@ -15,7 +15,6 @@ data class PointsOverviewVo(
     val balance: Int? = null,
     /** 累计获得积分（无账户=0，只增不减） */
     val totalEarned: Int? = null,
-    /** 今日是否已签 */
     val signedToday: Boolean? = null,
     /**
      * 当前连签天数：今日已签 = 签到时点记录的 streak；今日未签 = 连签预览
@@ -52,7 +51,6 @@ data class PointLedgerItemVo(
     val reasonDesc: String? = null,
     /** 业务日期维度（签到类=签到日，ISO yyyy-MM-dd；v1 端上不展示，保留契约） */
     val refDate: String? = null,
-    /** 本笔变动后余额快照 */
     val balanceAfter: Int? = null,
     /** 产生时间（ISO yyyy-MM-dd'T'HH:mm:ss） */
     val createdAt: String? = null,

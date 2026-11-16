@@ -175,7 +175,6 @@ class DivLlmRepository @Inject constructor(
         }
     }
 
-    // ---- SSE 流（真连） ----
 
     private suspend fun stream(path: String, body: String, localId: Long, onEvent: (DivStreamEvent) -> Unit) {
         // SSE 回调运行在 OkHttp 线程（非协程上下文），禁止在回调内调 suspend DAO——
@@ -394,7 +393,6 @@ class DivLlmRepository @Inject constructor(
         append("## 结论与建议\n\n").append(reading.action)
     }
 
-    // ---- Mock 文本生成（原样保留） ----
 
     private fun buildMockReading(
         method: DivMethod,

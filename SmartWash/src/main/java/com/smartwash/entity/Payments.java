@@ -11,14 +11,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
-/**
- * <p>
- * 
- * </p>
- *
- * @author 
- * @since 2025-03-06
- */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)

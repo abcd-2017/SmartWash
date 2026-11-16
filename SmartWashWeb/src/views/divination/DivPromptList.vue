@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="术数方法">
@@ -51,7 +50,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -126,7 +124,6 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增 Prompt' : '编辑 Prompt'"
       v-model="dialogVisible"
@@ -203,8 +200,8 @@ const formRef = ref(null);
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const submitting = ref(false); // 弹窗确认按钮 loading，防连点
-const activatingId = ref(null); // 行内「激活」按钮 loading
-const deletingId = ref(null); // 行内「删除」按钮 loading
+const activatingId = ref(null);
+const deletingId = ref(null);
 
 // 术数方法选项（与后端 method 枚举对齐）
 

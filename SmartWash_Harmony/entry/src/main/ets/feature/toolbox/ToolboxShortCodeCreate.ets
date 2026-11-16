@@ -262,9 +262,6 @@ struct ToolboxShortCodeCreate {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Scroll() {
         Column() {
@@ -406,7 +403,6 @@ struct ToolboxShortCodeCreate {
               .width('100%')
               .scrollBar(BarState.Off)
             } else {
-              // ---------- 目标链接 ----------
               this.FormLabel(ToolboxText.toolbox_target_label)
               TextInput({ text: this.target, placeholder: ToolboxText.toolbox_target_hint })
                 .height(48)
@@ -483,7 +479,6 @@ struct ToolboxShortCodeCreate {
               Column()
                 .height(DesignDimens.SPACE_LG)
 
-              // ---------- 有效期预设 ----------
               this.FormLabel(ToolboxText.toolbox_expiry_label)
               // 横向可滚动兜底（对齐安卓 horizontalScroll，audit-17 T4 同口径）：
               // 窄屏/字体放大时 chips 超宽不挤压末位 chip，内容放得下时视觉与固定行一致
@@ -567,7 +562,6 @@ struct ToolboxShortCodeCreate {
       .width('100%')
       .height('100%')
       .align(Alignment.TopStart)
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       // 键盘避让走窗口级 KeyboardAvoidMode.RESIZE（EntryAbility 统一设置）；

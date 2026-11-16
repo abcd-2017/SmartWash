@@ -23,7 +23,6 @@ public class PointsProperties {
         private int basePoints = 5;
         /** 连签奖励周期：连签天数每满 N 天（第 N/2N/3N…天）额外发放一次奖励 */
         private int streakBonusStep = 7;
-        /** 连签奖励积分 */
         private int streakBonusPoints = 10;
         /** 签到接口每日尝试次数上限（Redis 计数防刷,幂等接口重复请求无副作用,仅防恶意打库） */
         private int attemptDailyLimit = 20;

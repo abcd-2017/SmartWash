@@ -14,16 +14,13 @@ public class DiningOrderListVo {
 
     private Long id;
 
-    /** 订单标题 */
     private String title;
 
     /** 订单状态：ONGOING / FINISHED */
     private String status;
 
-    /** 是否我发起的 */
     private Boolean isCreator;
 
-    /** 发起者用户 ID */
     private Long creatorUserId;
 
     private LocalDateTime createdAt;

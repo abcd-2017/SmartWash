@@ -15,7 +15,6 @@ import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
-/** 日志 TAG */
 const TAG: string = 'diningRecipeDetail'
 
 @Builder

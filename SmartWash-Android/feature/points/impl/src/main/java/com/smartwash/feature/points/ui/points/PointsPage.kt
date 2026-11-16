@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,7 +31,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +54,7 @@ import com.smartwash.common.ui.components.ButtonSpinner
 import com.smartwash.common.ui.components.DrumMark
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
+import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonBlock
@@ -105,11 +110,16 @@ fun PointsPage(
     val leaderboard by pointsViewModel.leaderboard.collectAsState()
     val signInState by pointsViewModel.signInState.collectAsState()
     val lastSignInResult by pointsViewModel.lastSignInResult.collectAsState()
+    val ledger by pointsViewModel.ledger.collectAsState()
+    val ledgerState by pointsViewModel.ledgerState.collectAsState()
+    val ledgerHasMore by pointsViewModel.hasMore.collectAsState()
+    val ledgerLoadMoreState by pointsViewModel.ledgerLoadMoreState.collectAsState()
 
-    // 首载：概览与月榜并行独立（榜单失败不拖垮签到/余额/流水区块）
+    // 首载：概览 / 月榜 / 流水三者并行独立（任一失败不拖垮其他区块）
     LaunchedEffect(Unit) {
         pointsViewModel.load()
         pointsViewModel.loadLeaderboard()
+        pointsViewModel.loadLedger()
     }
 
     // 签到结果反馈（副作用统一在 LaunchedEffect，规范禁组合期副作用）：
@@ -190,9 +200,15 @@ fun PointsPage(
                         overview = overview ?: PointsOverviewVo(),
                         leaderboard = leaderboard,
                         leaderboardState = leaderboardState,
+                        ledger = ledger,
+                        ledgerState = ledgerState,
+                        ledgerHasMore = ledgerHasMore,
+                        ledgerLoadMoreState = ledgerLoadMoreState,
                         signInLoading = signInState is RequestState.Loading,
                         onSignIn = { pointsViewModel.signIn() },
                         onRetryLeaderboard = { pointsViewModel.loadLeaderboard() },
+                        onReloadLedger = { pointsViewModel.loadLedger() },
+                        onLoadMoreLedger = { pointsViewModel.loadMoreLedger() },
                     )
                 }
             }
@@ -206,14 +222,34 @@ private fun PointsContent(
     overview: PointsOverviewVo,
     leaderboard: PointsLeaderboardVo?,
     leaderboardState: RequestState,
+    ledger: List<PointLedgerItemVo>,
+    ledgerState: RequestState,
+    ledgerHasMore: Boolean,
+    ledgerLoadMoreState: RequestState,
     signInLoading: Boolean,
     onSignIn: () -> Unit,
     onRetryLeaderboard: () -> Unit,
+    onReloadLedger: () -> Unit,
+    onLoadMoreLedger: () -> Unit,
 ) {
     // 底部安全区：enableEdgeToEdge 后壳层无全局 insets 兜底，滚动末尾在区块间距之上叠加
     // 导航栏高度避让（audit-20 #6；与 PageHeader 的 statusBarsPadding 对称，RechargePage 同款先例）
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val listState = rememberLazyListState()
+
+    // 触底加载更多流水：列表已无法继续前滚（到达流水卡底部）时触发；
+    // snapshotFlow 仅在状态翻转时发射，追加后列表重新可滚不会连环触发
+    val atListEnd by remember {
+        derivedStateOf { !listState.canScrollForward }
+    }
+    LaunchedEffect(ledgerHasMore) {
+        snapshotFlow { atListEnd }.collect { atEnd ->
+            if (atEnd && ledgerHasMore) onLoadMoreLedger()
+        }
+    }
+
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             start = AppDimens.pagePadding,
@@ -242,7 +278,12 @@ private fun PointsContent(
         // 页面无引导；key 恒定也避免条件 item 引发的布局跳变）
         item(key = "ledger") {
             LedgerSection(
-                items = overview.safeRecentLedger,
+                items = ledger,
+                ledgerState = ledgerState,
+                hasMore = ledgerHasMore,
+                loadMoreState = ledgerLoadMoreState,
+                onReload = onReloadLedger,
+                onLoadMore = onLoadMoreLedger,
                 modifier = Modifier.padding(top = AppDimens.sectionSpacing),
             )
         }
@@ -606,12 +647,21 @@ private fun MyRankRow(my: MyRankVo?) {
     }
 }
 
-/** 积分明细区块：reason 文案 + delta 正负色 + 时间（append-only 流水，时间倒序）；空流水卡内空态 */
+/**
+ * 积分明细区块：reason 文案 + delta 正负色 + 时间（append-only 流水，时间倒序）。
+ * 数据来源改为 /ledger 分页（[items] 为已累积页），卡内首载骨架/失败小态 + 触底加载 footer。
+ */
 @Composable
 private fun LedgerSection(
     items: List<PointLedgerItemVo>,
+    ledgerState: RequestState,
+    hasMore: Boolean,
+    loadMoreState: RequestState,
+    onReload: () -> Unit,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     Column(modifier = modifier) {
         Text(
             text = stringResource(R.string.points_ledger_title),
@@ -620,21 +670,114 @@ private fun LedgerSection(
         )
         Spacer(modifier = Modifier.height(AppDimens.spaceXs))
         GroupCard(contentPadding = PaddingValues(horizontal = AppDimens.cardPadding)) {
-            if (items.isEmpty()) {
+            when {
+                // 首载进行中且无数据：卡内骨架（行形状对齐真实明细行，§3.6），reduced motion 由
+                // SkeletonBlock 内置静态降级（同排行榜卡内骨架先例）
+                (ledgerState is RequestState.Idle || ledgerState is RequestState.Loading) &&
+                    items.isEmpty() -> Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = AppDimens.cardPadding),
+                ) {
+                    repeat(2) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            SkeletonBlock(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(AppDimens.spaceMd),
+                            )
+                            Spacer(modifier = Modifier.width(AppDimens.spaceMd))
+                            SkeletonBlock(
+                                modifier = Modifier.size(
+                                    width = AppDimens.spaceXl,
+                                    height = AppDimens.spaceMd,
+                                ),
+                            )
+                        }
+                    }
+                }
+
+                // 首载失败且无数据：卡内错误小态 + 重试，不伪装成「暂无积分记录」空态
+                ledgerState is RequestState.Error && items.isEmpty() -> Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = AppDimens.cardPadding),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = (ledgerState as? RequestState.Error)?.getMessage(context)
+                            ?: stringResource(R.string.points_load_failed),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.colorScheme.textSecondary,
+                    )
+                    Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                    AppButton(
+                        text = stringResource(R.string.points_action_retry),
+                        onClick = onReload,
+                        variant = AppButtonVariant.SECONDARY,
+                        small = true,
+                    )
+                }
+
                 // 空流水：滚筒母题空态（audit-20 #7：points_ledger_empty 既有文案接线；
                 // icon 仅占位不渲染，EmptyState 只画滚筒圆）
-                EmptyState(
+                items.isEmpty() -> EmptyState(
                     icon = Icons.Default.Refresh,
                     message = stringResource(R.string.points_ledger_empty),
                 )
-            } else {
-                items.forEachIndexed { index, item ->
-                    if (index > 0) {
-                        HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
+
+                else -> {
+                    items.forEachIndexed { index, item ->
+                        if (index > 0) {
+                            HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
+                        }
+                        LedgerRow(item)
                     }
-                    LedgerRow(item)
+                    if (hasMore) {
+                        HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
+                        LedgerLoadMoreFooter(
+                            loadMoreState = loadMoreState,
+                            onRetry = onLoadMore,
+                            onLoadMore = onLoadMore,
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+/** 流水加载更多 footer：LoadingDots / 失败重试 / 手动加载更多（触底自动加载为主，按钮兜底） */
+@Composable
+private fun LedgerLoadMoreFooter(
+    loadMoreState: RequestState,
+    onRetry: () -> Unit,
+    onLoadMore: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AppDimens.spaceSm),
+        contentAlignment = Alignment.Center,
+    ) {
+        when (loadMoreState) {
+            is RequestState.Loading -> LoadingDots()
+            is RequestState.Error -> AppButton(
+                text = stringResource(R.string.points_action_retry),
+                onClick = onRetry,
+                variant = AppButtonVariant.SECONDARY,
+                small = true,
+            )
+            else -> AppButton(
+                text = stringResource(R.string.points_ledger_load_more),
+                onClick = onLoadMore,
+                variant = AppButtonVariant.TEXT,
+            )
         }
     }
 }

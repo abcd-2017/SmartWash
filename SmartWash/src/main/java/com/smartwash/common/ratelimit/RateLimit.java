@@ -53,7 +53,6 @@ public @interface RateLimit {
     /** 限流窗口时长（秒），与 {@link #limit()} 组成「window 秒内最多 limit 次」语义 */
     int window() default 60;
 
-    /** 限流窗口内允许的最大请求次数 */
     int limit() default 10;
 
     /** 超限响应文案（透传到统一响应 message，三端按业务失败展示，无需新增错误码） */

@@ -130,7 +130,6 @@ fun PickupPage(
                     )
 
                     PickupListState.CONTENT -> Column(modifier = Modifier.fillMaxSize()) {
-                        // 学校信息
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()

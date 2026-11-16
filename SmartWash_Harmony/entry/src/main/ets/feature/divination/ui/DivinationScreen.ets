@@ -54,7 +54,6 @@ export struct DivinationScreen {
       }
       .width('100%')
       .height('100%')
-      // 沉浸式：渐变铺满全屏，内容避让状态栏与底部手势条
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .linearGradient({
         direction: GradientDirection.Bottom,

@@ -212,7 +212,6 @@ fun SoundscapePage(
     }
 }
 
-// ==================== hero 控制卡 ====================
 
 /**
  * hero 卡（每页唯一视觉锚点）：品牌渐变底 + 白字 + 白胶囊 CTA。
@@ -340,7 +339,6 @@ private fun rememberBarPhase(animate: Boolean): Float {
     return phase
 }
 
-// ==================== 预设场景 ====================
 
 /** 预设场景横向胶囊 chips：选中 = primary 实底白字，未选中 = surfaceVariant + 描边 */
 @Composable
@@ -402,7 +400,6 @@ private fun PresetSection(
     }
 }
 
-// ==================== 混音台 ====================
 
 /** 混音台：底噪 / 自然 / 室内三张分组卡（卡片唯一画法，组内发丝线分隔） */
 @Composable
@@ -678,7 +675,6 @@ private fun VolumeSlider(
     }
 }
 
-// ==================== 睡眠定时 ====================
 
 /**
  * 睡眠定时卡：关闭 / 15 / 30 / 60 分钟四档；仅播放中可设置。
@@ -775,7 +771,6 @@ private fun TimerCard(
     }
 }
 
-// ==================== 文案 / 图标 / 令牌映射 ====================
 
 @Composable
 private fun presetLabel(preset: SoundscapePreset): String = stringResource(

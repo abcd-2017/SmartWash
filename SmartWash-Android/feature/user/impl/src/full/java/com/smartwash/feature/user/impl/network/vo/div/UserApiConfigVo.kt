@@ -26,7 +26,6 @@ data class UserApiConfigVo(
     val modelName: String? = null,
     /** 自定义接入点地址（目录模式为 null） */
     val customBaseUrl: String? = null,
-    /** 自定义模型名称 */
     val customModel: String? = null,
     /** 密钥掩码（如 sk-****abc4） */
     val apiKeyMask: String? = null,

@@ -55,7 +55,6 @@ class DeliveryCreateViewModel @Inject constructor(
     private val _session = MutableStateFlow<DeliverySessionVo?>(null)
     val session = _session.asStateFlow()
 
-    /** 手动关闭提交状态 */
     private val _closeState = MutableStateFlow<RequestState>(RequestState.Idle)
     val closeState = _closeState.asStateFlow()
 

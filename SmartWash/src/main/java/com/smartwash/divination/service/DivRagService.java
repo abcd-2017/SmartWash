@@ -33,9 +33,7 @@ public class DivRagService {
 
     /** 内存向量索引：chunkId → embedding */
     private final Map<Long, float[]> vectorIndex = new LinkedHashMap<>();
-    /** chunk 元数据 */
     private final Map<Long, DivRagChunk> chunkMeta = new LinkedHashMap<>();
-    /** 是否已预热 */
     private volatile boolean warmed = false;
 
     public DivRagService(DivRagDocumentMapper documentMapper, DivRagChunkMapper chunkMapper) {
@@ -68,11 +66,9 @@ public class DivRagService {
             chunkMapper.insert(chunk);
         }
 
-        // 标记可用
         doc.setStatus(1);
         documentMapper.updateById(doc);
 
-        // 刷新内存索引
         warmUp();
 
         log.info("上传古籍文档, id: {}, title: {}, chunks: {}", doc.getId(), title, seq);
@@ -86,7 +82,6 @@ public class DivRagService {
         if (!warmed) warmUp();
         float[] queryVec = parseEmbedding(generatePlaceholderEmbedding(query));
 
-        // 计算余弦相似度
         return vectorIndex.entrySet().stream()
                 .filter(e -> {
                     DivRagChunk meta = chunkMeta.get(e.getKey());
@@ -100,7 +95,6 @@ public class DivRagService {
                 .collect(Collectors.toList());
     }
 
-    /** 预热内存向量索引 */
     public synchronized void warmUp() {
         vectorIndex.clear();
         chunkMeta.clear();
@@ -130,7 +124,6 @@ public class DivRagService {
         return vec;
     }
 
-    /** 余弦相似度 */
     private float cosineSimilarity(float[] a, float[] b) {
         if (a.length != b.length) return 0;
         double dot = 0, normA = 0, normB = 0;
@@ -152,7 +145,6 @@ public class DivRagService {
         for (int i = 0; i < dim; i++) {
             vec[i] = rng.nextFloat() * 2 - 1;
         }
-        // 归一化
         double norm = 0;
         for (float v : vec) norm += v * v;
         norm = Math.sqrt(norm);

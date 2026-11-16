@@ -26,7 +26,6 @@ abstract class LaundryModule {
     abstract fun bindSchoolSearchSource(impl: SchoolSearchSourceImpl): SchoolSearchSource
 }
 
-/** 洗衣域网络供给 */
 @Module
 @InstallIn(SingletonComponent::class)
 object LaundryApiModule {

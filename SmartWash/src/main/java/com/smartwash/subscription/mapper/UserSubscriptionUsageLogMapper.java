@@ -8,9 +8,6 @@ import org.apache.ibatis.annotations.Param;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * 订阅使用打卡流水 Mapper。
- */
 public interface UserSubscriptionUsageLogMapper extends BaseMapper<UserSubscriptionUsageLog> {
 
     /**

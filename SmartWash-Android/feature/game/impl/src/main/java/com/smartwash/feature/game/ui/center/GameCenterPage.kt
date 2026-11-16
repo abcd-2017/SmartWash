@@ -33,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.ColorPainter
@@ -64,6 +65,7 @@ import com.smartwash.feature.game.GameTint
 import com.smartwash.feature.game.R
 import com.smartwash.feature.game.model.GameItem
 import com.smartwash.feature.game.ui.navigateToGameWebView
+import kotlinx.coroutines.flow.collectIndexed
 
 /** 网格列数（对齐工作台两列卡，方案 §六） */
 private const val GRID_COLUMNS = 2
@@ -91,11 +93,14 @@ fun GameCenterPage(
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val context = LocalContext.current
 
-    // 网格滚动状态：分类切换后回顶。LazyColumn 按行 key 换代后仍保留旧偏移，
-    // 顶部会残留上一分类被裁切的残卡（ui-check P1：切筛选必现）
+    // 网格滚动状态：仅在用户主动切换分类时回顶。LazyColumn 按行 key 换代后仍保留旧偏移，
+    // 顶部会残留上一分类被裁切的残卡（ui-check P1：切筛选必现）。
+    // 用 snapshotFlow 跳过首次发射：页面进入/从游戏返回时 effect 会重启，
+    // 若无条件 scrollToItem(0) 会覆盖 rememberLazyListState 恢复的滚动位置。
     val gridListState = rememberLazyListState()
-    LaunchedEffect(selectedCategory) {
-        gridListState.scrollToItem(0)
+    LaunchedEffect(Unit) {
+        snapshotFlow { selectedCategory }
+            .collectIndexed { index, _ -> if (index > 0) gridListState.scrollToItem(0) }
     }
 
     PullToRefreshBox(
@@ -122,7 +127,6 @@ fun GameCenterPage(
             )
 
             when {
-                // 首刷失败：说明发生了什么 + 重试（规范 §3.6 错误态）
                 listState is RequestState.Error -> {
                     // 文案消费状态携带的 resId（单一事实源：VM 按错误类型区分文案时页面自动跟随）
                     val error = listState as RequestState.Error

@@ -92,10 +92,8 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         orders.setTotalPrice(item.getBasePrice());
         orders.setPayPrice(item.getBasePrice());
 
-        //设置订单状态
         orders.setStatus(OrderStatus.PENDING_PAYMENT.getStatus());
 
-        //唯一订单号
         Snowflake snowflake = IdUtil.getSnowflake();
         orders.setOrderNo(snowflake.nextIdStr());
         save(orders);
@@ -156,13 +154,9 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         Map<String, Long> statusCountMap = countGroupByStatusMap(userId);
         OrderItemCountVo itemCountVo = new OrderItemCountVo();
 
-        //待支付数量
         itemCountVo.setPendingPaymentCount(toStatusCount(statusCountMap, itemCountFrom.getPendingPaymentStatus()));
-        //待清洗数量
         itemCountVo.setProcessingCount(toStatusCount(statusCountMap, itemCountFrom.getProcessingStatus()));
-        //待取件数量
         itemCountVo.setPendingPickupCount(toStatusCount(statusCountMap, itemCountFrom.getPendingPickupStatus()));
-        //待寄件数量
         itemCountVo.setShippedCount(toStatusCount(statusCountMap, itemCountFrom.getShippedStatus()));
         return itemCountVo;
     }
@@ -202,7 +196,6 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             return adminCancelOrder(orders);
         }
 
-        // 校验状态流转是否合法
         java.util.Set<String> allowed = VALID_TRANSITIONS.get(orders.getStatus());
         if (allowed == null || !allowed.contains(orderStatus.getStatus())) {
             throw new CustomExceptions("非法的状态变更：" + OrderStatus.getDescriptionByStatus(orders.getStatus()) + " -> " + OrderStatus.getDescriptionByStatus(orderStatus.getStatus()));
@@ -454,7 +447,6 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         return Math.toIntExact(statusCountMap.getOrDefault(status, 0L));
     }
 
-    //计算使用优惠券后的订单价格
     @Override
     public OrdersVo calculationOrder(Long userId, Long orderId, Long userCouponId) {
         log.info("订单计价, orderId: {}, userId: {}, couponId: {}", orderId, userId, userCouponId);
@@ -496,7 +488,6 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             log.warn("订单用户不匹配, orderId: {}, userId: {}", statusFrom.getOrderId(), loginUser.getUserId());
             throw new CustomExceptions("订单错误");
         }
-        // 校验当前状态是否允许流转到目标状态
         java.util.Set<String> allowed = VALID_TRANSITIONS.get(orders.getStatus());
         if (allowed == null || !allowed.contains(nextStatus)) {
             throw new CustomExceptions("非法的状态变更：" + OrderStatus.getDescriptionByStatus(orders.getStatus()) + " -> " + OrderStatus.getDescriptionByStatus(nextStatus));

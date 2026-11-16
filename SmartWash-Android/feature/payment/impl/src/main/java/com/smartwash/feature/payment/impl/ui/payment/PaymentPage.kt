@@ -407,7 +407,6 @@ fun PaymentPage(
         }
     }
 
-    // 优惠券选择弹窗
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
@@ -667,5 +666,4 @@ private fun NoCouponItem(
  */
 private const val NO_COUPON_USER_COUPON_ID = 0L
 
-/** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
 private const val TAG = "PaymentPage"

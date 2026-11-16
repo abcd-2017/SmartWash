@@ -1,5 +1,4 @@
 // src/api/deeplink.js
-// 跳转路由字典（Deeplink Route）API 层
 // 接口已与后端 DeeplinkRouteAdminController 对齐（/admin/deeplink/routes，ROLE_ADMIN）：
 // 字段名以 DeeplinkRouteVo / Add·UpdateDeeplinkRouteFrom 为准（驼峰，enabled/requireLogin 为 1/0）。
 // 注意：列表 Vo 不含 createdAt/updatedAt 时间字段。

@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="标题">
@@ -38,7 +37,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -113,7 +111,6 @@
       </div>
     </div>
 
-    <!-- 发送公告弹窗 -->
     <el-dialog
       v-model="dialogVisible"
       title="发送站内信"
@@ -172,7 +169,6 @@
       </template>
     </el-dialog>
 
-    <!-- 送达统计弹窗 -->
     <el-dialog v-model="statVisible" title="送达统计" width="min(420px, 94vw)">
       <div v-loading="statLoading" class="stat-panel">
         <div class="stat-panel__item">
@@ -218,7 +214,6 @@ const formRef = ref(null);
 const dialogVisible = ref(false);
 const submitting = ref(false);
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: noticeList,
   total,
@@ -283,8 +278,6 @@ const rules = reactive({
   ],
 });
 
-// ---------- 送达统计 ----------
-
 const statVisible = ref(false);
 const statLoading = ref(false);
 const statLoadingId = ref(null);
@@ -312,8 +305,6 @@ const handleShowStat = async (row) => {
     statLoadingId.value = null;
   }
 };
-
-// ---------- 发送 ----------
 
 const handleCreate = () => {
   dialogVisible.value = true;
@@ -362,8 +353,6 @@ const submitForm = async () => {
   }
 };
 
-// ---------- 深链复制 ----------
-
 const handleCopyDeepLink = async (text) => {
   try {
     await navigator.clipboard.writeText(text);
@@ -395,7 +384,6 @@ onMounted(() => {
   background: currentColor;
 }
 
-/* 深链列：文本 + 复制按钮 */
 .deep-link-cell {
   display: flex;
   align-items: center;
@@ -414,7 +402,6 @@ onMounted(() => {
   font-size: 13px;
 }
 
-/* 表单项下的辅助说明 */
 .form-tip {
   width: 100%;
   font-size: 12px;
@@ -422,7 +409,6 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
-/* 送达统计面板：竖排三项，等宽数字 */
 .stat-panel {
   display: flex;
   flex-direction: column;

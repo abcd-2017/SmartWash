@@ -82,7 +82,6 @@ public class DivinationAdminController {
         return Result.ok(interpretationMapper.selectPage(pageObj, wrapper));
     }
 
-    // ==================== Prompt 版本管理 ====================
 
     @Operation(summary = "Prompt 版本分页列表", description = "按术数方法（可选）与版本（可选）分页查询 prompt 版本")
     @GetMapping("/prompts")
@@ -124,7 +123,6 @@ public class DivinationAdminController {
         return Result.ok("删除成功");
     }
 
-    // ==================== RAG 语料管理 ====================
 
     @Operation(summary = "古籍文档列表", description = "分页查询已上传的古籍语料")
     @GetMapping("/rag/documents")
@@ -153,7 +151,6 @@ public class DivinationAdminController {
         return Result.ok(ragService.uploadDocument(from.getTitle(), from.getBook(), from.getMethod(), content));
     }
 
-    // ==================== 拦截问题日志 ====================
 
     @Operation(summary = "拦截问题日志", description = "按关键词模糊匹配问题内容分页查询被安全分流拦截的问题")
     @GetMapping("/blocked")
@@ -165,7 +162,6 @@ public class DivinationAdminController {
         return Result.ok(blockedQuestionMapper.selectPage(pageObj, wrapper));
     }
 
-    // ==================== 平台模型目录管理 ====================
 
     @Operation(summary = "模型目录分页列表", description = "按厂商/名称/启用态筛选（均可选），返回分页结构（仅掩码，无密文）")
     @GetMapping("/models")
@@ -229,7 +225,6 @@ public class DivinationAdminController {
         return Result.ok(modelConfigService.testConnectivityById(id));
     }
 
-    // ==================== 平台全局设置 ====================
 
     @Operation(summary = "获取平台设置", description = "获取平台全局设置（单例）")
     @GetMapping("/settings")

@@ -25,9 +25,6 @@ import java.io.IOException;
 @Component
 public class SseBridge {
 
-    /**
-     * 推送 delta 文本帧。
-     */
     public void sendDelta(SseEmitter emitter, String text) {
         try {
             emitter.send(SseEmitter.event()
@@ -43,9 +40,6 @@ public class SseBridge {
         }
     }
 
-    /**
-     * 推送完成帧。
-     */
     public void sendDone(SseEmitter emitter, Long interpretationId, boolean cached) {
         try {
             emitter.send(SseEmitter.event()
@@ -62,9 +56,6 @@ public class SseBridge {
         }
     }
 
-    /**
-     * 推送错误帧。
-     */
     public void sendError(SseEmitter emitter, int code, String message) {
         try {
             emitter.send(SseEmitter.event()
@@ -90,7 +81,6 @@ public class SseBridge {
         }
     }
 
-    /** JSON 转义 */
     private String escapeJson(String text) {
         if (text == null) return "";
         return text.replace("\\", "\\\\")

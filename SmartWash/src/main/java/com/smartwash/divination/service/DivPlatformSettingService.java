@@ -32,9 +32,6 @@ public class DivPlatformSettingService {
         return setting;
     }
 
-    /**
-     * 更新平台设置。
-     */
     public void updateSetting(DivPlatformSetting setting) {
         setting.setId(1L);
         settingMapper.updateById(setting);

@@ -15,7 +15,6 @@ class DiningSyncLifecycle {
     /** 首载是否完成（详情已就绪，可据其 version 发起带 knownVersion 的订阅） */
     private var ready = false
 
-    /** 页面当前是否可见 */
     private var visible = false
 
     /** 事件输入；返回需要 VM 执行的指令 */
@@ -54,7 +53,6 @@ class DiningSyncLifecycle {
         Reset,
     }
 
-    /** VM 指令 */
     enum class Command {
         /** 无动作 */
         None,

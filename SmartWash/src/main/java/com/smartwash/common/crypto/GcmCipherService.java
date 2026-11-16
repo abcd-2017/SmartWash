@@ -36,8 +36,6 @@ public class GcmCipherService {
     }
 
     /**
-     * 加密明文。
-     *
      * @param plaintext  明文
      * @param keyVersion 主密钥版本
      * @return 密文字符串 v{ver}:{iv}:{ct}
@@ -59,8 +57,6 @@ public class GcmCipherService {
     }
 
     /**
-     * 解密密文。
-     *
      * @param cipherText 密文字符串 v{ver}:{iv}:{ct}
      * @return 明文
      */

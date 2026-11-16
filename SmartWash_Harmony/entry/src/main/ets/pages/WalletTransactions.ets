@@ -7,7 +7,7 @@ import { HttpStatusCode } from "@ohos/axios"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
-import { PagingController } from "../utils/PagingUtil"
+import { LazyListDataSource, PagingController } from "../utils/PagingUtil"
 import { pathStack } from "../utils/PathStackUtil"
 import { RouteNames } from "../constant/RouteNames"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
@@ -39,6 +39,9 @@ struct WalletTransactions {
   @State isFirstError: boolean = false
   // 追加加载失败态（对齐安卓 append Error → footer 重试行）；重试经 paging.retry() 重拉同一页
   @State appendError: boolean = false
+  // LazyForEach 数据源（读取 recordList，实例稳定不可重建，避免整表重建）
+  private dataSource: LazyListDataSource<TransactionVo> =
+    new LazyListDataSource<TransactionVo>(() => this.recordList)
   // 轻量分页封装：触底加载/上锁防重/封底判定统一收敛
   private paging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
@@ -127,11 +130,15 @@ struct WalletTransactions {
         if (page === 1) {
           // stale-while-revalidate（对齐充值记录页）：刷新成功才整体替换，刷新期间旧内容保持可读
           this.recordList = records
+          this.dataSource.notifyReload()
           this.isFirstError = false
           logger.debug('walletTransactions', `钱包流水首页加载成功 count=${records.length}`)
           return true
         }
+        // 追加按新索引逐项通知，避免整表重建
+        const startIndex: number = this.recordList.length
         this.recordList.push(...records)
+        this.dataSource.notifyAppend(startIndex, records.length)
         this.appendError = false
         logger.debug('walletTransactions', `钱包流水分页加载成功 page=${page} count=${records.length}`)
         return true
@@ -150,7 +157,6 @@ struct WalletTransactions {
       throw new Error(resString('wallet_transactions_2'))
     } catch (err) {
       if (page === 1) {
-        // 网络异常/401 拒绝时 promise 会 throw：兜住进错误态，避免 isLoadingFirst 卡死永久骨架
         showToastSafety(resString('wallet_transactions_3'))
         if (this.recordList.length === 0) {
           this.isFirstError = true
@@ -236,9 +242,6 @@ struct WalletTransactions {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 页头（公共 PageHeader：22/600 标题 + 48dp 返回热区）
@@ -254,7 +257,7 @@ struct WalletTransactions {
         } else if (this.recordList.length > 0) {
           // 与充值记录页一致：LazyColumn 触底分页，无下拉刷新入口
           List({ space: DesignDimens.CARD_SPACING }) {
-            ForEach(this.recordList, (item: TransactionVo, index: number) => {
+            LazyForEach(this.dataSource, (item: TransactionVo) => {
               ListItem() {
                 this.TransactionCard(item)
               }
@@ -291,7 +294,8 @@ struct WalletTransactions {
             bottom: safeBottomVp() + DesignDimens.SPACE_MD
           })
           .onScrollIndex((start: number, end: number) => {
-            this.paging.onScrollIndex(end, this.recordList?.length ?? 0)
+            // listLength 为 ListItem 真实数量（流水卡 + 尾部 footer/重试行）
+            this.paging.onScrollIndex(end, (this.recordList?.length ?? 0) + 1)
           })
           .onScrollFrameBegin((offset: number, state: ScrollState) => {
             this.paging.onScrollFrameBegin(offset)
@@ -345,7 +349,6 @@ struct WalletTransactions {
       }
       .width("100%")
       .height("100%")
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       }
     }

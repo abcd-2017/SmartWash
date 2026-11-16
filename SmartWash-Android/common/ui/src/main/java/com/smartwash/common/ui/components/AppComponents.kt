@@ -103,7 +103,6 @@ import com.smartwash.common.utils.pressTween
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
 
-// ========== 页面头部 ==========
 
 @Composable
 fun PageHeader(
@@ -157,7 +156,6 @@ fun PageHeader(
     }
 }
 
-// ========== 容器组件 ==========
 
 // DESIGN-SPEC v0.4 §2.4 卡片规格的 Compose 等价实现：规范「CSS 阴影 ↔ Compose elevation 映射表」
 // 裁定卡片 = `AppElevation.level1`（1dp），与页面侧 `Surface(shadowElevation = level1)` 同源。
@@ -505,7 +503,6 @@ fun AppButton(
     }
 }
 
-// ========== 设置/账户行 ==========
 
 @Composable
 fun SettingRow(
@@ -546,7 +543,6 @@ fun SettingRow(
     }
 }
 
-// ========== 空状态 ==========
 
 /**
  * 空状态 — 规范 §3.6：滚筒圆母题（[DrumMark]）静止态 + 一句引导文案 + 可选行动按钮。
@@ -613,7 +609,6 @@ fun LoadingState(
     SkeletonList(modifier = modifier, rows = 4)
 }
 
-// ========== 骨架屏 ==========
 
 /** 微光扫过一遍的行程（px）——足够覆盖一屏内任意宽度的骨架块 */
 private const val SHIMMER_TRAVEL = 1200f
@@ -644,7 +639,6 @@ fun rememberSkeletonBrush(): Brush {
     )
 }
 
-/** 单个骨架块 */
 @Composable
 fun SkeletonBlock(
     modifier: Modifier = Modifier,
@@ -700,7 +694,6 @@ fun SkeletonList(
     }
 }
 
-// ========== 分页尾部静态加载点 ==========
 
 /**
  * 静态三点灰 — reduced motion 降级占位（§8：取消无限旋转，但保留"还在加载"的可读性）。
@@ -726,7 +719,6 @@ fun LoadingDots(modifier: Modifier = Modifier) {
     }
 }
 
-// ========== 标签栏 ==========
 
 @Composable
 fun AppTabBar(
@@ -795,7 +787,6 @@ fun AppTabBar(
     }
 }
 
-// ========== 统一弹窗组件 ==========
 
 /**
  * 确认/取消操作弹窗

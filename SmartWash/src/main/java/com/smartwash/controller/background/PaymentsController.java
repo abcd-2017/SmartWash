@@ -22,14 +22,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Tag(name = "支付记录管理", description = "后台支付记录的增删改查及枚举查询")
 @Slf4j
 @RestController

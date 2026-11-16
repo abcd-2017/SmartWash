@@ -155,7 +155,6 @@ fun DrumPage(
     }
 }
 
-// ==================== 控制卡：BPM + 播放 + 节奏型 ====================
 
 @Composable
 private fun ControlCard(
@@ -347,7 +346,6 @@ private fun patternLabels(): List<Int> = listOf(
     R.string.lab_drum_pattern_d,
 )
 
-// ==================== 预设节奏 ====================
 
 @Composable
 private fun PresetSection(onApply: (DrumPreset) -> Unit) {
@@ -394,7 +392,6 @@ private fun PresetSection(onApply: (DrumPreset) -> Unit) {
     }
 }
 
-// ==================== 步进网格 ====================
 
 /** 步进网格卡：左侧声部标签固定列 + 右侧 16 步横滚区（8 行 × 16 步） */
 @Composable
@@ -561,7 +558,6 @@ private fun StepCell(
     )
 }
 
-// ==================== 文案映射 ====================
 
 @Composable
 private fun voiceLabel(voice: DrumVoice): String = stringResource(

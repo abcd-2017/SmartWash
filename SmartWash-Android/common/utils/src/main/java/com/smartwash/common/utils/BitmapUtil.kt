@@ -5,9 +5,6 @@ import android.graphics.Color
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 
-/**
- * 根据传入content生成二维码
- */
 fun generateQrCodeBitmap(content: String, size: Int = 512): Bitmap {
     require(content.isNotBlank()) { "QR code content must not be empty" }
     val writer = QRCodeWriter()

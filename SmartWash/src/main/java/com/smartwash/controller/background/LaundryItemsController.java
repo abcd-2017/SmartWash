@@ -20,14 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
 
-/**
- * <p>
- * 衣物套餐
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Tag(name = "洗衣项目管理", description = "洗衣套餐/项目的增删改查")
 @Slf4j
 @RestController

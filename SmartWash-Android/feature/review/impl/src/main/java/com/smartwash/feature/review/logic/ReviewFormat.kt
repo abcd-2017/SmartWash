@@ -17,7 +17,6 @@ object ReviewFormat {
         /** 分钟级（Learning/Relearning 短步长典型量级） */
         data class InMinutes(val minutes: Long) : DueText()
 
-        /** 小时级 */
         data class InHours(val hours: Long) : DueText()
 
         /** 天级（Review 间隔典型量级） */

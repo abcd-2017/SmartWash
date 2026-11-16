@@ -818,7 +818,7 @@ class WebDiningOrderControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andReturn();
-        return objectMapper.readTree(result.getResponse().getContentAsString()).path("data");
+        return objectMapper.readTree(result.getResponse().getContentAsString()).path("data").path("records");
     }
 
     private JsonNode getJson(String url, String token) throws Exception {

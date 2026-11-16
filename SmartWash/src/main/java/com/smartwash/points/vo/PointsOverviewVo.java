@@ -16,7 +16,6 @@ public class PointsOverviewVo {
     /** 累计获得积分（无账户=0） */
     private Integer totalEarned;
 
-    /** 今日是否已签 */
     private Boolean signedToday;
 
     /**

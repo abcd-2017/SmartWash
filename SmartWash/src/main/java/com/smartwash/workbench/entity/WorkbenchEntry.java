@@ -29,10 +29,8 @@ public class WorkbenchEntry implements Serializable {
     /** 业务唯一标识：端上兜底列表与下发数据对齐用，uk_entry_key 唯一索引裁决 */
     private String entryKey;
 
-    /** 入口标题 */
     private String title;
 
-    /** 副标题描述 */
     private String description;
 
     /** 图标 key，端上白名单枚举映射，未知值显示默认图标 */
@@ -62,7 +60,6 @@ public class WorkbenchEntry implements Serializable {
     /** 排序，越小越靠前 */
     private Integer sort;
 
-    /** 备注 */
     private String remark;
 
     private LocalDateTime createdAt;

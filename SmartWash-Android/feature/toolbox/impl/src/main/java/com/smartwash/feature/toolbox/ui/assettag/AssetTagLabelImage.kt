@@ -59,7 +59,6 @@ fun buildAssetTagLabelBitmap(itemName: String, url: String, code: String? = null
     val qrLeft = (width - qrSize) / 2f
     canvas.drawBitmap(qr, qrLeft, 190f, null)
 
-    // 标签码
     canvas.drawText(code ?: "", width / 2f, height - 90f, codePaint)
     return bitmap
 }

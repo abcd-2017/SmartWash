@@ -15,13 +15,11 @@ import androidx.annotation.Keep
 data class DiningOrderBriefVo(
     /** 订单 ID（确认加入后调 join 接口用） */
     val orderId: Long? = null,
-    /** 订单标题 */
     val title: String? = null,
     /** 订单状态：ONGOING / FINISHED */
     val status: String? = null,
     /** 发起者标识（脱敏手机号，如 139****9000） */
     val creatorName: String? = null,
-    /** 本单菜单菜品数 */
     val recipeCount: Long? = null,
     /** 当前用户是否已在该单中（已加入时端上可直接进详情页） */
     val joined: Boolean? = null,

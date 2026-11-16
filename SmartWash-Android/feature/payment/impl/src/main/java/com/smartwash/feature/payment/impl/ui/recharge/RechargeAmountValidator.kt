@@ -53,8 +53,6 @@ internal object RechargeAmountValidator {
         payAmount + if (isCustomAmountSelected) 0f else (PRESET_BONUSES[payAmount] ?: 0f)
 
     /**
-     * 解析本次提交应使用的充值金额。
-     *
      * 预设金额卡片取值固定合法；自定义金额逐项校验，失败原因写入 [RechargeAmountResult.error]。
      */
     fun resolve(isCustomAmountSelected: Boolean, presetAmount: Float?, customAmountRaw: String): RechargeAmountResult {

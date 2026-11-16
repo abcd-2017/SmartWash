@@ -477,7 +477,6 @@ private fun StatusHeroCard(
                     stringResource(R.string.step_pickup)
                 )
 
-                // 进度条
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically

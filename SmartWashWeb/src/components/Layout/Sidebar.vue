@@ -138,7 +138,6 @@ const iconRegistry = {
   Cpu: markRaw(Cpu),
   Setting: markRaw(Setting),
   Message: markRaw(Message),
-  // 情绪与订阅
   AlarmClock: markRaw(AlarmClock),
   // 工具箱与分组表头
   Link: markRaw(Link),
@@ -147,21 +146,14 @@ const iconRegistry = {
   User: markRaw(User),
   MagicStick: markRaw(MagicStick),
   Grid: markRaw(Grid),
-  // 工作台配置
   Guide: markRaw(Guide),
-  // 游戏库
   VideoPlay: markRaw(VideoPlay),
-  // 系统与安全
   Lock: markRaw(Lock),
   DocumentChecked: markRaw(DocumentChecked),
-  // 消息中心（站内信）
   Bell: markRaw(Bell),
-  // 吃啥
   Food: markRaw(Food),
   Dish: markRaw(Dish),
-  // 菜单搜索
   Search: markRaw(Search),
-  // 参数设置
   Tools: markRaw(Tools),
   // 菜谱管理
   ForkSpoon: markRaw(ForkSpoon),
@@ -264,7 +256,6 @@ const activeGroupIndex = computed(() => {
 // 初次渲染（含刷新/直链进入）即展开当前所在分组
 const defaultOpeneds = computed(() => (activeGroupIndex.value ? [activeGroupIndex.value] : []));
 
-// ===== 菜单搜索 =====
 const menuQuery = ref('');
 
 // 平铺搜索结果：标题/路径匹配（不区分大小写），附带所属分组名便于区分重名页面
@@ -441,7 +432,6 @@ watch(
   min-width: 0;
 }
 
-/* ===== 菜单搜索 ===== */
 .menu-search {
   padding: 0 14px 12px;
 }

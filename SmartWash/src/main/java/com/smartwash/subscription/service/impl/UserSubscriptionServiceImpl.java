@@ -59,7 +59,6 @@ public class UserSubscriptionServiceImpl extends ServiceImpl<UserSubscriptionMap
     private final SubscriptionReminderLogMapper subscriptionReminderLogMapper;
     private final UsersMapper usersMapper;
 
-    // ==================== CRUD ====================
 
     @Override
     public UserSubscriptionVo createSubscription(AddSubscriptionFrom from, Long userId) {
@@ -352,7 +351,6 @@ public class UserSubscriptionServiceImpl extends ServiceImpl<UserSubscriptionMap
                 .setUpdatedAt(record.getUpdatedAt());
     }
 
-    // ==================== 内部方法 ====================
 
     private UserSubscription getOwnedRecord(Long id, Long userId) {
         UserSubscription record = this.getById(id);

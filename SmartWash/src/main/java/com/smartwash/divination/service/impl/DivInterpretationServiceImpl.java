@@ -92,7 +92,6 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
             }
         }));
 
-        // 设置完成/超时回调
         emitter.onCompletion(() -> log.debug("SSE 推送完成, recordId: {}", recordId));
         emitter.onTimeout(() -> log.warn("SSE 推送超时, recordId: {}", recordId));
         emitter.onError(ex -> log.warn("SSE 推送异常, recordId: {}", recordId, ex));

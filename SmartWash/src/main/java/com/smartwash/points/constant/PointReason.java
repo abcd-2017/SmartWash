@@ -7,7 +7,6 @@ package com.smartwash.points.constant;
  */
 public enum PointReason {
 
-    /** 每日签到基础分 */
     SIGN_IN("每日签到"),
 
     /** 连签奖励（每满配置周期天数额外发放一次） */

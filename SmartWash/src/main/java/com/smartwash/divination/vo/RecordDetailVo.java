@@ -34,7 +34,6 @@ public class RecordDetailVo {
 
     private Integer chartVerified;
 
-    /** 最近一次解读 */
     private InterpretationVo latestInterpretation;
 
     private LocalDateTime createdAt;

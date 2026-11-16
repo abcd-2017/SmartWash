@@ -47,7 +47,7 @@ import {
 } from './SubscriptionUiCommon'
 import { AppButton, EmptyState, IconBox, SkeletonBlock, SkeletonList } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
-import { PagingController } from '../../../utils/PagingUtil'
+import { LazyListDataSource, PagingController } from '../../../utils/PagingUtil'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { SUBSCRIPTION_TICK_KEY } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
@@ -85,6 +85,9 @@ struct SubscriptionListPage {
   // 跨页刷新信号（自增 tick）：新建/编辑/删除/状态流转/标记已读成功后 bump
   @StorageLink(SUBSCRIPTION_TICK_KEY) @Watch('onSubscriptionTick') subscriptionTick: number = 0
   private hasShown: boolean = false
+  // LazyForEach 数据源（读取 list，实例稳定不可重建，否则整表重建）
+  private listSource: LazyListDataSource<SubscriptionVo> =
+    new LazyListDataSource<SubscriptionVo>(() => this.list)
   private paging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
       return this.fetchPage(page)
@@ -130,11 +133,15 @@ struct SubscriptionListPage {
       if (res.code === BizCode.SUCCESS && res.data !== null) {
         const records: Array<SubscriptionVo> = res.data.records
         if (page === 1) {
-          // 刷新会话门控：新数据就绪后才替换旧列表（等待网络期间保留旧数据防闪「空态 + 去新建」）；
-          // 空结果也在此放行（会话结束 → 真实空态）
           this.isFirstError = false
           this.isRefreshSession = false
           this.list = records
+          this.listSource.notifyReload()
+        } else if (records.length > 0) {
+          // 追加页：concat 后按新索引通知，避免整表重建（原实现漏追加，触底数据不显示）
+          const startIndex: number = this.list.length
+          this.list = this.list.concat(records)
+          this.listSource.notifyAppend(startIndex, records.length)
         }
         if (records.length === 0) {
           logger.debug(TAG, `分页封底 page=${page} 本页无数据`)
@@ -158,7 +165,6 @@ struct SubscriptionListPage {
       showToastSafety(res.message, SubscriptionText.subscription_error_load)
       throw new Error(SubscriptionText.subscription_error_load)
     } catch (err) {
-      // 网络异常/401 拒绝时 promise 会 throw：与「追加失败」同语义（reject 供分页器记失败页）
       if (page === 1) {
         this.isFirstError = true
         this.isRefreshSession = false
@@ -173,8 +179,6 @@ struct SubscriptionListPage {
 
   /**
    * 整列表重置重拉（变更信号/筛选切换/下拉刷新/错误重试共用，不亮 Refresh 指示器）。
-   * 刷新会话门控：不在请求前清空列表（旧数据保留防闪空态），新数据在 fetchPage 成功后整体替换；
-   * 会话开闭由各入口置位、fetchPage(1) 成功/失败复位。
    */
   async loadFirst(): Promise<void> {
     this.appendError = false
@@ -267,9 +271,6 @@ struct SubscriptionListPage {
 
   build() {
     NavDestination() {
-      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
-      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         SubscriptionPageHeader({
@@ -307,7 +308,7 @@ struct SubscriptionListPage {
           Refresh({ refreshing: $$this.isRefreshing }) {
             // space = 卡片间距 16（对齐安卓 spacedBy(cardSpacing)，缺失时卡片贴死）
             List({ space: DesignDimens.CARD_SPACING }) {
-              ForEach(this.list, (vo: SubscriptionVo) => {
+              LazyForEach(this.listSource, (vo: SubscriptionVo) => {
                 ListItem() {
                   SubscriptionCard({
                     vo: vo,
@@ -352,7 +353,8 @@ struct SubscriptionListPage {
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 8, bottom: 8 + safeBottomVp() })
             .divider({ strokeWidth: 0, color: Color.Transparent })
             .onScrollIndex((start: number, end: number) => {
-              this.paging.onScrollIndex(end, this.list.length)
+              // listLength 为 ListItem 真实数量（订阅卡 + 尾部 footer）
+              this.paging.onScrollIndex(end, this.list.length + 1)
             })
             .onScrollFrameBegin((offset: number) => {
               this.paging.onScrollFrameBegin(offset)
@@ -366,7 +368,6 @@ struct SubscriptionListPage {
       }
       .width('100%')
       .height('100%')
-      // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor($r('app.color.BACKGROUND'))
       }

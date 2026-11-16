@@ -207,8 +207,6 @@ export const shortCodeVisibilityText = (type) => SHORT_CODE_VISIBILITY_TEXT[type
 export const shortCodeVisibilityTagType = (type) =>
   dictValue(SHORT_CODE_VISIBILITY_TAG_TYPES, type);
 
-// ---------- 优惠券 ----------
-
 /** 优惠券状态 → 文案（与后端 CouponStatus 对齐：ACTIVE 可用，其余视为已失效） */
 export const COUPON_STATUS_TEXT = {
   ACTIVE: '可用',
@@ -575,7 +573,6 @@ export const AUDIT_ACTION_TEXT = {
   ADMIN_USER_UPDATE: '更新管理员',
   ADMIN_USER_DELETE: '删除管理员',
   SYS_CONFIG_UPDATE: '更新系统参数',
-  // 游戏库
   GAME_UPLOAD: '上传游戏',
   GAME_COVER_UPLOAD: '上传游戏封面',
   GAME_UPDATE: '更新游戏',
@@ -585,14 +582,11 @@ export const AUDIT_ACTION_TEXT = {
   GAME_LEVEL_SAVE: '保存游戏关卡',
   GAME_LEVEL_BATCH_IMPORT: '批量导入游戏关卡',
   GAME_LEVEL_DELETE: '删除游戏关卡',
-  // 工具箱
   TOOLBOX_SHORT_CODE_DELETE: '删除短码',
   LOCKER_TAG_GENERATE: '生成寄存柜标签',
   LOCKER_TAG_BATCH_GENERATE: '批量生成寄存柜标签',
   TOOLBOX_ASSET_TAG_DELETE: '删除物品标签',
-  // 验证码
   CAPTCHA_QUERY: '查询验证码',
-  // 餐饮
   DINING_CATEGORY_ADD: '新增餐饮分类',
   DINING_CATEGORY_UPDATE: '更新餐饮分类',
   DINING_CATEGORY_DELETE: '删除餐饮分类',
@@ -602,7 +596,6 @@ export const AUDIT_ACTION_TEXT = {
   DINING_RECIPE_STATUS: '变更菜谱上下架',
   DINING_RECIPE_COVER_UPLOAD: '上传菜谱封面',
   DINING_RECIPE_IMPORT: '导入菜谱',
-  // 观象台
   DIV_PROMPT_SAVE: '保存 Prompt',
   DIV_PROMPT_ACTIVATE: '激活 Prompt',
   DIV_PROMPT_DELETE: '删除 Prompt',
@@ -674,8 +667,6 @@ export const CAPTCHA_PURPOSE_TAG_TYPES = {
 /** 用途标签配色（文案 purposeDesc 由后端下发） */
 export const captchaPurposeTagType = (purpose) => dictValue(CAPTCHA_PURPOSE_TAG_TYPES, purpose);
 
-// ---------- 观象台·审计复审状态 ----------
-
 export const DIV_AUDIT_STATUS_TEXT = {
   0: '待审',
   1: '通过',
@@ -699,8 +690,6 @@ export const DIV_AUDIT_STATUS_OPTIONS = Object.entries(DIV_AUDIT_STATUS_TEXT).ma
     label,
   })
 );
-
-// ---------- 观象台·Prompt 状态 ----------
 
 export const DIV_PROMPT_STATUS_TEXT = {
   0: '草稿',
@@ -733,8 +722,6 @@ export const BLOCKED_REASON_TEXT = {
 
 /** 拦截原因文案（未知值回显原值） */
 export const blockedReasonText = (reason) => BLOCKED_REASON_TEXT[reason] || reason || '-';
-
-// ---------- 用户优惠券使用状态 ----------
 
 export const USER_COUPON_USED_TEXT = {
   true: '已使用',

@@ -300,7 +300,6 @@ fun RegisterPage(
                 color = Color.White
             )
 
-            // 进度条
             Spacer(modifier = Modifier.height(20.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // 激活态 — 纯白
@@ -366,7 +365,6 @@ fun RegisterPage(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 验证码行
                 VerificationCodeRow(
                     verificationCode = verificationCode,
                     isVerificationCodeError = isVerificationCodeError,

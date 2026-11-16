@@ -12,9 +12,7 @@ import androidx.annotation.Keep
  */
 @Keep
 data class DiningOrderFinishVo(
-    /** 订单 ID */
     val id: Long? = null,
-    /** 订单标题 */
     val title: String? = null,
     /** 订单状态（结束成功或幂等命中均为 FINISHED） */
     val status: String? = null,

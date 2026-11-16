@@ -193,7 +193,6 @@ export interface AnswerForm {
   durationMs?: number
 }
 
-// ==================== JSON → VO 显式映射 ====================
 // 背景见 network/vo/JsonParse.ets：Jackson 可能省略字段，interface 运行时不填充，
 // 消费点一律经 jsonStr/jsonNum/mapArray 兜底，避免 undefined 透传。
 
@@ -351,7 +350,6 @@ export class ReviewText {
   static get review_error_answer_too_long(): string { return resString('review_error_answer_too_long') }
 }
 
-// ==================== 七接口封装 ====================
 
 /**
  * 新建资料。title 必填（≤100 字），rawText 可空（≤100k）。

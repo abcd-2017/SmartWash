@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.Composable
@@ -13,23 +14,34 @@ import androidx.compose.ui.res.stringResource
 import com.smartwash.feature.coupon.R
 import com.smartwash.feature.coupon.network.vo.coupon.UserCouponVo
 import com.smartwash.feature.coupon.repository.CouponSource
+import com.smartwash.feature.coupon.ui.coupon.CouponLoadMoreFooter
+import com.smartwash.feature.coupon.ui.coupon.CouponLoadMoreTrigger
 import com.smartwash.feature.coupon.ui.coupon.CouponOfflineHint
 import com.smartwash.feature.coupon.ui.coupon.CouponSectionError
 import com.smartwash.feature.coupon.ui.coupon.UserCouponCard
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.utils.model.RequestState
 
 /**
- * 历史 tab（回归 2026-11-06 A5）：数据来源标记传入——
+ * 历史 tab（getUserCoupon status=1，分页）：数据来源标记传入——
  * FAILED → 错误/重试小态；CACHE → 列表顶部轻量离线提示；NETWORK → 现状。
+ * 触底自动加载更多 + footer（失败重试 / 手动兜底）。
  */
 @Composable
 fun HistoricalCouponsTab(
     historicalCoupons: List<UserCouponVo>,
     source: CouponSource = CouponSource.NETWORK,
+    hasMore: Boolean = false,
+    loadMoreState: RequestState = RequestState.Idle,
     onRetry: () -> Unit = {},
+    onLoadMore: () -> Unit = {},
 ) {
+    val listState = rememberLazyListState()
+    CouponLoadMoreTrigger(listState = listState, hasMore = hasMore, onLoadMore = onLoadMore)
+
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
         verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
@@ -57,6 +69,15 @@ fun HistoricalCouponsTab(
                 }
                 items(historicalCoupons, key = { it.userCouponId }) { coupon ->
                     UserCouponCard(couponVo = coupon, isHistorical = true)
+                }
+                if (hasMore) {
+                    item(key = "historical_load_more") {
+                        CouponLoadMoreFooter(
+                            loadMoreState = loadMoreState,
+                            onRetry = onLoadMore,
+                            onLoadMore = onLoadMore,
+                        )
+                    }
                 }
             }
         }

@@ -26,7 +26,6 @@ abstract class CouponModule {
     abstract fun bindCouponApi(impl: CouponApiImpl): CouponApi
 }
 
-/** 优惠券域网络供给 */
 @Module
 @InstallIn(SingletonComponent::class)
 object CouponApiModule {

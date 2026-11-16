@@ -45,7 +45,6 @@ import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.network.api.GameBridgeApi
 
-/** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接；供 WebViewClient 回调留痕） */
 private const val TAG = "SmartWashWebView"
 
 /**

@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="短码">
@@ -44,7 +43,6 @@
       </el-form>
     </div>
 
-    <!-- 数据表格 -->
     <div class="table-card">
       <el-table
         v-loading="listLoading"
@@ -259,7 +257,6 @@ const SECRET_CONTENT_TYPE = 7;
 // 过期判断：expireAt 为空表示永不过期
 const isExpired = (expireAt) => !!expireAt && dayjs(expireAt).isBefore(dayjs());
 
-// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
   list: shortCodeList,
   total,
@@ -291,7 +288,6 @@ const {
 // 行内「删除」按钮 loading，防连点
 const deletingId = ref(null);
 
-// 详情抽屉
 const detailVisible = ref(false);
 const detailLoading = ref(false);
 const detail = ref(null);
@@ -312,7 +308,6 @@ const handleDetail = async (row) => {
   }
 };
 
-// ---------- 复制短码 ----------
 // 后端未提供完整短链 URL，此处复制裸 code，完整访问链接需在端上按短码拼接
 async function copyToClipboard(text) {
   // 优先 Clipboard API（需 secure context），非 HTTPS 环境降级 execCommand（同 DeliverySession）
@@ -340,7 +335,6 @@ const handleCopyCode = async (row) => {
   }
 };
 
-// 删除短码
 const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
   const confirmed = await useConfirm(`确认删除短码「${row.code}」吗？删除后立即失效且不可恢复。`);
@@ -380,7 +374,6 @@ onMounted(() => {
   color: var(--text-input);
 }
 
-/* 短码 + 复制按钮同行 */
 .code-cell-wrap {
   display: inline-flex;
   align-items: center;

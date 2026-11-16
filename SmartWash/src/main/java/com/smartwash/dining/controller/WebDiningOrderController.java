@@ -1,5 +1,6 @@
 package com.smartwash.dining.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
 import com.smartwash.dining.from.CreateDiningOrderFrom;
 import com.smartwash.dining.from.JoinDiningOrderFrom;
@@ -9,6 +10,7 @@ import com.smartwash.dining.vo.DiningOrderCreatedVo;
 import com.smartwash.dining.vo.DiningOrderDetailVo;
 import com.smartwash.dining.vo.DiningOrderFinishVo;
 import com.smartwash.dining.vo.DiningOrderListVo;
+import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,8 +26,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 /**
  * 吃啥-订单用户端控制器。
@@ -49,10 +49,11 @@ public class WebDiningOrderController {
         return Result.ok(diningOrderService.create(from, currentUserId()));
     }
 
-    @Operation(summary = "我的订单列表", description = "我发起的 + 我参与的，按创建时间倒序，带 isCreator 标记")
+    @Operation(summary = "我的订单列表（分页）", description = "我发起的 + 我参与的，按创建时间倒序，带 isCreator 标记；"
+            + "page 默认 1、size 默认 10 上限 100")
     @GetMapping("/my")
-    public Result<List<DiningOrderListVo>> my() {
-        return Result.ok(diningOrderService.listMy(currentUserId()));
+    public Result<Page<DiningOrderListVo>> my(@Valid BaseSearchFrom from) {
+        return Result.ok(diningOrderService.pageMy(from, currentUserId()));
     }
 
     @Operation(summary = "订单详情（轮询主接口）", description = "点单页约 3s 一次带 knownVersion 轮询："

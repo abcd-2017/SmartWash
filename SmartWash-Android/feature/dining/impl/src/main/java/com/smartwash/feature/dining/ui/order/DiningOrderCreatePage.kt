@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Restaurant
@@ -34,10 +35,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +51,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
@@ -95,9 +96,9 @@ fun DiningOrderCreatePage(
     val formError by viewModel.formError.collectAsState()
     val sourceTitle by viewModel.sourceTitle.collectAsState()
     val sourceMenuCount by viewModel.sourceMenuCount.collectAsState()
-
-    // 菜品搜索关键词（本地过滤：本页已全量拉取菜谱，输入即筛，无需再请求）
-    var keyword by remember { mutableStateOf("") }
+    val hasMore by viewModel.hasMore.collectAsState()
+    val loadMoreState by viewModel.loadMoreState.collectAsState()
+    val keyword by viewModel.keyword.collectAsState()
 
     // 首载（栈上重组不重放；失败重试显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
@@ -109,17 +110,11 @@ fun DiningOrderCreatePage(
         else -> CreateContentState.Content
     }
 
-    // 分组派生（组合期纯计算）：按分类目录排序分组，未分类/孤儿分类归「未分类」组收尾；
-    // 关键词非空时先本地过滤（复用模式菜单只读，不参与搜索）
+    // 分组派生（组合期纯计算）：按分类目录排序分组，未分类/孤儿分类归「未分类」组收尾。
+    // 关键词已在 ViewModel 走服务端模糊查询（随分页重拉），此处直接对已加载菜谱分组
     val uncategorizedLabel = stringResource(R.string.dining_order_create_menu_uncategorized)
-    val visibleRecipes = if (keyword.isBlank() || viewModel.isReuseMode) {
-        recipes
-    } else {
-        val trimmed = keyword.trim()
-        recipes.filter { it.safeName.contains(trimmed, ignoreCase = true) }
-    }
-    val groups = remember(categories, visibleRecipes, uncategorizedLabel) {
-        groupRecipesByCategory(visibleRecipes, categories, uncategorizedLabel)
+    val groups = remember(categories, recipes, uncategorizedLabel) {
+        groupRecipesByCategory(recipes, categories, uncategorizedLabel)
     }
 
     // 提交成功：进分享视图（携带创建响应的 orderId + joinToken——token 的唯一来源）。
@@ -230,11 +225,11 @@ fun DiningOrderCreatePage(
                             )
                         }
 
-                        // 菜品搜索（本地过滤；复用模式菜单只读，不给搜索）
+                        // 菜品搜索（服务端模糊查询，防抖 300ms 重置分页重拉；复用模式菜单只读，不给搜索）
                         if (!viewModel.isReuseMode) {
                             DishSearchField(
                                 value = keyword,
-                                onValueChange = { keyword = it },
+                                onValueChange = viewModel::onKeywordChange,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(
@@ -277,7 +272,6 @@ fun DiningOrderCreatePage(
                                 start = AppDimens.pagePadding + 4.dp,
                             ),
                         )
-                        // 菜单就近错误提示
                         if (formError == DiningOrderFormError.MENU_EMPTY ||
                             formError == DiningOrderFormError.MENU_TOO_MANY
                         ) {
@@ -312,6 +306,9 @@ fun DiningOrderCreatePage(
                             RecipeGroupList(
                                 groups = groups,
                                 selectedIds = selectedIds,
+                                hasMore = hasMore,
+                                loadMoreState = loadMoreState,
+                                onLoadMore = viewModel::loadMore,
                                 onToggle = viewModel::toggleRecipe,
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -340,15 +337,40 @@ fun DiningOrderCreatePage(
     }
 }
 
-/** 分组菜品列表：每组区块标题（卡外）+ 菜品选择行；group key 用分类 ID、行 key 用菜谱 ID */
+/**
+ * 分组菜品列表：每组区块标题（卡外）+ 菜品选择行；group key 用分类 ID、行 key 用菜谱 ID。
+ * 触底加载：footer 进入视口（末两项可见）即自动调 [onLoadMore]，无需手动点按；
+ * footer 三态（加载点 / 失败重试 / 加载更多），加载更多失败不封底、可重试。
+ */
 @Composable
 private fun RecipeGroupList(
     groups: List<DiningMenuGroup>,
     selectedIds: Set<Long>,
+    hasMore: Boolean,
+    loadMoreState: RequestState,
+    onLoadMore: () -> Unit,
     onToggle: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val listState = rememberLazyListState()
+
+    // 触底探测：末两项可见即认为到达底部（footer 出现前提前半屏触发，滚动更顺）；
+    // 仅在还有下一页且非加载中时触发，加载更多失败保留 footer 重试入口
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+            info.totalItemsCount > 0 && lastVisible >= info.totalItemsCount - 2
+        }
+    }
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore && hasMore && loadMoreState !is RequestState.Loading) {
+            onLoadMore()
+        }
+    }
+
     LazyColumn(
+        state = listState,
         modifier = modifier,
         contentPadding = PaddingValues(
             start = AppDimens.pagePadding,
@@ -371,6 +393,31 @@ private fun RecipeGroupList(
                     selected = recipe.safeId in selectedIds,
                     onToggle = { onToggle(recipe.safeId) },
                 )
+            }
+        }
+        if (hasMore) {
+            item(key = "load_more") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = AppDimens.spaceMd),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    when (loadMoreState) {
+                        is RequestState.Loading -> LoadingDots()
+                        is RequestState.Error -> AppButton(
+                            text = stringResource(R.string.dining_order_load_more_failed),
+                            onClick = onLoadMore,
+                            variant = AppButtonVariant.SECONDARY,
+                            small = true,
+                        )
+                        else -> AppButton(
+                            text = stringResource(R.string.dining_load_more),
+                            onClick = onLoadMore,
+                            variant = AppButtonVariant.TEXT,
+                        )
+                    }
+                }
             }
         }
     }
