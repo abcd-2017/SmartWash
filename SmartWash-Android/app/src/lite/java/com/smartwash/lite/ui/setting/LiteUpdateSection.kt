@@ -32,7 +32,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.work.WorkManager
 import com.smartwash.R
 import com.smartwash.common.ui.components.AppConfirmDialog
-import com.smartwash.common.ui.components.AppInfoDialog
 import com.smartwash.common.ui.components.ButtonSpinner
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -156,25 +155,25 @@ fun LiteUpdateSection(
 
     if (showUpdateDialog) {
         val version = (state as? LiteUpdateState.UpdateAvailable)?.version
-        AppInfoDialog(
+        // 双按钮确认窗：仅「立即更新」点击才启动下载（原 AppInfoDialog 单按钮 +
+        // LaunchedEffect(version) 弹窗出现即下载，用户未确认就开始下载）
+        AppConfirmDialog(
             title = stringResource(R.string.new_version_available),
             message = version?.let {
                 stringResource(R.string.update_version_format, it.versionName, it.releaseDate) +
                     (if (it.changelog.isNotBlank()) "\n\n" + it.changelog else "")
             }.orEmpty(),
+            confirmText = stringResource(R.string.update_now),
+            cancelText = stringResource(R.string.update_later),
+            onConfirm = {
+                showUpdateDialog = false
+                updateViewModel.startDownload(workManager)
+            },
             onDismiss = {
                 showUpdateDialog = false
                 updateViewModel.reset()
             },
-            buttonText = stringResource(R.string.update_now),
         )
-        // AppInfoDialog 单按钮点击即「立即更新」：直接启动下载
-        LaunchedEffect(version) {
-            if (version != null) {
-                updateViewModel.startDownload(workManager)
-                showUpdateDialog = false
-            }
-        }
     }
 
     if (showDownloadDialog) {
@@ -196,9 +195,14 @@ fun LiteUpdateSection(
             cancelText = stringResource(R.string.update_later),
             onConfirm = {
                 showDownloadDialog = false
-                updateViewModel.reset()
+                updateViewModel.cancelDownload(workManager)
             },
-            onDismiss = { showDownloadDialog = false },
+            // 稍后更新：lite 无后台下载语义，同样撤销任务（原实现仅收弹窗，任务继续跑，
+            // 进度监听把 Downloading 状态推回 → 弹窗几秒后复现）
+            onDismiss = {
+                showDownloadDialog = false
+                updateViewModel.cancelDownload(workManager)
+            },
         )
     }
 

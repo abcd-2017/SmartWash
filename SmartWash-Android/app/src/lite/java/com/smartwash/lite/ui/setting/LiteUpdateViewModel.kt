@@ -209,6 +209,20 @@ class LiteUpdateViewModel @Inject constructor(
         _state.value = LiteUpdateState.Installing
     }
 
+    /**
+     * 取消下载：撤销 WorkManager 任务并复位。lite 无后台下载语义，进度弹窗的
+     * 「取消下载」与「稍后更新」都走这里——只复位状态不撤任务的话，observeProgress
+     * 监听仍在收 RUNNING，Downloading 状态会把进度弹窗再推出来。
+     */
+    fun cancelDownload(workManager: WorkManager) {
+        downloadWorkId?.let { id ->
+            runCatching { workManager.cancelWorkById(java.util.UUID.fromString(id)) }
+                .onFailure { AppLogger.warn(TAG, "取消下载任务失败：$id", it) }
+        }
+        downloadWorkId = null
+        reset()
+    }
+
     /** 复位到 Idle（关闭弹窗/提示后） */
     fun reset() {
         _state.value = LiteUpdateState.Idle
