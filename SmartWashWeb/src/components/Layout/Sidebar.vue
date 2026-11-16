@@ -43,7 +43,7 @@
         </template>
         <el-menu-item v-for="item in group.items" :key="item.path" :index="item.path">
           <el-icon><component :is="resolveIcon(item.meta.icon)" /></el-icon>
-          <span>{{ item.meta.title }}</span>
+          <span>{{ item.meta.title || item.path }}</span>
         </el-menu-item>
       </el-sub-menu>
     </el-menu>
@@ -221,8 +221,6 @@ const MENU_GROUP_CONFIG = [
     icon: 'Lock',
     paths: ['/roles', '/adminUsers', '/audit-logs', '/login-logs', '/captcha', '/sysconfig'],
   },
-  { title: '订阅', icon: 'AlarmClock', paths: ['/subscriptions'] },
-  { title: '系统与安全', icon: 'Lock', paths: ['/audit-logs'] },
   // 站内信为触达类工具，独立成组（不并入业务管理，避免与订单/支付混排）
   { title: '消息中心', icon: 'Bell', paths: ['/notices'] },
   // 吃啥为独立业务域，单独成组（后续批量导入挂同组）

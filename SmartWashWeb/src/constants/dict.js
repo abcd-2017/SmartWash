@@ -221,8 +221,8 @@ export const COUPON_STATUS_TAG_TYPES = {
   EXPIRED: 'info',
 };
 
-/** 优惠券状态文案（未知值兜底） */
-export const couponStatusText = (status) => COUPON_STATUS_TEXT[status] || '已失效';
+/** 优惠券状态文案（未知值兜底为「未知状态」而非「已失效」：新枚举未同步时不得误标语义） */
+export const couponStatusText = (status) => COUPON_STATUS_TEXT[status] || '未知状态';
 
 /** 优惠券状态标签配色 */
 export const couponStatusTagType = (status) => dictValue(COUPON_STATUS_TAG_TYPES, status);

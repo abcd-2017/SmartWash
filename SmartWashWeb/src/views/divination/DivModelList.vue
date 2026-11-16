@@ -46,8 +46,12 @@
       </el-form>
     </div>
 
-    <!-- 目录摘要：与移动端「厂商一级分组 / 模型二级」目录树形态对应 -->
-    <div class="tree-summary">共 {{ vendorCount }} 个厂商 / {{ total }} 个模型</div>
+    <!-- 目录摘要：与移动端「厂商一级分组 / 模型二级」目录树形态对应；
+         厂商数按当前页统计，仅当目录超单页上限分页兜底时标注口径，避免与 total 误读为同源 -->
+    <div class="tree-summary">
+      共 {{ vendorCount }}{{ total > listQuery.size ? '（本页）' : '' }} 个厂商 / 共
+      {{ total }} 个模型
+    </div>
 
     <!-- 数据表格（树形：厂商为一级分组、模型为二级子行） -->
     <div class="table-card">

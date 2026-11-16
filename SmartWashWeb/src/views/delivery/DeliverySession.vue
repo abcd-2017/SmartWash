@@ -437,8 +437,10 @@ async function handleFilesSelected(event) {
   try {
     for (const file of files) {
       if (file.size > DELIVERY_MAX_FILE_SIZE) {
-        logger.warn('文件超过 20MB 已跳过', `fileName=${file.name}`, `size=${file.size}`);
-        ElMessage.warning(`「${file.name}」超过 20MB，已跳过`);
+        logger.warn('文件超过大小上限已跳过', `fileName=${file.name}`, `size=${file.size}`);
+        ElMessage.warning(
+          `「${file.name}」超过 ${Math.floor(DELIVERY_MAX_FILE_SIZE / 1024 / 1024)}MB，已跳过`
+        );
         continue;
       }
       const kind = file.type?.startsWith('image/') ? 2 : 3;
