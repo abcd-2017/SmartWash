@@ -64,7 +64,15 @@
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              link
+              type="danger"
+              size="small"
+              :loading="deletingId === row.itemId"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -134,6 +142,7 @@ import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 
 const formRef = ref(null);
+const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
 
 // 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
 // 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
@@ -247,10 +256,13 @@ const submitForm = async () => {
 };
 
 const handleDelete = async (row) => {
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除套餐 ${row.itemName} 吗？`);
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (deletingId.value) return;
+  deletingId.value = row.itemId;
   try {
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+    const confirmed = await useConfirm(`确认删除套餐 ${row.itemName} 吗？`);
+    if (!confirmed) return;
     await deleteLaundry(row.itemId);
     ElMessage.success('删除成功');
     // 写操作成功留痕：业务键仅 itemId/itemName
@@ -261,6 +273,8 @@ const handleDelete = async (row) => {
   } catch (error) {
     logger.error('删除套餐失败:', `itemId=${row.itemId}`, error);
     ElMessage.error(friendlyErrorMessage(error, '删除失败'));
+  } finally {
+    deletingId.value = null;
   }
 };
 </script>

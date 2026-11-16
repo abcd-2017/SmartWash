@@ -76,7 +76,9 @@
         <el-form-item class="filter-end">
           <el-button type="primary" @click="handleCreate">新增寄存柜</el-button>
           <el-button @click="handleBatchCreate">批量新增</el-button>
-          <el-button @click="handleGenerateTagsForSchool">生成柜码标签</el-button>
+          <el-button :loading="generatingTags" @click="handleGenerateTagsForSchool">
+            生成柜码标签
+          </el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -115,8 +117,23 @@
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link size="small" @click="handleOpenLockerTag(row)">柜码</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              link
+              size="small"
+              :loading="openingTagId === row.lockerId"
+              @click="handleOpenLockerTag(row)"
+            >
+              柜码
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              size="small"
+              :loading="deletingId === row.lockerId"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -298,6 +315,9 @@ const schoolMap = ref({});
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const formRef = ref(null);
+const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
+const openingTagId = ref(null); // 行内「柜码」生成在途的行 ID，防连点
+const generatingTags = ref(false); // 「生成柜码标签」整校生成在途，防连点
 
 // 主弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
 // 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
@@ -532,10 +552,13 @@ const submitForm = async () => {
 };
 
 const handleDelete = async (row) => {
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除寄存柜 ${row.lockerNumber} 吗？`);
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (deletingId.value) return;
+  deletingId.value = row.lockerId;
   try {
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+    const confirmed = await useConfirm(`确认删除寄存柜 ${row.lockerNumber} 吗？`);
+    if (!confirmed) return;
     await deleteLocker(row.lockerId);
     ElMessage.success('删除成功');
     // 写操作成功留痕：业务键仅 lockerId/lockerNumber
@@ -544,6 +567,8 @@ const handleDelete = async (row) => {
   } catch (error) {
     logger.error('删除寄存柜失败:', `lockerId=${row.lockerId}`, error);
     ElMessage.error(friendlyErrorMessage(error, '删除失败'));
+  } finally {
+    deletingId.value = null;
   }
 };
 
@@ -560,6 +585,9 @@ const tagPrinting = ref(false);
 
 // 单柜生成柜码并打开打印弹窗（幂等：重复生成复用既有活码，不重复建行）
 const handleOpenLockerTag = async (row) => {
+  // 入口守卫：生成请求在途时忽略再次点击
+  if (openingTagId.value) return;
+  openingTagId.value = row.lockerId;
   try {
     const vo = await generateLockerTag(row.lockerId);
     await openTagDialog(
@@ -576,6 +604,8 @@ const handleOpenLockerTag = async (row) => {
   } catch (error) {
     logger.error('柜码生成失败:', `id=${row.lockerId}`, error);
     ElMessage.error(friendlyErrorMessage(error, '柜码生成失败'));
+  } finally {
+    openingTagId.value = null;
   }
 };
 
@@ -586,17 +616,22 @@ const handleGenerateTagsForSchool = async () => {
     ElMessage.warning('请先在搜索区选择学校，再批量生成柜码标签');
     return;
   }
-  const confirmed = await useConfirm(
-    `确认为「${schoolMap.value[schoolId]?.schoolName || schoolId}」的全部储物柜生成柜码标签吗？已生成的柜子将复用原有码。`
-  );
-  if (!confirmed) return;
+  // 入口守卫：生成请求在途时忽略再次点击（整校逐柜生成耗时可达数秒）
+  if (generatingTags.value) return;
+  generatingTags.value = true;
   try {
+    const confirmed = await useConfirm(
+      `确认为「${schoolMap.value[schoolId]?.schoolName || schoolId}」的全部储物柜生成柜码标签吗？已生成的柜子将复用原有码。`
+    );
+    if (!confirmed) return;
     const items = await generateLockerTagsForSchool(schoolId);
     await openTagDialog(items, schoolMap.value[schoolId]?.schoolName || '');
     ElMessage.success(`已就绪 ${items.length} 张柜码标签`);
   } catch (error) {
     logger.error('批量生成柜码失败:', `schoolId=${schoolId}`, error);
     ElMessage.error(friendlyErrorMessage(error, '批量生成柜码失败'));
+  } finally {
+    generatingTags.value = false;
   }
 };
 

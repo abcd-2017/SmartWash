@@ -96,7 +96,15 @@
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              link
+              type="danger"
+              size="small"
+              :loading="deletingId === row.userId"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -188,6 +196,7 @@ import { passwordLengthRule } from '@/utils/validators';
 import logger from '@/utils/logger';
 
 const formRef = ref(null);
+const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
 
 // 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
 // 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
@@ -353,10 +362,13 @@ const submitForm = async () => {
 };
 
 const handleDelete = async (row) => {
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除用户 ${row.phoneNumber} 吗？`);
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (deletingId.value) return;
+  deletingId.value = row.userId;
   try {
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+    const confirmed = await useConfirm(`确认删除用户 ${row.phoneNumber} 吗？`);
+    if (!confirmed) return;
     await deleteUser(row.userId);
     ElMessage.success('删除成功');
     logger.info('删除学生成功', `userId=${row.userId}`);
@@ -364,6 +376,8 @@ const handleDelete = async (row) => {
   } catch (error) {
     logger.error('删除学生失败:', `userId=${row.userId}`, error);
     ElMessage.error(error.message || '删除失败');
+  } finally {
+    deletingId.value = null;
   }
 };
 </script>

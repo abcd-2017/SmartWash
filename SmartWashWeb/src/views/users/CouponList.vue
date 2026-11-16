@@ -48,6 +48,7 @@
           <el-button
             type="danger"
             :disabled="multipleSelection.length === 0"
+            :loading="batchDeleting"
             @click="handleBatchDelete"
             >批量删除</el-button
           >
@@ -111,7 +112,15 @@
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              link
+              type="danger"
+              size="small"
+              :loading="deletingId === row.couponId"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -262,6 +271,8 @@ const dialogVisible = ref(false);
 const dialogType = ref('create');
 const multipleSelection = ref([]);
 const submitting = ref(false); // 确认按钮 loading，防连点
+const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
+const batchDeleting = ref(false); // 「批量删除」按钮 loading，防连点
 
 const {
   list: couponList,
@@ -355,17 +366,20 @@ const handleSelectionChange = (val) => {
 
 const handleBatchDelete = async () => {
   const count = multipleSelection.value.length;
-  // 已发放数量提示：券在用户手中时删除会使其失效，需让运营明确影响面
-  const issuedCount = multipleSelection.value.reduce(
-    (sum, item) => sum + (Number(item.issuedCount) || 0),
-    0
-  );
-  const issuedTip =
-    issuedCount > 0 ? `已有 ${issuedCount} 张券在用户手中，删除后这些券将失效。` : '';
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除选中的 ${count} 个优惠券吗？${issuedTip}`);
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (batchDeleting.value) return;
+  batchDeleting.value = true;
   try {
+    // 已发放数量提示：券在用户手中时删除会使其失效，需让运营明确影响面
+    const issuedCount = multipleSelection.value.reduce(
+      (sum, item) => sum + (Number(item.issuedCount) || 0),
+      0
+    );
+    const issuedTip =
+      issuedCount > 0 ? `已有 ${issuedCount} 张券在用户手中，删除后这些券将失效。` : '';
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+    const confirmed = await useConfirm(`确认删除选中的 ${count} 个优惠券吗？${issuedTip}`);
+    if (!confirmed) return;
     const ids = multipleSelection.value.map((item) => item.couponId).join(',');
     await deleteCoupon(ids);
     ElMessage.success('删除成功');
@@ -376,6 +390,8 @@ const handleBatchDelete = async () => {
   } catch (error) {
     logger.error('批量删除优惠券失败:', `count=${count}`, error);
     ElMessage.error(friendlyErrorMessage(error, '删除失败'));
+  } finally {
+    batchDeleting.value = false;
   }
 };
 
@@ -450,14 +466,17 @@ const submitForm = async () => {
 };
 
 const handleDelete = async (row) => {
-  // 已发放数量提示：券在用户手中时删除会使其失效，需让运营明确影响面
-  const issuedCount = Number(row.issuedCount) || 0;
-  const issuedTip =
-    issuedCount > 0 ? `已有 ${issuedCount} 张券在用户手中，删除后这些券将失效。` : '';
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除优惠券 "${row.title}" 吗？${issuedTip}`);
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (deletingId.value) return;
+  deletingId.value = row.couponId;
   try {
+    // 已发放数量提示：券在用户手中时删除会使其失效，需让运营明确影响面
+    const issuedCount = Number(row.issuedCount) || 0;
+    const issuedTip =
+      issuedCount > 0 ? `已有 ${issuedCount} 张券在用户手中，删除后这些券将失效。` : '';
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+    const confirmed = await useConfirm(`确认删除优惠券 "${row.title}" 吗？${issuedTip}`);
+    if (!confirmed) return;
     await deleteCoupon(row.couponId);
     ElMessage.success('删除成功');
     // 写操作成功留痕：业务键仅 couponId/title
@@ -466,6 +485,8 @@ const handleDelete = async (row) => {
   } catch (error) {
     logger.error('删除优惠券失败:', `couponId=${row.couponId}`, error);
     ElMessage.error(friendlyErrorMessage(error, '删除失败'));
+  } finally {
+    deletingId.value = null;
   }
 };
 </script>
