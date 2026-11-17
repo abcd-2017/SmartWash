@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -133,6 +134,9 @@ fun DiningRecipeCreatePage(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
+            // 规范 §4：键盘弹出时整页上收，步骤/食材等靠下输入框可经纵向滚动露出，
+            // 不被软键盘遮挡（与 RechargePage 同口径）
+            .imePadding()
     ) {
         PageHeader(
             title = stringResource(R.string.dining_recipe_create_title),

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -19,8 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -54,6 +53,7 @@ import com.smartwash.feature.divination.ui.components.DivSectionTitle
 import com.smartwash.feature.divination.ui.components.DivSeal
 import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.feature.divination.api.DivRoute
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.ui.theme.DivinationColorScheme
@@ -100,22 +100,12 @@ fun DivAskPage(
                     color = c.textSecondary,
                 )
                 Spacer(Modifier.height(8.dp))
-                TextField(
+                // 规范 §7「一切表单唯一标准」：业务层禁用 material3 原生输入组件，
+                // 统一走 common:ui 的 AppTextField（占位/辅助文案语义不变）
+                AppTextField(
                     value = state.question,
                     onValueChange = viewModel::onQuestionChange,
-                    placeholder = {
-                        // 占位符字号与正文一致（规范 §3.7）
-                        Text(stringResource(R.string.div_question_example), fontSize = 16.sp, color = c.textSecondary)
-                    },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = c.gold,
-                        focusedTextColor = c.textPrimary,
-                        unfocusedTextColor = c.textPrimary,
-                    ),
+                    placeholder = stringResource(R.string.div_question_example),
                     minLines = 2,
                     // 输入正文 16sp（规范 §3.7 输入控件标准，禁用 14sp 及以下；audit-22 #3，
                     // 与同页 NumberField 的 16sp 口径对齐），衬线保留，行高随 bodyLarge 16/24
@@ -484,7 +474,13 @@ private fun NumbersDialog(onConfirm: (Int, Int) -> Unit, onDismiss: () -> Unit) 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         // 与公共弹窗同一条入场动效（scale 0.92→1 + alpha，reduced motion 降级纯淡入）
         DivCard(modifier = Modifier.dialogEnterMotion(), background = c.surface2) {
-            Column(Modifier.padding(20.dp)) {
+            // Dialog 是独立窗口，adjustResize 对弹窗内容无效：数字键盘弹出时内容区
+            // 经 imePadding 上收，报数框与确认钮不被遮挡（W1 P2 #4，与 MaterialListPage 弹窗同口径）
+            Column(
+                Modifier
+                    .padding(20.dp)
+                    .imePadding()
+            ) {
                 Text(
                     text = stringResource(R.string.div_numbers_title),
                     style = divSerif(15.sp, FontWeight.SemiBold, 3.sp),
@@ -511,21 +507,11 @@ private fun NumbersDialog(onConfirm: (Int, Int) -> Unit, onDismiss: () -> Unit) 
 
 @Composable
 private fun NumberField(value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
-    val c = DivColors.current
-    TextField(
+    // 规范 §7：统一走 AppTextField（数字键盘选项保留，校验仍由 onValueChange 过滤 + 提交前区间拦截）
+    AppTextField(
         value = value,
         onValueChange = { text -> onChange(text.filter { it.isDigit() }.take(3)) },
-        // 报数输入走数字键盘（校验逻辑仍由 onValueChange 过滤 + 提交前 1..999 区间拦截）
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
-            focusedIndicatorColor = c.goldLine,
-            unfocusedIndicatorColor = c.hair,
-            cursorColor = c.gold,
-            focusedTextColor = c.textPrimary,
-            unfocusedTextColor = c.textPrimary,
-        ),
         textStyle = divSerif(16.sp, FontWeight.SemiBold, 0.sp),
         singleLine = true,
         modifier = modifier,

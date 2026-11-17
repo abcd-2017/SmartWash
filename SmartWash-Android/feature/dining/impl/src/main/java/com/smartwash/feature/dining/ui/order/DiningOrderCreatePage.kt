@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -156,6 +157,9 @@ fun DiningOrderCreatePage(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
+            // 规范 §4：标题/搜索输入框键盘弹出时整页上收，底部固定 CTA 随根布局抬升，
+            // 不被软键盘遮挡（与 RechargePage 同口径）
+            .imePadding()
     ) {
         PageHeader(
             title = stringResource(R.string.dining_order_create_title),
