@@ -7,10 +7,11 @@
 // CSV 行通过「封面对象键」列的文件名（如 dining/covers/番茄炒蛋.png → 番茄炒蛋.png）在
 // image/ 中找到本地封面文件，上传拿到新对象键后随 add/update 落库。
 //
-// 判重语义与后端 DiningRecipeImportServiceImpl.resolveExistingRecipe 对齐：
-// sourceKey 优先 →（菜名,分类）兜底；兜底命中排除「双方都挂了不同 key」的情形
-//（不同上游来源的菜按新增不覆盖）。逐条上传走 /add /update，因此分类名需在前端解析为
-// 分类 id（不存在的分类先经 addDiningCategory 补建——该接口不回传 id，需重拉列表映射）。
+// 判重语义与后端 DiningRecipeImportServiceImpl.resolveExistingRecipe 对齐（含 147bcb62 三级兜底）：
+// sourceKey 优先 →（菜名,分类）兜底 → 同名且库内唯一（已分类）宽松兜底（覆盖分类改名场景）；
+// 兜底命中排除「双方都挂了不同 key」的情形（不同上游来源的菜按新增不覆盖）。逐条上传走 /add
+// /update，因此分类名需在前端解析为分类 id（不存在的分类先经 addDiningCategory 补建——
+// 该接口不回传 id，需重拉列表映射）。
 import Papa from 'papaparse';
 
 /** 目录规范提示文案（整体报错信息尾部统一拼接） */
@@ -346,47 +347,59 @@ export function markBatchDuplicates(items) {
 }
 
 /**
- * 库内既有菜谱 → 两级判重映射（sourceKey → id；（菜名,分类）→ [{id, sourceKey}]）。
+ * 库内既有菜谱 → 三级判重映射（sourceKey → id；（菜名,分类）→ [{id, sourceKey}]；
+ * 菜名 → [{id, sourceKey}] 仅收录已分类菜，供「同名唯一」宽松兜底）。
  * 同键多条时保留先见者（sourceKey 有唯一索引本不会重复；（菜名,分类) 重复为合法业务态）。
  * @param {Array<{id: number, name: string, categoryName: string|null, sourceKey: string|null}>} records
  */
 export function buildRecipeMappings(records) {
   const bySourceKey = new Map();
   const byNameCategory = new Map();
+  const byName = new Map();
   for (const r of records || []) {
     if (r.sourceKey && !bySourceKey.has(r.sourceKey)) bySourceKey.set(r.sourceKey, r.id);
     const key = nameCategoryKey(r.name, r.categoryName);
     if (!byNameCategory.has(key)) byNameCategory.set(key, []);
     byNameCategory.get(key).push({ id: r.id, sourceKey: r.sourceKey || null });
+    // 宽松兜底只认「已分类」菜（对齐后端 tier3 过滤 candidate.categoryId != null：
+    // 手工建/历史遗留的未分类同名菜不被 CSV 行静默收编）
+    if (r.categoryName != null) {
+      if (!byName.has(r.name)) byName.set(r.name, []);
+      byName.get(r.name).push({ id: r.id, sourceKey: r.sourceKey || null });
+    }
   }
-  return { bySourceKey, byNameCategory };
+  return { bySourceKey, byNameCategory, byName };
 }
 
 /**
- * 行判重命中（与后端 resolveExistingRecipe 同语义）：
- * ① sourceKey 直查；②（菜名,分类）兜底——排除「双方都挂了不同 key」（不同上游按新增不覆盖）；
- * 行无 key 命中已回填 key 的菜谱 → 仍算命中（更新时 sourceKey 不传，后端保留既有 key）。
+ * 行判重命中（与后端 resolveExistingRecipe 同语义，含 147bcb62 三级兜底）：
+ * ① sourceKey 直查；②（菜名,分类）兜底；③ 前两级未命中 → 仅菜名且库内唯一（已分类）宽松兜底，
+ * 覆盖分类改名场景（CSV 换了分类名，两级键必然不命中）；多道同名存在歧义，保守不命中（保持新增）。
+ * ②③ 均排除「双方都挂了不同 key」（不同上游按新增不覆盖）；行无 key 命中已回填 key 的菜谱
+ * → 仍算命中（更新时 sourceKey 不传，后端保留既有 key）。
  */
 export function matchExistingRecipe(item, mappings) {
   if (item.sourceKey && mappings.bySourceKey.has(item.sourceKey)) {
     return { existingId: mappings.bySourceKey.get(item.sourceKey), matchVia: 'sourceKey' };
   }
   if (!item.name) return { existingId: null, matchVia: null };
-  const candidates =
+  const notConflicting = (c) => !(c.sourceKey && item.sourceKey && c.sourceKey !== item.sourceKey);
+  const sameCategory =
     mappings.byNameCategory.get(nameCategoryKey(item.name, item.categoryName)) || [];
-  const hit = candidates.find(
-    (c) => !(c.sourceKey && item.sourceKey && c.sourceKey !== item.sourceKey)
-  );
-  return hit
-    ? { existingId: hit.id, matchVia: 'nameCategory' }
-    : { existingId: null, matchVia: null };
+  const hit = sameCategory.find(notConflicting);
+  if (hit) return { existingId: hit.id, matchVia: 'nameCategory' };
+  const sameName = mappings.byName.get(item.name) || [];
+  if (sameName.length === 1 && notConflicting(sameName[0])) {
+    return { existingId: sameName[0].id, matchVia: 'nameOnly' };
+  }
+  return { existingId: null, matchVia: null };
 }
 
 /**
  * 覆盖预检：逐行命中既有菜谱标「覆盖更新」；多行命中同一菜谱时后者标错
  *（并发写同一行会互相覆盖，结果不可预期）。
  * @param {Object[]} items 有效行（跳过行原样带过）
- * @param {{bySourceKey: Map, byNameCategory: Map}} mappings buildRecipeMappings 输出
+ * @param {{bySourceKey: Map, byNameCategory: Map, byName: Map}} mappings buildRecipeMappings 输出
  */
 export function markOverwrite(items, mappings) {
   const claimed = new Map(); // existingId → 先见行（菜名用于报错文案）

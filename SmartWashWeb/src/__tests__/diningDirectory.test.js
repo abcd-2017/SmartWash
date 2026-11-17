@@ -348,6 +348,47 @@ describe('库内映射判重 buildRecipeMappings / matchExistingRecipe / markOve
     expect(matchExistingRecipe(item, mappings).existingId).toBe(1);
   });
 
+  it('宽松兜底：分类改名后仅菜名且库内唯一（已分类）命中（对齐后端 147bcb62）', () => {
+    const item = buildRecipeRow(
+      { 菜名: '小龙虾', 分类名: '烧烤' },
+      { rowNo: 1, csvName: 'a', imageIndex: new Map() }
+    );
+    // （小龙虾,烧烤）两级键不命中 → 同名唯一兜底命中 id=3
+    expect(matchExistingRecipe(item, mappings)).toEqual({ existingId: 3, matchVia: 'nameOnly' });
+  });
+
+  it('宽松兜底排除双方挂不同 key', () => {
+    const item = buildRecipeRow(
+      { 菜名: '小龙虾', 分类名: '烧烤', 唯一标识: 'hoc_y' },
+      { rowNo: 1, csvName: 'a', imageIndex: new Map() }
+    );
+    expect(matchExistingRecipe(item, mappings).existingId).toBeNull();
+  });
+
+  it('多道同名（已分类）存在歧义，宽松兜底保守不命中', () => {
+    const dupMappings = buildRecipeMappings([
+      { id: 21, name: '狮子头', categoryName: '主食', sourceKey: null },
+      { id: 22, name: '狮子头', categoryName: '汤类', sourceKey: null },
+    ]);
+    const item = buildRecipeRow(
+      { 菜名: '狮子头', 分类名: '烧烤' },
+      { rowNo: 1, csvName: 'a', imageIndex: new Map() }
+    );
+    expect(matchExistingRecipe(item, dupMappings).existingId).toBeNull();
+  });
+
+  it('未分类同名菜不参与宽松兜底，也不阻断唯一已分类同名的命中', () => {
+    const mixed = buildRecipeMappings([
+      { id: 31, name: '凉拌黄瓜', categoryName: null, sourceKey: null },
+      { id: 32, name: '凉拌黄瓜', categoryName: '凉菜', sourceKey: null },
+    ]);
+    const item = buildRecipeRow(
+      { 菜名: '凉拌黄瓜', 分类名: '酱料' },
+      { rowNo: 1, csvName: 'a', imageIndex: new Map() }
+    );
+    expect(matchExistingRecipe(item, mixed)).toEqual({ existingId: 32, matchVia: 'nameOnly' });
+  });
+
   it('markOverwrite 标覆盖行；多行命中同一菜谱时后来者标错', () => {
     const a = buildRecipeRow(
       { 菜名: '番茄炒蛋', 分类名: '汤类' },
