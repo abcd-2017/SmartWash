@@ -308,7 +308,6 @@ import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useTimeRange } from '@/composables/useTimeRange';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
 
 const statusOptions = ref({});
 const schoolOptions = ref([]);

@@ -1,5 +1,5 @@
 // src/__tests__/useTableList.test.js
-// useTableList 新增 listLoadError 状态的本地验证（按 shared-rules：新增测试文件不入库，仅本地运行）
+// useTableList listError（拉取失败态）的本地验证（按 shared-rules：新增测试文件不入库，仅本地运行）
 // 覆盖：失败置文案 + 成功清空 + 竞态守卫下旧失败不覆盖新状态
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -10,7 +10,7 @@ vi.mock('element-plus', () => ({
 import { ElMessage } from 'element-plus';
 import { useTableList } from '@/composables/useTableList';
 
-describe('useTableList listLoadError', () => {
+describe('useTableList listError', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -20,17 +20,17 @@ describe('useTableList listLoadError', () => {
       .fn()
       .mockRejectedValueOnce(new Error('服务不可用'))
       .mockResolvedValueOnce({ records: [{ id: 1 }], total: 1 });
-    const { list, listLoadError, fetchData } = useTableList({ fetchApi });
+    const { list, listError, fetchData } = useTableList({ fetchApi });
 
     await fetchData();
-    expect(listLoadError.value).toBe('服务不可用');
+    expect(listError.value).toBe(true);
     expect(ElMessage.error).toHaveBeenCalled();
 
     // 重试发起即清错误态：错误占位立刻让位给表格加载反馈
     const retry = fetchData();
-    expect(listLoadError.value).toBe('');
+    expect(listError.value).toBe(false);
     await retry;
-    expect(listLoadError.value).toBe('');
+    expect(listError.value).toBe(false);
     expect(list.value).toEqual([{ id: 1 }]);
   });
 
@@ -43,15 +43,15 @@ describe('useTableList listLoadError', () => {
       .fn()
       .mockReturnValueOnce(stale)
       .mockResolvedValue({ records: [], total: 0 });
-    const { listLoadError, fetchData } = useTableList({ fetchApi });
+    const { listError, fetchData } = useTableList({ fetchApi });
 
     const first = fetchData();
     await fetchData(); // 第二轮先完成，fetchSeq 前进
-    expect(listLoadError.value).toBe('');
+    expect(listError.value).toBe(false);
 
     rejectOld(new Error('过期失败'));
     await first;
-    expect(listLoadError.value).toBe('');
+    expect(listError.value).toBe(false);
     expect(ElMessage.error).not.toHaveBeenCalled();
   });
 });

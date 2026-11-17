@@ -42,7 +42,6 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
   const fetchData = async () => {
     const mySeq = ++fetchSeq;
     // 发起即清错误态：重试点击后错误占位立刻让位给表格的 v-loading，否则加载中无任何反馈
-    listLoadError.value = '';
     listLoading.value = true;
     listError.value = false;
     try {
@@ -51,8 +50,7 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
       if (mySeq !== fetchSeq) return;
       list.value = res.records;
       total.value = res.total;
-      listLoadError.value = '';
-      // 翻页/搜索后回到表格顶部（公共结构固定为 .table-card），减少视口下部翻页的往返滚动；
+        // 翻页/搜索后回到表格顶部（公共结构固定为 .table-card），减少视口下部翻页的往返滚动；
       // reduced-motion 用户直接跳转不做平滑滚动
       if (hasFetchedOnce) {
         const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
