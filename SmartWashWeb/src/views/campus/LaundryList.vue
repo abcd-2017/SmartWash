@@ -243,7 +243,6 @@ const submitForm = async () => {
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-<<<<<<< HEAD
     // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文）；字段红字已示于表单，
     // 不再叠加「操作失败」假 toast
     if (isValidationError(error)) {
@@ -252,15 +251,6 @@ const submitForm = async () => {
     }
     logger.error('保存套餐失败:', error);
     ElMessage.error(friendlyErrorMessage(error, '操作失败'));
-=======
-    // 分级处理：校验失败走字段红字，不弹全局假 toast（isValidationError 判据见 utils/errors）
-    if (isValidationError(error)) {
-      logger.debug('套餐表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
-    } else {
-      logger.error('保存套餐失败:', error instanceof Error ? error : '未知错误');
-      ElMessage.error(error.message || '操作失败');
-    }
->>>>>>> f92ae0f3 (fix(Web): 修复校验失败误弹操作失败提示)
   } finally {
     submitting.value = false;
   }
