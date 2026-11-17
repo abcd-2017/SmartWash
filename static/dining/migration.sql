@@ -31,12 +31,12 @@ SET @schema := DATABASE();
 SET @add := (
   SELECT CONCAT('ALTER TABLE `dining_recipe` ',
     CONCAT_WS(', ',
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='calories_per_100g'), 'ADD COLUMN `calories_per_100g` DECIMAL(8,2) NULL COMMENT '热量 Kcal/100g（CookLikeHOC 营养表口径）'', NULL),
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='calories_total'), 'ADD COLUMN `calories_total` DECIMAL(10,2) NULL COMMENT '整份估算热量 Kcal（HowToCook 预估卡路里口径）'', NULL),
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='protein_g'), 'ADD COLUMN `protein_g` DECIMAL(6,2) NULL COMMENT '蛋白质 g/100g'', NULL),
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='fat_g'), 'ADD COLUMN `fat_g` DECIMAL(6,2) NULL COMMENT '脂肪 g/100g'', NULL),
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='carbs_g'), 'ADD COLUMN `carbs_g` DECIMAL(6,2) NULL COMMENT '碳水化合物 g/100g'', NULL),
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='sodium_mg'), 'ADD COLUMN `sodium_mg` DECIMAL(8,2) NULL COMMENT '钠 mg/100g'', NULL)
+      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='calories_per_100g'), 'ADD COLUMN `calories_per_100g` DECIMAL(8,2) NULL COMMENT ''热量 Kcal/100g（CookLikeHOC 营养表口径）''', NULL),
+      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='calories_total'), 'ADD COLUMN `calories_total` DECIMAL(10,2) NULL COMMENT ''整份估算热量 Kcal（HowToCook 预估卡路里口径）''', NULL),
+      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='protein_g'), 'ADD COLUMN `protein_g` DECIMAL(6,2) NULL COMMENT ''蛋白质 g/100g''', NULL),
+      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='fat_g'), 'ADD COLUMN `fat_g` DECIMAL(6,2) NULL COMMENT ''脂肪 g/100g''', NULL),
+      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='carbs_g'), 'ADD COLUMN `carbs_g` DECIMAL(6,2) NULL COMMENT ''碳水化合物 g/100g''', NULL),
+      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='sodium_mg'), 'ADD COLUMN `sodium_mg` DECIMAL(8,2) NULL COMMENT ''钠 mg/100g''', NULL)
     ))
 );
 SET @stmt := IF(@add IS NOT NULL AND @add <> '', @add, 'SELECT ''dining_recipe 营养列已存在，跳过''');
