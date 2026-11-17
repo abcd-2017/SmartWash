@@ -9,3 +9,4 @@
 - **孤儿目录**：`feature/ai`、`feature/lostfound`、`common/security` 只有历史 `build/` 残留，无源码/无 `build.gradle`/未被 `settings.gradle` include，**不是模块**，不要在文档或代码中引用。
 - ⚠️ **`@HiltViewModel` 必须用 `hiltViewModel()` 获取**：全项目 27 个 ViewModel 均为 `@HiltViewModel` + `@Inject constructor`（无无参构造），使用标准 `viewModel()` 会因反射找不到无参构造抛 `NoSuchMethodException`，进入对应页面时 FATAL EXCEPTION。新建 ViewModel 时统一用 `androidx.hilt.navigation.compose.hiltViewModel`，禁止 `androidx.lifecycle.viewmodel.compose.viewModel`。
 - ⚠️ **RechargePage 组合期副作用**（独立任务，本任务不修）：`RechargePage.kt` 的金额选择/支付状态分支中存在写在 `when(state)` 渲染分支里的副作用，违反 Compose 硬规则，待独立任务修复。
+- ⚠️ **FileProvider 授权配置只此一份**：`${applicationId}.fileprovider` 的 `file_paths.xml` 唯一权威来源在 `:feature:update:core`（`res/xml/`）。app 模块曾残留一份同名旧文件，资源合并时 app 层覆盖 library 层，导致 filesDir/update 下的 APK 匹配不到 root，下载完成通知构建失败被误报为「下载失败」（2026-11-17 修复）。往 cacheDir/filesDir 新增需经 FileProvider 授权的消费方时，在 `:feature:update:core` 的 file_paths.xml 同步扩项，禁止在 app 层另立同名文件。
