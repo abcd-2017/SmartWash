@@ -103,8 +103,7 @@ public final class ShoppingListAssembler {
             }
         }
 
-        // 食材名并集（LinkedHashSet 保序去重，名列表与配料明细两源合并），按菜视图按菜归组（组内按选菜记录顺序）
-        Set<String> ingredientNames = new LinkedHashSet<>();
+        // 按菜视图按菜归组（组内按选菜记录顺序）；食材并集与聚合统一走菜单编排序（与勾选先后无关）
         Map<Long, List<SelectorView>> selectorsByRecipe = new LinkedHashMap<>();
         for (Selection selection : safeSelections) {
             if (selection == null || selection.recipeId() == null) {
@@ -115,7 +114,18 @@ public final class ShoppingListAssembler {
                 // 防御脏数据：选菜记录指向的菜不在本单菜单集合内，忽略该记录
                 continue;
             }
-            // 食材并集：仅收集被勾选过的菜，名列表/配料明细未填（null）安全跳过
+            selectorsByRecipe
+                    .computeIfAbsent(selection.recipeId(), k -> new ArrayList<>())
+                    .add(new SelectorView(selection.userId(), selection.note()));
+        }
+        // 食材名并集（LinkedHashSet 保序去重，名列表与配料明细两源合并）：
+        // 按菜单编排序遍历被勾选过的菜——同一份菜单无论勾选先后，快照顺序恒定（确定性契约）
+        Set<String> ingredientNames = new LinkedHashSet<>();
+        for (RecipeIngredient recipe : recipeIndex.values()) {
+            if (!selectorsByRecipe.containsKey(recipe.recipeId())) {
+                continue; // 无人勾选的菜：食材不进清单（与按菜视图同口径）
+            }
+            // 名列表/配料明细未填（null）安全跳过
             collectIngredientNames(recipe.ingredients(), ingredientNames);
             if (recipe.ingredientAmounts() != null) {
                 for (IngredientAmount amount : recipe.ingredientAmounts()) {
@@ -124,9 +134,6 @@ public final class ShoppingListAssembler {
                     }
                 }
             }
-            selectorsByRecipe
-                    .computeIfAbsent(selection.recipeId(), k -> new ArrayList<>())
-                    .add(new SelectorView(selection.userId(), selection.note()));
         }
 
         // 按菜视图沿用菜谱给定顺序（菜单编排序），只输出被勾选过的菜
@@ -138,18 +145,18 @@ public final class ShoppingListAssembler {
             }
         });
 
-        // ===== v2：配料按 (名称, 归一单位) 分组求和 + 热量汇总（仅被勾选过的菜） =====
+        // ===== v2：配料按 (名称, 归一单位) 分组求和 + 热量汇总（仅被勾选过的菜，均按菜单编排序） =====
         List<IngredientTotal> ingredientTotals = aggregateIngredientTotals(recipeIndex, selectorsByRecipe.keySet());
 
         BigDecimal totalCalories = BigDecimal.ZERO;
         int knownCount = 0;
         int unknownCount = 0;
         List<DishCalories> perDishCalories = new ArrayList<>();
-        for (Long recipeId : selectorsByRecipe.keySet()) {
-            RecipeIngredient recipe = recipeIndex.get(recipeId);
-            if (recipe == null) {
-                continue; // 防御：理论不可达（selectorsByRecipe 键均来自 recipeIndex 命中）
+        for (Map.Entry<Long, RecipeIngredient> entry : recipeIndex.entrySet()) {
+            if (!selectorsByRecipe.containsKey(entry.getKey())) {
+                continue; // 无人勾选的菜不进热量统计（与食材并集同口径）
             }
+            RecipeIngredient recipe = entry.getValue();
             if (recipe.calories() != null) {
                 perDishCalories.add(new DishCalories(recipe.recipeName(), recipe.calories()));
                 totalCalories = totalCalories.add(recipe.calories());
@@ -179,14 +186,18 @@ public final class ShoppingListAssembler {
     /**
      * 配料聚合：对被勾选过的菜，把其配料明细按 (名称, 归一单位) 分组求和。
      * kg→g、L→ml 换算 ×1000，其余单位原样保留；数量缺失（value/unit 空白）的配料不参与。
+     * 按菜单编排序遍历（recipeIndex 即菜单序），聚合组与组内 perDish 顺序与勾选先后无关。
      */
     private static List<IngredientTotal> aggregateIngredientTotals(Map<Long, RecipeIngredient> recipeIndex,
                                                                    Set<Long> selectedRecipeIds) {
-        // groupKey = name + "\u0001" + 归一单位 → 组内按菜累积（LinkedHashMap 保菜谱编排序）
+        // groupKey = name + "\u0001" + 归一单位 → 组内按菜累积（LinkedHashMap 按菜单序累积）
         Map<String, GroupAccumulator> groups = new LinkedHashMap<>();
-        for (Long recipeId : selectedRecipeIds) {
-            RecipeIngredient recipe = recipeIndex.get(recipeId);
-            if (recipe == null || recipe.ingredientAmounts() == null) {
+        for (Map.Entry<Long, RecipeIngredient> entry : recipeIndex.entrySet()) {
+            if (!selectedRecipeIds.contains(entry.getKey())) {
+                continue; // 无人勾选的菜不参与聚合（与食材并集同口径）
+            }
+            RecipeIngredient recipe = entry.getValue();
+            if (recipe.ingredientAmounts() == null) {
                 continue;
             }
             for (IngredientAmount amount : recipe.ingredientAmounts()) {
