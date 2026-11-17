@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.common.OrderStatus;
 import com.smartwash.common.Result;
+import com.smartwash.common.ratelimit.RateLimit;
 import com.smartwash.from.order.*;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.service.IOrdersService;
@@ -63,6 +64,8 @@ public class WebOrdersController {
     }
 
     @Operation(summary = "预约洗衣", description = "用户创建洗衣预约订单，返回订单ID")
+    // 下单频控：60 秒内同一用户最多 10 次，防脚本刷单占柜（B1-05）
+    @RateLimit(name = "order_reservation", window = 60, limit = 10, message = "下单过于频繁，请稍后再试")
     @PostMapping("/auth/orders/reservation")
     public Result<Long> reservationLaundry(@RequestBody @Valid ReservationOrderFrom reservationOrderFrom) {
         LoginUser loginUser = UserContextHolder.getUser();

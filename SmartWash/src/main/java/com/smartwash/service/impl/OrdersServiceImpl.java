@@ -25,6 +25,7 @@ import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,18 +59,31 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     private final PaymentsMapper paymentsMapper;
     private final OrderTimeoutManager orderTimeoutManager;
 
+    /** 单用户在途订单上限（待支付 + 已支付在途合计）：防 0 成本刷单占满全校柜子，可配置 */
+    @Value("${order.in-flight-limit:3}")
+    private int inFlightOrderLimit;
+
     @Override
     public Page<OrdersVo> getAllOrders(SearchOrderFrom searchOrderFrom) {
         Page<OrdersVo> page = new Page<>(searchOrderFrom.getPage(), searchOrderFrom.getSize());
         return ordersMapper.searchOrders(page, searchOrderFrom);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public Boolean deleteOrders(String ids) {
         log.info("删除订单, ids: {}", ids);
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(Long::valueOf)
                 .collect(Collectors.toList());
+        // 删单前先读取订单：释放在途订单占用的寄存柜并清理超时任务，避免柜子悬挂泄漏（B1-04）
+        List<Orders> orderList = listByIds(idList);
+        for (Orders order : orderList) {
+            if (IN_FLIGHT_STATUSES.contains(order.getStatus())) {
+                releaseLockerSafely(order.getLockerId(), order.getOrderId());
+            }
+            orderTimeoutManager.cancelTimeout(order.getOrderId());
+        }
         return removeByIds(idList);
     }
 
@@ -77,6 +91,15 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Override
     public Long createOrder(ReservationOrderFrom reservationOrderFrom, LoginUser loginUser) {
         Users user = usersMapper.selectById(loginUser.getUserId());
+        // 单用户在途订单上限校验（待支付 + 已支付在途）：超限拒绝，防脚本 0 成本循环下单占满柜子（B1-05）
+        Long inFlightCount = ordersMapper.selectCount(new LambdaQueryWrapper<Orders>()
+                .eq(Orders::getUserId, user.getUserId())
+                .in(Orders::getStatus, IN_FLIGHT_STATUSES));
+        if (inFlightCount != null && inFlightCount >= inFlightOrderLimit) {
+            log.warn("下单被拒绝：单用户在途订单已达上限, userId: {}, inFlight: {}, limit: {}",
+                    user.getUserId(), inFlightCount, inFlightOrderLimit);
+            throw new CustomExceptions("您有较多进行中的订单，请先完成后再预约");
+        }
         Orders orders = new Orders();
         //查找并锁定空余寄存柜（SELECT FOR UPDATE 防竞态）
         orders.setLockerId(findAndAssignFreeLocker(user.getSchoolId()));
@@ -174,6 +197,18 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
 
     // 已支付且未终态的状态集合：管理员取消这些状态的订单时走退款链路
     private static final java.util.Set<String> PAID_IN_FLIGHT_STATUSES = java.util.Set.of(
+            OrderStatus.PENDING_SHIPMENT.getStatus(),
+            OrderStatus.RECEIVED.getStatus(),
+            OrderStatus.WASHING.getStatus(),
+            OrderStatus.DRIED.getStatus(),
+            OrderStatus.IN_DELIVERY.getStatus(),
+            OrderStatus.READY_FOR_PICKUP.getStatus()
+    );
+
+    // 在途状态集合（待支付 + 已支付未终态）：这些订单仍持有寄存柜，删单时必须同步释放，
+    // 否则柜子永久停留「使用中」且超时任务读到 null 订单直接跳过，无自愈（B1-04）
+    private static final java.util.Set<String> IN_FLIGHT_STATUSES = java.util.Set.of(
+            OrderStatus.PENDING_PAYMENT.getStatus(),
             OrderStatus.PENDING_SHIPMENT.getStatus(),
             OrderStatus.RECEIVED.getStatus(),
             OrderStatus.WASHING.getStatus(),
