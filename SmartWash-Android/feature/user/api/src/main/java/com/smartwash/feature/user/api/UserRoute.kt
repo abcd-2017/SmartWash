@@ -43,6 +43,16 @@ sealed interface UserRoute : SmartWashRoute {
     data object Setting : UserRoute
 
     /**
+     * 饮食偏好页（设置页「饮食偏好」入口；契约 §三.2）。
+     *
+     * 忌口 7 标签多选 + 每日热量/钠目标；数据走吃啥域 /web/auth/dining/dietary-preference
+     * （经 DiningApi 跨域访问），页面实现位于 user-impl（两变体共用）。
+     */
+    @Serializable
+    @SerialName("DietaryPreference")
+    data object DietaryPreference : UserRoute
+
+    /**
      * 解读模型（BYOK）配置页。
      *
      * 设置页「解读模型」行跳入；观象台解读 428 拦截直达本页。2026-11-12 由设置页弹层

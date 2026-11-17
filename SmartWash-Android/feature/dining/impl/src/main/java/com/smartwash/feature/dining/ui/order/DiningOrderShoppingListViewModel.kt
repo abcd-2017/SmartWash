@@ -9,6 +9,7 @@ import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.SharePreferenceUtils
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.dining.R
+import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
 import com.smartwash.feature.dining.logic.DiningShoppingListResult
 import com.smartwash.feature.dining.logic.parseDiningShoppingList
 import com.smartwash.feature.dining.logic.resolveMyUserId
@@ -51,6 +52,13 @@ class DiningOrderShoppingListViewModel @Inject constructor(
     val orderTitle = _orderTitle.asStateFlow()
 
     /**
+     * 用户每日热量目标（默认 2000；偏好拉取后回填）。热量卡「今日剩余 = 目标 - 本单总热量」
+     * 的数据源（契约 §三.3）；失败静默用默认值，不阻断清单主流程。
+     */
+    private val _calorieTarget = MutableStateFlow(DietaryPreferenceVo.DEFAULT_CALORIE_TARGET)
+    val calorieTarget = _calorieTarget.asStateFlow()
+
+    /**
      * 已买食材（本地态，按订单持久化）：买菜时勾选，重启仍在。
      * 只影响展示与导出文本，不回写服务端（清单是快照）。
      */
@@ -82,6 +90,7 @@ class DiningOrderShoppingListViewModel @Inject constructor(
                         memberCount = detail.safeMembers.size,
                     )
                 _checked.value = readChecked()
+                loadCalorieTargetSafe()
                 _loadState.value = RequestState.Success
             } catch (e: CancellationException) {
                 throw e
@@ -89,6 +98,22 @@ class DiningOrderShoppingListViewModel @Inject constructor(
                 AppLogger.error(TAG, "DiningOrderShoppingListViewModel.load: ${e.message}", e)
                 _loadState.value = RequestState.Error(e.resId, e.message)
             }
+        }
+    }
+
+    /**
+     * 热量目标拉取（契约 §三.3）：失败静默用默认 2000，不阻断清单主流程。
+     */
+    private suspend fun loadCalorieTargetSafe() {
+        try {
+            val preference = diningRepository.getDietaryPreference()
+            _calorieTarget.value = preference.calorieTarget
+                ?.takeIf { it > 0 }
+                ?: DietaryPreferenceVo.DEFAULT_CALORIE_TARGET
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.warn(TAG, "热量目标拉取失败（降级默认 2000）：${e.message}")
         }
     }
 

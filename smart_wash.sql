@@ -1974,12 +1974,15 @@ CREATE TABLE `dining_recipe` (
 -- 配料主数据（名称唯一 uk_name）：CSV 导入/建菜谱时按名 upsert 自动注册，Web 后台配料库管理页维护；
 -- category 为导入时启发式预判（油盐糖酱醋料酒→SEASONING / 肉蛋禽→MAIN / 菜菇瓜茄葱姜蒜→AUX / 其他 OTHER），
 -- 后台可改；供应商信息不入库（转换器侧剥离）。
+-- allergen 为注册时按名启发预判（鱼虾蟹贝海鲜鱿→SEAFOOD 等，见 dining/support/IngredientAllergenResolver），
+-- NULL=无；后台可改（Web 配料管理页下拉），清空传空串归一为 NULL。
 -- ----------------------------
 DROP TABLE IF EXISTS `dining_ingredient`;
 CREATE TABLE `dining_ingredient` (
   `id`         BIGINT      NOT NULL AUTO_INCREMENT COMMENT '配料 ID',
   `name`       VARCHAR(32) NOT NULL COMMENT '配料名（唯一；供应商信息不入库）',
   `category`   VARCHAR(16) NOT NULL DEFAULT 'OTHER' COMMENT '配料分类：MAIN=主料/AUX=辅料/SEASONING=调料/OTHER=其他',
+  `allergen`   VARCHAR(32) NULL COMMENT '过敏原：SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SOY/SPICY/OTHER，NULL=无',
   `created_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -2082,4 +2085,37 @@ CREATE TABLE `dining_order_item` (
   UNIQUE KEY `uk_order_recipe_user` (`order_id`,`recipe_id`,`user_id`),
   KEY `idx_order` (`order_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-选菜记录（一人一菜一条，取消即删行）';
+
+-- ----------------------------
+-- Table structure for user_dietary_preference（用户饮食偏好）
+-- 功能 1+2 合并：忌口标签（allergens JSON 数组）+ 每日热量/钠目标。
+-- 一人一行（user_id 主键，非自增）：GET 无行=未设置，字段 NULL=默认值语义（端上兜底 2000kcal/2000mg）。
+-- 契约 §五.1 决策：表按 dining 域落地（避免跨域改 user 模块建表），user_id 关联 users.user_id。
+-- ----------------------------
+DROP TABLE IF EXISTS `user_dietary_preference`;
+CREATE TABLE `user_dietary_preference` (
+  `user_id`        BIGINT      NOT NULL COMMENT '用户 ID(users.user_id)，一人一行',
+  `allergens`      VARCHAR(128) NULL COMMENT '忌口标签 JSON 数组：SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SOY/SPICY',
+  `calorie_target` INT         NULL COMMENT '每日热量目标 kcal，NULL=默认 2000',
+  `sodium_target`  INT         NULL COMMENT '每日钠目标 mg，NULL=默认 2000',
+  `created_at`     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户饮食偏好（忌口+目标）';
+
+-- ----------------------------
+-- Table structure for dining_recipe_favorite（吃啥-菜谱收藏）
+-- 用户收藏的菜谱：uk_user_recipe 保证一人一菜一行，支撑收藏幂等（并发撞唯一键按已收藏处理）；
+-- idx_user 支撑「我的收藏」按人反查分页。
+-- ----------------------------
+DROP TABLE IF EXISTS `dining_recipe_favorite`;
+CREATE TABLE `dining_recipe_favorite` (
+  `id`         BIGINT   NOT NULL AUTO_INCREMENT,
+  `user_id`    BIGINT   NOT NULL COMMENT '用户 ID(users.user_id)',
+  `recipe_id`  BIGINT   NOT NULL COMMENT '菜谱 ID(dining_recipe.id)',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_recipe` (`user_id`,`recipe_id`),
+  KEY `idx_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-菜谱收藏';
 SET FOREIGN_KEY_CHECKS = 1;

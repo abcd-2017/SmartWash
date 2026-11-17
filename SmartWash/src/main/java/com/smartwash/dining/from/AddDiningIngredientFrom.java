@@ -20,4 +20,9 @@ public class AddDiningIngredientFrom {
     /** 配料分类：MAIN=主料/AUX=辅料/SEASONING=调料/OTHER=其他，缺省 OTHER */
     @Pattern(regexp = "MAIN|AUX|SEASONING|OTHER", message = "配料分类仅支持 MAIN/AUX/SEASONING/OTHER")
     private String category;
+
+    /** 过敏原：SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SOY/SPICY/OTHER，不传=按配料名启发预判 */
+    @Pattern(regexp = "(SEAFOOD|NUT|GLUTEN|DAIRY|EGG|SOY|SPICY|OTHER)?",
+            message = "过敏原仅支持 SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SOY/SPICY/OTHER")
+    private String allergen;
 }

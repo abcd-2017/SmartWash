@@ -1,6 +1,7 @@
 // src/__tests__/DiningIngredientList.test.js
 // 配料库管理页单测：mock API 层与 element-plus（对齐 useTableList.test.js 的轻量 mock 先例），
-// 覆盖「分页拉取参数清洗、新增/编辑提交（RESTful PUT）、删除确认、被引用删除透出后端 message」四条契约。
+// 覆盖「分页拉取参数清洗、新增/编辑提交（RESTful PUT）、删除确认、被引用删除透出后端 message」
+// 以及「过敏原下拉默认值 / 新增携带标签 / 编辑空串清空」契约。
 import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 
@@ -31,6 +32,12 @@ import {
   deleteDiningIngredient,
 } from '@/api/dining';
 import { ElMessage } from 'element-plus';
+import {
+  DINING_ALLERGEN_OPTIONS,
+  DINING_ALLERGEN_NONE_VALUE,
+  diningIngredientAllergenText,
+  diningIngredientAllergenTagType,
+} from '@/constants/dict';
 
 // Element Plus 组件 stub：保留结构语义（按钮可点、弹窗受控、表单校验直接通过），去掉样式/DOM 依赖
 const globalStubs = {
@@ -102,6 +109,8 @@ describe('DiningIngredientList.vue 配料库管理', () => {
 
     wrapper.vm.handleCreate();
     expect(wrapper.vm.dialogVisible).toBe(true);
+    // 过敏原下拉默认「无」（空串），未选时新增不携带该字段，由后端按名启发预判
+    expect(wrapper.vm.tempIngredient.allergen).toBe(DINING_ALLERGEN_NONE_VALUE);
     // 弹窗 v-if 挂载后模板 ref 才绑定 formRef，需等一拍再提交
     await wrapper.vm.$nextTick();
     wrapper.vm.tempIngredient.name = '鸡蛋';
@@ -111,8 +120,28 @@ describe('DiningIngredientList.vue 配料库管理', () => {
 
     expect(addDiningIngredient).toHaveBeenCalledTimes(1);
     expect(addDiningIngredient).toHaveBeenCalledWith({ name: '鸡蛋', category: 'MAIN' });
+    expect(addDiningIngredient.mock.calls[0][0]).not.toHaveProperty('allergen');
     expect(ElMessage.success).toHaveBeenCalledWith('新增成功');
     expect(getDiningIngredientList).toHaveBeenCalledTimes(2);
+  });
+
+  it('新增配料：选择过敏原标签时 payload 携带 allergen', async () => {
+    const wrapper = mountPage();
+    await flushPromises();
+
+    wrapper.vm.handleCreate();
+    await wrapper.vm.$nextTick();
+    wrapper.vm.tempIngredient.name = '虾仁';
+    wrapper.vm.tempIngredient.category = 'MAIN';
+    wrapper.vm.tempIngredient.allergen = 'SEAFOOD';
+    await wrapper.vm.submitForm();
+    await flushPromises();
+
+    expect(addDiningIngredient).toHaveBeenCalledWith({
+      name: '虾仁',
+      category: 'MAIN',
+      allergen: 'SEAFOOD',
+    });
   });
 
   it('表单校验未通过：拦截提交，不调接口也不弹「操作失败」', async () => {
@@ -129,22 +158,67 @@ describe('DiningIngredientList.vue 配料库管理', () => {
     expect(ElMessage.error).not.toHaveBeenCalled();
   });
 
-  it('编辑配料：RESTful PUT 携带路径 id 与改名/改分类字段', async () => {
+  it('编辑配料：回填已有过敏原，RESTful PUT 携带路径 id 与改名/改分类/过敏原字段', async () => {
     const wrapper = mountPage();
     await flushPromises();
 
-    wrapper.vm.handleEdit({ id: 3, name: '生抽', category: 'SEASONING' });
+    wrapper.vm.handleEdit({ id: 3, name: '花生酱', category: 'SEASONING', allergen: 'NUT' });
     expect(wrapper.vm.dialogVisible).toBe(true);
+    // 编辑态回填行内过敏原（NULL 归一为「无」空串）
+    expect(wrapper.vm.tempIngredient.allergen).toBe('NUT');
     await wrapper.vm.$nextTick();
-    wrapper.vm.tempIngredient.name = '老抽';
+    wrapper.vm.tempIngredient.name = '花生酱';
     await wrapper.vm.submitForm();
     await flushPromises();
 
     expect(updateDiningIngredient).toHaveBeenCalledTimes(1);
     expect(updateDiningIngredient.mock.calls[0][0]).toBe(3);
-    expect(updateDiningIngredient.mock.calls[0][1]).toEqual({ name: '老抽', category: 'SEASONING' });
+    expect(updateDiningIngredient.mock.calls[0][1]).toEqual({
+      name: '花生酱',
+      category: 'SEASONING',
+      allergen: 'NUT',
+    });
     expect(ElMessage.success).toHaveBeenCalledWith('修改成功');
     expect(addDiningIngredient).not.toHaveBeenCalled();
+  });
+
+  it('编辑配料：过敏原选「无」（空串）提交，走 PUT 清空语义', async () => {
+    const wrapper = mountPage();
+    await flushPromises();
+
+    wrapper.vm.handleEdit({ id: 4, name: '牛奶', category: 'OTHER', allergen: 'DAIRY' });
+    await wrapper.vm.$nextTick();
+    wrapper.vm.tempIngredient.allergen = DINING_ALLERGEN_NONE_VALUE;
+    await wrapper.vm.submitForm();
+    await flushPromises();
+
+    expect(updateDiningIngredient).toHaveBeenCalledTimes(1);
+    expect(updateDiningIngredient.mock.calls[0][1]).toEqual({
+      name: '牛奶',
+      category: 'OTHER',
+      allergen: '',
+    });
+  });
+
+  it('字典：过敏原选项/文案/配色与后端 ALLERGEN_VALUES 对齐，NULL 文案为「无」', () => {
+    expect(DINING_ALLERGEN_OPTIONS.map((o) => o.label)).toEqual([
+      '海鲜',
+      '坚果',
+      '麸质',
+      '乳制品',
+      '蛋类',
+      '大豆',
+      '辛辣',
+      '其他',
+    ]);
+    expect(DINING_ALLERGEN_NONE_VALUE).toBe('');
+    expect(diningIngredientAllergenText(null)).toBe('无');
+    expect(diningIngredientAllergenText('')).toBe('无');
+    expect(diningIngredientAllergenText('SEAFOOD')).toBe('海鲜');
+    expect(diningIngredientAllergenText('OTHER')).toBe('其他');
+    expect(diningIngredientAllergenText('UNKNOWN_VALUE')).toBe('UNKNOWN_VALUE');
+    expect(diningIngredientAllergenTagType('NUT')).toBe('danger');
+    expect(diningIngredientAllergenTagType(null)).toBe('info');
   });
 
   it('删除配料：确认后调用删除接口并按页码钳制刷新', async () => {

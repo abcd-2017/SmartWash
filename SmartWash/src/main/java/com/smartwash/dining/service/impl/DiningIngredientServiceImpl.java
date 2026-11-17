@@ -11,6 +11,7 @@ import com.smartwash.dining.from.UpdateDiningIngredientFrom;
 import com.smartwash.dining.mapper.DiningIngredientMapper;
 import com.smartwash.dining.mapper.DiningRecipeIngredientMapper;
 import com.smartwash.dining.service.DiningIngredientService;
+import com.smartwash.dining.support.IngredientAllergenResolver;
 import com.smartwash.dining.vo.DiningIngredientVo;
 import com.smartwash.exception.CustomExceptions;
 import lombok.extern.slf4j.Slf4j;
@@ -60,13 +61,17 @@ public class DiningIngredientServiceImpl extends ServiceImpl<DiningIngredientMap
         }
         DiningIngredient ingredient = new DiningIngredient()
                 .setName(from.getName())
-                .setCategory(StringUtils.hasText(from.getCategory()) ? from.getCategory() : DEFAULT_CATEGORY);
+                .setCategory(StringUtils.hasText(from.getCategory()) ? from.getCategory() : DEFAULT_CATEGORY)
+                // 过敏原：后台未指定时按配料名启发预判（契约 §2.2），指定值原样落库
+                .setAllergen(StringUtils.hasText(from.getAllergen())
+                        ? from.getAllergen() : IngredientAllergenResolver.resolve(from.getName()));
         try {
             this.save(ingredient);
         } catch (DuplicateKeyException e) {
             throw new CustomExceptions(409, "配料名称已存在");
         }
-        log.info("新增配料, name: {}, category: {}", ingredient.getName(), ingredient.getCategory());
+        log.info("新增配料, name: {}, category: {}, allergen: {}",
+                ingredient.getName(), ingredient.getCategory(), ingredient.getAllergen());
     }
 
     @Override
@@ -87,9 +92,13 @@ public class DiningIngredientServiceImpl extends ServiceImpl<DiningIngredientMap
         if (StringUtils.hasText(from.getCategory())) {
             ingredient.setCategory(from.getCategory());
         }
+        // 过敏原：null=不修改；空串=清空为 NULL（实体 updateStrategy=IGNORED 保证 null 写回库）
+        if (from.getAllergen() != null) {
+            ingredient.setAllergen(StringUtils.hasText(from.getAllergen()) ? from.getAllergen() : null);
+        }
         this.updateById(ingredient);
-        log.info("更新配料, id: {}, name: {}, category: {}", ingredient.getId(),
-                ingredient.getName(), ingredient.getCategory());
+        log.info("更新配料, id: {}, name: {}, category: {}, allergen: {}", ingredient.getId(),
+                ingredient.getName(), ingredient.getCategory(), ingredient.getAllergen());
     }
 
     @Override

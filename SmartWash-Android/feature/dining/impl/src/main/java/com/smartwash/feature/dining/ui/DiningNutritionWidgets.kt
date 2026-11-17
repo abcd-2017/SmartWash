@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.feature.dining.R
+import com.smartwash.feature.dining.logic.DiningAllergenGuard
 import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningNutritionCalculator.Nutrient
 import com.smartwash.feature.dining.logic.DiningNutritionCalculator.NutrientStatus
@@ -103,6 +104,61 @@ private fun DiningWarningItemLine(status: NutrientStatus) {
         style = MaterialTheme.typography.bodySmall,
         color = AppColors.colorScheme.onWarningContainer,
     )
+}
+
+/**
+ * 忌口警示条（契约 §三.1）：选中菜 allergens ∩ 用户忌口非空时出现，逐条
+ * 「含忌口：<忌口名>（<菜名>）」，红色系（异常/取消语义的粉容器 + dangerInk 小字），
+ * 与营养超标警示条同区并存、各占一条，非阻断。
+ */
+@Composable
+internal fun DiningAllergenWarningBar(
+    hits: List<DiningAllergenGuard.Hit>,
+    modifier: Modifier = Modifier,
+) {
+    if (hits.isEmpty()) return
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXxs)
+            .clip(RoundedCornerShape(AppDimens.radiusMd))
+            .background(AppColors.colorScheme.iconContainerPink)
+            .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm),
+    ) {
+        Text(
+            text = stringResource(R.string.dining_allergen_warning_title),
+            style = MaterialTheme.typography.labelLarge,
+            color = AppColors.colorScheme.dangerInk,
+        )
+        Spacer(modifier = Modifier.height(AppDimens.space2xs))
+        hits.forEach { hit ->
+            Text(
+                text = stringResource(
+                    R.string.dining_allergen_warning_item_format,
+                    diningAllergenLabel(hit.allergen),
+                    hit.recipeName,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.colorScheme.dangerInk,
+            )
+        }
+    }
+}
+
+/** 忌口标签展示名映射（SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SPICY/SOY；白名单外原样回显） */
+@Composable
+internal fun diningAllergenLabel(code: String): String {
+    val res = when (code) {
+        "SEAFOOD" -> R.string.dining_allergen_seafood
+        "NUT" -> R.string.dining_allergen_nut
+        "GLUTEN" -> R.string.dining_allergen_gluten
+        "DAIRY" -> R.string.dining_allergen_dairy
+        "EGG" -> R.string.dining_allergen_egg
+        "SPICY" -> R.string.dining_allergen_spicy
+        "SOY" -> R.string.dining_allergen_soy
+        else -> null
+    }
+    return res?.let { stringResource(it) } ?: code
 }
 
 /** 营养项展示名映射（热量/蛋白质/脂肪/碳水/钠） */

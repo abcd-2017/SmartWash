@@ -1,5 +1,6 @@
 package com.smartwash.feature.dining.api
 
+import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
 import com.smartwash.feature.dining.api.model.DiningScanResult
 
@@ -15,14 +16,32 @@ import com.smartwash.feature.dining.api.model.DiningScanResult
 interface DiningApi {
 
     /**
-     * 上架菜谱分页（categoryId 精确筛选，null=全部含未分类；仅返回上架，新菜谱在前）
+     * 上架菜谱分页（categoryId 精确 / keyword 菜名模糊 / ingredient 配料名模糊反查，null=不过滤，
+     * 多参数 AND；仅返回上架，新菜谱在前；列表带 favorited）
      */
     suspend fun getOnShelfRecipes(
         page: Int,
         size: Int,
         categoryId: Long? = null,
         keyword: String? = null,
+        ingredient: String? = null,
     ): List<DiningRecipeVo>
+
+    /**
+     * 我的收藏分页（按收藏时间倒序，字段同上架列表，favorited 恒 true）。
+     * 只暴露记录列表（域内手动分页按 total 判断是否还有下一页）。
+     */
+    suspend fun getFavoriteRecipes(page: Int, size: Int): List<DiningRecipeVo>
+
+    /** 收藏/取消收藏（幂等，返回操作后的当前态：true=已收藏） */
+    suspend fun favoriteRecipe(recipeId: Long): Boolean
+    suspend fun unfavoriteRecipe(recipeId: Long): Boolean
+
+    /** 获取饮食偏好（忌口 + 每日目标；字段 null=默认值语义） */
+    suspend fun getDietaryPreference(): DietaryPreferenceVo
+
+    /** 保存饮食偏好（任一字段 null=恢复默认） */
+    suspend fun saveDietaryPreference(preference: DietaryPreferenceVo)
 
     /**
      * 扫码内容归一化（全局扫码页消费，08 号票能力随扫码页上移壳层后经本契约回注）：

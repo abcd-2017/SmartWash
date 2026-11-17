@@ -9,8 +9,11 @@ import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.api.model.CreateDiningOrderRequest
+import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
 import com.smartwash.feature.dining.api.model.DiningCategoryVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
+import com.smartwash.feature.dining.logic.DiningAllergenGuard
+import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningOrderFormValidator
 import com.smartwash.feature.dining.logic.DiningOrderFormValidator.DiningOrderFormError
 import com.smartwash.feature.dining.repository.DiningRepository
@@ -134,6 +137,31 @@ class DiningOrderCreateViewModel @Inject constructor(
     private val _selectedRecipes = MutableStateFlow<Map<Long, DiningRecipeVo>>(emptyMap())
     val selectedRecipes = _selectedRecipes.asStateFlow()
 
+    /**
+     * 用户忌口标签（契约 §三.1 忌口警示数据源之一）：首载拉取偏好后回填，失败静默置空
+     * （无忌口则不渲染警示，不误报）。
+     */
+    private val _userAllergens = MutableStateFlow<Set<String>>(emptySet())
+    val userAllergens = _userAllergens.asStateFlow()
+
+    /**
+     * 已选菜 allergens 缓存（recipeId → 详情接口返回的过敏原码）：列表 VO 不带 allergens，
+     * 选中时按需拉详情回填，跨分页/换分类保留（[DiningAllergenGuard] 的输入）。
+     */
+    private val _allergenById = MutableStateFlow<Map<Long, List<String>>>(emptyMap())
+    val allergenById = _allergenById.asStateFlow()
+
+    /** 详情拉取任务（去重：同一道菜并发选中只发一次请求） */
+    private val allergenLoadJobs = mutableMapOf<Long, Job>()
+
+    /** 每日热量目标（默认 2000；偏好拉取后回填，份量建议参考值 = 目标 ÷ 3） */
+    private val _calorieTarget = MutableStateFlow(DietaryPreferenceVo.DEFAULT_CALORIE_TARGET)
+    val calorieTarget = _calorieTarget.asStateFlow()
+
+    /** 发起页人数（1-20，本地态不落库；默认 1） */
+    private val _peopleCount = MutableStateFlow(DiningNutritionCalculator.PEOPLE_MIN)
+    val peopleCount = _peopleCount.asStateFlow()
+
     private val _loadState = MutableStateFlow<RequestState>(RequestState.Idle)
     val loadState = _loadState.asStateFlow()
 
@@ -170,6 +198,7 @@ class DiningOrderCreateViewModel @Inject constructor(
             _loadState.value = RequestState.Loading
             try {
                 loadCategoriesSafe()
+                loadPreferenceSafe()
                 val reuseId = reuseFromOrderId
                 if (reuseId != null) {
                     loadAllRecipesFull()
@@ -247,6 +276,51 @@ class DiningOrderCreateViewModel @Inject constructor(
      */
     private suspend fun loadCategoriesSafe() {
         _categories.value = diningRepository.getCategories()
+    }
+
+    /**
+     * 饮食偏好拉取（契约 §三.1/§2.5）：忌口 + 热量目标。失败静默降级（忌口空集、目标默认），
+     * 不拖垮点单主流程。
+     */
+    private suspend fun loadPreferenceSafe() {
+        try {
+            val preference = diningRepository.getDietaryPreference()
+            _userAllergens.value = DiningAllergenGuard.normalizeAllergens(preference.safeAllergens).toSet()
+            _calorieTarget.value = preference.calorieTarget
+                ?.takeIf { it > 0 }
+                ?: DietaryPreferenceVo.DEFAULT_CALORIE_TARGET
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.warn(TAG, "饮食偏好拉取失败（降级无忌口/默认目标）：${e.message}")
+        }
+    }
+
+    /**
+     * 按需拉取选中菜的详情以缓存 allergens（契约 §三.1：列表不带 allergens，选中时按需拉详情）。
+     * 同一道菜并发选中只发一次；失败按「无过敏原」处理（不误报）。
+     */
+    private fun ensureAllergens(recipeId: Long) {
+        if (recipeId <= 0L) return
+        if (_allergenById.value.containsKey(recipeId)) return
+        if (allergenLoadJobs[recipeId]?.isActive == true) return
+        allergenLoadJobs[recipeId] = viewModelScope.launch {
+            try {
+                val detail = diningRepository.getRecipeDetail(recipeId)
+                _allergenById.value = _allergenById.value + (recipeId to detail.safeAllergens)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AppLogger.warn(TAG, "选中菜过敏原拉取失败（按无过敏原处理）：${e.message}")
+            } finally {
+                allergenLoadJobs.remove(recipeId)
+            }
+        }
+    }
+
+    /** 人数 stepper（1-20，本地态；越界收敛） */
+    fun onPeopleChange(value: Int) {
+        _peopleCount.value = DiningNutritionCalculator.coercePeopleCount(value)
     }
 
     /** 首页拉取（关键词 + 分类 + 分页基准；互斥串行，成功后才推进页码） */
@@ -348,10 +422,10 @@ class DiningOrderCreateViewModel @Inject constructor(
             if (!add(recipeId)) remove(recipeId)
         }
         _selectedRecipes.value = if (willSelect) {
-            _selectedRecipes.value +
-                _recipes.value.firstOrNull { it.safeId == recipeId }
-                    ?.let { mapOf(recipeId to it) }
-                    .orEmpty()
+            _recipes.value.firstOrNull { it.safeId == recipeId }?.let { vo ->
+                ensureAllergens(recipeId)
+                _selectedRecipes.value + (recipeId to vo)
+            } ?: _selectedRecipes.value
         } else {
             _selectedRecipes.value - recipeId
         }

@@ -278,6 +278,7 @@ CREATE TABLE IF NOT EXISTS dining_ingredient (
     id         bigint NOT NULL AUTO_INCREMENT,
     name       varchar(32) NOT NULL,
     category   varchar(16) NOT NULL DEFAULT 'OTHER',
+    allergen   varchar(32) DEFAULT NULL,
     created_at timestamp DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -295,6 +296,27 @@ CREATE TABLE IF NOT EXISTS dining_recipe_ingredient (
     updated_at    timestamp DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     CONSTRAINT uk_dining_recipe_ingredient UNIQUE (recipe_id, ingredient_id)
+);
+
+-- 用户饮食偏好表（忌口 + 热量/钠目标；一人一行）
+CREATE TABLE IF NOT EXISTS user_dietary_preference (
+    user_id        bigint NOT NULL,
+    allergens      varchar(128) DEFAULT NULL,
+    calorie_target int DEFAULT NULL,
+    sodium_target  int DEFAULT NULL,
+    created_at     timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at     timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id)
+);
+
+-- 吃啥-菜谱收藏表（uk_user_recipe 幂等闸门）
+CREATE TABLE IF NOT EXISTS dining_recipe_favorite (
+    id         bigint NOT NULL AUTO_INCREMENT,
+    user_id    bigint NOT NULL,
+    recipe_id  bigint NOT NULL,
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_dining_recipe_favorite UNIQUE (user_id, recipe_id)
 );
 
 -- 吃啥-点单订单表（WebDiningOrderControllerIntegrationTest 的 /web/auth/dining/orders 端点验证用）

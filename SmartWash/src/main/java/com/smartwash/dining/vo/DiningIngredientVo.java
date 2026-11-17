@@ -20,6 +20,9 @@ public class DiningIngredientVo {
     /** 配料分类：MAIN=主料/AUX=辅料/SEASONING=调料/OTHER=其他 */
     private String category;
 
+    /** 过敏原：SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SOY/SPICY/OTHER，null=无 */
+    private String allergen;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

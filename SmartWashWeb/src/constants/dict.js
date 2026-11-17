@@ -575,6 +575,57 @@ export const diningIngredientCategoryText = (category) =>
 export const diningIngredientCategoryTagType = (category) =>
   dictValue(DINING_INGREDIENT_CATEGORY_TAG_TYPES, category);
 
+// ---------- 吃啥配料过敏原（与后端 dining_ingredient.allergen 对齐：SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SOY/SPICY/OTHER） ----------
+// 契约 §2.2：NULL=无。表单下拉首项固定为「无」（value=''）：编辑提交空串=显式清空；
+// 新增不传该字段，由后端按配料名启发预判（POST 空串同样走启发，无法强制为 NULL）。
+
+/** 配料过敏原选项（表单下拉用，不含「无」项；中文文案对齐契约 §2.2 枚举注释） */
+export const DINING_ALLERGEN_OPTIONS = [
+  { value: 'SEAFOOD', label: '海鲜' },
+  { value: 'NUT', label: '坚果' },
+  { value: 'GLUTEN', label: '麸质' },
+  { value: 'DAIRY', label: '乳制品' },
+  { value: 'EGG', label: '蛋类' },
+  { value: 'SOY', label: '大豆' },
+  { value: 'SPICY', label: '辛辣' },
+  { value: 'OTHER', label: '其他' },
+];
+
+/** 配料过敏原 → 文案（含后端 ALLERGEN_VALUES 全集 OTHER，避免已登记值回显空白） */
+export const DINING_ALLERGEN_TEXT = {
+  SEAFOOD: '海鲜',
+  NUT: '坚果',
+  GLUTEN: '麸质',
+  DAIRY: '乳制品',
+  EGG: '蛋类',
+  SOY: '大豆',
+  SPICY: '辛辣',
+  OTHER: '其他',
+};
+
+/** 配料过敏原 → el-tag 类型（高致敏红/常见橙/低敏蓝灰，OTHER 灰） */
+export const DINING_ALLERGEN_TAG_TYPES = {
+  SEAFOOD: 'warning',
+  NUT: 'danger',
+  GLUTEN: 'info',
+  DAIRY: 'primary',
+  EGG: 'warning',
+  SOY: 'info',
+  SPICY: 'danger',
+  OTHER: 'info',
+};
+
+/** 配料过敏原文案（NULL/空=「无」；未知非空值回显原值，导入新增枚举时页面不致显示错误文案） */
+export const diningIngredientAllergenText = (allergen) =>
+  DINING_ALLERGEN_TEXT[allergen] || allergen || '无';
+
+/** 配料过敏原标签配色 */
+export const diningIngredientAllergenTagType = (allergen) =>
+  dictValue(DINING_ALLERGEN_TAG_TYPES, allergen);
+
+/** 表单「无」选项值：编辑提交空串=清空；新增不携带该字段（后端按名启发预判） */
+export const DINING_ALLERGEN_NONE_VALUE = '';
+
 /**
  * 份量假设常量（g）：一份热量口径 = caloriesTotal ?: caloriesPer100g × 250，
  * 250g 为份量假设常量（契约 §二拍板，四端一致写死并注释），

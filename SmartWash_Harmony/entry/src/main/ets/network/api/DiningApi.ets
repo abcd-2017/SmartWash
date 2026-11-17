@@ -7,6 +7,10 @@
 //          GET  /web/auth/dining/recipes/{id}         （详情，仅上架）
 //          POST /web/auth/dining/recipes/add          （source=USER 直上架）
 //          POST /web/auth/dining/recipes/cover        （multipart 封面上传，返回对象键）
+//          POST /web/auth/dining/recipes/{id}/favorite（收藏，幂等）
+//          DELETE /web/auth/dining/recipes/{id}/favorite（取消收藏，幂等）
+//          GET  /web/auth/dining/recipes/favorites     （我的收藏分页，字段同列表）
+//   偏好   GET/PUT /web/auth/dining/dietary-preference（忌口 + 每日热量/钠目标）
 //   订单   POST /web/auth/dining/orders/create        （title+recipeIds 或 fromOrderId 复用）
 //          GET  /web/auth/dining/orders/my            （我发起的 + 我参与的，分页 page/size）
 //          GET  /web/auth/dining/orders/{id}          （轮询主接口，knownVersion 轻量协议）
@@ -30,6 +34,7 @@ import { FormData, Type } from '@ohos/axios'
 import { httpUtil } from '../HttpUtil'
 import { BaseResponse } from '../BaseResponse'
 import {
+  DietaryPreferenceVo,
   DiningCategoryVo,
   DiningOrderBriefVo,
   DiningOrderCreatedVo,
@@ -38,6 +43,7 @@ import {
   DiningOrderListVo,
   DiningPageData,
   DiningRecipeVo,
+  dietaryPreferenceVoFromJSON,
   diningCategoryVoFromJSON,
   diningOrderBriefVoFromJSON,
   diningOrderCreatedVoFromJSON,
@@ -50,6 +56,7 @@ import {
 
 // VO 类型再导出（页面统一从本域 API 文件取契约类型）
 export {
+  DietaryPreferenceVo,
   DiningCategoryVo,
   DiningMenuRecipe,
   DiningOrderBriefVo,
@@ -96,9 +103,13 @@ function diningPageDataLikeToList<T>(raw: Object, mapper: (item: Object) => T): 
 }
 
 
-/** 上架菜谱分页（categoryId 精确，0/null=不过滤；keyword 菜名模糊，空串=不过滤） */
+/**
+ * 上架菜谱分页（categoryId 精确，0/null=不过滤；keyword 菜名模糊，空串=不过滤；
+ * ingredient 配料名模糊反查，空串=不过滤；多参数 AND）。
+ * 列表按当前用户批量填充 favorited（后端一次 IN 查询，无 N+1）。
+ */
 export async function getDiningRecipes(page: number, size: number, categoryId: number,
-  keyword: string): Promise<BaseResponse<DiningPageData<DiningRecipeVo>>> {
+  keyword: string, ingredient: string = ''): Promise<BaseResponse<DiningPageData<DiningRecipeVo>>> {
   const params: Record<string, Object> = {}
   params['page'] = page
   params['size'] = size
@@ -108,12 +119,80 @@ export async function getDiningRecipes(page: number, size: number, categoryId: n
   if (keyword.trim().length > 0) {
     params['keyword'] = keyword.trim()
   }
+  if (ingredient.trim().length > 0) {
+    params['ingredient'] = ingredient.trim()
+  }
   const res = await httpUtil.get<Object>('/web/auth/dining/recipes/all', params)
   return {
     data: res.data === null ? null : diningPageDataFromJSON<DiningRecipeVo>(res.data, diningRecipeVoFromJSON),
     code: res.code,
     message: res.message
   }
+}
+
+/**
+ * 我的收藏分页（GET /web/auth/dining/recipes/favorites；按收藏时间倒序，字段同上架列表，
+ * favorited 恒 true）。
+ */
+export async function getDiningFavoriteRecipes(page: number, size: number)
+  : Promise<BaseResponse<DiningPageData<DiningRecipeVo>>> {
+  const params: Record<string, Object> = {}
+  params['page'] = page
+  params['size'] = size
+  const res = await httpUtil.get<Object>('/web/auth/dining/recipes/favorites', params)
+  return {
+    data: res.data === null ? null : diningPageDataFromJSON<DiningRecipeVo>(res.data, diningRecipeVoFromJSON),
+    code: res.code,
+    message: res.message
+  }
+}
+
+/**
+ * 收藏菜谱（POST；幂等：已收藏返回当前态 true；菜谱不存在业务失败）。
+ * 返回 data 为当前收藏态 boolean。
+ */
+export async function favoriteDiningRecipe(id: number): Promise<BaseResponse<boolean>> {
+  return httpUtil.post<boolean>(`/web/auth/dining/recipes/${id}/favorite`)
+}
+
+/**
+ * 取消收藏（DELETE；幂等：未收藏时无操作，返回当前态 false）。
+ * 返回 data 为当前收藏态 boolean。
+ */
+export async function unfavoriteDiningRecipe(id: number): Promise<BaseResponse<boolean>> {
+  return httpUtil.delete<boolean>(`/web/auth/dining/recipes/${id}/favorite`)
+}
+
+/**
+ * 获取饮食偏好（GET /web/auth/dining/dietary-preference；字段 null=默认值语义，端上兜底 2000/2000）。
+ */
+export async function getDiningDietaryPreference(): Promise<BaseResponse<DietaryPreferenceVo>> {
+  const res = await httpUtil.get<Object>('/web/auth/dining/dietary-preference')
+  return {
+    data: res.data === null ? null : dietaryPreferenceVoFromJSON(res.data),
+    code: res.code,
+    message: res.message
+  }
+}
+
+/**
+ * 保存饮食偏好（PUT；整行 upsert；任一字段 null=恢复默认，allergens null=清空忌口）。
+ * 成功 data 为「保存成功」文案（与后端 Result<String> 对应）。
+ */
+export async function saveDiningDietaryPreference(preference: DietaryPreferenceVo)
+  : Promise<BaseResponse<string>> {
+  const body: Record<string, Object> = {}
+  // null 字段不序列化（Gson 默认省略 null，后端 absent 即 null），与 Android 端语义一致
+  if (preference.allergens !== null) {
+    body['allergens'] = preference.allergens
+  }
+  if (preference.calorieTarget !== null) {
+    body['calorieTarget'] = preference.calorieTarget
+  }
+  if (preference.sodiumTarget !== null) {
+    body['sodiumTarget'] = preference.sodiumTarget
+  }
+  return httpUtil.put<string>('/web/auth/dining/dietary-preference', body)
 }
 
 /** 菜谱详情（仅上架可见，下架/不存在返回同一业务失败） */

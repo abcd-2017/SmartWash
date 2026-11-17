@@ -86,6 +86,12 @@ export interface DiningRecipeVo {
   carbsG: number | null
   /** 钠 mg/100g（null=未录入） */
   sodiumMg: number | null
+  // ---- 收藏 / 忌口（契约 §2.2/§2.3，四端对齐后端 DiningRecipeVo）----
+  // 可空语义：Jackson 可能省略 null 字段，映射层缺失兜底 null，消费点不读可空原始字段。
+  /** 当前用户是否已收藏（列表批量填充 / 详情同字段；null=未下发，按未收藏降级） */
+  favorited: boolean | null
+  /** 该菜全部配料的过敏原去重集合（仅详情接口拼装；null=未下发/无过敏原） */
+  allergens: Array<string> | null
 }
 
 /** JSON → DiningRecipeVo */
@@ -107,9 +113,49 @@ export function diningRecipeVoFromJSON(raw: Object): DiningRecipeVo {
     proteinG: jsonNum(obj['proteinG']),
     fatG: jsonNum(obj['fatG']),
     carbsG: jsonNum(obj['carbsG']),
-    sodiumMg: jsonNum(obj['sodiumMg'])
+    sodiumMg: jsonNum(obj['sodiumMg']),
+    favorited: jsonBool(obj['favorited']),
+    allergens: jsonStrArray(obj['allergens']).filter((item: string): boolean => item.length > 0)
   }
 }
+
+
+/**
+ * 用户饮食偏好（GET/PUT /web/auth/dining/dietary-preference 载荷，契约 §2.1）。
+ *
+ * 字段 null = 默认值语义：端上兜底热量 2000 kcal / 钠 2000 mg；allergens 空列表 = 无忌口。
+ * 同一接口兼作 PUT 请求体（后端同名字段）：任一字段 null = 恢复默认（allergens null=清空忌口）。
+ * 忌口标签枚举：SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SOY/SPICY（后端白名单）。
+ */
+export interface DietaryPreferenceVo {
+  /** 忌口标签集合，null/缺失按空列表兜底（无忌口） */
+  allergens: Array<string> | null
+  /** 每日热量目标 kcal，null=默认 2000（有效区间 1200-4000） */
+  calorieTarget: number | null
+  /** 每日钠目标 mg，null=默认 2000（有效区间 1000-4000） */
+  sodiumTarget: number | null
+}
+
+/** JSON → DietaryPreferenceVo；缺失字段兜底 null（默认值语义） */
+export function dietaryPreferenceVoFromJSON(raw: Object): DietaryPreferenceVo {
+  const obj: Record<string, Object> = raw as Record<string, Object>
+  return {
+    allergens: jsonStrArray(obj['allergens']).filter((item: string): boolean => item.length > 0),
+    calorieTarget: jsonNum(obj['calorieTarget']),
+    sodiumTarget: jsonNum(obj['sodiumTarget'])
+  }
+}
+
+/** 默认每日热量目标（kcal）：后端 null 语义的端上兜底值（契约 §2.1） */
+export const DINING_DEFAULT_CALORIE_TARGET: number = 2000
+/** 默认每日钠目标（mg）：后端 null 语义的端上兜底值（契约 §2.1） */
+export const DINING_DEFAULT_SODIUM_TARGET: number = 2000
+/** 热量目标有效区间（与后端 @Min/@Max、设置页 stepper 一致） */
+export const DINING_CALORIE_MIN: number = 1200
+export const DINING_CALORIE_MAX: number = 4000
+/** 钠目标有效区间（与后端 @Min/@Max、设置页 stepper 一致） */
+export const DINING_SODIUM_MIN: number = 1000
+export const DINING_SODIUM_MAX: number = 4000
 
 
 /** 我的订单列表条目（GET /web/auth/dining/orders/my 载荷：我发起的 + 我参与的，创建时间倒序） */

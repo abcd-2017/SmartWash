@@ -18,4 +18,12 @@ public class UpdateDiningIngredientFrom {
     /** 配料分类，不传即不修改 */
     @Pattern(regexp = "MAIN|AUX|SEASONING|OTHER", message = "配料分类仅支持 MAIN/AUX/SEASONING/OTHER")
     private String category;
+
+    /**
+     * 过敏原，不传（null）即不修改；传空串=清空为 NULL（「无」）。
+     * 合法值：SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SOY/SPICY/OTHER
+     */
+    @Pattern(regexp = "(SEAFOOD|NUT|GLUTEN|DAIRY|EGG|SOY|SPICY|OTHER)?",
+            message = "过敏原仅支持 SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SOY/SPICY/OTHER")
+    private String allergen;
 }

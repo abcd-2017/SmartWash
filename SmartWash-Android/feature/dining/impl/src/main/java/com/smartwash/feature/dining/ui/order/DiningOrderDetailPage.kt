@@ -74,6 +74,7 @@ import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.api.DiningRoute
+import com.smartwash.feature.dining.logic.DiningAllergenGuard
 import com.smartwash.feature.dining.logic.DiningCartState
 import com.smartwash.feature.dining.logic.DiningMenuLink
 import com.smartwash.feature.dining.logic.DiningMenuSection
@@ -81,6 +82,7 @@ import com.smartwash.feature.dining.logic.DiningMenuItem
 import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningOrderPageDetail
 import com.smartwash.feature.dining.logic.DiningParticipant
+import com.smartwash.feature.dining.ui.DiningAllergenWarningBar
 import com.smartwash.feature.dining.ui.DiningCalorieBadge
 import com.smartwash.feature.dining.ui.DiningNutritionWarningBar
 import kotlinx.coroutines.launch
@@ -118,6 +120,8 @@ fun DiningOrderDetailPage(
     val message by viewModel.message.collectAsState()
     val finishState by viewModel.finishState.collectAsState()
     val dishNutritionById by viewModel.dishNutrition.collectAsState()
+    val userAllergens by viewModel.userAllergens.collectAsState()
+    val allergenById by viewModel.allergenById.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.load() }
 
@@ -194,6 +198,21 @@ fun DiningOrderDetailPage(
         ).exceededItems
     }
 
+    // 我的已选忌口命中（契约 §三.1）：与营养超标警示同区并存，各占一条；组合期纯计算
+    val myAllergenHits = remember(pageDetail, cart, allergenById, userAllergens) {
+        val dishes = pageDetail?.sections.orEmpty()
+            .flatMap { it.dishes }
+            .filter { cart.isSelected(it.recipeId) }
+            .map { dish ->
+                DiningAllergenGuard.SelectedDish(
+                    recipeId = dish.recipeId,
+                    recipeName = dish.name,
+                    allergens = allergenById[dish.recipeId]?.toSet().orEmpty(),
+                )
+            }
+        DiningAllergenGuard.hits(dishes, userAllergens)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -237,6 +256,7 @@ fun DiningOrderDetailPage(
                 syncPending = syncPending,
                 readOnly = pageDetail.isOngoing.not(),
                 nutritionWarning = myNutritionWarning,
+                allergenHits = myAllergenHits,
                 onToggle = viewModel::toggleRecipe,
                 onNoteClick = { noteTarget = it },
                 onCategoryClick = { categoryId ->
@@ -313,6 +333,7 @@ private fun OrderDetailContent(
     syncPending: Boolean,
     readOnly: Boolean,
     nutritionWarning: List<DiningNutritionCalculator.NutrientStatus>,
+    allergenHits: List<DiningAllergenGuard.Hit>,
     onToggle: (Long) -> Unit,
     onNoteClick: (DiningMenuItem) -> Unit,
     onCategoryClick: (Long?) -> Unit,
@@ -345,6 +366,9 @@ private fun OrderDetailContent(
 
         // 营养超标警示条（契约 §5.3：仅超标时出现，非阻断，估算口径）
         DiningNutritionWarningBar(items = nutritionWarning)
+
+        // 忌口警示条（契约 §三.1：仅命中时出现，与超标警示同区并存）
+        DiningAllergenWarningBar(hits = allergenHits)
 
         SelectedBottomBar(
             detail = detail,

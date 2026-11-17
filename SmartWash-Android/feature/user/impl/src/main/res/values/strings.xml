@@ -234,4 +234,29 @@
     <string name="error_password_mismatch">两次输入的密码不一致</string>
     <string name="change_password_success">密码修改成功</string>
     <string name="change_password_rule_hint">密码长度为 6-16 位，修改成功后需使用新密码重新登录</string>
+
+    <!-- 饮食偏好（契约 §三.2：设置页入口；数据在吃啥域 /web/auth/dining/dietary-preference） -->
+    <string name="dietary_preference_title">饮食偏好</string>
+    <string name="dietary_preference_allergens_label">忌口</string>
+    <string name="dietary_preference_allergens_hint">选中的过敏原会在点单时提醒（按已登记过敏原）</string>
+    <string name="dietary_preference_calorie_label">每日热量目标</string>
+    <string name="dietary_preference_sodium_label">每日钠目标</string>
+    <string name="dietary_preference_calorie_increase">增加热量目标</string>
+    <string name="dietary_preference_calorie_decrease">减少热量目标</string>
+    <string name="dietary_preference_sodium_increase">增加钠目标</string>
+    <string name="dietary_preference_sodium_decrease">减少钠目标</string>
+    <string name="dietary_unit_kcal">kcal</string>
+    <string name="dietary_unit_milligram">mg</string>
+    <string name="dietary_preference_save">保存</string>
+    <string name="dietary_preference_save_success">饮食偏好已保存</string>
+    <string name="dietary_preference_load_failed">饮食偏好加载失败</string>
+    <string name="dietary_preference_retry">重试</string>
+    <string name="dietary_allergen_seafood">海鲜</string>
+    <string name="dietary_allergen_nut">坚果</string>
+    <string name="dietary_allergen_gluten">麸质</string>
+    <string name="dietary_allergen_dairy">乳制品</string>
+    <string name="dietary_allergen_egg">蛋类</string>
+    <string name="dietary_allergen_spicy">辛辣</string>
+    <string name="dietary_allergen_soy">大豆</string>
+    <string name="dietary_allergen_unknown">其他</string>
 </resources>

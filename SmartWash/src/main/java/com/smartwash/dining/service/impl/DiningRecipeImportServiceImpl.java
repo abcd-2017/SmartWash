@@ -17,6 +17,7 @@ import com.smartwash.dining.mapper.DiningIngredientMapper;
 import com.smartwash.dining.mapper.DiningRecipeIngredientMapper;
 import com.smartwash.dining.mapper.DiningRecipeMapper;
 import com.smartwash.dining.service.DiningRecipeImportService;
+import com.smartwash.dining.support.IngredientAllergenResolver;
 import com.smartwash.dining.vo.DiningRecipeImportPreviewVo;
 import com.smartwash.dining.vo.DiningRecipeImportResultVo;
 import com.smartwash.exception.CustomExceptions;
@@ -469,10 +470,13 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
             }
             DiningIngredient ingredient = new DiningIngredient()
                     .setName(n)
-                    .setCategory(heuristicCategory(n));
+                    .setCategory(heuristicCategory(n))
+                    // 过敏原按名启发预判（契约 §2.2，与后台新增配料共用命中表）
+                    .setAllergen(IngredientAllergenResolver.resolve(n));
             try {
                 diningIngredientMapper.insert(ingredient);
-                log.info("导入自动注册配料, name: {}, category: {}", n, ingredient.getCategory());
+                log.info("导入自动注册配料, name: {}, category: {}, allergen: {}",
+                        n, ingredient.getCategory(), ingredient.getAllergen());
                 return ingredient.getId();
             } catch (DuplicateKeyException e) {
                 // 并发窗口撞 uk_name：改挂先建配料的 id（幂等语义）

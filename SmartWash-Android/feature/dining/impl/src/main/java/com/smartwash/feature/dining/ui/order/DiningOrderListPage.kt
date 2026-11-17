@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,7 +25,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -196,6 +199,9 @@ fun DiningOrderListPage(
                                 )
                             }
                         },
+                        onFavoritesClick = {
+                            navController.navigate(DiningRoute.RecipeFavorites)
+                        },
                     )
                 }
             }
@@ -238,12 +244,16 @@ private fun OrderListContent(
     onLoadMore: () -> Unit,
     onOrderClick: (DiningOrderListItem) -> Unit,
     onReuse: (DiningOrderListItem) -> Unit,
+    onFavoritesClick: () -> Unit,
 ) {
-    PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
-        modifier = Modifier.fillMaxSize(),
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        // 我的收藏入口（契约 §三.4）：常驻入口，空列表时亦可进入收藏
+        FavoritesEntry(onClick = onFavoritesClick)
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.weight(1f),
+        ) {
         // 空态也放进刷新容器：空列表同样支持下拉刷新（与有数据态交互一致）
         if (createdOrders.isEmpty() && joinedOrders.isEmpty()) {
             EmptyState(
@@ -327,6 +337,57 @@ private fun OrderListContent(
                     }
                 }
             }
+        }
+        }
+    }
+}
+
+/**
+ * 我的收藏入口卡（契约 §三.4）：图标容器（橙=待办/收藏语义）+ 标题 + 箭头，整卡 pressable。
+ * 位于订单分区之上，作为域内常驻入口。
+ */
+@Composable
+private fun FavoritesEntry(onClick: () -> Unit) {
+    GroupCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding)
+            .pressable(onClick = onClick),
+        contentPadding = PaddingValues(horizontal = AppDimens.cardPadding),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
+                    .background(AppColors.colorScheme.iconContainerOrange),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Favorite,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = AppColors.colorScheme.iconForegroundOrange,
+                )
+            }
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+            Text(
+                text = stringResource(R.string.dining_order_action_favorites),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.colorScheme.textPrimary,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = AppColors.colorScheme.textTertiary,
+            )
         }
     }
 }

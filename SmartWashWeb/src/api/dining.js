@@ -154,7 +154,7 @@ export function confirmDiningRecipeImport(data) {
 // （POST/PUT/DELETE 资源路径），按后端 DiningIngredientAdminController 实装对接。
 
 // 配料分页列表：page/size + keyword（配料名模糊）+ category（MAIN/AUX/SEASONING/OTHER 精确，可空），
-// 返回 MyBatis-Plus Page（records/total），按 id 升序；records 内为 DiningIngredientVo（id/name/category/createdAt/updatedAt）
+// 返回 MyBatis-Plus Page（records/total），按 id 升序；records 内为 DiningIngredientVo（id/name/category/allergen/createdAt/updatedAt）
 export function getDiningIngredientList(params) {
   return request({
     url: '/admin/dining/ingredient/page',
@@ -164,6 +164,8 @@ export function getDiningIngredientList(params) {
 }
 
 // 新增配料：name（≤32，全局唯一，重名后端 409 业务码）+ category（缺省 OTHER）
+// + allergen（SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SOY/SPICY/OTHER；不传=后端按名启发预判，
+// 注意 POST 对空串同样走启发，无法显式存 NULL）
 export function addDiningIngredient(data) {
   return request({
     url: '/admin/dining/ingredient',
@@ -172,7 +174,8 @@ export function addDiningIngredient(data) {
   });
 }
 
-// 更新配料：id 走路径变量；name/category 不传即不修改，改名重名时后端 409
+// 更新配料：id 走路径变量；name/category 不传即不修改，改名重名时后端 409；
+// allergen 不传=不修改，传空串=清空为 NULL（「无」），传标签值=覆盖
 export function updateDiningIngredient(id, data) {
   return request({
     url: `/admin/dining/ingredient/${id}`,

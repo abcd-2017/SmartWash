@@ -68,6 +68,19 @@
             </el-tag>
           </template>
         </el-table-column>
+        <!-- 过敏原：NULL=无（灰字），有值走标签配色；生僻配料未命中启发规则时后端存 NULL -->
+        <el-table-column label="过敏原" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag
+              v-if="row.allergen"
+              :type="diningIngredientAllergenTagType(row.allergen)"
+              effect="light"
+            >
+              {{ diningIngredientAllergenText(row.allergen) }}
+            </el-tag>
+            <span v-else class="text-muted">无</span>
+          </template>
+        </el-table-column>
         <el-table-column label="创建时间" min-width="160">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
@@ -128,6 +141,20 @@
           </el-select>
           <span class="form-tip-inline">主料/辅料/调料为批量导入的启发式预判，可在此修正</span>
         </el-form-item>
+        <el-form-item label="过敏原" prop="allergen">
+          <el-select v-model="tempIngredient.allergen" style="width: 200px">
+            <el-option :value="DINING_ALLERGEN_NONE_VALUE" label="无" />
+            <el-option
+              v-for="opt in DINING_ALLERGEN_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+          <span class="form-tip-inline">
+            新增不选时后端按配料名预判；编辑选「无」将清空该标签
+          </span>
+        </el-form-item>
       </el-form>
 
       <template #footer>
@@ -153,8 +180,12 @@ import { formatTime } from '@/utils/format';
 import { isValidationError } from '@/utils/errors';
 import {
   DINING_INGREDIENT_CATEGORY_OPTIONS,
+  DINING_ALLERGEN_OPTIONS,
+  DINING_ALLERGEN_NONE_VALUE,
   diningIngredientCategoryText,
   diningIngredientCategoryTagType,
+  diningIngredientAllergenText,
+  diningIngredientAllergenTagType,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
 
@@ -201,6 +232,8 @@ const tempIngredient = reactive({
   id: null,
   name: '',
   category: 'OTHER',
+  // 过敏原：'' = 「无」。编辑时空串提交即清空；新增空串不携带，由后端按名启发预判
+  allergen: DINING_ALLERGEN_NONE_VALUE,
 });
 
 // 验证规则（name 唯一性由后端 uk_name + 服务层查重兜底，重名走 409 业务码，前端只做展示层提示）
@@ -223,6 +256,7 @@ const handleCreate = () => {
     id: null,
     name: '',
     category: 'OTHER',
+    allergen: DINING_ALLERGEN_NONE_VALUE,
   });
 };
 
@@ -233,6 +267,7 @@ const handleEdit = (row) => {
     id: row.id,
     name: row.name,
     category: row.category || 'OTHER',
+    allergen: row.allergen || DINING_ALLERGEN_NONE_VALUE,
   });
 };
 
@@ -252,20 +287,29 @@ const submitForm = async () => {
       category: tempIngredient.category,
     };
     if (dialogType.value === 'create') {
+      // 新增：选了标签才携带；「无」（空串）不传，后端按配料名启发预判
+      //（后端 POST 对 null/空串一视同仁走启发，无法显式存 NULL）
+      if (tempIngredient.allergen) {
+        payload.allergen = tempIngredient.allergen;
+      }
       await addDiningIngredient(payload);
       logger.info(
         '配料新增成功',
         `name=${tempIngredient.name}`,
-        `category=${tempIngredient.category}`
+        `category=${tempIngredient.category}`,
+        `allergen=${tempIngredient.allergen || '(按名预判)'}`
       );
       ElMessage.success('新增成功');
     } else {
+      // 编辑：始终携带 allergen，空串=显式清空为 NULL（后端 PUT 空串清空语义）
+      payload.allergen = tempIngredient.allergen;
       await updateDiningIngredient(tempIngredient.id, payload);
       logger.info(
         '配料编辑成功',
         `id=${tempIngredient.id}`,
         `name=${tempIngredient.name}`,
-        `category=${tempIngredient.category}`
+        `category=${tempIngredient.category}`,
+        `allergen=${tempIngredient.allergen || '(清空)'}`
       );
       ElMessage.success('修改成功');
     }
@@ -324,5 +368,10 @@ const handleDelete = async (row) => {
   margin-left: 8px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.text-muted {
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 </style>

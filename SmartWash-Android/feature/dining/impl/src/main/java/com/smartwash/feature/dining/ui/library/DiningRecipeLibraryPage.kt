@@ -2,6 +2,7 @@ package com.smartwash.feature.dining.ui.library
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,10 +32,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -53,6 +57,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -113,6 +120,7 @@ fun DiningRecipeLibraryPage(
     val chips by viewModel.chips.collectAsState()
     val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
     val keyword by viewModel.keyword.collectAsState()
+    val searchByIngredient by viewModel.searchByIngredient.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.load() }
 
@@ -154,13 +162,25 @@ fun DiningRecipeLibraryPage(
             },
         )
 
-        // 关键词搜索（菜名模糊，服务端分页；防抖 300ms 重载；搜索态切全库列表）
+        // 关键词搜索（菜名/食材模糊，服务端分页；防抖 300ms 重载；搜索态切全库列表）
         RecipeSearchField(
             value = keyword,
             onValueChange = viewModel::onKeywordChange,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
+        )
+
+        // 搜索模式（契约 §2.4 最小方案）：菜名走 keyword，食材走 ingredient 反查；
+        // 二选一避免同时传导致 AND 过严。模式切换即按当前关键词重置分页重拉。
+        SearchModeRow(
+            searchByIngredient = searchByIngredient,
+            onSelect = viewModel::onSearchModeChange,
+            modifier = Modifier.padding(
+                start = AppDimens.pagePadding,
+                end = AppDimens.pagePadding,
+                bottom = AppDimens.spaceXs,
+            ),
         )
 
         Crossfade(
@@ -237,6 +257,7 @@ fun DiningRecipeLibraryPage(
                                         navController.navigate(DiningRoute.RecipeDetail(recipe.id))
                                     }
                                 },
+                                onToggleFavorite = viewModel::toggleFavorite,
                             )
                         }
                     }
@@ -294,12 +315,13 @@ private fun CategoryRail(
  * （末两项可见即触发），footer 三态（加载点 / 失败重试 / 加载更多），失败不封底可重试。
  */
 @Composable
-private fun RecipeGrid(
+internal fun RecipeGrid(
     recipes: List<DiningRecipeItem>,
     hasMore: Boolean,
     loadMoreState: RequestState,
     onLoadMore: () -> Unit,
     onRecipeClick: (DiningRecipeItem) -> Unit,
+    onToggleFavorite: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val gridState = rememberLazyGridState()
@@ -333,6 +355,7 @@ private fun RecipeGrid(
             RecipeCoverCard(
                 recipe = recipe,
                 onClick = { onRecipeClick(recipe) },
+                onToggleFavorite = { onToggleFavorite(recipe.id) },
             )
         }
         if (hasMore) {
@@ -377,9 +400,10 @@ private fun LazyGridState.reachedBottom(): Boolean {
  * 菜名 + 热量徽标（≈N kcal/份；缺失渲染「热量未知」次级档）。
  */
 @Composable
-private fun RecipeCoverCard(
+internal fun RecipeCoverCard(
     recipe: DiningRecipeItem,
     onClick: () -> Unit,
+    onToggleFavorite: () -> Unit,
 ) {
     GroupCard(
         modifier = Modifier
@@ -387,27 +411,36 @@ private fun RecipeCoverCard(
             .pressable(onClick = onClick),
         contentPadding = PaddingValues(0.dp),
     ) {
-        if (recipe.coverUrl.isNotBlank()) {
-            SmartWashAsyncImage(
-                url = recipe.coverUrl,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(COVER_ASPECT),
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(COVER_ASPECT)
-                    .background(AppColors.colorScheme.iconContainerGreen),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = recipe.name.firstOrNull()?.toString() ?: "",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = AppColors.colorScheme.primaryDark,
+        // 封面区：封面图/占位底 + 右上角收藏按钮（48dp 热区；内层 pressable 消费点击不进卡片）
+        Box {
+            if (recipe.coverUrl.isNotBlank()) {
+                SmartWashAsyncImage(
+                    url = recipe.coverUrl,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(COVER_ASPECT),
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(COVER_ASPECT)
+                        .background(AppColors.colorScheme.iconContainerGreen),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = recipe.name.firstOrNull()?.toString() ?: "",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = AppColors.colorScheme.primaryDark,
+                    )
+                }
             }
+            RecipeFavoriteButton(
+                favorited = recipe.favorited,
+                recipeName = recipe.name,
+                onClick = onToggleFavorite,
+                modifier = Modifier.align(Alignment.TopEnd),
+            )
         }
         Column(
             modifier = Modifier.padding(
@@ -425,6 +458,41 @@ private fun RecipeCoverCard(
             Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
             DiningCalorieBadge(calories = recipe.calories)
         }
+    }
+}
+
+/**
+ * 封面卡右上角收藏按钮（契约 §三.4）：48dp 热区，已收藏=实心红心、未收藏=描边灰心；
+ * 圆形半透明白底保证在封面图上可读；内层 pressable 消费点击（不触发整卡跳转）。
+ */
+@Composable
+private fun RecipeFavoriteButton(
+    favorited: Boolean,
+    recipeName: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val label = if (favorited) {
+        stringResource(R.string.dining_recipe_action_favorite_remove, recipeName)
+    } else {
+        stringResource(R.string.dining_recipe_action_favorite_add, recipeName)
+    }
+    Box(
+        modifier = modifier
+            .padding(AppDimens.spaceXs)
+            .size(48.dp)
+            .clip(CircleShape)
+            .background(AppColors.colorScheme.surface.copy(alpha = 0.88f))
+            .pressable(onClick = onClick, debounce = false)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = if (favorited) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+            contentDescription = null,
+            tint = if (favorited) AppColors.colorScheme.danger else AppColors.colorScheme.textSecondary,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
@@ -588,4 +656,68 @@ private fun RecipeSearchField(
         singleLine = true,
         modifier = modifier,
     )
+}
+
+/**
+ * 搜索模式切换行（契约 §2.4 食材反查最小方案）：「菜名」走 keyword、「食材」走 ingredient，
+ * 二选一避免 AND 过严；选中态 primarySoft 容器 + primaryDark 字（与分类栏选中态同令牌）。
+ */
+@Composable
+private fun SearchModeRow(
+    searchByIngredient: Boolean,
+    onSelect: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
+        SearchModeChip(
+            text = stringResource(R.string.dining_recipe_search_mode_name),
+            selected = !searchByIngredient,
+            onClick = { onSelect(false) },
+        )
+        SearchModeChip(
+            text = stringResource(R.string.dining_recipe_search_mode_ingredient),
+            selected = searchByIngredient,
+            onClick = { onSelect(true) },
+        )
+    }
+}
+
+/** 搜索模式 chip：48dp 最小热区，选中 primarySoft 底 + primaryDark 字，未选描边（规范 §7 自绘） */
+@Composable
+private fun SearchModeChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .clip(RoundedCornerShape(AppDimens.radiusFull))
+            .background(
+                if (selected) AppColors.colorScheme.primarySoft
+                else AppColors.colorScheme.surface,
+            )
+            .then(
+                if (!selected) {
+                    Modifier.border(
+                        width = 1.dp,
+                        color = AppColors.colorScheme.outline,
+                        shape = RoundedCornerShape(AppDimens.radiusFull),
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            .pressable(onClick = onClick, debounce = false)
+            .padding(horizontal = AppDimens.spaceMd),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) AppColors.colorScheme.primaryDark
+            else AppColors.colorScheme.textSecondary,
+        )
+    }
 }

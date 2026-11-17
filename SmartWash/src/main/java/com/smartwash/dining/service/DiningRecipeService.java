@@ -41,15 +41,44 @@ public interface DiningRecipeService extends IService<DiningRecipe> {
 
     // ==================== 用户端（04 号票） ====================
 
-    /** 用户端：上架菜谱分页（仅 status=1，分类精确/菜名关键词筛选，按 id 降序=新菜谱在前） */
-    Page<DiningRecipeVo> userPage(SearchWebDiningRecipeFrom from);
+    /**
+     * 用户端：上架菜谱分页（仅 status=1，分类精确/菜名关键词/配料名反查筛选，按 id 降序=新菜谱在前）。
+     * 按传入用户 ID 批量填充 favorited（一次 IN 查询，禁止 N+1）。
+     */
+    Page<DiningRecipeVo> userPage(SearchWebDiningRecipeFrom from, Long userId);
 
-    /** 用户端：菜谱详情（仅上架可见；不存在或已下架均按业务失败拒绝，避免暴露下架菜谱内容） */
-    DiningRecipeVo userDetail(Long id);
+    /**
+     * 用户端：菜谱详情（仅上架可见；不存在或已下架均按业务失败拒绝，避免暴露下架菜谱内容）。
+     * 填充 favorited（当前用户）与 allergens（该菜全部配料的过敏原去重集合）。
+     */
+    DiningRecipeVo userDetail(Long id, Long userId);
 
     /**
      * 用户端：新增菜谱（source=USER 直上架、创建人取传入用户 ID；分类哨兵协议与管理端一致：
      * null/0 均未分类、>0 校验存在）。无审核流，保存即可被所有人看到
      */
     void addUserRecipe(AddDiningRecipeFrom from, Long userId);
+
+    // ==================== 收藏（契约 §2.3） ====================
+
+    /**
+     * 收藏菜谱（幂等：已收藏直接返回 true，并发撞 uk_user_recipe 唯一键同样按已收藏处理）。
+     * 菜谱不存在时业务失败；不校验上下架——收藏是用户数据，不因目录下架而失效。
+     *
+     * @return 收藏后的状态（恒为 true）
+     */
+    boolean favorite(Long userId, Long recipeId);
+
+    /**
+     * 取消收藏（幂等：未收藏时为无操作）。
+     *
+     * @return 取消后的状态（恒为 false）
+     */
+    boolean unfavorite(Long userId, Long recipeId);
+
+    /**
+     * 我的收藏分页（按收藏时间倒序，字段同用户端菜谱列表，favorited 恒 true）。
+     * 收藏行指向的菜谱已被物理删除时跳过该条（不影响其他收藏）。
+     */
+    Page<DiningRecipeVo> favoritePage(Long userId, SearchWebDiningRecipeFrom from);
 }

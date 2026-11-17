@@ -48,6 +48,16 @@ data class DiningRecipeVo(
     val source: String? = null,
     /** 上下架：1=上架 0=下架（用户端恒为 1，仅防御性兜底） */
     val status: Int? = null,
+    /**
+     * 当前用户是否已收藏（契约 §2.3）：列表由后端按 user_id 批量填充，详情恒有值；
+     * null=未填充（老响应/管理端），端上按未收藏兜底。
+     */
+    val favorited: Boolean? = null,
+    /**
+     * 该菜全部配料的过敏原去重集合（契约 §2.2，仅用户端详情接口拼装，按 ALLERGEN_VALUES 顺序）；
+     * 列表接口不带（避免放大 payload），null/缺失按空列表兜底。
+     */
+    val allergens: List<String>? = null,
 ) {
     val safeId: Long get() = id ?: 0L
     val safeName: String get() = name.orEmpty()
@@ -55,4 +65,5 @@ data class DiningRecipeVo(
     val safeCoverUrl: String get() = coverUrl.orEmpty()
     val safeIngredients: List<String> get() = ingredients.orEmpty()
     val safeSteps: String get() = steps.orEmpty()
+    val safeAllergens: List<String> get() = allergens.orEmpty()
 }

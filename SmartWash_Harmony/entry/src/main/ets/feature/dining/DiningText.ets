@@ -229,4 +229,120 @@ export class DiningText {
   static ingredientDishCount(count: number): string {
     return fmt(resString('dining_shopping_list_ingredient_dishes_format'), `${count}`)
   }
+
+  /** 今日剩余 ≈ %s kcal（目标 - 本单总热量；负值由页面用 danger 色渲染） */
+  static remainingCaloriesValue(formatted: string): string {
+    return fmt(resString('dining_shopping_list_remaining_calories_format'), formatted)
+  }
+
+  /** 人均 ≈ %s kcal */
+  static perCapitaValue(formatted: string): string {
+    return fmt(resString('dining_shopping_list_per_capita_format'), formatted)
+  }
+
+  // ---- 食材反查搜索（契约 §2.4/§三.6：搜索框 hint + 模式 chips）----
+
+  static get dining_recipe_search_hint(): string { return resString('dining_recipe_search_hint') }
+  static get dining_recipe_search_mode_name(): string { return resString('dining_recipe_search_mode_name') }
+  static get dining_recipe_search_mode_ingredient(): string { return resString('dining_recipe_search_mode_ingredient') }
+
+  // ---- 收藏（契约 §2.3/§三.4）----
+
+  static get dining_order_action_favorites(): string { return resString('dining_order_action_favorites') }
+  static get dining_recipe_favorites_title(): string { return resString('dining_recipe_favorites_title') }
+  static get dining_recipe_favorites_empty(): string { return resString('dining_recipe_favorites_empty') }
+  static get dining_recipe_favorites_load_failed(): string { return resString('dining_recipe_favorites_load_failed') }
+
+  /** 收藏 %s（无障碍标签） */
+  static favoriteAddLabel(name: string): string {
+    return fmt(resString('dining_recipe_action_favorite_add_format'), name)
+  }
+
+  /** 取消收藏 %s（无障碍标签） */
+  static favoriteRemoveLabel(name: string): string {
+    return fmt(resString('dining_recipe_action_favorite_remove_format'), name)
+  }
+
+  // ---- 忌口警示（契约 §三.1：选中菜 allergens ∩ 用户忌口；文案注明按已登记过敏原）----
+
+  static get dining_allergen_warning_title(): string { return resString('dining_allergen_warning_title') }
+
+  /** 含忌口：%s（%s）（忌口名，菜名） */
+  static allergenWarningItem(allergenLabel: string, recipeName: string): string {
+    return resString('dining_allergen_warning_item_format').replace('%s', allergenLabel).replace('%s', recipeName)
+  }
+
+  /** 忌口标签展示名映射（白名单外原样回显，对齐 Android diningAllergenLabel） */
+  static allergenLabel(code: string): string {
+    if (code === 'SEAFOOD') {
+      return resString('dining_allergen_seafood')
+    }
+    if (code === 'NUT') {
+      return resString('dining_allergen_nut')
+    }
+    if (code === 'GLUTEN') {
+      return resString('dining_allergen_gluten')
+    }
+    if (code === 'DAIRY') {
+      return resString('dining_allergen_dairy')
+    }
+    if (code === 'EGG') {
+      return resString('dining_allergen_egg')
+    }
+    if (code === 'SPICY') {
+      return resString('dining_allergen_spicy')
+    }
+    if (code === 'SOY') {
+      return resString('dining_allergen_soy')
+    }
+    return code
+  }
+
+  // ---- 份量建议（契约 §2.5/§三.5：人均 vs 目标÷3 → 够/偏多/偏少；人数 1-20 本地态）----
+
+  static get dining_portion_people_label(): string { return resString('dining_portion_people_label') }
+  static get dining_portion_people_increase(): string { return resString('dining_portion_people_increase') }
+  static get dining_portion_people_decrease(): string { return resString('dining_portion_people_decrease') }
+
+  /** %d 人吃 · 人均 ≈%s kcal，够一餐 */
+  static portionAdviceEnough(peopleCount: number, perCapitaText: string): string {
+    return resString('dining_portion_advice_enough_format').replace('%d', `${peopleCount}`).replace('%s', perCapitaText)
+  }
+
+  /** %d 人吃 · 人均 ≈%s kcal，偏多，可以减 1 道 */
+  static portionAdviceMore(peopleCount: number, perCapitaText: string): string {
+    return resString('dining_portion_advice_more_format').replace('%d', `${peopleCount}`).replace('%s', perCapitaText)
+  }
+
+  /** %d 人吃 · 人均 ≈%s kcal，偏少，建议再加 1-2 道 */
+  static portionAdviceLess(peopleCount: number, perCapitaText: string): string {
+    return resString('dining_portion_advice_less_format').replace('%d', `${peopleCount}`).replace('%s', perCapitaText)
+  }
+
+  // ---- 购买清单人数 / 人均 / 今日剩余（契约 §三.3）----
+
+  static get dining_shopping_list_people_label(): string { return resString('dining_shopping_list_people_label') }
+
+  // ---- 饮食偏好设置页（契约 §三.2）----
+
+  static get dietary_preference_title(): string { return resString('dietary_preference_title') }
+  static get dietary_preference_allergens_label(): string { return resString('dietary_preference_allergens_label') }
+  static get dietary_preference_allergens_hint(): string { return resString('dietary_preference_allergens_hint') }
+  static get dietary_preference_calorie_label(): string { return resString('dietary_preference_calorie_label') }
+  static get dietary_preference_sodium_label(): string { return resString('dietary_preference_sodium_label') }
+  static get dietary_preference_calorie_increase(): string { return resString('dietary_preference_calorie_increase') }
+  static get dietary_preference_calorie_decrease(): string { return resString('dietary_preference_calorie_decrease') }
+  static get dietary_preference_sodium_increase(): string { return resString('dietary_preference_sodium_increase') }
+  static get dietary_preference_sodium_decrease(): string { return resString('dietary_preference_sodium_decrease') }
+  static get dietary_unit_kcal(): string { return resString('dietary_unit_kcal') }
+  static get dietary_unit_milligram(): string { return resString('dietary_unit_milligram') }
+  static get dietary_preference_save(): string { return resString('dietary_preference_save') }
+  static get dietary_preference_save_success(): string { return resString('dietary_preference_save_success') }
+  static get dietary_preference_load_failed(): string { return resString('dietary_preference_load_failed') }
+  static get dietary_preference_retry(): string { return resString('dietary_preference_retry') }
+
+  /** 设置页忌口 chip 展示名（白名单外原样回显） */
+  static dietaryAllergenLabel(code: string): string {
+    return DiningText.allergenLabel(code)
+  }
 }

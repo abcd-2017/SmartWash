@@ -5,7 +5,12 @@
 //
 // 全部函数确定性输入输出，供 entry/src/test/DiningLogic.test.ets 断言。
 
-import { DiningIngredientTotal, DiningOrderBriefVo } from '../../network/vo/DiningVo'
+import {
+  DINING_DEFAULT_CALORIE_TARGET,
+  DiningIngredientTotal,
+  DiningOrderBriefVo,
+  DiningRecipeVo
+} from '../../network/vo/DiningVo'
 import { diningShoppingListFromJSON, DiningShoppingListSnapshot } from '../../network/vo/DiningVo'
 
 
@@ -709,6 +714,179 @@ export function formatDiningAmount(value: number | null): string | null {
     return `${rounded}`
   }
   return rounded.toFixed(1)
+}
+
+
+// ========== 忌口警示（对齐 Android DiningAllergenGuard，四端同口径） ==========
+
+/** 忌口标签白名单（与后端 Pattern、设置页 7 个多选 chip 同源） */
+export const DINING_ALLERGEN_CODES: Array<string> =
+  ['SEAFOOD', 'NUT', 'GLUTEN', 'DAIRY', 'EGG', 'SOY', 'SPICY']
+
+/** 选中菜的过敏原事实（页面由选中 VO + 详情缓存的 allergens 组装） */
+export interface DiningSelectedDish {
+  recipeId: number
+  recipeName: string
+  /** 该菜过敏原码集合（null=未下发/未拉取，按无过敏原参与） */
+  allergens: Array<string> | null
+}
+
+/** 单条命中：哪道菜命中了哪个忌口（allergen 为归一化后的枚举码，UI 映射中文文案） */
+export interface DiningAllergenHit {
+  recipeId: number
+  recipeName: string
+  allergen: string
+}
+
+/** 单个码归一化：null/空白返回 null，其余去空白 + 大写（脏数据不抛出） */
+export function normalizeDiningAllergen(code: string | null): string | null {
+  if (code === null) {
+    return null
+  }
+  const trimmed = code.trim()
+  return trimmed.length > 0 ? trimmed.toUpperCase() : null
+}
+
+/** 归一化 + 去重（保序）；入参 null 兜底空数组 */
+export function normalizeDiningAllergens(codes: Array<string> | null): Array<string> {
+  if (codes === null) {
+    return []
+  }
+  const result: Array<string> = []
+  for (let i = 0; i < codes.length; i++) {
+    const normalized = normalizeDiningAllergen(codes[i])
+    if (normalized !== null && result.indexOf(normalized) < 0) {
+      result.push(normalized)
+    }
+  }
+  return result
+}
+
+/**
+ * 选中菜过敏原 ∩ 用户忌口求交（保选中菜顺序；同一道菜内按归一化去重；用户忌口为空返回空表）。
+ * 端上只负责「已登记过敏原」的交集，生僻配料后端为 NULL 的不参与（覆盖率风险见契约 §五.3）。
+ */
+export function diningAllergenHits(dishes: Array<DiningSelectedDish>,
+  userAllergens: Array<string> | null): Array<DiningAllergenHit> {
+  const user = normalizeDiningAllergens(userAllergens)
+  if (user.length === 0) {
+    return []
+  }
+  const hits: Array<DiningAllergenHit> = []
+  for (let i = 0; i < dishes.length; i++) {
+    const dish = dishes[i]
+    const dishAllergens = normalizeDiningAllergens(dish.allergens)
+    for (let j = 0; j < dishAllergens.length; j++) {
+      if (user.indexOf(dishAllergens[j]) >= 0) {
+        hits.push({ recipeId: dish.recipeId, recipeName: dish.recipeName, allergen: dishAllergens[j] })
+      }
+    }
+  }
+  return hits
+}
+
+
+// ========== 份量建议（对齐 Android DiningPortionAdvisor，四端同口径） ==========
+
+/** 人数下限（stepper 与人均共用） */
+export const DINING_PEOPLE_MIN: number = 1
+/** 人数上限（stepper 与人均共用） */
+export const DINING_PEOPLE_MAX: number = 20
+/** 每日餐次（参考值 = 日目标 ÷ 3，与营养超标警示同一口径） */
+export const DINING_MEALS_PER_DAY: number = 3
+/** 够一餐下限系数（人均 ≥ 参考 × 0.9） */
+export const DINING_PORTION_LOWER_RATIO: number = 0.9
+/** 够一餐上限系数（人均 ≤ 参考 × 1.1） */
+export const DINING_PORTION_UPPER_RATIO: number = 1.1
+
+/** 份量判定 */
+export enum DiningPortionVerdict {
+  /** 人均在参考 0.9-1.1 倍区间：够一餐 */
+  ENOUGH,
+  /** 人均高于参考 1.1 倍：偏多 */
+  MORE,
+  /** 人均低于参考 0.9 倍：偏少 */
+  LESS
+}
+
+/** 建议结果（页面文案与本地态人数回显共用） */
+export interface DiningPortionAdvice {
+  /** 收敛后的人数（1-20） */
+  peopleCount: number
+  /** 人均热量（kcal） */
+  perCapita: number
+  /** 一餐参考热量（kcal）= 目标 ÷ 3 */
+  reference: number
+  verdict: DiningPortionVerdict
+}
+
+/** 人数收敛到契约区间（1-20）：越界钳制、异常值兜底，页面 stepper 与人均共用 */
+export function coerceDiningPeopleCount(value: number): number {
+  if (!Number.isFinite(value)) {
+    return DINING_PEOPLE_MIN
+  }
+  const rounded = Math.round(value)
+  if (rounded < DINING_PEOPLE_MIN) {
+    return DINING_PEOPLE_MIN
+  }
+  if (rounded > DINING_PEOPLE_MAX) {
+    return DINING_PEOPLE_MAX
+  }
+  return rounded
+}
+
+/**
+ * 已选菜热量合计（份热量口径）：仅统计已知热量的菜；全部未知/空列表返回 null
+ * （页面不渲染建议，不谎报）。对齐 Android DiningNutritionCalculator.summarize.totalCalories。
+ */
+export function diningSelectedTotalCalories(recipes: Array<DiningRecipeVo>): number | null {
+  let total = 0
+  let knownCount = 0
+  for (let i = 0; i < recipes.length; i++) {
+    const calories = diningServingCalories(recipes[i].caloriesTotal, recipes[i].caloriesPer100g)
+    if (calories !== null) {
+      total += calories
+      knownCount++
+    }
+  }
+  return knownCount > 0 ? total : null
+}
+
+/**
+ * 计算份量建议（契约 §2.5）。
+ * @param totalCalories 本单已知热量菜之和（未知为 null → 返回 null）
+ * @param peopleCount 人数（越界收敛到 1-20）
+ * @param calorieTargetPerDay 用户每日热量目标（≤0 时用默认 2000）
+ */
+export function diningPortionAdvice(totalCalories: number | null, peopleCount: number,
+  calorieTargetPerDay: number): DiningPortionAdvice | null {
+  if (totalCalories === null) {
+    return null
+  }
+  const people = coerceDiningPeopleCount(peopleCount)
+  const target = calorieTargetPerDay > 0 ? calorieTargetPerDay : DINING_DEFAULT_CALORIE_TARGET
+  const reference = target / DINING_MEALS_PER_DAY
+  const perCapita = totalCalories / people
+  let verdict: DiningPortionVerdict = DiningPortionVerdict.ENOUGH
+  if (perCapita > reference * DINING_PORTION_UPPER_RATIO) {
+    verdict = DiningPortionVerdict.MORE
+  } else if (perCapita < reference * DINING_PORTION_LOWER_RATIO) {
+    verdict = DiningPortionVerdict.LESS
+  }
+  return { peopleCount: people, perCapita: perCapita, reference: reference, verdict: verdict }
+}
+
+/**
+ * 今日剩余热量（契约 §三.3）：目标 - 本单总热量；总热量未知返回 null（页面不渲染）。
+ * 负值 = 本单超目标，页面用 danger 色渲染。
+ */
+export function diningCalorieRemaining(totalCalories: number | null,
+  calorieTargetPerDay: number): number | null {
+  if (totalCalories === null) {
+    return null
+  }
+  const target = calorieTargetPerDay > 0 ? calorieTargetPerDay : DINING_DEFAULT_CALORIE_TARGET
+  return target - totalCalories
 }
 
 

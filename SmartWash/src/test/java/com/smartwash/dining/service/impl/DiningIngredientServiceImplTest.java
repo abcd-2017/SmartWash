@@ -33,6 +33,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -254,6 +255,83 @@ class DiningIngredientServiceImplTest {
         assertEquals(1L, vo.getId());
         assertEquals("鸡蛋", vo.getName());
         assertEquals(DiningIngredient.CATEGORY_MAIN, vo.getCategory());
+    }
+
+    // ==================== 过敏原（契约 §2.2） ====================
+
+    @Test
+    @DisplayName("新增：未指定 allergen 时按配料名启发预判（鸡蛋→EGG）")
+    void add_allergenHeuristicWhenOmitted() {
+        when(ingredientMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(ingredientMapper.insert(any(DiningIngredient.class))).thenReturn(1);
+
+        service.addIngredient(addFrom("鸡蛋", DiningIngredient.CATEGORY_MAIN));
+
+        ArgumentCaptor<DiningIngredient> captor = ArgumentCaptor.forClass(DiningIngredient.class);
+        verify(ingredientMapper).insert(captor.capture());
+        assertEquals(DiningIngredient.ALLERGEN_EGG, captor.getValue().getAllergen());
+    }
+
+    @Test
+    @DisplayName("新增：显式指定 allergen 时原样落库（不被启发覆盖）")
+    void add_explicitAllergenStored() {
+        when(ingredientMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(ingredientMapper.insert(any(DiningIngredient.class))).thenReturn(1);
+
+        AddDiningIngredientFrom from = addFrom("五花肉", DiningIngredient.CATEGORY_MAIN);
+        from.setAllergen(DiningIngredient.ALLERGEN_OTHER);
+        service.addIngredient(from);
+
+        ArgumentCaptor<DiningIngredient> captor = ArgumentCaptor.forClass(DiningIngredient.class);
+        verify(ingredientMapper).insert(captor.capture());
+        assertEquals(DiningIngredient.ALLERGEN_OTHER, captor.getValue().getAllergen());
+    }
+
+    @Test
+    @DisplayName("更新：allergen 传入即更新（NULL→SEAFOOD）")
+    void update_allergenApplied() {
+        when(ingredientMapper.selectById(1L)).thenReturn(ingredient(1L, "虾", "MAIN"));
+        when(ingredientMapper.updateById(any(DiningIngredient.class))).thenReturn(1);
+
+        UpdateDiningIngredientFrom from = new UpdateDiningIngredientFrom();
+        from.setAllergen(DiningIngredient.ALLERGEN_SEAFOOD);
+        service.updateIngredient(1L, from);
+
+        ArgumentCaptor<DiningIngredient> captor = ArgumentCaptor.forClass(DiningIngredient.class);
+        verify(ingredientMapper).updateById(captor.capture());
+        assertEquals(DiningIngredient.ALLERGEN_SEAFOOD, captor.getValue().getAllergen());
+    }
+
+    @Test
+    @DisplayName("更新：allergen 传空串清空为 null（IGNORED 策略写回库）")
+    void update_emptyAllergenClearsToNull() {
+        when(ingredientMapper.selectById(1L))
+                .thenReturn(ingredient(1L, "虾", "MAIN").setAllergen(DiningIngredient.ALLERGEN_SEAFOOD));
+        when(ingredientMapper.updateById(any(DiningIngredient.class))).thenReturn(1);
+
+        UpdateDiningIngredientFrom from = new UpdateDiningIngredientFrom();
+        from.setAllergen("");
+        service.updateIngredient(1L, from);
+
+        ArgumentCaptor<DiningIngredient> captor = ArgumentCaptor.forClass(DiningIngredient.class);
+        verify(ingredientMapper).updateById(captor.capture());
+        assertNull(captor.getValue().getAllergen(), "空串必须归一为 null（无过敏原）");
+    }
+
+    @Test
+    @DisplayName("更新：allergen 不传（null）保持原值不被清空")
+    void update_allergenOmittedKeepsOriginal() {
+        when(ingredientMapper.selectById(1L))
+                .thenReturn(ingredient(1L, "虾", "MAIN").setAllergen(DiningIngredient.ALLERGEN_SEAFOOD));
+        when(ingredientMapper.updateById(any(DiningIngredient.class))).thenReturn(1);
+
+        UpdateDiningIngredientFrom from = new UpdateDiningIngredientFrom();
+        from.setCategory(DiningIngredient.CATEGORY_MAIN);
+        service.updateIngredient(1L, from);
+
+        ArgumentCaptor<DiningIngredient> captor = ArgumentCaptor.forClass(DiningIngredient.class);
+        verify(ingredientMapper).updateById(captor.capture());
+        assertEquals(DiningIngredient.ALLERGEN_SEAFOOD, captor.getValue().getAllergen());
     }
 
     /** 断言抛出业务异常且消息匹配 */

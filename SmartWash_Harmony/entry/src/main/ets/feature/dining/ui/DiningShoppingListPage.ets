@@ -8,14 +8,23 @@ import { pasteboard } from '@kit.BasicServicesKit'
 import { RouteNames } from '../../../constant/RouteNames'
 import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
-import { DiningOrderDetailVo, getDiningOrderDetail } from '../../../network/api/DiningApi'
-import { getUserInfo } from '../../../network/api/UserApi'
 import {
+  DiningOrderDetailVo,
+  getDiningDietaryPreference,
+  getDiningOrderDetail
+} from '../../../network/api/DiningApi'
+import { getUserInfo } from '../../../network/api/UserApi'
+import { DINING_DEFAULT_CALORIE_TARGET } from '../../../network/vo/DiningVo'
+import {
+  DINING_PEOPLE_MAX,
+  DINING_PEOPLE_MIN,
   DiningIngredientTotalUi,
   DiningRecipeShopping,
   DiningSelectorShopping,
   DiningShoppingResult,
   buildShoppingListText,
+  coerceDiningPeopleCount,
+  diningCalorieRemaining,
   diningOrderStatusFromCode,
   diningTimeLabel,
   formatDiningAmount,
@@ -48,6 +57,12 @@ interface DiningIngredientRow {
   dishCount: number
 }
 
+/** 今日剩余展示模型（负值走 danger 色） */
+interface DiningRemainingText {
+  text: string
+  negative: boolean
+}
+
 @Builder
 export function DiningShoppingListBuilder() {
   DiningShoppingListPage()
@@ -66,6 +81,10 @@ struct DiningShoppingListPage {
   @Local activeTab: number = TAB_INGREDIENTS
   /** 已买食材（本地态，按订单持久化）：买菜时勾选，重启仍在；仅影响展示与导出文本 */
   @Local checked: string[] = []
+  /** 每日热量目标（kcal；默认 2000，供「今日剩余」计算） */
+  @Local calorieTarget: number = DINING_DEFAULT_CALORIE_TARGET
+  /** 人数本地态（1-20，默认参与者人数；不落库，离开页面即重置） */
+  @Local peopleCount: number = DINING_PEOPLE_MIN
 
   async aboutToAppear(): Promise<void> {
     this.orderId = getNumberParam(RouteNames.DINING_SHOPPING_LIST) ?? 0
@@ -75,6 +94,7 @@ struct DiningShoppingListPage {
       this.isError = true
       return
     }
+    await this.loadDietaryPreference()
     await this.loadDetail()
     await this.loadChecked()
     this.isLoading = false
@@ -214,6 +234,58 @@ struct DiningShoppingListPage {
           .fontColor($r('app.color.TEXT_SECONDARY'))
       }
       .alignItems(VerticalAlign.Bottom)
+
+      // 人数 stepper（1-20，本地态；默认参与者人数）
+      Row({ space: DesignDimens.SPACE_SM }) {
+        Text(DiningText.dining_shopping_list_people_label)
+          .fontSize(DesignFontSize.BODY)
+          .fontColor($r('app.color.TEXT_SECONDARY'))
+          .layoutWeight(1)
+        SymbolGlyph($r('sys.symbol.minus'))
+          .fontSize(20)
+          .fontColor([this.peopleCount > DINING_PEOPLE_MIN ? $r('app.color.TEXT_PRIMARY') : $r('app.color.TEXT_TERTIARY')])
+          .width(48)
+          .height(48)
+          .onClick(() => {
+            this.peopleCount = coerceDiningPeopleCount(this.peopleCount - 1)
+          })
+        Text(`${this.peopleCount}`)
+          .fontSize(DesignFontSize.BODY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor($r('app.color.TEXT_PRIMARY'))
+          .textAlign(TextAlign.Center)
+        SymbolGlyph($r('sys.symbol.plus'))
+          .fontSize(20)
+          .fontColor([this.peopleCount < DINING_PEOPLE_MAX ? $r('app.color.TEXT_PRIMARY') : $r('app.color.TEXT_TERTIARY')])
+          .width(48)
+          .height(48)
+          .onClick(() => {
+            this.peopleCount = coerceDiningPeopleCount(this.peopleCount + 1)
+          })
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
+      .padding({ top: DesignDimens.SPACE_XS })
+
+      if (this.perCapitaText() !== null) {
+        Text(this.perCapitaText() ?? '')
+          .fontSize(DesignFontSize.BODY)
+          .fontColor($r('app.color.TEXT_PRIMARY'))
+          .width('100%')
+          .padding({ top: DesignDimens.SPACE_XS })
+      }
+
+      // 今日剩余（目标 - 本单总热量；负值 danger 色）
+      if (this.remainingText() !== null) {
+        Text(this.remainingText()?.text ?? '')
+          .fontSize(DesignFontSize.BODY)
+          .fontColor(this.remainingText()?.negative === true
+            ? $r('app.color.DANGER_INK')
+            : $r('app.color.TEXT_PRIMARY'))
+          .width('100%')
+          .padding({ top: 2 })
+      }
+
       if (this.calorieUnknownCount() > 0) {
         Text(DiningText.calorieUnknownHint(this.calorieUnknownCount()))
           .fontSize(DesignFontSize.CAPTION)
@@ -374,6 +446,8 @@ struct DiningShoppingListPage {
       const res = await getDiningOrderDetail(this.orderId, null)
       if (res.code === BizCode.SUCCESS && res.data !== null) {
         this.detail = res.data
+        // 人数默认取参与者人数（0 兜底收敛到 1）
+        this.peopleCount = coerceDiningPeopleCount(res.data.members.length)
         // 我的定位（参与者脱敏手机号比对）
         const ids: Array<number> = []
         const phones: Array<string> = []
@@ -446,6 +520,45 @@ struct DiningShoppingListPage {
       return DiningText.dining_shopping_list_total_calories_unknown
     }
     return DiningText.totalCaloriesValue(formatted)
+  }
+
+  /** 人均热量文案（总热量未知返回 null，不渲染） */
+  private perCapitaText(): string | null {
+    const result = this.result
+    if (result === null || result.totalCalories === null) {
+      return null
+    }
+    const people = coerceDiningPeopleCount(this.peopleCount)
+    const formatted = formatDiningAmount(result.totalCalories / people)
+    return formatted === null ? null : DiningText.perCapitaValue(formatted)
+  }
+
+  /** 今日剩余文案（目标 - 本单总热量；总热量未知返回 null；负值 negative=true） */
+  private remainingText(): DiningRemainingText | null {
+    const result = this.result
+    if (result === null) {
+      return null
+    }
+    const remaining = diningCalorieRemaining(result.totalCalories, this.calorieTarget)
+    if (remaining === null) {
+      return null
+    }
+    const formatted = formatDiningAmount(remaining) ?? ''
+    return { text: DiningText.remainingCaloriesValue(formatted), negative: remaining < 0 }
+  }
+
+  /** 拉取饮食偏好（best-effort：失败按默认目标降级，不阻断清单渲染） */
+  private async loadDietaryPreference(): Promise<void> {
+    try {
+      const res = await getDiningDietaryPreference()
+      if (res.code === BizCode.SUCCESS && res.data !== null) {
+        this.calorieTarget = res.data.calorieTarget !== null && res.data.calorieTarget > 0
+          ? res.data.calorieTarget
+          : DINING_DEFAULT_CALORIE_TARGET
+      }
+    } catch (err) {
+      logger.debug(TAG, '饮食偏好加载失败，今日剩余按默认目标')
+    }
   }
 
   /**

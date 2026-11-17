@@ -78,10 +78,13 @@ import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.api.DiningRoute
 import com.smartwash.feature.dining.api.model.DiningCategoryVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
+import com.smartwash.feature.dining.ui.DiningAllergenWarningBar
 import com.smartwash.feature.dining.ui.DiningNutritionWarningBar
+import com.smartwash.feature.dining.logic.DiningAllergenGuard
 import com.smartwash.feature.dining.logic.DiningCategoryChip
 import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningOrderFormValidator.DiningOrderFormError
+import com.smartwash.feature.dining.logic.DiningPortionAdvisor
 
 /** 左分类栏宽度（对齐点单页 RAIL_WIDTH 先例：分类名短词为主，84dp 兼顾两行折行） */
 private val RAIL_WIDTH = 84.dp
@@ -128,6 +131,10 @@ fun DiningOrderCreatePage(
     val hasMore by viewModel.hasMore.collectAsState()
     val loadMoreState by viewModel.loadMoreState.collectAsState()
     val keyword by viewModel.keyword.collectAsState()
+    val peopleCount by viewModel.peopleCount.collectAsState()
+    val calorieTarget by viewModel.calorieTarget.collectAsState()
+    val userAllergens by viewModel.userAllergens.collectAsState()
+    val allergenById by viewModel.allergenById.collectAsState()
 
     // 首载（栈上重组不重放；失败重试显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
@@ -158,6 +165,25 @@ fun DiningOrderCreatePage(
             selectedIds.mapNotNull { selectedRecipes[it] }
                 .map { DiningNutritionCalculator.dishNutrition(it) },
         )
+    }
+
+    // 忌口命中（契约 §三.1）：选中菜 allergens（详情按需缓存）∩ 用户忌口；组合期纯计算
+    val allergenHits = remember(selectedRecipes, selectedIds, allergenById, userAllergens) {
+        val dishes = selectedIds.mapNotNull { id ->
+            selectedRecipes[id]?.let { vo ->
+                DiningAllergenGuard.SelectedDish(
+                    recipeId = vo.safeId,
+                    recipeName = vo.safeName,
+                    allergens = allergenById[id]?.toSet().orEmpty(),
+                )
+            }
+        }
+        DiningAllergenGuard.hits(dishes, userAllergens)
+    }
+
+    // 份量建议（契约 §2.5）：人均 = 本单总热量 ÷ 人数，参考 = 用户目标 ÷ 3（默认 2000÷3）
+    val portionAdvice = remember(nutritionReport.totalCalories, peopleCount, calorieTarget) {
+        DiningPortionAdvisor.advice(nutritionReport.totalCalories, peopleCount, calorieTarget)
     }
 
     // 提交成功：进分享视图（携带创建响应的 orderId + joinToken——token 的唯一来源）。
@@ -374,6 +400,10 @@ fun DiningOrderCreatePage(
         CreateBottomBar(
             selectedCount = selectedIds.size,
             nutritionReport = nutritionReport,
+            allergenHits = allergenHits,
+            portionAdvice = portionAdvice,
+            peopleCount = peopleCount,
+            onPeopleChange = viewModel::onPeopleChange,
             menuError = formError.takeIf {
                 it == DiningOrderFormError.MENU_EMPTY || it == DiningOrderFormError.MENU_TOO_MANY
             },
@@ -720,6 +750,10 @@ private fun AddDishButton(
 private fun CreateBottomBar(
     selectedCount: Int,
     nutritionReport: DiningNutritionCalculator.Report,
+    allergenHits: List<DiningAllergenGuard.Hit>,
+    portionAdvice: DiningPortionAdvisor.Advice?,
+    peopleCount: Int,
+    onPeopleChange: (Int) -> Unit,
     menuError: DiningOrderFormError?,
     menuErrorRes: (DiningOrderFormError) -> Int,
     isReuseMode: Boolean,
@@ -741,8 +775,19 @@ private fun CreateBottomBar(
                 .background(AppColors.colorScheme.divider),
         )
         Column(modifier = Modifier.navigationBarsPadding()) {
+            // 份量建议行（契约 §2.5/§三.5）：人数 stepper + 人均/判定文案；仅常规模式展示
+            if (!isReuseMode) {
+                PortionAdviceRow(
+                    advice = portionAdvice,
+                    peopleCount = peopleCount,
+                    onPeopleChange = onPeopleChange,
+                )
+            }
             if (nutritionReport.exceededItems.isNotEmpty()) {
                 DiningNutritionWarningBar(items = nutritionReport.exceededItems)
+            }
+            if (allergenHits.isNotEmpty()) {
+                DiningAllergenWarningBar(hits = allergenHits)
             }
             if (menuError != null) {
                 Text(
@@ -781,6 +826,117 @@ private fun CreateBottomBar(
                     text = stringResource(R.string.dining_order_create_submit),
                     onClick = onSubmit,
                     loading = submitLoading,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 份量建议行（契约 §2.5/§三.5）：人数 stepper（1-20，本地态）+ 建议文案
+ * （人均 vs 目标÷3 → 够/偏多/偏少）。总热量未知（advice=null）时只展示人数，不渲染建议。
+ */
+@Composable
+private fun PortionAdviceRow(
+    advice: DiningPortionAdvisor.Advice?,
+    peopleCount: Int,
+    onPeopleChange: (Int) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.dining_portion_people_label),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.colorScheme.textSecondary,
+                modifier = Modifier.weight(1f),
+            )
+            PortionStepButton(
+                isPlus = false,
+                enabled = peopleCount > DiningNutritionCalculator.PEOPLE_MIN,
+                onClick = { onPeopleChange(peopleCount - 1) },
+            )
+            Text(
+                text = peopleCount.toString(),
+                style = AppTextStyles.AmountMedium,
+                color = AppColors.colorScheme.textPrimary,
+                modifier = Modifier.padding(horizontal = AppDimens.spaceSm),
+            )
+            PortionStepButton(
+                isPlus = true,
+                enabled = peopleCount < DiningNutritionCalculator.PEOPLE_MAX,
+                onClick = { onPeopleChange(peopleCount + 1) },
+            )
+        }
+        if (advice != null) {
+            Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+            val perCapita = DiningNutritionCalculator.formatAmount(advice.perCapita).orEmpty()
+            val text = when (advice.verdict) {
+                DiningPortionAdvisor.Verdict.ENOUGH -> stringResource(
+                    R.string.dining_portion_advice_enough_format, advice.peopleCount, perCapita,
+                )
+                DiningPortionAdvisor.Verdict.MORE -> stringResource(
+                    R.string.dining_portion_advice_more_format, advice.peopleCount, perCapita,
+                )
+                DiningPortionAdvisor.Verdict.LESS -> stringResource(
+                    R.string.dining_portion_advice_less_format, advice.peopleCount, perCapita,
+                )
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                color = if (advice.verdict == DiningPortionAdvisor.Verdict.ENOUGH) {
+                    AppColors.colorScheme.textGreen
+                } else {
+                    AppColors.colorScheme.textSecondary
+                },
+            )
+        }
+    }
+}
+
+/** 人数步进按钮：48dp 触控热区 + 20dp Canvas 圆帽线段（- / +）；越界禁用降为 textTertiary */
+@Composable
+private fun PortionStepButton(
+    isPlus: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val glyphColor = if (enabled) AppColors.colorScheme.textSecondary
+    else AppColors.colorScheme.textTertiary
+    val label = if (isPlus) {
+        stringResource(R.string.dining_portion_people_increase)
+    } else {
+        stringResource(R.string.dining_portion_people_decrease)
+    }
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .semantics { contentDescription = label }
+            .then(if (enabled) Modifier.pressable(onClick = onClick, debounce = false) else Modifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.size(20.dp)) {
+            val stroke = 2.dp.toPx()
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val arm = 7.dp.toPx()
+            drawLine(
+                color = glyphColor,
+                start = Offset(center.x - arm, center.y),
+                end = Offset(center.x + arm, center.y),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round,
+            )
+            if (isPlus) {
+                drawLine(
+                    color = glyphColor,
+                    start = Offset(center.x, center.y - arm),
+                    end = Offset(center.x, center.y + arm),
+                    strokeWidth = stroke,
+                    cap = StrokeCap.Round,
                 )
             }
         }

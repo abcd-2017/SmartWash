@@ -94,6 +94,7 @@ fun DiningOrderShoppingListPage(
     val result by viewModel.result.collectAsState()
     val orderTitle by viewModel.orderTitle.collectAsState()
     val checked by viewModel.checked.collectAsState()
+    val calorieTarget by viewModel.calorieTarget.collectAsState()
 
     // 双视图切换（纯 UI 态；不参与网络请求）
     var tab by remember { mutableStateOf(TAB_INGREDIENTS) }
@@ -146,6 +147,7 @@ fun DiningOrderShoppingListPage(
                 tab = tab,
                 result = current,
                 checked = checked,
+                calorieTarget = calorieTarget,
                 onToggleChecked = viewModel::toggleChecked,
                 onTabSelected = { tab = it },
             )
@@ -179,14 +181,15 @@ private fun ShoppingListContent(
     tab: Int,
     result: DiningShoppingListResult,
     checked: Set<String>,
+    calorieTarget: Int,
     onToggleChecked: (String) -> Unit,
     onTabSelected: (Int) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // 热量卡（契约 §5.4）：总热量 tnum 大字 + 人数 stepper（1-20 本地态）+ 人均 + 未知提示；
+        // 热量卡（契约 §5.4）：总热量 tnum 大字 + 人数 stepper（1-20 本地态）+ 人均 + 今日剩余 + 未知提示；
         // 老快照无 v2 字段（totalCalories 与 unknownCount 皆 null）时整卡隐藏
         if (result.totalCalories != null || result.calorieUnknownDishCount != null) {
-            CalorieCard(result = result)
+            CalorieCard(result = result, calorieTarget = calorieTarget)
         }
         AppTabBar(
             tabs = listOf(
@@ -220,7 +223,11 @@ private fun ShoppingListContent(
  * + 「N 道菜热量未知，未计入」提示行。
  */
 @Composable
-private fun CalorieCard(result: DiningShoppingListResult, modifier: Modifier = Modifier) {
+private fun CalorieCard(
+    result: DiningShoppingListResult,
+    calorieTarget: Int,
+    modifier: Modifier = Modifier,
+) {
     // 人数本地态：默认快照参与者人数（0 兜底收敛到 1）；不落库，离开页面即重置
     var people by remember(result.memberCount) {
         mutableStateOf(DiningNutritionCalculator.coercePeopleCount(result.memberCount))
@@ -289,6 +296,19 @@ private fun CalorieCard(result: DiningShoppingListResult, modifier: Modifier = M
                 ),
                 style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.textPrimary,
+            )
+        }
+        // 今日剩余（契约 §三.3）：目标 - 本单总热量；负值（本单超目标）用危险色
+        val total = result.totalCalories
+        if (total != null) {
+            Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+            val remaining = calorieTarget - total
+            val remainingText = DiningNutritionCalculator.formatAmount(remaining).orEmpty()
+            Text(
+                text = stringResource(R.string.dining_shopping_list_remaining_calories_format, remainingText),
+                style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
+                color = if (remaining < 0) AppColors.colorScheme.dangerInk
+                else AppColors.colorScheme.textPrimary,
             )
         }
         if (unknownCount > 0) {

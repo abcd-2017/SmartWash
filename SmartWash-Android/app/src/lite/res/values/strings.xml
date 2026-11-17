@@ -38,6 +38,7 @@
     <string name="lite_setting_title">设置</string>
     <string name="lite_setting_section_account">账户</string>
     <string name="lite_setting_account_phone">手机号</string>
+    <string name="lite_setting_section_diet">饮食</string>
     <string name="lite_setting_section_general">通用</string>
     <string name="lite_setting_check_update">检查更新</string>
     <string name="lite_setting_check_update_desc">当前版本 v%s</string>

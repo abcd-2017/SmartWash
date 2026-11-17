@@ -17,6 +17,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -108,6 +110,33 @@ fun LiteSettingPage(
                     title = stringResource(R.string.lite_setting_account_phone),
                     value = userInfo?.phoneNumber.orEmpty().ifBlank { "-" },
                     onClick = null,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+            SectionLabel(text = stringResource(R.string.lite_setting_section_diet))
+            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+            GroupCard(
+                modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    horizontal = AppDimens.cardPadding
+                ),
+            ) {
+                // 饮食偏好（契约 §三.2：忌口 + 每日热量/钠目标，页面在 user 域两变体共用）
+                LiteSettingRow(
+                    icon = Icons.Filled.Restaurant,
+                    containerColor = AppColors.colorScheme.iconContainerOrange,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
+                    title = stringResource(com.smartwash.feature.user.impl.R.string.dietary_preference_title),
+                    onClick = { navController.navigate(UserRoute.DietaryPreference) },
+                    trailing = {
+                        Icon(
+                            imageVector = Icons.Filled.ChevronRight,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = AppColors.colorScheme.textTertiary,
+                        )
+                    },
                 )
             }
 
