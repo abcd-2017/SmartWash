@@ -56,7 +56,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与「暂无数据」空态区分，就地重试（W-E3） -->
+      <div v-if="listError" class="list-error">
+        <span>优惠券列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         ref="tableRef"
         v-loading="listLoading"
         :data="couponList"
@@ -261,6 +267,7 @@ const {
   list: couponList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,

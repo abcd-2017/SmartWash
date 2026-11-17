@@ -80,7 +80,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与「暂无数据」空态区分，就地重试（W-E3） -->
+      <div v-if="listError" class="list-error">
+        <span>学校列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="schoolList"
         fit
@@ -249,6 +255,7 @@ const {
   list: schoolList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,

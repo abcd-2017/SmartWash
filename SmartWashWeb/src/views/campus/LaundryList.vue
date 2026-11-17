@@ -33,7 +33,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与「暂无数据」空态区分，就地重试（W-E3） -->
+      <div v-if="listError" class="list-error">
+        <span>套餐列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="laundryList"
         fit
@@ -143,6 +149,7 @@ const {
   list: laundryList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
