@@ -76,7 +76,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与空态区分，给出重试入口 -->
+      <div v-if="listError" class="list-error">
+        <span>游戏列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="gameList"
         fit
@@ -203,6 +209,7 @@
       v-model="uploadDialogVisible"
       width="min(760px, 94vw)"
       :close-on-click-modal="false"
+      :close-on-press-escape="!uploading"
       :show-close="!uploading"
       @closed="handleUploadDialogClosed"
     >
@@ -491,6 +498,9 @@
           <template v-else-if="levelsResult?.ok">
             关卡已随本次上传导入：{{ levelsResult.created + levelsResult.updated }} 关（新增
             {{ levelsResult.created }} · 覆盖 {{ levelsResult.updated }}）
+            <span v-if="levelsResult.skipped">
+              · 另有 {{ levelsResult.skipped }} 行格式错误未导入，可到「关卡管理」用同一 JSON 修正后重试
+            </span>
           </template>
           <template v-else-if="levelsResult">
             关卡导入失败：{{ levelsResult.message }}。可到「关卡管理」用同一 JSON 重新导入
@@ -699,7 +709,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Document, UploadFilled, CircleCheckFilled, Close, Picture } from '@element-plus/icons-vue';
 import {
@@ -743,6 +753,7 @@ const {
   list: gameList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -1227,6 +1238,10 @@ const submitUpload = async () => {
     return;
   }
 
+  // 入口锁：封面上传与游戏包上传全程锁定确认按钮，双击/连点不再重复提交
+  if (uploading.value) return;
+  uploading.value = true;
+
   const formData = new FormData();
   formData.append('file', selectedFile.value);
   formData.append('title', tempGame.title);
@@ -1249,7 +1264,6 @@ const submitUpload = async () => {
     return;
   }
 
-  uploading.value = true;
   uploadPercent.value = 0;
   try {
     const res = await uploadGame(formData, (e) => {
@@ -1269,7 +1283,10 @@ const submitUpload = async () => {
       try {
         let created = 0;
         let updated = 0;
-        const rows = levelsDraft.value.plan.rows.filter((r) => r.fate !== 'error');
+        const planRows = levelsDraft.value.plan.rows;
+        const rows = planRows.filter((r) => r.fate !== 'error');
+        // 错误行不参与导入但必须让运营知道数量，否则成功面板呈现的是「全部导入」的假象
+        const skipped = planRows.length - rows.length;
         for (const payload of buildChunkedPayloads(rows, {
           gameKey: tempGame.gameKey,
           replaceAll: false,
@@ -1278,7 +1295,7 @@ const submitUpload = async () => {
           created += importRes.created || 0;
           updated += importRes.updated || 0;
         }
-        levelsResult.value = { ok: true, created, updated };
+        levelsResult.value = { ok: true, created, updated, skipped };
         logger.info(
           '关卡跟随导入成功',
           `gameKey=${tempGame.gameKey}`,
@@ -1570,6 +1587,12 @@ const handleDelete = async (row) => {
 
 onMounted(() => {
   fetchData();
+});
+
+// 弹窗开着时路由离开：清掉防抖定时器与封面预览的 objectURL，不在卸载后继续持引用
+onBeforeUnmount(() => {
+  clearTimeout(keyCheckTimer);
+  if (coverPreview.value) URL.revokeObjectURL(coverPreview.value);
 });
 </script>
 

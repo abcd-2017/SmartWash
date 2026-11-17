@@ -489,6 +489,20 @@
       "buildFunction": "DiningRecipeCreateBuilder",
       "data": {
       }
+    },
+    {
+      "name": "DiningFavoriteList",
+      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningFavoriteListPage.ets",
+      "buildFunction": "DiningFavoriteListBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DiningDietaryPreference",
+      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningDietaryPreferencePage.ets",
+      "buildFunction": "DiningDietaryPreferenceBuilder",
+      "data": {
+      }
     }
   ]
 }

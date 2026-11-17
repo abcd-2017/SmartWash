@@ -6,6 +6,7 @@ import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.dining.api.model.AddDiningRecipeRequest
 import com.smartwash.feature.dining.api.model.CreateDiningOrderRequest
 import com.smartwash.feature.dining.api.model.DiningCategoryVo
+import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
 import com.smartwash.feature.dining.api.model.DiningOrderCreatedVo
 import com.smartwash.feature.dining.api.model.AddDiningOrderItemRequest
 import com.smartwash.feature.dining.api.model.DiningOrderBriefVo
@@ -46,7 +47,10 @@ interface DiningServiceApi {
     @RequireAuthorization
     suspend fun categories(): ApiResult<List<DiningCategoryVo>>
 
-    /** 上架菜谱分页（categoryId 精确 / keyword 菜名模糊，null=不过滤；仅返回上架，新菜谱在前） */
+    /**
+     * 上架菜谱分页（categoryId 精确 / keyword 菜名模糊 / ingredient 配料名模糊反查，null=不过滤，
+     * 多参数 AND；仅返回上架，新菜谱在前；列表按当前用户批量填充 favorited）。
+     */
     @GET("/web/auth/dining/recipes/all")
     @RequireAuthorization
     suspend fun recipes(
@@ -54,12 +58,44 @@ interface DiningServiceApi {
         @Query("size") size: Int,
         @Query("categoryId") categoryId: Long? = null,
         @Query("keyword") keyword: String? = null,
+        @Query("ingredient") ingredient: String? = null,
     ): ApiResult<PageData<DiningRecipeVo>>
 
-    /** 菜谱详情（仅上架可见，下架/不存在返回同一业务失败） */
+    /** 我的收藏分页（按收藏时间倒序，字段同上架列表，favorited 恒 true） */
+    @GET("/web/auth/dining/recipes/favorites")
+    @RequireAuthorization
+    suspend fun favoriteRecipes(
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+    ): ApiResult<PageData<DiningRecipeVo>>
+
+    /** 收藏菜谱（幂等：已收藏返回当前态 true；菜谱不存在业务失败） */
+    @POST("/web/auth/dining/recipes/{id}/favorite")
+    @RequireAuthorization
+    suspend fun favoriteRecipe(@Path("id") id: Long): ApiResult<Boolean>
+
+    /** 取消收藏（幂等：未收藏时为无操作，返回当前态 false） */
+    @DELETE("/web/auth/dining/recipes/{id}/favorite")
+    @RequireAuthorization
+    suspend fun unfavoriteRecipe(@Path("id") id: Long): ApiResult<Boolean>
+
+    /**
+     * 菜谱详情（仅上架可见，下架/不存在返回同一业务失败）；
+     * 带 allergens（该菜全部配料的过敏原去重集合）与 favorited（当前用户是否收藏）。
+     */
     @GET("/web/auth/dining/recipes/{id}")
     @RequireAuthorization
     suspend fun recipeDetail(@Path("id") id: Long): ApiResult<DiningRecipeVo>
+
+    /** 获取饮食偏好（忌口 + 每日目标；字段 null=默认值语义，端上兜底 2000/2000） */
+    @GET("/web/auth/dining/dietary-preference")
+    @RequireAuthorization
+    suspend fun dietaryPreference(): ApiResult<DietaryPreferenceVo>
+
+    /** 保存饮食偏好（整行 upsert；任一字段 null=恢复默认，allergens null=清空忌口） */
+    @PUT("/web/auth/dining/dietary-preference")
+    @RequireAuthorization
+    suspend fun saveDietaryPreference(@Body request: DietaryPreferenceVo): ApiResult<String>
 
     /** 新增菜谱（source=USER 直上架，无审核流；categoryId 传 0/null=未分类） */
     @POST("/web/auth/dining/recipes/add")

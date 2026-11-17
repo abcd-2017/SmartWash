@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,18 +41,40 @@ public class WebDiningRecipeController {
 
     private final DiningRecipeService diningRecipeService;
 
-    @Operation(summary = "上架菜谱分页", description = "page/size + categoryId（精确，null=全部含未分类）/keyword（菜名模糊）筛选；"
-            + "仅返回上架菜谱，按 id 降序（新菜谱在前）")
+    @Operation(summary = "上架菜谱分页", description = "page/size + categoryId（精确，null=全部含未分类）/keyword（菜名模糊）/"
+            + "ingredient（配料名模糊反查，走关联表 join）筛选，可组合为 AND；仅返回上架菜谱，按 id 降序（新菜谱在前）；"
+            + "列表按当前用户批量填充 favorited")
     @GetMapping("/all")
     public Result<Page<DiningRecipeVo>> getAll(SearchWebDiningRecipeFrom from) {
-        return Result.ok(diningRecipeService.userPage(from));
+        return Result.ok(diningRecipeService.userPage(from, currentUserId()));
     }
 
-    @Operation(summary = "菜谱详情", description = "食材名数组与步骤全文；仅上架可见，不存在或已下架返回同一业务失败提示")
+    @Operation(summary = "菜谱详情", description = "食材名数组、步骤全文、allergens（该菜全部配料的过敏原去重集合）"
+            + "与 favorited（当前用户是否收藏）；仅上架可见，不存在或已下架返回同一业务失败提示")
     @GetMapping("/{id}")
     public Result<DiningRecipeVo> detail(
             @PathVariable("id") @Parameter(description = "菜谱ID", required = true) Long id) {
-        return Result.ok(diningRecipeService.userDetail(id));
+        return Result.ok(diningRecipeService.userDetail(id, currentUserId()));
+    }
+
+    @Operation(summary = "我的收藏", description = "当前用户收藏的菜谱分页（按收藏时间倒序），字段同上架列表，favorited 恒 true")
+    @GetMapping("/favorites")
+    public Result<Page<DiningRecipeVo>> favorites(SearchWebDiningRecipeFrom from) {
+        return Result.ok(diningRecipeService.favoritePage(currentUserId(), from));
+    }
+
+    @Operation(summary = "收藏菜谱", description = "幂等：已收藏返回当前态（data=true）；菜谱不存在业务失败")
+    @PostMapping("/{id}/favorite")
+    public Result<Boolean> favorite(
+            @PathVariable("id") @Parameter(description = "菜谱ID", required = true) Long id) {
+        return Result.ok(diningRecipeService.favorite(currentUserId(), id));
+    }
+
+    @Operation(summary = "取消收藏", description = "幂等：未收藏时为无操作（data=false）")
+    @DeleteMapping("/{id}/favorite")
+    public Result<Boolean> unfavorite(
+            @PathVariable("id") @Parameter(description = "菜谱ID", required = true) Long id) {
+        return Result.ok(diningRecipeService.unfavorite(currentUserId(), id));
     }
 
     @Operation(summary = "新增菜谱", description = "source=USER 直上架（无审核流，保存即可被所有人看到）；"

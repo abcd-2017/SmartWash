@@ -4,6 +4,8 @@
     title="批量导入关卡"
     width="min(860px, 94vw)"
     :close-on-click-modal="false"
+    :close-on-press-escape="!submitting"
+    :show-close="!submitting"
     @closed="resetState"
   >
     <template v-if="stage === 'input'">
@@ -132,6 +134,7 @@ import { computed, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
 import { batchImportGameLevels } from '@/api/gameData';
+import logger from '@/utils/logger';
 import {
   MAX_IMPORT_COUNT,
   MAX_IMPORT_FILE_SIZE,
@@ -239,8 +242,10 @@ const handleSubmit = async () => {
     );
     visible.value = false;
     emit('success');
-  } catch {
-    // 错误提示由 http 拦截器统一处理（失败原因含「第 N 关」定位）
+  } catch (error) {
+    // 业务拒绝必须提示：http 拦截器只对 HTTP 层错误弹 toast，「第 N 关」定位文案到此为静默
+    logger.error('关卡批量导入失败:', `gameKey=${props.gameKey}`, error);
+    ElMessage.error(error.message || '导入失败');
   } finally {
     submitting.value = false;
   }

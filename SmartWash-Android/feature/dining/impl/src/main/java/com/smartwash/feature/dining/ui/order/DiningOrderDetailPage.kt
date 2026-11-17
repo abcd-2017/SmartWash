@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -48,9 +49,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -66,16 +69,22 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SmartWashAsyncImage
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.api.DiningRoute
+import com.smartwash.feature.dining.logic.DiningAllergenGuard
 import com.smartwash.feature.dining.logic.DiningCartState
 import com.smartwash.feature.dining.logic.DiningMenuLink
 import com.smartwash.feature.dining.logic.DiningMenuSection
 import com.smartwash.feature.dining.logic.DiningMenuItem
+import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningOrderPageDetail
 import com.smartwash.feature.dining.logic.DiningParticipant
+import com.smartwash.feature.dining.ui.DiningAllergenWarningBar
+import com.smartwash.feature.dining.ui.DiningCalorieBadge
+import com.smartwash.feature.dining.ui.DiningNutritionWarningBar
 import kotlinx.coroutines.launch
 
 /** 左栏宽度（分类名短词为主，84dp 兼顾两行折行） */
@@ -110,6 +119,9 @@ fun DiningOrderDetailPage(
     val syncPending by viewModel.syncPending.collectAsState()
     val message by viewModel.message.collectAsState()
     val finishState by viewModel.finishState.collectAsState()
+    val dishNutritionById by viewModel.dishNutrition.collectAsState()
+    val userAllergens by viewModel.userAllergens.collectAsState()
+    val allergenById by viewModel.allergenById.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.load() }
 
@@ -175,6 +187,32 @@ fun DiningOrderDetailPage(
         derivedStateOf { link.activeCategoryAt(listState.firstVisibleItemIndex) }
     }
 
+    // 我的已选营养聚合（组合期纯计算，契约 §5.3 营养警示）：面向「我的这一餐」，
+    // 目录缓存缺失的菜不参与聚合（不误报）；超标项非空时底部栏上方出警示条
+    val myNutritionWarning = remember(pageDetail, cart, dishNutritionById) {
+        DiningNutritionCalculator.summarize(
+            pageDetail?.sections.orEmpty()
+                .flatMap { it.dishes }
+                .filter { cart.isSelected(it.recipeId) }
+                .mapNotNull { dishNutritionById[it.recipeId] },
+        ).exceededItems
+    }
+
+    // 我的已选忌口命中（契约 §三.1）：与营养超标警示同区并存，各占一条；组合期纯计算
+    val myAllergenHits = remember(pageDetail, cart, allergenById, userAllergens) {
+        val dishes = pageDetail?.sections.orEmpty()
+            .flatMap { it.dishes }
+            .filter { cart.isSelected(it.recipeId) }
+            .map { dish ->
+                DiningAllergenGuard.SelectedDish(
+                    recipeId = dish.recipeId,
+                    recipeName = dish.name,
+                    allergens = allergenById[dish.recipeId]?.toSet().orEmpty(),
+                )
+            }
+        DiningAllergenGuard.hits(dishes, userAllergens)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -217,6 +255,8 @@ fun DiningOrderDetailPage(
                 pendingRecipeIds = pendingRecipeIds,
                 syncPending = syncPending,
                 readOnly = pageDetail.isOngoing.not(),
+                nutritionWarning = myNutritionWarning,
+                allergenHits = myAllergenHits,
                 onToggle = viewModel::toggleRecipe,
                 onNoteClick = { noteTarget = it },
                 onCategoryClick = { categoryId ->
@@ -281,7 +321,7 @@ fun DiningOrderDetailPage(
     }
 }
 
-/** 点单页内容：参与者区 + 左右联动主区 + 底部已选栏 */
+/** 点单页内容：参与者区 + 左右联动主区 + 营养警示条（仅超标时出现）+ 底部购物车栏 */
 @Composable
 private fun OrderDetailContent(
     detail: DiningOrderPageDetail?,
@@ -292,6 +332,8 @@ private fun OrderDetailContent(
     pendingRecipeIds: Set<Long>,
     syncPending: Boolean,
     readOnly: Boolean,
+    nutritionWarning: List<DiningNutritionCalculator.NutrientStatus>,
+    allergenHits: List<DiningAllergenGuard.Hit>,
     onToggle: (Long) -> Unit,
     onNoteClick: (DiningMenuItem) -> Unit,
     onCategoryClick: (Long?) -> Unit,
@@ -322,6 +364,12 @@ private fun OrderDetailContent(
             )
         }
 
+        // 营养超标警示条（契约 §5.3：仅超标时出现，非阻断，估算口径）
+        DiningNutritionWarningBar(items = nutritionWarning)
+
+        // 忌口警示条（契约 §三.1：仅命中时出现，与超标警示同区并存）
+        DiningAllergenWarningBar(hits = allergenHits)
+
         SelectedBottomBar(
             detail = detail,
             cart = cart,
@@ -349,7 +397,7 @@ private fun ParticipantsBar(members: List<DiningParticipant>) {
             Text(
                 text = stringResource(R.string.dining_order_detail_participants_format, members.size),
                 style = MaterialTheme.typography.labelSmall,
-                color = AppColors.colorScheme.textTertiary,
+                color = AppColors.colorScheme.textSecondary,
             )
             Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             members.forEach { member ->
@@ -371,7 +419,7 @@ private fun ParticipantChip(member: DiningParticipant) {
                 if (member.isMe) AppColors.colorScheme.primarySoft
                 else AppColors.colorScheme.surfaceVariant,
             )
-            .padding(horizontal = AppDimens.spaceXs, vertical = 4.dp),
+            .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
     ) {
         Text(
             text = member.label,
@@ -408,6 +456,8 @@ private fun CategoryRail(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // 分类项最小 48dp 热区（规范 §3.2），且让选中底铺满整行高
+                    .heightIn(min = 48.dp)
                     .background(
                         if (selected) AppColors.colorScheme.primarySoft
                         else Color.Transparent,
@@ -463,7 +513,7 @@ private fun DishList(
             item(key = "section_${section.categoryId ?: 0L}") {
                 Text(
                     text = section.categoryName,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = AppTextStyles.SectionTitle,
                     color = AppColors.colorScheme.textSecondary,
                     modifier = Modifier.padding(
                         top = AppDimens.spaceSm,
@@ -529,14 +579,20 @@ private fun DishRow(
         }
         Spacer(modifier = Modifier.width(AppDimens.spaceSm))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = dish.name,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (selected) AppColors.colorScheme.primaryDark
-                else AppColors.colorScheme.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = dish.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (selected) AppColors.colorScheme.primaryDark
+                    else AppColors.colorScheme.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Spacer(modifier = Modifier.width(AppDimens.spaceXxs))
+                // 份热量徽标（契约 §5.3：≈N kcal/份；缺失渲染「热量未知」次级档）
+                DiningCalorieBadge(calories = dish.calories)
+            }
             // 他人备注随选菜人标识展示（本人备注走下方独立行，避免重复）
             val selectorLabels = dish.selectors.map { selector ->
                 if (!selector.isMe && selector.note.isNotBlank()) {
@@ -549,7 +605,7 @@ private fun DishRow(
                 Text(
                     text = selectorLabels.joinToString("、"),
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.textTertiary,
+                    color = AppColors.colorScheme.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -558,7 +614,7 @@ private fun DishRow(
                 Text(
                     text = stringResource(R.string.dining_order_detail_my_note_format, note),
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.ongoingInk,
+                    color = AppColors.colorScheme.textGreen,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -569,7 +625,7 @@ private fun DishRow(
         if (pending) {
             Box(
                 modifier = Modifier
-                    .size(6.dp)
+                    .size(8.dp)
                     .background(
                         color = AppColors.colorScheme.ongoing,
                         shape = RoundedCornerShape(AppDimens.radiusFull),
@@ -579,15 +635,21 @@ private fun DishRow(
         }
         // 做法入口（独立热区，跳菜谱详情看做法步骤；已结束只读态也可看）
         Box(
+            // 48dp 最小热区（规范 §3.2）：文字按钮档不得小于 44/48dp
             modifier = Modifier
+                .heightIn(min = 48.dp)
                 .clip(RoundedCornerShape(AppDimens.radiusFull))
                 .background(AppColors.colorScheme.surfaceVariant)
                 .pressable(onClick = onViewRecipe, debounce = false)
                 .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXxs),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = stringResource(R.string.dining_order_detail_recipe_action),
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
                 color = AppColors.colorScheme.textSecondary,
             )
         }
@@ -595,14 +657,19 @@ private fun DishRow(
         if (!readOnly) {
             Box(
                 modifier = Modifier
+                    .heightIn(min = 48.dp)
                     .clip(RoundedCornerShape(AppDimens.radiusFull))
                     .background(AppColors.colorScheme.surfaceVariant)
                     .pressable(onClick = onNote, debounce = false)
                     .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXxs),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = stringResource(R.string.dining_order_detail_note_action),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
                     color = if (note.isNotBlank()) AppColors.colorScheme.primaryDark
                     else AppColors.colorScheme.textSecondary,
                 )
@@ -677,7 +744,7 @@ private fun SelectedBottomBar(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = stringResource(R.string.dining_order_detail_selected_count_format, cart.count),
-                    style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
+                    style = AppTextStyles.AmountMedium,
                     color = AppColors.colorScheme.textPrimary,
                 )
                 if (syncPending) {
@@ -693,7 +760,7 @@ private fun SelectedBottomBar(
                 Text(
                     text = stringResource(R.string.dining_order_detail_bottom_hint),
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.textTertiary,
+                    color = AppColors.colorScheme.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -709,16 +776,17 @@ private fun SelectedBottomBar(
         }
         Spacer(modifier = Modifier.width(AppDimens.spaceSm))
         if (readOnly) {
-            // 只读态：有清单则给「查看购买清单」入口（发起者与参与者均可看）
+            // 只读态（契约 §5.3 主行动按角色）：有清单则「查看购买清单」为本态主行动（发起者与参与者均可看）
             if (!detail?.shoppingList.isNullOrBlank()) {
                 AppButton(
                     text = stringResource(R.string.dining_order_detail_view_shopping_list),
                     onClick = onViewShoppingList,
                     small = true,
-                    variant = AppButtonVariant.SECONDARY,
+                    variant = AppButtonVariant.PRIMARY,
                 )
             }
         } else if (detail?.isCreator == true) {
+            // 进行中发起者主行动：结束点单
             AppButton(
                 text = stringResource(R.string.dining_order_detail_finish),
                 onClick = onFinish,

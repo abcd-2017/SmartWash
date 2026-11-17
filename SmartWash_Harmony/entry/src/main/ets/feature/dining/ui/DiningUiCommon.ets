@@ -3,7 +3,7 @@
 
 import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { resString } from '../../../utils/ResourceString'
-import { DiningOrderStatus } from '../DiningLogic'
+import { DiningOrderStatus, formatDiningAmount } from '../DiningLogic'
 import { DiningText } from '../DiningText'
 
 /**
@@ -33,6 +33,39 @@ export struct DiningStatusTag {
         top: 2,
         bottom: 2
       })
+  }
+}
+
+/**
+ * 热量徽标（契约 §二：一份热量 = caloriesTotal ?: caloriesPer100g × 250 ÷ 100，四端同口径，
+ * 估算口径展示、不做超标提醒）。对齐 Android DiningCalorieBadge 画法：
+ * 已知热量 = primary 浅底主色字「≈N kcal/份」；两者皆缺 = surfaceVariant 底次级字「热量未知」。
+ */
+@ComponentV2
+export struct DiningCalorieBadge {
+  /** 份热量 Kcal（null = 热量未知；调用方经 DiningLogic.diningServingCalories 派生） */
+  @Param calories: number | null = null
+
+  /** 已知热量判定（非有限值同样按未知渲染，与文案同源） */
+  private isKnown(): boolean {
+    return formatDiningAmount(this.calories) !== null
+  }
+
+  private badgeText(): string {
+    const known = DiningText.calorieBadge(this.calories)
+    return known !== null ? known : DiningText.dining_nutrition_calorie_unknown
+  }
+
+  build() {
+    Text(this.badgeText())
+      .fontSize(DesignFontSize.CAPTION)
+      .fontWeight(DesignFontWeight.MEDIUM)
+      .fontColor(this.isKnown() ? $r('app.color.PRIMARY') : $r('app.color.TEXT_SECONDARY'))
+      .backgroundColor(this.isKnown() ? $r('app.color.PRIMARY_LIGHT') : $r('app.color.SURFACE_VARIANT'))
+      .borderRadius(DesignDimens.RADIUS_SMALL)
+      .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 2, bottom: 2 })
+      .maxLines(1)
+      .textOverflow({ overflow: TextOverflow.Ellipsis })
   }
 }
 

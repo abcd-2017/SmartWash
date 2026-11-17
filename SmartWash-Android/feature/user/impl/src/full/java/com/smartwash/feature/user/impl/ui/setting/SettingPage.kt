@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -212,6 +213,16 @@ fun SettingPage(
                 if (checkUpdateContent != null) {
                     HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 }
+                // 饮食偏好（契约 §三.2：忌口 + 每日热量/钠目标，数据在吃啥域）
+                SettingRow(
+                    icon = Icons.Default.Restaurant,
+                    containerColor = AppColors.colorScheme.iconContainerOrange,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
+                    title = stringResource(R.string.dietary_preference_title),
+                    trailing = { IconChevron() },
+                    onClick = { navController.navigate(UserRoute.DietaryPreference) }
+                )
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 // 修改密码（成功后清会话回登录页，PUT /web/auth/user/password）
                 SettingRow(
                     icon = Icons.Default.Lock,

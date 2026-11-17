@@ -96,7 +96,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与空态区分，给出重试入口 -->
+      <div v-if="listError" class="list-error">
+        <span>订单列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="orderList"
         fit
@@ -138,7 +144,15 @@
             <el-button link type="primary" size="small" @click="handleUpdateStatus(row)"
               >修改状态</el-button
             >
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              link
+              type="danger"
+              size="small"
+              :loading="deletingId === row.orderId"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -277,6 +291,7 @@ const {
   list: orderList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -308,6 +323,7 @@ const timeRange = useTimeRange(listQuery);
 
 const statusDialogVisible = ref(false);
 const submitting = ref(false); // 确认按钮 loading，防连点
+const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
 const statusForm = reactive({
   orderId: null,
   orderNo: '',
@@ -315,10 +331,9 @@ const statusForm = reactive({
   newStatus: '',
   payPrice: null,
 });
-onMounted(async () => {
-  await fetchStatus();
-  await fetchSchools();
-  await fetchLaundry();
+onMounted(() => {
+  // 筛选项与列表互不依赖，并行发出：串行 await 首屏要多等 2-3 倍 RTT（同 PaymentList）
+  Promise.allSettled([fetchStatus(), fetchSchools(), fetchLaundry()]);
   fetchData();
 });
 
@@ -356,14 +371,17 @@ const fetchLaundry = async () => {
 };
 
 const handleDelete = async (row) => {
-  // 确认弹窗：列明订单号与金额，明确不可恢复（订单含支付金额，删除即资金对账盲区；
-  // 后端为最终裁决，四端联动评审后建议改为作废语义）
-  const confirmed = await useConfirm(
-    `确认删除订单 ${row.orderNo}（金额 ￥${formatAmount(row.totalPrice, '-')}）吗？删除后不可恢复，如需留痕请改用状态流转或联系开发确认。`,
-    '删除订单'
-  );
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (deletingId.value) return;
+  deletingId.value = row.orderId;
   try {
+    // 确认弹窗：列明订单号与金额，明确不可恢复（订单含支付金额，删除即资金对账盲区；
+    // 后端为最终裁决，四端联动评审后建议改为作废语义）
+    const confirmed = await useConfirm(
+      `确认删除订单 ${row.orderNo}（金额 ￥${formatAmount(row.totalPrice, '-')}）吗？删除后不可恢复，如需留痕请改用状态流转或联系开发确认。`,
+      '删除订单'
+    );
+    if (!confirmed) return;
     await deleteOrder(row.orderId);
     ElMessage.success('删除成功');
     // 管理端写操作成功留痕（低频关键动作），业务键仅 orderId/orderNo，不含用户手机号等敏感字段
@@ -372,6 +390,8 @@ const handleDelete = async (row) => {
   } catch (error) {
     logger.error('删除订单失败:', `orderId=${row.orderId}`, `orderNo=${row.orderNo}`, error);
     ElMessage.error(error.message || '删除失败');
+  } finally {
+    deletingId.value = null;
   }
 };
 

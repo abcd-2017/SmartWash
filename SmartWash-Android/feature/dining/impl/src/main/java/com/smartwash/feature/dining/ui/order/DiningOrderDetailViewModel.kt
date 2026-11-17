@@ -9,11 +9,14 @@ import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.api.model.AddDiningOrderItemRequest
+import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
 import com.smartwash.feature.dining.api.model.DiningOrderDetailVo
 import com.smartwash.feature.dining.api.model.UpdateDiningOrderItemRequest
+import com.smartwash.feature.dining.logic.DiningAllergenGuard
 import com.smartwash.feature.dining.logic.DiningCartReplayOp
 import com.smartwash.feature.dining.logic.DiningCartState
 import com.smartwash.feature.dining.logic.DiningCartSyncCoordinator
+import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningOrderPageDetail
 import com.smartwash.feature.dining.logic.DiningSyncLifecycle
 import com.smartwash.feature.dining.logic.DiningSyncLifecycle.Command
@@ -100,9 +103,28 @@ class DiningOrderDetailViewModel @Inject constructor(
     /** 当前用户标识（首载时解析；null=不识别我的选菜） */
     private var myUserId: Long? = null
 
-    /** 分类目录/封面（渲染增强，首载时缓存） */
+    /** 分类目录/封面/份口径营养（渲染增强，首载时缓存；营养契约 §5.3 菜品行热量徽标 + 警示条） */
     private var categoryNames: Map<Long, String> = emptyMap()
     private var coverUrls: Map<Long, String> = emptyMap()
+    private var dishNutritionById: Map<Long, DiningNutritionCalculator.DishNutrition> = emptyMap()
+
+    /** 菜谱 ID → 份口径营养（警示条数据源；失败/未收录时条目缺失，按热量未知渲染） */
+    private val _dishNutrition = MutableStateFlow<Map<Long, DiningNutritionCalculator.DishNutrition>>(emptyMap())
+    val dishNutrition = _dishNutrition.asStateFlow()
+
+    /**
+     * 用户忌口标签（契约 §三.1 忌口警示数据源之一）：首载拉取偏好后回填，失败静默置空。
+     * 与 [_allergenById] 求交后渲染红色警示条。
+     */
+    private val _userAllergens = MutableStateFlow<Set<String>>(emptySet())
+    val userAllergens = _userAllergens.asStateFlow()
+
+    /**
+     * 菜谱 ID → allergens（详情反查缓存）：复用首载已全量拉取的菜谱目录一次收集，
+     * 避免为警示条额外发请求（列表接口不带 allergens，目录来自详情同源的列表+详情字段）。
+     */
+    private val _allergenById = MutableStateFlow<Map<Long, List<String>>>(emptyMap())
+    val allergenById = _allergenById.asStateFlow()
 
     private val uncategorizedLabel: String by lazy {
         application.getString(R.string.dining_order_detail_uncategorized)
@@ -113,6 +135,9 @@ class DiningOrderDetailViewModel @Inject constructor(
 
     /** 写操作串行锁：保证同一时刻只有一笔写，版本基准始终最新 */
     private val writeMutex = Mutex()
+
+    /** 过敏原详情拉取任务（去重：同一道菜并发选中只发一次请求） */
+    private val allergenLoadJobs = mutableMapOf<Long, Job>()
 
     /** 首载/重试（防重：加载中忽略） */
     fun load() {
@@ -127,18 +152,23 @@ class DiningOrderDetailViewModel @Inject constructor(
                 val detailVo = diningRepository.getOrderDetail(orderId)
                 val phone = userApi.getUserInfo()?.phoneNumber
                 val myId = resolveMyUserId(detailVo.safeMembers, phone)
-                // 分类目录/菜谱封面是渲染增强，失败不阻断主流程（分类名按「分类 {id}」兜底、封面占位）
+                // 分类目录/菜谱封面/营养是渲染增强，失败不阻断主流程（分类名按「分类 {id}」兜底、
+                // 封面占位、营养按「热量未知」渲染）
                 val categories = soften { diningRepository.getCategories() } ?: emptyList()
-                val covers = soften { loadAllRecipeCovers() } ?: emptyMap()
+                val catalog = soften { loadRecipeCatalog() } ?: RecipeCatalog(emptyMap(), emptyMap())
                 myUserId = myId
                 categoryNames = categories.associate { it.safeId to it.safeName }
-                coverUrls = covers
+                coverUrls = catalog.covers
+                dishNutritionById = catalog.nutrition
+                _dishNutrition.value = catalog.nutrition
+                loadPreferenceSafe()
                 coordinator.onInitialSnapshot(detailVo.safeVersion, myItemsOf(detailVo, myId))
                 _detail.value = detailVo.toOrderPageDetail(
                     myUserId = myId,
                     categoryNames = categoryNames,
-                    coverUrls = covers,
+                    coverUrls = coverUrls,
                     uncategorizedLabel = uncategorizedLabel,
+                    dishNutrition = dishNutritionById,
                 )
                 publishCart()
                 _loadState.value = RequestState.Success
@@ -269,7 +299,13 @@ class DiningOrderDetailViewModel @Inject constructor(
     private fun applySnapshot(vo: DiningOrderDetailVo) {
         if (vo.safeVersion < coordinator.serverVersion) return
         val replayOps = coordinator.onSnapshot(vo.safeVersion, myItemsOf(vo, myUserId))
-        _detail.value = vo.toOrderPageDetail(myUserId, categoryNames, coverUrls, uncategorizedLabel)
+        _detail.value = vo.toOrderPageDetail(
+            myUserId = myUserId,
+            categoryNames = categoryNames,
+            coverUrls = coverUrls,
+            uncategorizedLabel = uncategorizedLabel,
+            dishNutrition = dishNutritionById,
+        )
         publishCart()
         if (replayOps.isNotEmpty()) requestWrite()
     }
@@ -382,11 +418,14 @@ class DiningOrderDetailViewModel @Inject constructor(
         _cart.value = coordinator.cart
         _pendingRecipeIds.value = coordinator.pendingRecipeIds()
         _syncPending.value = coordinator.hasPendingWork()
+        // 我的已选变化即补齐 allergens（忌口警示数据源；按需、去重、失败静默）
+        ensureAllergensForSelected()
     }
 
-    /** 上架菜谱封面映射全量拉取（page 递增至取满；仅作封面增强，失败由 soften 吞掉） */
-    private suspend fun loadAllRecipeCovers(): Map<Long, String> {
+    /** 上架菜谱渲染目录（封面直链 + 份口径营养），page 递增至取满；仅作渲染增强，失败由 soften 吞掉 */
+    private suspend fun loadRecipeCatalog(): RecipeCatalog {
         val covers = mutableMapOf<Long, String>()
+        val nutrition = mutableMapOf<Long, DiningNutritionCalculator.DishNutrition>()
         var fetched = 0L
         var page = 1
         while (page <= MAX_PAGE_COUNT) {
@@ -394,12 +433,61 @@ class DiningOrderDetailViewModel @Inject constructor(
             pageData.records.forEach { recipe ->
                 val url = recipe.safeCoverUrl
                 if (url.isNotBlank()) covers[recipe.safeId] = url
+                nutrition[recipe.safeId] = DiningNutritionCalculator.dishNutrition(recipe)
             }
             fetched += pageData.records.size
             if (pageData.records.size < PAGE_SIZE || fetched >= pageData.total) break
             page++
         }
-        return covers
+        return RecipeCatalog(covers, nutrition)
+    }
+
+    /** 菜谱渲染目录快照（封面 + 份口径营养一次拉取共用） */
+    private data class RecipeCatalog(
+        val covers: Map<Long, String>,
+        val nutrition: Map<Long, DiningNutritionCalculator.DishNutrition>,
+    )
+
+    /**
+     * 按需拉取菜谱详情以缓存 allergens（契约 §三.1：列表不带 allergens，选中时按需拉详情）。
+     * 仅对「我的已选」菜触发，避免全量 N+1；同一道菜并发只发一次，失败按无过敏原处理。
+     */
+    private fun ensureAllergens(recipeId: Long) {
+        if (recipeId <= 0L) return
+        if (_allergenById.value.containsKey(recipeId)) return
+        if (allergenLoadJobs[recipeId]?.isActive == true) return
+        allergenLoadJobs[recipeId] = viewModelScope.launch {
+            try {
+                val detail = diningRepository.getRecipeDetail(recipeId)
+                _allergenById.value = _allergenById.value + (recipeId to detail.safeAllergens)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AppLogger.warn(TAG, "选中菜过敏原拉取失败（按无过敏原处理）：${e.message}")
+            } finally {
+                allergenLoadJobs.remove(recipeId)
+            }
+        }
+    }
+
+    /** 为当前我的已选菜补齐 allergens（首载/快照后由页面触发） */
+    fun ensureAllergensForSelected() {
+        _cart.value.selections.keys.forEach(::ensureAllergens)
+    }
+
+    /**
+     * 饮食偏好拉取（契约 §三.1）：忌口标签。失败静默降级为空集（不渲染警示，不误报），
+     * 不拖垮点单主流程。
+     */
+    private suspend fun loadPreferenceSafe() {
+        try {
+            val preference = diningRepository.getDietaryPreference()
+            _userAllergens.value = DiningAllergenGuard.normalizeAllergens(preference.safeAllergens).toSet()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.warn(TAG, "饮食偏好拉取失败（降级无忌口）：${e.message}")
+        }
     }
 
     /** 渲染增强型请求的失败软化（重抛取消，其余返回 null 由调用方兜底） */

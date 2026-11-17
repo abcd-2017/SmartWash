@@ -7,7 +7,7 @@
 <title>扫雷</title>
 <style>
   /*token:GAME-THEME.md*/
-  :root { --g-bg:#F5F6F3;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-cell1:#E9EDF1;--g-cell2:#C6D0D8;--g-cellhi:rgba(255,255,255,.55);--g-celllo:rgba(70,90,105,.18);--g-open:#F2EFE7;--g-openln:rgba(120,140,155,.18);--g-n1:#2456C9;--g-n2:#2E7D32;--g-n3:#D3392F;--g-n4:#5B2A86;--g-n5:#8D2F23;--g-n6:#00838F;--g-n7:#37474F;--g-n8:#90A4AE;--g-primary-deep:#17734A;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-cell1:#E9EDF1;--g-cell2:#C6D0D8;--g-cellhi:rgba(255,255,255,.55);--g-celllo:rgba(70,90,105,.18);--g-open:#F2EFE7;--g-openln:rgba(120,140,155,.18);--g-n1:#2456C9;--g-n2:#2E7D32;--g-n3:#D3392F;--g-n4:#5B2A86;--g-n5:#8D2F23;--g-n6:#00838F;--g-n7:#37474F;--g-n8:#90A4AE;--g-primary-deep:#17734A;--g-btn-primary:#17734A;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface2:#262A27;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-cell1:#2A2F2C;--g-cell2:#232724;--g-cellhi:rgba(255,255,255,.07);--g-celllo:rgba(0,0,0,.45);--g-open:#262A27;--g-openln:rgba(255,255,255,.06);--g-n1:#7B9FF2;--g-n2:#6FCF8E;--g-n3:#F08A80;--g-n4:#B794E0;--g-n5:#E89A8E;--g-n6:#5BC8D6;--g-n7:#B7C4CC;--g-n8:#7E837D;--g-primary-deep:#5BC894;color-scheme:dark }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -39,8 +39,8 @@
   .btn {
     min-height: 44px; min-width: 64px; padding: 0 16px;
     border: 0; border-radius: 14px;
-    background: var(--g-primary); color: #fff;
-    font-size:22px; font-weight:700; font-family: inherit;
+    background: var(--g-btn-primary); color: #fff;
+    font-size: 16px; font-weight: 600; font-family: inherit;
     cursor: pointer;
   }
   .btn:active { opacity: .85; }
@@ -69,6 +69,7 @@
     cursor: pointer;
   }
   .cell:active { filter: brightness(.93); }
+  .cell.cur { outline: 2px solid var(--g-primary-deep); outline-offset: -2px; }
   .cell.open {
     background: var(--g-open);
     box-shadow: inset 0 0 0 1px var(--g-openln);
@@ -154,8 +155,8 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <div class="stat"><span class="label">用时</span><span class="val" id="time">0</span></div>
   </div>
   <div class="stage">
-    <div class="board" id="board"></div>
-    <div class="overlay" id="overlay">
+    <div class="board" id="board" role="grid" tabindex="0" aria-label="扫雷棋盘，方向键移动，空格揭开，F 插旗"></div>
+    <div class="overlay" role="dialog" aria-modal="true" id="overlay">
       <p class="ov-title" id="ovTitle" role="status" aria-live="assertive"></p>
       <p class="ov-sub" id="ovSub"></p>
       <button class="btn" id="ovBtn">再来一局</button>
@@ -237,17 +238,39 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   function buildCells() {
     boardEl.innerHTML = "";
     cellsArr = [];
+    curR = 0; curC = 0;
     for (let r = 0; r < N; r++) {
       for (let c = 0; c < N; c++) {
         const d = document.createElement("div");
         d.className = "cell";
+        d.setAttribute("role", "gridcell");
         d.dataset.r = r;
         d.dataset.c = c;
         boardEl.appendChild(d);
         cellsArr.push(d);
       }
     }
+    paintCursor();
   }
+
+  /* 键盘/读屏：方向键移格、空格/Enter 揭开、F 插旗 */
+  let curR = 0, curC = 0, curEl = null;
+  function paintCursor() {
+    if (curEl) curEl.classList.remove("cur");
+    curEl = cellsArr[idx(curR, curC)];
+    if (curEl) curEl.classList.add("cur");
+  }
+  boardEl.addEventListener("keydown", (e) => {
+    const k = e.key;
+    if (k === "ArrowUp") curR = (curR + N - 1) % N;
+    else if (k === "ArrowDown") curR = (curR + 1) % N;
+    else if (k === "ArrowLeft") curC = (curC + N - 1) % N;
+    else if (k === "ArrowRight") curC = (curC + 1) % N;
+    else if (k === " " || k === "Enter") { reveal(curR, curC); e.preventDefault(); return; }
+    else if (k === "f" || k === "F") { toggleFlag(curR, curC); e.preventDefault(); return; }
+    else return;
+    paintCursor(); e.preventDefault();
+  });
 
   function neighbors(r, c, fn) {
     for (let dr = -1; dr <= 1; dr++) {
@@ -322,15 +345,17 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     const el = cellsArr[idx(r, c)];
     if (open[r][c]) {
       const k = counts[r][c];
-      el.className = "cell open" + (k ? " n" + k : "");
+      el.className = "cell open" + (k ? " n" + k : "") + (el === curEl ? " cur" : "");
       el.textContent = k ? k : "";
     } else if (flags[r][c]) {
-      el.className = "cell flag";
+      el.className = "cell flag" + (el === curEl ? " cur" : "");
       el.innerHTML = FLAG_SVG;
     } else {
-      el.className = "cell";
+      el.className = "cell" + (el === curEl ? " cur" : "");
       el.innerHTML = "";
     }
+    el.setAttribute("aria-label", "第" + (r + 1) + "行第" + (c + 1) + "列，" +
+      (open[r][c] ? (counts[r][c] ? counts[r][c] + " 个雷" : "已揭开") : flags[r][c] ? "已插旗" : "未揭开"));
   }
 
   function reveal(r, c) {
@@ -483,6 +508,39 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 
   reset();
   syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
 })();
 </script>
 </body>

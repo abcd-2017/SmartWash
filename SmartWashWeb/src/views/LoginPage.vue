@@ -29,8 +29,9 @@
         >
           <el-form-item label="用户名" prop="username">
             <el-input
-              v-model="loginForm.username"
+              v-model.trim="loginForm.username"
               placeholder="请输入用户名"
+              maxlength="64"
               clearable
               autocomplete="username"
             />

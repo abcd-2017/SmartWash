@@ -7,6 +7,7 @@ import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.ui.changepassword.ChangePasswordPage
 import com.smartwash.feature.user.impl.ui.permission.PermissionManagementPage
 import com.smartwash.feature.user.impl.ui.resetpassword.ResetPasswordPage
+import com.smartwash.feature.user.impl.ui.setting.DietaryPreferencePage
 
 /**
  * 用户域路由聚合（T8.1）：本域页面的 composable 注册自 app 壳 MainActivity
@@ -34,6 +35,10 @@ fun NavGraphBuilder.userGraph(navController: NavHostController) {
     // full 专属契约），其路由注册同在 src/full 的 UserFlavorGraphModule。
     composable<UserRoute.PermissionManagement> {
         PermissionManagementPage(navController)
+    }
+    // 饮食偏好页（两变体共用实现，契约 §三.2；入口在设置页）
+    composable<UserRoute.DietaryPreference> {
+        DietaryPreferencePage(navController)
     }
     // 以下两页走 NavHost 全局默认转场（与 Setting/PermissionManagement 同档）
     composable<UserRoute.ChangePassword> {

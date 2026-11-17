@@ -39,7 +39,13 @@
     />
 
     <div class="table-card">
+      <!-- 加载失败态：与「暂无关卡」空态区分，给出重试入口 -->
+      <div v-if="levelLoadError" class="load-error">
+        <span>关卡列表加载失败：{{ levelLoadError }}</span>
+        <el-button size="small" @click="fetchLevels">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="levelLoading"
         :data="levelList"
         border
@@ -67,7 +73,12 @@
             <el-button link type="primary" size="small" @click="handleEditLevel(row)"
               >编辑</el-button
             >
-            <el-button link type="danger" size="small" @click="handleDeleteLevel(row)"
+            <el-button
+              link
+              type="danger"
+              size="small"
+              :loading="deletingLevelNo === row.levelNo"
+              @click="handleDeleteLevel(row)"
               >删除</el-button
             >
           </template>
@@ -140,9 +151,11 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import { getGameList } from '@/api/game';
 import { getGameLevels, saveGameLevel, deleteGameLevel } from '@/api/gameData';
+import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 import LevelImportDialog from './components/LevelImportDialog.vue';
 
 defineOptions({ name: 'LevelManage' });
@@ -160,18 +173,23 @@ const loadGameOptions = async () => {
     // 管理端游戏列表不分页（size 上限 100，足够关卡维护用）
     const res = await getGameList({ page: 1, size: 100 });
     gameOptions.value = res?.records || [];
-  } catch {
+  } catch (error) {
+    // 下拉加载失败不能静默：不提示则下拉永远为空，用户无从区分「没有游戏」与「加载失败」
+    logger.error('游戏下拉加载失败:', error);
     gameOptions.value = [];
+    ElMessage.error(error.message || '游戏列表加载失败');
   }
 };
 
 const levelGameKey = ref('');
 const levelList = ref([]);
 const levelLoading = ref(false);
+const levelLoadError = ref(''); // 关卡列表加载失败文案：与「暂无关卡」空态区分，供重试占位
 // 竞态守卫：切换游戏时旧响应后到会覆盖新游戏的关卡（同 useTableList fetchSeq 模式）
 let levelFetchSeq = 0;
 
 const fetchLevels = async () => {
+  levelLoadError.value = '';
   if (!levelGameKey.value) {
     levelList.value = [];
     return;
@@ -182,9 +200,11 @@ const fetchLevels = async () => {
     const res = await getGameLevels(levelGameKey.value);
     if (mySeq !== levelFetchSeq) return;
     levelList.value = res || [];
-  } catch {
+  } catch (error) {
     if (mySeq !== levelFetchSeq) return;
+    // 失败不得伪装成「暂无关卡」：清列表并给出错误占位（模板据此切重试态）
     levelList.value = [];
+    levelLoadError.value = error.message || '关卡列表加载失败';
   } finally {
     // 被丢弃的旧响应不得关掉最新请求的 loading
     if (mySeq === levelFetchSeq) {
@@ -274,29 +294,41 @@ const submitLevel = async () => {
     ElMessage.success('保存成功，关卡版本号已递增（用户下次启动游戏生效）');
     levelDialogVisible.value = false;
     await fetchLevels();
-  } catch {
-    // 错误提示由 http 拦截器统一处理
+  } catch (error) {
+    // 业务失败必须提示：http 拦截器只对 HTTP 层错误弹 toast，业务码拒绝到此为静默
+    logger.error(
+      '保存关卡失败:',
+      `gameKey=${levelGameKey.value}`,
+      `levelNo=${levelForm.levelNo}`,
+      error
+    );
+    ElMessage.error(error.message || '保存失败');
   } finally {
     levelSubmitting.value = false;
   }
 };
 
+const deletingLevelNo = ref(null); // 行内「删除」按钮 loading，防连点
+
 const handleDeleteLevel = async (row) => {
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (deletingLevelNo.value) return;
+  deletingLevelNo.value = row.levelNo;
   try {
-    await ElMessageBox.confirm(
-      `确认删除「${levelGameKey.value}」第 ${row.levelNo} 关？删除后版本号递增，用户下次启动生效。`,
-      '删除关卡',
-      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+    const confirmed = await useConfirm(
+      `确认删除「${levelGameKey.value}」第 ${row.levelNo} 关？删除后版本号递增，用户下次启动生效。`
     );
-  } catch {
-    return;
-  }
-  try {
+    if (!confirmed) return;
     await deleteGameLevel(levelGameKey.value, row.levelNo);
     ElMessage.success('已删除');
     await fetchLevels();
-  } catch {
-    // 同上
+  } catch (error) {
+    // 同保存：业务拒绝（如后端占用校验）必须可见
+    logger.error('删除关卡失败:', `gameKey=${levelGameKey.value}`, `levelNo=${row.levelNo}`, error);
+    ElMessage.error(error.message || '删除失败');
+  } finally {
+    deletingLevelNo.value = null;
   }
 };
 
@@ -311,4 +343,6 @@ onMounted(() => {
   color: var(--el-text-color-secondary);
   font-size: 12px;
 }
+
+/* .load-error 失败占位样式全局化在 src/assets/pages.css，此处不再重复定义 */
 </style>

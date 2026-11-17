@@ -97,7 +97,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与空态区分，给出重试入口 -->
+      <div v-if="listError" class="list-error">
+        <span>充值记录列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="rechargeList"
         fit
@@ -170,6 +176,7 @@ const {
   list: rechargeList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -230,17 +237,25 @@ const summary = reactive({
   successAmount: 0,
 });
 const summaryLoading = ref(false);
+// 竞态守卫：快速连改日期范围时旧区间响应后到会覆盖新汇总（列表侧 useTableList 已有同款）
+let summarySeq = 0;
 
 const fetchSummary = async () => {
+  const mySeq = ++summarySeq;
   summaryLoading.value = true;
   try {
     const data = await getRechargeSummary(buildRangeParams());
+    if (mySeq !== summarySeq) return;
     Object.assign(summary, data);
   } catch (error) {
+    if (mySeq !== summarySeq) return;
     logger.error('充值汇总加载失败:', error);
     ElMessage.error(error.message || '获取充值汇总失败');
   } finally {
-    summaryLoading.value = false;
+    // 被丢弃的旧响应不得关掉最新请求的 loading
+    if (mySeq === summarySeq) {
+      summaryLoading.value = false;
+    }
   }
 };
 

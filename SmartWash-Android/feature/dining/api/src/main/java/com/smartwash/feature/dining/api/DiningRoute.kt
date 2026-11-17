@@ -33,6 +33,14 @@ sealed interface DiningRoute : SmartWashRoute {
     @SerialName("DiningRecipeCreate")
     data object RecipeCreate : DiningRoute
 
+    /**
+     * 我的收藏页（契约 §三.4）：favorites 分页链路 + 复用菜谱库双列封面卡；
+     * 入口在订单列表页分区。
+     */
+    @Serializable
+    @SerialName("DiningRecipeFavorites")
+    data object RecipeFavorites : DiningRoute
+
     /** 订单列表页（域首页；「我发起的/我参与的」分区 + FAB 创建；深链 host "dining" 落点） */
     @Serializable
     @SerialName("DiningOrderList")

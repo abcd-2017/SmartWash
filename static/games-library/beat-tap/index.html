@@ -7,7 +7,7 @@
 <title>节拍点按</title>
 <style>
   /* token:GAME-THEME.md §2 (D5 终版:仅 :root 浅色 + [data-theme=dark] 深色,桥唯一控制) */
-  :root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;color-scheme:light}
+  :root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;color-scheme:light}
   [data-theme="dark"]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark}
   [hidden]{display:none!important}
   *{box-sizing:border-box}
@@ -20,7 +20,7 @@
   }
   .app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;padding:10px 12px calc(8px + env(safe-area-inset-bottom))}
   header{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .btn{min-height:44px;padding:0 16px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:var(--g-on-primary);font-family:inherit;font-size:22px;font-weight:700;cursor:pointer}
+  .btn{min-height:44px;padding:0 16px;border:0;border-radius:var(--g-radius-btn);background:var(--g-btn-primary);color:var(--g-on-primary);font-family:inherit;font-size: 16px;font-weight: 600;cursor:pointer}
   .btn:active{opacity:.85}
   .btn.ghost{background:var(--g-surface);color:var(--g-text);border:1px solid var(--g-border)}
   .btn:disabled{opacity:.4;cursor:default}
@@ -46,7 +46,7 @@
   .grade.g-S{color:var(--g-warning)} .grade.g-A{color:var(--g-primary-deep)} .grade.g-B{color:var(--g-water)} .grade.g-C{color:var(--g-muted)}
   .rscore{margin:6px 0 0;text-align:center;font-size:14px;color:var(--g-muted)}
   .rscore b{font-size:22px;color:var(--g-text);font-variant-numeric:tabular-nums}
-  .newrec{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:16px;background:var(--g-warning);color: var(--g-text);font-size:12px;font-weight:700;vertical-align:2px}
+  .newrec{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:16px;background:var(--g-surface2);color:var(--g-warning);font-size:12px;font-weight:700;vertical-align:2px}
   .rstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0}
   .rstats span{display:flex;justify-content:space-between;padding:8px 10px;border-radius:10px;background:var(--g-surface2);font-size:14px;color:var(--g-muted)}
   .rstats b{color:var(--g-text);font-variant-numeric:tabular-nums}
@@ -108,7 +108,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </header>
   <div class="stage" id="stage">
     <canvas id="cv" aria-label="节拍游戏区" role="img"></canvas>
-    <div class="overlay" id="overlay" aria-live="assertive">
+    <div class="overlay" role="dialog" aria-modal="true" id="overlay" aria-live="assertive">
       <div class="panel" id="vMenu">
         <p class="rt">选择曲目</p>
         <p class="rs">音乐由 WebAudio 现场合成 · 建议佩戴耳机</p>
@@ -644,7 +644,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         ctx.globalAlpha = padFlash[i] * 0.28; ctx.fillStyle = PAL.lane[i];
         ctx.fillRect(i * lw + 1, 0, lw - 2, ly); ctx.globalAlpha = 1;
       }
-      ctx.fillStyle = PAL.faint; ctx.font = "600 12px " + FONT;
+      ctx.fillStyle = PAL.muted; ctx.font = "600 12px " + FONT;
       ctx.fillText(LANE_KEYS[i], laneX(i), ly + 22);
     }
     const size = Math.min(64, lw * 0.7);
@@ -800,6 +800,39 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     hit: hitLane, time: () => Math.round(songTime()),
     state: () => state, score: () => score
   };
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
 })();
 </script>
 </body>

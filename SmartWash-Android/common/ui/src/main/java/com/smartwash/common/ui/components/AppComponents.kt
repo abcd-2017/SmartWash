@@ -66,7 +66,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import com.smartwash.common.ui.theme.GlassTextDisabled
 import com.smartwash.common.ui.components.softCardShadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -83,8 +82,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
-import com.smartwash.common.ui.theme.Primary
-import com.smartwash.common.ui.theme.PrimaryDark
 import com.smartwash.common.ui.theme.TextSecondary
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_MICRO_MS
@@ -417,12 +414,12 @@ fun AppButton(
     // 渐变 / surfaceVariant / contentColor 三处颜色 0ms 硬切 → 弹簧过渡。
     // 目标值里保留"禁用降透明度"，动画只负责把跳变抹平，不改变最终视觉。
     val gradientStart by animateColorAsState(
-        targetValue = AppColors.colorScheme.primary.copy(alpha = if (active) 1f else 0.5f),
+        targetValue = AppColors.colorScheme.ctaGradientStart.copy(alpha = if (active) 1f else 0.5f),
         animationSpec = motionSpec(defaultSpring()),
         label = "appButtonGradientStart"
     )
     val gradientEnd by animateColorAsState(
-        targetValue = AppColors.colorScheme.primaryDark.copy(alpha = if (active) 1f else 0.5f),
+        targetValue = AppColors.colorScheme.ctaGradientEnd.copy(alpha = if (active) 1f else 0.5f),
         animationSpec = motionSpec(defaultSpring()),
         label = "appButtonGradientEnd"
     )
@@ -434,8 +431,8 @@ fun AppButton(
     // contentColor 为语义色覆盖（如 dangerInk），只做颜色值替换，不参与禁用降透明
     val baseContentColor = contentColor ?: if (isPrimary) {
         // onPrimary 令牌（浅色白 / 深色深绿 #17322B）：深色模式下品牌绿提亮为 #5BC894，
-        // 白字对比度不足，必须随主题切换
-        if (active) AppColors.colorScheme.onPrimary else GlassTextDisabled
+        // 白字对比度不足，必须随主题切换。禁用态沿用 onPrimary 降透明（不再借用 full 玻璃令牌）。
+        AppColors.colorScheme.onPrimary.copy(alpha = if (active) 1f else 0.5f)
     } else {
         AppColors.colorScheme.textPrimary.copy(alpha = if (active) 1f else 0.5f)
     }
@@ -740,7 +737,9 @@ fun AppTabBar(
                 label = "tabIndicatorWidth"
             )
             val labelColor by animateColorAsState(
-                targetValue = if (selected) AppColors.colorScheme.primary
+                // 选中标签 14sp 小号文字：走 textGreen 深档（full #177A4C 5.1:1 /
+                // lite #C2410C 5.2:1）；primary 实色 on 白仅 3.5:1 触红线（同 Color.kt R17 裁定）。
+                targetValue = if (selected) AppColors.colorScheme.textGreen
                 else AppColors.colorScheme.textSecondary,
                 animationSpec = motionSpec(defaultSpring()),
                 label = "tabLabelColor"

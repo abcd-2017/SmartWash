@@ -10,9 +10,19 @@
     <template v-if="stage === 'input'">
       <el-alert type="info" :closable="false" class="rule-tip">
         <template #title>
-          列：分类名 / 菜名 / 食材名列表 / 步骤 / 封面链接；食材之间用<b>顿号、逗号或分号</b>分隔；
-          分类名需先在「分类管理」页创建（留空为未分类）；封面不支持批量导入，导入后请单独上传；
-          单次最多 500 行。解析预览前<b>不会写入任何数据</b>。
+          <span>
+            列：分类名 / 菜名 / 食材名列表 / 食材明细列表 / 步骤 / 封面对象键 / 封面链接 /
+            热量每100g / 整份热量 / 蛋白质g / 脂肪g / 碳水g / 钠mg（后 8 列为新增，全部可选）。
+          </span>
+          <span>
+            食材之间用<b>顿号、逗号或分号</b>分隔；食材明细格式为<b>「名称:数量单位」顿号分隔</b>（如
+            鸡蛋:575g、西红柿:1800g，数量可空）；封面对象键需带
+            <b>dining/covers/</b> 前缀（对象不存在仅警告、该行封面不落库）。
+          </span>
+          <span>
+            营养 6 列均为数值、可空；分类名不存在时确认导入将<b>自动创建</b>；单次最多 500
+            行。解析预览前<b>不会写入任何数据</b>。
+          </span>
         </template>
       </el-alert>
 
@@ -69,15 +79,41 @@
             <span v-else class="text-muted">未分类</span>
           </template>
         </el-table-column>
-        <el-table-column label="食材" min-width="180" show-overflow-tooltip>
+        <el-table-column label="食材" min-width="160" show-overflow-tooltip>
           <template #default="{ row }">
             {{ (row.ingredients || []).join('、') || '-' }}
+          </template>
+        </el-table-column>
+        <!-- 食材明细（v2 新列）：`名称:数量单位` 解析结果，用于配料关联与买菜清单聚合 -->
+        <el-table-column label="食材明细" min-width="170" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ ingredientDetailText(row) || '-' }}
+          </template>
+        </el-table-column>
+        <!-- 封面对象键（v2 新列）：MinIO dining/covers/ 前缀；存储缺失时该行出警告、封面不落库 -->
+        <el-table-column label="封面对象键" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.coverObjectKey || '-' }}
+          </template>
+        </el-table-column>
+        <!-- 营养（v2 新列 6 项）：紧凑汇总展示，全空显示 '-' -->
+        <el-table-column label="营养" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ nutritionSummaryText(row) || '-' }}
           </template>
         </el-table-column>
         <el-table-column label="校验结果" width="140">
           <template #default="{ row }">
             <el-tooltip v-if="row.errors.length" :content="row.errors.join('；')" placement="top">
               <el-tag size="small" type="danger">校验失败</el-tag>
+            </el-tooltip>
+            <!-- 行级警告（分类自动创建/封面对象键缺失/明细解析失败）不阻断导入，仅提示 -->
+            <el-tooltip
+              v-else-if="row.warnings && row.warnings.length"
+              :content="row.warnings.join('；')"
+              placement="top"
+            >
+              <el-tag size="small" type="warning">有警告</el-tag>
             </el-tooltip>
             <el-tag v-else size="small" type="success">通过</el-tag>
           </template>
@@ -111,7 +147,7 @@
         type="success"
         :closable="false"
         class="result-alert"
-        :title="`导入成功：共 ${result.total} 行，全部写入（已默认上架，封面请在列表中单独上传）`"
+        :title="`导入成功：共 ${result.total} 行，全部写入（已默认上架；未提供有效封面对象键的菜谱可在列表中单独上传封面）`"
       />
 
       <el-table :data="result.rows" border stripe max-height="380" size="small">
@@ -236,7 +272,33 @@ const handleParse = async () => {
   }
 };
 
-// ---------- 确认导入（只提交通过校验的行） ----------
+// ---------- 预览行展示辅助（v2 新列） ----------
+
+// 食材明细 → `名称:数量单位` 顿号分隔文本（数量可空=仅名字关联；单位缺省时只拼数值）
+const ingredientDetailText = (row) => {
+  const details = row.ingredientDetails || [];
+  return details
+    .map((d) => {
+      const amount =
+        d.amountValue != null ? `${d.amountValue}${d.amountUnit || ''}` : d.amountUnit || '';
+      return amount ? `${d.name}:${amount}` : d.name;
+    })
+    .join('、');
+};
+
+// 营养 6 列 → 紧凑汇总文本（全空返回空串，模板显示 '-'）
+const nutritionSummaryText = (row) => {
+  const parts = [];
+  if (row.caloriesPer100g != null) parts.push(`热量${row.caloriesPer100g}kcal/100g`);
+  if (row.caloriesTotal != null) parts.push(`整份${row.caloriesTotal}kcal`);
+  if (row.proteinG != null) parts.push(`蛋白${row.proteinG}g`);
+  if (row.fatG != null) parts.push(`脂肪${row.fatG}g`);
+  if (row.carbsG != null) parts.push(`碳水${row.carbsG}g`);
+  if (row.sodiumMg != null) parts.push(`钠${row.sodiumMg}mg`);
+  return parts.join(' · ');
+};
+
+// ---------- 确认导入（只提交通过校验的行；warnings 不阻断） ----------
 
 const handleSubmit = async () => {
   submitting.value = true;
@@ -248,7 +310,16 @@ const handleSubmit = async () => {
         categoryName: row.categoryName,
         name: row.name,
         ingredients: row.ingredients,
+        // v2 新列（契约 §3.2）：明细/封面对象键/营养 6 列随确认行原样回传
+        ingredientDetails: row.ingredientDetails,
         steps: row.steps,
+        coverObjectKey: row.coverObjectKey,
+        caloriesPer100g: row.caloriesPer100g ?? null,
+        caloriesTotal: row.caloriesTotal ?? null,
+        proteinG: row.proteinG ?? null,
+        fatG: row.fatG ?? null,
+        carbsG: row.carbsG ?? null,
+        sodiumMg: row.sodiumMg ?? null,
       }));
     const data = await confirmDiningRecipeImport({ rows: validRows });
     result.value = data;

@@ -1,6 +1,7 @@
 package com.smartwash.dining.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -8,6 +9,7 @@ import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -47,6 +49,26 @@ public class DiningRecipe implements Serializable {
 
     /** 做法步骤（纯文本，换行分段） */
     private String steps;
+
+    /** 热量 Kcal/100g（CookLikeHOC 营养表口径），null=未录入。列名含数字段（per_100g），
+     * 驼峰自动映射产出 calories_per100g 与 DDL 不一致，故显式钉列名 */
+    @TableField("calories_per_100g")
+    private BigDecimal caloriesPer100g;
+
+    /** 整份估算热量 Kcal（HowToCook 预估卡路里口径），null=未录入 */
+    private BigDecimal caloriesTotal;
+
+    /** 蛋白质 g/100g，null=未录入 */
+    private BigDecimal proteinG;
+
+    /** 脂肪 g/100g，null=未录入 */
+    private BigDecimal fatG;
+
+    /** 碳水化合物 g/100g，null=未录入 */
+    private BigDecimal carbsG;
+
+    /** 钠 mg/100g，null=未录入 */
+    private BigDecimal sodiumMg;
 
     /** 来源：ADMIN=运营后台录入，USER=用户端新增 */
     private String source;

@@ -7,7 +7,7 @@
 <title>落块达人</title>
 <style>
   /*token:GAME-THEME.md §2 基线（UI 壳全部走 token；素材 token 为轨道/格子专用）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;
     --g-board:#FFFFFF;--g-cell:#EFF1EE;--g-cellhi:#1C1C1E;--g-line:#E6E9E6;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);
     --g-board:#1D201E;--g-cell:#262A27;--g-cellhi:#E6E9E6;--g-line:#2C312D;color-scheme:dark }
@@ -34,7 +34,7 @@
   canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; }
-  .btn { min-height: 44px; padding: 0 16px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: var(--g-on-primary); font-family: inherit; font-size:22px; font-weight:700; cursor: pointer; }
+  .btn { min-height: 44px; padding: 0 16px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: var(--g-on-primary); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
   .btn:disabled { opacity: .4; cursor: default; }
@@ -44,14 +44,14 @@
   .panel { width: 100%; max-width: 340px; max-height: 100%; overflow: auto; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 22px 18px; text-align: center; }
   .rt { margin: 0 0 6px; font-size: 22px; font-weight: 700; }
   .rs { margin: 0 0 14px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
-  .rhint { margin: 14px 0 0; font-size: 12px; color: var(--g-faint); line-height: 1.6; text-align: left; }
+  .rhint { margin: 14px 0 0; font-size: 12px; color: var(--g-muted); line-height: 1.6; text-align: left; }
   .grade { margin: 6px 0 2px; font-size: 36px; font-weight: 700; color: var(--g-primary-deep); font-variant-numeric: tabular-nums; }
   .rscore { margin: 4px 0 0; font-size: 14px; color: var(--g-muted); }
   .rscore b { color: var(--g-text); font-size: 18px; font-variant-numeric: tabular-nums; }
   .rstats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0 0; }
   .rstats span { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 10px; background: var(--g-surface2); font-size: 12px; color: var(--g-muted); }
   .rstats b { color: var(--g-text); font-variant-numeric: tabular-nums; }
-  .rbest { margin: 12px 0 0; font-size: 12px; color: var(--g-faint); }
+  .rbest { margin: 12px 0 0; font-size: 12px; color: var(--g-muted); }
   .rbtns { display: flex; gap: 10px; margin-top: 16px; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
@@ -94,7 +94,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <p class="foot">每行恰有一个黑块 · 点到黑块得 100 起（连击加成）· 踩到白块或黑块落出底线立即失败</p>
 </div>
-<div class="overlay" id="overlay">
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel" id="panel"></div>
 </div>
 <script>
@@ -396,7 +396,7 @@ function draw(){
   var lw=W/LANES,i,k;
   ctx.clearRect(0,0,W,H);
   ctx.save();
-  if(shake>0)ctx.translate((Math.random()-0.5)*7*shake,(Math.random()-0.5)*7*shake);
+  if(shake>0&&!window.__gRM)ctx.translate((Math.random()-0.5)*7*shake,(Math.random()-0.5)*7*shake);
   ctx.fillStyle=PAL.board;ctx.fillRect(-8,-8,W+16,H+16);
   for(k=0;k<L.rows;k++){
     var bot=offset-k*rowH,top=bot-rowH;
@@ -420,7 +420,7 @@ function draw(){
   if(playing&&!over&&!paused&&offset<=0){
     ctx.fillStyle=PAL.muted;ctx.font="700 22px system-ui,sans-serif";
     ctx.fillText("第 "+(cur+1)+" 关 · "+L.name,W/2,H*0.4);
-    ctx.fillStyle=PAL.faint;ctx.font="400 14px system-ui,sans-serif";
+    ctx.fillStyle=PAL.muted;ctx.font="400 14px system-ui,sans-serif";
     ctx.fillText("准备…",W/2,H*0.4+28);
   }
   for(i=0;i<ripples.length;i++){
@@ -566,6 +566,39 @@ window.__tt={
     score:score,playing:playing,paused:paused,over:over,offset:offset,pattern:pattern.join("")};},
   levels:function(){return LEVELS.length;}
 };
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
 })();
 </script>
 </body>

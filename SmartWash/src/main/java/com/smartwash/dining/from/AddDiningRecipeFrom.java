@@ -1,9 +1,12 @@
 package com.smartwash.dining.from;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -32,4 +35,38 @@ public class AddDiningRecipeFrom {
     /** 封面对象键（封面上传接口返回），null=暂不设置 */
     @Size(max = 255, message = "封面对象键过长")
     private String coverObjectKey;
+
+    /**
+     * 营养成分（契约 §3.2，全部可空=未录入）。
+     * 上限与导入器 NUTRITION_MAX_* 对齐：per100g/钠 ≤ 999999.99、整份 ≤ 99999999.99、其余营养素 ≤ 9999.99。
+     */
+    /** 热量 Kcal/100g（CookLikeHOC 营养表口径），null=未录入 */
+    @DecimalMin(value = "0", message = "热量不能为负数")
+    @DecimalMax(value = "999999.99", message = "热量数值过大")
+    private BigDecimal caloriesPer100g;
+
+    /** 整份估算热量 Kcal（HowToCook 预估卡路里口径），null=未录入 */
+    @DecimalMin(value = "0", message = "整份热量不能为负数")
+    @DecimalMax(value = "99999999.99", message = "整份热量数值过大")
+    private BigDecimal caloriesTotal;
+
+    /** 蛋白质 g/100g，null=未录入 */
+    @DecimalMin(value = "0", message = "蛋白质不能为负数")
+    @DecimalMax(value = "9999.99", message = "蛋白质数值过大")
+    private BigDecimal proteinG;
+
+    /** 脂肪 g/100g，null=未录入 */
+    @DecimalMin(value = "0", message = "脂肪不能为负数")
+    @DecimalMax(value = "9999.99", message = "脂肪数值过大")
+    private BigDecimal fatG;
+
+    /** 碳水化合物 g/100g，null=未录入 */
+    @DecimalMin(value = "0", message = "碳水化合物不能为负数")
+    @DecimalMax(value = "9999.99", message = "碳水化合物数值过大")
+    private BigDecimal carbsG;
+
+    /** 钠 mg/100g，null=未录入 */
+    @DecimalMin(value = "0", message = "钠不能为负数")
+    @DecimalMax(value = "999999.99", message = "钠数值过大")
+    private BigDecimal sodiumMg;
 }

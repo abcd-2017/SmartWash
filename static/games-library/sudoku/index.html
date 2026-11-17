@@ -7,7 +7,7 @@
 <title>数独</title>
 <style>
   /*token:GAME-THEME.md §2（全部 UI 走 token）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-success:#2D9B6A;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-primary:#FFF;--g-btn-primary:#17734A;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-success:#17734A;--g-warning:#9A6210;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -79,7 +79,8 @@
     font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
   }
   .btn:active { opacity: .85; }
-  .btn.primary { background: var(--g-primary); color: #fff; font-size:22px; font-weight:700; }
+  /* 主 CTA：深底白字 5.85:1（--g-primary 绿底白字仅 3.5:1），字号回落 16px/600，与原生 AppButton 15sp 同量级 */
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; }
   .btn.on { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
@@ -151,7 +152,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <button class="chip" data-d="2">大师</button>
     <button class="chip" id="btnDaily">每日挑战</button>
   </div>
-  <div class="sud" id="sud" aria-label="数独棋盘"></div>
+  <div class="sud" id="sud" role="grid" tabindex="0" aria-label="数独棋盘，方向键移动，数字键填数"></div>
   <p class="msg" id="msg" role="status" aria-live="polite">点空格选中，再点下方数字填入</p>
   <div class="keys" id="keys"></div>
   <div class="tools">
@@ -161,7 +162,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <p class="foot">冲突数字标红 · 同数字自动高亮 · 填数会自动清理同行列宫的笔记 · 最佳用时按难度分开记录</p>
 </div>
-<div class="overlay" id="overlay">
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
     <h2 id="ovTitle">已暂停</h2>
     <p class="desc" id="ovDesc"></p>
@@ -380,6 +381,7 @@ function buildGrid(){
     var d=document.createElement("div");
     d.className="cell";
     d.dataset.i=i;
+    d.setAttribute("role","gridcell");
     d.addEventListener("click",function(){sel=+this.dataset.i;paint()});
     s.appendChild(d);cellEls.push(d);
   }
@@ -389,6 +391,19 @@ function buildGrid(){
     if(c%3===2&&c!==8)cellEls[j].style.borderRight="2px solid "+getVar("--g-faint");
     if(r%3===2&&r!==8)cellEls[j].style.borderBottom="2px solid "+getVar("--g-faint");
   }
+  //键盘/读屏：容器聚焦后方向键移格、数字键填数、0/Backspace 擦除
+  s.addEventListener("keydown",function(e){
+    var k=e.key;if(sel<0){if(k.indexOf("Arrow")!==0)return;sel=0}
+    var r=Math.floor(sel/9),c=sel%9;
+    if(k==="ArrowUp")r=(r+8)%9;
+    else if(k==="ArrowDown")r=(r+1)%9;
+    else if(k==="ArrowLeft")c=(c+8)%9;
+    else if(k==="ArrowRight")c=(c+1)%9;
+    else if(/^[1-9]$/.test(k)){sel=r*9+c;input(+k);e.preventDefault();return}
+    else if(k==="Backspace"||k==="Delete"||k==="0"){sel=r*9+c;if(user[sel]){user[sel]=0;paint();updLeft()}e.preventDefault();return}
+    else return;
+    sel=r*9+c;paint();e.preventDefault();
+  });
 }
 function getVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
 function fmt(s){var m=Math.floor(s/60),ss=s%60;return(m<10?"0":"")+m+":"+(ss<10?"0":"")+ss}
@@ -475,6 +490,8 @@ function paint(){
     }
     if(v&&!given[i]&&conflictAt(i,v))cls+=" bad";
     el.className=cls;
+    el.setAttribute("aria-label","第"+(r+1)+"行第"+(c+1)+"列，"+(given[i]?"题面 "+v:(v?"已填 "+v:"空格")));
+    el.setAttribute("aria-selected",i===sel?"true":"false");
     //内容：正式数字 或 笔记
     var html="";
     if(v){
@@ -596,6 +613,39 @@ document.addEventListener("visibilitychange",function(){
 });
 buildGrid();buildKeys();startGame(0);
 syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
 })();
 </script>
 </body>

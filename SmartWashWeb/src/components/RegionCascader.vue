@@ -21,6 +21,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { WarningFilled } from '@element-plus/icons-vue';
 import AMapLoader from '@amap/amap-jsapi-loader';
+import logger from '@/utils/logger';
 
 const props = defineProps({
   modelValue: {
@@ -70,7 +71,10 @@ const cascaderProps = {
           resolve([]);
         }
       });
-    } catch {
+    } catch (error) {
+      // 静默降级为空列表，但必须留痕：高德未配置（VITE_AMAP_KEY 为空）属已知预期失败，
+      // 不弹 toast 防噪音，日志用于区分「该级无下级」与「加载失败」
+      logger.warn('行政区查询失败，级联降级为空列表:', `level=${level}`, error);
       resolve([]);
     }
   },
@@ -113,7 +117,9 @@ async function searchDistrict(keyword, level) {
         }
       });
     });
-  } catch {
+  } catch (error) {
+    // 同 lazyLoad：静默降级但留痕（高德 key 为空属预期失败，不弹 toast）
+    logger.warn('行政区查询失败，返回空列表:', `keyword=${keyword}`, `level=${level}`, error);
     return [];
   }
 }

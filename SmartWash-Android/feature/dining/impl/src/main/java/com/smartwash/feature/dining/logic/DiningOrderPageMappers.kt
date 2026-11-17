@@ -124,6 +124,8 @@ internal fun categoryNameOf(
  * @param myUserId 当前用户 ID（[resolveMyUserId] 产物，null=不识别我的选菜）
  * @param categoryNames 分类 ID → 名称（分类目录接口；缺失按「分类 {id}」兜底）
  * @param coverUrls 菜谱 ID → 封面直链（上架菜谱接口；缺失渲染占位底）
+ * @param dishNutrition 菜谱 ID → 份口径营养（上架菜谱接口 + DiningNutritionCalculator 派生；
+ *        缺失/热量未知为 null，菜品行渲染「热量未知」次级样式）
  * @param uncategorizedLabel 未分类段文案（调用方传 strings.xml）
  */
 fun DiningOrderDetailVo.toOrderPageDetail(
@@ -131,6 +133,7 @@ fun DiningOrderDetailVo.toOrderPageDetail(
     categoryNames: Map<Long, String>,
     coverUrls: Map<Long, String>,
     uncategorizedLabel: String,
+    dishNutrition: Map<Long, DiningNutritionCalculator.DishNutrition> = emptyMap(),
 ): DiningOrderPageDetail {
     val itemsByRecipe = safeItems.groupBy { it.safeRecipeId }
     val memberLabels = safeMembers.associate { it.safeUserId to it.safePhoneMasked }
@@ -156,6 +159,7 @@ fun DiningOrderDetailVo.toOrderPageDetail(
                             isMe = myUserId != null && item.safeUserId == myUserId,
                         )
                     },
+                    calories = dishNutrition[dish.recipeId]?.calories,
                 )
             },
         )

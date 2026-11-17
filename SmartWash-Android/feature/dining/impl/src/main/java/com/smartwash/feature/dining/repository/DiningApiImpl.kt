@@ -1,6 +1,7 @@
 package com.smartwash.feature.dining.repository
 
 import com.smartwash.feature.dining.api.DiningApi
+import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
 import com.smartwash.feature.dining.api.model.DiningScanResult
 import com.smartwash.feature.dining.logic.DiningJoinUrlParseResult
@@ -23,7 +24,25 @@ class DiningApiImpl @Inject constructor(
         size: Int,
         categoryId: Long?,
         keyword: String?,
-    ): List<DiningRecipeVo> = diningRepository.getRecipes(page, size, categoryId, keyword).records
+        ingredient: String?,
+    ): List<DiningRecipeVo> =
+        diningRepository.getRecipes(page, size, categoryId, keyword, ingredient).records
+
+    override suspend fun getFavoriteRecipes(page: Int, size: Int): List<DiningRecipeVo> =
+        diningRepository.getFavoriteRecipes(page, size).records
+
+    override suspend fun favoriteRecipe(recipeId: Long): Boolean =
+        diningRepository.favoriteRecipe(recipeId)
+
+    override suspend fun unfavoriteRecipe(recipeId: Long): Boolean =
+        diningRepository.unfavoriteRecipe(recipeId)
+
+    override suspend fun getDietaryPreference(): DietaryPreferenceVo =
+        diningRepository.getDietaryPreference()
+
+    override suspend fun saveDietaryPreference(preference: DietaryPreferenceVo) {
+        diningRepository.saveDietaryPreference(preference)
+    }
 
     override suspend fun normalizeScanToDeepLink(raw: String): DiningScanResult =
         when (val parsed = DiningJoinUrlParser.parse(raw)) {

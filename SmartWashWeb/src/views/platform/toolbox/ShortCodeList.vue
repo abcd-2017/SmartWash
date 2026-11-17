@@ -44,7 +44,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与空态区分，给出重试入口 -->
+      <div v-if="listError" class="list-error">
+        <span>短码列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="shortCodeList"
         fit
@@ -261,6 +267,7 @@ const {
   list: shortCodeList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -291,20 +298,29 @@ const deletingId = ref(null);
 const detailVisible = ref(false);
 const detailLoading = ref(false);
 const detail = ref(null);
+// 竞态守卫：快速连点两行详情，旧响应后到不得覆盖新抽屉（同 useTableList fetchSeq 模式）
+let detailSeq = 0;
 
 const handleDetail = async (row) => {
+  const mySeq = ++detailSeq;
   detailVisible.value = true;
   detailLoading.value = true;
   detail.value = null;
   try {
-    detail.value = await getShortCodeDetail(row.id);
+    const res = await getShortCodeDetail(row.id);
+    if (mySeq !== detailSeq) return;
+    detail.value = res;
   } catch (error) {
     // 页面自有 catch（列表拉取失败已由 useTableList/拦截器留痕，这里只兜底详情请求）
+    if (mySeq !== detailSeq) return;
     logger.error('短码详情获取失败:', `id=${row.id}`, error);
     ElMessage.error(error.message || '获取短码详情失败');
     detailVisible.value = false;
   } finally {
-    detailLoading.value = false;
+    // 被丢弃的旧响应不得关掉最新请求的 loading
+    if (mySeq === detailSeq) {
+      detailLoading.value = false;
+    }
   }
 };
 

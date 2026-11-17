@@ -21,17 +21,22 @@ import {
   addDiningOrderItem,
   finishDiningOrder,
   getDiningCategories,
+  getDiningDietaryPreference,
   getDiningOrderDetail,
+  getDiningRecipeDetail,
   removeDiningOrderItem,
   updateDiningOrderItemNote
 } from '../../../network/api/DiningApi'
 import { getUserInfo } from '../../../network/api/UserApi'
 import { UserInfoVo } from '../../../network/vo/UserInfoVo'
 import {
+  DiningAllergenHit,
   DiningCategoryName,
   DiningMenuRecipeRow,
   DiningMenuSection,
   DiningOrderStatus,
+  DiningSelectedDish,
+  diningAllergenHits,
   diningOrderStatusFromCode,
   groupDiningMenu,
   resolveMyUserId
@@ -74,6 +79,12 @@ interface SelectorLabel {
   isMe: boolean
 }
 
+/** 过敏原缓存条目（详情接口按需拉取结果） */
+interface DiningAllergenCacheEntry {
+  recipeId: number
+  allergens: Array<string>
+}
+
 @Builder
 export function DiningOrderDetailBuilder() {
   DiningOrderDetailPage()
@@ -114,6 +125,13 @@ struct DiningOrderDetailPage {
   private currentPhone: string = ''
   /** 分类目录（分组名回填源） */
   private categories: Array<DiningCategoryVo> = []
+  // ---- 忌口警示（契约 §三.1：我的选菜 allergens ∩ 用户忌口）----
+  /** 用户忌口标签（GET 饮食偏好；空集=无忌口） */
+  @Local userAllergens: Array<string> = []
+  /** 过敏原缓存（recipeId → 详情接口返回码；按需拉取） */
+  @Local allergenCache: Array<DiningAllergenCacheEntry> = []
+  /** 过敏原拉取在途（防重复请求） */
+  @Local allergenPendingIds: Array<number> = []
   // 轮询定时器（aboutToDisappear 必须 clear，CLAUDE.md 硬规则）
   private pollTimer: number = -1
   // 写操作互斥：进行中忽略新的勾选切换（防本地意图与在途写交错）
@@ -230,6 +248,7 @@ struct DiningOrderDetailPage {
                   .margin({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
               }
               this.ParticipantsBar()
+              this.AllergenWarningBar()
               Row() {
                 this.CategoryBar()
                 this.MenuList()
@@ -257,6 +276,65 @@ struct DiningOrderDetailPage {
     return this.detail?.members ?? new Array<DiningOrderMember>()
   }
 
+  /** 过敏原缓存读取（未缓存返回 null） */
+  private allergenOf(recipeId: number): Array<string> | null {
+    const entry = this.allergenCache.find((item: DiningAllergenCacheEntry): boolean => item.recipeId === recipeId)
+    return entry !== undefined ? entry.allergens : null
+  }
+
+  /** 我的选菜过敏原事实（缓存缺失按无过敏原参与） */
+  private selectedDishRows(): Array<DiningSelectedDish> {
+    const detail = this.detail
+    if (detail === null) {
+      return []
+    }
+    return this.myItems.map((item: MyItemIntent): DiningSelectedDish => {
+      const menu = detail.menu.find((row: DiningMenuRecipe): boolean => row.recipeId === item.recipeId)
+      return {
+        recipeId: item.recipeId,
+        recipeName: menu !== undefined ? menu.name : '',
+        allergens: this.allergenOf(item.recipeId)
+      }
+    })
+  }
+
+  /** 忌口命中（我的选菜 allergens ∩ 用户忌口） */
+  private allergenWarningHits(): Array<DiningAllergenHit> {
+    return diningAllergenHits(this.selectedDishRows(), this.userAllergens)
+  }
+
+  /** 为当前我的已选菜补齐过敏原（按需、去重、失败静默） */
+  private ensureAllergensForSelected(): void {
+    this.myItems.forEach((item: MyItemIntent): void => {
+      this.ensureAllergen(item.recipeId)
+    })
+  }
+
+  /** 按需拉取菜谱详情缓存过敏原 */
+  private async ensureAllergen(recipeId: number): Promise<void> {
+    if (recipeId <= 0 || this.allergenOf(recipeId) !== null) {
+      return
+    }
+    if (this.allergenPendingIds.indexOf(recipeId) >= 0) {
+      return
+    }
+    this.allergenPendingIds = this.allergenPendingIds.concat([recipeId])
+    try {
+      const res = await getDiningRecipeDetail(recipeId)
+      if (res.code === BizCode.SUCCESS && res.data !== null) {
+        const allergens = res.data.allergens === null ? [] : res.data.allergens
+        this.allergenCache = this.allergenCache.concat([{ recipeId: recipeId, allergens: allergens }])
+        logger.debug(TAG, `过敏原缓存 recipeId=${recipeId} count=${allergens.length}`)
+      } else {
+        logger.warn(TAG, `过敏原加载失败 recipeId=${recipeId} code=${res.code}`)
+      }
+    } catch (err) {
+      logger.error(TAG, `过敏原加载异常 recipeId=${recipeId}`, err instanceof Error ? err.message : '')
+    } finally {
+      this.allergenPendingIds = this.allergenPendingIds.filter((id: number): boolean => id !== recipeId)
+    }
+  }
+
   /** FINISHED 只读态（未知状态保守降级为只读） */
   private get readOnly(): boolean {
     return this.detail !== null && diningOrderStatusFromCode(this.detail.status) !== DiningOrderStatus.ONGOING
@@ -274,6 +352,15 @@ struct DiningOrderDetailPage {
 
   /** 首载：详情全量 + 分类目录（分组名回填，失败不致命）+ 当前手机号（定位「我的选菜」） */
   private async loadFirst(): Promise<void> {
+    // 饮食偏好 best-effort（忌口警示数据源；失败按无忌口降级）
+    try {
+      const prefRes = await getDiningDietaryPreference()
+      if (prefRes.code === BizCode.SUCCESS && prefRes.data !== null) {
+        this.userAllergens = prefRes.data.allergens === null ? [] : prefRes.data.allergens
+      }
+    } catch (err) {
+      logger.debug(TAG, '饮食偏好加载失败，忌口警示降级')
+    }
     // 当前用户手机号 best-effort（失败降级为不识别我的选菜）
     try {
       const userRes: BaseResponse<UserInfoVo> = await getUserInfo()
@@ -354,6 +441,8 @@ struct DiningOrderDetailPage {
     })
     this.myItems = rebuilt
     this.activeSectionIndex = 0
+    // 我的选菜变化即按需补齐过敏原（忌口警示数据源；缓存/在途去重，失败静默）
+    this.ensureAllergensForSelected()
   }
 
 
@@ -577,6 +666,34 @@ struct DiningOrderDetailPage {
     return labels
   }
 
+
+  /** 忌口警示条（我的选菜 allergens ∩ 用户忌口；无命中不渲染） */
+  @Builder
+  AllergenWarningBar() {
+    if (this.allergenWarningHits().length > 0) {
+      Column({ space: 2 }) {
+        Text(DiningText.dining_allergen_warning_title)
+          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontColor($r('app.color.DANGER_INK'))
+          .width('100%')
+        ForEach(this.allergenWarningHits(), (hit: DiningAllergenHit) => {
+          Text(DiningText.allergenWarningItem(DiningText.allergenLabel(hit.allergen), hit.recipeName))
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor($r('app.color.DANGER_INK'))
+            .width('100%')
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }, (hit: DiningAllergenHit): string => `allergen_${hit.recipeId}_${hit.allergen}`)
+      }
+      .alignItems(HorizontalAlign.Start)
+      .width('100%')
+      .backgroundColor($r('app.color.ICON_CONTAINER_PINK'))
+      .borderRadius(DesignDimens.RADIUS_MD)
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
+      .margin({ top: DesignDimens.SPACE_XS })
+    }
+  }
 
   /** 参与者区（横向头像位 + 脱敏手机号 + 发起标记） */
   @Builder

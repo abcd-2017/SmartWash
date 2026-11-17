@@ -7,7 +7,7 @@
 <title>猜成语</title>
 <style>
   /*token:GAME-THEME.md §2（全部 UI 壳走 token）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -38,8 +38,8 @@
   }
   .cell.fill { background: var(--g-surface); color: var(--g-text); border-color: var(--g-border); }
   .cell.hit { background: var(--g-success); color: #fff; border-color: transparent; }
-  .cell.near { background: var(--g-warning); color: var(--g-text); border-color: transparent; }
-  .cell.miss { background: var(--g-surface2); color: var(--g-faint); border-color: transparent; opacity: .75; }
+  .cell.near { background: var(--g-surface2); color: var(--g-warning); border-color: transparent; }
+  .cell.miss { background: var(--g-surface2); color: var(--g-muted); border-color: transparent; opacity: .75; }
   .cell.bump { transform: scale(1.08); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
@@ -51,14 +51,14 @@
   }
   .key:active { opacity: .7; }
   .key.hit { background: var(--g-success); color: #fff; box-shadow: none; }
-  .key.near { background: var(--g-warning); color: var(--g-text); box-shadow: none; }
-  .key.miss { background: var(--g-surface2); color: var(--g-faint); box-shadow: none; }
+  .key.near { background: var(--g-surface2); color: var(--g-warning); box-shadow: none; }
+  .key.miss { background: var(--g-surface2); color: var(--g-muted); box-shadow: none; }
   .tools { display: flex; gap: 8px; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
     border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-primary); color: #fff;
-    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
+    background: var(--g-btn-primary); color: #fff;
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
   }
   .btn:active { opacity: .85; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
@@ -119,7 +119,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <p class="foot">绿＝字对位对 · 黄＝字对位错 · 灰＝没有这个字 · 每题字库由答案字与干扰字组成</p>
 </div>
-<div class="overlay" id="overlay">
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
     <h2 id="ovTitle">猜对了！</h2>
     <p class="word" id="ovWord"></p>
@@ -273,16 +273,14 @@ function newRound(){
   var it=pickIdiom();
   target=it[0];meaning=it[1];hinted=false;guess=[];row=0;over=false;
   history=[];fbOf=[];
-  //字库 = 答案去重字 + 干扰字（取自其他成语，保证不在答案里）
-  var uniq=[];
-  for(var i=0;i<4;i++)if(uniq.indexOf(target[i])<0)uniq.push(target[i]);
+  //字库 = 答案四字（含重复字，否则含重复字的成语永远拼不出）+ 干扰字（取自其他成语）
   var pool=[];
   for(var j=0;j<LEVELS.length;j++){
     if(LEVELS[j][0]===target)continue;
     var w=LEVELS[j][0];
     for(var k=0;k<4;k++)pool.push(w[k]);
   }
-  keys=uniq.slice();
+  keys=target.split("");
   var guard=0;
   while(keys.length<16&&guard++<800){
     var c=pool[Math.floor(Math.random()*pool.length)];
@@ -418,6 +416,39 @@ $("ovBtn").addEventListener("click",function(){
 });
 paintStats();newRound();
 syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
 })();
 </script>
 </body>

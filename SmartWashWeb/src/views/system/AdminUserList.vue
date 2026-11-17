@@ -50,6 +50,7 @@
           <el-button
             type="danger"
             :disabled="multipleSelection.length === 0"
+            :loading="batchDeleting"
             @click="handleBatchDelete"
             >批量删除</el-button
           >
@@ -58,8 +59,14 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与空态区分，给出重试入口 -->
+      <div v-if="listError" class="list-error">
+        <span>管理员列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
         ref="tableRef"
+        v-else
         v-loading="listLoading"
         :data="adminList"
         fit
@@ -82,7 +89,15 @@
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              link
+              type="danger"
+              size="small"
+              :loading="deletingId === row.adminId"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -170,6 +185,8 @@ import { passwordLengthRule } from '@/utils/validators';
 
 const tableRef = ref(null);
 const formRef = ref(null);
+const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
+const batchDeleting = ref(false); // 「批量删除」按钮 loading，防连点
 
 // 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
 // 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
@@ -187,6 +204,7 @@ const {
   list: adminList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -267,10 +285,13 @@ const handleSelectionChange = (val) => {
 
 const handleBatchDelete = async () => {
   const count = multipleSelection.value.length;
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除选中的 ${count} 个管理员吗？`);
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (batchDeleting.value) return;
+  batchDeleting.value = true;
   try {
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+    const confirmed = await useConfirm(`确认删除选中的 ${count} 个管理员吗？`);
+    if (!confirmed) return;
     const ids = multipleSelection.value.map((item) => item.adminId).join(',');
     await deleteAdminUser(ids);
     ElMessage.success('删除成功');
@@ -281,6 +302,8 @@ const handleBatchDelete = async () => {
   } catch (error) {
     logger.error('批量删除管理员失败:', `count=${count}`, error);
     ElMessage.error(error.message || '删除失败');
+  } finally {
+    batchDeleting.value = false;
   }
 };
 
@@ -349,10 +372,13 @@ const submitForm = async () => {
 };
 
 const handleDelete = async (row) => {
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除管理员 ${row.username} 吗？`);
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (deletingId.value) return;
+  deletingId.value = row.adminId;
   try {
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+    const confirmed = await useConfirm(`确认删除管理员 ${row.username} 吗？`);
+    if (!confirmed) return;
     await deleteAdminUser(row.adminId);
     ElMessage.success('删除成功');
     // 写操作成功留痕：仅记 adminId/username，绝不含密码字段
@@ -361,6 +387,8 @@ const handleDelete = async (row) => {
   } catch (error) {
     logger.error('删除管理员失败:', `adminId=${row.adminId}`, error);
     ElMessage.error(error.message || '删除失败');
+  } finally {
+    deletingId.value = null;
   }
 };
 </script>

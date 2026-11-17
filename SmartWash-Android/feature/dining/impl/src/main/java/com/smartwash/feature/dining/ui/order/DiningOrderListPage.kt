@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,7 +25,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -62,6 +65,7 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.model.RequestState
@@ -195,6 +199,9 @@ fun DiningOrderListPage(
                                 )
                             }
                         },
+                        onFavoritesClick = {
+                            navController.navigate(DiningRoute.RecipeFavorites)
+                        },
                     )
                 }
             }
@@ -237,95 +244,150 @@ private fun OrderListContent(
     onLoadMore: () -> Unit,
     onOrderClick: (DiningOrderListItem) -> Unit,
     onReuse: (DiningOrderListItem) -> Unit,
+    onFavoritesClick: () -> Unit,
 ) {
-    if (createdOrders.isEmpty() && joinedOrders.isEmpty()) {
-        EmptyState(
-            icon = Icons.Default.Restaurant,
-            message = stringResource(R.string.dining_order_list_empty),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = AppDimens.pagePadding),
-        )
-        return
-    }
-
-    PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        // 列表底部避让手势条/三键导航——末卡呼吸空间 = FAB 高(56dp) + 底距(spaceLg) + 空隙(spaceLg)，
-        // 保证滚动到底不遮挡末卡
-        val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        val listState = rememberLazyListState()
-
-        // 触底探测：末两项可见即认为到达底部（footer 出现前提前半屏触发，滚动更顺）；
-        // 仅在还有下一页且非加载中时触发，加载更多失败保留 footer 重试入口
-        val shouldLoadMore by remember {
-            derivedStateOf {
-                val info = listState.layoutInfo
-                val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: -1
-                info.totalItemsCount > 0 && lastVisible >= info.totalItemsCount - 2
-            }
-        }
-        LaunchedEffect(shouldLoadMore) {
-            if (shouldLoadMore && hasMore && loadMoreState !is RequestState.Loading) {
-                onLoadMore()
-            }
-        }
-
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = AppDimens.pagePadding,
-                top = AppDimens.spaceXs,
-                end = AppDimens.pagePadding,
-                bottom = navBarsBottom + FAB_SIZE + AppDimens.spaceLg * 2,
-            ),
+    Column(modifier = Modifier.fillMaxSize()) {
+        // 我的收藏入口（契约 §三.4）：常驻入口，空列表时亦可进入收藏
+        FavoritesEntry(onClick = onFavoritesClick)
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.weight(1f),
         ) {
-            if (createdOrders.isNotEmpty()) {
-                orderSection(
-                    titleRes = R.string.dining_order_section_created,
-                    orders = createdOrders,
-                    onOrderClick = onOrderClick,
-                    onReuse = onReuse,
-                )
+        // 空态也放进刷新容器：空列表同样支持下拉刷新（与有数据态交互一致）
+        if (createdOrders.isEmpty() && joinedOrders.isEmpty()) {
+            EmptyState(
+                icon = Icons.Default.Restaurant,
+                message = stringResource(R.string.dining_order_list_empty),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = AppDimens.pagePadding),
+            )
+        } else {
+            // 列表底部避让手势条/三键导航——末卡呼吸空间 = FAB 高(56dp) + 底距(spaceLg) + 空隙(spaceLg)，
+            // 保证滚动到底不遮挡末卡
+            val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            val listState = rememberLazyListState()
+
+            // 触底探测：末两项可见即认为到达底部（footer 出现前提前半屏触发，滚动更顺）；
+            // 仅在还有下一页且非加载中时触发，加载更多失败保留 footer 重试入口
+            val shouldLoadMore by remember {
+                derivedStateOf {
+                    val info = listState.layoutInfo
+                    val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+                    info.totalItemsCount > 0 && lastVisible >= info.totalItemsCount - 2
+                }
             }
-            if (joinedOrders.isNotEmpty()) {
-                orderSection(
-                    titleRes = R.string.dining_order_section_joined,
-                    orders = joinedOrders,
-                    onOrderClick = onOrderClick,
-                    onReuse = onReuse,
-                )
+            LaunchedEffect(shouldLoadMore) {
+                if (shouldLoadMore && hasMore && loadMoreState !is RequestState.Loading) {
+                    onLoadMore()
+                }
             }
-            if (hasMore) {
-                item(key = "load_more") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = AppDimens.spaceMd),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        when (loadMoreState) {
-                            // 触底已自动触发，正常态按钮仅作失败后的手动重试入口
-                            is RequestState.Loading -> LoadingDots()
-                            is RequestState.Error -> AppButton(
-                                text = stringResource(R.string.dining_order_load_more_failed),
-                                onClick = onLoadMore,
-                                variant = AppButtonVariant.SECONDARY,
-                                small = true,
-                            )
-                            else -> AppButton(
-                                text = stringResource(R.string.dining_load_more),
-                                onClick = onLoadMore,
-                                variant = AppButtonVariant.TEXT,
-                            )
+
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = AppDimens.pagePadding,
+                    top = AppDimens.spaceXs,
+                    end = AppDimens.pagePadding,
+                    bottom = navBarsBottom + FAB_SIZE + AppDimens.spaceLg * 2,
+                ),
+            ) {
+                if (createdOrders.isNotEmpty()) {
+                    orderSection(
+                        titleRes = R.string.dining_order_section_created,
+                        orders = createdOrders,
+                        onOrderClick = onOrderClick,
+                        onReuse = onReuse,
+                    )
+                }
+                if (joinedOrders.isNotEmpty()) {
+                    orderSection(
+                        titleRes = R.string.dining_order_section_joined,
+                        orders = joinedOrders,
+                        onOrderClick = onOrderClick,
+                        onReuse = onReuse,
+                    )
+                }
+                if (hasMore) {
+                    item(key = "load_more") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = AppDimens.spaceMd),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            when (loadMoreState) {
+                                // 触底已自动触发，正常态按钮仅作失败后的手动重试入口
+                                is RequestState.Loading -> LoadingDots()
+                                is RequestState.Error -> AppButton(
+                                    text = stringResource(R.string.dining_order_load_more_failed),
+                                    onClick = onLoadMore,
+                                    variant = AppButtonVariant.SECONDARY,
+                                    small = true,
+                                )
+                                else -> AppButton(
+                                    text = stringResource(R.string.dining_load_more),
+                                    onClick = onLoadMore,
+                                    variant = AppButtonVariant.TEXT,
+                                )
+                            }
                         }
                     }
                 }
             }
+        }
+        }
+    }
+}
+
+/**
+ * 我的收藏入口卡（契约 §三.4）：图标容器（橙=待办/收藏语义）+ 标题 + 箭头，整卡 pressable。
+ * 位于订单分区之上，作为域内常驻入口。
+ */
+@Composable
+private fun FavoritesEntry(onClick: () -> Unit) {
+    GroupCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding)
+            .pressable(onClick = onClick),
+        contentPadding = PaddingValues(horizontal = AppDimens.cardPadding),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
+                    .background(AppColors.colorScheme.iconContainerOrange),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Favorite,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = AppColors.colorScheme.iconForegroundOrange,
+                )
+            }
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+            Text(
+                text = stringResource(R.string.dining_order_action_favorites),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.colorScheme.textPrimary,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = AppColors.colorScheme.textTertiary,
+            )
         }
     }
 }
@@ -340,9 +402,9 @@ private fun LazyListScope.orderSection(
     item(key = "section_$titleRes") {
         Text(
             text = stringResource(titleRes),
-            style = MaterialTheme.typography.titleSmall,
+            style = AppTextStyles.SectionTitle,
             color = AppColors.colorScheme.textSecondary,
-            modifier = Modifier.padding(top = AppDimens.spaceSm, bottom = AppDimens.spaceXs, start = 4.dp),
+            modifier = Modifier.padding(top = AppDimens.spaceSm, bottom = AppDimens.spaceXs, start = AppDimens.spaceXxs),
         )
     }
     items(orders, key = { it.id }) { order ->
@@ -402,7 +464,7 @@ private fun OrderCard(
                 Text(
                     text = order.displayTime,
                     style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                    color = AppColors.colorScheme.textTertiary,
+                    color = AppColors.colorScheme.textSecondary,
                     modifier = Modifier.weight(1f),
                 )
             } else {
@@ -457,8 +519,8 @@ private fun CreateOrderFab(
             .background(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        AppColors.colorScheme.heroGradientStart,
-                        AppColors.colorScheme.heroGradientEnd,
+                        AppColors.colorScheme.ctaGradientStart,
+                        AppColors.colorScheme.ctaGradientEnd,
                     ),
                 ),
             )

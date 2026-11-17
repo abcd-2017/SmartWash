@@ -97,4 +97,6 @@ export class RouteNames {
   static readonly DINING_LIBRARY: string = "DiningLibrary"
   static readonly DINING_RECIPE_DETAIL: string = "DiningRecipeDetail"
   static readonly DINING_RECIPE_CREATE: string = "DiningRecipeCreate"
+  static readonly DINING_FAVORITE_LIST: string = "DiningFavoriteList"
+  static readonly DINING_DIETARY_PREFERENCE: string = "DiningDietaryPreference"
 }

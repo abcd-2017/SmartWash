@@ -162,8 +162,116 @@ describe('RecipeImportDialog.vue 菜谱批量导入', () => {
       name: '番茄蛋汤',
       ingredients: ['西红柿', '鸡蛋'],
       steps: '冲汤',
+      // v2 新列（契约 §3.2）：预览行未携带时归一为 null，不传封面链接（封面不随批量导入落库）
+      caloriesPer100g: null,
+      caloriesTotal: null,
+      proteinG: null,
+      fatG: null,
+      carbsG: null,
+      sodiumMg: null,
     });
+    expect(payload.rows[0].coverUrl).toBeUndefined();
     expect(wrapper.vm.stage).toBe('result');
+  });
+
+  it('v2 行：warnings 不阻断提交，食材明细/封面对象键/营养 6 列随确认行回传', async () => {
+    previewDiningRecipeImport.mockResolvedValue({
+      total: 1,
+      validCount: 1,
+      errorCount: 0,
+      rows: [
+        {
+          rowNo: 2,
+          categoryName: '新分类',
+          name: '西红柿炒鸡蛋',
+          ingredients: ['西红柿', '鸡蛋'],
+          ingredientDetails: [
+            { name: '鸡蛋', amountValue: 575, amountUnit: 'g' },
+            { name: '西红柿', amountValue: 1800, amountUnit: 'g' },
+            { name: '盐', amountValue: null, amountUnit: null },
+          ],
+          steps: '',
+          coverObjectKey: 'dining/covers/tomato-egg.png',
+          caloriesPer100g: 472,
+          caloriesTotal: null,
+          proteinG: 12.1,
+          fatG: 8.5,
+          carbsG: 3.2,
+          sodiumMg: 560,
+          errors: [],
+          warnings: [
+            '分类「新分类」不存在，确认导入时自动创建',
+            '封面对象键 dining/covers/tomato-egg.png 校验通过',
+          ],
+        },
+      ],
+    });
+    confirmDiningRecipeImport.mockResolvedValue({
+      total: 1,
+      successCount: 1,
+      failedCount: 0,
+      rolledBack: false,
+      rows: [{ rowNo: 2, name: '西红柿炒鸡蛋', success: true, error: null, recipeId: 21 }],
+    });
+    const wrapper = mountDialog();
+    selectFile(wrapper, 'recipes-v2.csv');
+    await wrapper.vm.handleParse();
+    await flushPromises();
+    await wrapper.vm.handleSubmit();
+    await flushPromises();
+
+    expect(confirmDiningRecipeImport).toHaveBeenCalledTimes(1);
+    const payload = confirmDiningRecipeImport.mock.calls[0][0];
+    expect(payload.rows).toHaveLength(1, '仅带 warnings 的行不得被误当错误行剔除');
+    expect(payload.rows[0]).toEqual({
+      rowNo: 2,
+      categoryName: '新分类',
+      name: '西红柿炒鸡蛋',
+      ingredients: ['西红柿', '鸡蛋'],
+      ingredientDetails: [
+        { name: '鸡蛋', amountValue: 575, amountUnit: 'g' },
+        { name: '西红柿', amountValue: 1800, amountUnit: 'g' },
+        { name: '盐', amountValue: null, amountUnit: null },
+      ],
+      steps: '',
+      coverObjectKey: 'dining/covers/tomato-egg.png',
+      caloriesPer100g: 472,
+      caloriesTotal: null,
+      proteinG: 12.1,
+      fatG: 8.5,
+      carbsG: 3.2,
+      sodiumMg: 560,
+    });
+    expect(wrapper.emitted('success')).toHaveLength(1);
+  });
+
+  it('v2 预览展示辅助：食材明细拼 `名称:数量单位`、营养 6 列紧凑汇总、全空回落空串', () => {
+    const wrapper = mountDialog(false);
+
+    expect(
+      wrapper.vm.ingredientDetailText({
+        ingredientDetails: [
+          { name: '鸡蛋', amountValue: 575, amountUnit: 'g' },
+          { name: '西红柿', amountValue: 1800, amountUnit: 'g' },
+          { name: '盐', amountValue: null, amountUnit: null },
+          { name: '料酒', amountValue: null, amountUnit: '勺' },
+        ],
+      })
+    ).toBe('鸡蛋:575g、西红柿:1800g、盐、料酒:勺');
+    expect(wrapper.vm.ingredientDetailText({ ingredientDetails: undefined })).toBe('');
+    expect(
+      wrapper.vm.nutritionSummaryText({
+        caloriesPer100g: 472,
+        caloriesTotal: 1051,
+        proteinG: 12.1,
+        fatG: 8.5,
+        carbsG: 3.2,
+        sodiumMg: 560,
+      })
+    ).toBe('热量472kcal/100g · 整份1051kcal · 蛋白12.1g · 脂肪8.5g · 碳水3.2g · 钠560mg');
+    expect(wrapper.vm.nutritionSummaryText({ caloriesPer100g: null, sodiumMg: undefined })).toBe(
+      ''
+    );
   });
 
   it('整批回滚时结果态展示失败告警与逐行原因，不触发 success 刷新', async () => {

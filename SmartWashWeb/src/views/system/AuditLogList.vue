@@ -87,7 +87,13 @@
           校验最近 {{ verifyLimit }} 条
         </el-button>
       </div>
+      <!-- 加载失败态：与空态区分，给出重试入口 -->
+      <div v-if="listError" class="list-error">
+        <span>审计日志列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="auditList"
         fit
@@ -214,6 +220,7 @@ const {
   list: auditList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,

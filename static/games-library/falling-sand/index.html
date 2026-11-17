@@ -7,7 +7,7 @@
 <title>元素落沙</title>
 <style>
   /* token:GAME-THEME.md §2 (D5 终版:仅 :root 浅色 + [data-theme=dark] 深色,桥唯一控制) */
-  :root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-warning:#D98A26;--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;
+  :root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-warning:#9A6210;--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;
     --g-fs-empty:#FFFFFF;--g-fs-sand:#D9B44A;--g-fs-wetsand:#B08A42;--g-fs-water:#4A9FD4;--g-fs-stone:#8D958F;--g-fs-fire:#F2703E;--g-fs-smoke:#97A0A6;--g-fs-plant:#3FA45C;--g-fs-oil:#6E5433;--g-fs-steam:#BFD3DC;--g-fs-lava:#E2572B;--g-fs-glass:#C2E4E8;color-scheme:light}
   [data-theme="dark"]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-warning:#E2A44E;--g-shadow:0 2px 12px rgba(0,0,0,.28);
     --g-fs-empty:#1D201E;--g-fs-sand:#E2BE58;--g-fs-wetsand:#BD9550;--g-fs-water:#6BB4DE;--g-fs-stone:#9BA39D;--g-fs-fire:#FF8A50;--g-fs-smoke:#8A9298;--g-fs-plant:#4ADE6E;--g-fs-oil:#8A6C45;--g-fs-steam:#A7C2CE;--g-fs-lava:#F26838;--g-fs-glass:#9CCBD4;color-scheme:dark}
@@ -25,7 +25,7 @@
   .hud{display:flex;gap:10px;font-size:12px;color:var(--g-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
   .toolbar{display:flex;align-items:center;gap:8px;margin:16px 0 8px}
   .sp{flex:1}
-  .btn{min-height:44px;padding:0 16px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:var(--g-on-primary);font-family:inherit;font-size:22px;font-weight:700;cursor:pointer}
+  .btn{min-height:44px;padding:0 16px;border:0;border-radius:var(--g-radius-btn);background:var(--g-btn-primary);color:var(--g-on-primary);font-family:inherit;font-size: 16px;font-weight: 600;cursor:pointer}
   .btn:active{opacity:.85}
   .btn.ghost{background:var(--g-surface);color:var(--g-text);border:1px solid var(--g-border)}
   .seg{display:flex;border:1px solid var(--g-border);border-radius:var(--g-radius-btn);overflow:hidden;background:var(--g-surface)}

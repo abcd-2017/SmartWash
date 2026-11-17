@@ -48,6 +48,13 @@ class DiningMappersTest {
         assertEquals("", item.coverUrl)
         assertTrue(item.ingredients.isEmpty())
         assertEquals(0, item.ingredientCount)
+        assertFalse(item.favorited)
+    }
+
+    @Test
+    fun `收藏态映射 - favorited 填充与 null 兜底`() {
+        assertTrue(DiningRecipeVo(id = 1L, favorited = true).toRecipeItem().favorited)
+        assertFalse(DiningRecipeVo(id = 1L, favorited = null).toRecipeItem().favorited)
     }
 
     @Test

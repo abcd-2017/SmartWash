@@ -7,7 +7,7 @@
 <title>火柴棒算式</title>
 <style>
 /*token:GAME-THEME.md §2 基线（纯 DOM + 内联 SVG，颜色随 CSS 变量自动切换，无 canvas 素材色）*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light}
+:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light}
 :root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
@@ -29,7 +29,7 @@ header{display:flex;align-items:baseline;justify-content:space-between;margin-bo
 .msg{min-height:20px;margin:8px 2px;font-size:14px;color:var(--g-muted);text-align:center}
 .msg.warn{color:var(--g-danger)}
 .tools{display:flex;gap:8px}
-.btn{min-height:44px;padding:0 14px;flex:1;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:#fff;font-family:inherit;font-size:22px;font-weight:700;cursor:pointer}
+.btn{min-height:44px;padding:0 14px;flex:1;border:0;border-radius:var(--g-radius-btn);background:var(--g-btn-primary);color:#fff;font-family:inherit;font-size: 16px;font-weight: 600;cursor:pointer}
 .btn:active{opacity:.85}
 .btn.ghost{background:var(--g-surface2);color:var(--g-text)}
 .btn:disabled{opacity:.3}
@@ -44,7 +44,7 @@ header{display:flex;align-items:baseline;justify-content:space-between;margin-bo
 .panel .row{display:flex;gap:8px}
 .lv-row{width:100%;max-width:320px;max-height:170px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;padding:4px;margin:10px 0}
 .lv-chip{min-width:44px;min-height:44px;border:1px solid var(--g-border);border-radius:10px;background:var(--g-surface);color:var(--g-text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer}
-.lv-chip.on{background:var(--g-primary);border-color:transparent;color:#fff}
+.lv-chip.on{background:var(--g-btn-primary);border-color:transparent;color:#fff}
 .lv-chip:disabled{opacity:.35;cursor:default}
 .sheet{position:fixed;inset:0;z-index:11;background:var(--g-scrim);display:flex;align-items:flex-end;justify-content:center}
 .sheet.hide{display:none}
@@ -93,7 +93,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <p class="foot">移动：先点源字符拆出一根，再点目标字符放上去（点原字符=原地平移）· 添加 / 移除关卡点字符直接变换</p>
 </div>
-<div class="overlay" id="ovStart">
+<div class="overlay" role="dialog" aria-modal="true" id="ovStart">
   <div class="panel">
     <h2>火柴棒算式</h2>
     <div class="big" id="startInfo">第 1 关</div>
@@ -102,7 +102,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <button class="btn" id="btnStart">开始挑战</button>
   </div>
 </div>
-<div class="overlay hide" id="ovWin">
+<div class="overlay hide" role="dialog" aria-modal="true" id="ovWin">
   <div class="panel">
     <h2>过关！</h2>
     <div class="big" id="winInfo">用了 1 根</div>
@@ -113,7 +113,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     </div>
   </div>
 </div>
-<div class="sheet hide" id="ovPick">
+<div class="sheet hide" id="ovPick" role="dialog" aria-modal="true">
   <div class="sheet-in">
     <div class="title" id="pickTitle">选择结果</div>
     <div class="tip" id="pickTip"></div>
@@ -619,6 +619,39 @@ refreshStart();
 render();
 syncLevelsFromServer();
 syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
 })();
 </script>
 </body>

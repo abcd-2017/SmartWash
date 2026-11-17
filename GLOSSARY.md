@@ -699,6 +699,17 @@
   - Web：无用户端（管理后台不消费点单订单）。
 - **易混淆点**：version 只由选菜变更驱动（重置凭证/结束点单都不递增）；复用创建仍过上架把关，源单含已下架菜时整体拒绝；复用模式端上菜单只读回显（`toggleRecipe` 忽略），提交不传 recipeIds。
 
+### 10.13 配料库与营养（dining_ingredient / dining_recipe_ingredient / 菜谱营养 6 列）
+
+- **代码标识**：`dining_ingredient`、`DiningIngredient`、`/admin/dining/ingredient`；关联 `dining_recipe_ingredient`（`recipe_id` + `ingredient_id` + `amount_value` + `amount_unit`，uk(recipe_id, ingredient_id)）；菜谱营养列 `dining_recipe.calories_per_100g / calories_total / protein_g / fat_g / carbs_g / sodium_mg`（全可空）。
+- **定义**：配料库 = 菜谱食材的主数据（name 唯一、category 枚举 MAIN=主料/AUX=辅料/SEASONING=调料/OTHER=其他），导入与建菜谱时按名 upsert 自动注册，Web 后台独立管理页 CRUD（写接口 @Audited，被菜谱引用时拒绝删除）。菜谱-配料关联承载克数（`575g` → value=575/unit=g；kg 归一为 g、L 归一为 ml），是**买菜清单聚合的主数据源**——`ShoppingListAssembler` v2 按（配料名, 归一单位）分组求和产出 `ingredientTotals`，快照 JSON additive 扩展（v1 `ingredientNames`/`perRecipe` 保留兼容；老菜谱无关联数据时回落 ingredients JSON 名列表）。营养双口径：`calories_per_100g`（CookLikeHOC 每 100g 营养表）与 `calories_total`（HowToCook 整份估算）；**一份热量 = calories_total ?: calories_per_100g × 250g**（250g 为份量假设常量，四端一致）；总热量/人均卡路里在购买清单快照与 Android 端 `DiningNutritionCalculator` 同口径计算，超标提醒按一餐参考值（日参考 ÷3：热量≈667kcal/钠≈667mg 等）仅 Android 端实现。
+- **四端对应物**：
+  - 后端：`dining/`（`DiningIngredientAdminController`，导入器扩展列：食材明细列表/封面对象键/营养 5 列，分类不存在自动创建）。
+  - Android：`:feature:dining:{api,impl}`（VO 可空营养字段 + 快照 v2 + 美团式双栏列表热量徽标 + 购买清单人数 stepper 与人均卡路里）。
+  - 鸿蒙：`DiningVo.ets` 营养可空字段同步 + 热量徽标展示（超标提醒后续批次）。
+  - Web：`views/dining/DiningIngredientList.vue`（配料库管理页）+ 菜谱表单营养编辑 + 导入对话框新列说明。
+- **易混淆点**：`ingredients` JSON 与关联表**双写并存**（导入同时写两处），聚合读关联表、JSON 为兼容冗余；配料分类为启发式预判（后台可改）；营养列全可空——两口径皆缺的菜「热量未知」不参与合计；导入模板「分类名」由严格匹配改为**不存在自动创建**（10.10 的旧口径作废）。
+
 ---
 
 ## 11. 变体与平台标识

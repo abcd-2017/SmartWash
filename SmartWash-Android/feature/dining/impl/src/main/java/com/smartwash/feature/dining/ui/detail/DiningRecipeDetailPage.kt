@@ -3,16 +3,18 @@ package com.smartwash.feature.dining.ui.detail
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -44,6 +46,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SmartWashAsyncImage
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.model.RequestState
@@ -145,7 +148,7 @@ private fun DetailContent(
 
         Text(
             text = vo.name,
-            style = MaterialTheme.typography.titleLarge,
+            style = AppTextStyles.CardTitle,
             color = AppColors.colorScheme.textPrimary,
         )
         if (vo.categoryName.isNotBlank()) {
@@ -161,7 +164,7 @@ private fun DetailContent(
         GroupCard(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.dining_recipe_detail_ingredients_section),
-                style = MaterialTheme.typography.titleSmall,
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textPrimary,
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -187,7 +190,7 @@ private fun DetailContent(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(AppDimens.radiusFull))
                                 .background(AppColors.colorScheme.surfaceVariant)
-                                .padding(horizontal = AppDimens.spaceSm, vertical = 4.dp),
+                                .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXxs),
                         )
                     }
                 }
@@ -199,7 +202,7 @@ private fun DetailContent(
         GroupCard(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.dining_recipe_detail_steps_section),
-                style = MaterialTheme.typography.titleSmall,
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textPrimary,
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -232,7 +235,12 @@ private fun DetailContent(
                 }
             }
         }
-        // 底部留白避让手势条
-        Box(modifier = Modifier.height(32.dp))
+        // 底部避让手势条/三键导航（不硬编码高度）+ 末卡呼吸空间
+        Spacer(
+            modifier = Modifier.height(
+                WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+                    AppDimens.spaceLg,
+            ),
+        )
     }
 }

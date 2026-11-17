@@ -184,6 +184,8 @@ echarts.use([
 ]);
 
 const loading = ref(false);
+// 查询竞态序号：重置/连续改筛选时 fetchStats 丢弃过期响应（旧响应不得覆盖新图表与统计卡）
+let usageQuerySeq = 0;
 // 查询失败态：失败时统计卡与图表显示错误占位而非残留旧数据/「暂无数据」（成功查询清位）
 const queryError = ref(false);
 const dateRange = ref(null);
@@ -277,6 +279,8 @@ const handleResize = () => {
 };
 
 const fetchStats = async () => {
+  // 竞态守卫：重置/连续改筛选时旧响应后到会覆盖新图表与统计卡（同 useTableList fetchSeq 模式）
+  const mySeq = ++usageQuerySeq;
   loading.value = true;
   try {
     const params = {};
@@ -289,6 +293,7 @@ const fetchStats = async () => {
     }
     queryError.value = false;
     const res = await getUsageStats(params);
+    if (mySeq !== usageQuerySeq) return;
 
     const records = res.records || [];
     summary.recordCount = records.reduce((s, r) => s + (r.recordCount || 0), 0);
@@ -308,12 +313,16 @@ const fetchStats = async () => {
       `records=${records.length}`
     );
   } catch (error) {
+    if (mySeq !== usageQuerySeq) return;
     // 失败置位：统计卡显示错误占位+重试按钮，图表区显示错误态而非「暂无数据」
     queryError.value = true;
     logger.error('用量统计查询失败:', error);
     ElMessage.error(error.message || '获取用量数据失败');
   } finally {
-    loading.value = false;
+    // 被丢弃的旧响应不得关掉最新请求的 loading
+    if (mySeq === usageQuerySeq) {
+      loading.value = false;
+    }
   }
 };
 

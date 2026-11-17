@@ -38,6 +38,10 @@ dependencies {
     // 对外服务契约（UserApi/UserRoute/LoginEvent/UserInfo）
     implementation project(':feature:user:api')
 
+    // 吃啥域对外契约（DiningApi：设置页「饮食偏好」经此读写 /web/auth/dining/dietary-preference；
+    // 铁律 2：impl → 他人 api 合法；dining 两变体共用，故放 main 源集）
+    implementation project(':feature:dining:api')
+
     // 响应信封 ApiResult / HttpStatusCode / RequestState
     implementation project(':common:utils')
     // Retrofit（api 传递）+ @RequireAuthorization + NetworkException + TokenProvider/SessionEventNotifier 契约

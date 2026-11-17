@@ -37,7 +37,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与空态区分，给出重试入口 -->
+      <div v-if="listError" class="list-error">
+        <span>用户优惠券列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="couponList"
         fit
@@ -140,6 +146,7 @@ const {
   list: couponList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -161,8 +168,9 @@ const {
   errorMsg: '获取数据失败',
 });
 
-onMounted(async () => {
-  await fetchCoupons();
+onMounted(() => {
+  // 券下拉与列表互不依赖，并行发出：串行 await 首屏多等一个 RTT（同 PaymentList）
+  fetchCoupons();
   fetchData();
 });
 
@@ -178,15 +186,17 @@ const fetchCoupons = async () => {
 };
 
 const handleDelete = async (row) => {
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）；
-  // 文案带对象标识（券名 + 手机号），误删时无从核对的问题收敛
-  const confirmed = await useConfirm(
-    `确认删除领取记录吗？持有人 ${row.phoneNumber || '-'}，券「${row.couponVo?.title || '-'}」删除后不可恢复。`,
-    '删除领取记录'
-  );
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列（对齐全站入口守卫范式）
+  if (deletingId.value) return;
   deletingId.value = row.userCouponId;
   try {
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）；
+    // 文案带对象标识（券名 + 手机号），误删时无从核对的问题收敛
+    const confirmed = await useConfirm(
+      `确认删除领取记录吗？持有人 ${row.phoneNumber || '-'}，券「${row.couponVo?.title || '-'}」删除后不可恢复。`,
+      '删除领取记录'
+    );
+    if (!confirmed) return;
     await deleteUserCoupon(row.userCouponId);
     ElMessage.success('删除成功');
     // 写操作成功留痕：业务键仅 userCouponId，手机号不入日志（敏感红线）

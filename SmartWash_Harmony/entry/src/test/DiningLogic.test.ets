@@ -9,21 +9,66 @@
 
 import { describe, it, expect } from '@ohos/hypium';
 import {
+  DINING_ALLERGEN_CODES,
+  DINING_PEOPLE_MAX,
+  DINING_PEOPLE_MIN,
+  DINING_PORTION_GRAMS,
   DiningJoinEntryDecision,
   DiningJoinUrlKind,
+  DiningPortionVerdict,
   DiningRecipeShopping,
   DiningScanKind,
+  DiningSelectedDish,
   DiningShoppingResult,
   buildDiningJoinUrl,
   buildShoppingListText,
+  coerceDiningPeopleCount,
   decideDiningJoinEntry,
+  diningAllergenHits,
+  diningCalorieRemaining,
+  diningPortionAdvice,
+  diningSelectedTotalCalories,
+  diningServingCalories,
+  formatDiningAmount,
   maskDiningPhone,
+  normalizeDiningAllergen,
+  normalizeDiningAllergens,
   normalizeDiningScan,
   originOf,
   parseDiningJoinUrl,
   parseDiningShoppingList
 } from '../main/ets/feature/dining/DiningLogic';
-import { DiningOrderBriefVo } from '../main/ets/network/vo/DiningVo';
+import {
+  DietaryPreferenceVo,
+  DiningOrderBriefVo,
+  DiningRecipeVo,
+  dietaryPreferenceVoFromJSON,
+  diningRecipeVoFromJSON
+} from '../main/ets/network/vo/DiningVo';
+
+/** 测试用菜谱 VO 工厂（仅填营养相关字段，其余走默认） */
+function testRecipe(id: number, caloriesTotal: number | null,
+  caloriesPer100g: number | null): DiningRecipeVo {
+  return {
+    id: id,
+    categoryId: 0,
+    categoryName: '',
+    name: `菜${id}`,
+    coverUrl: '',
+    ingredients: [],
+    steps: '',
+    source: 'USER',
+    status: 1,
+    caloriesPer100g: caloriesPer100g,
+    caloriesTotal: caloriesTotal,
+    proteinG: null,
+    fatG: null,
+    carbsG: null,
+    sodiumMg: null,
+    favorited: null,
+    allergens: null
+  }
+}
 
 export default function diningLogicTest() {
   describe('diningLogicTest', () => {
@@ -181,7 +226,10 @@ export default function diningLogicTest() {
             recipeName: '凉拌西红柿',
             selectors: [{ label: '139****0001', note: '少糖', isMe: true }]
           }
-        ]
+        ],
+        ingredientTotals: null,
+        totalCalories: null,
+        calorieUnknownDishCount: null
       }
       const text = buildShoppingListText('周五晚火锅', result, ['鸡蛋'])
       const expected = '吃啥 · 购买清单\n订单：周五晚火锅\n\n【按食材买菜】\n[ ] 西红柿\n[x] 鸡蛋\n[ ] 葱\n\n' +
@@ -189,7 +237,10 @@ export default function diningLogicTest() {
       expect(text).assertEqual(expected)
     })
     it('shoppingListText-空标题省略订单行与空清单降级', 0, () => {
-      const empty: DiningShoppingResult = { ingredients: [], perRecipe: [] }
+      const empty: DiningShoppingResult = {
+        ingredients: [], perRecipe: [], ingredientTotals: null, totalCalories: null,
+        calorieUnknownDishCount: null
+      }
       const text = buildShoppingListText('  ', empty, [])
       expect(text.indexOf('订单：')).assertEqual(-1)
       expect(text.indexOf('【按食材买菜】\n（无）')).assertLarger(0)
@@ -197,9 +248,186 @@ export default function diningLogicTest() {
     })
     it('shoppingListText-无选菜人的菜只出菜名', 0, () => {
       const recipe: DiningRecipeShopping = { recipeName: '白米饭', selectors: [] }
-      const text = buildShoppingListText('家宴', { ingredients: [], perRecipe: [recipe] }, [])
+      const result: DiningShoppingResult = {
+        ingredients: [], perRecipe: [recipe], ingredientTotals: null, totalCalories: null,
+        calorieUnknownDishCount: null
+      }
+      const text = buildShoppingListText('家宴', result, [])
       expect(text.indexOf('- 白米饭')).assertLarger(0)
       expect(text.indexOf('白米饭：')).assertEqual(-1)
+    })
+
+    // ---------- 营养计算（契约 §二 份热量口径，对齐 Android DiningNutritionCalculator） ----------
+
+    it('servingCalories-整份口径优先', 0, () => {
+      expect(DINING_PORTION_GRAMS).assertEqual(250)
+      expect(diningServingCalories(1830, null)).assertEqual(1830)
+      expect(diningServingCalories(1830, 500)).assertEqual(1830)
+    })
+    it('servingCalories-per100g 按 250g 折算', 0, () => {
+      expect(diningServingCalories(null, 500)).assertEqual(1250)
+      expect(diningServingCalories(null, 100)).assertEqual(250)
+    })
+    it('servingCalories-两者皆缺未知', 0, () => {
+      expect(diningServingCalories(null, null)).assertNull()
+    })
+    it('formatAmount-整数去尾零与 1 位小数', 0, () => {
+      expect(formatDiningAmount(1830)).assertEqual('1830')
+      expect(formatDiningAmount(666.66)).assertEqual('666.7')
+      expect(formatDiningAmount(null)).assertNull()
+    })
+
+    // ---------- 购买清单快照 v2（契约 §3.3 additive，v1 存在性降级） ----------
+
+    it('shoppingList-v2 快照解析聚合与热量', 0, () => {
+      const json = '{"ingredientNames":["鸡蛋"],"perRecipe":[],' +
+        '"ingredientTotals":[{"name":"鸡蛋","totalValue":1130,"unit":"g","dishCount":2,' +
+        '"perDish":[{"recipeName":"番茄炒蛋","amountValue":575,"amountUnit":"g"}]}],' +
+        '"totalCalories":1830,"calorieKnownDishCount":2,"calorieUnknownDishCount":1,' +
+        '"perDishCalories":[{"recipeName":"宫保鸡丁","calories":1051}]}'
+      const snapshot = parseDiningShoppingList(json)
+      expect(snapshot.ingredientTotals === null).assertFalse()
+      if (snapshot.ingredientTotals !== null) {
+        expect(snapshot.ingredientTotals.length).assertEqual(1)
+        expect(snapshot.ingredientTotals[0].totalValue).assertEqual(1130)
+        expect(snapshot.ingredientTotals[0].unit).assertEqual('g')
+        expect(snapshot.ingredientTotals[0].dishCount).assertEqual(2)
+        expect(snapshot.ingredientTotals[0].perDish.length).assertEqual(1)
+      }
+      expect(snapshot.totalCalories).assertEqual(1830)
+      expect(snapshot.calorieKnownDishCount).assertEqual(2)
+      expect(snapshot.calorieUnknownDishCount).assertEqual(1)
+      expect(snapshot.perDishCalories === null).assertFalse()
+    })
+    it('shoppingList-v1 老快照 v2 字段缺失降级 null', 0, () => {
+      const snapshot = parseDiningShoppingList('{"ingredientNames":["鸡蛋"],"perRecipe":[]}')
+      expect(snapshot.ingredientTotals === null).assertTrue()
+      expect(snapshot.totalCalories).assertNull()
+      expect(snapshot.calorieKnownDishCount).assertNull()
+      expect(snapshot.calorieUnknownDishCount).assertNull()
+      expect(snapshot.perDishCalories === null).assertTrue()
+      expect(snapshot.ingredientNames.length).assertEqual(1)
+    })
+
+    // ---------- 忌口警示（契约 §三.1，对齐 Android DiningAllergenGuard） ----------
+
+    it('allergen-normalize 去空白大写与去重', 0, () => {
+      expect(normalizeDiningAllergen(' seafood ')).assertEqual('SEAFOOD')
+      expect(normalizeDiningAllergen('nut')).assertEqual('NUT')
+      expect(normalizeDiningAllergen('')).assertNull()
+      expect(normalizeDiningAllergen(null)).assertNull()
+      const normalized = normalizeDiningAllergens(['nut', ' NUT ', 'egg', ''])
+      expect(normalized.length).assertEqual(2)
+      expect(normalized[0]).assertEqual('NUT')
+      expect(normalized[1]).assertEqual('EGG')
+      expect(normalizeDiningAllergens(null).length).assertEqual(0)
+    })
+
+    it('allergen-hits 交集保序且用户空集短路', 0, () => {
+      const dishes: Array<DiningSelectedDish> = [
+        { recipeId: 1, recipeName: '宫保鸡丁', allergens: ['nut', 'SOY'] },
+        { recipeId: 2, recipeName: '清蒸鱼', allergens: ['SEAFOOD'] },
+        { recipeId: 3, recipeName: '白米饭', allergens: null }
+      ]
+      const hits = diningAllergenHits(dishes, ['NUT', 'SEAFOOD'])
+      expect(hits.length).assertEqual(2)
+      expect(hits[0].recipeId).assertEqual(1)
+      expect(hits[0].allergen).assertEqual('NUT')
+      expect(hits[1].recipeId).assertEqual(2)
+      expect(hits[1].allergen).assertEqual('SEAFOOD')
+      expect(diningAllergenHits(dishes, []).length).assertEqual(0)
+      expect(diningAllergenHits([], ['NUT']).length).assertEqual(0)
+    })
+
+    it('allergen-白名单 7 标签', 0, () => {
+      expect(DINING_ALLERGEN_CODES.length).assertEqual(7)
+      expect(DINING_ALLERGEN_CODES.indexOf('SPICY') >= 0).assertTrue()
+    })
+
+    // ---------- 份量建议（契约 §2.5，对齐 Android DiningPortionAdvisor） ----------
+
+    it('people-coerce 收敛 1-20 与异常值', 0, () => {
+      expect(DINING_PEOPLE_MIN).assertEqual(1)
+      expect(DINING_PEOPLE_MAX).assertEqual(20)
+      expect(coerceDiningPeopleCount(0)).assertEqual(1)
+      expect(coerceDiningPeopleCount(25)).assertEqual(20)
+      expect(coerceDiningPeopleCount(3)).assertEqual(3)
+      expect(coerceDiningPeopleCount(Number.NaN)).assertEqual(1)
+    })
+
+    it('selected-total-calories 仅统计已知菜', 0, () => {
+      expect(diningSelectedTotalCalories([])).assertNull()
+      expect(diningSelectedTotalCalories([testRecipe(1, null, null)])).assertNull()
+      // 1830 + 1250（500×250÷100）
+      expect(diningSelectedTotalCalories([
+        testRecipe(1, 1830, null),
+        testRecipe(2, null, 500)
+      ])).assertEqual(3080)
+    })
+
+    it('portion-advice 够/偏多/偏少阈值', 0, () => {
+      // 参考 = 2000÷3 ≈ 666.7；人均 600 = 参考×0.9 → ENOUGH
+      const enough = diningPortionAdvice(1200, 2, 2000)
+      expect(enough !== null).assertTrue()
+      if (enough !== null) {
+        expect(enough.verdict).assertEqual(DiningPortionVerdict.ENOUGH)
+        expect(enough.peopleCount).assertEqual(2)
+      }
+      // 人均 800 > 参考×1.1 → MORE
+      const more = diningPortionAdvice(1600, 2, 2000)
+      expect(more !== null && more.verdict === DiningPortionVerdict.MORE).assertTrue()
+      // 人均 450 < 参考×0.9 → LESS
+      const less = diningPortionAdvice(900, 2, 2000)
+      expect(less !== null && less.verdict === DiningPortionVerdict.LESS).assertTrue()
+      // 总热量未知 → null；目标缺省走默认 2000
+      expect(diningPortionAdvice(null, 2, 2000)).assertNull()
+      const fallback = diningPortionAdvice(1200, 2, 0)
+      expect(fallback !== null && fallback.reference > 666 && fallback.reference < 667).assertTrue()
+    })
+
+    it('calorie-remaining 目标减本单总热量', 0, () => {
+      expect(diningCalorieRemaining(1800, 2000)).assertEqual(200)
+      expect(diningCalorieRemaining(2200, 2000)).assertEqual(-200)
+      expect(diningCalorieRemaining(null, 2000)).assertNull()
+      expect(diningCalorieRemaining(2000, 0)).assertEqual(0)
+    })
+
+    // ---------- VO 字段透传（契约 §2.1/§2.2/§2.3） ----------
+
+    it('recipe-vo-favorited-allergens 映射与缺失兜底', 0, () => {
+      const raw: Record<string, Object> = {
+        'id': 7, 'name': '宫保鸡丁', 'favorited': true, 'allergens': ['NUT', 'SOY'],
+        'caloriesTotal': 1051
+      }
+      const vo = diningRecipeVoFromJSON(raw)
+      expect(vo.favorited).assertEqual(true)
+      expect(vo.allergens !== null).assertTrue()
+      if (vo.allergens !== null) {
+        expect(vo.allergens.length).assertEqual(2)
+      }
+      // 列表接口不带 allergens / favorited 缺失 → null 兜底
+      const listRaw: Record<string, Object> = { 'id': 8, 'name': '白米饭' }
+      const listVo = diningRecipeVoFromJSON(listRaw)
+      expect(listVo.favorited).assertNull()
+      expect(listVo.allergens === null || listVo.allergens.length === 0).assertTrue()
+    })
+
+    it('dietary-preference-vo 映射与 null 默认语义', 0, () => {
+      const prefRaw: Record<string, Object> = {
+        'allergens': ['NUT'], 'calorieTarget': 2200, 'sodiumTarget': 1800
+      }
+      const vo: DietaryPreferenceVo = dietaryPreferenceVoFromJSON(prefRaw)
+      expect(vo.calorieTarget).assertEqual(2200)
+      expect(vo.sodiumTarget).assertEqual(1800)
+      if (vo.allergens !== null) {
+        expect(vo.allergens.length).assertEqual(1)
+      }
+      // 字段缺失 → null（默认值语义）
+      const emptyRaw: Record<string, Object> = {}
+      const empty = dietaryPreferenceVoFromJSON(emptyRaw)
+      expect(empty.allergens === null || empty.allergens.length === 0).assertTrue()
+      expect(empty.calorieTarget).assertNull()
+      expect(empty.sodiumTarget).assertNull()
     })
   })
 }

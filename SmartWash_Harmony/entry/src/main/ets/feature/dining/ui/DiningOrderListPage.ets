@@ -108,6 +108,16 @@ struct DiningOrderListPage {
 
               Blank()
 
+              // 我的收藏入口（契约 §三.4）
+              Text(DiningText.dining_order_action_favorites)
+                .fontSize(DesignFontSize.PAGE_HEADER)
+                .fontWeight(DesignFontWeight.SEMI_BOLD)
+                .fontColor($r('app.color.PRIMARY_DARK'))
+                .padding({ left: 12, right: 12, top: 12, bottom: 12 })
+                .onClick(() => {
+                  pathStack.pushPathByName(RouteNames.DINING_FAVORITE_LIST, null)
+                })
+
               Text(DiningText.dining_order_action_recipe_library)
                 .fontSize(DesignFontSize.PAGE_HEADER)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)

@@ -39,6 +39,10 @@ data class AppColorScheme(
     val brandBase: Color,
     val heroGradientStart: Color,
     val heroGradientEnd: Color,
+    /** 主 CTA / hero 渐变（与 heroGradient 分离）：lite 主色 #EA580C 上白字不足 4.5:1，
+     *  故 CTA 渐变起点下移到深档；full 与 heroGradient 同值，视觉零变化。 */
+    val ctaGradientStart: Color,
+    val ctaGradientEnd: Color,
     val background: Color,
     val surface: Color,
     val surfaceVariant: Color,
@@ -90,6 +94,8 @@ val LightAppColorScheme = AppColorScheme(
     brandBase = Primary,
     heroGradientStart = HeroGradientStart,
     heroGradientEnd = PrimaryDark,
+    ctaGradientStart = Primary,
+    ctaGradientEnd = PrimaryDark,
     background = Background,
     surface = Surface,
     surfaceVariant = SurfaceVariant,
@@ -140,6 +146,8 @@ val DarkAppColorScheme = AppColorScheme(
     brandBase = Primary,
     heroGradientStart = HeroGradientStart,
     heroGradientEnd = DarkPrimary,
+    ctaGradientStart = DarkPrimary,
+    ctaGradientEnd = DarkPrimaryDark,
     background = DarkBackground,
     surface = DarkSurface,
     surfaceVariant = DarkSurfaceVariant,
@@ -311,14 +319,16 @@ fun ThinDivider(
 
 @Composable
 fun StatusDot(
-    color: Color = Success,
+    color: Color? = null,
     modifier: Modifier = Modifier,
 ) {
+    // 默认走 success 令牌（full 绿 / lite 语义绿），不再硬编码 full 专属常量 Success
+    val resolved = color ?: AppColors.colorScheme.success
     Box(
         modifier = modifier
             .size(8.dp)
             .clip(CircleShape)
-            .background(color)
+            .background(resolved)
     )
 }
 

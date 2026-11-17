@@ -10,10 +10,14 @@ import {
   DINING_PAGE_SIZE,
   DiningCategoryVo,
   DiningRecipeVo,
+  favoriteDiningRecipe,
   getDiningCategories,
-  getDiningRecipes
+  getDiningRecipes,
+  unfavoriteDiningRecipe
 } from '../../../network/api/DiningApi'
+import { diningServingCalories } from '../DiningLogic'
 import { DiningText } from '../DiningText'
+import { DiningCalorieBadge } from './DiningUiCommon'
 import {
   AppButton,
   AppButtonVariant,
@@ -29,6 +33,11 @@ import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
 const TAG: string = 'diningLibrary'
+
+/** 搜索模式：按菜名（keyword） */
+const SEARCH_MODE_NAME: number = 0
+/** 搜索模式：按食材（ingredient 反查） */
+const SEARCH_MODE_INGREDIENT: number = 1
 
 @Builder
 export function DiningLibraryBuilder() {
@@ -46,6 +55,12 @@ struct DiningLibraryPage {
   @Local isLoadingMore: boolean = false
   @Local appendError: boolean = false
   @Local keyword: string = ''
+  /** 搜索模式：0=菜名（keyword）1=食材（ingredient 反查） */
+  @Local searchMode: number = SEARCH_MODE_NAME
+  /** 本地收藏态（菜谱 ID 集合；服务端批量填充 + 乐观更新） */
+  @Local favoritedIds: Array<number> = []
+  /** 收藏写操作在途（防连点重复提交） */
+  @Local favoritePendingIds: Array<number> = []
   // 按压反馈 key
   @Local pressedKey: string = ''
   private paging: PagingController = new PagingController(
@@ -133,9 +148,16 @@ struct DiningLibraryPage {
             .align(Alignment.Start)
             .width('100%')
 
+            // 搜索模式 chips（菜名 / 食材反查，契约 §2.4/§三.6）
+            Row({ space: DesignDimens.SPACE_XS }) {
+              this.SearchModeChip(SEARCH_MODE_NAME, DiningText.dining_recipe_search_mode_name)
+              this.SearchModeChip(SEARCH_MODE_INGREDIENT, DiningText.dining_recipe_search_mode_ingredient)
+            }
+            .margin({ top: DesignDimens.SPACE_SM })
+
             Search({
               value: this.keyword,
-              placeholder: DiningText.dining_create_name_hint
+              placeholder: DiningText.dining_recipe_search_hint
             })
               .onChange((value: string) => {
                 this.keyword = value
@@ -296,29 +318,83 @@ struct DiningLibraryPage {
     })
   }
 
-  /** 菜谱卡：名称 + 分类名 + 食材数（无封面的轻量行卡，对齐 Android 列表卡信息密度） */
+  /** 搜索模式 chip（菜名 / 食材反查） */
+  @Builder
+  SearchModeChip(mode: number, label: string) {
+    Row() {
+      Text(label)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontColor(this.searchMode === mode ? $r('app.color.ON_PRIMARY') : $r('app.color.TEXT_SECONDARY'))
+    }
+    .justifyContent(FlexAlign.Center)
+    .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 6, bottom: 6 })
+    .borderRadius(DesignDimens.RADIUS_FULL)
+    .backgroundColor(this.searchMode === mode ? $r('app.color.PRIMARY') : $r('app.color.SURFACE'))
+    .border({
+      width: 1,
+      color: this.searchMode === mode ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE')
+    })
+    .onClick(() => {
+      if (this.searchMode === mode) {
+        return
+      }
+      this.searchMode = mode
+      this.reloadFirst()
+    })
+  }
+
+  /** 收藏按钮（48vp 热区；已收藏实心红心 / 未收藏描边灰心；乐观更新） */
+  @Builder
+  FavoriteButton(recipe: DiningRecipeVo) {
+    Column() {
+      SymbolGlyph(this.isFavorited(recipe)
+        ? $r('sys.symbol.heart_fill')
+        : $r('sys.symbol.heart'))
+        .fontSize(20)
+        .fontColor([this.isFavorited(recipe)
+          ? $r('app.color.DANGER')
+          : $r('app.color.TEXT_SECONDARY')])
+    }
+    .width(48)
+    .height(48)
+    .borderRadius(24)
+    .backgroundColor($r('app.color.SURFACE'))
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
+    .onClick(() => {
+      this.toggleFavorite(recipe)
+    })
+  }
+
+  /** 菜谱卡：名称 + 食材数·份热量徽标（无封面的轻量行卡，对齐 Android 列表卡信息密度） */
   @Builder
   RecipeCard(recipe: DiningRecipeVo) {
     Row({ space: DesignDimens.SPACE_MD }) {
-      if (recipe.coverUrl.length > 0) {
-        Image(recipe.coverUrl)
+      Stack({ alignContent: Alignment.TopEnd }) {
+        if (recipe.coverUrl.length > 0) {
+          Image(recipe.coverUrl)
+            .width(72)
+            .height(72)
+            .borderRadius(DesignDimens.RADIUS_MD)
+            .objectFit(ImageFit.Cover)
+            .draggable(false)
+        } else {
+          Column() {
+            SymbolGlyph($r('sys.symbol.fork_knife'))
+              .fontSize(24)
+              .fontColor([$r('app.color.TEXT_TERTIARY')])
+          }
           .width(72)
           .height(72)
           .borderRadius(DesignDimens.RADIUS_MD)
-          .objectFit(ImageFit.Cover)
-          .draggable(false)
-      } else {
-        Column() {
-          SymbolGlyph($r('sys.symbol.fork_knife'))
-            .fontSize(24)
-            .fontColor([$r('app.color.TEXT_TERTIARY')])
+          .backgroundColor($r('app.color.SURFACE_VARIANT'))
+          .justifyContent(FlexAlign.Center)
         }
-        .width(72)
-        .height(72)
-        .borderRadius(DesignDimens.RADIUS_MD)
-        .backgroundColor($r('app.color.SURFACE_VARIANT'))
-        .justifyContent(FlexAlign.Center)
+        this.FavoriteButton(recipe)
       }
+      .width(72)
+      .height(72)
 
       Column({ space: 4 }) {
         Text(recipe.name)
@@ -328,10 +404,18 @@ struct DiningLibraryPage {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
-        Text(DiningText.ingredientsCount(recipe.ingredients.length))
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor($r('app.color.TEXT_SECONDARY'))
-          .width('100%')
+        Row({ space: DesignDimens.SPACE_XS }) {
+          Text(DiningText.ingredientsCount(recipe.ingredients.length))
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor($r('app.color.TEXT_SECONDARY'))
+            .maxLines(1)
+          // 份热量徽标（caloriesTotal ?: caloriesPer100g × 250 ÷ 100，皆缺显示「热量未知」）
+          DiningCalorieBadge({
+            calories: diningServingCalories(recipe.caloriesTotal, recipe.caloriesPer100g)
+          })
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
       }
       .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)
@@ -379,7 +463,9 @@ struct DiningLibraryPage {
   /** 按页拉取（PagingController 追加；第 1 页整体替换） */
   private async fetchPage(page: number): Promise<boolean> {
     try {
-      const res = await getDiningRecipes(page, DINING_PAGE_SIZE, this.selectedCategoryId, this.keyword)
+      const ingredient = this.searchMode === SEARCH_MODE_INGREDIENT ? this.keyword : ''
+      const keyword = this.searchMode === SEARCH_MODE_NAME ? this.keyword : ''
+      const res = await getDiningRecipes(page, DINING_PAGE_SIZE, this.selectedCategoryId, keyword, ingredient)
       if (res.code === BizCode.SUCCESS && res.data !== null) {
         const records = res.data.records
         if (page === 1) {
@@ -390,6 +476,7 @@ struct DiningLibraryPage {
           this.list = this.list.concat(records)
           this.dataSource.notifyAppend(startIndex, records.length)
         }
+        this.mergeFavorited(records)
         this.appendError = false
         logger.debug(TAG, `菜谱分页加载成功 page=${page} count=${records.length} total=${res.data.total}`)
         return records.length > 0
@@ -411,6 +498,64 @@ struct DiningLibraryPage {
         this.appendError = true
       }
       return false
+    }
+  }
+
+  /** 是否已收藏（本地态唯一真相；服务端 favorited 经 mergeFavorited 汇入） */
+  private isFavorited(recipe: DiningRecipeVo): boolean {
+    return this.favoritedIds.indexOf(recipe.id) >= 0
+  }
+
+  /** 服务端列表 favorited 汇入本地态（true 加入 / false 移除，保持与服务端一致） */
+  private mergeFavorited(records: Array<DiningRecipeVo>): void {
+    records.forEach((recipe: DiningRecipeVo): void => {
+      const exists = this.favoritedIds.indexOf(recipe.id) >= 0
+      if (recipe.favorited === true && !exists) {
+        this.favoritedIds = this.favoritedIds.concat([recipe.id])
+      } else if (recipe.favorited === false && exists) {
+        this.favoritedIds = this.favoritedIds.filter((id: number): boolean => id !== recipe.id)
+      }
+    })
+  }
+
+  private setFavoritedLocal(recipeId: number, favorited: boolean): void {
+    const exists = this.favoritedIds.indexOf(recipeId) >= 0
+    if (favorited && !exists) {
+      this.favoritedIds = this.favoritedIds.concat([recipeId])
+    } else if (!favorited && exists) {
+      this.favoritedIds = this.favoritedIds.filter((id: number): boolean => id !== recipeId)
+    }
+  }
+
+  /**
+   * 收藏/取消收藏（乐观更新 → 服务端确认；失败回滚本地态并提示）。
+   * 幂等接口：POST 已收藏返回 true，DELETE 未收藏返回 false。
+   */
+  private async toggleFavorite(recipe: DiningRecipeVo): Promise<void> {
+    if (this.favoritePendingIds.indexOf(recipe.id) >= 0) {
+      return
+    }
+    const wasFavorited = this.isFavorited(recipe)
+    this.favoritePendingIds = this.favoritePendingIds.concat([recipe.id])
+    this.setFavoritedLocal(recipe.id, !wasFavorited)
+    try {
+      const res = wasFavorited
+        ? await unfavoriteDiningRecipe(recipe.id)
+        : await favoriteDiningRecipe(recipe.id)
+      if (res.code === BizCode.SUCCESS) {
+        this.setFavoritedLocal(recipe.id, res.data === true)
+        logger.debug(TAG, `收藏状态更新 recipeId=${recipe.id} favorited=${res.data === true}`)
+      } else {
+        this.setFavoritedLocal(recipe.id, wasFavorited)
+        logger.warn(TAG, `收藏未生效 recipeId=${recipe.id} code=${res.code} message=${res.message ?? ''}`)
+        showToastSafety(res.message, DiningText.dining_copy_failed)
+      }
+    } catch (err) {
+      this.setFavoritedLocal(recipe.id, wasFavorited)
+      logger.error(TAG, '收藏请求异常', err instanceof Error ? err.message : '')
+      showToastSafety('', DiningText.dining_copy_failed)
+    } finally {
+      this.favoritePendingIds = this.favoritePendingIds.filter((id: number): boolean => id !== recipe.id)
     }
   }
 }

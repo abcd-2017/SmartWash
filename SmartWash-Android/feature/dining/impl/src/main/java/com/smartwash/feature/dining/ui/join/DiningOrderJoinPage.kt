@@ -31,6 +31,7 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.api.DiningRoute
@@ -159,7 +160,7 @@ private fun JoinConfirmContent(
             ) {
                 Text(
                     text = brief.title.ifBlank { stringResource(R.string.dining_order_join_unknown_title) },
-                    style = MaterialTheme.typography.titleLarge,
+                    style = AppTextStyles.CardTitle,
                     color = AppColors.colorScheme.textPrimary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),

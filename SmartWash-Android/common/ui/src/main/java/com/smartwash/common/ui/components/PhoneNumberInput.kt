@@ -1,0 +1,132 @@
+package com.smartwash.common.ui.components
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Phone
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.smartwash.common.ui.R
+import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
+
+// 输入错误态统一走 error 令牌（full #A8435A / lite #B3261E，on 白 ≥4.5:1）；
+// 旧浅红 #FFB4AB 在浅底上仅约 1.6:1，错误提示近乎不可见。
+
+@Composable
+fun PhoneNumberInput(
+    phone: String,
+    isPhoneError: Boolean,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    // [P01/P02] 2026-11-05 画板复裁：玻璃卡输入行上方恢复独立字段标签行（白色 12sp 小字，
+    // label 与输入行间距 4dp）；label 与占位同文案会重复 → 有 label 时隐藏占位符
+    label: String? = null,
+    onValueChange: (String) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // 字段标签行（设计稿登录/注册画板：label 白 12sp 小字位于输入行上方，间距小）
+        if (label != null) {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = contentColor,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
+        // 输入行：高 48dp（§3.7 行高 48–50dp），文字与图标垂直居中
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 前缀图标 16dp + opacity .5（§3.7）
+            Icon(
+                Icons.Rounded.Phone,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = if (isPhoneError) AppColors.colorScheme.error
+                else contentColor.copy(alpha = 0.5f)
+            )
+            // 前缀与文字间距 spaceSm(12dp)（§3.7）
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+            BasicTextField(
+                value = phone,
+                onValueChange = { newValue ->
+                    // 只允许输入数字，过滤非数字字符
+                    val filtered = newValue.filter { it.isDigit() }
+                    onValueChange(filtered)
+                },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                // §3.7：输入正文 16sp / Normal —— 输入是高频读写场景，禁用 14sp 及以下
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 16.sp, lineHeight = 24.sp, color = contentColor
+                ),
+                cursorBrush = SolidColor(if (isPhoneError) AppColors.colorScheme.error else contentColor),
+                decorationBox = { innerTextField ->
+                    Box {
+                        // 有 label 时隐藏占位符（占位=字段名，与 label 文案重复）
+                        if (phone.isEmpty() && label == null) {
+                            // §3.7：占位符字号与正文一致
+                            Text(
+                                text = stringResource(R.string.phone_hint),
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
+                                color = contentColor.copy(alpha = 0.45f)
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
+            )
+        }
+        // 错误文案 0ms 硬切 → 展开/收起 + 淡入淡出（规范 7.8）
+        AnimatedVisibility(
+            visible = isPhoneError,
+            enter = fadeIn(enterTween(DURATION_MICRO_MS)) +
+                expandVertically(enterTween(DURATION_MICRO_MS)),
+            exit = fadeOut(exitTween(140)) +
+                shrinkVertically(exitTween(140)),
+        ) {
+            // 错误文案沿用既有 supportingText 内容（原 TextField supportingText 平替）
+            Text(
+                text = stringResource(R.string.invalid_phone),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = AppColors.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}

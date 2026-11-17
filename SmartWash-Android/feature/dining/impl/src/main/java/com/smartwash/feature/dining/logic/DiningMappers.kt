@@ -24,6 +24,10 @@ data class DiningRecipeItem(
     val coverUrl: String,
     /** 食材名数组（详情/列表角标用） */
     val ingredients: List<String>,
+    /** 份热量 Kcal（契约 §二口径，[DiningNutritionCalculator.servingCalories] 派生）；null=热量未知 */
+    val calories: Double?,
+    /** 当前用户是否已收藏（列表由后端批量填充，null=未收藏兜底） */
+    val favorited: Boolean = false,
 ) {
     /** 食材数角标文案参数（0 时列表隐藏角标） */
     val ingredientCount: Int get() = ingredients.size
@@ -78,13 +82,15 @@ data class DiningOrderShareDetail(
     val joinToken: String,
 )
 
-/** DiningRecipeVo → 菜谱库列表项（safe 兜底集中在映射层） */
+/** DiningRecipeVo → 菜谱库列表项（safe 兜底 + 份热量口径换算集中在映射层） */
 fun DiningRecipeVo.toRecipeItem(): DiningRecipeItem = DiningRecipeItem(
     id = safeId,
     name = safeName,
     categoryName = safeCategoryName,
     coverUrl = safeCoverUrl,
     ingredients = safeIngredients,
+    calories = DiningNutritionCalculator.servingCalories(caloriesTotal, caloriesPer100g),
+    favorited = favorited ?: false,
 )
 
 /**

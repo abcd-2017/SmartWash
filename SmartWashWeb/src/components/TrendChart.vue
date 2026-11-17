@@ -116,6 +116,12 @@ const buildOption = () => {
 // 数据/类型/色变化时重建 option；容器首次出现（空态 → 有数据）时初始化实例
 const ensureChart = async () => {
   if (!hasData.value) {
+    // 空数据时容器被 v-if 移除，必须同步卸掉实例：残留的旧实例会让数据恢复时
+    // 跳过 init、setOption 写入已脱离 DOM 的节点，图表白屏
+    resizeObserver?.disconnect();
+    resizeObserver = null;
+    chart?.dispose();
+    chart = null;
     return;
   }
   await nextTick();

@@ -26,7 +26,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与空态区分，给出重试入口 -->
+      <div v-if="listError" class="list-error">
+        <span>占卜审计列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="auditList"
         fit
@@ -135,9 +141,7 @@
             >
               {{ rawJsonCollapsed ? '展开原始 JSON' : '折叠原始 JSON' }}
             </el-button>
-            <pre v-if="!auditDiffs.length || !rawJsonCollapsed">{{
-              formatJson(currentAudit.auditJson)
-            }}</pre>
+            <pre v-if="!auditDiffs.length || !rawJsonCollapsed">{{ rawJsonText }}</pre>
           </template>
           <span v-else class="audit-empty">无审计明细数据</span>
         </div>
@@ -171,6 +175,7 @@ const {
   list: auditList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -211,6 +216,13 @@ const formatJson = (json) => {
   }
   return JSON.stringify(parsed, null, 2);
 };
+
+// 原始 JSON 文案收进 computed：此前写在模板插值里，详情弹窗每次重渲染都全量
+// parse + stringify 大审计 JSON；computed 只在审计对象变化时算一次
+const rawJsonText = computed(() => {
+  const json = currentAudit.value?.auditJson;
+  return json ? formatJson(json) : '';
+});
 
 // diffs 数组存在时以 chip 行呈现（field + cited + inChart），避免 raw JSON 倾倒
 const auditDiffs = computed(() => {

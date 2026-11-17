@@ -11,6 +11,7 @@ import com.smartwash.feature.dining.api.model.AddDiningOrderItemRequest
 import com.smartwash.feature.dining.api.model.AddDiningRecipeRequest
 import com.smartwash.feature.dining.api.model.CreateDiningOrderRequest
 import com.smartwash.feature.dining.api.model.DiningCategoryVo
+import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
 import com.smartwash.feature.dining.api.model.DiningOrderBriefVo
 import com.smartwash.feature.dining.api.model.DiningOrderCreatedVo
 import com.smartwash.feature.dining.api.model.DiningOrderDetailVo
@@ -46,24 +47,62 @@ class DiningRepository @Inject constructor(
                 throw NetworkException("分类数据为空", R.string.error_network_fail)
             }
 
-    /** 上架菜谱分页（page 从 1 起，size 上限 100，见后端 BaseSearchFrom） */
+    /** 上架菜谱分页（page 从 1 起，size 上限 100；keyword/ingredient 互斥语义由调用方决定，可 AND） */
     suspend fun getRecipes(
         page: Int,
         size: Int,
         categoryId: Long? = null,
         keyword: String? = null,
+        ingredient: String? = null,
     ): PageData<DiningRecipeVo> =
-        diningServiceApi.recipes(page, size, categoryId, keyword).data
+        diningServiceApi.recipes(page, size, categoryId, keyword, ingredient).data
             ?: run {
-                AppLogger.warn(TAG, "getRecipes 响应 data 为空，按失败处理上抛（page=$page, categoryId=$categoryId）")
+                AppLogger.warn(TAG, "getRecipes 响应 data 为空，按失败上抛（page=$page, categoryId=$categoryId）")
                 throw NetworkException("菜谱数据为空", R.string.error_network_fail)
             }
+
+    /** 我的收藏分页（按收藏时间倒序；data 缺失按失败上抛） */
+    suspend fun getFavoriteRecipes(page: Int, size: Int): PageData<DiningRecipeVo> =
+        diningServiceApi.favoriteRecipes(page, size).data
+            ?: run {
+                AppLogger.warn(TAG, "getFavoriteRecipes 响应 data 为空，按失败上抛（page=$page）")
+                throw NetworkException("收藏列表为空", R.string.error_network_fail)
+            }
+
+    /** 收藏/取消收藏（幂等，返回操作后的当前态；data 缺失按失败上抛） */
+    suspend fun favoriteRecipe(id: Long): Boolean =
+        diningServiceApi.favoriteRecipe(id).data
+            ?: run {
+                AppLogger.warn(TAG, "favoriteRecipe 响应 data 为空，按失败上抛（id=$id）")
+                throw NetworkException("收藏结果为空", R.string.error_network_fail)
+            }
+
+    /** 取消收藏（幂等，返回操作后的当前态；data 缺失按失败上抛） */
+    suspend fun unfavoriteRecipe(id: Long): Boolean =
+        diningServiceApi.unfavoriteRecipe(id).data
+            ?: run {
+                AppLogger.warn(TAG, "unfavoriteRecipe 响应 data 为空，按失败上抛（id=$id）")
+                throw NetworkException("取消收藏结果为空", R.string.error_network_fail)
+            }
+
+    /** 获取饮食偏好（字段 null=默认值语义；data 缺失按失败上抛） */
+    suspend fun getDietaryPreference(): DietaryPreferenceVo =
+        diningServiceApi.dietaryPreference().data
+            ?: run {
+                AppLogger.warn(TAG, "getDietaryPreference 响应 data 为空，按失败上抛")
+                throw NetworkException("饮食偏好为空", R.string.error_network_fail)
+            }
+
+    /** 保存饮食偏好（任一字段 null=恢复默认；成功 data 为提示文案，缺失不视为失败） */
+    suspend fun saveDietaryPreference(preference: DietaryPreferenceVo) {
+        diningServiceApi.saveDietaryPreference(preference)
+    }
 
     /** 菜谱详情（仅上架可见；下架/不存在由后端业务失败转译上抛） */
     suspend fun getRecipeDetail(id: Long): DiningRecipeVo =
         diningServiceApi.recipeDetail(id).data
             ?: run {
-                AppLogger.warn(TAG, "getRecipeDetail 响应 data 为空，按失败处理上抛（id=$id）")
+                AppLogger.warn(TAG, "getRecipeDetail 响应 data 为空，按失败上抛（id=$id）")
                 throw NetworkException("菜谱详情为空", R.string.error_network_fail)
             }
 

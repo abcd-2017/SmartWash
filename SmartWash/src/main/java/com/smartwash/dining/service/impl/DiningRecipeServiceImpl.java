@@ -5,12 +5,18 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.config.MinioConfig;
 import com.smartwash.dining.entity.DiningCategory;
+import com.smartwash.dining.entity.DiningIngredient;
 import com.smartwash.dining.entity.DiningRecipe;
+import com.smartwash.dining.entity.DiningRecipeFavorite;
+import com.smartwash.dining.entity.DiningRecipeIngredient;
 import com.smartwash.dining.from.AddDiningRecipeFrom;
 import com.smartwash.dining.from.SearchDiningRecipeFrom;
 import com.smartwash.dining.from.SearchWebDiningRecipeFrom;
 import com.smartwash.dining.from.UpdateDiningRecipeFrom;
 import com.smartwash.dining.mapper.DiningCategoryMapper;
+import com.smartwash.dining.mapper.DiningIngredientMapper;
+import com.smartwash.dining.mapper.DiningRecipeFavoriteMapper;
+import com.smartwash.dining.mapper.DiningRecipeIngredientMapper;
 import com.smartwash.dining.mapper.DiningRecipeMapper;
 import com.smartwash.dining.service.DiningRecipeService;
 import com.smartwash.dining.support.RecipeImageValidator;
@@ -23,14 +29,17 @@ import com.smartwash.utils.SecurityUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -69,6 +78,18 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
     @Autowired
     private SecurityUtil securityUtil;
 
+    /** 菜谱配料关联 Mapper：详情过敏原聚合（配料 ID → 过敏原） */
+    @Autowired
+    private DiningRecipeIngredientMapper recipeIngredientMapper;
+
+    /** 配料库 Mapper：详情过敏原聚合（关联行 → 配料过敏原） */
+    @Autowired
+    private DiningIngredientMapper ingredientMapper;
+
+    /** 菜谱收藏 Mapper：favorited 批量填充与收藏增删查（依赖 Mapper 而非服务，避免服务间环） */
+    @Autowired
+    private DiningRecipeFavoriteMapper favoriteMapper;
+
 
     @Override
     public Page<DiningRecipeVo> adminPage(SearchDiningRecipeFrom from) {
@@ -101,6 +122,13 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         recipe.setIngredients(serializeIngredients(from.getIngredients()));
         // 封面上传与表单分两次提交：先拿对象键，随新增/编辑一起落库（缺失时保持 null）
         recipe.setCoverObjectKey(from.getCoverObjectKey());
+        // 营养成分（契约 §3.2）：可空=未录入，随表单直接落库
+        recipe.setCaloriesPer100g(from.getCaloriesPer100g());
+        recipe.setCaloriesTotal(from.getCaloriesTotal());
+        recipe.setProteinG(from.getProteinG());
+        recipe.setFatG(from.getFatG());
+        recipe.setCarbsG(from.getCarbsG());
+        recipe.setSodiumMg(from.getSodiumMg());
         // 管理端录入：来源固定 ADMIN、创建人取当前登录管理员，默认上架（下架需显式走上下架接口）
         recipe.setSource(SOURCE_ADMIN);
         recipe.setStatus(DiningRecipe.STATUS_ON_SHELF);
@@ -133,6 +161,25 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         }
         if (from.getCoverObjectKey() != null) {
             recipe.setCoverObjectKey(from.getCoverObjectKey());
+        }
+        // 营养成分（契约 §3.2）：null=不修改，对齐本接口全量字段语义
+        if (from.getCaloriesPer100g() != null) {
+            recipe.setCaloriesPer100g(from.getCaloriesPer100g());
+        }
+        if (from.getCaloriesTotal() != null) {
+            recipe.setCaloriesTotal(from.getCaloriesTotal());
+        }
+        if (from.getProteinG() != null) {
+            recipe.setProteinG(from.getProteinG());
+        }
+        if (from.getFatG() != null) {
+            recipe.setFatG(from.getFatG());
+        }
+        if (from.getCarbsG() != null) {
+            recipe.setCarbsG(from.getCarbsG());
+        }
+        if (from.getSodiumMg() != null) {
+            recipe.setSodiumMg(from.getSodiumMg());
         }
         this.updateById(recipe);
         log.info("更新菜谱, id: {}, name: {}", recipe.getId(), recipe.getName());
@@ -182,25 +229,28 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
 
 
     @Override
-    public Page<DiningRecipeVo> userPage(SearchWebDiningRecipeFrom from) {
+    public Page<DiningRecipeVo> userPage(SearchWebDiningRecipeFrom from, Long userId) {
         // 用户端固定只查上架：status 不来自入参（SearchWebDiningRecipeFrom 无 status 字段），杜绝端上越权翻下架数据
         LambdaQueryWrapper<DiningRecipe> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DiningRecipe::getStatus, DiningRecipe.STATUS_ON_SHELF);
         wrapper.eq(from.getCategoryId() != null, DiningRecipe::getCategoryId, from.getCategoryId());
         wrapper.like(StringUtils.hasText(from.getKeyword()), DiningRecipe::getName, from.getKeyword());
+        // 食材反查（契约 §2.4）：与 keyword/categoryId 组合为 AND；命中为空时短路为空结果
+        applyIngredientFilter(from.getIngredient(), wrapper);
         // 与管理端列表同序：新菜谱在前
         wrapper.orderByDesc(DiningRecipe::getId);
 
         Page<DiningRecipe> page = this.page(new Page<>(from.getPage(), from.getSize()), wrapper);
         List<DiningRecipeVo> vos = page.getRecords().stream().map(this::buildVo).toList();
         fillCategoryNames(page.getRecords(), vos);
+        fillFavorited(vos, userId);
         Page<DiningRecipeVo> voPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
         voPage.setRecords(vos);
         return voPage;
     }
 
     @Override
-    public DiningRecipeVo userDetail(Long id) {
+    public DiningRecipeVo userDetail(Long id, Long userId) {
         DiningRecipe recipe = this.getById(id);
         // 下架与不存在同语义拒绝：不向下架菜谱泄露名称/步骤等内容，也不向端上区分两种失败
         if (recipe == null || !Objects.equals(recipe.getStatus(), DiningRecipe.STATUS_ON_SHELF)) {
@@ -208,7 +258,133 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         }
         DiningRecipeVo vo = buildVo(recipe);
         fillCategoryNames(List.of(recipe), List.of(vo));
+        vo.setAllergens(aggregateAllergens(id));
+        fillFavorited(List.of(vo), userId);
         return vo;
+    }
+
+    // ==================== 收藏（契约 §2.3） ====================
+
+    @Override
+    public boolean favorite(Long userId, Long recipeId) {
+        // 存在性校验：不校验上下架——收藏是用户数据，不因目录下架而失效（详情仍按上架口径拒绝）
+        Long count = this.baseMapper.selectCount(new LambdaQueryWrapper<DiningRecipe>()
+                .eq(DiningRecipe::getId, recipeId));
+        if (count == null || count == 0) {
+            throw new CustomExceptions("菜谱不存在");
+        }
+        // 幂等：已收藏直接返回当前态，不重复插
+        Long exists = favoriteMapper.selectCount(new LambdaQueryWrapper<DiningRecipeFavorite>()
+                .eq(DiningRecipeFavorite::getUserId, userId)
+                .eq(DiningRecipeFavorite::getRecipeId, recipeId));
+        if (exists != null && exists > 0) {
+            return true;
+        }
+        try {
+            favoriteMapper.insert(new DiningRecipeFavorite().setUserId(userId).setRecipeId(recipeId));
+        } catch (DuplicateKeyException e) {
+            // 并发窗口撞 uk_user_recipe：先收藏者生效，本次按已收藏处理（幂等）
+            log.info("收藏并发撞唯一键，按已收藏处理, userId: {}, recipeId: {}", userId, recipeId);
+        }
+        log.info("收藏菜谱, userId: {}, recipeId: {}", userId, recipeId);
+        return true;
+    }
+
+    @Override
+    public boolean unfavorite(Long userId, Long recipeId) {
+        // 幂等：未收藏时删除 0 行，无异常
+        favoriteMapper.delete(new LambdaQueryWrapper<DiningRecipeFavorite>()
+                .eq(DiningRecipeFavorite::getUserId, userId)
+                .eq(DiningRecipeFavorite::getRecipeId, recipeId));
+        log.info("取消收藏, userId: {}, recipeId: {}", userId, recipeId);
+        return false;
+    }
+
+    @Override
+    public Page<DiningRecipeVo> favoritePage(Long userId, SearchWebDiningRecipeFrom from) {
+        // 按收藏时间倒序（id 自增等价于时间序）：最新收藏的在前
+        Page<DiningRecipeFavorite> favPage = favoriteMapper.selectPage(
+                new Page<>(from.getPage(), from.getSize()),
+                new LambdaQueryWrapper<DiningRecipeFavorite>()
+                        .eq(DiningRecipeFavorite::getUserId, userId)
+                        .orderByDesc(DiningRecipeFavorite::getId));
+        List<Long> recipeIds = favPage.getRecords().stream()
+                .map(DiningRecipeFavorite::getRecipeId).toList();
+        Page<DiningRecipeVo> voPage = new Page<>(favPage.getCurrent(), favPage.getSize(), favPage.getTotal());
+        if (recipeIds.isEmpty()) {
+            voPage.setRecords(List.of());
+            return voPage;
+        }
+        Map<Long, DiningRecipe> recipeById = this.baseMapper
+                .selectList(new LambdaQueryWrapper<DiningRecipe>().in(DiningRecipe::getId, recipeIds)).stream()
+                .collect(Collectors.toMap(DiningRecipe::getId, r -> r, (a, b) -> a));
+        // 保持收藏顺序；收藏行指向的菜谱已被物理删除时跳过（无外键，孤儿收藏行不影响其他条目）
+        List<DiningRecipe> ordered = recipeIds.stream()
+                .map(recipeById::get).filter(Objects::nonNull).toList();
+        List<DiningRecipeVo> vos = new ArrayList<>(ordered.size());
+        for (DiningRecipe recipe : ordered) {
+            DiningRecipeVo vo = buildVo(recipe);
+            vo.setFavorited(true);
+            vos.add(vo);
+        }
+        fillCategoryNames(ordered, vos);
+        voPage.setRecords(vos);
+        return voPage;
+    }
+
+    /**
+     * 食材反查过滤（契约 §2.4）：先按配料名模糊取菜谱 ID 集合（join 关联表），再 IN 进主查询。
+     * 命中为空时用 {@code 1 = 0} 短路，避免 {@code IN ()} 语法错误。
+     */
+    private void applyIngredientFilter(String ingredient, LambdaQueryWrapper<DiningRecipe> wrapper) {
+        if (!StringUtils.hasText(ingredient)) {
+            return;
+        }
+        List<Long> recipeIds = this.baseMapper.selectRecipeIdsByIngredientName(ingredient.trim());
+        if (recipeIds == null || recipeIds.isEmpty()) {
+            wrapper.apply("1 = 0");
+            return;
+        }
+        wrapper.in(DiningRecipe::getId, recipeIds);
+    }
+
+    /**
+     * 批量填充 favorited（契约 §2.3）：一次 {@code WHERE user_id=? AND recipe_id IN(...)} 查询，禁止 N+1。
+     * userId 为空或列表为空时全部置 false（公开/管理端场景）。
+     */
+    private void fillFavorited(List<DiningRecipeVo> vos, Long userId) {
+        if (userId == null || vos.isEmpty()) {
+            vos.forEach(vo -> vo.setFavorited(false));
+            return;
+        }
+        List<Long> recipeIds = vos.stream().map(DiningRecipeVo::getId).toList();
+        Set<Long> favorited = favoriteMapper.selectList(new LambdaQueryWrapper<DiningRecipeFavorite>()
+                        .eq(DiningRecipeFavorite::getUserId, userId)
+                        .in(DiningRecipeFavorite::getRecipeId, recipeIds)).stream()
+                .map(DiningRecipeFavorite::getRecipeId).collect(Collectors.toSet());
+        vos.forEach(vo -> vo.setFavorited(favorited.contains(vo.getId())));
+    }
+
+    /**
+     * 聚合该菜全部配料的过敏原去重集合（契约 §2.2）：关联表 → 配料 → 非空 allergen，
+     * 按 {@link DiningIngredient#ALLERGEN_VALUES} 顺序稳定输出，空集返回空列表。
+     */
+    private List<String> aggregateAllergens(Long recipeId) {
+        List<DiningRecipeIngredient> relations = recipeIngredientMapper.selectList(
+                new LambdaQueryWrapper<DiningRecipeIngredient>()
+                        .eq(DiningRecipeIngredient::getRecipeId, recipeId));
+        if (relations.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ingredientIds = relations.stream()
+                .map(DiningRecipeIngredient::getIngredientId).filter(Objects::nonNull).distinct().toList();
+        if (ingredientIds.isEmpty()) {
+            return List.of();
+        }
+        Set<String> allergens = ingredientMapper.selectBatchIds(ingredientIds).stream()
+                .map(DiningIngredient::getAllergen).filter(StringUtils::hasText).collect(Collectors.toSet());
+        // 按枚举定义顺序稳定输出（同菜多配料命中同一标签只出现一次）
+        return DiningIngredient.ALLERGEN_VALUES.stream().filter(allergens::contains).toList();
     }
 
     @Override
@@ -290,11 +466,12 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         }
     }
 
-    /** 实体 → 管理端 Vo：拼封面直链、反序列化食材数组（分类名由批量联查统一回填） */
+    /** 实体 → Vo：拼封面直链、反序列化食材数组（分类名由批量联查统一回填）；favorited 默认 false，用户端再按实际覆盖 */
     private DiningRecipeVo buildVo(DiningRecipe recipe) {
         DiningRecipeVo vo = new DiningRecipeVo();
         BeanUtils.copyProperties(recipe, vo);
         vo.setIngredients(deserializeIngredients(recipe.getIngredients()));
+        vo.setFavorited(false);
         vo.setCoverUrl(StringUtils.hasText(recipe.getCoverObjectKey())
                 ? minioConfig.urlOf(recipe.getCoverObjectKey()) : null);
         return vo;

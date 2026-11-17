@@ -2,16 +2,16 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F5F6F3">
 <title>投壶</title>
 <style>
   /*token:GAME-THEME.md §2 基线 + §3 素材（sky/cloud/field/gnd/grid/card/open/ball）*/
   :root {
     --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
-    --g-primary:#2D9B6A; --g-primary-deep:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
+    --g-primary:#2D9B6A; --g-primary-deep:#17734A;--g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
     --g-text:#1C1C1E; --g-muted:#6B6E73; --g-faint:#A9AEA9; --g-border:#E6E9E6; --g-hairline:#EFF1EE;
-    --g-danger:#A83850; --g-warning:#D98A26; --g-success:#2D9B6A; --g-water:#4A9FD4;
+    --g-danger:#A83850; --g-warning:#9A6210; --g-success:#17734A; --g-water:#4A9FD4;
     --g-scrim:rgba(245,246,243,.9);
     --g-shadow:0 2px 12px rgba(20,40,30,.05);
     --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
@@ -73,8 +73,8 @@
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
     border: 0; border-radius: 14px;
-    background: var(--g-primary); color: var(--g-on-primary);
-    font-family: inherit; font-size:22px; font-weight:700; cursor: pointer;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
     touch-action: manipulation;
   }
   .btn:active { opacity: .85; }
@@ -101,9 +101,9 @@
     touch-action: manipulation;
   }
   .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
-  .lv-chip.done { background: var(--g-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
+  .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
   .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
-  .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background: var(--g-warning); color: var(--g-text); font-size: 12px; font-weight: 700; }
+  .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background:var(--g-surface2);color:var(--g-warning); font-size: 12px; font-weight: 700; }
   .badge.show { display: inline-block; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
@@ -141,7 +141,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <div class="stage" id="stage">
     <canvas id="cv" aria-label="投壶游戏画面" role="img"></canvas>
-    <div class="overlay" id="ovWin">
+    <div class="overlay" role="dialog" aria-modal="true" id="ovWin">
       <span class="badge" id="ovNew">新纪录</span>
       <h2 class="ov-title">过关！</h2>
       <p class="ov-sub" id="ovWinDesc"></p>
@@ -151,7 +151,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         <button class="btn ghost" id="btnSelectWin" type="button">选关</button>
       </div>
     </div>
-    <div class="overlay" id="ovFail">
+    <div class="overlay" role="dialog" aria-modal="true" id="ovFail">
       <h2 class="ov-title">箭已用尽</h2>
       <p class="ov-sub" id="ovFailDesc"></p>
       <div class="btn-row">
@@ -159,7 +159,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         <button class="btn ghost" id="btnSelectFail" type="button">选关</button>
       </div>
     </div>
-    <div class="overlay" id="ovSelect">
+    <div class="overlay" role="dialog" aria-modal="true" id="ovSelect">
       <h2 class="ov-title">选择关卡</h2>
       <div class="lv-wrap"><div class="lv-grid" id="lvGrid"></div></div>
       <div class="btn-row"><button class="btn ghost" id="btnCloseSelect" type="button">关闭</button></div>
@@ -810,6 +810,39 @@ resize();
 startLevel(cur);
 requestAnimationFrame(frame);
 syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
 })();
 </script>
 </body>

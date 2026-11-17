@@ -2,16 +2,22 @@ package com.smartwash.dining.service.impl;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.smartwash.dining.entity.DiningCategory;
+import com.smartwash.dining.entity.DiningIngredient;
 import com.smartwash.dining.entity.DiningRecipe;
+import com.smartwash.dining.entity.DiningRecipeIngredient;
 import com.smartwash.dining.from.DiningRecipeImportConfirmFrom;
 import com.smartwash.dining.mapper.DiningCategoryMapper;
+import com.smartwash.dining.mapper.DiningIngredientMapper;
+import com.smartwash.dining.mapper.DiningRecipeIngredientMapper;
 import com.smartwash.dining.mapper.DiningRecipeMapper;
 import com.smartwash.dining.service.DiningRecipeImportService;
 import com.smartwash.dining.vo.DiningRecipeImportPreviewVo;
 import com.smartwash.dining.vo.DiningRecipeImportResultVo;
 import com.smartwash.exception.CustomExceptions;
+import com.smartwash.config.MinioConfig;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.SecurityUtil;
+import io.minio.MinioClient;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -34,9 +40,13 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -53,6 +63,10 @@ import static org.mockito.Mockito.when;
  * 菜谱批量导入服务测试（对齐 DiningRecipeServiceImplTest 的纯 Mockito 先例）。
  * 只断言公共接口的外部行为契约（两阶段：预览不落库 / 确认整批事务 + 逐行报告），
  * 不探内部结构。文件构造在测试侧用 POI/字符串生成真实字节，解析链路全真。
+ *
+ * <p>v2 扩展覆盖（契约 §3.2）：可选新列（食材明细列表/封面对象键/营养 6 列）解析与校验、
+ * 分类不存在自动创建（sort 递增）、配料按名 upsert 幂等（已存在复用不覆盖）、
+ * 关联表按名去重合并（明细数量优先）、旧 5 列 CSV 行为零破坏。</p>
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -67,7 +81,21 @@ class DiningRecipeImportServiceImplTest {
     @Mock
     private DiningCategoryMapper categoryMapper;
 
+    @Mock
+    private DiningIngredientMapper ingredientMapper;
+
+    @Mock
+    private DiningRecipeIngredientMapper recipeIngredientMapper;
+
+    @Mock
+    private MinioClient minioClient;
+
+    @Mock
+    private MinioConfig minioConfig;
+
     private DiningRecipeImportService service;
+
+    private final AtomicLong ingredientIdSeq = new AtomicLong(100);
 
     @BeforeAll
     static void initTableInfo() {
@@ -75,6 +103,8 @@ class DiningRecipeImportServiceImplTest {
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
         com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(assistant, DiningRecipe.class);
         com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(assistant, DiningCategory.class);
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(assistant, DiningIngredient.class);
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(assistant, DiningRecipeIngredient.class);
     }
 
     @BeforeEach
@@ -82,6 +112,10 @@ class DiningRecipeImportServiceImplTest {
         DiningRecipeImportServiceImpl impl = new DiningRecipeImportServiceImpl();
         ReflectionTestUtils.setField(impl, "diningRecipeMapper", recipeMapper);
         ReflectionTestUtils.setField(impl, "diningCategoryMapper", categoryMapper);
+        ReflectionTestUtils.setField(impl, "diningIngredientMapper", ingredientMapper);
+        ReflectionTestUtils.setField(impl, "diningRecipeIngredientMapper", recipeIngredientMapper);
+        ReflectionTestUtils.setField(impl, "minioClient", minioClient);
+        ReflectionTestUtils.setField(impl, "minioConfig", minioConfig);
         ReflectionTestUtils.setField(impl, "securityUtil", new SecurityUtil());
         service = impl;
 
@@ -140,10 +174,20 @@ class DiningRecipeImportServiceImplTest {
                 "异常消息应包含「" + expectedMessagePart + "」，实际: " + ex.getMessage());
     }
 
+    /** 配料库 selectOne 未命中 + insert 自增回填（模拟 MyBatis-Plus insert 后回填主键） */
+    private void stubIngredientAutoRegister() {
+        when(ingredientMapper.selectOne(any())).thenReturn(null);
+        when(ingredientMapper.insert(any(DiningIngredient.class))).thenAnswer(inv -> {
+            inv.getArgument(0, DiningIngredient.class).setId(ingredientIdSeq.incrementAndGet());
+            return 1;
+        });
+        when(recipeIngredientMapper.insert(any(DiningRecipeIngredient.class))).thenReturn(1);
+    }
+
     // ==================== 模板生成 ====================
 
     @Test
-    @DisplayName("模板：xlsx 可被 POI 读回，首 sheet 首行为 5 列标准表头，且带填写说明 sheet")
+    @DisplayName("模板：xlsx 可被 POI 读回，首 sheet 首行为 13 列标准表头（v2 新列在列），且带填写说明 sheet")
     void template_readableWithStandardHeader() throws Exception {
         byte[] bytes = service.buildTemplate();
         assertTrue(bytes.length > 0, "模板字节非空");
@@ -154,13 +198,22 @@ class DiningRecipeImportServiceImplTest {
             assertEquals("分类名", header.getCell(0).getStringCellValue());
             assertEquals("菜名", header.getCell(1).getStringCellValue());
             assertEquals("食材名列表", header.getCell(2).getStringCellValue());
-            assertEquals("步骤", header.getCell(3).getStringCellValue());
-            assertEquals("封面链接", header.getCell(4).getStringCellValue());
+            assertEquals("食材明细列表", header.getCell(3).getStringCellValue());
+            assertEquals("步骤", header.getCell(4).getStringCellValue());
+            assertEquals("封面对象键", header.getCell(5).getStringCellValue());
+            assertEquals("封面链接", header.getCell(6).getStringCellValue());
+            assertEquals("热量每100g", header.getCell(7).getStringCellValue());
+            assertEquals("整份热量", header.getCell(8).getStringCellValue());
+            assertEquals("蛋白质g", header.getCell(9).getStringCellValue());
+            assertEquals("脂肪g", header.getCell(10).getStringCellValue());
+            assertEquals("碳水g", header.getCell(11).getStringCellValue());
+            assertEquals("钠mg", header.getCell(12).getStringCellValue());
             assertTrue(first.getLastRowNum() >= 1, "表头之外应有示例行");
             assertTrue(workbook.getNumberOfSheets() >= 2, "应有填写说明 sheet");
             String explain = workbook.getSheetAt(1).getRow(0).getCell(0).getStringCellValue();
             assertTrue(explain.contains("分隔"), "说明必须写清食材分隔符约定");
             assertTrue(explain.contains("500"), "说明必须写清单次行数上限");
+            assertTrue(explain.contains("自动创建"), "说明必须写清分类自动创建行为");
         }
     }
 
@@ -233,10 +286,119 @@ class DiningRecipeImportServiceImplTest {
         assertEquals(List.of("豆腐", "牛肉末", "豆瓣酱"), vo.getRows().get(0).getIngredients());
     }
 
+    // ==================== 预览：v2 可选列解析 ====================
+
+    @Test
+    @DisplayName("预览 v2：食材明细列表解析——数量数值/单位成对解析，数量为空或适量按未给出处理")
+    void preview_ingredientDetails_parsed() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+        DiningRecipeImportPreviewVo vo = service.preview(xlsxFile(List.of(
+                List.of("分类名", "菜名", "食材名列表", "食材明细列表", "步骤", "封面链接"),
+                List.of("", "番茄炒蛋", "西红柿、鸡蛋、盐", "鸡蛋:575g、西红柿:1.8kg、盐:、葱:适量", "炒", ""))));
+
+        DiningRecipeImportPreviewVo.PreviewRow row = vo.getRows().get(0);
+        assertTrue(row.getErrors().isEmpty(), "合法明细不应产生错误");
+        assertEquals(4, row.getIngredientDetails().size());
+        assertEquals("鸡蛋", row.getIngredientDetails().get(0).getName());
+        assertEquals(0, new BigDecimal("575").compareTo(row.getIngredientDetails().get(0).getAmountValue()));
+        assertEquals("g", row.getIngredientDetails().get(0).getAmountUnit());
+        assertEquals("kg", row.getIngredientDetails().get(1).getAmountUnit(), "单位原样保留（kg→g 归一在聚合侧做）");
+        assertEquals(0, new BigDecimal("1.8").compareTo(row.getIngredientDetails().get(1).getAmountValue()));
+        assertNull(row.getIngredientDetails().get(2).getAmountValue(), "「盐:」空数量落 NULL");
+        assertNull(row.getIngredientDetails().get(2).getAmountUnit());
+        assertNull(row.getIngredientDetails().get(3).getAmountValue(), "「葱:适量」非数值按未给出处理");
+        assertNull(row.getIngredientDetails().get(3).getAmountUnit());
+        assertTrue(row.getWarnings().isEmpty(), "数量为空/适量是合法语义，不产生警告");
+    }
+
+    @Test
+    @DisplayName("预览 v2：明细缺冒号等解析失败给行级警告不报错（导入不阻断）")
+    void preview_ingredientDetails_parseFailureWarned() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+        DiningRecipeImportPreviewVo vo = service.preview(xlsxFile(List.of(
+                List.of("分类名", "菜名", "食材名列表", "食材明细列表", "步骤", "封面链接"),
+                List.of("", "番茄炒蛋", "西红柿", "鸡蛋、西红柿:200g", "炒", ""))));
+
+        DiningRecipeImportPreviewVo.PreviewRow row = vo.getRows().get(0);
+        assertTrue(row.getErrors().isEmpty(), "明细解析失败仅警告，不算错误");
+        assertEquals(1, row.getIngredientDetails().size(), "缺冒号项跳过，合法项保留");
+        assertEquals("西红柿", row.getIngredientDetails().get(0).getName());
+        assertTrue(row.getWarnings().stream().anyMatch(w -> w.contains("鸡蛋") && w.contains("跳过")),
+                "解析失败项必须进 warnings 标注");
+    }
+
+    @Test
+    @DisplayName("预览 v2：营养列解析——数值归一、非法文本与负数给行级错误")
+    void preview_nutritionColumns_parsedAndValidated() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+        DiningRecipeImportPreviewVo vo = service.preview(xlsxFile(List.of(
+                List.of("分类名", "菜名", "食材名列表", "步骤", "封面链接",
+                        "热量每100g", "整份热量", "蛋白质g", "脂肪g", "碳水g", "钠mg"),
+                List.of("", "好菜", "盐", "煮", "", "105.5", "1830", "8.2", "11.3", "4.9", "620.5"),
+                List.of("", "文本热量菜", "盐", "煮", "", "约100", "", "", "", "", ""),
+                List.of("", "负数菜", "盐", "煮", "", "-5", "-1", "", "", "", ""))));
+
+        DiningRecipeImportPreviewVo.PreviewRow ok = vo.getRows().get(0);
+        assertTrue(ok.getErrors().isEmpty());
+        assertEquals(0, new BigDecimal("105.5").compareTo(ok.getCaloriesPer100g()));
+        assertEquals(0, new BigDecimal("1830").compareTo(ok.getCaloriesTotal()));
+        assertEquals(0, new BigDecimal("8.2").compareTo(ok.getProteinG()));
+        assertEquals(0, new BigDecimal("11.3").compareTo(ok.getFatG()));
+        assertEquals(0, new BigDecimal("4.9").compareTo(ok.getCarbsG()));
+        assertEquals(0, new BigDecimal("620.5").compareTo(ok.getSodiumMg()));
+
+        DiningRecipeImportPreviewVo.PreviewRow textRow = vo.getRows().get(1);
+        assertTrue(textRow.getErrors().stream().anyMatch(e -> e.contains("热量每100g") && e.contains("数值")));
+
+        DiningRecipeImportPreviewVo.PreviewRow negativeRow = vo.getRows().get(2);
+        assertTrue(negativeRow.getErrors().stream().anyMatch(e -> e.contains("热量每100g") && e.contains("负数")));
+        assertTrue(negativeRow.getErrors().stream().anyMatch(e -> e.contains("整份热量") && e.contains("负数")));
+    }
+
+    @Test
+    @DisplayName("预览 v2：封面对象键——前缀非法报错；前缀合法但存储不存在仅警告不报错")
+    void preview_coverObjectKey_prefixAndExistence() throws Exception {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+        when(minioConfig.getBucketName()).thenReturn("test-bucket");
+        when(minioClient.statObject(any(io.minio.StatObjectArgs.class)))
+                .thenThrow(new IOException("connection refused"));
+
+        DiningRecipeImportPreviewVo vo = service.preview(xlsxFile(List.of(
+                List.of("分类名", "菜名", "食材名列表", "步骤", "封面链接", "封面对象键"),
+                List.of("", "坏前缀菜", "盐", "煮", "", "other/abc.png"),
+                List.of("", "缺对象菜", "盐", "煮", "", "dining/covers/missing.png"))));
+
+        DiningRecipeImportPreviewVo.PreviewRow badPrefix = vo.getRows().get(0);
+        assertTrue(badPrefix.getErrors().stream().anyMatch(e -> e.contains("dining/covers/")),
+                "前缀非法必须行级报错");
+
+        DiningRecipeImportPreviewVo.PreviewRow missing = vo.getRows().get(1);
+        assertTrue(missing.getErrors().isEmpty(), "存储缺失仅警告不阻断");
+        assertTrue(missing.getWarnings().stream().anyMatch(w -> w.contains("dining/covers/missing.png") && w.contains("不存在")),
+                "存储缺失必须进 warnings 标注");
+    }
+
+    @Test
+    @DisplayName("预览 v2：封面对象键存储存在 → 无警告（statObject 命中即视为可导入）")
+    void preview_coverObjectKey_exists_noWarning() throws Exception {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+        when(minioConfig.getBucketName()).thenReturn("test-bucket");
+        when(minioClient.statObject(any(io.minio.StatObjectArgs.class))).thenReturn(null);
+
+        DiningRecipeImportPreviewVo vo = service.preview(xlsxFile(List.of(
+                List.of("分类名", "菜名", "食材名列表", "步骤", "封面链接", "封面对象键"),
+                List.of("", "有封面菜", "盐", "煮", "", "dining/covers/a.png"))));
+
+        DiningRecipeImportPreviewVo.PreviewRow row = vo.getRows().get(0);
+        assertTrue(row.getErrors().isEmpty());
+        assertTrue(row.getWarnings().isEmpty());
+        verify(minioClient).statObject(any(io.minio.StatObjectArgs.class));
+    }
+
     // ==================== 预览：行级校验 ====================
 
     @Test
-    @DisplayName("预览行级错误：菜名空/分类不存在/食材单项超长/步骤超长/封面非法，行号定位准确")
+    @DisplayName("预览行级错误：菜名空/食材单项超长/步骤超长/封面非法，行号定位准确；分类不存在降级为警告")
     void preview_rowLevelErrors_collected() {
         when(categoryMapper.selectList(any())).thenReturn(List.of(category(3L, "汤羹")));
         String longIngredient = "超".repeat(33);
@@ -249,8 +411,8 @@ class DiningRecipeImportServiceImplTest {
                 List.of("", "坏链接菜", "盐", "煮", "ftp://not-http.example.com/a.png"))));
 
         assertEquals(5, vo.getTotal());
-        assertEquals(0, vo.getValidCount());
-        assertEquals(5, vo.getErrorCount());
+        assertEquals(1, vo.getValidCount(), "分类不存在的行降级为警告，仍可导入");
+        assertEquals(4, vo.getErrorCount());
 
         DiningRecipeImportPreviewVo.PreviewRow row2 = vo.getRows().get(0);
         assertEquals(2, row2.getRowNo());
@@ -258,8 +420,9 @@ class DiningRecipeImportServiceImplTest {
 
         DiningRecipeImportPreviewVo.PreviewRow row3 = vo.getRows().get(1);
         assertEquals(3, row3.getRowNo());
-        assertTrue(row3.getErrors().stream().anyMatch(e -> e.contains("分类") && e.contains("幽灵分类")),
-                "第 3 行分类不存在应带分类名报错");
+        assertTrue(row3.getErrors().isEmpty(), "分类不存在不再阻断导入");
+        assertTrue(row3.getWarnings().stream().anyMatch(e -> e.contains("幽灵分类") && e.contains("自动创建")),
+                "分类不存在必须以警告标注确认时自动创建");
         assertNull(row3.getCategoryId());
 
         DiningRecipeImportPreviewVo.PreviewRow row4 = vo.getRows().get(2);
@@ -270,6 +433,17 @@ class DiningRecipeImportServiceImplTest {
 
         DiningRecipeImportPreviewVo.PreviewRow row6 = vo.getRows().get(4);
         assertTrue(row6.getErrors().stream().anyMatch(e -> e.contains("封面")));
+    }
+
+    @Test
+    @DisplayName("预览：步骤列为空不再报错（酱料配方/瓶装饮品无做法步骤）")
+    void preview_blankSteps_allowed() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+        DiningRecipeImportPreviewVo vo = service.preview(xlsxFile(List.of(
+                List.of("分类名", "菜名", "食材名列表", "步骤", "封面链接"),
+                List.of("酱料", "秘制辣椒油", "辣椒、油", "", ""))));
+        assertTrue(vo.getRows().get(0).getErrors().isEmpty(), "步骤可空是合法输入");
+        assertNull(vo.getRows().get(0).getSteps());
     }
 
     @Test
@@ -335,7 +509,7 @@ class DiningRecipeImportServiceImplTest {
     }
 
     @Test
-    @DisplayName("预览：表头缺列整体拒绝，错误提示指明缺哪一列")
+    @DisplayName("预览：表头缺必选列整体拒绝，错误提示指明缺哪一列")
     void preview_missingColumn_rejected() {
         expectBusinessException("菜名", () -> service.preview(xlsxFile(List.of(
                 List.of("分类名", "食材名列表", "步骤", "封面链接"),
@@ -373,10 +547,11 @@ class DiningRecipeImportServiceImplTest {
     }
 
     @Test
-    @DisplayName("确认：全部通过逐行写入——source=ADMIN、默认上架、创建管理员、分类名映射 ID、食材 JSON 序列化，报告含菜谱 ID")
+    @DisplayName("确认：全部通过逐行写入——source=ADMIN、默认上架、创建管理员、分类名映射 ID、食材 JSON 双写，报告含菜谱 ID")
     void confirm_allValid_insertsAllWithReport() {
         when(categoryMapper.selectList(any())).thenReturn(List.of(category(3L, "汤羹")));
         when(recipeMapper.insert(any(DiningRecipe.class))).thenReturn(1);
+        stubIngredientAutoRegister();
 
         DiningRecipeImportResultVo vo = service.confirm(confirmFrom(
                 confirmRow(2, "汤羹", "番茄蛋汤", List.of("西红柿", "鸡蛋"), "冲汤"),
@@ -396,9 +571,9 @@ class DiningRecipeImportServiceImplTest {
         assertEquals("ADMIN", first.getSource(), "导入来源固定 ADMIN");
         assertEquals(7L, first.getCreatedByAdminId(), "创建人取当前登录管理员");
         assertNull(first.getCreatedByUserId());
-        assertEquals("[\"西红柿\",\"鸡蛋\"]", first.getIngredients(), "食材数组序列化为 JSON 文本落库");
+        assertEquals("[\"西红柿\",\"鸡蛋\"]", first.getIngredients(), "食材数组序列化为 JSON 文本双写落库");
         assertEquals("冲汤", first.getSteps());
-        assertNull(first.getCoverObjectKey(), "批量导入不落封面（封面走单独上传链路）");
+        assertNull(first.getCoverObjectKey(), "未传封面对象键时不落封面");
 
         assertNull(captor.getAllValues().get(1).getCategoryId(), "分类名空 = 未分类落 null");
         assertEquals(2, vo.getRows().get(0).getRowNo());
@@ -409,13 +584,14 @@ class DiningRecipeImportServiceImplTest {
     }
 
     @Test
-    @DisplayName("确认：任一行失败（分类不存在）全批不落库，返回逐行失败报告")
+    @DisplayName("确认：任一行失败（封面对象键前缀非法）全批不落库，返回逐行失败报告")
     void confirm_anyInvalid_rollsBackWholeBatch() {
         when(categoryMapper.selectList(any())).thenReturn(List.of(category(3L, "汤羹")));
 
         DiningRecipeImportResultVo vo = service.confirm(confirmFrom(
                 confirmRow(2, "汤羹", "番茄蛋汤", List.of("西红柿"), "冲汤"),
-                confirmRow(3, "幽灵分类", "幽灵菜", List.of("盐"), "煮")));
+                new DiningRecipeImportConfirmFrom.Row().setRowNo(3).setName("幽灵菜")
+                        .setIngredients(List.of("盐")).setSteps("煮").setCoverObjectKey("other/not-allowed.png")));
 
         assertTrue(vo.isRolledBack(), "存在失败行必须全批不落库");
         assertEquals(2, vo.getTotal());
@@ -427,7 +603,184 @@ class DiningRecipeImportServiceImplTest {
             assertNotNull(row.getError());
             assertNull(row.getRecipeId());
         });
-        assertTrue(vo.getRows().get(1).getError().contains("分类"), "失败原因必须指明分类问题");
+        assertTrue(vo.getRows().get(1).getError().contains("封面对象键"), "失败原因必须指明封面键前缀问题");
+    }
+
+    @Test
+    @DisplayName("确认：分类不存在自动创建（sort 自当前最大值递增），并发撞 uk_name 改挂先建分类")
+    void confirm_autoCreatesCategory_withIncrementalSort() {
+        // 已有分类最大 sort=5；两行分别引用不存在的「凉菜」「饮品」
+        when(categoryMapper.selectList(any())).thenReturn(List.of(
+                new DiningCategory().setId(1L).setName("家常菜").setSort(5)));
+        when(recipeMapper.insert(any(DiningRecipe.class))).thenReturn(1);
+        stubIngredientAutoRegister();
+        when(categoryMapper.insert(any(DiningCategory.class))).thenAnswer(inv -> {
+            DiningCategory created = inv.getArgument(0, DiningCategory.class);
+            if (created.getId() == null) {
+                created.setId("凉菜".equals(created.getName()) ? 50L : 51L);
+            }
+            return 1;
+        });
+
+        DiningRecipeImportResultVo vo = service.confirm(confirmFrom(
+                confirmRow(2, "凉菜", "凉拌黄瓜", List.of("黄瓜"), "拍碎"),
+                confirmRow(3, "饮品", "酸梅汤", List.of("乌梅"), "熬煮"),
+                confirmRow(4, "凉菜", "凉拌木耳", List.of("木耳"), "拌")));
+
+        assertFalse(vo.isRolledBack());
+        assertEquals(3, vo.getSuccessCount());
+
+        ArgumentCaptor<DiningCategory> categoryCaptor = ArgumentCaptor.forClass(DiningCategory.class);
+        verify(categoryMapper, org.mockito.Mockito.times(2)).insert(categoryCaptor.capture());
+        List<DiningCategory> created = categoryCaptor.getAllValues();
+        assertEquals(2, created.size(), "同名分类只创建一次（凉菜复用）");
+        assertEquals("凉菜", created.get(0).getName());
+        assertEquals(6, created.get(0).getSort(), "sort 自当前最大值 5 递增");
+        assertEquals("饮品", created.get(1).getName());
+        assertEquals(7, created.get(1).getSort(), "第二个新分类 sort 继续递增");
+
+        ArgumentCaptor<DiningRecipe> recipeCaptor = ArgumentCaptor.forClass(DiningRecipe.class);
+        verify(recipeMapper, org.mockito.Mockito.times(3)).insert(recipeCaptor.capture());
+        assertEquals(50L, recipeCaptor.getAllValues().get(0).getCategoryId());
+        assertEquals(51L, recipeCaptor.getAllValues().get(1).getCategoryId());
+        assertEquals(50L, recipeCaptor.getAllValues().get(2).getCategoryId(), "同批同名分类复用同一 ID");
+        // 自动创建信息按行回显到 warnings
+        assertTrue(vo.getRows().get(0).getWarnings().stream().anyMatch(w -> w.contains("凉菜") && w.contains("自动创建")));
+    }
+
+    @Test
+    @DisplayName("确认：配料按名 upsert 幂等——已存在的配料复用 ID 不再插入，启发分类仅对新配料生效")
+    void confirm_ingredientUpsert_idempotent() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+        when(recipeMapper.insert(any(DiningRecipe.class))).thenReturn(1);
+        // 按调用序区分：首次查询（鸡蛋，已存在后台人工维护的记录）返回既有配料，其后返回 null
+        AtomicLong calls = new AtomicLong();
+        when(ingredientMapper.selectOne(any())).thenAnswer(inv -> {
+            if (calls.incrementAndGet() == 1) {
+                return new DiningIngredient().setId(88L).setName("鸡蛋").setCategory("OTHER");
+            }
+            return null;
+        });
+        when(ingredientMapper.insert(any(DiningIngredient.class))).thenAnswer(inv -> {
+            inv.getArgument(0, DiningIngredient.class).setId(ingredientIdSeq.incrementAndGet());
+            return 1;
+        });
+        when(recipeIngredientMapper.insert(any(DiningRecipeIngredient.class))).thenReturn(1);
+
+        DiningRecipeImportResultVo vo = service.confirm(confirmFrom(
+                confirmRow(2, null, "番茄炒蛋", List.of("鸡蛋", "豆瓣酱", "辣椒油"), "炒")));
+
+        assertFalse(vo.isRolledBack());
+        // 已存在的鸡蛋复用，不再 insert
+        ArgumentCaptor<DiningIngredient> ingredientCaptor = ArgumentCaptor.forClass(DiningIngredient.class);
+        verify(ingredientMapper, org.mockito.Mockito.times(2)).insert(ingredientCaptor.capture());
+        assertEquals(List.of("豆瓣酱", "辣椒油"), ingredientCaptor.getAllValues().stream()
+                .map(DiningIngredient::getName).toList(), "已存在配料不重插（幂等）");
+        assertEquals(DiningIngredient.CATEGORY_SEASONING, ingredientCaptor.getAllValues().get(0).getCategory(),
+                "「豆瓣酱」含酱 → SEASONING 启发分类");
+        assertEquals(DiningIngredient.CATEGORY_SEASONING, ingredientCaptor.getAllValues().get(1).getCategory(),
+                "「辣椒油」含油 → SEASONING 启发分类");
+
+        // 关联表按名去重写入：3 个配料 3 行关联
+        ArgumentCaptor<DiningRecipeIngredient> relationCaptor = ArgumentCaptor.forClass(DiningRecipeIngredient.class);
+        verify(recipeIngredientMapper, org.mockito.Mockito.times(3)).insert(relationCaptor.capture());
+        assertEquals(88L, relationCaptor.getAllValues().get(0).getIngredientId(), "已存在配料复用其 ID");
+    }
+
+    @Test
+    @DisplayName("确认：食材明细写关联表带数量；名列表与明细同名按名去重（明细数量优先），名列表独有条目数量为空")
+    void confirm_ingredientRelations_mergeDetailsOverNames() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+        when(recipeMapper.insert(any(DiningRecipe.class))).thenReturn(1);
+        stubIngredientAutoRegister();
+
+        DiningRecipeImportConfirmFrom.Row row = confirmRow(2, null, "番茄炒蛋",
+                List.of("鸡蛋", "西红柿", "葱"), "炒");
+        row.setIngredientDetails(List.of(
+                new DiningRecipeImportConfirmFrom.IngredientDetail().setName("鸡蛋")
+                        .setAmountValue(new BigDecimal("575")).setAmountUnit("g"),
+                new DiningRecipeImportConfirmFrom.IngredientDetail().setName("西红柿")
+                        .setAmountValue(new BigDecimal("1800")).setAmountUnit("g")));
+        DiningRecipeImportResultVo vo = service.confirm(confirmFrom(row));
+
+        assertFalse(vo.isRolledBack());
+        // 名列表 3 项 + 明细 2 项（鸡蛋/西红柿与名列表重名）→ 去重后 3 行关联
+        ArgumentCaptor<DiningRecipeIngredient> relationCaptor = ArgumentCaptor.forClass(DiningRecipeIngredient.class);
+        verify(recipeIngredientMapper, org.mockito.Mockito.times(3)).insert(relationCaptor.capture());
+        List<DiningRecipeIngredient> relations = relationCaptor.getAllValues();
+        assertEquals(0, new BigDecimal("575").compareTo(relations.get(0).getAmountValue()),
+                "重名配料以明细数量为准");
+        assertEquals("g", relations.get(0).getAmountUnit());
+        assertEquals(0, new BigDecimal("1800").compareTo(relations.get(1).getAmountValue()));
+        assertNull(relations.get(2).getAmountValue(), "名列表独有条目（葱）数量为空");
+        assertNull(relations.get(2).getAmountUnit());
+    }
+
+    @Test
+    @DisplayName("确认：营养列写入菜谱实体；封面对象键存储缺失时该行封面不落库并回显警告")
+    void confirm_nutritionAndCoverKey_written() throws Exception {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+        when(recipeMapper.insert(any(DiningRecipe.class))).thenReturn(1);
+        stubIngredientAutoRegister();
+        when(minioConfig.getBucketName()).thenReturn("test-bucket");
+        when(minioClient.statObject(any(io.minio.StatObjectArgs.class)))
+                .thenThrow(new IOException("object missing"));
+
+        DiningRecipeImportConfirmFrom.Row row = confirmRow(2, null, "番茄炒蛋", List.of("鸡蛋"), "炒")
+                .setCaloriesPer100g(new BigDecimal("86.3"))
+                .setCaloriesTotal(new BigDecimal("518"))
+                .setProteinG(new BigDecimal("7.9"))
+                .setFatG(new BigDecimal("5.1"))
+                .setCarbsG(new BigDecimal("3.2"))
+                .setSodiumMg(new BigDecimal("480.6"))
+                .setCoverObjectKey("dining/covers/tomato-egg.png");
+        DiningRecipeImportResultVo vo = service.confirm(confirmFrom(row));
+
+        assertFalse(vo.isRolledBack());
+        ArgumentCaptor<DiningRecipe> captor = ArgumentCaptor.forClass(DiningRecipe.class);
+        verify(recipeMapper).insert(captor.capture());
+        DiningRecipe saved = captor.getValue();
+        assertEquals(0, new BigDecimal("86.3").compareTo(saved.getCaloriesPer100g()));
+        assertEquals(0, new BigDecimal("518").compareTo(saved.getCaloriesTotal()));
+        assertEquals(0, new BigDecimal("7.9").compareTo(saved.getProteinG()));
+        assertEquals(0, new BigDecimal("5.1").compareTo(saved.getFatG()));
+        assertEquals(0, new BigDecimal("3.2").compareTo(saved.getCarbsG()));
+        assertEquals(0, new BigDecimal("480.6").compareTo(saved.getSodiumMg()));
+        assertNull(saved.getCoverObjectKey(), "存储中不存在的封面对象键不得落库（防挂空直链）");
+        assertNotNull(vo.getRows().get(0).getWarnings());
+        assertTrue(vo.getRows().get(0).getWarnings().stream().anyMatch(w -> w.contains("封面")));
+    }
+
+    @Test
+    @DisplayName("确认：旧 5 列 CSV 行为零破坏——无明细/营养/封面时新列落 null；名列表仍 upsert 配料并写无数量关联（契约 §3.2 ②）")
+    void confirm_legacyFiveColumnRow_unchanged() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of(category(3L, "汤羹")));
+        when(recipeMapper.insert(any(DiningRecipe.class))).thenReturn(1);
+        stubIngredientAutoRegister();
+
+        DiningRecipeImportResultVo vo = service.confirm(confirmFrom(
+                confirmRow(2, "汤羹", "番茄蛋汤", List.of("西红柿", "鸡蛋"), "冲汤")));
+
+        assertFalse(vo.isRolledBack());
+        assertEquals(1, vo.getSuccessCount());
+        ArgumentCaptor<DiningRecipe> captor = ArgumentCaptor.forClass(DiningRecipe.class);
+        verify(recipeMapper).insert(captor.capture());
+        DiningRecipe saved = captor.getValue();
+        assertNull(saved.getCaloriesPer100g());
+        assertNull(saved.getCaloriesTotal());
+        assertNull(saved.getProteinG());
+        assertNull(saved.getFatG());
+        assertNull(saved.getCarbsG());
+        assertNull(saved.getSodiumMg());
+        assertNull(saved.getCoverObjectKey());
+        // 名列表也写关联表（数量未给出落 NULL）——买菜清单 v2 的聚合依据，旧 CSV 同样受益
+        ArgumentCaptor<DiningRecipeIngredient> relationCaptor = ArgumentCaptor.forClass(DiningRecipeIngredient.class);
+        verify(recipeIngredientMapper, org.mockito.Mockito.times(2)).insert(relationCaptor.capture());
+        relationCaptor.getAllValues().forEach(relation -> {
+            assertNull(relation.getAmountValue(), "旧 CSV 名列表无数量，关联行数量落 NULL");
+            assertNull(relation.getAmountUnit());
+        });
+        assertTrue(vo.getRows().get(0).getWarnings() == null || vo.getRows().get(0).getWarnings().isEmpty());
     }
 
     @Test

@@ -34,6 +34,7 @@ import { SwitchButton } from '@element-plus/icons-vue';
 import { getCurrentAdminUser } from '@/api/adminUser';
 import { useAuthStore } from '@/stores/auth';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 const route = useRoute();
 const router = useRouter();
@@ -49,8 +50,9 @@ const fetchUserInfo = async () => {
   try {
     const userInfo = await getCurrentAdminUser();
     username.value = userInfo.username;
-  } catch {
-    // 请求失败由 http 拦截器统一弹出提示，这里保持用户名为空即可
+  } catch (error) {
+    // HTTP 层错误已有拦截器 toast；业务码失败拦截器不提示，这里留痕解释「用户名为空」
+    logger.warn('管理员信息加载失败，顶栏用户名留空:', error);
   }
 };
 

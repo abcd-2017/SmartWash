@@ -60,7 +60,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与空态区分，给出重试入口 -->
+      <div v-if="listError" class="list-error">
+        <span>用户列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="userList"
         fit
@@ -96,7 +102,15 @@
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              link
+              type="danger"
+              size="small"
+              :loading="deletingId === row.userId"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -188,6 +202,7 @@ import { passwordLengthRule } from '@/utils/validators';
 import logger from '@/utils/logger';
 
 const formRef = ref(null);
+const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
 
 // 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
 // 避免下次打开时上次未通过的校验残留（评审：弹窗关闭清理不一致）
@@ -203,9 +218,11 @@ const {
   list: userList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -312,17 +329,19 @@ const submitForm = async () => {
   const valid = await formRef.value.validate().catch(() => false);
   if (!valid) return;
 
-  // 修改密码静默提交无确认（评审 P3）：填了非空密码时二次确认，防止误改锁定用户
-  if (dialogType.value === 'edit' && tempUser.password) {
-    const confirmed = await useConfirm(
-      `确认修改用户 ${tempUser.phoneNumber} 的登录密码吗？`,
-      '修改密码'
-    );
-    if (!confirmed) return;
-  }
-
+  // 入口锁：validate 期间双击不再叠加确认弹窗或重复提交（对齐 SysConfigList 的锁先于 validate 语义）
+  if (submitting.value) return;
   submitting.value = true;
   try {
+    // 修改密码静默提交无确认（评审 P3）：填了非空密码时二次确认，防止误改锁定用户
+    if (dialogType.value === 'edit' && tempUser.password) {
+      const confirmed = await useConfirm(
+        `确认修改用户 ${tempUser.phoneNumber} 的登录密码吗？`,
+        '修改密码'
+      );
+      if (!confirmed) return;
+    }
+
     if (dialogType.value === 'create') {
       await addUser(tempUser);
       ElMessage.success('新增成功');
@@ -353,17 +372,22 @@ const submitForm = async () => {
 };
 
 const handleDelete = async (row) => {
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除用户 ${row.phoneNumber} 吗？`);
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (deletingId.value) return;
+  deletingId.value = row.userId;
   try {
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+    const confirmed = await useConfirm(`确认删除用户 ${row.phoneNumber} 吗？`);
+    if (!confirmed) return;
     await deleteUser(row.userId);
     ElMessage.success('删除成功');
     logger.info('删除学生成功', `userId=${row.userId}`);
-    fetchData();
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除学生失败:', `userId=${row.userId}`, error);
     ElMessage.error(error.message || '删除失败');
+  } finally {
+    deletingId.value = null;
   }
 };
 </script>

@@ -7,10 +7,16 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.config.MinioConfig;
 import com.smartwash.dining.entity.DiningCategory;
+import com.smartwash.dining.entity.DiningIngredient;
 import com.smartwash.dining.entity.DiningRecipe;
+import com.smartwash.dining.entity.DiningRecipeFavorite;
+import com.smartwash.dining.entity.DiningRecipeIngredient;
 import com.smartwash.dining.from.AddDiningRecipeFrom;
 import com.smartwash.dining.from.SearchWebDiningRecipeFrom;
 import com.smartwash.dining.mapper.DiningCategoryMapper;
+import com.smartwash.dining.mapper.DiningIngredientMapper;
+import com.smartwash.dining.mapper.DiningRecipeFavoriteMapper;
+import com.smartwash.dining.mapper.DiningRecipeIngredientMapper;
 import com.smartwash.dining.mapper.DiningRecipeMapper;
 import com.smartwash.dining.vo.DiningRecipeVo;
 import com.smartwash.exception.CustomExceptions;
@@ -27,6 +33,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -68,6 +76,15 @@ class DiningRecipeUserServiceImplTest {
     @Mock
     private FileStorageService fileStorageService;
 
+    @Mock
+    private DiningRecipeFavoriteMapper favoriteMapper;
+
+    @Mock
+    private DiningRecipeIngredientMapper recipeIngredientMapper;
+
+    @Mock
+    private DiningIngredientMapper ingredientMapper;
+
     private DiningRecipeServiceImpl service;
 
     @BeforeAll
@@ -85,6 +102,9 @@ class DiningRecipeUserServiceImplTest {
         ReflectionTestUtils.setField(service, "baseMapper", recipeMapper);
         ReflectionTestUtils.setField(service, "diningCategoryMapper", categoryMapper);
         ReflectionTestUtils.setField(service, "fileStorageService", fileStorageService);
+        ReflectionTestUtils.setField(service, "favoriteMapper", favoriteMapper);
+        ReflectionTestUtils.setField(service, "recipeIngredientMapper", recipeIngredientMapper);
+        ReflectionTestUtils.setField(service, "ingredientMapper", ingredientMapper);
         ReflectionTestUtils.setField(service, "securityUtil", new com.smartwash.utils.SecurityUtil());
         // MinioConfig.urlOf 为纯字符串拼装，真实实例配占位端点即可
         MinioConfig minioConfig = new MinioConfig();
@@ -124,7 +144,7 @@ class DiningRecipeUserServiceImplTest {
         SearchWebDiningRecipeFrom from = new SearchWebDiningRecipeFrom();
         from.setCategoryId(3L);
         from.setKeyword("番茄");
-        service.userPage(from);
+        service.userPage(from, 9102L);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<LambdaQueryWrapper<DiningRecipe>> captor =
@@ -149,7 +169,7 @@ class DiningRecipeUserServiceImplTest {
         when(categoryMapper.selectBatchIds(List.of(2L)))
                 .thenReturn(List.of(new DiningCategory().setId(2L).setName("汤羹")));
 
-        Page<DiningRecipeVo> page = service.userPage(new SearchWebDiningRecipeFrom());
+        Page<DiningRecipeVo> page = service.userPage(new SearchWebDiningRecipeFrom(), 9102L);
 
         DiningRecipeVo vo = page.getRecords().get(0);
         assertEquals("番茄炒蛋", vo.getName());
@@ -170,7 +190,7 @@ class DiningRecipeUserServiceImplTest {
         when(categoryMapper.selectBatchIds(List.of(2L)))
                 .thenReturn(List.of(new DiningCategory().setId(2L).setName("汤羹")));
 
-        DiningRecipeVo vo = service.userDetail(1L);
+        DiningRecipeVo vo = service.userDetail(1L, 9102L);
 
         assertEquals("番茄炒蛋", vo.getName());
         assertEquals("汤羹", vo.getCategoryName());
@@ -183,7 +203,7 @@ class DiningRecipeUserServiceImplTest {
     void userDetail_offShelf_rejected() {
         when(recipeMapper.selectById(2L)).thenReturn(recipe(2L, "下架菜", null, DiningRecipe.STATUS_OFF_SHELF));
 
-        expectBusinessException("菜谱不存在或已下架", () -> service.userDetail(2L));
+        expectBusinessException("菜谱不存在或已下架", () -> service.userDetail(2L, 9102L));
     }
 
     @Test
@@ -191,7 +211,7 @@ class DiningRecipeUserServiceImplTest {
     void userDetail_missing_rejected() {
         when(recipeMapper.selectById(404L)).thenReturn(null);
 
-        expectBusinessException("菜谱不存在或已下架", () -> service.userDetail(404L));
+        expectBusinessException("菜谱不存在或已下架", () -> service.userDetail(404L, 9102L));
     }
 
     // ==================== 新增 ====================
@@ -286,6 +306,176 @@ class DiningRecipeUserServiceImplTest {
         expectBusinessException("仅支持 JPG/PNG/WebP 格式图片",
                 () -> service.uploadCover(new MockMultipartFile("file", "evil.png", "application/octet-stream", html)));
         verify(fileStorageService, never()).uploadFile(any(), eq("dining/covers"));
+    }
+
+    // ==================== 食材反查搜索（契约 §2.4） ====================
+
+    @Test
+    @DisplayName("用户端分页：ingredient 配料名反查与 keyword/categoryId 组合为 AND")
+    void userPage_ingredientFilter_combinedWithKeywordAndCategory() {
+        when(recipeMapper.selectRecipeIdsByIngredientName("豆腐")).thenReturn(List.of(1L, 2L));
+        doReturn(new Page<DiningRecipe>(1, 10, 0)).when(recipeMapper).selectPage(any(), any());
+
+        SearchWebDiningRecipeFrom from = new SearchWebDiningRecipeFrom();
+        from.setIngredient("豆腐");
+        from.setKeyword("番茄");
+        from.setCategoryId(3L);
+        service.userPage(from, 9102L);
+
+        verify(recipeMapper).selectRecipeIdsByIngredientName("豆腐");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<DiningRecipe>> captor =
+                ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(recipeMapper).selectPage(any(), captor.capture());
+        String segment = captor.getValue().getSqlSegment().toUpperCase();
+        assertTrue(segment.contains("IN"), "反查命中的菜谱 ID 必须以 IN 进入主查询");
+        Map<String, Object> params = captor.getValue().getParamNameValuePairs();
+        assertTrue(params.containsValue(3L), "categoryId 精确筛选必须进入查询条件");
+        assertTrue(params.values().stream().anyMatch(v -> v instanceof String s && s.contains("番茄")),
+                "keyword 菜名模糊筛选必须与 ingredient 组合（AND）");
+    }
+
+    @Test
+    @DisplayName("用户端分页：配料名无命中时短路为空结果（1=0，避免 IN () 语法错误）")
+    void userPage_ingredientNoMatch_shortCircuitsEmpty() {
+        when(recipeMapper.selectRecipeIdsByIngredientName("不存在的食材")).thenReturn(List.of());
+        doReturn(new Page<DiningRecipe>(1, 10, 0)).when(recipeMapper).selectPage(any(), any());
+
+        SearchWebDiningRecipeFrom from = new SearchWebDiningRecipeFrom();
+        from.setIngredient("不存在的食材");
+        service.userPage(from, 9102L);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<DiningRecipe>> captor =
+                ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(recipeMapper).selectPage(any(), captor.capture());
+        assertTrue(captor.getValue().getSqlSegment().contains("1 = 0"), "无命中必须短路为空结果");
+    }
+
+    // ==================== favorited 批量填充（契约 §2.3） ====================
+
+    @Test
+    @DisplayName("用户端分页：favorited 由一次 IN 查询批量填充，未收藏为 false")
+    void userPage_favoritedBatchFilled() {
+        Page<DiningRecipe> result = new Page<>(1, 10, 2);
+        result.setRecords(List.of(
+                recipe(1L, "番茄炒蛋", null, DiningRecipe.STATUS_ON_SHELF),
+                recipe(2L, "凉拌黄瓜", null, DiningRecipe.STATUS_ON_SHELF)));
+        doReturn(result).when(recipeMapper).selectPage(any(), any());
+        when(favoriteMapper.selectList(any(Wrapper.class)))
+                .thenReturn(List.of(new DiningRecipeFavorite().setUserId(9102L).setRecipeId(1L)));
+
+        Page<DiningRecipeVo> page = service.userPage(new SearchWebDiningRecipeFrom(), 9102L);
+
+        assertTrue(page.getRecords().get(0).getFavorited(), "已收藏菜谱 favorited=true");
+        assertFalse(page.getRecords().get(1).getFavorited(), "未收藏菜谱 favorited=false");
+        verify(favoriteMapper, org.mockito.Mockito.times(1)).selectList(any(Wrapper.class));
+    }
+
+    // ==================== 详情过敏原聚合（契约 §2.2） ====================
+
+    @Test
+    @DisplayName("详情：allergens 为该菜全部配料过敏原去重集合，按枚举顺序稳定输出")
+    void userDetail_allergensAggregatedDistinctInEnumOrder() {
+        when(recipeMapper.selectById(1L))
+                .thenReturn(recipe(1L, "番茄炒蛋", 2L, DiningRecipe.STATUS_ON_SHELF));
+        when(categoryMapper.selectBatchIds(List.of(2L)))
+                .thenReturn(List.of(new DiningCategory().setId(2L).setName("汤羹")));
+        when(recipeIngredientMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
+                new DiningRecipeIngredient().setRecipeId(1L).setIngredientId(11L),
+                new DiningRecipeIngredient().setRecipeId(1L).setIngredientId(12L),
+                new DiningRecipeIngredient().setRecipeId(1L).setIngredientId(13L)));
+        when(ingredientMapper.selectBatchIds(List.of(11L, 12L, 13L))).thenReturn(List.of(
+                new DiningIngredient().setId(11L).setAllergen(DiningIngredient.ALLERGEN_NUT),
+                new DiningIngredient().setId(12L).setAllergen(DiningIngredient.ALLERGEN_EGG),
+                new DiningIngredient().setId(13L).setAllergen(DiningIngredient.ALLERGEN_NUT)));
+        when(favoriteMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
+
+        DiningRecipeVo vo = service.userDetail(1L, 9102L);
+
+        assertEquals(List.of(DiningIngredient.ALLERGEN_NUT, DiningIngredient.ALLERGEN_EGG), vo.getAllergens(),
+                "NUT 出现两次只保留一次，且按 ALLERGEN_VALUES 顺序（NUT 在 EGG 前）输出");
+    }
+
+    // ==================== 收藏（契约 §2.3） ====================
+
+    @Test
+    @DisplayName("收藏：已收藏直接返回当前态（幂等），不重复插入")
+    void favorite_alreadyFavorited_idempotent() {
+        when(recipeMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(favoriteMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+
+        assertTrue(service.favorite(9102L, 5L));
+
+        verify(favoriteMapper, never()).insert(any(DiningRecipeFavorite.class));
+    }
+
+    @Test
+    @DisplayName("收藏：未收藏写入 user_id + recipe_id，返回 true")
+    void favorite_new_insertsAndReturnsTrue() {
+        when(recipeMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(favoriteMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        when(favoriteMapper.insert(any(DiningRecipeFavorite.class))).thenReturn(1);
+
+        assertTrue(service.favorite(9102L, 5L));
+
+        ArgumentCaptor<DiningRecipeFavorite> captor = ArgumentCaptor.forClass(DiningRecipeFavorite.class);
+        verify(favoriteMapper).insert(captor.capture());
+        assertEquals(9102L, captor.getValue().getUserId());
+        assertEquals(5L, captor.getValue().getRecipeId());
+    }
+
+    @Test
+    @DisplayName("收藏：并发撞 uk_user_recipe 唯一键按已收藏处理（幂等）")
+    void favorite_duplicateKey_idempotent() {
+        when(recipeMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(favoriteMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        when(favoriteMapper.insert(any(DiningRecipeFavorite.class)))
+                .thenThrow(new DuplicateKeyException("uk_user_recipe"));
+
+        assertTrue(service.favorite(9102L, 5L));
+    }
+
+    @Test
+    @DisplayName("收藏：菜谱不存在时业务失败，不触收藏表")
+    void favorite_recipeMissing_rejected() {
+        when(recipeMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+
+        expectBusinessException("菜谱不存在", () -> service.favorite(9102L, 5L));
+
+        verify(favoriteMapper, never()).insert(any(DiningRecipeFavorite.class));
+    }
+
+    @Test
+    @DisplayName("取消收藏：按 user_id + recipe_id 删除，幂等返回 false")
+    void unfavorite_deletesAndReturnsFalse() {
+        when(favoriteMapper.delete(any(Wrapper.class))).thenReturn(1);
+
+        assertFalse(service.unfavorite(9102L, 5L));
+
+        verify(favoriteMapper).delete(any(Wrapper.class));
+    }
+
+    @Test
+    @DisplayName("我的收藏：按收藏顺序输出，favorited 恒 true，字段同列表")
+    void favoritePage_ordersByFavoriteAndMarksFavorited() {
+        Page<DiningRecipeFavorite> favPage = new Page<>(1, 10, 2);
+        favPage.setRecords(List.of(
+                new DiningRecipeFavorite().setRecipeId(1L),
+                new DiningRecipeFavorite().setRecipeId(2L)));
+        doReturn(favPage).when(favoriteMapper).selectPage(any(), any());
+        // 故意乱序返回，服务层须按收藏顺序重排
+        when(recipeMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
+                recipe(2L, "凉拌黄瓜", null, DiningRecipe.STATUS_ON_SHELF),
+                recipe(1L, "番茄炒蛋", null, DiningRecipe.STATUS_ON_SHELF)));
+
+        Page<DiningRecipeVo> page = service.favoritePage(9102L, new SearchWebDiningRecipeFrom());
+
+        assertEquals(2L, page.getTotal());
+        assertEquals(List.of(1L, 2L), page.getRecords().stream()
+                .map(DiningRecipeVo::getId).toList(), "必须按收藏顺序（favorite id 倒序）输出");
+        assertTrue(page.getRecords().get(0).getFavorited());
+        assertTrue(page.getRecords().get(1).getFavorited());
     }
 
     /** 断言抛出业务异常且消息匹配（CustomExceptions 经全局异常处理转 Result 信封的业务提示） */

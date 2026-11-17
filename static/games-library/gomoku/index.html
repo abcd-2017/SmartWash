@@ -7,7 +7,7 @@
 <title>五子棋 · 人机对弈</title>
 <style>
 /*token:GAME-THEME.md*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFF;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-border:#E6E9E6;--g-primary-deep:#17734A;--g-danger:#A83850;--g-shadow:0 10px 24px rgba(20,40,30,.10);--g-bd1:#F6DCAB;--g-bd2:#ECCF92;--g-line:#7A5B34;--g-star:#5A4325;color-scheme:light}
+:root{--g-bg:#F5F6F3;--g-surface:#FFF;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-border:#E6E9E6;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-danger:#A83850;--g-shadow:0 10px 24px rgba(20,40,30,.10);--g-bd1:#F6DCAB;--g-bd2:#ECCF92;--g-line:#7A5B34;--g-star:#5A4325;color-scheme:light}
 :root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-border:#2C312D;--g-primary-deep:#5BC894;--g-danger:#DB7186;--g-shadow:0 10px 24px rgba(0,0,0,.45);--g-bd1:#4A3D26;--g-bd2:#3A2F1D;--g-line:#9A845C;--g-star:#B49C6E;color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -18,7 +18,7 @@ header{width:100%;max-width:460px;padding:10px 14px 16px;text-align:center}
 #stage{position:relative;flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;touch-action:none}
 canvas{display:block;border-radius:10px;box-shadow:var(--g-shadow)}
 footer{display:flex;gap:16px;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
-.btn{min-width:110px;min-height:46px;border:0;border-radius:12px;background:var(--g-primary);color:#fff;font-size:22px;font-weight:700;padding:0 20px;cursor:pointer;font-family:inherit}
+.btn{min-width:110px;min-height:46px;border:0;border-radius:12px;background:var(--g-btn-primary);color:#fff;font-size: 16px;font-weight: 600;padding:0 20px;cursor:pointer;font-family:inherit}
 .btn:active{transform:scale(.96)}
 .btn:disabled{opacity:.4}
 .btn.alt{background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text)}
@@ -175,7 +175,7 @@ function render(now){
     ctx.fill();
   }
   var animating=false,scale=1;
-  if(now&&anim&&now-anim.t0<180){
+  if(now&&anim&&!window.__gRM&&now-anim.t0<180){
     animating=true;
     var t=(now-anim.t0)/180;
     t=t*(2-t);

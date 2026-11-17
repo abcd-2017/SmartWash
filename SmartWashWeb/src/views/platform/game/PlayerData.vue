@@ -38,7 +38,13 @@
         </div>
 
         <div class="table-card">
+          <!-- 加载失败态：与空态区分，给出重试入口 -->
+          <div v-if="listError" class="list-error">
+            <span>玩家数据列表加载失败，请检查网络后重试</span>
+            <el-button size="small" @click="fetchSaves">重试</el-button>
+          </div>
           <el-table
+            v-else
             v-loading="saveListLoading"
             :data="saveList"
             border
@@ -103,7 +109,13 @@
         </div>
 
         <div class="table-card">
+          <!-- 加载失败态：与空态区分，给出重试入口 -->
+          <div v-if="scoreLoadError" class="list-error">
+            <span>{{ scoreLoadError }}</span>
+            <el-button size="small" @click="fetchScores">重试</el-button>
+          </div>
           <el-table
+            v-else
             v-loading="scoreListLoading"
             :data="scoreList"
             border
@@ -146,10 +158,12 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
+import { ElMessage } from 'element-plus';
 import { getGameList } from '@/api/game';
 import { getGameSaves, getGameScores } from '@/api/gameData';
 import { useTableList } from '@/composables/useTableList';
 import { formatTime } from '@/utils/format';
+import logger from '@/utils/logger';
 
 defineOptions({ name: 'PlayerData' });
 
@@ -169,8 +183,11 @@ const loadGameOptions = async () => {
   try {
     const res = await getGameList({ page: 1, size: 100 });
     gameOptions.value = res?.records || [];
-  } catch {
+  } catch (error) {
+    // 下拉加载失败不能静默：不提示则筛选器永远为空，用户无从区分「无数据」与「加载失败」
+    logger.error('游戏下拉加载失败:', error);
     gameOptions.value = [];
+    ElMessage.error(error.message || '游戏列表加载失败');
   }
 };
 
@@ -178,6 +195,7 @@ const {
   list: saveList,
   total: saveTotal,
   listLoading: saveListLoading,
+  listError,
   listQuery: saveListQuery,
   pageSizes,
   fetchData: fetchSaves,
@@ -200,6 +218,7 @@ const {
   list: scoreList,
   total: scoreTotal,
   listLoading: scoreListLoading,
+  listLoadError: scoreLoadError,
   listQuery: scoreListQuery,
   fetchData: fetchScores,
   handleSearch: handleScoreSearch,

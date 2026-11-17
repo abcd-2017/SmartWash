@@ -174,3 +174,15 @@ div.table-card .laundry-item__desc {
 /* v1 层级：金额 600 字重成为扫读锚点，支付ID/时间降为次级 */
 div.table-card .pay-amount { font-weight: 600; }
 div.table-card .el-table .col-subtle .cell { color: var(--text-secondary); font-size: 13px; }
+
+/* 列表加载失败占位（useTableList 页面通用，同 SysConfigList 范式）：
+   与「暂无数据」空态区分，居中提示 + 重试入口 */
+.load-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}

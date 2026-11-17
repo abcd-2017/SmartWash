@@ -7,7 +7,7 @@
 <title>打砖块</title>
 <style>
 /*token:GAME-THEME.md*/
-:root{--g-bg:#F5F6F3;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-primary-deep:#17734A;--g-scrim:rgba(245,246,243,.9);--g-sky1:#F5F6F3;--g-sky2:#EFF1EE;--g-ball:#FFF;--g-ballln:rgba(90,110,150,.6);color-scheme:light}
+:root{--g-bg:#F5F6F3;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-scrim:rgba(245,246,243,.9);--g-sky1:#F5F6F3;--g-sky2:#EFF1EE;--g-ball:#FFF;--g-ballln:rgba(90,110,150,.6);color-scheme:light}
 :root[data-theme=dark]{--g-bg:#141614;--g-surface2:#262A27;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-primary-deep:#5BC894;--g-scrim:rgba(20,22,20,.9);--g-sky1:#1D201E;--g-sky2:#141614;--g-ballln:rgba(169,174,169,.5);color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -15,7 +15,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","
 header{width:100%;max-width:430px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px 16px}
 header .stats{display:flex;gap:14px;font-size:14px;color:var(--g-muted)}
 header .stats b{color:var(--g-primary-deep);font-size:18px}
-.pbtn{min-width:60px;min-height:44px;border:0;border-radius:10px;background:var(--g-primary);color:var(--g-on-primary);font-size:22px;font-weight:700;padding:0 14px;cursor:pointer;font-family:inherit}
+.pbtn{min-width:60px;min-height:44px;border:0;border-radius:10px;background:var(--g-btn-primary);color:var(--g-on-primary);font-size: 16px;font-weight: 600;padding:0 14px;cursor:pointer;font-family:inherit}
 .pbtn:active{transform:scale(.96)}
 #stage{position:relative;width:100%;max-width:430px;flex:1;min-height:0;touch-action:none;overflow:hidden}
 canvas{display:block;width:100%;height:100%}
@@ -24,7 +24,7 @@ canvas{display:block;width:100%;height:100%}
 .overlay h2{font-size:22px;color:var(--g-primary-deep)}
 .overlay .big{font-size:18px}
 .overlay .small{font-size:14px;color:var(--g-muted)}
-.btn{min-height:48px;min-width:150px;border:0;border-radius:14px;background:var(--g-primary);color:var(--g-on-primary);font-size:22px;font-weight:700;padding:0 26px;cursor:pointer;font-family:inherit}
+.btn{min-height:48px;min-width:150px;border:0;border-radius:14px;background:var(--g-btn-primary);color:var(--g-on-primary);font-size: 16px;font-weight: 600;padding:0 26px;cursor:pointer;font-family:inherit}
 .btn:active{transform:scale(.96)}
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
@@ -60,24 +60,24 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </header>
 <div id="stage">
   <canvas id="cv" role="img" aria-label="游戏画面"></canvas>
-  <div id="ovStart" class="overlay">
+  <div id="ovStart" class="overlay" role="dialog" aria-modal="true">
     <h2>打砖块</h2>
     <div class="big">最高分 <span id="sBest">0</span></div>
     <div class="big">最高关卡 <span id="sBestLevel">0</span></div>
     <button id="btnStart" class="btn">开始游戏</button>
     <div class="small">左右拖动控制挡板，点按屏幕发球</div>
   </div>
-  <div id="ovPause" class="overlay hide" aria-live="assertive">
+  <div id="ovPause" class="overlay hide" aria-live="assertive" role="dialog" aria-modal="true">
     <h2>已暂停</h2>
     <button id="btnResume" class="btn">继续游戏</button>
     <div class="small">切到后台会自动暂停</div>
   </div>
-  <div id="ovClear" class="overlay hide">
+  <div id="ovClear" class="overlay hide" role="dialog" aria-modal="true">
     <h2 id="clearTitle">第 1 关完成</h2>
     <div class="big">当前得分 <span id="clearScore">0</span></div>
     <button id="btnNext" class="btn">进入第 2 关</button>
   </div>
-  <div id="ovOver" class="overlay hide">
+  <div id="ovOver" class="overlay hide" role="dialog" aria-modal="true">
     <h2>游戏结束</h2>
     <div class="big">本局得分 <span id="overScore">0</span></div>
     <div class="small" id="overInfo">最高分 0 · 最高关卡 0</div>
@@ -436,6 +436,39 @@ elSBest.textContent=String(best);
 elSBestLevel.textContent=String(bestLevel);
 requestAnimationFrame(frame);
 syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
 })();
 </script>
 </body>

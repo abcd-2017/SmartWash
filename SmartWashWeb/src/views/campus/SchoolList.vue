@@ -120,7 +120,15 @@
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              link
+              type="danger"
+              size="small"
+              :loading="deletingId === row.schoolId"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -250,6 +258,7 @@ const formRef = ref(null);
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const submitting = ref(false); // 确认按钮 loading，防连点
+const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
 
 const {
   list: schoolList,
@@ -259,6 +268,7 @@ const {
   listQuery,
   pageSizes,
   fetchData,
+  fetchDataAfterDelete,
   handleSearch,
   resetSearch,
   handlePageChange,
@@ -418,20 +428,25 @@ const submitForm = async () => {
 };
 
 const handleDelete = async (row) => {
-  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
-  const confirmed = await useConfirm(`确认删除学校 ${row.schoolName} 吗？`);
-  if (!confirmed) return;
+  // 入口守卫：确认/请求在途时忽略再次点击，防双击把多个确认弹窗排进队列
+  if (deletingId.value) return;
+  deletingId.value = row.schoolId;
   try {
+    // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+    const confirmed = await useConfirm(`确认删除学校 ${row.schoolName} 吗？`);
+    if (!confirmed) return;
     await deleteSchool(row.schoolId);
     ElMessage.success('删除成功');
     // 写操作成功留痕：业务键仅 schoolId/schoolName，联系电话不入日志
     logger.info('删除学校成功', `schoolId=${row.schoolId}`, `schoolName=${row.schoolName}`);
     // 学校下拉缓存同步失效（评审 #15 的失效入口）
     schoolOptionsCache.invalidate();
-    fetchData();
+    fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除学校失败:', `schoolId=${row.schoolId}`, error);
     ElMessage.error(friendlyErrorMessage(error, '删除失败'));
+  } finally {
+    deletingId.value = null;
   }
 };
 </script>

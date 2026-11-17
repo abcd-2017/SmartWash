@@ -304,6 +304,22 @@ struct Setting {
               .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
 
             SettingGroupCard() {
+              // 饮食偏好（契约 §三.2：忌口 + 每日热量/钠目标；数据在吃啥域 dietary-preference）
+              SettingRow({
+                icon: $r('sys.symbol.fork_knife'),
+                containerColor: $r('app.color.ICON_CONTAINER_PINK'),
+                iconColor: $r('app.color.ICON_FOREGROUND_PINK'),
+                title: resString('dietary_preference_title'),
+                trailingValue: "",
+                onRowClick: () => {
+                  pathStack.pushPathByName(RouteNames.DINING_DIETARY_PREFERENCE, null)
+                }
+              })
+
+              Divider()
+                .color($r('app.color.HAIRLINE'))
+                .strokeWidth(0.5)
+
               // 检查更新（对齐安卓「其他」组 CheckUpdateSettingRow，64dp 行 + 行尾当前版本号）
               // 图标对齐安卓 Icons.Default.SystemUpdate（下载/更新语义）取 sys.symbol.download
               SettingRow({

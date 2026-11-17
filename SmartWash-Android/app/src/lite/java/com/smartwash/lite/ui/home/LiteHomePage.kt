@@ -42,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.smartwash.R
+import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppCard
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -55,16 +56,16 @@ import com.smartwash.feature.game.api.GameRoute
 import com.smartwash.feature.user.api.UserRoute
 
 /**
- * lite 首页（吃啥）——**无底栏**，聚焦点单：发起点单 / 我的点单 / 菜谱库 + 游戏 + 设置。
+ * lite 首页（吃啥）——**无底栏**，聚焦点单：发起点单（主 CTA）/ 我的点单 / 菜谱库 + 游戏 + 设置。
  *
- * 布局：顶部品牌 hero（品牌渐变 + 一句话）→ 主入口「发起点单」→ 次入口「我的点单 / 菜谱库」
- * → 次级「游戏」→ 底部「设置」。路由常量复用 dining:api 的 [DiningRoute.OrderCreate] /
- * [DiningRoute.OrderList] / [DiningRoute.RecipeLibrary]、game:api 的 [GameRoute.Center]、
- * user:api 的 [UserRoute.Setting]。
+ * 布局：顶部品牌 hero（CTA 渐变 + onPrimary 文字）→ 唯一实心主 CTA「发起点单」→ 次入口卡
+ * 「我的点单 / 菜谱库」→ 次级「游戏」→ 底部「设置」。主 CTA 与次入口形成明确层级（规范：
+ * 每屏一个主 CTA，大面积品牌底只属于 hero 与主 CTA）。路由常量复用 dining:api 的
+ * [DiningRoute.OrderCreate] / [DiningRoute.OrderList] / [DiningRoute.RecipeLibrary]、
+ * game:api 的 [GameRoute.Center]、user:api 的 [UserRoute.Setting]。
  *
- * 视觉全部取自品牌令牌（[AppColors] / [AppDimens] / [AppTextStyles]），未自创色值/间距/圆角；
- * 图标为 Material 内置。入场动效经 [motionSpec] 提供 reduced motion 降级
- * （降级时位移归零，仅保留淡入）。主/次/次级入口使用递减位移分量，保持层级。
+ * 视觉全部取自品牌令牌（[AppColors] / [AppDimens] / [AppTextStyles]），未自创色值/间距/圆角。
+ * 入场动效经 [motionSpec] 提供 reduced motion 降级（降级时位移归零，仅保留淡入）。
  */
 @Composable
 fun LiteHomePage(navController: NavController) {
@@ -88,14 +89,19 @@ fun LiteHomePage(navController: NavController) {
     ) {
         Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
-        // 品牌区 — 品牌渐变 hero（规范 §3.1 hero 变体：渐变底 + 白字，无描边）
+        // 品牌区 — hero（规范 §3.1 hero 变体：CTA 渐变底 + onPrimary 文字，无描边、无阴影）。
+        // 渐变走 ctaGradient 而非 primary→primaryDark：lite 主色 #EA580C 上白字仅 3.57:1，
+        // CTA 起点下移到 #C2410C（5.2:1）；深色主题文字走 onPrimary 深橙（亮橙底 6.7:1）。
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(AppDimens.radiusXl))
                 .background(
                     Brush.linearGradient(
-                        listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark)
+                        listOf(
+                            AppColors.colorScheme.ctaGradientStart,
+                            AppColors.colorScheme.ctaGradientEnd
+                        )
                     )
                 )
                 .padding(AppDimens.cardPadding)
@@ -104,39 +110,53 @@ fun LiteHomePage(navController: NavController) {
                 Text(
                     text = stringResource(R.string.lite_brand_name),
                     style = AppTextStyles.RootTitle,
-                    color = Color.White
+                    color = AppColors.colorScheme.onPrimary
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                 Text(
                     text = stringResource(R.string.lite_brand_subtitle),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.82f)
+                    color = AppColors.colorScheme.onPrimary.copy(alpha = 0.82f)
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                 Text(
                     text = stringResource(R.string.lite_home_hero_line),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
+                    color = AppColors.colorScheme.onPrimary
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
 
-        // 主入口「发起点单」— 核心动作，入场位移分量最大
-        LiteHomeCard(
-            icon = Icons.Filled.Restaurant,
-            iconContainerColor = AppColors.colorScheme.iconContainerGreen,
-            iconTint = AppColors.colorScheme.iconForegroundGreen,
-            title = stringResource(R.string.lite_home_create),
-            description = stringResource(R.string.lite_home_create_desc),
-            onClick = { navController.navigate(DiningRoute.OrderCreate()) },
-            entranceAlpha = entranceAlpha,
-            entranceShift = 16f,
-            reduceMotion = reduceMotion,
+        // 主入口「发起点单」— 唯一实心主 CTA（全宽胶囊），与下方次入口卡拉开层级
+        Text(
+            text = stringResource(R.string.lite_home_create_desc),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.colorScheme.textSecondary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    alpha = entranceAlpha
+                    translationY = if (reduceMotion) 0f
+                    else (1f - entranceAlpha) * 16f * density
+                }
         )
+        Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+        Box(
+            modifier = Modifier.graphicsLayer {
+                alpha = entranceAlpha
+                translationY = if (reduceMotion) 0f
+                else (1f - entranceAlpha) * 16f * density
+            }
+        ) {
+            AppButton(
+                text = stringResource(R.string.lite_home_create),
+                onClick = { navController.navigate(DiningRoute.OrderCreate()) },
+            )
+        }
 
-        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+        Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
 
         // 次入口「我的点单」— 复看进行中的点单 / 历史单
         LiteHomeCard(

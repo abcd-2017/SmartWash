@@ -580,6 +580,54 @@ class DiningOrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("结束点单 v2：配料明细与热量进快照（ingredientTotals 归一求和/totalCalories/未知计数），无明细老菜谱回落名列表")
+    void finish_v2_snapshotIncludesTotalsAndCalories() {
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 3, CREATOR));
+        when(menuMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
+                new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(1L),
+                new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(2L)));
+        // 菜 1 有关联明细，菜 2 为老菜谱（仅 ingredients JSON 名列表，无关联明细、无营养）
+        when(recipeGate.getIngredients(anyCollection())).thenReturn(Map.of(
+                1L, List.of("西红柿", "鸡蛋"),
+                2L, List.of("黄瓜")));
+        when(recipeGate.getBriefs(anyCollection())).thenReturn(Map.of(
+                1L, new DiningRecipeGate.RecipeBrief(1L, "西红柿炒蛋", 11L),
+                2L, new DiningRecipeGate.RecipeBrief(2L, "凉拌黄瓜", 11L)));
+        when(recipeGate.getIngredientAmounts(anyCollection())).thenReturn(Map.of(
+                1L, List.of(new DiningRecipeGate.IngredientDetail("鸡蛋", new java.math.BigDecimal("575"), "g"),
+                        new DiningRecipeGate.IngredientDetail("西红柿", new java.math.BigDecimal("1.8"), "kg"))));
+        when(recipeGate.getServingCalories(anyCollection())).thenReturn(Map.of(
+                1L, new java.math.BigDecimal("1051")));
+        when(itemMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
+                new DiningOrderItem().setOrderId(ORDER_ID).setRecipeId(1L).setUserId(JOINER).setNote(null),
+                new DiningOrderItem().setOrderId(ORDER_ID).setRecipeId(2L).setUserId(CREATOR).setNote(null)));
+        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
+
+        DiningOrderFinishVo vo = service.finish(ORDER_ID, CREATOR);
+
+        com.fasterxml.jackson.databind.JsonNode snapshot = com.smartwash.utils.JsonUtils.readTree(vo.getShoppingList());
+        // 配料聚合：kg→g 归一求和（1.8kg → 1800g），老菜谱的黄瓜只进名并集不进数量聚合
+        assertEquals(2, snapshot.path("ingredientTotals").size());
+        assertEquals("鸡蛋", snapshot.path("ingredientTotals").get(0).path("name").asText());
+        assertEquals(0, new java.math.BigDecimal("575").compareTo(
+                new java.math.BigDecimal(snapshot.path("ingredientTotals").get(0).path("totalValue").asText())));
+        assertEquals("g", snapshot.path("ingredientTotals").get(0).path("unit").asText());
+        assertEquals("西红柿", snapshot.path("ingredientTotals").get(1).path("name").asText());
+        assertEquals(0, new java.math.BigDecimal("1800").compareTo(
+                new java.math.BigDecimal(snapshot.path("ingredientTotals").get(1).path("totalValue").asText())));
+        assertTrue(snapshot.path("ingredientNames").toString().contains("黄瓜"), "老菜谱名列表回落进名并集");
+        // 热量：已知 1051 + 未知 1（凉拌黄瓜无热量）
+        assertEquals(0, new java.math.BigDecimal("1051").compareTo(
+                new java.math.BigDecimal(snapshot.path("totalCalories").asText())));
+        assertEquals(1, snapshot.path("calorieKnownDishCount").asInt());
+        assertEquals(1, snapshot.path("calorieUnknownDishCount").asInt());
+        assertEquals("西红柿炒蛋", snapshot.path("perDishCalories").get(0).path("recipeName").asText());
+        // v1 字段不丢：名并集与按菜视图仍在
+        assertTrue(snapshot.path("ingredientNames").size() >= 3);
+        assertEquals(2, snapshot.path("perRecipe").size());
+    }
+
+    @Test
     @DisplayName("结束点单：已 FINISHED 幂等返回库内原快照，不聚合不更新")
     void finish_alreadyFinished_idempotent() {
         DiningOrder finished = order(ORDER_ID, "FINISHED", "tok", 3, CREATOR);

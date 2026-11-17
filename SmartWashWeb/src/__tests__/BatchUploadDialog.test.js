@@ -21,6 +21,7 @@ vi.mock('@/composables/useConfirm', () => ({
 }));
 
 import BatchUploadDialog from '@/views/platform/game/components/BatchUploadDialog.vue';
+import { ElMessage } from 'element-plus';
 import { getGameList, uploadGame, uploadGameCover } from '@/api/game';
 import { getGameLevels, batchImportGameLevels } from '@/api/gameData';
 
@@ -40,7 +41,7 @@ const globalStubs = {
   'el-button': {
     props: ['type', 'disabled', 'loading'],
     template:
-      '<button :disabled="disabled || loading" @click="$emit(\'click\')"><slot /></button>',
+      '<button :disabled="disabled || loading" :data-loading="loading" @click="$emit(\'click\')"><slot /></button>',
   },
   'el-table': { template: '<table><slot /></table>' },
   'el-table-column': { template: '<div class="col"><slot name="header" /></div>' },
@@ -208,7 +209,7 @@ describe('BatchUploadDialog 上传（关卡跟随导入）', () => {
     // 行内结果：maze 关卡已导入；beat-tap 未勾选 → 未导入；snake 未携带
     const after = Object.fromEntries(wrapper.vm.queue.map((it) => [it.dirName, it]));
     expect(after.maze.result.ok).toBe(true);
-    expect(after.maze.levels.result).toEqual({ ok: true, created: 3, updated: 0 });
+    expect(after.maze.levels.result).toEqual({ ok: true, created: 3, updated: 0, skipped: 0 });
     expect(after['beat-tap'].result.ok).toBe(true);
     expect(after['beat-tap'].levels.result).toBeNull();
     expect(after.snake.levels.result).toBeNull();
@@ -253,6 +254,64 @@ describe('BatchUploadDialog 上传（关卡跟随导入）', () => {
 
     expect(useConfirm).toHaveBeenCalledTimes(1);
     expect(useConfirm.mock.calls[0][0]).toContain('maze');
+    wrapper.unmount();
+  });
+});
+
+describe('BatchUploadDialog 预检反馈与失败兜底', () => {
+  it('预检进行中：按钮 loading + 阶段文案可见，完成后复位', async () => {
+    // 卡住「比对库内已有游戏」阶段，观察预检中间态
+    let resolveList;
+    getGameList.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveList = resolve;
+        })
+    );
+    const wrapper = mount(BatchUploadDialog, {
+      props: { modelValue: true },
+      global: { stubs: globalStubs },
+    });
+
+    const chosen = wrapper.vm.handleDirChosen({
+      target: { files: [makeFile('index.html', 'parent/maze/index.html')], value: '' },
+    });
+    // 推进到 fetchAllGameKeys 挂起（文件解析完成后才发起比对请求）
+    await vi.waitFor(() => expect(getGameList).toHaveBeenCalled());
+
+    expect(wrapper.vm.checking).toBe(true);
+    expect(wrapper.vm.checkingText).toContain('比对');
+    const btn = wrapper.find('.batch-choose-action button');
+    expect(btn.attributes('data-loading')).toBe('true');
+    expect(btn.attributes('disabled')).toBeDefined();
+    expect(wrapper.find('.batch-checking').exists()).toBe(true);
+
+    resolveList({ records: [{ gameKey: 'maze' }], total: 1 });
+    await chosen;
+    await flushPromises();
+
+    expect(wrapper.vm.checking).toBe(false);
+    expect(wrapper.vm.phase).toBe('preview');
+    expect(wrapper.find('.batch-checking').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('预检请求失败：提示错误、复位 checking、停留 choose 不卡死', async () => {
+    getGameList.mockRejectedValue(new Error('服务开小差了'));
+    const errorSpy = vi.spyOn(ElMessage, 'error').mockImplementation(() => ({}));
+    const wrapper = mount(BatchUploadDialog, {
+      props: { modelValue: true },
+      global: { stubs: globalStubs },
+    });
+
+    // 兜底 catch 后不应向外抛未处理 rejection
+    await chooseParentDir(wrapper, [makeFile('index.html', 'parent/maze/index.html')]);
+
+    expect(errorSpy).toHaveBeenCalledWith('服务开小差了');
+    expect(wrapper.vm.checking).toBe(false);
+    expect(wrapper.vm.phase).toBe('choose');
+    expect(wrapper.vm.queue).toHaveLength(0);
+    errorSpy.mockRestore();
     wrapper.unmount();
   });
 });

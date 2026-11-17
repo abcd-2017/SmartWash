@@ -18,4 +18,7 @@ public class SearchWebDiningRecipeFrom extends BaseSearchFrom {
 
     /** 关键词，菜名模糊匹配 */
     private String keyword;
+
+    /** 配料名，模糊反查含该配料的菜谱（走 dining_recipe_ingredient join dining_ingredient）；与 keyword/categoryId 组合为 AND */
+    private String ingredient;
 }

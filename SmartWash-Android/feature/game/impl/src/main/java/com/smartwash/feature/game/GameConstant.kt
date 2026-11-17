@@ -36,7 +36,8 @@ enum class GameCategory(val key: String) {
 /**
  * 游戏卡图标容器语义色组（规范 §2.1 六色浅底，key 语言直接对齐工作台
  * WorkbenchTint——同一后端字典语言 green/blue/orange/pink/teal/purple）。
- * 未知 color key 兜底 GREEN（契约：未知值显示默认样式）。
+ * 未知 color key 兜底 PURPLE（游戏域在 lite 的语义槽位为「游戏=紫」，与首页游戏入口一致；
+ * 契约：未知值显示默认样式）。
  */
 enum class GameTint {
     GREEN,
@@ -48,14 +49,15 @@ enum class GameTint {
 
     companion object {
 
-        /** 后端 color key → 色组（大小写不敏感，未知兜底 GREEN，对齐 WorkbenchTint.fromKey） */
+        /** 后端 color key → 色组（大小写不敏感，未知兜底 PURPLE，对齐 lite「游戏=紫」语义） */
         fun fromKey(key: String?): GameTint = when (key?.lowercase()) {
+            "green" -> GREEN
             "blue" -> BLUE
             "orange" -> ORANGE
             "pink" -> PINK
             "teal" -> TEAL
             "purple" -> PURPLE
-            else -> GREEN
+            else -> PURPLE
         }
     }
 }
