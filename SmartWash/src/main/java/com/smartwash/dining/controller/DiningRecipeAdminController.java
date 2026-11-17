@@ -50,7 +50,7 @@ public class DiningRecipeAdminController {
         return Result.ok(diningRecipeService.adminPage(from));
     }
 
-    @Operation(summary = "新增菜谱", description = "默认上架；categoryId 可空=未分类，传值时校验分类存在；封面走独立上传接口拿对象键后随编辑/新增回填")
+    @Operation(summary = "新增菜谱", description = "默认上架；categoryId 可空=未分类，传值时校验分类存在；sourceKey 可选（目录式上传判重键），同 key 已存在报冲突；封面走独立上传接口拿对象键后随编辑/新增回填")
     @Audited(action = "DINING_RECIPE_ADD", targetType = "dining_recipe")
     @PostMapping("/add")
     public Result<String> add(@RequestBody @Valid AddDiningRecipeFrom from) {
@@ -58,7 +58,7 @@ public class DiningRecipeAdminController {
         return Result.ok("添加成功");
     }
 
-    @Operation(summary = "更新菜谱", description = "id 必传；其余字段不传即不修改；categoryId 传值时校验分类存在；上下架走专用状态接口")
+    @Operation(summary = "更新菜谱", description = "id 必传；其余字段不传即不修改；categoryId 传值时校验分类存在；sourceKey 传值时若同 key 已挂其他菜谱报冲突；上下架走专用状态接口")
     @Audited(action = "DINING_RECIPE_UPDATE", targetType = "dining_recipe", targetIdSpEL = "#from.id")
     @PostMapping("/update")
     public Result<String> update(@RequestBody @Valid UpdateDiningRecipeFrom from) {
@@ -101,13 +101,13 @@ public class DiningRecipeAdminController {
         response.getOutputStream().write(diningRecipeImportService.buildTemplate());
     }
 
-    @Operation(summary = "菜谱批量导入-解析预览", description = "上传 .xlsx/.csv（≤5MB、≤500 数据行），解析并逐行校验（缺列整体拒绝；菜名/分类/食材/步骤/封面链接给行号级错误），返回归一后行数据供预览确认；本接口不落库")
+    @Operation(summary = "菜谱批量导入-解析预览", description = "上传 .xlsx/.csv（≤5MB、≤500 数据行），解析并逐行校验（缺列整体拒绝；菜名/分类/食材/步骤/封面链接给行号级错误），返回归一后行数据供预览确认；按 source_key 优先 →（菜名,分类）兜底判重，逐行标注 isNew/existsKind 并汇总 newCount/updateCount（新增 N / 更新 M）；本接口不落库")
     @PostMapping("/import")
     public Result<DiningRecipeImportPreviewVo> previewImport(@RequestPart("file") @Parameter(description = "导入文件（.xlsx/.csv）", required = true) MultipartFile file) {
         return Result.ok(diningRecipeImportService.preview(file));
     }
 
-    @Operation(summary = "菜谱批量导入-确认写入", description = "两阶段导入第二步：提交预览通过校验的行（归一后结构化数据），整批事务——再次逐行校验，任一行失败全批不落库并返回逐行失败报告（rolledBack=true）；全部通过才逐行写入并返回逐行菜谱 ID。封面不支持批量导入，导入后单独上传")
+    @Operation(summary = "菜谱批量导入-确认写入", description = "两阶段导入第二步：提交预览通过校验的行（归一后结构化数据），整批事务——再次逐行校验，任一行失败全批不落库并返回逐行失败报告（rolledBack=true）；全部通过才写入：命中库内已有菜谱（source_key 优先 →（菜名,分类）兜底）幂等更新（保留 id/created_at/status，不静默改上下架），未命中新增；返回逐行菜谱 ID 与 isNew/existsKind、createdCount/updatedCount。封面不支持批量导入，导入后单独上传")
     @Audited(action = "DINING_RECIPE_IMPORT", targetType = "dining_recipe")
     @PostMapping("/import/confirm")
     public Result<DiningRecipeImportResultVo> confirmImport(@RequestBody @Valid DiningRecipeImportConfirmFrom from) {
