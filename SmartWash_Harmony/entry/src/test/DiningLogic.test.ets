@@ -20,6 +20,7 @@ import {
   DiningScanKind,
   DiningSelectedDish,
   DiningShoppingResult,
+  DiningStepLineKind,
   buildDiningJoinUrl,
   buildShoppingListText,
   coerceDiningPeopleCount,
@@ -36,7 +37,8 @@ import {
   normalizeDiningScan,
   originOf,
   parseDiningJoinUrl,
-  parseDiningShoppingList
+  parseDiningShoppingList,
+  parseDiningStepLines
 } from '../main/ets/feature/dining/DiningLogic';
 import {
   DietaryPreferenceVo,
@@ -275,6 +277,35 @@ export default function diningLogicTest() {
       expect(formatDiningAmount(1830)).assertEqual('1830')
       expect(formatDiningAmount(666.66)).assertEqual('666.7')
       expect(formatDiningAmount(null)).assertNull()
+    })
+
+    // ---------- 步骤渲染清洗（TD24 对齐安卓 parseStepLines） ----------
+
+    it('stepLines-剥离 markdown 加粗与原文编号', 0, () => {
+      const lines = parseDiningStepLines('**1.** 打散鸡蛋\n2、热锅下油\n3) 翻炒装盘')
+      expect(lines.length).assertEqual(3)
+      expect(lines[0].kind).assertEqual(DiningStepLineKind.MAIN)
+      expect(lines[0].text).assertEqual('打散鸡蛋')
+      expect(lines[1].text).assertEqual('热锅下油')
+      expect(lines[2].text).assertEqual('翻炒装盘')
+    })
+
+    it('stepLines-「-」开头行归子注解', 0, () => {
+      const lines = parseDiningStepLines('打散鸡蛋\n- 用土鸡蛋更香\n——也可以加点料酒')
+      expect(lines.length).assertEqual(3)
+      expect(lines[0].kind).assertEqual(DiningStepLineKind.MAIN)
+      expect(lines[1].kind).assertEqual(DiningStepLineKind.SUB)
+      expect(lines[1].text).assertEqual('用土鸡蛋更香')
+      expect(lines[2].kind).assertEqual(DiningStepLineKind.SUB)
+      expect(lines[2].text).assertEqual('也可以加点料酒')
+    })
+
+    it('stepLines-空行跳过与空串返回空表', 0, () => {
+      expect(parseDiningStepLines('').length).assertEqual(0)
+      const lines = parseDiningStepLines('第一步\n\n\n第二步\n')
+      expect(lines.length).assertEqual(2)
+      expect(lines[0].text).assertEqual('第一步')
+      expect(lines[1].text).assertEqual('第二步')
     })
 
     // ---------- 购买清单快照 v2（契约 §3.3 additive，v1 存在性降级） ----------

@@ -717,6 +717,53 @@ export function formatDiningAmount(value: number | null): string | null {
 }
 
 
+// ========== 菜谱步骤渲染清洗（TD24 对齐 Android DiningRecipeDetailPage.parseStepLines，同口径） ==========
+
+/** 步骤行类别：main = 主步骤（渲染自动序号）；sub = 子注解（缩进浅色不编号） */
+export enum DiningStepLineKind {
+  MAIN,
+  SUB
+}
+
+/** 步骤行解析产物（详情页渲染模型） */
+export interface DiningStepLine {
+  kind: DiningStepLineKind
+  text: string
+}
+
+/** 原文自带编号前缀（「1.」「2、」「3)」——HowToCook/CookLikeHOC 步骤文本常见），渲染层剥离避免双重编号 */
+const DINING_STEP_NO_PREFIX: RegExp = /^\d+[.、)）]\s*/
+/** markdown 加粗标记（HowToCook 原文加粗语法直接入库导致星号泄露渲染） */
+const DINING_STEP_BOLD_MARK: RegExp = /\*\*/g
+
+/**
+ * 步骤文本解析（TD24）：按行拆分 → 全局剥离 markdown「**」加粗标记 → 「-」开头行归
+ * 子注解（缩进浅色不编号）、其余行剥原文自带编号归主步骤（渲染层补序号，避免双重编号）。
+ * 转换器源头（TD25）已剥离「**」，渲染层保留清洗兼容存量数据。
+ * 纯函数无 UI 依赖，供详情页渲染与单测共用（与安卓 parseStepLines 同口径）。
+ */
+export function parseDiningStepLines(raw: string): Array<DiningStepLine> {
+  if (raw.length === 0) {
+    return []
+  }
+  const lines = raw.split('\n')
+  const result: Array<DiningStepLine> = []
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim()
+    if (trimmed.length === 0) {
+      continue
+    }
+    const cleaned = trimmed.replace(DINING_STEP_BOLD_MARK, '').trim()
+    if (cleaned.startsWith('-') || cleaned.startsWith('–') || cleaned.startsWith('—')) {
+      result.push({ kind: DiningStepLineKind.SUB, text: cleaned.replace(/^[-–—]+\s*/, '').trim() })
+    } else {
+      result.push({ kind: DiningStepLineKind.MAIN, text: cleaned.replace(DINING_STEP_NO_PREFIX, '').trim() })
+    }
+  }
+  return result
+}
+
+
 // ========== 忌口警示（对齐 Android DiningAllergenGuard，四端同口径） ==========
 
 /** 忌口标签白名单（与后端 Pattern、设置页 7 个多选 chip 同源） */

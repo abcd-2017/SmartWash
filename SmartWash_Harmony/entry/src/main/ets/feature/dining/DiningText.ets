@@ -249,6 +249,9 @@ export class DiningText {
   // ---- 收藏（契约 §2.3/§三.4）----
 
   static get dining_order_action_favorites(): string { return resString('dining_order_action_favorites') }
+  static get dining_recipe_favorite(): string { return resString('dining_recipe_favorite') }
+  static get dining_recipe_unfavorite(): string { return resString('dining_recipe_unfavorite') }
+  static get dining_recipe_favorite_failed(): string { return resString('dining_recipe_favorite_failed') }
   static get dining_recipe_favorites_title(): string { return resString('dining_recipe_favorites_title') }
   static get dining_recipe_favorites_empty(): string { return resString('dining_recipe_favorites_empty') }
   static get dining_recipe_favorites_load_failed(): string { return resString('dining_recipe_favorites_load_failed') }

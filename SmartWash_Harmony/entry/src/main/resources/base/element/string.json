@@ -5853,6 +5853,18 @@
       "value": "食材"
     },
     {
+      "name": "dining_recipe_favorite",
+      "value": "收藏"
+    },
+    {
+      "name": "dining_recipe_unfavorite",
+      "value": "取消收藏"
+    },
+    {
+      "name": "dining_recipe_favorite_failed",
+      "value": "收藏操作失败，请重试"
+    },
+    {
       "name": "dining_recipe_action_favorite_add_format",
       "value": "收藏 %s"
     },

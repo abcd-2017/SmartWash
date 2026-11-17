@@ -87,6 +87,12 @@ export class MotionTiming {
   static readonly SPRING: ICurve = curves.springMotion(0.4, 1)
 
   /**
+   * 弹跳弹簧 — 对齐安卓 MediumBouncy（dampingRatio 0.5；D11：收藏弹跳/加选 +→✓ 等状态
+   * 变换反馈）：阻尼欠阻尼产生一次过冲回落，response 与标准弹簧同档。
+   */
+  static readonly BOUNCY: ICurve = curves.springMotion(0.4, 0.5)
+
+  /**
    * 弹窗入场 — 对齐安卓 dialogEnterMotion：scale 0.92→1 + fade 0→1 一次性进场。
    * 退出动画受弹窗窗口机制限制（窗口由系统直接移除），两端一致不做。
    */
