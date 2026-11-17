@@ -4,6 +4,8 @@
     <!-- 页面标题 -->
     <string name="dining_recipe_library_title">菜谱库</string>
     <string name="dining_recipe_detail_title">菜谱详情</string>
+    <string name="dining_recipe_favorite">收藏</string>
+    <string name="dining_recipe_unfavorite">取消收藏</string>
     <string name="dining_recipe_create_title">新增菜谱</string>
 
     <!-- 菜谱库 -->

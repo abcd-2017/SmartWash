@@ -29,13 +29,23 @@ class DiningRecipeDetailViewModel @Inject constructor(
     private val _recipe = MutableStateFlow<DiningRecipeVo?>(null)
     val recipe = _recipe.asStateFlow()
 
+    /** 收藏态（详情返回填充；页内乐观切换 + 服务端失败回滚） */
+    private val _favorited = MutableStateFlow(false)
+    val favorited = _favorited.asStateFlow()
+
+    /** 收藏切换进行中（防连击重复请求） */
+    private val _favoriting = MutableStateFlow(false)
+    val favoriting = _favoriting.asStateFlow()
+
     /** 首载/重试（防重：加载中直接忽略） */
     fun load(recipeId: Long) {
         if (recipeId <= 0 || _detailState.value is RequestState.Loading) return
         viewModelScope.launch {
             _detailState.value = RequestState.Loading
             try {
-                _recipe.value = diningRepository.getRecipeDetail(recipeId)
+                val vo = diningRepository.getRecipeDetail(recipeId)
+                _recipe.value = vo
+                _favorited.value = vo.favorited == true
                 _detailState.value = RequestState.Success
             } catch (e: CancellationException) {
                 // 取消不作为网络错误，直接上抛
@@ -43,6 +53,32 @@ class DiningRecipeDetailViewModel @Inject constructor(
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "DiningRecipeDetailViewModel.load: ${e.message}", e)
                 _detailState.value = RequestState.Error(e.resId, e.message)
+            }
+        }
+    }
+
+    /** 收藏切换（TD22/P2-6）：乐观更新本地态，服务端失败回滚——详情页收藏入口此前缺失 */
+    fun toggleFavorite() {
+        val id = _recipe.value?.safeId ?: return
+        if (_favoriting.value) return
+        _favoriting.value = true
+        val target = !_favorited.value
+        _favorited.value = target
+        viewModelScope.launch {
+            try {
+                val ok = if (target) {
+                    diningRepository.favoriteRecipe(id)
+                } else {
+                    diningRepository.unfavoriteRecipe(id)
+                }
+                if (!ok) _favorited.value = !target
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AppLogger.error(TAG, "toggleFavorite: ${e.message}", e)
+                _favorited.value = !target
+            } finally {
+                _favoriting.value = false
             }
         }
     }
