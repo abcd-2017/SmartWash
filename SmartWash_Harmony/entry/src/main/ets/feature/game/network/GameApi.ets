@@ -219,3 +219,106 @@ export function withUniqueKeys(games: Array<GameItem>): Array<GameItem> {
 export async function getGameList(): Promise<BaseResponse<Array<GameVo>>> {
   return httpUtil.get<Array<GameVo>>('/web/auth/game/list')
 }
+
+// ========== 游戏数据桥接口（H5 经原生桥代理，需 ROLE_USER；对齐安卓 GameBridgeApi.kt） ==========
+// H5 不持有 token，一律由原生桥带 Bearer 请求 /web/auth/game/* 后回传（见 GAME-THEME.md §5.2）。
+
+/** 存档视图（对齐后端 GameStateVo；无存档时 stateJson 为 null） */
+export interface GameStateVo {
+  gameKey?: string
+  stateJson?: string | null
+  schemaVer?: number | null
+  updatedAt?: string | null
+}
+
+/** 单个关卡（对齐后端 GameLevelVo） */
+export interface GameLevelVo {
+  levelNo?: number
+  name?: string | null
+  dataJson?: string
+  difficulty?: number | null
+  sort?: number
+}
+
+/** 关卡下发视图（对齐后端 GameLevelsVo） */
+export interface GameLevelsVo {
+  gameKey?: string
+  version?: number
+  levels?: Array<GameLevelVo>
+}
+
+/** 排行榜条目（对齐后端 GameLeaderboardVo.EntryVo） */
+export interface GameLeaderboardEntryVo {
+  rank?: number
+  userId?: number
+  maskedPhone?: string | null
+  avatar?: string | null
+  metricValue?: number
+  metricExtra?: number | null
+}
+
+/** 我的排名（对齐后端 GameLeaderboardVo.MyRankVo） */
+export interface GameMyRankVo {
+  rank?: number | null
+  metricValue?: number | null
+}
+
+/** 排行榜视图（对齐后端 GameLeaderboardVo） */
+export interface GameLeaderboardVo {
+  gameKey?: string
+  metricLabel?: string | null
+  metricOrder?: string
+  entries?: Array<GameLeaderboardEntryVo>
+  my?: GameMyRankVo | null
+}
+
+/** 存档写入请求体（对齐后端 GameStateUpdateFrom，字段名逐一勿改） */
+export interface GameStateUpdateBody {
+  gameKey: string
+  stateJson: string
+  schemaVer?: number
+}
+
+/** 成绩上报请求体（对齐后端 GameScoreReportFrom，字段名逐一勿改） */
+export interface GameScoreReportBody {
+  gameKey: string
+  metricValue: number
+  metricExtra?: number
+  metricJson?: string
+}
+
+/** GET 查询参数构造（ArkTS 禁裸对象字面量作参数，按索引赋值） */
+function gameParams(gameKey: string, limit?: number): Record<string, Object> {
+  const params: Record<string, Object> = {}
+  params['gameKey'] = gameKey
+  if (limit !== undefined) {
+    params['limit'] = limit
+  }
+  return params
+}
+
+/** 读存档：无存档时 data.stateJson 为 null（首次进入正常态） */
+export async function getGameState(gameKey: string): Promise<BaseResponse<GameStateVo>> {
+  return httpUtil.get<GameStateVo>('/web/auth/game/state', gameParams(gameKey))
+}
+
+/** 写存档：upsert，stateJson 游戏自定义（服务端不解析语义） */
+export async function saveGameState(body: GameStateUpdateBody): Promise<BaseResponse<GameStateVo>> {
+  return httpUtil.put<GameStateVo>('/web/auth/game/state', body)
+}
+
+/** 上报成绩：后端取历史最佳（方向由 game_config.metric_order 决定） */
+export async function reportGameScore(body: GameScoreReportBody): Promise<BaseResponse<string>> {
+  return httpUtil.post<string>('/web/auth/game/score', body)
+}
+
+/** 排行榜 TOP N（含我的排名；limit 由桥归一化，缺省 20） */
+export async function getGameLeaderboard(gameKey: string,
+  limit: number): Promise<BaseResponse<GameLeaderboardVo>> {
+  return httpUtil.get<GameLeaderboardVo>('/web/auth/game/leaderboard', gameParams(gameKey, limit))
+}
+
+/** 关卡下发：启用中的关卡列表 + 版本号（端上据版本号判断缓存是否失效） */
+export async function getGameLevels(gameKey: string): Promise<BaseResponse<GameLevelsVo>> {
+  return httpUtil.get<GameLevelsVo>('/web/auth/game/levels', gameParams(gameKey))
+}
