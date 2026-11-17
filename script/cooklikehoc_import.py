@@ -302,12 +302,13 @@ def parse_nutrition_table(section_lines):
 
 
 def join_steps(section_lines):
-    """步骤节 → 多行文本（保留序号）。"""
+    """步骤节 → 多行文本（保留序号；剥离 markdown 加粗标记，TD25：源头清洗防 ** 星号泄露渲染）。"""
     steps = []
     for line in section_lines:
         s = line.strip()
         if not s or s.startswith(("<!--", "```")):
             continue
+        s = s.replace("**", "")
         steps.append(s)
     return "\n".join(steps)[:MAX_STEPS]
 
@@ -577,8 +578,9 @@ def write_csvs(out_dir, hoc_recipes, htc_recipes, all_ingredients):
         rows = []
         seen_keys = set()
         for r in recipes:
-            # 无实拍图 → 分类占位图兜底（PS 生成，category_<分类名>.png），四端展示不空窗
-            cover = r["coverKey"] or f"dining/covers/category_{r['category']}.png"
+            # 无实拍图 → 对象键留空（TD26）：端上回落「浅绿底 + 菜名首字」占位；
+            # 旧方案落分类占位图（category_*.png）缩小后语义不清且红白色跳出绿系，已废弃
+            cover = r["coverKey"] or ""
             source_key = make_source_key(source_prefix, r["name"])
             # 同源同名变体（源仓库存在，如「农家小炒肉（玉耳版本）」）：加序号后缀保唯一，不去重
             if source_key in seen_keys:
