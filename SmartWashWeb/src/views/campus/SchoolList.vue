@@ -234,6 +234,7 @@ import { getSchoolList, addSchool, updateSchool, deleteSchool } from '@/api/scho
 import { schoolOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useConfirm } from '@/composables/useConfirm';
 import RegionCascader from '@/components/RegionCascader.vue';
 import AmapPicker from '@/components/AmapPicker.vue';
@@ -396,9 +397,14 @@ const submitForm = async () => {
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本
-    logger.error('保存学校失败:', error instanceof Error ? error : '表单校验未通过');
-    ElMessage.error(error.message || '操作失败');
+    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本；
+    // 字段红字已示于表单，不再叠加「操作失败」假 toast
+    if (isValidationError(error)) {
+      logger.debug('学校表单校验未通过，已拦截提交');
+      return;
+    }
+    logger.error('保存学校失败:', error);
+    ElMessage.error(friendlyErrorMessage(error, '操作失败'));
   } finally {
     submitting.value = false;
   }
@@ -418,7 +424,7 @@ const handleDelete = async (row) => {
     fetchData();
   } catch (error) {
     logger.error('删除学校失败:', `schoolId=${row.schoolId}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   }
 };
 </script>
