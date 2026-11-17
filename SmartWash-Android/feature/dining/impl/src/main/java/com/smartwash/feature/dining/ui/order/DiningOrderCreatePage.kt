@@ -3,6 +3,9 @@ package com.smartwash.feature.dining.ui.order
 import android.widget.Toast
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -226,9 +231,10 @@ fun DiningOrderCreatePage(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
-            // 规范 §4：标题/搜索输入框键盘弹出时整页上收，底部固定 CTA 随根布局抬升，
-            // 不被软键盘遮挡（与 RechargePage 同口径）
-            .imePadding()
+            // 键盘避让决策（TD15）：本页是「表单头 + 长列表 + 固定 CTA」混合页，不再整页上收
+            // （原 RechargePage 表单页口径套用导致键盘弹出列表被压缩、CTA 弹起跳变）。
+            // 标题/搜索框位于页面上半部不会被键盘遮挡；键盘弹出时列表下半部被遮可接受——
+            // 输入场景下列表本就无需交互，与美团点单页行为一致。
     ) {
         Box(modifier = Modifier.weight(1f)) {
             // PageHeader 置于滚动区外（固定头部：标题输入 + 分类栏为页面骨架，不随列表滚动）
@@ -384,6 +390,9 @@ fun DiningOrderCreatePage(
                                             loadMoreState = loadMoreState,
                                             onLoadMore = viewModel::loadMore,
                                             onToggle = viewModel::toggleRecipe,
+                                            onViewRecipe = { recipeId ->
+                                                navController.navigate(DiningRoute.RecipeDetail(recipeId))
+                                            },
                                             modifier = Modifier.weight(1f),
                                         )
                                     }
@@ -502,6 +511,7 @@ private fun DishList(
     loadMoreState: RequestState,
     onLoadMore: () -> Unit,
     onToggle: (Long) -> Unit,
+    onViewRecipe: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -535,6 +545,7 @@ private fun DishList(
                 recipe = recipe,
                 selected = recipe.safeId in selectedIds,
                 onToggle = { onToggle(recipe.safeId) },
+                onViewRecipe = { onViewRecipe(recipe.safeId) },
                 modifier = Modifier.padding(bottom = AppDimens.cardSpacing),
             )
         }
@@ -577,6 +588,7 @@ private fun DishRow(
     recipe: DiningRecipeVo,
     selected: Boolean,
     onToggle: () -> Unit,
+    onViewRecipe: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val nutrition = DiningNutritionCalculator.dishNutrition(recipe)
@@ -594,7 +606,8 @@ private fun DishRow(
     } else {
         null
     }
-    val subLine = listOfNotNull(ingredientText, calorieText).joinToString(" · ")
+    // 副行热量前置（TD16）：大字体/窄屏截断时优先保住热量语义（旧序「N 种食材 · ≈107 …」热量必被截）
+    val subLine = listOfNotNull(calorieText, ingredientText).joinToString(" · ")
 
     GroupCard(
         modifier = modifier
@@ -608,7 +621,12 @@ private fun DishRow(
                 .fillMaxWidth()
                 .heightIn(min = DISH_ROW_MIN_HEIGHT),
         ) {
-            DishThumb(coverUrl = recipe.safeCoverUrl, name = recipe.safeName)
+            // 缩略图独立点击 → 菜谱详情（TD17，美团惯例：行点击=加购、点图=看详情）
+            DishThumb(
+                coverUrl = recipe.safeCoverUrl,
+                name = recipe.safeName,
+                modifier = Modifier.pressable(onClick = onViewRecipe, debounce = false),
+            )
             Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -616,7 +634,8 @@ private fun DishRow(
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (selected) AppColors.colorScheme.primaryDark
                     else AppColors.colorScheme.textPrimary,
-                    maxLines = 1,
+                    // 两行上限（TD16）：大字体档单行只剩 3-4 字，两行保住菜名可读性
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (subLine.isNotBlank()) {
@@ -642,6 +661,9 @@ private fun DishRow(
 /** 56dp 封面缩略（菜谱库搜索行同款）：有封面走网络图，缺失回落浅绿底 + 菜名首字 */
 @Composable
 private fun DishThumb(coverUrl: String, name: String, modifier: Modifier = Modifier) {
+    // 分类占位图（dining/covers/category_*.png）视为无封面（TD18）：缩小后语义不清且
+    // 红白色跳出清氧绿系，回落浅绿底 + 菜名首字更干净；转换器新数据已不再生成占位键
+    val hasRealCover = coverUrl.isNotBlank() && !coverUrl.contains("dining/covers/category_")
     Box(
         modifier = modifier
             .size(DISH_COVER_SIZE)
@@ -649,7 +671,7 @@ private fun DishThumb(coverUrl: String, name: String, modifier: Modifier = Modif
             .background(AppColors.colorScheme.iconContainerGreen),
         contentAlignment = Alignment.Center,
     ) {
-        if (coverUrl.isNotBlank()) {
+        if (hasRealCover) {
             SmartWashAsyncImage(
                 url = coverUrl,
                 modifier = Modifier.fillMaxSize(),
@@ -687,9 +709,17 @@ private fun AddDishButton(
             .pressable(onClick = onClick, debounce = false),
         contentAlignment = Alignment.Center,
     ) {
+        // 状态变换 spring 弹跳（TD19/D11）：勾选瞬间放大过冲回落（MediumBouncy 过冲特性），
+        // 取消时回弹 1f；无障碍「移除动效」场景 spring 值瞬时到达，无持续动画
+        val scale by animateFloatAsState(
+            targetValue = if (selected) 1.12f else 1f,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+            label = "addDishScale",
+        )
         Box(
             modifier = Modifier
                 .size(32.dp)
+                .scale(scale)
                 .then(
                     if (selected) {
                         Modifier.background(
@@ -800,20 +830,24 @@ private fun CreateBottomBar(
                     ),
                 )
             }
+            // 主行改两段式（TD28/P1-2）：大字体档「计数+清空+CTA」横向总预算超屏宽（≈487dp
+            // > 393dp），单行排布必然截断/遮盖——信息行（计数+清空）与全宽 CTA 行分离，
+            // 对齐美团购物车栏惯例：全宽大按钮同时构成页面唯一视觉锚点（D9 阶梯层级）
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceSm),
+                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXxs),
             ) {
                 Text(
-                    // 已选计数（数量数据档 AmountMedium + tnum，规范 §2.2 硬规则）
                     text = stringResource(R.string.dining_order_create_selected_count_format, selectedCount),
                     style = AppTextStyles.AmountMedium,
                     color = AppColors.colorScheme.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
                 if (!isReuseMode && selectedCount > 0) {
-                    Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                     AppButton(
                         text = stringResource(R.string.dining_order_create_clear),
                         onClick = onRequestClear,
@@ -821,13 +855,15 @@ private fun CreateBottomBar(
                         contentColor = AppColors.colorScheme.dangerInk,
                     )
                 }
-                Spacer(modifier = Modifier.weight(1f))
-                AppButton(
-                    text = stringResource(R.string.dining_order_create_submit),
-                    onClick = onSubmit,
-                    loading = submitLoading,
-                )
             }
+            AppButton(
+                text = stringResource(R.string.dining_order_create_submit),
+                onClick = onSubmit,
+                loading = submitLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXxs),
+            )
         }
     }
 }

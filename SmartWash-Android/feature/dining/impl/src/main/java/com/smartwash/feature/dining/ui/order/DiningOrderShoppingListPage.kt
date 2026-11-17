@@ -243,7 +243,16 @@ private fun CalorieCard(
         )
         Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
         Row(verticalAlignment = Alignment.Bottom) {
-            val formattedTotal = DiningNutritionCalculator.formatAmount(result.totalCalories)
+            // TD27/P2-8：全部菜热量未知时聚合 totalCalories=0.0——渲染「≈0」误导（仿佛确认了
+            // 零热量）；未知菜数 == 已点菜总数（按菜备菜视图仅含被点过的菜）时改显「热量未知」
+            val allCaloriesUnknown = result.calorieUnknownDishCount != null &&
+                result.perRecipe.isNotEmpty() &&
+                result.calorieUnknownDishCount == result.perRecipe.size
+            val formattedTotal = if (allCaloriesUnknown) {
+                null
+            } else {
+                DiningNutritionCalculator.formatAmount(result.totalCalories)
+            }
             Text(
                 text = if (formattedTotal != null) {
                     stringResource(R.string.dining_shopping_list_total_calories_value_format, formattedTotal)

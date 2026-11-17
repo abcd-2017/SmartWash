@@ -27,6 +27,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
@@ -580,14 +582,17 @@ private fun DishRow(
         Spacer(modifier = Modifier.width(AppDimens.spaceSm))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // 菜名 weight(fill=true) + 两行上限（TD21/P0-1）：原 fill=false 在大字体档被
+                // 固定宽做法/备注按钮挤压至 0 宽——菜名整行消失（「啥也不显示」根因）；
+                // 热量徽标挪至菜名行右侧自然收缩，不再与按钮争宽
                 Text(
                     text = dish.name,
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (selected) AppColors.colorScheme.primaryDark
                     else AppColors.colorScheme.textPrimary,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
+                    modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(AppDimens.spaceXxs))
                 // 份热量徽标（契约 §5.3：≈N kcal/份；缺失渲染「热量未知」次级档）
@@ -633,45 +638,40 @@ private fun DishRow(
             )
             Spacer(modifier = Modifier.width(AppDimens.spaceXs))
         }
-        // 做法入口（独立热区，跳菜谱详情看做法步骤；已结束只读态也可看）
+        // 做法入口（独立热区，跳菜谱详情看做法步骤；已结束只读态也可看）。
+        // 图标化（TD21/P0-1）：文字胶囊在 fontScale 放大后宽度失控挤压菜名；图标 + 48dp
+        // 热区宽度恒定，语义由 contentDescription 承担
         Box(
-            // 48dp 最小热区（规范 §3.2）：文字按钮档不得小于 44/48dp
             modifier = Modifier
-                .heightIn(min = 48.dp)
+                .size(48.dp)
                 .clip(RoundedCornerShape(AppDimens.radiusFull))
                 .background(AppColors.colorScheme.surfaceVariant)
-                .pressable(onClick = onViewRecipe, debounce = false)
-                .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXxs),
+                .pressable(onClick = onViewRecipe, debounce = false),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = stringResource(R.string.dining_order_detail_recipe_action),
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                ),
-                color = AppColors.colorScheme.textSecondary,
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                contentDescription = stringResource(R.string.dining_order_detail_recipe_action),
+                tint = AppColors.colorScheme.textSecondary,
+                modifier = Modifier.size(20.dp),
             )
         }
         // 备注入口（独立热区，点击不触发整行勾选）；只读态隐藏
         if (!readOnly) {
             Box(
                 modifier = Modifier
-                    .heightIn(min = 48.dp)
+                    .size(48.dp)
                     .clip(RoundedCornerShape(AppDimens.radiusFull))
                     .background(AppColors.colorScheme.surfaceVariant)
-                    .pressable(onClick = onNote, debounce = false)
-                    .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXxs),
+                    .pressable(onClick = onNote, debounce = false),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = stringResource(R.string.dining_order_detail_note_action),
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                    color = if (note.isNotBlank()) AppColors.colorScheme.primaryDark
+                Icon(
+                    imageVector = Icons.Filled.Edit,
+                    contentDescription = stringResource(R.string.dining_order_detail_note_action),
+                    tint = if (note.isNotBlank()) AppColors.colorScheme.primaryDark
                     else AppColors.colorScheme.textSecondary,
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }

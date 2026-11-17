@@ -411,9 +411,10 @@ internal fun RecipeCoverCard(
             .pressable(onClick = onClick),
         contentPadding = PaddingValues(0.dp),
     ) {
-        // 封面区：封面图/占位底 + 右上角收藏按钮（48dp 热区；内层 pressable 消费点击不进卡片）
+        // 封面区：封面图/占位底 + 右上角收藏按钮（48dp 热区；内层 pressable 消费点击不进卡片）。
+        // 分类占位图（dining/covers/category_*.png）视为无封面（TD18）：实拍缺失回落首字占位
         Box {
-            if (recipe.coverUrl.isNotBlank()) {
+            if (recipe.coverUrl.isNotBlank() && !recipe.coverUrl.contains("dining/covers/category_")) {
                 SmartWashAsyncImage(
                     url = recipe.coverUrl,
                     modifier = Modifier
@@ -452,7 +453,8 @@ internal fun RecipeCoverCard(
                 text = recipe.name,
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppColors.colorScheme.textPrimary,
-                maxLines = 1,
+                // 两行上限（TD16）：大字体档单行 7 字即截断，网格卡有纵向余量
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
@@ -596,7 +598,7 @@ private fun SearchResultRow(
     }
 }
 
-/** 56dp 封面缩略（发起点单页同款）：有封面走网络图，缺失回落浅绿底 + 菜名首字 */
+/** 56dp 封面缩略（发起点单页同款）：有封面走网络图，分类占位键/缺失回落浅绿底 + 菜名首字（TD18） */
 @Composable
 private fun RecipeThumb(coverUrl: String, name: String, modifier: Modifier = Modifier) {
     Box(
@@ -606,7 +608,7 @@ private fun RecipeThumb(coverUrl: String, name: String, modifier: Modifier = Mod
             .background(AppColors.colorScheme.iconContainerGreen),
         contentAlignment = Alignment.Center,
     ) {
-        if (coverUrl.isNotBlank()) {
+        if (coverUrl.isNotBlank() && !coverUrl.contains("dining/covers/category_")) {
             SmartWashAsyncImage(
                 url = coverUrl,
                 modifier = Modifier.fillMaxSize(),
