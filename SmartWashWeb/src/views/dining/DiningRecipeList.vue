@@ -50,6 +50,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleCreate">新增菜谱</el-button>
           <el-button @click="importDialogVisible = true">批量导入</el-button>
+          <el-button @click="directoryImportVisible = true">目录导入</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -356,6 +357,9 @@
 
     <!-- 批量导入弹窗（下载模板 → 上传解析预览 → 确认 → 逐行结果报告） -->
     <RecipeImportDialog v-model="importDialogVisible" @success="fetchData" />
+
+    <!-- 目录导入弹窗（选父目录：根层 CSV + image/ 封面，逐条上传单行互不阻断） -->
+    <DiningDirectoryImportDialog v-model="directoryImportVisible" @success="fetchData" />
   </div>
 </template>
 
@@ -364,6 +368,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Plus } from '@element-plus/icons-vue';
 import RecipeImportDialog from './components/RecipeImportDialog.vue';
+import DiningDirectoryImportDialog from './components/DiningDirectoryImportDialog.vue';
 import {
   getDiningRecipeList,
   addDiningRecipe,
@@ -394,6 +399,9 @@ const statusSwitchingId = ref(null); // 行内上下架开关 loading，防连�
 
 // 批量导入弹窗可见性（导入成功后由对话框 emit success → fetchData 刷新列表）
 const importDialogVisible = ref(false);
+
+// 目录导入弹窗可见性（选父目录逐条上传；导入成功后同样 emit success → fetchData 刷新）
+const directoryImportVisible = ref(false);
 
 const {
   list: recipeList,
