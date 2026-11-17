@@ -5,7 +5,7 @@
 //
 // 全部函数确定性输入输出，供 entry/src/test/DiningLogic.test.ets 断言。
 
-import { DiningOrderBriefVo } from '../../network/vo/DiningVo'
+import { DiningIngredientTotal, DiningOrderBriefVo } from '../../network/vo/DiningVo'
 import { diningShoppingListFromJSON, DiningShoppingListSnapshot } from '../../network/vo/DiningVo'
 
 
@@ -509,9 +509,17 @@ function categoryNameOf(categories: Array<DiningCategoryName>, categoryId: numbe
 }
 
 
-/** 空快照（解析失败兜底；展示层据此给空态） */
+/** 空快照（解析失败兜底；展示层据此给空态，v2 字段按「无 v2 数据」降级） */
 export function emptyDiningShoppingList(): DiningShoppingListSnapshot {
-  return { ingredientNames: [], perRecipe: [] }
+  return {
+    ingredientNames: [],
+    perRecipe: [],
+    ingredientTotals: null,
+    totalCalories: null,
+    calorieKnownDishCount: null,
+    calorieUnknownDishCount: null,
+    perDishCalories: null
+  }
 }
 
 /**
@@ -548,10 +556,31 @@ export interface DiningRecipeShopping {
   selectors: Array<DiningSelectorShopping>
 }
 
-/** 结果页双视图模型（快照 + 参与者目录 → 展示结构，对齐 Android toShoppingListResult） */
+/** 配料聚合行 UI 模型（快照 v2「按食材」渲染单元：名称 + 总量单位 + 菜数徽标） */
+export interface DiningIngredientTotalUi {
+  name: string
+  /** 聚合总量（null=来源未给出，仅列名不显数量） */
+  totalValue: number | null
+  /** 归一后单位（g/ml/个/…；空串=未给出） */
+  unit: string
+  /** 该配料出现的菜数（0=未给出，隐藏「N 道菜」徽标） */
+  dishCount: number
+}
+
+/**
+ * 结果页双视图模型（快照 + 参与者目录 → 展示结构，对齐 Android toShoppingListResult）。
+ * v2 字段（契约 §3.3 additive）：老快照为 null → 消费方按「无 v2 数据」降级
+ * （热量汇总隐藏、「按食材」tab 回落 ingredients 逐名渲染）。
+ */
 export interface DiningShoppingResult {
   ingredients: Array<string>
   perRecipe: Array<DiningRecipeShopping>
+  /** v2：配料聚合行；null=老快照无 v2 数据 */
+  ingredientTotals: Array<DiningIngredientTotalUi> | null
+  /** v2：已知热量菜的份热量之和（Kcal）；null=老快照无 v2 数据或无一菜已知 */
+  totalCalories: number | null
+  /** v2：热量未知菜数（未计入总热量）；null=老快照无 v2 数据 */
+  calorieUnknownDishCount: number | null
 }
 
 /**
@@ -582,7 +611,22 @@ export function toDiningShoppingResult(snapshot: DiningShoppingListSnapshot,
     })
     perRecipe.push({ recipeName: view.recipeName, selectors: selectors })
   })
-  return { ingredients: snapshot.ingredientNames, perRecipe: perRecipe }
+  // v2 字段透传（老快照 ingredientTotals 为 null → 结果模型同为 null，消费方降级渲染）
+  const totals: Array<DiningIngredientTotalUi> | null = snapshot.ingredientTotals === null
+    ? null
+    : snapshot.ingredientTotals.map((total: DiningIngredientTotal): DiningIngredientTotalUi => ({
+      name: total.name,
+      totalValue: total.totalValue,
+      unit: total.unit,
+      dishCount: total.dishCount
+    }))
+  return {
+    ingredients: snapshot.ingredientNames,
+    perRecipe: perRecipe,
+    ingredientTotals: totals,
+    totalCalories: snapshot.totalCalories,
+    calorieUnknownDishCount: snapshot.calorieUnknownDishCount
+  }
 }
 
 /**
@@ -623,6 +667,48 @@ export function buildShoppingListText(orderTitle: string, result: DiningShopping
     })
   }
   return lines.join('\n')
+}
+
+
+// ========== 营养计算（对齐 Android DiningNutritionCalculator，四端同口径） ==========
+
+/**
+ * 份量假设常量（g）：一份菜按 250g 估算（契约 §二拍板，四端一致写死并注释）。
+ * 每 100g 口径的营养折算到份 = 值 × 250 ÷ 100；与后端 DiningRecipeGate.PORTION_GRAMS、
+ * Android DiningNutritionCalculator.PORTION_GRAMS、Web dict.js DINING_PORTION_GRAMS 同一常量。
+ */
+export const DINING_PORTION_GRAMS: number = 250
+
+/**
+ * 份热量口径（契约 §二，四端一致）：caloriesTotal（HowToCook 整份预估）优先；
+ * 否则 caloriesPer100g（CookLikeHOC 营养表）× 250g ÷ 100；两者皆缺返回 null
+ * （热量未知，不参与热量聚合，UI 显示「热量未知」次级样式）。
+ */
+export function diningServingCalories(caloriesTotal: number | null,
+  caloriesPer100g: number | null): number | null {
+  if (caloriesTotal !== null) {
+    return caloriesTotal
+  }
+  if (caloriesPer100g === null) {
+    return null
+  }
+  return caloriesPer100g * DINING_PORTION_GRAMS / 100
+}
+
+/**
+ * 数量展示格式化（对齐 Android DiningNutritionCalculator.formatAmount，跨端一致格式）：
+ * 整数去尾零（1830.0 → "1830"），非整数最多保留 1 位小数（666.66 → "666.7"）；
+ * null/非有限值返回 null（热量未知态由调用方渲染「热量未知」）。
+ */
+export function formatDiningAmount(value: number | null): string | null {
+  if (value === null || !Number.isFinite(value)) {
+    return null
+  }
+  const rounded = Math.round(value * 10) / 10
+  if (Number.isInteger(rounded)) {
+    return `${rounded}`
+  }
+  return rounded.toFixed(1)
 }
 
 

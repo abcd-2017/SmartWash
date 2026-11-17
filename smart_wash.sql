@@ -1931,33 +1931,80 @@ CREATE TABLE `dining_category` (
 -- ----------------------------
 -- Table structure for dining_recipe（菜谱）
 -- 平台公共菜谱库的正片条目：Web 管理端增删改查/上下架/封面上传，用户端后续批次
--- 浏览（上架列表）并在点单菜单里按菜谱勾选；购买清单 = 所选菜谱 ingredients 食材名并集去重。
+-- 浏览（上架列表）并在点单菜单里按菜谱勾选；购买清单 = 所选菜谱配料聚合（v2 主数据源为
+-- dining_recipe_ingredient 关联表，ingredients JSON 保留双写兼容老消费方）。
 -- category_id 可空 = 未分类（分类被菜谱引用时服务层拒绝删除分类，避免悬空）。
 -- cover_object_key 存 MinIO 对象键（dining/covers/ 前缀，匿名直读白名单），直链由 MinioConfig.urlOf 拼装。
--- ingredients 用 JSON 类型存食材名数组（如 ["西红柿","鸡蛋","葱"]），不聚合数量、不换算单位（spec 有意简化）。
+-- ingredients 用 JSON 类型存食材名数组（如 ["西红柿","鸡蛋","葱"]），保留双写；数量/单位聚合走关联表。
+-- 营养 6 列全部可空：calories_per_100g 为每 100g 口径（CookLikeHOC 营养表）、calories_total 为整份口径
+-- （HowToCook 预估卡路里）；展示口径「一份热量 = calories_total ?: calories_per_100g × 250g」，
+-- 250g 为份量假设常量（四端一致写死）；两者都缺的菜「热量未知」，不参与热量聚合。
 -- source 区分 ADMIN（运营后台录入）/ USER（用户端新增直上架）；创建人二选一落 created_by_admin_id / created_by_user_id。
 -- status 上下架：1=上架（客户端可选），0=下架（不再出现在客户端上架列表，历史点单订单不受影响）。
 -- name 不做唯一约束（同名菜谱是合法业务态，如不同来源的家传做法）。
 -- ----------------------------
 DROP TABLE IF EXISTS `dining_recipe`;
 CREATE TABLE `dining_recipe` (
-  `id`                  BIGINT       NOT NULL AUTO_INCREMENT COMMENT '菜谱 ID',
-  `category_id`         BIGINT       NULL COMMENT '所属分类 ID（dining_category.id），NULL=未分类',
-  `name`                VARCHAR(64)  NOT NULL COMMENT '菜名（如 番茄炒蛋）',
-  `cover_object_key`    VARCHAR(255) NULL COMMENT '封面图对象键（MinIO dining/covers/ 前缀），NULL=未上传',
-  `ingredients`         JSON         NULL COMMENT '食材名数组（JSON，如 ["西红柿","鸡蛋"]），购买清单按名字并集去重',
-  `steps`               TEXT         NULL COMMENT '做法步骤（纯文本，换行分段）',
-  `source`              VARCHAR(16)  NOT NULL DEFAULT 'ADMIN' COMMENT '来源：ADMIN=运营后台录入，USER=用户端新增',
-  `status`              TINYINT      NOT NULL DEFAULT 1 COMMENT '上下架：1=上架，0=下架',
-  `created_by_user_id`  BIGINT       NULL COMMENT '创建人用户 ID（source=USER 时记录 users.user_id）',
-  `created_by_admin_id` BIGINT       NULL COMMENT '创建人管理员 ID（source=ADMIN 时记录 admin_users.admin_id）',
-  `created_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `id`                  BIGINT        NOT NULL AUTO_INCREMENT COMMENT '菜谱 ID',
+  `category_id`         BIGINT        NULL COMMENT '所属分类 ID（dining_category.id），NULL=未分类',
+  `name`                VARCHAR(64)   NOT NULL COMMENT '菜名（如 番茄炒蛋）',
+  `cover_object_key`    VARCHAR(255)  NULL COMMENT '封面图对象键（MinIO dining/covers/ 前缀），NULL=未上传',
+  `ingredients`         JSON          NULL COMMENT '食材名数组（JSON，如 ["西红柿","鸡蛋"]），保留双写兼容老消费方，聚合主数据源为关联表',
+  `steps`               TEXT          NULL COMMENT '做法步骤（纯文本，换行分段）',
+  `calories_per_100g`   DECIMAL(8,2)  NULL COMMENT '热量 Kcal/100g（CookLikeHOC 营养表口径）',
+  `calories_total`      DECIMAL(10,2) NULL COMMENT '整份估算热量 Kcal（HowToCook 预估卡路里口径）',
+  `protein_g`           DECIMAL(6,2)  NULL COMMENT '蛋白质 g/100g',
+  `fat_g`               DECIMAL(6,2)  NULL COMMENT '脂肪 g/100g',
+  `carbs_g`             DECIMAL(6,2)  NULL COMMENT '碳水化合物 g/100g',
+  `sodium_mg`           DECIMAL(8,2)  NULL COMMENT '钠 mg/100g',
+  `source`              VARCHAR(16)   NOT NULL DEFAULT 'ADMIN' COMMENT '来源：ADMIN=运营后台录入，USER=用户端新增',
+  `status`              TINYINT       NOT NULL DEFAULT 1 COMMENT '上下架：1=上架，0=下架',
+  `created_by_user_id`  BIGINT        NULL COMMENT '创建人用户 ID（source=USER 时记录 users.user_id）',
+  `created_by_admin_id` BIGINT        NULL COMMENT '创建人管理员 ID（source=ADMIN 时记录 admin_users.admin_id）',
+  `created_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   KEY `idx_category_id` (`category_id`) COMMENT '分类筛选与分类引用计数',
   KEY `idx_status` (`status`) COMMENT '客户端上架列表过滤',
   KEY `idx_name` (`name`) COMMENT '关键词模糊搜索'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-菜谱';
+
+-- ----------------------------
+-- Table structure for dining_ingredient（配料库）
+-- 配料主数据（名称唯一 uk_name）：CSV 导入/建菜谱时按名 upsert 自动注册，Web 后台配料库管理页维护；
+-- category 为导入时启发式预判（油盐糖酱醋料酒→SEASONING / 肉蛋禽→MAIN / 菜菇瓜茄葱姜蒜→AUX / 其他 OTHER），
+-- 后台可改；供应商信息不入库（转换器侧剥离）。
+-- ----------------------------
+DROP TABLE IF EXISTS `dining_ingredient`;
+CREATE TABLE `dining_ingredient` (
+  `id`         BIGINT      NOT NULL AUTO_INCREMENT COMMENT '配料 ID',
+  `name`       VARCHAR(32) NOT NULL COMMENT '配料名（唯一；供应商信息不入库）',
+  `category`   VARCHAR(16) NOT NULL DEFAULT 'OTHER' COMMENT '配料分类：MAIN=主料/AUX=辅料/SEASONING=调料/OTHER=其他',
+  `created_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-配料库';
+
+-- ----------------------------
+-- Table structure for dining_recipe_ingredient（菜谱配料关联）
+-- 菜谱 ↔ 配料 多对多关联（带数量/单位），买菜清单聚合（ShoppingListAssembler v2）的主数据源；
+-- amount_value/amount_unit 可空 = 来源未给出数量（如「适量/若干」）；uk_recipe_ingredient 保证
+-- 一菜一配料仅一行（食材名列表与明细列表并存时按名去重合并）；idx_ingredient 支撑删除配料前引用计数。
+-- ----------------------------
+DROP TABLE IF EXISTS `dining_recipe_ingredient`;
+CREATE TABLE `dining_recipe_ingredient` (
+  `id`            BIGINT        NOT NULL AUTO_INCREMENT COMMENT '关联 ID',
+  `recipe_id`     BIGINT        NOT NULL COMMENT '菜谱 ID(dining_recipe.id)',
+  `ingredient_id` BIGINT        NOT NULL COMMENT '配料 ID(dining_ingredient.id)',
+  `amount_value`  DECIMAL(10,2) NULL COMMENT '数量数值（如 575g → 575），NULL=来源未给出',
+  `amount_unit`   VARCHAR(16)   NULL COMMENT '单位（g/kg/ml/L/个/根/片/包/勺/瓣/条/块/只/盒/袋/斤/两），NULL=未给出',
+  `created_at`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_recipe_ingredient` (`recipe_id`,`ingredient_id`),
+  KEY `idx_ingredient` (`ingredient_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-菜谱配料关联（买菜清单聚合依据）';
 
 -- ----------------------------
 -- Table structure for dining_order（点单订单）
@@ -1975,7 +2022,7 @@ CREATE TABLE `dining_order` (
   `status`          VARCHAR(16)  NOT NULL DEFAULT 'ONGOING' COMMENT '订单状态：ONGOING进行中 / FINISHED已结束',
   `join_token`      VARCHAR(64)  NOT NULL COMMENT '加入凭证（二维码携带，重置即旧码作废）',
   `version`         INT          NOT NULL DEFAULT 0 COMMENT '乐观并发版本号（每次选菜变更 +1，轮询协议基准）',
-  `shopping_list`   JSON         DEFAULT NULL COMMENT '购买清单快照（结束时写入：食材名并集去重 + 按菜视图）',
+  `shopping_list`   JSON         DEFAULT NULL COMMENT '购买清单快照（结束时写入）。v2 字段：ingredientNames食材名并集/perRecipe按菜视图（v1）、ingredientTotals按(配料名,归一单位)聚合求和（kg→g、L→ml）、totalCalories已知热量菜份热量之和、calorieKnownDishCount/calorieUnknownDishCount热量已知与未知菜数、perDishCalories逐菜热量；老快照仅含 v1 字段，端上按字段存在性回落渲染',
   `finished_at`     DATETIME     DEFAULT NULL COMMENT '结束时间',
   `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

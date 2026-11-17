@@ -86,6 +86,15 @@
             <span class="recipe-name" :title="row.name">{{ row.name }}</span>
           </template>
         </el-table-column>
+        <!-- 热量徽标：一份热量口径（契约 §二）= 整份热量 ?: 热量/100g × 250g，两者都缺不渲染 -->
+        <el-table-column label="热量" width="130" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="servingCalories(row) !== null" type="warning" effect="plain">
+              ≈ {{ servingCalories(row) }} kcal/份
+            </el-tag>
+            <span v-else class="text-muted">-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="分类" min-width="110">
           <template #default="{ row }">
             <el-tooltip v-if="row.categoryName" :content="row.categoryName" placement="top">
@@ -262,6 +271,81 @@
           <!-- 后端 updateRecipe 对 steps 用 hasText 判空：留空不会清空原内容，需显式告知 -->
           <div class="form-tip">编辑时留空表示不修改原步骤内容</div>
         </el-form-item>
+        <!-- 营养成分（契约 §3.2）：全部可选，随表单提交 caloriesPer100g/caloriesTotal/proteinG/fatG/carbsG/sodiumMg -->
+        <el-form-item label="营养成分">
+          <div class="nutrition-grid">
+            <div class="nutrition-field">
+              <span class="nutrition-label">热量 Kcal/100g</span>
+              <el-input-number
+                v-model="tempRecipe.caloriesPer100g"
+                :min="0"
+                :max="999999.99"
+                :precision="2"
+                :controls="false"
+                placeholder="选填"
+              />
+            </div>
+            <div class="nutrition-field">
+              <span class="nutrition-label">整份热量 Kcal</span>
+              <el-input-number
+                v-model="tempRecipe.caloriesTotal"
+                :min="0"
+                :max="99999999.99"
+                :precision="2"
+                :controls="false"
+                placeholder="选填"
+              />
+            </div>
+            <div class="nutrition-field">
+              <span class="nutrition-label">蛋白质 g/100g</span>
+              <el-input-number
+                v-model="tempRecipe.proteinG"
+                :min="0"
+                :max="9999.99"
+                :precision="2"
+                :controls="false"
+                placeholder="选填"
+              />
+            </div>
+            <div class="nutrition-field">
+              <span class="nutrition-label">脂肪 g/100g</span>
+              <el-input-number
+                v-model="tempRecipe.fatG"
+                :min="0"
+                :max="9999.99"
+                :precision="2"
+                :controls="false"
+                placeholder="选填"
+              />
+            </div>
+            <div class="nutrition-field">
+              <span class="nutrition-label">碳水 g/100g</span>
+              <el-input-number
+                v-model="tempRecipe.carbsG"
+                :min="0"
+                :max="9999.99"
+                :precision="2"
+                :controls="false"
+                placeholder="选填"
+              />
+            </div>
+            <div class="nutrition-field">
+              <span class="nutrition-label">钠 mg/100g</span>
+              <el-input-number
+                v-model="tempRecipe.sodiumMg"
+                :min="0"
+                :max="999999.99"
+                :precision="2"
+                :controls="false"
+                placeholder="选填"
+              />
+            </div>
+          </div>
+          <div class="form-tip">
+            一份热量展示口径：整份热量优先，否则按 热量/100g × {{ DINING_PORTION_GRAMS }}g
+            估算（份量假设常量，四端一致）； 编辑时留空表示不修改原值（如需清空请通过批量导入覆盖）
+          </div>
+        </el-form-item>
       </el-form>
 
       <template #footer>
@@ -295,6 +379,7 @@ import { useConfirm } from '@/composables/useConfirm';
 import { formatTime } from '@/utils/format';
 import {
   DINING_RECIPE_STATUS_OPTIONS,
+  DINING_PORTION_GRAMS,
   diningRecipeSourceText,
   diningRecipeSourceTagType,
 } from '@/constants/dict';
@@ -364,7 +449,8 @@ const loadCategoryOptions = async () => {
 };
 
 // 表单数据（字段名已与后端 DiningRecipeVo / Add·UpdateDiningRecipeFrom 对齐；
-// categoryId 用 0 表示未分类：后端约定 0 归一为 null 落库，null 则表示「不修改」）
+// categoryId 用 0 表示未分类：后端约定 0 归一为 null 落库，null 则表示「不修改」；
+// 营养 6 列（契约 §3.2）可空，编辑态 null=不修改）
 const tempRecipe = reactive({
   id: null,
   name: '',
@@ -372,7 +458,30 @@ const tempRecipe = reactive({
   coverObjectKey: null,
   ingredients: [],
   steps: '',
+  caloriesPer100g: null,
+  caloriesTotal: null,
+  proteinG: null,
+  fatG: null,
+  carbsG: null,
+  sodiumMg: null,
 });
+
+// 一份热量（契约 §二口径，四端一致写死）：caloriesTotal 优先，
+// 否则 caloriesPer100g × DINING_PORTION_GRAMS(250g) ÷ 100；两者都缺返回 null（热量未知）
+const servingCalories = (row) => {
+  if (row.caloriesTotal != null) return Math.round(Number(row.caloriesTotal));
+  if (row.caloriesPer100g != null) {
+    return Math.round((Number(row.caloriesPer100g) * DINING_PORTION_GRAMS) / 100);
+  }
+  return null;
+};
+
+// 营养输入归一：el-input-number 清空后为 null/undefined/''，统一归 null 落 payload
+const nutritionOrNull = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+};
 
 const rules = reactive({
   name: [
@@ -468,13 +577,19 @@ const handleCreate = () => {
     coverObjectKey: null,
     ingredients: [],
     steps: '',
+    caloriesPer100g: null,
+    caloriesTotal: null,
+    proteinG: null,
+    fatG: null,
+    carbsG: null,
+    sodiumMg: null,
   });
   ingredientInput.value = '';
   revokeCoverPreview();
   coverPreviewUrl.value = null;
 };
 
-// 打开编辑弹窗（编辑为全量字段语义，直接携带行数据；未分类回显哨兵 0）
+// 打开编辑弹窗（编辑为全量字段语义，直接携带行数据；未分类回显哨兵 0；营养 6 列回显可空值）
 const handleEdit = (row) => {
   dialogType.value = 'edit';
   dialogVisible.value = true;
@@ -485,6 +600,12 @@ const handleEdit = (row) => {
     coverObjectKey: row.coverObjectKey,
     ingredients: [...(row.ingredients || [])],
     steps: row.steps || '',
+    caloriesPer100g: row.caloriesPer100g ?? null,
+    caloriesTotal: row.caloriesTotal ?? null,
+    proteinG: row.proteinG ?? null,
+    fatG: row.fatG ?? null,
+    carbsG: row.carbsG ?? null,
+    sodiumMg: row.sodiumMg ?? null,
   });
   ingredientInput.value = '';
   // 回显用后端直链（非 ObjectURL），先回收上次本地预览再切换
@@ -512,6 +633,13 @@ const submitForm = async () => {
       ingredients: tempRecipe.ingredients,
       steps: tempRecipe.steps,
       coverObjectKey: tempRecipe.coverObjectKey,
+      // 营养 6 列随表单提交（契约 §3.2）：null=新增时未录入 / 编辑时不修改
+      caloriesPer100g: nutritionOrNull(tempRecipe.caloriesPer100g),
+      caloriesTotal: nutritionOrNull(tempRecipe.caloriesTotal),
+      proteinG: nutritionOrNull(tempRecipe.proteinG),
+      fatG: nutritionOrNull(tempRecipe.fatG),
+      carbsG: nutritionOrNull(tempRecipe.carbsG),
+      sodiumMg: nutritionOrNull(tempRecipe.sodiumMg),
     };
     if (dialogType.value === 'create') {
       await addDiningRecipe(payload);
@@ -654,6 +782,29 @@ const handleDelete = async (row) => {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+}
+
+/* 营养成分网格：两列布局，字段宽对齐弹窗内容区 */
+.nutrition-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.nutrition-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nutrition-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.nutrition-field :deep(.el-input-number) {
+  width: 100%;
 }
 
 .form-tip-inline {

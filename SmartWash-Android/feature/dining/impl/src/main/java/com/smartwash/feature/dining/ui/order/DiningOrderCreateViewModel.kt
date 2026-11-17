@@ -35,14 +35,17 @@ private const val FULL_LOAD_PAGE_SIZE = 100
 private const val KEYWORD_DEBOUNCE_MS = 300L
 
 /**
- * 创建订单页 ViewModel：标题 + 按分类分组勾选公共库菜品（复用 T4 菜谱读取面——分类目录与
- * 上架菜谱分页直连域内 [DiningRepository]，页面均在 dining 域内无需跨域 DiningApi 扩展面）。
+ * 创建订单页 ViewModel：标题 + 左分类栏按分类勾选公共库菜品（契约 §5.2 美团式双栏，
+ * 复用 T4 菜谱读取面——分类目录与上架菜谱分页直连域内 [DiningRepository]，页面均在
+ * dining 域内无需跨域 DiningApi 扩展面）。
  *
- * 菜品按需分页策略：首载只取第 1 页（每页 20），触底 [loadMore] 续拉；加载更多失败不封底、
- * footer 内联重试。搜索关键词走服务端模糊查询，变更即重置分页（page=1）重拉。
- * 首载失败给整页错误态 + 重试（菜品是本页主流程，不静默降级）。
+ * 菜品按需分页策略（性能硬约束，保留服务端分页 + 懒加载）：首载只取第 1 页（每页 20），
+ * 触底 [loadMore] 续拉；左栏选中分类 → 服务端按分类过滤分页（[selectCategory] 换分类即
+ * 重置分页）；加载更多失败不封底、footer 内联重试。搜索关键词走服务端模糊查询，变更即
+ * 重置分页（page=1）重拉。首载失败给整页错误态 + 重试（菜品是本页主流程，不静默降级）。
+ * 已选集合（[selectedRecipeIds]）跨分页/跨分类持久持有，左栏徽标只统计本地已选数。
  * 复用历史菜单模式例外：只读回显源单勾选态需按全量菜谱渲染，仍走全量拉取（见
- * [loadAllRecipesFull]），不分页。
+ * [loadAllRecipesFull]），不分页、无分类栏。
  *
  * 复用历史菜单模式（13 号票，路由参数 fromOrderId）：进入时拉取源单详情，把源单本单菜单
  * 预勾选并只读回显（[selectedRecipeIds] 锁定，[toggleRecipe] 忽略），提交携带 fromOrderId
@@ -98,6 +101,13 @@ class DiningOrderCreateViewModel @Inject constructor(
     private val _keyword = MutableStateFlow("")
     val keyword = _keyword.asStateFlow()
 
+    /**
+     * 左栏选中分类（null=全部，契约 §5.2）：服务端按分类过滤分页（换分类即重置分页，
+     * 保留懒加载）；已选集合跨分类持久持有（[selectedRecipeIds] 不随分类切换清空）。
+     */
+    private val _selectedCategoryId = MutableStateFlow<Long?>(null)
+    val selectedCategoryId = _selectedCategoryId.asStateFlow()
+
     private var currentPage = 1
 
     /** 菜谱拉取串行锁：首载/搜索重置与加载更多共用，防并发响应交错覆盖 */
@@ -109,6 +119,20 @@ class DiningOrderCreateViewModel @Inject constructor(
     /** 已勾选菜谱 ID 集合（无序集合；提交时按分组顺序展开保序提交） */
     private val _selectedRecipeIds = MutableStateFlow<Set<Long>>(emptySet())
     val selectedRecipeIds = _selectedRecipeIds.asStateFlow()
+
+    /**
+     * 已加载菜谱的分类注册表（recipeId → 分类 ID，null=未分类）：跨分类切换/分页累计，
+     * 供左栏「该分类已选数」徽标统计（契约 §5.2：徽标只统计本地已选数，无网络成本）。
+     */
+    private val _recipeCategories = MutableStateFlow<Map<Long, Long?>>(emptyMap())
+    val recipeCategories = _recipeCategories.asStateFlow()
+
+    /**
+     * 已勾选菜谱的 VO 快照（recipeId → VO，随勾选/加载回填维护）：营养超标警示条的数据源，
+     * 分类切换导致分页列表重置后仍可对全部已选菜做营养聚合（不丢已选菜的口径）。
+     */
+    private val _selectedRecipes = MutableStateFlow<Map<Long, DiningRecipeVo>>(emptyMap())
+    val selectedRecipes = _selectedRecipes.asStateFlow()
 
     private val _loadState = MutableStateFlow<RequestState>(RequestState.Idle)
     val loadState = _loadState.asStateFlow()
@@ -185,6 +209,29 @@ class DiningOrderCreateViewModel @Inject constructor(
     }
 
     /**
+     * 切换左栏分类（服务端按分类过滤 + 重置分页，契约 §5.2；防重：加载中忽略）。
+     * 已选集合不清空——跨分类勾选由 [selectedRecipeIds] 持久持有；复用模式菜单只读忽略。
+     */
+    fun selectCategory(categoryId: Long?) {
+        if (reuseFromOrderId != null) return
+        if (_selectedCategoryId.value == categoryId) return
+        if (_loadState.value is RequestState.Loading) return
+        _selectedCategoryId.value = categoryId
+        viewModelScope.launch {
+            _loadState.value = RequestState.Loading
+            try {
+                fetchFirstPage()
+                _loadState.value = RequestState.Success
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: NetworkException) {
+                AppLogger.error(TAG, "selectCategory: ${e.message}", e)
+                _loadState.value = RequestState.Error(e.resId, e.message)
+            }
+        }
+    }
+
+    /**
      * 复用模式：拉取源单详情，标题兜底回填 + 菜单预勾选（只读回显，提交不传 recipeIds）。
      * 源单不存在/非成员/已无上架菜由后端错误经 NetworkException 上抛，整页进错误态。
      */
@@ -202,13 +249,34 @@ class DiningOrderCreateViewModel @Inject constructor(
         _categories.value = diningRepository.getCategories()
     }
 
-    /** 首页拉取（关键词 + 分页基准；互斥串行，成功后才推进页码） */
+    /** 首页拉取（关键词 + 分类 + 分页基准；互斥串行，成功后才推进页码） */
     private suspend fun fetchFirstPage() = fetchMutex.withLock {
-        val page = diningRepository.getRecipes(1, PAGE_SIZE, keyword = currentKeyword())
+        val page = diningRepository.getRecipes(
+            1, PAGE_SIZE, effectiveCategoryId(), keyword = currentKeyword(),
+        )
         currentPage = 1
         _recipes.value = page.records
         _hasMore.value = _recipes.value.size < page.total
         _loadMoreState.value = RequestState.Idle
+        recordCatalog(page.records)
+    }
+
+    /**
+     * 生效分类筛选（契约 §5.2）：关键词搜索态为全库检索（分类暂不参与，UI 同步隐藏分类栏）；
+     * 关键词清空后恢复分类过滤。选中分类保留在本地态，不因搜索被清除。
+     */
+    private fun effectiveCategoryId(): Long? =
+        if (_keyword.value.trim().isNotBlank()) null else _selectedCategoryId.value
+
+    /** 回填分类注册表与已选菜谱快照（分页/换分类后徽标与营养聚合不丢已选项；categoryId 0 归并为 null=未分类） */
+    private fun recordCatalog(records: List<DiningRecipeVo>) {
+        _recipeCategories.value = _recipeCategories.value +
+            records.associate { it.safeId to it.categoryId?.takeIf { categoryId -> categoryId > 0L } }
+        val selected = _selectedRecipeIds.value
+        if (selected.isNotEmpty()) {
+            _selectedRecipes.value = _selectedRecipes.value +
+                records.filter { it.safeId in selected }.associateBy { it.safeId }
+        }
     }
 
     /** 加载更多（防重：加载中/无更多/首载搜索中直接忽略；失败不封底可重试） */
@@ -232,10 +300,13 @@ class DiningOrderCreateViewModel @Inject constructor(
     /** 追加下一页（互斥串行；页码与 total 以服务端当页响应为准） */
     private suspend fun fetchNextPage() = fetchMutex.withLock {
         val nextPage = currentPage + 1
-        val page = diningRepository.getRecipes(nextPage, PAGE_SIZE, keyword = currentKeyword())
+        val page = diningRepository.getRecipes(
+            nextPage, PAGE_SIZE, effectiveCategoryId(), keyword = currentKeyword(),
+        )
         currentPage = nextPage
         _recipes.value = _recipes.value + page.records
         _hasMore.value = _recipes.value.size < page.total
+        recordCatalog(page.records)
     }
 
     /** 当前搜索关键词（空白按不过滤处理，对齐后端 null 语义） */
@@ -257,6 +328,7 @@ class DiningOrderCreateViewModel @Inject constructor(
         _recipes.value = collected
         _hasMore.value = false
         _loadMoreState.value = RequestState.Idle
+        recordCatalog(collected)
     }
 
     fun onTitleChange(value: String) {
@@ -264,13 +336,32 @@ class DiningOrderCreateViewModel @Inject constructor(
         clearFormError()
     }
 
-    /** 勾选/取消一道菜（上限校验在提交时统一做，勾选过程不打断；复用模式菜单只读忽略） */
+    /**
+     * 勾选/取消一道菜（上限校验在提交时统一做，勾选过程不打断；复用模式菜单只读忽略）。
+     * 勾选时从已加载列表回填 VO 快照（营养警示数据源），取消时移除。
+     */
     fun toggleRecipe(recipeId: Long) {
         if (isReuseMode) return
         if (recipeId <= 0L) return
+        val willSelect = recipeId !in _selectedRecipeIds.value
         _selectedRecipeIds.value = _selectedRecipeIds.value.toMutableSet().apply {
             if (!add(recipeId)) remove(recipeId)
         }
+        _selectedRecipes.value = if (willSelect) {
+            _selectedRecipes.value +
+                _recipes.value.firstOrNull { it.safeId == recipeId }
+                    ?.let { mapOf(recipeId to it) }
+                    .orEmpty()
+        } else {
+            _selectedRecipes.value - recipeId
+        }
+    }
+
+    /** 清空已选（购物车栏「清空」，二次确认由页面承担；复用模式菜单只读忽略） */
+    fun clearSelections() {
+        if (isReuseMode) return
+        _selectedRecipeIds.value = emptySet()
+        _selectedRecipes.value = emptyMap()
     }
 
     /** 提交（端上校验先行；Loading 期间防重）。成功由页面消费后进分享视图 */

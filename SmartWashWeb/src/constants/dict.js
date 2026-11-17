@@ -540,6 +540,47 @@ export const DINING_RECIPE_SOURCE_TAG_TYPES = {
 /** 菜谱来源标签配色 */
 export const diningRecipeSourceTagType = (source) =>
   dictValue(DINING_RECIPE_SOURCE_TAG_TYPES, source);
+
+// ---------- 吃啥配料库（与后端 dining_ingredient.category 对齐：MAIN/AUX/SEASONING/OTHER） ----------
+
+/** 配料分类选项（筛选下拉 + 表单下拉共用；中文文案对齐契约 §3.1 枚举注释） */
+export const DINING_INGREDIENT_CATEGORY_OPTIONS = [
+  { value: 'MAIN', label: '主料' },
+  { value: 'AUX', label: '辅料' },
+  { value: 'SEASONING', label: '调料' },
+  { value: 'OTHER', label: '其他' },
+];
+
+/** 配料分类 → 文案 */
+export const DINING_INGREDIENT_CATEGORY_TEXT = {
+  MAIN: '主料',
+  AUX: '辅料',
+  SEASONING: '调料',
+  OTHER: '其他',
+};
+
+/** 配料分类 → el-tag 类型（主料红/辅料绿/调料橙/其他灰） */
+export const DINING_INGREDIENT_CATEGORY_TAG_TYPES = {
+  MAIN: 'danger',
+  AUX: 'success',
+  SEASONING: 'warning',
+  OTHER: 'info',
+};
+
+/** 配料分类文案（未知值回显原值，导入启发新增枚举时页面不致显示错误文案） */
+export const diningIngredientCategoryText = (category) =>
+  DINING_INGREDIENT_CATEGORY_TEXT[category] || category || '-';
+
+/** 配料分类标签配色 */
+export const diningIngredientCategoryTagType = (category) =>
+  dictValue(DINING_INGREDIENT_CATEGORY_TAG_TYPES, category);
+
+/**
+ * 份量假设常量（g）：一份热量口径 = caloriesTotal ?: caloriesPer100g × 250，
+ * 250g 为份量假设常量（契约 §二拍板，四端一致写死并注释），
+ * 与后端 DiningRecipeGate.PORTION_GRAMS / Android / 鸿蒙端同值。
+ */
+export const DINING_PORTION_GRAMS = 250;
 // ---------- 操作审计（与后端 @Audited 注解全集对齐） ----------
 
 // 来源：SmartWash 后端 controller/background/ 各 Controller 的 @Audited(action, targetType)。
@@ -596,6 +637,9 @@ export const AUDIT_ACTION_TEXT = {
   DINING_RECIPE_STATUS: '变更菜谱上下架',
   DINING_RECIPE_COVER_UPLOAD: '上传菜谱封面',
   DINING_RECIPE_IMPORT: '导入菜谱',
+  DINING_INGREDIENT_ADD: '新增配料',
+  DINING_INGREDIENT_UPDATE: '更新配料',
+  DINING_INGREDIENT_DELETE: '删除配料',
   DIV_PROMPT_SAVE: '保存 Prompt',
   DIV_PROMPT_ACTIVATE: '激活 Prompt',
   DIV_PROMPT_DELETE: '删除 Prompt',
@@ -626,6 +670,7 @@ export const AUDIT_TARGET_TYPE_TEXT = {
   toolbox_asset_tag: '物品标签',
   dining_category: '餐饮分类',
   dining_recipe: '菜谱',
+  dining_ingredient: '配料',
   div_prompt_version: 'Prompt 版本',
   div_rag_document: '语料文档',
   div_model_config: '模型配置',

@@ -3,6 +3,7 @@ package com.smartwash.dining.vo;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,6 +37,24 @@ public class DiningRecipeVo {
 
     /** 做法步骤（纯文本） */
     private String steps;
+
+    /** 热量 Kcal/100g（CookLikeHOC 营养表口径），null=未录入 */
+    private BigDecimal caloriesPer100g;
+
+    /** 整份估算热量 Kcal（HowToCook 预估卡路里口径），null=未录入；一份热量展示口径 = caloriesTotal ?: caloriesPer100g × 250g（份量假设常量，四端一致写死） */
+    private BigDecimal caloriesTotal;
+
+    /** 蛋白质 g/100g，null=未录入 */
+    private BigDecimal proteinG;
+
+    /** 脂肪 g/100g，null=未录入 */
+    private BigDecimal fatG;
+
+    /** 碳水化合物 g/100g，null=未录入 */
+    private BigDecimal carbsG;
+
+    /** 钠 mg/100g，null=未录入 */
+    private BigDecimal sodiumMg;
 
     /** 来源：ADMIN=运营后台录入，USER=用户端新增 */
     private String source;

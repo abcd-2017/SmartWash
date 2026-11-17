@@ -1441,4 +1441,12 @@ export const STRING_FALLBACK: Record<string, string> = {
   'dining_form_error_ingredient_too_long': '单个食材名过长（上限 32 字符）',
   'dining_form_error_ingredient_too_many': '食材数量过多（上限 100 项）',
   'dining_form_error_steps_too_long': '步骤内容过长（上限 20000 字符）',
+  'dining_nutrition_calorie_badge_format': '≈%s kcal/份',
+  'dining_nutrition_calorie_unknown': '热量未知',
+  'dining_unit_kcal': 'kcal',
+  'dining_shopping_list_calorie_card_title': '本单热量（估算）',
+  'dining_shopping_list_total_calories_value_format': '≈%s',
+  'dining_shopping_list_total_calories_unknown': '热量未知',
+  'dining_shopping_list_calorie_unknown_hint_format': '%d 道菜热量未知，未计入',
+  'dining_shopping_list_ingredient_dishes_format': '%d 道菜',
 }

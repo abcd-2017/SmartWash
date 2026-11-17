@@ -37,6 +37,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -117,6 +118,11 @@ class DiningRecipeServiceImplTest {
         from.setCategoryId(categoryId);
         from.setIngredients(List.of("西红柿", "鸡蛋"));
         from.setSteps("热锅下油");
+        from.setCaloriesPer100g(new BigDecimal("472.00"));
+        from.setProteinG(new BigDecimal("12.10"));
+        from.setFatG(new BigDecimal("8.50"));
+        from.setCarbsG(new BigDecimal("3.20"));
+        from.setSodiumMg(new BigDecimal("560.00"));
         return from;
     }
 
@@ -162,6 +168,12 @@ class DiningRecipeServiceImplTest {
         assertNull(saved.getCreatedByUserId(), "管理端录入不得误记用户创建人");
         assertEquals("[\"西红柿\",\"鸡蛋\"]", saved.getIngredients(), "食材名数组必须序列化为 JSON 文本落库");
         assertEquals("热锅下油", saved.getSteps());
+        assertEquals(new BigDecimal("472.00"), saved.getCaloriesPer100g(), "营养成分随新增表单落库");
+        assertNull(saved.getCaloriesTotal(), "未录入的整份热量保持 null");
+        assertEquals(new BigDecimal("12.10"), saved.getProteinG());
+        assertEquals(new BigDecimal("8.50"), saved.getFatG());
+        assertEquals(new BigDecimal("3.20"), saved.getCarbsG());
+        assertEquals(new BigDecimal("560.00"), saved.getSodiumMg());
     }
 
     @Test
@@ -271,6 +283,30 @@ class DiningRecipeServiceImplTest {
         ArgumentCaptor<DiningRecipe> captor = ArgumentCaptor.forClass(DiningRecipe.class);
         verify(recipeMapper).updateById(captor.capture());
         assertEquals("[\"西红柿\",\"鸡蛋\",\"葱\"]", captor.getValue().getIngredients());
+    }
+
+    @Test
+    @DisplayName("修改：营养成分传入即更新、null 保持原值（全量字段语义）")
+    void update_nutritionFields_appliedAndNullKeeps() {
+        DiningRecipe existing = recipe(1L, "番茄炒蛋", 1L, 1)
+                .setCaloriesPer100g(new BigDecimal("472.00"))
+                .setSodiumMg(new BigDecimal("560.00"));
+        when(recipeMapper.selectById(1L)).thenReturn(existing);
+        when(recipeMapper.updateById(any(DiningRecipe.class))).thenReturn(1);
+
+        UpdateDiningRecipeFrom from = new UpdateDiningRecipeFrom();
+        from.setId(1L);
+        from.setCaloriesPer100g(new BigDecimal("465.50"));
+        from.setProteinG(new BigDecimal("11.80"));
+        service.updateRecipe(from);
+
+        ArgumentCaptor<DiningRecipe> captor = ArgumentCaptor.forClass(DiningRecipe.class);
+        verify(recipeMapper).updateById(captor.capture());
+        DiningRecipe updated = captor.getValue();
+        assertEquals(new BigDecimal("465.50"), updated.getCaloriesPer100g(), "传入的热量必须更新");
+        assertEquals(new BigDecimal("11.80"), updated.getProteinG(), "传入的蛋白质必须更新");
+        assertEquals(new BigDecimal("560.00"), updated.getSodiumMg(), "未传入的钠不得被修改");
+        assertNull(updated.getCaloriesTotal(), "未传入的整份热量不得被修改");
     }
 
     // ==================== 删除 ====================

@@ -4,6 +4,7 @@
 //
 // 场景人称统一「同学」，显示名统一「吃啥」「点单」（不得出现「家庭点单」「家人」）。
 
+import { formatDiningAmount } from './DiningLogic'
 import { resString } from '../../utils/ResourceString'
 
 /** 占位格式化：%d / %s 各替换一次（文案表格式串专用，不做多参数位置映射） */
@@ -192,4 +193,40 @@ export class DiningText {
   static get dining_form_error_ingredient_too_long(): string { return resString('dining_form_error_ingredient_too_long') }
   static get dining_form_error_ingredient_too_many(): string { return resString('dining_form_error_ingredient_too_many') }
   static get dining_form_error_steps_too_long(): string { return resString('dining_form_error_steps_too_long') }
+
+  // ---- 营养口径（契约 §二；键名对齐 Android strings.xml 营养/购买清单热量组，估算口径）----
+
+  static get dining_nutrition_calorie_unknown(): string { return resString('dining_nutrition_calorie_unknown') }
+  static get dining_unit_kcal(): string { return resString('dining_unit_kcal') }
+
+  static get dining_shopping_list_calorie_card_title(): string {
+    return resString('dining_shopping_list_calorie_card_title')
+  }
+  static get dining_shopping_list_total_calories_unknown(): string {
+    return resString('dining_shopping_list_total_calories_unknown')
+  }
+
+  /** ≈%s kcal/份（一份热量徽标，份热量口径见 DiningLogic.diningServingCalories）；null=热量未知 */
+  static calorieBadge(calories: number | null): string | null {
+    const formatted = formatDiningAmount(calories)
+    if (formatted === null) {
+      return null
+    }
+    return fmt(resString('dining_nutrition_calorie_badge_format'), formatted)
+  }
+
+  /** ≈%s（购买清单总热量大字值，单位 kcal 由调用方单独渲染） */
+  static totalCaloriesValue(formatted: string): string {
+    return fmt(resString('dining_shopping_list_total_calories_value_format'), formatted)
+  }
+
+  /** %d 道菜热量未知，未计入 */
+  static calorieUnknownHint(count: number): string {
+    return fmt(resString('dining_shopping_list_calorie_unknown_hint_format'), `${count}`)
+  }
+
+  /** %d 道菜（配料聚合行徽标） */
+  static ingredientDishCount(count: number): string {
+    return fmt(resString('dining_shopping_list_ingredient_dishes_format'), `${count}`)
+  }
 }

@@ -34,6 +34,8 @@ data class DiningMenuItem(
     val myNote: String,
     /** 全部选菜人（共享购物车明细，按选菜记录顺序） */
     val selectors: List<DiningSelector>,
+    /** 份热量 Kcal（契约 §二口径，点单页目录缓存派生）；null=热量未知（渲染「热量未知」次级样式） */
+    val calories: Double? = null,
 )
 
 /** 点单页分类段模型（左栏一项 + 右列表一段） */

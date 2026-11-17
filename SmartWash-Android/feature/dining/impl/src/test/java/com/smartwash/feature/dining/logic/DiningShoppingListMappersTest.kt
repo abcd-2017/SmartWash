@@ -81,4 +81,57 @@ class DiningShoppingListMappersTest {
         assertNull(parseDiningShoppingList("   "))
         assertNull(parseDiningShoppingList("{not-json"))
     }
+
+    // ===== v2 快照（契约 §3.3 additive） =====
+
+    @Test
+    fun `v2 快照映射配料聚合与热量汇总`() {
+        val raw = """
+            {"ingredientNames":["鸡蛋","西红柿"],
+             "perRecipe":[],
+             "ingredientTotals":[
+               {"name":"鸡蛋","totalValue":1130.0,"unit":"g","dishCount":2,
+                "perDish":[{"recipeName":"西红柿炒鸡蛋","amountValue":575,"amountUnit":"g"}]},
+               {"name":"葱","totalValue":null,"unit":null,"dishCount":1,"perDish":[]}],
+             "totalCalories":1830.0,
+             "calorieKnownDishCount":3,
+             "calorieUnknownDishCount":1,
+             "perDishCalories":[{"recipeName":"宫保鸡丁","calories":1051.0}]}
+        """.trimIndent()
+
+        val members = listOf(
+            DiningOrderDetailVo.OrderMember(userId = 1L, isCreator = true, phoneMasked = "139****0001"),
+            DiningOrderDetailVo.OrderMember(userId = 2L, isCreator = false, phoneMasked = "138****0002"),
+            DiningOrderDetailVo.OrderMember(userId = 3L, isCreator = false, phoneMasked = "137****0003"),
+        )
+        val result = parseDiningShoppingList(raw)!!.toShoppingListResult(members, 1L)
+
+        // v2 聚合行：数量 + 单位 + 菜数；无数量配料仅列名（totalValue null 透传）
+        val totals = result.ingredientTotals!!
+        assertEquals(2, totals.size)
+        assertEquals("鸡蛋", totals[0].name)
+        assertEquals(1130.0, totals[0].totalValue!!, 1e-9)
+        assertEquals("g", totals[0].unit)
+        assertEquals(2, totals[0].dishCount)
+        assertEquals("葱", totals[1].name)
+        assertNull(totals[1].totalValue)
+        // 热量汇总与未知计数透传（页面据此渲染热量卡与「N 道菜热量未知，未计入」）
+        assertEquals(1830.0, result.totalCalories!!, 1e-9)
+        assertEquals(1, result.calorieUnknownDishCount!!)
+        // 人数 stepper 默认值 = 参与者人数
+        assertEquals(3, result.memberCount)
+        // v1 字段行为不变
+        assertEquals(listOf("鸡蛋", "西红柿"), result.ingredients)
+    }
+
+    @Test
+    fun `老快照无 v2 字段时聚合与热量为 null（消费方降级）`() {
+        val result = parseDiningShoppingList(
+            """{"ingredientNames":["鸡蛋"],"perRecipe":[]}""",
+        )!!.toShoppingListResult(emptyList(), null)
+
+        assertNull(result.ingredientTotals)
+        assertNull(result.totalCalories)
+        assertNull(result.calorieUnknownDishCount)
+    }
 }

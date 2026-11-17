@@ -432,6 +432,19 @@ const routes = [
           requiresAuth: true,
         },
       },
+      {
+        // 配料库：dining_ingredient 独立管理页（契约 §3.4 RESTful 接口），
+        // 批量导入按食材名自动注册配料，本页负责改名/改分类/清理
+        path: '/dining/ingredients',
+        name: 'DiningIngredientList',
+        component: () => import('@/views/dining/DiningIngredientList.vue'),
+        meta: {
+          title: '配料库',
+          showInMenu: true,
+          icon: 'Sugar',
+          requiresAuth: true,
+        },
+      },
     ],
   },
   {

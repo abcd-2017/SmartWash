@@ -1,0 +1,128 @@
+package com.smartwash.feature.dining.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.feature.dining.R
+import com.smartwash.feature.dining.logic.DiningNutritionCalculator
+import com.smartwash.feature.dining.logic.DiningNutritionCalculator.Nutrient
+import com.smartwash.feature.dining.logic.DiningNutritionCalculator.NutrientStatus
+
+/**
+ * 吃啥营养口径共享小部件（菜谱库 / 发起点单 / 点单页共用，契约 §二/§5.1-§5.3）：
+ * 热量徽标（≈N kcal/份；缺失渲染「热量未知」次级档，不占位不谎报）、营养超标警示条
+ * （warningContainer 语义容器，仅超标时出现，非阻断、估算口径）与营养项文案/单位映射
+ * （文案单一事实来源在 strings.xml，数值格式化统一走 [DiningNutritionCalculator] 纯函数）。
+ */
+
+/**
+ * 热量徽标（契约 §5.1/§5.2/§5.3 菜品行热量展示统一画法）：≈N kcal/份（primarySoft 浅绿底 +
+ * onPrimarySoft 深绿字——规范 §2.1 浅绿容器的文字配对，12sp 小字对比度达标，tnum）；
+ * 热量缺失渲染「热量未知」次级档（surfaceVariant 底 + textSecondary 字）。
+ */
+@Composable
+internal fun DiningCalorieBadge(
+    calories: Double?,
+    modifier: Modifier = Modifier,
+) {
+    val formatted = DiningNutritionCalculator.formatAmount(calories)
+    val known = formatted != null
+    val container = if (known) AppColors.colorScheme.primarySoft
+    else AppColors.colorScheme.surfaceVariant
+    val content = if (known) AppColors.colorScheme.onPrimarySoft
+    else AppColors.colorScheme.textSecondary
+    val text = if (known) {
+        stringResource(R.string.dining_nutrition_calorie_badge_format, formatted)
+    } else {
+        stringResource(R.string.dining_nutrition_calorie_unknown)
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+        color = content,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier
+            .clip(RoundedCornerShape(AppDimens.radiusSmall))
+            .background(container)
+            .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.space2xs),
+    )
+}
+
+/** 营养超标警示条（契约 §5.2/§5.3）：逐项「钠预计 2.4mg，超一餐参考 666.7mg」形态，非阻断 */
+@Composable
+internal fun DiningNutritionWarningBar(
+    items: List<NutrientStatus>,
+    modifier: Modifier = Modifier,
+) {
+    if (items.isEmpty()) return
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXxs)
+            .clip(RoundedCornerShape(AppDimens.radiusMd))
+            .background(AppColors.colorScheme.warningContainer)
+            .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm),
+    ) {
+        Text(
+            text = stringResource(R.string.dining_nutrition_warning_title),
+            style = MaterialTheme.typography.labelLarge,
+            color = AppColors.colorScheme.onWarningContainer,
+        )
+        Spacer(modifier = Modifier.height(AppDimens.space2xs))
+        items.forEach { status ->
+            DiningWarningItemLine(status = status)
+        }
+    }
+}
+
+/** 单项超标行：「钠预计 2.4mg，超一餐参考 666.7mg」（单位随营养项，估算口径） */
+@Composable
+private fun DiningWarningItemLine(status: NutrientStatus) {
+    val unit = diningNutrientUnit(status.nutrient)
+    Text(
+        text = stringResource(
+            R.string.dining_nutrition_warning_item_format,
+            diningNutrientLabel(status.nutrient),
+            DiningNutritionCalculator.formatAmount(status.value).orEmpty() + unit,
+            DiningNutritionCalculator.formatAmount(status.reference).orEmpty() + unit,
+        ),
+        style = MaterialTheme.typography.bodySmall,
+        color = AppColors.colorScheme.onWarningContainer,
+    )
+}
+
+/** 营养项展示名映射（热量/蛋白质/脂肪/碳水/钠） */
+@Composable
+internal fun diningNutrientLabel(nutrient: Nutrient): String = stringResource(
+    when (nutrient) {
+        Nutrient.CALORIES -> R.string.dining_nutrient_calories
+        Nutrient.PROTEIN -> R.string.dining_nutrient_protein
+        Nutrient.FAT -> R.string.dining_nutrient_fat
+        Nutrient.CARBS -> R.string.dining_nutrient_carbs
+        Nutrient.SODIUM -> R.string.dining_nutrient_sodium
+    },
+)
+
+/** 营养项单位映射（热量 kcal / 钠 mg / 其余 g，契约 §二参考值口径） */
+@Composable
+internal fun diningNutrientUnit(nutrient: Nutrient): String = stringResource(
+    when (nutrient) {
+        Nutrient.CALORIES -> R.string.dining_unit_kcal
+        Nutrient.SODIUM -> R.string.dining_unit_milligram
+        else -> R.string.dining_unit_gram
+    },
+)

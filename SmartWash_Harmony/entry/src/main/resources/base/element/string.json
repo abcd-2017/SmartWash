@@ -5767,6 +5767,38 @@
     {
       "name": "dining_form_error_steps_too_long",
       "value": "步骤内容过长（上限 20000 字符）"
+    },
+    {
+      "name": "dining_nutrition_calorie_badge_format",
+      "value": "≈%s kcal/份"
+    },
+    {
+      "name": "dining_nutrition_calorie_unknown",
+      "value": "热量未知"
+    },
+    {
+      "name": "dining_unit_kcal",
+      "value": "kcal"
+    },
+    {
+      "name": "dining_shopping_list_calorie_card_title",
+      "value": "本单热量（估算）"
+    },
+    {
+      "name": "dining_shopping_list_total_calories_value_format",
+      "value": "≈%s"
+    },
+    {
+      "name": "dining_shopping_list_total_calories_unknown",
+      "value": "热量未知"
+    },
+    {
+      "name": "dining_shopping_list_calorie_unknown_hint_format",
+      "value": "%d 道菜热量未知，未计入"
+    },
+    {
+      "name": "dining_shopping_list_ingredient_dishes_format",
+      "value": "%d 道菜"
     }
   ]
 }

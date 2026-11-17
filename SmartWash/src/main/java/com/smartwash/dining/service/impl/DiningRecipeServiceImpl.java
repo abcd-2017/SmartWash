@@ -101,6 +101,13 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         recipe.setIngredients(serializeIngredients(from.getIngredients()));
         // 封面上传与表单分两次提交：先拿对象键，随新增/编辑一起落库（缺失时保持 null）
         recipe.setCoverObjectKey(from.getCoverObjectKey());
+        // 营养成分（契约 §3.2）：可空=未录入，随表单直接落库
+        recipe.setCaloriesPer100g(from.getCaloriesPer100g());
+        recipe.setCaloriesTotal(from.getCaloriesTotal());
+        recipe.setProteinG(from.getProteinG());
+        recipe.setFatG(from.getFatG());
+        recipe.setCarbsG(from.getCarbsG());
+        recipe.setSodiumMg(from.getSodiumMg());
         // 管理端录入：来源固定 ADMIN、创建人取当前登录管理员，默认上架（下架需显式走上下架接口）
         recipe.setSource(SOURCE_ADMIN);
         recipe.setStatus(DiningRecipe.STATUS_ON_SHELF);
@@ -133,6 +140,25 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         }
         if (from.getCoverObjectKey() != null) {
             recipe.setCoverObjectKey(from.getCoverObjectKey());
+        }
+        // 营养成分（契约 §3.2）：null=不修改，对齐本接口全量字段语义
+        if (from.getCaloriesPer100g() != null) {
+            recipe.setCaloriesPer100g(from.getCaloriesPer100g());
+        }
+        if (from.getCaloriesTotal() != null) {
+            recipe.setCaloriesTotal(from.getCaloriesTotal());
+        }
+        if (from.getProteinG() != null) {
+            recipe.setProteinG(from.getProteinG());
+        }
+        if (from.getFatG() != null) {
+            recipe.setFatG(from.getFatG());
+        }
+        if (from.getCarbsG() != null) {
+            recipe.setCarbsG(from.getCarbsG());
+        }
+        if (from.getSodiumMg() != null) {
+            recipe.setSodiumMg(from.getSodiumMg());
         }
         this.updateById(recipe);
         log.info("更新菜谱, id: {}, name: {}", recipe.getId(), recipe.getName());

@@ -73,7 +73,14 @@ class DiningOrderShoppingListViewModel @Inject constructor(
                 val myUserId = resolveMyUserId(detail.safeMembers, phone)
                 _result.value = parseDiningShoppingList(detail.safeShoppingList)
                     ?.toShoppingListResult(detail.safeMembers, myUserId)
-                    ?: DiningShoppingListResult(emptyList(), emptyList())
+                    ?: DiningShoppingListResult(
+                        ingredients = emptyList(),
+                        perRecipe = emptyList(),
+                        ingredientTotals = null,
+                        totalCalories = null,
+                        calorieUnknownDishCount = null,
+                        memberCount = detail.safeMembers.size,
+                    )
                 _checked.value = readChecked()
                 _loadState.value = RequestState.Success
             } catch (e: CancellationException) {

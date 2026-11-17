@@ -9,6 +9,7 @@
 
 import { describe, it, expect } from '@ohos/hypium';
 import {
+  DINING_PORTION_GRAMS,
   DiningJoinEntryDecision,
   DiningJoinUrlKind,
   DiningRecipeShopping,
@@ -17,6 +18,8 @@ import {
   buildDiningJoinUrl,
   buildShoppingListText,
   decideDiningJoinEntry,
+  diningServingCalories,
+  formatDiningAmount,
   maskDiningPhone,
   normalizeDiningScan,
   originOf,
@@ -181,7 +184,10 @@ export default function diningLogicTest() {
             recipeName: '凉拌西红柿',
             selectors: [{ label: '139****0001', note: '少糖', isMe: true }]
           }
-        ]
+        ],
+        ingredientTotals: null,
+        totalCalories: null,
+        calorieUnknownDishCount: null
       }
       const text = buildShoppingListText('周五晚火锅', result, ['鸡蛋'])
       const expected = '吃啥 · 购买清单\n订单：周五晚火锅\n\n【按食材买菜】\n[ ] 西红柿\n[x] 鸡蛋\n[ ] 葱\n\n' +
@@ -189,7 +195,10 @@ export default function diningLogicTest() {
       expect(text).assertEqual(expected)
     })
     it('shoppingListText-空标题省略订单行与空清单降级', 0, () => {
-      const empty: DiningShoppingResult = { ingredients: [], perRecipe: [] }
+      const empty: DiningShoppingResult = {
+        ingredients: [], perRecipe: [], ingredientTotals: null, totalCalories: null,
+        calorieUnknownDishCount: null
+      }
       const text = buildShoppingListText('  ', empty, [])
       expect(text.indexOf('订单：')).assertEqual(-1)
       expect(text.indexOf('【按食材买菜】\n（无）')).assertLarger(0)
@@ -197,9 +206,65 @@ export default function diningLogicTest() {
     })
     it('shoppingListText-无选菜人的菜只出菜名', 0, () => {
       const recipe: DiningRecipeShopping = { recipeName: '白米饭', selectors: [] }
-      const text = buildShoppingListText('家宴', { ingredients: [], perRecipe: [recipe] }, [])
+      const result: DiningShoppingResult = {
+        ingredients: [], perRecipe: [recipe], ingredientTotals: null, totalCalories: null,
+        calorieUnknownDishCount: null
+      }
+      const text = buildShoppingListText('家宴', result, [])
       expect(text.indexOf('- 白米饭')).assertLarger(0)
       expect(text.indexOf('白米饭：')).assertEqual(-1)
+    })
+
+    // ---------- 营养计算（契约 §二 份热量口径，对齐 Android DiningNutritionCalculator） ----------
+
+    it('servingCalories-整份口径优先', 0, () => {
+      expect(DINING_PORTION_GRAMS).assertEqual(250)
+      expect(diningServingCalories(1830, null)).assertEqual(1830)
+      expect(diningServingCalories(1830, 500)).assertEqual(1830)
+    })
+    it('servingCalories-per100g 按 250g 折算', 0, () => {
+      expect(diningServingCalories(null, 500)).assertEqual(1250)
+      expect(diningServingCalories(null, 100)).assertEqual(250)
+    })
+    it('servingCalories-两者皆缺未知', 0, () => {
+      expect(diningServingCalories(null, null)).assertNull()
+    })
+    it('formatAmount-整数去尾零与 1 位小数', 0, () => {
+      expect(formatDiningAmount(1830)).assertEqual('1830')
+      expect(formatDiningAmount(666.66)).assertEqual('666.7')
+      expect(formatDiningAmount(null)).assertNull()
+    })
+
+    // ---------- 购买清单快照 v2（契约 §3.3 additive，v1 存在性降级） ----------
+
+    it('shoppingList-v2 快照解析聚合与热量', 0, () => {
+      const json = '{"ingredientNames":["鸡蛋"],"perRecipe":[],' +
+        '"ingredientTotals":[{"name":"鸡蛋","totalValue":1130,"unit":"g","dishCount":2,' +
+        '"perDish":[{"recipeName":"番茄炒蛋","amountValue":575,"amountUnit":"g"}]}],' +
+        '"totalCalories":1830,"calorieKnownDishCount":2,"calorieUnknownDishCount":1,' +
+        '"perDishCalories":[{"recipeName":"宫保鸡丁","calories":1051}]}'
+      const snapshot = parseDiningShoppingList(json)
+      expect(snapshot.ingredientTotals === null).assertFalse()
+      if (snapshot.ingredientTotals !== null) {
+        expect(snapshot.ingredientTotals.length).assertEqual(1)
+        expect(snapshot.ingredientTotals[0].totalValue).assertEqual(1130)
+        expect(snapshot.ingredientTotals[0].unit).assertEqual('g')
+        expect(snapshot.ingredientTotals[0].dishCount).assertEqual(2)
+        expect(snapshot.ingredientTotals[0].perDish.length).assertEqual(1)
+      }
+      expect(snapshot.totalCalories).assertEqual(1830)
+      expect(snapshot.calorieKnownDishCount).assertEqual(2)
+      expect(snapshot.calorieUnknownDishCount).assertEqual(1)
+      expect(snapshot.perDishCalories === null).assertFalse()
+    })
+    it('shoppingList-v1 老快照 v2 字段缺失降级 null', 0, () => {
+      const snapshot = parseDiningShoppingList('{"ingredientNames":["鸡蛋"],"perRecipe":[]}')
+      expect(snapshot.ingredientTotals === null).assertTrue()
+      expect(snapshot.totalCalories).assertNull()
+      expect(snapshot.calorieKnownDishCount).assertNull()
+      expect(snapshot.calorieUnknownDishCount).assertNull()
+      expect(snapshot.perDishCalories === null).assertTrue()
+      expect(snapshot.ingredientNames.length).assertEqual(1)
     })
   })
 }

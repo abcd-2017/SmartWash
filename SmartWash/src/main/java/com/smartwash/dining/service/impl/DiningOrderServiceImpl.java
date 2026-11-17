@@ -40,6 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -282,13 +283,24 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
         List<Long> recipeIds = menus.stream().map(DiningOrderMenu::getRecipeId).toList();
         Map<Long, List<String>> ingredientMap = recipeGate.getIngredients(recipeIds);
         Map<Long, DiningRecipeGate.RecipeBrief> briefs = recipeGate.getBriefs(recipeIds);
+        // v2：配料明细（关联表主数据源）+ 一份热量（calories_total ?: calories_per_100g × 250 口径在 gate 内归一）
+        Map<Long, List<DiningRecipeGate.IngredientDetail>> amountsMap = recipeGate.getIngredientAmounts(recipeIds);
+        Map<Long, BigDecimal> caloriesMap = recipeGate.getServingCalories(recipeIds);
 
         // 菜谱视图按本单菜单编排序；选菜记录按勾选顺序（按菜视图内选菜人顺序）
+        // 兼容回落：无关联明细的老菜谱沿用 ingredients JSON 名列表（明细为空 = 仅名并集，value/unit 缺失）；
+        // ingredients JSON 保留双写，即便有关联明细也并入名并集（漂移数据仍可见）
         List<RecipeIngredient> recipes = new ArrayList<>(recipeIds.size());
         for (Long recipeId : recipeIds) {
             DiningRecipeGate.RecipeBrief brief = briefs.get(recipeId);
+            List<ShoppingListAssembler.IngredientAmount> amounts =
+                    amountsMap.getOrDefault(recipeId, List.of()).stream()
+                            .map(detail -> new ShoppingListAssembler.IngredientAmount(
+                                    detail.name(), detail.amountValue(), detail.amountUnit()))
+                            .toList();
             recipes.add(new RecipeIngredient(recipeId, brief == null ? null : brief.name(),
-                    ingredientMap.getOrDefault(recipeId, List.of())));
+                    ingredientMap.getOrDefault(recipeId, List.of()), amounts,
+                    caloriesMap.get(recipeId)));
         }
         List<Selection> selections = itemMapper.selectList(new LambdaQueryWrapper<DiningOrderItem>()
                         .eq(DiningOrderItem::getOrderId, orderId).orderByAsc(DiningOrderItem::getId))

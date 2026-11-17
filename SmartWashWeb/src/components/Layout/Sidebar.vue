@@ -113,6 +113,8 @@ import {
   // 吃啥
   Food,
   Dish,
+  // 配料库
+  Sugar,
   // 菜单搜索
   Search,
   // 参数设置
@@ -163,6 +165,7 @@ const iconRegistry = {
   Bell: markRaw(Bell),
   Food: markRaw(Food),
   Dish: markRaw(Dish),
+  Sugar: markRaw(Sugar),
   Search: markRaw(Search),
   Tools: markRaw(Tools),
   // 菜谱管理
@@ -223,8 +226,12 @@ const MENU_GROUP_CONFIG = [
   },
   // 站内信为触达类工具，独立成组（不并入业务管理，避免与订单/支付混排）
   { title: '消息中心', icon: 'Bell', paths: ['/notices'] },
-  // 吃啥为独立业务域，单独成组（后续批量导入挂同组）
-  { title: '吃啥', icon: 'Food', paths: ['/dining/categories', '/dining/recipes'] },
+  // 吃啥为独立业务域，单独成组（分类/菜谱/配料库同组）
+  {
+    title: '吃啥',
+    icon: 'Food',
+    paths: ['/dining/categories', '/dining/recipes', '/dining/ingredients'],
+  },
 ];
 
 const homeRoute = computed(() => menuRoutes.value.find((r) => r.path === '/') || null);

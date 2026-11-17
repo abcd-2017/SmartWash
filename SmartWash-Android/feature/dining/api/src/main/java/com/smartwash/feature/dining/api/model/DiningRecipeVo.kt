@@ -10,6 +10,8 @@ import androidx.annotation.Keep
  * （MinIO dining/covers/ 白名单匿名读，后端由对象键拼装）。
  *
  * Gson 容错约定：字段全部可空 + 默认 null，消费方经 safe 系兜底；coverUrl 缺失按无封面渲染占位。
+ * 营养 6 字段（契约 §三 3.4）可空即语义：null = 未录入（热量未知），不参与热量聚合，无需 safe 非
+ * 空兜底——「未知」本身是要渲染的状态。
  */
 @Keep
 data class DiningRecipeVo(
@@ -26,6 +28,22 @@ data class DiningRecipeVo(
     val ingredients: List<String>? = null,
     /** 做法步骤（纯文本，可含换行） */
     val steps: String? = null,
+    /** 热量 Kcal/100g（CookLikeHOC 营养表口径），null=未录入 */
+    val caloriesPer100g: Double? = null,
+    /**
+     * 整份估算热量 Kcal（HowToCook 预估卡路里口径），null=未录入。
+     * 展示口径（契约 §二，四端一致）：一份热量 = caloriesTotal ?: caloriesPer100g × 250g
+     * （250g 为份量假设常量），换算与聚合见 impl 侧 DiningNutritionCalculator。
+     */
+    val caloriesTotal: Double? = null,
+    /** 蛋白质 g/100g，null=未录入 */
+    val proteinG: Double? = null,
+    /** 脂肪 g/100g，null=未录入 */
+    val fatG: Double? = null,
+    /** 碳水化合物 g/100g，null=未录入 */
+    val carbsG: Double? = null,
+    /** 钠 mg/100g，null=未录入 */
+    val sodiumMg: Double? = null,
     /** 来源：ADMIN=运营录入，USER=用户新增（直上架） */
     val source: String? = null,
     /** 上下架：1=上架 0=下架（用户端恒为 1，仅防御性兜底） */

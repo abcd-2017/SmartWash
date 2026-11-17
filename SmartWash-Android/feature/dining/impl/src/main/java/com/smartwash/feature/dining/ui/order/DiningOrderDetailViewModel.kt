@@ -14,6 +14,7 @@ import com.smartwash.feature.dining.api.model.UpdateDiningOrderItemRequest
 import com.smartwash.feature.dining.logic.DiningCartReplayOp
 import com.smartwash.feature.dining.logic.DiningCartState
 import com.smartwash.feature.dining.logic.DiningCartSyncCoordinator
+import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningOrderPageDetail
 import com.smartwash.feature.dining.logic.DiningSyncLifecycle
 import com.smartwash.feature.dining.logic.DiningSyncLifecycle.Command
@@ -100,9 +101,14 @@ class DiningOrderDetailViewModel @Inject constructor(
     /** 当前用户标识（首载时解析；null=不识别我的选菜） */
     private var myUserId: Long? = null
 
-    /** 分类目录/封面（渲染增强，首载时缓存） */
+    /** 分类目录/封面/份口径营养（渲染增强，首载时缓存；营养契约 §5.3 菜品行热量徽标 + 警示条） */
     private var categoryNames: Map<Long, String> = emptyMap()
     private var coverUrls: Map<Long, String> = emptyMap()
+    private var dishNutritionById: Map<Long, DiningNutritionCalculator.DishNutrition> = emptyMap()
+
+    /** 菜谱 ID → 份口径营养（警示条数据源；失败/未收录时条目缺失，按热量未知渲染） */
+    private val _dishNutrition = MutableStateFlow<Map<Long, DiningNutritionCalculator.DishNutrition>>(emptyMap())
+    val dishNutrition = _dishNutrition.asStateFlow()
 
     private val uncategorizedLabel: String by lazy {
         application.getString(R.string.dining_order_detail_uncategorized)
@@ -127,18 +133,22 @@ class DiningOrderDetailViewModel @Inject constructor(
                 val detailVo = diningRepository.getOrderDetail(orderId)
                 val phone = userApi.getUserInfo()?.phoneNumber
                 val myId = resolveMyUserId(detailVo.safeMembers, phone)
-                // 分类目录/菜谱封面是渲染增强，失败不阻断主流程（分类名按「分类 {id}」兜底、封面占位）
+                // 分类目录/菜谱封面/营养是渲染增强，失败不阻断主流程（分类名按「分类 {id}」兜底、
+                // 封面占位、营养按「热量未知」渲染）
                 val categories = soften { diningRepository.getCategories() } ?: emptyList()
-                val covers = soften { loadAllRecipeCovers() } ?: emptyMap()
+                val catalog = soften { loadRecipeCatalog() } ?: RecipeCatalog(emptyMap(), emptyMap())
                 myUserId = myId
                 categoryNames = categories.associate { it.safeId to it.safeName }
-                coverUrls = covers
+                coverUrls = catalog.covers
+                dishNutritionById = catalog.nutrition
+                _dishNutrition.value = catalog.nutrition
                 coordinator.onInitialSnapshot(detailVo.safeVersion, myItemsOf(detailVo, myId))
                 _detail.value = detailVo.toOrderPageDetail(
                     myUserId = myId,
                     categoryNames = categoryNames,
-                    coverUrls = covers,
+                    coverUrls = coverUrls,
                     uncategorizedLabel = uncategorizedLabel,
+                    dishNutrition = dishNutritionById,
                 )
                 publishCart()
                 _loadState.value = RequestState.Success
@@ -269,7 +279,13 @@ class DiningOrderDetailViewModel @Inject constructor(
     private fun applySnapshot(vo: DiningOrderDetailVo) {
         if (vo.safeVersion < coordinator.serverVersion) return
         val replayOps = coordinator.onSnapshot(vo.safeVersion, myItemsOf(vo, myUserId))
-        _detail.value = vo.toOrderPageDetail(myUserId, categoryNames, coverUrls, uncategorizedLabel)
+        _detail.value = vo.toOrderPageDetail(
+            myUserId = myUserId,
+            categoryNames = categoryNames,
+            coverUrls = coverUrls,
+            uncategorizedLabel = uncategorizedLabel,
+            dishNutrition = dishNutritionById,
+        )
         publishCart()
         if (replayOps.isNotEmpty()) requestWrite()
     }
@@ -384,9 +400,10 @@ class DiningOrderDetailViewModel @Inject constructor(
         _syncPending.value = coordinator.hasPendingWork()
     }
 
-    /** 上架菜谱封面映射全量拉取（page 递增至取满；仅作封面增强，失败由 soften 吞掉） */
-    private suspend fun loadAllRecipeCovers(): Map<Long, String> {
+    /** 上架菜谱渲染目录（封面直链 + 份口径营养），page 递增至取满；仅作渲染增强，失败由 soften 吞掉 */
+    private suspend fun loadRecipeCatalog(): RecipeCatalog {
         val covers = mutableMapOf<Long, String>()
+        val nutrition = mutableMapOf<Long, DiningNutritionCalculator.DishNutrition>()
         var fetched = 0L
         var page = 1
         while (page <= MAX_PAGE_COUNT) {
@@ -394,13 +411,20 @@ class DiningOrderDetailViewModel @Inject constructor(
             pageData.records.forEach { recipe ->
                 val url = recipe.safeCoverUrl
                 if (url.isNotBlank()) covers[recipe.safeId] = url
+                nutrition[recipe.safeId] = DiningNutritionCalculator.dishNutrition(recipe)
             }
             fetched += pageData.records.size
             if (pageData.records.size < PAGE_SIZE || fetched >= pageData.total) break
             page++
         }
-        return covers
+        return RecipeCatalog(covers, nutrition)
     }
+
+    /** 菜谱渲染目录快照（封面 + 份口径营养一次拉取共用） */
+    private data class RecipeCatalog(
+        val covers: Map<Long, String>,
+        val nutrition: Map<Long, DiningNutritionCalculator.DishNutrition>,
+    )
 
     /** 渲染增强型请求的失败软化（重抛取消，其余返回 null 由调用方兜底） */
     private suspend fun <T> soften(block: suspend () -> T): T? = try {

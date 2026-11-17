@@ -258,6 +258,12 @@ CREATE TABLE IF NOT EXISTS dining_recipe (
     cover_object_key    varchar(255) DEFAULT NULL,
     ingredients         varchar(4096) DEFAULT NULL,
     steps               text DEFAULT NULL,
+    calories_per_100g   decimal(8,2) DEFAULT NULL,
+    calories_total      decimal(10,2) DEFAULT NULL,
+    protein_g           decimal(6,2) DEFAULT NULL,
+    fat_g               decimal(6,2) DEFAULT NULL,
+    carbs_g             decimal(6,2) DEFAULT NULL,
+    sodium_mg           decimal(8,2) DEFAULT NULL,
     source              varchar(16) NOT NULL DEFAULT 'ADMIN',
     status              tinyint NOT NULL DEFAULT 1,
     created_by_user_id  bigint DEFAULT NULL,
@@ -265,6 +271,30 @@ CREATE TABLE IF NOT EXISTS dining_recipe (
     created_at          timestamp DEFAULT CURRENT_TIMESTAMP,
     updated_at          timestamp DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
+);
+
+-- 吃啥-配料库表（菜谱导入 upsert / DiningIngredientAdminController 端点验证用；结构对齐 smart_wash.sql）
+CREATE TABLE IF NOT EXISTS dining_ingredient (
+    id         bigint NOT NULL AUTO_INCREMENT,
+    name       varchar(32) NOT NULL,
+    category   varchar(16) NOT NULL DEFAULT 'OTHER',
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_dining_ingredient_name UNIQUE (name)
+);
+
+-- 吃啥-菜谱配料关联表（买菜清单聚合主数据源；uk 一菜一配料一行）
+CREATE TABLE IF NOT EXISTS dining_recipe_ingredient (
+    id            bigint NOT NULL AUTO_INCREMENT,
+    recipe_id     bigint NOT NULL,
+    ingredient_id bigint NOT NULL,
+    amount_value  decimal(10,2) DEFAULT NULL,
+    amount_unit   varchar(16) DEFAULT NULL,
+    created_at    timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at    timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_dining_recipe_ingredient UNIQUE (recipe_id, ingredient_id)
 );
 
 -- 吃啥-点单订单表（WebDiningOrderControllerIntegrationTest 的 /web/auth/dining/orders 端点验证用）

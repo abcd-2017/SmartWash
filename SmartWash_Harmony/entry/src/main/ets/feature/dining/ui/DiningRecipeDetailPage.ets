@@ -7,7 +7,9 @@ import { RouteNames } from '../../../constant/RouteNames'
 import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import { DiningRecipeVo, getDiningRecipeDetail } from '../../../network/api/DiningApi'
+import { diningServingCalories } from '../DiningLogic'
 import { DiningText } from '../DiningText'
+import { DiningCalorieBadge } from './DiningUiCommon'
 import { EmptyState, SkeletonBlock } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
 import { getNumberParam, pathStack } from '../../../utils/PathStackUtil'
@@ -126,6 +128,13 @@ struct DiningRecipeDetailPage {
                     .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
                     .margin({ top: DesignDimens.SPACE_XS })
                 }
+
+                // 份热量徽标（caloriesTotal ?: caloriesPer100g × 250 ÷ 100，皆缺显示「热量未知」；
+                // 估算口径展示，不做超标提醒——后续批次）
+                DiningCalorieBadge({
+                  calories: diningServingCalories(this.recipe.caloriesTotal, this.recipe.caloriesPer100g)
+                })
+                  .margin({ top: DesignDimens.SPACE_XS })
 
                 // 食材 chips
                 Text(DiningText.dining_recipe_detail_ingredients_section)

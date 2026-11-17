@@ -11,12 +11,14 @@ import { BizCode } from '../../../network/HttpUtil'
 import { DiningOrderDetailVo, getDiningOrderDetail } from '../../../network/api/DiningApi'
 import { getUserInfo } from '../../../network/api/UserApi'
 import {
+  DiningIngredientTotalUi,
   DiningRecipeShopping,
   DiningSelectorShopping,
   DiningShoppingResult,
   buildShoppingListText,
   diningOrderStatusFromCode,
   diningTimeLabel,
+  formatDiningAmount,
   parseDiningShoppingList,
   resolveMyUserId,
   toDiningShoppingResult
@@ -36,6 +38,15 @@ const TAG: string = 'diningShoppingList'
 /** 双视图页签下标 */
 const TAB_INGREDIENTS: number = 0
 const TAB_PER_RECIPE: number = 1
+
+/** 按食材行渲染模型（快照 v2 聚合行 / v1 纯名行统一承载，勾选态按名对齐） */
+interface DiningIngredientRow {
+  name: string
+  /** 数量文本（如 1130g）；null = v1 行或来源未给数量 */
+  amountText: string | null
+  /** 该配料出现的菜数（0 = 隐藏「N 道菜」徽标） */
+  dishCount: number
+}
 
 @Builder
 export function DiningShoppingListBuilder() {
@@ -149,6 +160,11 @@ struct DiningShoppingListPage {
                   .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 2 })
               }
 
+              // 热量汇总卡（快照 v2 存在性降级：仅携带 v2 字段的快照渲染，老快照整卡隐藏）
+              if (this.hasCalorieSummary()) {
+                this.CalorieSummaryCard()
+              }
+
               AppTabBar({
                 tabs: [DiningText.dining_shopping_list_tab_ingredients, DiningText.dining_shopping_list_tab_per_recipe],
                 selectedIndex: this.activeTab,
@@ -177,6 +193,43 @@ struct DiningShoppingListPage {
     .hideTitleBar(true)
   }
 
+  /**
+   * 热量汇总卡（契约 §3.3 快照 v2 / §5.4）：总热量大字 + kcal 单位 + 未知数提示行。
+   * 估算口径（250g/份假设，见 DiningLogic.DINING_PORTION_GRAMS），不做超标提醒与人均
+   * （Android §5.4 先行，鸿蒙后续批次补齐）。
+   */
+  @Builder
+  CalorieSummaryCard() {
+    Column({ space: DesignDimens.SPACE_XS }) {
+      Text(DiningText.dining_shopping_list_calorie_card_title)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor($r('app.color.TEXT_SECONDARY'))
+      Row({ space: DesignDimens.SPACE_XS }) {
+        Text(this.totalCaloriesText())
+          .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontColor($r('app.color.TEXT_PRIMARY'))
+        Text(DiningText.dining_unit_kcal)
+          .fontSize(DesignFontSize.BODY)
+          .fontColor($r('app.color.TEXT_SECONDARY'))
+      }
+      .alignItems(VerticalAlign.Bottom)
+      if (this.calorieUnknownCount() > 0) {
+        Text(DiningText.calorieUnknownHint(this.calorieUnknownCount()))
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor($r('app.color.ONGOING_INK'))
+      }
+    }
+    .alignItems(HorizontalAlign.Start)
+    .width('100%')
+    .backgroundColor($r('app.color.SURFACE'))
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .borderWidth(1)
+    .borderColor($r('app.color.OUTLINE'))
+    .padding(DesignDimens.CARD_PADDING)
+    .margin({ top: DesignDimens.SPACE_SM })
+  }
+
   /** 按食材买菜视图（食材名并集去重，保序）：行首自绘勾选框标记「已买」，买菜时对着勾掉 */
   @Builder
   IngredientsView() {
@@ -200,16 +253,23 @@ struct DiningShoppingListPage {
               bottom: DesignDimens.SPACE_XS
             })
         }
-        ForEach(this.result.ingredients, (ingredient: string) => {
+        ForEach(this.ingredientRows(), (row: DiningIngredientRow) => {
           ListItem() {
             Row({ space: DesignDimens.SPACE_MD }) {
-              DiningCheckbox({ checked: this.checked.indexOf(ingredient) >= 0, boxSize: 22 })
-              Text(ingredient)
+              DiningCheckbox({ checked: this.checked.indexOf(row.name) >= 0, boxSize: 22 })
+              Text(row.name)
                 .fontSize(DesignFontSize.BODY)
-                .fontColor(this.checked.indexOf(ingredient) >= 0
+                .fontColor(this.checked.indexOf(row.name) >= 0
                   ? $r('app.color.TEXT_TERTIARY')
                   : $r('app.color.TEXT_PRIMARY'))
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .layoutWeight(1)
+              if (row.amountText !== null || row.dishCount > 0) {
+                Text(this.amountMetaText(row))
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontColor($r('app.color.TEXT_SECONDARY'))
+              }
             }
             .width('100%')
             .alignItems(VerticalAlign.Center)
@@ -220,10 +280,10 @@ struct DiningShoppingListPage {
               bottom: DesignDimens.SPACE_MD
             })
             .onClick(() => {
-              this.toggleChecked(ingredient)
+              this.toggleChecked(row.name)
             })
           }
-        }, (ingredient: string) => `ing_${ingredient}`)
+        }, (row: DiningIngredientRow) => `ing_${row.name}`)
         ListItem() {
           Column() {
           }
@@ -360,6 +420,67 @@ struct DiningShoppingListPage {
       }
     })
     return count
+  }
+
+  /** 是否携带 v2 热量/聚合数据（老快照 v2 字段为 null → 隐藏热量卡，按 v1 降级渲染） */
+  private hasCalorieSummary(): boolean {
+    const result = this.result
+    if (result === null) {
+      return false
+    }
+    return result.ingredientTotals !== null || result.totalCalories !== null
+      || result.calorieUnknownDishCount !== null
+  }
+
+  /** 热量未知菜数（v1 快照/未给返回 0，不渲染提示行） */
+  private calorieUnknownCount(): number {
+    const result = this.result
+    return result !== null && result.calorieUnknownDishCount !== null ? result.calorieUnknownDishCount : 0
+  }
+
+  /** 总热量大字值（已知 → 「≈1830」；未知/v1 快照 → 「热量未知」） */
+  private totalCaloriesText(): string {
+    const result = this.result
+    const formatted = result !== null ? formatDiningAmount(result.totalCalories) : null
+    if (formatted === null) {
+      return DiningText.dining_shopping_list_total_calories_unknown
+    }
+    return DiningText.totalCaloriesValue(formatted)
+  }
+
+  /**
+   * 按食材行模型（契约 §3.3 v1 优先回落）：v2 聚合行（名称 + 总量单位 + 菜数）优先；
+   * 老快照 ingredientTotals 为 null → 回落 ingredientNames 逐名渲染。
+   */
+  private ingredientRows(): Array<DiningIngredientRow> {
+    const result = this.result
+    if (result === null) {
+      return []
+    }
+    if (result.ingredientTotals !== null) {
+      return result.ingredientTotals.map((total: DiningIngredientTotalUi): DiningIngredientRow => {
+        const amount = formatDiningAmount(total.totalValue)
+        const row: DiningIngredientRow = {
+          name: total.name,
+          amountText: amount !== null ? `${amount}${total.unit}` : null,
+          dishCount: total.dishCount
+        }
+        return row
+      })
+    }
+    return result.ingredients.map((name: string): DiningIngredientRow => {
+      const row: DiningIngredientRow = { name: name, amountText: null, dishCount: 0 }
+      return row
+    })
+  }
+
+  /** 聚合行尾部说明（数量 · N 道菜；数量缺失只出菜数） */
+  private amountMetaText(row: DiningIngredientRow): string {
+    const amount = row.amountText !== null ? row.amountText : ''
+    if (row.dishCount > 0) {
+      return `${amount} · ${DiningText.ingredientDishCount(row.dishCount)}`
+    }
+    return amount
   }
 
   /** 已买态存储键（按订单隔离） */

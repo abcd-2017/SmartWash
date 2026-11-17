@@ -2,6 +2,7 @@ package com.smartwash.feature.dining.ui.order
 
 import android.widget.Toast
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -37,13 +38,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -63,6 +67,7 @@ import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.dining.R
+import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningRecipeShopping
 import com.smartwash.feature.dining.logic.DiningShoppingListResult
 import com.smartwash.feature.dining.logic.buildShoppingListText
@@ -168,7 +173,7 @@ fun DiningOrderShoppingListPage(
     }
 }
 
-/** 内容区：Tab 栏固定，视图切换走 Crossfade（卡片入场令牌，reduced motion 由 motionSpec 降级） */
+/** 内容区：热量卡（仅 v2 快照有数据时出现）+ Tab 栏固定，视图切换走 Crossfade（卡片入场令牌，reduced motion 由 motionSpec 降级） */
 @Composable
 private fun ShoppingListContent(
     tab: Int,
@@ -178,6 +183,11 @@ private fun ShoppingListContent(
     onTabSelected: (Int) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
+        // 热量卡（契约 §5.4）：总热量 tnum 大字 + 人数 stepper（1-20 本地态）+ 人均 + 未知提示；
+        // 老快照无 v2 字段（totalCalories 与 unknownCount 皆 null）时整卡隐藏
+        if (result.totalCalories != null || result.calorieUnknownDishCount != null) {
+            CalorieCard(result = result)
+        }
         AppTabBar(
             tabs = listOf(
                 stringResource(R.string.dining_shopping_list_tab_ingredients),
@@ -193,7 +203,7 @@ private fun ShoppingListContent(
         ) { index ->
             if (index == TAB_INGREDIENTS) {
                 IngredientsView(
-                    ingredients = result.ingredients,
+                    result = result,
                     checked = checked,
                     onToggle = onToggleChecked,
                 )
@@ -205,16 +215,175 @@ private fun ShoppingListContent(
 }
 
 /**
- * 按食材买菜视图：食材名并集清单（保序），行首自绘勾选框标记「已买」。
- * 勾选为本地态（按订单持久化），便于买菜时对照勾掉；仅影响展示与导出文本。
+ * 热量卡（契约 §5.4）：总热量大字（AppTextStyles.DataLarge 36sp tnum，本页唯一视觉锚点）+
+ * 人数 stepper（- N +，1-20，默认参与者人数，本地状态不落库）+ 人均热量（总/人数本地实时算）
+ * + 「N 道菜热量未知，未计入」提示行。
+ */
+@Composable
+private fun CalorieCard(result: DiningShoppingListResult, modifier: Modifier = Modifier) {
+    // 人数本地态：默认快照参与者人数（0 兜底收敛到 1）；不落库，离开页面即重置
+    var people by remember(result.memberCount) {
+        mutableStateOf(DiningNutritionCalculator.coercePeopleCount(result.memberCount))
+    }
+    val perCapita = DiningNutritionCalculator.perCapita(result.totalCalories, people)
+    val unknownCount = result.calorieUnknownDishCount ?: 0
+
+    GroupCard(modifier = modifier.padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceSm)) {
+        Text(
+            text = stringResource(R.string.dining_shopping_list_calorie_card_title),
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.colorScheme.textSecondary,
+        )
+        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+        Row(verticalAlignment = Alignment.Bottom) {
+            val formattedTotal = DiningNutritionCalculator.formatAmount(result.totalCalories)
+            Text(
+                text = if (formattedTotal != null) {
+                    stringResource(R.string.dining_shopping_list_total_calories_value_format, formattedTotal)
+                } else {
+                    stringResource(R.string.dining_shopping_list_total_calories_unknown)
+                },
+                style = AppTextStyles.DataLarge,
+                color = AppColors.colorScheme.textPrimary,
+            )
+            Spacer(modifier = Modifier.width(AppDimens.spaceXxs))
+            Text(
+                text = stringResource(R.string.dining_unit_kcal),
+                style = MaterialTheme.typography.bodyLarge,
+                color = AppColors.colorScheme.textSecondary,
+            )
+        }
+        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+        // 人数 stepper（- N +）：按钮 48dp 触控热区，图形为 Canvas 圆帽线段（无新增 Icons.* 使用）
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.dining_shopping_list_people_label),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.colorScheme.textSecondary,
+                modifier = Modifier.weight(1f),
+            )
+            PeopleStepButton(
+                isPlus = false,
+                enabled = people > DiningNutritionCalculator.PEOPLE_MIN,
+                onClick = { people = DiningNutritionCalculator.coercePeopleCount(people - 1) },
+            )
+            Text(
+                text = people.toString(),
+                style = AppTextStyles.AmountMedium,
+                color = AppColors.colorScheme.textPrimary,
+                modifier = Modifier.padding(horizontal = AppDimens.spaceSm),
+            )
+            PeopleStepButton(
+                isPlus = true,
+                enabled = people < DiningNutritionCalculator.PEOPLE_MAX,
+                onClick = { people = DiningNutritionCalculator.coercePeopleCount(people + 1) },
+            )
+        }
+        if (perCapita != null) {
+            Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+            val formattedPerCapita = DiningNutritionCalculator.formatAmount(perCapita)
+            Text(
+                text = stringResource(
+                    R.string.dining_shopping_list_per_capita_format,
+                    formattedPerCapita.orEmpty(),
+                ),
+                style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
+                color = AppColors.colorScheme.textPrimary,
+            )
+        }
+        if (unknownCount > 0) {
+            Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+            Text(
+                text = stringResource(R.string.dining_shopping_list_calorie_unknown_hint_format, unknownCount),
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.colorScheme.ongoingInk,
+            )
+        }
+    }
+}
+
+/** 人数步进按钮：48dp 触控热区 + 20dp Canvas 圆帽线段（- / +）；越界禁用降为 textTertiary */
+@Composable
+private fun PeopleStepButton(
+    isPlus: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val glyphColor = if (enabled) AppColors.colorScheme.textSecondary
+    else AppColors.colorScheme.textTertiary
+    val label = if (isPlus) {
+        stringResource(R.string.dining_shopping_list_people_increase)
+    } else {
+        stringResource(R.string.dining_shopping_list_people_decrease)
+    }
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .semantics { contentDescription = label }
+            .then(if (enabled) Modifier.pressable(onClick = onClick, debounce = false) else Modifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.size(20.dp)) {
+            val stroke = 2.dp.toPx()
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val arm = 7.dp.toPx()
+            drawLine(
+                color = glyphColor,
+                start = Offset(center.x - arm, center.y),
+                end = Offset(center.x + arm, center.y),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round,
+            )
+            if (isPlus) {
+                drawLine(
+                    color = glyphColor,
+                    start = Offset(center.x, center.y - arm),
+                    end = Offset(center.x, center.y + arm),
+                    strokeWidth = stroke,
+                    cap = StrokeCap.Round,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 按食材买菜视图：v2 快照优先渲染 [DiningShoppingListResult.ingredientTotals] 聚合行
+ * （名称 总量单位 · N 道菜，无数量配料仅列名），老快照回落食材名并集逐名渲染。
+ * 行首自绘勾选框标记「已买」（勾选为本地态，按订单持久化，仅影响展示与导出文本）。
  */
 @Composable
 private fun IngredientsView(
-    ingredients: List<String>,
+    result: DiningShoppingListResult,
     checked: Set<String>,
     onToggle: (String) -> Unit,
 ) {
-    val checkedCount = ingredients.count { it in checked }
+    // 行模型统一：v2 聚合行（名 + 数量单位 · N 道菜）与老快照名行共用一套渲染
+    data class IngredientRowUi(val name: String, val amountText: String?)
+
+    val rows: List<IngredientRowUi> = result.ingredientTotals?.map { total ->
+        val amountText = if (total.totalValue == null) {
+            null
+        } else {
+            val value = DiningNutritionCalculator.formatAmount(total.totalValue).orEmpty()
+            val amount = stringResource(
+                R.string.dining_shopping_list_ingredient_amount_format,
+                value,
+                total.unit,
+            )
+            if (total.dishCount > 0) {
+                amount + " · " + stringResource(
+                    R.string.dining_shopping_list_ingredient_dishes_format,
+                    total.dishCount,
+                )
+            } else {
+                amount
+            }
+        }
+        IngredientRowUi(name = total.name, amountText = amountText)
+    } ?: result.ingredients.map { IngredientRowUi(name = it, amountText = null) }
+
+    val checkedCount = rows.count { it.name in checked }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -228,7 +397,7 @@ private fun IngredientsView(
                 text = stringResource(
                     R.string.dining_shopping_list_ingredients_progress_format,
                     checkedCount,
-                    ingredients.size,
+                    rows.size,
                 ),
                 style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
@@ -236,21 +405,22 @@ private fun IngredientsView(
         }
         item(key = "ingredients_card") {
             GroupCard(modifier = Modifier.fillMaxWidth()) {
-                if (ingredients.isEmpty()) {
+                if (rows.isEmpty()) {
                     Text(
                         text = stringResource(R.string.dining_shopping_list_empty_ingredients),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.colorScheme.textSecondary,
                     )
                 } else {
-                    ingredients.forEachIndexed { index, name ->
+                    rows.forEachIndexed { index, row ->
                         IngredientRow(
-                            name = name,
-                            checked = name in checked,
-                            onToggle = { onToggle(name) },
+                            name = row.name,
+                            amountText = row.amountText,
+                            checked = row.name in checked,
+                            onToggle = { onToggle(row.name) },
                         )
                         // 卡内行间 0.5dp 发丝线（规范 §3.1：仅同一容器内部）
-                        if (index != ingredients.lastIndex) {
+                        if (index != rows.lastIndex) {
                             HorizontalDivider(
                                 thickness = 0.5.dp,
                                 color = AppColors.colorScheme.divider,
@@ -263,10 +433,11 @@ private fun IngredientsView(
     }
 }
 
-/** 食材行：自绘勾选框 + 食材名（整行可点切换已买；已买降级为次要文字） */
+/** 食材行：自绘勾选框 + 食材名 + 右侧聚合数量（整行可点切换已买；已买降级为次要文字） */
 @Composable
 private fun IngredientRow(
     name: String,
+    amountText: String?,
     checked: Boolean,
     onToggle: () -> Unit,
 ) {
@@ -319,7 +490,19 @@ private fun IngredientRow(
             style = MaterialTheme.typography.bodyLarge,
             color = if (checked) AppColors.colorScheme.textSecondary
             else AppColors.colorScheme.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
         )
+        if (amountText != null) {
+            Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+            Text(
+                // 聚合数量（数量数据开 tnum，规范 §2.2 硬规则）
+                text = amountText,
+                style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                color = AppColors.colorScheme.textSecondary,
+            )
+        }
     }
 }
 

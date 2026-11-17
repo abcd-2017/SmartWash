@@ -75,6 +75,8 @@ class DiningRecipeImportControllerIntegrationTest {
         lenient().when(valueOperations.get(anyString())).thenReturn(null);
         lenient().when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
 
+        jdbcTemplate.update("DELETE FROM dining_recipe_ingredient");
+        jdbcTemplate.update("DELETE FROM dining_ingredient");
         jdbcTemplate.update("DELETE FROM dining_recipe");
         jdbcTemplate.update("DELETE FROM dining_category");
         jdbcTemplate.update("DELETE FROM users WHERE phone_number = ?", PHONE);
@@ -88,6 +90,8 @@ class DiningRecipeImportControllerIntegrationTest {
 
     @AfterEach
     void cleanUp() {
+        jdbcTemplate.update("DELETE FROM dining_recipe_ingredient");
+        jdbcTemplate.update("DELETE FROM dining_ingredient");
         jdbcTemplate.update("DELETE FROM dining_recipe");
         jdbcTemplate.update("DELETE FROM dining_category");
         jdbcTemplate.update("DELETE FROM users WHERE phone_number = ?", PHONE);
@@ -154,7 +158,7 @@ class DiningRecipeImportControllerIntegrationTest {
     // ==================== 预览（不落库） ====================
 
     @Test
-    @DisplayName("admin 上传 CSV 预览：逐行校验结果返回（合法行/错误行各带行号与原因），库中零新增")
+    @DisplayName("admin 上传 CSV 预览：逐行校验结果返回（合法行/错误行各带行号与原因；分类不存在降级为警告），库中零新增")
     void preview_csv_rowLevelResults_andNoWrite() throws Exception {
         createCategory("汤羹");
         String body = HEADER_ROW + "\n汤羹,番茄蛋汤,西红柿、鸡蛋,冲汤,\n幽灵分类,幽灵菜,盐,煮,\n";
@@ -163,18 +167,22 @@ class DiningRecipeImportControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.total").value(2))
-                .andExpect(jsonPath("$.data.validCount").value(1))
-                .andExpect(jsonPath("$.data.errorCount").value(1))
+                .andExpect(jsonPath("$.data.validCount").value(2))
+                .andExpect(jsonPath("$.data.errorCount").value(0))
                 .andExpect(jsonPath("$.data.rows[0].rowNo").value(2))
                 .andExpect(jsonPath("$.data.rows[0].categoryId").value(categoryIdByName("汤羹")))
                 .andExpect(jsonPath("$.data.rows[0].name").value("番茄蛋汤"))
                 .andExpect(jsonPath("$.data.rows[0].ingredients.length()").value(2))
-                .andExpect(jsonPath("$.data.rows[1].errors[0]",
+                .andExpect(jsonPath("$.data.rows[1].errors.length()").value(0))
+                .andExpect(jsonPath("$.data.rows[1].categoryId",
+                        org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.rows[1].warnings[0]",
                         org.hamcrest.Matchers.containsString("幽灵分类")))
                 .andExpect(jsonPath("$.data.rows[1].rowNo").value(3));
 
-        // 预览不落库
+        // 预览不落库（幽灵分类不得被预览阶段自动创建，库内仅剩预置的 汤羹 一条）
         assertEquals(0, countRecipes(), "预览阶段不得写入任何菜谱");
+        assertEquals(1, countRows("dining_category"), "预览阶段不得自动创建分类");
     }
 
     @Test
@@ -233,12 +241,12 @@ class DiningRecipeImportControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("admin 确认导入：任一行失败（分类不存在）全批不落库，逐行失败报告可读")
+    @DisplayName("admin 确认导入：任一行失败（封面对象键前缀非法）全批不落库，逐行失败报告可读")
     void confirm_anyInvalid_rollsBackWholeBatch() throws Exception {
         createCategory("汤羹");
         String body = """
                 {"rows":[{"rowNo":2,"categoryName":"汤羹","name":"番茄蛋汤","ingredients":["西红柿"],"steps":"冲汤"},
-                         {"rowNo":3,"categoryName":"幽灵分类","name":"幽灵菜","ingredients":["盐"],"steps":"煮"}]}""";
+                         {"rowNo":3,"name":"幽灵菜","ingredients":["盐"],"steps":"煮","coverObjectKey":"wrong/not-allowed.png"}]}""";
         mockMvc.perform(post(BASE + "/import/confirm")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -249,9 +257,56 @@ class DiningRecipeImportControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.successCount").value(0))
                 .andExpect(jsonPath("$.data.failedCount").value(2))
                 .andExpect(jsonPath("$.data.rows[1].error",
-                        org.hamcrest.Matchers.containsString("分类")));
+                        org.hamcrest.Matchers.containsString("封面对象键")));
 
         assertEquals(0, countRecipes(), "任一行失败必须全批不落库");
+    }
+
+    @Test
+    @DisplayName("admin 确认导入：分类不存在自动创建 + 配料自动注册 + 关联表/营养列写入（v2 主链路）")
+    void confirm_autoCreatesCategoryAndIngredients() throws Exception {
+        String body = """
+                {"rows":[{"rowNo":2,"categoryName":"导入自动分类","name":"西红柿炒蛋",
+                          "ingredients":["西红柿","鸡蛋"],
+                          "ingredientDetails":[{"name":"鸡蛋","amountValue":575,"amountUnit":"g"},
+                                               {"name":"西红柿","amountValue":1800,"amountUnit":"g"}],
+                          "steps":"炒","caloriesTotal":518,"proteinG":7.9,"sodiumMg":480.6}]}""";
+        mockMvc.perform(post(BASE + "/import/confirm")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.rolledBack").value(false))
+                .andExpect(jsonPath("$.data.successCount").value(1))
+                .andExpect(jsonPath("$.data.rows[0].success").value(true))
+                .andExpect(jsonPath("$.data.rows[0].warnings[0]",
+                        org.hamcrest.Matchers.containsString("导入自动分类")));
+
+        // 分类自动创建（经分类列表接口验证）
+        MvcResult categories = mockMvc.perform(get(CATEGORY_BASE + "/all")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertTrue(categories.getResponse().getContentAsString().contains("导入自动分类"),
+                "不存在的分类必须被自动创建");
+
+        // 配料自动注册 + 关联表写入（H2 直查验证聚合主数据源）
+        assertEquals(2, countRows("dining_ingredient"), "食材名/明细自动注册到配料库");
+        assertEquals(2, countRows("dining_recipe_ingredient"), "菜谱配料关联必须落库");
+
+        // 菜谱列表接口带出营养列（VO 契约）
+        MvcResult listResult = mockMvc.perform(get(BASE + "/all")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode recipe = objectMapper.readTree(listResult.getResponse().getContentAsString())
+                .path("data").path("records").get(0);
+        assertEquals("西红柿炒蛋", recipe.path("name").asText());
+        assertEquals(0, java.math.BigDecimal.valueOf(518)
+                .compareTo(new java.math.BigDecimal(recipe.path("caloriesTotal").asText())));
+        assertEquals(0, java.math.BigDecimal.valueOf(7.9)
+                .compareTo(new java.math.BigDecimal(recipe.path("proteinG").asText())));
     }
 
     @Test
@@ -312,6 +367,11 @@ class DiningRecipeImportControllerIntegrationTest {
 
     /** 菜谱总数（H2 直查计数，专供「不落库/全批回滚」断言） */
     private int countRecipes() {
-        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM dining_recipe", Integer.class);
+        return countRows("dining_recipe");
+    }
+
+    /** 任意表总数（H2 直查计数，供配料/关联表/分类的落库断言） */
+    private int countRows(String table) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + table, Integer.class);
     }
 }

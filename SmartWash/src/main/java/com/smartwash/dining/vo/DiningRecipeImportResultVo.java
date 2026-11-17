@@ -43,5 +43,8 @@ public class DiningRecipeImportResultVo {
 
         /** 写入后的菜谱 ID（失败/回滚行为 null） */
         private Long recipeId;
+
+        /** 行级警告（不阻断导入：封面对象键存储缺失/分类自动创建等），按行回显 */
+        private List<String> warnings;
     }
 }

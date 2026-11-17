@@ -13,7 +13,9 @@ import {
   getDiningCategories,
   getDiningRecipes
 } from '../../../network/api/DiningApi'
+import { diningServingCalories } from '../DiningLogic'
 import { DiningText } from '../DiningText'
+import { DiningCalorieBadge } from './DiningUiCommon'
 import {
   AppButton,
   AppButtonVariant,
@@ -296,7 +298,7 @@ struct DiningLibraryPage {
     })
   }
 
-  /** 菜谱卡：名称 + 分类名 + 食材数（无封面的轻量行卡，对齐 Android 列表卡信息密度） */
+  /** 菜谱卡：名称 + 食材数·份热量徽标（无封面的轻量行卡，对齐 Android 列表卡信息密度） */
   @Builder
   RecipeCard(recipe: DiningRecipeVo) {
     Row({ space: DesignDimens.SPACE_MD }) {
@@ -328,10 +330,18 @@ struct DiningLibraryPage {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
-        Text(DiningText.ingredientsCount(recipe.ingredients.length))
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor($r('app.color.TEXT_SECONDARY'))
-          .width('100%')
+        Row({ space: DesignDimens.SPACE_XS }) {
+          Text(DiningText.ingredientsCount(recipe.ingredients.length))
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor($r('app.color.TEXT_SECONDARY'))
+            .maxLines(1)
+          // 份热量徽标（caloriesTotal ?: caloriesPer100g × 250 ÷ 100，皆缺显示「热量未知」）
+          DiningCalorieBadge({
+            calories: diningServingCalories(recipe.caloriesTotal, recipe.caloriesPer100g)
+          })
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
       }
       .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)

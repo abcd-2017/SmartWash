@@ -1,7 +1,7 @@
 // src/api/dining.js
-// 接口已与后端 DiningCategoryAdminController / DiningRecipeAdminController 对齐
-// （/admin/dining/**，ROLE_ADMIN）：字段名以 DiningCategoryVo / DiningRecipeVo
-// 及 Add·Update{DiningCategory,DiningRecipe}From 为准（驼峰）。
+// 接口已与后端 DiningCategoryAdminController / DiningRecipeAdminController /
+// DiningIngredientAdminController 对齐（/admin/dining/**，ROLE_ADMIN）：
+// 字段名以 DiningCategoryVo / DiningRecipeVo / DiningIngredientVo 及各 Add·Update·Search From 为准（驼峰）。
 // 点单订单为用户端接口（/web/auth/dining/orders/**），管理后台不消费，故无对应封装。
 import request from '@/utils/http';
 
@@ -124,7 +124,11 @@ export async function downloadDiningRecipeImportTemplate() {
 }
 
 // 上传导入文件解析预览（.xlsx/.csv，≤5MB、≤500 行）：multipart 上传，返回逐行校验结果
-// { total, validCount, errorCount, rows: [{rowNo, categoryName, categoryId, name, ingredients, steps, coverUrl, errors}] }，
+// { total, validCount, errorCount, rows: [{rowNo, categoryName, categoryId, name, ingredients,
+//   ingredientDetails, steps, coverUrl, coverObjectKey, caloriesPer100g, caloriesTotal, proteinG,
+//   fatG, carbsG, sodiumMg, errors, warnings}] }，v2 扩展（契约 §3.2）：
+// 行级 warnings 为非阻断警告（分类自动创建/封面对象键存储缺失/明细解析失败），
+// 「分类名」不存在预览降级为警告、确认导入时自动创建；
 // 本阶段后端不落库，预览确认后才提交 confirmDiningRecipeImport
 export function previewDiningRecipeImport(formData) {
   return request({
@@ -142,5 +146,46 @@ export function confirmDiningRecipeImport(data) {
     url: '/admin/dining/recipes/import/confirm',
     method: 'post',
     data,
+  });
+}
+
+// ==================== 配料库管理（契约 §3.4，RESTful 风格） ====================
+// 注意与上方分类/菜谱控制器的 /add /update 风格不同：配料控制器为 RESTful
+// （POST/PUT/DELETE 资源路径），按后端 DiningIngredientAdminController 实装对接。
+
+// 配料分页列表：page/size + keyword（配料名模糊）+ category（MAIN/AUX/SEASONING/OTHER 精确，可空），
+// 返回 MyBatis-Plus Page（records/total），按 id 升序；records 内为 DiningIngredientVo（id/name/category/createdAt/updatedAt）
+export function getDiningIngredientList(params) {
+  return request({
+    url: '/admin/dining/ingredient/page',
+    method: 'get',
+    params,
+  });
+}
+
+// 新增配料：name（≤32，全局唯一，重名后端 409 业务码）+ category（缺省 OTHER）
+export function addDiningIngredient(data) {
+  return request({
+    url: '/admin/dining/ingredient',
+    method: 'post',
+    data,
+  });
+}
+
+// 更新配料：id 走路径变量；name/category 不传即不修改，改名重名时后端 409
+export function updateDiningIngredient(id, data) {
+  return request({
+    url: `/admin/dining/ingredient/${id}`,
+    method: 'put',
+    data,
+  });
+}
+
+// 删除配料：物理删除；被菜谱配料关联（dining_recipe_ingredient）引用时后端 409 拒绝，
+// message 含引用数量（如「配料「鸡蛋」被 3 个菜谱引用…」），前端如实透出
+export function deleteDiningIngredient(id) {
+  return request({
+    url: `/admin/dining/ingredient/${id}`,
+    method: 'delete',
   });
 }

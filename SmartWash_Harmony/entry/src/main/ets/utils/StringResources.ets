@@ -1368,4 +1368,12 @@ export const STRING_RES: Record<string, Resource> = {
   'dining_form_error_ingredient_too_long': $r('app.string.dining_form_error_ingredient_too_long'),
   'dining_form_error_ingredient_too_many': $r('app.string.dining_form_error_ingredient_too_many'),
   'dining_form_error_steps_too_long': $r('app.string.dining_form_error_steps_too_long'),
+  'dining_nutrition_calorie_badge_format': $r('app.string.dining_nutrition_calorie_badge_format'),
+  'dining_nutrition_calorie_unknown': $r('app.string.dining_nutrition_calorie_unknown'),
+  'dining_unit_kcal': $r('app.string.dining_unit_kcal'),
+  'dining_shopping_list_calorie_card_title': $r('app.string.dining_shopping_list_calorie_card_title'),
+  'dining_shopping_list_total_calories_value_format': $r('app.string.dining_shopping_list_total_calories_value_format'),
+  'dining_shopping_list_total_calories_unknown': $r('app.string.dining_shopping_list_total_calories_unknown'),
+  'dining_shopping_list_calorie_unknown_hint_format': $r('app.string.dining_shopping_list_calorie_unknown_hint_format'),
+  'dining_shopping_list_ingredient_dishes_format': $r('app.string.dining_shopping_list_ingredient_dishes_format'),
 }

@@ -33,9 +33,12 @@ private const val KEYWORD_DEBOUNCE_MS = 300L
  * 状态划分（请求状态全程 [RequestState]）：
  * - [listState]：上架菜谱首页列表（骨架/错误/内容），切分类与下拉刷新复用；
  * - [loadMoreState]：加载更多独立态，失败不影响已加载列表；
- * - [chips]：分类筛选条（头部固定「全部」伪分类），加载失败仅留痕隐藏筛选条——
+ * - [chips]：左分类栏数据（头部固定「全部」伪分类），加载失败仅留痕隐藏分类栏——
  *   分类是辅助筛选，不拖垮菜谱列表主流程（对齐 notice 未读数失败语义）；
- * - [selectedCategoryId]：当前筛选分类（null=全部），切换即重载首页列表。
+ * - [selectedCategoryId]：当前筛选分类（null=全部），切换即服务端按分类重置分页（契约 §5.1
+ *   性能硬约束：保留服务端分页 + 懒加载，禁止全量拉取本地过滤）；
+ * - [keyword]：菜名模糊搜索，服务端分页查询；搜索态切换为全库检索（分类过滤暂不参与），
+ *   关键词清空后恢复分类过滤。
  */
 @HiltViewModel
 class DiningRecipeLibraryViewModel @Inject constructor(
@@ -109,10 +112,17 @@ class DiningRecipeLibraryViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 生效分类筛选（契约 §5.1）：关键词搜索态切换为全库检索（分类暂不参与，UI 同步隐藏
+     * 分类栏）；关键词清空后恢复分类过滤。选中分类始终保留在本地态，不因搜索被清除。
+     */
+    private fun effectiveCategoryId(): Long? =
+        if (_keyword.value.trim().isNotBlank()) null else _selectedCategoryId.value
+
     /** 首页拉取（分类 + 关键词 + 分页基准；互斥串行，成功后才推进页码） */
     private suspend fun fetchFirstPage() = fetchMutex.withLock {
         val page = diningRepository.getRecipes(
-            1, PAGE_SIZE, _selectedCategoryId.value, _keyword.value.trim(),
+            1, PAGE_SIZE, effectiveCategoryId(), _keyword.value.trim(),
         )
         currentPage = 1
         _recipes.value = page.records.map { it.toRecipeItem() }
@@ -158,10 +168,10 @@ class DiningRecipeLibraryViewModel @Inject constructor(
         viewModelScope.launch {
             _loadMoreState.value = RequestState.Loading
             try {
-                val nextPage = currentPage + 1
-                val page = diningRepository.getRecipes(
-                    nextPage, PAGE_SIZE, _selectedCategoryId.value, _keyword.value.trim(),
-                )
+            val nextPage = currentPage + 1
+            val page = diningRepository.getRecipes(
+                nextPage, PAGE_SIZE, effectiveCategoryId(), _keyword.value.trim(),
+            )
                 currentPage = nextPage
                 _recipes.value = _recipes.value + page.records.map { it.toRecipeItem() }
                 _hasMore.value = _recipes.value.size < page.total
