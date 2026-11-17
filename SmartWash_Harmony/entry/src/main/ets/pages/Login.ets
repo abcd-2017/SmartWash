@@ -170,9 +170,11 @@ struct Login {
 
         // 品牌标识 — 96dp 单层圆形（对齐 Android LoginPage.kt:181-196）
         Stack({ alignContent: Alignment.Center }) {
-          SymbolGlyph($r('sys.symbol.laundry'))
-            .fontSize(56)
-            .fontColor([Color.White])
+          // 品牌图标与 Android 同源（自绘矢量渲染，见 docs/icon-decision-and-diff.md）
+          Image($r('app.media.ic_washing_machine'))
+            .width(56)
+            .height(56)
+            .objectFit(ImageFit.Contain)
         }
         .width(96)
         .height(96)

@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,6 +59,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
@@ -93,6 +96,19 @@ fun GameCenterPage(
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val context = LocalContext.current
 
+    // 刷新失败且已有内容：保留网格，仅 Toast 轻提示（不整页替换，避免内容丢失感）。
+    // 首刷失败（列表为空）仍走下方全屏错误态 + 重试。
+    LaunchedEffect(listState) {
+        val error = listState as? RequestState.Error ?: return@LaunchedEffect
+        if (games.isNotEmpty()) {
+            Toast.makeText(
+                context,
+                context.getString(error.messageResId),
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
+
     // 网格滚动状态：仅在用户主动切换分类时回顶。LazyColumn 按行 key 换代后仍保留旧偏移，
     // 顶部会残留上一分类被裁切的残卡（ui-check P1：切筛选必现）。
     // 用 snapshotFlow 跳过首次发射：页面进入/从游戏返回时 effect 会重启，
@@ -127,7 +143,9 @@ fun GameCenterPage(
             )
 
             when {
-                listState is RequestState.Error -> {
+                // 首刷失败（无已有内容）：说明发生了什么 + 重试（规范 §3.6 错误态）；
+                // 刷新失败且已有内容时不进本分支，保留网格 + Toast（见上方 LaunchedEffect）
+                listState is RequestState.Error && games.isEmpty() -> {
                     // 文案消费状态携带的 resId（单一事实源：VM 按错误类型区分文案时页面自动跟随）
                     val error = listState as RequestState.Error
                     EmptyState(
@@ -250,18 +268,23 @@ private fun GameGrid(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // 两种构图（有/无封面）高度不同：行高取内禀高度，卡片再 fillMaxHeight 对齐，
+                    // 避免同排卡片底边参差（与工作台 TileRow 同一手法）
+                    .height(IntrinsicSize.Min)
                     .padding(
                         start = AppDimens.pagePadding,
                         end = AppDimens.pagePadding,
                         bottom = GRID_SPACING,
                     ),
                 horizontalArrangement = Arrangement.spacedBy(GRID_SPACING),
+                verticalAlignment = Alignment.Top,
             ) {
                 rowGames.forEach { game ->
                     GameCard(
                         game = game,
                         onClick = { onGameClick(game) },
-                        modifier = Modifier.weight(1f),
+                        // 等高：IntrinsicSize.Min 行高下填满行高，与邻卡底部对齐
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
                 }
                 // 接口返回奇数个游戏时末行补位，保持两列网格
@@ -279,12 +302,14 @@ private fun GameGrid(
  * - 有封面（服务端 MinIO 直链优先，缺失回退本地自绘兜底）：封面与文字分区 — 16:9 封面
  *   独立占卡顶（随卡片圆角裁切），文字区白底置于封面下方（标题 + 两行描述），文字永不遮图
  *   （2026-11-07 用户反馈调整：原「底部渐变遮罩压白字」构图遮挡封面细节，弃用）；
- *   badge 白胶囊叠封面右上（surface 底 + textPrimary 字 + 1dp outline 描边），任意封面底色下可读；
+ *   badge 走 [GameBadge]（surface 胶囊 + 1dp outline + textPrimary），叠封面右上，任意封面底色下可读；
  *   服务端封面加载失败经 Coil error 态回退本地自绘封面（无本地资产退占位灰）。
  * - 无封面：原回退卡 — IconBox 图标容器（六色浅底 + 对应前景色，44/12/24 v0.4 §3.2 主容器档）
- *   + 标题 + 描述两行截断。
+ *   + 标题 + 描述两行截断；badge 与有封面分支共用 [GameBadge]，置于文字区末尾。
+ * 两种构图同高：GameGrid 的 Row 取 IntrinsicSize.Min，本卡 fillMaxHeight 对齐，同排底边齐平。
  * 整卡 pressable（scale 0.97 / 80-150ms 档，transform-only，reduced motion 降级透明度）；
- * a11y：contentDescription = title + description，封面为装饰图不出语义。
+ * a11y：mergeDescendants 并入 contentDescription = title + description（封面为装饰图不出语义，
+ * 卡内文字不单独暴露，避免 TalkBack 重复播报）。
  */
 @Composable
 private fun GameCard(
@@ -303,7 +328,8 @@ private fun GameCard(
     }
     Surface(
         modifier = modifier
-            .semantics {
+            // mergeDescendants：卡内标题/描述并入同一语义节点，避免 TalkBack 重复播报
+            .semantics(mergeDescendants = true) {
                 contentDescription =
                     if (game.description.isBlank()) game.title
                     else "${game.title}，${game.description}"
@@ -320,7 +346,7 @@ private fun GameCard(
         val hasCover = hasServerCover || localCover != null
         if (hasCover) {
             Column {
-                // 封面区：16:9 满宽，随卡片圆角裁顶角；badge 白胶囊叠右上角
+                // 封面区：16:9 满宽，随卡片圆角裁顶角；badge 胶囊叠右上角
                 Box {
                     if (hasServerCover) {
                         SmartWashAsyncImage(
@@ -347,20 +373,11 @@ private fun GameCard(
                         }
                     }
                     if (!game.badge.isNullOrBlank()) {
-                        Text(
+                        GameBadge(
                             text = game.badge,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = scheme.textPrimary,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(AppDimens.spaceSm)
-                                .background(scheme.surface, RoundedCornerShape(AppDimens.radiusFull))
-                                // 1dp outline 描边与卡片描边同语言：封面接近白色时胶囊轮廓不消失
-                                .border(
-                                    BorderStroke(1.dp, scheme.outline),
-                                    RoundedCornerShape(AppDimens.radiusFull),
-                                )
-                                .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.space2xs)
+                                .padding(AppDimens.spaceSm),
                         )
                     }
                 }
@@ -371,7 +388,7 @@ private fun GameCard(
                 ) {
                     Text(
                         text = game.title,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = AppTextStyles.CardTitle,
                         color = scheme.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -380,7 +397,7 @@ private fun GameCard(
                         Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                         Text(
                             text = game.description,
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.bodySmall,
                             color = scheme.textSecondary,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
@@ -400,7 +417,7 @@ private fun GameCard(
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 Text(
                     text = game.title,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = AppTextStyles.CardTitle,
                     color = scheme.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -410,25 +427,15 @@ private fun GameCard(
                     Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                     Text(
                         text = game.description,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = scheme.textSecondary,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                // badge 角标（无封面构图）：主色浅底/深绿小字胶囊（语言对齐工作台 ToolTile）。
-                // 文字色取 textGreenOnTint（§10 对比度红线：primary 品牌绿在 primaryLight 浅底
-                // 小字号下仅 ≈3.3:1 不达 AA，textGreenOnTint ≈6.4:1 达标，深浅两主题均已定档）
                 if (!game.badge.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-                    Text(
-                        text = game.badge,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = scheme.textGreenOnTint,
-                        modifier = Modifier
-                            .background(scheme.primaryLight, RoundedCornerShape(AppDimens.radiusFull))
-                            .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.space2xs)
-                    )
+                    GameBadge(text = game.badge)
                 }
             }
         }
@@ -436,14 +443,42 @@ private fun GameCard(
 }
 
 /**
+ * 游戏角标 — 有封面/无封面两种构图共用同一画法：surface 胶囊底 + 1dp outline + textPrimary
+ * （labelSmall 12/500，角标档）。有封面时叠封面右上（调用方传 align 定位），无封面时置于文字区末尾，
+ * 仅摆放位置不同。outline 与卡片描边同语言，封面接近白色时胶囊轮廓不消失。
+ */
+@Composable
+private fun GameBadge(text: String, modifier: Modifier = Modifier) {
+    val scheme = AppColors.colorScheme
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = scheme.textPrimary,
+        modifier = modifier
+            .background(scheme.surface, RoundedCornerShape(AppDimens.radiusFull))
+            .border(
+                BorderStroke(1.dp, scheme.outline),
+                RoundedCornerShape(AppDimens.radiusFull),
+            )
+            .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.space2xs)
+    )
+}
+
+/**
  * 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实内容一致；行距同真实网格 16dp（GRID_SPACING），
  * 微光扫过经 SkeletonBlock，reduced motion 自动退化为静态浅灰块）。
- * 骨架与封面主导真实卡同构：16:9 封面块（顶角圆角）+ 下方标题/描述文字条块。
+ * 与真实卡同源：封面块共用 [GAME_CARD_ASPECT_RATIO] 与顶角 radiusLg；文字区共用 cardPadding 内边距
+ * 与真实行高（标题 CardTitle 24sp 行高 → spaceXl；描述 bodySmall 16sp 行高 → spaceMd）。
+ * 真实卡封面由服务端下发 / 本地兜底提供，绝大多数游戏为「有封面」构图，故骨架按该构图对齐；
+ * 无封面卡（未知 gameKey 且无本地资产）为极少数降级情形。
  */
 @Composable
 private fun GameGridSkeleton(modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.padding(horizontal = AppDimens.pagePadding),
+        modifier = modifier
+            .padding(horizontal = AppDimens.pagePadding)
+            // 与真实网格首行顶部留白一致（LazyColumn contentPadding top = spaceSm）
+            .padding(top = AppDimens.spaceSm),
         verticalArrangement = Arrangement.spacedBy(GRID_SPACING),
     ) {
         repeat(3) {
@@ -453,6 +488,7 @@ private fun GameGridSkeleton(modifier: Modifier = Modifier) {
             ) {
                 repeat(GRID_COLUMNS) {
                     Column(modifier = Modifier.weight(1f)) {
+                        // 封面块：16:9 满宽 + 顶角圆角（与真实卡共用比例常量）
                         SkeletonBlock(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -462,22 +498,24 @@ private fun GameGridSkeleton(modifier: Modifier = Modifier) {
                                 topEnd = AppDimens.radiusLg,
                             ),
                         )
-                        Spacer(modifier = Modifier.height(AppDimens.spaceXs))
-                        SkeletonBlock(
-                            modifier = Modifier
-                                .fillMaxWidth(0.65f)
-                                // 对齐真实标题行高（bodyMedium 14sp → 20sp 行高，spaceLg 档）
-                                .height(AppDimens.spaceLg),
-                            shape = RoundedCornerShape(AppDimens.radiusSmall),
-                        )
-                        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-                        SkeletonBlock(
-                            modifier = Modifier
-                                .fillMaxWidth(0.9f)
-                                // 对齐真实描述行高（labelSmall 12sp → 16sp 行高，spaceMd 档）
-                                .height(AppDimens.spaceMd),
-                            shape = RoundedCornerShape(AppDimens.radiusSmall),
-                        )
+                        // 文字区：与真实卡同内边距（cardPadding）与同行高
+                        Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
+                            SkeletonBlock(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.65f)
+                                    // 真实标题 CardTitle 18sp/24sp 行高
+                                    .height(AppDimens.spaceXl),
+                                shape = RoundedCornerShape(AppDimens.radiusSmall),
+                            )
+                            Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+                            SkeletonBlock(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.9f)
+                                    // 真实描述 bodySmall 12sp/16sp 行高
+                                    .height(AppDimens.spaceMd),
+                                shape = RoundedCornerShape(AppDimens.radiusSmall),
+                            )
+                        }
                     }
                 }
             }

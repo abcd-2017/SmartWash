@@ -106,7 +106,9 @@ fun AppPillTabRow(
                 when {
                     !selected -> AppColors.colorScheme.surface
                     isDark -> AppColors.colorScheme.brandBase
-                    else -> AppColors.colorScheme.primary
+                    // 浅色选中底取 CTA 渐变起点：lite #C2410C（白字 5.2:1），
+                    // 避免 brandBase #EA580C 白字 3.57:1；full 与 primary 同值，视觉不变。
+                    else -> AppColors.colorScheme.ctaGradientStart
                 }
             )
             val labelColor = selectedColor(

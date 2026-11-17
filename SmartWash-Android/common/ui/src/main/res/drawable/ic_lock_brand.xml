@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 品牌锁图标 — 重置密码页品牌标识，与 ic_washing_machine / ic_water_add 同族（自绘白名单）-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp"
+    android:height="42dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+
+    <!-- 锁梁：上半圆环（stroke #fff w2.6 round） -->
+    <path
+        android:pathData="M13,18 v-3 a7,7 0 0 1 14,0 v3"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.9"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- 锁体：圆角矩形（stroke #fff w2.6 round join） -->
+    <path
+        android:pathData="M11,18 h18 a4,4 0 0 1 4,4 v9 a4,4 0 0 1 -4,4 H11 a4,4 0 0 1 -4,-4 v-9 a4,4 0 0 1 4,-4 z"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.9"
+        android:strokeWidth="2.6"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+
+    <!-- 锁孔：圆点 + 竖槽（stroke #fff w2.2 round） -->
+    <path
+        android:pathData="M20,24.5 m-2.2,0 a2.2,2.2 0 1,1 4.4,0 a2.2,2.2 0 1,1 -4.4,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.9"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M20,26.5 L20,30.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.9"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+</vector>

@@ -11,7 +11,7 @@
     <string name="lite_brand_subtitle">Today Eat</string>
 
     <!-- 首页 -->
-    <string name="lite_home_hero_line">今天吃什么？发起一场，喊室友一起选</string>
+    <string name="lite_home_hero_line">今天吃什么？发起一场点单</string>
     <string name="lite_home_create">发起点单</string>
     <string name="lite_home_create_desc">选好几道菜，生成二维码喊人加入</string>
     <string name="lite_home_orders">我的点单</string>
@@ -24,13 +24,13 @@
 
     <!-- 登录 -->
     <string name="lite_login_title">登 录</string>
-    <string name="lite_login_subtitle">登录后同步你的点单与菜谱</string>
+    <string name="lite_login_subtitle">和室友一起点，今天吃什么</string>
     <string name="lite_no_account">没有账号？</string>
     <string name="lite_register_now">立即注册</string>
 
     <!-- 注册 -->
     <string name="lite_register_title">注 册</string>
-    <string name="lite_register_subtitle">注册即登录，发起第一场点单</string>
+    <string name="lite_register_subtitle">注册即用，喊人一起点</string>
     <string name="lite_has_account">已有账号？</string>
     <string name="lite_login_now">立即登录</string>
 

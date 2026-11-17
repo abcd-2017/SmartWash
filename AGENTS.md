@@ -96,3 +96,4 @@ Single-context 布局：根目录一个 `GLOSSARY.md` + `docs/adr/`。详见 `do
 - `.claude/docs/` 只放跨会话复用的规则类文档（如 commit 规范、共享规则）
 - 判断标准：这份文档是「给别人看的项目说明」还是「我自己/团队的工作过程」？后者放 `docs/`
 - 已知工作文档：`docs/code-review-2026-08-28.md`（四端评审）、`docs/短链内核实现方案.md`、`docs/占卜模块后端与数据库架构设计.md` 等
+- 本机残留清理：agent 会话会留下工作流草稿、空目录骨架、日志等残留，跑 `bash script/clean.sh` 一键清理（自带防护，不动构建产物与依赖目录）

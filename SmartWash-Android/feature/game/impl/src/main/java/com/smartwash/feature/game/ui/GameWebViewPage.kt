@@ -123,7 +123,7 @@ fun GameWebViewPage(
         )
     }
 
-    // 游戏简介弹窗：清氧 AppInfoDialog 自带入场动效与 reduced motion 降级
+    // 游戏简介弹窗：AppInfoDialog 自带入场动效与 reduced motion 降级
     if (showIntro) {
         AppInfoDialog(
             title = headerTitle,

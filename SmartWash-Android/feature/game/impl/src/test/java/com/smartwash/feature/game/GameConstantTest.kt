@@ -55,12 +55,13 @@ class GameConstantTest {
         assertEquals(GameTint.PURPLE, GameTint.fromKey("purple"))
     }
 
+    // 游戏域未知 color key 兜底 PURPLE：lite 六色语义为「游戏=紫」，与首页游戏入口一致
     @Test
-    fun `color 未知与空与 null 兜底 GREEN`() {
-        assertEquals(GameTint.GREEN, GameTint.fromKey("default"))
-        assertEquals(GameTint.GREEN, GameTint.fromKey("red"))
-        assertEquals(GameTint.GREEN, GameTint.fromKey(""))
-        assertEquals(GameTint.GREEN, GameTint.fromKey(null))
+    fun `color 未知与空与 null 兜底 PURPLE`() {
+        assertEquals(GameTint.PURPLE, GameTint.fromKey("default"))
+        assertEquals(GameTint.PURPLE, GameTint.fromKey("red"))
+        assertEquals(GameTint.PURPLE, GameTint.fromKey(""))
+        assertEquals(GameTint.PURPLE, GameTint.fromKey(null))
     }
 
     // ---------- 分类 key ----------

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -218,6 +219,8 @@ private fun CategoryChipRow(
                 color = content,
                 maxLines = 1,
                 modifier = Modifier
+                    // chip 最小 44dp 热区（规范 §3.2），并让选中底铺满整颗
+                    .heightIn(min = 44.dp)
                     .clip(RoundedCornerShape(AppDimens.radiusFull))
                     .background(container)
                     .pressable(onClick = { onSelect(chip.id) })
@@ -241,63 +244,63 @@ private fun RecipeList(
     onLoadMore: () -> Unit,
     onRecipeClick: (DiningRecipeItem) -> Unit,
 ) {
-    if (recipes.isEmpty()) {
-        EmptyState(
-            // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位
-            icon = Icons.Default.Restaurant,
-            // 引导式文案由页面按「搜索无果 / 分类无果 / 全库空」就近选择
-            message = emptyMessage,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = AppDimens.pagePadding),
-        )
-        return
-    }
-
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
         modifier = Modifier.fillMaxSize(),
     ) {
-        // 列表底部避让手势条/三键导航（规范 §4）——末卡与「加载更多」footer 可完整滚出系统栏之下
-        val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = AppDimens.pagePadding,
-                top = AppDimens.spaceXs,
-                end = AppDimens.pagePadding,
-                bottom = navBarsBottom + AppDimens.spaceXl,
-            ),
-        ) {
-            items(recipes, key = { it.id }) { recipe ->
-                RecipeCard(
-                    recipe = recipe,
-                    onClick = { onRecipeClick(recipe) },
-                    modifier = Modifier.padding(bottom = AppDimens.cardSpacing),
-                )
-            }
-            if (hasMore) {
-                item(key = "load_more") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = AppDimens.spaceMd),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        when (loadMoreState) {
-                            is RequestState.Loading -> LoadingDots()
-                            is RequestState.Error -> AppButton(
-                                text = stringResource(R.string.dining_recipe_action_retry),
-                                onClick = onLoadMore,
-                                variant = AppButtonVariant.SECONDARY,
-                                small = true,
-                            )
-                            else -> AppButton(
-                                text = stringResource(R.string.dining_load_more),
-                                onClick = onLoadMore,
-                                variant = AppButtonVariant.TEXT,
-                            )
+        // 空态也放进刷新容器：空列表/搜索无果同样支持下拉刷新（与有数据态交互一致）
+        if (recipes.isEmpty()) {
+            EmptyState(
+                // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位
+                icon = Icons.Default.Restaurant,
+                // 引导式文案由页面按「搜索无果 / 分类无果 / 全库空」就近选择
+                message = emptyMessage,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = AppDimens.pagePadding),
+            )
+        } else {
+            // 列表底部避让手势条/三键导航（规范 §4）——末卡与「加载更多」footer 可完整滚出系统栏之下
+            val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = AppDimens.pagePadding,
+                    top = AppDimens.spaceXs,
+                    end = AppDimens.pagePadding,
+                    bottom = navBarsBottom + AppDimens.spaceXl,
+                ),
+            ) {
+                items(recipes, key = { it.id }) { recipe ->
+                    RecipeCard(
+                        recipe = recipe,
+                        onClick = { onRecipeClick(recipe) },
+                        modifier = Modifier.padding(bottom = AppDimens.cardSpacing),
+                    )
+                }
+                if (hasMore) {
+                    item(key = "load_more") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = AppDimens.spaceMd),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            when (loadMoreState) {
+                                is RequestState.Loading -> LoadingDots()
+                                is RequestState.Error -> AppButton(
+                                    text = stringResource(R.string.dining_recipe_action_retry),
+                                    onClick = onLoadMore,
+                                    variant = AppButtonVariant.SECONDARY,
+                                    small = true,
+                                )
+                                else -> AppButton(
+                                    text = stringResource(R.string.dining_load_more),
+                                    onClick = onLoadMore,
+                                    variant = AppButtonVariant.TEXT,
+                                )
+                            }
                         }
                     }
                 }
@@ -407,3 +410,13 @@ private fun RecipeSearchField(
         modifier = modifier,
     )
 }
+
+/** 输入框令牌色（与新增菜谱/创建点单页同款：r12 + outline 描边 + surfaceVariant 底） */
+@Composable
+private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = AppColors.colorScheme.primary,
+    unfocusedBorderColor = AppColors.colorScheme.outline,
+    errorBorderColor = AppColors.colorScheme.error,
+    focusedContainerColor = AppColors.colorScheme.surfaceVariant,
+    unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
+)

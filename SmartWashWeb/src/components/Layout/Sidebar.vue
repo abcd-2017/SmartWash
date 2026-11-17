@@ -17,11 +17,14 @@
         @keyup.enter="handleSearchEnter"
       />
     </div>
+    <!-- collapse-transition 必须关掉：它响应 v-show 的隐藏动作，leave 会写死 inline width/overflow
+         且重新显示时不还原（表现为「输入搜索词后菜单变窄、清空后只剩图标」）。侧栏本身没有折叠功能，无需该过渡 -->
     <el-menu
       v-show="!menuQuery"
       ref="menuRef"
       :default-active="activeMenu"
       :default-openeds="defaultOpeneds"
+      :collapse-transition="false"
       router
       @open="handleMenuOpen"
       @close="handleMenuClose"
@@ -44,8 +47,15 @@
         </el-menu-item>
       </el-sub-menu>
     </el-menu>
-    <!-- 搜索态：平铺匹配结果（含所属分组），独立菜单实例避免与分组展开状态互相干扰 -->
-    <el-menu v-show="menuQuery" :default-active="activeMenu" router class="search-menu">
+    <!-- 搜索态：平铺匹配结果（含所属分组），独立菜单实例避免与分组展开状态互相干扰；
+         同样关掉内置折叠过渡，否则它也会在 v-show 切换时改写宽度 -->
+    <el-menu
+      v-show="menuQuery"
+      :default-active="activeMenu"
+      :collapse-transition="false"
+      router
+      class="search-menu"
+    >
       <el-menu-item v-if="searchResults.length === 0" disabled index="no-match">
         <span class="search-empty">无匹配菜单</span>
       </el-menu-item>

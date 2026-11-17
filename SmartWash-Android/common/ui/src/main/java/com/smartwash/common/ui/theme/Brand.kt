@@ -43,14 +43,22 @@ object AppBrandTokens {
 // 暖橙 + 米白：食欲感、与清氧绿彻底区隔；危险色改用独立深红 #B3261E，避免与主橙混淆。
 // 文字强调档 [TextGreen]/[TextGreenOnTint] 沿用「深档用于小号文字」的既有约定（on 白 ≥ 4.5:1）。
 
-private val LitePrimary = Color(0xFFEA580C)          // 橙-600，品牌主色（渐变起点/图形着色）
+private val LitePrimary = Color(0xFFEA580C)          // 橙-600，品牌主色（图形着色/选中标签底色）
 private val LiteOnPrimary = Color(0xFFFFFFFF)
-private val LitePrimaryContainer = Color(0xFFFDF0E7)
+private val LitePrimaryContainer = Color(0xFFFFF7ED) // 橙-50（M3 容器底）
 private val LiteOnPrimaryContainer = Color(0xFF7C2D12)   // 橙-900
 private val LitePrimaryLight = Color(0xFFFFF7ED)     // 橙-50，图标容器/票券底
-private val LitePrimarySoft = Color(0xFFFDF0E7)      // 选中底
+private val LitePrimarySoft = Color(0xFFFDF0E7)      // 选中底（与图标容器橙-50 区分，勿合并）
 private val LiteOnPrimarySoft = Color(0xFF7C2D12)
 private val LitePrimaryDark = Color(0xFFC2410C)      // 橙-700，按下态/渐变暗端（on 白 5.2:1）
+
+// 吃啥 CTA / hero 渐变：品牌主色 #EA580C 上白字仅 3.57:1（15sp 需 4.5:1），
+// 故 CTA 渐变起点下移到 primaryDark #C2410C（白字 5.2:1），暗端橙-800 #9A3412（7.0:1）。
+private val LiteCtaGradientStart = LitePrimaryDark
+private val LiteCtaGradientEnd = Color(0xFF9A3412)   // 橙-800
+// 深色主题 CTA 渐变：亮橙底 + 深橙字（onPrimary #431407 ≈6.7:1），与深色主按钮文字策略一致。
+private val DarkLiteCtaGradientStart = Color(0xFFFB923C)
+private val DarkLiteCtaGradientEnd = Color(0xFFF97316)
 
 private val LiteBackground = Color(0xFFFFFBF7)       // 暖米白
 private val LiteOnBackground = Color(0xFF292524)     // stone-800
@@ -98,7 +106,7 @@ private val LiteDanger = Color(0xFFB3261E)
 private val LiteDangerInk = Color(0xFFB3261E)
 
 // 吃啥图标容器六色（语义槽位沿用 AppColorScheme，值改为暖色语义）
-private val LiteIconContainerGreen = Color(0xFFFDF0E7)   // 主流程（发起）
+private val LiteIconContainerGreen = Color(0xFFFFF7ED)   // 主流程（发起）—橙-50，与选中底 #FDF0E7 区分
 private val LiteIconContainerBlue = Color(0xFFEEF2FB)    // 加入/二维码/链接
 private val LiteIconContainerOrange = Color(0xFFFDF3E7)  // 进行中/待办
 private val LiteIconContainerPink = Color(0xFFFDEEF0)    // 异常/取消
@@ -193,6 +201,8 @@ val LiteAppColorScheme = AppColorScheme(
     brandBase = LitePrimary,
     heroGradientStart = LitePrimary,
     heroGradientEnd = LitePrimaryDark,
+    ctaGradientStart = LiteCtaGradientStart,
+    ctaGradientEnd = LiteCtaGradientEnd,
     background = LiteBackground,
     surface = LiteSurface,
     surfaceVariant = LiteSurfaceVariant,
@@ -243,6 +253,8 @@ val DarkLiteAppColorScheme = AppColorScheme(
     brandBase = LitePrimary,
     heroGradientStart = DarkLitePrimary,
     heroGradientEnd = Color(0xFFF97316),
+    ctaGradientStart = DarkLiteCtaGradientStart,
+    ctaGradientEnd = DarkLiteCtaGradientEnd,
     background = DarkLiteBackground,
     surface = DarkLiteSurface,
     surfaceVariant = DarkLiteSurfaceVariant,

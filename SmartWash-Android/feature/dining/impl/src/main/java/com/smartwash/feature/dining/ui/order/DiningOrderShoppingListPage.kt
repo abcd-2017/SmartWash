@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -54,6 +56,7 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.model.RequestState
@@ -227,7 +230,7 @@ private fun IngredientsView(
                     checkedCount,
                     ingredients.size,
                 ),
-                style = MaterialTheme.typography.titleSmall,
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
             )
         }
@@ -237,15 +240,22 @@ private fun IngredientsView(
                     Text(
                         text = stringResource(R.string.dining_shopping_list_empty_ingredients),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = AppColors.colorScheme.textTertiary,
+                        color = AppColors.colorScheme.textSecondary,
                     )
                 } else {
-                    ingredients.forEach { name ->
+                    ingredients.forEachIndexed { index, name ->
                         IngredientRow(
                             name = name,
                             checked = name in checked,
                             onToggle = { onToggle(name) },
                         )
+                        // 卡内行间 0.5dp 发丝线（规范 §3.1：仅同一容器内部）
+                        if (index != ingredients.lastIndex) {
+                            HorizontalDivider(
+                                thickness = 0.5.dp,
+                                color = AppColors.colorScheme.divider,
+                            )
+                        }
                     }
                 }
             }
@@ -264,6 +274,8 @@ private fun IngredientRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            // 列表行最小 48dp 热区（规范 §3.2）
+            .heightIn(min = 48.dp)
             .pressable(onClick = onToggle, debounce = false)
             .semantics { contentDescription = name }
             .padding(vertical = AppDimens.spaceXs),
@@ -305,7 +317,7 @@ private fun IngredientRow(
         Text(
             text = name,
             style = MaterialTheme.typography.bodyLarge,
-            color = if (checked) AppColors.colorScheme.textTertiary
+            color = if (checked) AppColors.colorScheme.textSecondary
             else AppColors.colorScheme.textPrimary,
         )
     }
@@ -325,7 +337,7 @@ private fun PerRecipeView(perRecipe: List<DiningRecipeShopping>) {
         item(key = "per_recipe_header") {
             Text(
                 text = stringResource(R.string.dining_shopping_list_per_recipe_section),
-                style = MaterialTheme.typography.titleSmall,
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
             )
         }
@@ -335,12 +347,13 @@ private fun PerRecipeView(perRecipe: List<DiningRecipeShopping>) {
                     Text(
                         text = stringResource(R.string.dining_shopping_list_empty_per_recipe),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = AppColors.colorScheme.textTertiary,
+                        color = AppColors.colorScheme.textSecondary,
                     )
                 }
             }
         } else {
-            itemsIndexed(perRecipe, key = { index, _ -> index }) { _, recipe ->
+            // key 用内容组合而非索引：列表重排时避免错误复用
+            itemsIndexed(perRecipe, key = { index, item -> "${item.recipeName}_$index" }) { _, recipe ->
                 RecipeCard(recipe = recipe)
             }
         }
@@ -353,7 +366,7 @@ private fun RecipeCard(recipe: DiningRecipeShopping) {
     GroupCard(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = recipe.recipeName,
-            style = MaterialTheme.typography.titleSmall,
+            style = AppTextStyles.CardTitle,
             color = AppColors.colorScheme.textPrimary,
         )
         Spacer(modifier = Modifier.height(AppDimens.spaceXs))
@@ -372,7 +385,7 @@ private fun RecipeCard(recipe: DiningRecipeShopping) {
                             selector.note,
                         ),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = AppColors.colorScheme.textTertiary,
+                        color = AppColors.colorScheme.textSecondary,
                     )
                 }
             }

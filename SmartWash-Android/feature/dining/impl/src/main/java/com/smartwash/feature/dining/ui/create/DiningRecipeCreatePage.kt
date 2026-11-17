@@ -19,10 +19,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,6 +60,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SmartWashAsyncImage
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.dining.R
@@ -232,6 +235,8 @@ fun DiningRecipeCreatePage(
                             viewModel.addIngredient(ingredientInput)
                             ingredientInput = ""
                         },
+                        // 空输入禁用（VM 对空串直接 return，避免可点无反馈）
+                        enabled = ingredientInput.isNotBlank(),
                         variant = AppButtonVariant.SECONDARY,
                     )
                 }
@@ -303,14 +308,14 @@ fun DiningRecipeCreatePage(
     }
 }
 
-/** 区块标题（卡外标签行，18sp title 档，规范 §2.2） */
+/** 区块标题（卡外标签行，18sp Title 档 = AppTextStyles.SectionTitle，规范 §2.2） */
 @Composable
 private fun SectionLabel(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleSmall,
+        style = AppTextStyles.SectionTitle,
         color = AppColors.colorScheme.textPrimary,
-        modifier = Modifier.padding(bottom = AppDimens.spaceXs, start = 4.dp),
+        modifier = Modifier.padding(bottom = AppDimens.spaceXs, start = AppDimens.spaceXxs),
     )
 }
 
@@ -350,12 +355,11 @@ private fun CoverPicker(
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
             AppButton(
                 small = true,
-                text = if (isUploading) {
-                    stringResource(R.string.dining_create_cover_pick)
-                } else {
-                    stringResource(R.string.dining_create_cover_replace)
-                },
+                // 已选封面场景固定「更换」；上传中走 loading 并禁用，避免重复选传
+                text = stringResource(R.string.dining_create_cover_replace),
                 onClick = onPick,
+                loading = isUploading,
+                enabled = !isUploading,
                 variant = AppButtonVariant.SECONDARY,
             )
         }
@@ -377,6 +381,8 @@ private fun CategoryChip(label: String, selected: Boolean, onClick: () -> Unit) 
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
+            // chip 最小 44dp 热区（规范 §3.2），并让选中底铺满整颗
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(AppDimens.radiusFull))
             .background(container)
             .pressable(onClick = onClick)
@@ -391,7 +397,7 @@ private fun IngredientChip(label: String, onRemove: () -> Unit) {
         modifier = Modifier
             .clip(RoundedCornerShape(AppDimens.radiusFull))
             .background(AppColors.colorScheme.surfaceVariant)
-            .padding(start = AppDimens.spaceSm, end = AppDimens.spaceXs, top = 4.dp, bottom = 4.dp),
+            .padding(start = AppDimens.spaceSm, end = AppDimens.spaceXs, top = AppDimens.spaceXxs, bottom = AppDimens.spaceXxs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -403,14 +409,20 @@ private fun IngredientChip(label: String, onRemove: () -> Unit) {
         )
         Spacer(modifier = Modifier.width(AppDimens.spaceXxs))
         val removeLabel = stringResource(R.string.dining_create_ingredient_remove, label)
-        Icon(
-            imageVector = Icons.Rounded.Close,
-            contentDescription = removeLabel,
-            tint = AppColors.colorScheme.textSecondary,
+        // 48dp 自绘热区（规范 §3.2：图标强制 48dp 热区），20dp 图形居中
+        Box(
             modifier = Modifier
-                .width(20.dp)
+                .size(48.dp)
                 .pressable(onClick = onRemove),
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Close,
+                contentDescription = removeLabel,
+                tint = AppColors.colorScheme.textSecondary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }
 

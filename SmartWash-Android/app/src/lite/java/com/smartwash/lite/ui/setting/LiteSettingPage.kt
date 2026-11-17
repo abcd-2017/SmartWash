@@ -186,7 +186,8 @@ private fun LiteSettingRow(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.97f) else Modifier)
-            .height(64.dp),
+            // 行高对齐 full SettingRow（56dp，规范 §3.5 列表行）
+            .height(56.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconBox(

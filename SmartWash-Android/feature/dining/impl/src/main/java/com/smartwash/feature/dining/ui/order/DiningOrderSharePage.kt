@@ -11,9 +11,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -53,6 +56,7 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.generateQrCodeBitmap
@@ -200,7 +204,7 @@ private fun ShareContent(
                 Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = AppTextStyles.CardTitle,
                     color = AppColors.colorScheme.textPrimary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -222,7 +226,7 @@ private fun ShareContent(
         GroupCard(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.dining_order_share_qr_section),
-                style = MaterialTheme.typography.titleSmall,
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textPrimary,
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -266,7 +270,13 @@ private fun ShareContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(AppDimens.spaceXl))
+        // 底部避让手势条/三键导航（不硬编码高度）+ 末卡呼吸空间
+        Spacer(
+            modifier = Modifier.height(
+                WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+                    AppDimens.spaceLg,
+            ),
+        )
     }
 }
 
@@ -328,7 +338,7 @@ private fun StatusDotSmall(status: DiningOrderStatus) {
                 .clip(CircleShape)
                 .background(dotColor),
         )
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(AppDimens.spaceXxs))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,

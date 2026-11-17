@@ -56,6 +56,7 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.model.RequestState
@@ -204,7 +205,7 @@ fun DiningOrderCreatePage(
                                 text = stringResource(R.string.dining_order_create_title_label),
                                 style = MaterialTheme.typography.titleSmall,
                                 color = AppColors.colorScheme.textPrimary,
-                                modifier = Modifier.padding(bottom = AppDimens.spaceXs, start = 4.dp),
+                                modifier = Modifier.padding(bottom = AppDimens.spaceXs, start = AppDimens.spaceXxs),
                             )
                             AppTextField(
                                 value = title,
@@ -250,25 +251,25 @@ fun DiningOrderCreatePage(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.colorScheme.textSecondary,
                                 modifier = Modifier.padding(
-                                    start = AppDimens.pagePadding + 4.dp,
+                                    start = AppDimens.pagePadding + AppDimens.spaceXxs,
                                     end = AppDimens.pagePadding,
                                     bottom = AppDimens.spaceXs,
                                 ),
                             )
                         }
 
-                        // 勾选计数（数量开 tabular numbers，规范 §2.2 硬规则）
+                        // 勾选计数（数量数据档 AmountMedium + tnum，规范 §2.2 硬规则）
                         Text(
                             text = stringResource(
                                 R.string.dining_order_create_selected_count_format,
                                 selectedIds.size,
                             ),
-                            style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
+                            style = AppTextStyles.AmountMedium,
                             color = AppColors.colorScheme.textPrimary,
                             modifier = Modifier.padding(
                                 top = AppDimens.spaceLg,
                                 bottom = AppDimens.spaceXs,
-                                start = AppDimens.pagePadding + 4.dp,
+                                start = AppDimens.pagePadding + AppDimens.spaceXxs,
                             ),
                         )
                         if (formError == DiningOrderFormError.MENU_EMPTY ||
@@ -279,7 +280,7 @@ fun DiningOrderCreatePage(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.colorScheme.error,
                                 modifier = Modifier.padding(
-                                    start = AppDimens.pagePadding + 4.dp,
+                                    start = AppDimens.pagePadding + AppDimens.spaceXxs,
                                     bottom = AppDimens.spaceXs,
                                 ),
                             )
@@ -381,9 +382,9 @@ private fun RecipeGroupList(
             item(key = "group_${group.categoryId ?: 0L}") {
                 Text(
                     text = group.categoryName,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = AppTextStyles.SectionTitle,
                     color = AppColors.colorScheme.textSecondary,
-                    modifier = Modifier.padding(top = AppDimens.spaceSm, bottom = AppDimens.spaceXs, start = 4.dp),
+                    modifier = Modifier.padding(top = AppDimens.spaceSm, bottom = AppDimens.spaceXs, start = AppDimens.spaceXxs),
                 )
             }
             items(group.recipes, key = { it.safeId }) { recipe ->
@@ -453,7 +454,7 @@ private fun RecipeSelectRow(
                         recipe.safeIngredients.size,
                     ),
                     style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                    color = AppColors.colorScheme.textTertiary,
+                    color = AppColors.colorScheme.textSecondary,
                 )
             }
         }

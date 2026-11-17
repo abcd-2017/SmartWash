@@ -202,9 +202,11 @@ struct Register {
           // 品牌区（92dp 单层圆形 + 标题 22/600 + 副标题 12，对齐 Android RegisterPage.kt:259-292）
           Column() {
             Stack({ alignContent: Alignment.Center }) {
-              SymbolGlyph($r('sys.symbol.drop'))
-                .fontSize(42)
-                .fontColor([Color.White])
+              // 品牌图标与 Android 同源（自绘矢量渲染，见 docs/icon-decision-and-diff.md）
+              Image($r('app.media.ic_water_add'))
+                .width(42)
+                .height(42)
+                .objectFit(ImageFit.Contain)
             }
             .width(92)
             .height(92)

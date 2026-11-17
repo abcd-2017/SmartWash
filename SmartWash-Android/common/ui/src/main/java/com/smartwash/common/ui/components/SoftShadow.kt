@@ -3,6 +3,8 @@ package com.smartwash.common.ui.components
 import android.graphics.BlurMaskFilter
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Modifier
+import com.smartwash.common.ui.theme.AppBrand
+import com.smartwash.common.ui.theme.LocalAppBrand
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
@@ -15,6 +17,12 @@ import androidx.compose.ui.unit.dp
  * 规范 §2.4 卡片阴影色（浅色档）：CSS `rgba(20,40,30,0.05)`（5% 不透明度 + 20,40,30 绿调）。
  */
 val CardShadowColor = Color(0x0D14281E)
+
+/**
+ * 吃啥（lite）卡片阴影色（浅色档）：暖棕 5% `rgba(154,52,18,0.05)`。
+ * lite 品牌与清氧绿彻底区隔，卡片着地影不再残留 full 绿调（DESIGN「品牌维度」）。
+ */
+val LiteCardShadowColor = Color(0x0D9A3412)
 
 /**
  * 规范 §6.5 深色模式卡片阴影色（深色档）：CSS `rgba(0,0,0,0.28)`，
@@ -73,8 +81,15 @@ fun Modifier.softCardShadow(
 ): Modifier = composed {
     // §6.5 主题分支：仅当调用方沿用默认浅色档（未显式传色）时随主题切换，
     // 显式传入的色值（如浮层档）不覆盖。浅色模式下 effectiveColor == color，视觉零变化。
-    val effectiveColor =
-        if (isSystemInDarkTheme() && color == CardShadowColor) DarkCardShadowColor else color
+    val effectiveColor = when {
+        // 显式传色（如浮层档）不覆盖
+        color != CardShadowColor -> color
+        // 深色档两品牌共用纯黑（§6.5）
+        isSystemInDarkTheme() -> DarkCardShadowColor
+        // lite 用暖棕影，避免清氧绿残留；full 维持绿调
+        LocalAppBrand.current == AppBrand.TodayEat -> LiteCardShadowColor
+        else -> color
+    }
     drawWithCache {
         val blurPx = blur.toPx()
         val oy = offsetY.toPx()

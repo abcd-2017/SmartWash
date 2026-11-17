@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Phone
+import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +53,9 @@ import com.smartwash.common.ui.components.AppPasswordTextField
 import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.AppVerificationCodeField
 import com.smartwash.common.ui.components.GroupCard
+import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.PasswordInput
+import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -156,52 +160,23 @@ fun LiteRegisterPage(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
-            .statusBarsPadding()
             .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = AppDimens.pagePadding),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(AppDimens.spaceLg))
-
-        // 顶部返回 + 标题（返回热区 48dp，自绘无 state layer）
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .pressable(onClick = { navController.popBackStack() }, debounce = false),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(com.smartwash.common.ui.R.string.back),
-                    modifier = Modifier.size(24.dp),
-                    tint = AppColors.colorScheme.textPrimary
-                )
-            }
-            Text(
-                text = stringResource(R.string.lite_register_title),
-                style = AppTextStyles.PageHeader,
-                color = AppColors.colorScheme.textPrimary
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.size(48.dp))
-        }
+        // 页头（返回 + 「注册」）复用共享 PageHeader，与设置页口径一致；
+        // 品牌名不重复出现（首页/登录已建立品牌），仅保留一句引导副标题。
+        PageHeader(
+            title = stringResource(R.string.lite_register_title),
+            onBack = { navController.popBackStack() }
+        )
 
         Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
         Text(
-            text = stringResource(R.string.lite_brand_name),
-            style = AppTextStyles.RootTitle,
-            color = AppColors.colorScheme.textPrimary
-        )
-        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-        Text(
             text = stringResource(R.string.lite_register_subtitle),
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = AppColors.colorScheme.textSecondary
         )
 
@@ -370,5 +345,109 @@ fun LiteRegisterPage(
         }
 
         Spacer(modifier = Modifier.height(AppDimens.spaceXxl))
+    }
+}
+
+/**
+ * 验证码输入行 — 对齐 §3.7：输入正文 16sp、前缀图标 16dp、尾缀发送为描边按钮
+ * （1dp 描边 + 12dp 圆角 + 高 40dp + 横向 14dp），倒计时/加载禁用态降至 .55 透明度。
+ */
+@Composable
+private fun LiteVerificationCodeRow(
+    code: String,
+    isCodeError: Boolean,
+    countDown: Int,
+    captchaLoading: Boolean,
+    contentColor: Color,
+    focusRequester: FocusRequester,
+    onValueChange: (String) -> Unit,
+    onSendCaptcha: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Key,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = if (isCodeError) AppColors.colorScheme.error else contentColor.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+            BasicTextField(
+                value = code,
+                onValueChange = onValueChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 16.sp,
+                    lineHeight = 24.sp,
+                    color = contentColor
+                ),
+                cursorBrush = SolidColor(if (isCodeError) AppColors.colorScheme.error else contentColor),
+                decorationBox = { innerTextField ->
+                    Box {
+                        if (code.isEmpty()) {
+                            Text(
+                                text = stringResource(com.smartwash.feature.user.impl.R.string.verification_code_hint),
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
+                                color = contentColor.copy(alpha = 0.45f)
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
+            )
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+
+            val sendEnabled = countDown == 0 && !captchaLoading
+            Box(
+                modifier = Modifier
+                    .height(40.dp)
+                    .then(
+                        if (sendEnabled) Modifier.pressable(onClick = onSendCaptcha, debounce = false)
+                        else Modifier
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (sendEnabled) contentColor.copy(alpha = 0.3f)
+                        else contentColor.copy(alpha = 0.3f * 0.55f),
+                        shape = RoundedCornerShape(AppDimens.radiusMd)
+                    )
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = if (countDown > 0) {
+                        stringResource(com.smartwash.feature.user.impl.R.string.countdown_format, countDown)
+                    } else {
+                        stringResource(com.smartwash.feature.user.impl.R.string.get_verification_code)
+                    },
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontFeatureSettings = "tnum"
+                    ),
+                    color = contentColor.copy(
+                        alpha = if (sendEnabled) 0.92f else 0.92f * 0.55f
+                    )
+                )
+            }
+        }
+
+        if (isCodeError) {
+            Text(
+                text = stringResource(com.smartwash.feature.user.impl.R.string.invalid_verification_code),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = AppColors.colorScheme.error,
+                modifier = Modifier.padding(top = AppDimens.spaceXxs)
+            )
+        }
     }
 }

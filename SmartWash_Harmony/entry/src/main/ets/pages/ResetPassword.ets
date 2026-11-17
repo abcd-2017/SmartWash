@@ -192,9 +192,11 @@ struct ResetPassword {
           // 引导区（锁形图标 + 标题 + 说明，对齐 Register 品牌区规格）
           Column() {
             Stack({ alignContent: Alignment.Center }) {
-              SymbolGlyph($r('sys.symbol.lock'))
-                .fontSize(42)
-                .fontColor([Color.White])
+              // 品牌图标与 Android 同源（自绘矢量渲染，对齐 Android 新增 ic_lock_brand）
+              Image($r('app.media.ic_lock_brand'))
+                .width(42)
+                .height(42)
+                .objectFit(ImageFit.Contain)
             }
             .width(92)
             .height(92)
