@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
@@ -35,8 +34,6 @@ import androidx.compose.material.icons.rounded.Notes
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -65,6 +62,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppConfirmDialog
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingDots
@@ -226,7 +224,8 @@ fun DeliverySessionPage(
                 )
             }
             else -> {
-                // 分页列表：LazyColumn 填满列表区（空态/骨架/错误分支同用 weight(1f) 撑满以便居中）
+                // 分页列表：卡随内容收缩（weight fill=false，上限仍为剩余空间）——
+                // 原 weight(1f) 强制拉满，条目少时卡内出现大片空白（用户反馈"投递后下半屏空白"）
                 DeliveryItemList(
                     items = items,
                     retryableIds = retryableIds,
@@ -234,7 +233,7 @@ fun DeliverySessionPage(
                     loadMoreState = loadMoreState,
                     onLoadMore = viewModel::loadMore,
                     onItem = viewModel::openItem,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    modifier = Modifier.weight(1f, fill = false).fillMaxWidth(),
                 )
             }
         }
@@ -629,26 +628,16 @@ private fun DeliverySendArea(
                     onClick = onPickFile,
                 )
                 Spacer(modifier = Modifier.width(AppDimens.spaceXs))
-                OutlinedTextField(
+                AppTextField(
                     value = draft,
                     onValueChange = onDraftChange,
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.toolbox_delivery_send_hint),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = AppColors.colorScheme.textSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    textStyle = MaterialTheme.typography.bodyLarge,
+                    placeholder = stringResource(R.string.toolbox_delivery_send_hint),
+                    singleLine = false,
                     minLines = 1,
                     maxLines = 4,
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 48.dp),
-                    shape = RoundedCornerShape(AppDimens.inputRadius),
-                    colors = tokenTextFieldColors(),
                 )
                 Spacer(modifier = Modifier.width(AppDimens.spaceXs))
                 // 发送 — 44dp 圆形主色按钮（热区 ≥44dp，规范 §3.3；draft 空则禁用降透明度 0.5）
@@ -709,12 +698,3 @@ private fun kindIcon(kind: DeliveryRules.ItemKind): ImageVector = when (kind) {
     DeliveryRules.ItemKind.IMAGE -> Icons.Rounded.Image
     DeliveryRules.ItemKind.FILE -> Icons.Rounded.InsertDriveFile
 }
-
-/** 输入框令牌配色（规范 §3.7：inputRadius 14dp + surfaceVariant 底 + outline 描边） */
-@Composable
-private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AppColors.colorScheme.primary,
-    unfocusedBorderColor = AppColors.colorScheme.outline,
-    focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-    unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-)

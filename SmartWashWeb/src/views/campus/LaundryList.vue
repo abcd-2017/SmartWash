@@ -33,7 +33,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与「暂无数据」空态区分，就地重试（W-E3） -->
+      <div v-if="listError" class="list-error">
+        <span>套餐列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="laundryList"
         fit
@@ -123,6 +129,7 @@ import { getLaundryList, addLaundry, updateLaundry, deleteLaundry } from '@/api/
 import { laundryOptionsCache } from '@/utils/optionCache';
 import { formatAmount, formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 
@@ -142,6 +149,7 @@ const {
   list: laundryList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -225,9 +233,14 @@ const submitForm = async () => {
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本
-    logger.error('保存套餐失败:', error instanceof Error ? error : '表单校验未通过');
-    ElMessage.error(error.message || '操作失败');
+    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文）；字段红字已示于表单，
+    // 不再叠加「操作失败」假 toast
+    if (isValidationError(error)) {
+      logger.debug('套餐表单校验未通过，已拦截提交');
+      return;
+    }
+    logger.error('保存套餐失败:', error);
+    ElMessage.error(friendlyErrorMessage(error, '操作失败'));
   } finally {
     submitting.value = false;
   }
@@ -247,7 +260,7 @@ const handleDelete = async (row) => {
     fetchData();
   } catch (error) {
     logger.error('删除套餐失败:', `itemId=${row.itemId}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   }
 };
 </script>

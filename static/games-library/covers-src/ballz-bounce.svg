@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4A5FA8"/>
+      <stop offset="0.55" stop-color="#3A4C8C"/>
+      <stop offset="1" stop-color="#2C3B6E"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1A2444" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#26315A" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#1E2748" opacity="0.55"/>
+
+  <!-- 星尘点缀 -->
+  <g stroke="#D8E0F5" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 104 h10 M101 99 v10" stroke-width="3"/>
+    <path d="M690 92 h12 M696 86 v12" stroke-width="3.4"/>
+    <path d="M716 220 h9 M720.5 215.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M84 260 h9 M88.5 255.5 v9" stroke-width="2.6" opacity="0.6"/>
+  </g>
+  <g fill="#D8E0F5" opacity="0.5">
+    <circle cx="170" cy="168" r="4"/><circle cx="648" cy="176" r="3.4"/>
+    <circle cx="70" cy="216" r="3"/><circle cx="748" cy="186" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="402" rx="260" ry="24" fill="#1E2748" opacity="0.38"/>
+
+  <!-- 砖块阵列 -->
+  <g stroke="#1E2620" stroke-width="7" font-family="Arial, Helvetica, sans-serif"
+     font-size="30" font-weight="bold" text-anchor="middle">
+    <g>
+      <rect x="196" y="118" width="96" height="48" rx="10" fill="#E04848"/>
+      <rect x="306" y="118" width="96" height="48" rx="10" fill="#F2C230"/>
+      <rect x="416" y="118" width="96" height="48" rx="10" fill="#3E7BE8"/>
+      <rect x="526" y="118" width="96" height="48" rx="10" fill="#3FA34D"/>
+      <text x="244" y="151" fill="#FFFFFF" stroke="none">12</text>
+      <text x="354" y="151" fill="#FFFFFF" stroke="none">8</text>
+      <text x="464" y="151" fill="#FFFFFF" stroke="none">20</text>
+      <text x="574" y="151" fill="#FFFFFF" stroke="none">6</text>
+    </g>
+    <g>
+      <rect x="196" y="182" width="96" height="48" rx="10" fill="#9B6BD4"/>
+      <rect x="306" y="182" width="96" height="48" rx="10" fill="#3FA34D"/>
+      <rect x="416" y="182" width="96" height="48" rx="10" fill="#F28C28"/>
+      <rect x="526" y="182" width="96" height="48" rx="10" fill="#E04848"/>
+      <text x="244" y="215" fill="#FFFFFF" stroke="none">4</text>
+      <text x="354" y="215" fill="#FFFFFF" stroke="none">16</text>
+      <text x="464" y="215" fill="#FFFFFF" stroke="none">9</text>
+      <text x="574" y="215" fill="#FFFFFF" stroke="none">14</text>
+    </g>
+    <g>
+      <rect x="196" y="246" width="96" height="48" rx="10" fill="#3E7BE8"/>
+      <rect x="306" y="246" width="96" height="48" rx="10" fill="#F2C230"/>
+      <rect x="416" y="246" width="96" height="48" rx="10" fill="#E04848"/>
+      <rect x="526" y="246" width="96" height="48" rx="10" fill="#9B6BD4"/>
+      <text x="244" y="279" fill="#FFFFFF" stroke="none">7</text>
+      <text x="354" y="279" fill="#FFFFFF" stroke="none">11</text>
+      <text x="464" y="279" fill="#FFFFFF" stroke="none">18</text>
+      <text x="574" y="279" fill="#FFFFFF" stroke="none">3</text>
+    </g>
+  </g>
+
+  <!-- 弹道虚线 -->
+  <path d="M400 352 L400 300" stroke="#FFFFFF" stroke-width="5" stroke-dasharray="4 12"
+        stroke-linecap="round" fill="none" opacity="0.75"/>
+
+  <!-- 弹球（家族表情） -->
+  <circle cx="400" cy="378" r="34" fill="#FFFFFF" stroke="#1E2620" stroke-width="9"/>
+  <circle cx="400" cy="378" r="34" fill="url(#gloss)"/>
+  <circle cx="389" cy="370" r="6" fill="#1F1A14"/>
+  <circle cx="411" cy="370" r="6" fill="#1F1A14"/>
+  <path d="M388 390 Q400 400 412 390" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 道具球 -->
+  <circle cx="648" cy="330" r="20" fill="#4EC9D4" stroke="#1E2620" stroke-width="7"/>
+  <path d="M648 318 v24 M636 330 h24" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

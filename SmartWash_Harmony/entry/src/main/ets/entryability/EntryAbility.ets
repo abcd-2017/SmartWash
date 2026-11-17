@@ -1,6 +1,7 @@
 import { AbilityConstant, Configuration, ConfigurationConstant, UIAbility, Want, errorManager } from '@kit.AbilityKit';
 import { display, window, KeyboardAvoidMode } from '@kit.ArkUI';
 import { logger } from '../utils/Logger';
+import { initKeyboardAvoidContext, installKeyboardAvoidGuard } from '../utils/PathStackUtil';
 import { initPreferences } from '../utils/StorageUtil';
 import { initPickupReminder } from '../utils/ReminderService';
 import { DarkModeStore } from '../constant/DarkModeStore';
@@ -144,7 +145,12 @@ export default class EntryAbility extends UIAbility {
     });
     // 键盘 RESIZE 避让：经窗口 UIContext 设置（API 11+）
     try {
-      mainWindow.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE);
+      const uiContext = mainWindow.getUIContext();
+      uiContext.setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE);
+      // 路由切面守卫：注入窗口 UIContext，任何页面切换/切 tab 后统一复位 RESIZE，
+      // 杜绝常驻 tab（Workbench NONE）泄漏全局避让（P1）
+      initKeyboardAvoidContext(uiContext);
+      installKeyboardAvoidGuard();
     } catch (err) {
       logger.error('EntryAbility', 'setKeyboardAvoidMode 失败', err instanceof Error ? err.message : '');
     }

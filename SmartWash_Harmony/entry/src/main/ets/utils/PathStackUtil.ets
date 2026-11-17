@@ -1,4 +1,58 @@
+import { KeyboardAvoidMode, UIContext, uiObserver } from '@kit.ArkUI'
+import { logger } from './Logger'
+
 export const pathStack: NavPathStack = new NavPathStack();
+
+// ========== 键盘避让路由守卫（P1 全局污染修复）==========
+// 背景：Workbench 是 Home 的常驻 TabContent，挂载时把窗口级 KeyboardAvoidMode 设为 NONE，
+// 但 tab 切换不触发 aboutToDisappear，NONE 会永久泄漏，导致后续输入页键盘弹出时窗口不压缩、
+// 输入区被整条遮住（对齐安卓 adjustResize 口径，全局默认应为 RESIZE）。
+// 这里在路由切面统一收口：任何 NavDestination 切换 / tabContent 显隐，都把窗口级避让复位为
+// 默认 RESIZE。窗口级 UIContext 全局唯一，由 EntryAbility 注入。
+let keyboardAvoidContext: UIContext | null = null
+
+/** 注入窗口级 UIContext（EntryAbility.setupImmersiveWindow 调用，全局唯一） */
+export function initKeyboardAvoidContext(uiContext: UIContext): void {
+  keyboardAvoidContext = uiContext
+}
+
+/**
+ * 复位窗口级键盘避让为默认 RESIZE（与 EntryAbility 口径一致）。
+ * 幂等：目标页若需自定义避让，可在自身生命周期内再次覆盖（如 Workbench 搜索聚焦设 NONE）。
+ * 失败静默不阻塞导航，仅留 warn 摘要（不序列化 error）。
+ */
+export function resetKeyboardAvoidMode(): void {
+  if (keyboardAvoidContext === null) {
+    return
+  }
+  try {
+    keyboardAvoidContext.setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE)
+  } catch (err) {
+    logger.warn('pathStack', '复位键盘避让模式失败')
+  }
+}
+
+/**
+ * 安装路由切面守卫（EntryAbility 启动时调用一次）：
+ * - navDestinationSwitch：任何页面入栈 / 出栈 / 替换后复位 RESIZE；
+ * - tabContentUpdate：tab 切换（Workbench 常驻 tab 离开）后复位 RESIZE。
+ */
+export function installKeyboardAvoidGuard(): void {
+  if (keyboardAvoidContext === null) {
+    logger.warn('pathStack', '键盘避让守卫未安装：窗口 UIContext 未注入')
+    return
+  }
+  try {
+    uiObserver.on('navDestinationSwitch', keyboardAvoidContext, () => {
+      resetKeyboardAvoidMode()
+    })
+    uiObserver.on('tabContentUpdate', () => {
+      resetKeyboardAvoidMode()
+    })
+  } catch (err) {
+    logger.warn('pathStack', '键盘避让守卫安装失败')
+  }
+}
 
 // ========== 安全取参工具（评审 #31）==========
 // 背景：裸写 pathStack.getParamByName(name)[0] as X 存在两类崩溃风险——

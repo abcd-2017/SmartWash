@@ -82,7 +82,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与「暂无数据」空态区分，就地重试（W-E3） -->
+      <div v-if="listError" class="list-error">
+        <span>寄存柜列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="lockerList"
         fit
@@ -281,6 +287,7 @@ import { schoolOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
 import { lockerStatusTagType } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useTimeRange } from '@/composables/useTimeRange';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
@@ -304,6 +311,7 @@ const {
   list: lockerList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -447,9 +455,14 @@ const submitBatchForm = async () => {
     batchDialogVisible.value = false;
     fetchData();
   } catch (error) {
-    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本
-    logger.error('批量新增寄存柜失败:', error instanceof Error ? error : '表单校验未通过');
-    ElMessage.error(error.message || '操作失败');
+    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文）；字段红字已示于表单，
+    // 不再叠加「操作失败」假 toast
+    if (isValidationError(error)) {
+      logger.debug('批量新增寄存柜表单校验未通过，已拦截提交');
+      return;
+    }
+    logger.error('批量新增寄存柜失败:', error);
+    ElMessage.error(friendlyErrorMessage(error, '操作失败'));
   } finally {
     batchSubmitting.value = false;
   }
@@ -505,9 +518,14 @@ const submitForm = async () => {
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本
-    logger.error('保存寄存柜失败:', error instanceof Error ? error : '表单校验未通过');
-    ElMessage.error(error.message || '操作失败');
+    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文）；字段红字已示于表单，
+    // 不再叠加「操作失败」假 toast
+    if (isValidationError(error)) {
+      logger.debug('寄存柜表单校验未通过，已拦截提交');
+      return;
+    }
+    logger.error('保存寄存柜失败:', error);
+    ElMessage.error(friendlyErrorMessage(error, '操作失败'));
   } finally {
     submitting.value = false;
   }
@@ -525,7 +543,7 @@ const handleDelete = async (row) => {
     fetchData();
   } catch (error) {
     logger.error('删除寄存柜失败:', `lockerId=${row.lockerId}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   }
 };
 
@@ -557,7 +575,7 @@ const handleOpenLockerTag = async (row) => {
     );
   } catch (error) {
     logger.error('柜码生成失败:', `id=${row.lockerId}`, error);
-    ElMessage.error(error.message || '柜码生成失败');
+    ElMessage.error(friendlyErrorMessage(error, '柜码生成失败'));
   }
 };
 
@@ -578,7 +596,7 @@ const handleGenerateTagsForSchool = async () => {
     ElMessage.success(`已就绪 ${items.length} 张柜码标签`);
   } catch (error) {
     logger.error('批量生成柜码失败:', `schoolId=${schoolId}`, error);
-    ElMessage.error(error.message || '批量生成柜码失败');
+    ElMessage.error(friendlyErrorMessage(error, '批量生成柜码失败'));
   }
 };
 

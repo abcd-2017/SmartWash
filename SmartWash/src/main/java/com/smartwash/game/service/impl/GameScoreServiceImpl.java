@@ -15,6 +15,7 @@ import com.smartwash.game.vo.GameScoreAdminVo;
 import com.smartwash.game.vo.GameScoreUserVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
@@ -83,7 +84,7 @@ public class GameScoreServiceImpl extends ServiceImpl<GameScoreEntryMapper, Game
 
         GameScoreEntry saved;
         if (first) {
-            saved = new GameScoreEntry()
+            GameScoreEntry entity = new GameScoreEntry()
                     .setUserId(userId)
                     .setGameKey(gameKey)
                     .setMetricValue(metricValue)
@@ -91,7 +92,19 @@ public class GameScoreServiceImpl extends ServiceImpl<GameScoreEntryMapper, Game
                     .setMetricJson(metricJson)
                     .setPlayedCount(1)
                     .setLastPlayedAt(LocalDateTime.now());
-            save(saved);
+            try {
+                save(entity);
+                saved = entity;
+            } catch (DuplicateKeyException e) {
+                // 并发首写撞 uk_user_game：唯一索引裁决已有记录，回退为查询既有记录返回，避免 500（对齐存档服务范式）
+                log.warn("游戏成绩并发首写撞唯一索引，回退查询既有记录, userId: {}, gameKey: {}", userId, gameKey);
+                saved = getOne(new LambdaQueryWrapper<GameScoreEntry>()
+                        .eq(GameScoreEntry::getUserId, userId)
+                        .eq(GameScoreEntry::getGameKey, gameKey), false);
+                if (saved == null) {
+                    throw new CustomExceptions("成绩上报失败，请重试");
+                }
+            }
         } else {
             baseMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<GameScoreEntry>()
                     .eq(GameScoreEntry::getUserId, userId)

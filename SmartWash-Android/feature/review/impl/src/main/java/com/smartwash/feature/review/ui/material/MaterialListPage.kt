@@ -31,8 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +54,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppCard
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
@@ -321,47 +320,28 @@ private fun CreateMaterialForm(
     val context = LocalContext.current
     GroupCard {
         FormLabel(stringResource(R.string.review_material_form_title_label))
-        OutlinedTextField(
+        AppTextField(
             value = title,
             onValueChange = onTitleChange,
-            placeholder = {
-                Text(
-                    text = stringResource(R.string.review_material_form_title_hint),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = AppColors.colorScheme.textSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            },
-            textStyle = MaterialTheme.typography.bodyLarge,
+            placeholder = stringResource(R.string.review_material_form_title_hint),
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
                 // 固定高度改弹性下限：130% 字体缩放时文字不被裁切（审查矩阵 #15）
                 .heightIn(min = 48.dp),
-            shape = RoundedCornerShape(AppDimens.inputRadius),
-            colors = tokenTextFieldColors(),
         )
 
         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
         FormLabel(stringResource(R.string.review_material_form_raw_label))
-        OutlinedTextField(
+        AppTextField(
             value = rawText,
             onValueChange = onRawTextChange,
-            placeholder = {
-                Text(
-                    text = stringResource(R.string.review_material_form_raw_hint),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = AppColors.colorScheme.textSecondary,
-                )
-            },
-            textStyle = MaterialTheme.typography.bodyLarge,
+            placeholder = stringResource(R.string.review_material_form_raw_hint),
+            singleLine = false,
             minLines = 4,
             maxLines = 8,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(AppDimens.inputRadius),
-            colors = tokenTextFieldColors(),
         )
 
         // 提交错误（仅提交后展示，规范 §3.7）
@@ -717,41 +697,25 @@ private fun ReviewCardEditDialog(
                     }
                     Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                     FormLabel(stringResource(R.string.review_card_dialog_question_label))
-                    OutlinedTextField(
+                    AppTextField(
                         value = question,
                         onValueChange = onQuestionChange,
-                        placeholder = {
-                            Text(
-                                text = stringResource(R.string.review_card_dialog_question_hint),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = AppColors.colorScheme.textSecondary,
-                            )
-                        },
-                        textStyle = MaterialTheme.typography.bodyLarge,
+                        placeholder = stringResource(R.string.review_card_dialog_question_hint),
+                        singleLine = false,
                         minLines = 2,
                         maxLines = 5,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(AppDimens.inputRadius),
-                        colors = tokenTextFieldColors(),
                     )
                     Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                     FormLabel(stringResource(R.string.review_card_dialog_answer_label))
-                    OutlinedTextField(
+                    AppTextField(
                         value = answer,
                         onValueChange = onAnswerChange,
-                        placeholder = {
-                            Text(
-                                text = stringResource(R.string.review_card_dialog_answer_hint),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = AppColors.colorScheme.textSecondary,
-                            )
-                        },
-                        textStyle = MaterialTheme.typography.bodyLarge,
+                        placeholder = stringResource(R.string.review_card_dialog_answer_hint),
+                        singleLine = false,
                         minLines = 3,
                         maxLines = 8,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(AppDimens.inputRadius),
-                        colors = tokenTextFieldColors(),
                     )
                     val errorMessage = (submitState as? RequestState.Error)?.getMessage(context)
                     if (errorMessage != null) {
@@ -801,12 +765,3 @@ private fun FormLabel(text: String) {
     )
 }
 
-/** 输入框令牌配色（r14 + surfaceVariant 底 + outline 描边，规范 §3.7） */
-@Composable
-private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AppColors.colorScheme.primary,
-    unfocusedBorderColor = AppColors.colorScheme.outline,
-    errorBorderColor = AppColors.colorScheme.error,
-    focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-    unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-)

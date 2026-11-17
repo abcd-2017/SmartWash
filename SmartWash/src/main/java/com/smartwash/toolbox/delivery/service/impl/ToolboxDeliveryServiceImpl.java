@@ -77,10 +77,13 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
     private static final long BRUTE_FORCE_DELAY_MS = 500;
     /** 对端占用键前缀：一个会话同一时刻只允许一个对端在场（对齐 LocalSend 单活动会话 409） */
     private static final String OCCUPY_KEY_PREFIX = "smartwash:toolbox:delivery:occupy:";
+    /** 已验密键前缀：enter 成功后写入，密码会话的其余公开端点凭此放行（缺失 401） */
+    private static final String ENTERED_KEY_PREFIX = "smartwash:toolbox:delivery:entered:";
     /** 业务码语义：HTTP 对齐（{code,message,data} 信封） */
     private static final int CODE_NOT_FOUND = 404;
     private static final int CODE_FORBIDDEN = 403;
     private static final int CODE_OCCUPIED = 409;
+    private static final int CODE_UNAUTHORIZED = 401;
     private static final int CODE_PAYLOAD_TOO_LARGE = 413;
 
     private final ShortCodeGenerator shortCodeGenerator;
@@ -158,8 +161,9 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
         if (!updated) {
             throw new CustomExceptions(CODE_NOT_FOUND, "投递会话不存在或已失效");
         }
-        // 关闭即解除对端占用，占用键跟随会话生命周期
+        // 关闭即解除对端占用，占用键与已验密键跟随会话生命周期
         stringRedisTemplate.delete(OCCUPY_KEY_PREFIX + code);
+        stringRedisTemplate.delete(ENTERED_KEY_PREFIX + code);
         log.info("投递会话已关闭, code: {}, ownerUserId: {}", code, ownerUserId);
     }
 
@@ -188,6 +192,10 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
         if (!Boolean.TRUE.equals(occupied)) {
             throw new CustomExceptions(CODE_OCCUPIED, "会话已被其他设备占用");
         }
+        // 进入成功写入「已验密」键：密码会话的 items/publish/take/content 端点凭此放行，
+        // 缺失一律 401；TTL 与占用键一致（会话剩余时长），随会话失效自动清理
+        stringRedisTemplate.opsForValue().set(ENTERED_KEY_PREFIX + code, "1",
+                remain.isNegative() ? Duration.ZERO : remain);
         // 进入成功才计数：主表原子自增，防并发丢失更新
         toolboxShortCodeService.update(new UpdateWrapper<ToolboxShortCode>()
                 .eq("code", code)
@@ -198,17 +206,23 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
 
     @Override
     public DeliverySessionDetailVo peerSessionDetail(String code) {
-        return buildDetailVo(getActiveSession(code));
+        ToolboxShortCode session = getActiveSession(code);
+        checkPasswordEntered(session);
+        return buildDetailVo(session);
     }
 
     @Override
     public DeliveryItemVo peerPublishText(String code, PublishDeliveryTextFrom from) {
-        return publishTextItem(getActiveSession(code), DIRECTION_PEER_TO_OWNER, from);
+        ToolboxShortCode session = getActiveSession(code);
+        checkPasswordEntered(session);
+        return publishTextItem(session, DIRECTION_PEER_TO_OWNER, from);
     }
 
     @Override
     public DeliveryItemVo peerPublishFile(String code, Integer kind, MultipartFile file) {
-        return publishFileItem(getActiveSession(code), DIRECTION_PEER_TO_OWNER, kind, file);
+        ToolboxShortCode session = getActiveSession(code);
+        checkPasswordEntered(session);
+        return publishFileItem(session, DIRECTION_PEER_TO_OWNER, kind, file);
     }
 
     // ==================== 条目发布（owner 侧） ====================
@@ -227,7 +241,7 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
 
     @Override
     public DeliveryItemTakenVo takeItem(String code, Long itemId) {
-        getActiveSession(code);
+        checkPasswordEntered(getActiveSession(code));
         ToolboxDeliveryItem item = getItem(itemId, code);
         // 原子认领：仅当未取走时置位，判影响行数放行（防并发双读，PsiTransfer claim 语义）
         if (baseMapper.claim(itemId) != 1) {
@@ -261,7 +275,7 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
 
     @Override
     public DeliveryContent content(String code, Long itemId) {
-        getActiveSession(code);
+        checkPasswordEntered(getActiveSession(code));
         ToolboxDeliveryItem item = getItem(itemId, code);
         if (Integer.valueOf(KIND_TEXT).equals(item.getKind())) {
             // 文本：正文可能已焚毁（null，占位状态照常返回）
@@ -310,6 +324,7 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
                     .eq(ToolboxDeliveryItem::getSessionCode, session.getCode()));
             toolboxShortCodeService.removeById(session.getId());
             stringRedisTemplate.delete(OCCUPY_KEY_PREFIX + session.getCode());
+            stringRedisTemplate.delete(ENTERED_KEY_PREFIX + session.getCode());
         }
         log.info("过期投递会话清理完成, 共 {} 个会话", expiredSessions.size());
     }
@@ -407,6 +422,21 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
     /** 对端会话读取：凭码即凭证，仅校验存在与生命周期 */
     private ToolboxShortCode getActiveSession(String code) {
         return getSessionByCode(code);
+    }
+
+    /**
+     * 密码会话端点准入校验（F3）：无密码会话直接放行；有密码但本次会话未成功 enter
+     * （键缺失/已过期）时一律 401，杜绝拿码绕过密码读/写/取。
+     */
+    private void checkPasswordEntered(ToolboxShortCode session) {
+        if (StrUtil.isBlank(session.getPasswordHash())) {
+            return;
+        }
+        Boolean entered = stringRedisTemplate.hasKey(ENTERED_KEY_PREFIX + session.getCode());
+        if (!Boolean.TRUE.equals(entered)) {
+            log.warn("投递会话密码校验缺失，拒绝访问, code: {}", session.getCode());
+            throw new CustomExceptions(CODE_UNAUTHORIZED, "请先输入投递密码");
+        }
     }
 
     /** 会话读取与读路径失效判断：不存在/非投递类型/已过期或已关闭一律 404 语义（不用负缓存） */

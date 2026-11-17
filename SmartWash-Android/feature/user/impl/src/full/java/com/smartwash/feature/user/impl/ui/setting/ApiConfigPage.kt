@@ -31,11 +31,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,11 +53,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
@@ -636,9 +633,9 @@ private fun ModeChip(
 }
 
 /**
- * BYOK 表单输入框 — AppInputDialog（common/ui）同款 M3 OutlinedTextField 画法：
- * 16sp 正文（§3.7 输入高频读写场景禁 14sp）、inputRadius 14、
- * focused primary / unfocused outline / error 描边；错误文案 13sp error 仅提交时展示。
+ * BYOK 表单输入框 — 统一走 [AppTextField]（规范 §3.7 唯一输入控件）：
+ * 16sp 正文、inputRadius 14、focused primary / unfocused outline / error 描边；
+ * 错误文案 13sp error 仅提交时展示。
  */
 @Composable
 private fun ApiConfigTextField(
@@ -652,24 +649,12 @@ private fun ApiConfigTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: (@Composable () -> Unit)? = null,
 ) {
-    OutlinedTextField(
+    AppTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(text = label) },
-        placeholder = {
-            Text(
-                text = placeholder,
-                // §3.7：占位符字号与正文一致（16sp）
-                style = MaterialTheme.typography.bodyLarge,
-                color = AppColors.colorScheme.textSecondary,
-            )
-        },
+        label = label,
+        placeholder = placeholder,
         modifier = Modifier.fillMaxWidth(),
-        textStyle = LocalTextStyle.current.copy(
-            fontSize = 16.sp,
-            lineHeight = 24.sp,
-            color = AppColors.colorScheme.textPrimary,
-        ),
         singleLine = true,
         isError = isError,
         supportingText = if (isError && errorMessage != null) {
@@ -685,12 +670,6 @@ private fun ApiConfigTextField(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         visualTransformation = visualTransformation,
         trailingIcon = trailingIcon,
-        shape = RoundedCornerShape(AppDimens.inputRadius),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = AppColors.colorScheme.primary,
-            unfocusedBorderColor = AppColors.colorScheme.outline,
-            errorBorderColor = AppColors.colorScheme.error,
-        ),
     )
 }
 
@@ -702,7 +681,7 @@ private data class ApiConfigDropdownOption(
 )
 
 /**
- * 目录模式联动下拉框 — M3 ExposedDropdownMenuBox：readOnly [OutlinedTextField] 作锚点
+ * 目录模式联动下拉框 — M3 ExposedDropdownMenuBox：readOnly [AppTextField] 作锚点
  * （样式对齐 [ApiConfigTextField]：inputRadius 圆角、focused primary / unfocused outline /
  * error 描边、16sp 正文），disabled 时描边/文字/占位与常规态一致仅不可展开；
  * 菜单条目自绘 Row + pressable（§7 禁 M3 交互组件 state layer），选中项 primarySoft 底 +
@@ -726,40 +705,18 @@ private fun ApiConfigDropdownField(
         expanded = expanded,
         onExpandedChange = { if (enabled) expanded = it },
     ) {
-        OutlinedTextField(
+        AppTextField(
             value = value,
             onValueChange = {},
             readOnly = true,
             enabled = enabled,
-            label = { Text(text = label) },
-            placeholder = {
-                Text(
-                    text = placeholder,
-                    // §3.7：占位符字号与正文一致（16sp）
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = AppColors.colorScheme.textSecondary,
-                )
-            },
+            label = label,
+            placeholder = placeholder,
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled),
-            textStyle = LocalTextStyle.current.copy(
-                fontSize = 16.sp,
-                lineHeight = 24.sp,
-                color = AppColors.colorScheme.textPrimary,
-            ),
             singleLine = true,
             isError = isError,
-            shape = RoundedCornerShape(AppDimens.inputRadius),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AppColors.colorScheme.primary,
-                unfocusedBorderColor = AppColors.colorScheme.outline,
-                disabledBorderColor = AppColors.colorScheme.outline,
-                errorBorderColor = AppColors.colorScheme.error,
-                disabledTextColor = AppColors.colorScheme.textPrimary,
-                disabledLabelColor = AppColors.colorScheme.textSecondary,
-                disabledPlaceholderColor = AppColors.colorScheme.textSecondary,
-            ),
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },

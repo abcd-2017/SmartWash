@@ -8,18 +8,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,12 +32,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
@@ -150,20 +148,10 @@ fun ShortCodeCreatePage(
                 when (form.mode) {
                     ShortCodeCreateViewModel.CreateMode.SHORT_LINK -> {
                         FormLabel(stringResource(R.string.toolbox_target_label))
-                        OutlinedTextField(
+                        AppTextField(
                             value = form.target,
                             onValueChange = viewModel::updateTarget,
-                            placeholder = {
-                                Text(
-                                    text = stringResource(R.string.toolbox_target_hint),
-                                    // 规范页样张实测：占位符 body 档 14/400 + textTertiary
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = AppColors.colorScheme.textTertiary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            },
-                            textStyle = MaterialTheme.typography.bodyLarge,
+                            placeholder = stringResource(R.string.toolbox_target_hint),
                             singleLine = true,
                             // URL 输入补 Uri 键盘（「/」「.com」便捷键，audit-17 #11）；
                             // 关闭自动纠错：Gboard 会把 http:// 静默改写成 https://（协议头不可被键盘篡改）
@@ -173,10 +161,7 @@ fun ShortCodeCreatePage(
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp),
-                            // 规范 §3 radius.input = 12（14 为非收敛档）
-                            shape = RoundedCornerShape(AppDimens.radiusMd),
-                            colors = tokenTextFieldColors(),
+                                .heightIn(min = 48.dp),
                         )
                         Text(
                             text = stringResource(R.string.toolbox_target_helper),
@@ -192,22 +177,14 @@ fun ShortCodeCreatePage(
                     ShortCodeCreateViewModel.CreateMode.SECRET -> {
                         // ---------- 内容（阅后即焚正文） ----------
                         FormLabel(stringResource(R.string.toolbox_secret_content_label))
-                        OutlinedTextField(
+                        AppTextField(
                             value = form.content,
                             onValueChange = viewModel::updateContent,
-                            placeholder = {
-                                Text(
-                                    text = stringResource(R.string.toolbox_secret_content_hint),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = AppColors.colorScheme.textTertiary,
-                                )
-                            },
-                            textStyle = MaterialTheme.typography.bodyLarge,
+                            placeholder = stringResource(R.string.toolbox_secret_content_hint),
+                            singleLine = false,
                             minLines = 4,
                             maxLines = 8,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(AppDimens.radiusMd),
-                            colors = tokenTextFieldColors(),
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -252,19 +229,10 @@ fun ShortCodeCreatePage(
                         )
                         if (form.passwordEnabled) {
                             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-                            OutlinedTextField(
+                            AppTextField(
                                 value = form.password,
                                 onValueChange = viewModel::updatePassword,
-                                placeholder = {
-                                    Text(
-                                        text = stringResource(R.string.toolbox_secret_password_hint),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = AppColors.colorScheme.textTertiary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                },
-                                textStyle = MaterialTheme.typography.bodyLarge,
+                                placeholder = stringResource(R.string.toolbox_secret_password_hint),
                                 singleLine = true,
                                 // 口令框同关自动纠错（键盘联想/纠正会污染口令字符）
                                 keyboardOptions = KeyboardOptions(
@@ -274,9 +242,7 @@ fun ShortCodeCreatePage(
                                 visualTransformation = PasswordVisualTransformation(),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(48.dp),
-                                shape = RoundedCornerShape(AppDimens.radiusMd),
-                                colors = tokenTextFieldColors(),
+                                    .heightIn(min = 48.dp),
                             )
                         }
 
@@ -286,20 +252,10 @@ fun ShortCodeCreatePage(
 
                 // ---------- 自定义短码（可选，两种模式共用） ----------
                 FormLabel(stringResource(R.string.toolbox_custom_code_label))
-                OutlinedTextField(
+                AppTextField(
                     value = form.customCode,
                     onValueChange = viewModel::updateCustomCode,
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.toolbox_custom_code_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.colorScheme.textTertiary,
-                            // 对齐目标链接框：字体放大 130% 时 hint 不折行、不破 48dp 固定高（audit-17 #10）
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    textStyle = MaterialTheme.typography.bodyLarge,
+                    placeholder = stringResource(R.string.toolbox_custom_code_hint),
                     singleLine = true,
                     // 短码为大小写敏感的字母数字：Ascii 键盘 + 关自动纠错/首字母大写（码值不可被键盘改写）
                     keyboardOptions = KeyboardOptions(
@@ -309,9 +265,7 @@ fun ShortCodeCreatePage(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(AppDimens.radiusMd),
-                    colors = tokenTextFieldColors(),
+                        .heightIn(min = 48.dp),
                 )
 
                 // ---------- 可见性（仅短链；私密文本由后端恒置公开） ----------
@@ -432,13 +386,3 @@ private fun FormLabel(text: String) {
         modifier = Modifier.padding(bottom = AppDimens.spaceXs),
     )
 }
-
-/** 输入框令牌配色（对齐 UpdateUserInfoPage 先例：r12 + surfaceVariant 底 + outline 描边） */
-@Composable
-private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AppColors.colorScheme.primary,
-    unfocusedBorderColor = AppColors.colorScheme.outline,
-    errorBorderColor = AppColors.colorScheme.error,
-    focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-    unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-)

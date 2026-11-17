@@ -106,6 +106,17 @@
   display: none;
 }
 
+/* 列表加载失败占位 — 与「暂无数据」空态区分，居中提示 + 重试入口（W-E3） */
+.table-card .list-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
 /* 分页区 — 内嵌在表格卡片底部 */
 .table-card .pagination-bar {
   display: flex;

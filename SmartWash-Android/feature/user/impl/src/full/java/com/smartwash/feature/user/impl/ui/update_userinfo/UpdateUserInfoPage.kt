@@ -40,8 +40,6 @@ import androidx.compose.material.icons.rounded.School
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,6 +66,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.feature.user.impl.R
 import com.smartwash.common.ui.components.AppCard
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AuthCtaButton
 import com.smartwash.common.ui.navigation.ShellRoute
@@ -293,46 +292,20 @@ fun UpdateUserInfoPage(
                     )
 
                     // 学号输入框 — 信息锁定后禁用编辑
-                    OutlinedTextField(
+                    AppTextField(
                         value = studentId,
                         onValueChange = { studentId = it; isStudentIdError = false },
-            placeholder = {
-                Text(
-                    text = stringResource(R.string.student_id),
-                    // §3.7：占位符字号与正文一致（16sp）+ textSecondary，非 12sp/textTertiary
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = AppColors.colorScheme.textSecondary
-                )
-            },
+                        placeholder = stringResource(R.string.student_id),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp),
+                            .heightIn(min = 48.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         enabled = !isInfoLocked,
                         isError = isStudentIdError,
                         supportingText = if (isStudentIdError) {
                             { Text(stringResource(R.string.invalid_student_id)) }
                         } else null,
-                        leadingIcon = {
-                            // §3.7 前缀图标 16dp + 透明度 .5（原 20dp 全色 primary 违规）
-                            Icon(
-                                Icons.Rounded.Badge,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = AppColors.colorScheme.primary.copy(alpha = 0.5f)
-                            )
-                        },
-                        shape = RoundedCornerShape(AppDimens.inputRadius),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = AppColors.colorScheme.primary,
-                            // 设计稿输入框为无边框浅灰填充：非聚焦/禁用态描边透明（保留聚焦 primary 与 error 描边）
-                            unfocusedBorderColor = Color.Transparent,
-                            errorBorderColor = AppColors.colorScheme.error,
-                            focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                            disabledBorderColor = Color.Transparent,
-                            disabledContainerColor = AppColors.colorScheme.surfaceVariant
-                        )
+                        leadingIcon = Icons.Rounded.Badge
                     )
                 }
                 }
@@ -388,34 +361,19 @@ fun SearchSchoolInput(
     onValueChange: (String) -> Unit
 ) {
     Column(modifier = modifier) {
-        OutlinedTextField(
+        AppTextField(
             value = query,
             onValueChange = onValueChange,
-            placeholder = {
-                Text(
-                    text = stringResource(R.string.search_school),
-                    // §3.7：占位符字号与正文一致（16sp）+ textSecondary
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = AppColors.colorScheme.textSecondary
-                )
-            },
+            placeholder = stringResource(R.string.search_school),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .heightIn(min = 48.dp),
             enabled = enabled,
             isError = isSchoolError,
             supportingText = if (isSchoolError) {
                 { Text(stringResource(R.string.please_select_school)) }
             } else null,
-            leadingIcon = {
-                // §3.7 前缀图标 16dp + 透明度 .5
-                Icon(
-                    Icons.Rounded.School,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = AppColors.colorScheme.primary.copy(alpha = 0.5f)
-                )
-            },
+            leadingIcon = Icons.Rounded.School,
             trailingIcon = {
                 // 48dp 自绘清空按钮（§3.7 尾缀热区 ≥44dp；M3 IconButton 自带 state layer/涟漪，规范 §7 禁用于可点击场景）
                 Box(
@@ -435,18 +393,7 @@ fun SearchSchoolInput(
                     )
                 }
             },
-            shape = RoundedCornerShape(AppDimens.inputRadius),
-            interactionSource = interactionSource,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AppColors.colorScheme.primary,
-                // 设计稿输入框为无边框浅灰填充：非聚焦/禁用态描边透明（保留聚焦 primary 与 error 描边）
-                unfocusedBorderColor = Color.Transparent,
-                errorBorderColor = AppColors.colorScheme.error,
-                focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                disabledBorderColor = Color.Transparent,
-                disabledContainerColor = AppColors.colorScheme.surfaceVariant
-            )
+            interactionSource = interactionSource
         )
 
         // 下拉列表：展开/收起走弹簧 + 淡入，替代 0ms 出现/消失

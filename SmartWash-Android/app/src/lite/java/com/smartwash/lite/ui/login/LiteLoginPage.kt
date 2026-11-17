@@ -9,13 +9,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,14 +37,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.R
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppPasswordTextField
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.GroupCard
-import com.smartwash.common.ui.components.PasswordInput
-import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -64,8 +69,8 @@ import com.smartwash.lite.ui.login.LiteLoginViewModel
  * 不重复实现账户逻辑；差异仅在 UI 与去向——lite 登录成功 / 已有会话直接进
  * [ShellRoute.Home]（lite 首页），不做 full 的学校信息补填判断。
  *
- * 视觉：浅底 + 白卡（清氧功能页画法），输入组件复用 common:ui 的 [PhoneNumberInput] /
- * [PasswordInput]（§3.7 表单规范），主 CTA 走 [AppButton]（48dp 胶囊）。
+ * 视觉：浅底 + 白卡（清氧功能页画法），输入组件复用 common:ui 的 [AppTextField] /
+ * [AppPasswordTextField]（§3.7 表单规范），主 CTA 走 [AppButton]（48dp 胶囊）。
  */
 @Composable
 fun LiteLoginPage(
@@ -80,7 +85,6 @@ fun LiteLoginPage(
     var password by remember { mutableStateOf("") }
     var isPhoneError by remember { mutableStateOf(false) }
     var isPasswordError by remember { mutableStateOf(false) }
-    var showPassword by remember { mutableStateOf(false) }
     val passwordFocusRequester = remember { FocusRequester() }
 
     val loginState by loginViewModel.loginState.collectAsState()
@@ -154,36 +158,70 @@ fun LiteLoginPage(
 
         // 输入卡（清氧唯一卡片画法）
         GroupCard(modifier = Modifier.fillMaxWidth()) {
-            PhoneNumberInput(
-                phone = phone,
-                isPhoneError = isPhoneError,
-                contentColor = AppColors.colorScheme.textPrimary,
-                label = stringResource(com.smartwash.common.ui.R.string.phone_hint),
-            ) {
-                if (it.length <= 11) phone = it
-                // 只在已显示错误后实时更新，避免输入中报错（§3.7）
-                isPhoneError = if (it.length == 11) !isValidPhone(it) else isPhoneError
-                if (it.length == 11 && isValidPhone(it)) {
-                    passwordFocusRequester.requestFocus()
-                }
-            }
+            // 字段标签行（设计稿：label 位于输入行上方，间距 4dp）
+            Text(
+                text = stringResource(com.smartwash.common.ui.R.string.phone_hint),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = AppColors.colorScheme.textPrimary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            AppTextField(
+                value = phone,
+                onValueChange = {
+                    if (it.length <= 11) phone = it
+                    // 只在已显示错误后实时更新，避免输入中报错（§3.7）
+                    isPhoneError = if (it.length == 11) !isValidPhone(it) else isPhoneError
+                    if (it.length == 11 && isValidPhone(it)) {
+                        passwordFocusRequester.requestFocus()
+                    }
+                },
+                modifier = Modifier.heightIn(min = 48.dp),
+                isError = isPhoneError,
+                leadingIcon = Icons.Rounded.Phone,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                supportingText = if (isPhoneError) {
+                    {
+                        Text(
+                            text = stringResource(com.smartwash.common.ui.R.string.invalid_phone),
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            color = AppColors.colorScheme.error
+                        )
+                    }
+                } else null
+            )
 
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
             HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
 
-            PasswordInput(
-                password = password,
-                isPasswordError = isPasswordError,
-                showPassword = showPassword,
-                showVisibility = { showPassword = !showPassword },
-                contentColor = AppColors.colorScheme.textPrimary,
-                label = stringResource(com.smartwash.common.ui.R.string.password_hint),
+            Text(
+                text = stringResource(com.smartwash.common.ui.R.string.password_hint),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = AppColors.colorScheme.textPrimary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            AppPasswordTextField(
+                value = password,
+                onValueChange = {
+                    if (it.length <= 16) password = it
+                    isPasswordError = if (it.length >= 6) false else isPasswordError
+                },
                 modifier = Modifier.focusRequester(passwordFocusRequester),
-            ) {
-                if (it.length <= 16) password = it
-                isPasswordError = if (it.length >= 6) false else isPasswordError
-            }
+                isError = isPasswordError,
+                supportingText = if (isPasswordError) {
+                    {
+                        Text(
+                            text = stringResource(com.smartwash.common.ui.R.string.invalid_password),
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            color = AppColors.colorScheme.error
+                        )
+                    }
+                } else null
+            )
         }
 
         Spacer(modifier = Modifier.height(AppDimens.spaceXl))

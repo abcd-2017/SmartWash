@@ -54,10 +54,11 @@
         left join coupon c on c.coupon_id = uc.coupon_id
         where u.user_id = #{userId}
         -- status-> 0代表当前可用的优惠券，1代表已经使用过或过期优惠券
-        <if test="status == '0'">
+        <!-- 注意：OGNL 单引号单字符是 Character，与 String 的 status 比较恒 false，必须用双引号字符串 -->
+        <if test='status == "0"'>
             and (is_used = 0 and expired_at > now())
         </if>
-        <if test="status == '1'">
+        <if test='status == "1"'>
             and (is_used = 1 or now() > expired_at)
         </if>
         ORDER BY uc.received_at DESC

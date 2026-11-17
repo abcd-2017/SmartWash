@@ -2,6 +2,7 @@ package com.smartwash.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.smartwash.common.CouponStatus;
 import com.smartwash.entity.Coupon;
 import com.smartwash.entity.Orders;
 import com.smartwash.entity.UserCoupon;
@@ -62,6 +63,23 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
         Coupon coupon = couponMapper.selectById(couponId);
         if (coupon == null) {
             throw new CustomExceptions("优惠券不存在");
+        }
+
+        // 领取入口独立校验券状态与发放时间窗（展示层「可领取列表」的过滤不能代替领取校验）：
+        // status=1 已失效、now 不在 [startTime, endTime] 内一律拒绝，防止失效券被直领后正常抵扣；
+        // 时间为空按历史数据兜底视为不限（DDL 中两列非空，正常数据不会为空）
+        if (CouponStatus.EXPIRED.getStatus().toString().equals(coupon.getStatus())) {
+            log.info("领取已失效优惠券被拒绝, couponId: {}, userId: {}", couponId, userId);
+            throw new CustomExceptions("优惠券已失效");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (coupon.getStartTime() != null && now.isBefore(coupon.getStartTime())) {
+            log.info("领取未开始发放的优惠券被拒绝, couponId: {}, userId: {}", couponId, userId);
+            throw new CustomExceptions("优惠券未开始发放");
+        }
+        if (coupon.getEndTime() != null && now.isAfter(coupon.getEndTime())) {
+            log.info("领取已过发放时间的优惠券被拒绝, couponId: {}, userId: {}", couponId, userId);
+            throw new CustomExceptions("优惠券已失效");
         }
 
         //原子递增已发放数量（total_limit 为 NULL 表示不限量），影响行数为 0 说明已领完，防止并发超发

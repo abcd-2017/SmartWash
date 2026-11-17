@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -30,8 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,6 +52,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SmartWashAsyncImage
@@ -68,8 +68,8 @@ import com.smartwash.feature.dining.logic.DiningRecipeFormValidator.DiningRecipe
  * 选图 → Multipart 上传，头像上传先例模式）。保存成功 Toast 后返回菜谱库（列表经
  * SmartWashAsyncImage 按后端直链回显封面）。
  *
- * 输入控件（规范 §3.7/§7）：OutlinedTextField + 令牌色（对齐 subscription/toolbox 先例的
- * tokenTextFieldColors），正文 16sp；分类用 chips 而非下拉（量级小 + 触达少一跳）。
+ * 输入控件（规范 §3.7/§7）：AppTextField（common:ui 统一输入组件，正文 16sp）；
+ * 分类用 chips 而非下拉（量级小 + 触达少一跳）。
  */
 @Composable
 fun DiningRecipeCreatePage(
@@ -134,6 +134,9 @@ fun DiningRecipeCreatePage(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
+            // 规范 §4：键盘弹出时整页上收，步骤/食材等靠下输入框可经纵向滚动露出，
+            // 不被软键盘遮挡（与 RechargePage 同口径）
+            .imePadding()
     ) {
         PageHeader(
             title = stringResource(R.string.dining_recipe_create_title),
@@ -166,10 +169,10 @@ fun DiningRecipeCreatePage(
 
             SectionLabel(stringResource(R.string.dining_create_name_label))
             GroupCard(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
+                AppTextField(
                     value = name,
                     onValueChange = viewModel::onNameChange,
-                    placeholder = { Text(stringResource(R.string.dining_create_name_hint)) },
+                    placeholder = stringResource(R.string.dining_create_name_hint),
                     isError = formError == DiningRecipeFormError.NAME_REQUIRED ||
                         formError == DiningRecipeFormError.NAME_TOO_LONG,
                     supportingText = {
@@ -181,11 +184,7 @@ fun DiningRecipeCreatePage(
                             }
                         }
                     },
-                    // §3.7：输入正文禁用 14sp 及以下
-                    textStyle = MaterialTheme.typography.bodyLarge,
                     singleLine = true,
-                    shape = RoundedCornerShape(AppDimens.radiusMd),
-                    colors = tokenTextFieldColors(),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -218,15 +217,11 @@ fun DiningRecipeCreatePage(
             SectionLabel(stringResource(R.string.dining_create_ingredients_label))
             GroupCard(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
+                    AppTextField(
                         value = ingredientInput,
                         onValueChange = { ingredientInput = it },
-                        placeholder = { Text(stringResource(R.string.dining_create_ingredients_hint)) },
-                        // §3.7：输入正文 16sp
-                        textStyle = MaterialTheme.typography.bodyLarge,
+                        placeholder = stringResource(R.string.dining_create_ingredients_hint),
                         singleLine = true,
-                        shape = RoundedCornerShape(AppDimens.radiusMd),
-                        colors = tokenTextFieldColors(),
                         modifier = Modifier.weight(1f),
                     )
                     Spacer(modifier = Modifier.width(AppDimens.spaceSm))
@@ -276,21 +271,18 @@ fun DiningRecipeCreatePage(
 
             SectionLabel(stringResource(R.string.dining_create_steps_label))
             GroupCard(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
+                AppTextField(
                     value = steps,
                     onValueChange = viewModel::onStepsChange,
-                    placeholder = { Text(stringResource(R.string.dining_create_steps_hint)) },
+                    placeholder = stringResource(R.string.dining_create_steps_hint),
                     isError = formError == DiningRecipeFormError.STEPS_TOO_LONG,
                     supportingText = {
                         if (formError == DiningRecipeFormError.STEPS_TOO_LONG) {
                             Text(stringResource(R.string.dining_form_error_steps_too_long))
                         }
                     },
-                    // §3.7：输入正文 16sp
-                    textStyle = MaterialTheme.typography.bodyLarge,
+                    singleLine = false,
                     minLines = 4,
-                    shape = RoundedCornerShape(AppDimens.radiusMd),
-                    colors = tokenTextFieldColors(),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -422,12 +414,3 @@ private fun IngredientChip(label: String, onRemove: () -> Unit) {
     }
 }
 
-/** 输入框令牌色（对齐 subscription/toolbox 先例的 tokenTextFieldColors：r12 + outline 描边） */
-@Composable
-private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AppColors.colorScheme.primary,
-    unfocusedBorderColor = AppColors.colorScheme.outline,
-    errorBorderColor = AppColors.colorScheme.error,
-    focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-    unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-)

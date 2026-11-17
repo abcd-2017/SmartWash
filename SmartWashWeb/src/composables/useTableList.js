@@ -4,6 +4,7 @@
 // 页面通过 buildParams 保留各自的空参清洗规则，行为与迁移前完全等价。
 import { ref, reactive } from 'vue';
 import { ElMessage } from 'element-plus';
+import { isHttpError, friendlyErrorMessage } from '@/utils/errors';
 
 // 分页组件可选的每页条数（评审 #25）
 export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
@@ -19,6 +20,9 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
   const list = ref([]);
   const total = ref(0);
   const listLoading = ref(false);
+  // 拉取失败态：与「空列表」区分，供页面渲染错误占位 + 重试入口，
+  // 避免请求失败时表格落「暂无数据」把故障误染成空态（W-E3）
+  const listError = ref(false);
   // 分页组件可选项（透传给 el-pagination 的 :page-sizes）
   const pageSizes = PAGE_SIZE_OPTIONS;
 
@@ -38,6 +42,7 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
   const fetchData = async () => {
     const mySeq = ++fetchSeq;
     listLoading.value = true;
+    listError.value = false;
     try {
       const params = buildParams ? buildParams(listQuery) : { ...listQuery };
       const res = await fetchApi(params);
@@ -56,7 +61,13 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
       hasFetchedOnce = true;
     } catch (error) {
       if (mySeq !== fetchSeq) return;
-      ElMessage.error(error.message || errorMsg);
+      // 失败不等于无数据：置错误态由页面展示重试入口，表格不再落「暂无数据」
+      listError.value = true;
+      // HTTP/网络错误的友好文案已由 http.js 拦截器统一提示（且不透传 axios 原文），
+      // 此处仅对业务失败（后端中文 message）补一次提示，避免静默
+      if (!isHttpError(error)) {
+        ElMessage.error(friendlyErrorMessage(error, errorMsg));
+      }
     } finally {
       // 竞态守卫同样覆盖 loading：被丢弃的旧响应不得关掉最新请求的 loading，
       // 否则快速翻页/连续搜索时表格会提前退出加载态、露出旧数据
@@ -103,6 +114,7 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
     list,
     total,
     listLoading,
+    listError,
     listQuery,
     pageSizes,
     fetchData,

@@ -7,13 +7,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.common.PaymentStatus;
 import com.smartwash.common.Result;
-import com.smartwash.common.audit.Audited;
-import com.smartwash.from.payment.AddPaymentFrom;
 import com.smartwash.from.payment.SearchPaymentFrom;
-import com.smartwash.from.payment.UpdatePaymentFrom;
 import com.smartwash.service.IPaymentsService;
 import com.smartwash.vo.payment.PaymentVo;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-@Tag(name = "支付记录管理", description = "后台支付记录的增删改查及枚举查询")
+@Tag(name = "支付记录管理", description = "后台支付记录查询及枚举（资金流水禁止手工新增/修改）")
 @Slf4j
 @RestController
 @RequestMapping("/admin/payments")
@@ -63,30 +59,6 @@ public class PaymentsController {
         return Result.ok(paymentsService.getAllPayments(paymentFrom));
     }
 
-    @Operation(summary = "新增支付记录", description = "手动新增一条支付记录")
-    @Audited(action = "PAYMENT_MANUAL_ADD", targetType = "payment")
-    @PostMapping("/add")
-    public Result<String> addPayment(@RequestBody @Valid AddPaymentFrom paymentsFrom) {
-//        if (paymentsService.getPaymentByName(PaymentFrom.getUsername()) != null) {
-//            return Result.fail("给付款记录名已被使用");
-//        }
-        paymentsService.addPayment(paymentsFrom);
-        log.info("管理员新增支付记录, orderId: {}, userId: {}, amount: {}", paymentsFrom.getOrderId(), paymentsFrom.getUserId(), paymentsFrom.getAmount());
-        return Result.ok("添加成功");
-    }
-
-    @Operation(summary = "更新支付记录", description = "修改支付记录信息")
-    @Audited(action = "PAYMENT_MANUAL_UPDATE", targetType = "payment", targetIdSpEL = "#paymentsFrom.paymentId")
-    @PostMapping("/update")
-    public Result<String> updatePayment(@RequestBody @Valid UpdatePaymentFrom paymentsFrom) {
-        if (paymentsService.getById(paymentsFrom.getPaymentId()) == null) {
-            log.warn("更新支付记录被拒绝：支付记录不存在, paymentId: {}", paymentsFrom.getPaymentId());
-            return Result.failMsg("支付记录不存在");
-        }
-        paymentsService.updatePayment(paymentsFrom);
-        log.info("管理员更新支付记录, paymentId: {}", paymentsFrom.getPaymentId());
-        return Result.ok("修改成功");
-    }
-
-
+    // 手工新增/修改支付流水入口已下线（资金流水只允许由支付网关链路产生，禁止手工写库）；
+    // 服务层 addPayment/updatePayment 暂保留供内部补偿流程可能复用，不再暴露 HTTP 映射
 }

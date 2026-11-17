@@ -13,8 +13,8 @@
 #
 # 检查范围：业务层 = app/src + feature/*/impl/src。
 #   common/ui 封装层与 feature/divination（观象台）不在业务层扫描范围内；
-#   检查 3/4 属 §3.7 输入控件防回潮，针对封装层自身文件（PasswordInput/PhoneNumberInput）
-#   与验证码行所在 RegisterPage 单独列出，不受业务层范围限制。
+#   检查 3/4 属 §3.7 输入控件防回潮，针对封装层自身文件（AppTextField 系列）单独列出；
+#   检查 5 校验业务层不得直接调用 material3 OutlinedTextField（一律走 AppTextField）。
 # 挂账豁免（范围外批次收编，到期后移除，逐条列注释）：
 #   - feature/laundry/impl/.../laundry/LaundryPage.kt    —— TextButton×1 + LocalIndication×1（范围外挂账，见 PROGRESS.md）
 #   - feature/payment/impl/.../payment/PaySuccessPage.kt —— 范围外挂账批次（cardRadius 等同批处理）
@@ -36,13 +36,13 @@ check() {
 }
 
 # 业务层扫描范围（业务层收编目标；观象台 feature/divination 与 common/ui 封装层不在内）
-SCOPES=(app/src feature/user/impl/src feature/order/impl/src feature/payment/impl/src feature/laundry/impl/src feature/coupon/impl/src feature/points/impl/src feature/notice/impl/src feature/update/src)
+SCOPES=(app/src feature/user/impl/src feature/order/impl/src feature/payment/impl/src feature/laundry/impl/src feature/coupon/impl/src feature/points/impl/src feature/notice/impl/src feature/update/src feature/subscription/impl/src feature/toolbox/impl/src feature/review/impl/src feature/dining/impl/src)
 
-# §3.7 输入控件检查文件（common/ui 封装层自身 + 验证码行所在 RegisterPage）
+# §3.7 输入控件检查文件（common/ui 封装层自身：统一输入组件实现）
 INPUT_FILES=(
-  common/ui/src/main/java/com/smartwash/common/ui/components/PasswordInput.kt
-  common/ui/src/main/java/com/smartwash/common/ui/components/PhoneNumberInput.kt
-  feature/user/impl/src/main/java/com/smartwash/feature/user/impl/ui/register/RegisterPage.kt
+  common/ui/src/main/java/com/smartwash/common/ui/components/AppTextField.kt
+  common/ui/src/main/java/com/smartwash/common/ui/components/AppPasswordTextField.kt
+  common/ui/src/main/java/com/smartwash/common/ui/components/AppVerificationCodeField.kt
 )
 
 # M3 按钮调用正则（检查 1a 两处使用，改一处须同步另一处）：
@@ -145,6 +145,23 @@ if [ -n "$SUFFIX_TEXT_HITS" ]; then
   done <<< "$SUFFIX_TEXT_HITS"
 fi
 check "检查4: §3.7 密码尾缀文字「显示/隐藏」（尾缀操作一律图标化）" "$SUFFIX_TEXT_COUNT"
+
+# --- 检查 5: 业务层禁止直接使用 material3 OutlinedTextField（一律走 common:ui AppTextField）---
+# 与检查 1a 同策略：文件含 material3 import 才判 M3 调用；common/ui 封装层与观象台不在 SCOPES 内
+BIZ_OTF_HITS=""
+for f in $(grep -rln --include='*.kt' -E 'OutlinedTextField\(' "${SCOPES[@]}" 2>/dev/null); do
+  grep -q 'import androidx.compose.material3' "$f" || continue
+  grep -nE 'OutlinedTextField\(' "$f" | sed "s|^|$f:|"
+done
+BIZ_OTF_COUNT=0
+if [ -n "$BIZ_OTF_HITS" ]; then
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    echo "   ✗ $line"
+    BIZ_OTF_COUNT=$((BIZ_OTF_COUNT + 1))
+  done <<< "$BIZ_OTF_HITS"
+fi
+check "检查5: 业务层直接调用 material3 OutlinedTextField（应统一用 AppTextField）" "$BIZ_OTF_COUNT"
 
 echo ""
 if [ "$VIOLATIONS" -eq 0 ]; then

@@ -22,7 +22,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与「暂无数据」空态区分，就地重试（W-E3） -->
+      <div v-if="listError" class="list-error">
+        <span>菜谱分类列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="categoryList"
         fit
@@ -118,6 +124,7 @@ import {
   deleteDiningCategory,
 } from '@/api/dining';
 import { useTableList } from '@/composables/useTableList';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useConfirm } from '@/composables/useConfirm';
 import { diningCategoryOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
@@ -133,6 +140,7 @@ const {
   list: categoryList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -226,19 +234,20 @@ const submitForm = async () => {
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-    // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
-    if (error?.fields) {
+    // validate() 校验失败 reject 的是无 message 的字段对象（isValidationError），
+    // 与接口失败区分级别；字段红字已示于表单，不再叠加「操作失败」假 toast
+    if (isValidationError(error)) {
       logger.debug('菜谱分类表单校验未通过，已拦截提交');
-    } else {
-      logger.error(
-        '菜谱分类提交失败:',
-        `type=${dialogType.value}`,
-        `name=${tempCategory.name}`,
-        `id=${tempCategory.id ?? '-'}`,
-        error
-      );
+      return;
     }
-    ElMessage.error(error.message || '操作失败');
+    logger.error(
+      '菜谱分类提交失败:',
+      `type=${dialogType.value}`,
+      `name=${tempCategory.name}`,
+      `id=${tempCategory.id ?? '-'}`,
+      error
+    );
+    ElMessage.error(friendlyErrorMessage(error, '操作失败'));
   } finally {
     submitting.value = false;
   }
@@ -261,7 +270,7 @@ const handleDelete = async (row) => {
   } catch (error) {
     logger.error('菜谱分类删除失败:', `id=${row.id}`, `name=${row.name}`, error);
     // 引用冲突（如「分类「家常菜」已被 3 个菜谱引用，无法删除」）与普通失败统一透出后端 message
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

@@ -28,6 +28,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartWashAndroid"
         tools:targetApi="31">
+        <!--  windowSoftInputMode=adjustResize：edge-to-edge 下 ime insets 只在 resize
+              模式派发,各页 imePadding() 依赖此声明;缺省 adjustUnspecified 会走窗口
+              平移,键盘避让全项目失效(模拟器实测确认)  -->
         <activity
             android:name=".ui.activity.MainActivity"
             android:exported="true"
@@ -35,6 +38,7 @@
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.SmartWashAndroid"
+            android:windowSoftInputMode="adjustResize"
             tools:ignore="LockedOrientationActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

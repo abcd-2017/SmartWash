@@ -36,6 +36,8 @@ import javax.inject.Inject
  * - 最近使用：点击时经 [recordRecent] 记入 DataStore（新的在前，去重封顶 [RECENT_MAX] 条），
  *   与当次下发列表求交集后供页面渲染「最近使用」区；
  * - 公告关闭：type=notice 条目可关闭，关闭记录落 DataStore，visibleTools 永久过滤该条。
+ * - 角标已读：带 badge 条目首次点击即记入 DataStore，visibleTools 抹除该 badge
+ *   （entryKey:badge 组合键，服务端改 badge 值视为新角标重新展示）。
  *
  * 点击分发：[onToolClick] 经 [DeepLinkHandler.resolve] 解析 target（挂起，可能查后端
  * 字典兜底），解析结果经 [navigateAction] 一次性回流给页面调 [navigate] 出栈跳转。
@@ -65,6 +67,9 @@ class WorkbenchViewModel @Inject constructor(
     /** 已关闭公告 entryKey 集合（关闭即永久过滤，下拉刷新/重装恢复） */
     private val _dismissedNotices = MutableStateFlow<Set<String>>(emptySet())
 
+    /** 已读角标键（entryKey:badge，点击即隐藏；badge 值变化视为新角标） */
+    private val _seenBadges = MutableStateFlow<Set<String>>(emptySet())
+
     /**
      * 展示列表 = 下发列表 − 已关闭公告 − 搜索过滤（搜索态下页面退化为平铺网格）。
      *
@@ -75,8 +80,17 @@ class WorkbenchViewModel @Inject constructor(
      * 本页数据为服务端下发配置（低频变化），常驻缓存无一致性风险。
      */
     val visibleTools: StateFlow<List<WorkbenchTool>> =
-        combine(_tools, _searchQuery, _dismissedNotices) { tools, query, dismissed ->
-            val base = tools.filterNot { it.layout == WorkbenchLayout.NOTICE && it.entryKey in dismissed }
+        combine(_tools, _searchQuery, _dismissedNotices, _seenBadges) { tools, query, dismissed, seenBadges ->
+            val base = tools
+                .filterNot { it.layout == WorkbenchLayout.NOTICE && it.entryKey in dismissed }
+                // 已读角标在数据源抹除：列表行/网格卡/搜索行三处渲染同源生效
+                .map { tool ->
+                    if (tool.badge != null && "${tool.entryKey}:${tool.badge}" in seenBadges) {
+                        tool.copy(badge = null)
+                    } else {
+                        tool
+                    }
+                }
             if (query.isBlank()) {
                 base
             } else {
@@ -104,6 +118,8 @@ class WorkbenchViewModel @Inject constructor(
             _recentKeys.value = prefs.getData(KEY_RECENT_ENTRIES, "")
                 .split(',').filter { it.isNotBlank() }
             _dismissedNotices.value = prefs.getData(KEY_DISMISSED_NOTICES, "")
+                .split(',').filter { it.isNotBlank() }.toSet()
+            _seenBadges.value = prefs.getData(KEY_SEEN_BADGES, "")
                 .split(',').filter { it.isNotBlank() }.toSet()
         }
     }
@@ -154,6 +170,20 @@ class WorkbenchViewModel @Inject constructor(
                 AppLogger.error(TAG, "WorkbenchViewModel.onToolClick 深链解析异常，降级 Unknown：entryKey=${tool.entryKey}", e)
                 _navigateAction.emit(DeepLinkAction.Unknown(tool.target))
             }
+        }
+    }
+
+    /**
+     * 角标已读：带 badge 的条目被点击后本地记录（entryKey:badge 组合键，逗号连接落
+     * DataStore），visibleTools 立即抹除该角标；服务端改 badge 值后组合键变化，重新展示。
+     */
+    fun markBadgeSeen(tool: WorkbenchTool) {
+        val badge = tool.badge ?: return
+        val key = "${tool.entryKey}:$badge"
+        if (key in _seenBadges.value) return
+        _seenBadges.value = _seenBadges.value + key
+        viewModelScope.launch {
+            prefs.saveData(KEY_SEEN_BADGES, _seenBadges.value.joinToString(","))
         }
     }
 
@@ -221,6 +251,9 @@ class WorkbenchViewModel @Inject constructor(
 
         /** DataStore key：已关闭公告（entryKey 逗号连接） */
         private const val KEY_DISMISSED_NOTICES = "workbench_dismissed_notices"
+
+        /** DataStore key：已读角标（entryKey:badge 组合键，逗号连接） */
+        private const val KEY_SEEN_BADGES = "workbench_seen_badges"
 
         /** 最近使用保留条数（一屏 LazyRow 可见量级，防无限增长） */
         private const val RECENT_MAX = 6

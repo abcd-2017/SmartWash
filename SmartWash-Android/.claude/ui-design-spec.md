@@ -291,6 +291,14 @@ v0.4 把字阶**收敛为 8 档**，`weight` 只允许 `400/500/600/700`：
 > 可用性倒退（输入正文偏小、关键动作无可点击暗示、眼睛图标被文字替代）。本节为
 > 定稿裁决：**皮肤听设计稿，控件可用性听平台惯例**，冲突时后者优先。后续检验以此为准。
 
+**统一实现（2026-11-16 起）**：全项目输入框一律使用 `:common:ui` 的 `AppTextField`
+（密码 `AppPasswordTextField`、验证码 `AppVerificationCodeField`）。三者底层为 M3
+`OutlinedTextField`，令牌固定：`inputRadius`(14dp) 圆角 + `surfaceVariant` 底 +
+`outline` 描边（聚焦 `primary` / 错误 `error`）+ 正文 16sp。**业务层禁止直接调用
+material3 `OutlinedTextField`**（§7 的封装层例外只作用于 `common/ui`）；`scripts/check-ui.sh`
+检查 5 静态校验。认证页（登录/注册/重置/修改密码）与其他表单页使用同一套输入框，
+仅外层容器（玻璃卡 / 白卡）随页面皮肤不同。
+
 | 项 | 规格 |
 |---|---|
 | 输入正文 | **16sp / Normal**——输入是高频读写场景，禁用 14sp 及以下 |
@@ -648,7 +656,10 @@ fun DrumIcon(state: OrderStatus, tint: Color) {
   TextButton 胶囊块、列表行矩形涟漪）。`pressable` 已固定 `indication = null`；
   **Material 交互组件（`Button` / `TextButton` / `TextField` 等自带 state layer 的）
   禁止直接用于可点击场景**——一律 `pressable`/自绘替代；既有裸 `clickable` 必须显式
-  `indication = null` 并配套 `pressScale`/`pressAlpha`，否则无按压反馈
+  `indication = null` 并配套 `pressScale`/`pressAlpha`，否则无按压反馈。
+  **输入框例外（2026-11-16）**：与 Material 默认行为的搏斗只允许发生在 `:common:ui`
+  封装层——业务层一律用 `AppTextField` 系列，不得直接调用 material3 `TextField`/
+  `OutlinedTextField`（见 §3.7）
 
 **红线：动画只能由真实状态触发。** 禁止伪造支付成功、订单完成、算法结果——没有真实事件就不放动画。
 

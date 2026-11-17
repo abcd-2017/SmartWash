@@ -28,6 +28,18 @@ import BuildProfile from 'entry/BuildProfile'
 import { ServerConfig } from '../config/ServerConfig'
 import { resColor } from '../utils/ResourceColor'
 import { resString } from '../utils/ResourceString'
+import { BaseResponse } from '../network/BaseResponse'
+import { BizCode } from '../network/HttpUtil'
+import { jsonNum, jsonStr } from '../network/vo/JsonParse'
+import {
+  GameScoreReportBody,
+  GameStateUpdateBody,
+  getGameLeaderboard,
+  getGameLevels,
+  getGameState,
+  reportGameScore,
+  saveGameState
+} from '../feature/game/network/GameApi'
 
 /** WebView 页路由入参（对齐安卓 ShellRoute.WEB_VIEW 的 url/title/chrome 三个 query 参数） */
 export class WebPageParam {
@@ -58,6 +70,13 @@ const CHROME_IMMERSIVE: string = 'immersive'
 const CHROME_NONE: string = 'none'
 const CHROME_MODES: Array<string> = [CHROME_FULL, CHROME_IMMERSIVE, CHROME_NONE]
 
+// 排行榜 limit 非法（<= 0）时的缺省 TOP N（对齐安卓 GameThemeBridgePolicy.DEFAULT_LEADERBOARD_LIMIT）
+const DEFAULT_LEADERBOARD_LIMIT: number = 20
+// 桥数据调用超时（毫秒）：H5 GB 适配层的 pending 表无超时会永久挂起，原生侧兜底回传失败
+const GAME_BRIDGE_TIMEOUT_MS: number = 15000
+// 空载荷占位（ok=true 但 data 为 null 时回传 {}，对齐安卓 gson.toJson(payload ?: emptyMap)）
+const EMPTY_GAME_PAYLOAD: Record<string, Object> = {}
+
 // JS 桥注入对象名（H5 侧 window.SmartWashGameBridge，协议与安卓一致）
 const GAME_BRIDGE_NAME: string = 'SmartWashGameBridge'
 /**
@@ -79,6 +98,86 @@ function normalizeChrome(mode: string): string {
     }
   }
   return CHROME_FULL
+}
+
+/** 存档写入载荷解析结果（对齐安卓 GameThemeBridgePolicy.SaveStatePayload） */
+interface SaveStatePayload {
+  stateJson: string
+  schemaVer: number | null
+}
+
+/** 成绩上报载荷解析结果（对齐安卓 GameBridgeScoreReportBody 的映射前置） */
+interface ReportScorePayload {
+  metricValue: number
+  metricExtra: number | null
+  metricJson: string | null
+}
+
+/**
+ * 解析 H5 传入的 JSON 对象（非法/数组/标量返回 null，由调用方按缺省处理）。
+ * 对齐安卓 GameThemeBridgePolicy.parseJsonObject：Gson.fromJson(JsonObject) 对非对象失败。
+ */
+function parseJsonObject(json: string | null): Record<string, Object> | null {
+  if (json === null || json.length === 0) {
+    return null
+  }
+  try {
+    const parsed: Object = JSON.parse(json)
+    if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, Object>
+    }
+  } catch (err) {
+    // 非法 JSON：按缺省处理（存档场景回退原始字符串，不丢内容）
+  }
+  return null
+}
+
+/**
+ * saveState 载荷解析，兼容两种 H5 载荷（对齐安卓 Policy.parseSaveStatePayload）：
+ * - 标准 {"stateJson":"...","schemaVer":1}：提取 stateJson / schemaVer；
+ * - 裸 JSON（无 stateJson 键或 stateJson 为 null）：整个原始字符串作为存档内容落库，
+ *   避免「存档内容不能为空」静默失败；空/非法输入解析为空串。
+ */
+function parseSaveStatePayload(payloadJson: string | null): SaveStatePayload {
+  const payload: Record<string, Object> | null = parseJsonObject(payloadJson)
+  if (payload === null) {
+    return { stateJson: payloadJson ?? '', schemaVer: null }
+  }
+  const stateJson: string | null = jsonStr(payload['stateJson'])
+  return {
+    stateJson: stateJson ?? payloadJson ?? '',
+    schemaVer: jsonNum(payload['schemaVer'])
+  }
+}
+
+/**
+ * reportScore 载荷解析（对齐安卓 Policy.parseJsonObject + GameBridgeScoreReportBody 映射）：
+ * 缺失字段按缺省（metricValue=0，其余 null），不阻断上报。
+ */
+function parseReportScorePayload(payloadJson: string | null): ReportScorePayload {
+  const payload: Record<string, Object> | null = parseJsonObject(payloadJson)
+  if (payload === null) {
+    return { metricValue: 0, metricExtra: null, metricJson: null }
+  }
+  return {
+    metricValue: jsonNum(payload['metricValue']) ?? 0,
+    metricExtra: jsonNum(payload['metricExtra']),
+    metricJson: jsonStr(payload['metricJson'])
+  }
+}
+
+/** 排行榜 limit 归一化：H5 传 0 / 负数按缺省 20 处理（对齐安卓 normalizeLeaderboardLimit） */
+function normalizeLeaderboardLimit(limit: number): number {
+  return limit <= 0 ? DEFAULT_LEADERBOARD_LIMIT : limit
+}
+
+/**
+ * cbId 经 JS 单引号字符串字面量转义（回调脚本以 'cbId' 内嵌）：
+ * 先转反斜杠再转单引号——顺序保证已转义序列不被二次转义，防止 cbId 注入破坏回调脚本
+ * （对齐安卓 GameThemeBridgePolicy.escapeJsSingleQuoted）。
+ */
+function escapeJsSingleQuoted(raw: string): string {
+  return raw.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 }
 
 /**
@@ -142,10 +241,26 @@ class SmartWashGameBridge {
   private currentPageHost: string | null = null
   private whitelist: Set<string>
   private onChromeChange: (mode: string) => void
+  /** Web 控制器（异步结果经 runJavaScript 回传 H5） */
+  private controller: webview.WebviewController
+  /** 页面存活标记：销毁后禁止 evaluateJavascript（防 destroy 竞态，对齐安卓 G2.1） */
+  private alive: boolean = false
+  /** 待回传 cbId → 超时定时器（全路径回调保障，H5 pending 表无超时会永久挂起） */
+  private pending: Map<string, number> = new Map()
 
-  constructor(whitelist: Set<string>, onChromeChange: (mode: string) => void) {
+  constructor(whitelist: Set<string>, onChromeChange: (mode: string) => void,
+    controller: webview.WebviewController) {
     this.whitelist = whitelist
     this.onChromeChange = onChromeChange
+    this.controller = controller
+  }
+
+  /** 同步页面存活标记（aboutToAppear 置 true / aboutToDisappear 置 false） */
+  setAlive(alive: boolean): void {
+    this.alive = alive
+    if (!alive) {
+      this.clearPending()
+    }
   }
 
   /** onPageBegin 刷新 host 快照（供桥调用时的来源判定） */
@@ -175,6 +290,119 @@ class SmartWashGameBridge {
     }
     this.onChromeChange(normalizeChrome(mode))
   }
+
+  /** 读存档：H5 传 gameKey + 回调 id，原生带 token 请求后回传 */
+  loadState(gameKey: string, cbId: string): void {
+    this.dispatchData(cbId, 'loadState', (): Promise<BaseResponse<Object>> => getGameState(gameKey))
+  }
+
+  /** 写存档：payloadJson = {"stateJson":"...","schemaVer":1}（兼容裸 JSON 兜底） */
+  saveState(gameKey: string, payloadJson: string, cbId: string): void {
+    const payload: SaveStatePayload = parseSaveStatePayload(payloadJson)
+    const body: GameStateUpdateBody = { gameKey: gameKey, stateJson: payload.stateJson }
+    if (payload.schemaVer !== null) {
+      body.schemaVer = payload.schemaVer
+    }
+    this.dispatchData(cbId, 'saveState', (): Promise<BaseResponse<Object>> => saveGameState(body))
+  }
+
+  /** 上报成绩：payloadJson = {"metricValue":100,"metricExtra":null,"metricJson":null} */
+  reportScore(gameKey: string, payloadJson: string, cbId: string): void {
+    const payload: ReportScorePayload = parseReportScorePayload(payloadJson)
+    const body: GameScoreReportBody = { gameKey: gameKey, metricValue: payload.metricValue }
+    if (payload.metricExtra !== null) {
+      body.metricExtra = payload.metricExtra
+    }
+    if (payload.metricJson !== null) {
+      body.metricJson = payload.metricJson
+    }
+    this.dispatchData(cbId, 'reportScore', (): Promise<BaseResponse<Object>> => reportGameScore(body))
+  }
+
+  /** 排行榜：limit 非法（<= 0）时按缺省 20 处理 */
+  getLeaderboard(gameKey: string, limit: number, cbId: string): void {
+    const normalized: number = normalizeLeaderboardLimit(limit)
+    this.dispatchData(cbId, 'getLeaderboard',
+      (): Promise<BaseResponse<Object>> => getGameLeaderboard(gameKey, normalized))
+  }
+
+  /** 关卡下发 */
+  getLevels(gameKey: string, cbId: string): void {
+    this.dispatchData(cbId, 'getLevels', (): Promise<BaseResponse<Object>> => getGameLevels(gameKey))
+  }
+
+  /**
+   * 统一数据请求分发：白名单校验 → 超时计时 → 请求 → 结果回调 H5。
+   * 白名单外 / 请求异常 / 超时一律回调失败（ok=false），H5 侧据此降级 localStorage。
+   */
+  private dispatchData(cbId: string, method: string,
+    request: () => Promise<BaseResponse<Object>>): void {
+    if (!this.isAllowedHost()) {
+      logger.warn('webPage', `桥数据调用拒绝非白名单来源 method=${method}`)
+      this.emitResult(cbId, false, '非白名单来源')
+      return
+    }
+    // cbId 重入防御：H5 异常重复调用同一 id 时先了结旧回调，避免 pending 互相覆盖悬挂
+    this.cancelPending(cbId)
+    const timerId: number = setTimeout((): void => {
+      this.pending.delete(cbId)
+      logger.warn('webPage', `桥数据调用超时 method=${method}`)
+      this.emitResult(cbId, false, '网络异常')
+    }, GAME_BRIDGE_TIMEOUT_MS)
+    this.pending.set(cbId, timerId)
+    request().then((res: BaseResponse<Object>): void => {
+      this.cancelPending(cbId)
+      if (res.code === BizCode.SUCCESS) {
+        this.emitResult(cbId, true, res.data ?? EMPTY_GAME_PAYLOAD)
+      } else {
+        this.emitResult(cbId, false, res.message ?? '网络异常')
+      }
+    }).catch((err: Error): void => {
+      this.cancelPending(cbId)
+      // 仅记 method + message 摘要，不序列化 error（可能携带请求上下文）
+      logger.warn('webPage', `桥数据请求失败 method=${method} err=${err.message}`)
+      this.emitResult(cbId, false, '网络异常')
+    })
+  }
+
+  /**
+   * 结果回调：window.__gOnGameBridgeResult(cbId, ok, payload)；
+   * payload 为 JSON 对象字面量（字符串载荷为 JSON 字符串字面量）。
+   * 页面已销毁 / 控制器未就绪时静默跳过（回调丢失无副作用，H5 侧超时兜底）。
+   */
+  private emitResult(cbId: string, ok: boolean, payload: Object | null): void {
+    if (!this.alive) {
+      return
+    }
+    const json: string = JSON.stringify(payload !== null ? payload : EMPTY_GAME_PAYLOAD)
+    const safeCbId: string = escapeJsSingleQuoted(cbId)
+    const script: string =
+      `window.__gOnGameBridgeResult&&window.__gOnGameBridgeResult('${safeCbId}', ${ok}, ${json})`
+    try {
+      this.controller.runJavaScript(script).catch((): void => {
+        // controller 未附加 / 页面已销毁：静默
+      })
+    } catch (err) {
+      logger.debug('webPage', '桥结果回调时 Web 控制器未就绪，跳过')
+    }
+  }
+
+  /** 了结指定 cbId 的待回传项（存在则清定时器），供完成回调与重入防御复用 */
+  private cancelPending(cbId: string): void {
+    const timerId: number | undefined = this.pending.get(cbId)
+    if (timerId !== undefined) {
+      clearTimeout(timerId)
+      this.pending.delete(cbId)
+    }
+  }
+
+  /** 清空全部待回传项（页面销毁时调用，防定时器泄漏） */
+  private clearPending(): void {
+    this.pending.forEach((timerId: number): void => {
+      clearTimeout(timerId)
+    })
+    this.pending.clear()
+  }
 }
 
 @Builder
@@ -199,12 +427,14 @@ struct WebPage {
   // 对齐安卓 GameThemeBridge 的主动推送语义（原生薄层进度条/错误态颜色以重进页面刷新兜底）
   @StorageProp('darkMode') @Watch('onDarkModeChange') darkMode: boolean = false
   private controller: webview.WebviewController = new webview.WebviewController()
-  // 游戏桥：白名单 host 内才生效（构造即绑定 chrome 回调）
+  // 游戏桥：白名单 host 内才生效（构造即绑定 chrome 回调与 Web 控制器，供异步数据回传）
   private gameBridge: SmartWashGameBridge = new SmartWashGameBridge(bridgeWhitelist(), (mode: string) => {
     this.applyChrome(mode)
-  })
+  }, this.controller)
 
   aboutToAppear(): void {
+    // 桥存活标记：页面销毁前允许数据回调（销毁即置 false，回调侧据此跳过 evaluateJavascript）
+    this.gameBridge.setAlive(true)
     // 安全取参（评审 #31 约定）：参数缺失/非法时不崩溃，保持错误态
     const param = getObjectParam<WebPageParam>(RouteNames.WEB_PAGE)
     if (param !== null) {
@@ -216,6 +446,8 @@ struct WebPage {
   }
 
   aboutToDisappear(): void {
+    // 桥存活标记置 false 并清空待回传定时器（防页面销毁后 evaluateJavascript 与定时器泄漏）
+    this.gameBridge.setAlive(false)
     // 离页复原 chrome（对齐安卓 DisposableEffect onDispose → apply(FULL)）
     this.applyChrome(CHROME_FULL)
   }
@@ -350,12 +582,14 @@ struct WebPage {
             Web({ src: this.url, controller: this.controller })
               .javaScriptAccess(true)
               .domStorageAccess(true)
-              // 游戏 H5 桥（问题16）：window.SmartWashGameBridge.getTheme()/setChrome(mode)，
-              // 仅白名单 host（BASE_URL 同源）生效，协议对齐安卓
+              // 游戏 H5 桥（问题16 + HF6）：主题/chrome + 数据桥 5 方法
+              //（loadState/saveState/reportScore/getLeaderboard/getLevels），
+              // 仅白名单 host（BASE_URL + MinIO）生效，协议与安卓 GameThemeBridge 对齐
               .javaScriptProxy({
                 object: this.gameBridge,
                 name: GAME_BRIDGE_NAME,
-                methodList: ['getTheme', 'setChrome'],
+                methodList: ['getTheme', 'setChrome', 'loadState', 'saveState',
+                  'reportScore', 'getLeaderboard', 'getLevels'],
                 controller: this.controller
               })
               // 外部 scheme 拦截（对齐安卓 shouldOverrideUrlLoading）：http(s) 留应用内，其余交系统

@@ -55,7 +55,13 @@
     </div>
 
     <div class="table-card">
+      <!-- 加载失败态：与「暂无数据」空态区分，就地重试（W-E3） -->
+      <div v-if="listError" class="list-error">
+        <span>菜谱列表加载失败，请检查网络后重试</span>
+        <el-button size="small" @click="fetchData">重试</el-button>
+      </div>
       <el-table
+        v-else
         v-loading="listLoading"
         :data="recipeList"
         fit
@@ -284,6 +290,7 @@ import {
 } from '@/api/dining';
 import { diningCategoryOptionsCache } from '@/utils/optionCache';
 import { useTableList } from '@/composables/useTableList';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useConfirm } from '@/composables/useConfirm';
 import { formatTime } from '@/utils/format';
 import {
@@ -307,6 +314,7 @@ const {
   list: recipeList,
   total,
   listLoading,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -413,7 +421,7 @@ const handleCoverUpload = async ({ file }) => {
     coverPreviewUrl.value = coverObjectUrl.value;
     ElMessage.success('封面已上传');
   } catch (error) {
-    ElMessage.error(error.message || '封面上传失败');
+    ElMessage.error(friendlyErrorMessage(error, '封面上传失败'));
   } finally {
     coverUploading.value = false;
   }
@@ -516,19 +524,20 @@ const submitForm = async () => {
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-    // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别
-    if (error?.fields) {
+    // validate() 校验失败 reject 的是无 message 的字段对象（isValidationError），
+    // 与接口失败区分级别；字段红字已示于表单，不再叠加「操作失败」假 toast
+    if (isValidationError(error)) {
       logger.debug('菜谱表单校验未通过，已拦截提交');
-    } else {
-      logger.error(
-        '菜谱提交失败:',
-        `type=${dialogType.value}`,
-        `name=${tempRecipe.name}`,
-        `id=${tempRecipe.id ?? '-'}`,
-        error
-      );
+      return;
     }
-    ElMessage.error(error.message || '操作失败');
+    logger.error(
+      '菜谱提交失败:',
+      `type=${dialogType.value}`,
+      `name=${tempRecipe.name}`,
+      `id=${tempRecipe.id ?? '-'}`,
+      error
+    );
+    ElMessage.error(friendlyErrorMessage(error, '操作失败'));
   } finally {
     submitting.value = false;
   }
@@ -545,7 +554,7 @@ const handleStatusChange = async (row, val) => {
     ElMessage.success(targetStatus === 1 ? '已上架' : '已下架');
   } catch (error) {
     logger.error('菜谱上下架失败:', `id=${row.id}`, error);
-    ElMessage.error(error.message || '操作失败');
+    ElMessage.error(friendlyErrorMessage(error, '操作失败'));
   } finally {
     statusSwitchingId.value = null;
   }
@@ -566,7 +575,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('菜谱删除失败:', `id=${row.id}`, `name=${row.name}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

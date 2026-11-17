@@ -44,7 +44,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -80,8 +79,6 @@ import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppTextStyles
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import com.smartwash.common.ui.theme.AppDimens
@@ -987,10 +984,10 @@ fun AppInputDialog(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
+                    AppTextField(
                         value = inputValue,
                         onValueChange = onValueChange,
-                        label = { Text(inputLabel) },
+                        label = inputLabel,
                         supportingText = {
                             // 错误行 0ms 硬切 → 展开/收起 + 淡入淡出（规范 7.8）
                             AnimatedVisibility(
@@ -1003,18 +1000,11 @@ fun AppInputDialog(
                                 Text(text = errorMessage.orEmpty())
                             }
                         },
-                        // §3.7：输入正文禁用 14sp 及以下，覆盖 M3 默认
-                        textStyle = LocalTextStyle.current.copy(fontSize = 16.sp),
+                        // §3.7：输入正文禁用 14sp 及以下（AppTextField 默认 bodyLarge 16sp）
                         singleLine = true,
                         isError = isError,
                         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(AppDimens.inputRadius),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = AppColors.colorScheme.primary,
-                            unfocusedBorderColor = AppColors.colorScheme.outline,
-                            errorBorderColor = AppColors.colorScheme.error
-                        )
                     )
                 }
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)

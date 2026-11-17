@@ -179,6 +179,12 @@ class UpdateViewModel @Inject constructor(
      * 下载中不弹进度窗（见 [_autoDownload]）。
      */
     fun onAutoDownload(version: AppVersionVo) {
+        // 与 onUpdateAvailable 同防重放口径：用户本会话已关闭（稍后/取消）的同版本
+        // 不再自动下载（replay 事件在壳层重建时重放会命中此守卫）
+        if (version.versionCode == dismissedVersionCode) {
+            AppLogger.debug(TAG, "自动下载事件命中已关闭版本 versionCode=${version.versionCode}，忽略")
+            return
+        }
         val current = _state.value
         if (current is UpdateState.Downloading ||
             current is UpdateState.Downloaded ||

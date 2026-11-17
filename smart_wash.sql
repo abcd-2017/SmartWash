@@ -1305,11 +1305,11 @@ CREATE TABLE `sys_config` (
 -- Records of sys_config
 -- 种子值与各业务方 Java 兜底默认值一致，新增参数需同步 SysConfigServiceImpl.NUMERIC_KEYS
 -- ----------------------------
-INSERT INTO `sys_config` VALUES (1, 'order.payTimeoutMinutes', '30', '订单创建后未支付自动取消的分钟数');
-INSERT INTO `sys_config` VALUES (2, 'login.maxAttempts', '5', '同一账号连续登录失败达到该次数后锁定');
-INSERT INTO `sys_config` VALUES (3, 'login.lockoutMinutes', '5', '账号登录失败锁定时长（分钟）');
-INSERT INTO `sys_config` VALUES (4, 'login.ipMaxAttempts', '20', '同一 IP 连续登录失败达到该次数后限制该 IP');
-INSERT INTO `sys_config` VALUES (5, 'login.ipLockoutMinutes', '15', 'IP 登录失败限制时长（分钟）');
+INSERT INTO `sys_config` (`id`, `config_key`, `config_value`, `remark`) VALUES (1, 'order.payTimeoutMinutes', '30', '订单创建后未支付自动取消的分钟数');
+INSERT INTO `sys_config` (`id`, `config_key`, `config_value`, `remark`) VALUES (2, 'login.maxAttempts', '5', '同一账号连续登录失败达到该次数后锁定');
+INSERT INTO `sys_config` (`id`, `config_key`, `config_value`, `remark`) VALUES (3, 'login.lockoutMinutes', '5', '账号登录失败锁定时长（分钟）');
+INSERT INTO `sys_config` (`id`, `config_key`, `config_value`, `remark`) VALUES (4, 'login.ipMaxAttempts', '20', '同一 IP 连续登录失败达到该次数后限制该 IP');
+INSERT INTO `sys_config` (`id`, `config_key`, `config_value`, `remark`) VALUES (5, 'login.ipLockoutMinutes', '15', 'IP 登录失败限制时长（分钟）');
 
 -- ----------------------------
 -- Table structure for div_user_api_config（用户自带API BYOK）

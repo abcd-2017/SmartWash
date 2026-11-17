@@ -2,14 +2,6 @@ package com.smartwash.feature.user.impl.ui.register
 
 import android.app.Activity
 import android.widget.Toast
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -21,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -31,13 +24,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Key
+import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,17 +47,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
+import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AuthGradientBottom
 import com.smartwash.common.ui.theme.AuthGradientMid
 import com.smartwash.common.ui.theme.AuthGradientTop
-import com.smartwash.common.ui.theme.ErrorLight
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.GlassBgCard
 import com.smartwash.common.ui.theme.GlassBgSubtle
 import com.smartwash.common.ui.theme.GlassBorderSubtle
-import com.smartwash.common.ui.theme.GlassInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -80,24 +69,19 @@ import androidx.core.view.WindowCompat
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.smartwash.common.ui.components.AppPasswordTextField
+import com.smartwash.common.ui.components.AppTextField
+import com.smartwash.common.ui.components.AppVerificationCodeField
 import com.smartwash.common.ui.components.AuthCtaButton
-import com.smartwash.common.ui.components.PasswordInput
-import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.ClickDebouncer
-import com.smartwash.common.utils.CROSSFADE_ALT_MS
-import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.currentView
-import com.smartwash.common.utils.enterTween
-import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.isValidPhone
-import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
-import com.smartwash.common.utils.selectedColor
 import com.smartwash.common.utils.HapticEffect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -108,8 +92,6 @@ private val GradientBottom = AuthGradientBottom
 
 // 进度条非激活态（注册画板「进度2/3」= white 28%）
 private val ProgressInactive = Color.White.copy(alpha = 0.28f)
-// 退出时长 ≈ 进入（DURATION_MICRO_MS）的 70%（动效语言 v0.4）
-private const val EXIT_MICRO_MS = 140
 
 @Composable
 fun RegisterPage(
@@ -122,7 +104,6 @@ fun RegisterPage(
     var isPhoneError by remember { mutableStateOf(false) }
     var isVerificationCodeError by remember { mutableStateOf(false) }
     var isPasswordError by remember { mutableStateOf(false) }
-    var showPassword by remember { mutableStateOf(false) }
     val verificationCodeFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
 
@@ -184,7 +165,6 @@ fun RegisterPage(
     LaunchedEffect(registerState) {
         when (registerState) {
             is RequestState.Success -> {
-                showPassword = false
                 Toast.makeText(context, context.getString(R.string.register_success), Toast.LENGTH_SHORT).show()
                 registerViewModel.setRegisterIdle()
                 // 注册成功后跳转填写学校学号信息
@@ -338,26 +318,45 @@ fun RegisterPage(
                     .border(1.dp, GlassBorderSubtle, glassShape)
                     .padding(horizontal = 16.dp, vertical = 20.dp)
             ) {
-                PhoneNumberInput(
-                    phone = phone,
-                    isPhoneError = isPhoneError,
-                    contentColor = Color.White,
-                    // [P02] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
-                    // label 文案与占位同为字段名，复用 common:ui 既有 string 资源（nonTransitiveRClass 全限定引用）
-                    label = stringResource(com.smartwash.common.ui.R.string.phone_hint),
-                ) {
-                    if (it.length <= 11) phone = it
-                    // 只在输入完成（11位）或清空时验证
-                    isPhoneError = when {
-                        it.isEmpty() -> false
-                        it.length == 11 -> !isValidPhone(it)
-                        else -> false
-                    }
-                    // 输入完成自动跳转到验证码框
-                    if (it.length == 11 && isValidPhone(it)) {
-                        verificationCodeFocusRequester.requestFocus()
-                    }
-                }
+                // [P02] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
+                // label 文案与占位同为字段名，复用 common:ui 既有 string 资源（nonTransitiveRClass 全限定引用）
+                Text(
+                    text = stringResource(com.smartwash.common.ui.R.string.phone_hint),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                AppTextField(
+                    value = phone,
+                    onValueChange = {
+                        if (it.length <= 11) phone = it
+                        // 只在输入完成（11位）或清空时验证
+                        isPhoneError = when {
+                            it.isEmpty() -> false
+                            it.length == 11 -> !isValidPhone(it)
+                            else -> false
+                        }
+                        // 输入完成自动跳转到验证码框
+                        if (it.length == 11 && isValidPhone(it)) {
+                            verificationCodeFocusRequester.requestFocus()
+                        }
+                    },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                    isError = isPhoneError,
+                    leadingIcon = Icons.Rounded.Phone,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    supportingText = if (isPhoneError) {
+                        {
+                            Text(
+                                text = stringResource(com.smartwash.common.ui.R.string.invalid_phone),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                color = AppColors.colorScheme.error
+                            )
+                        }
+                    } else null
+                )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -365,14 +364,16 @@ fun RegisterPage(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                VerificationCodeRow(
-                    verificationCode = verificationCode,
-                    isVerificationCodeError = isVerificationCodeError,
-                    countDown = countDown,
-                    captchaState = captchaState,
-                    // [P02] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
-                    label = stringResource(R.string.verification_code_hint),
-                    focusRequester = verificationCodeFocusRequester,
+                // [P02] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
+                Text(
+                    text = stringResource(R.string.verification_code_hint),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                AppVerificationCodeField(
+                    value = verificationCode,
                     onValueChange = { newValue ->
                         // 只允许输入数字，过滤非数字字符
                         val filtered = newValue.filter { it.isDigit() }
@@ -385,6 +386,8 @@ fun RegisterPage(
                             passwordFocusRequester.requestFocus()
                         }
                     },
+                    sendText = stringResource(R.string.get_verification_code),
+                    countdownText = stringResource(R.string.countdown_format, countDown),
                     onSendCaptcha = {
                         // 先校验手机号格式，通过后再请求验证码，避免无效手机号也发起请求
                         if (isValidPhone(phone)) {
@@ -404,7 +407,24 @@ fun RegisterPage(
                         } else {
                             isPhoneError = true
                         }
-                    }
+                    },
+                    // focusRequester 经 modifier 下传（保留原 VerificationCodeRow 的聚焦自动跳转）
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .focusRequester(verificationCodeFocusRequester),
+                    countDown = countDown,
+                    sendEnabled = countDown == 0 && captchaState !is RequestState.Loading,
+                    isError = isVerificationCodeError,
+                    supportingText = if (isVerificationCodeError) {
+                        {
+                            Text(
+                                text = stringResource(R.string.invalid_verification_code),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                color = AppColors.colorScheme.error
+                            )
+                        }
+                    } else null
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -413,21 +433,35 @@ fun RegisterPage(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                PasswordInput(
-                    password = password,
-                    isPasswordError = isPasswordError,
-                    showPassword = showPassword,
-                    showVisibility = { showPassword = !showPassword },
-                    contentColor = Color.White,
-                    // 设计稿注册画板密码字段为「设置密码」（登录为「密码」）
-                    // [P02] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
-                    hint = stringResource(R.string.password_hint_register),
-                    label = stringResource(R.string.password_hint_register),
-                    modifier = Modifier.focusRequester(passwordFocusRequester)
-                ) {
-                    // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测）
-                    if (it.length <= 16) password = it
-                }
+                // 设计稿注册画板密码字段为「设置密码」（登录为「密码」）
+                // [P02] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
+                Text(
+                    text = stringResource(R.string.password_hint_register),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                AppPasswordTextField(
+                    value = password,
+                    onValueChange = {
+                        // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测；超长由组件 maxLength 截断）
+                        password = it
+                    },
+                    // 最大位数由组件 maxLength 固定 16，无需页面截断
+                    modifier = Modifier.focusRequester(passwordFocusRequester),
+                    isError = isPasswordError,
+                    supportingText = if (isPasswordError) {
+                        {
+                            Text(
+                                text = stringResource(com.smartwash.common.ui.R.string.invalid_password),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                color = AppColors.colorScheme.error
+                            )
+                        }
+                    } else null
+                )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -491,145 +525,4 @@ private fun GlassDivider() {
             .height(1.dp)
             .background(Color.White.copy(alpha = 0.12f))
     )
-}
-
-@Composable
-private fun VerificationCodeRow(
-    verificationCode: String,
-    isVerificationCodeError: Boolean,
-    countDown: Int,
-    captchaState: RequestState,
-    // [P02] 2026-11-05 画板复裁：输入行上方独立字段标签行（白 12sp），同 PhoneNumberInput/PasswordInput
-    label: String? = null,
-    focusRequester: FocusRequester = FocusRequester(),
-    onValueChange: (String) -> Unit,
-    onSendCaptcha: () -> Unit,
-    contentColor: Color = Color.White
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // 字段标签行（设计稿注册画板：label 白 12sp 小字位于输入行上方，间距小）
-        if (label != null) {
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                color = contentColor,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-        }
-        // 紧凑输入行：内容高 20dp（设计稿输入行=图标 20px，登录/注册画板 412→432 同款，D-R4）
-        // 输入行：高 48dp（§3.7 行高 48–50dp），文字与图标垂直居中
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 前缀图标 16dp + opacity .5（§3.7）
-            Icon(
-                Icons.Rounded.Key,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = if (isVerificationCodeError) ErrorLight
-                else contentColor.copy(alpha = 0.5f)
-            )
-            // 前缀与文字间距 spaceSm(12dp)（§3.7）
-            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-            BasicTextField(
-                value = verificationCode,
-                onValueChange = onValueChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(focusRequester),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                // §3.7：输入正文 16sp / Normal —— 输入是高频读写场景，禁用 14sp 及以下
-                textStyle = LocalTextStyle.current.copy(
-                    fontSize = 16.sp, lineHeight = 24.sp, color = contentColor
-                ),
-                cursorBrush = SolidColor(if (isVerificationCodeError) ErrorLight else contentColor),
-                decorationBox = { innerTextField ->
-                    Box {
-                        // 有 label 时隐藏占位符（占位=字段名，与 label 文案重复）
-                        if (verificationCode.isEmpty() && label == null) {
-                            // §3.7：占位符字号与正文一致
-                            Text(
-                                text = stringResource(R.string.verification_code_hint),
-                                fontSize = 16.sp,
-                                lineHeight = 24.sp,
-                                color = contentColor.copy(alpha = 0.45f)
-                            )
-                        }
-                        innerTextField()
-                    }
-                }
-            )
-            // 尾缀发送按钮：1dp 玻璃描边（白 30%）+ 999 胶囊 + 48dp 高 + 横向 14dp（注册画板「发送按钮」88×48 r999）。
-            // 高 48 大于行高 20，垂直方向溢出行边界不参与布局占位（同 PasswordInput 可见性钮模式）；
-            // 画板按钮相对输入行中心上移 6px（顶 437 对齐标签顶、底 485 对齐分隔线2），offset 精确复刻。
-            // 倒计时/加载禁用态描边与文字透明度降至 .55；倒计时本身已防重复发送，不再叠加防抖
-            val sendEnabled = countDown == 0 && captchaState !is RequestState.Loading
-            // 描边与文字色随可发送态过渡（reduced motion 下经 motionSpec 降级为 180ms 纯颜色变化）
-            val sendBorderColor = selectedColor(
-                if (sendEnabled) GlassInput else GlassInput.copy(alpha = GlassInput.alpha * 0.55f)
-            )
-            val sendTextColor = selectedColor(
-                contentColor.copy(alpha = if (sendEnabled) 0.92f else 0.92f * 0.55f)
-            )
-            // §3.7 尾缀发送 = 描边按钮：1dp 描边 + 12dp 圆角（规范正文写 radiusSmall(12dp)，
-            // 但 AppDimens.radiusSmall 实为 10dp——取规范值 12dp = radiusMd）+ 高 40dp + 横向 14dp；
-            // 行高已为 48dp，按钮交由 Row 的 CenterVertically 居中，不再需要 offset 补偿
-            Box(
-                modifier = Modifier
-                    .height(40.dp)
-                    .then(
-                        if (sendEnabled) Modifier.pressable(onClick = onSendCaptcha, debounce = false)
-                        else Modifier
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = sendBorderColor,
-                        shape = RoundedCornerShape(AppDimens.radiusMd)
-                    )
-                    .padding(horizontal = 14.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // 「获取验证码 ↔ 59s」状态切换交叉淡入；倒计时每秒的数字跳动仍为直切（不加动画）
-                AnimatedContent(
-                    targetState = countDown > 0,
-                    transitionSpec = {
-                        fadeIn(tween(CROSSFADE_ALT_MS)) togetherWith fadeOut(tween(CROSSFADE_ALT_MS))
-                    },
-                    label = "sendCaptchaLabel",
-                ) { counting ->
-                    Text(
-                        text = if (counting) stringResource(R.string.countdown_format, countDown)
-                        else stringResource(R.string.get_verification_code),
-                        // 12/16/500 = captionStrong 档；倒计时秒数是数量，开 tnum（规范 §2.2）
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontFeatureSettings = "tnum"
-                        ),
-                        color = sendTextColor
-                    )
-                }
-            }
-        }
-        // 错误文案：淡入 + 纵向展开，避免卡片高度 0ms 突跳
-        AnimatedVisibility(
-            visible = isVerificationCodeError,
-            enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
-                expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
-            exit = fadeOut(motionSpec(exitTween(EXIT_MICRO_MS))) +
-                shrinkVertically(motionSpec(exitTween(EXIT_MICRO_MS))),
-        ) {
-            // 错误文案沿用既有 supportingText 内容（原 TextField supportingText 平替）
-            Text(
-                text = stringResource(R.string.invalid_verification_code),
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                color = ErrorLight,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-    }
 }

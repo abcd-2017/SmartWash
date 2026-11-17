@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,8 +30,6 @@ import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
@@ -78,8 +78,8 @@ private enum class CreateContentState { Skeleton, Error, Content }
  * 复用历史菜单模式（13 号票）：路由携带 fromOrderId 进入——菜品区只读回显源单菜单并提示
  * 「将复用历史订单「x」的 N 道菜」，提交带 fromOrderId 由后端整份复制（见 ViewModel）。
  *
- * 输入控件（规范 §3.7/§7）：OutlinedTextField + tokenTextFieldColors（T4 新增菜谱页先例），
- * 正文 16sp；菜品行勾选自绘（pressable + Check 图标，禁 M3 Checkbox/ripple）。
+ * 输入控件（规范 §3.7/§7）：AppTextField（common:ui 统一输入组件，正文 16sp）；
+ * 菜品行勾选自绘（pressable + Check 图标，禁 M3 Checkbox/ripple）。
  */
 @Composable
 fun DiningOrderCreatePage(
@@ -157,6 +157,9 @@ fun DiningOrderCreatePage(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
+            // 规范 §4：标题/搜索输入框键盘弹出时整页上收，底部固定 CTA 随根布局抬升，
+            // 不被软键盘遮挡（与 RechargePage 同口径）
+            .imePadding()
     ) {
         PageHeader(
             title = stringResource(R.string.dining_order_create_title),
@@ -203,10 +206,10 @@ fun DiningOrderCreatePage(
                                 color = AppColors.colorScheme.textPrimary,
                                 modifier = Modifier.padding(bottom = AppDimens.spaceXs, start = 4.dp),
                             )
-                            OutlinedTextField(
+                            AppTextField(
                                 value = title,
                                 onValueChange = viewModel::onTitleChange,
-                                placeholder = { Text(stringResource(R.string.dining_order_create_title_hint)) },
+                                placeholder = stringResource(R.string.dining_order_create_title_hint),
                                 isError = formError == DiningOrderFormError.TITLE_REQUIRED ||
                                     formError == DiningOrderFormError.TITLE_TOO_LONG,
                                 supportingText = {
@@ -216,11 +219,7 @@ fun DiningOrderCreatePage(
                                         Text(stringResource(viewModel.errorRes(formError!!)))
                                     }
                                 },
-                                // §3.7：输入正文禁用 14sp 及以下
-                                textStyle = MaterialTheme.typography.bodyLarge,
                                 singleLine = true,
-                                shape = RoundedCornerShape(AppDimens.radiusMd),
-                                colors = tokenTextFieldColors(),
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
@@ -532,35 +531,18 @@ private fun groupRecipesByCategory(
     }
 }
 
-/** 输入框令牌色（T4 新增菜谱页同款：r12 + outline 描边 + surfaceVariant 底） */
-@Composable
-private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AppColors.colorScheme.primary,
-    unfocusedBorderColor = AppColors.colorScheme.outline,
-    errorBorderColor = AppColors.colorScheme.error,
-    focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-    unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-)
-
-/** 菜品搜索输入框（§3.7：前缀 16dp 搜索图标 .5 透明度 + 48dp 自绘清空热区） */
+/** 菜品搜索输入框（§3.7：前缀 16dp 搜索图标组件统一着色 + 48dp 自绘清空热区） */
 @Composable
 private fun DishSearchField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    OutlinedTextField(
+    AppTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(stringResource(R.string.dining_order_create_search_hint)) },
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Rounded.Search,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = AppColors.colorScheme.textSecondary.copy(alpha = 0.5f),
-            )
-        },
+        placeholder = stringResource(R.string.dining_order_create_search_hint),
+        leadingIcon = Icons.Rounded.Search,
         trailingIcon = {
             if (value.isNotEmpty()) {
                 Box(
@@ -579,9 +561,6 @@ private fun DishSearchField(
             }
         },
         singleLine = true,
-        textStyle = MaterialTheme.typography.bodyLarge,
-        shape = RoundedCornerShape(AppDimens.radiusMd),
-        colors = tokenTextFieldColors(),
         modifier = modifier,
     )
 }

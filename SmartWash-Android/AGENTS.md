@@ -230,8 +230,9 @@ com.smartwash.common.ui/
 │   ├── AppComponents.kt           # PageHeader, AppCard, AppButton, AppTabBar, SettingRow
 │   ├── InfoRow.kt                 # 信息行组件
 │   ├── InfoSection.kt             # 信息分组卡片
-│   ├── PasswordInput.kt           # 密码输入框
-│   └── PhoneNumberInput.kt        # 手机号输入框
+│   ├── AppTextField.kt            # 统一输入框（规范 §3.7 唯一标准）
+│   ├── AppPasswordTextField.kt    # 密码输入框（尾缀图标化）
+│   └── AppVerificationCodeField.kt # 验证码输入框（描边发送按钮）
 ├── navigation/
 │   └── ShellRoute.kt              # 壳层路由契约（HOME 常量）
 └── theme/
@@ -1074,7 +1075,7 @@ object XxxInitModule {
 
 - `common/ui/src/main/java/com/smartwash/common/ui/theme/{Color,Theme,Type,AppDesign}.kt` — 令牌与主题
 - `common/ui/src/main/java/com/smartwash/common/ui/components/AppComponents.kt` — PageHeader / AppCard / AppButton / AppTabBar / SettingRow
-- `common/ui/src/main/java/com/smartwash/common/ui/components/{InfoSection,InfoRow,PasswordInput,PhoneNumberInput}.kt`
+- `common/ui/src/main/java/com/smartwash/common/ui/components/{InfoSection,InfoRow,AppTextField,AppPasswordTextField,AppVerificationCodeField}.kt`
 - `common/ui/src/main/java/com/smartwash/common/ui/navigation/ShellRoute.kt` — 壳层路由契约
 
 ---

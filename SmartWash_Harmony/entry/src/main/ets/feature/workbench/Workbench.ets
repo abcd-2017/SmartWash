@@ -90,19 +90,18 @@ export struct Workbench {
   aboutToAppear(): void {
     // TabContent 懒加载：首次切到工作台 tab 才拉取（对齐安卓 WorkbenchViewModel init 拉取）
     logger.debug('workbench', '工作台挂载，拉取服务端入口配置')
-    // 键盘避让（问题13）：全局是 RESIZE，会把整窗压到键盘上沿、底部 tab 被裁出窗口；
-    // 工作台只有顶部搜索框，不需要避让，改 NONE 让键盘覆盖内容、底栏保持原位
-    this.applyKeyboardAvoidNone()
+    // 键盘避让不在挂载期设 NONE：工作台是常驻 TabContent，tab 切换不触发 aboutToDisappear，
+    // 挂载期设 NONE 会永久泄漏全局避让（P1）。改为只在搜索聚焦期间设 NONE，失焦/切走即复位。
     this.loadEntries()
     // 最近使用/公告关闭记录异步回读（对齐安卓 init 回读 DataStore）
     this.loadLocalState()
   }
 
   /**
-   * 键盘避让 NONE 落位（问题13）：窗口默认 RESIZE（EntryAbility 统一设置）。
-   * 2026-11-05 实测：仅挂载期设置一次，模拟器聚焦搜索框时窗口仍被压缩（dump 断言
-   * root 底沿 = 键盘顶沿 1850）；在搜索框聚焦事件里键盘弹出前重设一次才稳定生效。
-   * 回读留痕便于复核；失败静默不阻塞输入。
+   * 键盘避让 NONE 落位（仅搜索聚焦期间）：窗口默认 RESIZE（EntryAbility 统一设置）。
+   * 工作台只有顶部搜索框，聚焦时改 NONE 让键盘覆盖内容、底栏保持原位；失焦即恢复 RESIZE。
+   * 2026-11-05 实测：模拟器聚焦搜索框时窗口仍被压缩，需在 onFocus 里键盘弹出前设置才稳定生效；
+   * 真机语义正确。回读留痕便于复核；失败静默不阻塞输入。
    */
   private applyKeyboardAvoidNone(): void {
     try {
@@ -113,13 +112,18 @@ export struct Workbench {
     }
   }
 
-  aboutToDisappear(): void {
-    // 离开工作台恢复全局 RESIZE，避免影响登录/充值等需要避让的输入页
+  /** 恢复全局 RESIZE（搜索失焦 / 离开工作台）：兜底路由守卫之外的页内自查，失败静默 */
+  private restoreKeyboardAvoidResize(): void {
     try {
       this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE)
     } catch (err) {
       logger.warn('workbench', '恢复键盘避让模式失败')
     }
+  }
+
+  aboutToDisappear(): void {
+    // 离开工作台恢复全局 RESIZE，避免影响登录/充值等需要避让的输入页
+    this.restoreKeyboardAvoidResize()
   }
 
   /**
@@ -1017,6 +1021,10 @@ export struct Workbench {
               // 键盘弹出前重设 NONE（模拟器上 ArkUI 避让引擎不跟随 NONE，见
               // applyKeyboardAvoidNone 注释；真机语义正确，保留为契约兜底）
               this.applyKeyboardAvoidNone()
+            })
+            .onBlur(() => {
+              // 失焦即恢复全局 RESIZE：NONE 只在搜索聚焦期间生效，不随常驻 tab 泄漏
+              this.restoreKeyboardAvoidResize()
             })
             .width('100%')
             .height(48)
