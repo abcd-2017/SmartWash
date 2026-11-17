@@ -489,9 +489,10 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
      * 幂等判重解析（预览与确认同一套规则）：
      * ① 行 source_key 非空按 key 查（命中即更新——key 已在库中按幂等语义处理，不是错误）；
      * ② 未命中再按（菜名,分类）兜底查——存量未标识菜谱靠该兜底命中回填 key；
-     * ③ 兜底命中仅排除「双方都挂了不同 key」的情形（不同上游来源的菜，按新增不覆盖）：
-     *    行无 key 的旧 CSV 重导命中已回填 key 的菜谱 → 更新且保留既有 key（防整批重复插菜）。
-     * categoryResolvable=false（预览期分类尚不存在，确认时才新建）时禁用兜底——该行必为新增。
+     * ③ 两级未命中时按「仅菜名且库内唯一」宽松兜底——覆盖分类改名场景（历史「配料」→ CSV
+     *    「酱料」：旧分类下已有菜，新分类确认时才创建，（菜名,新分类）两级键必然不命中，
+     *    无本级则整类存量菜被误判新增重复入库）。多道同名时存在歧义，保守不命中（保持新增），
+     *    避免误更新错菜；命中排除「双方都挂了不同 key」的情形（不同上游来源的菜按新增不覆盖）。
      */
     private DiningRecipe resolveExistingRecipe(ParsedRow parsed,
                                                Map<String, DiningRecipe> existingBySourceKey,
@@ -503,9 +504,34 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
                 return byKey;
             }
         }
-        if (!categoryResolvable || parsed.name == null) {
+        if (parsed.name == null) {
             return null;
         }
+        if (categoryResolvable) {
+            DiningRecipe byNameAndCategory = findSameNameCategory(existingByName, parsed);
+            if (byNameAndCategory != null) {
+                return byNameAndCategory;
+            }
+        }
+        List<DiningRecipe> sameName = existingByName.stream()
+                .filter(candidate -> parsed.name.equals(candidate.getName()))
+                // 未分类（categoryId=null）的同名菜不参与宽松兜底：手工建的/历史遗留菜
+                // 不该被 CSV 行的「新分类」静默收编（保留 preview_unresolvableCategory_forcesNew 语义）
+                .filter(candidate -> candidate.getCategoryId() != null)
+                .toList();
+        if (sameName.size() != 1) {
+            return null;
+        }
+        DiningRecipe candidate = sameName.get(0);
+        if (candidate.getSourceKey() != null && parsed.sourceKey != null
+                && !candidate.getSourceKey().equals(parsed.sourceKey)) {
+            return null;
+        }
+        return candidate;
+    }
+
+    /** （菜名,分类）兜底命中：同名同分类且非「双方不同 key」冲突的既有菜谱，无命中返回 null */
+    private DiningRecipe findSameNameCategory(List<DiningRecipe> existingByName, ParsedRow parsed) {
         for (DiningRecipe candidate : existingByName) {
             if (!parsed.name.equals(candidate.getName())) {
                 continue;
