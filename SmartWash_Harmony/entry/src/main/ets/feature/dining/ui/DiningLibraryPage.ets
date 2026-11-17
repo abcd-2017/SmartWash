@@ -17,7 +17,7 @@ import {
 } from '../../../network/api/DiningApi'
 import { diningServingCalories } from '../DiningLogic'
 import { DiningText } from '../DiningText'
-import { DiningCalorieBadge } from './DiningUiCommon'
+import { DiningCalorieBadge, DiningRecipeThumb } from './DiningUiCommon'
 import {
   AppButton,
   AppButtonVariant,
@@ -367,41 +367,25 @@ struct DiningLibraryPage {
     })
   }
 
-  /** 菜谱卡：名称 + 食材数·份热量徽标（无封面的轻量行卡，对齐 Android 列表卡信息密度） */
+  /** 菜谱卡：封面缩略（占位键回落首字）+ 名称（两行上限）+ 食材数·份热量徽标 */
   @Builder
   RecipeCard(recipe: DiningRecipeVo) {
     Row({ space: DesignDimens.SPACE_MD }) {
       Stack({ alignContent: Alignment.TopEnd }) {
-        if (recipe.coverUrl.length > 0) {
-          Image(recipe.coverUrl)
-            .width(72)
-            .height(72)
-            .borderRadius(DesignDimens.RADIUS_MD)
-            .objectFit(ImageFit.Cover)
-            .draggable(false)
-        } else {
-          Column() {
-            SymbolGlyph($r('sys.symbol.fork_knife'))
-              .fontSize(24)
-              .fontColor([$r('app.color.TEXT_TERTIARY')])
-          }
-          .width(72)
-          .height(72)
-          .borderRadius(DesignDimens.RADIUS_MD)
-          .backgroundColor($r('app.color.SURFACE_VARIANT'))
-          .justifyContent(FlexAlign.Center)
-        }
+        // TD18 对齐安卓定案：分类占位键（dining/covers/category_*）视为无封面回落首字
+        DiningRecipeThumb({ coverUrl: recipe.coverUrl, name: recipe.name, thumbSize: 72 })
         this.FavoriteButton(recipe)
       }
       .width(72)
       .height(72)
 
       Column({ space: 4 }) {
+        // 两行上限（TD16 对齐安卓定案）：大字体档单行 7 字即截断，行卡纵向有余量
         Text(recipe.name)
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor($r('app.color.TEXT_PRIMARY'))
-          .maxLines(1)
+          .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
         Row({ space: DesignDimens.SPACE_XS }) {

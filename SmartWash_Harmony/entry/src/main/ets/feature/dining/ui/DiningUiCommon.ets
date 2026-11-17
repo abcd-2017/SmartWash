@@ -1,7 +1,7 @@
 // 吃啥（dining）域共享 UI 组件 — 状态标签 / 勾选框 / 备注弹窗。
 // 设计语言对齐清氧规范与既有域先例（AppCard / AppConfirmDialog / SymbolGlyph 令牌）。
 
-import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
 import { resString } from '../../../utils/ResourceString'
 import { DiningOrderStatus, formatDiningAmount } from '../DiningLogic'
 import { DiningText } from '../DiningText'
@@ -71,7 +71,8 @@ export struct DiningCalorieBadge {
 
 /**
  * 自绘勾选框（对齐 Android dining 域勾选框：20vp 外环 + primary 实底 + 白色对勾）。
- * 无点击逻辑：勾选切换由调用方行级手势消费，本组件只做状态表达。
+ * 选中态整体恒定放大 1.12（TD19/D11 对齐安卓加选按钮 spring 弹跳：勾选瞬间放大过冲回落，
+ * 取消时回弹），缩放过渡走弹跳弹簧；无点击逻辑：勾选切换由调用方行级手势消费。
  */
 @ComponentV2
 export struct DiningCheckbox {
@@ -101,6 +102,60 @@ export struct DiningCheckbox {
     }
     .width(this.boxSize)
     .height(this.boxSize)
+    .scale({
+      x: this.checked ? 1.12 : 1,
+      y: this.checked ? 1.12 : 1
+    })
+    .animation({ curve: MotionTiming.BOUNCY })
+  }
+}
+
+/**
+ * 菜谱封面缩略（TD18 对齐安卓定案）：dining/covers/category_*.png 分类占位键视为无封面
+ * （转换器新数据已不再生成占位键，渲染层兼容存量数据）；无封面/占位键回落浅绿底 +
+ * 菜名首字占位（不依赖网络，红白色跳出清氧绿系的旧占位图不再出现）。
+ * 无点击逻辑：点击跳转由调用方行级手势消费，本组件只做视觉表达。
+ */
+@ComponentV2
+export struct DiningRecipeThumb {
+  /** 封面直链（空串 = 无封面） */
+  @Param coverUrl: string = ''
+  /** 菜名（无封面回落首字占位） */
+  @Param name: string = ''
+  /** 缩略边长（vp） */
+  @Param thumbSize: number = 72
+
+  /** 真实封面判定（TD18）：分类占位键（dining/covers/category_*）视为无封面 */
+  private hasRealCover(): boolean {
+    return this.coverUrl.length > 0 && !this.coverUrl.includes('dining/covers/category_')
+  }
+
+  build() {
+    Stack() {
+      if (this.hasRealCover()) {
+        Image(this.coverUrl)
+          .width(this.thumbSize)
+          .height(this.thumbSize)
+          .borderRadius(DesignDimens.RADIUS_MD)
+          .objectFit(ImageFit.Cover)
+          .draggable(false)
+      } else {
+        Column() {
+          Text(this.name.length > 0 ? this.name.charAt(0) : '')
+            .fontSize(Math.round(this.thumbSize * 0.33))
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor($r('app.color.PRIMARY_DARK'))
+        }
+        .width(this.thumbSize)
+        .height(this.thumbSize)
+        .borderRadius(DesignDimens.RADIUS_MD)
+        .backgroundColor($r('app.color.ICON_CONTAINER_GREEN'))
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+      }
+    }
+    .width(this.thumbSize)
+    .height(this.thumbSize)
   }
 }
 
