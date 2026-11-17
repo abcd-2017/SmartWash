@@ -5,8 +5,9 @@
 // fromOrderId（菜单由后端整份复制，端上只校验标题）。
 // 提交成功 → replace 分享视图（等价 Android popUpTo(OrderCreate)+navigate：分享返回直回列表）。
 
+import { KeyboardAvoidMode } from '@kit.ArkUI'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   DietaryPreferenceVo,
@@ -38,6 +39,7 @@ import {
   diningOrderStatusFromCode,
   diningPortionAdvice,
   diningSelectedTotalCalories,
+  diningServingCalories,
   formatDiningAmount,
   groupDiningMenu,
   validateDiningOrderForm,
@@ -126,6 +128,37 @@ struct DiningOrderCreatePage {
   @Local allergenCache: Array<DiningAllergenCacheEntry> = []
   /** 过敏原拉取在途（防重复请求） */
   @Local allergenPendingIds: Array<number> = []
+
+  aboutToDisappear(): void {
+    // 键盘避让兜底复位（对齐 Workbench 先例）：路由守卫已收口，此处防焦点残留泄漏
+    this.restoreKeyboardAvoidResize()
+  }
+
+  /**
+   * 键盘避让 NONE 落位（仅标题输入聚焦期间，TD15 对齐安卓定案）：
+   * 本页是「表单头 + 长列表 + 固定 CTA」混合页，全局默认 RESIZE 会整窗压缩——键盘弹出
+   * 列表被压缩、底部 CTA 弹起跳变（与安卓 imePadding 整页上收同源问题）。改 NONE 让
+   * 键盘直接覆盖列表下半部（输入场景列表本就无需交互），整页不上收。
+   * 路由守卫（PathStackUtil.installKeyboardAvoidGuard）在导航切换时复位 RESIZE，
+   * 失焦/离页页内自查兜底复位，避免影响登录/充值等需要避让的输入页。
+   */
+  private applyKeyboardAvoidNone(): void {
+    try {
+      this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.NONE)
+      logger.debug(TAG, `键盘避让模式已设 NONE，回读=${this.getUIContext().getKeyboardAvoidMode()}`)
+    } catch (err) {
+      logger.warn(TAG, '设置键盘避让模式失败')
+    }
+  }
+
+  /** 恢复全局 RESIZE（输入失焦 / 离开本页）：失败静默不阻塞 */
+  private restoreKeyboardAvoidResize(): void {
+    try {
+      this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE)
+    } catch (err) {
+      logger.warn(TAG, '恢复键盘避让模式失败')
+    }
+  }
 
   async aboutToAppear(): Promise<void> {
     const param = getObjectParam<DiningOrderCreateParam>(RouteNames.DINING_ORDER_CREATE)
@@ -222,6 +255,13 @@ struct DiningOrderCreatePage {
       .width('100%')
       .height(48)
       .margin({ top: DesignDimens.SPACE_XS })
+      // 键盘弹出前设 NONE（Workbench 2026-11-05 实测：聚焦期设置才稳定生效），失焦复位
+      .onFocus(() => {
+        this.applyKeyboardAvoidNone()
+      })
+      .onBlur(() => {
+        this.restoreKeyboardAvoidResize()
+      })
       .onChange((value: string) => {
         this.titleInput = value
       })
@@ -539,24 +579,41 @@ struct DiningOrderCreatePage {
     })
   }
 
-  /** 菜品行：勾选框 + 菜名 + 食材数 */
+  /**
+   * 菜品行副行（TD16 对齐安卓定案）：热量前置——大字体/窄屏截断时优先保住热量语义
+   * （旧序「N 种食材 · ≈107 …」热量必被截）；热量缺失渲染「热量未知」，无食材只出热量。
+   */
+  private recipeSubLine(recipe: DiningRecipeVo): string {
+    const parts: Array<string> = []
+    const calories = diningServingCalories(recipe.caloriesTotal, recipe.caloriesPer100g)
+    const calorieText = DiningText.calorieBadge(calories)
+    parts.push(calorieText !== null ? calorieText : DiningText.dining_nutrition_calorie_unknown)
+    if (recipe.ingredients.length > 0) {
+      parts.push(DiningText.ingredientsCount(recipe.ingredients.length))
+    }
+    return parts.join(' · ')
+  }
+
+  /** 菜品行：勾选框 + 菜名（两行上限）+ 热量前置副行 */
   @Builder
   RecipeRow(recipe: DiningRecipeVo) {
     Row({ space: DesignDimens.SPACE_SM }) {
       DiningCheckbox({ checked: this.selectedIds.indexOf(recipe.id) >= 0 })
 
       Column({ space: 2 }) {
+        // 两行上限（TD16）：大字体档单行只剩 3-4 字，两行保住菜名可读性
         Text(recipe.name)
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor($r('app.color.TEXT_PRIMARY'))
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(this.recipeSubLine(recipe))
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor($r('app.color.TEXT_SECONDARY'))
+          .fontFeature(DesignFontFeature.TNUM)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
-        if (recipe.ingredients.length > 0) {
-          Text(DiningText.ingredientsCount(recipe.ingredients.length))
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor($r('app.color.TEXT_SECONDARY'))
-        }
       }
       .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)
