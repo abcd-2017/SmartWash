@@ -62,9 +62,9 @@ struct Recharge {
 
   async aboutToAppear(): Promise<void> {
     logger.debug('recharge', '充值页挂载，拉取账户余额')
-    // 键盘避让强制 RESIZE（对齐安卓 adjustResize / imePadding）：工作台搜索页会把窗口级避让
-    // 设为 NONE 且作为 tab 常驻不恢复，若继承 NONE，键盘弹出时窗口不压缩，底部 CTA 会被
-    // 键盘整条遮住。这里在页面挂载时复位 RESIZE，保证 CTA 始终可见可点。
+    // 键盘避让强制 RESIZE（对齐安卓 adjustResize / imePadding）：全局默认即 RESIZE，
+    // 路由切面守卫（PathStackUtil.installKeyboardAvoidGuard）已保证离开工作台等常驻页后复位；
+    // 此处保留页面级兜底，确保 CTA 始终可见可点。
     try {
       this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE)
     } catch (err) {
