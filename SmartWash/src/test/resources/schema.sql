@@ -264,13 +264,15 @@ CREATE TABLE IF NOT EXISTS dining_recipe (
     fat_g               decimal(6,2) DEFAULT NULL,
     carbs_g             decimal(6,2) DEFAULT NULL,
     sodium_mg           decimal(8,2) DEFAULT NULL,
+    source_key          varchar(64) DEFAULT NULL,
     source              varchar(16) NOT NULL DEFAULT 'ADMIN',
     status              tinyint NOT NULL DEFAULT 1,
     created_by_user_id  bigint DEFAULT NULL,
     created_by_admin_id bigint DEFAULT NULL,
     created_at          timestamp DEFAULT CURRENT_TIMESTAMP,
     updated_at          timestamp DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    CONSTRAINT uk_dining_recipe_source_key UNIQUE (source_key)
 );
 
 -- 吃啥-配料库表（菜谱导入 upsert / DiningIngredientAdminController 端点验证用；结构对齐 smart_wash.sql）

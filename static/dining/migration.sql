@@ -77,3 +77,27 @@ CREATE TABLE IF NOT EXISTS `dining_recipe_favorite` (
   UNIQUE KEY `uk_user_recipe` (`user_id`,`recipe_id`),
   KEY `idx_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-菜谱收藏';
+
+-- =====================================================================
+-- 吃啥菜谱导入幂等判重增量：source_key 唯一标识列 + 唯一键
+-- 用法同上，幂等可重复执行。判重顺序：source_key 优先 →（菜名, 分类）兜底；
+-- 命中=更新（保留 id/created_at/status），未命中=新增；存量菜靠重导回填 source_key。
+-- =====================================================================
+
+-- 6) dining_recipe.source_key 列（存在即跳过）
+SET @schema := DATABASE();
+SET @add := (
+  SELECT IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='source_key'),
+    'ALTER TABLE `dining_recipe` ADD COLUMN `source_key` VARCHAR(64) NULL COMMENT ''来源唯一标识（如 hoc_0001/htc_0001/目录名）：导入与目录式上传判重键，非空按 key 幂等更新，NULL=旧数据未标识（重导回填）''',
+    'SELECT ''dining_recipe.source_key 已存在，跳过''')
+);
+PREPARE s FROM @add; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- 7) dining_recipe 唯一键 uk_source_key（存在即跳过；MySQL 唯一索引允许多个 NULL，未标识旧数据不受约束）
+SET @schema := DATABASE();
+SET @add := (
+  SELECT IF(NOT EXISTS(SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND INDEX_NAME='uk_source_key'),
+    'ALTER TABLE `dining_recipe` ADD UNIQUE KEY `uk_source_key` (`source_key`)',
+    'SELECT ''dining_recipe.uk_source_key 已存在，跳过''')
+);
+PREPARE s FROM @add; EXECUTE s; DEALLOCATE PREPARE s;

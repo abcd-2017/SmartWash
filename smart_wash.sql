@@ -1942,6 +1942,8 @@ CREATE TABLE `dining_category` (
 -- source 区分 ADMIN（运营后台录入）/ USER（用户端新增直上架）；创建人二选一落 created_by_admin_id / created_by_user_id。
 -- status 上下架：1=上架（客户端可选），0=下架（不再出现在客户端上架列表，历史点单订单不受影响）。
 -- name 不做唯一约束（同名菜谱是合法业务态，如不同来源的家传做法）。
+-- source_key 来源唯一标识（如 hoc_0001）：CSV 导入与目录式上传的幂等判重键——非空时按 key 查重命中即更新
+--（保留 id/created_at/status），未命中再按（菜名,分类）兜底；uk_source_key 保证一 key 一菜（NULL 不参与唯一裁决）。
 -- ----------------------------
 DROP TABLE IF EXISTS `dining_recipe`;
 CREATE TABLE `dining_recipe` (
@@ -1957,6 +1959,7 @@ CREATE TABLE `dining_recipe` (
   `fat_g`               DECIMAL(6,2)  NULL COMMENT '脂肪 g/100g',
   `carbs_g`             DECIMAL(6,2)  NULL COMMENT '碳水化合物 g/100g',
   `sodium_mg`           DECIMAL(8,2)  NULL COMMENT '钠 mg/100g',
+  `source_key`          VARCHAR(64)   NULL COMMENT '来源唯一标识（如 hoc_0001/htc_0001/目录名）：导入与目录式上传判重键，非空按 key 幂等更新，NULL=旧数据未标识（重导回填）',
   `source`              VARCHAR(16)   NOT NULL DEFAULT 'ADMIN' COMMENT '来源：ADMIN=运营后台录入，USER=用户端新增',
   `status`              TINYINT       NOT NULL DEFAULT 1 COMMENT '上下架：1=上架，0=下架',
   `created_by_user_id`  BIGINT        NULL COMMENT '创建人用户 ID（source=USER 时记录 users.user_id）',
@@ -1964,6 +1967,7 @@ CREATE TABLE `dining_recipe` (
   `created_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_source_key` (`source_key`) COMMENT '来源唯一标识判重（一 key 一菜，幂等更新闸门）',
   KEY `idx_category_id` (`category_id`) COMMENT '分类筛选与分类引用计数',
   KEY `idx_status` (`status`) COMMENT '客户端上架列表过滤',
   KEY `idx_name` (`name`) COMMENT '关键词模糊搜索'
