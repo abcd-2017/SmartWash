@@ -512,9 +512,18 @@ struct DiningShoppingListPage {
     return result !== null && result.calorieUnknownDishCount !== null ? result.calorieUnknownDishCount : 0
   }
 
-  /** 总热量大字值（已知 → 「≈1830」；未知/v1 快照 → 「热量未知」） */
+  /**
+   * 总热量大字值（已知 → 「≈1830」；未知/v1 快照 → 「热量未知」）。
+   * TD27 对齐安卓定案：全部菜热量未知时后端聚合 totalCalories=0.0——渲染「≈0」误导
+   * （仿佛确认了零热量）；未知菜数 == 已点菜总数（按菜备菜视图仅含被点过的菜）时改显
+   * 「热量未知」。
+   */
   private totalCaloriesText(): string {
     const result = this.result
+    if (result !== null && result.calorieUnknownDishCount !== null && result.perRecipe.length > 0
+      && result.calorieUnknownDishCount === result.perRecipe.length) {
+      return DiningText.dining_shopping_list_total_calories_unknown
+    }
     const formatted = result !== null ? formatDiningAmount(result.totalCalories) : null
     if (formatted === null) {
       return DiningText.dining_shopping_list_total_calories_unknown
