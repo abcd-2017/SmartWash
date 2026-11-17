@@ -816,7 +816,13 @@ struct DiningOrderDetailPage {
     })
   }
 
-  /** 菜品行：勾选框 + 菜名 + 选菜人/备注 + 备注/取消入口 */
+  /** 我的备注文本（备注图标着色依据：有备注 primaryDark 强调，无备注次级灰） */
+  private noteOf(recipeId: number): string {
+    const existing = this.myItems.find((entry: MyItemIntent): boolean => entry.recipeId === recipeId)
+    return existing?.note ?? ''
+  }
+
+  /** 菜品行：勾选框 + 菜名 + 选菜人/备注 + 做法/备注图标入口 */
   @Builder
   MenuRow(row: DiningMenuRecipeRow) {
     Column({ space: DesignDimens.SPACE_XS }) {
@@ -824,6 +830,7 @@ struct DiningOrderDetailPage {
         // FINISHED 只读态：勾选框仅展示（行点击在 toggleRecipe 内拦截并提示）
         DiningCheckbox({ checked: this.isChecked(row.recipeId) })
 
+        // 菜名 layoutWeight(1) + 两行上限（TD21 对齐安卓定案）：固定宽按钮挤压下不消失
         Text(row.name)
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.MEDIUM)
@@ -832,24 +839,45 @@ struct DiningOrderDetailPage {
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .layoutWeight(1)
 
-        // 做法入口（独立热区，跳菜谱详情看做法步骤；只读态也可看）
-        Text(DiningText.dining_order_detail_recipe_action)
-          .fontSize(DesignFontSize.BUTTON_TEXT)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor($r('app.color.TEXT_GREEN'))
-          .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 6, bottom: 6 })
+        // 做法入口（独立热区，跳菜谱详情看做法步骤；只读态也可看）。
+        // 图标化（TD21 对齐安卓定案）：文字胶囊在大字体档宽度失控挤压菜名；图标 + 48vp
+        // 恒宽热区宽度恒定，语义由无障碍文本承担
+        Column() {
+          SymbolGlyph($r('sys.symbol.book'))
+            .fontSize(20)
+            .fontColor([$r('app.color.TEXT_SECONDARY')])
+        }
+        .width(48)
+        .height(48)
+        .borderRadius(DesignDimens.RADIUS_FULL)
+        .backgroundColor($r('app.color.SURFACE_VARIANT'))
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+        .accessibilityText(DiningText.dining_order_detail_recipe_action)
+        .onClick(() => {
+          pathStack.pushPathByName(RouteNames.DINING_RECIPE_DETAIL, row.recipeId)
+        })
+
+        // 备注入口（独立热区，点击不触发整行勾选）；只读态隐藏。
+        // 对齐安卓口径：未勾选也可点（弹窗确认后一步「勾选+备注」POST，saveNote 已承载）
+        if (!this.readOnly) {
+          Column() {
+            SymbolGlyph($r('sys.symbol.square_and_pencil'))
+              .fontSize(20)
+              .fontColor([this.noteOf(row.recipeId).length > 0
+                ? $r('app.color.PRIMARY_DARK')
+                : $r('app.color.TEXT_SECONDARY')])
+          }
+          .width(48)
+          .height(48)
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .backgroundColor($r('app.color.SURFACE_VARIANT'))
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+          .accessibilityText(DiningText.dining_order_detail_note_action)
           .onClick(() => {
-            pathStack.pushPathByName(RouteNames.DINING_RECIPE_DETAIL, row.recipeId)
+            this.openNoteDialog(row.recipeId)
           })
-        if (!this.readOnly && this.isChecked(row.recipeId)) {
-          Text(DiningText.dining_order_detail_note_action)
-            .fontSize(DesignFontSize.BUTTON_TEXT)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor($r('app.color.TEXT_GREEN'))
-            .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 6, bottom: 6 })
-            .onClick(() => {
-              this.openNoteDialog(row.recipeId)
-            })
         }
       }
       .width('100%')
