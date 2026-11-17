@@ -469,18 +469,24 @@ jobs:
           WEB_IMAGE: ${{ secrets.WEB_IMAGE }}
           WEB_DIGEST: ${{ needs.web.outputs.digest }}
         run: |
-          DEPLOY_URL="http://${DEPLOY_WEBHOOK_HOST}:${DEPLOY_WEBHOOK_PORT}/api/deploy"
+          BASE_URL="http://${DEPLOY_WEBHOOK_HOST}:${DEPLOY_WEBHOOK_PORT}"
+          DEPLOY_URL="${BASE_URL}/api/deploy"
+          STATUS_URL="${BASE_URL}/api/deploy/status"
 
           echo "Deploying version ${VERSION} via ${DEPLOY_URL}..."
 
-          curl --fail-with-body \
-            --silent \
-            --show-error \
-            --request POST \
-            "$DEPLOY_URL" \
-            --header "Authorization: Bearer $DEPLOY_TOKEN" \
-            --header "Content-Type: application/json" \
-            --data @- <<EOF
+          # 1) 触发部署：webhook 立即返回 202 + deploymentId，部署在服务器后台执行
+          TRIGGER_RESPONSE="$(
+            curl --fail-with-body \
+              --silent \
+              --show-error \
+              --connect-timeout 15 \
+              --max-time 60 \
+              --request POST \
+              "$DEPLOY_URL" \
+              --header "Authorization: Bearer $DEPLOY_TOKEN" \
+              --header "Content-Type: application/json" \
+              --data @- <<EOF
           {
             "version": "${VERSION}",
             "backendImage": "${BACKEND_IMAGE}",
@@ -489,3 +495,48 @@ jobs:
             "webDigest": "${WEB_DIGEST}"
           }
           EOF
+          )"
+
+          DEPLOYMENT_ID="$(printf '%s' "$TRIGGER_RESPONSE" | jq -r '.deploymentId')"
+          echo "deploymentId: ${DEPLOYMENT_ID}"
+
+          # 2) 轮询真实部署结果，直到成功 / 失败 / 超时（30 分钟）
+          DEPLOY_DEADLINE=$((SECONDS + 1800))
+
+          while (( SECONDS < DEPLOY_DEADLINE )); do
+            HTTP_CODE="$(
+              curl --silent \
+                --show-error \
+                --connect-timeout 15 \
+                --max-time 60 \
+                --output /tmp/deploy-status.json \
+                --write-out '%{http_code}' \
+                "${STATUS_URL}?id=${DEPLOYMENT_ID}" \
+                --header "Authorization: Bearer $DEPLOY_TOKEN" \
+                || true
+            )"
+
+            if [[ "$HTTP_CODE" == "200" ]]; then
+              STATE="$(jq -r '.state' /tmp/deploy-status.json)"
+              echo "Deployment state: ${STATE}"
+
+              case "$STATE" in
+                success)
+                  echo "Deployment succeeded."
+                  exit 0
+                  ;;
+                failed)
+                  echo "Deployment failed:"
+                  jq -r '.message // "unknown error"' /tmp/deploy-status.json
+                  exit 1
+                  ;;
+              esac
+            else
+              echo "Status endpoint returned HTTP ${HTTP_CODE}, retrying..."
+            fi
+
+            sleep 10
+          done
+
+          echo "Timed out waiting for deployment ${DEPLOYMENT_ID}."
+          exit 1
