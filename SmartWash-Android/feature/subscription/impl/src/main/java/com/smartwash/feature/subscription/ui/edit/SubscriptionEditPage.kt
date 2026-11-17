@@ -157,7 +157,7 @@ fun SubscriptionEditPage(
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp),
+                                .heightIn(min = 48.dp),
                         )
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
@@ -172,7 +172,7 @@ fun SubscriptionEditPage(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp),
+                                .heightIn(min = 48.dp),
                         )
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
@@ -204,7 +204,7 @@ fun SubscriptionEditPage(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp),
+                                .heightIn(min = 48.dp),
                         )
                         // helper 是指导用户填写的可读正文：装饰档 textTertiary #A9AEA9 仅 2.25:1
                         // 踩对比度红线（DESIGN-SPEC §10），12sp 弱化下限为 textSecondary（4.9:1）。
@@ -291,7 +291,7 @@ fun SubscriptionEditPage(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp),
+                                .heightIn(min = 48.dp),
                         )
                         Text(
                             text = stringResource(R.string.subscription_form_remind_helper),
@@ -312,7 +312,7 @@ fun SubscriptionEditPage(
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp),
+                                .heightIn(min = 48.dp),
                         )
                         Text(
                             text = stringResource(R.string.subscription_form_cancel_url_helper),

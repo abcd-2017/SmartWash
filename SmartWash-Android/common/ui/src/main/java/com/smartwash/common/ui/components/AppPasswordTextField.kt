@@ -33,7 +33,8 @@ import com.smartwash.common.utils.pressable
  * §3.7：尾缀操作一律图标化（Material `Visibility / VisibilityOff`，禁止文字替代），
  * 热区 ≥44dp（此处 48dp 自绘，§7 禁 M3 IconButton 自带 state layer）。
  *
- * @param maxLength 最大位数，超出直接截断、不报错（沿用原 PasswordInput 行为）
+ * @param maxLength 最大位数，超出直接截断、不报错（沿用原 PasswordInput 行为）；
+ *   传 null 则不限制长度（如投递进入密码 4-64 位由业务侧规则校验的场景）
  */
 @Composable
 fun AppPasswordTextField(
@@ -44,7 +45,7 @@ fun AppPasswordTextField(
     isError: Boolean = false,
     supportingText: (@Composable () -> Unit)? = null,
     enabled: Boolean = true,
-    maxLength: Int = 16,
+    maxLength: Int? = 16,
     interactionSource: MutableInteractionSource? = null,
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -53,7 +54,9 @@ fun AppPasswordTextField(
     AppTextField(
         value = value,
         onValueChange = { newValue ->
-            onValueChange(if (newValue.length > maxLength) newValue.take(maxLength) else newValue)
+            onValueChange(
+                if (maxLength != null && newValue.length > maxLength) newValue.take(maxLength) else newValue
+            )
         },
         modifier = modifier,
         placeholder = placeholder,

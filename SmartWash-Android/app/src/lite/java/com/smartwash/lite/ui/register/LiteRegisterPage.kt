@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -228,7 +229,7 @@ fun LiteRegisterPage(
                         codeFocusRequester.requestFocus()
                     }
                 },
-                modifier = Modifier.height(48.dp),
+                modifier = Modifier.heightIn(min = 48.dp),
                 isError = isPhoneError,
                 leadingIcon = Icons.Rounded.Phone,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -278,7 +279,7 @@ fun LiteRegisterPage(
                     }
                 },
                 modifier = Modifier
-                    .height(48.dp)
+                    .heightIn(min = 48.dp)
                     .focusRequester(codeFocusRequester),
                 placeholder = stringResource(com.smartwash.feature.user.impl.R.string.verification_code_hint),
                 isError = isCodeError,

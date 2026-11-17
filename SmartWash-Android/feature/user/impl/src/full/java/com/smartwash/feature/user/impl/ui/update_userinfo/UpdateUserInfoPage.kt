@@ -298,7 +298,7 @@ fun UpdateUserInfoPage(
                         placeholder = stringResource(R.string.student_id),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp),
+                            .heightIn(min = 48.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         enabled = !isInfoLocked,
                         isError = isStudentIdError,
@@ -367,7 +367,7 @@ fun SearchSchoolInput(
             placeholder = stringResource(R.string.search_school),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .heightIn(min = 48.dp),
             enabled = enabled,
             isError = isSchoolError,
             supportingText = if (isSchoolError) {

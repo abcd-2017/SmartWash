@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -137,7 +138,7 @@ fun ChangePasswordPage(
                         },
                         // 最大位数由组件 maxLength 固定 16
                         isError = false,
-                        modifier = Modifier.height(48.dp)
+                        modifier = Modifier.heightIn(min = 48.dp)
                     )
                     // 行内错误淡入 + 纵向展开（对齐注册页同场景，AND-B-012），不再 0ms 硬切
                     InlineError(
@@ -173,7 +174,7 @@ fun ChangePasswordPage(
                                 )
                             }
                         } else null,
-                        modifier = Modifier.height(48.dp)
+                        modifier = Modifier.heightIn(min = 48.dp)
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -193,7 +194,7 @@ fun ChangePasswordPage(
                         },
                         // 最大位数由组件 maxLength 固定 16
                         isError = false,
-                        modifier = Modifier.height(48.dp)
+                        modifier = Modifier.heightIn(min = 48.dp)
                     )
                     InlineError(
                         visible = isMismatchError,

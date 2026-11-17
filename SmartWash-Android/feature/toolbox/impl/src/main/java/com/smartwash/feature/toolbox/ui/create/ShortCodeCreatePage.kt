@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -160,7 +161,7 @@ fun ShortCodeCreatePage(
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp),
+                                .heightIn(min = 48.dp),
                         )
                         Text(
                             text = stringResource(R.string.toolbox_target_helper),
@@ -241,7 +242,7 @@ fun ShortCodeCreatePage(
                                 visualTransformation = PasswordVisualTransformation(),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(48.dp),
+                                    .heightIn(min = 48.dp),
                             )
                         }
 
@@ -264,7 +265,7 @@ fun ShortCodeCreatePage(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                        .heightIn(min = 48.dp),
                 )
 
                 // ---------- 可见性（仅短链；私密文本由后端恒置公开） ----------

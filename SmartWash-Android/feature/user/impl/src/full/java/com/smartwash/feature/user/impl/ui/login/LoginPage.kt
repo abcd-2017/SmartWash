@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -253,7 +254,7 @@ fun LoginPage(
                             passwordFocusRequester.requestFocus()
                         }
                     },
-                    modifier = Modifier.height(48.dp),
+                    modifier = Modifier.heightIn(min = 48.dp),
                     isError = isPhoneError,
                     leadingIcon = Icons.Rounded.Phone,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
