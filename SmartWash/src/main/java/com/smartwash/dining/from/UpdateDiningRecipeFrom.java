@@ -71,4 +71,11 @@ public class UpdateDiningRecipeFrom {
     @DecimalMin(value = "0", message = "钠不能为负数")
     @DecimalMax(value = "999999.99", message = "钠数值过大")
     private BigDecimal sodiumMg;
+
+    /**
+     * 来源唯一标识（可选），null=不修改；按 sourceKey 幂等保护：
+     * 传值时若同 key 已挂在其他菜谱（不同 id）上则报冲突，本接口不支持清空标识。
+     */
+    @Size(max = 64, message = "唯一标识过长（上限64字符）")
+    private String sourceKey;
 }

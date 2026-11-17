@@ -56,6 +56,9 @@ public class DiningRecipeVo {
     /** 钠 mg/100g，null=未录入 */
     private BigDecimal sodiumMg;
 
+    /** 来源唯一标识（如 hoc_0001），null=未标识；导入/目录式上传幂等判重键，编辑回传用 */
+    private String sourceKey;
+
     /** 来源：ADMIN=运营后台录入，USER=用户端新增 */
     private String source;
 

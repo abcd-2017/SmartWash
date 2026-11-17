@@ -114,6 +114,11 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         Long categoryId = normalizeUncategorized(from.getCategoryId());
         // 分类传入时校验存在（category_id 无外键约束，写前拦截避免悬空引用）
         checkCategoryExists(categoryId);
+        // 唯一标识判重键（目录式上传逐条创建时携带）：同 key 已存在先给业务提示，不撞 uk_source_key 玻璃异常
+        String sourceKey = trimToNull(from.getSourceKey());
+        if (sourceKey != null) {
+            checkSourceKeyAvailable(sourceKey, null);
+        }
 
         DiningRecipe recipe = new DiningRecipe();
         recipe.setName(from.getName());
@@ -129,6 +134,7 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         recipe.setFatG(from.getFatG());
         recipe.setCarbsG(from.getCarbsG());
         recipe.setSodiumMg(from.getSodiumMg());
+        recipe.setSourceKey(sourceKey);
         // 管理端录入：来源固定 ADMIN、创建人取当前登录管理员，默认上架（下架需显式走上下架接口）
         recipe.setSource(SOURCE_ADMIN);
         recipe.setStatus(DiningRecipe.STATUS_ON_SHELF);
@@ -149,6 +155,11 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
             Long categoryId = normalizeUncategorized(from.getCategoryId());
             checkCategoryExists(categoryId);
             recipe.setCategoryId(categoryId);
+        }
+        // 唯一标识按 sourceKey 幂等保护：同 key 已挂在其他菜谱（不同 id）上即报冲突（uk_source_key 业务化提示）
+        if (StringUtils.hasText(from.getSourceKey())) {
+            checkSourceKeyAvailable(from.getSourceKey().trim(), from.getId());
+            recipe.setSourceKey(from.getSourceKey().trim());
         }
         if (StringUtils.hasText(from.getName())) {
             recipe.setName(from.getName());
@@ -392,6 +403,7 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         // 分类哨兵协议与管理端一致：null/0 均未分类、>0 校验存在（GLOSSARY 10.10）
         Long categoryId = normalizeUncategorized(from.getCategoryId());
         checkCategoryExists(categoryId);
+        // sourceKey 是管理端导入/目录式上传的幂等判重键：用户端新增忽略该字段，防止用户抢占管理端判重键
 
         DiningRecipe recipe = new DiningRecipe();
         recipe.setName(from.getName());
@@ -418,6 +430,27 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
         if (diningCategoryMapper.selectById(categoryId) == null) {
             throw new CustomExceptions("分类不存在");
         }
+    }
+
+    /**
+     * 唯一标识可用性校验（uk_source_key 的业务化前置提示）：同 key 已存在且不属于
+     * excludeId 指向的菜谱即报冲突——新增时 excludeId 传 null（任何占用都算冲突），
+     * 更新时传本记录 id（回填/保持自身 key 放行）。
+     */
+    private void checkSourceKeyAvailable(String sourceKey, Long excludeId) {
+        DiningRecipe occupied = this.baseMapper.selectOne(new LambdaQueryWrapper<DiningRecipe>()
+                .eq(DiningRecipe::getSourceKey, sourceKey)
+                .ne(excludeId != null, DiningRecipe::getId, excludeId)
+                .last("LIMIT 1"));
+        if (occupied != null) {
+            throw new CustomExceptions("唯一标识「" + sourceKey + "」已被菜谱「" + occupied.getName()
+                    + "」使用，请直接更新该菜谱或更换标识");
+        }
+    }
+
+    /** 去两侧空白，空白串归一为 null（「未填写」语义） */
+    private String trimToNull(String text) {
+        return StringUtils.hasText(text) ? text.trim() : null;
     }
 
     /** 未分类哨兵归一：0 → null（DB category_id 可空=未分类） */

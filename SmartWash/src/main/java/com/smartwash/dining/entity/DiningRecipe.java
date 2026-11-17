@@ -70,6 +70,10 @@ public class DiningRecipe implements Serializable {
     /** 钠 mg/100g，null=未录入 */
     private BigDecimal sodiumMg;
 
+    /** 来源唯一标识（如 hoc_0001/htc_0001/目录名）：导入与目录式上传判重键，
+     * 非空按 key 幂等更新（uk_source_key 一 key 一菜），null=旧数据未标识（重导回填） */
+    private String sourceKey;
+
     /** 来源：ADMIN=运营后台录入，USER=用户端新增 */
     private String source;
 

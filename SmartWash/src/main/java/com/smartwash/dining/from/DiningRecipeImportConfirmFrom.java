@@ -84,6 +84,11 @@ public class DiningRecipeImportConfirmFrom {
 
         /** 钠 mg/100g（可空） */
         private BigDecimal sodiumMg;
+
+        /** 唯一标识（可空，模板「唯一标识」列）：非空按 key 幂等判重（命中更新/未命中兜底匹配），
+         * 同批重复 key 为行级错误；旧 CSV 无此列不受影响 */
+        @Size(max = 64, message = "唯一标识过长（上限64字符）")
+        private String sourceKey;
     }
 
     /** 配料明细条目：`名称:数量单位` 解析结果（数量可空 = 来源未给出，如「适量」） */

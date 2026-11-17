@@ -21,10 +21,20 @@ import org.springframework.web.multipart.MultipartFile;
  * （食材明细列表/封面对象键/热量每100g/整份热量/蛋白质g/脂肪g/碳水g/钠mg）全部可选，
  * 旧模板/旧 CSV 零改动仍可导入。步骤列可空（酱料配方/瓶装饮品无做法，仅校验长度上限）。</p>
  *
+ * <p>幂等判重（source_key 唯一标识）：判重顺序 = 行 source_key 非空按 key 查 →（菜名,分类）兜底查；
+ * 命中即更新既有菜谱（保留 id/created_at/status/source/创建人，不静默改上下架），未命中新增。
+ * 存量未标识菜谱靠重导按兜底键命中回填 source_key。同批内重复 source_key 为行级错误（全批回滚）。</p>
+ *
  * <p>{@link #buildTemplate} 生成带填写说明与示例行的 xlsx 模板（接口动态生成而非静态文件：
  * 模板列约束与代码校验规则同源演进，不依赖 jar 内资源路径维护）。</p>
  */
 public interface DiningRecipeImportService {
+
+    /** 判重结果类型：新增（未命中库内已有菜谱） */
+    String EXISTS_KIND_CREATE = "CREATE";
+
+    /** 判重结果类型：更新（source_key/（菜名,分类）命中库内已有菜谱，幂等覆盖刷新） */
+    String EXISTS_KIND_UPDATE = "UPDATE";
 
     /** 生成导入模板 xlsx 字节（首个 sheet 为表头+示例行，第二个 sheet 为填写说明） */
     byte[] buildTemplate();
@@ -40,7 +50,8 @@ public interface DiningRecipeImportService {
      * 阶段二：确认导入（整批事务）。再次逐行校验，任一行失败全批不落库
      * （rolledBack=true + 逐行失败报告）；全部通过才写入（分类自动创建、配料 upsert +
      * 关联表、营养列、封面对象键存储校验；source=ADMIN、默认上架、记录创建管理员）
-     * 并返回逐行成功报告。
+     * 并返回逐行成功报告。命中库内已有菜谱（source_key 优先 →（菜名,分类）兜底）按
+     * 幂等更新处理：刷新内容列、重建配料关联，保留 id/created_at/status/来源与创建人。
      */
     DiningRecipeImportResultVo confirm(DiningRecipeImportConfirmFrom from);
 }
