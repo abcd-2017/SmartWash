@@ -187,7 +187,7 @@ class DiningRecipeImportServiceImplTest {
     // ==================== 模板生成 ====================
 
     @Test
-    @DisplayName("模板：xlsx 可被 POI 读回，首 sheet 首行为 13 列标准表头（v2 新列在列），且带填写说明 sheet")
+    @DisplayName("模板：xlsx 可被 POI 读回，首 sheet 首行为 14 列标准表头（v2 新列+唯一标识在列），且带填写说明 sheet")
     void template_readableWithStandardHeader() throws Exception {
         byte[] bytes = service.buildTemplate();
         assertTrue(bytes.length > 0, "模板字节非空");
@@ -208,12 +208,14 @@ class DiningRecipeImportServiceImplTest {
             assertEquals("脂肪g", header.getCell(10).getStringCellValue());
             assertEquals("碳水g", header.getCell(11).getStringCellValue());
             assertEquals("钠mg", header.getCell(12).getStringCellValue());
+            assertEquals("唯一标识", header.getCell(13).getStringCellValue(), "幂等判重列必须在模板表头");
             assertTrue(first.getLastRowNum() >= 1, "表头之外应有示例行");
             assertTrue(workbook.getNumberOfSheets() >= 2, "应有填写说明 sheet");
             String explain = workbook.getSheetAt(1).getRow(0).getCell(0).getStringCellValue();
             assertTrue(explain.contains("分隔"), "说明必须写清食材分隔符约定");
             assertTrue(explain.contains("500"), "说明必须写清单次行数上限");
             assertTrue(explain.contains("自动创建"), "说明必须写清分类自动创建行为");
+            assertTrue(explain.contains("更新"), "说明必须写清重复导入幂等更新行为");
         }
     }
 
@@ -816,5 +818,191 @@ class DiningRecipeImportServiceImplTest {
         expectBusinessException("不能为空", () -> service.confirm(new DiningRecipeImportConfirmFrom()));
         expectBusinessException("不能为空", () -> service.confirm(
                 new DiningRecipeImportConfirmFrom().setRows(java.util.Collections.emptyList())));
+    }
+
+    // ==================== source_key 幂等判重 ====================
+
+    private DiningRecipeImportConfirmFrom.Row keyedRow(int rowNo, String sourceKey, String categoryName,
+                                                       String name, List<String> ingredients) {
+        return confirmRow(rowNo, categoryName, name, ingredients, "煮").setSourceKey(sourceKey);
+    }
+
+    @Test
+    @DisplayName("确认：同批内重复 source_key → 行级报错全批回滚，不落任何菜")
+    void confirm_batchDuplicateSourceKey_rollsBack() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+
+        DiningRecipeImportResultVo vo = service.confirm(confirmFrom(
+                keyedRow(2, "hoc_001", null, "菜A", List.of("盐")),
+                keyedRow(3, "hoc_001", null, "菜B", List.of("盐"))));
+
+        assertTrue(vo.isRolledBack());
+        assertEquals(0, vo.getSuccessCount());
+        verify(recipeMapper, never()).insert(any(DiningRecipe.class));
+        verify(recipeMapper, never()).update(any(), any());
+        vo.getRows().forEach(row ->
+                assertTrue(row.getError().contains("唯一标识") && row.getError().contains("重复"),
+                        "重复 key 的每一行都要标错，实际: " + row.getError()));
+    }
+
+    @Test
+    @DisplayName("确认：source_key 命中库内已有菜谱 → 幂等更新（insert 零调用，关联按既有 ID 重建），报告标「更新」")
+    void confirm_sourceKeyHit_updatesExisting() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+        stubIngredientAutoRegister();
+        DiningRecipe existing = new DiningRecipe().setId(11L).setName("旧名")
+                .setCategoryId(3L).setSourceKey("hoc_001");
+        when(recipeMapper.selectList(any())).thenReturn(List.of(existing));
+
+        DiningRecipeImportConfirmFrom.Row row = keyedRow(2, "hoc_001", null, "新名", List.of("鸡蛋"));
+        row.setIngredientDetails(List.of(new DiningRecipeImportConfirmFrom.IngredientDetail()
+                .setName("鸡蛋").setAmountValue(new BigDecimal("575")).setAmountUnit("g")));
+        DiningRecipeImportResultVo vo = service.confirm(confirmFrom(row));
+
+        assertFalse(vo.isRolledBack());
+        assertEquals(1, vo.getSuccessCount());
+        assertEquals(0, vo.getCreatedCount());
+        assertEquals(1, vo.getUpdatedCount());
+        verify(recipeMapper, never()).insert(any(DiningRecipe.class));
+        verify(recipeMapper).update(org.mockito.ArgumentMatchers.isNull(), any());
+        // 关联按既有菜谱 ID 重建：先删旧关联，再插入新关联行
+        verify(recipeIngredientMapper).delete(any());
+        ArgumentCaptor<DiningRecipeIngredient> relationCaptor = ArgumentCaptor.forClass(DiningRecipeIngredient.class);
+        verify(recipeIngredientMapper).insert(relationCaptor.capture());
+        assertEquals(11L, relationCaptor.getValue().getRecipeId(), "重建的关联必须挂既有菜谱 ID");
+        assertEquals(0, new BigDecimal("575").compareTo(relationCaptor.getValue().getAmountValue()));
+        assertEquals("g", relationCaptor.getValue().getAmountUnit());
+        // 报告行：更新语义回显既有 ID
+        assertFalse(vo.getRows().get(0).getIsNew());
+        assertEquals("UPDATE", vo.getRows().get(0).getExistsKind());
+        assertEquals(11L, vo.getRows().get(0).getRecipeId());
+    }
+
+    @Test
+    @DisplayName("确认：source_key 未命中但（菜名,分类）兜底命中 → 更新既有菜谱（存量回填路径），报告标「更新」")
+    void confirm_sourceKeyMiss_fallbackNameCategoryHit_updates() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of(category(3L, "汤羹")));
+        stubIngredientAutoRegister();
+        DiningRecipe existing = new DiningRecipe().setId(12L).setName("番茄蛋汤")
+                .setCategoryId(3L).setSourceKey(null);
+        when(recipeMapper.selectList(any())).thenReturn(List.of(existing));
+
+        DiningRecipeImportResultVo vo = service.confirm(confirmFrom(
+                keyedRow(2, "hoc_002", "汤羹", "番茄蛋汤", List.of("西红柿"))));
+
+        assertFalse(vo.isRolledBack());
+        assertEquals(1, vo.getUpdatedCount());
+        assertEquals(0, vo.getCreatedCount());
+        verify(recipeMapper, never()).insert(any(DiningRecipe.class));
+        verify(recipeMapper).update(org.mockito.ArgumentMatchers.isNull(), any());
+        assertFalse(vo.getRows().get(0).getIsNew());
+        assertEquals("UPDATE", vo.getRows().get(0).getExistsKind());
+        assertEquals(12L, vo.getRows().get(0).getRecipeId());
+    }
+
+    @Test
+    @DisplayName("确认：source_key 未命中且兜底命中的菜谱已挂其他来源 key → 视为不同上游菜，按新增插入")
+    void confirm_fallbackHitWithDifferentKey_createsNew() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of(category(3L, "汤羹")));
+        when(recipeMapper.insert(any(DiningRecipe.class))).thenReturn(1);
+        stubIngredientAutoRegister();
+        DiningRecipe existing = new DiningRecipe().setId(13L).setName("番茄蛋汤")
+                .setCategoryId(3L).setSourceKey("htc_999");
+        when(recipeMapper.selectList(any())).thenReturn(List.of(existing));
+
+        DiningRecipeImportResultVo vo = service.confirm(confirmFrom(
+                keyedRow(2, "hoc_003", "汤羹", "番茄蛋汤", List.of("西红柿"))));
+
+        assertFalse(vo.isRolledBack());
+        assertEquals(1, vo.getCreatedCount());
+        assertEquals(0, vo.getUpdatedCount());
+        verify(recipeMapper).insert(any(DiningRecipe.class));
+        verify(recipeMapper, never()).update(any(), any());
+        assertTrue(vo.getRows().get(0).getIsNew());
+        assertEquals("CREATE", vo.getRows().get(0).getExistsKind());
+    }
+
+    @Test
+    @DisplayName("预览：命中既有菜谱标注 isNew=false/UPDATE，未命中标 isNew=true/CREATE，顶层给出新增/更新计数")
+    void preview_marksNewAndUpdate_withCounts() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of(category(3L, "汤羹")));
+        DiningRecipe existing = new DiningRecipe().setId(21L).setName("番茄蛋汤")
+                .setCategoryId(3L).setSourceKey(null);
+        when(recipeMapper.selectList(any())).thenReturn(List.of(existing));
+
+        DiningRecipeImportPreviewVo vo = service.preview(xlsxFile(List.of(
+                List.of("分类名", "菜名", "食材名列表", "步骤", "封面链接", "唯一标识"),
+                List.of("汤羹", "番茄蛋汤", "西红柿", "煮", "", "hoc_010"),
+                List.of("汤羹", "全新菜", "盐", "煮", "", "hoc_011"))));
+
+        assertEquals(2, vo.getTotal());
+        assertEquals(2, vo.getValidCount());
+        assertEquals(1, vo.getNewCount());
+        assertEquals(1, vo.getUpdateCount());
+        DiningRecipeImportPreviewVo.PreviewRow hit = vo.getRows().get(0);
+        assertEquals(Boolean.FALSE, hit.getIsNew(), "（菜名,分类）兜底命中必须标更新");
+        assertEquals("UPDATE", hit.getExistsKind());
+        DiningRecipeImportPreviewVo.PreviewRow fresh = vo.getRows().get(1);
+        assertEquals(Boolean.TRUE, fresh.getIsNew());
+        assertEquals("CREATE", fresh.getExistsKind());
+        assertEquals("hoc_011", fresh.getSourceKey(), "唯一标识原文必须回显给前端");
+    }
+
+    @Test
+    @DisplayName("预览：分类尚不存在（确认时自动创建）的行禁用兜底判重，必标新增")
+    void preview_unresolvableCategory_forcesNew() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of(category(3L, "汤羹")));
+        DiningRecipe existing = new DiningRecipe().setId(22L).setName("同名菜")
+                .setCategoryId(null).setSourceKey(null);
+        when(recipeMapper.selectList(any())).thenReturn(List.of(existing));
+
+        DiningRecipeImportPreviewVo vo = service.preview(xlsxFile(List.of(
+                List.of("分类名", "菜名", "食材名列表", "步骤", "封面链接"),
+                List.of("幽灵分类", "同名菜", "盐", "煮", ""))));
+
+        DiningRecipeImportPreviewVo.PreviewRow row = vo.getRows().get(0);
+        assertEquals(Boolean.TRUE, row.getIsNew(),
+                "分类不存在时兜底禁用——不得误命中未分类的同名菜");
+        assertEquals("CREATE", row.getExistsKind());
+        assertEquals(1, vo.getNewCount());
+        assertEquals(0, vo.getUpdateCount());
+    }
+
+    @Test
+    @DisplayName("预览：同批重复 source_key 标行级错误，errorCount 计入且该行无判重语义")
+    void preview_batchDuplicateSourceKey_rowError() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of());
+
+        DiningRecipeImportPreviewVo vo = service.preview(xlsxFile(List.of(
+                List.of("分类名", "菜名", "食材名列表", "步骤", "封面链接", "唯一标识"),
+                List.of("", "菜A", "盐", "煮", "", "hoc_dup"),
+                List.of("", "菜B", "盐", "煮", "", "hoc_dup"))));
+
+        assertEquals(2, vo.getErrorCount());
+        assertEquals(0, vo.getValidCount());
+        vo.getRows().forEach(row -> {
+            assertNull(row.getIsNew(), "行级错误时无判重语义");
+            assertNull(row.getExistsKind());
+            assertTrue(row.getErrors().stream().anyMatch(e -> e.contains("hoc_dup")));
+        });
+    }
+
+    @Test
+    @DisplayName("确认：旧 CSV 无唯一标识列零破坏——不查 source_key、走既有新增路径")
+    void confirm_legacyCsvWithoutSourceKey_unaffected() {
+        when(categoryMapper.selectList(any())).thenReturn(List.of(category(3L, "汤羹")));
+        when(recipeMapper.insert(any(DiningRecipe.class))).thenReturn(1);
+        stubIngredientAutoRegister();
+
+        DiningRecipeImportResultVo vo = service.confirm(confirmFrom(
+                confirmRow(2, "汤羹", "番茄蛋汤", List.of("西红柿"), "冲汤")));
+
+        assertFalse(vo.isRolledBack());
+        assertEquals(1, vo.getCreatedCount());
+        assertEquals(0, vo.getUpdatedCount());
+        ArgumentCaptor<DiningRecipe> captor = ArgumentCaptor.forClass(DiningRecipe.class);
+        verify(recipeMapper).insert(captor.capture());
+        assertNull(captor.getValue().getSourceKey(), "未带标识的旧 CSV 新增行 source_key 落 NULL");
+        assertTrue(vo.getRows().get(0).getIsNew());
     }
 }
