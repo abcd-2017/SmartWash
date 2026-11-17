@@ -258,7 +258,6 @@ import { useTableList } from '@/composables/useTableList';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
 
 const tableRef = ref(null);
 const formRef = ref(null);

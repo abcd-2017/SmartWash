@@ -384,7 +384,6 @@ import {
   diningRecipeSourceTagType,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);

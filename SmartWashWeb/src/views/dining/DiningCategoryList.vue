@@ -129,7 +129,6 @@ import { useConfirm } from '@/composables/useConfirm';
 import { diningCategoryOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
