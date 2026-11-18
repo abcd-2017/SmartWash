@@ -796,16 +796,10 @@ struct Payment {
           Column() {
             EmptyState({
               message: resString('payment_1'),
-              action: () => {
-                AppButton({
-                  small: true,
-                  text: resString('retry'),
-                  variant: AppButtonVariant.SECONDARY,
-                  click: () => {
-                    this.loadOrderInfo()
-                  }
-                })
-                  .margin({ top: DesignDimens.SPACE_MD })
+              actionText: resString('retry'),
+              actionVariant: AppButtonVariant.SECONDARY,
+              onAction: () => {
+                this.loadOrderInfo()
               }
             })
           }

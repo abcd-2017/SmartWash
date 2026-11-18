@@ -53,22 +53,22 @@ export function CouponBuilder() {
   Coupon()
 }
 
-@Component
+@ComponentV2
 struct Coupon {
   // 三类券数据（一次聚合拉取，切 tab 仅切内存列表）
-  @State availableCoupons: Array<CouponVo> = []
-  @State claimedCoupons: Array<UserCouponVo> = []
-  @State historicalCoupons: Array<UserCouponVo> = []
-  @State selectedIndex: number = 0
+  @Local availableCoupons: Array<CouponVo> = []
+  @Local claimedCoupons: Array<UserCouponVo> = []
+  @Local historicalCoupons: Array<UserCouponVo> = []
+  @Local selectedIndex: number = 0
   // 首屏/刷新加载态（对齐安卓全屏 LoadingState）
-  @State isLoading: boolean = false
+  @Local isLoading: boolean = false
   // 首载失败标记：三列表全空且失败时展示 EmptyState + 重试（对齐安卓 CouponContentState.Error）
-  @State loadFailed: boolean = false
+  @Local loadFailed: boolean = false
   // 领取请求进行中的券 ID（逐券标记，对齐安卓 claimingId；全页 receiving 会误伤其他卡）
-  @State claimingCouponId: number | null = null
+  @Local claimingCouponId: number | null = null
   // 已领取/历史触底加载态（各 tab 独立 footer spinner）
-  @State claimedLoadingMore: boolean = false
-  @State historicalLoadingMore: boolean = false
+  @Local claimedLoadingMore: boolean = false
+  @Local historicalLoadingMore: boolean = false
   // 领取点击节流（防抖第一道防线）
   private receiveDebouncer: Debouncer = new Debouncer()
   // LazyForEach 数据源（实例稳定，读取对应 @State 数组）
@@ -375,16 +375,10 @@ struct Coupon {
           Column() {
             EmptyState({
               message: resString('coupon_load_failed'),
-              action: () => {
-                AppButton({
-                  small: true,
-                  text: resString('retry'),
-                  variant: AppButtonVariant.SECONDARY,
-                  click: () => {
-                    this.loadAllCoupons()
-                  }
-                })
-                .margin({ top: DesignDimens.SPACE_MD })
+              actionText: resString('retry'),
+              actionVariant: AppButtonVariant.SECONDARY,
+              onAction: () => {
+                this.loadAllCoupons()
               }
             })
           }

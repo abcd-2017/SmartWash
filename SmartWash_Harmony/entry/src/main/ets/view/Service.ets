@@ -302,16 +302,10 @@ export struct Service {
         Column() {
           EmptyState({
             message: resString('service_1'),
-            action: () => {
-              AppButton({
-                small: true,
-                text: resString('retry'),
-                variant: AppButtonVariant.SECONDARY,
-                click: () => {
-                  this.fetchItems()
-                }
-              })
-              .margin({ top: DesignDimens.SPACE_MD })
+            actionText: resString('retry'),
+            actionVariant: AppButtonVariant.SECONDARY,
+            onAction: () => {
+              this.fetchItems()
             }
           })
         }

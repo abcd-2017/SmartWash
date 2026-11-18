@@ -51,17 +51,17 @@ export function NoticeInboxBuilder() {
   NoticeInboxPage()
 }
 
-@Component
+@ComponentV2
 struct NoticeInboxPage {
-  @State list: Array<NoticeVo> = []
-  @State isLoadingFirst: boolean = true
-  @State isFirstError: boolean = false
-  @State firstErrorMessage: string = ''
-  @State isRefreshing: boolean = false
-  @State unreadCount: number = 0
-  @State readAllLoading: boolean = false
-  @State isLoadingMore: boolean = false
-  @State appendError: boolean = false
+  @Local list: Array<NoticeVo> = []
+  @Local isLoadingFirst: boolean = true
+  @Local isFirstError: boolean = false
+  @Local firstErrorMessage: string = ''
+  @Local isRefreshing: boolean = false
+  @Local unreadCount: number = 0
+  @Local readAllLoading: boolean = false
+  @Local isLoadingMore: boolean = false
+  @Local appendError: boolean = false
   // LazyForEach 数据源（读取 list，实例稳定不可重建，避免整表重建）
   private dataSource: LazyListDataSource<NoticeVo> =
     new LazyListDataSource<NoticeVo>(() => this.list)

@@ -638,16 +638,10 @@ struct OrderDetail {
           Column() {
             EmptyState({
               message: resString('order_detail_2'),
-              action: () => {
-                AppButton({
-                  small: true,
-                  text: resString('retry'),
-                  variant: AppButtonVariant.SECONDARY,
-                  click: () => {
-                    this.loadOrderDetail()
-                  }
-                })
-                  .margin({ top: DesignDimens.SPACE_MD })
+              actionText: resString('retry'),
+              actionVariant: AppButtonVariant.SECONDARY,
+              onAction: () => {
+                this.loadOrderDetail()
               }
             })
           }

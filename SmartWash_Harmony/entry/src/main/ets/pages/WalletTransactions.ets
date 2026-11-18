@@ -330,18 +330,14 @@ struct WalletTransactions {
           // 空状态（规范 §3.6 空态三件套：母题 + 引导文案 + 行动按钮「去充值」，
           // 文案对齐安卓 no_wallet_transactions 修后值）
           Column() {
-            EmptyState({ message: resString('no_wallet_transactions') }) {
-              Column() {
-                AppButton({
-                  small: true,
-                  text: resString('go_recharge'),
-                  click: (): void => {
-                    pathStack.pushPathByName(RouteNames.RECHARGE, null)
-                  }
-                })
+            EmptyState({
+              message: resString('no_wallet_transactions'),
+              actionText: resString('go_recharge'),
+              actionVariant: AppButtonVariant.PRIMARY,
+              onAction: () => {
+                pathStack.pushPathByName(RouteNames.RECHARGE, null)
               }
-              .margin({ top: DesignDimens.SPACE_MD })
-            }
+            })
           }
           .width("100%")
           .layoutWeight(1)
