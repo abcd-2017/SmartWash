@@ -8,7 +8,12 @@ import { RouteNames } from '../../../constant/RouteNames'
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import { DiningOrderBriefVo, getDiningOrderBrief, joinDiningOrder } from '../../../network/api/DiningApi'
-import { DiningJoinEntryDecision, decideDiningJoinEntry } from '../DiningLogic'
+import {
+  DiningJoinEntryDecision,
+  DiningOrderStatus,
+  decideDiningJoinEntry,
+  diningOrderStatusFromCode
+} from '../DiningLogic'
 import { DiningText } from '../DiningText'
 import { DiningOrderJoinParam } from '../api'
 import { AppButton, EmptyState, SkeletonBlock } from '../../../view/common/AppComponents'
@@ -171,7 +176,9 @@ struct DiningOrderJoinPage {
           .fontColor($r('app.color.TEXT_SECONDARY'))
           .width('100%')
 
-        Text('同学确认加入后即可在点单页勾选想吃的菜')
+        Text(this.isDraftBrief()
+          ? DiningText.dining_order_join_draft_hint
+          : DiningText.dining_order_join_hint)
           .fontSize(DesignFontSize.CAPTION)
           .fontColor($r('app.color.TEXT_TERTIARY'))
           .width('100%')
@@ -214,6 +221,12 @@ struct DiningOrderJoinPage {
   /** brief 判重决策（applyDetail 风格的集中派生） */
   private decision(): DiningJoinEntryDecision {
     return decideDiningJoinEntry(this.brief)
+  }
+
+  /** 草稿单加入提示（成员可一起加菜/移除，定稿后再勾选） */
+  private isDraftBrief(): boolean {
+    return this.brief !== null
+      && diningOrderStatusFromCode(this.brief.status) === DiningOrderStatus.DRAFT
   }
 
   /** 拉取 brief（首载/重试共用） */

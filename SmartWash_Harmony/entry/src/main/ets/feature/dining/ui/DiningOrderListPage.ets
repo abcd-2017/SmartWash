@@ -307,7 +307,9 @@ struct DiningOrderListPage {
           .fontColor($r('app.color.TEXT_SECONDARY'))
           .layoutWeight(1)
 
-        Text(DiningText.dining_order_action_reuse)
+        // 草稿不提供「再来一单」：点卡片进详情继续编辑（复用仅对已定稿单有意义）
+        if (diningOrderStatusFromCode(order.status) !== DiningOrderStatus.DRAFT) {
+          Text(DiningText.dining_order_action_reuse)
           .fontSize(DesignFontSize.BUTTON_TEXT)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor($r('app.color.TEXT_GREEN'))
@@ -327,6 +329,7 @@ struct DiningOrderListPage {
           .onClick(() => {
             this.goCreateForReuse(order)
           })
+        }
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -467,9 +470,13 @@ struct DiningOrderListPage {
     this.dataSource.notifyReload()
   }
 
-  /** 卡片点击：进行中 → 点单页；已结束/未知 → 购买清单结果页（未知态保守降级同 FINISHED） */
+  /**
+   * 卡片点击：草稿/进行中 → 点单页（草稿继续编辑、进行中勾选）；
+   * 已结束/未知 → 购买清单结果页（未知态保守降级同 FINISHED）。
+   */
   private goOrderBody(order: DiningOrderListVo): void {
-    if (diningOrderStatusFromCode(order.status) === DiningOrderStatus.ONGOING) {
+    const status = diningOrderStatusFromCode(order.status)
+    if (status === DiningOrderStatus.DRAFT || status === DiningOrderStatus.ONGOING) {
       pathStack.pushPathByName(RouteNames.DINING_ORDER_DETAIL, order.id)
     } else {
       pathStack.pushPathByName(RouteNames.DINING_SHOPPING_LIST, order.id)

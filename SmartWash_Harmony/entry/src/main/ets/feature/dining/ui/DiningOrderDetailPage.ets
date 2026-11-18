@@ -18,12 +18,14 @@ import {
   DiningOrderDetailVo,
   DiningOrderItem,
   DiningOrderMember,
+  addDiningOrderDish,
   addDiningOrderItem,
   finishDiningOrder,
   getDiningCategories,
   getDiningDietaryPreference,
   getDiningOrderDetail,
   getDiningRecipeDetail,
+  removeDiningOrderDish,
   removeDiningOrderItem,
   updateDiningOrderItemNote
 } from '../../../network/api/DiningApi'
@@ -32,18 +34,20 @@ import { UserInfoVo } from '../../../network/vo/UserInfoVo'
 import {
   DiningAllergenHit,
   DiningCategoryName,
+  DiningDraftMenuEditor,
   DiningMenuRecipeRow,
   DiningMenuSection,
   DiningOrderStatus,
   DiningSelectedDish,
   diningAllergenHits,
+  diningMenuIdSet,
   diningOrderStatusFromCode,
   groupDiningMenu,
   resolveMyUserId
 } from '../DiningLogic'
 import { DiningText } from '../DiningText'
 import { DiningCheckbox, DiningNoteDialog } from './DiningUiCommon'
-import { DiningOrderShareParam } from '../api'
+import { DiningOrderCreateParam, DiningOrderShareParam } from '../api'
 import {
   AppButton,
   AppButtonVariant,
@@ -136,6 +140,10 @@ struct DiningOrderDetailPage {
   private pollTimer: number = -1
   // 写操作互斥：进行中忽略新的勾选切换（防本地意图与在途写交错）
   private writeInFlight: boolean = false
+  /** 草稿菜单编辑状态机（DRAFT 态移除菜；version 乐观锁 + 409 刷新重放） */
+  private draftMenu: DiningDraftMenuEditor = new DiningDraftMenuEditor()
+  /** 草稿菜单写串行链：与选菜写共用写互斥语义，保证 version 基准最新 */
+  private draftWriteChain: Promise<void> = Promise.resolve()
   // 结束点单二次确认弹窗
   private finishDialog: CustomDialogController = new CustomDialogController({
     builder: AppConfirmDialog({
@@ -210,14 +218,17 @@ struct DiningOrderDetailPage {
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .layoutWeight(1)
 
-            Text(DiningText.dining_order_detail_share)
-              .fontSize(DesignFontSize.PAGE_HEADER)
-              .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor($r('app.color.PRIMARY_DARK'))
-              .padding({ left: 12, right: 12, top: 12, bottom: 12 })
-              .onClick(() => {
-                this.goShare()
-              })
+            // 分享入口仅发起者 + 已定稿（DRAFT 期邀请在创建页，FINISHED 凭证已失效）
+            if (this.isCreator && this.isOngoing) {
+              Text(DiningText.dining_order_detail_share)
+                .fontSize(DesignFontSize.PAGE_HEADER)
+                .fontWeight(DesignFontWeight.SEMI_BOLD)
+                .fontColor($r('app.color.PRIMARY_DARK'))
+                .padding({ left: 12, right: 12, top: 12, bottom: 12 })
+                .onClick(() => {
+                  this.goShare()
+                })
+            }
           }
           .width('100%')
           .height(56)
@@ -238,7 +249,9 @@ struct DiningOrderDetailPage {
             .layoutWeight(1)
           } else {
             Column() {
-              if (this.readOnly) {
+              if (this.isDraft) {
+                this.DraftHintBar()
+              } else if (this.readOnly) {
                 Text(DiningText.dining_order_detail_finished_locked)
                   .fontSize(DesignFontSize.CAPTION)
                   .fontColor($r('app.color.TEXT_SECONDARY'))
@@ -335,9 +348,19 @@ struct DiningOrderDetailPage {
     }
   }
 
-  /** FINISHED 只读态（未知状态保守降级为只读） */
+  /** 草稿态（菜单可加/移除，不可勾选/结束；全部成员可加入） */
+  private get isDraft(): boolean {
+    return this.detail !== null && diningOrderStatusFromCode(this.detail.status) === DiningOrderStatus.DRAFT
+  }
+
+  /** 已定稿进行中（可勾选/改备注/取消，发起者可结束） */
+  private get isOngoing(): boolean {
+    return this.detail !== null && diningOrderStatusFromCode(this.detail.status) === DiningOrderStatus.ONGOING
+  }
+
+  /** FINISHED 只读态（未知状态保守降级为只读；DRAFT/ONGOING 均可交互） */
   private get readOnly(): boolean {
-    return this.detail !== null && diningOrderStatusFromCode(this.detail.status) !== DiningOrderStatus.ONGOING
+    return this.detail !== null && diningOrderStatusFromCode(this.detail.status) === DiningOrderStatus.FINISHED
   }
 
   private get isCreator(): boolean {
@@ -414,18 +437,14 @@ struct DiningOrderDetailPage {
       this.memberLabels.set(member.userId, member.phoneMasked)
     })
     this.myUserId = resolveMyUserId(ids, phones, this.currentPhone)
-    // 分组派生（分类名回填；未分类收尾）
+    // 草稿菜单快照：收敛已被服务端满足的未决移除，保留其余本地意图（供 409 重放）
+    this.draftMenu.onServerSnapshot(data.version, diningMenuIdSet(data.menu))
+    // 分组派生（分类名回填；未分类收尾；DRAFT 按本地意图过滤已移除菜）
     const names: Array<DiningCategoryName> = this.categories.map((c: DiningCategoryVo): DiningCategoryName =>
       ({ id: c.id, name: c.name }))
     const rows: Array<DiningMenuRecipeRow> = data.menu.map((recipe: DiningMenuRecipe): DiningMenuRecipeRow =>
       ({ recipeId: recipe.recipeId, name: recipe.name, categoryId: recipe.categoryId }))
-    this.sections = groupDiningMenu(rows, names, DiningText.dining_order_detail_uncategorized)
-    this.sectionOffsets = []
-    let offset = 0
-    this.sections.forEach((section: DiningMenuSection): void => {
-      this.sectionOffsets.push(offset)
-      offset += section.recipes.length + 1 // 1 = 分组标题行
-    })
+    this.rebuildSections(rows, names)
     // 我的意图重建（服务端真相为准；仅在途写涉及的菜保留本地意图，防刚写入被旧快照覆盖）
     const rebuilt: Array<MyItemIntent> = []
     data.items.forEach((item: DiningOrderItem): void => {
@@ -443,6 +462,25 @@ struct DiningOrderDetailPage {
     this.activeSectionIndex = 0
     // 我的选菜变化即按需补齐过敏原（忌口警示数据源；缓存/在途去重，失败静默）
     this.ensureAllergensForSelected()
+  }
+
+  /**
+   * 重建分组与左栏偏移（DRAFT 态按草稿本地意图过滤：未决移除的菜即时从列表消失，
+   * 待 409 刷新后按需重放/回滚）。
+   */
+  private rebuildSections(rows: Array<DiningMenuRecipeRow>, names: Array<DiningCategoryName>): void {
+    let effective = rows
+    if (this.isDraft) {
+      const local = this.draftMenu.localMenu
+      effective = rows.filter((row: DiningMenuRecipeRow): boolean => local.has(row.recipeId))
+    }
+    this.sections = groupDiningMenu(effective, names, DiningText.dining_order_detail_uncategorized)
+    this.sectionOffsets = []
+    let offset = 0
+    this.sections.forEach((section: DiningMenuSection): void => {
+      this.sectionOffsets.push(offset)
+      offset += section.recipes.length + 1 // 1 = 分组标题行
+    })
   }
 
 
@@ -477,7 +515,7 @@ struct DiningOrderDetailPage {
       if (res.data.unchanged) {
         return
       }
-      const finished = diningOrderStatusFromCode(res.data.status) !== DiningOrderStatus.ONGOING
+      const finished = diningOrderStatusFromCode(res.data.status) === DiningOrderStatus.FINISHED
       this.applyDetail(res.data)
       if (finished) {
         this.stopPolling()
@@ -496,7 +534,7 @@ struct DiningOrderDetailPage {
       const res = await getDiningOrderDetail(this.orderId, null)
       if (res.code === BizCode.SUCCESS && res.data !== null) {
         this.applyDetail(res.data)
-        if (diningOrderStatusFromCode(res.data.status) !== DiningOrderStatus.ONGOING) {
+        if (diningOrderStatusFromCode(res.data.status) === DiningOrderStatus.FINISHED) {
           this.stopPolling()
         }
       }
@@ -509,7 +547,11 @@ struct DiningOrderDetailPage {
 
   /** 勾选/取消（乐观更新 → 写服务端；失败回滚 + 全量刷新） */
   private toggleRecipe(recipeId: number): void {
-    if (this.readOnly || this.writeInFlight) {
+    if (this.writeInFlight) {
+      return
+    }
+    if (!this.isOngoing) {
+      // 已结束提示只读；草稿态无勾选入口（菜单编辑在草稿态分支内）
       if (this.readOnly) {
         showToastSafety(DiningText.dining_order_detail_finished_locked)
       }
@@ -544,7 +586,7 @@ struct DiningOrderDetailPage {
   private saveNote(note: string): void {
     const recipeId = this.noteTargetRecipeId
     this.noteTargetRecipeId = -1
-    if (recipeId <= 0 || this.readOnly || this.writeInFlight) {
+    if (recipeId <= 0 || !this.isOngoing || this.writeInFlight) {
       return
     }
     const existing = this.myItems.find((entry: MyItemIntent): boolean => entry.recipeId === recipeId)
@@ -613,9 +655,93 @@ struct DiningOrderDetailPage {
     }
   }
 
+  /**
+   * 草稿移除一道菜（仅 DRAFT 态、全部成员可移除任意菜）：本地即时移除 + 异步写 dishes。
+   * version 乐观锁；409 拉取最新后重放；失败回滚本地并提示。
+   */
+  private removeDish(recipeId: number): void {
+    if (recipeId <= 0 || !this.isDraft || this.writeInFlight) {
+      return
+    }
+    this.draftMenu.onToggle(recipeId)
+    this.rebuildSections(this.currentMenuRows(), this.currentCategoryNames())
+    this.ensureDraftMenuWrite()
+  }
+
+  /** 触发草稿菜单写链（串行，与选菜写互斥语义一致） */
+  private ensureDraftMenuWrite(): void {
+    this.draftWriteChain = this.draftWriteChain.then((): Promise<void> => {
+      return this.runDraftMenuWriteLoop()
+    })
+  }
+
+  /** 冲刷草稿菜单差分：409 刷新后重放；失败回滚该菜并提示 */
+  private async runDraftMenuWriteLoop(): Promise<void> {
+    while (true) {
+      const op = this.draftMenu.pendingOp()
+      if (op === null) {
+        return
+      }
+      const version = this.draftMenu.serverVersion
+      try {
+        const res = op.add
+          ? await addDiningOrderDish(this.orderId, { recipeId: op.recipeId, version: version })
+          : await removeDiningOrderDish(this.orderId, op.recipeId, version)
+        if (res.code === BizCode.SUCCESS) {
+          this.draftMenu.onWriteSuccess(op)
+        } else if (res.code === 409) {
+          if (!(await this.refreshDraftMenu())) {
+            return
+          }
+        } else {
+          this.draftMenu.onWriteFailure(op)
+          showToastSafety(res.message, DiningText.dining_order_detail_write_failed)
+          return
+        }
+      } catch (err) {
+        this.draftMenu.onWriteFailure(op)
+        logger.error(TAG, `草稿菜单写异常 recipeId=${op.recipeId}`, err instanceof Error ? err.message : '')
+        showToastSafety('', DiningText.dining_order_detail_write_failed)
+        return
+      }
+    }
+  }
+
+  /** 拉取最新详情刷新草稿服务端真相（保留本地意图，差分在写链内重放） */
+  private async refreshDraftMenu(): Promise<boolean> {
+    try {
+      const res = await getDiningOrderDetail(this.orderId, null)
+      if (res.code === BizCode.SUCCESS && res.data !== null) {
+        this.draftMenu.onServerSnapshot(res.data.version, diningMenuIdSet(res.data.menu))
+        this.version = res.data.version
+        this.rebuildSections(this.currentMenuRows(), this.currentCategoryNames())
+        return true
+      }
+      logger.warn(TAG, `草稿刷新失败 code=${res.code} message=${res.message ?? ''}`)
+    } catch (err) {
+      logger.error(TAG, '草稿刷新异常', err instanceof Error ? err.message : '')
+    }
+    return false
+  }
+
+  /** 当前详情菜单行（移除后重建分组用） */
+  private currentMenuRows(): Array<DiningMenuRecipeRow> {
+    const detail = this.detail
+    if (detail === null) {
+      return []
+    }
+    return detail.menu.map((recipe: DiningMenuRecipe): DiningMenuRecipeRow =>
+      ({ recipeId: recipe.recipeId, name: recipe.name, categoryId: recipe.categoryId }))
+  }
+
+  /** 分类名目录（移除后重建分组用） */
+  private currentCategoryNames(): Array<DiningCategoryName> {
+    return this.categories.map((c: DiningCategoryVo): DiningCategoryName => ({ id: c.id, name: c.name }))
+  }
+
   /** 结束点单（仅发起者且 ONGOING；成功 replace 购买清单页，对齐 popUpTo inclusive） */
   private async doFinish(): Promise<void> {
-    if (this.finishing || !this.isCreator || this.readOnly) {
+    if (this.finishing || !this.isCreator || !this.isOngoing) {
       return
     }
     this.finishing = true
@@ -634,6 +760,13 @@ struct DiningOrderDetailPage {
       showToastSafety('', DiningText.dining_order_detail_write_failed)
     }
     this.finishing = false
+  }
+
+  /** 草稿「添加菜品」：进创建页草稿编辑态（携带 orderId，加/移除走 dishes 接口） */
+  private goAddDish(): void {
+    const param = new DiningOrderCreateParam()
+    param.orderId = this.orderId
+    pathStack.pushPathByName(RouteNames.DINING_ORDER_CREATE, param)
   }
 
   /** 进分享视图（发起者可带凭证重建二维码；参与者无凭证由分享页降级提示） */
@@ -693,6 +826,34 @@ struct DiningOrderDetailPage {
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
       .margin({ top: DesignDimens.SPACE_XS })
     }
+  }
+
+  /** 草稿提示条：secondary 档「草稿」标签 + 编辑中说明（灰态，不抢锚点） */
+  @Builder
+  DraftHintBar() {
+    Row({ space: DesignDimens.SPACE_XS }) {
+      Text(DiningText.dining_order_detail_draft_badge)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontColor($r('app.color.ON_SECONDARY_CONTAINER'))
+        .backgroundColor($r('app.color.SECONDARY_CONTAINER'))
+        .borderRadius(DesignDimens.RADIUS_FULL)
+        .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
+      Text(DiningText.dining_order_detail_draft_hint)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor($r('app.color.TEXT_SECONDARY'))
+        .maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .layoutWeight(1)
+    }
+    .width('100%')
+    .alignItems(VerticalAlign.Center)
+    .padding({
+      left: DesignDimens.PAGE_PADDING,
+      right: DesignDimens.PAGE_PADDING,
+      top: DesignDimens.SPACE_XS,
+      bottom: DesignDimens.SPACE_XS
+    })
   }
 
   /** 参与者区（横向头像位 + 脱敏手机号 + 发起标记） */
@@ -791,7 +952,11 @@ struct DiningOrderDetailPage {
         }
         ForEach(section.recipes, (row: DiningMenuRecipeRow) => {
           ListItem() {
-            this.MenuRow(row)
+            if (this.isDraft) {
+              this.DraftMenuRow(row)
+            } else {
+              this.MenuRow(row)
+            }
           }
         }, (row: DiningMenuRecipeRow) => `row_${row.recipeId}`)
       }, (section: DiningMenuSection) => `section_${section.categoryId}_${section.recipes.length}`)
@@ -919,6 +1084,64 @@ struct DiningOrderDetailPage {
     })
   }
 
+  /**
+   * 草稿菜品行：菜名 + 做法入口 + 行内移除（独立热区）。
+   * 整行不触发勾选（草稿态无选菜语义）；移除全部成员可用。
+   */
+  @Builder
+  DraftMenuRow(row: DiningMenuRecipeRow) {
+    Row({ space: DesignDimens.SPACE_SM }) {
+      Text(row.name)
+        .fontSize(DesignFontSize.BODY)
+        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontColor($r('app.color.TEXT_PRIMARY'))
+        .maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .layoutWeight(1)
+
+      // 做法入口（跳菜谱详情看做法步骤）
+      Column() {
+        SymbolGlyph($r('sys.symbol.book'))
+          .fontSize(20)
+          .fontColor([$r('app.color.TEXT_SECONDARY')])
+      }
+      .width(48)
+      .height(48)
+      .borderRadius(DesignDimens.RADIUS_FULL)
+      .backgroundColor($r('app.color.SURFACE_VARIANT'))
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+      .accessibilityText(DiningText.dining_order_detail_recipe_action)
+      .onClick(() => {
+        pathStack.pushPathByName(RouteNames.DINING_RECIPE_DETAIL, row.recipeId)
+      })
+
+      // 移除入口（草稿态主操作；全部成员可移除任意菜）
+      Column() {
+        SymbolGlyph($r('sys.symbol.minus'))
+          .fontSize(20)
+          .fontColor([$r('app.color.DANGER_INK')])
+      }
+      .width(48)
+      .height(48)
+      .borderRadius(DesignDimens.RADIUS_FULL)
+      .backgroundColor($r('app.color.SURFACE_VARIANT'))
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+      .accessibilityText(DiningText.removeDishLabel(row.name))
+      .onClick(() => {
+        this.removeDish(row.recipeId)
+      })
+    }
+    .width('100%')
+    .alignItems(VerticalAlign.Center)
+    .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM, left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS })
+    .borderRadius(DesignDimens.RADIUS_MD)
+    .backgroundColor($r('app.color.SURFACE'))
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
+    .margin({ bottom: DesignDimens.SPACE_XS })
+  }
+
   /** 底部已选栏：进行中 = 提示 + 已选数 + 同步态 + 发起者结束按钮；只读 = 查看购买清单 */
   @Builder
   BottomBar() {
@@ -926,60 +1149,87 @@ struct DiningOrderDetailPage {
       Divider()
         .color($r('app.color.HAIRLINE'))
         .strokeWidth(0.5)
-      Row({ space: DesignDimens.SPACE_SM }) {
-        Column({ space: 2 }) {
-          if (!this.readOnly) {
-            Text(DiningText.dining_order_detail_bottom_hint)
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor($r('app.color.TEXT_SECONDARY'))
-            Row({ space: DesignDimens.SPACE_XS }) {
-              Text(DiningText.detailSelectedCount(this.mySelectedCount))
-                .fontSize(DesignFontSize.CAPTION)
-                .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor($r('app.color.TEXT_PRIMARY'))
-              if (this.syncing || this.pendingRecipeIds.length > 0) {
-                Text(DiningText.dining_order_detail_syncing)
-                  .fontSize(DesignFontSize.CAPTION)
-                  .fontColor($r('app.color.TEXT_TERTIARY'))
-              }
+      if (this.isDraft) {
+        // 草稿底部栏：菜单计数 + 「添加菜品」主行动（跳创建页草稿编辑态）
+        Column() {
+          Text(DiningText.draftMenuCount(this.draftMenu.localMenu.size))
+            .fontSize(DesignFontSize.BODY)
+            .fontWeight(DesignFontWeight.MEDIUM)
+            .fontColor($r('app.color.TEXT_PRIMARY'))
+            .width('100%')
+          AppButton({
+            text: DiningText.dining_order_detail_add_dish,
+            click: () => {
+              this.goAddDish()
             }
-            .alignItems(VerticalAlign.Center)
-          } else {
-            Text(DiningText.dining_order_detail_finished_locked)
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor($r('app.color.TEXT_SECONDARY'))
+          })
+            .width('100%')
+            .margin({ top: DesignDimens.SPACE_SM })
+        }
+        .width('100%')
+        .alignItems(HorizontalAlign.Start)
+        .padding({
+          left: DesignDimens.PAGE_PADDING,
+          right: DesignDimens.PAGE_PADDING,
+          top: DesignDimens.SPACE_SM,
+          bottom: Math.max(safeBottomVp(), DesignDimens.SPACE_MD)
+        })
+      } else {
+        Row({ space: DesignDimens.SPACE_SM }) {
+          Column({ space: 2 }) {
+            if (!this.readOnly) {
+              Text(DiningText.dining_order_detail_bottom_hint)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor($r('app.color.TEXT_SECONDARY'))
+              Row({ space: DesignDimens.SPACE_XS }) {
+                Text(DiningText.detailSelectedCount(this.mySelectedCount))
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontWeight(DesignFontWeight.MEDIUM)
+                  .fontColor($r('app.color.TEXT_PRIMARY'))
+                if (this.syncing || this.pendingRecipeIds.length > 0) {
+                  Text(DiningText.dining_order_detail_syncing)
+                    .fontSize(DesignFontSize.CAPTION)
+                    .fontColor($r('app.color.TEXT_TERTIARY'))
+                }
+              }
+              .alignItems(VerticalAlign.Center)
+            } else {
+              Text(DiningText.dining_order_detail_finished_locked)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor($r('app.color.TEXT_SECONDARY'))
+            }
+          }
+          .alignItems(HorizontalAlign.Start)
+          .layoutWeight(1)
+
+          if (!this.readOnly && this.isCreator) {
+            AppButton({
+              small: true,
+              text: DiningText.dining_order_detail_finish,
+              loading: this.finishing,
+              click: () => {
+                this.finishDialog.open()
+              }
+            })
+          } else if (this.readOnly) {
+            AppButton({
+              small: true,
+              text: DiningText.dining_order_detail_view_shopping_list,
+              click: () => {
+                pathStack.pushPathByName(RouteNames.DINING_SHOPPING_LIST, this.orderId)
+              }
+            })
           }
         }
-        .alignItems(HorizontalAlign.Start)
-        .layoutWeight(1)
-
-        if (!this.readOnly && this.isCreator) {
-          AppButton({
-            small: true,
-            text: DiningText.dining_order_detail_finish,
-            loading: this.finishing,
-            click: () => {
-              this.finishDialog.open()
-            }
-          })
-        } else if (this.readOnly) {
-          AppButton({
-            small: true,
-            text: DiningText.dining_order_detail_view_shopping_list,
-            click: () => {
-              pathStack.pushPathByName(RouteNames.DINING_SHOPPING_LIST, this.orderId)
-            }
-          })
-        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+        .padding({
+          left: DesignDimens.PAGE_PADDING,
+          right: DesignDimens.PAGE_PADDING,
+          top: DesignDimens.SPACE_SM,
+          bottom: Math.max(safeBottomVp(), DesignDimens.SPACE_MD)
+        })
       }
-      .width('100%')
-      .alignItems(VerticalAlign.Center)
-      .padding({
-        left: DesignDimens.PAGE_PADDING,
-        right: DesignDimens.PAGE_PADDING,
-        top: DesignDimens.SPACE_SM,
-        bottom: Math.max(safeBottomVp(), DesignDimens.SPACE_MD)
-      })
     }
     .width('100%')
     .backgroundColor($r('app.color.BACKGROUND'))

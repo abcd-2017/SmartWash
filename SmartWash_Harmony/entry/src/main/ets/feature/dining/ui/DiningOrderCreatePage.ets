@@ -5,6 +5,7 @@
 // fromOrderId（菜单由后端整份复制，端上只校验标题）。
 // 提交成功 → replace 分享视图（等价 Android popUpTo(OrderCreate)+navigate：分享返回直回列表）。
 
+import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { KeyboardAvoidMode } from '@kit.ArkUI'
 import { RouteNames } from '../../../constant/RouteNames'
 import { DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
@@ -14,19 +15,24 @@ import {
   DINING_PAGE_SIZE,
   DiningCategoryVo,
   DiningMenuRecipe,
+  DiningOrderCreatedVo,
   DiningOrderDetailVo,
   DiningRecipeVo,
+  addDiningOrderDish,
   createDiningOrder,
   getDiningCategories,
   getDiningDietaryPreference,
   getDiningOrderDetail,
   getDiningRecipeDetail,
-  getDiningRecipes
+  getDiningRecipes,
+  publishDiningOrder,
+  removeDiningOrderDish
 } from '../../../network/api/DiningApi'
 import {
   DINING_PEOPLE_MAX,
   DINING_PEOPLE_MIN,
   DiningAllergenHit,
+  DiningDraftMenuEditor,
   DiningOrderFormError,
   DiningPortionVerdict,
   DiningSelectedDish,
@@ -34,7 +40,9 @@ import {
   DiningMenuRecipeRow,
   DiningMenuSection,
   DiningOrderStatus,
+  buildDiningOrderDeepLink,
   coerceDiningPeopleCount,
+  diningMenuIdSet,
   diningAllergenHits,
   diningOrderStatusFromCode,
   diningPortionAdvice,
@@ -83,6 +91,13 @@ struct DiningOrderCreatePage {
   private fromOrderId: number = 0
   private sourceTitle: string = ''
   private isReuseMode: boolean = false
+  // 草稿编辑模式（路由 orderId > 0：加载既有 DRAFT，加/移除走 dishes 接口，CTA=publish）
+  private editOrderId: number = 0
+  private isDraftEditMode: boolean = false
+  /** 草稿菜单编辑状态机（惰性创建 / 净差写 / version 乐观锁） */
+  private draft: DiningDraftMenuEditor = new DiningDraftMenuEditor()
+  /** 草稿写串行链：切换/邀请/publish 共用，保证 version 基准始终最新 */
+  private draftWriteChain: Promise<void> = Promise.resolve()
 
   @Local titleInput: string = ''
   /** 常规模式：已勾选菜谱 ID（保序，提交按勾选顺序） */
@@ -163,14 +178,21 @@ struct DiningOrderCreatePage {
   async aboutToAppear(): Promise<void> {
     const param = getObjectParam<DiningOrderCreateParam>(RouteNames.DINING_ORDER_CREATE)
     if (param !== null) {
+      this.editOrderId = param.orderId
       this.fromOrderId = param.fromOrderId
       this.sourceTitle = param.sourceTitle
     }
-    this.isReuseMode = this.fromOrderId > 0
-    logger.debug(TAG, `创建页挂载 复用模式=${this.isReuseMode} fromOrderId=${this.fromOrderId}`)
+    // 草稿编辑优先（与 Android 同口径）：orderId > 0 时加载既有 DRAFT，否则按 fromOrderId 判复用
+    this.isDraftEditMode = this.editOrderId > 0
+    this.isReuseMode = !this.isDraftEditMode && this.fromOrderId > 0
+    logger.debug(TAG, `创建页挂载 草稿编辑=${this.isDraftEditMode} orderId=${this.editOrderId} ` +
+      `复用模式=${this.isReuseMode} fromOrderId=${this.fromOrderId}`)
     // 偏好首载（best-effort：失败按默认目标 + 无忌口降级，不阻断发起点单）
     await this.loadDietaryPreference()
-    if (this.isReuseMode) {
+    if (this.isDraftEditMode) {
+      await this.loadCategories()
+      await this.loadDraftDetail()
+    } else if (this.isReuseMode) {
       await this.loadReuseSource()
     } else {
       await this.loadCategories()
@@ -202,6 +224,19 @@ struct DiningOrderCreatePage {
               .fontColor($r('app.color.TEXT_PRIMARY'))
 
             Blank()
+
+            // 草稿协同：邀请入口常显（复用模式无草稿语义，隐藏）；
+            // 点击先惰性创建/冲刷草稿，再复制加入深链到剪贴板
+            if (!this.isReuseMode) {
+              Text(DiningText.dining_order_create_invite)
+                .fontSize(DesignFontSize.PAGE_HEADER)
+                .fontWeight(DesignFontWeight.SEMI_BOLD)
+                .fontColor($r('app.color.PRIMARY_DARK'))
+                .padding({ left: 12, right: 12, top: 12, bottom: 12 })
+                .onClick(() => {
+                  this.requestInviteLink()
+                })
+            }
           }
           .width('100%')
           .height(56)
@@ -755,26 +790,195 @@ struct DiningOrderCreatePage {
     }
   }
 
-  /** 勾选/取消（上限内保序追加；上限提示；勾选后按需补齐过敏原） */
-  private toggleRecipe(recipeId: number): void {
-    const index = this.selectedIds.indexOf(recipeId)
-    if (index >= 0) {
-      const updated = this.selectedIds.slice()
-      updated.splice(index, 1)
-      this.selectedIds = updated
-      this.selectedRecipes = this.selectedRecipes.filter((recipe: DiningRecipeVo): boolean => recipe.id !== recipeId)
+  /** 草稿编辑模式：加载既有 DRAFT（标题/菜单/version/凭证），失败进错误态 */
+  private async loadDraftDetail(): Promise<void> {
+    try {
+      const res = await getDiningOrderDetail(this.editOrderId, null)
+      if (res.code === BizCode.SUCCESS && res.data !== null) {
+        const detail: DiningOrderDetailVo = res.data
+        const menu = diningMenuIdSet(detail.menu)
+        this.draft.markCreated(detail.id, detail.joinToken)
+        this.draft.onInitialSnapshot(detail.version, menu)
+        this.titleInput = detail.title
+        this.selectedIds = Array.from(menu)
+        this.selectedRecipes = this.recipes.filter((recipe: DiningRecipeVo): boolean => menu.has(recipe.id))
+        logger.debug(TAG, `草稿加载成功 orderId=${detail.id} menu=${menu.size} version=${detail.version}`)
+      } else {
+        logger.warn(TAG, `草稿详情加载失败 code=${res.code} message=${res.message ?? ''}`)
+        this.isError = true
+        this.loadErrorMessage = DiningText.dining_order_detail_load_failed
+        showToastSafety(res.message, DiningText.dining_order_detail_load_failed)
+      }
+    } catch (err) {
+      logger.error(TAG, '草稿详情加载异常', err instanceof Error ? err.message : '')
+      this.isError = true
+      this.loadErrorMessage = DiningText.dining_order_detail_load_failed
+      showToastSafety('', DiningText.dining_order_detail_load_failed)
+    }
+  }
+
+  /**
+   * 同步本地选中态到草稿状态机意图（勾选框/营养聚合数据源）。
+   * 顺序跟随状态机 localMenu（服务端顺序 + 未决差分），不依赖旧数组顺序。
+   */
+  private syncSelectedFromDraft(): void {
+    const local = this.draft.localMenu
+    this.selectedIds = Array.from(local)
+    const kept: Array<DiningRecipeVo> = []
+    const known = new Set<number>()
+    this.selectedRecipes.forEach((recipe: DiningRecipeVo): void => {
+      if (local.has(recipe.id)) {
+        kept.push(recipe)
+        known.add(recipe.id)
+      }
+    })
+    this.recipes.forEach((recipe: DiningRecipeVo): void => {
+      if (local.has(recipe.id) && !known.has(recipe.id)) {
+        kept.push(recipe)
+        known.add(recipe.id)
+        this.ensureAllergen(recipe.id)
+      }
+    })
+    this.selectedRecipes = kept
+  }
+
+  /** 触发草稿写链（串行）；forceCreate=true 时即使无待写差分也创建草稿（邀请入口用） */
+  private ensureDraftAndFlush(forceCreate: boolean = false): void {
+    this.draftWriteChain = this.draftWriteChain.then((): Promise<void> => {
+      return this.runDraftWriteLoop(forceCreate)
+    })
+  }
+
+  /** 草稿写循环：惰性创建 → 冲刷净差写（409 刷新重放；失败回滚并提示） */
+  private async runDraftWriteLoop(forceCreate: boolean): Promise<void> {
+    try {
+      if (!this.draft.isCreated && (forceCreate || this.draft.pendingOp() !== null)) {
+        await this.createDraft()
+      }
+      await this.flushDraftWrites()
+    } catch (err) {
+      logger.error(TAG, '草稿写异常', err instanceof Error ? err.message : '')
+      showToastSafety('', DiningText.dining_order_create_write_failed)
+    }
+  }
+
+  /** 惰性创建草稿：携带当前标题与本地菜单（空也可），落库后服务端真相即本地菜单 */
+  private async createDraft(): Promise<void> {
+    const menu = Array.from(this.draft.localMenu)
+    const res = await createDiningOrder({
+      title: this.titleInput.trim(),
+      recipeIds: menu,
+      fromOrderId: null
+    })
+    if (res.code !== BizCode.SUCCESS || res.data === null || res.data.orderId <= 0) {
+      throw new Error(res.message ?? 'create failed')
+    }
+    this.draft.markCreated(res.data.orderId, res.data.joinToken)
+    // create 已携带创建瞬间的菜单（version=0）；在途期间的新切换保留在未决里继续冲刷
+    this.draft.onServerSnapshot(0, new Set<number>(menu))
+    logger.info(TAG, `惰性创建草稿 orderId=${res.data.orderId} 菜品数=${menu.length}`)
+  }
+
+  /** 冲刷草稿菜单差分（调用方在写链内）：409 刷新后重放，直至本地意图与服务端一致 */
+  private async flushDraftWrites(): Promise<void> {
+    while (true) {
+      const op = this.draft.pendingOp()
+      if (op === null) {
+        return
+      }
+      const version = this.draft.serverVersion
+      try {
+        const res = op.add
+          ? await addDiningOrderDish(this.draft.orderId, { recipeId: op.recipeId, version: version })
+          : await removeDiningOrderDish(this.draft.orderId, op.recipeId, version)
+        if (res.code === BizCode.SUCCESS) {
+          this.draft.onWriteSuccess(op)
+        } else if (res.code === 409) {
+          if (!(await this.refreshDraftMenu())) {
+            return
+          }
+        } else {
+          this.draft.onWriteFailure(op)
+          showToastSafety(res.message, DiningText.dining_order_create_write_failed)
+          return
+        }
+      } catch (err) {
+        this.draft.onWriteFailure(op)
+        logger.error(TAG, `草稿菜单写异常 recipeId=${op.recipeId}`, err instanceof Error ? err.message : '')
+        showToastSafety('', DiningText.dining_order_create_write_failed)
+        return
+      }
+    }
+  }
+
+  /** 拉取草稿最新详情刷新服务端真相（保留本地意图，差分在写链内重放） */
+  private async refreshDraftMenu(): Promise<boolean> {
+    if (!this.draft.isCreated) {
+      return false
+    }
+    try {
+      const res = await getDiningOrderDetail(this.draft.orderId, null)
+      if (res.code === BizCode.SUCCESS && res.data !== null) {
+        this.draft.onServerSnapshot(res.data.version, diningMenuIdSet(res.data.menu))
+        this.syncSelectedFromDraft()
+        return true
+      }
+      logger.warn(TAG, `草稿刷新失败 code=${res.code} message=${res.message ?? ''}`)
+    } catch (err) {
+      logger.error(TAG, '草稿刷新异常', err instanceof Error ? err.message : '')
+    }
+    return false
+  }
+
+  /** 邀请：惰性创建（空草稿也可）并冲刷后复制加入深链；无凭证提示不可邀请 */
+  private requestInviteLink(): void {
+    if (this.isReuseMode) {
       return
     }
-    if (this.selectedIds.length >= 100) {
+    this.ensureDraftAndFlush(true)
+    this.draftWriteChain.then((): void => {
+      const link = buildDiningOrderDeepLink(this.draft.orderId, this.draft.joinToken)
+      if (link === null) {
+        showToastSafety(DiningText.dining_order_invite_unavailable)
+        return
+      }
+      this.copyText(link, DiningText.dining_order_invite_copy_done)
+    }).catch((err: Object): void => {
+      logger.error(TAG, '邀请链接准备异常', err instanceof Error ? err.message : '')
+      showToastSafety('', DiningText.dining_order_create_write_failed)
+    })
+  }
+
+  /** 复制文本到剪贴板（pasteboard；成功/失败 Toast） */
+  private copyText(text: string, doneMessage: string): void {
+    try {
+      const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
+      pasteboard.getSystemPasteboard().setData(pasteData).then((): void => {
+        showToastSafety(doneMessage)
+        logger.debug(TAG, '加入链接已复制')
+      }).catch((err: BusinessError): void => {
+        logger.warn(TAG, `加入链接复制失败 code=${err.code}`)
+        showToastSafety(DiningText.dining_copy_failed)
+      })
+    } catch (err) {
+      logger.error(TAG, '加入链接复制异常', err instanceof Error ? err.message : '')
+      showToastSafety(DiningText.dining_copy_failed)
+    }
+  }
+
+  /** 勾选/取消（草稿菜单净差写；复用模式只读忽略） */
+  private toggleRecipe(recipeId: number): void {
+    if (this.isReuseMode) {
+      return
+    }
+    const willSelect = this.selectedIds.indexOf(recipeId) < 0
+    if (willSelect && this.selectedIds.length >= 100) {
       showToastSafety(DiningText.dining_order_error_menu_too_many)
       return
     }
-    const recipe = this.recipes.find((item: DiningRecipeVo): boolean => item.id === recipeId)
-    if (recipe !== undefined) {
-      this.selectedRecipes = this.selectedRecipes.concat([recipe])
-    }
-    this.selectedIds = this.selectedIds.concat([recipeId])
-    this.ensureAllergen(recipeId)
+    this.draft.onToggle(recipeId)
+    this.syncSelectedFromDraft()
+    this.ensureDraftAndFlush()
   }
 
   /** 拉取饮食偏好（best-effort：失败按默认目标 + 无忌口降级，不阻断发起点单） */
@@ -858,42 +1062,126 @@ struct DiningOrderCreatePage {
     return { text: DiningText.portionAdviceLess(advice.peopleCount, perCapitaText), verdict: advice.verdict }
   }
 
-  /** 提交：常规 = validate + recipeIds；复用 = validateReuse + fromOrderId */
+  /**
+   * 提交（发起点单）：
+   * - 常规/草稿编辑：校验标题必填 + 菜单非空 → 冲刷草稿写 → publish（409 刷新重试）；
+   * - 复用模式：校验标题 → create(fromOrderId) 复制菜单 → publish 定稿。
+   * 成功后 replace 分享视图（分享返回直回列表）。
+   */
   private async submit(): Promise<void> {
     if (this.submitting) {
       return
     }
-    const validation = this.isReuseMode
-      ? validateDiningOrderReuse(this.titleInput)
-      : validateDiningOrderForm(this.titleInput, this.selectedIds)
+    if (this.isReuseMode) {
+      const validation = validateDiningOrderReuse(this.titleInput)
+      if (!validation.valid) {
+        showToastSafety(this.orderErrorText(validation.error))
+        return
+      }
+      this.submitting = true
+      try {
+        const created = await this.publishReusedOrder(this.fromOrderId, validation.normalizedTitle)
+        this.afterPublishSuccess(created)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : ''
+        logger.error(TAG, '复用模式发起异常', message)
+        showToastSafety(message.length > 0 ? message : '', DiningText.dining_order_create_result_invalid)
+      }
+      this.submitting = false
+      return
+    }
+    const menu = Array.from(this.draft.localMenu)
+    const validation = validateDiningOrderForm(this.titleInput, menu)
     if (!validation.valid) {
       showToastSafety(this.orderErrorText(validation.error))
       return
     }
     this.submitting = true
     try {
-      const res = await createDiningOrder({
-        title: validation.normalizedTitle,
-        recipeIds: this.isReuseMode ? null : validation.normalizedRecipeIds,
-        fromOrderId: this.isReuseMode ? this.fromOrderId : null
-      })
-      if (res.code === BizCode.SUCCESS && res.data !== null && res.data.orderId > 0) {
-        logger.info(TAG, `点单创建成功 orderId=${res.data.orderId}`)
-        showToastSafety(DiningText.dining_order_create_submit_success)
-        const shareParam = new DiningOrderShareParam()
-        shareParam.orderId = res.data.orderId
-        shareParam.joinToken = res.data.joinToken
-        // replace 等价 Android popUpTo(OrderCreate) inclusive + navigate：分享返回直回列表
-        pathStack.replacePathByName(RouteNames.DINING_ORDER_SHARE, shareParam)
-      } else {
-        logger.warn(TAG, `点单创建未生效 code=${res.code} message=${res.message ?? ''}`)
-        showToastSafety(res.message, DiningText.dining_order_create_result_invalid)
+      // 等待既有写链并补一次冲刷，保证 publish 携带最新 version
+      this.ensureDraftAndFlush(true)
+      await this.draftWriteChain
+      const created = await this.publishDraft(validation.normalizedTitle)
+      if (created !== null) {
+        this.afterPublishSuccess(created)
       }
     } catch (err) {
-      logger.error(TAG, '点单创建异常', err instanceof Error ? err.message : '')
+      logger.error(TAG, '发起点单异常', err instanceof Error ? err.message : '')
       showToastSafety('', DiningText.dining_order_create_result_invalid)
     }
     this.submitting = false
+  }
+
+  /**
+   * 常规/草稿编辑：publish（409 刷新重试一次；菜单被并发清空时友好提示）。
+   * @returns 成功产物；失败已 Toast 并返回 null
+   */
+  private async publishDraft(normalizedTitle: string): Promise<DiningOrderCreatedVo | null> {
+    const res = await publishDiningOrder(this.draft.orderId, {
+      title: normalizedTitle,
+      version: this.draft.serverVersion
+    })
+    if (res.code === BizCode.SUCCESS) {
+      return { orderId: this.draft.orderId, joinToken: this.draft.joinToken }
+    }
+    if (res.code !== 409) {
+      showToastSafety(res.message, DiningText.dining_order_create_result_invalid)
+      return null
+    }
+    logger.info(TAG, 'publish 版本冲突，刷新草稿后重试')
+    if (!(await this.refreshDraftMenu())) {
+      showToastSafety('', DiningText.dining_order_create_result_invalid)
+      return null
+    }
+    if (this.draft.serverMenu.size === 0) {
+      showToastSafety(DiningText.dining_order_error_menu_empty)
+      return null
+    }
+    const retry = await publishDiningOrder(this.draft.orderId, {
+      title: normalizedTitle,
+      version: this.draft.serverVersion
+    })
+    if (retry.code !== BizCode.SUCCESS) {
+      showToastSafety(retry.message, DiningText.dining_order_create_result_invalid)
+      return null
+    }
+    return { orderId: this.draft.orderId, joinToken: this.draft.joinToken }
+  }
+
+  /** 复用模式：create(fromOrderId) 复制历史菜单 → 取服务端 version → publish 定稿 */
+  private async publishReusedOrder(fromOrderId: number,
+    normalizedTitle: string): Promise<DiningOrderCreatedVo> {
+    const created = await createDiningOrder({
+      title: normalizedTitle,
+      recipeIds: null,
+      fromOrderId: fromOrderId
+    })
+    if (created.code !== BizCode.SUCCESS || created.data === null || created.data.orderId <= 0) {
+      throw new Error(created.message ?? 'create failed')
+    }
+    let version = 0
+    const detail = await getDiningOrderDetail(created.data.orderId, null)
+    if (detail.code === BizCode.SUCCESS && detail.data !== null) {
+      version = detail.data.version
+    }
+    const published = await publishDiningOrder(created.data.orderId, {
+      title: normalizedTitle,
+      version: version
+    })
+    if (published.code !== BizCode.SUCCESS) {
+      throw new Error(published.message ?? 'publish failed')
+    }
+    return created.data
+  }
+
+  /** 发起成功：Toast + replace 分享视图（分享返回直回列表） */
+  private afterPublishSuccess(created: DiningOrderCreatedVo): void {
+    logger.info(TAG, `点单发起成功 orderId=${created.orderId}`)
+    showToastSafety(DiningText.dining_order_create_submit_success)
+    const shareParam = new DiningOrderShareParam()
+    shareParam.orderId = created.orderId
+    shareParam.joinToken = created.joinToken
+    pathStack.replacePathByName(RouteNames.DINING_ORDER_SHARE, shareParam)
   }
 
   /** 表单错误枚举 → 文案 */
