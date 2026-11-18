@@ -141,6 +141,9 @@
           <el-button type="danger" plain @click="abortFlag = true">中止上传</el-button>
         </template>
         <template v-else>
+          <el-button v-if="failedCount > 0" type="warning" plain :loading="retrying" @click="retryFailed">
+            重试失败行（{{ failedCount }}）
+          </el-button>
           <el-button @click="phase = 'choose'">重新导入</el-button>
           <el-button type="primary" @click="visible = false">完成</el-button>
         </template>
@@ -201,6 +204,9 @@ const resetChecking = () => {
 const abortFlag = ref(false);
 const current = ref(null);
 const doneCount = ref(0);
+// 重试失败行进行中（D23 加固）；runDenominator = 本轮上传行数（首轮全量 / 重试轮仅失败行），进度条按本轮算
+const retrying = ref(false);
+const runDenominator = ref(0);
 // 覆盖更新预检拉到的既有分类（上传阶段补建缺失分类的差集依据）
 const knownCategories = ref([]);
 
@@ -222,7 +228,7 @@ const failedCount = computed(
   () => uploadTargets.value.filter((it) => it.result && !it.result.ok).length
 );
 const runPercent = computed(() =>
-  uploadTargets.value.length ? Math.round((doneCount.value / uploadTargets.value.length) * 100) : 0
+  runDenominator.value ? Math.round((doneCount.value / runDenominator.value) * 100) : 0
 );
 // 预检发现的不存在分类（预览汇总提示；上传时逐个补建）
 const missingCategories = computed(() => {
@@ -357,6 +363,7 @@ const startUpload = async () => {
   phase.value = 'running';
   abortFlag.value = false;
   doneCount.value = 0;
+  runDenominator.value = targets.length;
   current.value = null;
   try {
     await uploadAll(targets);
@@ -446,6 +453,31 @@ const uploadItem = async (item, idByName) => {
   }
 };
 
+/**
+ * 重试失败行（D23 加固）：仅重跑 result 失败的行（分类补建在 uploadAll 内幂等复跑，
+ * 封面重传会产生新对象键覆盖同名键）；中止标志复位，进度条按本轮失败行数计。
+ */
+const retryFailed = async () => {
+  const failedTargets = uploadTargets.value.filter((it) => it.result && !it.result.ok);
+  if (!failedTargets.length) return;
+  retrying.value = true;
+  phase.value = 'running';
+  abortFlag.value = false;
+  doneCount.value = 0;
+  runDenominator.value = failedTargets.length;
+  current.value = null;
+  try {
+    await uploadAll(failedTargets);
+  } finally {
+    failedTargets.forEach((it) => {
+      if (!it.result) it.result = { ok: false, message: '未上传（已中止）' };
+    });
+    retrying.value = false;
+    phase.value = 'done';
+    emit('success');
+  }
+};
+
 const handleClosed = () => {
   phase.value = 'choose';
   queue.value = [];
@@ -453,6 +485,8 @@ const handleClosed = () => {
   knownCategories.value = [];
   current.value = null;
   doneCount.value = 0;
+  runDenominator.value = 0;
+  retrying.value = false;
   abortFlag.value = false;
   resetChecking();
 };
