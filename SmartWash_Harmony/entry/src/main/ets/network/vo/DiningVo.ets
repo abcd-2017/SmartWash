@@ -379,6 +379,11 @@ export interface DiningShoppingSelector {
 
 /** 按菜视图条目：一道菜及其全部选菜人 */
 export interface DiningShoppingRecipeView {
+  /**
+   * 菜谱 ID（additive 新增，供按菜备菜行跳转菜谱详情看做法）。
+   * 0 = 老快照无该字段（Jackson 缺键/类型漂移兜底），行不可点击跳转。
+   */
+  recipeId: number
   recipeName: string
   selectors: Array<DiningShoppingSelector>
 }
@@ -497,6 +502,8 @@ export function diningShoppingListFromJSON(raw: Object | null): DiningShoppingLi
     perRecipe: mapArray(obj['perRecipe'], (item: Object): DiningShoppingRecipeView => {
       const recipe: Record<string, Object> = item as Record<string, Object>
       return {
+        // additive 字段按存在性映射：老快照缺 recipeId 键 → 兜底 0（消费端据此禁用跳转）
+        recipeId: jsonNum(recipe['recipeId']) ?? 0,
         recipeName: jsonStr(recipe['recipeName']) ?? '',
         selectors: mapArray(recipe['selectors'], (sel: Object): DiningShoppingSelector => {
           const selObj: Record<string, Object> = sel as Record<string, Object>

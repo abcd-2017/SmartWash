@@ -219,13 +219,13 @@ struct DiningFavoriteListPage {
     })
   }
 
-  /** 收藏卡：封面缩略（占位键回落首字）+ 名称（两行上限）+ 食材数·份热量 + 取消收藏 */
+  /** 收藏卡：封面缩略（占位键回落品牌占位图）+ 名称（两行上限）+ 食材数·份热量 + 取消收藏 */
   @Builder
   RecipeCard(recipe: DiningRecipeVo) {
     Row({ space: DesignDimens.SPACE_MD }) {
       Stack({ alignContent: Alignment.TopEnd }) {
-        // TD18 对齐安卓定案：分类占位键（dining/covers/category_*）视为无封面回落首字
-        DiningRecipeThumb({ coverUrl: recipe.coverUrl, name: recipe.name, thumbSize: 72 })
+        // TD18 对齐安卓定案：分类占位键（dining/covers/category_*）视为无封面，回落品牌占位图（D24 替代首字）
+        DiningRecipeThumb({ coverUrl: recipe.coverUrl, thumbSize: 72 })
         Column() {
           SymbolGlyph($r('sys.symbol.heart_fill'))
             .fontSize(20)

@@ -337,13 +337,21 @@ export default function diningLogicTest() {
 
     it('shoppingList-标准快照解析', 0, () => {
       const json = '{"ingredientNames":["西红柿","鸡蛋"],"perRecipe":[' +
-        '{"recipeName":"番茄炒蛋","selectors":[{"userId":7,"note":"不要辣"}]}]}'
+        '{"recipeId":12,"recipeName":"番茄炒蛋","selectors":[{"userId":7,"note":"不要辣"}]}]}'
       const snapshot = parseDiningShoppingList(json)
       expect(snapshot.ingredientNames.length).assertEqual(2)
       expect(snapshot.ingredientNames[0]).assertEqual('西红柿')
       expect(snapshot.perRecipe.length).assertEqual(1)
+      expect(snapshot.perRecipe[0].recipeId).assertEqual(12)
       expect(snapshot.perRecipe[0].recipeName).assertEqual('番茄炒蛋')
       expect(snapshot.perRecipe[0].selectors[0].note).assertEqual('不要辣')
+    })
+    it('shoppingList-老快照缺recipeId兜底0', 0, () => {
+      // additive 兼容：老快照无 recipeId 键 → 解析兜底 0（消费端据此禁用按菜行跳详情）
+      const json = '{"ingredientNames":["鸡蛋"],"perRecipe":[{"recipeName":"白米饭","selectors":[]}]}'
+      const snapshot = parseDiningShoppingList(json)
+      expect(snapshot.perRecipe.length).assertEqual(1)
+      expect(snapshot.perRecipe[0].recipeId).assertEqual(0)
     })
     it('shoppingList-空值与畸形兜底空快照', 0, () => {
       expect(parseDiningShoppingList(null).ingredientNames.length).assertEqual(0)
@@ -358,6 +366,7 @@ export default function diningLogicTest() {
         ingredients: ['西红柿', '鸡蛋', '葱'],
         perRecipe: [
           {
+            recipeId: 0,
             recipeName: '番茄炒蛋',
             selectors: [
               { label: '139****0001', note: '不要辣', isMe: true },
@@ -365,6 +374,7 @@ export default function diningLogicTest() {
             ]
           },
           {
+            recipeId: 0,
             recipeName: '凉拌西红柿',
             selectors: [{ label: '139****0001', note: '少糖', isMe: true }]
           }
@@ -389,7 +399,7 @@ export default function diningLogicTest() {
       expect(text.indexOf('【按菜备菜】\n（无）')).assertLarger(0)
     })
     it('shoppingListText-无选菜人的菜只出菜名', 0, () => {
-      const recipe: DiningRecipeShopping = { recipeName: '白米饭', selectors: [] }
+      const recipe: DiningRecipeShopping = { recipeId: 0, recipeName: '白米饭', selectors: [] }
       const result: DiningShoppingResult = {
         ingredients: [], perRecipe: [recipe], ingredientTotals: null, totalCalories: null,
         calorieUnknownDishCount: null

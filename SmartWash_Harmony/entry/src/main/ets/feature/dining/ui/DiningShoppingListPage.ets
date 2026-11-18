@@ -6,7 +6,7 @@
 
 import { pasteboard } from '@kit.BasicServicesKit'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
 import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import {
@@ -86,8 +86,12 @@ struct DiningShoppingListPage {
   @Local calorieTarget: number = DINING_DEFAULT_CALORIE_TARGET
   /** 人数本地态（1-20，默认参与者人数；不落库，离开页面即重置） */
   @Local peopleCount: number = DINING_PEOPLE_MIN
+  // 按压反馈 key（按菜备菜行，对齐安卓 pressable）+ reduced motion 降级
+  @Local pressedKey: string = ''
+  @Local reduceMotion: boolean = false
 
   async aboutToAppear(): Promise<void> {
+    this.reduceMotion = ReduceMotion.isEnabled()
     this.orderId = getNumberParam(RouteNames.DINING_SHOPPING_LIST) ?? 0
     if (this.orderId <= 0) {
       logger.warn(TAG, '购买清单参数缺失 orderId')
@@ -434,6 +438,29 @@ struct DiningShoppingListPage {
             .borderWidth(1)
             .borderColor($r('app.color.OUTLINE'))
             .padding(DesignDimens.CARD_PADDING)
+            // 按菜行点击进菜谱详情看做法（快照 additive recipeId）：仅 recipeId>0 的行可点，
+            // 老快照（缺 recipeId，解析兜底 0）整行不可点，避免点了白点。按压 100ms
+            // FastOutSlowIn scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+            .scale({
+              x: recipe.recipeId > 0 && !this.reduceMotion && this.pressedKey === `per_${recipe.recipeId}` ? MotionScale.Press : 1,
+              y: recipe.recipeId > 0 && !this.reduceMotion && this.pressedKey === `per_${recipe.recipeId}` ? MotionScale.Press : 1
+            })
+            .opacity(recipe.recipeId > 0 && this.reduceMotion && this.pressedKey === `per_${recipe.recipeId}` ? MotionAlpha.PressReduced : 1)
+            .animation(MotionTiming.PRESS)
+            .onTouch((event: TouchEvent) => {
+              // 老快照不可点行不置按压态：无点击却出现按压反馈会误导「可跳转」
+              if (recipe.recipeId <= 0) {
+                return
+              }
+              if (event.type === TouchType.Down) {
+                this.pressedKey = `per_${recipe.recipeId}`
+              } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.pressedKey = ''
+              }
+            })
+            .onClick(() => {
+              this.viewRecipe(recipe.recipeId)
+            })
           }
         }, (recipe: DiningRecipeShopping) => `recipe_${recipe.recipeName}_${recipe.selectors.length}`)
         ListItem() {
@@ -489,6 +516,14 @@ struct DiningShoppingListPage {
       this.isError = true
       showToastSafety('', DiningText.dining_shopping_list_load_failed)
     }
+  }
+
+  /** 按菜行点击：进菜谱详情看做法（对齐安卓行点击语义；recipeId=0 老快照行内守卫不跳） */
+  private viewRecipe(recipeId: number): void {
+    if (recipeId <= 0) {
+      return
+    }
+    pathStack.pushPathByName(RouteNames.DINING_RECIPE_DETAIL, recipeId)
   }
 
   /** 已买食材数（与当前清单交集，避免陈旧项撑大进度） */
