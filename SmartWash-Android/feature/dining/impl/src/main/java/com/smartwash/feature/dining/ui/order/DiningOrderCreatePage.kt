@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Clear
@@ -94,11 +95,15 @@ import com.smartwash.feature.dining.logic.DiningPortionAdvisor
 /** 左分类栏宽度（对齐点单页 RAIL_WIDTH 先例：分类名短词为主，84dp 兼顾两行折行） */
 private val RAIL_WIDTH = 84.dp
 
-/** 菜品行卡封面缩略尺寸（对齐点单页 DISH_COVER_SIZE 先例） */
-private val DISH_COVER_SIZE = 56.dp
+/** 营养三小项数值格式化（份口径；整数值去掉小数尾巴，与徽标口径一致） */
+private fun macroAmount(value: Double): String =
+    DiningNutritionCalculator.formatAmount(value).orEmpty()
 
-/** 菜品行卡最小行高（规范 §3.4 列表行卡 64dp 口径） */
-private val DISH_ROW_MIN_HEIGHT = 64.dp
+/** 菜品行卡封面缩略尺寸（TD30：56→64，行卡加四层信息后行高自然充裕） */
+private val DISH_COVER_SIZE = 64.dp
+
+/** 菜品行卡最小行高（TD30：随封面 64 提到 72） */
+private val DISH_ROW_MIN_HEIGHT = 72.dp
 
 /** 创建页内容区三态：首载骨架 / 首载失败 / 内容（菜品列表可空态） */
 private enum class CreateContentState { Skeleton, Error, Content }
@@ -271,37 +276,64 @@ fun DiningOrderCreatePage(
                         )
 
                         CreateContentState.Content -> Column(modifier = Modifier.fillMaxSize()) {
-                            // 标题（表单首字段，就近错误提示）
-                            Column(
+                            // 标题行（TD32/精修定案）：头部只留搜索一个输入框——标题改「点击编辑
+                            // 原位展开」轻交互，空标题也可先行选菜/邀请（草稿协同批次复用本交互），
+                            // 必填校验在「发起点单」时触发（就近红字保留在编辑态）
+                            var editingTitle by remember { mutableStateOf(false) }
+                            val titleError = formError == DiningOrderFormError.TITLE_REQUIRED ||
+                                formError == DiningOrderFormError.TITLE_TOO_LONG
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = AppDimens.pagePadding),
+                                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
                             ) {
-                                Text(
-                                    text = stringResource(R.string.dining_order_create_title_label),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = AppColors.colorScheme.textPrimary,
-                                    modifier = Modifier.padding(
-                                        bottom = AppDimens.spaceXs,
-                                        start = AppDimens.spaceXxs,
-                                    ),
-                                )
-                                AppTextField(
-                                    value = title,
-                                    onValueChange = viewModel::onTitleChange,
-                                    placeholder = stringResource(R.string.dining_order_create_title_hint),
-                                    isError = formError == DiningOrderFormError.TITLE_REQUIRED ||
-                                        formError == DiningOrderFormError.TITLE_TOO_LONG,
-                                    supportingText = {
-                                        if (formError == DiningOrderFormError.TITLE_REQUIRED ||
-                                            formError == DiningOrderFormError.TITLE_TOO_LONG
-                                        ) {
-                                            Text(stringResource(viewModel.errorRes(formError!!)))
-                                        }
-                                    },
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
+                                if (editingTitle) {
+                                    AppTextField(
+                                        value = title,
+                                        onValueChange = viewModel::onTitleChange,
+                                        placeholder = stringResource(R.string.dining_order_create_title_hint),
+                                        isError = titleError,
+                                        supportingText = {
+                                            if (titleError) {
+                                                Text(stringResource(viewModel.errorRes(formError!!)))
+                                            }
+                                        },
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+                                    AppButton(
+                                        text = stringResource(R.string.dining_order_create_title_confirm),
+                                        onClick = { editingTitle = false },
+                                        variant = AppButtonVariant.SECONDARY,
+                                        small = true,
+                                    )
+                                } else {
+                                    Text(
+                                        text = title.ifBlank {
+                                            stringResource(R.string.dining_order_create_title_hint)
+                                        },
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = if (title.isBlank()) AppColors.colorScheme.textTertiary
+                                        else AppColors.colorScheme.textPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .pressable(onClick = { editingTitle = true }, debounce = false),
+                                    )
+                                    Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+                                    Icon(
+                                        imageVector = Icons.Filled.Edit,
+                                        contentDescription = stringResource(R.string.dining_order_create_title_edit),
+                                        tint = AppColors.colorScheme.textSecondary,
+                                        modifier = Modifier
+                                            .size(22.dp)
+                                            .pressable(onClick = { editingTitle = true }, debounce = false)
+                                            .padding(2.dp),
+                                    )
+                                }
                             }
 
                             // 菜品搜索（服务端模糊查询，防抖 300ms 重置分页重拉；搜索态切全库列表，
@@ -454,7 +486,9 @@ private fun CreateCategoryRail(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.surfaceVariant),
+            // rail 透明底（TD31）：原 surfaceVariant 整条灰绿与页面底 #F5F6F3 明度接近、发灰；
+            // 透明透出页面底，选中浅绿块成为唯一色块，对比清晰（craft-floor：无左色条方案）
+            .background(Color.Transparent),
     ) {
         items(chips, key = { it.id ?: -1L }) { chip ->
             val selected = chip.id == selectedCategoryId
@@ -608,6 +642,17 @@ private fun DishRow(
     }
     // 副行热量前置（TD16）：大字体/窄屏截断时优先保住热量语义（旧序「N 种食材 · ≈107 …」热量必被截）
     val subLine = listOfNotNull(calorieText, ingredientText).joinToString(" · ")
+    // 营养三小项（TD30/精修规范 §一）：蛋白/脂肪/碳水，份口径，tnum + 语义绿——
+    // 与副行（灰）拉开色阶，承担「信息分层」而非同重堆叠（typeset 规则）
+    val macroLine = listOfNotNull(
+        nutrition.proteinG?.let {
+            stringResource(R.string.dining_order_create_macro_protein, macroAmount(it))
+        },
+        nutrition.fatG?.let { stringResource(R.string.dining_order_create_macro_fat, macroAmount(it)) },
+        nutrition.carbsG?.let { stringResource(R.string.dining_order_create_macro_carbs, macroAmount(it)) },
+    ).joinToString(" · ")
+    // 食材摘要（TD30）：前 3 个 + 省略；最浅色阶层（textTertiary），大字体截断时最先让位
+    val ingredientSummary = recipe.safeIngredients.take(3).joinToString("、")
 
     GroupCard(
         modifier = modifier
@@ -643,6 +688,24 @@ private fun DishRow(
                         text = subLine,
                         style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
                         color = AppColors.colorScheme.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (macroLine.isNotBlank()) {
+                    Text(
+                        text = macroLine,
+                        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                        color = AppColors.colorScheme.textGreen,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (ingredientSummary.isNotBlank()) {
+                    Text(
+                        text = if (recipe.safeIngredients.size > 3) "$ingredientSummary…" else ingredientSummary,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.colorScheme.textTertiary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -704,7 +767,9 @@ private fun AddDishButton(
     }
     Box(
         modifier = Modifier
-            .size(48.dp)
+            // 40dp 热区 + 28dp 视觉（TD30）：原 48/32 在窄屏挤占文字区（行宽约 17%→13%），
+            // 释放宽度给四层信息
+            .size(40.dp)
             .semantics { contentDescription = actionLabel }
             .pressable(onClick = onClick, debounce = false),
         contentAlignment = Alignment.Center,
@@ -718,7 +783,7 @@ private fun AddDishButton(
         )
         Box(
             modifier = Modifier
-                .size(32.dp)
+                .size(28.dp)
                 .scale(scale)
                 .then(
                     if (selected) {

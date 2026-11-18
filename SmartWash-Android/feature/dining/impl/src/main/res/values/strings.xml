@@ -116,6 +116,8 @@
     <string name="dining_order_create_title">发起点单</string>
     <string name="dining_order_create_title_label">点单标题</string>
     <string name="dining_order_create_title_hint">比如：周五晚火锅</string>
+    <string name="dining_order_create_title_edit">编辑点单标题</string>
+    <string name="dining_order_create_title_confirm">确定</string>
     <string name="dining_order_create_menu_label">勾选本单菜品</string>
     <string name="dining_order_create_search_hint">搜索菜品</string>
     <string name="dining_order_create_menu_uncategorized">未分类</string>
@@ -124,6 +126,9 @@
     <string name="dining_order_create_submit_success">点单已发起，分享二维码喊同学一起加入吧</string>
     <string name="dining_order_create_load_failed">菜品加载失败</string>
     <string name="dining_order_create_recipe_ingredients_format">%1$d 种食材</string>
+    <string name="dining_order_create_macro_protein">蛋白 %1$s g</string>
+    <string name="dining_order_create_macro_fat">脂肪 %1$s g</string>
+    <string name="dining_order_create_macro_carbs">碳水 %1$s g</string>
     <string name="dining_order_create_recipe_select">勾选菜品 %1$s</string>
     <string name="dining_order_create_recipe_deselect">取消勾选菜品 %1$s</string>
     <string name="dining_order_create_reuse_hint_format">将复用历史订单「%1$s」的 %2$d 道菜（菜单按原单复制，不可修改）</string>
