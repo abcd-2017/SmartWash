@@ -55,6 +55,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -93,6 +95,12 @@ class DiningRecipeImportServiceImplTest {
     @Mock
     private MinioConfig minioConfig;
 
+    @Mock
+    private com.smartwash.dining.service.DiningIngredientService diningIngredientService;
+
+    @Mock
+    private com.smartwash.dining.service.DiningRecipeIngredientService diningRecipeIngredientService;
+
     private DiningRecipeImportService service;
 
     private final AtomicLong ingredientIdSeq = new AtomicLong(100);
@@ -114,6 +122,8 @@ class DiningRecipeImportServiceImplTest {
         ReflectionTestUtils.setField(impl, "diningCategoryMapper", categoryMapper);
         ReflectionTestUtils.setField(impl, "diningIngredientMapper", ingredientMapper);
         ReflectionTestUtils.setField(impl, "diningRecipeIngredientMapper", recipeIngredientMapper);
+        ReflectionTestUtils.setField(impl, "diningIngredientService", diningIngredientService);
+        ReflectionTestUtils.setField(impl, "diningRecipeIngredientService", diningRecipeIngredientService);
         ReflectionTestUtils.setField(impl, "minioClient", minioClient);
         ReflectionTestUtils.setField(impl, "minioConfig", minioConfig);
         ReflectionTestUtils.setField(impl, "securityUtil", new SecurityUtil());
@@ -174,14 +184,17 @@ class DiningRecipeImportServiceImplTest {
                 "异常消息应包含「" + expectedMessagePart + "」，实际: " + ex.getMessage());
     }
 
-    /** 配料库 selectOne 未命中 + insert 自增回填（模拟 MyBatis-Plus insert 后回填主键） */
+    /** 配料库 selectList 未命中 + 批量 insert 自增回填（模拟 saveBatch 回填主键；降级逐条 stub 同步保留） */
     private void stubIngredientAutoRegister() {
-        when(ingredientMapper.selectOne(any())).thenReturn(null);
-        when(ingredientMapper.insert(any(DiningIngredient.class))).thenAnswer(inv -> {
-            inv.getArgument(0, DiningIngredient.class).setId(ingredientIdSeq.incrementAndGet());
-            return 1;
+        when(ingredientMapper.selectList(any())).thenReturn(List.of());
+        when(diningIngredientService.saveBatch(anyList(), anyInt())).thenAnswer(inv -> {
+            java.util.Collection<DiningIngredient> batch = inv.getArgument(0);
+            for (DiningIngredient ingredient : batch) {
+                ingredient.setId(ingredientIdSeq.incrementAndGet());
+            }
+            return true;
         });
-        when(recipeIngredientMapper.insert(any(DiningRecipeIngredient.class))).thenReturn(1);
+        when(diningRecipeIngredientService.saveBatch(anyList(), anyInt())).thenReturn(true);
     }
 
     // ==================== 模板生成 ====================
@@ -655,38 +668,36 @@ class DiningRecipeImportServiceImplTest {
     void confirm_ingredientUpsert_idempotent() {
         when(categoryMapper.selectList(any())).thenReturn(List.of());
         when(recipeMapper.insert(any(DiningRecipe.class))).thenReturn(1);
-        // 按调用序区分：首次查询（鸡蛋，已存在后台人工维护的记录）返回既有配料，其后返回 null
-        AtomicLong calls = new AtomicLong();
-        when(ingredientMapper.selectOne(any())).thenAnswer(inv -> {
-            if (calls.incrementAndGet() == 1) {
-                return new DiningIngredient().setId(88L).setName("鸡蛋").setCategory("OTHER");
+        // IN 批查：鸡蛋已在库（人工维护记录），豆瓣酱/辣椒油未命中走批量自动注册
+        when(ingredientMapper.selectList(any())).thenReturn(
+                List.of(new DiningIngredient().setId(88L).setName("鸡蛋").setCategory("OTHER")));
+        when(diningIngredientService.saveBatch(anyList(), anyInt())).thenAnswer(inv -> {
+            java.util.Collection<DiningIngredient> batch = inv.getArgument(0);
+            for (DiningIngredient ingredient : batch) {
+                ingredient.setId(ingredientIdSeq.incrementAndGet());
             }
-            return null;
+            return true;
         });
-        when(ingredientMapper.insert(any(DiningIngredient.class))).thenAnswer(inv -> {
-            inv.getArgument(0, DiningIngredient.class).setId(ingredientIdSeq.incrementAndGet());
-            return 1;
-        });
-        when(recipeIngredientMapper.insert(any(DiningRecipeIngredient.class))).thenReturn(1);
+        when(diningRecipeIngredientService.saveBatch(anyList(), anyInt())).thenReturn(true);
 
         DiningRecipeImportResultVo vo = service.confirm(confirmFrom(
                 confirmRow(2, null, "番茄炒蛋", List.of("鸡蛋", "豆瓣酱", "辣椒油"), "炒")));
 
         assertFalse(vo.isRolledBack());
-        // 已存在的鸡蛋复用，不再 insert
-        ArgumentCaptor<DiningIngredient> ingredientCaptor = ArgumentCaptor.forClass(DiningIngredient.class);
-        verify(ingredientMapper, org.mockito.Mockito.times(2)).insert(ingredientCaptor.capture());
-        assertEquals(List.of("豆瓣酱", "辣椒油"), ingredientCaptor.getAllValues().stream()
+        // 已存在的鸡蛋复用，不再插入——批量注册列表只有豆瓣酱/辣椒油
+        ArgumentCaptor<List<DiningIngredient>> ingredientCaptor = ArgumentCaptor.forClass(List.class);
+        verify(diningIngredientService).saveBatch(ingredientCaptor.capture(), anyInt());
+        assertEquals(List.of("豆瓣酱", "辣椒油"), ingredientCaptor.getValue().stream()
                 .map(DiningIngredient::getName).toList(), "已存在配料不重插（幂等）");
-        assertEquals(DiningIngredient.CATEGORY_SEASONING, ingredientCaptor.getAllValues().get(0).getCategory(),
+        assertEquals(DiningIngredient.CATEGORY_SEASONING, ingredientCaptor.getValue().get(0).getCategory(),
                 "「豆瓣酱」含酱 → SEASONING 启发分类");
-        assertEquals(DiningIngredient.CATEGORY_SEASONING, ingredientCaptor.getAllValues().get(1).getCategory(),
+        assertEquals(DiningIngredient.CATEGORY_SEASONING, ingredientCaptor.getValue().get(1).getCategory(),
                 "「辣椒油」含油 → SEASONING 启发分类");
 
-        // 关联表按名去重写入：3 个配料 3 行关联
-        ArgumentCaptor<DiningRecipeIngredient> relationCaptor = ArgumentCaptor.forClass(DiningRecipeIngredient.class);
-        verify(recipeIngredientMapper, org.mockito.Mockito.times(3)).insert(relationCaptor.capture());
-        assertEquals(88L, relationCaptor.getAllValues().get(0).getIngredientId(), "已存在配料复用其 ID");
+        // 关联表按名去重批量写入：3 个配料 3 行关联
+        ArgumentCaptor<List<DiningRecipeIngredient>> relationListCaptor = ArgumentCaptor.forClass(List.class);
+        verify(diningRecipeIngredientService).saveBatch(relationListCaptor.capture(), anyInt());
+        assertEquals(88L, relationListCaptor.getValue().get(0).getIngredientId(), "已存在配料复用其 ID");
     }
 
     @Test
@@ -706,10 +717,10 @@ class DiningRecipeImportServiceImplTest {
         DiningRecipeImportResultVo vo = service.confirm(confirmFrom(row));
 
         assertFalse(vo.isRolledBack());
-        // 名列表 3 项 + 明细 2 项（鸡蛋/西红柿与名列表重名）→ 去重后 3 行关联
-        ArgumentCaptor<DiningRecipeIngredient> relationCaptor = ArgumentCaptor.forClass(DiningRecipeIngredient.class);
-        verify(recipeIngredientMapper, org.mockito.Mockito.times(3)).insert(relationCaptor.capture());
-        List<DiningRecipeIngredient> relations = relationCaptor.getAllValues();
+        // 名列表 3 项 + 明细 2 项（鸡蛋/西红柿与名列表重名）→ 去重后 3 行关联（批量写入）
+        ArgumentCaptor<List<DiningRecipeIngredient>> relationListCaptor = ArgumentCaptor.forClass(List.class);
+        verify(diningRecipeIngredientService).saveBatch(relationListCaptor.capture(), anyInt());
+        List<DiningRecipeIngredient> relations = relationListCaptor.getValue();
         assertEquals(0, new BigDecimal("575").compareTo(relations.get(0).getAmountValue()),
                 "重名配料以明细数量为准");
         assertEquals("g", relations.get(0).getAmountUnit());
@@ -775,13 +786,13 @@ class DiningRecipeImportServiceImplTest {
         assertNull(saved.getCarbsG());
         assertNull(saved.getSodiumMg());
         assertNull(saved.getCoverObjectKey());
-        // 名列表也写关联表（数量未给出落 NULL）——买菜清单 v2 的聚合依据，旧 CSV 同样受益
-        ArgumentCaptor<DiningRecipeIngredient> relationCaptor = ArgumentCaptor.forClass(DiningRecipeIngredient.class);
-        verify(recipeIngredientMapper, org.mockito.Mockito.times(2)).insert(relationCaptor.capture());
-        relationCaptor.getAllValues().forEach(relation -> {
+        // 名列表也写关联表（数量未给出落 NULL）——买菜清单 v2 的聚合依据，旧 CSV 同样受益（批量写入）
+        ArgumentCaptor<List<DiningRecipeIngredient>> relationListCaptor2 = ArgumentCaptor.forClass(List.class);
+        verify(diningRecipeIngredientService).saveBatch(relationListCaptor2.capture(), anyInt());
+        for (DiningRecipeIngredient relation : relationListCaptor2.getValue()) {
             assertNull(relation.getAmountValue(), "旧 CSV 名列表无数量，关联行数量落 NULL");
             assertNull(relation.getAmountUnit());
-        });
+        }
         assertTrue(vo.getRows().get(0).getWarnings() == null || vo.getRows().get(0).getWarnings().isEmpty());
     }
 
@@ -865,13 +876,14 @@ class DiningRecipeImportServiceImplTest {
         assertEquals(1, vo.getUpdatedCount());
         verify(recipeMapper, never()).insert(any(DiningRecipe.class));
         verify(recipeMapper).update(org.mockito.ArgumentMatchers.isNull(), any());
-        // 关联按既有菜谱 ID 重建：先删旧关联，再插入新关联行
+        // 关联按既有菜谱 ID 重建：先删旧关联（IN 批删），再批量写入新关联行
         verify(recipeIngredientMapper).delete(any());
-        ArgumentCaptor<DiningRecipeIngredient> relationCaptor = ArgumentCaptor.forClass(DiningRecipeIngredient.class);
-        verify(recipeIngredientMapper).insert(relationCaptor.capture());
-        assertEquals(11L, relationCaptor.getValue().getRecipeId(), "重建的关联必须挂既有菜谱 ID");
-        assertEquals(0, new BigDecimal("575").compareTo(relationCaptor.getValue().getAmountValue()));
-        assertEquals("g", relationCaptor.getValue().getAmountUnit());
+        ArgumentCaptor<List<DiningRecipeIngredient>> updatedRelationsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(diningRecipeIngredientService).saveBatch(updatedRelationsCaptor.capture(), anyInt());
+        DiningRecipeIngredient relation = updatedRelationsCaptor.getValue().get(0);
+        assertEquals(11L, relation.getRecipeId(), "重建的关联必须挂既有菜谱 ID");
+        assertEquals(0, new BigDecimal("575").compareTo(relation.getAmountValue()));
+        assertEquals("g", relation.getAmountUnit());
         // 报告行：更新语义回显既有 ID
         assertFalse(vo.getRows().get(0).getIsNew());
         assertEquals("UPDATE", vo.getRows().get(0).getExistsKind());

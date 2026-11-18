@@ -79,8 +79,11 @@ public final class ShoppingListAssembler {
                                List<DishCalories> perDishCalories) {
     }
 
-    /** 按菜视图：一道菜及其全部选菜人 */
-    public record RecipeView(String recipeName, List<SelectorView> selectors) {
+    /**
+     * 按菜视图：一道菜及其全部选菜人。recipeId 供端上从购买清单跳转菜谱详情；
+     * 老快照无该字段，端上判 id 非空才可点击。
+     */
+    public record RecipeView(Long recipeId, String recipeName, List<SelectorView> selectors) {
     }
 
     /** 选菜人视图：谁选的 + 个人备注 */
@@ -152,7 +155,7 @@ public final class ShoppingListAssembler {
                 return;
             }
             List<SelectorView> selectors = selectorsByRecipe.get(recipeId);
-            perRecipe.add(new RecipeView(recipe.recipeName(),
+            perRecipe.add(new RecipeView(recipeId, recipe.recipeName(),
                     selectors == null ? List.of() : List.copyOf(selectors)));
         });
 
