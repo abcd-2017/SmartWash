@@ -15,36 +15,34 @@ import {
 import { diningShoppingListFromJSON, DiningShoppingListSnapshot } from '../../network/vo/DiningVo'
 
 
-/** 点单订单状态全集（后端 dining_order.status 白名单；文案见 DiningText） */
+/**
+ * 点单订单状态全集（后端 dining_order.status 白名单；文案见 DiningText）。
+ * 契约（2026-11-18 协同点单改造）：DRAFT → FINISHED（发起者一步「提交」直接结束），
+ * 原 ONGOING 已移除，不再产生、不再消费。
+ */
 export enum DiningOrderStatus {
-  /** 草稿（边点边邀：菜单可加/移除，全部成员可加入；publish 后才 ONGOING） */
+  /** 编辑中（标题/菜单可空，全员可加/移除菜、可邀请加入） */
   DRAFT,
-  /** 进行中（可加入、可勾选/改备注/取消） */
-  ONGOING,
-  /** 已结束（发起者锁定并生成购买清单快照，拒绝一切选菜写入） */
+  /** 已结束（发起者提交并生成购买清单快照，拒绝一切写入） */
   FINISHED
 }
 
 /**
- * 状态码 → 枚举；null/空白/白名单外脏数据按保守降级返回 FINISHED 档语义
+ * 状态码 → 枚举；null/空白/白名单外脏数据（含历史 ONGOING）按保守降级返回 FINISHED 档语义
  *（未知状态按「不可写」处理，交互与展示同 FINISHED——不引导用户对未知态下单）。
  */
 export function diningOrderStatusFromCode(code: string | null): DiningOrderStatus {
   if (code === 'DRAFT') {
     return DiningOrderStatus.DRAFT
   }
-  if (code === 'ONGOING') {
-    return DiningOrderStatus.ONGOING
-  }
   return DiningOrderStatus.FINISHED
 }
 
 /**
- * 是否可加入（草稿协同：DRAFT/ONGOING 均允许成员凭凭证加入；
- * FINISHED 与未知状态不可加入）。
+ * 是否可加入（仅 DRAFT 允许成员凭凭证加入；FINISHED 与未知状态不可加入）。
  */
 export function isDiningOrderJoinable(status: DiningOrderStatus): boolean {
-  return status === DiningOrderStatus.DRAFT || status === DiningOrderStatus.ONGOING
+  return status === DiningOrderStatus.DRAFT
 }
 
 /** 端内加入深链 scheme + host + path 前缀（与壳层 DeepLinkRegistry 的 dining/order 契约同源） */
@@ -222,9 +220,9 @@ export function parseDiningJoinUrl(raw: string | null): DiningJoinUrlParseResult
 
 /** 加入入口决策四态（对齐 Android DiningJoinEntryDecision） */
 export enum DiningJoinEntryDecision {
-  /** 已是成员：直达点单详情页 */
-  ENTER_DETAIL,
-  /** 非成员且订单进行中：展示确认加入 */
+  /** 已是成员：直达创建页（编辑态，详情页已按契约删除） */
+  ENTER_CREATE,
+  /** 非成员且订单草稿中：展示确认加入 */
   CONFIRM_JOIN,
   /** 订单已结束/状态未知：不引导加入 */
   ORDER_FINISHED,
@@ -275,7 +273,7 @@ export function decideDiningJoinEntry(brief: DiningOrderBriefVo | null): DiningJ
     return DiningJoinEntryDecision.BRIEF_UNAVAILABLE
   }
   if (brief.joined) {
-    return DiningJoinEntryDecision.ENTER_DETAIL
+    return DiningJoinEntryDecision.ENTER_CREATE
   }
   if (isDiningOrderJoinable(diningOrderStatusFromCode(brief.status))) {
     return DiningJoinEntryDecision.CONFIRM_JOIN

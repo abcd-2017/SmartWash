@@ -43,6 +43,28 @@ export class DiningText {
   static get dining_order_invite_unavailable(): string { return resString('dining_order_invite_unavailable') }
   static get dining_order_create_write_failed(): string { return resString('dining_order_create_write_failed') }
   static get dining_order_create_load_failed(): string { return resString('dining_order_create_load_failed') }
+  static get dining_order_cart_title(): string { return resString('dining_order_cart_title') }
+  static get dining_order_cart_empty(): string { return resString('dining_order_cart_empty') }
+  static get dining_order_cart_remove(): string { return resString('dining_order_cart_remove') }
+
+  /** 已选 %d 道 · %s 人（底栏左侧信息区） */
+  static cartSummary(count: number, people: number): string {
+    return resString('dining_order_cart_summary_format')
+      .replace('%d', `${count}`).replace('%s', `${people}`)
+  }
+
+  /** 列表卡摘要：%d 道菜 · %s（对齐 Android dining_order_list_summary_format；无摘要时仅出菜品数） */
+  static orderListSummary(menuCount: number, ingredientSummary: string): string {
+    const summary = ingredientSummary.trim()
+    if (summary.length > 0) {
+      return resString('dining_order_list_summary_format')
+        .replace('%d', `${menuCount}`).replace('%s', summary)
+    }
+    if (menuCount <= 0) {
+      return ''
+    }
+    return fmt(resString('dining_order_list_dish_count_format'), `${menuCount}`)
+  }
   static get dining_order_error_title_required(): string { return resString('dining_order_error_title_required') }
   static get dining_order_error_title_too_long(): string { return resString('dining_order_error_title_too_long') }
   static get dining_order_error_menu_empty(): string { return resString('dining_order_error_menu_empty') }
@@ -66,6 +88,7 @@ export class DiningText {
   }
 
   static get dining_order_share_title(): string { return resString('dining_order_share_title') }
+  static get dining_order_invite_title(): string { return resString('dining_order_invite_title') }
   static get dining_order_share_qr_section(): string { return resString('dining_order_share_qr_section') }
   static get dining_order_share_qr_hint(): string { return resString('dining_order_share_qr_hint') }
   static get dining_order_share_copy_link(): string { return resString('dining_order_share_copy_link') }

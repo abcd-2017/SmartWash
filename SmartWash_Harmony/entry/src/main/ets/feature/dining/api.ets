@@ -4,7 +4,7 @@
 
 /**
  * 创建订单页路由参数。
- * - orderId > 0：草稿编辑模式（加载既有 DRAFT，加/移除走 dishes，CTA= publish）
+ * - orderId > 0：草稿编辑模式（加载既有 DRAFT，加/移除走 dishes，CTA=提交订单）
  * - fromOrderId > 0：复用历史菜单模式（源单菜单只读，提交带 fromOrderId）
  * - 二者皆空：常规模式（惰性创建 DRAFT）
  */

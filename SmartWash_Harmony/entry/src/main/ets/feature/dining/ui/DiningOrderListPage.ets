@@ -1,8 +1,8 @@
 // 吃啥订单列表页（域首页）— 对齐 Android DiningOrderListPage.kt
 //
-// 「我发起的 / 我参与的」分区（isCreator 派生）+ 订单卡（标题/状态/时间/卡内「再来一单」）
-// + FAB 发起点单 + 右上角菜谱库入口。深链 smartwash://dining 落点、工作台入口 target 同款。
-// 卡片点击：ONGOING → 点单页；FINISHED → 购买清单结果页。
+// 「我发起的 / 我参与的」分区（isCreator 派生）+ 订单卡（标题/状态/时间/菜品数+食材摘要/
+// 卡内「再来一单」）+ FAB 发起点单 + 右上角菜谱库入口。深链 smartwash://dining 落点、
+// 工作台入口 target 同款。卡片点击：DRAFT → 创建页（编辑态）；FINISHED → 购买清单结果页。
 // 返回本页（离栈再回）经 onShown 重拉（对齐 Android 列表返回不刷新遗留的修法）。
 
 import { RouteNames } from '../../../constant/RouteNames'
@@ -324,6 +324,17 @@ struct DiningOrderListPage {
       .width('100%')
       .alignItems(VerticalAlign.Center)
 
+      // 菜品数 + 食材摘要（后端未下发菜品数时整行隐藏，不臆造）
+      if (DiningText.orderListSummary(order.menuCount, order.ingredientSummary).length > 0) {
+        Text(DiningText.orderListSummary(order.menuCount, order.ingredientSummary))
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor($r('app.color.TEXT_SECONDARY'))
+          .width('100%')
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .margin({ top: DesignDimens.SPACE_XS })
+      }
+
       Row({ space: DesignDimens.SPACE_SM }) {
         if (order.isCreator) {
           Text(DiningText.dining_order_creator_badge)
@@ -507,13 +518,15 @@ struct DiningOrderListPage {
   }
 
   /**
-   * 卡片点击：草稿/进行中 → 点单页（草稿继续编辑、进行中勾选）；
-   * 已结束/未知 → 购买清单结果页（未知态保守降级同 FINISHED）。
+   * 卡片点击：DRAFT → 创建页（编辑态，orderId）；
+   * FINISHED/未知 → 购买清单结果页（未知态保守降级同 FINISHED）。
    */
   private goOrderBody(order: DiningOrderListVo): void {
     const status = diningOrderStatusFromCode(order.status)
-    if (status === DiningOrderStatus.DRAFT || status === DiningOrderStatus.ONGOING) {
-      pathStack.pushPathByName(RouteNames.DINING_ORDER_DETAIL, order.id)
+    if (status === DiningOrderStatus.DRAFT) {
+      const param = new DiningOrderCreateParam()
+      param.orderId = order.id
+      pathStack.pushPathByName(RouteNames.DINING_ORDER_CREATE, param)
     } else {
       pathStack.pushPathByName(RouteNames.DINING_SHOPPING_LIST, order.id)
     }

@@ -1,14 +1,16 @@
-// 发起点单页 — 对齐 Android DiningOrderCreatePage.kt
+// 点单创建/编辑页 — 对齐 Android DiningOrderCreatePage.kt（2026-11-18 协同点单改造契约）
 //
-// 常规模式：标题输入 + 左分类右菜品（按分类分组勾选上架菜谱）+ 固定 CTA 提交；
-// 复用模式（query fromOrderId，13 号票语义）：拉源单详情回显菜单只读 + 提示 + 提交带
-// fromOrderId（菜单由后端整份复制，端上只校验标题）。
-// 提交成功 → replace 分享视图（等价 Android popUpTo(OrderCreate)+navigate：分享返回直回列表）。
+// 产品模型：菜单即已选清单；全员共同编辑；发起者一步「提交订单」→ 订单直接结束。
+// 常规模式：标题输入 + 分类 chips + 菜品列表（右侧加/移除按钮）+ 底部单行购物车栏
+//（已选 N 道 · M 人 + 右 CTA「提交订单」）；点左侧信息区弹购物车弹窗（已选明细 + 移除 + 人数）。
+// 草稿编辑模式（路由 orderId）：加载既有 DRAFT，加/移除走 dishes 接口，CTA=提交订单。
+// 复用模式（query fromOrderId）：拉源单详情回显菜单只读 + 提示 + 提交带 fromOrderId
+//（菜单由后端整份复制，端上只校验标题）。
+// 提交成功 → replace 购买清单页（等价 Android popUpTo(OrderCreate)+navigate：返回直回列表）。
 
-import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { KeyboardAvoidMode } from '@kit.ArkUI'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
 import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import {
@@ -16,7 +18,6 @@ import {
   DINING_PAGE_SIZE,
   DiningCategoryVo,
   DiningMenuRecipe,
-  DiningOrderCreatedVo,
   DiningOrderDetailVo,
   DiningRecipeVo,
   addDiningOrderDish,
@@ -26,39 +27,29 @@ import {
   getDiningOrderDetail,
   getDiningRecipeDetail,
   getDiningRecipes,
-  publishDiningOrder,
+  submitDiningOrder,
   removeDiningOrderDish
 } from '../../../network/api/DiningApi'
 import {
-  DINING_PEOPLE_MAX,
   DINING_PEOPLE_MIN,
   DiningAllergenHit,
   DiningDraftMenuEditor,
   DiningOrderFormError,
-  DiningPortionVerdict,
   DiningSelectedDish,
   DiningCategoryName,
   DiningMenuRecipeRow,
   DiningMenuSection,
-  DiningOrderStatus,
-  buildDiningOrderDeepLink,
-  coerceDiningPeopleCount,
   diningMenuIdSet,
   diningAllergenHits,
-  diningOrderStatusFromCode,
-  diningPortionAdvice,
-  diningSelectedTotalCalories,
-  diningServingCalories,
-  formatDiningAmount,
   groupDiningMenu,
   validateDiningOrderForm,
   validateDiningOrderReuse
 } from '../DiningLogic'
 import { DiningText } from '../DiningText'
-import { DiningCheckbox } from './DiningUiCommon'
+import { DiningCartPopup } from './DiningUiCommon'
 import { DINING_DEFAULT_CALORIE_TARGET } from '../../../network/vo/DiningVo'
 import { DiningOrderCreateParam, DiningOrderShareParam } from '../api'
-import { AnimatedNumber, AppButton, EmptyState, SkeletonList } from '../../../view/common/AppComponents'
+import { AppButton, EmptyState, SkeletonList } from '../../../view/common/AppComponents'
 import { LoadingFooter } from '../../../view/LoadingFooter'
 import { logger } from '../../../utils/Logger'
 import { LazyListDataSource, PagingController } from '../../../utils/PagingUtil'
@@ -75,12 +66,6 @@ interface DiningAllergenCacheEntry {
   allergens: Array<string>
 }
 
-/** 份量建议展示模型（文案 + 判定色档） */
-interface DiningPortionAdviceText {
-  text: string
-  verdict: DiningPortionVerdict
-}
-
 @Builder
 export function DiningOrderCreateBuilder() {
   DiningOrderCreatePage()
@@ -92,12 +77,12 @@ struct DiningOrderCreatePage {
   private fromOrderId: number = 0
   private sourceTitle: string = ''
   private isReuseMode: boolean = false
-  // 草稿编辑模式（路由 orderId > 0：加载既有 DRAFT，加/移除走 dishes 接口，CTA=publish）
+  // 草稿编辑模式（路由 orderId > 0：加载既有 DRAFT，加/移除走 dishes 接口，CTA=提交订单）
   private editOrderId: number = 0
   private isDraftEditMode: boolean = false
   /** 草稿菜单编辑状态机（惰性创建 / 净差写 / version 乐观锁） */
   private draft: DiningDraftMenuEditor = new DiningDraftMenuEditor()
-  /** 草稿写串行链：切换/邀请/publish 共用，保证 version 基准始终最新 */
+  /** 草稿写串行链：切换/邀请/提交 共用，保证 version 基准始终最新 */
   private draftWriteChain: Promise<void> = Promise.resolve()
 
   @Local titleInput: string = ''
@@ -147,6 +132,9 @@ struct DiningOrderCreatePage {
   @Local allergenCache: Array<DiningAllergenCacheEntry> = []
   /** 过敏原拉取在途（防重复请求） */
   @Local allergenPendingIds: Array<number> = []
+
+  /** 购物车弹窗控制器（每次打开新建，保证入参为最新，对齐 MaterialListPage 先例） */
+  private cartDialog: CustomDialogController | null = null
 
   aboutToDisappear(): void {
     // 键盘避让兜底复位（对齐 Workbench 先例）：路由守卫已收口，此处防焦点残留泄漏
@@ -353,17 +341,6 @@ struct DiningOrderCreatePage {
             .width('100%')
             .margin({ top: DesignDimens.SPACE_MD })
           this.CategoryChips()
-          // 已选计数变化走弹簧淡入淡出（对齐安卓 AnimatedContent numberSpec = defaultSpring()）
-          Column() {
-            AnimatedNumber({
-              value: DiningText.selectedCount(this.selectedIds.length),
-              fontSize: DesignFontSize.CAPTION,
-              fontColor: $r('app.color.TEXT_SECONDARY')
-            })
-          }
-          .width('100%')
-          .alignItems(HorizontalAlign.Start)
-          .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XS })
         }
         .width('100%')
         .padding({
@@ -414,11 +391,39 @@ struct DiningOrderCreatePage {
           return { offsetRemain: offset }
         })
 
-        // 忌口警示 + 人数份量建议（常规模式；固定于列表与 CTA 之间）
-        this.WarningAndPortionBar()
+        // 忌口警示（常规模式；固定于列表与底栏之间，非阻断）
+        this.AllergenWarningBar()
       }
 
-      // 底部 CTA（复用模式只校验标题；常规模式校验标题+菜单）
+      // 底部单行购物车栏（复用模式只校验标题；常规/草稿编辑校验标题+菜单）
+      this.BottomBar()
+    }
+    .width('100%')
+    .layoutWeight(1)
+  }
+
+  /**
+   * 底部单行购物车栏（契约 §五.2）：左侧信息区「已选 N 道 · M 人」（点击弹购物车弹窗，
+   * 内含已选明细 + 移除 + 人数 stepper）+ 右侧主 CTA「提交订单」。
+   * 复用模式无购物车交互，信息区展示源单菜品数且不可点。
+   */
+  @Builder
+  BottomBar() {
+    Row() {
+      // 严格单行信息区（对齐安卓）：仅「已选 N 道 · M 人」，点击量与人数在购物车弹窗内
+      Text(this.bottomInfoText())
+        .fontSize(DesignFontSize.BODY)
+        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontColor($r('app.color.TEXT_PRIMARY'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .layoutWeight(1)
+      .onClick(() => {
+        if (!this.isReuseMode) {
+          this.openCart()
+        }
+      })
+
       AppButton({
         text: DiningText.dining_order_create_submit,
         loading: this.submitting,
@@ -426,14 +431,82 @@ struct DiningOrderCreatePage {
           this.submit()
         }
       })
-        .padding({
-          left: DesignDimens.PAGE_PADDING,
-          right: DesignDimens.PAGE_PADDING,
-          bottom: Math.max(safeBottomVp(), DesignDimens.SPACE_MD)
-        })
+      .width(132)
     }
     .width('100%')
-    .layoutWeight(1)
+    .alignItems(VerticalAlign.Center)
+    .padding({
+      left: DesignDimens.PAGE_PADDING,
+      right: DesignDimens.SPACE_SM,
+      top: DesignDimens.SPACE_XS,
+      bottom: Math.max(safeBottomVp(), DesignDimens.SPACE_MD)
+    })
+    .border({ width: { top: 0.5 }, color: $r('app.color.DIVIDER') })
+    .backgroundColor($r('app.color.SURFACE'))
+  }
+
+  /** 底栏左侧信息文案：常规/草稿编辑「已选 N 道 · M 人」；复用模式「源单 N 道菜」 */
+  private bottomInfoText(): string {
+    if (this.isReuseMode) {
+      return DiningText.menuCount(this.reuseRecipeCount)
+    }
+    return DiningText.cartSummary(this.selectedIds.length, this.peopleCount)
+  }
+
+  /**
+   * 打开购物车弹窗（每次新建控制器，保证已选明细/人数/热量目标为最新快照）。
+   * 弹窗内移除/人数变化经回调回写父页（父页写草稿差分 + 同步本地态）。
+   */
+  private openCart(): void {
+    this.cartDialog = new CustomDialogController({
+      builder: DiningCartPopup({
+        selectedRecipes: this.selectedRecipes,
+        peopleCount: this.peopleCount,
+        calorieTarget: this.calorieTarget,
+        onRemove: (recipeId: number): void => {
+          this.removeSelectedRecipe(recipeId)
+        },
+        onPeopleChange: (count: number): void => {
+          this.peopleCount = count
+        }
+      }),
+      autoCancel: true,
+      alignment: DialogAlignment.Bottom,
+      customStyle: true
+    })
+    this.cartDialog.open()
+  }
+
+  /** 忌口警示条（选中菜 allergens ∩ 用户忌口；无命中不渲染） */
+  @Builder
+  AllergenWarningBar() {
+    if (this.allergenWarningHits().length > 0) {
+      Column({ space: 2 }) {
+        Text(DiningText.dining_allergen_warning_title)
+          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontColor($r('app.color.DANGER_INK'))
+          .width('100%')
+        ForEach(this.allergenWarningHits(), (hit: DiningAllergenHit) => {
+          Text(DiningText.allergenWarningItem(DiningText.allergenLabel(hit.allergen), hit.recipeName))
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor($r('app.color.DANGER_INK'))
+            .width('100%')
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }, (hit: DiningAllergenHit): string => `allergen_${hit.recipeId}_${hit.allergen}`)
+      }
+      .alignItems(HorizontalAlign.Start)
+      .width('100%')
+      .backgroundColor($r('app.color.ICON_CONTAINER_PINK'))
+      .borderRadius(DesignDimens.RADIUS_MD)
+      .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
+      .margin({
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        bottom: DesignDimens.SPACE_XS
+      })
+    }
   }
 
   /** 列表 footer：加载更多 spinner / 失败重试 / 已全部加载 */
@@ -459,86 +532,6 @@ struct DiningOrderCreatePage {
         .textAlign(TextAlign.Center)
         .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
     }
-  }
-
-  /**
-   * 忌口警示 + 人数份量建议条（契约 §三.1/§三.5）：
-   * - 忌口警示：选中菜 allergens ∩ 用户忌口，逐条「含忌口：<忌口名>（<菜名>）」红色系；
-   * - 人数 stepper（1-20，本地态）+ 份量建议（人均 vs 目标÷3 → 够/偏多/偏少）。
-   */
-  @Builder
-  WarningAndPortionBar() {
-    Column() {
-      if (this.allergenWarningHits().length > 0) {
-        Column({ space: 2 }) {
-          Text(DiningText.dining_allergen_warning_title)
-            .fontSize(DesignFontSize.BODY_SMALL)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor($r('app.color.DANGER_INK'))
-            .width('100%')
-          ForEach(this.allergenWarningHits(), (hit: DiningAllergenHit) => {
-            Text(DiningText.allergenWarningItem(DiningText.allergenLabel(hit.allergen), hit.recipeName))
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor($r('app.color.DANGER_INK'))
-              .width('100%')
-              .maxLines(2)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }, (hit: DiningAllergenHit): string => `allergen_${hit.recipeId}_${hit.allergen}`)
-        }
-        .alignItems(HorizontalAlign.Start)
-        .width('100%')
-        .backgroundColor($r('app.color.ICON_CONTAINER_PINK'))
-        .borderRadius(DesignDimens.RADIUS_MD)
-        .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
-      }
-
-      Row({ space: DesignDimens.SPACE_SM }) {
-        Text(DiningText.dining_portion_people_label)
-          .fontSize(DesignFontSize.BODY)
-          .fontColor($r('app.color.TEXT_SECONDARY'))
-          .layoutWeight(1)
-        SymbolGlyph($r('sys.symbol.minus'))
-          .fontSize(20)
-          .fontColor([this.peopleCount > DINING_PEOPLE_MIN ? $r('app.color.TEXT_PRIMARY') : $r('app.color.TEXT_TERTIARY')])
-          .width(48)
-          .height(48)
-          .onClick(() => {
-            this.peopleCount = coerceDiningPeopleCount(this.peopleCount - 1)
-          })
-        Text(`${this.peopleCount}`)
-          .fontSize(DesignFontSize.BODY)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor($r('app.color.TEXT_PRIMARY'))
-          .textAlign(TextAlign.Center)
-        SymbolGlyph($r('sys.symbol.plus'))
-          .fontSize(20)
-          .fontColor([this.peopleCount < DINING_PEOPLE_MAX ? $r('app.color.TEXT_PRIMARY') : $r('app.color.TEXT_TERTIARY')])
-          .width(48)
-          .height(48)
-          .onClick(() => {
-            this.peopleCount = coerceDiningPeopleCount(this.peopleCount + 1)
-          })
-      }
-      .width('100%')
-      .alignItems(VerticalAlign.Center)
-      .padding({ top: DesignDimens.SPACE_XS })
-
-      if (this.portionAdviceText() !== null) {
-        Text(this.portionAdviceText()?.text ?? '')
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor(this.portionAdviceText()?.verdict === DiningPortionVerdict.ENOUGH
-            ? $r('app.color.TEXT_GREEN')
-            : $r('app.color.TEXT_SECONDARY'))
-          .width('100%')
-          .padding({ top: DesignDimens.SPACE_XS })
-      }
-    }
-    .width('100%')
-    .padding({
-      left: DesignDimens.PAGE_PADDING,
-      right: DesignDimens.PAGE_PADDING,
-      bottom: DesignDimens.SPACE_XS
-    })
   }
 
   /** 复用提示条（浅绿胶囊提示历史菜单按原单复制不可修改） */
@@ -634,47 +627,46 @@ struct DiningOrderCreatePage {
   }
 
   /**
-   * 菜品行副行（TD16 对齐安卓定案）：热量前置——大字体/窄屏截断时优先保住热量语义
-   * （旧序「N 种食材 · ≈107 …」热量必被截）；热量缺失渲染「热量未知」，无食材只出热量。
+   * 菜品行副行（对齐安卓定案）：食材名顿号连接（如「鸡蛋、牛奶、白砂糖…」），
+   * 最多 2 行、超长省略；不显示热量与「N 种食材」计数。
    */
-  private recipeSubLine(recipe: DiningRecipeVo): string {
-    const parts: Array<string> = []
-    const calories = diningServingCalories(recipe.caloriesTotal, recipe.caloriesPer100g)
-    const calorieText = DiningText.calorieBadge(calories)
-    parts.push(calorieText !== null ? calorieText : DiningText.dining_nutrition_calorie_unknown)
-    if (recipe.ingredients.length > 0) {
-      parts.push(DiningText.ingredientsCount(recipe.ingredients.length))
-    }
-    return parts.join(' · ')
+  private recipeIngredientLine(recipe: DiningRecipeVo): string {
+    return recipe.ingredients.join('、')
   }
 
-  /** 菜品行：勾选框 + 菜名（两行上限）+ 热量前置副行 */
+  /**
+   * 菜品行：菜名（两行上限）+ 食材名副行（2 行上限）+ 右侧加/移除按钮。
+   * 行点击 = 菜谱详情；右侧圆形按钮 = 加/移除（对齐安卓）。
+   * 契约 §五.1 行内口径：按钮右内边距 12dp、文字（菜名/食材）右内边距 16dp（>12）。
+   */
   @Builder
   RecipeRow(recipe: DiningRecipeVo) {
-    Row({ space: DesignDimens.SPACE_SM }) {
-      DiningCheckbox({ checked: this.selectedIds.indexOf(recipe.id) >= 0 })
-
+    Row() {
       Column({ space: 2 }) {
         // 两行上限（TD16）：大字体档单行只剩 3-4 字，两行保住菜名可读性
         Text(recipe.name)
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor($r('app.color.TEXT_PRIMARY'))
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(this.recipeSubLine(recipe))
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor($r('app.color.TEXT_SECONDARY'))
-          .fontFeature(DesignFontFeature.TNUM)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
+        if (this.recipeIngredientLine(recipe).length > 0) {
+          Text(this.recipeIngredientLine(recipe))
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor($r('app.color.TEXT_SECONDARY'))
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
       }
       .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)
+      .padding({ right: 16 })
+
+      this.DishSelectButton(recipe)
     }
     .width('100%')
     .alignItems(VerticalAlign.Center)
-    .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM, left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS })
+    .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM, left: DesignDimens.SPACE_XS, right: 12 })
     .borderRadius(DesignDimens.RADIUS_MD)
     .backgroundColor($r('app.color.SURFACE'))
     .border({ width: 1, color: $r('app.color.OUTLINE') })
@@ -692,6 +684,45 @@ struct DiningOrderCreatePage {
         this.pressedKey = ''
       }
     })
+    .onClick(() => {
+      this.viewRecipe(recipe.id)
+    })
+  }
+
+  /**
+   * 加/移除按钮（48vp 触控热区 + 32vp 视觉圆，对齐安卓 AddDishButton）：
+   * 未选 = outline 描边空心圆 + primary 加号；已选 = primary 实底 + 白色对勾。
+   * 行点击进菜谱详情，加/移除只由本按钮承担（内层 onClick 消费，不与行点击冲突）。
+   */
+  @Builder
+  DishSelectButton(recipe: DiningRecipeVo) {
+    Stack({ alignContent: Alignment.Center }) {
+      Column()
+        .width(32)
+        .height(32)
+        .borderRadius(16)
+        .backgroundColor(this.selectedIds.indexOf(recipe.id) >= 0
+          ? $r('app.color.PRIMARY')
+          : Color.Transparent)
+        .border({
+          width: 1,
+          color: this.selectedIds.indexOf(recipe.id) >= 0
+            ? $r('app.color.PRIMARY')
+            : $r('app.color.OUTLINE')
+        })
+
+      if (this.selectedIds.indexOf(recipe.id) >= 0) {
+        SymbolGlyph($r('sys.symbol.checkmark'))
+          .fontSize(18)
+          .fontColor([$r('app.color.ON_PRIMARY')])
+      } else {
+        SymbolGlyph($r('sys.symbol.plus'))
+          .fontSize(18)
+          .fontColor([$r('app.color.PRIMARY')])
+      }
+    }
+    .width(48)
+    .height(48)
     .onClick(() => {
       this.toggleRecipe(recipe.id)
     })
@@ -799,10 +830,8 @@ struct DiningOrderCreatePage {
       const res = await getDiningOrderDetail(this.fromOrderId, null)
       if (res.code === BizCode.SUCCESS && res.data !== null) {
         const detail: DiningOrderDetailVo = res.data
-        if (diningOrderStatusFromCode(detail.status) !== DiningOrderStatus.ONGOING) {
-          // 已结束的源单仍可复用（历史菜单复制），不拦截（后端为准）；此处仅留痕
-          logger.debug(TAG, `复用源单状态=${detail.status}`)
-        }
+        // 已结束的源单仍可复用（历史菜单复制），不拦截（后端为准）；此处仅留痕
+        logger.debug(TAG, `复用源单状态=${detail.status}`)
         const rows: Array<DiningMenuRecipeRow> = detail.menu.map((recipe: DiningMenuRecipe): DiningMenuRecipeRow =>
           ({ recipeId: recipe.recipeId, name: recipe.name, categoryId: recipe.categoryId }))
         this.reuseRecipeCount = rows.length
@@ -965,40 +994,36 @@ struct DiningOrderCreatePage {
     return false
   }
 
-  /** 邀请：惰性创建（空草稿也可）并冲刷后复制加入深链；无凭证提示不可邀请 */
+  /**
+   * 邀请：惰性创建（空草稿也可）并冲刷后跳邀请页（契约：邀请入口落 DiningOrderSharePage，
+   * 邀请与分享合并；不再只复制到剪贴板）。无凭证提示不可邀请。
+   */
   private requestInviteLink(): void {
     if (this.isReuseMode) {
       return
     }
     this.ensureDraftAndFlush(true)
     this.draftWriteChain.then((): void => {
-      const link = buildDiningOrderDeepLink(this.draft.orderId, this.draft.joinToken)
-      if (link === null) {
+      if (this.draft.orderId <= 0 || this.draft.joinToken.length === 0) {
         showToastSafety(DiningText.dining_order_invite_unavailable)
         return
       }
-      this.copyText(link, DiningText.dining_order_invite_copy_done)
+      const shareParam = new DiningOrderShareParam()
+      shareParam.orderId = this.draft.orderId
+      shareParam.joinToken = this.draft.joinToken
+      pathStack.pushPathByName(RouteNames.DINING_ORDER_SHARE, shareParam)
     }).catch((err: Object): void => {
       logger.error(TAG, '邀请链接准备异常', err instanceof Error ? err.message : '')
       showToastSafety('', DiningText.dining_order_create_write_failed)
     })
   }
 
-  /** 复制文本到剪贴板（pasteboard；成功/失败 Toast） */
-  private copyText(text: string, doneMessage: string): void {
-    try {
-      const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
-      pasteboard.getSystemPasteboard().setData(pasteData).then((): void => {
-        showToastSafety(doneMessage)
-        logger.debug(TAG, '加入链接已复制')
-      }).catch((err: BusinessError): void => {
-        logger.warn(TAG, `加入链接复制失败 code=${err.code}`)
-        showToastSafety(DiningText.dining_copy_failed)
-      })
-    } catch (err) {
-      logger.error(TAG, '加入链接复制异常', err instanceof Error ? err.message : '')
-      showToastSafety(DiningText.dining_copy_failed)
+  /** 行点击：进菜谱详情（对齐安卓行点击语义；加/移除只由右侧按钮承担） */
+  private viewRecipe(recipeId: number): void {
+    if (recipeId <= 0) {
+      return
     }
+    pathStack.pushPathByName(RouteNames.DINING_RECIPE_DETAIL, recipeId)
   }
 
   /** 勾选/取消（草稿菜单净差写；复用模式只读忽略） */
@@ -1009,6 +1034,16 @@ struct DiningOrderCreatePage {
     const willSelect = this.selectedIds.indexOf(recipeId) < 0
     if (willSelect && this.selectedIds.length >= 100) {
       showToastSafety(DiningText.dining_order_error_menu_too_many)
+      return
+    }
+    this.draft.onToggle(recipeId)
+    this.syncSelectedFromDraft()
+    this.ensureDraftAndFlush()
+  }
+
+  /** 购物车弹窗移除：仅对本地意图中已存在的菜记移除差分（全员可移除任意菜） */
+  private removeSelectedRecipe(recipeId: number): void {
+    if (this.isReuseMode || !this.draft.localMenu.has(recipeId)) {
       return
     }
     this.draft.onToggle(recipeId)
@@ -1080,28 +1115,11 @@ struct DiningOrderCreatePage {
     }
   }
 
-  /** 份量建议文案（总热量未知返回 null，页面不渲染建议） */
-  private portionAdviceText(): DiningPortionAdviceText | null {
-    const total = diningSelectedTotalCalories(this.selectedRecipes)
-    const advice = diningPortionAdvice(total, this.peopleCount, this.calorieTarget)
-    if (advice === null) {
-      return null
-    }
-    const perCapitaText = formatDiningAmount(advice.perCapita) ?? ''
-    if (advice.verdict === DiningPortionVerdict.ENOUGH) {
-      return { text: DiningText.portionAdviceEnough(advice.peopleCount, perCapitaText), verdict: advice.verdict }
-    }
-    if (advice.verdict === DiningPortionVerdict.MORE) {
-      return { text: DiningText.portionAdviceMore(advice.peopleCount, perCapitaText), verdict: advice.verdict }
-    }
-    return { text: DiningText.portionAdviceLess(advice.peopleCount, perCapitaText), verdict: advice.verdict }
-  }
-
   /**
-   * 提交（发起点单）：
-   * - 常规/草稿编辑：校验标题必填 + 菜单非空 → 冲刷草稿写 → publish（409 刷新重试）；
-   * - 复用模式：校验标题 → create(fromOrderId) 复制菜单 → publish 定稿。
-   * 成功后 replace 分享视图（分享返回直回列表）。
+   * 提交订单（契约：发起者一步「提交」→ 订单直接结束并生成购买清单）：
+   * - 常规/草稿编辑：校验标题必填 + 菜单非空 → 冲刷草稿写 → submit（409 刷新重试）；
+   * - 复用模式：校验标题 → create(fromOrderId) 复制菜单 → submit。
+   * 成功后 replace 购买清单页（返回直回列表）。
    */
   private async submit(): Promise<void> {
     if (this.submitting) {
@@ -1115,11 +1133,11 @@ struct DiningOrderCreatePage {
       }
       this.submitting = true
       try {
-        const created = await this.publishReusedOrder(this.fromOrderId, validation.normalizedTitle)
-        this.afterPublishSuccess(created)
+        const orderId = await this.submitReusedOrder(this.fromOrderId, validation.normalizedTitle)
+        this.afterSubmitSuccess(orderId)
       } catch (err) {
         const message = err instanceof Error ? err.message : ''
-        logger.error(TAG, '复用模式发起异常', message)
+        logger.error(TAG, '复用模式提交异常', message)
         showToastSafety(message.length > 0 ? message : '', DiningText.dining_order_create_result_invalid)
       }
       this.submitting = false
@@ -1133,37 +1151,37 @@ struct DiningOrderCreatePage {
     }
     this.submitting = true
     try {
-      // 等待既有写链并补一次冲刷，保证 publish 携带最新 version
+      // 等待既有写链并补一次冲刷，保证 submit 携带最新 version
       this.ensureDraftAndFlush(true)
       await this.draftWriteChain
-      const created = await this.publishDraft(validation.normalizedTitle)
-      if (created !== null) {
-        this.afterPublishSuccess(created)
+      const orderId = await this.submitDraft(validation.normalizedTitle)
+      if (orderId !== null) {
+        this.afterSubmitSuccess(orderId)
       }
     } catch (err) {
-      logger.error(TAG, '发起点单异常', err instanceof Error ? err.message : '')
+      logger.error(TAG, '提交订单异常', err instanceof Error ? err.message : '')
       showToastSafety('', DiningText.dining_order_create_result_invalid)
     }
     this.submitting = false
   }
 
   /**
-   * 常规/草稿编辑：publish（409 刷新重试一次；菜单被并发清空时友好提示）。
-   * @returns 成功产物；失败已 Toast 并返回 null
+   * 常规/草稿编辑：submit（409 刷新重试一次；菜单被并发清空时友好提示）。
+   * @returns 成功订单 ID；失败已 Toast 并返回 null
    */
-  private async publishDraft(normalizedTitle: string): Promise<DiningOrderCreatedVo | null> {
-    const res = await publishDiningOrder(this.draft.orderId, {
+  private async submitDraft(normalizedTitle: string): Promise<number | null> {
+    const res = await submitDiningOrder(this.draft.orderId, {
       title: normalizedTitle,
       version: this.draft.serverVersion
     })
     if (res.code === BizCode.SUCCESS) {
-      return { orderId: this.draft.orderId, joinToken: this.draft.joinToken }
+      return this.draft.orderId
     }
     if (res.code !== 409) {
       showToastSafety(res.message, DiningText.dining_order_create_result_invalid)
       return null
     }
-    logger.info(TAG, 'publish 版本冲突，刷新草稿后重试')
+    logger.info(TAG, 'submit 版本冲突，刷新草稿后重试')
     if (!(await this.refreshDraftMenu())) {
       showToastSafety('', DiningText.dining_order_create_result_invalid)
       return null
@@ -1172,7 +1190,7 @@ struct DiningOrderCreatePage {
       showToastSafety(DiningText.dining_order_error_menu_empty)
       return null
     }
-    const retry = await publishDiningOrder(this.draft.orderId, {
+    const retry = await submitDiningOrder(this.draft.orderId, {
       title: normalizedTitle,
       version: this.draft.serverVersion
     })
@@ -1180,12 +1198,11 @@ struct DiningOrderCreatePage {
       showToastSafety(retry.message, DiningText.dining_order_create_result_invalid)
       return null
     }
-    return { orderId: this.draft.orderId, joinToken: this.draft.joinToken }
+    return this.draft.orderId
   }
 
-  /** 复用模式：create(fromOrderId) 复制历史菜单 → 取服务端 version → publish 定稿 */
-  private async publishReusedOrder(fromOrderId: number,
-    normalizedTitle: string): Promise<DiningOrderCreatedVo> {
+  /** 复用模式：create(fromOrderId) 复制历史菜单 → 取服务端 version → submit */
+  private async submitReusedOrder(fromOrderId: number, normalizedTitle: string): Promise<number> {
     const created = await createDiningOrder({
       title: normalizedTitle,
       recipeIds: null,
@@ -1199,24 +1216,21 @@ struct DiningOrderCreatePage {
     if (detail.code === BizCode.SUCCESS && detail.data !== null) {
       version = detail.data.version
     }
-    const published = await publishDiningOrder(created.data.orderId, {
+    const submitted = await submitDiningOrder(created.data.orderId, {
       title: normalizedTitle,
       version: version
     })
-    if (published.code !== BizCode.SUCCESS) {
-      throw new Error(published.message ?? 'publish failed')
+    if (submitted.code !== BizCode.SUCCESS) {
+      throw new Error(submitted.message ?? 'submit failed')
     }
-    return created.data
+    return created.data.orderId
   }
 
-  /** 发起成功：Toast + replace 分享视图（分享返回直回列表） */
-  private afterPublishSuccess(created: DiningOrderCreatedVo): void {
-    logger.info(TAG, `点单发起成功 orderId=${created.orderId}`)
+  /** 提交成功：Toast + replace 购买清单页（返回直回列表） */
+  private afterSubmitSuccess(orderId: number): void {
+    logger.info(TAG, `点单提交成功 orderId=${orderId}`)
     showToastSafety(DiningText.dining_order_create_submit_success)
-    const shareParam = new DiningOrderShareParam()
-    shareParam.orderId = created.orderId
-    shareParam.joinToken = created.joinToken
-    pathStack.replacePathByName(RouteNames.DINING_ORDER_SHARE, shareParam)
+    pathStack.replacePathByName(RouteNames.DINING_SHOPPING_LIST, orderId)
   }
 
   /** 表单错误枚举 → 文案 */

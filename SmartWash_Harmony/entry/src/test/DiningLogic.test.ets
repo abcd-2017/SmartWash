@@ -50,6 +50,7 @@ import {
   DiningOrderBriefVo,
   DiningRecipeVo,
   dietaryPreferenceVoFromJSON,
+  diningOrderListVoFromJSON,
   diningRecipeVoFromJSON
 } from '../main/ets/network/vo/DiningVo';
 
@@ -173,17 +174,24 @@ export default function diningLogicTest() {
     })
     it('joinEntry-已成员直达', 0, () => {
       const brief: DiningOrderBriefVo = {
-        orderId: 1, title: '周五晚火锅', status: 'ONGOING', creatorName: '139****9000',
+        orderId: 1, title: '周五晚火锅', status: 'DRAFT', creatorName: '139****9000',
         recipeCount: 3, joined: true
       }
-      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.ENTER_DETAIL)
+      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.ENTER_CREATE)
     })
-    it('joinEntry-非成员进行中确认加入', 0, () => {
+    it('joinEntry-非成员草稿确认加入', 0, () => {
+      const brief: DiningOrderBriefVo = {
+        orderId: 1, title: '周五晚火锅', status: 'DRAFT', creatorName: '139****9000',
+        recipeCount: 3, joined: false
+      }
+      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.CONFIRM_JOIN)
+    })
+    it('joinEntry-历史 ONGOING 按结束态不引导加入', 0, () => {
       const brief: DiningOrderBriefVo = {
         orderId: 1, title: '周五晚火锅', status: 'ONGOING', creatorName: '139****9000',
         recipeCount: 3, joined: false
       }
-      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.CONFIRM_JOIN)
+      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.ORDER_FINISHED)
     })
     it('joinEntry-已结束与未知态不引导加入', 0, () => {
       const finished: DiningOrderBriefVo = {
@@ -202,22 +210,15 @@ export default function diningLogicTest() {
 
     it('orderStatus-状态码映射与未知兜底', 0, () => {
       expect(diningOrderStatusFromCode('DRAFT')).assertEqual(DiningOrderStatus.DRAFT)
-      expect(diningOrderStatusFromCode('ONGOING')).assertEqual(DiningOrderStatus.ONGOING)
       expect(diningOrderStatusFromCode('FINISHED')).assertEqual(DiningOrderStatus.FINISHED)
+      // 历史 ONGOING 与未知/空值统一保守降级为 FINISHED 档（不可写）
+      expect(diningOrderStatusFromCode('ONGOING')).assertEqual(DiningOrderStatus.FINISHED)
       expect(diningOrderStatusFromCode('WEIRD')).assertEqual(DiningOrderStatus.FINISHED)
       expect(diningOrderStatusFromCode(null)).assertEqual(DiningOrderStatus.FINISHED)
     })
-    it('joinable-DRAFT/ONGOING 可加入', 0, () => {
+    it('joinable-仅 DRAFT 可加入', 0, () => {
       expect(isDiningOrderJoinable(DiningOrderStatus.DRAFT)).assertTrue()
-      expect(isDiningOrderJoinable(DiningOrderStatus.ONGOING)).assertTrue()
       expect(isDiningOrderJoinable(DiningOrderStatus.FINISHED)).assertFalse()
-    })
-    it('joinEntry-非成员草稿确认加入', 0, () => {
-      const brief: DiningOrderBriefVo = {
-        orderId: 1, title: '草稿单', status: 'DRAFT', creatorName: '139****9000',
-        recipeCount: 0, joined: false
-      }
-      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.CONFIRM_JOIN)
     })
     it('deepLink-加入深链构造与兜底', 0, () => {
       expect(buildDiningOrderDeepLink(12, 'tok')).assertEqual('smartwash://dining/order/12?t=tok')
@@ -598,6 +599,21 @@ export default function diningLogicTest() {
       expect(empty.allergens === null || empty.allergens.length === 0).assertTrue()
       expect(empty.calorieTarget).assertNull()
       expect(empty.sodiumTarget).assertNull()
+    })
+
+    it('orderList-vo 摘要字段映射与缺失兜底', 0, () => {
+      const raw: Record<string, Object> = {
+        'id': 1, 'title': '周五晚火锅', 'status': 'FINISHED',
+        'menuCount': 5, 'ingredientSummary': '西红柿、鸡蛋、葱'
+      }
+      const vo = diningOrderListVoFromJSON(raw)
+      expect(vo.menuCount).assertEqual(5)
+      expect(vo.ingredientSummary).assertEqual('西红柿、鸡蛋、葱')
+      // 后端未下发摘要：menuCount=0（消费端隐藏摘要行）、ingredientSummary 空串
+      const bareRaw: Record<string, Object> = { 'id': 2, 'title': '草稿单' }
+      const bare = diningOrderListVoFromJSON(bareRaw)
+      expect(bare.menuCount).assertEqual(0)
+      expect(bare.ingredientSummary).assertEqual('')
     })
   })
 }

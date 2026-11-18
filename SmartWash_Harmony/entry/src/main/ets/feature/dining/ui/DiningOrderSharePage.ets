@@ -13,7 +13,7 @@ import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, Motion
 import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import { DiningOrderDetailVo, getDiningOrderDetail, resetDiningJoinToken } from '../../../network/api/DiningApi'
-import { buildDiningJoinUrl } from '../DiningLogic'
+import { buildDiningJoinUrl, diningOrderStatusFromCode, DiningOrderStatus } from '../DiningLogic'
 import { DiningText } from '../DiningText'
 import { DiningOrderShareParam } from '../api'
 import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, SkeletonBlock } from '../../../view/common/AppComponents'
@@ -104,7 +104,7 @@ struct DiningOrderSharePage {
               pathStack.pop()
             })
 
-            Text(DiningText.dining_order_share_title)
+            Text(this.titleText())
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor($r('app.color.TEXT_PRIMARY'))
@@ -145,6 +145,7 @@ struct DiningOrderSharePage {
             Scroll() {
               Column() {
                 this.OrderInfoCard()
+                // 邀请与分享合一：二维码/复制/重置照常展示（与安卓同构）；仅标题按状态切换
                 this.QrSection()
                 this.ActionArea()
               }
@@ -173,6 +174,16 @@ struct DiningOrderSharePage {
       }
     }
     .hideTitleBar(true)
+  }
+
+  /**
+   * 标题按状态（契约 §四，对齐安卓）：FINISHED=订单分享；其余（DRAFT/未知/详情未到）=邀请加入。
+   * 详情未到按「邀请中」降级——本页主要由创建页邀请入口进入，无空窗。
+   */
+  private titleText(): string {
+    const finished = this.detail !== null
+      && diningOrderStatusFromCode(this.detail.status) === DiningOrderStatus.FINISHED
+    return finished ? DiningText.dining_order_share_title : DiningText.dining_order_invite_title
   }
 
   /** 订单信息卡：标题 + 菜品数 + 参与者数 */

@@ -162,7 +162,7 @@ export const DINING_SODIUM_MAX: number = 4000
 export interface DiningOrderListVo {
   id: number
   title: string
-  /** DRAFT / ONGOING / FINISHED（白名单外脏数据由映射层保守降级为 FINISHED） */
+  /** DRAFT / FINISHED（契约移除 ONGOING；白名单外脏数据由映射层保守降级为 FINISHED） */
   status: string
   /** 是否我发起的 */
   isCreator: boolean
@@ -171,6 +171,16 @@ export interface DiningOrderListVo {
   createdAt: string
   /** 结束时间（进行中为空串） */
   finishedAt: string
+  /**
+   * 本单菜单菜数（列表卡「菜品数」摘要；与 Android DiningOrderListVo.menuCount 对齐）。
+   * 后端未下发兜底 0，消费端据此隐藏摘要行。
+   */
+  menuCount: number
+  /**
+   * 食材摘要（列表卡「食材摘要」，后端聚合去重后按顿号连接；与 Android ingredientSummary 对齐）。
+   * 后端未下发/无食材为空串，消费端仅展示菜品数。
+   */
+  ingredientSummary: string
 }
 
 /** JSON → DiningOrderListVo */
@@ -183,7 +193,9 @@ export function diningOrderListVoFromJSON(raw: Object): DiningOrderListVo {
     isCreator: jsonBool(obj['isCreator']) ?? false,
     creatorUserId: jsonNum(obj['creatorUserId']) ?? 0,
     createdAt: jsonStr(obj['createdAt']) ?? '',
-    finishedAt: jsonStr(obj['finishedAt']) ?? ''
+    finishedAt: jsonStr(obj['finishedAt']) ?? '',
+    menuCount: jsonNum(obj['menuCount']) ?? 0,
+    ingredientSummary: jsonStr(obj['ingredientSummary']) ?? ''
   }
 }
 
@@ -243,7 +255,7 @@ export interface DiningOrderDetailVo {
   /** true=与已知 version 一致（轻量响应）；缺失按 false 兜底 */
   unchanged: boolean
   title: string
-  /** DRAFT / ONGOING / FINISHED（DRAFT 菜单可加/移除，全部成员可加入） */
+  /** DRAFT / FINISHED（契约移除 ONGOING；DRAFT 菜单可加/移除，全部成员可加入） */
   status: string
   creatorUserId: number
   menu: Array<DiningMenuRecipe>
@@ -312,7 +324,7 @@ export function diningOrderDetailVoFromJSON(raw: Object): DiningOrderDetailVo {
 export interface DiningOrderBriefVo {
   orderId: number
   title: string
-  /** DRAFT / ONGOING / FINISHED（DRAFT 亦可加入） */
+  /** DRAFT / FINISHED（契约移除 ONGOING；仅 DRAFT 可加入） */
   status: string
   /** 发起者标识（脱敏手机号） */
   creatorName: string
@@ -336,7 +348,7 @@ export function diningOrderBriefVoFromJSON(raw: Object): DiningOrderBriefVo {
 }
 
 
-/** 结束点单响应（POST /web/auth/dining/orders/{id}/finish 载荷；幂等返回库内原快照） */
+/** 提交点单响应（POST /web/auth/dining/orders/{id}/submit 载荷；幂等返回库内原快照） */
 export interface DiningOrderFinishVo {
   id: number
   title: string
