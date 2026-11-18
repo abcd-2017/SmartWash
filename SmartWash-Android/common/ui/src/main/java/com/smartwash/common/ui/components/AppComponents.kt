@@ -70,6 +70,7 @@ import com.smartwash.common.ui.components.softCardShadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -587,11 +588,13 @@ fun EmptyState(
                 tint = AppColors.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
-            // 引导文案 — 空态主文案档 bodyLarge(16sp)（字阶 §2，非 caption）
+            // 引导文案 — 空态主文案档 bodyLarge(16sp)（字阶 §2，非 caption）；多行文案
+            // 需显式居中：Text 块内默认 Start 对齐，长文案折行后整块左歪（图标居中文字偏左）
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyLarge,
-                color = AppColors.colorScheme.textSecondary
+                color = AppColors.colorScheme.textSecondary,
+                textAlign = TextAlign.Center
             )
             if (action != null) {
                 Spacer(modifier = Modifier.height(AppDimens.spaceMd))

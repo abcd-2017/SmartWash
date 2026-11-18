@@ -148,6 +148,15 @@ components:
     textColor: "{colors.text-primary}"
     rounded: "{rounded.input}"
     height: "48dp"
+  # TD37 输入皮肤档（2026-11-18 定）：认证页玻璃皮肤（AppTextField variant=GLASS）
+  app-input-field-glass:
+    backgroundColor: "transparent"            # 透明行，透出品牌渐变
+    textColor: "#FFFFFF"                      # 禁用整体 alpha .38
+    placeholder: "#FFFFFF @ 45%"              # §3.7 玻璃页占位口径
+    rounded: "{rounded.input}"
+    height: "48dp"
+    focusIndicator: "#FFFFFF @ 55%"           # 聚焦底指示线 1dp，弹簧过渡，reduced 180ms
+    error: "#FFB4AB"                          # ErrorLight，深绿玻璃底可读
   # TD36 控件档（2026-11-18 定）：胶囊筛选 chip
   app-filter-chip:
     backgroundColor: "{colors.primary}"        # 选中 SOLID；SOFT 选中 primary-soft；未选 surface + 1dp outline 描边

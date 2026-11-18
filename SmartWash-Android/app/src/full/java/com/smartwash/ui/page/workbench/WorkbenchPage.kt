@@ -30,7 +30,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Search
@@ -60,7 +59,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.Image
@@ -81,6 +79,7 @@ import com.smartwash.R
 import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LocalCoverArt
 import com.smartwash.common.ui.components.SkeletonBlock
@@ -546,8 +545,11 @@ private fun ScanEntryButton(navController: NavHostController) {
 }
 
 /**
- * 搜索框（规范 §3.7 输入控件）：48dp 行高、16sp 正文、前缀图标 16dp@0.5、
- * surfaceVariant 底 + inputRadius(14) 圆角、尾缀清除按钮 44dp 热区。
+ * 搜索框（规范 §3.7 输入控件唯一标准 [AppTextField]）：surfaceVariant 底 + outline 描边、
+ * 16sp 正文、前缀图标 16dp@0.5、尾缀清除按钮 44dp 热区。
+ *
+ * 2026-11-18 收敛：原自绘 `BasicTextField`（无描边、48dp 行高）并入统一组件，
+ * 消除「工作台输入」与表单输入两套口径。
  */
 @Composable
 private fun WorkbenchSearchField(
@@ -556,59 +558,32 @@ private fun WorkbenchSearchField(
     modifier: Modifier = Modifier,
 ) {
     val scheme = AppColors.colorScheme
-    BasicTextField(
+    AppTextField(
         value = query,
         onValueChange = onQueryChange,
-        singleLine = true,
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = scheme.textPrimary),
-        cursorBrush = SolidColor(scheme.primary),
-        modifier = modifier.fillMaxWidth(),
-        decorationBox = { innerTextField ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .background(scheme.surfaceVariant, RoundedCornerShape(AppDimens.inputRadius))
-                    .padding(start = AppDimens.spaceSm, end = AppDimens.spaceXs),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 前缀图标 16dp + opacity .5（§3.7）
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = scheme.textSecondary.copy(alpha = 0.5f)
-                )
-                Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-                Box(modifier = Modifier.weight(1f)) {
-                    if (query.isEmpty()) {
-                        // 占位符字号与正文一致（§3.7）
-                        Text(
-                            text = stringResource(R.string.workbench_search_hint),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = scheme.textSecondary
-                        )
-                    }
-                    innerTextField()
-                }
-                if (query.isNotEmpty()) {
-                    // 清除按钮：图标化 + 44dp 方形热区（热区对称溢出行内余量，不参与布局占位观感）
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .pressable(onClick = { onQueryChange("") }, debounce = false),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = stringResource(R.string.workbench_search_clear),
-                            modifier = Modifier.size(16.dp),
-                            tint = scheme.textSecondary
-                        )
-                    }
+        modifier = modifier,
+        placeholder = stringResource(R.string.workbench_search_hint),
+        leadingIcon = Icons.Default.Search,
+        trailingIcon = if (query.isNotEmpty()) {
+            {
+                // 清除按钮：图标化 + 44dp 方形热区（§3.7 尾缀一律图标化）
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .pressable(onClick = { onQueryChange("") }, debounce = false),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.workbench_search_clear),
+                        modifier = Modifier.size(16.dp),
+                        tint = scheme.textSecondary,
+                    )
                 }
             }
-        }
+        } else {
+            null
+        },
     )
 }
 

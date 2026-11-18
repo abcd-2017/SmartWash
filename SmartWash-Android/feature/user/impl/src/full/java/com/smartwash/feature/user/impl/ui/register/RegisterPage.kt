@@ -52,7 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.ErrorLight
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AuthGradientBottom
 import com.smartwash.common.ui.theme.AuthGradientMid
@@ -74,6 +74,7 @@ import androidx.core.view.WindowCompat
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.smartwash.common.ui.components.AppFieldVariant
 import com.smartwash.common.ui.components.AppPasswordTextField
 import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.AppVerificationCodeField
@@ -352,6 +353,7 @@ fun RegisterPage(
                         }
                     },
                     modifier = Modifier.heightIn(min = 48.dp),
+                    variant = AppFieldVariant.GLASS,
                     isError = isPhoneError,
                     leadingIcon = Icons.Rounded.Phone,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -367,7 +369,7 @@ fun RegisterPage(
                                 text = stringResource(com.smartwash.common.ui.R.string.invalid_phone),
                                 fontSize = 12.sp,
                                 lineHeight = 16.sp,
-                                color = AppColors.colorScheme.error
+                                color = ErrorLight
                             )
                         }
                     }
@@ -427,6 +429,7 @@ fun RegisterPage(
                     modifier = Modifier
                         .heightIn(min = 48.dp)
                         .focusRequester(verificationCodeFocusRequester),
+                    variant = AppFieldVariant.GLASS,
                     countDown = countDown,
                     sendEnabled = countDown == 0 && captchaState !is RequestState.Loading,
                     isError = isVerificationCodeError,
@@ -442,7 +445,7 @@ fun RegisterPage(
                                 text = stringResource(R.string.invalid_verification_code),
                                 fontSize = 12.sp,
                                 lineHeight = 16.sp,
-                                color = AppColors.colorScheme.error
+                                color = ErrorLight
                             )
                         }
                     }
@@ -471,6 +474,7 @@ fun RegisterPage(
                     },
                     // 最大位数由组件 maxLength 固定 16，无需页面截断
                     modifier = Modifier.focusRequester(passwordFocusRequester),
+                    variant = AppFieldVariant.GLASS,
                     isError = isPasswordError,
                     supportingText = {
                         AnimatedVisibility(
@@ -484,7 +488,7 @@ fun RegisterPage(
                                 text = stringResource(com.smartwash.common.ui.R.string.invalid_password),
                                 fontSize = 12.sp,
                                 lineHeight = 16.sp,
-                                color = AppColors.colorScheme.error
+                                color = ErrorLight
                             )
                         }
                     }

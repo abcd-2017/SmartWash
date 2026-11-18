@@ -838,3 +838,34 @@ fun DrumIcon(state: OrderStatus, tint: Color) {
 | reduced motion | 位移/颜色降级 180ms | §8 |
 
 > 开关行 `SwitchRow`：行高 64dp（与设置页两行卡一致，§3.4），图标盒 `icon-box-小` 32dp，整行可点 + 右侧开关独立可点。
+
+---
+
+## 附：输入框皮肤档（2026-11-18 用户拍板，TD37）
+
+> 背景：认证页（登录/注册/重置密码）为品牌绿渐变 + 玻璃卡。2026-11-17「收敛表单输入」把认证页一并换成
+> `AppTextField` 常规档（`surfaceVariant` 实底），浅色下变成一块白砖、深色下变成一块纯黑砖，丢失设计稿的
+> 「透明输入行」观感；且 §3.7 要求的玻璃页占位 `rgba(255,255,255,.45)` 在常规档无法表达。用户 2026-11-18
+> 拍板补玻璃皮肤档，以下为**唯一依据**；认证页禁止再自绘 `BasicTextField`。
+
+### 输入框皮肤（`AppTextField(variant = AppFieldVariant.STANDARD / GLASS)`）
+
+| 项 | STANDARD（常规表单） | GLASS（认证页玻璃卡） |
+|---|---|---|
+| 适用 | 白卡/浅色页面一切表单 | 品牌渐变玻璃卡（登录/注册/重置密码） |
+| 容器 | `surfaceVariant` | 透明（`Color.Transparent`） |
+| 描边 | `outline`，聚焦 `primary` / 错误 `error` | 无常态描边；聚焦时底部 1dp 白 `.55` 指示线（弹簧过渡，未聚焦透明） |
+| 文字 | `textPrimary` | `#FFFFFF`（禁用整体 `.38`） |
+| 占位 | `textSecondary`，字号与正文一致 | 白 `.45`，字号与正文一致 |
+| 前缀/尾缀图标 | `textSecondary`（前缀透明度 `.5`） | 白 `.5` / `.8` |
+| 光标 | `primary`（错误 `error`） | `#FFFFFF`（错误 `ErrorLight`） |
+| 错误文案 | `error` | `ErrorLight #FFB4AB` |
+| 高度 | 常规 M3 自然高 / `compact` 52dp | **48dp** 行高（多行 `heightIn(min=48)`） |
+| 字段标签 | 页面上方自绘 label | 同左（白 12sp） |
+| reduced motion | 颜色/聚焦过渡降级 180ms | 同左 |
+
+> 玻璃档是**同一组件的第二种皮肤**，不是新组件；两种皮肤共用 `leadingIcon` / `trailingIcon` /
+> `placeholder` / `supportingText` 槽位与全部交互语义。`AppPasswordTextField` / `AppVerificationCodeField`
+> 同步支持 `variant` 下传。
+> 未纳入本档的自绘输入（工作台搜索框除外，2026-11-18 收敛；占卜追问为玄墨/宣纸子主题专用皮肤、lite 变体
+> 验证码行）需在后续单开皮肤档后再收敛，不得直接套 GLASS。

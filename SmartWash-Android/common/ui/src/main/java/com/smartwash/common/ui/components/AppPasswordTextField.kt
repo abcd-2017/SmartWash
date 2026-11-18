@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -46,6 +47,7 @@ fun AppPasswordTextField(
     supportingText: (@Composable () -> Unit)? = null,
     enabled: Boolean = true,
     maxLength: Int? = 16,
+    variant: AppFieldVariant = AppFieldVariant.STANDARD,
     interactionSource: MutableInteractionSource? = null,
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -63,6 +65,7 @@ fun AppPasswordTextField(
         isError = isError,
         supportingText = supportingText,
         enabled = enabled,
+        variant = variant,
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -86,7 +89,12 @@ fun AppPasswordTextField(
                             if (isVisible) R.string.hide_password else R.string.show_password
                         ),
                         modifier = Modifier.size(20.dp),
-                        tint = colors.textSecondary,
+                        // 玻璃皮肤（认证页）图标走白 .8；常规档维持 textSecondary
+                        tint = if (variant == AppFieldVariant.GLASS) {
+                            Color.White.copy(alpha = 0.8f)
+                        } else {
+                            colors.textSecondary
+                        },
                     )
                 }
             }
