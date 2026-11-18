@@ -5,7 +5,8 @@
 // brief 失败 → 错误态重试。未登录由壳层深链守卫拦截（dining 不在公开白名单）。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import { DiningOrderBriefVo, getDiningOrderBrief, joinDiningOrder } from '../../../network/api/DiningApi'
 import {
@@ -100,13 +101,20 @@ struct DiningOrderJoinPage {
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_MD })
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (!this.paramValid) {
             Column() {
               EmptyState({ message: DiningText.dining_order_join_param_invalid })
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else {
+            // 注：BodyByDecision 为 @Builder 调用，无法挂 transition（同创建页 FormBody 口径）
             this.BodyByDecision()
           }
         }

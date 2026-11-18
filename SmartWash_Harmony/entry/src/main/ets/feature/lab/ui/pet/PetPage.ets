@@ -13,7 +13,8 @@
  * 仅限时态/动画进行中运行，静帧不空转；tick（限时回 idle、闲置入睡）由 1s 定时器驱动。
  */
 
-import { DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppButton, AppButtonVariant, PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
@@ -83,8 +84,11 @@ export struct PetPage {
   private reactionStartMs: number = 0
   private evolveStartMs: number = 0
   private reduceMotion: boolean = labReduceMotion()
+  // 宠物画布按压缩放态（对齐安卓 pressable）
+  @Local pressed: boolean = false
 
   aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
     this.tickTimerId = setInterval(() => {
       this.onTick()
     }, PET_TICK_MS)
@@ -522,6 +526,20 @@ export struct PetPage {
                   .width(PET_CANVAS_SIZE)
                   .height(PET_CANVAS_SIZE)
                   .accessibilityDescription(this.petCanvasDescription())
+                  // 画布按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+                  .scale({
+                    x: !this.reduceMotion && this.pressed ? MotionScale.Press : 1,
+                    y: !this.reduceMotion && this.pressed ? MotionScale.Press : 1
+                  })
+                  .opacity(this.reduceMotion && this.pressed ? MotionAlpha.PressReduced : 1)
+                  .animation(MotionTiming.PRESS)
+                  .onTouch((event: TouchEvent) => {
+                    if (event.type === TouchType.Down) {
+                      this.pressed = true
+                    } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                      this.pressed = false
+                    }
+                  })
                   .onClick(() => {
                     this.interact(PetAction.PET)
                   })

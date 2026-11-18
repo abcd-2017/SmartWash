@@ -5,7 +5,8 @@
 // 校验只在提交时内联展示（规范 §3.7 基线⑤）；成功后 toast + 置变更信号 + 返回列表（列表 onShown 重拉）。
 
 import { HttpStatusCode } from '@ohos/axios'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../constant/DesignSystem'
+import { ReduceMotion } from '../../utils/ReduceMotion'
 import {
   AddShortCodeForm,
   createShortCode,
@@ -208,13 +209,16 @@ struct ToolboxShortCodeCreate {
         .borderWidth(1)
         .borderColor(selected ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
         .borderRadius(DesignDimens.RADIUS_FULL)
-        // 200ms 颜色过渡（对齐安卓 selectedColor）
-        .animation({ duration: 200, curve: Curve.EaseInOut })
+        // 选中色走临界阻尼弹簧（对齐安卓 selectedColor，reduced 180ms）
+        .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
     }
     .constraintSize({ minHeight: 48 })
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
-    .scale({ x: this.pressedChipId === chipId ? 0.97 : 1, y: this.pressedChipId === chipId ? 0.97 : 1 })
+    .scale({
+      x: this.pressedChipId === chipId ? MotionScale.Press : 1,
+      y: this.pressedChipId === chipId ? MotionScale.Press : 1
+    })
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedChipId = chipId
@@ -225,7 +229,8 @@ struct ToolboxShortCodeCreate {
     .onClick(() => {
       this.onChipSelect(chipId)
     })
-    .animation({ duration: 200, curve: Curve.EaseInOut })
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
   }
 
   /** chip 点击分流：0/1 可见性（公开/私有），2..5 有效期预设（永久/7天/30天/自定义），

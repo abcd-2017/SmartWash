@@ -31,7 +31,8 @@ import {
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
-import { DesignDimens, DesignElevation } from '../../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, MotionAlpha, MotionScale, MotionTiming } from '../../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../../utils/ReduceMotion'
 import { pathStack } from '../../../../../utils/PathStackUtil'
 import { Debouncer } from '../../../../../utils/DebounceUtil'
 import { logger } from '../../../../../utils/Logger'
@@ -78,9 +79,12 @@ struct DivHomePage {
   @Local pressedKey: string = ''
   // 今日一签保存中（compare-10 #1 对齐安卓 signSaving 三件套：保存中禁点 + 尾缀「…」+ 同步置位防连点）
   @Local signSaving: boolean = false
+  // reduced motion：按压取消缩放改 alpha 0.86（规范 §8）
+  @Local reduceMotion: boolean = false
   private debouncer: Debouncer = new Debouncer()
 
   async aboutToAppear(): Promise<void> {
+    this.reduceMotion = ReduceMotion.isEnabled()
     await this.refresh()
   }
 
@@ -355,7 +359,13 @@ struct DivHomePage {
       offsetX: 0,
       offsetY: 2
     })
-    .scale({ x: this.pressedKey === method ? 0.97 : 1, y: this.pressedKey === method ? 0.97 : 1 })
+    // 按压 100ms FastOutSlowIn scale 0.97（对齐安卓 pressable）；reduced motion 改 alpha 0.86
+    .scale({
+      x: !this.reduceMotion && this.pressedKey === method ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.pressedKey === method ? MotionScale.Press : 1
+    })
+    .opacity(this.reduceMotion && this.pressedKey === method ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = method
@@ -546,7 +556,8 @@ struct DivHomePage {
               }
               .width('100%')
               .opacity(this.records.length === 0 ? 1 : 0)
-              .animation({ duration: 180, curve: Curve.EaseInOut })
+              // 交叉淡变 200ms LinearOutSlowIn（对齐安卓 Crossfade(200)），reduced 降 180ms
+              .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
 
               // 记录列表层
               Column() {
@@ -564,7 +575,8 @@ struct DivHomePage {
               }
               .width('100%')
               .opacity(this.records.length === 0 ? 0 : 1)
-              .animation({ duration: 180, curve: Curve.EaseInOut })
+              // 交叉淡变 200ms LinearOutSlowIn（对齐安卓 Crossfade(200)），reduced 降 180ms
+              .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
             }
             .width('100%')
             // 案卷卡内层：左右 14、纵向 0（行自带 vertical 12；compare-10 #18 对齐安卓 padding(horizontal = 14.dp)）

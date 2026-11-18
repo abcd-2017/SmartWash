@@ -4,7 +4,8 @@
 // + 每日钠目标 stepper（1000-4000）；进入 GET 回填（null 字段兜底 2000/2000），保存走 PUT。
 // 入口：设置页「其他」组。
 
-import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   DietaryPreferenceVo,
@@ -84,6 +85,9 @@ struct DiningDietaryPreferencePage {
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (this.isError) {
             Column() {
               EmptyState({ message: DiningText.dietary_preference_load_failed }) {
@@ -102,6 +106,9 @@ struct DiningDietaryPreferencePage {
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else {
             Scroll() {
               Column() {
@@ -216,6 +223,9 @@ struct DiningDietaryPreferencePage {
             .layoutWeight(1)
             .align(Alignment.TopStart)
             .edgeEffect(EdgeEffect.Spring)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
 
             AppButton({
               text: DiningText.dietary_preference_save,

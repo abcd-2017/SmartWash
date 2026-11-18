@@ -2,6 +2,7 @@
 // 设计语言对齐清氧规范与既有域先例（AppCard / AppConfirmDialog / SymbolGlyph 令牌）。
 
 import { DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { resString } from '../../../utils/ResourceString'
 import { DiningOrderStatus, formatDiningAmount } from '../DiningLogic'
 import { DiningText } from '../DiningText'
@@ -97,13 +98,14 @@ export struct DiningCheckbox {
           style: BorderStyle.Solid
         })
         .backgroundColor(this.checked ? $r('app.color.PRIMARY') : Color.Transparent)
-        .animation({ duration: 120, curve: Curve.EaseOut })
+        // 选中态颜色走临界阻尼弹簧（对齐安卓 selectedColor = motionSpec(defaultSpring())），reduced 降 180ms
+        .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
 
       if (this.checked) {
         SymbolGlyph($r('sys.symbol.checkmark'))
           .fontSize(this.boxSize * 0.7)
           .fontColor([$r('app.color.ON_PRIMARY')])
-          .animation({ duration: 120, curve: Curve.EaseOut })
+          .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
       }
     }
     .width(this.boxSize)
@@ -112,7 +114,8 @@ export struct DiningCheckbox {
       x: this.checked ? 1.12 : 1,
       y: this.checked ? 1.12 : 1
     })
-    .animation({ curve: MotionTiming.BOUNCY })
+    // 加选弹跳 spring(0.5,1500)（对齐安卓 MediumBouncy），reduced 降级 180ms 无回弹
+    .animation(ReduceMotion.specCurve(MotionTiming.BOUNCY))
   }
 }
 

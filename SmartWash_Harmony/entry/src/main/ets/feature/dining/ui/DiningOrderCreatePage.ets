@@ -8,7 +8,8 @@
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { KeyboardAvoidMode } from '@kit.ArkUI'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   DietaryPreferenceVo,
@@ -57,7 +58,7 @@ import { DiningText } from '../DiningText'
 import { DiningCheckbox } from './DiningUiCommon'
 import { DINING_DEFAULT_CALORIE_TARGET } from '../../../network/vo/DiningVo'
 import { DiningOrderCreateParam, DiningOrderShareParam } from '../api'
-import { AppButton, EmptyState, SkeletonList } from '../../../view/common/AppComponents'
+import { AnimatedNumber, AppButton, EmptyState, SkeletonList } from '../../../view/common/AppComponents'
 import { LoadingFooter } from '../../../view/LoadingFooter'
 import { logger } from '../../../utils/Logger'
 import { LazyListDataSource, PagingController } from '../../../utils/PagingUtil'
@@ -115,6 +116,9 @@ struct DiningOrderCreatePage {
   // 常规模式：触底加载更多态 / 追加失败态（驱动列表 footer）
   @Local isLoadingMore: boolean = false
   @Local appendError: boolean = false
+  // 按压反馈 key（菜品行/入口，对齐安卓 pressable）+ reduced motion 降级
+  @Local pressedKey: string = ''
+  @Local reduceMotion: boolean = false
   /** LazyForEach 数据源（读取 recipes，实例稳定不可重建，避免整表重建） */
   private dataSource: LazyListDataSource<DiningRecipeVo> =
     new LazyListDataSource<DiningRecipeVo>(() => this.recipes)
@@ -176,6 +180,7 @@ struct DiningOrderCreatePage {
   }
 
   async aboutToAppear(): Promise<void> {
+    this.reduceMotion = ReduceMotion.isEnabled()
     const param = getObjectParam<DiningOrderCreateParam>(RouteNames.DINING_ORDER_CREATE)
     if (param !== null) {
       this.editOrderId = param.orderId
@@ -249,6 +254,9 @@ struct DiningOrderCreatePage {
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (this.isError) {
             Column() {
               EmptyState({ message: this.loadErrorMessage.length > 0
@@ -257,7 +265,12 @@ struct DiningOrderCreatePage {
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else {
+            // 注：FormBody 为 @Builder 调用，无法挂 transition；内容态入场沿用安卓 Crossfade 语义，
+            // 鸿蒙侧以骨架/错误态退场过渡近似（不额外包容器，避免破坏内部 layoutWeight 布局）
             this.FormBody()
           }
         }
@@ -340,11 +353,17 @@ struct DiningOrderCreatePage {
             .width('100%')
             .margin({ top: DesignDimens.SPACE_MD })
           this.CategoryChips()
-          Text(DiningText.selectedCount(this.selectedIds.length))
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor($r('app.color.TEXT_SECONDARY'))
-            .width('100%')
-            .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XS })
+          // 已选计数变化走弹簧淡入淡出（对齐安卓 AnimatedContent numberSpec = defaultSpring()）
+          Column() {
+            AnimatedNumber({
+              value: DiningText.selectedCount(this.selectedIds.length),
+              fontSize: DesignFontSize.CAPTION,
+              fontColor: $r('app.color.TEXT_SECONDARY')
+            })
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XS })
         }
         .width('100%')
         .padding({
@@ -659,6 +678,20 @@ struct DiningOrderCreatePage {
     .borderRadius(DesignDimens.RADIUS_MD)
     .backgroundColor($r('app.color.SURFACE'))
     .border({ width: 1, color: $r('app.color.OUTLINE') })
+    // 菜品行按压 100ms FastOutSlowIn scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+    .scale({
+      x: !this.reduceMotion && this.pressedKey === `row_${recipe.id}` ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.pressedKey === `row_${recipe.id}` ? MotionScale.Press : 1
+    })
+    .opacity(this.reduceMotion && this.pressedKey === `row_${recipe.id}` ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedKey = `row_${recipe.id}`
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedKey = ''
+      }
+    })
     .onClick(() => {
       this.toggleRecipe(recipe.id)
     })

@@ -1,6 +1,7 @@
 import { DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { logger } from "../utils/Logger"
 import { AppConfirmDialog, AppCard, PageHeader } from "../view/common/AppComponents"
+import { SwitchRow } from "../view/common/AppSwitch"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { notificationManager } from "@kit.NotificationKit"
 import { common } from "@kit.AbilityKit"
@@ -157,16 +158,22 @@ struct PermissionManagement {
                   .strokeWidth(0.5)
 
                 // 触感反馈（端内开关，非系统权限；自设置页迁入，与通知同页归集）
-                PermissionRow({
+                // 由「行尾文字冒充开关」升级为公共 SwitchRow（整行可点 + 右侧真实开关语义）
+                SwitchRow({
                   icon: $r('sys.symbol.hand_tap'),
-                  containerColor: $r('app.color.ICON_CONTAINER_TEAL'),
-                  iconColor: $r('app.color.ICON_FOREGROUND_TEAL'),
+                  iconContainerColor: $r('app.color.ICON_CONTAINER_TEAL'),
+                  iconTint: $r('app.color.ICON_FOREGROUND_TEAL'),
                   title: resString('permission_haptic'),
                   description: resString('permission_haptic_desc'),
-                  trailingValue: this.hapticEnabled ? resString('lab_drum_cell_on') : resString('lab_drum_cell_off'),
-                  trailingColor: $r('app.color.TEXT_SECONDARY'),
-                  showAction: true,
-                  onRowClick: () => {
+                  rowHeight: 72,
+                  checked: this.hapticEnabled,
+                  onText: resString('lab_drum_cell_on'),
+                  offText: resString('lab_drum_cell_off'),
+                  onChange: (checked: boolean): void => {
+                    // 开关自身与整行点击互斥（内层消费），此处再防一次值未变的重复触发
+                    if (checked === this.hapticEnabled) {
+                      return
+                    }
                     this.toggleHaptic()
                   }
                 })

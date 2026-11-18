@@ -4,6 +4,7 @@ import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } fro
 import { pathStack } from "../utils/PathStackUtil"
 import { logger } from "../utils/Logger"
 import { AppButton, AppButtonVariant, AppCard, AppConfirmDialog, AppInfoDialog, PageHeader } from "../view/common/AppComponents"
+import { SwitchRow } from "../view/common/AppSwitch"
 import { getAppVersionCode, getAppVersionName } from "../utils/AppInfoUtil"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { isPickupReminderEnabled, setPickupReminderEnabled } from "../utils/ReminderService"
@@ -240,15 +241,22 @@ struct Setting {
               .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
 
             SettingGroupCard() {
-              // 取件提醒（真实开关，调研候选 2）：订单进入待取件后 30 分钟本地提醒取件；
-              // 关闭即撤销全部未触发提醒，重新开启后列表/详情同步自动补登记
-              SettingRow({
+              // 取件提醒（真实开关）：订单进入待取件后 30 分钟本地提醒取件；
+              // 关闭即撤销全部未触发提醒，重新开启后列表/详情同步自动补登记。
+              // 由「行尾文字冒充开关」升级为公共 SwitchRow（整行可点 + 右侧真实开关语义）
+              SwitchRow({
                 icon: $r('sys.symbol.hourglass'),
-                containerColor: $r('app.color.ICON_CONTAINER_BLUE'),
-                iconColor: $r('app.color.ICON_FOREGROUND_BLUE'),
+                iconContainerColor: $r('app.color.ICON_CONTAINER_BLUE'),
+                iconTint: $r('app.color.ICON_FOREGROUND_BLUE'),
                 title: resString('setting_33'),
-                trailingValue: this.pickupReminderEnabled ? resString('lab_drum_cell_on') : resString('lab_drum_cell_off'),
-                onRowClick: () => {
+                checked: this.pickupReminderEnabled,
+                onText: resString('lab_drum_cell_on'),
+                offText: resString('lab_drum_cell_off'),
+                onChange: (checked: boolean): void => {
+                  // 开关自身与整行点击互斥（内层消费），此处再防一次值未变的重复触发
+                  if (checked === this.pickupReminderEnabled) {
+                    return
+                  }
                   this.togglePickupReminder()
                 }
               })

@@ -3,7 +3,7 @@
 // 内容：
 // 1) 页面头（返回 + 标题 + 可选两个文字动作）；
 // 2) 静态标签 chip（状态/类型/角标）与可选筛选 chip；
-// 3) 自绘开关（自动续费）与续费周期进度环；
+// 3) 续费周期进度环（自动续费开关已上收公共 view/common/AppSwitch.ets）；
 // 4) 日期选择弹窗（下次续费日/试用截止共用）；
 // 5) 状态/周期/提醒类型/续费相对描述等展示换算。
 //
@@ -12,9 +12,12 @@
 // - 弹窗「先关窗再回调」；颜色一律取 Design* 令牌（深色模式自动生效）。
 
 import { pasteboard } from '@kit.BasicServicesKit'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { AnimatorOptions, AnimatorResult } from '@ohos.animator'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { SubscriptionCycleType, SubscriptionReminderType, SubscriptionStatus, SubscriptionText, SubscriptionVo, subscriptionCycleTypeFromRaw, subscriptionReminderTypeFromRawOrDefault, subscriptionStatusFromRawOrDefault, subscriptionStatusIsTerminal } from '../api'
 import { formatAmount, formatDate, renewProgressFraction } from '../logic/SubscriptionRules'
+import { AnimatedNumber } from '../../../view/common/AppComponents'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { resolveArgb } from '../../../utils/ResourceColor'
 import { resString } from '../../../utils/ResourceString'
@@ -134,6 +137,8 @@ export struct SubscriptionSelectableChip {
   @Param selected: boolean = false
   @Event onSelect: () => void = () => {
   }
+  // 按压态（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
+  @Local pressed: boolean = false
 
   build() {
     // 双层结构对齐安卓：外层 48 最小热区（DESIGN-SPEC §3 触控目标 ≥48），onClick 上移容器；
@@ -157,54 +162,24 @@ export struct SubscriptionSelectableChip {
           width: 1,
           color: this.selected ? Color.Transparent : $r('app.color.OUTLINE')
         })
-        .animation(MotionTiming.ENTER)
+        // 选中色走临界阻尼弹簧（对齐安卓 selectedColor，reduced 180ms）
+        .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
     }
     .constraintSize({ minHeight: 48 })
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .scale({ x: this.pressed ? MotionScale.Press : 1, y: this.pressed ? MotionScale.Press : 1 })
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
     .onClick(() => {
       this.onSelect()
-    })
-  }
-}
-
-/**
- * 自绘开关（自动续费）—— 轨道 44×24 胶囊，thumb 20 圆点；
- * 全库无既有 Switch 先例（规范 §7 禁 state layer），故自绘。
- */
-@ComponentV2
-export struct SubscriptionToggle {
-  @Param checked: boolean = false
-  @Event onChange: (checked: boolean) => void = (_: boolean) => {
-  }
-
-  build() {
-    // 双层结构对齐安卓（audit-14 #7）：外层 48 最小热区（DESIGN-SPEC §3 触控目标 ≥48×48），
-    // onClick 上移外层，24 轨道居中视觉尺寸不变（同 SelectableChip 已修写法）
-    Column() {
-      Row() {
-        Column()
-          .width(20)
-          .height(20)
-          .borderRadius(10)
-          .backgroundColor($r('app.color.SURFACE'))
-          .margin({ left: this.checked ? 22 : 2 })
-      }
-      .width(44)
-      .height(24)
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      // 未选中轨道从装饰档 textTertiary 收敛 textSecondary（#A9AEA9 on 白 2.25:1 低于
-      // 图形控件 3:1 非文本对比下限，DESIGN-SPEC §10；thumb 白色在次文本色轨道上辨识足够）
-      .backgroundColor(this.checked ? $r('app.color.PRIMARY') : $r('app.color.TEXT_SECONDARY'))
-      .justifyContent(FlexAlign.Start)
-      .alignItems(VerticalAlign.Center)
-      .animation(MotionTiming.ENTER)
-    }
-    .constraintSize({ minHeight: 48 })
-    .justifyContent(FlexAlign.Center)
-    .alignItems(HorizontalAlign.Center)
-    .onClick(() => {
-      this.onChange(!this.checked)
     })
   }
 }
@@ -215,8 +190,9 @@ export struct SubscriptionToggle {
  * 环线与环心文字拆色（对齐安卓 2026-11-11 修复）：环线走图形口径（ringColor），
  * 环心 12fp 数字走文字级达标令牌（centerTextColor，§10 ≥4.5:1）。
  * 数据变化经 @Monitor 触发重绘（修复 ForEach 同 key 复用时弧线停留旧值）；
- * fraction 以 220ms easeOut 逐帧插值过渡（ArkUI Canvas 无逐帧弹簧直驱，端限制近似，
- * 时长对齐 MotionTiming 弹簧收敛档），颜色变化立即重绘。
+ * fraction 以 interpolating-spring（临界阻尼 1.0 / stiffness 350）逐帧插值过渡，
+ * 对齐安卓 animateFloatAsState(motionSpec(defaultSpring))；reduced motion 直接落值。
+ * 颜色变化立即重绘。
  */
 @ComponentV2
 export struct RenewProgressRing {
@@ -228,50 +204,74 @@ export struct RenewProgressRing {
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
   /** 弧线插值显示值（@Param fraction 不可变，逐帧过渡经此字段重绘） */
   private displayedFraction: number = 0
-  /** 过渡帧定时器（新动画前/组件销毁时必须清理） */
-  private animTimer: number = -1
+  /** 弹簧动画器（Canvas 逐帧重绘；对齐安卓 animateFloatAsState(defaultSpring)） */
+  private animatorResult: AnimatorResult | null = null
+  /** 动画器选项 — interpolating-spring(velocity, mass, stiffness, damping)，阻尼比 1.0 临界无回弹 */
+  private animOptions: AnimatorOptions = {
+    duration: 0,
+    easing: 'interpolating-spring(0, 1, 350, 37.4)',
+    delay: 0,
+    direction: "normal",
+    iterations: 1,
+    begin: 0,
+    end: 1,
+    fill: "forwards"
+  }
+  /** 本帧动画起点 / 终点（progress 0→1 线性映射到该区间） */
+  private fromFraction: number = 0
+  private targetFraction: number = 0
 
   aboutToAppear(): void {
     this.displayedFraction = this.fraction
+    this.fromFraction = this.fraction
+    this.targetFraction = this.fraction
+    this.drawRing()
+    try {
+      const result: AnimatorResult = this.getUIContext().createAnimator(this.animOptions)
+      result.onFrame = (progress: number): void => {
+        this.handleFrame(progress)
+      }
+      this.animatorResult = result
+    } catch (err) {
+      // 动画器不可用（极少数环境）：退化为直接重绘，不留卡死值
+      this.animatorResult = null
+    }
+  }
+
+  /** 动画帧回调：progress 0→1 映射到 [fromFraction, targetFraction] 后重绘 */
+  private handleFrame(progress: number): void {
+    this.displayedFraction = this.fromFraction + (this.targetFraction - this.fromFraction) * progress
     this.drawRing()
   }
 
   aboutToDisappear(): void {
-    this.clearAnimTimer()
-  }
-
-  /** @Param 数据变化：重绘弧线（fraction 走插值过渡，颜色跳变重绘） */
-  @Monitor('fraction', 'ringColor', 'trackColor')
-  onRingDataChange(): void {
-    this.startFractionTransition()
-  }
-
-  private clearAnimTimer(): void {
-    if (this.animTimer !== -1) {
-      clearInterval(this.animTimer)
-      this.animTimer = -1
+    if (this.animatorResult !== null) {
+      this.animatorResult.finish()
+      this.animatorResult = null
     }
   }
 
-  /** fraction 220ms easeOut 插值逐帧重绘；颜色等非进度变化（delta 为 0）直接重绘 */
-  private startFractionTransition(): void {
-    this.clearAnimTimer()
-    const from: number = this.displayedFraction
-    const delta: number = this.fraction - from
-    if (delta === 0) {
+  /** @Param 数据变化：重绘弧线（fraction 走弹簧插值过渡，颜色跳变重绘） */
+  @Monitor('fraction', 'ringColor', 'trackColor')
+  onRingDataChange(): void {
+    // reduced motion：取消过渡直接落值（规范 §8，对齐安卓 motionSpec 180ms 由重置为立即重绘）
+    if (ReduceMotion.isEnabled()) {
+      this.displayedFraction = this.fraction
       this.drawRing()
       return
     }
-    const start: number = Date.now()
-    const duration: number = 220
-    this.animTimer = setInterval(() => {
-      const t: number = Math.min(1, (Date.now() - start) / duration)
-      this.displayedFraction = from + delta * (1 - Math.pow(1 - t, 3))
+    this.fromFraction = this.displayedFraction
+    this.targetFraction = this.fraction
+    if (this.targetFraction === this.fromFraction || this.animatorResult === null) {
       this.drawRing()
-      if (t >= 1) {
-        this.clearAnimTimer()
-      }
-    }, 16)
+      return
+    }
+    this.animatorResult.reset(this.animOptions)
+    // reset 后重挂帧回调，确保逐帧重绘不丢失
+    this.animatorResult.onFrame = (progress: number): void => {
+      this.handleFrame(progress)
+    }
+    this.animatorResult.play()
   }
 
   private drawRing(): void {
@@ -307,11 +307,13 @@ export struct RenewProgressRing {
           this.drawRing()
         })
 
-      Text(subscriptionFormat(SubscriptionText.subscription_renew_days_compact, Math.abs(this.daysLeft)))
-        .fontSize(DesignFontSize.CAPTION)
-        .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(this.centerTextColor)
-        .fontFeature(DesignFontFeature.TNUM)
+      // 环心距续费天数：数字变化走弹簧淡入淡出（对齐安卓 AnimatedContent numberSpec）
+      AnimatedNumber({
+        value: subscriptionFormat(SubscriptionText.subscription_renew_days_compact, Math.abs(this.daysLeft)),
+        fontSize: DesignFontSize.CAPTION,
+        fontWeight: DesignFontWeight.MEDIUM,
+        fontColor: this.centerTextColor
+      })
     }
     .width(44)
     .height(44)
@@ -364,6 +366,8 @@ export struct SubscriptionDatePickerDialog {
   @Prop title: string = resString('subscription_form_pick_date')
   @State selected: Date = new Date()
   @State entered: boolean = false
+  // reduced motion：缩放归零只留纯淡入（规范 §8）
+  @State reduceMotion: boolean = false
   onConfirm: (date: string) => void = () => {
   }
   onDismiss: () => void = () => {
@@ -372,7 +376,7 @@ export struct SubscriptionDatePickerDialog {
   /** 弹窗统一入场（对齐安卓 dialogEnterMotion）：首帧后再触发，弹簧 scale 0.92→1 + fade */
   private playEnterMotion(): void {
     setTimeout(() => {
-      animateTo(MotionTiming.DIALOG_ENTER, () => {
+      animateTo(ReduceMotion.spec(MotionTiming.DIALOG_ENTER), () => {
         this.entered = true
       })
     }, 16)
@@ -453,9 +457,13 @@ export struct SubscriptionDatePickerDialog {
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
-      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .scale({
+        x: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter),
+        y: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter)
+      })
       .opacity(this.entered ? 1 : 0)
       .onAppear(() => {
+        this.reduceMotion = ReduceMotion.isEnabled()
         this.playEnterMotion()
       })
     }

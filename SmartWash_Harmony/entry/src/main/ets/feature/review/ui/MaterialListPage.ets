@@ -7,7 +7,8 @@
 // 已知坑遵守：内容依赖状态的卡片用 @ComponentV2 + @Param/@Event；输入态由表单自身持有；
 // 列表骨架/错误/空态齐备（规范 §3.6）。
 
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   AddCardForm,
@@ -70,6 +71,8 @@ struct MaterialListPage {
   @Local cardsLoadingMore: boolean = false
   @Local cardsAppendError: boolean = false
   @Local createVisible: boolean = false
+  // 「加载更多」行按压态（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
+  @Local loadMorePressed: boolean = false
   @Local formTitle: string = ''
   @Local formRawText: string = ''
   @Local creating: boolean = false
@@ -474,6 +477,16 @@ struct MaterialListPage {
     .constraintSize({ minHeight: 48 })
     .justifyContent(FlexAlign.Center)
     .alignItems(VerticalAlign.Center)
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .scale({ x: this.loadMorePressed ? MotionScale.Press : 1, y: this.loadMorePressed ? MotionScale.Press : 1 })
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.loadMorePressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.loadMorePressed = false
+      }
+    })
     .onClick(() => {
       // 错误态行本身即重试入口，仅加载中拦截（对齐安卓 LoadMoreRow pressable 常开，M6）
       if (!this.isLoadingMore) {
@@ -515,6 +528,8 @@ struct MaterialListPage {
                 ListItem() {
                   this.CreateMaterialForm()
                 }
+                // 建资料表单展开（对齐安卓 AnimatedVisibility 卡片档 300ms；ArkUI 以淡入近似）
+                .transition(TransitionEffect.OPACITY.animation(ReduceMotion.spec(MotionTiming.ENTER_CARD)))
               }
 
               if (this.materials.length === 0) {
@@ -549,6 +564,8 @@ struct MaterialListPage {
                       }
                     })
                   }
+                  // 列表项进出场（对齐安卓 animatedListItem 弹簧；ArkUI 无项级 placement，淡入淡出近似）
+                  .transition(ReduceMotion.listItemTransition())
                 }, (material: MaterialVo) => `${material.id ?? 0}`)
 
                 if (this.materialsHasMore()) {
@@ -604,6 +621,8 @@ struct MaterialCard {
   }
   @Event onRetryCards: () => void = () => {
   }
+  // 头部按压态（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
+  @Local pressed: boolean = false
 
   build() {
     Column() {
@@ -636,6 +655,16 @@ struct MaterialCard {
       .width('100%')
       .constraintSize({ minHeight: 48 })
       .alignItems(VerticalAlign.Center)
+      // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+      .scale({ x: this.pressed ? MotionScale.Press : 1, y: this.pressed ? MotionScale.Press : 1 })
+      .animation(ReduceMotion.spec(MotionTiming.PRESS))
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressed = true
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressed = false
+        }
+      })
       .onClick(() => {
         this.onToggleExpand()
       })
@@ -687,6 +716,11 @@ struct MaterialCard {
         }
         .width('100%')
         .alignItems(HorizontalAlign.Start)
+        // 展开/收起（对齐安卓 AnimatedVisibility 卡片档 300ms；ArkUI 无高度退出动画，淡入淡出近似）
+        .transition(TransitionEffect.asymmetric(
+          TransitionEffect.OPACITY.animation(ReduceMotion.spec(MotionTiming.ENTER_CARD)),
+          TransitionEffect.OPACITY.animation(ReduceMotion.spec(MotionTiming.EXIT_CARD))
+        ))
       }
     }
     .width('100%')

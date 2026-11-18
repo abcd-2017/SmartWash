@@ -6,7 +6,8 @@
 // 返回本页（离栈再回）经 onShown 重拉（对齐 Android 列表返回不刷新遗留的修法）。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import { DiningOrderListVo, pageMyDiningOrders } from '../../../network/api/DiningApi'
 import { diningOrderStatusFromCode, DiningOrderStatus, diningTimeLabel } from '../DiningLogic'
@@ -62,6 +63,8 @@ struct DiningOrderListPage {
   @Local isLoadingMore: boolean = false
   // 按压反馈 key（对齐项目口径：onTouch Down/Up + scale 0.97）
   @Local pressedKey: string = ''
+  // reduced motion：按压取消缩放改 alpha 0.86（规范 §8）
+  @Local reduceMotion: boolean = false
   /** LazyForEach 数据源（读取 entries，实例稳定不可重建） */
   private dataSource: LazyListDataSource<DiningOrderListEntry> =
     new LazyListDataSource<DiningOrderListEntry>(() => this.entries)
@@ -77,6 +80,7 @@ struct DiningOrderListPage {
   private hasShown: boolean = false
 
   aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
     logger.debug(TAG, '订单列表页挂载，开始首载')
     this.reloadFirstPage()
   }
@@ -123,6 +127,20 @@ struct DiningOrderListPage {
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
                 .fontColor($r('app.color.PRIMARY_DARK'))
                 .padding({ left: 12, right: 12, top: 12, bottom: 12 })
+                // 入口按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+                .scale({
+                  x: !this.reduceMotion && this.pressedKey === 'library' ? MotionScale.Press : 1,
+                  y: !this.reduceMotion && this.pressedKey === 'library' ? MotionScale.Press : 1
+                })
+                .opacity(this.reduceMotion && this.pressedKey === 'library' ? MotionAlpha.PressReduced : 1)
+                .animation(MotionTiming.PRESS)
+                .onTouch((event: TouchEvent) => {
+                  if (event.type === TouchType.Down) {
+                    this.pressedKey = 'library'
+                  } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                    this.pressedKey = ''
+                  }
+                })
                 .onClick(() => {
                   pathStack.pushPathByName(RouteNames.DINING_LIBRARY, null)
                 })
@@ -140,6 +158,9 @@ struct DiningOrderListPage {
               }
               .width('100%')
               .layoutWeight(1)
+              // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+              .transition(TransitionEffect.OPACITY)
+              .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
             } else if (this.isError) {
               Column() {
                 EmptyState({ message: DiningText.dining_order_list_load_failed }) {
@@ -159,12 +180,18 @@ struct DiningOrderListPage {
               }
               .width('100%')
               .layoutWeight(1)
+              // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+              .transition(TransitionEffect.OPACITY)
+              .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
             } else if (this.createdOrders.length === 0 && this.joinedOrders.length === 0) {
               Column() {
                 EmptyState({ message: DiningText.dining_order_list_empty })
               }
               .width('100%')
               .layoutWeight(1)
+              // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+              .transition(TransitionEffect.OPACITY)
+              .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
             } else {
               // 真数据列表改 LazyForEach 懒加载（分区标题 + 订单卡统一走数据源）
               List() {
@@ -196,6 +223,9 @@ struct DiningOrderListPage {
                 this.paging.onScrollFrameBegin(offset)
                 return { offsetRemain: offset }
               })
+              // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+              .transition(TransitionEffect.OPACITY)
+              .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
             }
           }
           .width('100%')
@@ -225,11 +255,13 @@ struct DiningOrderListPage {
             right: DesignDimens.PAGE_PADDING,
             bottom: Math.max(safeBottomVp(), DesignDimens.SPACE_LG) + DesignDimens.SPACE_MD
           })
+          // FAB 按压 100ms FastOutSlowIn scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
           .scale({
-            x: this.pressedKey === 'fab' ? 0.94 : 1,
-            y: this.pressedKey === 'fab' ? 0.94 : 1
+            x: !this.reduceMotion && this.pressedKey === 'fab' ? MotionScale.Press : 1,
+            y: !this.reduceMotion && this.pressedKey === 'fab' ? MotionScale.Press : 1
           })
-          .animation({ duration: 100, curve: Curve.EaseOut })
+          .opacity(this.reduceMotion && this.pressedKey === 'fab' ? MotionAlpha.PressReduced : 1)
+          .animation(MotionTiming.PRESS)
           .onTouch((event: TouchEvent) => {
             if (event.type === TouchType.Down) {
               this.pressedKey = 'fab'
@@ -314,11 +346,13 @@ struct DiningOrderListPage {
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor($r('app.color.TEXT_GREEN'))
           .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
+          // 「再来一单」按压 100ms FastOutSlowIn scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
           .scale({
-            x: this.pressedKey === `reuse_${order.id}` ? 0.94 : 1,
-            y: this.pressedKey === `reuse_${order.id}` ? 0.94 : 1
+            x: !this.reduceMotion && this.pressedKey === `reuse_${order.id}` ? MotionScale.Press : 1,
+            y: !this.reduceMotion && this.pressedKey === `reuse_${order.id}` ? MotionScale.Press : 1
           })
-          .animation({ duration: 100, curve: Curve.EaseOut })
+          .opacity(this.reduceMotion && this.pressedKey === `reuse_${order.id}` ? MotionAlpha.PressReduced : 1)
+          .animation(MotionTiming.PRESS)
           .onTouch((event: TouchEvent) => {
             if (event.type === TouchType.Down) {
               this.pressedKey = `reuse_${order.id}`
@@ -348,11 +382,13 @@ struct DiningOrderListPage {
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
     .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, bottom: DesignDimens.CARD_SPACING })
+    // 订单卡按压 100ms FastOutSlowIn scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
     .scale({
-      x: this.pressedKey === `card_${order.id}` ? 0.97 : 1,
-      y: this.pressedKey === `card_${order.id}` ? 0.97 : 1
+      x: !this.reduceMotion && this.pressedKey === `card_${order.id}` ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.pressedKey === `card_${order.id}` ? MotionScale.Press : 1
     })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    .opacity(this.reduceMotion && this.pressedKey === `card_${order.id}` ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = `card_${order.id}`

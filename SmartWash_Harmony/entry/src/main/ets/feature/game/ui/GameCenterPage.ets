@@ -16,7 +16,8 @@ import { RouteNames } from '../../../constant/RouteNames'
 import { logger } from '../../../utils/Logger'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { common } from '@kit.AbilityKit'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { Debouncer } from '../../../utils/DebounceUtil'
@@ -155,6 +156,8 @@ struct GameGrid {
                   .width('100%')
               }
               .layoutWeight(1)
+              // 网格项进出场（对齐安卓 animatedListItem 弹簧；ArkUI 无项级 placement，淡入淡出近似）
+              .transition(ReduceMotion.listItemTransition())
             }, (game: GameItem) => game.gameKey)
             // 接口返回奇数个游戏时末行补位，保持两列网格
             if (row.length === 1) {
@@ -384,9 +387,9 @@ struct GameCard {
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
-    // 整卡按压反馈 + 连点节流（对齐安卓 pressable：scale 0.97 / 100ms + 500ms 防抖）
-    .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    // 整卡按压反馈 + 连点节流（对齐安卓 pressable：scale 0.97 / 100ms FastOutSlowIn + 500ms 防抖）
+    .scale({ x: this.pressed ? MotionScale.Press : 1, y: this.pressed ? MotionScale.Press : 1 })
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressed = true

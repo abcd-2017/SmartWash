@@ -4,7 +4,8 @@
 // 且条目行依赖 direction/kind/taken 状态渲染，按已知坑用 @ComponentV2 + @Param
 // （@Builder 按值传参不响应状态更新）。
 
-import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import { resColor } from '../../../../utils/ResourceColor'
 import {
   DeliveryDirection,
@@ -43,6 +44,8 @@ export struct DeliveryItemRow {
   @Require @Param item: DeliveryItemVo
   @Event onRowClick: () => void = () => {
   }
+  // 按压态（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
+  @Local pressed: boolean = false
 
   private kindIcon(): Resource {
     const kind = kindFromCode(this.item.kind ?? 1)
@@ -155,6 +158,16 @@ export struct DeliveryItemRow {
     .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
     .alignItems(VerticalAlign.Center)
     .opacity(this.isTaken() ? 0.45 : 1)
+    // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
+    .scale({ x: this.pressed ? MotionScale.Press : 1, y: this.pressed ? MotionScale.Press : 1 })
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
     .onClick(() => {
       if (!this.isTaken()) {
         this.onRowClick()

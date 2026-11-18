@@ -6,7 +6,8 @@
  * （视觉播放头仍推进）。reduced motion：默认停止、用户主动播放（当前常量 false）。
  */
 
-import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppButton, AppButtonVariant, PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
@@ -113,6 +114,8 @@ export struct DrumPage {
   @Local activePattern: number = 0
   @Local patterns: DrumPattern[] = []
   @Local currentStep: number = -1
+  // 按压反馈 key（节奏型 / 预设 / 播放停止，对齐安卓 pressable）
+  @Local pressedKey: string = ''
 
   private engine: DrumEngine = new DrumEngine()
   private sliderCtx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
@@ -370,6 +373,20 @@ export struct DrumPage {
             .borderWidth(1)
             .borderColor(this.activePattern === index ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
             .textAlign(TextAlign.Center)
+            // 节奏型按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+            .scale({
+              x: !this.reduceMotion && this.pressedKey === `pattern_${index}` ? MotionScale.Press : 1,
+              y: !this.reduceMotion && this.pressedKey === `pattern_${index}` ? MotionScale.Press : 1
+            })
+            .opacity(this.reduceMotion && this.pressedKey === `pattern_${index}` ? MotionAlpha.PressReduced : 1)
+            .animation(MotionTiming.PRESS)
+            .onTouch((event: TouchEvent) => {
+              if (event.type === TouchType.Down) {
+                this.pressedKey = `pattern_${index}`
+              } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.pressedKey = ''
+              }
+            })
             .onClick(() => {
               this.selectPattern(index)
             })
@@ -423,6 +440,20 @@ export struct DrumPage {
             }
             .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             .margin({ right: DesignDimens.SPACE_XS })
+            // 预设按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+            .scale({
+              x: !this.reduceMotion && this.pressedKey === `preset_${index}` ? MotionScale.Press : 1,
+              y: !this.reduceMotion && this.pressedKey === `preset_${index}` ? MotionScale.Press : 1
+            })
+            .opacity(this.reduceMotion && this.pressedKey === `preset_${index}` ? MotionAlpha.PressReduced : 1)
+            .animation(MotionTiming.PRESS)
+            .onTouch((event: TouchEvent) => {
+              if (event.type === TouchType.Down) {
+                this.pressedKey = `preset_${index}`
+              } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.pressedKey = ''
+              }
+            })
             .onClick(() => {
               this.applyPreset(preset)
             })
@@ -560,7 +591,8 @@ export struct DrumPage {
           .borderColor($r('app.color.PRIMARY'))
       }
       .scale({ x: this.stepCellScale(voice, step), y: this.stepCellScale(voice, step) })
-      .animation({ duration: 200, curve: Curve.EaseOut })
+      // 落点格放大走弹簧（对齐安卓 popSpec = motionSpec(defaultSpring())），reduced 降 180ms
+      .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
     }
     .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM,
       top: DesignDimens.SPACE_XXS, bottom: DesignDimens.SPACE_XXS })

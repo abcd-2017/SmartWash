@@ -15,6 +15,7 @@ import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { HttpStatusCode } from '@ohos/axios'
 import { RouteNames } from '../../../../constant/RouteNames'
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import {
   AddDeliveryTextForm,
   closeDeliverySession,
@@ -880,6 +881,8 @@ struct DeliverySessionPage {
                     }
                   }
                 }
+                // 列表项进出场（对齐安卓 animatedListItem 弹簧；ArkUI 无项级 placement，淡入淡出近似）
+                .transition(ReduceMotion.listItemTransition())
               }, (item: DeliveryItemVo) => `${item.id ?? 0}`)
               ListItem() {
                 LoadingFooter({ isLoading: this.isLoadingMore })

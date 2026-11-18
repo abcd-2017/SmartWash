@@ -9,7 +9,8 @@ import { image } from '@kit.ImageKit'
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { generateBarcode, scanCore } from '@kit.ScanKit'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import { DiningOrderDetailVo, getDiningOrderDetail, resetDiningJoinToken } from '../../../network/api/DiningApi'
 import { buildDiningJoinUrl } from '../DiningLogic'
@@ -128,12 +129,18 @@ struct DiningOrderSharePage {
               top: DesignDimens.SPACE_MD
             })
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (this.isError || this.detail === null) {
             Column() {
               EmptyState({ message: DiningText.dining_order_share_detail_failed })
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else {
             Scroll() {
               Column() {
@@ -154,6 +161,9 @@ struct DiningOrderSharePage {
             .height('100%')
             .align(Alignment.TopStart)
             .edgeEffect(EdgeEffect.Spring)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           }
         }
         .width('100%')

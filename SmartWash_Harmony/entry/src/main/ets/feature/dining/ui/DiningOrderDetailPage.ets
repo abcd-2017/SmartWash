@@ -10,7 +10,8 @@
 
 import { BaseResponse } from '../../../network/BaseResponse'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   DiningCategoryVo,
@@ -51,6 +52,7 @@ import { DiningOrderCreateParam, DiningOrderShareParam } from '../api'
 import {
   AppButton,
   AppButtonVariant,
+  AnimatedNumber,
   AppConfirmDialog,
   EmptyState,
   LoadingDots,
@@ -136,6 +138,9 @@ struct DiningOrderDetailPage {
   @Local allergenCache: Array<DiningAllergenCacheEntry> = []
   /** 过敏原拉取在途（防重复请求） */
   @Local allergenPendingIds: Array<number> = []
+  // 按压反馈 key（做法/备注入口）+ reduced motion 降级（对齐安卓 pressable）
+  @Local pressedKey: string = ''
+  @Local reduceMotion: boolean = false
   // 轮询定时器（aboutToDisappear 必须 clear，CLAUDE.md 硬规则）
   private pollTimer: number = -1
   // 写操作互斥：进行中忽略新的勾选切换（防本地意图与在途写交错）
@@ -174,6 +179,7 @@ struct DiningOrderDetailPage {
   })
 
   async aboutToAppear(): Promise<void> {
+    this.reduceMotion = ReduceMotion.isEnabled()
     this.orderId = getNumberParam(RouteNames.DINING_ORDER_DETAIL) ?? 0
     if (this.orderId <= 0) {
       logger.warn(TAG, '点单页参数缺失 orderId')
@@ -241,12 +247,18 @@ struct DiningOrderDetailPage {
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (this.isError || this.detail === null) {
             Column() {
               EmptyState({ message: DiningText.dining_order_detail_load_failed })
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else {
             Column() {
               if (this.isDraft) {
@@ -273,6 +285,9 @@ struct DiningOrderDetailPage {
             }
             .width('100%')
             .height('100%')
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           }
         }
         .width('100%')
@@ -1021,6 +1036,20 @@ struct DiningOrderDetailPage {
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
         .accessibilityText(DiningText.dining_order_detail_recipe_action)
+        // 做法入口按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+        .scale({
+          x: !this.reduceMotion && this.pressedKey === `recipe_${row.recipeId}` ? MotionScale.Press : 1,
+          y: !this.reduceMotion && this.pressedKey === `recipe_${row.recipeId}` ? MotionScale.Press : 1
+        })
+        .opacity(this.reduceMotion && this.pressedKey === `recipe_${row.recipeId}` ? MotionAlpha.PressReduced : 1)
+        .animation(MotionTiming.PRESS)
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.pressedKey = `recipe_${row.recipeId}`
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pressedKey = ''
+          }
+        })
         .onClick(() => {
           pathStack.pushPathByName(RouteNames.DINING_RECIPE_DETAIL, row.recipeId)
         })
@@ -1042,6 +1071,20 @@ struct DiningOrderDetailPage {
           .justifyContent(FlexAlign.Center)
           .alignItems(HorizontalAlign.Center)
           .accessibilityText(DiningText.dining_order_detail_note_action)
+          // 备注入口按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+          .scale({
+            x: !this.reduceMotion && this.pressedKey === `note_${row.recipeId}` ? MotionScale.Press : 1,
+            y: !this.reduceMotion && this.pressedKey === `note_${row.recipeId}` ? MotionScale.Press : 1
+          })
+          .opacity(this.reduceMotion && this.pressedKey === `note_${row.recipeId}` ? MotionAlpha.PressReduced : 1)
+          .animation(MotionTiming.PRESS)
+          .onTouch((event: TouchEvent) => {
+            if (event.type === TouchType.Down) {
+              this.pressedKey = `note_${row.recipeId}`
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+              this.pressedKey = ''
+            }
+          })
           .onClick(() => {
             this.openNoteDialog(row.recipeId)
           })
@@ -1114,6 +1157,20 @@ struct DiningOrderDetailPage {
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
       .accessibilityText(DiningText.dining_order_detail_recipe_action)
+      // 做法入口按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+      .scale({
+        x: !this.reduceMotion && this.pressedKey === `draft_recipe_${row.recipeId}` ? MotionScale.Press : 1,
+        y: !this.reduceMotion && this.pressedKey === `draft_recipe_${row.recipeId}` ? MotionScale.Press : 1
+      })
+      .opacity(this.reduceMotion && this.pressedKey === `draft_recipe_${row.recipeId}` ? MotionAlpha.PressReduced : 1)
+      .animation(MotionTiming.PRESS)
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressedKey = `draft_recipe_${row.recipeId}`
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressedKey = ''
+        }
+      })
       .onClick(() => {
         pathStack.pushPathByName(RouteNames.DINING_RECIPE_DETAIL, row.recipeId)
       })
@@ -1131,6 +1188,20 @@ struct DiningOrderDetailPage {
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
       .accessibilityText(DiningText.removeDishLabel(row.name))
+      // 移除入口按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+      .scale({
+        x: !this.reduceMotion && this.pressedKey === `remove_${row.recipeId}` ? MotionScale.Press : 1,
+        y: !this.reduceMotion && this.pressedKey === `remove_${row.recipeId}` ? MotionScale.Press : 1
+      })
+      .opacity(this.reduceMotion && this.pressedKey === `remove_${row.recipeId}` ? MotionAlpha.PressReduced : 1)
+      .animation(MotionTiming.PRESS)
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressedKey = `remove_${row.recipeId}`
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressedKey = ''
+        }
+      })
       .onClick(() => {
         this.removeDish(row.recipeId)
       })
@@ -1154,10 +1225,13 @@ struct DiningOrderDetailPage {
       if (this.isDraft) {
         // 草稿底部栏：菜单计数 + 「添加菜品」主行动（跳创建页草稿编辑态）
         Column() {
-          Text(DiningText.draftMenuCount(this.draftMenu.localMenu.size))
-            .fontSize(DesignFontSize.BODY)
-            .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor($r('app.color.TEXT_PRIMARY'))
+          // 菜单计数变化走弹簧淡入淡出（对齐安卓 AnimatedContent numberSpec = defaultSpring()）
+          AnimatedNumber({
+            value: DiningText.draftMenuCount(this.draftMenu.localMenu.size),
+            fontSize: DesignFontSize.BODY,
+            fontWeight: DesignFontWeight.MEDIUM,
+            fontColor: $r('app.color.TEXT_PRIMARY')
+          })
             .width('100%')
           AppButton({
             text: DiningText.dining_order_detail_add_dish,
@@ -1184,10 +1258,13 @@ struct DiningOrderDetailPage {
                 .fontSize(DesignFontSize.CAPTION)
                 .fontColor($r('app.color.TEXT_SECONDARY'))
               Row({ space: DesignDimens.SPACE_XS }) {
-                Text(DiningText.detailSelectedCount(this.mySelectedCount))
-                  .fontSize(DesignFontSize.CAPTION)
-                  .fontWeight(DesignFontWeight.MEDIUM)
-                  .fontColor($r('app.color.TEXT_PRIMARY'))
+                // 已选数变化走弹簧淡入淡出（对齐安卓 AnimatedContent numberSpec = defaultSpring()）
+                AnimatedNumber({
+                  value: DiningText.detailSelectedCount(this.mySelectedCount),
+                  fontSize: DesignFontSize.CAPTION,
+                  fontWeight: DesignFontWeight.MEDIUM,
+                  fontColor: $r('app.color.TEXT_PRIMARY')
+                })
                 if (this.syncing || this.pendingRecipeIds.length > 0) {
                   Text(DiningText.dining_order_detail_syncing)
                     .fontSize(DesignFontSize.CAPTION)

@@ -13,7 +13,8 @@ import { common, Want } from '@kit.AbilityKit'
 import { image } from '@kit.ImageKit'
 import { generateBarcode, scanCore } from '@kit.ScanKit'
 import { RouteNames } from '../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../constant/DesignSystem'
+import { ReduceMotion } from '../../utils/ReduceMotion'
 import {
   ShortCodeStatsVo,
   TOOLBOX_PAGE_SIZE,
@@ -608,7 +609,12 @@ struct ToolboxShortCodeDetail {
           .constraintSize({ minWidth: 48, minHeight: 48 })
           .justifyContent(FlexAlign.Center)
           .alignItems(HorizontalAlign.Center)
-          .scale({ x: this.pressedKey === 'renew' ? 0.97 : 1, y: this.pressedKey === 'renew' ? 0.97 : 1 })
+          .scale({
+            x: this.pressedKey === 'renew' ? MotionScale.Press : 1,
+            y: this.pressedKey === 'renew' ? MotionScale.Press : 1
+          })
+          // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+          .animation(ReduceMotion.spec(MotionTiming.PRESS))
           .onTouch((event: TouchEvent) => {
             if (event.type === TouchType.Down) {
               this.pressedKey = 'renew'
@@ -692,7 +698,12 @@ struct ToolboxShortCodeDetail {
         .alignItems(HorizontalAlign.Center)
         .backgroundColor($r('app.color.SURFACE_VARIANT'))
         .borderRadius(DesignDimens.RADIUS_MD)
-        .scale({ x: this.pressedKey === 'qr-retry' ? 0.97 : 1, y: this.pressedKey === 'qr-retry' ? 0.97 : 1 })
+        .scale({
+          x: this.pressedKey === 'qr-retry' ? MotionScale.Press : 1,
+          y: this.pressedKey === 'qr-retry' ? MotionScale.Press : 1
+        })
+        // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+        .animation(ReduceMotion.spec(MotionTiming.PRESS))
         .onTouch((event: TouchEvent) => {
           if (event.type === TouchType.Down) {
             this.pressedKey = 'qr-retry'
@@ -1065,7 +1076,12 @@ struct ToolboxShortCodeDetail {
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor($r('app.color.DANGER_INK'))
             .padding({ left: 12, right: 12, top: 12, bottom: 12 })
-            .scale({ x: this.pressedKey === 'delete' ? 0.97 : 1, y: this.pressedKey === 'delete' ? 0.97 : 1 })
+            .scale({
+              x: this.pressedKey === 'delete' ? MotionScale.Press : 1,
+              y: this.pressedKey === 'delete' ? MotionScale.Press : 1
+            })
+            // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+            .animation(ReduceMotion.spec(MotionTiming.PRESS))
             .onTouch((event: TouchEvent) => {
               if (event.type === TouchType.Down) {
                 this.pressedKey = 'delete'

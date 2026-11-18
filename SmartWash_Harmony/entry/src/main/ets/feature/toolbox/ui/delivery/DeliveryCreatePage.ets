@@ -13,7 +13,8 @@ import { image } from '@kit.ImageKit'
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { HttpStatusCode } from '@ohos/axios'
 import { RouteNames } from '../../../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import {
   AddDeliverySessionForm,
   createDeliverySession,
@@ -487,9 +488,18 @@ struct DeliveryCreatePage {
                   })
 
                 Stack({ alignContent: Alignment.Center }) {
-                  SymbolGlyph(this.showPassword ? $r('sys.symbol.eye_slash') : $r('sys.symbol.eye'))
-                    .fontSize(20)
-                    .fontColor([$r('app.color.TEXT_SECONDARY')])
+                  // 密码可见性图标交叉淡变（对齐安卓 Crossfade 200ms LinearOutSlowIn，reduced 180ms）
+                  if (this.showPassword) {
+                    SymbolGlyph($r('sys.symbol.eye_slash'))
+                      .fontSize(20)
+                      .fontColor([$r('app.color.TEXT_SECONDARY')])
+                      .transition(TransitionEffect.OPACITY.animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT)))
+                  } else {
+                    SymbolGlyph($r('sys.symbol.eye'))
+                      .fontSize(20)
+                      .fontColor([$r('app.color.TEXT_SECONDARY')])
+                      .transition(TransitionEffect.OPACITY.animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT)))
+                  }
                 }
                 .width(DesignDimens.BACK_HIT_AREA)
                 .height(DesignDimens.BACK_HIT_AREA)
@@ -626,13 +636,15 @@ struct DeliveryDurationChip {
         .borderWidth(1)
         .borderColor(this.selected ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
         .borderRadius(DesignDimens.RADIUS_FULL)
+        // 选中色走临界阻尼弹簧（对齐安卓 selectedColor，reduced 180ms）
+        .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
     }
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     // 最小 48×48 热区（defaultMinSize 语义，compare-07 #28）：宽胶囊随内容撑开，
     // 避免固定 48 宽造成视觉溢出与热区死区
     .constraintSize({ minWidth: DesignDimens.BACK_HIT_AREA, minHeight: DesignDimens.BACK_HIT_AREA })
-    .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
+    .scale({ x: this.pressed ? MotionScale.Press : 1, y: this.pressed ? MotionScale.Press : 1 })
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressed = true
@@ -643,7 +655,8 @@ struct DeliveryDurationChip {
     .onClick(() => {
       this.onSelect(this.chipId)
     })
-    .animation({ duration: 200, curve: Curve.EaseInOut })
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
   }
 }
 

@@ -14,6 +14,8 @@ import { MeiHuaChart } from '../../core/meihua/MeiHuaChart'
 import { QiMenChart } from '../../core/qimen/QiMenChart'
 import { LiuRenChart, LiuRenCourse } from '../../core/liuren/LiuRenChart'
 import { Trigram } from '../../core/DivinationCommon'
+import { MotionTiming } from '../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import { resolveArgb } from '../../../../utils/ResourceColor'
 import {
   DivCard,
@@ -129,9 +131,15 @@ struct LiuYaoRow {
     if (this.line !== null && this.line.yao.isMoving && this.revealed >= 1) {
       this.markTimer = setTimeout(() => {
         this.markVisible = true
-        animateTo({ duration: 200, curve: Curve.EaseOut }, () => {
+        if (divReduceMotion()) {
+          // reduced motion：直接定格（规范 §8），仅保留可读性
           this.markScale = 1
-        })
+        } else {
+          // 动爻标记弹簧盖上（对齐安卓 motionSpec(defaultSpring())），延迟 80ms 由外层 setTimeout 承担
+          animateTo(ReduceMotion.specCurve(MotionTiming.SELECTED), () => {
+            this.markScale = 1
+          })
+        }
       }, 80)
     }
   }
@@ -226,7 +234,8 @@ export struct LiuYaoPan {
       this.progresses = [0, 0, 0, 0, 0, 0]
       for (let i = 0; i < 6; i++) {
         const id = setTimeout(() => {
-          animateTo({ duration: YAO_DRAW_MS, curve: Curve.FastOutSlowIn }, () => {
+          // 单爻 350ms LinearOutSlowIn（对齐安卓 enterTween(350)），交叠 60ms
+          animateTo({ duration: YAO_DRAW_MS, curve: Curve.LinearOutSlowIn }, () => {
             const next = this.progresses.slice()
             next[i] = 1
             this.progresses = next

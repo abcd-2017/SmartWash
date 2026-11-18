@@ -6,7 +6,8 @@
 
 import { LengthMetrics } from '@kit.ArkUI'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import { DiningRecipeVo, favoriteDiningRecipe, getDiningRecipeDetail, unfavoriteDiningRecipe } from '../../../network/api/DiningApi'
 import { DiningStepLine, DiningStepLineKind, diningServingCalories, parseDiningStepLines } from '../DiningLogic'
@@ -36,8 +37,12 @@ struct DiningRecipeDetailPage {
   @Local favorited: boolean = false
   /** 收藏切换进行中（防连击重复请求） */
   @Local favoriting: boolean = false
+  // 收藏入口按压缩放态 + reduced motion 降级
+  @Local pressed: boolean = false
+  @Local reduceMotion: boolean = false
 
   async aboutToAppear(): Promise<void> {
+    this.reduceMotion = ReduceMotion.isEnabled()
     this.recipeId = getNumberParam(RouteNames.DINING_RECIPE_DETAIL) ?? 0
     if (this.recipeId <= 0) {
       logger.warn(TAG, '菜谱详情参数缺失 recipeId')
@@ -92,6 +97,20 @@ struct DiningRecipeDetailPage {
               .justifyContent(FlexAlign.Center)
               .alignItems(HorizontalAlign.Center)
               .accessibilityText(this.favorited ? DiningText.dining_recipe_unfavorite : DiningText.dining_recipe_favorite)
+              // 收藏入口按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+              .scale({
+                x: !this.reduceMotion && this.pressed ? MotionScale.Press : 1,
+                y: !this.reduceMotion && this.pressed ? MotionScale.Press : 1
+              })
+              .opacity(this.reduceMotion && this.pressed ? MotionAlpha.PressReduced : 1)
+              .animation(MotionTiming.PRESS)
+              .onTouch((event: TouchEvent) => {
+                if (event.type === TouchType.Down) {
+                  this.pressed = true
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                  this.pressed = false
+                }
+              })
               .onClick(() => {
                 this.toggleFavorite()
               })
@@ -111,12 +130,18 @@ struct DiningRecipeDetailPage {
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_MD })
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (this.isError || this.recipe === null) {
             Column() {
               EmptyState({ message: DiningText.dining_recipe_detail_load_failed })
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else {
             Scroll() {
               Column() {
@@ -257,6 +282,9 @@ struct DiningRecipeDetailPage {
             .align(Alignment.TopStart)
             .edgeEffect(EdgeEffect.Spring)
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           }
         }
         .width('100%')

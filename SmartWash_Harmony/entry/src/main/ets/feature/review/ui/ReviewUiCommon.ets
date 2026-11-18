@@ -11,7 +11,8 @@
 // - 内容依赖状态的组件一律 @ComponentV2 + @Param/@Event（@Builder 按值传参不响应更新）；
 // - 弹窗「先关窗再回调」；弹窗内输入态由弹窗自持，避免父页状态注入不同步。
 
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import {
   REVIEW_MATERIAL_TITLE_MAX_PAGES,
   REVIEW_PAGE_SIZE,
@@ -186,6 +187,8 @@ export struct RatingButton {
   @Param isEnabled: boolean = true
   @Event click: () => void = () => {
   }
+  // 按压态（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
+  @Local pressed: boolean = false
 
   build() {
     Column() {
@@ -207,6 +210,16 @@ export struct RatingButton {
     .enabled(this.isEnabled)
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .scale({ x: this.pressed ? MotionScale.Press : 1, y: this.pressed ? MotionScale.Press : 1 })
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
     .onClick(() => {
       if (this.isEnabled) {
         this.click()
@@ -236,7 +249,8 @@ export struct StudyProgressBar {
         .width(`${Math.min(100, Math.max(0, this.fraction * 100))}%`)
         .height(4)
         .backgroundColor($r('app.color.PRIMARY'))
-        .animation({ curve: MotionTiming.SPRING })
+        // 进度宽度弹簧（对齐安卓 animateFloatAsState(defaultSpring)，reduced 180ms）
+        .animation(ReduceMotion.specCurve(MotionTiming.SPRING))
     }
     .width('100%')
     .height(4)
@@ -360,6 +374,8 @@ export struct ReviewCardDialog {
   @State submitting: boolean = false
   @State errorMessage: string = ''
   @State entered: boolean = false
+  // reduced motion：缩放归零只留纯淡入（规范 §8）
+  @State reduceMotion: boolean = false
   onConfirm: (question: string, answer: string) => Promise<ReviewCardSubmitResult> =
     async (): Promise<ReviewCardSubmitResult> => {
       return { success: false, errorMessage: '' }
@@ -370,7 +386,7 @@ export struct ReviewCardDialog {
   /** 弹窗统一入场（对齐安卓 dialogEnterMotion）：首帧后再触发，弹簧 scale 0.92→1 + fade */
   private playEnterMotion(): void {
     setTimeout(() => {
-      animateTo(MotionTiming.DIALOG_ENTER, () => {
+      animateTo(ReduceMotion.spec(MotionTiming.DIALOG_ENTER), () => {
         this.entered = true
       })
     }, 16)
@@ -533,9 +549,13 @@ export struct ReviewCardDialog {
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
-      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .scale({
+        x: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter),
+        y: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter)
+      })
       .opacity(this.entered ? 1 : 0)
       .onAppear(() => {
+        this.reduceMotion = ReduceMotion.isEnabled()
         this.playEnterMotion()
       })
     }

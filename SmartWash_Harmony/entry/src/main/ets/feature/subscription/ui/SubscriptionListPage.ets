@@ -11,7 +11,8 @@
 // 已知坑遵守：条目卡内容依赖状态 → @ComponentV2 + @Param/@Event（@Builder 按值传参不响应更新）。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   SUBSCRIPTION_PAGE_SIZE,
@@ -330,6 +331,8 @@ struct SubscriptionListPage {
                     }
                   })
                 }
+                // 列表项进出场（对齐安卓 animatedListItem 弹簧；ArkUI 无项级 placement，淡入淡出近似）
+                .transition(ReduceMotion.listItemTransition())
               }, (vo: SubscriptionVo) => `${vo.subscriptionId}`)
 
               // 尾部：加载中骨架 / 失败重试（对齐安卓 append LoadState）
@@ -404,6 +407,8 @@ export struct SubscriptionCard {
   @Require @Param vo: SubscriptionVo
   @Event onCardClick: () => void = () => {
   }
+  // 按压态（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
+  @Local pressed: boolean = false
 
   /** 状态（防御回落 active） */
   private status(): SubscriptionStatus {
@@ -552,6 +557,16 @@ export struct SubscriptionCard {
       color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
+    })
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .scale({ x: this.pressed ? MotionScale.Press : 1, y: this.pressed ? MotionScale.Press : 1 })
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
     })
     .onClick(() => {
       this.onCardClick()

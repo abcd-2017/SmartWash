@@ -16,6 +16,7 @@ import { Debouncer } from "../utils/DebounceUtil"
 import { LazyListDataSource, PagingController } from "../utils/PagingUtil"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { AppButton, AppButtonVariant, AppPillTabRow, EmptyState, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { TicketDashedLine, TicketNotch } from "../view/TicketNotchShape"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
@@ -270,6 +271,8 @@ struct Coupon {
               }
             })
           }
+          // 列表项进出场统一走 ReduceMotion.listItemTransition（对齐安卓 animatedListItem）
+          .transition(ReduceMotion.listItemTransition())
         // 键必须含状态指纹（问题5 根因）：领取成功 loadAllCoupons 整表替换对象，
         // 仅用 couponId 时键不变 → 复用旧子组件、@Param 不同步 → 按钮定格「立即领取」
         }, (coupon: CouponVo, index: number) => `${coupon.couponId ?? index}:${coupon.status ?? ""}`)
@@ -291,6 +294,8 @@ struct Coupon {
           ListItem() {
             CouponTicketCard({ userCoupon: userCoupon, isHistorical: false })
           }
+          // 列表项进出场统一走 ReduceMotion.listItemTransition（对齐安卓 animatedListItem）
+          .transition(ReduceMotion.listItemTransition())
         // 键含 isUsed 指纹：刷新换对象后键不变会复用旧子组件（同可用 tab 键问题）
         }, (userCoupon: UserCouponVo, index: number) =>
           `${userCoupon.userCouponId ?? index}:${userCoupon.isUsed ? 1 : 0}`)
@@ -323,6 +328,8 @@ struct Coupon {
           ListItem() {
             CouponTicketCard({ userCoupon: userCoupon, isHistorical: true })
           }
+          // 列表项进出场统一走 ReduceMotion.listItemTransition（对齐安卓 animatedListItem）
+          .transition(ReduceMotion.listItemTransition())
         // 键含 isUsed 指纹：核销状态变化后对象替换、键不变会复用旧子组件（同可用 tab 键问题）
         }, (userCoupon: UserCouponVo, index: number) =>
           `${userCoupon.userCouponId ?? index}:${userCoupon.isUsed ? 1 : 0}`)

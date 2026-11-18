@@ -1,4 +1,5 @@
-import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../constant/DesignSystem'
+import { ReduceMotion } from '../utils/ReduceMotion'
 import { OrderVo } from '../network/vo/OrderVo'
 import { OrderStatusEnum, getOrderStatusDescription } from '../constant/OrderStatus'
 import { resColor } from '../utils/ResourceColor'
@@ -115,8 +116,12 @@ export struct HeroCard {
   @Local statusText: string = resString('home_hero_no_order')
   @Local heroProgress: number = 0
   @Local currentStep: number = 0
+  // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms；reduced motion 降级 alpha 0.86）
+  @Local pressed: boolean = false
+  @Local reduceMotion: boolean = false
 
   aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
     this.syncOrder()
   }
 
@@ -225,14 +230,14 @@ export struct HeroCard {
                   .width(8)
                   .height(8)
                   .backgroundColor(index <= this.currentStep ? Color.White : $r('app.color.OUTLINE'))
-                  .animation(MotionTiming.ENTER)
+                  .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
 
                 if (index < HERO_STEPS().length - 1) {
                   Row()
                     .layoutWeight(1)
                     .height(2)
                     .backgroundColor(index < this.currentStep ? Color.White : $r('app.color.OUTLINE'))
-                    .animation(MotionTiming.ENTER)
+                    .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
                 }
               }, (label: string) => label)
             }
@@ -289,6 +294,20 @@ export struct HeroCard {
       .linearGradient({
         angle: 135,
         colors: [[$r('app.color.PRIMARY'), 0], [$r('app.color.PRIMARY_DARK'), 1]]
+      })
+      // 整卡按压反馈（对齐安卓 pressable）：scale 0.97 + 100ms FastOutSlowIn；reduced motion 降级 alpha
+      .scale({
+        x: this.pressed && !this.reduceMotion ? MotionScale.Press : 1,
+        y: this.pressed && !this.reduceMotion ? MotionScale.Press : 1
+      })
+      .opacity(this.pressed && this.reduceMotion ? MotionAlpha.PressReduced : 1)
+      .animation(MotionTiming.PRESS)
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressed = true
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressed = false
+        }
       })
       .onClick(() => {
         if (this.hasOrder) {

@@ -10,7 +10,8 @@
 
 import vibrator from '@ohos.vibrator'
 import { DivColor } from '../../../../constant/DivTheme'
-import { DesignDimens, DesignElevation } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, MotionAlpha, MotionScale, MotionTiming } from '../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import { resolveArgb } from '../../../../utils/ResourceColor'
 import { resString } from '../../../../utils/ResourceString'
 
@@ -692,6 +693,12 @@ export struct DivGoldButton {
   }
   // 按压态（scale 0.97）—— 见下方 build 说明
   @Local pressed: boolean = false
+  // reduced motion：取消缩放，降级为透明度 0.86（规范 §8，对齐安卓 pressScale 降级分支）
+  @Local reduceMotion: boolean = false
+
+  aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
+  }
 
   build() {
     Column() {
@@ -720,8 +727,14 @@ export struct DivGoldButton {
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .enabled(this.isEnabled)
-    // 规范 §7：交互反馈不使用 Material ripple；按压反馈统一由 scale 0.97 承载，禁用态不缩放
-    .scale({ x: this.isEnabled && this.pressed ? 0.97 : 1, y: this.isEnabled && this.pressed ? 0.97 : 1 })
+    // 规范 §7：交互反馈不使用 Material ripple；按压反馈统一由 scale 0.97 承载，禁用态不缩放。
+    // 100ms FastOutSlowIn（对齐安卓 pressTween）；reduced motion 取消缩放改 alpha 0.86。
+    .scale({
+      x: !this.reduceMotion && this.isEnabled && this.pressed ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.isEnabled && this.pressed ? MotionScale.Press : 1
+    })
+    .opacity(this.reduceMotion && this.isEnabled && this.pressed ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressed = true
@@ -750,6 +763,12 @@ export struct DivCard {
   }
   // 按压态（scale 0.97）—— 见下方 build 说明
   @Local pressed: boolean = false
+  // reduced motion：取消缩放，降级为透明度 0.86（规范 §8）
+  @Local reduceMotion: boolean = false
+
+  aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
+  }
 
   build() {
     Column() {
@@ -775,8 +794,14 @@ export struct DivCard {
     .border({ width: 1, color: this.lineColor ?? DivPalette.hair, radius: 16 })
     .enabled(this.clickable)
     // 规范 §7：不使用 Material ripple（原 .stateEffect() 非通用属性，实测编译报错），按压反馈由 scale 0.97 承载
-    // （对齐安卓 DivCard 的 pressable：indication = null + scaleFactor 0.97）
-    .scale({ x: this.clickable && this.pressed ? 0.97 : 1, y: this.clickable && this.pressed ? 0.97 : 1 })
+    // （对齐安卓 DivCard 的 pressable：indication = null + scaleFactor 0.97）；100ms FastOutSlowIn，
+    // reduced motion 取消缩放改 alpha 0.86（规范 §8）
+    .scale({
+      x: !this.reduceMotion && this.clickable && this.pressed ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.clickable && this.pressed ? MotionScale.Press : 1
+    })
+    .opacity(this.reduceMotion && this.clickable && this.pressed ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressed = true
@@ -802,40 +827,75 @@ export struct DivCategoryChip {
   @Param horizontalPadding: number = 12
   @Event onAction: () => void = () => {
   }
+  // 勾缩放（0→1 弹簧，对齐安卓 chipCheck = motionSpec(defaultSpring())）
+  @Local checkScale: number = 0
+  // 按压态 + reduced motion 降级（对齐安卓 pressable：scale 0.97 / 100ms，reduced 改 alpha 0.86）
+  @Local pressed: boolean = false
+  @Local reduceMotion: boolean = false
+
+  aboutToAppear(): void {
+    this.checkScale = this.selected ? 1 : 0
+    this.reduceMotion = ReduceMotion.isEnabled()
+  }
+
+  @Monitor('selected')
+  onSelectedChange(): void {
+    animateTo(ReduceMotion.specCurve(MotionTiming.SELECTED), () => {
+      this.checkScale = this.selected ? 1 : 0
+    })
+  }
 
   build() {
+    // 外层承载按压（100ms FastOutSlowIn）；内层承载选中态颜色/勾（弹簧）——
+    // ArkUI 单个节点的 .animation 会同时作用于全部可动画属性，故按安卓
+    // selectedColor + pressable 的分工拆两层（reduced 分别降级 180ms）。
     Row() {
-      DivSerifText({
-        text: this.text,
-        textSize: 12,
-        weight: this.selected ? 600 : 400,
-        spacing: 0,
-        color: this.selected ? DivPalette.goldText : DivPalette.textSecondary,
-        textAlign: TextAlign.Center,
-        maxLines: 1
-      })
-      if (this.selected) {
+      Row() {
         DivSerifText({
-          text: '✓',
+          text: this.text,
           textSize: 12,
-          weight: 600,
+          weight: this.selected ? 600 : 400,
           spacing: 0,
-          color: DivPalette.goldText,
-          textAlign: TextAlign.Center
+          color: this.selected ? DivPalette.goldText : DivPalette.textSecondary,
+          textAlign: TextAlign.Center,
+          maxLines: 1
         })
-          .padding({ left: 3 })
-          .scale({ x: 1, y: 1 })
-          .animation({ duration: 200, curve: Curve.EaseOut })
+        // 勾：弹簧缩放盖上/退下（scale 为绘制层属性，不参与布局；scale=0 时移除节点避免撑宽胶囊）
+        if (this.checkScale > 0) {
+          DivSerifText({
+            text: '✓',
+            textSize: 12,
+            weight: 600,
+            spacing: 0,
+            color: DivPalette.goldText,
+            textAlign: TextAlign.Center
+          })
+            .padding({ left: 3 })
+            .scale({ x: this.checkScale, y: this.checkScale })
+        }
       }
+      .height(48)
+      .padding({ left: this.horizontalPadding, right: this.horizontalPadding })
+      .borderRadius(999)
+      // 选中底宣纸实底金（对齐安卓 c.gold #8F7233，compare-15 #6）；字色仍取 goldText 墨字
+      .backgroundColor(this.selected ? DivPalette.gold : DivPalette.surface)
+      .border({ width: 1, color: this.selected ? DivPalette.gold : DivPalette.goldLine })
+      // 底色/描边/字色走选中态弹簧（对齐安卓 selectedColor = motionSpec(defaultSpring())，reduced 降 180ms）
+      .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
     }
-    .height(48)
-    .padding({ left: this.horizontalPadding, right: this.horizontalPadding })
-    .borderRadius(999)
-    // 选中底宣纸实底金（对齐安卓 c.gold #8F7233，compare-15 #6）；字色仍取 goldText 墨字
-    .backgroundColor(this.selected ? DivPalette.gold : DivPalette.surface)
-    .border({ width: 1, color: this.selected ? DivPalette.gold : DivPalette.goldLine })
-    // 底色/描边/字色 200ms 过渡（隐式动画）
-    .animation({ duration: 200 })
+    .scale({
+      x: !this.reduceMotion && this.pressed ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.pressed ? MotionScale.Press : 1
+    })
+    .opacity(this.reduceMotion && this.pressed ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
     .onClick(() => {
       DivHaptic.selection()
       this.onAction()
@@ -851,6 +911,23 @@ export struct DivRadioRow {
   @Param subtitle: string = ''
   @Param selected: boolean = false
   @Event onAction: () => void = () => {
+  }
+  // 内点缩放（0→1 弹簧，对齐安卓 radioDot = motionSpec(defaultSpring())）
+  @Local dotScale: number = 0
+  // 按压态 + reduced motion 降级（对齐安卓 pressable：scale 0.97 / 100ms，reduced 改 alpha 0.86）
+  @Local pressed: boolean = false
+  @Local reduceMotion: boolean = false
+
+  aboutToAppear(): void {
+    this.dotScale = this.selected ? 1 : 0
+    this.reduceMotion = ReduceMotion.isEnabled()
+  }
+
+  @Monitor('selected')
+  onSelectedChange(): void {
+    animateTo(ReduceMotion.specCurve(MotionTiming.SELECTED), () => {
+      this.dotScale = this.selected ? 1 : 0
+    })
   }
 
   build() {
@@ -878,15 +955,15 @@ export struct DivRadioRow {
           .height(20)
           .borderRadius(10)
           .border({ width: 1, color: this.selected ? 0xE6C9A961 : DivPalette.goldLine })
+          .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
 
-        if (this.selected) {
-          Column()
-            .width(8)
-            .height(8)
-            .borderRadius(4)
-            .backgroundColor(DivPalette.gold)
-            .animation({ duration: 200, curve: Curve.EaseOut })
-        }
+        // 内点常驻（scale 为绘制层属性，居中无布局位移），弹簧缩放进出
+        Column()
+          .width(8)
+          .height(8)
+          .borderRadius(4)
+          .backgroundColor(DivPalette.gold)
+          .scale({ x: this.dotScale, y: this.dotScale })
       }
       .width(20)
       .height(20)
@@ -895,6 +972,19 @@ export struct DivRadioRow {
     .width('100%')
     .padding({ left: 20, right: 20, top: 12, bottom: 12 })
     .alignItems(VerticalAlign.Center)
+    .scale({
+      x: !this.reduceMotion && this.pressed ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.pressed ? MotionScale.Press : 1
+    })
+    .opacity(this.reduceMotion && this.pressed ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
     .onClick(() => {
       DivHaptic.selection()
       this.onAction()
@@ -927,6 +1017,11 @@ export struct DivFooterNote {
 
 // ========== 金色水波加载指示（对齐安卓 WaveIcon：观象台金色，自带 reduced motion 静止分支） ==========
 
+/** 水波单程时长（ms）— 对齐安卓 MotionIcons.WaveIcon：tween(1600, EaseInOut) + Reverse */
+const WAVE_ONE_WAY_MS: number = 1600
+/** 水波重绘间隔（ms） */
+const WAVE_TICK_MS: number = 16
+
 @ComponentV2
 export struct DivWaveIcon {
   // 命名注意：不能叫 size（与 CustomComponent 基类的 size() 属性方法冲突导致编译错误），
@@ -939,10 +1034,12 @@ export struct DivWaveIcon {
 
   aboutToAppear(): void {
     if (!divReduceMotion()) {
+      // 相位步进按「单程 1600ms 走完 2π」折算（安卓 Reverse 往返 3200ms，正弦全周期同此值）
+      const step: number = (Math.PI * 2) * WAVE_TICK_MS / (WAVE_ONE_WAY_MS * 2)
       this.timerId = setInterval(() => {
-        this.phase = (this.phase + 0.12) % (Math.PI * 2)
+        this.phase = (this.phase + step) % (Math.PI * 2)
         this.drawWave()
-      }, 16)
+      }, WAVE_TICK_MS)
     }
     this.drawWave()
   }

@@ -10,7 +10,8 @@ import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
 import { LazyListDataSource, PagingController } from "../utils/PagingUtil"
 import { AppConfirmDialog, EmptyState, LoadingState } from "../view/common/AppComponents"
-import { DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { logger } from "../utils/Logger"
 import { safeTopVp } from "../utils/SafeArea"
 import { cancelPickupReminderForOrder, ReminderSyncOrder, syncPickupReminderOrders } from "../utils/ReminderService"
@@ -500,6 +501,8 @@ struct OrderList {
                     left: DesignDimens.PAGE_PADDING,
                     right: DesignDimens.PAGE_PADDING
                   })
+                  // 列表项进出场统一走 ReduceMotion.listItemTransition（对齐安卓 animatedListItem）
+                  .transition(ReduceMotion.listItemTransition())
                   // 键含数据指纹：同月订单集变化后键变触发重建，否则复用旧 OrderMonthCard
                   // 且不重执行 itemGenerator，@Param orders 不同步 → UI 停留旧数据（实测 3 条列表显示 1 条）。
                 }, (entry: OrderListEntry) => entry.key)
@@ -537,7 +540,8 @@ struct OrderList {
         .width("100%")
         .layoutWeight(1)
         .opacity(this.contentOpacity)
-        .animation({ duration: 200, curve: Curve.EaseOut })
+        // 内容进场 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)），reduced 降级 180ms
+        .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
       }
       .width("100%")
       .height("100%")

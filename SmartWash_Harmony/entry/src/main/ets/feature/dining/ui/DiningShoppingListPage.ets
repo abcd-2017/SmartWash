@@ -6,7 +6,8 @@
 
 import { pasteboard } from '@kit.BasicServicesKit'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   DiningOrderDetailVo,
@@ -149,12 +150,18 @@ struct DiningShoppingListPage {
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_MD })
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (this.isError || this.detail === null) {
             Column() {
               EmptyState({ message: DiningText.dining_shopping_list_load_failed })
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else {
             Column() {
               // 标题行（订单标题 + 状态 + 结束时间）
@@ -202,6 +209,9 @@ struct DiningShoppingListPage {
             }
             .width('100%')
             .height('100%')
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           }
         }
         .width('100%')

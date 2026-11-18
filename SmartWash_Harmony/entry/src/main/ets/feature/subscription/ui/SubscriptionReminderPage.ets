@@ -6,7 +6,8 @@
 //
 // 已知坑遵守：条目内容依赖状态 → @ComponentV2 + @Param/@Event。
 
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import { ReminderVo, SubscriptionText, listReminders, markReminderRead } from '../api'
 import {
@@ -217,6 +218,8 @@ struct SubscriptionReminderPage {
                   }
                 })
               }
+              // 列表项进出场（对齐安卓 animatedListItem 弹簧；ArkUI 无项级 placement，淡入淡出近似）
+              .transition(ReduceMotion.listItemTransition())
             }, (reminder: ReminderVo) => `${reminder.reminderId}`)
           }
           .width('100%')
@@ -250,6 +253,8 @@ export struct ReminderRow {
   @Require @Param reminder: ReminderVo
   @Event onRowClick: () => void = () => {
   }
+  // 按压态（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
+  @Local pressed: boolean = false
 
   private reminderType() {
     return subscriptionReminderTypeOf(this.reminder.remindType)
@@ -335,6 +340,16 @@ export struct ReminderRow {
       color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
+    })
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .scale({ x: this.pressed ? MotionScale.Press : 1, y: this.pressed ? MotionScale.Press : 1 })
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
     })
     .onClick(() => {
       if (this.isUnread()) {

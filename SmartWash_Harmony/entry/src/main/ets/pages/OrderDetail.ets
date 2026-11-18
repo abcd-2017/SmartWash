@@ -2,7 +2,8 @@ import { HttpStatusCode } from "@ohos/axios"
 import { BusinessError, pasteboard } from "@kit.BasicServicesKit"
 import vibrator from '@ohos.vibrator'
 import { RouteNames } from "../constant/RouteNames"
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
 import { addReview, getOrderInfo, getOrderReviews } from "../network/api/OrderApi"
 import { BaseResponse } from "../network/BaseResponse"
@@ -574,8 +575,8 @@ struct OrderDetail {
         .justifyContent(FlexAlign.Center)
         .borderRadius(DesignDimens.RADIUS_FULL)
         .border({ width: 1, color: $r('app.color.OUTLINE') })
-        .scale({ x: this.contactPressed ? 0.97 : 1, y: this.contactPressed ? 0.97 : 1 })
-        .animation({ duration: 100, curve: Curve.EaseOut })
+        .scale({ x: this.contactPressed ? MotionScale.Press : 1, y: this.contactPressed ? MotionScale.Press : 1 })
+        .animation(ReduceMotion.spec(MotionTiming.PRESS))
         .onTouch((event: TouchEvent) => {
           if (event.type === TouchType.Down) {
             this.contactPressed = true
@@ -603,8 +604,8 @@ struct OrderDetail {
           .borderRadius(DesignDimens.RADIUS_FULL)
           .backgroundColor($r('app.color.PRIMARY'))
           .margin({ left: 12 })
-          .scale({ x: this.pickupPressed ? 0.97 : 1, y: this.pickupPressed ? 0.97 : 1 })
-          .animation({ duration: 100, curve: Curve.EaseOut })
+          .scale({ x: this.pickupPressed ? MotionScale.Press : 1, y: this.pickupPressed ? MotionScale.Press : 1 })
+          .animation(ReduceMotion.spec(MotionTiming.PRESS))
           .onTouch((event: TouchEvent) => {
             if (event.type === TouchType.Down) {
               this.pickupPressed = true
@@ -752,7 +753,8 @@ struct OrderDetail {
         // 骨架↔内容 Crossfade 近似（对齐安卓 Crossfade 300ms）：加载态整列淡隐 + 禁命中，
         // 骨架层以 TransitionEffect.OPACITY 淡入淡出（§2-I2）
         .opacity(this.isLoading ? 0 : 1)
-        .animation({ duration: 300, curve: Curve.EaseInOut })
+        // 卡片级 300ms 减速（对齐安卓 Crossfade 300ms），reduced 降级 180ms
+        .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
         .enabled(!this.isLoading)
 
         if (this.isLoading) {
@@ -812,7 +814,7 @@ export struct PickupCodeDialog {
   /** 弹窗统一入场（对齐安卓 dialogEnterMotion）：scale 0.92→1 + fade 0→1 弹簧一次性进场 */
   private playEnterMotion(): void {
     setTimeout(() => {
-      animateTo(MotionTiming.DIALOG_ENTER, () => {
+      animateTo(ReduceMotion.spec(MotionTiming.DIALOG_ENTER), () => {
         this.entered = true
       })
     }, 16)

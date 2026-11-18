@@ -6,7 +6,8 @@ import { getObjectParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { BaseResponse } from "../network/BaseResponse"
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { cancelPickupReminderForOrder } from "../utils/ReminderService"
@@ -468,8 +469,8 @@ struct PickupDelivery {
       .justifyContent(FlexAlign.Center)
       .borderRadius(DesignDimens.RADIUS_FULL)
       .border({ width: 1, color: $r('app.color.OUTLINE') })
-      .scale({ x: this.contactPressed ? 0.97 : 1, y: this.contactPressed ? 0.97 : 1 })
-      .animation({ duration: 100, curve: Curve.EaseOut })
+      .scale({ x: this.contactPressed ? MotionScale.Press : 1, y: this.contactPressed ? MotionScale.Press : 1 })
+      .animation(ReduceMotion.spec(MotionTiming.PRESS))
       .onTouch((event: TouchEvent) => {
         if (event.type === TouchType.Down) {
           this.contactPressed = true
@@ -503,8 +504,8 @@ struct PickupDelivery {
       .borderRadius(DesignDimens.RADIUS_FULL)
       .backgroundColor($r('app.color.PRIMARY'))
       .margin({ left: DesignDimens.SPACE_SM })
-      .scale({ x: this.primaryPressed ? 0.97 : 1, y: this.primaryPressed ? 0.97 : 1 })
-      .animation({ duration: 100, curve: Curve.EaseOut })
+      .scale({ x: this.primaryPressed ? MotionScale.Press : 1, y: this.primaryPressed ? MotionScale.Press : 1 })
+      .animation(ReduceMotion.spec(MotionTiming.PRESS))
       .onTouch((event: TouchEvent) => {
         if (event.type === TouchType.Down) {
           this.primaryPressed = true

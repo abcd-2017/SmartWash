@@ -24,7 +24,8 @@ import {
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
-import { DesignDimens } from '../../../../../constant/DesignSystem'
+import { DesignDimens, MotionTiming } from '../../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../../utils/ReduceMotion'
 import { pathStack } from '../../../../../utils/PathStackUtil'
 import { logger } from '../../../../../utils/Logger'
 import { resString } from '../../../../../utils/ResourceString'
@@ -227,7 +228,8 @@ export struct DivHistoryPage {
           .width('100%')
           .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING, top: DesignDimens.SPACE_XXS })
           .opacity(this.isLoading ? 1 : 0)
-          .animation({ duration: 180, curve: Curve.EaseInOut })
+          // 三态交叉淡变 200ms LinearOutSlowIn（对齐安卓 Crossfade(200)），reduced 降 180ms
+          .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
 
           // 空态层（仅在首载完成且筛选结果为空时呈现，加载期不再以空态冒充首帧）
           Column() {
@@ -263,7 +265,8 @@ export struct DivHistoryPage {
           .alignItems(HorizontalAlign.Center)
           .padding({ top: 80 })
           .opacity(!this.isLoading && this.filtered().length === 0 ? 1 : 0)
-          .animation({ duration: 180, curve: Curve.EaseInOut })
+          // 三态交叉淡变 200ms LinearOutSlowIn（对齐安卓 Crossfade(200)），reduced 降 180ms
+          .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
 
           // 列表层（画板：卡间距 8 · 卡高 60，compare-08 #9 勿用全局 CARD_SPACING=16）
           List({ space: 8 }) {
@@ -317,6 +320,9 @@ export struct DivHistoryPage {
                     bottom: DesignDimens.SPACE_SM
                   })
                   .alignItems(VerticalAlign.Center)
+                  // 列表项进出场：ArkUI 无 Modifier.animateItem 等价 API，以透明度过渡 + 弹簧曲线近似
+                  // （对齐安卓 animateItem(placementSpec = motionSpec(defaultSpring())）；reduced 降 180ms）
+                  .transition(TransitionEffect.OPACITY.animation(ReduceMotion.specCurve(MotionTiming.ITEM)))
                 }
               }
             // 键含建档状态指纹：refresh 整表替换对象后键不变会复用旧子组件（同步标记滞后）
@@ -332,7 +338,8 @@ export struct DivHistoryPage {
             bottom: DesignDimens.SPACE_XXS
           })
           .opacity(!this.isLoading && this.filtered().length > 0 ? 1 : 0)
-          .animation({ duration: 180, curve: Curve.EaseInOut })
+          // 三态交叉淡变 200ms LinearOutSlowIn（对齐安卓 Crossfade(200)），reduced 降 180ms
+          .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
         }
         .width('100%')
         .layoutWeight(1)
