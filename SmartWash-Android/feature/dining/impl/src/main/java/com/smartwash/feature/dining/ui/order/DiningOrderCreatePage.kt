@@ -10,6 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -526,10 +527,8 @@ private fun CreateCategoryRail(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            // rail 外卖式配色（用户复核 2026-11-18 定案）：整条灰底（surfaceVariant），
-            // 选中项=白块（surface，与右侧列表卡同色形成整体）+ 深绿字——对齐美团分类栏
-            // 「选中=列表同色、未选中=反转色（灰）」惯例
-            .background(AppColors.colorScheme.surfaceVariant),
+            // rail 底=页面底色令牌 background（色阶语义，非自创）：与页面同底不成灰条
+            .background(AppColors.colorScheme.background),
     ) {
         items(chips, key = { it.id ?: -1L }) { chip ->
             val selected = chip.id == selectedCategoryId
@@ -540,7 +539,8 @@ private fun CreateCategoryRail(
                     // 分类项最小 48dp 热区（规范 §3.2），且让选中底铺满整行高；
                     // 选中=白块（surface，与列表卡同色）——外卖式「选中与列表同色」
                     .heightIn(min = 52.dp)
-                    .background(if (selected) AppColors.colorScheme.surface else Color.Transparent)
+                    // 选中底=primarySoft + onPrimarySoft 字（DESIGN.md 色阶定义的选中语义，不自创）
+                    .background(if (selected) AppColors.colorScheme.primarySoft else Color.Transparent)
                     .pressable(onClick = { onSelect(chip.id) }, debounce = false)
                     .padding(horizontal = AppDimens.spaceXxs, vertical = AppDimens.spaceXs),
                 contentAlignment = Alignment.Center,
@@ -549,7 +549,7 @@ private fun CreateCategoryRail(
                     Text(
                         text = chip.name,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (selected) AppColors.colorScheme.primaryDark
+                        color = if (selected) AppColors.colorScheme.onPrimarySoft
                         else AppColors.colorScheme.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -655,9 +655,9 @@ private fun DishList(
 }
 
 /**
- * 菜品行卡（契约 §5.2）：GroupCard 唯一画法 + 整卡 pressable 切换勾选；56dp 封面缩略
- * （缺失回落浅绿底 + 菜名首字）+ 菜名（已选 primaryDark 强调）+ 食材数·热量副行 + 右侧
- * 48dp 加选按钮（已选态 primary 实底 + 白色对勾）。
+ * 菜品行卡（用户复核 2026-11-18 定案）：GroupCard + 整卡 pressable 切换勾选。
+ * 布局上下分区——内容行（封面 + 菜名单行 + 热量副行）独占整宽在上，加选按钮独立一行
+ * 靠右下：信息不再与按钮横向互挤；菜名单行省略，信息做减法（仅两层）。
  */
 @Composable
 private fun DishRow(
@@ -682,31 +682,19 @@ private fun DishRow(
     } else {
         null
     }
-    // 副行热量前置（TD16）：大字体/窄屏截断时优先保住热量语义（旧序「N 种食材 · ≈107 …」热量必被截）
+    // 副行热量前置（TD16）：大字体/窄屏截断时优先保住热量语义
     val subLine = listOfNotNull(calorieText, ingredientText).joinToString(" · ")
-    // 营养三小项（TD30/精修规范 §一）：蛋白/脂肪/碳水，份口径，tnum + 语义绿——
-    // 与副行（灰）拉开色阶，承担「信息分层」而非同重堆叠（typeset 规则）
-    val macroLine = listOfNotNull(
-        nutrition.proteinG?.let {
-            stringResource(R.string.dining_order_create_macro_protein, macroAmount(it))
-        },
-        nutrition.fatG?.let { stringResource(R.string.dining_order_create_macro_fat, macroAmount(it)) },
-        nutrition.carbsG?.let { stringResource(R.string.dining_order_create_macro_carbs, macroAmount(it)) },
-    ).joinToString(" · ")
-    // 食材摘要（TD30）：前 3 个 + 省略；最浅色阶层（textTertiary），大字体截断时最先让位
-    val ingredientSummary = recipe.safeIngredients.take(3).joinToString("、")
 
     GroupCard(
         modifier = modifier
             .fillMaxWidth()
             .pressable(onClick = onToggle, debounce = false),
-        // 内外边距对称（用户复核 2026-11-18）：原只有横向，行卡上下贴边；
-        // 纵向 spaceSm 与横向 cardPadding 形成「外松内紧」节奏
         contentPadding = PaddingValues(
             horizontal = AppDimens.cardPadding,
             vertical = AppDimens.spaceSm,
         ),
     ) {
+        // 内容行：图 + 文字列（weight 独占整宽，不再与按钮挤）
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -726,8 +714,8 @@ private fun DishRow(
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (selected) AppColors.colorScheme.primaryDark
                     else AppColors.colorScheme.textPrimary,
-                    // 两行上限（TD16）：大字体档单行只剩 3-4 字，两行保住菜名可读性
-                    maxLines = 2,
+                    // 单行省略（用户复核 2026-11-18）：折行断词难看，对齐外卖单行卡
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (subLine.isNotBlank()) {
@@ -739,26 +727,13 @@ private fun DishRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                if (macroLine.isNotBlank()) {
-                    Text(
-                        text = macroLine,
-                        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                        color = AppColors.colorScheme.textGreen,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (ingredientSummary.isNotBlank()) {
-                    Text(
-                        text = if (recipe.safeIngredients.size > 3) "$ingredientSummary…" else ingredientSummary,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.colorScheme.textTertiary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
             }
-            Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+        }
+        // 按钮行：独立一行靠右下，与内容分区（用户复核 2026-11-18「前几行内容、后几行按钮」）
+        Row(
+            horizontalArrangement = Arrangement.End,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             AddDishButton(
                 selected = selected,
                 dishName = recipe.safeName,

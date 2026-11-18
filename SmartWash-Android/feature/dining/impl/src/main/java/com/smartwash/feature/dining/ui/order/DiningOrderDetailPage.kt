@@ -709,11 +709,10 @@ private fun CategoryRail(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // 分类项最小 48dp 热区（规范 §3.2）；L3 外卖式：rail 灰底（容器 surfaceVariant），
-                    // 选中=白块 surface + primaryDark 字（2026-11-18 与创建页统一）
+                    // 分类项最小 48dp 热区（规范 §3.2）；选中底=primarySoft（色阶语义，与创建页统一）
                     .heightIn(min = 48.dp)
                     .background(
-                        if (selected) AppColors.colorScheme.surface
+                        if (selected) AppColors.colorScheme.primarySoft
                         else Color.Transparent,
                     )
                     .pressable(onClick = { onSelect(section.categoryId) }, debounce = false)
@@ -723,7 +722,7 @@ private fun CategoryRail(
                 Text(
                     text = section.categoryName,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (selected) AppColors.colorScheme.primaryDark
+                    color = if (selected) AppColors.colorScheme.onPrimarySoft
                     else AppColors.colorScheme.textSecondary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

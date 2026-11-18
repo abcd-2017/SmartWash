@@ -434,10 +434,10 @@ private fun OrderCard(
         modifier = modifier
             .fillMaxWidth()
             .pressable(onClick = onClick),
-        // L1 卡片内边距：横 cardPadding / 纵 spaceSm（原 GroupCard 默认四边 20dp 纵向偏大）
+        // L1 卡片内边距：横 cardPadding / 纵 spaceXs（用户复核收底：纵 12 仍显空，收到 8）
         contentPadding = PaddingValues(
             horizontal = AppDimens.cardPadding,
-            vertical = AppDimens.spaceSm,
+            vertical = AppDimens.spaceXs,
         ),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -464,7 +464,7 @@ private fun OrderCard(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+        Spacer(modifier = Modifier.height(AppDimens.spaceXs))
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (order.displayTime.isNotBlank()) {
                 Text(
