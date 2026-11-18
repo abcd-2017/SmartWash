@@ -7,25 +7,31 @@ import { DiningOrderStatus, formatDiningAmount } from '../DiningLogic'
 import { DiningText } from '../DiningText'
 
 /**
- * 点单订单状态标签（进行中 = primary 浅底主色字 / 已结束 = surfaceVariant 底次级字）。
- * 对齐清氧小胶囊画法（radiusFull + caption 档）。
+ * 点单订单状态标签（草稿 = secondary 档 / 进行中 = primary 浅底主色字 /
+ * 已结束 = surfaceVariant 底次级字）。对齐清氧小胶囊画法（radiusFull + caption 档）。
  */
 @ComponentV2
 export struct DiningStatusTag {
   @Param @Require status: DiningOrderStatus = DiningOrderStatus.FINISHED
 
   build() {
-    Text(this.status === DiningOrderStatus.ONGOING
-      ? DiningText.dining_order_status_ongoing
-      : DiningText.dining_order_status_finished)
+    Text(this.status === DiningOrderStatus.DRAFT
+      ? DiningText.dining_order_status_draft
+      : (this.status === DiningOrderStatus.ONGOING
+        ? DiningText.dining_order_status_ongoing
+        : DiningText.dining_order_status_finished))
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(this.status === DiningOrderStatus.ONGOING
-        ? $r('app.color.PRIMARY')
-        : $r('app.color.TEXT_SECONDARY'))
-      .backgroundColor(this.status === DiningOrderStatus.ONGOING
-        ? $r('app.color.PRIMARY_LIGHT')
-        : $r('app.color.SURFACE_VARIANT'))
+      .fontColor(this.status === DiningOrderStatus.DRAFT
+        ? $r('app.color.ON_SECONDARY_CONTAINER')
+        : (this.status === DiningOrderStatus.ONGOING
+          ? $r('app.color.PRIMARY')
+          : $r('app.color.TEXT_SECONDARY')))
+      .backgroundColor(this.status === DiningOrderStatus.DRAFT
+        ? $r('app.color.SECONDARY_CONTAINER')
+        : (this.status === DiningOrderStatus.ONGOING
+          ? $r('app.color.PRIMARY_LIGHT')
+          : $r('app.color.SURFACE_VARIANT')))
       .borderRadius(DesignDimens.RADIUS_FULL)
       .padding({
         left: DesignDimens.SPACE_SM,
