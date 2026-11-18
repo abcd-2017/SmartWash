@@ -25,6 +25,9 @@ public interface OrdersMapper extends BaseMapper<Orders> {
 
     Page<ShowOrderVo> getOrderList(Page<ShowOrderVo> page, String status, Long userId);
 
+    /** 首页「进行中」列表：支付后到取件前的全部在途状态（已收取为中途状态非终态） */
+    Page<ShowOrderVo> getInFlightOrderList(Page<ShowOrderVo> page, @Param("statuses") java.util.Collection<String> statuses, @Param("userId") Long userId);
+
     /**
      * 条件更新订单状态（取件/寄件完成等用户侧流转的并发闸门）：仅当当前状态等于 expectStatus 时流转，
      * 同时清空 pickup_code 与 locker_id。禁止无状态条件的覆写——否则已退款订单可被并发取件覆写为已完成。

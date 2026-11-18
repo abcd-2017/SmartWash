@@ -397,10 +397,12 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         return list(queryWrapper);
     }
 
+    /** 首页「进行中」口径 = 复用 PAID_IN_FLIGHT_STATUSES（支付后到取件前的在途状态，已收取为中途状态非终态）。
+     * 此前仅查清洗中，已收取/已烘干/配送中/待取件的订单从首页消失（e2e-2026-11-18 Android 报告 P2） */
     @Override
     public List<ShowOrderVo> getWashingOrderShowVo(LoginUser loginUser, int size) {
         Page<ShowOrderVo> page = new Page<>(1, size);
-        return ordersMapper.getOrderList(page, OrderStatus.WASHING.getStatus(), loginUser.getUserId()).getRecords();
+        return ordersMapper.getInFlightOrderList(page, PAID_IN_FLIGHT_STATUSES, loginUser.getUserId()).getRecords();
     }
 
     /**
