@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -297,11 +298,12 @@ private fun OrderListContent(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    // 卡片式：左右页边距 24dp 由容器统一提供（对齐洗衣域订单列表）
+                    // 卡片式：左右页边距 24dp 由容器统一提供（对齐洗衣域订单列表）；
+                    // 底部 = FAB 56dp + 20dp 呼吸，与左右页边距同量级（过大时末卡下方空洞）
                     start = AppDimens.pagePadding,
                     end = AppDimens.pagePadding,
                     top = AppDimens.spaceXs,
-                    bottom = navBarsBottom + FAB_SIZE + AppDimens.spaceLg * 2,
+                    bottom = navBarsBottom + FAB_SIZE + AppDimens.spaceLg,
                 ),
                 verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
             ) {
@@ -438,8 +440,11 @@ private fun LazyListScope.orderSection(
 /**
  * 订单卡（卡片式，对齐洗衣域订单列表画法）：GroupCard 唯一卡片画法（白底 + 1dp outline +
  * 软阴影 + radiusLg，默认 cardPadding 20dp 内边距），左右 24dp 页边距由列表 contentPadding
- * 统一提供。内容：状态色点 + 标题 + 发起角标 + 已选菜品/食材摘要 + 时间行 +「再来一单」
- * 文字操作（带 fromOrderId 进创建页整份复用源单菜单；整卡 pressable）。
+ * 统一提供。
+ *
+ * 内容三层（外卖订单卡惯例，标题即主锚点）：标题行（16sp Medium，右侧状态徽标 + 发起角标）→
+ * 摘要行（12sp 次要灰，菜数 + 食材）→ 时间行（12sp 更浅灰 tnum +「再来一单」文字操作，
+ * 带 fromOrderId 进创建页整份复用源单菜单）。整卡 pressable。
  */
 @Composable
 private fun OrderCard(
@@ -455,18 +460,18 @@ private fun OrderCard(
             .pressable(onClick = onClick),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusDot(order.status)
-            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             val untitled = order.title.isBlank()
             Text(
-                // 空标题（草稿未命名）显示占位锚点（次要色示占位语义），避免状态行只剩「草稿」
+                // 空标题（草稿未命名）显示占位锚点（次要色示占位语义），避免只剩状态字无标题
                 text = if (untitled) stringResource(R.string.dining_order_title_placeholder) else order.title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = if (untitled) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
+            Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+            StatusDot(order.status)
             if (order.isCreator && showCreatorBadge) {
                 Spacer(modifier = Modifier.width(AppDimens.spaceXs))
                 Text(
@@ -493,19 +498,19 @@ private fun OrderCard(
                 } else {
                     stringResource(R.string.dining_order_list_menu_count_format, order.menuCount)
                 },
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = AppColors.colorScheme.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (order.displayTime.isNotBlank()) {
                 Text(
                     text = order.displayTime,
                     style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                    color = AppColors.colorScheme.textSecondary,
+                    color = AppColors.colorScheme.textTertiary,
                     modifier = Modifier.weight(1f),
                 )
             } else {

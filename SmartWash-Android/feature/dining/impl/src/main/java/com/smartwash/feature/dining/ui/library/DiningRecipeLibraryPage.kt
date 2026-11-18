@@ -1,6 +1,7 @@
 package com.smartwash.feature.dining.ui.library
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,11 +51,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -62,6 +67,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
@@ -124,6 +131,19 @@ fun DiningRecipeLibraryPage(
     val searchByIngredient by viewModel.searchByIngredient.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.load() }
+
+    // 返回本页（详情/收藏往返）静默同步收藏态：详情页收藏后列表卡心形需跟随，
+    // 失败保留旧列表（对齐订单列表页 ON_RESUME 刷新先例，修收藏态跨页不同步）
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.load(silent = true)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // 搜索态切换为全库结果列表（契约 §5.1）：分类栏隐藏，结果单列铺满
     val isSearching = keyword.isNotBlank()
@@ -433,13 +453,14 @@ internal fun RecipeCoverCard(
                         .aspectRatio(COVER_ASPECT)
                         .background(AppColors.colorScheme.iconContainerGreen),
                 ) {
-                    Text(
-                        text = recipe.name.firstOrNull()?.toString() ?: "",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = AppColors.colorScheme.primaryDark,
+                    // 无封面占位：品牌碗筷线稿居中（D24，替代左下首字）
+                    Image(
+                        painter = painterResource(R.drawable.dining_recipe_placeholder),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(AppDimens.spaceMd),
+                            .fillMaxSize()
+                            .padding(AppDimens.spaceLg),
                     )
                 }
             }
@@ -611,16 +632,20 @@ private fun RecipeThumb(coverUrl: String, name: String, modifier: Modifier = Mod
             .background(AppColors.colorScheme.iconContainerGreen),
         contentAlignment = Alignment.Center,
     ) {
-        if (coverUrl.isNotBlank() && !coverUrl.contains("/dining/covers/")) {
+        if (coverUrl.isNotBlank() && !coverUrl.contains("dining/covers/category_")) {
             SmartWashAsyncImage(
                 url = coverUrl,
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            Text(
-                text = name.firstOrNull()?.toString() ?: "",
-                style = MaterialTheme.typography.titleMedium,
-                color = AppColors.colorScheme.primaryDark,
+            // 无封面占位：品牌碗筷线稿（D24，替代首字——首字在小图上可读性差且无品牌感）
+            Image(
+                painter = painterResource(R.drawable.dining_recipe_placeholder),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
             )
         }
     }

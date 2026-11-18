@@ -4,6 +4,7 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
@@ -39,8 +40,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -200,27 +203,42 @@ private fun DetailContent(
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
-                Text(
-                    text = vo.name.firstOrNull()?.toString() ?: "",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = AppColors.colorScheme.primaryDark,
+                // 无封面占位：品牌碗筷线稿居中（D24，替代首字大字）
+                Image(
+                    painter = painterResource(R.drawable.dining_recipe_placeholder),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(AppDimens.spaceXxl),
                 )
             }
         }
         Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
-        Text(
-            text = vo.name,
-            style = AppTextStyles.CardTitle,
-            color = AppColors.colorScheme.textPrimary,
-        )
-        if (vo.categoryName.isNotBlank()) {
-            Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+        // 菜名 + 分类徽标同行（菜名即头部锚点；分类收为 primarySoft 徽标，与订单卡
+        // 「发起」角标同语言——裸灰字与上下卡片视觉落差大，D22 修突兀感）
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = vo.categoryName,
-                style = MaterialTheme.typography.labelLarge,
-                color = AppColors.colorScheme.textSecondary,
+                text = vo.name,
+                style = AppTextStyles.CardTitle,
+                color = AppColors.colorScheme.textPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
+            if (vo.categoryName.isNotBlank()) {
+                Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+                Text(
+                    text = vo.categoryName,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.colorScheme.primaryDark,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(AppDimens.radiusFull))
+                        .background(AppColors.colorScheme.primarySoft)
+                        .padding(horizontal = AppDimens.spaceXs, vertical = 2.dp),
+                )
+            }
         }
         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
@@ -284,22 +302,24 @@ private fun DetailContent(
                         is StepLine.Main -> {
                             mainStepNo++
                             Row {
+                                // 固定 24dp 序号列：内容折行后悬挂缩进与首字对齐（裸 Row 折行回行首）
                                 Text(
                                     // 步骤序号开 tabular numbers（规范 §2.2 硬规则）
                                     text = "$mainStepNo.",
                                     style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                                     color = AppColors.colorScheme.primaryDark,
+                                    modifier = Modifier.width(24.dp),
                                 )
-                                Spacer(modifier = Modifier.width(AppDimens.spaceXs))
                                 Text(
                                     text = line.text,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = AppColors.colorScheme.textPrimary,
+                                    modifier = Modifier.weight(1f),
                                 )
                             }
                         }
 
-                        is StepLine.Sub -> Row(modifier = Modifier.padding(start = AppDimens.spaceLg)) {
+                        is StepLine.Sub -> Row(modifier = Modifier.padding(start = 24.dp)) {
                             Text(
                                 text = line.text,
                                 style = MaterialTheme.typography.bodySmall,

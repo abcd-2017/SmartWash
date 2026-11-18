@@ -112,6 +112,8 @@
     <string name="dining_order_load_more_failed">加载更多失败，点击重试</string>
     <string name="dining_order_creator_badge">发起</string>
     <string name="dining_order_title_placeholder">未命名点单</string>
+    <string name="dining_nutrition_warning_summary_format">营养预估超标 %1$d 项</string>
+    <string name="dining_allergen_warning_summary_format">含忌口 %1$d 项</string>
     <string name="dining_order_list_menu_count_format">%1$d 道菜</string>
     <string name="dining_order_list_summary_format">%1$d 道菜 · %2$s</string>
     <string name="dining_order_action_reuse">再来一单</string>

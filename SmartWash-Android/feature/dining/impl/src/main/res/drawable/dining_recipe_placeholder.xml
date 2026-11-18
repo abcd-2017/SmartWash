@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    菜谱默认占位图（D24）：无真实封面时替代「菜名首字」占位。
+    设计：清氧品牌深绿 #1E8C5C 碗筷线稿，居中构图（碗口 + 碗身 + 碗足 + 斜搭筷子），
+    底色由消费方继续铺 iconContainerGreen 浅绿语义底，保持四端视觉一致。
+    Compose painterResource 不解析主题属性，故线稿色为品牌色硬编码。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 碗口 -->
+    <path
+        android:pathData="M25,60 L83,60"
+        android:strokeColor="#1E8C5C"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+
+    <!-- 碗身（半圆收底） -->
+    <path
+        android:pathData="M29,60 C29,76 40,86 54,86 C68,86 79,76 79,60"
+        android:strokeColor="#1E8C5C"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- 碗足 -->
+    <path
+        android:pathData="M45,86 L45,92 L63,92 L63,86"
+        android:strokeColor="#1E8C5C"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+
+    <!-- 筷子（斜搭碗口） -->
+    <path
+        android:pathData="M60,26 L86,54"
+        android:strokeColor="#1E8C5C"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M71,22 L88,50"
+        android:strokeColor="#1E8C5C"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+
+    <!-- 蒸汽两缕 -->
+    <path
+        android:pathData="M36,36 C36,31 40,31 40,26"
+        android:strokeColor="#1E8C5C"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M46,32 C46,27 50,27 50,22"
+        android:strokeColor="#1E8C5C"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+</vector>

@@ -83,11 +83,15 @@ class DiningRecipeLibraryViewModel @Inject constructor(
     /** 关键词搜索防抖任务（新输入取消上一次） */
     private var keywordJob: Job? = null
 
-    /** 首载/重试/下拉刷新（防重：加载中直接忽略；分类条与列表并行独立拉取） */
-    fun load() {
+    /**
+     * 首载/重试/下拉刷新（防重：加载中直接忽略；分类条与列表并行独立拉取）。
+     * [silent] 用于返回本页的静默刷新（详情页收藏后列表态需同步）：不动 Loading 态
+     * （不触发骨架/转圈），失败保留旧列表原状。
+     */
+    fun load(silent: Boolean = false) {
         if (_listState.value is RequestState.Loading) return
         viewModelScope.launch {
-            _listState.value = RequestState.Loading
+            if (!silent) _listState.value = RequestState.Loading
             try {
                 fetchFirstPage()
             } catch (e: CancellationException) {
@@ -95,7 +99,7 @@ class DiningRecipeLibraryViewModel @Inject constructor(
                 throw e
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "DiningRecipeLibraryViewModel.load: ${e.message}", e)
-                _listState.value = RequestState.Error(e.resId, e.message)
+                if (!silent) _listState.value = RequestState.Error(e.resId, e.message)
             }
         }
         loadCategories()

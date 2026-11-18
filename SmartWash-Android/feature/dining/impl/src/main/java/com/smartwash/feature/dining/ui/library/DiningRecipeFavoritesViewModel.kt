@@ -49,17 +49,18 @@ class DiningRecipeFavoritesViewModel @Inject constructor(
     private val fetchMutex = Mutex()
 
     /** 首载/重试/下拉刷新（防重：加载中直接忽略） */
-    fun load() {
+    /** 首载/重试/下拉刷新；[silent] 用于返回本页静默同步收藏态（不动 Loading 态） */
+    fun load(silent: Boolean = false) {
         if (_listState.value is RequestState.Loading) return
         viewModelScope.launch {
-            _listState.value = RequestState.Loading
+            if (!silent) _listState.value = RequestState.Loading
             try {
                 fetchFirstPage()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "DiningRecipeFavoritesViewModel.load: ${e.message}", e)
-                _listState.value = RequestState.Error(e.resId, e.message)
+                if (!silent) _listState.value = RequestState.Error(e.resId, e.message)
             }
         }
     }
