@@ -458,9 +458,15 @@ internal fun RecipeCoverCard(
                         painter = painterResource(R.drawable.dining_recipe_placeholder),
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
+                        // 右侧多让位收藏按钮（48dp 圆 + 边距），线稿居左下不与其相压
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(AppDimens.spaceLg),
+                            .padding(
+                                start = AppDimens.spaceLg,
+                                top = AppDimens.spaceLg,
+                                end = AppDimens.spaceXxl,
+                                bottom = AppDimens.spaceLg,
+                            ),
                     )
                 }
             }
