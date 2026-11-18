@@ -8,6 +8,7 @@ import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.dining.R
+import com.smartwash.feature.dining.api.model.AddDiningOrderDishRequest
 import com.smartwash.feature.dining.api.model.AddDiningOrderItemRequest
 import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
 import com.smartwash.feature.dining.api.model.DiningOrderDetailVo
@@ -16,6 +17,7 @@ import com.smartwash.feature.dining.logic.DiningAllergenGuard
 import com.smartwash.feature.dining.logic.DiningCartReplayOp
 import com.smartwash.feature.dining.logic.DiningCartState
 import com.smartwash.feature.dining.logic.DiningCartSyncCoordinator
+import com.smartwash.feature.dining.logic.DiningDraftMenuEditor
 import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningOrderPageDetail
 import com.smartwash.feature.dining.logic.DiningSyncLifecycle
@@ -24,6 +26,7 @@ import com.smartwash.feature.dining.logic.DiningSyncLifecycle.Event
 import com.smartwash.feature.dining.logic.DiningVersionConflictException
 import com.smartwash.feature.dining.logic.resolveMyUserId
 import com.smartwash.feature.dining.logic.toOrderPageDetail
+import com.smartwash.feature.dining.logic.withoutDish
 import com.smartwash.feature.dining.repository.DiningRepository
 import com.smartwash.feature.dining.sync.DiningOrderSyncChannel
 import com.smartwash.feature.user.api.UserApi
@@ -97,6 +100,9 @@ class DiningOrderDetailViewModel @Inject constructor(
     /** 共享购物车同步状态机（纯 Kotlin） */
     private val coordinator = DiningCartSyncCoordinator()
 
+    /** 草稿菜单编辑状态机（纯 Kotlin；DRAFT 态加/移除菜，version 乐观锁） */
+    private val draftMenu = DiningDraftMenuEditor()
+
     /** 订阅生命周期状态机（纯 Kotlin） */
     private val syncLifecycle = DiningSyncLifecycle()
 
@@ -163,6 +169,10 @@ class DiningOrderDetailViewModel @Inject constructor(
                 _dishNutrition.value = catalog.nutrition
                 loadPreferenceSafe()
                 coordinator.onInitialSnapshot(detailVo.safeVersion, myItemsOf(detailVo, myId))
+                draftMenu.onInitialSnapshot(
+                    detailVo.safeVersion,
+                    detailVo.safeMenu.map { it.safeRecipeId }.filter { it > 0L }.toSet(),
+                )
                 _detail.value = detailVo.toOrderPageDetail(
                     myUserId = myId,
                     categoryNames = categoryNames,
@@ -220,6 +230,19 @@ class DiningOrderDetailViewModel @Inject constructor(
         coordinator.onNote(recipeId, note)
         publishCart()
         requestWrite()
+    }
+
+    /**
+     * 草稿移除一道菜（仅 DRAFT 态、全部成员可移除任意菜）：本地即时移除 + 异步写 dishes 接口。
+     * 写操作携带已知 version；409 冲突拉取最新后重放差分；失败回滚本地并提示。
+     */
+    fun removeDish(recipeId: Long) {
+        if (recipeId <= 0L) return
+        val current = _detail.value ?: return
+        if (!current.isDraft) return
+        _detail.value = current.withoutDish(recipeId)
+        draftMenu.onToggle(recipeId)
+        requestDraftMenuWrite()
     }
 
     /**
@@ -299,6 +322,10 @@ class DiningOrderDetailViewModel @Inject constructor(
     private fun applySnapshot(vo: DiningOrderDetailVo) {
         if (vo.safeVersion < coordinator.serverVersion) return
         val replayOps = coordinator.onSnapshot(vo.safeVersion, myItemsOf(vo, myUserId))
+        draftMenu.onServerSnapshot(
+            vo.safeVersion,
+            vo.safeMenu.map { it.safeRecipeId }.filter { it > 0L }.toSet(),
+        )
         _detail.value = vo.toOrderPageDetail(
             myUserId = myUserId,
             categoryNames = categoryNames,
@@ -383,6 +410,61 @@ class DiningOrderDetailViewModel @Inject constructor(
                     version = version,
                 ),
             )
+        }
+    }
+
+    // ==================== 草稿菜单写循环（DRAFT 加/移除菜） ====================
+
+    /** 触发草稿菜单写循环（复用写串行锁，与选菜写互斥保证 version 基准最新） */
+    private fun requestDraftMenuWrite() {
+        if (orderId <= 0L) return
+        viewModelScope.launch {
+            if (!writeMutex.tryLock()) return@launch
+            try {
+                flushDraftMenuWrites()
+            } finally {
+                writeMutex.unlock()
+            }
+        }
+    }
+
+    /**
+     * 串行冲刷草稿菜单差分：409 拉取最新后重放；失败回滚该菜本地态、提示并拉取最新同步 UI。
+     * 本地 UI 已即时移除（[withoutDish]），服务端真相由 [refreshFromServer] 回灌。
+     */
+    private suspend fun flushDraftMenuWrites() {
+        while (currentCoroutineContext().isActive) {
+            val op = draftMenu.pendingOp() ?: return
+            try {
+                if (op.add) {
+                    diningRepository.addOrderDish(
+                        orderId,
+                        AddDiningOrderDishRequest(recipeId = op.recipeId, version = draftMenu.serverVersion),
+                    )
+                } else {
+                    diningRepository.removeOrderDish(orderId, op.recipeId, draftMenu.serverVersion)
+                }
+                draftMenu.onWriteSuccess(op)
+                AppLogger.info(TAG, "草稿菜单写入成功 orderId=$orderId recipeId=${op.recipeId} add=${op.add}")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: DiningVersionConflictException) {
+                AppLogger.info(TAG, "草稿菜单版本冲突，拉取最新后重放 orderId=$orderId recipeId=${op.recipeId}")
+                if (!refreshFromServer()) return
+            } catch (e: NetworkException) {
+                AppLogger.error(TAG, "草稿菜单写入失败 orderId=$orderId recipeId=${op.recipeId}: ${e.message}", e)
+                draftMenu.onWriteFailure(op)
+                _message.value = e.message
+                    ?: application.getString(R.string.dining_order_detail_write_failed)
+                refreshFromServer()
+                return
+            } catch (e: Exception) {
+                AppLogger.error(TAG, "草稿菜单写入未知失败 orderId=$orderId recipeId=${op.recipeId}", e)
+                draftMenu.onWriteFailure(op)
+                _message.value = application.getString(R.string.dining_order_detail_write_failed)
+                refreshFromServer()
+                return
+            }
         }
     }
 

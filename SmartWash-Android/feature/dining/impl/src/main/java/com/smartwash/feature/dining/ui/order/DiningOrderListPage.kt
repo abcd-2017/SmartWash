@@ -470,20 +470,24 @@ private fun OrderCard(
             } else {
                 Spacer(modifier = Modifier.weight(1f))
             }
-            AppButton(
-                text = stringResource(R.string.dining_order_action_reuse),
-                onClick = onReuse,
-                variant = AppButtonVariant.TEXT,
-                small = true,
-            )
+            // 草稿不提供「再来一单」：点卡片进详情继续编辑（复用源单语义仅对已定稿单有意义）
+            if (order.status != DiningOrderStatus.DRAFT) {
+                AppButton(
+                    text = stringResource(R.string.dining_order_action_reuse),
+                    onClick = onReuse,
+                    variant = AppButtonVariant.TEXT,
+                    small = true,
+                )
+            }
         }
     }
 }
 
-/** 状态色点 + 状态小字（§3.5：进行中 #D98A26 橙 / 已结束 success 绿） */
+/** 状态色点 + 状态小字（§3.5：草稿 secondary 灰 / 进行中 #D98A26 橙 / 已结束 success 绿） */
 @Composable
 private fun StatusDot(status: DiningOrderStatus, modifier: Modifier = Modifier) {
     val (dotColor, label) = when (status) {
+        DiningOrderStatus.DRAFT -> MaterialTheme.colorScheme.secondary to stringResource(R.string.dining_order_status_draft)
         DiningOrderStatus.ONGOING -> AppColors.colorScheme.ongoing to stringResource(R.string.dining_order_status_ongoing)
         DiningOrderStatus.FINISHED -> AppColors.colorScheme.success to stringResource(R.string.dining_order_status_finished)
     }

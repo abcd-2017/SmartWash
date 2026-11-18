@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -247,6 +249,21 @@ fun DiningOrderDetailPage(
         )
 
         when {
+            // 草稿态：菜单区可加/移除菜（加菜跳创建页草稿编辑态），不可勾选/结束
+            pageDetail != null && pageDetail.isDraft -> DraftOrderContent(
+                detail = pageDetail,
+                sections = sections,
+                listState = listState,
+                activeCategoryId = activeCategoryId,
+                onAddDish = {
+                    navController.navigate(DiningRoute.OrderCreate(orderId = pageDetail.id))
+                },
+                onRemoveDish = viewModel::removeDish,
+                onViewRecipe = { recipeId ->
+                    navController.navigate(DiningRoute.RecipeDetail(recipeId))
+                },
+            )
+
             // 详情在（成功/刷新/失败留痕）——渲染内容；失败重试显式触发
             pageDetail != null -> OrderDetailContent(
                 detail = pageDetail,
@@ -380,6 +397,239 @@ private fun OrderDetailContent(
             onFinish = onFinish,
             onViewShoppingList = onViewShoppingList,
         )
+    }
+}
+
+/**
+ * 草稿态内容：参与者区 + 草稿提示条 + 左分类栏 + 菜单列表（行内移除）+ 底部「添加菜品」。
+ * 菜单即草稿本单菜单，全部成员可移除；加菜经创建页草稿编辑态（复用其选菜交互），
+ * 定稿（publish）入口在创建页。
+ */
+@Composable
+private fun DraftOrderContent(
+    detail: DiningOrderPageDetail,
+    sections: List<DiningMenuSection>,
+    listState: LazyListState,
+    activeCategoryId: Long?,
+    onAddDish: () -> Unit,
+    onRemoveDish: (Long) -> Unit,
+    onViewRecipe: (Long) -> Unit,
+) {
+    val menuCount = remember(sections) { sections.sumOf { it.dishes.size } }
+    val link = remember(sections) { DiningMenuLink(sections) }
+    val scope = rememberCoroutineScope()
+    Column(modifier = Modifier.fillMaxSize()) {
+        ParticipantsBar(detail.members)
+        DraftHintBar()
+        Row(modifier = Modifier.weight(1f)) {
+            CategoryRail(
+                sections = sections,
+                activeCategoryId = activeCategoryId,
+                onSelect = { categoryId ->
+                    scope.launch { listState.scrollToItem(link.scrollTargetIndex(categoryId)) }
+                },
+                modifier = Modifier.width(RAIL_WIDTH),
+            )
+            DraftMenuList(
+                sections = sections,
+                listState = listState,
+                onRemoveDish = onRemoveDish,
+                onViewRecipe = onViewRecipe,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        DraftBottomBar(menuCount = menuCount, onAddDish = onAddDish)
+    }
+}
+
+/** 草稿提示条：secondary 档「草稿」标签 + 编辑中说明（灰态，不抢锚点） */
+@Composable
+private fun DraftHintBar() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(AppDimens.radiusFull))
+                .background(MaterialTheme.colorScheme.secondaryContainer)
+                .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.space2xs),
+        ) {
+            Text(
+                text = stringResource(R.string.dining_order_detail_draft_badge),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+        }
+        Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+        Text(
+            text = stringResource(R.string.dining_order_detail_draft_hint),
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.colorScheme.textSecondary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+/** 草稿菜单列表：分类头 + 菜品行（行内移除，无勾选/备注交互） */
+@Composable
+private fun DraftMenuList(
+    sections: List<DiningMenuSection>,
+    listState: LazyListState,
+    onRemoveDish: (Long) -> Unit,
+    onViewRecipe: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (sections.isEmpty()) {
+        EmptyState(
+            icon = Icons.Default.Restaurant,
+            message = stringResource(R.string.dining_order_detail_draft_empty_menu),
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = AppDimens.pagePadding),
+        )
+        return
+    }
+    LazyColumn(
+        state = listState,
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = AppDimens.spaceLg),
+    ) {
+        sections.forEach { section ->
+            item(key = "section_${section.categoryId ?: 0L}") {
+                Text(
+                    text = section.categoryName,
+                    style = AppTextStyles.SectionTitle,
+                    color = AppColors.colorScheme.textSecondary,
+                    modifier = Modifier.padding(
+                        top = AppDimens.spaceSm,
+                        bottom = AppDimens.spaceXs,
+                        start = AppDimens.spaceSm,
+                    ),
+                )
+            }
+            items(section.dishes, key = { it.recipeId }) { dish ->
+                DraftDishRow(
+                    dish = dish,
+                    onRemove = { onRemoveDish(dish.recipeId) },
+                    onViewRecipe = { onViewRecipe(dish.recipeId) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 草稿菜品行：封面 + 菜名 + 份热量徽标 + 做法入口 + 移除入口（独立热区）。
+ * 整行不触发勾选（草稿态无选菜语义）。
+ */
+@Composable
+private fun DraftDishRow(
+    dish: DiningMenuItem,
+    onRemove: () -> Unit,
+    onViewRecipe: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = AppDimens.spaceSm, horizontal = AppDimens.spaceSm),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(DISH_COVER_SIZE)
+                .clip(RoundedCornerShape(AppDimens.radiusMd))
+                .background(AppColors.colorScheme.surfaceVariant),
+        ) {
+            if (dish.coverUrl.isNotBlank()) {
+                SmartWashAsyncImage(
+                    url = dish.coverUrl,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = dish.name,
+                style = MaterialTheme.typography.bodyLarge,
+                color = AppColors.colorScheme.textPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            DiningCalorieBadge(calories = dish.calories)
+        }
+        Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(AppDimens.radiusFull))
+                .background(AppColors.colorScheme.surfaceVariant)
+                .pressable(onClick = onViewRecipe, debounce = false),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                contentDescription = stringResource(R.string.dining_order_detail_recipe_action),
+                tint = AppColors.colorScheme.textSecondary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(AppDimens.radiusFull))
+                .background(AppColors.colorScheme.surfaceVariant)
+                .pressable(onClick = onRemove, debounce = false),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Clear,
+                contentDescription = stringResource(R.string.dining_order_detail_remove_dish, dish.name),
+                tint = AppColors.colorScheme.dangerInk,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
+}
+
+/** 草稿底部栏：菜单计数 + 「添加菜品」主行动（跳创建页草稿编辑态） */
+@Composable
+private fun DraftBottomBar(menuCount: Int, onAddDish: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppColors.colorScheme.surface),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.5.dp)
+                .background(AppColors.colorScheme.divider),
+        )
+        Column(modifier = Modifier.navigationBarsPadding()) {
+            Text(
+                text = stringResource(R.string.dining_order_detail_draft_menu_count_format, menuCount),
+                style = AppTextStyles.AmountMedium,
+                color = AppColors.colorScheme.textPrimary,
+                modifier = Modifier.padding(
+                    horizontal = AppDimens.pagePadding,
+                    vertical = AppDimens.spaceXs,
+                ),
+            )
+            AppButton(
+                text = stringResource(R.string.dining_order_detail_add_dish),
+                onClick = onAddDish,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXxs),
+            )
+        }
     }
 }
 

@@ -53,10 +53,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -145,9 +147,32 @@ fun DiningOrderCreatePage(
     val calorieTarget by viewModel.calorieTarget.collectAsState()
     val userAllergens by viewModel.userAllergens.collectAsState()
     val allergenById by viewModel.allergenById.collectAsState()
+    val inviteLink by viewModel.inviteLink.collectAsState()
+    val draftMessage by viewModel.draftMessage.collectAsState()
 
     // 首载（栈上重组不重放；失败重试显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
+
+    // 邀请链接：复制到剪贴板 + Toast（组合期禁副作用，收进 effect）
+    val clipboard = LocalClipboardManager.current
+    LaunchedEffect(inviteLink) {
+        val link = inviteLink ?: return@LaunchedEffect
+        clipboard.setText(AnnotatedString(link))
+        Toast.makeText(
+            context,
+            context.getString(R.string.dining_order_invite_copy_done),
+            Toast.LENGTH_SHORT,
+        ).show()
+        viewModel.consumeInviteLink()
+    }
+
+    // 草稿写操作失败提示（409 未收敛/网络失败；组合期禁副作用）
+    LaunchedEffect(draftMessage) {
+        draftMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.consumeDraftMessage()
+        }
+    }
 
     // 清空已选确认弹窗（破坏性操作二次确认）
     var showClearConfirm by remember { mutableStateOf(false) }
@@ -247,6 +272,17 @@ fun DiningOrderCreatePage(
                 PageHeader(
                     title = stringResource(R.string.dining_order_create_title),
                     onBack = { navController.navigateUp() },
+                    actions = {
+                        // 草稿协同：邀请入口常显（复用模式无草稿语义，隐藏）——无 orderId 时先惰性创建，
+                        // 复制加入深链到剪贴板（见 inviteLink 一次性事件）
+                        if (!viewModel.isReuseMode) {
+                            AppButton(
+                                text = stringResource(R.string.dining_order_create_invite),
+                                onClick = viewModel::requestInviteLink,
+                                variant = AppButtonVariant.TEXT,
+                            )
+                        }
+                    },
                 )
 
                 Crossfade(

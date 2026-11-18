@@ -328,6 +328,7 @@ private fun JoinQrContent(
 @Composable
 private fun StatusDotSmall(status: DiningOrderStatus) {
     val (dotColor, label) = when (status) {
+        DiningOrderStatus.DRAFT -> MaterialTheme.colorScheme.secondary to stringResource(R.string.dining_order_status_draft)
         DiningOrderStatus.ONGOING -> AppColors.colorScheme.ongoing to stringResource(R.string.dining_order_status_ongoing)
         DiningOrderStatus.FINISHED -> AppColors.colorScheme.success to stringResource(R.string.dining_order_status_finished)
     }
