@@ -13,7 +13,7 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     # 以下占位符均无默认值：DB_HOST / DB_PORT / DB_USERNAME / DB_PASSWORD 必须由环境变量注入
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/smart_wash?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&autoReconnect=true&allowMultiQueries=true&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&useSSL=true
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/smart_wash?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&autoReconnect=true&allowMultiQueries=true&serverTimezone=GMT%2B8&connectionTimeZone=GMT%2B8&forceConnectionTimeZoneToSession=true&rewriteBatchedStatements=true&useSSL=true
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
