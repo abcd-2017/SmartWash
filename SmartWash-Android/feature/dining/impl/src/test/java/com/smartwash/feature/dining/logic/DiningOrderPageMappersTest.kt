@@ -181,6 +181,41 @@ class DiningOrderPageMappersTest {
         assertEquals("""{"ingredientNames":["西红柿","鸡蛋","葱"]}""", page.shoppingList)
     }
 
+    @Test
+    fun `DRAFT 状态映射为草稿态（菜单可编辑、不可勾选）`() {
+        val vo = detail().copy(status = "DRAFT", version = 3L)
+        val page = vo.toOrderPageDetail(9L, emptyMap(), emptyMap(), "未分类")
+        assertEquals(DiningOrderStatus.DRAFT, page.status)
+        assertTrue(page.isDraft)
+        assertFalse(page.isOngoing)
+    }
+
+    @Test
+    fun `withoutDish 移除命中菜并丢弃空分类段`() {
+        val vo = detail(
+            status = "DRAFT",
+            menu = listOf(
+                menu(10L, "番茄炒蛋", 1L),
+                menu(11L, "凉拌黄瓜", 1L),
+                menu(12L, "紫菜汤", 2L),
+            ),
+        )
+        val page = vo.toOrderPageDetail(9L, mapOf(1L to "家常菜", 2L to "汤羹"), emptyMap(), "未分类")
+        val after = page.withoutDish(10L)
+        assertEquals(listOf("家常菜", "汤羹"), after.sections.map { it.categoryName })
+        assertEquals(listOf(11L, 12L), after.sections.flatMap { it.dishes }.map { it.recipeId })
+
+        val afterEmpty = page.withoutDish(12L)
+        assertEquals(listOf("家常菜"), afterEmpty.sections.map { it.categoryName })
+    }
+
+    @Test
+    fun `withoutDish 未命中返回等价模型`() {
+        val page = detail(status = "DRAFT", menu = listOf(menu(10L, "番茄炒蛋", 1L)))
+            .toOrderPageDetail(9L, emptyMap(), emptyMap(), "未分类")
+        assertEquals(page, page.withoutDish(999L))
+    }
+
     // ==================== 辅助 ====================
 
     private fun menu(recipeId: Long, name: String, categoryId: Long?) =
@@ -191,12 +226,14 @@ class DiningOrderPageMappersTest {
         items: List<DiningOrderDetailVo.OrderItem> = emptyList(),
         members: List<DiningOrderDetailVo.OrderMember> = emptyList(),
         creatorUserId: Long? = 9L,
+        status: String = "ONGOING",
+        version: Long = 3L,
     ) = DiningOrderDetailVo(
         id = 1L,
-        version = 3L,
+        version = version,
         unchanged = false,
         title = "周五晚火锅",
-        status = "ONGOING",
+        status = status,
         creatorUserId = creatorUserId,
         menu = menu,
         items = items,

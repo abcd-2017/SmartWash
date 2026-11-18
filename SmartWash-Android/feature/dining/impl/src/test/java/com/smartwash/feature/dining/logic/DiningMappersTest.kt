@@ -131,6 +131,13 @@ class DiningMappersTest {
     }
 
     @Test
+    fun `草稿状态映射为 DRAFT 供列表打草稿标签`() {
+        val item = DiningOrderListVo(id = 12L, title = "待定", status = "DRAFT", isCreator = true).toOrderListItem()
+        assertEquals(DiningOrderStatus.DRAFT, item.status)
+        assertTrue(item.isCreator)
+    }
+
+    @Test
     fun `订单时间 ISO 串格式化为年月日时分`() {
         assertEquals(
             "2025-01-05 09:07",

@@ -33,6 +33,14 @@ class DiningJoinEntryTest {
     }
 
     @Test
+    fun `非成员且草稿态展示确认加入（草稿可加入一起选菜）`() {
+        assertEquals(
+            DiningJoinEntryDecision.CONFIRM_JOIN,
+            DiningJoinEntry.decide(brief(joined = false, status = DiningOrderStatus.DRAFT)),
+        )
+    }
+
+    @Test
     fun `非成员且已结束不引导加入`() {
         assertEquals(
             DiningJoinEntryDecision.ORDER_FINISHED,
