@@ -284,7 +284,7 @@ fun StarMapPage(
 }
 
 /**
- * 顶栏（暗色沉浸式自定义页头，布局与 `PageHeader` 一致：48dp 返回热区 + 22sp 标题）：
+ * 顶栏（暗色沉浸式自定义页头，布局与 `PageHeader` 一致：48dp 返回热区 + 18sp 标题）：
  * 返回箭头 + 标题 + 夜视模式开关。
  */
 @Composable

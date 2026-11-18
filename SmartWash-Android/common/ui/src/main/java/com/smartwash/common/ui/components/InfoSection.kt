@@ -31,7 +31,7 @@ fun InfoSection(
     icon: ImageVector?,
     iconContainerColor: Color? = null,
     iconTint: Color? = null,
-    // 画板实测：寄存柜信息/订单信息标题 18/600（SectionTitle 档）；
+    // 画板实测：寄存柜信息/订单信息标题 16/600（SectionTitle 档，2026-11-18 由 18 收敛）；
     // 寄件「操作指引」卡为 14/500，传 typography.titleSmall 覆盖
     titleStyle: TextStyle = AppTextStyles.SectionTitle,
     content: @Composable () -> Unit,

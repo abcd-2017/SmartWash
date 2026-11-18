@@ -50,9 +50,9 @@
     "typographyMeta": {
       "display": { "displayName": "数据大字 DataLarge", "purpose": "余额、应付金额、取件码——每屏至多一处锚点级大字，强制 tnum。" },
       "headline": { "displayName": "结果大字", "purpose": "结果页大标题；数据大字窄屏降级档（36 → 28 → 22）。" },
-      "title-large": { "displayName": "页头/根页标题", "purpose": "内页页头 PageHeader、根页大标题 RootTitle、hero 状态锚点字 StatusLarge。" },
-      "title": { "displayName": "区块/卡片标题", "purpose": "区块标题、卡片标题、金额中字 AmountMedium（+tnum）。" },
-      "body-large": { "displayName": "主要正文", "purpose": "主要正文与表单输入正文最小档（输入禁用 14sp 及以下）。" },
+      "title-large": { "displayName": "根页/状态大字", "purpose": "根页大标题 RootTitle、hero 状态锚点字 StatusLarge。" },
+      "title": { "displayName": "内页页头/金额中字", "purpose": "内页页头 PageHeader、金额中字 AmountMedium（+tnum）。" },
+      "body-large": { "displayName": "主要正文", "purpose": "主要正文与表单输入正文最小档（输入禁用 14sp 及以下）；卡片标题 / 区块标题用本档 600 字重（16/24/600）。" },
       "body": { "displayName": "列表正文", "purpose": "列表行主文案（特许 500）、次要正文。" },
       "caption": { "displayName": "辅助文字", "purpose": "辅助说明、时间戳、占位符。" },
       "caption-strong": { "displayName": "角标", "purpose": "tab、角标、底部导航标签。" },
@@ -112,7 +112,7 @@
       "refersTo": "card",
       "description": "全应用唯一卡片画法：纯白底 + 1dp 描边 + 着地影 + 16dp 圆角 + 20dp 内边距。灰底卡、裸白卡、0.5dp 描边卡均为违规。",
       "html": "<div class=\"ds-card\"><div class=\"ds-card__title\">订单信息</div><div class=\"ds-card__body\">标准洗 × 1</div></div>",
-      "css": ".ds-card { background: #fff; border: 1px solid #E6E9E6; border-radius: 16px; box-shadow: 0 2px 12px rgba(20,40,30,.05); padding: 20px; } .ds-card__title { font-size: 18px; font-weight: 600; color: #1C1C1E; } .ds-card__body { margin-top: 8px; font-size: 14px; color: #6B6E73; font-variant-numeric: tabular-nums; }"
+      "css": ".ds-card { background: #fff; border: 1px solid #E6E9E6; border-radius: 16px; box-shadow: 0 2px 12px rgba(20,40,30,.05); padding: 20px; } .ds-card__title { font-size: 16px; font-weight: 600; color: #1C1C1E; } .ds-card__body { margin-top: 8px; font-size: 14px; color: #6B6E73; font-variant-numeric: tabular-nums; }"
     },
     {
       "name": "Icon Box",
@@ -168,7 +168,7 @@
       "任何动效必须有 LocalReduceMotion 降级分支，无降级不合入"
     ],
     "rules": [
-      { "name": "一屏一锚点规则 (One Anchor Rule)", "body": "每屏最多一个「重」元素——36sp 数据大字、状态大字、hero 卡，三者至多留一。锚点超过一个等于没有锚点；标题不参与大字竞争（根页 ≤22sp、内页 ≤22sp）。", "section": "colors" },
+      { "name": "一屏一锚点规则 (One Anchor Rule)", "body": "每屏最多一个「重」元素——36sp 数据大字、状态大字、hero 卡，三者至多留一。锚点超过一个等于没有锚点；标题不参与大字竞争（根页 ≤22sp、内页页头 18sp）。", "section": "colors" },
       { "name": "品牌绿是空气规则 (Green-is-Air Rule)", "body": "绿色必须出现在至少三处非功能位置（hero 渐变、区块标题装饰、选中底、图标容器、数据强调），它在界面里是「空气中的氧」，不是按钮的专利。大面积纯绿底只属于 hero 与主 CTA。", "section": "colors" },
       { "name": "六色容器规则", "body": "图标容器底色按语义从六色浅底中取（洗护绿、物流蓝、待办橙、异常粉、账户青、观象台紫），禁止随机取色、禁止裸图标直接着色。", "section": "colors" },
       { "name": "数字等宽规则 (tnum Rule)", "body": "金额、数量、取件码、订单号一律 fontFeatureSettings = \"tnum\"——数字变化时左右跳即违规。取件码等关键数字优先用 display/tnum 大字。", "section": "typography" },

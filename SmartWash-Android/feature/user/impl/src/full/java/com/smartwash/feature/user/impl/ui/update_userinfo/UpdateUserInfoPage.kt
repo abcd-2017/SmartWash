@@ -214,7 +214,8 @@ fun UpdateUserInfoPage(
                         }
                         Text(
                             text = stringResource(R.string.complete_info),
-                            style = MaterialTheme.typography.titleLarge,
+                            // 页面标题跟随内页页头档 18/24/600（2026-11-18 统一，原 22sp 作废）
+                            style = AppTextStyles.PageHeader,
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         Text(

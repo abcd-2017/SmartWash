@@ -503,7 +503,7 @@ private fun GameGridSkeleton(modifier: Modifier = Modifier) {
                             SkeletonBlock(
                                 modifier = Modifier
                                     .fillMaxWidth(0.65f)
-                                    // 真实标题 CardTitle 18sp/24sp 行高
+                                    // 真实标题 CardTitle 16sp/24sp 行高
                                     .height(AppDimens.spaceXl),
                                 shape = RoundedCornerShape(AppDimens.radiusSmall),
                             )

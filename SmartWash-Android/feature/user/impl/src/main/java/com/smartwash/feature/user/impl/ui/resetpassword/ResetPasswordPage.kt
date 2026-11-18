@@ -225,7 +225,7 @@ fun ResetPasswordPage(
                 Text(
                     text = stringResource(R.string.reset_password),
                     modifier = Modifier.weight(1f),
-                    // 页头 22/600 = PageHeader 档（与注册页同模板）
+                    // 页头 18/24/600 = PageHeader 档（与注册页同模板）
                     style = AppTextStyles.PageHeader,
                     color = Color.White,
                     textAlign = TextAlign.Center

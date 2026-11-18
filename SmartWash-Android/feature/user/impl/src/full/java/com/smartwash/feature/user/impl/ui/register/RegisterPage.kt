@@ -234,7 +234,7 @@ fun RegisterPage(
                 Text(
                     text = stringResource(R.string.register),
                     modifier = Modifier.weight(1f),
-                    // 注册画板页头实测 22/600（= PageHeader 档，与清氧内页页头裁定一致）
+                    // 页头标题走 PageHeader 档 18/24/600（2026-11-18 起内页页头统一 18sp）
                     style = AppTextStyles.PageHeader,
                     color = Color.White,
                     textAlign = TextAlign.Center

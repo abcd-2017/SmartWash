@@ -12,6 +12,12 @@ import androidx.compose.ui.unit.sp
  *   bodyLarge 16/24/400 · body 14/20/400 · caption 12/16/400 · captionStrong 12/16/500
  * weight 只允许 400/500/600/700；金额与数字槽位启用 tnum。
  *
+ * 语义分配（2026-11-18 对齐餐饮内页画板后调整）：
+ *   - 内页页头 PageHeader = title 档 18/24/600（居中）
+ *   - 卡片标题 CardTitle / 区块标题 SectionTitle = bodyLarge 档 16/24/600（与正文同档靠字重区分）
+ *   - 根页大标题 RootTitle / 状态大字 StatusLarge 仍取 titleLarge 档 22/28/600
+ *   - 金额中字 AmountMedium 保持 title 档 18/24/600 + tnum
+ *
  * AppTextStyles 保留旧命名（DataLarge/RootTitle 等）作为语义别名，值映射到上述 8 档
  * （规范 §1.4：「字阶命名 DataLarge/RootTitle 等，以 8 档为准，旧名作别名映射」），
  * 既有调用点无需改动。
@@ -60,29 +66,27 @@ object AppTextStyles {
         letterSpacing = 0.sp,
     )
 
-    /** 二级页页头（= font.titleLarge 22/28/600）。
-     *  v0.4 覆写表曾把本别名映射到 title 18，但 2026-10-31 逐板实测 7 块内页画板
-     *  （设置/订单详情/订单列表/充值记录/优惠券/取件/寄件/AI助手）页头均为 22/600/28，
-     *  别名行系文档笔误，按画板裁定映射到 titleLarge。 */
+    /** 二级页页头（= font.title 18/24/600）。2026-11-18 起内页页头改为居中 18sp；
+     *  原 2026-10-31 画板实测 22sp 的勘误作废。 */
     val PageHeader = TextStyle(
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp,
-    )
-
-    /** 卡片标题（= font.title 18/24/600，规范 §5 卡片标题） */
-    val CardTitle = TextStyle(
         fontWeight = FontWeight.SemiBold,
         fontSize = 18.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.sp,
     )
 
-    /** 区块标题 — 页面内分区标题（迁移 17→18 = font.title） */
+    /** 卡片标题（= font.bodyLarge 档 16/24/600，与正文同档靠字重区分） */
+    val CardTitle = TextStyle(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.sp,
+    )
+
+    /** 区块标题 — 页面内分区标题（= font.bodyLarge 档 16/24/600，与正文同档靠字重区分） */
     val SectionTitle = TextStyle(
         fontWeight = FontWeight.SemiBold,
-        fontSize = 18.sp,
+        fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.sp,
     )
@@ -136,14 +140,15 @@ val AppTypography = Typography(
         letterSpacing = 0.sp
     ),
 
-    // font.titleLarge 22/28/600（页面标题）
+    // font.titleLarge 22/28/600（根页大标题 / hero 状态大字；不再作内页页头）
     titleLarge = TextStyle(
         fontWeight = FontWeight.SemiBold,
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
-    // font.title 18/24/600（区块标题、卡片标题、按钮）
+    // font.title 18/24/600 槽位（行动 / 强调文字；卡片/区块标题不占本槽位，
+    // 走 AppTextStyles.CardTitle / SectionTitle = bodyLarge 档 16/24/600）
     titleMedium = TextStyle(
         fontWeight = FontWeight.SemiBold,
         fontSize = 18.sp,

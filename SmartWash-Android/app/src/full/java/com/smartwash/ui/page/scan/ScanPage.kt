@@ -71,6 +71,7 @@ import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.pressable
 import java.util.concurrent.Executors
 
@@ -198,7 +199,7 @@ fun ScanPage(
         }
         Text(
             text = stringResource(R.string.scan_title),
-            style = MaterialTheme.typography.titleLarge,
+            style = AppTextStyles.PageHeader,
             color = Color.White,
             modifier = Modifier
                 .align(Alignment.TopCenter)
