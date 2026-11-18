@@ -7,6 +7,7 @@ import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.utils.model.HttpStatusCode
 import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.dining.api.DiningServiceApi
+import com.smartwash.feature.dining.api.model.AddDiningOrderDishRequest
 import com.smartwash.feature.dining.api.model.AddDiningOrderItemRequest
 import com.smartwash.feature.dining.api.model.AddDiningRecipeRequest
 import com.smartwash.feature.dining.api.model.CreateDiningOrderRequest
@@ -19,6 +20,7 @@ import com.smartwash.feature.dining.api.model.DiningOrderFinishVo
 import com.smartwash.feature.dining.api.model.DiningOrderListVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
 import com.smartwash.feature.dining.api.model.JoinDiningOrderRequest
+import com.smartwash.feature.dining.api.model.PublishDiningOrderRequest
 import com.smartwash.feature.dining.api.model.UpdateDiningOrderItemRequest
 import com.smartwash.feature.dining.logic.DiningOrderBusinessCode
 import com.smartwash.feature.dining.logic.DiningVersionConflictException
@@ -119,13 +121,49 @@ class DiningRepository @Inject constructor(
                 throw NetworkException("封面上传结果为空", R.string.error_network_fail)
             }
 
-    /** 创建点单订单（返回 orderId + joinToken 供拼二维码；token 是端上唯一凭证来源，data 缺失按失败上抛） */
+    /**
+     * 创建点单草稿（返回 orderId + joinToken；草稿期即可邀请，data 缺失按失败上抛）。
+     * title/recipeIds 均可空——端上惰性创建，标题/菜单在草稿期随时补充。
+     */
     suspend fun createOrder(request: CreateDiningOrderRequest): DiningOrderCreatedVo =
         diningServiceApi.createOrder(request).data
             ?: run {
                 AppLogger.warn(TAG, "createOrder 响应 data 为空，按失败上抛")
                 throw NetworkException("创建订单结果为空", R.string.error_network_fail)
             }
+
+    /**
+     * 发起点单（DRAFT→ONGOING；仅发起者；标题必填 + 菜单非空；version 乐观锁）。
+     * 信封 409 转译为 [DiningVersionConflictException]（端上刷新后重试），其余非 200 转译为
+     * NetworkException；成功 data 为 null 不视为失败。
+     */
+    suspend fun publishOrder(orderId: Long, request: PublishDiningOrderRequest) {
+        diningServiceApi.publishOrder(orderId, request).ensureDiningSuccess()
+    }
+
+    /**
+     * 草稿加菜（仅 DRAFT 态、全部成员；幂等；version 乐观锁）。
+     * 409 转译为 [DiningVersionConflictException]，其余非 200 转译为 NetworkException。
+     */
+    suspend fun addOrderDish(orderId: Long, request: AddDiningOrderDishRequest) {
+        diningServiceApi.addOrderDish(orderId, request).ensureDiningSuccess()
+    }
+
+    /**
+     * 草稿移除菜（仅 DRAFT 态、全部成员可移除任意菜；幂等；version 乐观锁）。
+     * 409 转译为 [DiningVersionConflictException]，其余非 200 转译为 NetworkException。
+     */
+    suspend fun removeOrderDish(orderId: Long, recipeId: Long, version: Long) {
+        diningServiceApi.removeOrderDish(orderId, recipeId, version).ensureDiningSuccess()
+    }
+
+    /**
+     * 放弃草稿（仅发起者 + 仅 DRAFT；物理删订单与子表）。
+     * 非发起者/状态异常由后端业务失败转译上抛；成功 data 为 null 不视为失败。
+     */
+    suspend fun discardOrder(orderId: Long) {
+        diningServiceApi.discardOrder(orderId).ensureDiningSuccess()
+    }
 
     /** 我的订单分页（我发起的 + 我参与的，创建时间倒序；data 缺失按失败上抛） */
     suspend fun getMyOrders(page: Int, size: Int): PageData<DiningOrderListVo> =

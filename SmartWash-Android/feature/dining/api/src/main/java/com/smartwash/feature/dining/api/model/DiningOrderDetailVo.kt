@@ -26,7 +26,7 @@ data class DiningOrderDetailVo(
     /** 轮询结果标志：true=与已知 version 一致（轻量响应，其余字段 null）；null 按 false 兜底 */
     val unchanged: Boolean? = null,
     val title: String? = null,
-    /** 订单状态：ONGOING / FINISHED */
+    /** 订单状态：DRAFT / ONGOING / FINISHED（端上按状态切草稿编辑态/定稿勾选态/只读态） */
     val status: String? = null,
     val creatorUserId: Long? = null,
     /** 本单菜单（发起者编排的选菜范围，按加入菜单顺序；端上按分类组织左侧分类栏） */

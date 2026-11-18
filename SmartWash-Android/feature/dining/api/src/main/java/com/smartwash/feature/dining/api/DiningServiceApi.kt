@@ -3,6 +3,7 @@ package com.smartwash.feature.dining.api
 import com.smartwash.common.network.annotation.RequireAuthorization
 import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.utils.model.PageData
+import com.smartwash.feature.dining.api.model.AddDiningOrderDishRequest
 import com.smartwash.feature.dining.api.model.AddDiningRecipeRequest
 import com.smartwash.feature.dining.api.model.CreateDiningOrderRequest
 import com.smartwash.feature.dining.api.model.DiningCategoryVo
@@ -15,6 +16,7 @@ import com.smartwash.feature.dining.api.model.DiningOrderFinishVo
 import com.smartwash.feature.dining.api.model.DiningOrderListVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
 import com.smartwash.feature.dining.api.model.JoinDiningOrderRequest
+import com.smartwash.feature.dining.api.model.PublishDiningOrderRequest
 import com.smartwash.feature.dining.api.model.UpdateDiningOrderItemRequest
 import okhttp3.MultipartBody
 import retrofit2.http.Body
@@ -108,10 +110,54 @@ interface DiningServiceApi {
     @RequireAuthorization
     suspend fun uploadCover(@Part file: MultipartBody.Part): ApiResult<String>
 
-    /** 创建点单订单（title + recipeIds，或 fromOrderId 复用历史菜单；返回 orderId + joinToken 供拼二维码） */
+    /**
+     * 创建点单草稿（title/recipeIds 均可空，或 fromOrderId 复用历史菜单；返回 orderId + joinToken）。
+     * 草稿协同点单：本接口创建 DRAFT（标题/菜单可空），草稿期即可邀请；publish 定稿后才 ONGOING。
+     */
     @POST("/web/auth/dining/orders/create")
     @RequireAuthorization
     suspend fun createOrder(@retrofit2.http.Body request: CreateDiningOrderRequest): ApiResult<DiningOrderCreatedVo>
+
+    /**
+     * 发起点单（DRAFT→ONGOING；仅发起者；标题必填 + 菜单非空；version 乐观锁，冲突返回业务码 409）。
+     * [request] 携带草稿页原位编辑后的标题与客户端已知 version。
+     */
+    @POST("/web/auth/dining/orders/{id}/publish")
+    @RequireAuthorization
+    suspend fun publishOrder(
+        @Path("id") id: Long,
+        @Body request: PublishDiningOrderRequest,
+    ): ApiResult<Void>
+
+    /**
+     * 草稿加菜（recipeId；仅 DRAFT 态、全部成员可加；幂等；version 乐观锁，冲突返回 409）。
+     */
+    @POST("/web/auth/dining/orders/{id}/dishes")
+    @RequireAuthorization
+    suspend fun addOrderDish(
+        @Path("id") id: Long,
+        @Body request: AddDiningOrderDishRequest,
+    ): ApiResult<Void>
+
+    /**
+     * 草稿移除菜（仅 DRAFT 态、全部成员可移除任意菜；幂等；version 乐观锁，冲突返回 409）。
+     * [version] 为客户端已知订单版本（query 参数，与后端 @RequestParam 契约一致）。
+     */
+    @DELETE("/web/auth/dining/orders/{id}/dishes/{recipeId}")
+    @RequireAuthorization
+    suspend fun removeOrderDish(
+        @Path("id") id: Long,
+        @Path("recipeId") recipeId: Long,
+        @Query("version") version: Long,
+    ): ApiResult<Void>
+
+    /**
+     * 放弃草稿（仅发起者 + 仅 DRAFT 态；物理删订单与菜单/成员/选菜子行）。
+     * 用于清空堆积的空草稿；已定稿/已结束由后端拒绝。
+     */
+    @DELETE("/web/auth/dining/orders/{id}")
+    @RequireAuthorization
+    suspend fun discardOrder(@Path("id") id: Long): ApiResult<Void>
 
     /** 我的订单分页（我发起的 + 我参与的，按创建时间倒序，带 isCreator 标记；page 从 1 起） */
     @GET("/web/auth/dining/orders/my")

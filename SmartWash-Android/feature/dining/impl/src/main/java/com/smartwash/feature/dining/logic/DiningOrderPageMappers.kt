@@ -23,6 +23,8 @@ data class DiningOrderPageDetail(
     val status: DiningOrderStatus,
     /** 服务端 version（写接口乐观并发闸门；本地写失败留待 10 号票重放） */
     val version: Long,
+    /** 是否草稿态（菜单可加/移除，不可勾选/结束） */
+    val isDraft: Boolean,
     /** 是否进行中（可勾选/改备注） */
     val isOngoing: Boolean,
     /** 当前用户是否发起者（结束点单入口可见性） */
@@ -170,6 +172,7 @@ fun DiningOrderDetailVo.toOrderPageDetail(
         title = safeTitle,
         status = diningOrderStatusOf(safeStatus),
         version = safeVersion,
+        isDraft = diningOrderStatusOf(safeStatus) == DiningOrderStatus.DRAFT,
         isOngoing = diningOrderStatusOf(safeStatus) == DiningOrderStatus.ONGOING,
         isCreator = myUserId != null && safeCreatorUserId == myUserId,
         joinToken = safeJoinToken,
@@ -186,3 +189,14 @@ fun DiningOrderDetailVo.toOrderPageDetail(
         },
     )
 }
+
+/**
+ * 草稿移除一道菜后的页面模型（纯函数，详情页 DRAFT 菜单区本地即时移除）：
+ * 移除命中菜，并丢弃因移除而变空的分类段（左栏与右列表顺序保持一致）。
+ * 未命中返回原模型。
+ */
+fun DiningOrderPageDetail.withoutDish(recipeId: Long): DiningOrderPageDetail = copy(
+    sections = sections
+        .map { section -> section.copy(dishes = section.dishes.filterNot { it.recipeId == recipeId }) }
+        .filterNot { it.dishes.isEmpty() },
+)

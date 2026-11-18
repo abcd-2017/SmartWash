@@ -49,15 +49,20 @@ sealed interface DiningRoute : SmartWashRoute {
     /**
      * 创建订单页（标题 + 按分类分组勾选公共库菜品，提交成功进分享视图）。
      *
+     * 草稿协同点单：常规进入为「惰性创建」——首次加菜或点邀请时才落 DRAFT 草稿；
+     * [orderId] 非空时进入「草稿编辑模式」——加载既有 DRAFT（标题/菜单/version/凭证），
+     * 加菜/移除走 dishes 接口、CTA 为 publish 定稿（详情页 DRAFT 菜单区「添加菜品」入口跳转）。
+     *
      * 复用历史菜单入口（13 号票）：[fromOrderId] 非空时进入复用模式——本单菜单按该历史订单复制
      * （后端 fromOrderId 契约），页面只填标题、菜品区只读并回显源单菜单；[sourceTitle] 为入口顺带
-     * 下发的源单标题（首帧提示文案，缺失时经详情接口自取）。二者为 query 参数（SavedStateHandle 同源读取）。
+     * 下发的源单标题（首帧提示文案，缺失时经详情接口自取）。均为 query 参数（SavedStateHandle 同源读取）。
      */
     @Serializable
     @SerialName("DiningOrderCreate")
     data class OrderCreate(
         val fromOrderId: Long? = null,
         val sourceTitle: String = "",
+        val orderId: Long? = null,
     ) : DiningRoute
 
     /**

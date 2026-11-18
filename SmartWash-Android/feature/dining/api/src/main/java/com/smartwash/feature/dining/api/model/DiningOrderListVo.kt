@@ -15,7 +15,7 @@ data class DiningOrderListVo(
     /** 订单 ID（列表 key / 分享视图路由参数） */
     val id: Long? = null,
     val title: String? = null,
-    /** 订单状态：ONGOING / FINISHED（白名单外脏数据由映射层保守降级） */
+    /** 订单状态：DRAFT / ONGOING / FINISHED（草稿项带标签；白名单外脏数据由映射层保守降级） */
     val status: String? = null,
     val isCreator: Boolean? = null,
     val creatorUserId: Long? = null,
