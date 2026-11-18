@@ -255,8 +255,7 @@ private fun ShareContent(
                             Toast.LENGTH_SHORT,
                         ).show()
                     },
-                    // 降重（TD35 分享页方向）：锚点=二维码卡，操作走文字按钮行
-                    variant = AppButtonVariant.TEXT,
+                    variant = AppButtonVariant.SECONDARY,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 )
                 // 重置凭证入口（发起者限定：joinUrl 非空即 token 可得=发起者；参与者本就走降级提示）

@@ -527,8 +527,8 @@ private fun CreateCategoryRail(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            // rail 底=页面底色令牌 background（色阶语义，非自创）：与页面同底不成灰条
-            .background(AppColors.colorScheme.background),
+            // rail 灰底（surfaceVariant）+ 选中白块——用户原话：「选中=列表同色（白），未选中反转色（灰）」
+            .background(AppColors.colorScheme.surfaceVariant),
     ) {
         items(chips, key = { it.id ?: -1L }) { chip ->
             val selected = chip.id == selectedCategoryId
@@ -539,8 +539,8 @@ private fun CreateCategoryRail(
                     // 分类项最小 48dp 热区（规范 §3.2），且让选中底铺满整行高；
                     // 选中=白块（surface，与列表卡同色）——外卖式「选中与列表同色」
                     .heightIn(min = 52.dp)
-                    // 选中底=primarySoft + onPrimarySoft 字（DESIGN.md 色阶定义的选中语义，不自创）
-                    .background(if (selected) AppColors.colorScheme.primarySoft else Color.Transparent)
+                    // 选中=白块 surface + primaryDark 字（与列表卡同色，用户原话）
+                    .background(if (selected) AppColors.colorScheme.surface else Color.Transparent)
                     .pressable(onClick = { onSelect(chip.id) }, debounce = false)
                     .padding(horizontal = AppDimens.spaceXxs, vertical = AppDimens.spaceXs),
                 contentAlignment = Alignment.Center,
