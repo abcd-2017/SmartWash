@@ -1,7 +1,7 @@
 // 吃啥（dining）域用户端接口（契约源：后端 dining/controller/WebDiningCategoryController /
 // WebDiningRecipeController / WebDiningOrderController / WebDiningOrderItemController，需 ROLE_USER）
 //
-// 17 个端点与 Android feature/dining/api/DiningServiceApi.kt 逐接口对齐：
+// 24 个端点与 Android feature/dining/api/DiningServiceApi.kt 逐接口对齐：
 //   分类   GET  /web/auth/dining/categories/all
 //   菜谱   GET  /web/auth/dining/recipes/all          （上架分页：categoryId/keyword 筛选）
 //          GET  /web/auth/dining/recipes/{id}         （详情，仅上架）
@@ -28,8 +28,9 @@
 //
 // 乐观并发契约：写请求携带客户端已知 version；与服务端不一致返回业务码 409
 //（message「订单已被他人更新，请刷新后重试」），端上拉取最新详情后重放/回滚。
-// 鸿蒙端消费约定（本实现简化，对齐任务口径）：写失败（含 409）一律回滚本地意图并全量刷新
-//（knownVersion=null），不做逐操作重放。
+// 鸿蒙端消费约定：
+// - 选菜/备注/取消：写失败（含 409）回滚本地意图并全量刷新（knownVersion=null），不逐操作重放；
+// - 草稿菜单（加菜/移除/publish）：经 DiningDraftMenuEditor 净差写，409 拉取最新后重放未决差分。
 //
 // BASE_URL 不在本文件出现：请求走 httpUtil（baseURL 由 Axios.ets 构建期注入），
 // 二维码内容构造见 feature/dining/DiningLogic.ets 的 buildDiningJoinUrl。
