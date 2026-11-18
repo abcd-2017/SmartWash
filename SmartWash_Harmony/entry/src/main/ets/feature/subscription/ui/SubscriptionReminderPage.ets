@@ -39,16 +39,16 @@ export function SubscriptionReminderBuilder() {
   SubscriptionReminderPage()
 }
 
-@Component
+@ComponentV2
 struct SubscriptionReminderPage {
-  @State unreadOnly: boolean = true
-  @State items: Array<ReminderVo> = []
-  @State isLoading: boolean = true
-  @State isError: boolean = false
+  @Local unreadOnly: boolean = true
+  @Local items: Array<ReminderVo> = []
+  @Local isLoading: boolean = true
+  @Local isError: boolean = false
   // 切换筛选/重拉时的非空加载指示（audit-16 #5：旧列表不得静默滞留冒充新结果）
-  @State isRefreshing: boolean = false
+  @Local isRefreshing: boolean = false
   // 正在标记已读的条目 id（防重复点击）
-  @State markingId: number = -1
+  @Local markingId: number = -1
 
   async aboutToAppear(): Promise<void> {
     logger.debug(TAG, '提醒列表页挂载，开始首刷')

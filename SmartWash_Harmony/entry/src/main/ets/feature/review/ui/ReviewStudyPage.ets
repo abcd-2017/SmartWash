@@ -55,20 +55,20 @@ export function ReviewStudyBuilder() {
   ReviewStudyPage()
 }
 
-@Component
+@ComponentV2
 struct ReviewStudyPage {
   /** 剩余队列（评分成功即移除，第一张为当前卡） */
-  @State cards: Array<ReviewCardVo> = []
+  @Local cards: Array<ReviewCardVo> = []
   /** 本轮总张数（进度分母） */
-  @State total: number = 0
-  @State isLoadingFirst: boolean = true
-  @State isFirstError: boolean = false
+  @Local total: number = 0
+  @Local isLoadingFirst: boolean = true
+  @Local isFirstError: boolean = false
   /** 是否已翻面（正面问题 → 背面答案 + 评分按钮） */
-  @State flipped: boolean = false
+  @Local flipped: boolean = false
   /** 评分提交态（loading 整排禁用；错误 toast 后保留当前卡） */
-  @State answerLoading: boolean = false
+  @Local answerLoading: boolean = false
   /** materialId → 所属资料标题（缺失显示「未归资料」） */
-  @State materialTitles: Map<number, string> = new Map<number, string>()
+  @Local materialTitles: Map<number, string> = new Map<number, string>()
   /** 路由入参：起始卡片 id（-1 = 从队首开始） */
   private startCardId: number = -1
   /** 当前卡展示时刻——评分时折算 durationMs（契约 AnswerFrom.durationMs，可空） */

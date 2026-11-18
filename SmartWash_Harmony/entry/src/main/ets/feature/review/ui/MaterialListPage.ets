@@ -2,7 +2,7 @@
 //
 // 资料列表（分页 + 加载更多）+ 粘贴文本建资料（内联表单）+ 每份资料的问答卡列表（展开查看）。
 // 契约 v1 未提供改卡/删卡/删资料端点（后端 ReviewWebController 亦无），故卡片仅支持新增与查看。
-// 任一写入成功（建资料/建卡）后 bump 复习 tick，队列页 onShown/@Watch 消费重拉。
+// 任一写入成功（建资料/建卡）后 bump 复习 tick，队列页 onShown 手动比对 AppStorage 消费重拉。
 //
 // 已知坑遵守：内容依赖状态的卡片用 @ComponentV2 + @Param/@Event；输入态由表单自身持有；
 // 列表骨架/错误/空态齐备（规范 §3.6）。
@@ -52,29 +52,28 @@ export function MaterialListBuilder() {
   MaterialListPage()
 }
 
-@Component
+@ComponentV2
 struct MaterialListPage {
-  @State materials: Array<MaterialVo> = []
-  @State total: number = 0
-  @State isLoadingFirst: boolean = true
-  @State isFirstError: boolean = false
-  @State isRefreshing: boolean = false
-  @State isLoadingMore: boolean = false
-  @State loadMoreError: boolean = false
-  @State expandedMaterialId: number = -1
-  @State cards: Array<ReviewCardVo> = []
-  @State cardsLoading: boolean = false
-  @State cardsError: boolean = false
-  @State cardsTotal: number = 0
-  @State cardsHasMore: boolean = false
-  @State cardsLoadingMore: boolean = false
-  @State cardsAppendError: boolean = false
-  @State createVisible: boolean = false
-  @State formTitle: string = ''
-  @State formRawText: string = ''
-  @State creating: boolean = false
-  @State createError: string = ''
-  private dialogController: CustomDialogController | null = null
+  @Local materials: Array<MaterialVo> = []
+  @Local total: number = 0
+  @Local isLoadingFirst: boolean = true
+  @Local isFirstError: boolean = false
+  @Local isRefreshing: boolean = false
+  @Local isLoadingMore: boolean = false
+  @Local loadMoreError: boolean = false
+  @Local expandedMaterialId: number = -1
+  @Local cards: Array<ReviewCardVo> = []
+  @Local cardsLoading: boolean = false
+  @Local cardsError: boolean = false
+  @Local cardsTotal: number = 0
+  @Local cardsHasMore: boolean = false
+  @Local cardsLoadingMore: boolean = false
+  @Local cardsAppendError: boolean = false
+  @Local createVisible: boolean = false
+  @Local formTitle: string = ''
+  @Local formRawText: string = ''
+  @Local creating: boolean = false
+  @Local createError: string = ''
   // LazyForEach 数据源（读取 materials，实例稳定不可重建，否则整表重建）
   private materialsSource: LazyListDataSource<MaterialVo> =
     new LazyListDataSource<MaterialVo>(() => this.materials)
@@ -275,31 +274,38 @@ struct MaterialListPage {
     }
   }
 
-  /** 打开建卡弹窗（每次新建控制器，保证入参为最新） */
-  private openAddCardDialog(materialId: number): void {
-    let materialTitle: string = ''
-    for (const material of this.materials) {
-      if (material.id === materialId) {
-        materialTitle = material.title ?? ''
-        break
+  /**
+   * 打开建卡弹窗。控制器必须由结构体字段持有（与 SubscriptionDetailPage 同款）：
+   * V2 页面里在方法内临时 new 的控制器，框架不注入 controller，弹窗内 this.controller
+   * 为 undefined，点击「确认」关闭时抛错并误报「加载失败」。
+   * builder 为闭包，materialId/标题在 open() 时读取，保证入参为最新。
+   */
+  private addCardDialogMaterialId: number = -1
+  private addCardDialogController: CustomDialogController = new CustomDialogController({
+    builder: ReviewCardDialog({
+      materialTitle: this.materialTitleOf(this.addCardDialogMaterialId),
+      onConfirm: (question: string, answer: string): Promise<ReviewCardSubmitResult> => {
+        return this.submitAddCard(this.addCardDialogMaterialId, question, answer)
+      },
+      onDismiss: (): void => {
+        this.addCardDialogMaterialId = -1
       }
-    }
-    const controller: CustomDialogController = new CustomDialogController({
-      builder: ReviewCardDialog({
-        materialTitle: materialTitle,
-        onConfirm: (question: string, answer: string): Promise<ReviewCardSubmitResult> => {
-          return this.submitAddCard(materialId, question, answer)
-        },
-        onDismiss: (): void => {
-          this.dialogController = null
-        }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center,
-      customStyle: true
-    })
-    this.dialogController = controller
-    controller.open()
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+
+  /** 打开建卡弹窗（先记下目标资料，builder 闭包在 open 时读取最新标题） */
+  private openAddCardDialog(materialId: number): void {
+    this.addCardDialogMaterialId = materialId
+    this.addCardDialogController.open()
+  }
+
+  /** 资料 id → 标题（缺失回落空串，弹窗隐藏标题行） */
+  private materialTitleOf(materialId: number): string {
+    const material = this.materials.find((item: MaterialVo): boolean => item.id === materialId)
+    return material?.title ?? ''
   }
 
   /**
