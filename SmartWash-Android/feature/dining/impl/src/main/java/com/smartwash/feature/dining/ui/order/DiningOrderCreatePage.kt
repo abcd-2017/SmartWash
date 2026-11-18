@@ -694,12 +694,11 @@ private fun DishRow(
             vertical = AppDimens.spaceSm,
         ),
     ) {
-        // 内容行：图 + 文字列（weight 独占整宽，不再与按钮挤）
+        // 内容行：图 + 文字列（weight 独占整宽）；行高跟随内容（=封面 64），
+        // 原 heightIn(min=72) 比内容高出 ~12dp 堆在内容下方 = 用户看到的「底部空一大截」
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = DISH_ROW_MIN_HEIGHT),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             // 缩略图独立点击 → 菜谱详情（TD17，美团惯例：行点击=加购、点图=看详情）
             DishThumb(
