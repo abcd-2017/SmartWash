@@ -373,6 +373,19 @@ fun DiningOrderCreatePage(
                                             .padding(2.dp),
                                     )
                                 }
+                                // 显示态也要给校验反馈：空标题点「发起点单」被拦时不再无反馈
+                                // （原只在编辑态 supportingText 渲染 → 用户观感「点了没反应」）
+                                if (titleError) {
+                                    Text(
+                                        text = stringResource(viewModel.errorRes(formError!!)),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = AppColors.colorScheme.error,
+                                        modifier = Modifier.padding(
+                                            start = AppDimens.spaceXxs,
+                                            top = AppDimens.space2xs,
+                                        ),
+                                    )
+                                }
                             }
 
                             // 菜品搜索（服务端模糊查询，防抖 300ms 重置分页重拉；搜索态切全库列表，

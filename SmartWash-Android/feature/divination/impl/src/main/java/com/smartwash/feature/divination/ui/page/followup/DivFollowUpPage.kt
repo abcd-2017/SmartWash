@@ -54,6 +54,7 @@ import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.data.DivFollowUpTurn
 import com.smartwash.feature.divination.data.DivStreamEvent
 import com.smartwash.common.ui.components.WaveIcon
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.feature.divination.ui.DivinationScreen
 import com.smartwash.feature.divination.ui.components.DivPageHeader
 import com.smartwash.common.ui.components.softCardShadow
@@ -144,7 +145,11 @@ fun DivFollowUpPage(
                 // key 用追加序号（history 只追加不删除，index 稳定）：旧 key=content+role 在
                 // 同会话出现相同文案轮次（Mock 固定回复/用户重发同句）会 Duplicate key 崩溃
                 itemsIndexed(state.history, key = { index, _ -> "h$index" }) { _, turn ->
-                    ChatBubble(turn)
+                    ChatBubble(
+                        turn,
+                        // 新增轮次的进出场 + 位移补间（reduced motion 自动落位）
+                        modifier = animatedListItem(),
+                    )
                 }
                 // 流式回复气泡（issue #78 SSE delta 增量上屏；空增量先出水波 + 「正在推演…」）；
                 // audit-23 #18：中断时保留已流出的部分回复（气泡灰显 + 「生成中断」标记），不再整体消失
@@ -271,7 +276,12 @@ fun DivFollowUpPage(
  *  streaming=true 为 SSE 增量上屏中的回复（取消首帧淡入，避免每帧重启动画）；
  *  muted=true 为中断保留的未完成回复（audit-23 #18：正文降为次级色灰显）。 */
 @Composable
-private fun ChatBubble(turn: DivFollowUpTurn, streaming: Boolean = false, muted: Boolean = false) {
+private fun ChatBubble(
+    turn: DivFollowUpTurn,
+    modifier: Modifier = Modifier,
+    streaming: Boolean = false,
+    muted: Boolean = false,
+) {
     val c = DivColors.current
     val isUser = turn.role == "user"
     // 新气泡首帧 alpha 0→1（reduced motion 取消，直接呈现）；流式气泡跳过（增量逐帧重组会重启动画）
@@ -289,7 +299,7 @@ private fun ChatBubble(turn: DivFollowUpTurn, streaming: Boolean = false, muted:
     val appear = Modifier.graphicsLayer { this.alpha = alpha.value }
     val shape = RoundedCornerShape(16.dp)
     Row(
-        Modifier.fillMaxWidth(),
+        modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
     ) {
         Box(

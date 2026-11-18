@@ -121,7 +121,7 @@ fun <T> spinInfinite(durationMs: Int = SPIN_PERIOD_MS): InfiniteRepeatableSpec<T
     )
 
 /**
- * 选中态颜色 — 全应用统一的"选中 / 未选中"颜色过渡（200ms 档弹簧，
+ * 选中态颜色 — 全应用统一的"选中 / 未选中"颜色过渡（临界阻尼弹簧 [defaultSpring] = 1.0/350，
  * reduced motion 时经 [motionSpec] 自动降级为 180ms 纯颜色过渡）。
  *
  * 收敛全应用"选中态颜色"模式：调用侧只给目标色，不再各写一遍 animateColorAsState。

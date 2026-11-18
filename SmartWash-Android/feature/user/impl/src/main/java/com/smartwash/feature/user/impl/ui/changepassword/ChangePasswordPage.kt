@@ -164,8 +164,14 @@ fun ChangePasswordPage(
                         },
                         // 最大位数由组件 maxLength 固定 16
                         isError = isNewPasswordError,
-                        supportingText = if (isNewPasswordError) {
-                            {
+                        supportingText = {
+                            AnimatedVisibility(
+                                visible = isNewPasswordError,
+                                enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                                    expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                                exit = fadeOut(motionSpec(exitTween(EXIT_MICRO_MS))) +
+                                    shrinkVertically(motionSpec(exitTween(EXIT_MICRO_MS))),
+                            ) {
                                 Text(
                                     text = stringResource(com.smartwash.common.ui.R.string.invalid_password),
                                     fontSize = 12.sp,
@@ -173,7 +179,7 @@ fun ChangePasswordPage(
                                     color = AppColors.colorScheme.error
                                 )
                             }
-                        } else null,
+                        },
                         modifier = Modifier.heightIn(min = 48.dp)
                     )
 

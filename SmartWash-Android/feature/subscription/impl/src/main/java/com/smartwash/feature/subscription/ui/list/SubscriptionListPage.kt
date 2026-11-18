@@ -59,6 +59,7 @@ import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -261,6 +262,7 @@ fun SubscriptionListPage(
                                     SubscriptionCard(
                                         vo = vo,
                                         onClick = { navController.navigateToSubscriptionDetail(vo.subscriptionId) },
+                                        modifier = animatedListItem(),
                                     )
                                 }
                             }
@@ -355,6 +357,7 @@ private fun AppendLoadingRow() {
 private fun SubscriptionCard(
     vo: SubscriptionVo,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val status = SubscriptionStatus.fromRawOrDefault(vo.status)
     val cycleType = SubscriptionCycleType.fromRaw(vo.cycleType)
@@ -362,7 +365,7 @@ private fun SubscriptionCard(
 
     // 统一走 GroupCard（规范 §3.1 唯一卡片画法：softCardShadow + 1dp 描边 + 20dp 卡内边距）
     GroupCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .pressable(onClick = onClick, scaleFactor = 0.97f),
     ) {

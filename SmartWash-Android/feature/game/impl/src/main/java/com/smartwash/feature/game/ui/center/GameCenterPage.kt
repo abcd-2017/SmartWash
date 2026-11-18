@@ -57,6 +57,7 @@ import com.smartwash.common.ui.components.AppPillTabRow
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonBlock
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -275,7 +276,8 @@ private fun GameGrid(
                         start = AppDimens.pagePadding,
                         end = AppDimens.pagePadding,
                         bottom = GRID_SPACING,
-                    ),
+                    )
+                    .then(animatedListItem()),
                 horizontalArrangement = Arrangement.spacedBy(GRID_SPACING),
                 verticalAlignment = Alignment.Top,
             ) {

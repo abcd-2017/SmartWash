@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -54,6 +53,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppChipVariant
+import com.smartwash.common.ui.components.AppFilterChip
 import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
@@ -366,27 +367,21 @@ private fun CoverPicker(
     }
 }
 
-/** 分类 chip（多选一；选中 primarySoft 浅绿底 + primaryDeep 文字，未选中灰阶） */
+/**
+ * 分类 chip（多选一）—— 统一走公共 [AppFilterChip]（SOFT）：
+ * 选中 = primarySoft 浅底 + onPrimarySoft 深字，未选中 = surface 底 + 1dp outline 描边 + textSecondary
+ * （原未选中 surfaceVariant 灰阶统一收敛到 surface + outline 口径）；48dp 最小热区 / 常驻描边 /
+ * 恒定 SemiBold / selected 语义由公共组件内置。
+ */
 @Composable
 private fun CategoryChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    val (container, content) = if (selected) {
-        AppColors.colorScheme.primarySoft to AppColors.colorScheme.primaryDark
-    } else {
-        AppColors.colorScheme.surfaceVariant to AppColors.colorScheme.textSecondary
-    }
-    Text(
+    AppFilterChip(
         text = label,
-        style = MaterialTheme.typography.labelLarge,
-        color = content,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier
-            // chip 最小 44dp 热区（规范 §3.2），并让选中底铺满整颗
-            .heightIn(min = 44.dp)
-            .clip(RoundedCornerShape(AppDimens.radiusFull))
-            .background(container)
-            .pressable(onClick = onClick)
-            .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceXs),
+        selected = selected,
+        onClick = onClick,
+        variant = AppChipVariant.SOFT,
+        // 该页分类 chip 原用 labelLarge（14sp），保留原字号，避免画板观感漂移
+        textStyle = MaterialTheme.typography.labelLarge,
     )
 }
 

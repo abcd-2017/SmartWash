@@ -2,6 +2,11 @@ package com.smartwash.feature.user.impl.ui.register
 
 import android.app.Activity
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -78,7 +83,11 @@ import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.ClickDebouncer
 import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.isValidPhone
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
@@ -346,8 +355,14 @@ fun RegisterPage(
                     isError = isPhoneError,
                     leadingIcon = Icons.Rounded.Phone,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    supportingText = if (isPhoneError) {
-                        {
+                    supportingText = {
+                        AnimatedVisibility(
+                            visible = isPhoneError,
+                            enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                                expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                            exit = fadeOut(motionSpec(exitTween(140))) +
+                                shrinkVertically(motionSpec(exitTween(140))),
+                        ) {
                             Text(
                                 text = stringResource(com.smartwash.common.ui.R.string.invalid_phone),
                                 fontSize = 12.sp,
@@ -355,7 +370,7 @@ fun RegisterPage(
                                 color = AppColors.colorScheme.error
                             )
                         }
-                    } else null
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -415,8 +430,14 @@ fun RegisterPage(
                     countDown = countDown,
                     sendEnabled = countDown == 0 && captchaState !is RequestState.Loading,
                     isError = isVerificationCodeError,
-                    supportingText = if (isVerificationCodeError) {
-                        {
+                    supportingText = {
+                        AnimatedVisibility(
+                            visible = isVerificationCodeError,
+                            enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                                expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                            exit = fadeOut(motionSpec(exitTween(140))) +
+                                shrinkVertically(motionSpec(exitTween(140))),
+                        ) {
                             Text(
                                 text = stringResource(R.string.invalid_verification_code),
                                 fontSize = 12.sp,
@@ -424,7 +445,7 @@ fun RegisterPage(
                                 color = AppColors.colorScheme.error
                             )
                         }
-                    } else null
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -451,8 +472,14 @@ fun RegisterPage(
                     // 最大位数由组件 maxLength 固定 16，无需页面截断
                     modifier = Modifier.focusRequester(passwordFocusRequester),
                     isError = isPasswordError,
-                    supportingText = if (isPasswordError) {
-                        {
+                    supportingText = {
+                        AnimatedVisibility(
+                            visible = isPasswordError,
+                            enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                                expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                            exit = fadeOut(motionSpec(exitTween(140))) +
+                                shrinkVertically(motionSpec(exitTween(140))),
+                        ) {
                             Text(
                                 text = stringResource(com.smartwash.common.ui.R.string.invalid_password),
                                 fontSize = 12.sp,
@@ -460,7 +487,7 @@ fun RegisterPage(
                                 color = AppColors.colorScheme.error
                             )
                         }
-                    } else null
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))

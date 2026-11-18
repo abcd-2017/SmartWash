@@ -67,6 +67,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppConfirmDialog
@@ -329,11 +330,13 @@ fun OrderPage(
                                         Text(
                                             text = label,
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = AppColors.colorScheme.textSecondary
+                                            color = AppColors.colorScheme.textSecondary,
+                                            modifier = animatedListItem()
                                         )
                                     }
                                     is OrderListItem.Group -> {
                                         MonthGroupCard(
+                                            modifier = animatedListItem(),
                                             group = item,
                                             itemClick = { order -> navController.navigate(OrderRoute.OrderDetail(order.orderId)) },
                                             paymentClick = { order -> navController.navigate(PaymentRoute.Payment(order.orderId)) },
@@ -421,6 +424,7 @@ fun OrderPage(
  */
 @Composable
 private fun MonthGroupCard(
+    modifier: Modifier = Modifier,
     group: OrderListItem.Group,
     paymentClick: (OrderInfo) -> Unit,
     shipmentClick: (OrderInfo) -> Unit,
@@ -431,7 +435,7 @@ private fun MonthGroupCard(
     // DESIGN-SPEC v0.4 §3.1 唯一卡片画法：纯白 surface 底 + 1px outline 描边 + level1(1dp) 阴影
     //（≈ CSS 0 2px 12px rgba(20,40,30,.05)）。旧实现「无阴影裸白卡」属规范明令禁止项。
     Surface(
-        modifier = Modifier.fillMaxWidth().softCardShadow(),
+        modifier = modifier.fillMaxWidth().softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)

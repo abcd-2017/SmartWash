@@ -800,3 +800,41 @@ fun DrumIcon(state: OrderStatus, tint: Color) {
 | L4 | **头部预算**：标题区+搜索区合计 ≤ 屏高 25%；输入框统一高度档（常规 56dp / compact 44dp，compact 仅用于堆叠场景） | 创建页用 compact |
 | L5 | **底栏层数 ≤3**：主行（计数+人数+清空）+ 全宽 CTA + （警示/错误最多 1 条合并展示）；人数 stepper 并入主行，取消独立份量行 | 创建页 CreateBottomBar |
 | L6 | **页面锚点唯一**：头部降权（浅底小字）、列表为中、CTA 为强——阶梯配色 | D9 |
+
+---
+
+## 附：控件尺寸档（2026-11-18 用户复核后增补，TD36）
+
+> 背景：规范有颜色/字阶/间距/圆角/按钮/卡片/图标容器/输入框，**唯独缺「胶囊 chip」与「开关」**，导致这两类控件一直凭感觉定尺寸（同一种 chip 出现 36/40/44/48 四种热区、未选中底 surface / surfaceVariant / 透明三套）。用户 2026-11-18 拍板定档，以下为**唯一依据**，新增同类控件必须先在此开档。
+
+### 胶囊筛选 chip（`AppFilterChip`）
+
+| 项 | 取值 | 依据 |
+|---|---|---|
+| 可见高度 | **32dp**（= `caption` 行高 16dp + 上下各 `spaceXs` 8dp） | 平台 AssistChip/FilterChip 标准档；与原订阅/Toolbox chip 一致 |
+| 横向内边距 | **16dp**（`spaceMd`） | 对齐「小按钮」档 |
+| 形状 | `radiusFull` 胶囊 | §2.3 圆角表 |
+| 字号/字重 | `captionStrong` 12sp/16/500（组件内统一SemiBold 600，避免字重随选中插值引发兄弟位移） | §2.2 字阶 |
+| 描边 | 常驻 1dp：选中=底色同色（无边界）；未选中=`outline` | 尺寸不跳变 |
+| 选中色 | SOLID：`primary` + `onPrimary`；SOFT：`primarySoft` + `onPrimarySoft` | §2.1 |
+| 未选中底 | `surface` | §2.1 |
+| 触控热区 | **≥48dp**（外层 `heightIn(min=48)`，可见尺寸不变） | §3.4 热区口径 |
+| 选中动画 | `selectedColor`（`defaultSpring`） | §7 |
+| 无障碍 | `semantics { selected }` | §9 验收 |
+| reduced motion | 颜色过渡降级 `CROSSFADE_ALT_MS` 180ms | §8 |
+
+### 开关（`AppSwitch`）
+
+| 项 | 取值 | 依据 |
+|---|---|---|
+| 轨道 | **44×24dp** 胶囊 | 高 = `bodyLarge` 行高 24dp，与左侧 16sp 正文齐平、不压字 |
+| thumb | **20dp** 圆形，`surface` | — |
+| 位移 | **2dp ↔ 22dp**（行程 20dp），`defaultSpring` | §7 位移一律弹簧 |
+| 轨道色 | 选中 `primary`；未选中 `surfaceVariant` + 1dp `outline` 描边 | §2.1；轮廓由描边承担 |
+| 触控热区 | **48×48dp**（外层 `defaultMinSize(48,48)`，可见尺寸不变） | §3.2 豁免项热区 48dp |
+| 按压反馈 | `pressable` scale 0.97 / 100ms | §7 |
+| 禁用态 | 整体 alpha 0.38 + 禁点 | §3.3 禁用档 |
+| 无障碍 | `Role.Switch` + `stateDescription`（开/关），可选 `contentDescription` | 平台开关语义 |
+| reduced motion | 位移/颜色降级 180ms | §8 |
+
+> 开关行 `SwitchRow`：行高 64dp（与设置页两行卡一致，§3.4），图标盒 `icon-box-小` 32dp，整行可点 + 右侧开关独立可点。

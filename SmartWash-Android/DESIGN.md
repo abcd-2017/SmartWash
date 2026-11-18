@@ -148,6 +148,25 @@ components:
     textColor: "{colors.text-primary}"
     rounded: "{rounded.input}"
     height: "48dp"
+  # TD36 控件档（2026-11-18 定）：胶囊筛选 chip
+  app-filter-chip:
+    backgroundColor: "{colors.primary}"        # 选中 SOLID；SOFT 选中 primary-soft；未选 surface + 1dp outline 描边
+    textColor: "#FFFFFF"                       # 未选 text-secondary
+    rounded: "{rounded.full}"
+    height: "32dp"                             # 可见高 = caption 行高 16dp + 上下各 8dp
+    paddingHorizontal: "16dp"
+    target: "48dp"                             # 最小触控热区（可见尺寸不变）
+    typography: "{typography.caption-strong}"
+  # TD36 控件档（2026-11-18 定）：开关
+  app-switch:
+    trackColor: "{colors.primary}"             # 选中；未选 surface-variant + 1dp outline 描边
+    rounded: "{rounded.full}"
+    width: "44dp"
+    height: "24dp"                             # 与 body-large 行高 24dp 齐平，不压过左侧文字
+    thumb: "20dp"
+    thumbTravel: "20dp"                        # 位移 2dp ↔ 22dp
+    target: "48dp"                             # 最小触控热区
+    motion: "{motion.default-spring}"          # 位移/颜色走弹簧，reduced 180ms
 ---
 
 # Design System: SmartWash Android 用户端（清氧设计系统）

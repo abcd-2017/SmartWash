@@ -59,6 +59,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.feature.order.api.model.OrderBrief
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppInfoDialog
@@ -304,6 +305,7 @@ fun IndexPage(
                 // 进行中订单列表 ↔ 空态：合并为单 item 交叉淡变，不再整块硬切
                 item {
                     Crossfade(
+                        modifier = animatedListItem(),
                         targetState = orderList.isNotEmpty(),
                         animationSpec = motionSpec(enterTween(DURATION_CARD_MS)),
                         label = "indexOrderList"

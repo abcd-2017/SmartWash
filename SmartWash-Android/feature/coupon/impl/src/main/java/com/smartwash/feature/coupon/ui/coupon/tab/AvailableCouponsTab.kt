@@ -55,6 +55,7 @@ import com.smartwash.feature.coupon.ui.coupon.CouponOfflineHint
 import com.smartwash.feature.coupon.ui.coupon.CouponSectionError
 import com.smartwash.feature.coupon.ui.coupon.TicketFaceWidth
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -116,7 +117,8 @@ fun AvailableCouponsTab(
                         coupon = coupon,
                         isAvailable = true,
                         isClaiming = coupon.couponId == claimingId,
-                        onClaimClick = { itemClick(coupon.couponId) }
+                        onClaimClick = { itemClick(coupon.couponId) },
+                        modifier = animatedListItem(),
                     )
                 }
             }
@@ -130,12 +132,13 @@ fun CouponCard(
     isAvailable: Boolean,
     isClaiming: Boolean,
     onClaimClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val outlineColor = AppColors.colorScheme.outline
     // 2026-11-01 用户拍板：可领取卡（设计稿无画板）统一成屏 12 票券形态——
     // 打孔 + 绿面额区 + 垂直虚线 + 右区，与已领取/过期 tab 同一卡片语言；领取按钮占状态字位
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .drawBehind {
                 // 中间虚线 — 同票券：1dp 竖线、段 6 / 隔 4，上下 margin 12（x=面额区右缘与打孔同轴）

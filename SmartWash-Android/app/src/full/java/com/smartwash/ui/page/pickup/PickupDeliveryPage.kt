@@ -471,14 +471,21 @@ private fun PickupDeliveryActionBar(
                 .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull)),
             contentAlignment = Alignment.Center
         ) {
-            if (loading) {
-                ButtonSpinner(size = 20.dp, strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-            } else {
-                Text(
-                    text = primaryText,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
+            // 文字 ↔ spinner：与 AppButton/AuthCtaButton 统一走 Crossfade(180)，不再 if/else 硬切
+            Crossfade(
+                targetState = loading,
+                animationSpec = tween(CROSSFADE_ALT_MS),
+                label = "primaryLoading"
+            ) { isLoading ->
+                if (isLoading) {
+                    ButtonSpinner(size = 20.dp, strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text(
+                        text = primaryText,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
         }
     }

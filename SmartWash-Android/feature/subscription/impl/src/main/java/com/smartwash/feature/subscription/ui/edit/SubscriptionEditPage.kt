@@ -56,7 +56,7 @@ import com.smartwash.feature.subscription.api.SubscriptionCycleType
 import com.smartwash.feature.subscription.logic.SubscriptionRules
 import com.smartwash.feature.subscription.ui.SubscriptionDatePickerDialog
 import com.smartwash.feature.subscription.ui.SubscriptionSelectableChip
-import com.smartwash.feature.subscription.ui.SubscriptionToggle
+import com.smartwash.common.ui.components.AppSwitch
 import com.smartwash.feature.subscription.ui.copyToClipboard
 import com.smartwash.feature.subscription.ui.notifySubscriptionChanged
 
@@ -274,9 +274,11 @@ fun SubscriptionEditPage(
                                     color = AppColors.colorScheme.textSecondary,
                                 )
                             }
-                            SubscriptionToggle(
+                            AppSwitch(
                                 checked = form.autoRenew,
                                 onCheckedChange = viewModel::updateAutoRenew,
+                                onText = stringResource(R.string.subscription_detail_auto_renew_on),
+                                offText = stringResource(R.string.subscription_detail_auto_renew_off),
                             )
                         }
 

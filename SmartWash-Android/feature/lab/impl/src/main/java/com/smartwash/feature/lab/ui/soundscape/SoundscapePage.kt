@@ -1,6 +1,5 @@
 package com.smartwash.feature.lab.ui.soundscape
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.Canvas
@@ -69,6 +68,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.smartwash.common.ui.components.AppSwitch
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
@@ -557,8 +557,8 @@ private fun ChannelRow(
 }
 
 /**
- * 自绘开关（48×28dp 胶囊）：拇指位置用 Animatable 弹簧过渡；
- * reduced motion 经 [motionSpec] 降级为 180ms 过渡，按压反馈由 pressable 承担。
+ * 声道开关 —— 统一走公共 [AppSwitch]（48×28 胶囊、弹簧位移、Role.Switch + 开/关状态播报）。
+ * [label] 作为 contentDescription 供 TalkBack 朗读声道名。
  */
 @Composable
 private fun SoundToggle(
@@ -566,46 +566,13 @@ private fun SoundToggle(
     onCheckedChange: () -> Unit,
     label: String,
 ) {
-    val scheme = AppColors.colorScheme
-    val onText = stringResource(R.string.lab_soundscape_on)
-    val offText = stringResource(R.string.lab_soundscape_off)
-    val position = remember { Animatable(if (checked) 1f else 0f) }
-    // 动效规格在组合层解析（LaunchedEffect 块是非组合的 suspend 上下文）
-    val toggleSpec = motionSpec(defaultSpring<Float>())
-    LaunchedEffect(checked) {
-        position.animateTo(if (checked) 1f else 0f, toggleSpec)
-    }
-    Box(
-        modifier = Modifier
-            // pressable 前置 + 视觉区外 padding 外扩触控热区：视觉胶囊 48×28 不变，
-            // 命中区抬到 48×52（§2.3 触控热区 ≥48dp，28dp 高直接点按拇指命中率过低）
-            .pressable(onClick = onCheckedChange)
-            .padding(vertical = AppDimens.spaceSm)
-            .size(width = 48.dp, height = 28.dp)
-            .clip(RoundedCornerShape(AppDimens.radiusFull))
-            .background(if (checked) scheme.primary else scheme.surfaceVariant)
-            .border(
-                1.dp,
-                if (checked) scheme.primary else scheme.outline,
-                RoundedCornerShape(AppDimens.radiusFull),
-            )
-            .semantics {
-                contentDescription = label
-                stateDescription = if (checked) onText else offText
-                role = Role.Switch
-            },
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        Box(
-            modifier = Modifier
-                .padding(start = 4.dp)
-                .offset(x = 20.dp * position.value)
-                .size(20.dp)
-                .clip(CircleShape)
-                .background(scheme.surface)
-                .border(1.dp, scheme.outline, CircleShape),
-        )
-    }
+    AppSwitch(
+        checked = checked,
+        onCheckedChange = { onCheckedChange() },
+        contentDescription = label,
+        onText = stringResource(R.string.lab_soundscape_on),
+        offText = stringResource(R.string.lab_soundscape_off),
+    )
 }
 
 /**

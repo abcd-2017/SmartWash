@@ -55,6 +55,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.SwitchRow
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -198,22 +199,22 @@ fun PermissionManagementPage(
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 // 触感反馈（端内开关，非系统权限；与上面两项同页归集，2026-11-12 自设置页迁入）
-                PermissionRow(
+                // 由「整行文字切换」升级为真实开关行（SwitchRow）：Role.Switch + 开/关状态播报
+                SwitchRow(
                     icon = Icons.Default.TouchApp,
-                    containerColor = AppColors.colorScheme.iconContainerTeal,
-                    iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
+                    iconContainerColor = AppColors.colorScheme.iconContainerTeal,
+                    iconTint = AppColors.colorScheme.iconForegroundTeal,
                     title = stringResource(R.string.permission_haptic),
                     description = stringResource(R.string.permission_haptic_desc),
-                    trailingText = stringResource(
-                        if (hapticEnabled) R.string.enabled else R.string.disabled
-                    ),
-                    trailingColor = AppColors.colorScheme.textSecondary,
-                    onClick = {
-                        val newValue = !hapticEnabled
+                    checked = hapticEnabled,
+                    onCheckedChange = { newValue ->
                         permissionManagementViewModel.setHapticEnabled(newValue)
                         // 开启瞬间给一次确认触感（因果明确的时刻，规范 §7.7）
                         if (newValue) view.performHaptic(HapticEffect.LIGHT)
-                    }
+                    },
+                    rowHeight = 72.dp,
+                    onText = stringResource(R.string.enabled),
+                    offText = stringResource(R.string.disabled),
                 )
             }
 

@@ -78,6 +78,7 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.smartwash.R
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
@@ -384,7 +385,7 @@ fun WorkbenchPage(
                             "wb_search_${rowTools.size}_" + rowTools.joinToString("-") { it.entryKey }
                         }
                     ) { rowIndex, rowTools ->
-                        StaggerIn(index = rowIndex, modifier = Modifier.fillMaxWidth()) {
+                        StaggerIn(index = rowIndex, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
                             TileRowContent(
                                 tools = rowTools,
                                 onToolClick = handleToolClick,
@@ -400,6 +401,7 @@ fun WorkbenchPage(
                     if (recentTools.isNotEmpty()) {
                         item(key = "wb_recent") {
                             RecentSection(
+                                modifier = animatedListItem(),
                                 tools = recentTools,
                                 onToolClick = handleToolClick
                             )
@@ -446,7 +448,7 @@ fun WorkbenchPage(
                         val blockTop = if (afterSection || afterToolsHeader) 0.dp else AppDimens.sectionSpacing
                         when (block) {
                             is WorkbenchBlock.Section -> SectionHeader(title = block.title)
-                            is WorkbenchBlock.Notice -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
+                            is WorkbenchBlock.Notice -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
                                 NoticeBar(
                                     tool = block.tool,
                                     onClick = { handleToolClick(block.tool) },
@@ -456,7 +458,7 @@ fun WorkbenchPage(
                                         .padding(top = blockTop, bottom = AppDimens.cardSpacing)
                                 )
                             }
-                            is WorkbenchBlock.Wide -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
+                            is WorkbenchBlock.Wide -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
                                 WideCard(
                                     tool = block.tool,
                                     onClick = { handleToolClick(block.tool) },
@@ -465,7 +467,7 @@ fun WorkbenchPage(
                                         .padding(top = blockTop, bottom = AppDimens.cardSpacing)
                                 )
                             }
-                            is WorkbenchBlock.TileRow -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
+                            is WorkbenchBlock.TileRow -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
                                 TileRowContent(
                                     tools = block.tools,
                                     onToolClick = handleToolClick,
@@ -476,7 +478,7 @@ fun WorkbenchPage(
                                     }
                                 )
                             }
-                            is WorkbenchBlock.RowGroup -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
+                            is WorkbenchBlock.RowGroup -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
                                 RowGroupCard(
                                     tools = block.tools,
                                     onToolClick = handleToolClick,
@@ -632,11 +634,12 @@ private fun SectionHeader(title: String) {
 /** 最近使用区：区块标题 + 横滑 chip 行（本地记忆，点击走同一条深链链路） */
 @Composable
 private fun RecentSection(
+    modifier: Modifier = Modifier,
     tools: List<WorkbenchTool>,
     onToolClick: (WorkbenchTool) -> Unit,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(top = AppDimens.sectionSpacing)
     ) {
@@ -653,7 +656,11 @@ private fun RecentSection(
             contentPadding = PaddingValues(horizontal = AppDimens.pagePadding)
         ) {
             items(tools, key = { it.entryKey }) { tool ->
-                RecentChip(tool = tool, onClick = { onToolClick(tool) })
+                RecentChip(
+                    modifier = animatedListItem(),
+                    tool = tool,
+                    onClick = { onToolClick(tool) }
+                )
             }
         }
     }
@@ -662,6 +669,7 @@ private fun RecentSection(
 /** 最近使用 chip：白胶囊 + 32dp 小图标容器（§3.2 小档 32/12/20），整颗 48dp 高热区 */
 @Composable
 private fun RecentChip(
+    modifier: Modifier = Modifier,
     tool: WorkbenchTool,
     onClick: () -> Unit,
 ) {
@@ -671,7 +679,7 @@ private fun RecentChip(
         shape = RoundedCornerShape(AppDimens.radiusFull),
         color = scheme.surface,
         border = BorderStroke(1.dp, scheme.outline),
-        modifier = Modifier.pressable(onClick = onClick)
+        modifier = modifier.pressable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier.padding(

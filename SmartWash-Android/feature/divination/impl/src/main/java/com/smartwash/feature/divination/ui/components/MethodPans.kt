@@ -258,7 +258,7 @@ private fun PalaceCell(chart: QiMenChart, gong: Int, modifier: Modifier = Modifi
     }
 }
 
-/** 大六壬式盘：天地盘双环（外环天盘缓转、内环地盘固定 + 四正刻线 + 天心金点） */
+/** 大六壬式盘：天地盘双环（外环天盘、内环地盘固定 + 四正刻线 + 天心金点）。静态绘制，无旋转动效。 */
 @Composable
 fun LiurenPan(chart: LiuRenChart, modifier: Modifier = Modifier) {
     val c = DivColors.current

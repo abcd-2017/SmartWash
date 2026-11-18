@@ -3,7 +3,6 @@ package com.smartwash.feature.toolbox.ui
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
@@ -26,13 +25,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.smartwash.common.ui.components.AppFilterChip
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.pressable
-import com.smartwash.common.utils.selectedColor
 import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.logic.ShortCodeRules
 import java.time.LocalDate
@@ -73,8 +71,9 @@ fun ToolboxTagChip(
 }
 
 /**
- * 可选预设 chip —— 选中 = 品牌底白字，未选中 = 白底描边（模式对齐 CouponPage 筛选胶囊）。
- * 触控热区：外层 Box 扩到 48dp 最小热区（视觉尺寸仍由内部 Surface 决定，不变）；
+ * 可选预设 chip —— 统一走公共 [AppFilterChip]（SOLID + tnum）：
+ * 选中 = primary 实底 + onPrimary 白字，未选中 = surface 底 + 1dp outline 描边 + textSecondary。
+ * tnum：chip 内含数字（「10 分钟」「7 天」等），数字变化时槽位不跳动（规范 §2.2）。
  * 文本强制单行——chip 行横向滚动兜底（见投递有效期行），任何宽度下不出现文字竖排折行。
  */
 @Composable
@@ -84,41 +83,13 @@ fun ToolboxSelectableChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 选中底色 / 文字色 / 描边色统一走公共 selectedColor（200ms 档弹簧，reduced motion 自动降级）
-    val containerColor = selectedColor(
-        if (selected) AppColors.colorScheme.primary else MaterialTheme.colorScheme.surface
+    AppFilterChip(
+        text = text,
+        selected = selected,
+        onClick = onClick,
+        modifier = modifier,
+        tnum = true,
     )
-    val contentColor = selectedColor(
-        // onPrimary 令牌（浅白/深绿）：深色模式下品牌绿提亮，白字对比度不足
-        if (selected) AppColors.colorScheme.onPrimary else AppColors.colorScheme.textSecondary
-    )
-    // 描边常驻 1dp、颜色在 outline ↔ 透明间过渡：选中切换不再让描边整条消失/出现
-    val borderColor = selectedColor(
-        if (selected) Color.Transparent else AppColors.colorScheme.outline
-    )
-    Box(
-        modifier = modifier
-            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-            .pressable(onClick = onClick, debounce = false),
-        contentAlignment = Alignment.Center,
-    ) {
-        Surface(
-            shape = RoundedCornerShape(AppDimens.radiusFull),
-            color = containerColor,
-            border = BorderStroke(1.dp, borderColor),
-        ) {
-            Text(
-                text = text,
-                // tnum：chip 内含数字（「10 分钟」「7 天」等），数字变化时槽位不跳动（规范 §2.2）
-                style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
-                // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变，兄弟 chip 连续位移观感更差
-                fontWeight = FontWeight.SemiBold,
-                color = contentColor,
-                maxLines = 1,
-                modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = 6.dp),
-            )
-        }
-    }
 }
 
 /**

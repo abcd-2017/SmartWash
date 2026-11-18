@@ -52,6 +52,7 @@ import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
@@ -265,7 +266,9 @@ private fun NoticeList(
                 NoticeCard(
                     notice = notice,
                     onClick = { onNoticeClick(notice) },
-                    modifier = Modifier.padding(bottom = AppDimens.cardSpacing),
+                    modifier = Modifier
+                        .padding(bottom = AppDimens.cardSpacing)
+                        .then(animatedListItem()),
                 )
             }
             if (hasMore) {
