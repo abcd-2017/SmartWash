@@ -899,11 +899,13 @@ struct DiningOrderCreatePage {
           }
         } else {
           this.draft.onWriteFailure(op)
+          this.syncSelectedFromDraft()
           showToastSafety(res.message, DiningText.dining_order_create_write_failed)
           return
         }
       } catch (err) {
         this.draft.onWriteFailure(op)
+        this.syncSelectedFromDraft()
         logger.error(TAG, `草稿菜单写异常 recipeId=${op.recipeId}`, err instanceof Error ? err.message : '')
         showToastSafety('', DiningText.dining_order_create_write_failed)
         return
