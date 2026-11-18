@@ -3,10 +3,12 @@ import { OrderItemCountForm } from '../entity/OrderItemCountForm';
 import { OrderListForm } from '../entity/OrderListForm';
 import { OrderNextStatus } from '../entity/OrderNextStatus';
 import { ReservationLaundry } from '../entity/ReservationLaundry';
+import { ReviewSubmit } from '../entity/ReviewSubmit';
 import { httpUtil } from '../HttpUtil';
 import { OrderInfo } from '../vo/OrderInfo';
 import { OrderItemCountVo, orderItemCountVoFromJSON } from '../vo/OrderItemCountVo';
 import { OrderVo, orderVoFromJSON } from '../vo/OrderVo';
+import { ReviewVo, reviewVoListFromJSON } from '../vo/ReviewVo';
 import { mapArray } from '../vo/JsonParse';
 
 async function reservationLaundry(data: ReservationLaundry): Promise<BaseResponse<number>> {
@@ -63,6 +65,29 @@ async function generateQrCode(pickCode: string): Promise<BaseResponse<string>> {
   return httpUtil.get<string>(`/web/auth/orders/generateQrCode/${pickCode}`);
 }
 
+/**
+ * 提交订单评价（对齐后端 POST /web/auth/reviews/add，AddReviewFrom：orderId/rating/content）。
+ * data=true 表示受理成功（重复评价由后端拒绝）。
+ */
+async function addReview(data: ReviewSubmit): Promise<BaseResponse<boolean>> {
+  return httpUtil.post<boolean>('/web/auth/reviews/add', data);
+}
+
+/**
+ * 订单评价列表（后端按创建时间倒序分页，Page 包装 records）；消费侧取首条作本人评价回显。
+ */
+async function getOrderReviews(orderId: number): Promise<BaseResponse<Array<ReviewVo>>> {
+  const raw: BaseResponse<Object> = await httpUtil.get<Object>(`/web/auth/reviews/${orderId}`);
+  // Page 结构：data.records 才是数组（裸数组解析会恒空，曾导致已评价入口不显示）
+  let records: Object | null = null
+  if (raw.data !== null) {
+    const pageObj = raw.data as Record<string, Object>
+    records = pageObj['records'] ?? null
+  }
+  const mapped: Array<ReviewVo> = reviewVoListFromJSON(records)
+  return { code: raw.code, message: raw.message, data: mapped };
+}
+
 export {
   reservationLaundry,
   calculationOrder,
@@ -73,5 +98,7 @@ export {
   getOrderList,
   getOrderItemCount,
   getOrderInfo,
-  generateQrCode
+  generateQrCode,
+  addReview,
+  getOrderReviews
 }
