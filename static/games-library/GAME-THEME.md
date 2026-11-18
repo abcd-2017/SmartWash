@@ -242,6 +242,15 @@ HTML/CSS、`__gThemeToggle`、`g-theme` 读写、matchMedia 监听及按钮让�
 5.1. **§6.1 动效降级模板**（置于 `</style>` 前）：
    `@media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }`
    ——状态切换（overlay 显隐等）依赖 display/类名，不依赖动画存在，压平后功能不受损。
+5.2. **标题排版通则（2026-11-18 随字阶 v0.5 增补）**：
+   - 标题**不强制单行**，允许在容器内自然换行；**禁止**用固定高度硬切标题。
+   - **覆盖层标题**（`.ov-title` / `.overlay h2`）**最多两行**，超出省略：
+     `display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`
+     ——overlay 是模态层、宽度受限（padding 20–24px），需防长文案顶开按钮。
+   - **面板 / 卡片标题**（`.panel h2` / `.card h2` / `.rt`）随文档流自然换行，**不加行数限制**
+     ——它们在文档流内，多行只推高卡片，不会挤压浮层。
+   - 存量 67 款已收敛到 18px，标题规则均无 `nowrap` / 固定高度，**无需补写 clamp**；
+     本通则面向新增游戏与后续改版。
 6. 全屏视口游戏（`html,body{height:100%}` + `overflow:hidden`）在 `<head` 主题运行时里追加
    `try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}`（§5.1）；
    卡片式布局游戏不加。
