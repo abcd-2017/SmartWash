@@ -162,7 +162,7 @@ export const DINING_SODIUM_MAX: number = 4000
 export interface DiningOrderListVo {
   id: number
   title: string
-  /** ONGOING / FINISHED（白名单外脏数据由映射层保守降级为 FINISHED） */
+  /** DRAFT / ONGOING / FINISHED（白名单外脏数据由映射层保守降级为 FINISHED） */
   status: string
   /** 是否我发起的 */
   isCreator: boolean
@@ -243,7 +243,7 @@ export interface DiningOrderDetailVo {
   /** true=与已知 version 一致（轻量响应）；缺失按 false 兜底 */
   unchanged: boolean
   title: string
-  /** ONGOING / FINISHED */
+  /** DRAFT / ONGOING / FINISHED（DRAFT 菜单可加/移除，全部成员可加入） */
   status: string
   creatorUserId: number
   menu: Array<DiningMenuRecipe>
@@ -312,7 +312,7 @@ export function diningOrderDetailVoFromJSON(raw: Object): DiningOrderDetailVo {
 export interface DiningOrderBriefVo {
   orderId: number
   title: string
-  /** ONGOING / FINISHED */
+  /** DRAFT / ONGOING / FINISHED（DRAFT 亦可加入） */
   status: string
   /** 发起者标识（脱敏手机号） */
   creatorName: string

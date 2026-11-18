@@ -11,8 +11,12 @@
 //          DELETE /web/auth/dining/recipes/{id}/favorite（取消收藏，幂等）
 //          GET  /web/auth/dining/recipes/favorites     （我的收藏分页，字段同列表）
 //   偏好   GET/PUT /web/auth/dining/dietary-preference（忌口 + 每日热量/钠目标）
-//   订单   POST /web/auth/dining/orders/create        （title+recipeIds 或 fromOrderId 复用）
-//          GET  /web/auth/dining/orders/my            （我发起的 + 我参与的，分页 page/size）
+//   订单   POST /web/auth/dining/orders/create        （创建 DRAFT：title/recipeIds 均可空或 fromOrderId 复用）
+//          POST /web/auth/dining/orders/{id}/publish  （DRAFT→ONGOING；仅创建者；标题必填+菜单非空；version）
+//          POST /web/auth/dining/orders/{id}/dishes   （草稿加菜；全部成员；幂等；version）
+//          DELETE /web/auth/dining/orders/{id}/dishes/{recipeId}?version=（草稿移除菜；全部成员；幂等；version）
+//          DELETE /web/auth/dining/orders/{id}         （放弃草稿；仅创建者 + DRAFT）
+//          GET  /web/auth/dining/orders/my            （我发起的 + 我参与的，分页 page/size，含 status）
 //          GET  /web/auth/dining/orders/{id}          （轮询主接口，knownVersion 轻量协议）
 //          GET  /web/auth/dining/orders/brief/{token} （加入前预览）
 //          POST /web/auth/dining/orders/{id}/join
@@ -253,7 +257,11 @@ export interface CreateDiningOrderForm {
   fromOrderId: number | null
 }
 
-/** 创建点单订单（返回 orderId + joinToken 供拼二维码） */
+/**
+ * 创建点单草稿（返回 orderId + joinToken 供拼二维码/深链）。
+ * 草稿协同：title/recipeIds 均可空（或 fromOrderId 复用历史菜单），创建即 DRAFT；
+ * publish 定稿后才 ONGOING。
+ */
 export async function createDiningOrder(form: CreateDiningOrderForm)
   : Promise<BaseResponse<DiningOrderCreatedVo>> {
   const body: Record<string, Object> = {}
@@ -270,6 +278,59 @@ export async function createDiningOrder(form: CreateDiningOrderForm)
     code: res.code,
     message: res.message
   }
+}
+
+/** 发起点单请求体（DRAFT→ONGOING；title 为草稿页编辑后的最终标题，version 乐观锁） */
+export interface PublishDiningOrderForm {
+  title: string
+  version: number
+}
+
+/**
+ * 发起点单（DRAFT→ONGOING；仅创建者；标题必填 + 菜单非空；version 乐观锁，冲突返回业务码 409）。
+ * 成功 data 恒为 null。
+ */
+export async function publishDiningOrder(orderId: number, form: PublishDiningOrderForm)
+  : Promise<BaseResponse<null>> {
+  const body: Record<string, Object> = {}
+  body['title'] = form.title
+  body['version'] = form.version
+  return httpUtil.post<null>(`/web/auth/dining/orders/${orderId}/publish`, body)
+}
+
+/** 草稿加菜请求体（recipeId + 客户端已知 version，乐观锁） */
+export interface AddDiningOrderDishForm {
+  recipeId: number
+  version: number
+}
+
+/**
+ * 草稿加菜（仅 DRAFT 态、全部成员可加；幂等：已存在返回成功；version 冲突返回 409）。
+ * 成功 data 恒为 null。
+ */
+export async function addDiningOrderDish(orderId: number, form: AddDiningOrderDishForm)
+  : Promise<BaseResponse<null>> {
+  const body: Record<string, Object> = {}
+  body['recipeId'] = form.recipeId
+  body['version'] = form.version
+  return httpUtil.post<null>(`/web/auth/dining/orders/${orderId}/dishes`, body)
+}
+
+/**
+ * 草稿移除菜（仅 DRAFT 态、全部成员可移除任意菜；幂等：不存在返回成功；version 冲突返回 409）。
+ * 成功 data 恒为 null。
+ */
+export async function removeDiningOrderDish(orderId: number, recipeId: number, version: number)
+  : Promise<BaseResponse<null>> {
+  return httpUtil.delete<null>(`/web/auth/dining/orders/${orderId}/dishes/${recipeId}?version=${version}`)
+}
+
+/**
+ * 放弃草稿（仅创建者 + 仅 DRAFT 态；物理删订单与菜单/成员/选菜子行）。
+ * 成功 data 恒为 null。
+ */
+export async function discardDiningOrder(orderId: number): Promise<BaseResponse<null>> {
+  return httpUtil.delete<null>(`/web/auth/dining/orders/${orderId}`)
 }
 
 /**
@@ -317,7 +378,7 @@ export async function getDiningOrderBrief(token: string): Promise<BaseResponse<D
   }
 }
 
-/** 加入订单（校验 token 匹配 + 订单 ONGOING + 未重复加入；成功 data 恒为 null） */
+/** 加入订单（校验 token 匹配 + 订单状态 ∈ {DRAFT, ONGOING} + 未重复加入；成功 data 恒为 null） */
 export async function joinDiningOrder(orderId: number, joinToken: string): Promise<BaseResponse<null>> {
   const body: Record<string, Object> = {}
   body['joinToken'] = joinToken

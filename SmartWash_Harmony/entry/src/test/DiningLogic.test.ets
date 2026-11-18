@@ -13,8 +13,10 @@ import {
   DINING_PEOPLE_MAX,
   DINING_PEOPLE_MIN,
   DINING_PORTION_GRAMS,
+  DiningDraftMenuEditor,
   DiningJoinEntryDecision,
   DiningJoinUrlKind,
+  DiningOrderStatus,
   DiningPortionVerdict,
   DiningRecipeShopping,
   DiningScanKind,
@@ -22,15 +24,18 @@ import {
   DiningShoppingResult,
   DiningStepLineKind,
   buildDiningJoinUrl,
+  buildDiningOrderDeepLink,
   buildShoppingListText,
   coerceDiningPeopleCount,
   decideDiningJoinEntry,
   diningAllergenHits,
   diningCalorieRemaining,
+  diningOrderStatusFromCode,
   diningPortionAdvice,
   diningSelectedTotalCalories,
   diningServingCalories,
   formatDiningAmount,
+  isDiningOrderJoinable,
   maskDiningPhone,
   normalizeDiningAllergen,
   normalizeDiningAllergens,
@@ -191,6 +196,140 @@ export default function diningLogicTest() {
       }
       expect(decideDiningJoinEntry(finished)).assertEqual(DiningJoinEntryDecision.ORDER_FINISHED)
       expect(decideDiningJoinEntry(dirty)).assertEqual(DiningJoinEntryDecision.ORDER_FINISHED)
+    })
+
+    // ---------- 草稿协同（DRAFT 状态 / 加入 / 深链 / 菜单状态机） ----------
+
+    it('orderStatus-状态码映射与未知兜底', 0, () => {
+      expect(diningOrderStatusFromCode('DRAFT')).assertEqual(DiningOrderStatus.DRAFT)
+      expect(diningOrderStatusFromCode('ONGOING')).assertEqual(DiningOrderStatus.ONGOING)
+      expect(diningOrderStatusFromCode('FINISHED')).assertEqual(DiningOrderStatus.FINISHED)
+      expect(diningOrderStatusFromCode('WEIRD')).assertEqual(DiningOrderStatus.FINISHED)
+      expect(diningOrderStatusFromCode(null)).assertEqual(DiningOrderStatus.FINISHED)
+    })
+    it('joinable-DRAFT/ONGOING 可加入', 0, () => {
+      expect(isDiningOrderJoinable(DiningOrderStatus.DRAFT)).assertTrue()
+      expect(isDiningOrderJoinable(DiningOrderStatus.ONGOING)).assertTrue()
+      expect(isDiningOrderJoinable(DiningOrderStatus.FINISHED)).assertFalse()
+    })
+    it('joinEntry-非成员草稿确认加入', 0, () => {
+      const brief: DiningOrderBriefVo = {
+        orderId: 1, title: '草稿单', status: 'DRAFT', creatorName: '139****9000',
+        recipeCount: 0, joined: false
+      }
+      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.CONFIRM_JOIN)
+    })
+    it('deepLink-加入深链构造与兜底', 0, () => {
+      expect(buildDiningOrderDeepLink(12, 'tok')).assertEqual('smartwash://dining/order/12?t=tok')
+      expect(buildDiningOrderDeepLink(0, 'tok')).assertNull()
+      expect(buildDiningOrderDeepLink(12, '  ')).assertNull()
+    })
+
+    it('draftEditor-未创建时切换只记意图且不落库', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      expect(editor.isCreated).assertFalse()
+      editor.onToggle(7)
+      expect(editor.orderId).assertEqual(0)
+      expect(editor.localMenu.size).assertEqual(1)
+      expect(editor.localMenu.has(7)).assertTrue()
+      const op = editor.pendingOp()
+      expect(op !== null && op.recipeId === 7 && op.add).assertTrue()
+    })
+    it('draftEditor-未创建且无切换时无待写', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      expect(editor.pendingOp()).assertNull()
+    })
+    it('draftEditor-创建后快照收敛未决', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.onToggle(7)
+      editor.onToggle(8)
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(0, editor.localMenu)
+      expect(editor.isCreated).assertTrue()
+      expect(editor.orderId).assertEqual(10)
+      expect(editor.joinToken).assertEqual('tok')
+      expect(editor.pendingOp()).assertNull()
+    })
+    it('draftEditor-写成功 version 递增且菜单落库', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(0, new Set<number>())
+      editor.onToggle(7)
+      const op = editor.pendingOp()
+      expect(op !== null).assertTrue()
+      if (op !== null) {
+        editor.onWriteSuccess(op)
+      }
+      expect(editor.serverVersion).assertEqual(1)
+      expect(editor.serverMenu.has(7)).assertTrue()
+      expect(editor.pendingOp()).assertNull()
+    })
+    it('draftEditor-写成功移除收缩菜单', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(2, new Set<number>([7, 8]))
+      editor.onToggle(7)
+      const op = editor.pendingOp()
+      expect(op !== null && op.add === false).assertTrue()
+      if (op !== null) {
+        editor.onWriteSuccess(op)
+      }
+      expect(editor.serverVersion).assertEqual(3)
+      expect(editor.serverMenu.has(7)).assertFalse()
+      expect(editor.serverMenu.has(8)).assertTrue()
+    })
+    it('draftEditor-409 快照刷新保留本地意图', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(1, new Set<number>([7]))
+      editor.onToggle(8)
+      const replay = editor.onServerSnapshot(2, new Set<number>([7, 9]))
+      expect(editor.serverVersion).assertEqual(2)
+      expect(editor.localMenu.size).assertEqual(3)
+      expect(editor.localMenu.has(9)).assertTrue()
+      expect(editor.localMenu.has(8)).assertTrue()
+      expect(replay.length).assertEqual(1)
+      expect(replay[0].recipeId).assertEqual(8)
+      expect(replay[0].add).assertTrue()
+    })
+    it('draftEditor-写失败回滚该操作且不影响其他意图', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(1, new Set<number>([7]))
+      editor.onToggle(7) // 移除 7
+      editor.onToggle(8) // 加 8
+      editor.onWriteFailure({ recipeId: 7, add: false })
+      expect(editor.localMenu.has(7)).assertTrue()
+      expect(editor.localMenu.has(8)).assertTrue()
+      const op = editor.pendingOp()
+      expect(op !== null && op.recipeId === 8 && op.add).assertTrue()
+    })
+    it('draftEditor-待写差分先加后删且稳定排序', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(0, new Set<number>([3, 4]))
+      editor.onToggle(3)
+      editor.onToggle(4)
+      editor.onToggle(1)
+      editor.onToggle(2)
+      const ops = editor.pendingOps()
+      expect(ops.length).assertEqual(4)
+      expect(ops[0].recipeId).assertEqual(1)
+      expect(ops[0].add).assertTrue()
+      expect(ops[1].recipeId).assertEqual(2)
+      expect(ops[2].recipeId).assertEqual(3)
+      expect(ops[2].add).assertFalse()
+      expect(ops[3].recipeId).assertEqual(4)
+    })
+    it('draftEditor-清空产生全部移除差分', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(5, new Set<number>([7, 8]))
+      editor.onClear()
+      const ops = editor.pendingOps()
+      expect(ops.length).assertEqual(2)
+      expect(ops[0].add).assertFalse()
+      expect(ops[1].add).assertFalse()
     })
 
     // ---------- parseDiningShoppingList ----------
