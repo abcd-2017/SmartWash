@@ -323,6 +323,7 @@ CREATE TABLE IF NOT EXISTS dining_recipe_favorite (
 
 -- 吃啥-点单订单表（WebDiningOrderControllerIntegrationTest 的 /web/auth/dining/orders 端点验证用）
 -- shopping_list 生产库为 MySQL JSON 类型，H2 用等价 varchar 承载（MyBatis 两侧均按字符串映射）
+-- status 取值：DRAFT 草稿 / ONGOING 进行中 / FINISHED 已结束
 CREATE TABLE IF NOT EXISTS dining_order (
     id              bigint NOT NULL AUTO_INCREMENT,
     title           varchar(64) NOT NULL,

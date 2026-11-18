@@ -2,6 +2,7 @@ package com.smartwash.dining.service.impl;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -9,8 +10,10 @@ import com.smartwash.dining.entity.DiningOrder;
 import com.smartwash.dining.entity.DiningOrderItem;
 import com.smartwash.dining.entity.DiningOrderMember;
 import com.smartwash.dining.entity.DiningOrderMenu;
+import com.smartwash.dining.from.AddDiningOrderDishFrom;
 import com.smartwash.dining.from.CreateDiningOrderFrom;
 import com.smartwash.dining.from.JoinDiningOrderFrom;
+import com.smartwash.dining.from.PublishDiningOrderFrom;
 import com.smartwash.dining.mapper.DiningOrderItemMapper;
 import com.smartwash.dining.mapper.DiningOrderMapper;
 import com.smartwash.dining.mapper.DiningOrderMemberMapper;
@@ -129,7 +132,7 @@ class DiningOrderServiceImplTest {
     // ==================== 创建 ====================
 
     @Test
-    @DisplayName("创建：写入订单（ONGOING/随机 token/version=0），创建者即首个成员，菜单逐条落库")
+    @DisplayName("创建：写入 DRAFT 草稿（随机 token/version=0），创建者即首个成员，菜单逐条落库")
     void create_success_writesOrderMemberAndMenu() {
         when(orderMapper.insert(any(DiningOrder.class))).thenAnswer(inv -> {
             inv.getArgument(0, DiningOrder.class).setId(ORDER_ID);
@@ -146,7 +149,7 @@ class DiningOrderServiceImplTest {
         ArgumentCaptor<DiningOrder> orderCaptor = ArgumentCaptor.forClass(DiningOrder.class);
         verify(orderMapper).insert(orderCaptor.capture());
         DiningOrder saved = orderCaptor.getValue();
-        assertEquals("ONGOING", saved.getStatus());
+        assertEquals("DRAFT", saved.getStatus());
         assertEquals(0, saved.getVersion());
         assertNotNull(saved.getJoinToken());
 
@@ -160,6 +163,26 @@ class DiningOrderServiceImplTest {
         verify(menuMapper, org.mockito.Mockito.times(2)).insert(menuCaptor.capture());
         assertEquals(List.of(1L, 2L),
                 menuCaptor.getAllValues().stream().map(DiningOrderMenu::getRecipeId).toList());
+    }
+
+    @Test
+    @DisplayName("创建：标题与菜单均可空 → 落一张空 DRAFT（不校验上架、不写菜单行）")
+    void create_emptyDraft_success() {
+        when(orderMapper.insert(any(DiningOrder.class))).thenAnswer(inv -> {
+            inv.getArgument(0, DiningOrder.class).setId(ORDER_ID);
+            return 1;
+        });
+        when(memberMapper.insert(any(DiningOrderMember.class))).thenReturn(1);
+
+        var vo = service.create(new CreateDiningOrderFrom(), CREATOR);
+
+        assertEquals(ORDER_ID, vo.getOrderId());
+        ArgumentCaptor<DiningOrder> orderCaptor = ArgumentCaptor.forClass(DiningOrder.class);
+        verify(orderMapper).insert(orderCaptor.capture());
+        assertEquals("DRAFT", orderCaptor.getValue().getStatus());
+        assertEquals("", orderCaptor.getValue().getTitle(), "空标题落空串（DB title NOT NULL）");
+        verify(recipeGate, never()).assertAllOnShelf(any());
+        verify(menuMapper, never()).insert(any(DiningOrderMenu.class));
     }
 
     @Test
@@ -222,10 +245,319 @@ class DiningOrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("创建：显式 recipeIds 为空 → 拒绝")
-    void create_emptyMenu_rejected() {
-        expectBusinessException("本单菜单不能为空",
-                () -> service.create(createFrom("标题", List.of(), null), CREATOR));
+    @DisplayName("创建：显式 recipeIds 为空列表 → 合法空草稿（不再拒绝）")
+    void create_emptyMenu_allowedAsDraft() {
+        when(orderMapper.insert(any(DiningOrder.class))).thenAnswer(inv -> {
+            inv.getArgument(0, DiningOrder.class).setId(ORDER_ID);
+            return 1;
+        });
+        when(memberMapper.insert(any(DiningOrderMember.class))).thenReturn(1);
+
+        assertNotNull(service.create(createFrom("标题", List.of(), null), CREATOR));
+        verify(menuMapper, never()).insert(any(DiningOrderMenu.class));
+    }
+
+    // ==================== 发起点单（publish） ====================
+
+    private PublishDiningOrderFrom publishFrom(String title, Long version) {
+        PublishDiningOrderFrom from = new PublishDiningOrderFrom();
+        from.setTitle(title);
+        from.setVersion(version);
+        return from;
+    }
+
+    @Test
+    @DisplayName("publish：DRAFT→ONGOING 条件 UPDATE 成功，标题随请求落库")
+    void publish_success() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(2L);
+        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
+
+        service.publish(ORDER_ID, publishFrom("定稿标题", 0L), CREATOR);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaUpdateWrapper<DiningOrder>> captor =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(orderMapper).update(any(), captor.capture());
+        captor.getValue().getSqlSegment(); // 物化惰性 SQL 段，WHERE/SET 参数才进入参数表
+        Map<String, Object> params = captor.getValue().getParamNameValuePairs();
+        assertTrue(params.containsValue("ONGOING"), "状态必须置为 ONGOING");
+        assertTrue(params.containsValue("DRAFT"), "条件 UPDATE 必须以 DRAFT 为闸门");
+        assertTrue(params.containsValue(0L), "条件 UPDATE 必须以客户端已知 version 为闸门");
+        assertTrue(params.containsValue("定稿标题"), "请求携带的标题必须落库");
+    }
+
+    @Test
+    @DisplayName("publish：请求不传标题则沿用库内标题")
+    void publish_fallsBackToStoredTitle() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
+
+        service.publish(ORDER_ID, publishFrom(null, 0L), CREATOR);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaUpdateWrapper<DiningOrder>> captor =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(orderMapper).update(any(), captor.capture());
+        captor.getValue().getSqlSegment(); // 物化惰性 SQL 段，WHERE/SET 参数才进入参数表
+        assertTrue(captor.getValue().getParamNameValuePairs().containsValue("周五晚火锅"));
+    }
+
+    @Test
+    @DisplayName("publish：标题必填（库内空 + 请求空/纯空白均拒绝，且不落库）")
+    void publish_blankTitle_rejected() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(
+                new DiningOrder().setId(ORDER_ID).setTitle("").setStatus("DRAFT")
+                        .setJoinToken("tok").setVersion(0).setCreatorUserId(CREATOR));
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+
+        expectBusinessException("订单标题不能为空", () -> service.publish(ORDER_ID, publishFrom(null, 0L), CREATOR));
+        expectBusinessException("订单标题不能为空", () -> service.publish(ORDER_ID, publishFrom("   ", 0L), CREATOR));
+        verify(orderMapper, never()).update(any(), any(Wrapper.class));
+    }
+
+    @Test
+    @DisplayName("publish：菜单为空拒绝（服务端二次校验，防止 publish 前菜单被清空）")
+    void publish_emptyMenu_rejected() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+
+        expectBusinessException("本单菜单不能为空，无法发起点单",
+                () -> service.publish(ORDER_ID, publishFrom("标题", 0L), CREATOR));
+        verify(orderMapper, never()).update(any(), any(Wrapper.class));
+    }
+
+    @Test
+    @DisplayName("publish：仅发起者可定稿；非成员/非发起者拒绝")
+    void publish_notCreator_rejected() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        expectBusinessException("仅发起者可发起点单",
+                () -> service.publish(ORDER_ID, publishFrom("标题", 0L), JOINER));
+        verify(orderMapper, never()).update(any(), any(Wrapper.class));
+    }
+
+    @Test
+    @DisplayName("publish：非法状态迁移拒绝（ONGOING 重复 publish / FINISHED 已结束）")
+    void publish_illegalTransition_rejected() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 1, CREATOR));
+        expectBusinessException("点单已发起点单，无需重复操作",
+                () -> service.publish(ORDER_ID, publishFrom("标题", 1L), CREATOR));
+
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "FINISHED", "tok", 2, CREATOR));
+        expectBusinessException("点单已结束，无法发起点单",
+                () -> service.publish(ORDER_ID, publishFrom("标题", 2L), CREATOR));
+        verify(orderMapper, never()).update(any(), any(Wrapper.class));
+    }
+
+    @Test
+    @DisplayName("publish：version 冲突返回 409；状态已变但 version 未变返回刷新提示")
+    void publish_versionConflict_409() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(0);
+        // 服务端已递增到 1：判定为并发冲突
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 1, CREATOR));
+
+        CustomExceptions ex = assertThrows(CustomExceptions.class,
+                () -> service.publish(ORDER_ID, publishFrom("标题", 0L), CREATOR));
+        assertEquals(409, ex.getCode());
+        assertEquals("订单已被他人更新，请刷新后重试", ex.getMessage());
+    }
+
+    // ==================== 草稿加菜 / 移除 ====================
+
+    private AddDiningOrderDishFrom addDishFrom(Long recipeId, Long version) {
+        AddDiningOrderDishFrom from = new AddDiningOrderDishFrom();
+        from.setRecipeId(recipeId);
+        from.setVersion(version);
+        return from;
+    }
+
+    @Test
+    @DisplayName("加菜：DRAFT + 成员 + 上架 → 递增 version 后落菜单行")
+    void addDish_success() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 3, CREATOR));
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
+        when(menuMapper.insert(any(DiningOrderMenu.class))).thenReturn(1);
+
+        service.addDish(ORDER_ID, addDishFrom(7L, 3L), CREATOR);
+
+        verify(recipeGate).assertAllOnShelf(List.of(7L));
+        ArgumentCaptor<LambdaUpdateWrapper<DiningOrder>> captor =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(orderMapper).update(any(), captor.capture());
+        captor.getValue().getSqlSegment(); // 物化惰性 SQL 段，WHERE/SET 参数才进入参数表
+        assertTrue(captor.getValue().getParamNameValuePairs().containsValue(3L),
+                "version 闸门必须使用客户端已知版本");
+        ArgumentCaptor<DiningOrderMenu> menuCaptor = ArgumentCaptor.forClass(DiningOrderMenu.class);
+        verify(menuMapper).insert(menuCaptor.capture());
+        assertEquals(7L, menuCaptor.getValue().getRecipeId());
+    }
+
+    @Test
+    @DisplayName("加菜：已存在按幂等成功（不重复落库、不递增 version）")
+    void addDish_idempotent() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 3, CREATOR));
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+
+        service.addDish(ORDER_ID, addDishFrom(7L, 3L), CREATOR);
+
+        verify(orderMapper, never()).update(any(), any(Wrapper.class));
+        verify(menuMapper, never()).insert(any(DiningOrderMenu.class));
+    }
+
+    @Test
+    @DisplayName("加菜：并发撞 uk_order_recipe 按幂等成功处理（不向上抛）")
+    void addDish_duplicateKey_idempotent() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 3, CREATOR));
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
+        when(menuMapper.insert(any(DiningOrderMenu.class)))
+                .thenThrow(new DuplicateKeyException("uk_order_recipe"));
+
+        service.addDish(ORDER_ID, addDishFrom(7L, 3L), CREATOR);
+    }
+
+    @Test
+    @DisplayName("加菜：非 DRAFT / 非成员 / 下架菜 / version 缺失 / version 冲突均拒绝")
+    void addDish_guards() {
+        // 非 DRAFT
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 3, CREATOR));
+        expectBusinessException("点单已定稿，不能编辑菜单",
+                () -> service.addDish(ORDER_ID, addDishFrom(7L, 3L), CREATOR));
+
+        // 非成员
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 3, CREATOR));
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        expectBusinessException("仅订单成员可以加菜",
+                () -> service.addDish(ORDER_ID, addDishFrom(7L, 3L), JOINER));
+
+        // 下架/不存在
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        org.mockito.Mockito.doThrow(new CustomExceptions("部分菜谱不存在或已下架，无法加入本单菜单"))
+                .when(recipeGate).assertAllOnShelf(any());
+        expectBusinessException("部分菜谱不存在或已下架，无法加入本单菜单",
+                () -> service.addDish(ORDER_ID, addDishFrom(404L, 3L), CREATOR));
+
+        // 后续用例不再受上架桩影响
+        org.mockito.Mockito.doNothing().when(recipeGate).assertAllOnShelf(any());
+
+        // version 缺失
+        expectBusinessException("已知版本号 version 不能为空",
+                () -> service.addDish(ORDER_ID, addDishFrom(7L, null), CREATOR));
+
+        // version 冲突
+        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(0);
+        CustomExceptions ex = assertThrows(CustomExceptions.class,
+                () -> service.addDish(ORDER_ID, addDishFrom(7L, 99L), CREATOR));
+        assertEquals(409, ex.getCode());
+        verify(menuMapper, never()).insert(any(DiningOrderMenu.class));
+    }
+
+    @Test
+    @DisplayName("移除菜：全部成员可移除任意菜（含发起者加的），递增 version 后删行")
+    void removeDish_success() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 3, CREATOR));
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
+        when(menuMapper.delete(any(Wrapper.class))).thenReturn(1);
+
+        // JOINER 并非该菜的「归属人」——草稿期不校验归属（拍板②）
+        service.removeDish(ORDER_ID, 7L, 3L, JOINER);
+
+        ArgumentCaptor<LambdaUpdateWrapper<DiningOrder>> captor =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(orderMapper).update(any(), captor.capture());
+        captor.getValue().getSqlSegment(); // 物化惰性 SQL 段，WHERE/SET 参数才进入参数表
+        assertTrue(captor.getValue().getParamNameValuePairs().containsValue(3L));
+        verify(menuMapper).delete(any(Wrapper.class));
+    }
+
+    @Test
+    @DisplayName("移除菜：不存在按幂等成功（不递增 version、不删行）")
+    void removeDish_idempotent() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 3, CREATOR));
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+
+        service.removeDish(ORDER_ID, 7L, 3L, CREATOR);
+
+        verify(orderMapper, never()).update(any(), any(Wrapper.class));
+        verify(menuMapper, never()).delete(any(Wrapper.class));
+    }
+
+    @Test
+    @DisplayName("移除菜：非 DRAFT / 非成员 / version 缺失 / version 冲突均拒绝")
+    void removeDish_guards() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 3, CREATOR));
+        expectBusinessException("点单已定稿，不能编辑菜单",
+                () -> service.removeDish(ORDER_ID, 7L, 3L, CREATOR));
+
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 3, CREATOR));
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        expectBusinessException("仅订单成员可以移除菜",
+                () -> service.removeDish(ORDER_ID, 7L, 3L, JOINER));
+
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        expectBusinessException("已知版本号 version 不能为空",
+                () -> service.removeDish(ORDER_ID, 7L, null, CREATOR));
+
+        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(0);
+        CustomExceptions ex = assertThrows(CustomExceptions.class,
+                () -> service.removeDish(ORDER_ID, 7L, 99L, CREATOR));
+        assertEquals(409, ex.getCode());
+        verify(menuMapper, never()).delete(any(Wrapper.class));
+    }
+
+    // ==================== 放弃草稿 ====================
+
+    @Test
+    @DisplayName("放弃草稿：仅发起者的 DRAFT 可删，订单行按 status 条件删后清子表")
+    void discardDraft_success() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        when(orderMapper.delete(any(Wrapper.class))).thenReturn(1);
+        when(menuMapper.delete(any(Wrapper.class))).thenReturn(1);
+        when(memberMapper.delete(any(Wrapper.class))).thenReturn(1);
+        when(itemMapper.delete(any(Wrapper.class))).thenReturn(0);
+
+        service.discardDraft(ORDER_ID, CREATOR);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<DiningOrder>> captor =
+                ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(orderMapper).delete(captor.capture());
+        captor.getValue().getSqlSegment(); // 物化惰性 SQL 段，WHERE 条件参数才进入参数表
+        assertTrue(captor.getValue().getParamNameValuePairs().containsValue("DRAFT"),
+                "订单行删除必须以 DRAFT 为条件，防止误删已定稿单");
+        verify(menuMapper).delete(any(Wrapper.class));
+        verify(memberMapper).delete(any(Wrapper.class));
+        verify(itemMapper).delete(any(Wrapper.class));
+    }
+
+    @Test
+    @DisplayName("放弃草稿：非发起者 / 非 DRAFT / 并发已定稿均拒绝")
+    void discardDraft_guards() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        expectBusinessException("仅发起者可放弃草稿", () -> service.discardDraft(ORDER_ID, JOINER));
+
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 1, CREATOR));
+        expectBusinessException("仅草稿可放弃", () -> service.discardDraft(ORDER_ID, CREATOR));
+
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        when(orderMapper.delete(any(Wrapper.class))).thenReturn(0);
+        expectBusinessException("草稿状态已变更，请刷新后重试",
+                () -> service.discardDraft(ORDER_ID, CREATOR));
+
+        verify(menuMapper, never()).delete(any(Wrapper.class));
+        verify(memberMapper, never()).delete(any(Wrapper.class));
     }
 
     // ==================== 加入 ====================
@@ -245,6 +577,23 @@ class DiningOrderServiceImplTest {
         verify(memberMapper).insert(captor.capture());
         assertEquals(ORDER_ID, captor.getValue().getOrderId());
         assertEquals(JOINER, captor.getValue().getUserId());
+    }
+
+    @Test
+    @DisplayName("加入：DRAFT 草稿同样可加入（边点边邀），成员落库并发通知")
+    void join_draftAllowed() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        when(memberMapper.selectList(any(Wrapper.class))).thenReturn(
+                List.of(new DiningOrderMember().setOrderId(ORDER_ID).setUserId(CREATOR)));
+        when(memberMapper.insert(any(DiningOrderMember.class))).thenReturn(1);
+
+        JoinDiningOrderFrom from = new JoinDiningOrderFrom();
+        from.setJoinToken("tok");
+        service.join(ORDER_ID, from, JOINER);
+
+        verify(memberMapper).insert(any(DiningOrderMember.class));
+        verify(noticeService).publishTargeted(eq(NoticeType.DINING_JOIN), any(), any(), any(), any());
     }
 
     @Test
