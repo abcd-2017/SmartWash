@@ -26,10 +26,31 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/admin/adminUsers")
 public class AdminUsersController {
+    /** 超管角色名（roles 表 role_name）：管理员账号的增删改仅超管可操作，防止 role2/role3 越权操作超管账号 */
+    private static final String ROLE_SUPER_ADMIN = "root";
+
     @Autowired
     private IAdminUsersService adminUsersService;
     @Autowired
     private SecurityUtil securityUtil;
+
+    /**
+     * 管理员账号管理门禁：仅超管（roles.role_name=root）可操作。
+     * 修复越权漏洞：此前 schools_admin 可新增/删除乃至删除超管账号——角色信息不在 JWT authorities
+     * （authorities 仅粗粒度 ROLE_ADMIN），必须回查 roles 表业务角色。
+     */
+    private boolean isSuperAdmin() {
+        LoginUser currentUser = (LoginUser) securityUtil.getCurrentUser();
+        if (currentUser == null || currentUser.getUsername() == null) {
+            return false;
+        }
+        String roleName = adminUsersService.getAdminRoleName(currentUser.getUsername());
+        if (!ROLE_SUPER_ADMIN.equals(roleName)) {
+            log.warn("管理员管理被拒绝：非超管角色, username: {}, role: {}", currentUser.getUsername(), roleName);
+            return false;
+        }
+        return true;
+    }
 
     @Operation(summary = "分页查询管理员列表", description = "根据条件分页查询管理员用户列表")
     @GetMapping("/all")
@@ -41,9 +62,12 @@ public class AdminUsersController {
     @Audited(action = "ADMIN_USER_ADD", targetType = "admin_user")
     @PostMapping("/add")
     public Result<String> addAdminUser(@RequestBody @Valid AddAdminUserFrom adminUserFrom) {
+        if (!isSuperAdmin()) {
+            return Result.failMsg("仅超级管理员可管理管理员账号");
+        }
         if (adminUsersService.getAdminUserByName(adminUserFrom.getUsername()) != null) {
             log.warn("新增管理员被拒绝：用户名已被使用, username: {}", adminUserFrom.getUsername());
-            return Result.failMsg("给管理员用户名已被使用");
+            return Result.failMsg("管理员用户名已被使用");
         }
         adminUsersService.addAdminUsers(adminUserFrom);
         log.info("新增管理员成功, username: {}", adminUserFrom.getUsername());
@@ -61,6 +85,9 @@ public class AdminUsersController {
     @Audited(action = "ADMIN_USER_UPDATE", targetType = "admin_user", targetIdSpEL = "#adminUsersFrom.adminId")
     @PostMapping("/update")
     public Result<String> updateAdminUser(@RequestBody @Valid UpdateAdminUserFrom adminUsersFrom) {
+        if (!isSuperAdmin()) {
+            return Result.failMsg("仅超级管理员可管理管理员账号");
+        }
         AdminUsers user = adminUsersService.getById(adminUsersFrom.getAdminId());
         if (user == null) {
             log.warn("更新管理员被拒绝：管理员不存在, adminId: {}", adminUsersFrom.getAdminId());
@@ -68,7 +95,7 @@ public class AdminUsersController {
         }
         if (!Objects.equals(user.getUsername(), adminUsersFrom.getUsername()) && adminUsersService.getAdminUserByName(adminUsersFrom.getUsername()) != null) {
             log.warn("更新管理员被拒绝：用户名已被使用, adminId: {}, username: {}", adminUsersFrom.getAdminId(), adminUsersFrom.getUsername());
-            return Result.failMsg("给管理员用户名已被使用");
+            return Result.failMsg("管理员用户名已被使用");
         }
         adminUsersService.updateAdminUsers(adminUsersFrom);
         log.info("更新管理员成功, adminId: {}", adminUsersFrom.getAdminId());
@@ -79,6 +106,9 @@ public class AdminUsersController {
     @Audited(action = "ADMIN_USER_DELETE", targetType = "admin_user", targetIdSpEL = "#ids")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteAdminUsers(@PathVariable("ids") @Parameter(description = "管理员ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
+        if (!isSuperAdmin()) {
+            return Result.failMsg("仅超级管理员可管理管理员账号");
+        }
         log.info("批量删除管理员, ids: {}", ids);
         // 当前登录管理员从 SecurityContext 取出传入 Service（与 getAdminUserInfo 同模式），用于防自删校验
         LoginUser currentUser = (LoginUser) securityUtil.getCurrentUser();
