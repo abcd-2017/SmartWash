@@ -295,6 +295,8 @@ private fun PermissionRow(
                 color = AppColors.colorScheme.textSecondary
             )
         }
+        // 描述长文会顶满 weight 列宽，行尾状态紧贴描述文字 → 补 12dp 间距（视觉上与标题列分离）
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = trailingText,
             style = MaterialTheme.typography.bodySmall,

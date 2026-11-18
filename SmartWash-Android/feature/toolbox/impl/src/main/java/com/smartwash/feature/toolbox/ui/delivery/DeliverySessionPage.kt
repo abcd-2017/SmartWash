@@ -587,6 +587,8 @@ private fun DeliverySendArea(
                 .navigationBarsPadding()
         ) {
             HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
+            // 状态文案与输入行共用同一 padding 列：状态列单独成列时，空态仍占 vertical
+            // padding（2×12dp），而输入行自身无内边距——输入框被顶到底部且贴屏幕左右边
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -612,8 +614,9 @@ private fun DeliverySendArea(
                     }
                     else -> {}
                 }
-            }
-            Row(verticalAlignment = Alignment.Bottom) {
+                // CenterVertically：单行态下图标中心（22dp）、文本行中心（28dp）、发送钮中心
+                // 对齐；Bottom 对齐时 44dp 按钮贴行底，与文本基线差 6dp，多行态随输入居中
+                Row(verticalAlignment = Alignment.CenterVertically) {
                 // 选图片 / 选文件 — 44dp 热区图标入口（次级 36 容器内 20 图标，蓝·物流语义）
                 PickerIconButton(
                     icon = Icons.Rounded.AddPhotoAlternate,
@@ -644,7 +647,6 @@ private fun DeliverySendArea(
                 val canSend = draft.isNotBlank() && sendState !is RequestState.Loading
                 Box(
                     modifier = Modifier
-                        .padding(bottom = AppDimens.spaceXxs)
                         .size(44.dp)
                         .alpha(if (canSend) 1f else 0.5f)
                         // 禁用态给读屏 disabled 语义（视觉仍是 0.5 降透明度），
@@ -660,6 +662,7 @@ private fun DeliverySendArea(
                         tint = AppColors.colorScheme.onPrimary,
                         modifier = Modifier.size(20.dp),
                     )
+                }
                 }
             }
         }

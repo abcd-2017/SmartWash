@@ -51,7 +51,10 @@ import androidx.navigation.NavHostController
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.R
+import com.smartwash.feature.laundry.api.LaundryRoute
 import com.smartwash.feature.order.api.model.OrderInfo
+import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppCard
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingState
@@ -126,7 +129,16 @@ fun PickupPage(
 
                     PickupListState.EMPTY -> EmptyState(
                         icon = Icons.Default.LocalLaundryService,
-                        message = stringResource(R.string.no_pickup_orders)
+                        message = stringResource(R.string.no_pickup_orders),
+                        // 规范 §3.6 空态三件套：引导文案 + 行动按钮（跳预约下单，与订单列表空态一致）
+                        action = {
+                            AppButton(
+                                small = true,
+                                text = stringResource(com.smartwash.feature.order.impl.R.string.go_order),
+                                onClick = { navController.navigate(LaundryRoute.Laundry()) },
+                                variant = AppButtonVariant.PRIMARY,
+                            )
+                        },
                     )
 
                     PickupListState.CONTENT -> Column(modifier = Modifier.fillMaxSize()) {
