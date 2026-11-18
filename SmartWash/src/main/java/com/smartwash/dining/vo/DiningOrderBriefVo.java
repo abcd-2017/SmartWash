@@ -16,7 +16,7 @@ public class DiningOrderBriefVo {
 
     private String title;
 
-    /** 订单状态：ONGOING / FINISHED（端上可提前提示已结束） */
+    /** 订单状态：DRAFT 草稿 / FINISHED 已结束（端上可提前提示已结束） */
     private String status;
 
     /** 发起者标识（脱敏手机号，如 139****9000） */

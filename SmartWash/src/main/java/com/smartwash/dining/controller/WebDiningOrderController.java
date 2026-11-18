@@ -5,7 +5,7 @@ import com.smartwash.common.Result;
 import com.smartwash.dining.from.AddDiningOrderDishFrom;
 import com.smartwash.dining.from.CreateDiningOrderFrom;
 import com.smartwash.dining.from.JoinDiningOrderFrom;
-import com.smartwash.dining.from.PublishDiningOrderFrom;
+import com.smartwash.dining.from.SubmitDiningOrderFrom;
 import com.smartwash.dining.service.DiningOrderService;
 import com.smartwash.dining.vo.DiningOrderBriefVo;
 import com.smartwash.dining.vo.DiningOrderCreatedVo;
@@ -34,12 +34,12 @@ import org.springframework.web.bind.annotation.RestController;
  * 吃啥-订单用户端控制器。
  * 路径前缀 /web/auth/dining/orders，需 ROLE_USER（SecurityConfig 的 /web/auth/** 通配统一拦截，无需改权限配置）。
  * 全部接口以当前登录用户为主体（UserContextHolder 注入 userId）。
- * 草稿协同点单：create 改为创建 DRAFT（标题/菜单可空），新增 publish/加菜/移除菜/放弃草稿；
- * detail 与 my 均返回 status 供端上区分草稿/进行中。
- * 四端联动说明：本次仅用户端接口（Android/鸿蒙消费），管理端不涉及；
- * create 语义由「直接 ONGOING」变为「创建 DRAFT」，旧版本端收到 DRAFT 的兜底由端上处理。
+ * 产品模型：菜单即已选清单，全员共同编辑，发起者一步「提交」→ 订单直接结束。
+ * create 创建 DRAFT（标题/菜单可空），submit 提交即 FINISHED 并生成购买清单快照；
+ * 状态机只允许 DRAFT→FINISHED，无 ONGOING。
+ * 四端联动说明：本次仅用户端接口（Android/鸿蒙消费），管理端不涉及。
  */
-@Tag(name = "吃啥-订单用户端", description = "创建草稿/发起点单/草稿加菜/移除菜/放弃草稿/我的订单/详情轮询/加入前brief/加入/重置加入凭证/结束点单")
+@Tag(name = "吃啥-订单用户端", description = "创建草稿/提交点单/草稿加菜/移除菜/放弃草稿/我的订单/详情轮询/加入前brief/加入/重置加入凭证")
 @Slf4j
 @RestController
 @RequestMapping("/web/auth/dining/orders")
@@ -56,13 +56,13 @@ public class WebDiningOrderController {
         return Result.ok(diningOrderService.create(from, currentUserId()));
     }
 
-    @Operation(summary = "发起点单（草稿定稿）", description = "DRAFT→ONGOING；仅发起者；校验标题必填 + 菜单非空；"
-            + "携带客户端已知 version 做乐观锁，冲突返回业务码 409（端上刷新后重试）")
-    @PostMapping("/{id}/publish")
-    public Result<Void> publish(@PathVariable("id") Long id,
-                                @RequestBody @Valid PublishDiningOrderFrom from) {
-        diningOrderService.publish(id, from, currentUserId());
-        return Result.ok(null);
+    @Operation(summary = "提交点单（提交即结束）", description = "DRAFT→FINISHED；仅发起者；校验标题必填 + 菜单非空；"
+            + "聚合本单菜单生成 shopping_list 快照（按菜视图无选菜人），通知全体成员；"
+            + "携带客户端已知 version 做乐观锁，冲突返回业务码 409（端上刷新后重试）；重复提交幂等返回原快照")
+    @PostMapping("/{id}/submit")
+    public Result<DiningOrderFinishVo> submit(@PathVariable("id") Long id,
+                                              @RequestBody @Valid SubmitDiningOrderFrom from) {
+        return Result.ok(diningOrderService.submit(id, from, currentUserId()));
     }
 
     @Operation(summary = "草稿加菜", description = "往本单菜单加一道菜（recipeId）；仅 DRAFT 态、全部成员可加；"
@@ -87,7 +87,7 @@ public class WebDiningOrderController {
     }
 
     @Operation(summary = "放弃草稿", description = "仅发起者、仅 DRAFT 态；物理删除订单行与菜单/成员/选菜子行"
-            + "（项目无逻辑删除）。用于清空堆积的空草稿；已定稿/已结束拒绝")
+            + "（项目无逻辑删除）。用于清空堆积的空草稿；已提交/已结束拒绝")
     @DeleteMapping("/{id}")
     public Result<Void> discardDraft(@PathVariable("id") Long id) {
         diningOrderService.discardDraft(id, currentUserId());
@@ -95,7 +95,7 @@ public class WebDiningOrderController {
     }
 
     @Operation(summary = "我的订单列表（分页）", description = "我发起的 + 我参与的，按创建时间倒序，带 isCreator 标记；"
-            + "列表项含 status（DRAFT 草稿 / ONGOING 进行中 / FINISHED 已结束），草稿带标签展示；"
+            + "列表项含 status（DRAFT 草稿 / FINISHED 已结束），草稿带标签展示；"
             + "page 默认 1、size 默认 10 上限 100")
     @GetMapping("/my")
     public Result<Page<DiningOrderListVo>> my(@Valid BaseSearchFrom from) {
@@ -105,7 +105,7 @@ public class WebDiningOrderController {
     @Operation(summary = "订单详情（轮询主接口）", description = "点单页约 3s 一次带 knownVersion 轮询："
             + "与服务端 version 一致返回 unchanged=true 轻量响应（仅 id/version/unchanged）；"
             + "不一致或未带 knownVersion 返回全量（status + 本单菜单+选菜记录+参与者+version）。"
-            + "端上按 status 切草稿编辑态（DRAFT）/ 定稿勾选态（ONGOING）；仅订单成员可查看")
+            + "端上按 status 切草稿编辑态（DRAFT）/ 已结束结果态（FINISHED）；仅订单成员可查看")
     @GetMapping("/{id}")
     public Result<DiningOrderDetailVo> detail(
             @PathVariable("id") Long id,
@@ -121,7 +121,7 @@ public class WebDiningOrderController {
         return Result.ok(diningOrderService.brief(token, currentUserId()));
     }
 
-    @Operation(summary = "加入订单", description = "校验 join_token 匹配 + 订单状态 ∈ {DRAFT, ONGOING} + 未重复加入"
+    @Operation(summary = "加入订单", description = "校验 join_token 匹配 + 订单状态为 DRAFT + 未重复加入"
             + "（凭证无效/已结束/重复加入三类失败均有明确业务提示）")
     @PostMapping("/{id}/join")
     public Result<Void> join(@PathVariable("id") Long id, @RequestBody @Valid JoinDiningOrderFrom from) {
@@ -129,17 +129,10 @@ public class WebDiningOrderController {
         return Result.ok(null);
     }
 
-    @Operation(summary = "重置加入凭证", description = "仅发起者；旧二维码全部作废，返回新 joinToken")
+    @Operation(summary = "重置加入凭证", description = "仅发起者、仅 DRAFT 态；旧二维码全部作废，返回新 joinToken")
     @PostMapping("/{id}/join-token/reset")
     public Result<String> resetJoinToken(@PathVariable("id") Long id) {
         return Result.ok(diningOrderService.resetJoinToken(id, currentUserId()));
-    }
-
-    @Operation(summary = "结束点单", description = "仅发起者且仅 ONGOING；聚合所有选菜（按菜去重取食材名并集去重 + "
-            + "按菜视图）写入 shopping_list JSON 快照，status → FINISHED 并记录 finished_at；重复调用幂等返回原快照")
-    @PostMapping("/{id}/finish")
-    public Result<DiningOrderFinishVo> finish(@PathVariable("id") Long id) {
-        return Result.ok(diningOrderService.finish(id, currentUserId()));
     }
 
     private Long currentUserId() {

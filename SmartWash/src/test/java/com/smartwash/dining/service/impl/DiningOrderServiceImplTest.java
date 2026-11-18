@@ -13,7 +13,7 @@ import com.smartwash.dining.entity.DiningOrderMenu;
 import com.smartwash.dining.from.AddDiningOrderDishFrom;
 import com.smartwash.dining.from.CreateDiningOrderFrom;
 import com.smartwash.dining.from.JoinDiningOrderFrom;
-import com.smartwash.dining.from.PublishDiningOrderFrom;
+import com.smartwash.dining.from.SubmitDiningOrderFrom;
 import com.smartwash.dining.mapper.DiningOrderItemMapper;
 import com.smartwash.dining.mapper.DiningOrderMapper;
 import com.smartwash.dining.mapper.DiningOrderMemberMapper;
@@ -237,7 +237,7 @@ class DiningOrderServiceImplTest {
     @Test
     @DisplayName("创建：非源订单成员不可复用历史菜单")
     void create_notMemberOfSource_rejected() {
-        when(orderMapper.selectById(880L)).thenReturn(order(880L, "ONGOING", "t", 1, 999L));
+        when(orderMapper.selectById(880L)).thenReturn(order(880L, "DRAFT", "t", 1, 999L));
         when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
 
         expectBusinessException("仅订单成员可复用历史菜单",
@@ -257,23 +257,47 @@ class DiningOrderServiceImplTest {
         verify(menuMapper, never()).insert(any(DiningOrderMenu.class));
     }
 
-    // ==================== 发起点单（publish） ====================
+    // ==================== 提交点单（submit） ====================
 
-    private PublishDiningOrderFrom publishFrom(String title, Long version) {
-        PublishDiningOrderFrom from = new PublishDiningOrderFrom();
+    private SubmitDiningOrderFrom submitFrom(String title, Long version) {
+        SubmitDiningOrderFrom from = new SubmitDiningOrderFrom();
         from.setTitle(title);
         from.setVersion(version);
         return from;
     }
 
+    /** 桩：本单菜单两道菜 + 食材/菜名，供聚合断言 */
+    private void mockMenuAndRecipes() {
+        when(menuMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
+                new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(1L),
+                new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(2L)));
+        when(recipeGate.getIngredients(anyCollection())).thenReturn(Map.of(
+                1L, List.of("西红柿", "鸡蛋", "葱"),
+                2L, List.of("黄瓜", "蒜")));
+        when(recipeGate.getBriefs(anyCollection())).thenReturn(Map.of(
+                1L, new DiningRecipeGate.RecipeBrief(1L, "番茄炒蛋", 11L),
+                2L, new DiningRecipeGate.RecipeBrief(2L, "凉拌黄瓜", 11L)));
+    }
+
     @Test
-    @DisplayName("publish：DRAFT→ONGOING 条件 UPDATE 成功，标题随请求落库")
-    void publish_success() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
-        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(2L);
+    @DisplayName("submit：DRAFT→FINISHED 条件 UPDATE 成功，聚合本单菜单写快照，标题随请求落库")
+    void submit_success() {
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        mockMenuAndRecipes();
         when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
 
-        service.publish(ORDER_ID, publishFrom("定稿标题", 0L), CREATOR);
+        DiningOrderFinishVo vo = service.submit(ORDER_ID, submitFrom("定稿标题", 0L), CREATOR);
+
+        assertEquals(ORDER_ID, vo.getId());
+        assertEquals("FINISHED", vo.getStatus());
+        assertEquals("定稿标题", vo.getTitle());
+        assertNotNull(vo.getFinishedAt());
+        // 菜单即已选清单：两道菜食材并集进清单，按菜视图无选菜人
+        assertTrue(vo.getShoppingList().contains("西红柿"));
+        assertTrue(vo.getShoppingList().contains("葱"));
+        assertTrue(vo.getShoppingList().contains("黄瓜"));
+        assertTrue(vo.getShoppingList().contains("番茄炒蛋"));
+        assertTrue(vo.getShoppingList().contains("凉拌黄瓜"));
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<LambdaUpdateWrapper<DiningOrder>> captor =
@@ -281,20 +305,20 @@ class DiningOrderServiceImplTest {
         verify(orderMapper).update(any(), captor.capture());
         captor.getValue().getSqlSegment(); // 物化惰性 SQL 段，WHERE/SET 参数才进入参数表
         Map<String, Object> params = captor.getValue().getParamNameValuePairs();
-        assertTrue(params.containsValue("ONGOING"), "状态必须置为 ONGOING");
+        assertTrue(params.containsValue("FINISHED"), "状态必须置为 FINISHED");
         assertTrue(params.containsValue("DRAFT"), "条件 UPDATE 必须以 DRAFT 为闸门");
         assertTrue(params.containsValue(0L), "条件 UPDATE 必须以客户端已知 version 为闸门");
         assertTrue(params.containsValue("定稿标题"), "请求携带的标题必须落库");
     }
 
     @Test
-    @DisplayName("publish：请求不传标题则沿用库内标题")
-    void publish_fallsBackToStoredTitle() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
-        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+    @DisplayName("submit：请求不传标题则沿用库内标题")
+    void submit_fallsBackToStoredTitle() {
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        mockMenuAndRecipes();
         when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
 
-        service.publish(ORDER_ID, publishFrom(null, 0L), CREATOR);
+        service.submit(ORDER_ID, submitFrom(null, 0L), CREATOR);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<LambdaUpdateWrapper<DiningOrder>> captor =
@@ -305,64 +329,101 @@ class DiningOrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("publish：标题必填（库内空 + 请求空/纯空白均拒绝，且不落库）")
-    void publish_blankTitle_rejected() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(
+    @DisplayName("submit：标题必填（库内空 + 请求空/纯空白均拒绝，且不落库）")
+    void submit_blankTitle_rejected() {
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(
                 new DiningOrder().setId(ORDER_ID).setTitle("").setStatus("DRAFT")
                         .setJoinToken("tok").setVersion(0).setCreatorUserId(CREATOR));
-        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
 
-        expectBusinessException("订单标题不能为空", () -> service.publish(ORDER_ID, publishFrom(null, 0L), CREATOR));
-        expectBusinessException("订单标题不能为空", () -> service.publish(ORDER_ID, publishFrom("   ", 0L), CREATOR));
+        expectBusinessException("订单标题不能为空", () -> service.submit(ORDER_ID, submitFrom(null, 0L), CREATOR));
+        expectBusinessException("订单标题不能为空", () -> service.submit(ORDER_ID, submitFrom("   ", 0L), CREATOR));
         verify(orderMapper, never()).update(any(), any(Wrapper.class));
     }
 
     @Test
-    @DisplayName("publish：菜单为空拒绝（服务端二次校验，防止 publish 前菜单被清空）")
-    void publish_emptyMenu_rejected() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
-        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+    @DisplayName("submit：菜单为空拒绝（服务端二次校验，防止提交前菜单被清空）")
+    void submit_emptyMenu_rejected() {
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        when(menuMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
 
-        expectBusinessException("本单菜单不能为空，无法发起点单",
-                () -> service.publish(ORDER_ID, publishFrom("标题", 0L), CREATOR));
+        expectBusinessException("本单菜单不能为空，无法提交点单",
+                () -> service.submit(ORDER_ID, submitFrom("标题", 0L), CREATOR));
         verify(orderMapper, never()).update(any(), any(Wrapper.class));
     }
 
     @Test
-    @DisplayName("publish：仅发起者可定稿；非成员/非发起者拒绝")
-    void publish_notCreator_rejected() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
-        expectBusinessException("仅发起者可发起点单",
-                () -> service.publish(ORDER_ID, publishFrom("标题", 0L), JOINER));
+    @DisplayName("submit：仅发起者可提交；非发起者拒绝")
+    void submit_notCreator_rejected() {
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        expectBusinessException("仅发起者可提交点单",
+                () -> service.submit(ORDER_ID, submitFrom("标题", 0L), JOINER));
         verify(orderMapper, never()).update(any(), any(Wrapper.class));
     }
 
     @Test
-    @DisplayName("publish：非法状态迁移拒绝（ONGOING 重复 publish / FINISHED 已结束）")
-    void publish_illegalTransition_rejected() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 1, CREATOR));
-        expectBusinessException("点单已发起点单，无需重复操作",
-                () -> service.publish(ORDER_ID, publishFrom("标题", 1L), CREATOR));
-
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "FINISHED", "tok", 2, CREATOR));
-        expectBusinessException("点单已结束，无法发起点单",
-                () -> service.publish(ORDER_ID, publishFrom("标题", 2L), CREATOR));
+    @DisplayName("submit：脏数据状态（非 DRAFT/FINISHED）拒绝")
+    void submit_illegalStatus_rejected() {
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "LEGACY", "tok", 1, CREATOR));
+        expectBusinessException("点单状态异常，无法提交",
+                () -> service.submit(ORDER_ID, submitFrom("标题", 1L), CREATOR));
         verify(orderMapper, never()).update(any(), any(Wrapper.class));
     }
 
     @Test
-    @DisplayName("publish：version 冲突返回 409；状态已变但 version 未变返回刷新提示")
-    void publish_versionConflict_409() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
-        when(menuMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+    @DisplayName("submit：version 冲突返回 409")
+    void submit_versionConflict_409() {
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        mockMenuAndRecipes();
         when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(0);
         // 服务端已递增到 1：判定为并发冲突
         when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 1, CREATOR));
 
         CustomExceptions ex = assertThrows(CustomExceptions.class,
-                () -> service.publish(ORDER_ID, publishFrom("标题", 0L), CREATOR));
+                () -> service.submit(ORDER_ID, submitFrom("标题", 0L), CREATOR));
         assertEquals(409, ex.getCode());
         assertEquals("订单已被他人更新，请刷新后重试", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("submit：并发窗口条件 UPDATE 影响 0 行但订单已被提交 → 幂等返回其快照")
+    void submit_concurrentFinished_idempotent() {
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        mockMenuAndRecipes();
+        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(0);
+        DiningOrder finished = order(ORDER_ID, "FINISHED", "tok", 1, CREATOR);
+        finished.setShoppingList("{\"ingredientNames\":[\"西红柿\"]}");
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(finished);
+
+        DiningOrderFinishVo vo = service.submit(ORDER_ID, submitFrom("标题", 0L), CREATOR);
+
+        assertEquals("{\"ingredientNames\":[\"西红柿\"]}", vo.getShoppingList());
+        assertEquals("FINISHED", vo.getStatus());
+    }
+
+    @Test
+    @DisplayName("submit：已 FINISHED 幂等返回库内原快照，不聚合不更新")
+    void submit_alreadyFinished_idempotent() {
+        DiningOrder finished = order(ORDER_ID, "FINISHED", "tok", 1, CREATOR);
+        finished.setShoppingList("{\"ingredientNames\":[\"西红柿\"]}");
+        finished.setFinishedAt(LocalDateTime.of(2026, 1, 1, 10, 0));
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(finished);
+
+        DiningOrderFinishVo vo = service.submit(ORDER_ID, submitFrom("标题", 1L), CREATOR);
+
+        assertEquals("{\"ingredientNames\":[\"西红柿\"]}", vo.getShoppingList(), "必须返回原快照");
+        assertEquals("FINISHED", vo.getStatus());
+        assertEquals(LocalDateTime.of(2026, 1, 1, 10, 0), vo.getFinishedAt());
+        verify(orderMapper, never()).update(any(), any(Wrapper.class));
+        verify(menuMapper, never()).selectList(any(Wrapper.class));
+        verify(recipeGate, never()).getIngredients(anyCollection());
+        verify(noticeService, never()).publishTargeted(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("submit：订单不存在拒绝")
+    void submit_orderMissing_rejected() {
+        when(orderMapper.selectForUpdate(404L)).thenReturn(null);
+        expectBusinessException("点单不存在", () -> service.submit(404L, submitFrom("标题", 0L), CREATOR));
     }
 
     // ==================== 草稿加菜 / 移除 ====================
@@ -426,9 +487,9 @@ class DiningOrderServiceImplTest {
     @Test
     @DisplayName("加菜：非 DRAFT / 非成员 / 下架菜 / version 缺失 / version 冲突均拒绝")
     void addDish_guards() {
-        // 非 DRAFT
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 3, CREATOR));
-        expectBusinessException("点单已定稿，不能编辑菜单",
+        // 非 DRAFT（已结束）
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "FINISHED", "tok", 3, CREATOR));
+        expectBusinessException("点单已结束，不能编辑菜单",
                 () -> service.addDish(ORDER_ID, addDishFrom(7L, 3L), CREATOR));
 
         // 非成员
@@ -496,8 +557,8 @@ class DiningOrderServiceImplTest {
     @Test
     @DisplayName("移除菜：非 DRAFT / 非成员 / version 缺失 / version 冲突均拒绝")
     void removeDish_guards() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 3, CREATOR));
-        expectBusinessException("点单已定稿，不能编辑菜单",
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "FINISHED", "tok", 3, CREATOR));
+        expectBusinessException("点单已结束，不能编辑菜单",
                 () -> service.removeDish(ORDER_ID, 7L, 3L, CREATOR));
 
         when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 3, CREATOR));
@@ -548,7 +609,7 @@ class DiningOrderServiceImplTest {
         when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
         expectBusinessException("仅发起者可放弃草稿", () -> service.discardDraft(ORDER_ID, JOINER));
 
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 1, CREATOR));
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "FINISHED", "tok", 1, CREATOR));
         expectBusinessException("仅草稿可放弃", () -> service.discardDraft(ORDER_ID, CREATOR));
 
         when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
@@ -563,9 +624,9 @@ class DiningOrderServiceImplTest {
     // ==================== 加入 ====================
 
     @Test
-    @DisplayName("加入：token 匹配且 ONGOING → 成员落库")
+    @DisplayName("加入：token 匹配且 DRAFT → 成员落库")
     void join_success() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 0, CREATOR));
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
         when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
         when(memberMapper.insert(any(DiningOrderMember.class))).thenReturn(1);
 
@@ -599,7 +660,7 @@ class DiningOrderServiceImplTest {
     @Test
     @DisplayName("加入：发布 DINING_JOIN 定向通知——接收人=发起者+既有参与者（不含操作人），深链指向订单详情")
     void join_publishesDiningJoinNotice_excludingOperator() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 0, CREATOR));
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
         when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
         // 既有参与者：发起者 + 103（操作人 102 尚未加入）
         when(memberMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
@@ -632,7 +693,7 @@ class DiningOrderServiceImplTest {
     @Test
     @DisplayName("加入：发布失败向上抛出（不吞异常），业务写随事务回滚")
     void join_noticeFailure_propagates() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 0, CREATOR));
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
         when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
         when(memberMapper.selectList(any(Wrapper.class))).thenReturn(
                 List.of(new DiningOrderMember().setOrderId(ORDER_ID).setUserId(CREATOR)));
@@ -651,7 +712,7 @@ class DiningOrderServiceImplTest {
     void join_failurePaths_rejected() {
         JoinDiningOrderFrom wrongToken = new JoinDiningOrderFrom();
         wrongToken.setJoinToken("bad-token");
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 0, CREATOR));
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
         expectBusinessException("加入凭证无效或已重置", () -> service.join(ORDER_ID, wrongToken, JOINER));
 
         when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "FINISHED", "tok", 5, CREATOR));
@@ -659,7 +720,7 @@ class DiningOrderServiceImplTest {
         goodToken.setJoinToken("tok");
         expectBusinessException("点单已结束，无法加入", () -> service.join(ORDER_ID, goodToken, JOINER));
 
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 0, CREATOR));
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
         when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
         expectBusinessException("你已在该点单中", () -> service.join(ORDER_ID, goodToken, JOINER));
 
@@ -670,7 +731,7 @@ class DiningOrderServiceImplTest {
     @Test
     @DisplayName("加入：并发撞 uk_order_user（DuplicateKeyException）仍按防重复拒绝")
     void join_duplicateKeyFallback_rejected() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 0, CREATOR));
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
         when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
         when(memberMapper.insert(any(DiningOrderMember.class))).thenThrow(new DuplicateKeyException("uk_order_user"));
 
@@ -685,7 +746,7 @@ class DiningOrderServiceImplTest {
     @Test
     @DisplayName("重置凭证：仅发起者；生成新 token 并精确 SET（不触碰 version）")
     void resetJoinToken_creatorOnly() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "old", 0, CREATOR));
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "old", 0, CREATOR));
         when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
 
         expectBusinessException("仅发起者可重置加入凭证", () -> service.resetJoinToken(ORDER_ID, JOINER));
@@ -715,7 +776,7 @@ class DiningOrderServiceImplTest {
     @Test
     @DisplayName("详情轮询：knownVersion 与服务端一致 → unchanged=true 轻量响应，不组装菜单/成员/选菜")
     void detail_knownVersionMatches_lightweight() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 3, CREATOR));
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 3, CREATOR));
         when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
 
         DiningOrderDetailVo vo = service.detail(ORDER_ID, 3L, CREATOR);
@@ -732,7 +793,7 @@ class DiningOrderServiceImplTest {
     @Test
     @DisplayName("详情全量：knownVersion 不匹配 → 全量组装（菜单/选菜/参与者/脱敏手机号/isCreator）")
     void detail_versionChanged_fullAssembly() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 5, CREATOR));
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 5, CREATOR));
         when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
 
         DiningOrderMenu menu = new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(1L);
@@ -767,7 +828,7 @@ class DiningOrderServiceImplTest {
     @Test
     @DisplayName("详情：非成员 / 订单不存在 → 拒绝")
     void detail_accessControl() {
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 0, CREATOR));
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
         when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
         expectBusinessException("仅订单成员可查看点单详情", () -> service.detail(ORDER_ID, null, JOINER));
 
@@ -781,7 +842,7 @@ class DiningOrderServiceImplTest {
     @DisplayName("brief：凭 token 换标题/发起者脱敏手机号/菜品数/joined 标记")
     void brief_success() {
         // getOne(wrapper, false) 的内部实现随 MP 版本走 selectOne/selectList 不同路径，三重 mock 兜住
-        DiningOrder found = order(ORDER_ID, "ONGOING", "tok", 0, CREATOR);
+        DiningOrder found = order(ORDER_ID, "DRAFT", "tok", 0, CREATOR);
         when(orderMapper.selectOne(any(Wrapper.class))).thenReturn(found);
         when(orderMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(found);
         doReturn(List.of(found)).when(orderMapper).selectList(any(Wrapper.class));
@@ -793,7 +854,7 @@ class DiningOrderServiceImplTest {
 
         assertEquals(ORDER_ID, vo.getOrderId());
         assertEquals("周五晚火锅", vo.getTitle());
-        assertEquals("ONGOING", vo.getStatus());
+        assertEquals("DRAFT", vo.getStatus());
         assertEquals("139****0001", vo.getCreatorName());
         assertEquals(2L, vo.getRecipeCount());
         assertFalse(vo.getJoined());
@@ -814,11 +875,18 @@ class DiningOrderServiceImplTest {
     @DisplayName("列表分页：透传 page/size，转换 VO 保持库内倒序并按 isCreator 标记（我发起/我参与）")
     void pageMy_mapsVoWithIsCreator() {
         // JOINER 参与 881（他人发起）、发起 880；合并与倒序由 mapper SQL 负责，服务层透传并转换
-        DiningOrder joinedNewer = order(881L, "ONGOING", "t1", 2, CREATOR);
-        DiningOrder createdOrder = order(880L, "ONGOING", "t2", 0, JOINER);
+        DiningOrder joinedNewer = order(881L, "DRAFT", "t1", 2, CREATOR);
+        DiningOrder createdOrder = order(880L, "DRAFT", "t2", 0, JOINER);
         Page<DiningOrder> entityPage = new Page<>(1, 10, 2);
         entityPage.setRecords(List.of(joinedNewer, createdOrder));
         when(orderMapper.selectMyOrderPage(any(Page.class), eq(JOINER))).thenReturn(entityPage);
+        // 批量摘要：一次查两份单的菜单，一次取食材名
+        when(menuMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
+                new DiningOrderMenu().setOrderId(881L).setRecipeId(1L),
+                new DiningOrderMenu().setOrderId(880L).setRecipeId(2L)));
+        when(recipeGate.getIngredients(anyCollection())).thenReturn(Map.of(
+                1L, List.of("西红柿", "鸡蛋"),
+                2L, List.of("黄瓜")));
 
         Page<DiningOrderListVo> result = service.pageMy(new BaseSearchFrom(), JOINER);
 
@@ -828,12 +896,41 @@ class DiningOrderServiceImplTest {
         assertFalse(result.getRecords().get(0).getIsCreator());
         assertEquals(880L, result.getRecords().get(1).getId());
         assertTrue(result.getRecords().get(1).getIsCreator());
+        // 列表摘要：菜单菜数 + 食材名并集（批量组装，无 N+1）
+        assertEquals(1, result.getRecords().get(0).getMenuCount());
+        assertEquals("西红柿、鸡蛋", result.getRecords().get(0).getIngredientSummary());
+        assertEquals(1, result.getRecords().get(1).getMenuCount());
+        assertEquals("黄瓜", result.getRecords().get(1).getIngredientSummary());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Page<DiningOrder>> pageCaptor = ArgumentCaptor.forClass(Page.class);
         verify(orderMapper).selectMyOrderPage(pageCaptor.capture(), eq(JOINER));
         assertEquals(1L, pageCaptor.getValue().getCurrent());
         assertEquals(10L, pageCaptor.getValue().getSize());
+        verify(menuMapper, org.mockito.Mockito.times(1)).selectList(any(Wrapper.class));
+        verify(recipeGate, org.mockito.Mockito.times(1)).getIngredients(anyCollection());
+    }
+
+    @Test
+    @DisplayName("列表摘要：食材名超过 6 个截断加「…」；无菜单时菜数 0、摘要空串")
+    void pageMy_summaryTruncatesAndEmpty() {
+        DiningOrder many = order(882L, "DRAFT", "t3", 0, JOINER);
+        DiningOrder emptyMenu = order(883L, "DRAFT", "t4", 0, JOINER);
+        Page<DiningOrder> entityPage = new Page<>(1, 10, 2);
+        entityPage.setRecords(List.of(many, emptyMenu));
+        when(orderMapper.selectMyOrderPage(any(Page.class), eq(JOINER))).thenReturn(entityPage);
+        when(menuMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
+                new DiningOrderMenu().setOrderId(882L).setRecipeId(1L)));
+        when(recipeGate.getIngredients(anyCollection())).thenReturn(Map.of(
+                1L, List.of("西红柿", "鸡蛋", "葱", "黄瓜", "蒜", "辣椒", "花椒")));
+
+        Page<DiningOrderListVo> result = service.pageMy(new BaseSearchFrom(), JOINER);
+
+        assertEquals(1, result.getRecords().get(0).getMenuCount());
+        assertEquals("西红柿、鸡蛋、葱、黄瓜、蒜、辣椒…",
+                result.getRecords().get(0).getIngredientSummary(), "超过 6 个须截断并加省略号");
+        assertEquals(0, result.getRecords().get(1).getMenuCount());
+        assertEquals("", result.getRecords().get(1).getIngredientSummary());
     }
 
     @Test
@@ -849,67 +946,24 @@ class DiningOrderServiceImplTest {
         assertTrue(result.getRecords().isEmpty());
     }
 
-    // ==================== 结束点单 ====================
+    // ==================== 提交通知与 v2 快照 ====================
 
     @Test
-    @DisplayName("结束点单：仅发起者；聚合食材并集 + 按菜视图写快照，status→FINISHED 且记录 finished_at")
-    void finish_success_aggregatesSnapshot() {
-        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 3, CREATOR));
-        when(menuMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
-                new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(1L),
-                new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(2L)));
-        when(recipeGate.getIngredients(anyCollection())).thenReturn(Map.of(
-                1L, List.of("西红柿", "鸡蛋", "葱"),
-                2L, List.of("黄瓜", "蒜")));
-        when(recipeGate.getBriefs(anyCollection())).thenReturn(Map.of(
-                1L, new DiningRecipeGate.RecipeBrief(1L, "番茄炒蛋", 11L),
-                2L, new DiningRecipeGate.RecipeBrief(2L, "凉拌黄瓜", 11L)));
-        when(itemMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
-                new DiningOrderItem().setOrderId(ORDER_ID).setRecipeId(1L).setUserId(JOINER).setNote("不要辣"),
-                new DiningOrderItem().setOrderId(ORDER_ID).setRecipeId(2L).setUserId(CREATOR).setNote(null)));
-        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
-
-        DiningOrderFinishVo vo = service.finish(ORDER_ID, CREATOR);
-
-        assertEquals(ORDER_ID, vo.getId());
-        assertEquals("FINISHED", vo.getStatus());
-        assertNotNull(vo.getFinishedAt());
-        // 按食材：两道菜食材并集（西红柿、鸡蛋、葱、黄瓜、蒜）
-        assertTrue(vo.getShoppingList().contains("西红柿"), "购买清单须含番茄炒蛋的食材");
-        assertTrue(vo.getShoppingList().contains("葱"));
-        assertTrue(vo.getShoppingList().contains("黄瓜"));
-        // 按菜视图：菜名 + 选菜人备注
-        assertTrue(vo.getShoppingList().contains("番茄炒蛋"), "按菜视图须含菜名");
-        assertTrue(vo.getShoppingList().contains("不要辣"), "按菜视图须含选菜人备注");
-
-        // 状态条件 UPDATE：SET FINISHED + 快照 + finished_at
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<LambdaUpdateWrapper<DiningOrder>> captor =
-                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
-        verify(orderMapper).update(any(), captor.capture());
-        captor.getValue().getSqlSegment(); // 物化惰性 SQL 段，WHERE 条件参数才进入参数表
-        Map<String, Object> params = captor.getValue().getParamNameValuePairs();
-        assertTrue(params.containsValue("FINISHED"), "状态必须置为 FINISHED");
-        assertTrue(params.containsValue("ONGOING"), "条件 UPDATE 必须以 ONGOING 为闸门");
-    }
-
-    @Test
-    @DisplayName("结束点单：发布 DINING_FINISH 定向通知——接收人=全体成员，深链指向订单详情")
-    void finish_publishesDiningFinishNotice_toAllMembers() {
-        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 3, CREATOR));
+    @DisplayName("submit：发布 DINING_FINISH 定向通知——接收人=全体成员，深链指向订单详情")
+    void submit_publishesDiningFinishNotice_toAllMembers() {
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
         when(menuMapper.selectList(any(Wrapper.class))).thenReturn(
                 List.of(new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(1L)));
         when(recipeGate.getIngredients(anyCollection())).thenReturn(Map.of(1L, List.of("西红柿")));
         when(recipeGate.getBriefs(anyCollection())).thenReturn(
                 Map.of(1L, new DiningRecipeGate.RecipeBrief(1L, "番茄炒蛋", 11L)));
-        when(itemMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
         when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
         // 全体成员：发起者 + 参与者
         when(memberMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
                 new DiningOrderMember().setOrderId(ORDER_ID).setUserId(CREATOR),
                 new DiningOrderMember().setOrderId(ORDER_ID).setUserId(JOINER)));
 
-        service.finish(ORDER_ID, CREATOR);
+        service.submit(ORDER_ID, submitFrom("周五晚火锅", 0L), CREATOR);
 
         // 发布时机：状态条件 UPDATE 成功之后（同事务，通知随业务写一起提交）
         InOrder inOrder = inOrder(orderMapper, noticeService);
@@ -925,13 +979,13 @@ class DiningOrderServiceImplTest {
                 any(),
                 eq("smartwash://dining/order/900?t=tok"),
                 receiversCaptor.capture());
-        assertEquals(List.of(CREATOR, JOINER), receiversCaptor.getValue(), "结束通知接收人必须是全体成员") ;
+        assertEquals(List.of(CREATOR, JOINER), receiversCaptor.getValue(), "提交通知接收人必须是全体成员");
     }
 
     @Test
-    @DisplayName("结束点单 v2：配料明细与热量进快照（ingredientTotals 归一求和/totalCalories/未知计数），无明细老菜谱回落名列表")
-    void finish_v2_snapshotIncludesTotalsAndCalories() {
-        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 3, CREATOR));
+    @DisplayName("submit v2：配料明细与热量进快照（ingredientTotals 归一求和/totalCalories/未知计数），无明细老菜谱回落名列表")
+    void submit_v2_snapshotIncludesTotalsAndCalories() {
+        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
         when(menuMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
                 new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(1L),
                 new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(2L)));
@@ -947,12 +1001,9 @@ class DiningOrderServiceImplTest {
                         new DiningRecipeGate.IngredientDetail("西红柿", new java.math.BigDecimal("1.8"), "kg"))));
         when(recipeGate.getServingCalories(anyCollection())).thenReturn(Map.of(
                 1L, new java.math.BigDecimal("1051")));
-        when(itemMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
-                new DiningOrderItem().setOrderId(ORDER_ID).setRecipeId(1L).setUserId(JOINER).setNote(null),
-                new DiningOrderItem().setOrderId(ORDER_ID).setRecipeId(2L).setUserId(CREATOR).setNote(null)));
         when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
 
-        DiningOrderFinishVo vo = service.finish(ORDER_ID, CREATOR);
+        DiningOrderFinishVo vo = service.submit(ORDER_ID, submitFrom("周五晚火锅", 0L), CREATOR);
 
         com.fasterxml.jackson.databind.JsonNode snapshot = com.smartwash.utils.JsonUtils.readTree(vo.getShoppingList());
         // 配料聚合：kg→g 归一求和（1.8kg → 1800g），老菜谱的黄瓜只进名并集不进数量聚合
@@ -974,62 +1025,6 @@ class DiningOrderServiceImplTest {
         // v1 字段不丢：名并集与按菜视图仍在
         assertTrue(snapshot.path("ingredientNames").size() >= 3);
         assertEquals(2, snapshot.path("perRecipe").size());
-    }
-
-    @Test
-    @DisplayName("结束点单：已 FINISHED 幂等返回库内原快照，不聚合不更新")
-    void finish_alreadyFinished_idempotent() {
-        DiningOrder finished = order(ORDER_ID, "FINISHED", "tok", 3, CREATOR);
-        finished.setShoppingList("{\"ingredientNames\":[\"西红柿\"]}");
-        finished.setFinishedAt(LocalDateTime.of(2026, 1, 1, 10, 0));
-        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(finished);
-
-        DiningOrderFinishVo vo = service.finish(ORDER_ID, CREATOR);
-
-        assertEquals("{\"ingredientNames\":[\"西红柿\"]}", vo.getShoppingList(), "必须返回原快照");
-        assertEquals("FINISHED", vo.getStatus());
-        assertEquals(LocalDateTime.of(2026, 1, 1, 10, 0), vo.getFinishedAt());
-        verify(orderMapper, never()).update(any(), any(Wrapper.class));
-        verify(menuMapper, never()).selectList(any(Wrapper.class));
-        verify(recipeGate, never()).getIngredients(anyCollection());
-        verify(noticeService, never()).publishTargeted(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("结束点单：非发起者拒绝")
-    void finish_notCreator_rejected() {
-        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 0, CREATOR));
-        expectBusinessException("仅发起者可结束点单", () -> service.finish(ORDER_ID, JOINER));
-        verify(orderMapper, never()).update(any(), any(Wrapper.class));
-        verify(noticeService, never()).publishTargeted(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("结束点单：订单不存在拒绝")
-    void finish_orderMissing_rejected() {
-        when(orderMapper.selectForUpdate(404L)).thenReturn(null);
-        expectBusinessException("点单不存在", () -> service.finish(404L, CREATOR));
-    }
-
-    @Test
-    @DisplayName("结束点单：并发窗口条件 UPDATE 影响 0 行但订单已被结束 → 幂等返回其快照")
-    void finish_concurrentFinished_idempotent() {
-        when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "ONGOING", "tok", 0, CREATOR));
-        when(menuMapper.selectList(any(Wrapper.class))).thenReturn(
-                List.of(new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(1L)));
-        when(recipeGate.getIngredients(anyCollection())).thenReturn(Map.of(1L, List.of("西红柿")));
-        when(recipeGate.getBriefs(anyCollection())).thenReturn(
-                Map.of(1L, new DiningRecipeGate.RecipeBrief(1L, "番茄炒蛋", 11L)));
-        when(itemMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
-        when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(0);
-        DiningOrder finished = order(ORDER_ID, "FINISHED", "tok", 0, CREATOR);
-        finished.setShoppingList("{\"ingredientNames\":[\"西红柿\"]}");
-        when(orderMapper.selectById(ORDER_ID)).thenReturn(finished);
-
-        DiningOrderFinishVo vo = service.finish(ORDER_ID, CREATOR);
-
-        assertEquals("{\"ingredientNames\":[\"西红柿\"]}", vo.getShoppingList());
-        assertEquals("FINISHED", vo.getStatus());
     }
 
     /** 断言抛出业务异常且消息匹配 */

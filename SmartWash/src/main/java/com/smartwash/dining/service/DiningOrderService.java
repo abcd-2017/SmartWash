@@ -6,7 +6,7 @@ import com.smartwash.dining.entity.DiningOrder;
 import com.smartwash.dining.from.AddDiningOrderDishFrom;
 import com.smartwash.dining.from.CreateDiningOrderFrom;
 import com.smartwash.dining.from.JoinDiningOrderFrom;
-import com.smartwash.dining.from.PublishDiningOrderFrom;
+import com.smartwash.dining.from.SubmitDiningOrderFrom;
 import com.smartwash.dining.vo.DiningOrderBriefVo;
 import com.smartwash.dining.vo.DiningOrderCreatedVo;
 import com.smartwash.dining.vo.DiningOrderDetailVo;
@@ -16,8 +16,8 @@ import com.smartwash.from.BaseSearchFrom;
 
 /**
  * 点单订单服务：创建草稿 / 我的订单列表 / 详情（version 轮询协议）/
- * 加入前 brief / 加入 / 重置加入凭证 / 发起点单（publish）/ 草稿期加菜与移除菜。
- * 选菜增改删见 {@link DiningOrderItemService}。
+ * 加入前 brief / 加入 / 重置加入凭证 / 提交点单（submit，提交即结束）/ 草稿期加菜与移除菜。
+ * 选菜记录（dining_order_item）已停止写入，购买清单直接聚合本单菜单。
  */
 public interface DiningOrderService extends IService<DiningOrder> {
 
@@ -28,10 +28,11 @@ public interface DiningOrderService extends IService<DiningOrder> {
     DiningOrderCreatedVo create(CreateDiningOrderFrom from, Long userId);
 
     /**
-     * 发起点单（publish）：DRAFT→ONGOING。仅发起者；校验标题必填 + 菜单非空；
-     * 携带客户端已知 version 做乐观锁，冲突返回业务错误码 409。
+     * 提交点单（submit）：DRAFT→FINISHED（提交即结束）。仅发起者；校验标题必填 + 菜单非空；
+     * 聚合本单菜单生成 shopping_list 快照，通知全体成员；返回购买清单快照（复用 DiningOrderFinishVo）。
+     * 携带客户端已知 version 做乐观锁，冲突返回业务错误码 409；重复提交幂等返回库内原快照。
      */
-    void publish(Long orderId, PublishDiningOrderFrom from, Long userId);
+    DiningOrderFinishVo submit(Long orderId, SubmitDiningOrderFrom from, Long userId);
 
     /**
      * 草稿期加菜：仅 DRAFT 态、全部成员可加；菜谱须存在且上架；
@@ -47,8 +48,8 @@ public interface DiningOrderService extends IService<DiningOrder> {
 
     /**
      * 放弃草稿：仅发起者、仅 DRAFT 态，物理删除订单行与其菜单/成员/选菜子行（项目无逻辑删除）。
-     * 空草稿堆积的兜底出口（方案 §七「本次做」）；与并发 publish 互斥——
-     * 先按 status 条件删订单行，publish 已定稿则本删除 0 行并拒绝。
+     * 空草稿堆积的兜底出口（方案 §七「本次做」）；与并发 submit 互斥——
+     * 先按 status 条件删订单行，submit 已把状态推到 FINISHED 时本删除 0 行并拒绝。
      */
     void discardDraft(Long orderId, Long userId);
 
@@ -68,16 +69,9 @@ public interface DiningOrderService extends IService<DiningOrder> {
     /** 加入前预览 brief：凭 join_token 换订单标题 / 发起者 / 菜品数，用于扫码确认弹窗 */
     DiningOrderBriefVo brief(String joinToken, Long userId);
 
-    /** 加入订单：校验 join_token + 状态 ∈ {DRAFT, ONGOING} + 防重复加入（uk_order_user 兜底并发） */
+    /** 加入订单：校验 join_token + 状态为 DRAFT + 防重复加入（uk_order_user 兜底并发） */
     void join(Long orderId, JoinDiningOrderFrom from, Long userId);
 
-    /** 重置 join_token（仅发起者、仅 ONGOING）：旧二维码全部作废，返回新 token */
+    /** 重置 join_token（仅发起者、仅 DRAFT）：旧二维码全部作废，返回新 token */
     String resetJoinToken(Long orderId, Long userId);
-
-    /**
-     * 结束点单（仅发起者、仅 ONGOING）：聚合所有选菜，按菜去重取食材名并集去重 + 按菜视图
-     * （菜 → 选了的人 + 备注）写入 shopping_list JSON 快照，status → FINISHED 并记录 finished_at。
-     * 重复调用幂等：已 FINISHED 直接返回库内原快照。
-     */
-    DiningOrderFinishVo finish(Long orderId, Long userId);
 }

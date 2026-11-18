@@ -17,8 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 购买清单聚合纯函数测试（spec：食材名并集去重 + 按菜视图，不聚合数量、不换算单位）。
- * 纯函数无依赖，直接断言输入输出契约；结束点单接口（11 号票）复用同一聚合口径。
+ * 购买清单聚合纯函数测试（spec：食材名并集去重 + 按菜视图）。
+ * 纯函数无依赖，直接断言输入输出契约；submit 提交点单接口复用同一聚合口径。
  */
 @DisplayName("ShoppingListAssembler 购买清单聚合测试")
 class ShoppingListAssemblerTest {
@@ -139,15 +139,20 @@ class ShoppingListAssemblerTest {
     }
 
     @Test
-    @DisplayName("空选菜记录：清单与按菜视图均为空")
-    void assemble_noSelections_emptyResult() {
+    @DisplayName("空选菜记录 = 整份菜单入选：食材并集与按菜视图覆盖全部菜，按菜视图无选菜人")
+    void assemble_noSelections_wholeMenuIncluded() {
         List<RecipeIngredient> recipes = List.of(
-                new RecipeIngredient(1L, "番茄炒蛋", List.of("西红柿")));
+                new RecipeIngredient(1L, "番茄炒蛋", List.of("西红柿", "鸡蛋")),
+                new RecipeIngredient(2L, "凉拌黄瓜", List.of("黄瓜")));
 
         ShoppingList list = ShoppingListAssembler.assemble(recipes, List.of());
 
-        assertTrue(list.ingredientNames().isEmpty());
-        assertTrue(list.perRecipe().isEmpty());
+        assertEquals(List.of("西红柿", "鸡蛋", "黄瓜"), list.ingredientNames());
+        assertEquals(2, list.perRecipe().size(), "整份菜单全部进入按菜视图");
+        assertEquals("番茄炒蛋", list.perRecipe().get(0).recipeName());
+        assertTrue(list.perRecipe().get(0).selectors().isEmpty(), "新模型无选菜人");
+        assertEquals("凉拌黄瓜", list.perRecipe().get(1).recipeName());
+        assertTrue(list.perRecipe().get(1).selectors().isEmpty());
     }
 
     @Test

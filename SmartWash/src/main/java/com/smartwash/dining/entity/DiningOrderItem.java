@@ -11,9 +11,9 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 吃啥-选菜记录（共享购物车明细）。
- * 一人一菜一条（uk order+recipe+user）：勾选即插入、取消即删行；note 承载个人备注（如 不要辣）。
- * 所有变更走 dining_order.version 乐观并发协议（条件 UPDATE +1，不匹配返回业务错误码 409）。
+ * 吃啥-选菜记录（历史遗留，已停止写入）。
+ * 新模型「菜单即已选清单」，购买清单直接聚合 dining_order_menu，不再产生个人选菜记录。
+ * 表与实体保留（不删表，避免迁移风险），仅 detail 兼容读取历史数据；一行一人一菜（uk order+recipe+user）。
  */
 @Data
 @EqualsAndHashCode(callSuper = false)

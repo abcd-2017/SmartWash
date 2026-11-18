@@ -31,7 +31,6 @@ import static org.mockito.Mockito.lenient;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -41,14 +40,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 1. 权限：/web/auth/dining/orders 由 /web/auth/** 通配保护——匿名 401；
  * 2. 创建：菜谱上架校验（不存在/下架拒绝）、创建者即首个成员、join_token 生成、fromOrderId 复用；
  * 3. version 轮询协议：knownVersion 一致轻量（unchanged=true），不一致全量；
- * 4. 乐观并发：选菜 version 冲突返回业务码 409，每次变更 version 递增；
- * 5. join 三类失败：token 错误 / 订单已结束 / 重复加入；
- * 6. 选菜校验：成员身份 / 菜在本单菜单内 / 结束状态写拒绝。
+ * 4. 乐观并发：草稿菜单 version 冲突返回业务码 409，每次变更 version 递增；
+ * 5. submit：DRAFT→FINISHED 聚合本单菜单写快照、通知全体成员、幂等；
+ * 6. join 三类失败：token 错误 / 订单已结束 / 重复加入；
+ * 7. 列表摘要：menuCount + ingredientSummary（批量组装）。
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@DisplayName("点单订单用户端集成测试（权限/创建/轮询/并发/加入/选菜）")
+@DisplayName("点单订单用户端集成测试（权限/创建/轮询/并发/提交/加入/列表摘要）")
 class WebDiningOrderControllerIntegrationTest {
 
     private static final String CREATOR_PHONE = "13900000001";
@@ -82,7 +82,7 @@ class WebDiningOrderControllerIntegrationTest {
 
         cleanAll();
 
-        // 用户（发起者/加入者）+ 分类 + 菜谱：101/102 上架，103 下架
+        // 用户（发起者/加入者）+ 分类 + 菜谱：101/102 上架，103 下架，104 用于摘要截断
         jdbcTemplate.update("INSERT INTO users(user_id, school_id, phone_number, password) VALUES (8801, 1, ?, 'pwd')", CREATOR_PHONE);
         jdbcTemplate.update("INSERT INTO users(user_id, school_id, phone_number, password) VALUES (8802, 1, ?, 'pwd')", JOINER_PHONE);
         jdbcTemplate.update("INSERT INTO dining_category(id, name, sort) VALUES (11, '家常菜', 1)");
@@ -91,6 +91,8 @@ class WebDiningOrderControllerIntegrationTest {
         jdbcTemplate.update("INSERT INTO dining_recipe(id, category_id, name, ingredients, status) "
                 + "VALUES (102, 11, '凉拌黄瓜', '[\"黄瓜\",\"蒜\"]', 1)");
         jdbcTemplate.update("INSERT INTO dining_recipe(id, category_id, name, status) VALUES (103, 11, '下架菜', 0)");
+        jdbcTemplate.update("INSERT INTO dining_recipe(id, category_id, name, ingredients, status) "
+                + "VALUES (104, 11, '大杂烩', '[\"西红柿\",\"鸡蛋\",\"葱\",\"黄瓜\",\"蒜\",\"辣椒\",\"花椒\"]', 1)");
 
         creatorToken = jwtUtil.generatorToken("user-" + CREATOR_PHONE);
         joinerToken = jwtUtil.generatorToken("user-" + JOINER_PHONE);
@@ -108,7 +110,7 @@ class WebDiningOrderControllerIntegrationTest {
         jdbcTemplate.update("DELETE FROM dining_order_menu");
         jdbcTemplate.update("DELETE FROM dining_order_member");
         jdbcTemplate.update("DELETE FROM dining_order");
-        jdbcTemplate.update("DELETE FROM dining_recipe WHERE id IN (101, 102, 103)");
+        jdbcTemplate.update("DELETE FROM dining_recipe WHERE id IN (101, 102, 103, 104)");
         jdbcTemplate.update("DELETE FROM dining_category WHERE id = 11");
         jdbcTemplate.update("DELETE FROM users WHERE phone_number IN (?, ?, ?, ?)",
                 CREATOR_PHONE, JOINER_PHONE, THIRD_PHONE, FOURTH_PHONE);
@@ -236,8 +238,8 @@ class WebDiningOrderControllerIntegrationTest {
     // ==================== 草稿协同点单（DRAFT 状态机） ====================
 
     @Test
-    @DisplayName("草稿全链路：空草稿 → publish 拒绝空标题/空菜单 → 加菜幂等 → 移除幂等 → publish 定稿 → detail status=ONGOING")
-    void draft_publish_fullFlow() throws Exception {
+    @DisplayName("草稿全链路：空草稿 → submit 拒绝空标题/空菜单 → 加菜幂等 → 移除幂等 → submit 提交 → detail status=FINISHED")
+    void draft_submit_fullFlow() throws Exception {
         // 空草稿（无标题无菜单）
         MvcResult created = mockMvc.perform(post(BASE + "/create")
                         .header("Authorization", "Bearer " + creatorToken)
@@ -250,8 +252,8 @@ class WebDiningOrderControllerIntegrationTest {
         assertEquals("DRAFT", jdbcTemplate.queryForObject(
                 "SELECT status FROM dining_order WHERE id = ?", String.class, orderId));
 
-        // publish 空标题 → 拒绝
-        mockMvc.perform(post(BASE + "/{id}/publish", orderId)
+        // submit 空标题 → 拒绝
+        mockMvc.perform(post(BASE + "/{id}/submit", orderId)
                         .header("Authorization", "Bearer " + creatorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"version\":0}"))
@@ -259,12 +261,12 @@ class WebDiningOrderControllerIntegrationTest {
                 .andExpect(jsonPath("$.message").value("订单标题不能为空"));
 
         // 空菜单 → 拒绝（服务端二次校验）
-        mockMvc.perform(post(BASE + "/{id}/publish", orderId)
+        mockMvc.perform(post(BASE + "/{id}/submit", orderId)
                         .header("Authorization", "Bearer " + creatorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"周五晚火锅\",\"version\":0}"))
                 .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("本单菜单不能为空，无法发起点单"));
+                .andExpect(jsonPath("$.message").value("本单菜单不能为空，无法提交点单"));
 
         // 加菜 101（version 0→1），重复加菜按幂等成功且不递增 version
         mockMvc.perform(post(BASE + "/{id}/dishes", orderId)
@@ -299,80 +301,73 @@ class WebDiningOrderControllerIntegrationTest {
                 .andExpect(jsonPath("$.code").value(200));
         assertEquals(3, currentVersion(orderId));
 
-        // publish 定稿（携带最新 version）
-        mockMvc.perform(post(BASE + "/{id}/publish", orderId)
+        // submit 提交（携带最新 version）
+        mockMvc.perform(post(BASE + "/{id}/submit", orderId)
                         .header("Authorization", "Bearer " + creatorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"周五晚火锅\",\"version\":3}"))
                 .andExpect(jsonPath("$.code").value(200));
-        assertEquals("ONGOING", jdbcTemplate.queryForObject(
+        assertEquals("FINISHED", jdbcTemplate.queryForObject(
                 "SELECT status FROM dining_order WHERE id = ?", String.class, orderId));
         assertEquals("周五晚火锅", jdbcTemplate.queryForObject(
                 "SELECT title FROM dining_order WHERE id = ?", String.class, orderId));
+        assertEquals(4, currentVersion(orderId), "提交成功须递增 version，阻断并发菜单写穿透");
 
         // detail 返回 status
         mockMvc.perform(get(BASE + "/{id}", orderId)
                         .header("Authorization", "Bearer " + creatorToken))
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.status").value("ONGOING"))
+                .andExpect(jsonPath("$.data.status").value("FINISHED"))
                 .andExpect(jsonPath("$.data.title").value("周五晚火锅"));
     }
 
     @Test
-    @DisplayName("publish 守卫：非创建者拒绝 / 重复 publish 拒绝 / version 冲突 409")
-    void draft_publish_guards() throws Exception {
+    @DisplayName("submit 守卫：非发起者拒绝 / version 冲突 409 / 重复提交幂等")
+    void submit_guards() throws Exception {
         long orderId = createDraft(creatorToken, "守卫草稿", "[101]");
 
-        // 非创建者（未加入的 joiner）
-        mockMvc.perform(post(BASE + "/{id}/publish", orderId)
+        // 非发起者（未加入的 joiner）
+        mockMvc.perform(post(BASE + "/{id}/submit", orderId)
                         .header("Authorization", "Bearer " + joinerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"越权\",\"version\":0}"))
                 .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("仅发起者可发起点单"));
+                .andExpect(jsonPath("$.message").value("仅发起者可提交点单"));
 
-        // version 冲突：先加菜把 version 推到 1，再用旧 version=0 publish → 409
+        // version 冲突：先加菜把 version 推到 1，再用旧 version=0 提交 → 409
         mockMvc.perform(post(BASE + "/{id}/dishes", orderId)
                         .header("Authorization", "Bearer " + creatorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"recipeId\":102,\"version\":0}"))
                 .andExpect(jsonPath("$.code").value(200));
-        mockMvc.perform(post(BASE + "/{id}/publish", orderId)
+        mockMvc.perform(post(BASE + "/{id}/submit", orderId)
                         .header("Authorization", "Bearer " + creatorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"守卫草稿\",\"version\":0}"))
                 .andExpect(jsonPath("$.code").value(409))
                 .andExpect(jsonPath("$.message").value("订单已被他人更新，请刷新后重试"));
 
-        // 携带最新 version 定稿成功；再次 publish → 拒绝（无逆向/重复迁移）
-        mockMvc.perform(post(BASE + "/{id}/publish", orderId)
-                        .header("Authorization", "Bearer " + creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"守卫草稿\",\"version\":1}"))
-                .andExpect(jsonPath("$.code").value(200));
-        mockMvc.perform(post(BASE + "/{id}/publish", orderId)
-                        .header("Authorization", "Bearer " + creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"守卫草稿\",\"version\":2}"))
-                .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("点单已发起点单，无需重复操作"));
+        // 携带最新 version 提交成功；再次提交 → 幂等返回原快照（200）
+        String first = submitAndGetSnapshot(orderId, creatorToken, 1);
+        String second = submitAndGetSnapshot(orderId, creatorToken, 2);
+        assertEquals(first, second, "重复提交必须返回同一快照");
     }
 
     @Test
     @DisplayName("加菜/移除守卫：非 DRAFT 拒绝 / 非成员拒绝 / version 冲突 409 / version 缺失")
     void draft_dish_guards() throws Exception {
-        // 非 DRAFT（已定稿）
-        long ongoingId = createOngoingOrder(creatorToken, "已定稿单", "[101]");
-        mockMvc.perform(post(BASE + "/{id}/dishes", ongoingId)
+        // 非 DRAFT（已提交）
+        long finishedId = createFinishedOrder(creatorToken, "已提交单", "[101]");
+        mockMvc.perform(post(BASE + "/{id}/dishes", finishedId)
                         .header("Authorization", "Bearer " + creatorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"recipeId\":102,\"version\":1}"))
                 .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("点单已定稿，不能编辑菜单"));
-        mockMvc.perform(delete(BASE + "/{id}/dishes/{recipeId}?version=1", ongoingId, 101)
+                .andExpect(jsonPath("$.message").value("点单已结束，不能编辑菜单"));
+        mockMvc.perform(delete(BASE + "/{id}/dishes/{recipeId}?version=1", finishedId, 101)
                         .header("Authorization", "Bearer " + creatorToken))
                 .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("点单已定稿，不能编辑菜单"));
+                .andExpect(jsonPath("$.message").value("点单已结束，不能编辑菜单"));
 
         // 非成员
         long orderId = createDraft(creatorToken, "成员守卫单", "[101]");
@@ -431,9 +426,9 @@ class WebDiningOrderControllerIntegrationTest {
         assertEquals(0L, jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM dining_order_member WHERE order_id = ?", Long.class, orderId));
 
-        // 非 DRAFT（已定稿）拒绝
-        long ongoingId = createOngoingOrder(creatorToken, "不可弃单", "[101]");
-        mockMvc.perform(delete(BASE + "/{id}", ongoingId)
+        // 非 DRAFT（已提交）拒绝
+        long finishedId = createFinishedOrder(creatorToken, "不可弃单", "[101]");
+        mockMvc.perform(delete(BASE + "/{id}", finishedId)
                         .header("Authorization", "Bearer " + creatorToken))
                 .andExpect(jsonPath("$.code").value(201))
                 .andExpect(jsonPath("$.message").value("仅草稿可放弃"));
@@ -462,8 +457,9 @@ class WebDiningOrderControllerIntegrationTest {
     @Test
     @DisplayName("我的订单列表：我发起 + 我参与都出现，isCreator 标记正确")
     void myOrders_creatorAndJoiner() throws Exception {
-        long orderId = createOngoingOrder(creatorToken, "周五晚火锅", "[101,102]");
+        long orderId = createDraft(creatorToken, "周五晚火锅", "[101,102]");
         joinOrder(joinerToken, orderId);
+        submitAndGetSnapshot(orderId, creatorToken, currentVersion(orderId));
 
         // 发起者视角
         JsonNode creatorList = getList(BASE + "/my", creatorToken);
@@ -475,7 +471,22 @@ class WebDiningOrderControllerIntegrationTest {
         JsonNode joinerList = getList(BASE + "/my", joinerToken);
         assertEquals(1, joinerList.size());
         assertTrue(joinerList.get(0).path("isCreator").asBoolean() == false);
-        assertEquals("ONGOING", joinerList.get(0).path("status").asText());
+        assertEquals("FINISHED", joinerList.get(0).path("status").asText());
+    }
+
+    @Test
+    @DisplayName("我的订单列表：摘要字段 menuCount + ingredientSummary（食材并集，超 6 个截断加省略号）")
+    void myOrders_summaryFields() throws Exception {
+        createDraft(creatorToken, "两道菜", "[101,102]");
+        createDraft(creatorToken, "大杂烩", "[104]");
+
+        JsonNode records = getList(BASE + "/my", creatorToken);
+        assertEquals(2, records.size());
+        // 倒序：后创建的大杂烩在前
+        assertEquals(1, records.get(0).path("menuCount").asInt());
+        assertEquals("西红柿、鸡蛋、葱、黄瓜、蒜、辣椒…", records.get(0).path("ingredientSummary").asText());
+        assertEquals(2, records.get(1).path("menuCount").asInt());
+        assertEquals("西红柿、鸡蛋、葱、黄瓜、蒜", records.get(1).path("ingredientSummary").asText());
     }
 
     // ==================== 详情轮询协议 ====================
@@ -510,7 +521,7 @@ class WebDiningOrderControllerIntegrationTest {
         assertEquals(2, data.path("members").size());
         assertTrue(data.path("members").get(0).path("isCreator").asBoolean());
         assertEquals("139****0001", data.path("members").get(0).path("phoneMasked").asText(), "手机号必须脱敏");
-        assertNull(data.path("shoppingList").asText(null), "进行中的单无购买清单快照");
+        assertNull(data.path("shoppingList").asText(null), "草稿期的单无购买清单快照");
 
         // 非成员查看：拒绝
         mockMvc.perform(get(BASE + "/{id}", orderId)
@@ -622,9 +633,9 @@ class WebDiningOrderControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("重置凭证：仅发起者；旧 token 立即失效，新 token 可用")
+    @DisplayName("重置凭证：仅发起者 + 仅 DRAFT；旧 token 立即失效，新 token 可用")
     void resetJoinToken_flow() throws Exception {
-        long orderId = createOngoingOrder(creatorToken, "重置单", "[101]");
+        long orderId = createDraft(creatorToken, "重置单", "[101]");
         String oldToken = jdbcTemplate.queryForObject(
                 "SELECT join_token FROM dining_order WHERE id = ?", String.class, orderId);
 
@@ -653,166 +664,30 @@ class WebDiningOrderControllerIntegrationTest {
         mockMvc.perform(get(BASE + "/brief/" + newToken)
                         .header("Authorization", "Bearer " + joinerToken))
                 .andExpect(jsonPath("$.code").value(200));
-    }
 
-    // ==================== 选菜（version 乐观并发） ====================
-
-    @Test
-    @DisplayName("选菜增改删全链路：勾选（v→v+1）→ 改备注（v+1→v+2）→ 取消（v+2→v+3）")
-    void itemCrud_fullFlow() throws Exception {
-        long orderId = createOngoingOrder(creatorToken, "选菜单", "[101,102]");
-        joinOrder(joinerToken, orderId);
-        int v = currentVersion(orderId);
-
-        // 勾选 101（version=v）
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + joinerToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":101,\"note\":\"不要辣\",\"version\":" + v + "}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
-        assertEquals(v + 1, currentVersion(orderId));
-        Long itemCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM dining_order_item WHERE order_id = ? AND user_id = 8802", Long.class, orderId);
-        assertEquals(1L, itemCount);
-
-        // 改备注（version=v+1）
-        mockMvc.perform(put(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + joinerToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":101,\"note\":\"多放葱\",\"version\":" + (v + 1) + "}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
-        String note = jdbcTemplate.queryForObject(
-                "SELECT note FROM dining_order_item WHERE order_id = ? AND user_id = 8802 AND recipe_id = 101",
-                String.class, orderId);
-        assertEquals("多放葱", note);
-        assertEquals(v + 2, currentVersion(orderId));
-
-        // 取消（version=v+2）
-        mockMvc.perform(delete(BASE + "/{orderId}/items/{recipeId}?version=" + (v + 2), orderId, 101)
-                        .header("Authorization", "Bearer " + joinerToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
-        itemCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM dining_order_item WHERE order_id = ? AND user_id = 8802 AND recipe_id = 101",
-                Long.class, orderId);
-        assertEquals(0L, itemCount, "取消即删行");
-        assertEquals(v + 3, currentVersion(orderId));
-    }
-
-    @Test
-    @DisplayName("version 冲突：用过期 version 写入返回业务码 409，落库 version 不变")
-    void itemWrite_versionConflict_409() throws Exception {
-        long orderId = createOngoingOrder(creatorToken, "并发单", "[101,102]");
-        joinOrder(joinerToken, orderId);
-        int v = currentVersion(orderId);
-
-        // 第一次写成功：version v→v+1
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + joinerToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":101,\"version\":" + v + "}"))
-                .andExpect(jsonPath("$.code").value(200));
-
-        // 第二次写仍携带旧 version=v → 409（模拟并发窗口）
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":102,\"version\":" + v + "}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(409))
-                .andExpect(jsonPath("$.message").value("订单已被他人更新，请刷新后重试"));
-        assertEquals(v + 1, currentVersion(orderId), "冲突写不得改变服务端 version");
-
-        // 携带最新 version=v+1 重放成功
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":102,\"version\":" + (v + 1) + "}"))
-                .andExpect(jsonPath("$.code").value(200));
-        assertEquals(v + 2, currentVersion(orderId));
-
-        // 删除接口同样受 version 闸门保护（旧 version=v → 409）
-        mockMvc.perform(delete(BASE + "/{orderId}/items/{recipeId}?version=" + v, orderId, 102)
+        // 已提交单重置：拒绝
+        long finishedId = createFinishedOrder(creatorToken, "已提交重置单", "[101]");
+        mockMvc.perform(post(BASE + "/{id}/join-token/reset", finishedId)
                         .header("Authorization", "Bearer " + creatorToken))
-                .andExpect(jsonPath("$.code").value(409));
+                .andExpect(jsonPath("$.code").value(201))
+                .andExpect(jsonPath("$.message").value("点单已结束，无需重置加入凭证"));
     }
 
-    @Test
-    @DisplayName("选菜校验：非成员拒绝 / 菜不在本单菜单拒绝 / 重复勾选拒绝 / 结束状态写拒绝")
-    void itemWrite_guards() throws Exception {
-        long orderId = createOngoingOrder(creatorToken, "校验单", "[101]");
-        String token = jdbcTemplate.queryForObject(
-                "SELECT join_token FROM dining_order WHERE id = ?", String.class, orderId);
-        int v = currentVersion(orderId);
-
-        // 非成员勾选（joiner 未加入）
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + joinerToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":101,\"version\":" + v + "}"))
-                .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("仅订单成员可以选菜"));
-
-        // 菜不在本单菜单（102 未被编排进菜单）
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":102,\"version\":" + v + "}"))
-                .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("该菜不在本单菜单内"));
-
-        // 重复勾选（uk order+recipe+user）
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":101,\"version\":" + v + "}"))
-                .andExpect(jsonPath("$.code").value(200));
-        assertEquals(v + 1, currentVersion(orderId));
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":101,\"note\":\"again\",\"version\":" + (v + 1) + "}"))
-                .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("你已选过这道菜，可直接修改备注"));
-
-        // 结束状态写拒绝：直插 FINISHED 单 + 成员，尝试勾选
-        jdbcTemplate.update(
-                "INSERT INTO dining_order(id, title, creator_user_id, status, join_token, version) "
-                        + "VALUES (9901, '结束单', 8801, 'FINISHED', 'done-token', 7)");
-        jdbcTemplate.update("INSERT INTO dining_order_menu(order_id, recipe_id) VALUES (9901, 101)");
-        mockMvc.perform(post(BASE + "/{orderId}/items", 9901)
-                        .header("Authorization", "Bearer " + creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":101,\"version\":7}"))
-                .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("点单已结束，不能修改选菜"));
-        assertEquals(7, currentVersion(9901), "结束状态写拒绝不得递增 version");
-    }
-
-    // ==================== 结束点单与购买清单 ====================
+    // ==================== 提交点单与购买清单 ====================
 
     @Test
-    @DisplayName("结束点单：仅发起者；聚合食材并集 + 按菜视图写快照，status→FINISHED、记录 finished_at")
-    void finish_success_writesSnapshot() throws Exception {
-        long orderId = createOngoingOrder(creatorToken, "结束单", "[101,102]");
+    @DisplayName("提交点单：仅发起者；聚合本单菜单写快照，status→FINISHED、记录 finished_at，按菜视图无选菜人")
+    void submit_success_writesSnapshot() throws Exception {
+        long orderId = createDraft(creatorToken, "结束单", "[101,102]");
         joinOrder(joinerToken, orderId);
         int v = currentVersion(orderId);
 
-        // 发起者选 101（带备注），加入者选 102（无备注）
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":101,\"note\":\"多放葱\",\"version\":" + v + "}"))
-                .andExpect(jsonPath("$.code").value(200));
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + joinerToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":102,\"version\":" + (v + 1) + "}"))
-                .andExpect(jsonPath("$.code").value(200));
+        // 历史选菜记录（已停止写入，仅作遗留数据）：不得影响本单菜单聚合
+        jdbcTemplate.update(
+                "INSERT INTO dining_order_item(order_id, recipe_id, user_id, note) VALUES (?, 101, 8802, '不要辣')",
+                orderId);
 
-        String snapshot = finishAndGetSnapshot(orderId, creatorToken);
+        String snapshot = submitAndGetSnapshot(orderId, creatorToken, v);
         JsonNode snapshotNode = objectMapper.readTree(snapshot);
         // 按食材：两道菜食材并集（西红柿、鸡蛋、葱 + 黄瓜、蒜）
         JsonNode ingredients = snapshotNode.path("ingredientNames");
@@ -822,95 +697,81 @@ class WebDiningOrderControllerIntegrationTest {
         assertEquals("葱", ingredients.get(2).asText());
         assertEquals("黄瓜", ingredients.get(3).asText());
         assertEquals("蒜", ingredients.get(4).asText());
-        // 按菜视图：仅含被勾选的菜，且带选菜人备注
+        // 按菜视图：本单菜单全部入选，无选菜人（遗留选菜记录不产生 selectors）
         JsonNode perRecipe = snapshotNode.path("perRecipe");
         assertEquals(2, perRecipe.size());
         assertEquals("番茄炒蛋", perRecipe.get(0).path("recipeName").asText());
-        assertEquals("多放葱", perRecipe.get(0).path("selectors").get(0).path("note").asText());
+        assertEquals(0, perRecipe.get(0).path("selectors").size(), "新模型无选菜人");
         assertEquals("凉拌黄瓜", perRecipe.get(1).path("recipeName").asText());
+        assertEquals(0, perRecipe.get(1).path("selectors").size());
+        assertTrue(!snapshot.contains("不要辣"), "遗留选菜备注不得进入购买清单");
 
-        // 落库核对：状态/快照/finished_at 一致；结束不改变 version（version 只由选菜变更驱动）
+        // 落库核对：状态/快照/finished_at 一致；提交递增 version
         assertEquals("FINISHED", jdbcTemplate.queryForObject(
                 "SELECT status FROM dining_order WHERE id = ?", String.class, orderId));
         assertEquals(snapshot, jdbcTemplate.queryForObject(
                 "SELECT shopping_list FROM dining_order WHERE id = ?", String.class, orderId));
         assertNotNull(jdbcTemplate.queryForObject(
                 "SELECT finished_at FROM dining_order WHERE id = ?", LocalDateTime.class, orderId));
-        assertEquals(v + 2, currentVersion(orderId));
+        assertEquals(v + 1, currentVersion(orderId));
     }
 
     @Test
-    @DisplayName("结束点单：重复调用幂等——第二次返回同一快照，finished_at 不变")
-    void finish_idempotent_repeat() throws Exception {
-        long orderId = createOngoingOrder(creatorToken, "幂等单", "[101]");
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":101,\"version\":" + currentVersion(orderId) + "}"))
-                .andExpect(jsonPath("$.code").value(200));
+    @DisplayName("提交点单：重复调用幂等——第二次返回同一快照，finished_at 不变")
+    void submit_idempotent_repeat() throws Exception {
+        long orderId = createDraft(creatorToken, "幂等单", "[101]");
 
-        String first = finishAndGetSnapshot(orderId, creatorToken);
+        String first = submitAndGetSnapshot(orderId, creatorToken, currentVersion(orderId));
         LocalDateTime firstFinishedAt = jdbcTemplate.queryForObject(
                 "SELECT finished_at FROM dining_order WHERE id = ?", LocalDateTime.class, orderId);
-        String second = finishAndGetSnapshot(orderId, creatorToken);
+        String second = submitAndGetSnapshot(orderId, creatorToken, currentVersion(orderId));
         LocalDateTime secondFinishedAt = jdbcTemplate.queryForObject(
                 "SELECT finished_at FROM dining_order WHERE id = ?", LocalDateTime.class, orderId);
 
-        assertEquals(first, second, "重复结束必须返回同一快照");
-        assertEquals(firstFinishedAt, secondFinishedAt, "重复结束不得刷新 finished_at");
+        assertEquals(first, second, "重复提交必须返回同一快照");
+        assertEquals(firstFinishedAt, secondFinishedAt, "重复提交不得刷新 finished_at");
     }
 
     @Test
-    @DisplayName("结束点单：无人选菜也正常结束，快照为空清单")
-    void finish_noSelections_emptySnapshot() throws Exception {
-        long orderId = createOngoingOrder(creatorToken, "空选单", "[101]");
-
-        String snapshot = finishAndGetSnapshot(orderId, creatorToken);
-        JsonNode snapshotNode = objectMapper.readTree(snapshot);
-        assertTrue(snapshotNode.path("ingredientNames").isEmpty());
-        assertTrue(snapshotNode.path("perRecipe").isEmpty());
-        assertEquals("FINISHED", jdbcTemplate.queryForObject(
-                "SELECT status FROM dining_order WHERE id = ?", String.class, orderId));
-    }
-
-    @Test
-    @DisplayName("结束点单：非发起者拒绝；结束后勾选/改备注/取消三类写接口均返回明确业务错误")
-    void finish_guardsAndFinishedWriteRejection() throws Exception {
-        long orderId = createOngoingOrder(creatorToken, "守卫单", "[101]");
+    @DisplayName("提交点单：非发起者拒绝；提交后加菜/移除/放弃均拒绝")
+    void submit_guardsAndFinishedWriteRejection() throws Exception {
+        long orderId = createDraft(creatorToken, "守卫单", "[101]");
         joinOrder(joinerToken, orderId);
 
-        // 非发起者结束：拒绝
-        mockMvc.perform(post(BASE + "/{id}/finish", orderId)
-                        .header("Authorization", "Bearer " + joinerToken))
+        // 非发起者提交：拒绝
+        mockMvc.perform(post(BASE + "/{id}/submit", orderId)
+                        .header("Authorization", "Bearer " + joinerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"越权\",\"version\":0}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("仅发起者可结束点单"));
-        assertEquals("ONGOING", jdbcTemplate.queryForObject(
+                .andExpect(jsonPath("$.message").value("仅发起者可提交点单"));
+        assertEquals("DRAFT", jdbcTemplate.queryForObject(
                 "SELECT status FROM dining_order WHERE id = ?", String.class, orderId));
 
-        // 发起者结束
-        mockMvc.perform(post(BASE + "/{id}/finish", orderId)
-                        .header("Authorization", "Bearer " + creatorToken))
+        // 发起者提交
+        mockMvc.perform(post(BASE + "/{id}/submit", orderId)
+                        .header("Authorization", "Bearer " + creatorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"守卫单\",\"version\":0}"))
                 .andExpect(jsonPath("$.code").value(200));
 
         int version = currentVersion(orderId);
-        // 已结束后：勾选 / 改备注 / 取消 三类写接口均返回明确业务错误
-        mockMvc.perform(post(BASE + "/{orderId}/items", orderId)
+        // 已提交后：加菜 / 移除 / 放弃 三类写接口均返回明确业务错误
+        mockMvc.perform(post(BASE + "/{id}/dishes", orderId)
                         .header("Authorization", "Bearer " + creatorToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":101,\"version\":" + version + "}"))
+                        .content("{\"recipeId\":102,\"version\":" + version + "}"))
                 .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("点单已结束，不能修改选菜"));
-        mockMvc.perform(put(BASE + "/{orderId}/items", orderId)
-                        .header("Authorization", "Bearer " + creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipeId\":101,\"note\":\"x\",\"version\":" + version + "}"))
-                .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("点单已结束，不能修改选菜"));
-        mockMvc.perform(delete(BASE + "/{orderId}/items/{recipeId}?version=" + version, orderId, 101)
+                .andExpect(jsonPath("$.message").value("点单已结束，不能编辑菜单"));
+        mockMvc.perform(delete(BASE + "/{id}/dishes/{recipeId}?version=" + version, orderId, 101)
                         .header("Authorization", "Bearer " + creatorToken))
-                        .andExpect(jsonPath("$.code").value(201))
-                        .andExpect(jsonPath("$.message").value("点单已结束，不能修改选菜"));
+                .andExpect(jsonPath("$.code").value(201))
+                .andExpect(jsonPath("$.message").value("点单已结束，不能编辑菜单"));
+        mockMvc.perform(delete(BASE + "/{id}", orderId)
+                        .header("Authorization", "Bearer " + creatorToken))
+                .andExpect(jsonPath("$.code").value(201))
+                .andExpect(jsonPath("$.message").value("仅草稿可放弃"));
         assertEquals(version, currentVersion(orderId), "结束状态写拒绝不得递增 version");
     }
 
@@ -956,44 +817,47 @@ class WebDiningOrderControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("结束事件：DINING_FINISH 定向通知落库——接收人=全体成员，深链指向订单详情")
-    void finish_publishesDiningFinishNotice_toAllMembers() throws Exception {
-        long orderId = createOngoingOrder(creatorToken, "结束通知单", "[101]");
+    @DisplayName("提交事件：DINING_FINISH 定向通知落库——接收人=全体成员，深链指向订单详情")
+    void submit_publishesDiningFinishNotice_toAllMembers() throws Exception {
+        long orderId = createDraft(creatorToken, "结束通知单", "[101]");
         joinOrder(joinerToken, orderId);
         String token = jdbcTemplate.queryForObject(
                 "SELECT join_token FROM dining_order WHERE id = ?", String.class, orderId);
 
-        finishAndGetSnapshot(orderId, creatorToken);
+        submitAndGetSnapshot(orderId, creatorToken, currentVersion(orderId));
 
         List<Long> receivers = jdbcTemplate.queryForList(
                 "SELECT user_id FROM notice WHERE type = 'DINING_FINISH' AND title = ? ORDER BY user_id",
                 Long.class, "「结束通知单」已结束点单");
-        assertEquals(java.util.List.of(8801L, 8802L), receivers, "结束通知必须送达全体成员");
+        assertEquals(java.util.List.of(8801L, 8802L), receivers, "提交通知必须送达全体成员");
         String deepLink = jdbcTemplate.queryForObject(
                 "SELECT deep_link FROM notice WHERE type = 'DINING_FINISH' AND user_id = 8801", String.class);
         assertEquals("smartwash://dining/order/" + orderId + "?t=" + token, deepLink);
     }
 
     @Test
-    @DisplayName("结束事件：重复结束幂等——不重复发送 DINING_FINISH 通知")
-    void finish_idempotent_doesNotDuplicateNotice() throws Exception {
-        long orderId = createOngoingOrder(creatorToken, "幂等结束通知单", "[101]");
+    @DisplayName("提交事件：重复提交幂等——不重复发送 DINING_FINISH 通知")
+    void submit_idempotent_doesNotDuplicateNotice() throws Exception {
+        long orderId = createDraft(creatorToken, "幂等结束通知单", "[101]");
         joinOrder(joinerToken, orderId);
 
-        finishAndGetSnapshot(orderId, creatorToken);
-        finishAndGetSnapshot(orderId, creatorToken);
+        submitAndGetSnapshot(orderId, creatorToken, currentVersion(orderId));
+        submitAndGetSnapshot(orderId, creatorToken, currentVersion(orderId));
 
         Long count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM notice WHERE type = 'DINING_FINISH' AND title = ?",
                 Long.class, "「幂等结束通知单」已结束点单");
-        assertEquals(2L, count, "重复结束不得重复通知（幂等返回路径不发布）");
+        assertEquals(2L, count, "重复提交不得重复通知（幂等返回路径不发布）");
     }
 
     // ==================== 辅助 ====================
 
-    private String finishAndGetSnapshot(long orderId, String token) throws Exception {
-        MvcResult result = mockMvc.perform(post(BASE + "/{id}/finish", orderId)
-                        .header("Authorization", "Bearer " + token))
+    private String submitAndGetSnapshot(long orderId, String token, long version) throws Exception {
+        // 不传标题：沿用库内标题（与端上「草稿页已编辑标题」口径一致）
+        MvcResult result = mockMvc.perform(post(BASE + "/{id}/submit", orderId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"version\":" + version + "}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andReturn();
@@ -1015,7 +879,7 @@ class WebDiningOrderControllerIntegrationTest {
         return jwtUtil.generatorToken("user-" + phone);
     }
 
-    /** 创建草稿（DRAFT，未 publish） */
+    /** 创建草稿（DRAFT，未提交） */
     private long createDraft(String token, String title, String recipeIdsJson) throws Exception {
         MvcResult result = mockMvc.perform(post(BASE + "/create")
                         .header("Authorization", "Bearer " + token)
@@ -1028,21 +892,16 @@ class WebDiningOrderControllerIntegrationTest {
                 .path("data").path("orderId").asLong();
     }
 
-    /** 创建并定稿（ONGOING）：create + publish，返回 orderId */
-    private long createOngoingOrder(String token, String title, String recipeIdsJson) throws Exception {
+    /** 创建并提交（FINISHED）：create + submit，返回 orderId */
+    private long createFinishedOrder(String token, String title, String recipeIdsJson) throws Exception {
         long orderId = createDraft(token, title, recipeIdsJson);
-        publish(token, orderId);
-        return orderId;
-    }
-
-    /** 发起点单（publish）：携带当前 version，沿用库内标题 */
-    private void publish(String token, long orderId) throws Exception {
-        mockMvc.perform(post(BASE + "/{id}/publish", orderId)
+        mockMvc.perform(post(BASE + "/{id}/submit", orderId)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"version\":" + currentVersion(orderId) + "}"))
+                        .content("{\"title\":\"" + title + "\",\"version\":" + currentVersion(orderId) + "}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+        return orderId;
     }
 
     private String createOrderAndReturnToken(String token, String title, String recipeIdsJson) throws Exception {

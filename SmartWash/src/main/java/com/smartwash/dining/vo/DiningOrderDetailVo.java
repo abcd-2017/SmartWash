@@ -29,7 +29,7 @@ public class DiningOrderDetailVo {
 
     private String title;
 
-    /** 订单状态：DRAFT 草稿 / ONGOING 进行中 / FINISHED 已结束 */
+    /** 订单状态：DRAFT 草稿 / FINISHED 已结束 */
     private String status;
 
     private Long creatorUserId;
@@ -44,7 +44,7 @@ public class DiningOrderDetailVo {
 
     private LocalDateTime finishedAt;
 
-    /** 购买清单快照 JSON 文本（结束时由 11 号票写入，进行中为 null） */
+    /** 购买清单快照 JSON 文本（submit 提交时写入，草稿期为 null） */
     private String shoppingList;
 
     /**

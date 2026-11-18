@@ -8,13 +8,13 @@ import java.util.List;
 /**
  * 创建点单订单请求 DTO（草稿态）。
  * 标题与菜单均可空：进入创建页即落一张 DRAFT 草稿，标题/菜单在草稿期可随时补充；
- * publish（发起点单）时才校验标题必填 + 菜单非空。
+ * submit（提交点单）时才校验标题必填 + 菜单非空。
  * 菜单来源二选一：显式勾选 recipeIds，或 fromOrderId 复用历史订单的本单菜单（常吃的搭配不用重新勾）。
  */
 @Data
 public class CreateDiningOrderFrom {
 
-    /** 订单标题（如 周五晚火锅）；草稿期可空，publish 时必填 */
+    /** 订单标题（如 周五晚火锅）；草稿期可空，submit 时必填 */
     @Size(max = 64, message = "订单标题过长（上限64字符）")
     private String title;
 
