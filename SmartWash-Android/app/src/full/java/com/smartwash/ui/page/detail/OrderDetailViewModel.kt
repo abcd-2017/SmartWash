@@ -6,11 +6,13 @@ import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.order.api.OrderApi
 import com.smartwash.feature.order.api.model.OrderInfo
+import com.smartwash.feature.order.api.model.OrderReview
 import com.smartwash.R
 import com.smartwash.common.utils.model.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -40,6 +42,53 @@ class OrderDetailViewModel @Inject constructor(
 
     fun resetState() {
         _getOrderInfoDetail.value = RequestState.Idle
+    }
+
+    /** 订单评价提交状态（Idle/Loading/Success/Error；Success 后弹层关闭由页面消费） */
+    private val _submitReviewState = MutableStateFlow<RequestState>(RequestState.Idle)
+    val submitReviewState = _submitReviewState.asStateFlow()
+
+    /** 本订单已提交评价（首条），驱动"评价此单/查看评价/已评价"入口语义 */
+    private val _myReview = MutableStateFlow<OrderReview?>(null)
+    val myReview = _myReview.asStateFlow()
+
+    fun loadMyReview(orderId: Long) {
+        viewModelScope.launch {
+            try {
+                _myReview.value = orderApi.getOrderReviews(orderId, 1, 10).firstOrNull()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: NetworkException) {
+                AppLogger.warn(TAG, "OrderDetailViewModel.loadMyReview: ${e.message}", e)
+            }
+        }
+    }
+
+    fun submitReview(orderId: Long, rating: Int, content: String) {
+        if (_submitReviewState.value is RequestState.Loading) return
+        _submitReviewState.value = RequestState.Loading
+        viewModelScope.launch {
+            try {
+                val accepted = orderApi.submitReview(orderId, rating, content)
+                if (accepted) {
+                    AppLogger.info(TAG, "订单评价提交成功：orderId=$orderId rating=$rating")
+                    _submitReviewState.value = RequestState.Success
+                    _myReview.value = OrderReview(orderId = orderId, rating = rating, content = content)
+                } else {
+                    _submitReviewState.value =
+                        RequestState.Error(R.string.review_submit_rejected, null)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: NetworkException) {
+                AppLogger.error(TAG, "OrderDetailViewModel.submitReview 失败：orderId=$orderId", e)
+                _submitReviewState.value = RequestState.Error(e.resId, e.message)
+            }
+        }
+    }
+
+    fun resetReviewState() {
+        _submitReviewState.value = RequestState.Idle
     }
 
     private companion object {

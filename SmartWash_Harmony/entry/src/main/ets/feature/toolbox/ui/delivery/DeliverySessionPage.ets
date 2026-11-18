@@ -61,23 +61,23 @@ export function DeliverySessionBuilder() {
   DeliverySessionPage()
 }
 
-@Component
+@ComponentV2
 struct DeliverySessionPage {
-  @State code: string = ''
-  @State session: DeliverySessionVo | null = null
-  @State items: Array<DeliveryItemVo> = []
-  @State isLoadingFirst: boolean = true
-  @State isFirstError: boolean = false
-  @State pollFailed: boolean = false
+  @Local code: string = ''
+  @Local session: DeliverySessionVo | null = null
+  @Local items: Array<DeliveryItemVo> = []
+  @Local isLoadingFirst: boolean = true
+  @Local isFirstError: boolean = false
+  @Local pollFailed: boolean = false
   // 触底加载更多态
-  @State isLoadingMore: boolean = false
-  @State draft: string = ''
-  @State sending: boolean = false
-  @State sendError: string = ''
+  @Local isLoadingMore: boolean = false
+  @Local draft: string = ''
+  @Local sending: boolean = false
+  @Local sendError: string = ''
   // 预览/取走动作 loading（对齐安卓 previewAction）
-  @State actionLoading: boolean = false
-  @State closing: boolean = false
-  @State draftFocused: boolean = false
+  @Local actionLoading: boolean = false
+  @Local closing: boolean = false
+  @Local draftFocused: boolean = false
 
   private pollTimerId: number = -1
   private pollInterval: number = DELIVERY_POLL_INTERVAL_MS

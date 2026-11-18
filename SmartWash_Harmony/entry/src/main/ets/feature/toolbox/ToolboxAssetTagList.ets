@@ -34,16 +34,16 @@ export function ToolboxAssetTagListBuilder() {
   ToolboxAssetTagList()
 }
 
-@Component
+@ComponentV2
 struct ToolboxAssetTagList {
-  @State list: Array<AssetTagVo> = []
-  @State isLoadingFirst: boolean = true
-  @State isFirstError: boolean = false
-  @State isRefreshing: boolean = false
-  @State refreshingSession: boolean = false
-  @State isLoadingMore: boolean = false
-  @State appendError: boolean = false
-  @State pressedKey: string = ''
+  @Local list: Array<AssetTagVo> = []
+  @Local isLoadingFirst: boolean = true
+  @Local isFirstError: boolean = false
+  @Local isRefreshing: boolean = false
+  @Local refreshingSession: boolean = false
+  @Local isLoadingMore: boolean = false
+  @Local appendError: boolean = false
+  @Local pressedKey: string = ''
   private hasShown: boolean = false
   // LazyForEach 数据源（读取 list，实例稳定不可重建，否则整表重建）
   private listSource: LazyListDataSource<AssetTagVo> =

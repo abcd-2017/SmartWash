@@ -5,12 +5,14 @@ import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.order.api.model.OrderBrief
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderItemCount
+import com.smartwash.feature.order.api.model.OrderReview
 import com.smartwash.feature.order.impl.R
 import com.smartwash.feature.order.impl.network.api.OrderServiceApi
 import com.smartwash.feature.order.impl.network.entity.order.OrderNextStatus
 import com.smartwash.feature.order.impl.network.entity.order.ReservationLaundry
 import com.smartwash.feature.order.impl.network.vo.order.OrderGroupVo
 import com.smartwash.feature.order.impl.network.vo.order.toModel
+import com.smartwash.feature.order.impl.network.vo.review.ReviewSubmitRequest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -140,6 +142,20 @@ class OrderRepository @Inject constructor(
         return result.data?.toModel()
             ?: throw NetworkException("订单计算结果为空", R.string.error_network_fail)
     }
+
+
+    suspend fun submitReview(orderId: Long, rating: Int, content: String): Boolean {
+        val accepted = orderServiceApi.addReview(ReviewSubmitRequest(orderId, rating, content.ifBlank { null })).data == true
+        if (accepted) {
+            AppLogger.info(TAG, "submitReview: 订单评价提交成功 orderId=$orderId rating=$rating")
+        } else {
+            AppLogger.warn(TAG, "submitReview: 后端未确认评价提交（业务拒绝/重复评价）orderId=$orderId")
+        }
+        return accepted
+    }
+
+    suspend fun getOrderReviews(orderId: Long, page: Int, size: Int): List<OrderReview> =
+        orderServiceApi.getOrderReviews(orderId, page, size).data?.records?.map { it.toModel() } ?: emptyList()
 
     private fun OrderGroupVo.toModel() = OrderGroup(
         items = items.map { it.toModel() },

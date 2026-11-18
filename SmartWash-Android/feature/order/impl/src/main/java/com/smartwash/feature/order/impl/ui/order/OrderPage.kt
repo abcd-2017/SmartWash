@@ -387,6 +387,8 @@ fun OrderPage(
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
+                                // 空态卡与列表分支（LazyColumn contentPadding）同用页面左右边距，避免贴边
+                                .padding(horizontal = AppDimens.pagePadding)
                                 .verticalScroll(rememberScrollState())
                         ) {
                             OrderEmptyState(

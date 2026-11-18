@@ -4,8 +4,11 @@ import vibrator from '@ohos.vibrator'
 import { RouteNames } from "../constant/RouteNames"
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
-import { getOrderInfo } from "../network/api/OrderApi"
+import { addReview, getOrderInfo, getOrderReviews } from "../network/api/OrderApi"
+import { BaseResponse } from "../network/BaseResponse"
 import { OrderInfo } from "../network/vo/OrderInfo"
+import { ReviewVo } from "../network/vo/ReviewVo"
+import { ReviewSubmit } from "../network/entity/ReviewSubmit"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { AppButton, AppButtonVariant, EmptyState, IconBox, LoadingState } from "../view/common/AppComponents"
@@ -70,6 +73,29 @@ struct OrderDetail {
     alignment: DialogAlignment.Center,
     customStyle: true
   })
+  // 评价状态（对齐安卓 OrderDetailViewModel：myReview/submitReviewState）
+  @State myReview: ReviewVo | null = null
+  @State reviewSubmitting: boolean = false
+  @State reviewSubmitError: string = ""
+  @State reviewPressed: boolean = false
+  // 评价弹窗（对齐安卓 ReviewDialog：星级 + 文案 + 已评价只读回显；
+  // controller 属性由 CustomDialogController 框架注入，同 AppInfoDialog 先例不手动传）
+  private reviewDialogController: CustomDialogController = new CustomDialogController({
+    builder: ReviewDialog({
+      existing: this.myReview,
+      submitting: this.reviewSubmitting,
+      submitError: this.reviewSubmitError,
+      onSubmit: (rating: number, content: string) => {
+        this.submitReview(rating, content)
+      },
+      onDismiss: () => {
+        this.reviewDialogController.close()
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
   // 时间线节点（按订单流程顺序，保持 5 个状态不变）
   private nodes: Array<TimelineNode> = [
     new TimelineNode(OrderStatusEnum.PENDING_PAYMENT, resString('pending_payment')),
@@ -107,6 +133,10 @@ struct OrderDetail {
         logger.debug('orderDetail', `订单详情加载成功 orderId=${this.orderId} status=${res.data?.status ?? ""}`)
         this.orderInfo = res.data
         this.loadFailed = false
+        // 已完成订单加载本人评价（fire-and-forget，失败不影响详情主流程；对齐安卓 loadMyReview）
+        if (res.data !== null && res.data.status === OrderStatusEnum.COMPLETED) {
+          this.loadMyReview()
+        }
         // 取件提醒同步（fire-and-forget，调研候选 2 解耦原则）：详情是待取件单最准确的
         // 发现点（带柜号上下文，文案可落到具体柜位）；同步内部全量容错不影响详情主流程
         if (res.data !== null) {
@@ -149,6 +179,69 @@ struct OrderDetail {
   private showPickupCode(): boolean {
     const status = this.orderInfo?.status
     return status === OrderStatusEnum.PENDING_SHIPMENT || status === OrderStatusEnum.READY_FOR_PICKUP
+  }
+
+  /**
+   * 是否展示评价入口（对齐安卓 showReview = 已完成；已评价时按钮转为「查看评价」只读回显）。
+   */
+  private showReview(): boolean {
+    return this.orderInfo?.status === OrderStatusEnum.COMPLETED
+  }
+
+  /**
+   * 拉取本人评价（首条）驱动入口语义：null=未评价；非 null=已评价（对齐安卓 loadMyReview）。
+   */
+  private loadMyReview(): void {
+    if (this.orderId === null) {
+      return
+    }
+    getOrderReviews(this.orderId).then((res: BaseResponse<Array<ReviewVo>>) => {
+      if (res.code === HttpStatusCode.Ok) {
+        // data 可能为 null（BaseResponse<T|null>），兜底空列表语义
+        this.myReview = res.data !== null && res.data.length > 0 ? res.data[0] : null
+      }
+    }).catch((err: Object) => {
+      logger.debug('orderDetail', `本人评价加载失败（不影响详情）${err instanceof Error ? err.message : ''}`)
+    })
+  }
+
+  /**
+   * 提交评价（对齐安卓 submitReview：防连点 + 成功后本地回显并关弹窗；失败展示可重试错误）。
+   */
+  private async submitReview(rating: number, content: string): Promise<void> {
+    if (this.reviewSubmitting || this.orderId === null) {
+      return
+    }
+    this.reviewSubmitting = true
+    this.reviewSubmitError = ''
+    try {
+      const req = new ReviewSubmit()
+      req.orderId = this.orderId
+      req.rating = rating
+      req.content = content
+      const res = await addReview(req)
+      if (res.code === HttpStatusCode.Ok && res.data === true) {
+        logger.info('orderDetail', `订单评价提交成功 orderId=${this.orderId} rating=${rating}`)
+        this.myReview = {
+          reviewId: 0,
+          orderId: this.orderId,
+          userId: 0,
+          userPhone: null,
+          rating: rating,
+          content: content,
+          createdAt: null
+        }
+        showToastSafety(resString('review_success'))
+        this.reviewDialogController.close()
+      } else {
+        this.reviewSubmitError = res.message ?? resString('review_submit_rejected')
+      }
+    } catch (err) {
+      logger.warn('orderDetail', `订单评价提交异常：${err instanceof Error ? err.message : ''}`)
+      this.reviewSubmitError = resString('review_submit_rejected')
+    } finally {
+      this.reviewSubmitting = false
+    }
   }
 
   // 订单状态 → 展示元数据映射（原写在 @Builder 内的 switch 不满足 ArkTS 语法）
@@ -534,6 +627,45 @@ struct OrderDetail {
             }
           })
         }
+
+        // 评价入口（对齐安卓 showReview=已完成）：未评价=主按钮「评价此单」；
+        // 已评价=次按钮「查看评价」只读回显；提交中禁用点击（对齐安卓 reviewSubmitting）
+        if (this.showReview()) {
+          Column() {
+            Text(this.myReview !== null ? resString('review_done_title') : resString('review_order'))
+              .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(this.myReview !== null ? $r('app.color.PRIMARY_DARK') : $r('app.color.ON_PRIMARY'))
+              .letterSpacing(1)
+          }
+          .layoutWeight(1)
+          .height(48)
+          .justifyContent(FlexAlign.Center)
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .backgroundColor(this.myReview !== null ? $r('app.color.SURFACE') : $r('app.color.PRIMARY'))
+          .border({
+            width: this.myReview !== null ? 1 : 0,
+            color: this.myReview !== null ? $r('app.color.OUTLINE') : $r('app.color.SURFACE')
+          })
+          .margin({ left: 12 })
+          .scale({ x: this.reviewPressed ? 0.97 : 1, y: this.reviewPressed ? 0.97 : 1 })
+          .animation({ duration: 100, curve: Curve.EaseOut })
+          .onTouch((event: TouchEvent) => {
+            if (event.type === TouchType.Down) {
+              this.reviewPressed = true
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+              this.reviewPressed = false
+            }
+          })
+          .onClick(() => {
+            if (this.reviewSubmitting) {
+              return
+            }
+            this.reviewSubmitError = ''
+            logger.debug('orderDetail', `打开评价弹窗 orderId=${this.orderId} 已评价=${this.myReview !== null}`)
+            this.reviewDialogController.open()
+          })
+        }
       }
       .width("100%")
       .padding({
@@ -638,16 +770,10 @@ struct OrderDetail {
           Column() {
             EmptyState({
               message: resString('order_detail_2'),
-              action: () => {
-                AppButton({
-                  small: true,
-                  text: resString('retry'),
-                  variant: AppButtonVariant.SECONDARY,
-                  click: () => {
-                    this.loadOrderDetail()
-                  }
-                })
-                  .margin({ top: DesignDimens.SPACE_MD })
+              actionText: resString('retry'),
+              actionVariant: AppButtonVariant.SECONDARY,
+              onAction: () => {
+                this.loadOrderDetail()
               }
             })
           }
@@ -812,5 +938,154 @@ export struct PickupCodeDialog {
     .width("100%")
     .justifyContent(FlexAlign.Center)
     .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
+  }
+}
+
+/**
+ * 订单评价弹窗（对齐安卓 OrderDetailPage.kt ReviewDialog）：
+ * 星级 1-5（44vp 触控热区，选中 primary 实心）+ 体验文案（选填 ≤200）；
+ * 已评价只读回显（标题「我的评价」、输入禁用、按钮「关闭」）。
+ */
+@CustomDialog
+export struct ReviewDialog {
+  controller: CustomDialogController
+  @Prop existing: ReviewVo | null = null
+  @Prop submitting: boolean = false
+  @Prop submitError: string = ''
+  @State rating: number = 0
+  @State contentText: string = ''
+  @State entered: boolean = false
+  onSubmit: (rating: number, content: string) => void = () => {
+  }
+  onDismiss: () => void = () => {
+  }
+
+  aboutToAppear(): void {
+    // 已评价回显（只读）；未评价从零起评
+    this.rating = this.existing?.rating ?? 0
+    this.contentText = this.existing?.content ?? ''
+  }
+
+  private playEnterMotion(): void {
+    setTimeout(() => {
+      animateTo(MotionTiming.DIALOG_ENTER, () => {
+        this.entered = true
+      })
+    }, 16)
+  }
+
+  private canSubmit(): boolean {
+    return this.existing === null && !this.submitting && this.rating >= 1 && this.rating <= 5
+  }
+
+  build() {
+    Column() {
+      Text(this.existing !== null ? resString('review_done_title') : resString('review_order'))
+        .fontSize(DesignFontSize.ROOT_TITLE)
+        .fontWeight(DesignFontWeight.BOLD)
+        .fontColor($r('app.color.TEXT_PRIMARY'))
+        .margin({ bottom: 16 })
+
+      // 星级行（§3.2 触控 ≥44vp；实心/描边星区分选中态）
+      Row() {
+        ForEach([1, 2, 3, 4, 5], (star: number) => {
+          Stack() {
+            SymbolGlyph(star <= this.rating ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'))
+              .fontSize(28)
+              .fontColor([star <= this.rating ? $r('app.color.PRIMARY') : $r('app.color.TEXT_TERTIARY')])
+          }
+          .width(44)
+          .height(44)
+          .onClick(() => {
+            if (this.existing === null && !this.submitting) {
+              this.rating = star
+            }
+          })
+        }, (star: number) => star.toString())
+      }
+      .width("100%")
+      .margin({ bottom: 12 })
+
+      TextInput({ placeholder: resString('review_content_hint'), text: this.contentText })
+        .maxLength(200)
+        .fontSize(DesignFontSize.BODY)
+        .fontColor($r('app.color.TEXT_PRIMARY'))
+        .placeholderColor($r('app.color.TEXT_TERTIARY'))
+        .backgroundColor($r('app.color.SURFACE_VARIANT'))
+        .borderRadius(DesignDimens.INPUT_RADIUS)
+        .padding(12)
+        .enabled(this.existing === null && !this.submitting)
+        .onChange((it: string) => {
+          if (this.existing === null && !this.submitting) {
+            this.contentText = it
+          }
+        })
+
+      if (this.submitError !== '') {
+        Text(this.submitError)
+          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontColor($r('app.color.DANGER'))
+          .margin({ top: 8 })
+      }
+
+      // 底部分区动作（对齐安卓 DialogAction：48 高 / bodyLarge 16/500）
+      Divider()
+        .color($r('app.color.DIVIDER'))
+        .strokeWidth(0.5)
+        .margin({ top: 20 })
+
+      Row() {
+        Text($r('app.string.cancel'))
+          .fontSize(DesignFontSize.BODY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor($r('app.color.TEXT_SECONDARY'))
+          .layoutWeight(1)
+          .height(48)
+          .textAlign(TextAlign.Center)
+          .onClick(() => {
+            this.onDismiss()
+            this.controller.close()
+          })
+
+        Divider()
+          .vertical(true)
+          .color($r('app.color.DIVIDER'))
+          .strokeWidth(0.5)
+          .height(48)
+
+        Text(this.existing !== null ? resString('review_close') : resString('review_submit'))
+          .fontSize(DesignFontSize.BODY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor($r('app.color.PRIMARY'))
+          .opacity(this.canSubmit() || this.existing !== null ? 1 : 0.5)
+          .layoutWeight(1)
+          .height(48)
+          .textAlign(TextAlign.Center)
+          .onClick(() => {
+            if (this.existing !== null) {
+              this.onDismiss()
+              this.controller.close()
+            } else if (this.canSubmit()) {
+              this.onSubmit(this.rating, this.contentText)
+            }
+          })
+      }
+      .width("100%")
+    }
+    .width("100%")
+    .padding({ left: 24, right: 24, top: 20, bottom: 12 })
+    .backgroundColor($r('app.color.SURFACE'))
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .shadow({
+      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+      color: $r('app.color.SHADOW_COLOR_FLOAT'),
+      offsetX: 0,
+      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
+    })
+    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+    .opacity(this.entered ? 1 : 0)
+    .onAppear(() => {
+      this.playEnterMotion()
+    })
   }
 }

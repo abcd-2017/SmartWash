@@ -65,7 +65,7 @@ public class LockersController {
     public Result<String> addLocker(@RequestBody @Valid AddLockerFrom addLockerFrom) {
         if (lockersService.getLockerById(addLockerFrom.getSchoolId(), addLockerFrom.getLockerNumber()) != null) {
             log.warn("新增寄存柜被拒绝：编号已被使用, schoolId: {}, lockerNumber: {}", addLockerFrom.getSchoolId(), addLockerFrom.getLockerNumber());
-            return Result.failMsg("给存储柜名已被使用");
+            return Result.failMsg("存储柜编号已被使用");
         }
         lockersService.addLockers(addLockerFrom);
         log.info("新增寄存柜成功, schoolId: {}, lockerNumber: {}", addLockerFrom.getSchoolId(), addLockerFrom.getLockerNumber());

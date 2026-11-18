@@ -452,16 +452,10 @@ struct Laundry {
           Column() {
             EmptyState({
               message: resString('laundry_2'),
-              action: () => {
-                AppButton({
-                  small: true,
-                  text: resString('retry'),
-                  variant: AppButtonVariant.SECONDARY,
-                  click: () => {
-                    this.retryFetchItems()
-                  }
-                })
-                .margin({ top: DesignDimens.SPACE_MD })
+              actionText: resString('retry'),
+              actionVariant: AppButtonVariant.SECONDARY,
+              onAction: () => {
+                this.retryFetchItems()
               }
             })
           }

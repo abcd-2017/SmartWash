@@ -55,6 +55,8 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
 
         queryWrapper.and(lockersFrom.getLockerId() != null, b -> b.eq(Lockers::getLockerId, lockersFrom.getLockerId()));
         queryWrapper.and(lockersFrom.getSchoolId() != null, b -> b.eq(Lockers::getSchoolId, lockersFrom.getSchoolId()));
+        // 表单携带 lockerNumber 筛选但此前查询未接，Web 端按编号筛选不生效（e2e-2026-11-18 Web 报告 P1）
+        queryWrapper.and(lockersFrom.getLockerNumber() != null, b -> b.eq(Lockers::getLockerNumber, lockersFrom.getLockerNumber()));
         queryWrapper.and(lockersFrom.getStatus() != null, b -> b.eq(Lockers::getStatus, lockersFrom.getStatus()));
         queryWrapper.and(lockersFrom.getStartTime() != null, b -> b.ge(Lockers::getLastUsedAt, lockersFrom.getStartTime()));
         queryWrapper.and(lockersFrom.getEndTime() != null, b -> b.le(Lockers::getLastUsedAt, lockersFrom.getEndTime()));

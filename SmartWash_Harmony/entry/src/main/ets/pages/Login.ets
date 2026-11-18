@@ -271,7 +271,14 @@ struct Login {
               .accessibilityText($r('app.string.password'))
               .key("loginPasswordInput")
               .showPasswordIcon(false)
-              .onChange((it: string) => this.password = it)
+              .onChange((it: string) => {
+                this.password = it
+                // 提示仅在已显示时实时消除：长度合法即清，避免输入补足后提示滞留
+                // （实测热启动残留提示在用户重新输入合法密码后仍不消失）
+                if (this.checkPassword && it.length >= 6 && it.length <= 16) {
+                  this.checkPassword = false
+                }
+              })
 
             // 密码可见性切换 — 图标化 + 48dp 热区（对齐 Android PasswordInput.kt:112-136）
             Stack({ alignContent: Alignment.Center }) {

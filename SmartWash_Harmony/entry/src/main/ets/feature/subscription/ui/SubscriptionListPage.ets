@@ -4,8 +4,9 @@
 // 条目卡：名称/每期金额/周期描述 + 续费周期进度环 + 试用倒计时角标 + 未读提醒红点；
 // canceled/finished 灰态（去色 + 状态 chip）。新建/提醒入口在页头。
 //
-// 跨页刷新：新建/编辑/删除/状态流转/标记已读成功 bump 订阅 tick（自增），
-// 本页 @StorageLink + @Watch 消费重拉（对齐安卓 savedStateHandle CHANGED_KEY）。
+// 跨页刷新：新建/编辑/删除/状态流转/标记已读成功 bump 订阅 tick（自增）。
+// V2 无 @StorageLink/@Watch，改由页面重新可见（onShown）时手动比对 AppStorage tick 重拉
+// （对齐安卓 savedStateHandle CHANGED_KEY 的返回即消费语义）。
 //
 // 已知坑遵守：条目卡内容依赖状态 → @ComponentV2 + @Param/@Event（@Builder 按值传参不响应更新）。
 
@@ -69,22 +70,22 @@ export function SubscriptionListBuilder() {
   SubscriptionListPage()
 }
 
-@Component
+@ComponentV2
 struct SubscriptionListPage {
-  @State list: Array<SubscriptionVo> = []
-  @State isLoadingFirst: boolean = true
-  @State isFirstError: boolean = false
-  @State isRefreshing: boolean = false
-  @State isLoadingMore: boolean = false
-  @State appendError: boolean = false
-  @State statusFilter: SubscriptionStatus | null = null
+  @Local list: Array<SubscriptionVo> = []
+  @Local isLoadingFirst: boolean = true
+  @Local isFirstError: boolean = false
+  @Local isRefreshing: boolean = false
+  @Local isLoadingMore: boolean = false
+  @Local appendError: boolean = false
+  @Local statusFilter: SubscriptionStatus | null = null
   // 刷新会话门控（对齐安卓 2026-11-06 闪空态回归修复）：变更信号/筛选切换/下拉刷新都会重拉列表，
   // 会话期间「清空后、新加载尚未开始」的帧会命中空态分支闪一帧——会话期间列表非空保旧数据、
   // 列表为空走骨架；只有本轮加载结束（有数据，或确认空结果）才允许真实空态
-  @State isRefreshSession: boolean = false
-  // 跨页刷新信号（自增 tick）：新建/编辑/删除/状态流转/标记已读成功后 bump
-  @StorageLink(SUBSCRIPTION_TICK_KEY) @Watch('onSubscriptionTick') subscriptionTick: number = 0
-  private hasShown: boolean = false
+  @Local isRefreshSession: boolean = false
+  // 跨页刷新信号（自增 tick）：新建/编辑/删除/状态流转/标记已读成功后 bump。
+  // V2 不订阅 AppStorage，仅记录上次消费值，onShown 时比对差值触发重拉
+  private lastSubscriptionTick: number = 0
   // LazyForEach 数据源（读取 list，实例稳定不可重建，否则整表重建）
   private listSource: LazyListDataSource<SubscriptionVo> =
     new LazyListDataSource<SubscriptionVo>(() => this.list)
@@ -98,10 +99,22 @@ struct SubscriptionListPage {
   )
 
   async aboutToAppear(): Promise<void> {
+    // 先记录当前 tick，避免首次 onShown 误判为「有变更」而重复首刷
+    this.lastSubscriptionTick = AppStorage.get<number>(SUBSCRIPTION_TICK_KEY) ?? 0
     logger.debug(TAG, '订阅列表页挂载，开始首刷')
     this.isLoadingFirst = true
     await this.loadFirst()
     this.isLoadingFirst = false
+  }
+
+  /** onShown 手动消费订阅变更：仅当 tick 自上次可见以来自增才重拉（V2 无 @Watch） */
+  private consumeSubscriptionTick(): void {
+    const current: number = AppStorage.get<number>(SUBSCRIPTION_TICK_KEY) ?? 0
+    logger.debug(TAG, `onShown 订阅 tick 比对 current=${current} last=${this.lastSubscriptionTick}`)
+    if (current !== this.lastSubscriptionTick) {
+      this.lastSubscriptionTick = current
+      this.onSubscriptionTick()
+    }
   }
 
   /** 消费订阅变更 tick：重拉列表（自增保证每次变更都触发；会话门控防闪空态） */
@@ -374,10 +387,8 @@ struct SubscriptionListPage {
     }
     .hideTitleBar(true)
     .onShown(() => {
-      // 首次 onShown 与 aboutToAppear 去重（变更 tick 已由 @Watch 消费，此处仅兜底）
-      if (!this.hasShown) {
-        this.hasShown = true
-      }
+      // V2 无 @StorageLink/@Watch：返回本页时手动比对订阅 tick，有变更即重拉
+      this.consumeSubscriptionTick()
     })
   }
 }

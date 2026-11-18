@@ -5,7 +5,7 @@ import { OrderInfo } from "../network/vo/OrderInfo"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
-import { AppButton, CircleIconBox, EmptyState, LoadingState } from "../view/common/AppComponents"
+import { AppButton, AppButtonVariant, CircleIconBox, EmptyState, LoadingState } from "../view/common/AppComponents"
 import { PickupDeliveryParam } from "./PickupDelivery"
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
@@ -380,15 +380,10 @@ struct PaymentSuccess {
           Column() {
             EmptyState({
               message: resString('pay_success_load_failed'),
-              action: () => {
-                AppButton({
-                  small: true,
-                  text: resString('retry'),
-                  click: () => {
-                    this.loadOrder()
-                  }
-                })
-                .margin({ top: DesignDimens.SPACE_MD })
+              actionText: resString('retry'),
+              actionVariant: AppButtonVariant.PRIMARY,
+              onAction: () => {
+                this.loadOrder()
               }
             })
           }

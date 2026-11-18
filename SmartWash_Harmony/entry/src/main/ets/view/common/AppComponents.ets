@@ -792,6 +792,13 @@ export struct EmptyState {
   // 行动按钮插槽（规范 §3.6：空态 = 滚筒圆母题 + 引导文案 + 行动按钮）。
   // 默认走空插槽 emptyContent，不渲染任何内容，故既有只传 message 的调用点视觉不变。
   @BuilderParam action: () => void = emptyContent
+  // 行动按钮（可选）：由 EmptyState 内部（V2 父）渲染 AppButton，避免 V1 调用点把
+  // V2 组件写进 action 插槽闭包——V1 闭包由 V2 渲染器执行时实例化 V2 组件会抛
+  // "class constructor cannot called without 'new'"（Service/Laundry/Coupon 等 8 处失败态实测崩溃/白屏）。
+  @Param actionText: string = ''
+  @Param actionVariant: AppButtonVariant = AppButtonVariant.SECONDARY
+  @Event onAction: () => void = () => {
+  }
   // 空态是"状态到达"的时刻，给一次进场（fade + 上移归位，对齐安卓 EmptyState 入场）。
   // V2 组件内部状态用 @Local（@State 是 V1 装饰器）
   @Local entered: boolean = false
@@ -814,6 +821,18 @@ export struct EmptyState {
       // 安卓 EmptyState 的行动按钮通栏无水平 padding（问题14 修复回退，以安卓为准）：
       // AppButton 非文字变体 width('100%')，外层不再套 PAGE_PADDING
       Column() {
+        // 内部渲染路径：V1 调用点只传 actionText/onAction，避免插槽闭包跨 V1/V2 边界实例化 V2 组件
+        if (this.actionText !== '') {
+          AppButton({
+            small: true,
+            text: this.actionText,
+            variant: this.actionVariant,
+            click: () => {
+              this.onAction()
+            }
+          })
+            .margin({ top: DesignDimens.SPACE_MD })
+        }
         this.action()
       }
       .width('100%')

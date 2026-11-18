@@ -3917,6 +3917,34 @@
       "value": "查看取件码"
     },
     {
+      "name": "review_order",
+      "value": "评价此单"
+    },
+    {
+      "name": "review_done_title",
+      "value": "我的评价"
+    },
+    {
+      "name": "review_content_hint",
+      "value": "说说这次洗衣的体验吧（选填）"
+    },
+    {
+      "name": "review_submit",
+      "value": "提交评价"
+    },
+    {
+      "name": "review_close",
+      "value": "关闭"
+    },
+    {
+      "name": "review_submit_success",
+      "value": "评价提交成功，感谢反馈"
+    },
+    {
+      "name": "review_submit_rejected",
+      "value": "评价提交未成功，请稍后再试"
+    },
+    {
       "name": "no_pickup_code",
       "value": "暂无取件码，请稍后再试"
     },

@@ -3,8 +3,9 @@
 // 顶部「今日 N 张」计数条（数据大字锚点 + 到期/新卡分解 + 开始复习 CTA）+
 // 队列列表（卡面预览、所属资料 chip、到期类型角标 Learning 分钟级/Review 天级）。
 //
-// 跨页刷新：资料页建资料/建卡、复习页每次评分成功后 bump 复习 tick（自增），
-// 本页 @StorageLink + @Watch 消费重拉（对齐安卓 savedStateHandle CHANGED_KEY）。
+// 跨页刷新：资料页建资料/建卡、复习页每次评分成功后 bump 复习 tick（自增）。
+// V2 无 @StorageLink/@Watch，页面重新可见（onShown）时手动比对 AppStorage tick 重拉
+// （对齐安卓 savedStateHandle CHANGED_KEY 的返回即消费语义）。
 //
 // 已知坑遵守：列表条目内容依赖状态 → 队列条目卡用 @ComponentV2 + @Param/@Event。
 
@@ -38,22 +39,25 @@ export function ReviewQueueBuilder() {
   ReviewQueuePage()
 }
 
-@Component
+@ComponentV2
 struct ReviewQueuePage {
-  @State queue: ReviewQueueVo | null = null
-  @State materialTitles: Map<number, string> = new Map<number, string>()
-  @State isLoadingFirst: boolean = true
-  @State isFirstError: boolean = false
-  @State isRefreshing: boolean = false
+  @Local queue: ReviewQueueVo | null = null
+  @Local materialTitles: Map<number, string> = new Map<number, string>()
+  @Local isLoadingFirst: boolean = true
+  @Local isFirstError: boolean = false
+  @Local isRefreshing: boolean = false
   // 分钟粒度时钟基准：全部队列卡共用同一 now，「N 分钟后到期」随页面停留推进
   // （对齐安卓 produceState 分钟级 ticker，跨端矩阵 #4）
-  @State now: number = Date.now()
+  @Local now: number = Date.now()
   /** 到期时钟定时器 id（aboutToDisappear 必须清理，鸿蒙红线） */
   private dueTickerId: number = -1
-  // 跨页刷新信号（自增 tick）：资料页建资料/建卡、复习页评分成功后 bump
-  @StorageLink(REVIEW_TICK_KEY) @Watch('onReviewTick') reviewTick: number = 0
+  // 跨页刷新信号（自增 tick）：资料页建资料/建卡、复习页评分成功后 bump。
+  // V2 不订阅 AppStorage，仅记录上次消费值，onShown 时比对差值触发重拉
+  private lastReviewTick: number = 0
 
   async aboutToAppear(): Promise<void> {
+    // 先记录当前 tick，避免首次 onShown 误判为「有变更」而重复首刷
+    this.lastReviewTick = AppStorage.get<number>(REVIEW_TICK_KEY) ?? 0
     // 每 30s 推进一次时钟基准，驱动全部 QueueCard 的到期文案重算
     this.dueTickerId = setInterval(() => {
       this.now = Date.now()
@@ -68,10 +72,14 @@ struct ReviewQueuePage {
     }
   }
 
-  /** 消费复习变更 tick：重拉队列（自增保证每次变更都触发） */
-  private onReviewTick(): void {
-    logger.debug(TAG, '消费到复习变更信号，重拉队列')
-    this.load()
+  /** onShown 手动消费复习变更：仅当 tick 自上次可见以来自增才重拉（V2 无 @Watch） */
+  private consumeReviewTick(): void {
+    const current: number = AppStorage.get<number>(REVIEW_TICK_KEY) ?? 0
+    if (current !== this.lastReviewTick) {
+      logger.debug(TAG, `消费到复习变更信号 current=${current} last=${this.lastReviewTick}，重拉队列`)
+      this.lastReviewTick = current
+      this.load()
+    }
   }
 
   /** 拉取今日队列并补齐「所属资料」标题 */
@@ -254,6 +262,10 @@ struct ReviewQueuePage {
       }
     }
     .hideTitleBar(true)
+    .onShown(() => {
+      // V2 无 @StorageLink/@Watch：从复习页/资料页返回时手动比对复习 tick，有变更即重拉
+      this.consumeReviewTick()
+    })
   }
 }
 

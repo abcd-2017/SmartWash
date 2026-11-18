@@ -187,10 +187,11 @@ struct OrderList {
       // 月份标题项
       list.push({ key: `header_${section.monthKey}`, isHeader: true, monthKey: section.monthKey, orders: [] })
       // 整月订单卡项
-      // 键含数据指纹（订单 id 串）：同月订单集变化（刷新/切页签回切）后键变触发重建，
-      // 否则复用旧 OrderMonthCard 且不重执行 itemGenerator，@Param orders 不同步 → UI 停留旧数据
+      // 键含数据指纹（订单 id+状态串）：同月订单集或订单状态变化（刷新/切页签回切/寄件取件返回）后
+      // 键变触发重建，否则复用旧 OrderMonthCard 且不重执行 itemGenerator，@Param orders 不同步 →
+      // UI 停留旧状态（实测寄件/取件确认返回后状态角标与操作按钮不更新）
       list.push({
-        key: `${section.monthKey}:${section.orders.map((o: OrderInfo) => o.orderId ?? 0).join(",")}`,
+        key: `${section.monthKey}:${section.orders.map((o: OrderInfo) => `${o.orderId ?? 0}:${o.status ?? ''}`).join(",")}`,
         isHeader: false,
         monthKey: section.monthKey,
         orders: section.orders

@@ -27,13 +27,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Receipt
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +63,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
+import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.DialogAction
 import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.components.softCardShadow
@@ -71,6 +77,7 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.feature.order.api.model.OrderInfo
+import com.smartwash.feature.order.api.model.OrderReview
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.HapticEffect
@@ -98,6 +105,7 @@ fun OrderDetailPage(
 
     // 错误提示放 LaunchedEffect，禁止组合期直接弹 Toast
     val context = LocalContext.current
+    val view = currentView()
     LaunchedEffect(getOrderDetailState) {
         if (getOrderDetailState is RequestState.Error) {
             Toast.makeText(
@@ -111,6 +119,33 @@ fun OrderDetailPage(
 
     // 取件码弹窗开关（D-OD1，恢复旧版寄存柜取件码功能链）
     var showPickupCodeDialog by remember { mutableStateOf(false) }
+    var showReviewDialog by remember { mutableStateOf(false) }
+    val myReview by orderDetailViewModel.myReview.collectAsState()
+    val submitReviewState by orderDetailViewModel.submitReviewState.collectAsState()
+
+    // 已完成订单进入页面时拉取评价回显（失败静默，入口降级为未评价）
+    LaunchedEffect(orderInfo?.orderId, orderInfo?.status) {
+        if (OrderStatus.fromStatus(orderInfo?.status ?: "-1") == OrderStatus.COMPLETED) {
+            orderDetailViewModel.loadMyReview(orderId)
+        }
+    }
+
+    // 评价提交收尾：成功关弹层 + 成功触感；失败由弹层内错误行承担
+    LaunchedEffect(submitReviewState) {
+        when (val s = submitReviewState) {
+            is RequestState.Success -> {
+                view.performHaptic(HapticEffect.SUCCESS)
+                Toast.makeText(context, context.getString(R.string.review_submit_success), Toast.LENGTH_SHORT).show()
+                orderDetailViewModel.resetReviewState()
+                showReviewDialog = false
+            }
+            is RequestState.Error -> {
+                Toast.makeText(context, s.getMessage(context), Toast.LENGTH_SHORT).show()
+                orderDetailViewModel.resetReviewState()
+            }
+            else -> {}
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -140,7 +175,10 @@ fun OrderDetailPage(
                     Column(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                         // 状态区 — 无卡片：居中滚筒插画 + 状态字（设计稿屏 6，D-OD8）
                         // 屏 6 实测 页头文字底→插画顶 14dp：PageHeader 自带内边距已占 18dp，不再追加 Spacer
-                        OrderStatusHeader(status = OrderStatus.fromStatus(orderInfo?.status ?: "-1"))
+                        OrderStatusHeader(
+                            status = OrderStatus.fromStatus(orderInfo?.status ?: "-1"),
+                            completedAt = orderInfo?.updatedAt
+                        )
 
                         // 进度时间线（规范 §3.4）；卡片规格对齐 v0.4 §3.1 / §2.4：radiusLg 16 + 1px outline 描边 + level1 阴影
                         Surface(
@@ -235,6 +273,10 @@ fun OrderDetailPage(
                 OrderDetailActionBar(
                     showPickupCode = currentStatus == OrderStatus.PENDING_SHIPMENT ||
                         currentStatus == OrderStatus.READY_FOR_PICKUP,
+                    showReview = currentStatus == OrderStatus.COMPLETED,
+                    reviewDone = myReview != null,
+                    reviewSubmitting = submitReviewState is RequestState.Loading,
+                    onReviewClick = { showReviewDialog = true },
                     onContactServiceClick = {
                         // 待客服功能立项后接入（D-OD12，用户已确认：先以 Toast 兜底）
                         Toast.makeText(context, context.getString(R.string.contact_service_unavailable), Toast.LENGTH_SHORT).show()
@@ -264,6 +306,17 @@ fun OrderDetailPage(
                 pickupCode = parsePickupCode(orderInfo),
                 lockerNumber = orderInfo?.lockersVo?.lockerNumber ?: 0,
                 onDismiss = { showPickupCodeDialog = false }
+            )
+        }
+
+        // 评价弹层（E2E 补齐）：已完成订单提交星级 + 文案评价；成功经 LaunchedEffect 收尾
+        if (showReviewDialog) {
+            ReviewDialog(
+                orderId = orderInfo?.orderId ?: -1L,
+                existing = myReview,
+                submitState = submitReviewState,
+                onSubmit = { rating, content -> orderDetailViewModel.submitReview(orderId, rating, content) },
+                onDismiss = { showReviewDialog = false }
             )
         }
     }
@@ -511,7 +564,7 @@ fun ProgressTimeline(currentStatus: OrderStatus?, firstNodeTime: String? = null)
  * 本页插画为静态复刻（清洗中动效由首页滚筒承担，DrumIcon.kt 保留不动）；数据流不变
  */
 @Composable
-private fun OrderStatusHeader(status: OrderStatus?) {
+private fun OrderStatusHeader(status: OrderStatus?, completedAt: String? = null) {
     data class OrderStatusInfo(
         @androidx.annotation.StringRes val statusTextRes: Int,
         val statusColor: Color,
@@ -576,7 +629,13 @@ private fun OrderStatusHeader(status: OrderStatus?) {
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = stringResource(info.estimatedTimeRes),
+            // 已完成副行带真实完成时间（updatedAt 即终态流转时间），格式异常回退纯文案
+            text = if (status == OrderStatus.COMPLETED && !completedAt.isNullOrBlank()) {
+                stringResource(info.estimatedTimeRes) + " " +
+                    (completedAt.takeIf { Regex("""\d{4}-\d{2}-\d{2} \d{2}:\d{2}""").matches(it.take(16)) } ?: completedAt)
+            } else {
+                stringResource(info.estimatedTimeRes)
+            },
             // 副行提示 caption 档（屏 6 实测 12/16/400；插画→状态字 12 / 状态字→副行 6）
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.colorScheme.textSecondary
@@ -664,8 +723,12 @@ private fun DrumIllustration() {
 private fun OrderDetailActionBar(
     modifier: Modifier = Modifier,
     showPickupCode: Boolean,
+    showReview: Boolean = false,
+    reviewDone: Boolean = false,
+    reviewSubmitting: Boolean = false,
     onContactServiceClick: () -> Unit = {},
     onPickupCodeClick: () -> Unit = {},
+    onReviewClick: () -> Unit = {},
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -708,7 +771,34 @@ private fun OrderDetailActionBar(
                 }
                 // 主按钮 — 纯色 primary 胶囊（屏 6 实测无渐变），onPrimary 双主题成对；
                 // P-901：无取件码语义的状态（已取消/已完成等）不渲染该按钮
-                if (showPickupCode) {
+                // 已完成订单的评价入口（E2E 补齐：后端 /web/auth/reviews/add 无 UI 消费）；
+                // 已评价过降级为次态文案按钮（仍可点开查看自己提交的评价内容）
+                if (showReview) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .pressable(
+                                onClick = { if (!reviewSubmitting) onReviewClick() },
+                                debounce = false
+                            )
+                            .background(
+                                if (reviewDone) AppColors.colorScheme.primarySoft
+                                else AppColors.colorScheme.primary,
+                                RoundedCornerShape(AppDimens.radiusFull)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(
+                                if (reviewDone) R.string.review_done else R.string.review_order
+                            ),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (reviewDone) AppColors.colorScheme.onPrimarySoft
+                            else MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                } else if (showPickupCode) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -725,6 +815,114 @@ private fun OrderDetailActionBar(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * 评价弹层（E2E 补齐）：星级五选一 + 选填文案 + 提交；已有评价时只读回显。
+ * 骨架对齐 PickupCodeDialog（radiusLg + floatLayer + dialogEnterMotion）；输入用
+ * AppTextField（§3.7 业务层唯一输入控件）；星级触控热区 44dp；reduced motion 由
+ * dialogEnterMotion/motionSpec 承担。
+ */
+@Composable
+private fun ReviewDialog(
+    orderId: Long,
+    existing: OrderReview?,
+    submitState: RequestState,
+    onSubmit: (rating: Int, content: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val view = currentView()
+    var rating by remember { mutableIntStateOf(existing?.rating?.takeIf { it > 0 } ?: 0) }
+    var content by remember { mutableStateOf(existing?.content.orEmpty()) }
+    val submitting = submitState is RequestState.Loading
+    val canSubmit = rating in 1..5 && !submitting
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = { if (!submitting) onDismiss() }) {
+        Surface(
+            modifier = Modifier.dialogEnterMotion(),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = AppElevation.floatLayer
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 20.dp)
+            ) {
+                Text(
+                    text = stringResource(
+                        if (existing != null) R.string.review_done_title else R.string.review_order
+                    ),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                // 星级行：44dp 触控热区（§3.2 触控 ≥44），实心/描边星区分选中态
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    for (star in 1..5) {
+                        val filled = star <= rating
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .pressable(onClick = {
+                                    if (existing == null && !submitting) {
+                                        view.performHaptic(HapticEffect.LIGHT)
+                                        rating = star
+                                    }
+                                }),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (filled) Icons.Rounded.Star else Icons.Rounded.StarBorder,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = if (filled) AppColors.colorScheme.primary
+                                else AppColors.colorScheme.textTertiary
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                AppTextField(
+                    value = content,
+                    onValueChange = { if (existing == null && !submitting && it.length <= 200) content = it },
+                    placeholder = stringResource(R.string.review_content_hint),
+                    enabled = existing == null,
+                    readOnly = existing != null,
+                    singleLine = false,
+                    maxLines = 4,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (submitState is RequestState.Error) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = submitState.getMessage(LocalContext.current),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.colorScheme.error
+                    )
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                AppButton(
+                    text = stringResource(
+                        if (existing != null) R.string.review_close else R.string.review_submit
+                    ),
+                    onClick = {
+                        if (existing != null) {
+                            onDismiss()
+                        } else {
+                            onSubmit(rating, content)
+                        }
+                    },
+                    enabled = if (existing != null) true else canSubmit,
+                    loading = submitting,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

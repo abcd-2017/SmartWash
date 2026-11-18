@@ -97,15 +97,9 @@ class CouponViewModel @Inject constructor(
                 launch { loadClaimed() }
                 launch { loadHistorical() }
             }
-            // 整页错误态仅在「三组皆无数据」时给出；部分失败由对应 tab 内小态承担
-            val allEmpty = _availableCoupons.value.isEmpty() &&
-                _claimedCoupons.value.isEmpty() &&
-                _historicalCoupons.value.isEmpty()
-            _loadState.value = if (allEmpty) {
-                RequestState.Error(R.string.coupon_load_failed)
-            } else {
-                RequestState.Success
-            }
+            // 三组皆空是合法空态（如新账号），交由各 tab 的空态承担，不再整页误报「加载失败」；
+            // 真正的失败由各组的 NetworkException 分支置 CouponSource.FAILED 在 tab 内承担
+            _loadState.value = RequestState.Success
         }
     }
 

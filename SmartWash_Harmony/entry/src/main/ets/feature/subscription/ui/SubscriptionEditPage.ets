@@ -61,34 +61,34 @@ export function SubscriptionEditBuilder() {
   SubscriptionEditPage()
 }
 
-@Component
+@ComponentV2
 struct SubscriptionEditPage {
   // ---------- 表单字段（金额/期数/提醒天数以文本承载，提交时统一解析校验） ----------
-  @State name: string = ''
-  @State amount: string = ''
-  @State cycleType: SubscriptionCycleType = SubscriptionCycleType.MONTH
-  @State interval: string = '1'
-  @State nextRenewDate: string = formatDate(new Date())
-  @State trialEndDate: string = ''
-  @State autoRenew: boolean = true
-  @State remindDays: string = '3'
-  @State cancelUrl: string = ''
-  @State cancelSteps: string = ''
-  @State note: string = ''
-  @State isLoadingDetail: boolean = false
-  @State isLoadError: boolean = false
-  @State isSubmitting: boolean = false
-  @State submitError: string = ''
+  @Local name: string = ''
+  @Local amount: string = ''
+  @Local cycleType: SubscriptionCycleType = SubscriptionCycleType.MONTH
+  @Local interval: string = '1'
+  @Local nextRenewDate: string = formatDate(new Date())
+  @Local trialEndDate: string = ''
+  @Local autoRenew: boolean = true
+  @Local remindDays: string = '3'
+  @Local cancelUrl: string = ''
+  @Local cancelSteps: string = ''
+  @Local note: string = ''
+  @Local isLoadingDetail: boolean = false
+  @Local isLoadError: boolean = false
+  @Local isSubmitting: boolean = false
+  @Local submitError: string = ''
   // 编辑目标 id（新建为 -1）
   private editId: number = -1
   // 输入框聚焦态（描边高亮）
-  @State private nameFocused: boolean = false
-  @State private amountFocused: boolean = false
-  @State private intervalFocused: boolean = false
-  @State private remindDaysFocused: boolean = false
-  @State private cancelUrlFocused: boolean = false
-  @State private cancelStepsFocused: boolean = false
-  @State private noteFocused: boolean = false
+  @Local nameFocused: boolean = false
+  @Local amountFocused: boolean = false
+  @Local intervalFocused: boolean = false
+  @Local remindDaysFocused: boolean = false
+  @Local cancelUrlFocused: boolean = false
+  @Local cancelStepsFocused: boolean = false
+  @Local noteFocused: boolean = false
 
   aboutToAppear(): void {
     const param = getNumberParam(RouteNames.SUBSCRIPTION_EDIT)

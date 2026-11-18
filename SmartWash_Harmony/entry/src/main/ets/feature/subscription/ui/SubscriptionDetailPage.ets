@@ -5,6 +5,7 @@
 // 取消路径折叠卡（网址可打开/复制）。
 //
 // 详情数据实时拉取；编辑经表单页（返回 bump 订阅 tick 触发本页与列表页刷新）。
+// V2 无 @StorageLink/@Watch：本地动作成功后即时重拉，页面重新可见时手动比对 AppStorage tick 补差。
 // 已知坑遵守：弹窗「先关窗再回调」；颜色一律取 Design* 令牌。
 
 import { common, Want } from '@kit.AbilityKit'
@@ -68,27 +69,28 @@ export function SubscriptionDetailBuilder() {
   SubscriptionDetailPage()
 }
 
-@Component
+@ComponentV2
 struct SubscriptionDetailPage {
-  @State detail: SubscriptionVo | null = null
-  @State isLoading: boolean = true
-  @State isLoadError: boolean = false
-  @State statsItem: SubscriptionStatsItemVo | null = null
-  @State isLoadingStats: boolean = false
-  @State isStatsError: boolean = false
-  @State isTransitioning: boolean = false
-  @State isDeleting: boolean = false
-  @State isCheckingIn: boolean = false
-  @State isUndoing: boolean = false
-  @State usageList: Array<UsageLogVo> = []
-  @State isLoadingUsageFirst: boolean = true
-  @State isUsageFirstError: boolean = false
-  @State isLoadingMoreUsage: boolean = false
-  @State usageAppendError: boolean = false
-  @State cancelPathExpanded: boolean = false
-  @State pendingUndoId: number = -1
-  // 跨页刷新信号（自增 tick）：编辑/删除/状态流转/打卡/标记已读成功后 bump
-  @StorageLink(SUBSCRIPTION_TICK_KEY) @Watch('onSubscriptionTick') subscriptionTick: number = 0
+  @Local detail: SubscriptionVo | null = null
+  @Local isLoading: boolean = true
+  @Local isLoadError: boolean = false
+  @Local statsItem: SubscriptionStatsItemVo | null = null
+  @Local isLoadingStats: boolean = false
+  @Local isStatsError: boolean = false
+  @Local isTransitioning: boolean = false
+  @Local isDeleting: boolean = false
+  @Local isCheckingIn: boolean = false
+  @Local isUndoing: boolean = false
+  @Local usageList: Array<UsageLogVo> = []
+  @Local isLoadingUsageFirst: boolean = true
+  @Local isUsageFirstError: boolean = false
+  @Local isLoadingMoreUsage: boolean = false
+  @Local usageAppendError: boolean = false
+  @Local cancelPathExpanded: boolean = false
+  @Local pendingUndoId: number = -1
+  // 跨页刷新信号（自增 tick）：编辑/删除/状态流转/打卡/标记已读成功后 bump。
+  // V2 不订阅 AppStorage，仅记录上次消费值：本地动作即时重拉 + onShown 补差
+  private lastSubscriptionTick: number = 0
   private subscriptionId: number = -1
   // LazyForEach 数据源（读取 usageList，实例稳定不可重建，否则整表重建）
   private usageSource: LazyListDataSource<UsageLogVo> =
@@ -103,15 +105,30 @@ struct SubscriptionDetailPage {
   )
 
   async aboutToAppear(): Promise<void> {
+    // 先记录当前 tick，避免首次 onShown 误判为「有变更」而重复首刷
+    this.lastSubscriptionTick = AppStorage.get<number>(SUBSCRIPTION_TICK_KEY) ?? 0
     const param = getNumberParam(RouteNames.SUBSCRIPTION_DETAIL)
     this.subscriptionId = param !== null && param > 0 ? param : -1
     await this.reloadAll()
   }
 
-  /** 消费订阅变更 tick：整页重拉（自增保证每次变更都触发） */
-  private onSubscriptionTick(): void {
-    logger.debug(TAG, '消费到订阅变更信号，重拉详情')
-    this.reloadAll()
+  /**
+   * 本地动作（状态流转/打卡/撤销）bump tick 后即时重拉，并前移消费位，
+   * 避免 onShown 再次判定为「有新变更」造成重复请求（V2 无 @Watch 事件可依赖）
+   */
+  private async reloadAfterLocalChange(): Promise<void> {
+    this.lastSubscriptionTick = AppStorage.get<number>(SUBSCRIPTION_TICK_KEY) ?? 0
+    await this.reloadAll()
+  }
+
+  /** onShown 手动消费订阅变更：仅当 tick 自上次可见以来自增才重拉（V2 无 @Watch） */
+  private consumeSubscriptionTick(): void {
+    const current: number = AppStorage.get<number>(SUBSCRIPTION_TICK_KEY) ?? 0
+    if (current !== this.lastSubscriptionTick) {
+      logger.debug(TAG, `消费到订阅变更信号 current=${current} last=${this.lastSubscriptionTick}，重拉详情`)
+      this.lastSubscriptionTick = current
+      this.reloadAll()
+    }
   }
 
   /** 详情 + 统计 + 打卡分页整页重拉 */
@@ -231,6 +248,7 @@ struct SubscriptionDetailPage {
         logger.info(TAG, `订阅状态流转成功 id=${this.subscriptionId} action=${action}`)
         showToastSafety(SubscriptionText.subscription_toast_status_updated)
         bumpSubscriptionRefresh()
+        await this.reloadAfterLocalChange()
       } else {
         logger.warn(TAG, `订阅状态流转失败 action=${action} code=${res.code ?? 0} msg=${res.message ?? ''}`)
         showToastSafety(res.message, SubscriptionText.subscription_error_submit)
@@ -280,6 +298,7 @@ struct SubscriptionDetailPage {
         logger.info(TAG, `订阅打卡成功 id=${this.subscriptionId}`)
         showToastSafety(SubscriptionText.subscription_usage_check_in_done)
         bumpSubscriptionRefresh()
+        await this.reloadAfterLocalChange()
       } else {
         logger.warn(TAG, `订阅打卡失败 code=${res.code ?? 0} msg=${res.message ?? ''}`)
         showToastSafety(res.message, SubscriptionText.subscription_error_submit)
@@ -305,6 +324,7 @@ struct SubscriptionDetailPage {
         showToastSafety(SubscriptionText.subscription_toast_undo_success)
         this.pendingUndoId = -1
         bumpSubscriptionRefresh()
+        await this.reloadAfterLocalChange()
       } else {
         logger.warn(TAG, `打卡撤销失败 code=${res.code ?? 0} msg=${res.message ?? ''}`)
         showToastSafety(res.message, SubscriptionText.subscription_error_submit)
@@ -1046,6 +1066,10 @@ label: SubscriptionText.subscription_detail_note,
       }
     }
     .hideTitleBar(true)
+    .onShown(() => {
+      // V2 无 @StorageLink/@Watch：从编辑页等返回时手动比对订阅 tick，有变更即重拉
+      this.consumeSubscriptionTick()
+    })
   }
 }
 

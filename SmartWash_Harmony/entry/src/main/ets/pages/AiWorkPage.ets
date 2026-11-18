@@ -87,14 +87,14 @@ export function AiWorkBuilder() {
   AiWorkPage()
 }
 
-@Component
+@ComponentV2
 struct AiWorkPage {
-  @State inputText: string = ''
-  @State inputFocused: boolean = false
+  @Local inputText: string = ''
+  @Local inputFocused: boolean = false
   // 按压反馈（对齐安卓 pressable scale 0.97）
-  @State pressedTask: number = -1
+  @Local pressedTask: number = -1
   // 发送钮按压反馈（对齐安卓 pressable scale 0.97，套用本页 QuickTaskCard 同款模式）
-  @State pressedSend: boolean = false
+  @Local pressedSend: boolean = false
 
   /** 快捷任务点击：占位提示（不发起请求） */
   private onQuickTask(index: number): void {

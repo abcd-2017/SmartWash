@@ -50,20 +50,20 @@ export function ToolboxShortCodeListBuilder() {
   ToolboxShortCodeList()
 }
 
-@Component
+@ComponentV2
 struct ToolboxShortCodeList {
-  @State list: Array<ShortCodeVo> = []
-  @State isLoadingFirst: boolean = true
-  @State isFirstError: boolean = false
-  @State isRefreshing: boolean = false
+  @Local list: Array<ShortCodeVo> = []
+  @Local isLoadingFirst: boolean = true
+  @Local isFirstError: boolean = false
+  @Local isRefreshing: boolean = false
   // 刷新会话门控（对齐安卓 refreshSession）：下拉刷新/变更信号回列表期间为真，
   // 空态分支被门控（走骨架），会话在本轮加载返回后结束
-  @State refreshingSession: boolean = false
-  @State isLoadingMore: boolean = false
+  @Local refreshingSession: boolean = false
+  @Local isLoadingMore: boolean = false
   // 追加加载失败态（对齐安卓 append Error → footer 文字重试）；重试经 paging.retry() 重拉同一页
-  @State appendError: boolean = false
+  @Local appendError: boolean = false
   // 按压反馈（对齐安卓 pressable scale 0.97）：卡片 / 复制钮共用一个 key
-  @State pressedKey: string = ''
+  @Local pressedKey: string = ''
   // onShown 首次即触发，首屏加载由 aboutToAppear 承担；加锁避免首屏重复请求
   private hasShown: boolean = false
   // LazyForEach 数据源（读取 list，实例稳定不可重建，否则整表重建）
