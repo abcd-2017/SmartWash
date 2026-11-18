@@ -478,6 +478,9 @@ struct AddSchool {
         }
         .layoutWeight(1)
         .scrollBar(BarState.Off)
+        // 键盘 RESIZE 压缩窗口时，下拉列表等溢出内容会穿透渲染到固定 CTA 栏（实测文字重叠），
+        // 显式裁剪 Scroll 视口内容
+        .clip(true)
         .width("100%")
         // 内容不足一屏时顶对齐（Scroll 默认居中，会把表单挤到屏幕中部）
         .align(Alignment.Top)

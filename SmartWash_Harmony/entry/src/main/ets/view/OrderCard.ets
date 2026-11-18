@@ -275,7 +275,7 @@ export struct OrderMonthCard {
             .color($r('app.color.HAIRLINE'))
             .margin({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
         }
-      }, (order: OrderInfo) => order.orderId?.toString())
+      }, (order: OrderInfo) => `${order.orderId ?? 0}:${order.status ?? ''}`)
     }
     .width("100%")
     .backgroundColor($r('app.color.SURFACE'))

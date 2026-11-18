@@ -300,7 +300,7 @@ struct PickupDelivery {
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor($r('app.color.ON_WARNING_CONTAINER'))
-          Text($r('app.string.pickup_delivery_9') +
+          Text(resString('pickup_delivery_9') +
             resString('pickup_delivery_10') +
             resString('pickup_delivery_11'))
             .fontSize(DesignFontSize.CAPTION)
@@ -551,16 +551,10 @@ struct PickupDelivery {
           Column() {
             EmptyState({
               message: resString('error_network_fail'),
-              action: () => {
-                AppButton({
-                  small: true,
-                  text: resString('retry'),
-                  variant: AppButtonVariant.SECONDARY,
-                  click: () => {
-                    this.initPage()
-                  }
-                })
-                  .margin({ top: DesignDimens.SPACE_MD })
+              actionText: resString('retry'),
+              actionVariant: AppButtonVariant.SECONDARY,
+              onAction: () => {
+                this.initPage()
               }
             })
           }
