@@ -29,7 +29,7 @@ public class DiningOrderDetailVo {
 
     private String title;
 
-    /** 订单状态：ONGOING / FINISHED */
+    /** 订单状态：DRAFT 草稿 / ONGOING 进行中 / FINISHED 已结束 */
     private String status;
 
     private Long creatorUserId;

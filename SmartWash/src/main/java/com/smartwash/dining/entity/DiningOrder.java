@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 /**
  * 吃啥-点单订单。
  * 一人发起（title + 从公共菜谱库勾选本单菜单）生成二维码分享，其他人扫码加入后各自勾选想吃的菜；
+ * 草稿协同点单：创建即 DRAFT（标题/菜单可空、全部成员可加/移除菜），发起者 publish 定稿为 ONGOING；
  * 发起者结束后锁定订单并写 shopping_list 快照（结束接口在 11 号票）。
  */
 @Data
@@ -32,7 +33,7 @@ public class DiningOrder implements Serializable {
     /** 发起者用户 ID(users.user_id) */
     private Long creatorUserId;
 
-    /** 订单状态：ONGOING 进行中 / FINISHED 已结束（DiningOrderStatus） */
+    /** 订单状态：DRAFT 草稿 / ONGOING 进行中 / FINISHED 已结束（DiningOrderStatus） */
     private String status;
 
     /** 加入凭证（二维码携带，uk_join_token 兜底唯一；重置即旧二维码全部作废） */
