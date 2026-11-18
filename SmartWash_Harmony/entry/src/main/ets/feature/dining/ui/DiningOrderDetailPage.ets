@@ -695,11 +695,13 @@ struct DiningOrderDetailPage {
           }
         } else {
           this.draftMenu.onWriteFailure(op)
+          this.rebuildSections(this.currentMenuRows(), this.currentCategoryNames())
           showToastSafety(res.message, DiningText.dining_order_detail_write_failed)
           return
         }
       } catch (err) {
         this.draftMenu.onWriteFailure(op)
+        this.rebuildSections(this.currentMenuRows(), this.currentCategoryNames())
         logger.error(TAG, `草稿菜单写异常 recipeId=${op.recipeId}`, err instanceof Error ? err.message : '')
         showToastSafety('', DiningText.dining_order_detail_write_failed)
         return
