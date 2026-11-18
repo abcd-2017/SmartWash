@@ -1,6 +1,7 @@
 package com.smartwash.toolbox.delivery.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartwash.common.Result;
 import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.toolbox.delivery.from.CreateDeliverySessionFrom;
@@ -20,9 +21,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 /**
  * 工作台设备投递用户端控制器（owner = 会话主人，ROLE_USER）。
@@ -38,6 +41,7 @@ public class ToolboxDeliveryController {
 
     private final ToolboxDeliveryService toolboxDeliveryService;
     private final DeliveryFileStreaming deliveryFileStreaming;
+    private final ObjectMapper objectMapper;
 
     @Operation(summary = "创建投递会话", description = "可选密码与有效期（默认30分钟，上限120）；返回投递码、过期时刻与对端 H5 地址")
     @PostMapping("/sessions")
@@ -95,15 +99,21 @@ public class ToolboxDeliveryController {
 
     @Operation(summary = "条目内容", description = "文本返回 JSON（焚毁后内容为空）；文件流式转发（须先 take 认领，下载完成即焚毁，中断可重取），不暴露对象 URL")
     @GetMapping("/sessions/{code}/items/{itemId}/content")
-    public ResponseEntity<?> content(@PathVariable("code") String code,
-                                     @PathVariable("itemId") Long itemId) {
+    public ResponseEntity<StreamingResponseBody> content(@PathVariable("code") String code,
+                                                         @PathVariable("itemId") Long itemId) {
         DeliveryContent content = toolboxDeliveryService.content(code, itemId);
         if (content.getFileDownload() == null) {
             DeliveryItemTakenVo vo = new DeliveryItemTakenVo()
                     .setId(itemId)
                     .setKind(content.getKind())
                     .setTextContent(content.getTextContent());
-            return ResponseEntity.ok().body(Result.ok(vo));
+            // 方法返回类型必须是确切泛型 ResponseEntity<StreamingResponseBody>：此前 ResponseEntity<?>
+            // 通配符擦除后 Spring 不把 StreamingResponseBody 识别为异步体，找不到匹配 converter
+            // 直接 500（HttpMessageNotWritableException，e2e-2026-11-18 Android 报告 P0），
+            // 文本分支也统一走 StreamingResponseBody 写 JSON，与文件分支共用同一返回类型
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(out -> out.write(objectMapper.writeValueAsBytes(Result.ok(vo))));
         }
         return deliveryFileStreaming.toResponse(toolboxDeliveryService, content.getFileDownload());
     }

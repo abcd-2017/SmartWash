@@ -1,5 +1,6 @@
 package com.smartwash.toolbox.delivery.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartwash.common.Result;
 import com.smartwash.toolbox.delivery.from.EnterDeliverySessionFrom;
 import com.smartwash.toolbox.delivery.from.PublishDeliveryTextFrom;
@@ -15,9 +16,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 /**
  * 工作台设备投递对端控制器（电脑浏览器凭投递码匿名访问）。
@@ -33,6 +36,7 @@ public class ToolboxDeliveryPublicController {
 
     private final ToolboxDeliveryService toolboxDeliveryService;
     private final DeliveryFileStreaming deliveryFileStreaming;
+    private final ObjectMapper objectMapper;
 
     @Operation(summary = "进入会话", description = "凭码匿名进入，可选密码（错误响应延迟约500ms防爆破）；单对端占用（被占 409 语义）；计入会话进入次数")
     @PostMapping("/{code}/enter")
@@ -72,15 +76,19 @@ public class ToolboxDeliveryPublicController {
 
     @Operation(summary = "条目内容", description = "文本返回 JSON（焚毁后内容为空）；文件流式转发（须先 take 认领，下载完成即焚毁，中断可重取），不暴露对象 URL")
     @GetMapping("/{code}/items/{itemId}/content")
-    public ResponseEntity<?> content(@PathVariable("code") String code,
-                                     @PathVariable("itemId") Long itemId) {
+    public ResponseEntity<StreamingResponseBody> content(@PathVariable("code") String code,
+                                                         @PathVariable("itemId") Long itemId) {
         DeliveryContent content = toolboxDeliveryService.content(code, itemId);
         if (content.getFileDownload() == null) {
             DeliveryItemTakenVo vo = new DeliveryItemTakenVo()
                     .setId(itemId)
                     .setKind(content.getKind())
                     .setTextContent(content.getTextContent());
-            return ResponseEntity.ok().body(Result.ok(vo));
+            // 与 owner 侧同构：返回类型必须是确切泛型，通配符擦除会让 StreamingResponseBody
+            // 找不到匹配 converter（e2e-2026-11-18 Android 报告 P0）
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(out -> out.write(objectMapper.writeValueAsBytes(Result.ok(vo))));
         }
         return deliveryFileStreaming.toResponse(toolboxDeliveryService, content.getFileDownload());
     }

@@ -13,6 +13,7 @@ import com.smartwash.toolbox.entity.ToolboxShortCode;
 import com.smartwash.toolbox.mapper.ToolboxShortCodeMapper;
 import com.smartwash.toolbox.service.ToolboxShortCodeService;
 import com.smartwash.toolbox.toolkit.ShortCodeGenerator;
+import com.smartwash.toolbox.toolkit.WebBaseUrlResolver;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,7 +80,8 @@ class ToolboxDeliveryServiceImplTest {
     @BeforeEach
     void setUp() {
         service = spy(new ToolboxDeliveryServiceImpl(shortCodeGenerator, toolboxShortCodeService,
-                toolboxShortCodeMapper, deliveryObjectStorage, stringRedisTemplate, passwordEncoder));
+                toolboxShortCodeMapper, deliveryObjectStorage, stringRedisTemplate, passwordEncoder,
+                new WebBaseUrlResolver()));
     }
 
     private ToolboxShortCode session(Long ownerUserId) {

@@ -1,5 +1,6 @@
 package com.smartwash.toolbox.delivery.toolkit;
 
+import com.smartwash.config.MinioConfig;
 import com.smartwash.toolbox.delivery.service.ToolboxDeliveryService;
 import com.smartwash.toolbox.delivery.service.ToolboxDeliveryService.DeliveryFileDownload;
 import io.minio.GetObjectArgs;
@@ -29,12 +30,18 @@ import java.nio.charset.StandardCharsets;
 public class DeliveryFileStreaming {
 
     private final MinioClient minioClient;
+    private final MinioConfig minioConfig;
 
     public ResponseEntity<StreamingResponseBody> toResponse(ToolboxDeliveryService service,
                                                             DeliveryFileDownload download) {
         StreamingResponseBody body = out -> {
             try (GetObjectResponse in = minioClient.getObject(
-                    GetObjectArgs.builder().object(download.getObjectKey()).build())) {
+                    // MinIO SDK 每请求必须显式 bucket：此前 GetObjectArgs 缺 .bucket()，
+                    // 开流必抛异常 → 中断回调把认领释放掉，文件下载从未成功过
+                    GetObjectArgs.builder()
+                            .bucket(minioConfig.getBucketName())
+                            .object(download.getObjectKey())
+                            .build())) {
                 in.transferTo(out);
                 out.flush();
                 // 流正常完成才焚毁对象

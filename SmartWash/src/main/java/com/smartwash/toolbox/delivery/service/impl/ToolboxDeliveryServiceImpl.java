@@ -22,9 +22,9 @@ import com.smartwash.toolbox.delivery.vo.DeliverySessionVo;
 import com.smartwash.toolbox.entity.ToolboxShortCode;
 import com.smartwash.toolbox.service.ToolboxShortCodeService;
 import com.smartwash.toolbox.toolkit.ShortCodeGenerator;
+import com.smartwash.toolbox.toolkit.WebBaseUrlResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -93,9 +93,10 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
     private final StringRedisTemplate stringRedisTemplate;
     private final PasswordEncoder passwordEncoder;
 
-    /** 会话对端 H5 页地址的域名前缀（拼 {base}/d/{code}），生产通过环境变量 TOOLBOX_PUBLIC_BASE_URL 注入 */
-    @Value("${toolbox.public-base-url}")
-    private String publicBaseUrl;
+    /** 会话对端 H5 页地址解析器：/d/{code} 是 Web SPA 路由（SmartWashWeb router），域名前缀
+     * 必须取 web-base-url（Web SPA 地址）而非 public-base-url（短链域名）——此前配置项用错，
+     * enterUrl 恒为相对路径，端上只能显示兜底文案（e2e-2026-11-18 Android 报告） */
+    private final WebBaseUrlResolver webBaseUrlResolver;
 
     // ==================== 会话（owner 侧） ====================
 
@@ -492,9 +493,7 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
     }
 
     private DeliverySessionVo buildSessionVo(ToolboxShortCode session, Long itemCount) {
-        String base = publicBaseUrl.endsWith("/")
-                ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1)
-                : publicBaseUrl;
+        String base = webBaseUrlResolver.resolve();
         return new DeliverySessionVo()
                 .setCode(session.getCode())
                 .setExpireAt(session.getExpireAt())
