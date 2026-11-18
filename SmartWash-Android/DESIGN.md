@@ -148,6 +148,34 @@ components:
     textColor: "{colors.text-primary}"
     rounded: "{rounded.input}"
     height: "48dp"
+  # TD37 输入皮肤档（2026-11-18 定）：认证页玻璃皮肤（AppTextField variant=GLASS）
+  app-input-field-glass:
+    backgroundColor: "transparent"            # 透明行，透出品牌渐变
+    textColor: "#FFFFFF"                      # 禁用整体 alpha .38
+    placeholder: "#FFFFFF @ 45%"              # §3.7 玻璃页占位口径
+    rounded: "{rounded.input}"
+    height: "48dp"
+    focusIndicator: "#FFFFFF @ 55%"           # 聚焦底指示线 1dp，弹簧过渡，reduced 180ms
+    error: "#FFB4AB"                          # ErrorLight，深绿玻璃底可读
+  # TD36 控件档（2026-11-18 定）：胶囊筛选 chip
+  app-filter-chip:
+    backgroundColor: "{colors.primary}"        # 选中 SOLID；SOFT 选中 primary-soft；未选 surface + 1dp outline 描边
+    textColor: "#FFFFFF"                       # 未选 text-secondary
+    rounded: "{rounded.full}"
+    height: "32dp"                             # 可见高 = caption 行高 16dp + 上下各 8dp
+    paddingHorizontal: "16dp"
+    target: "48dp"                             # 最小触控热区（可见尺寸不变）
+    typography: "{typography.caption-strong}"
+  # TD36 控件档（2026-11-18 定）：开关
+  app-switch:
+    trackColor: "{colors.primary}"             # 选中；未选 surface-variant + 1dp outline 描边
+    rounded: "{rounded.full}"
+    width: "44dp"
+    height: "24dp"                             # 与 body-large 行高 24dp 齐平，不压过左侧文字
+    thumb: "20dp"
+    thumbTravel: "20dp"                        # 位移 2dp ↔ 22dp
+    target: "48dp"                             # 最小触控热区
+    motion: "{motion.default-spring}"          # 位移/颜色走弹簧，reduced 180ms
 ---
 
 # Design System: SmartWash Android 用户端（清氧设计系统）
@@ -223,7 +251,7 @@ components:
 登录/注册等品牌渐变页（160° 三段 #1A9E6E → #0D7A4A → #0B5C3A + 毛玻璃卡）深浅同款。
 
 ### Named Rules
-**The 一屏一锚点规则 (One Anchor Rule).** 每屏最多一个「重」元素——36sp 数据大字、状态大字、hero 卡，三者至多留一。锚点超过一个等于没有锚点；标题不参与大字竞争（根页 ≤22sp、内页 ≤22sp）。
+**The 一屏一锚点规则 (One Anchor Rule).** 每屏最多一个「重」元素——36sp 数据大字、状态大字、hero 卡，三者至多留一。锚点超过一个等于没有锚点；标题不参与大字竞争（根页 ≤22sp、内页页头 18sp）。
 
 **The 品牌绿是空气规则 (Green-is-Air Rule).** 绿色必须出现在至少三处非功能位置（hero 渐变、区块标题装饰、选中底、图标容器、数据强调），它在界面里是「空气中的氧」，不是按钮的专利。大面积纯绿底只属于 hero 与主 CTA。
 
@@ -235,18 +263,18 @@ components:
 
 **Character:** 靠 8 档固定字阶与字重（只允许 400/500/600/700）做层级，不造夹档——不存在 15sp 正文、17sp/20sp/21sp/24sp 标题档。数字槽位启用 tnum。
 
-### Hierarchy（v0.4 定稿 8 档）
+### Hierarchy（v0.5 定稿 8 档）
 - **Display** (700, 36sp/44sp, tnum)：数据大字——余额、应付金额、取件码。每屏至多一处。
 - **Headline** (700, 28sp/36sp)：结果页大标题；数据大字在窄屏的降级档（36 → 28 → 22）。
-- **Title Large** (600, 22sp/28sp)：内页页头（PageHeader）、根页大标题（RootTitle）、hero 状态锚点字（StatusLarge）。
-- **Title** (600, 18sp/24sp)：区块标题、卡片标题、金额中字（AmountMedium，+tnum）。
-- **Body Large** (400, 16sp/24sp)：主要正文；表单输入正文的最小档（输入禁用 14sp 及以下）。
+- **Title Large** (600, 22sp/28sp)：根页大标题（RootTitle）、hero 状态锚点字（StatusLarge）。
+- **Title** (600, 18sp/24sp)：内页页头（PageHeader）、金额中字（AmountMedium，+tnum）。
+- **Body Large** (400, 16sp/24sp)：主要正文；表单输入正文的最小档（输入禁用 14sp 及以下）；**卡片标题 / 区块标题用本档 600 字重（16/24/600）**。
 - **Body** (400, 14sp/20sp)：列表行主文案（特许配 500）、次要正文。
 - **Caption** (400, 12sp/16sp)：辅助说明、时间戳、占位符。
 - **Caption Strong** (500, 12sp/16sp)：tab、角标、底部导航标签。
 - **Button** (600, 15sp, letterSpacing 1sp)：按钮文字——组件级规格（§3.3），不在 8 档字阶内。
 
-语义别名（`AppTextStyles`）`DataLarge / StatusLarge / AmountMedium / RootTitle / PageHeader / CardTitle / SectionTitle` 保留，值已映射到上述 8 档，既有调用点无需改动。
+语义别名（`AppTextStyles`）`DataLarge / StatusLarge / AmountMedium / RootTitle / PageHeader / CardTitle / SectionTitle` 保留，值已映射到上述 8 档（其中 `CardTitle` / `SectionTitle` 现映射到 `bodyLarge` 600 子角色），既有调用点无需改动。
 
 ### Named Rules
 **The 数字等宽规则 (tnum Rule).** 金额、数量、取件码、订单号一律 `fontFeatureSettings = "tnum"`——数字变化时左右跳即违规。取件码等关键数字优先用 display/tnum 大字。
@@ -332,7 +360,7 @@ Hero 卡、按钮、深色卡一律不加投影——层级由渐变/描边/深�
 
 ### Navigation
 - **底部导航**: 68dp 高，自绘 tab 图标（线性/实心成对，8 个路径定稿于规范 §4.5），26dp 显示；未选中 #A9AEA9 实心、选中 #2D9B6A + scale 1.06；选中动效 = 外轮廓勾边 0–400ms + 灰/绿交叉淡变 140–170ms + 终态 600ms（reduced motion：直接以品牌色实心终态出现）。
-- **页头（PageHeader）**: 返回箭头 24dp（48dp 热区，行首让位 12dp 使图形左缘落在 24）+ 22sp/600 标题 + 右侧 actions；内置连击防抖防双 pop 黑屏。
+- **页头（PageHeader）**: Box 叠层布局——标题 **相对整行居中**（`title` 18sp/24sp/600、单行省略），返回箭头 24dp（48dp 热区）+ 右侧 actions 分列两侧；actions 不得挤偏标题；内置连击防抖防双 pop 黑屏。
 
 ### Motion（动效 vocabulary，`common/utils/AnimationUtils.kt` 全应用唯一来源）
 - `defaultSpring()` spring(1.0, 350)——卡片入场、选中态、非手势位移；位移动画禁用固定时长 tween。

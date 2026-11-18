@@ -62,12 +62,21 @@ KEEP_VERSIONS="${KEEP_VERSIONS:?KEEP_VERSIONS 未配置}"
 # 可配置项
 # ============================================================
 
-HEALTH_ENDPOINT="${HEALTH_ENDPOINT:?HEALTH_ENDPOINT 未配置}"
-HEALTH_TIMEOUT="${HEALTH_TIMEOUT:?HEALTH_TIMEOUT 未配置}"
-HEALTH_INTERVAL="${HEALTH_INTERVAL:?HEALTH_INTERVAL 未配置}"
+# 健康检查：默认探本机后端的公开版本接口（无需鉴权，现读 version.json）
+HEALTH_ENDPOINT="${HEALTH_ENDPOINT:-/web/app/version}"
+HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-120}"
+HEALTH_INTERVAL="${HEALTH_INTERVAL:-5}"
+# 健康检查失败是否阻断部署（true=阻断；false=只告警，用于端点未就绪时临时放行）
+HEALTH_REQUIRED="${HEALTH_REQUIRED:-true}"
 
 BACKEND_PORT="${BACKEND_PORT:?BACKEND_PORT 未配置}"
 WEB_PORT="${WEB_PORT:?WEB_PORT 未配置}"
+
+# 地址允许只写路径，自动补本机后端前缀
+case "$HEALTH_ENDPOINT" in
+    http://* | https://*) ;;
+    *) HEALTH_ENDPOINT="http://127.0.0.1:${BACKEND_PORT}${HEALTH_ENDPOINT}" ;;
+esac
 # ============================================================
 # 参数
 # ============================================================
@@ -660,6 +669,45 @@ docker compose \
     -f "$COMPOSE_FILE" \
     up -d \
     --no-build
+
+# ------------------------------------------------------------
+# 8b. 健康检查（容器起来 ≠ 服务可用，可用才算部署成功）
+# ------------------------------------------------------------
+
+echo "Waiting for service health..."
+
+HEALTH_CODE=""
+HEALTH_DEADLINE=$((SECONDS + HEALTH_TIMEOUT))
+
+while (( SECONDS < HEALTH_DEADLINE )); do
+    HEALTH_CODE="$(
+        curl \
+            --silent \
+            --show-error \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            "$HEALTH_ENDPOINT" \
+            || true
+    )"
+
+    if [[ "$HEALTH_CODE" =~ ^2[0-9][0-9]$ ]]; then
+        echo "Health check passed (HTTP ${HEALTH_CODE})."
+        break
+    fi
+
+    sleep "$HEALTH_INTERVAL"
+done
+
+if [[ ! "$HEALTH_CODE" =~ ^2[0-9][0-9]$ ]]; then
+    echo "ERROR: health check failed after ${HEALTH_TIMEOUT}s (last HTTP ${HEALTH_CODE:-no response})"
+    echo "Endpoint: ${HEALTH_ENDPOINT}"
+
+    if [[ "$HEALTH_REQUIRED" == "true" ]]; then
+        exit 1
+    fi
+
+    echo "WARNING: HEALTH_REQUIRED=false，健康检查未通过仍继续部署。"
+fi
 
 # ============================================================
 # 9. 清理旧镜像（核心：解决虚悬镜像堆积问题）

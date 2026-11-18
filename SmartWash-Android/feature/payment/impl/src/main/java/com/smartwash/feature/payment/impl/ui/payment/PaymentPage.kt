@@ -3,6 +3,7 @@ package com.smartwash.feature.payment.impl.ui.payment
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -76,7 +77,9 @@ import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.motionSpec
@@ -94,6 +97,12 @@ fun PaymentPage(
     var showRechargeDialog by remember { mutableStateOf(false) }
     var selectedPaymentMethod by remember { mutableStateOf("balance") }
     val current = LocalContext.current
+
+    // 数值交叉淡变规格：transitionSpec 非 composable 上下文（不能调 motionSpec），
+    // 故在组合期按 LocalReduceMotion 显式分支——reduced motion 统一降级为 180ms 纯淡入淡出（规范 §8）。
+    val reduceMotion = LocalReduceMotion.current
+    val valueEnterSpec = if (reduceMotion) tween<Float>(CROSSFADE_ALT_MS) else enterTween<Float>(DURATION_MICRO_MS)
+    val valueExitSpec = if (reduceMotion) tween<Float>(CROSSFADE_ALT_MS) else exitTween<Float>(120)
 
     val orderInfo by paymentViewModel.orderInfo.collectAsState()
     val paymentState by paymentViewModel.paymentState.collectAsState()
@@ -182,8 +191,7 @@ fun PaymentPage(
                                 AnimatedContent(
                                     targetState = orderInfo?.payPrice,
                                     transitionSpec = {
-                                        fadeIn(enterTween(DURATION_MICRO_MS)) togetherWith
-                                            fadeOut(exitTween(120))
+                                        fadeIn(valueEnterSpec) togetherWith fadeOut(valueExitSpec)
                                     },
                                     label = "amountDue"
                                 ) { payPrice ->
@@ -337,8 +345,7 @@ fun PaymentPage(
                                         targetState = if (selectedCoupon == -1 || userCouponList.isEmpty()) null
                                         else userCouponList[selectedCoupon].discount,
                                         transitionSpec = {
-                                            fadeIn(enterTween(DURATION_MICRO_MS)) togetherWith
-                                                fadeOut(exitTween(120))
+                                            fadeIn(valueEnterSpec) togetherWith fadeOut(valueExitSpec)
                                         },
                                         label = "couponDiscount"
                                     ) { discount ->

@@ -1,6 +1,7 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { RouteNames } from "../constant/RouteNames"
 import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { getUserInfo, uploadAvatar } from "../network/api/UserApi"
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { UserInfoVo } from "../network/vo/UserInfoVo"
@@ -54,8 +55,9 @@ export struct UserInfo {
   @StorageLink(NOTICE_TICK_KEY) @Watch("onNoticeTick") noticeTick: number = 0
   // 滚动收缩停靠进度 0..1（滚动驱动：0=展开，1=停靠）
   @State progress: number = 0
-  // reduced motion：当前 SDK 无系统动画时长开关可读（同 divReduceMotion / labReduceMotion 决策），占位 false
-  private reduceMotion: boolean = false
+  // reduced motion：系统「减少动态效果」，经 ReduceMotion 读取（对齐安卓 LocalReduceMotion）
+  // 注：原「SDK 无系统动画时长开关」结论已更新——@ohos.settings 可读 ANIMATOR_DURATION_SCALE
+  @State reduceMotion: boolean = false
 
   //监听用户信息刷新状态变化
   onUserInfoChange() {
@@ -72,6 +74,7 @@ export struct UserInfo {
   }
 
   aboutToAppear() {
+    this.reduceMotion = ReduceMotion.isEnabled()
     this.refreshUserInfo()
     this.loadUnreadCount()
   }

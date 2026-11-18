@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppInfoDialog
@@ -261,6 +262,7 @@ fun LaundryPage(
 
                 items(laundryItems, key = { it.itemId }) { item ->
                     LaundryTypeItem(
+                        modifier = animatedListItem(),
                         title = item.itemName,
                         description = item.description,
                         isSelected = selectItemId == item.itemId,
@@ -308,6 +310,7 @@ fun LaundryPage(
 
 @Composable
 private fun LaundryTypeItem(
+    modifier: Modifier = Modifier,
     title: String,
     description: String,
     isSelected: Boolean,
@@ -340,7 +343,7 @@ private fun LaundryTypeItem(
     // 选中强调由 primaryLight 底 + primary 描边承担，描边宽度不再随选中变化（原 0.5/1/1.5dp
     // 三档与弹簧过渡未接入绘制，属死代码，一并移除——视觉与时序均无变化）
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             // 原 clickable 直挂 Material 涟漪（§7 禁令）→ pressable（自带防抖与降级）
             .pressable(onClick = {

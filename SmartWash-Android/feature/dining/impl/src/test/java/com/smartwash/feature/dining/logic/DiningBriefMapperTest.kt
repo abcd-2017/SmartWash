@@ -17,7 +17,7 @@ class DiningBriefMapperTest {
         val ui = DiningOrderBriefVo(
             orderId = 42L,
             title = "周五晚火锅",
-            status = "ONGOING",
+            status = "DRAFT",
             creatorName = "139****9000",
             recipeCount = 6L,
             joined = false,
@@ -25,7 +25,7 @@ class DiningBriefMapperTest {
 
         assertEquals(42L, ui.orderId)
         assertEquals("周五晚火锅", ui.title)
-        assertEquals(DiningOrderStatus.ONGOING, ui.status)
+        assertEquals(DiningOrderStatus.DRAFT, ui.status)
         assertEquals("139****9000", ui.creatorName)
         assertEquals(6, ui.recipeCount)
         assertFalse(ui.joined)
@@ -45,9 +45,9 @@ class DiningBriefMapperTest {
 
     @Test
     fun `joined 为 true 时已加入标记透传（端上据此跳过确认弹窗）`() {
-        val ui = DiningOrderBriefVo(orderId = 8L, title = "夜宵", status = "ONGOING", joined = true).toBriefUi()
+        val ui = DiningOrderBriefVo(orderId = 8L, title = "夜宵", status = "DRAFT", joined = true).toBriefUi()
         assertEquals(8L, ui.orderId)
-        assertEquals(DiningOrderStatus.ONGOING, ui.status)
+        assertEquals(DiningOrderStatus.DRAFT, ui.status)
         assertEquals(true, ui.joined)
     }
 

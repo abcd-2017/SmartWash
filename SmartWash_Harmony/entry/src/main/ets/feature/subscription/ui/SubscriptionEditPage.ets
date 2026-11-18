@@ -35,10 +35,10 @@ import {
   SubscriptionDatePickerDialog,
   SubscriptionPageHeader,
   SubscriptionSelectableChip,
-  SubscriptionToggle,
   subscriptionCopyText
 } from './SubscriptionUiCommon'
 import { AppButton, AppButtonVariant, EmptyState, SkeletonList } from '../../../view/common/AppComponents'
+import { AppSwitch } from '../../../view/common/AppSwitch'
 import { logger } from '../../../utils/Logger'
 import { pathStack, getNumberParam } from '../../../utils/PathStackUtil'
 import { bumpSubscriptionRefresh } from '../../../utils/RefreshSignal'
@@ -553,8 +553,12 @@ struct SubscriptionEditPage {
                   .alignItems(HorizontalAlign.Start)
                   .layoutWeight(1)
 
-                  SubscriptionToggle({
+                  // 自动续费开关统一走公共 AppSwitch（48×28 胶囊 + 弹簧位移 + 开/关状态播报）
+                  AppSwitch({
                     checked: this.autoRenew,
+                    accessibilityLabel: SubscriptionText.subscription_form_auto_renew_label,
+                    onText: SubscriptionText.subscription_detail_auto_renew_on,
+                    offText: SubscriptionText.subscription_detail_auto_renew_off,
                     onChange: (checked: boolean): void => {
                       this.autoRenew = checked
                     }

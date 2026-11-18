@@ -1,8 +1,9 @@
 // 清氧设计系统 — 通用 UI 组件
 // 参考 Android 端 AppComponents.kt
 
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming, toColorString } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionAlpha, MotionDuration, MotionScale, MotionTiming, toColorString } from '../../constant/DesignSystem'
 import { pathStack } from '../../utils/PathStackUtil'
+import { ReduceMotion } from '../../utils/ReduceMotion'
 import vibrator from '@ohos.vibrator'
 import { resColor, resolveArgb } from '../../utils/ResourceColor'
 import { resString } from '../../utils/ResourceString'
@@ -195,9 +196,21 @@ export struct AppButton {
   @Param small: boolean = false
   @Event click: () => void = () => {
   }
+  // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms；reduced motion 降级 alpha 0.86）
+  @Local pressed: boolean = false
+  @Local reduceMotion: boolean = false
+
+  aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
+  }
 
   private isActive(): boolean {
     return this.isEnabled && !this.loading
+  }
+
+  /** 按压透明度 — 仅 reduced motion 时降到 0.86（规范 §8） */
+  private pressAlpha(pressed: boolean): number {
+    return pressed && this.reduceMotion ? MotionAlpha.PressReduced : 1
   }
 
   /** 文字/spinner 色 — 主=onPrimary；次=contentColor ?? textPrimary；文字态=textGreen */
@@ -243,7 +256,20 @@ export struct AppButton {
       // 最小触控 48（对齐安卓 heightIn(min = 48)）；widthIn(min=44) 保留
       .constraintSize({ minWidth: 44, minHeight: 48 })
       .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
-      .opacity(this.isActive() ? 1 : 0.5)
+      // 按压反馈（对齐安卓 pressable）：scale 0.97 + 100ms FastOutSlowIn；reduced motion 降级 alpha 0.86
+      .scale({
+        x: this.pressed && !this.reduceMotion ? MotionScale.Press : 1,
+        y: this.pressed && !this.reduceMotion ? MotionScale.Press : 1
+      })
+      .opacity(this.isActive() ? this.pressAlpha(this.pressed) : 0.5)
+      .animation(MotionTiming.PRESS)
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressed = true
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressed = false
+        }
+      })
       .onClick(() => {
         this.triggerClick()
       })
@@ -280,9 +306,22 @@ export struct AppButton {
           ? [[$r('app.color.PRIMARY'), 0], [$r('app.color.PRIMARY_DARK'), 1]]
           : [[Color.Transparent, 0], [Color.Transparent, 1]]
       })
-      .opacity(this.isActive() ? 1 : 0.5)
+      // 按压反馈（对齐安卓 pressable）：scale 0.97 + 100ms FastOutSlowIn；reduced motion 降级 alpha 0.86
+      .scale({
+        x: this.pressed && !this.reduceMotion ? MotionScale.Press : 1,
+        y: this.pressed && !this.reduceMotion ? MotionScale.Press : 1
+      })
+      .opacity(this.isActive() ? this.pressAlpha(this.pressed) : 0.5)
       .stateEffect(this.isActive())
       .enabled(this.isActive())
+      .animation(MotionTiming.PRESS)
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressed = true
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressed = false
+        }
+      })
       .onClick(() => {
         this.triggerClick()
       })
@@ -312,6 +351,8 @@ export struct AppInfoDialog {
   @Prop message: string = ''
   @Prop buttonText: string = resString('confirm')
   @State entered: boolean = false
+  // reduced motion：缩放归零只留纯淡入（规范 §8，对齐安卓 dialogEnterMotion 的 reduceMotion 分支）
+  @State reduceMotion: boolean = false
   onDismiss: () => void = () => {
   }
 
@@ -321,7 +362,7 @@ export struct AppInfoDialog {
    */
   private playEnterMotion(): void {
     setTimeout(() => {
-      animateTo(MotionTiming.DIALOG_ENTER, () => {
+      animateTo(ReduceMotion.spec(MotionTiming.DIALOG_ENTER), () => {
         this.entered = true
       })
     }, 16)
@@ -380,9 +421,14 @@ export struct AppInfoDialog {
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
-      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      // reduced motion：起始缩放恒 1，仅透明度 0→1 淡入
+      .scale({
+        x: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter),
+        y: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter)
+      })
       .opacity(this.entered ? 1 : 0)
       .onAppear(() => {
+        this.reduceMotion = ReduceMotion.isEnabled()
         this.playEnterMotion()
       })
     }
@@ -414,7 +460,8 @@ export struct AppTabBar {
             .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(this.selectedIndex === index ? $r('app.color.PRIMARY') : $r('app.color.TEXT_SECONDARY'))
             .padding({ left: 12, right: 12, top: 8, bottom: 8 })
-            .animation(MotionTiming.ENTER)
+            // 选中态颜色 / 指示条走临界阻尼弹簧（对齐安卓 selectedColor = defaultSpring）
+            .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
 
           // 底部指示器 — 常驻，宽度 0↔20 过渡
           Row()
@@ -422,7 +469,7 @@ export struct AppTabBar {
             .height(3)
             .borderRadius(1.5)
             .backgroundColor($r('app.color.PRIMARY'))
-            .animation(MotionTiming.ENTER)
+            .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
         }
         .alignItems(HorizontalAlign.Center)
         .onClick(() => {
@@ -479,7 +526,8 @@ export struct AppPillTabRow {
             color: this.selectedIndex === index ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE')
           })
           .margin({ right: DesignDimens.SPACE_XS })
-          .animation(MotionTiming.ENTER)
+          // 选中底色 / 文字色走临界阻尼弹簧（对齐安卓 selectedColor = defaultSpring）
+          .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
           // 选中态播报（无障碍）：读屏时播报「已选中」状态
           .accessibilitySelected(this.selectedIndex === index)
           .onClick(() => {
@@ -527,7 +575,8 @@ export struct SelectionDot {
           color: this.selected ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'),
           style: BorderStyle.Solid
         })
-        .animation(MotionTiming.ENTER)
+        // 选中态描边色走临界阻尼弹簧（对齐安卓 selectedColor = defaultSpring）
+        .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
 
       // 内圆：选中时从圆心长出（scale 0→1）
       Column()
@@ -536,7 +585,7 @@ export struct SelectionDot {
         .borderRadius(this.dotSize / 4)
         .backgroundColor($r('app.color.PRIMARY'))
         .scale({ x: this.selected ? 1 : 0, y: this.selected ? 1 : 0 })
-        .animation(MotionTiming.ENTER)
+        .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
     }
     .width(this.dotSize)
     .height(this.dotSize)
@@ -554,6 +603,12 @@ export struct SelectionDot {
 export struct SkeletonBlock {
   @Param blockRadius: number = DesignDimens.RADIUS_MD
   @Local glow: boolean = false
+  // reduced motion：取消无限循环，退化为静态底块（规范 §8，对齐安卓 rememberSkeletonBrush 的 SolidColor(base)）
+  @Local reduceMotion: boolean = false
+
+  aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
+  }
 
   build() {
     Stack() {
@@ -571,17 +626,15 @@ export struct SkeletonBlock {
           colors: [[toColorString(resColor('SURFACE') & 0x00FFFFFF), 0], [$r('app.color.SURFACE'), 0.5], [toColorString(resColor('SURFACE') & 0x00FFFFFF), 1]]
         })
         .opacity(this.glow ? 1 : 0.3)
-        .animation({
-          duration: 1400,
-          curve: Curve.Linear,
-          iterations: -1,
-          playMode: PlayMode.Alternate
-        })
+        // reduced motion：duration 0 使 opacity 变化不产生动画，停在静态底块
+        .animation(this.reduceMotion ? { duration: 0 } : MotionTiming.SHIMMER)
     }
     .clip(true)
     .borderRadius(this.blockRadius)
     .onAppear(() => {
-      this.glow = true
+      if (!this.reduceMotion) {
+        this.glow = true
+      }
     })
   }
 }
@@ -802,6 +855,8 @@ export struct EmptyState {
   // 空态是"状态到达"的时刻，给一次进场（fade + 上移归位，对齐安卓 EmptyState 入场）。
   // V2 组件内部状态用 @Local（@State 是 V1 装饰器）
   @Local entered: boolean = false
+  // reduced motion：位移归零只留淡入（规范 §8，对齐安卓 EmptyState 的 initialOffsetY = 0）
+  @Local reduceMotion: boolean = false
 
   build() {
     Column() {
@@ -842,11 +897,13 @@ export struct EmptyState {
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .opacity(this.entered ? 1 : 0)
-    .translate({ y: this.entered ? 0 : 12 })
+    // reduced motion：位移归零（y 恒 0），仅保留淡入
+    .translate({ y: this.entered || this.reduceMotion ? 0 : 12 })
     .onAppear(() => {
+      this.reduceMotion = ReduceMotion.isEnabled()
       // 首帧后再触发，保证初始态先上屏，弹簧进场才可见
       setTimeout(() => {
-        animateTo(MotionTiming.ENTER, () => {
+        animateTo(ReduceMotion.spec(MotionTiming.ENTER), () => {
           this.entered = true
         })
       }, 16)
@@ -883,6 +940,8 @@ export struct AppConfirmDialog {
   // 危险操作（退出登录/解绑等）：确认按钮走 dangerInk，与安卓 AppConfirmDialog(isDanger = true) 对齐
   @Prop isDanger: boolean = false
   @State entered: boolean = false
+  // reduced motion：缩放归零只留纯淡入（规范 §8）
+  @State reduceMotion: boolean = false
   onConfirm: () => void = () => {
   }
   onDismiss: () => void = () => {
@@ -891,7 +950,7 @@ export struct AppConfirmDialog {
   /** 弹窗统一入场（对齐安卓 dialogEnterMotion）：首帧后再触发，弹簧 scale 0.92→1 + fade */
   private playEnterMotion(): void {
     setTimeout(() => {
-      animateTo(MotionTiming.DIALOG_ENTER, () => {
+      animateTo(ReduceMotion.spec(MotionTiming.DIALOG_ENTER), () => {
         this.entered = true
       })
     }, 16)
@@ -983,14 +1042,87 @@ export struct AppConfirmDialog {
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
-      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      // reduced motion：起始缩放恒 1，仅透明度 0→1 淡入
+      .scale({
+        x: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter),
+        y: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter)
+      })
       .opacity(this.entered ? 1 : 0)
       .onAppear(() => {
+        this.reduceMotion = ReduceMotion.isEnabled()
         this.playEnterMotion()
       })
     }
     .width("100%")
     .justifyContent(FlexAlign.Center)
     .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
+  }
+}
+
+
+// ========== AnimatedNumber 数字变化（对齐安卓 Points/Payment 的 AnimatedContent fade） ==========
+
+/**
+ * 数字变化 — 数值变化时弹簧淡入淡出（对齐安卓 AnimatedContent + numberSpec = defaultSpring()）。
+ * 先淡出到 0，切值后再淡入回 1；reduced motion 降级为 180ms 纯淡入淡出（规范 §8）。
+ * 单一 Text 复用，缩放/透明度为绘制层属性，不改变布局尺寸。
+ *
+ * 用法：AnimatedNumber({ value: `${this.balance}`, fontSize: DesignFontSize.DATA_LARGE })
+ */
+@ComponentV2
+export struct AnimatedNumber {
+  @Param value: string = ''
+  // 行高可选：不传时回退 fontSize（避免 @Require 强制调用方传参，兼容未指定行高的调用点）
+  @Param lineHeight: number = 0
+  @Param fontSize: number = DesignFontSize.DATA_LARGE
+  @Param fontWeight: number = DesignFontWeight.BOLD
+  @Param fontColor: ResourceColor = $r('app.color.TEXT_PRIMARY')
+  @Param fontFeature: string = DesignFontFeature.TNUM
+  @Local displayValue: string = ''
+  // 命名避开基类内置 opacity/scale 属性方法（同 CustomComponent 冲突会导致编译错误）
+  @Local numberOpacity: number = 1
+  @Local numberScale: number = 1
+
+  aboutToAppear(): void {
+    this.displayValue = this.value
+  }
+
+  /** 数字规格：弹簧淡入淡出；reduced motion 降级 180ms Linear（规范 §8） */
+  private numberSpec(): AnimateParam {
+    return ReduceMotion.spec({ curve: MotionTiming.NUMBER })
+  }
+
+  @Monitor('value')
+  onValueChange(): void {
+    if (this.displayValue === this.value) {
+      return
+    }
+    const spec: AnimateParam = this.numberSpec()
+    const fadeOut: AnimateParam = {
+      duration: spec.duration,
+      curve: spec.curve,
+      onFinish: () => {
+        this.displayValue = this.value
+        animateTo(spec, () => {
+          this.numberOpacity = 1
+          this.numberScale = 1
+        })
+      }
+    }
+    animateTo(fadeOut, () => {
+      this.numberOpacity = 0
+      this.numberScale = 0.96
+    })
+  }
+
+  build() {
+    Text(this.displayValue)
+      .fontSize(this.fontSize)
+      .lineHeight(this.lineHeight > 0 ? this.lineHeight : this.fontSize)
+      .fontWeight(this.fontWeight)
+      .fontColor(this.fontColor)
+      .fontFeature(this.fontFeature)
+      .opacity(this.numberOpacity)
+      .scale({ x: this.numberScale, y: this.numberScale })
   }
 }

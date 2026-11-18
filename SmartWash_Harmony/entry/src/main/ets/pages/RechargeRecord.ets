@@ -1,5 +1,6 @@
 import { EmptyState, LoadingState, PageHeader } from "../view/common/AppComponents"
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { RechargeType } from "../constant/RechargeType"
 import { getRechargeRecordList } from "../network/api/ReChargeApi"
@@ -195,7 +196,8 @@ struct RechargeRecord {
           .width("100%")
           .layoutWeight(1)
           .transition(TransitionEffect.OPACITY)
-          .animation({ duration: 200, curve: Curve.EaseOut })
+          // 内容进场 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)），reduced 降级 180ms
+          .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
         } else if (this.recordList.length > 0) {
           // 安卓 RechargeRecordPage 的 LazyColumn 无下拉刷新入口，此处同步移除 Refresh 包裹
           List({ space: DesignDimens.CARD_SPACING }) {
@@ -203,6 +205,8 @@ struct RechargeRecord {
               ListItem() {
                 this.RecordCard(record)
               }
+              // 列表项进出场统一走 ReduceMotion.listItemTransition（对齐安卓 animatedListItem）
+              .transition(ReduceMotion.listItemTransition())
             }, (record: RechargeRecordVo, index: number) => `${record.recordId ?? index}`)
             ListItem() {
               LoadingFooter({ isLoading: !!this.isLoadingMore })
@@ -220,7 +224,8 @@ struct RechargeRecord {
             return { offsetRemain: offset }
           })
           .transition(TransitionEffect.OPACITY)
-          .animation({ duration: 200, curve: Curve.EaseOut })
+          // 内容进场 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)），reduced 降级 180ms
+          .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
         } else {
           // 空状态（对齐安卓 EmptyState：滚筒圆母题 + 引导文案，§3.6 禁灰色 Material 图标）
           EmptyState({ message: resString('no_recharge_records') })

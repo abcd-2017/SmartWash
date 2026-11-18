@@ -10,7 +10,8 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { LazyListDataSource, PagingController } from "../utils/PagingUtil"
 import { BusinessError, pasteboard } from "@kit.BasicServicesKit"
 import vibrator from "@ohos.vibrator"
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
@@ -244,10 +245,10 @@ struct PickUp {
     })
     // 卡片按压反馈（recap §8-I1/G3：scale 0.97 + 100ms；动作按钮按下时行不缩放）
     .scale({
-      x: this.pressedOrderId === order.orderId && !this.actionPressed ? 0.97 : 1,
-      y: this.pressedOrderId === order.orderId && !this.actionPressed ? 0.97 : 1
+      x: this.pressedOrderId === order.orderId && !this.actionPressed ? MotionScale.Press : 1,
+      y: this.pressedOrderId === order.orderId && !this.actionPressed ? MotionScale.Press : 1
     })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedOrderId = order.orderId ?? null
@@ -284,8 +285,8 @@ struct PickUp {
       .justifyContent(FlexAlign.Center)
       .borderRadius(DesignDimens.RADIUS_FULL)
       .border({ width: 1, color: $r('app.color.OUTLINE') })
-      .scale({ x: this.contactPressed ? 0.97 : 1, y: this.contactPressed ? 0.97 : 1 })
-      .animation({ duration: 100, curve: Curve.EaseOut })
+      .scale({ x: this.contactPressed ? MotionScale.Press : 1, y: this.contactPressed ? MotionScale.Press : 1 })
+      .animation(ReduceMotion.spec(MotionTiming.PRESS))
       .onTouch((event: TouchEvent) => {
         if (event.type === TouchType.Down) {
           this.contactPressed = true
@@ -311,8 +312,8 @@ struct PickUp {
       .borderRadius(DesignDimens.RADIUS_FULL)
       .backgroundColor($r('app.color.PRIMARY'))
       .margin({ left: DesignDimens.SPACE_SM })
-      .scale({ x: this.copyPressed ? 0.97 : 1, y: this.copyPressed ? 0.97 : 1 })
-      .animation({ duration: 100, curve: Curve.EaseOut })
+      .scale({ x: this.copyPressed ? MotionScale.Press : 1, y: this.copyPressed ? MotionScale.Press : 1 })
+      .animation(ReduceMotion.spec(MotionTiming.PRESS))
       .onTouch((event: TouchEvent) => {
         if (event.type === TouchType.Down) {
           this.copyPressed = true

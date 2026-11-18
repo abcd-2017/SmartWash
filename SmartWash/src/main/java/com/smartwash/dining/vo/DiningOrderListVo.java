@@ -16,12 +16,18 @@ public class DiningOrderListVo {
 
     private String title;
 
-    /** 订单状态：ONGOING / FINISHED */
+    /** 订单状态：DRAFT 草稿 / FINISHED 已结束 */
     private String status;
 
     private Boolean isCreator;
 
     private Long creatorUserId;
+
+    /** 本单菜单菜数（端上按 0 兜底） */
+    private Integer menuCount;
+
+    /** 食材摘要：本单菜单食材名并集前 6 个，用「、」连接，超尾加「…」；无食材为空串 */
+    private String ingredientSummary;
 
     private LocalDateTime createdAt;
 

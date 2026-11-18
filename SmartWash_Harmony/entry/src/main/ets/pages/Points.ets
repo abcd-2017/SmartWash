@@ -34,12 +34,13 @@ import {
   formatLedgerTime,
   overviewAfterSignIn
 } from '../utils/PointsLogic'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../constant/DesignSystem'
+import { ReduceMotion } from '../utils/ReduceMotion'
 import { safeBottomVp, safeTopVp } from '../utils/SafeArea'
 import { showToastSafety } from '../utils/ToastUtil'
 import { logger } from '../utils/Logger'
 import { BusinessError } from '@kit.BasicServicesKit'
-import { AppButton, AppButtonVariant, DrumMark, EmptyState, LoadingState, PageHeader, SkeletonBlock } from '../view/common/AppComponents'
+import { AnimatedNumber, AppButton, AppButtonVariant, DrumMark, EmptyState, LoadingState, PageHeader, SkeletonBlock } from '../view/common/AppComponents'
 import { LoadingFooter } from '../view/LoadingFooter'
 import { LazyListDataSource, PagingController } from '../utils/PagingUtil'
 import { ThemeRefreshV2 } from '../view/common/ThemeRefresh'
@@ -552,7 +553,8 @@ export struct PointsPage {
         .height(14)
         .color($r('app.color.TEXT_GREEN'))
         .opacity(this.signingIn ? 1 : 0)
-        .animation({ duration: 180, curve: Curve.EaseOut })
+        // 交叉淡变降级档 180ms（对齐安卓 CrossfadeAlt），reduced 时保持 180ms 纯淡入淡出
+        .animation(ReduceMotion.spec(MotionTiming.CROSSFADE_ALT))
 
       Text(this.signedToday() ? PointsText.signedToday : PointsText.signIn)
         .fontSize(DesignFontSize.BUTTON)
@@ -560,7 +562,8 @@ export struct PointsPage {
         .fontFeature(DesignFontFeature.TNUM)
         .fontColor(this.signedToday() ? $r('app.color.GLASS_TEXT_ACTIVE') : $r('app.color.TEXT_GREEN'))
         .opacity(this.signingIn ? 0 : 1)
-        .animation({ duration: 180, curve: Curve.EaseOut })
+        // 交叉淡变降级档 180ms（对齐安卓 CrossfadeAlt），reduced 时保持 180ms 纯淡入淡出
+        .animation(ReduceMotion.spec(MotionTiming.CROSSFADE_ALT))
     }
     .width('100%')
     .height(48)
@@ -587,12 +590,14 @@ export struct PointsPage {
           .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor(Color.White)
 
-        Text(this.balanceText())
-          .fontSize(DesignFontSize.DATA_LARGE)
-          .lineHeight(DesignFontSize.DATA_LARGE + 8)
-          .fontWeight(DesignFontWeight.BOLD)
-          .fontFeature(DesignFontFeature.TNUM)
-          .fontColor(Color.White)
+        // 数字变化：弹簧淡入淡出（对齐安卓 PointsPage AnimatedContent numberSpec）
+        AnimatedNumber({
+          value: this.balanceText(),
+          lineHeight: DesignFontSize.DATA_LARGE + 8,
+          fontSize: DesignFontSize.DATA_LARGE,
+          fontWeight: DesignFontWeight.BOLD,
+          fontColor: Color.White
+        })
           .margin({ top: DesignDimens.SPACE_XXS })
 
         Text(this.totalEarnedText())

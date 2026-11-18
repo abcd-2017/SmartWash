@@ -51,6 +51,7 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.smartwash.R
 import com.smartwash.common.ui.components.ButtonSpinner
+import com.smartwash.common.ui.components.SwitchRow
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.AppDimens
@@ -349,48 +350,21 @@ private fun handleUpdateClick(
 internal fun AutoUpdateSettingRow(updateViewModel: UpdateViewModel) {
     val view = LocalView.current
     val autoUpdateEnabled by updateViewModel.autoUpdateEnabled.collectAsState()
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp)
-            .pressable(
-                onClick = {
-                    val newValue = !autoUpdateEnabled
-                    updateViewModel.setAutoUpdateEnabled(newValue)
-                    if (newValue) view.performHaptic(HapticEffect.LIGHT)
-                }
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconBox(
-            icon = Icons.Default.DownloadDone,
-            size = 32.dp,
-            iconSize = 20.dp,
-            containerColor = AppColors.colorScheme.iconContainerTeal,
-            iconTint = AppColors.colorScheme.iconForegroundTeal,
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.auto_update),
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.colorScheme.textPrimary,
-            )
-            Text(
-                text = stringResource(R.string.auto_update_desc),
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textSecondary,
-                modifier = Modifier.padding(top = 2.dp),
-            )
-        }
-        Text(
-            text = stringResource(
-                if (autoUpdateEnabled) R.string.auto_update_enabled else R.string.auto_update_disabled
-            ),
-            style = MaterialTheme.typography.bodySmall,
-            color = AppColors.colorScheme.textSecondary,
-        )
-    }
+    // 由「整行文字切换」升级为真实开关行（SwitchRow）：右侧开关带 Role.Switch + 开/关状态播报
+    SwitchRow(
+        icon = Icons.Default.DownloadDone,
+        iconContainerColor = AppColors.colorScheme.iconContainerTeal,
+        iconTint = AppColors.colorScheme.iconForegroundTeal,
+        title = stringResource(R.string.auto_update),
+        description = stringResource(R.string.auto_update_desc),
+        checked = autoUpdateEnabled,
+        onCheckedChange = { newValue ->
+            updateViewModel.setAutoUpdateEnabled(newValue)
+            if (newValue) view.performHaptic(HapticEffect.LIGHT)
+        },
+        onText = stringResource(R.string.auto_update_enabled),
+        offText = stringResource(R.string.auto_update_disabled),
+    )
 }
 
 /**

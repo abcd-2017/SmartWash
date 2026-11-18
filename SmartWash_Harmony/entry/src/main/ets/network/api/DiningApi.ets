@@ -1,7 +1,7 @@
 // 吃啥（dining）域用户端接口（契约源：后端 dining/controller/WebDiningCategoryController /
 // WebDiningRecipeController / WebDiningOrderController / WebDiningOrderItemController，需 ROLE_USER）
 //
-// 17 个端点与 Android feature/dining/api/DiningServiceApi.kt 逐接口对齐：
+// 23 个端点与 Android feature/dining/api/DiningServiceApi.kt 逐接口对齐：
 //   分类   GET  /web/auth/dining/categories/all
 //   菜谱   GET  /web/auth/dining/recipes/all          （上架分页：categoryId/keyword 筛选）
 //          GET  /web/auth/dining/recipes/{id}         （详情，仅上架）
@@ -11,21 +11,26 @@
 //          DELETE /web/auth/dining/recipes/{id}/favorite（取消收藏，幂等）
 //          GET  /web/auth/dining/recipes/favorites     （我的收藏分页，字段同列表）
 //   偏好   GET/PUT /web/auth/dining/dietary-preference（忌口 + 每日热量/钠目标）
-//   订单   POST /web/auth/dining/orders/create        （title+recipeIds 或 fromOrderId 复用）
-//          GET  /web/auth/dining/orders/my            （我发起的 + 我参与的，分页 page/size）
+//   订单   POST /web/auth/dining/orders/create        （创建 DRAFT：title/recipeIds 均可空或 fromOrderId 复用）
+//          POST /web/auth/dining/orders/{id}/submit   （DRAFT→FINISHED；仅发起者；标题必填+菜单非空；version；
+//                                                     聚合本单菜单生成 shopping_list，返回 DiningOrderFinishVo）
+//          POST /web/auth/dining/orders/{id}/dishes   （草稿加菜；全部成员；幂等；version）
+//          DELETE /web/auth/dining/orders/{id}/dishes/{recipeId}?version=（草稿移除菜；全部成员；幂等；version）
+//          DELETE /web/auth/dining/orders/{id}         （放弃草稿；仅创建者 + DRAFT）
+//          GET  /web/auth/dining/orders/my            （我发起的 + 我参与的，分页 page/size，含 status）
 //          GET  /web/auth/dining/orders/{id}          （轮询主接口，knownVersion 轻量协议）
 //          GET  /web/auth/dining/orders/brief/{token} （加入前预览）
-//          POST /web/auth/dining/orders/{id}/join
-//          POST /web/auth/dining/orders/{id}/join-token/reset
-//          POST /web/auth/dining/orders/{id}/finish
+//          POST /web/auth/dining/orders/{id}/join     （仅 DRAFT 可加入）
+//          POST /web/auth/dining/orders/{id}/join-token/reset（仅发起者 + 仅 DRAFT）
 //   选菜   POST /web/auth/dining/orders/{orderId}/items          （勾选，version 乐观并发）
 //          PUT  /web/auth/dining/orders/{orderId}/items          （改备注，version）
 //          DELETE /web/auth/dining/orders/{orderId}/items/{recipeId}（取消，version）
 //
 // 乐观并发契约：写请求携带客户端已知 version；与服务端不一致返回业务码 409
 //（message「订单已被他人更新，请刷新后重试」），端上拉取最新详情后重放/回滚。
-// 鸿蒙端消费约定（本实现简化，对齐任务口径）：写失败（含 409）一律回滚本地意图并全量刷新
-//（knownVersion=null），不做逐操作重放。
+// 鸿蒙端消费约定：
+// - 选菜/备注/取消：写失败（含 409）回滚本地意图并全量刷新（knownVersion=null），不逐操作重放；
+// - 草稿菜单（加菜/移除/submit）：经 DiningDraftMenuEditor 净差写，409 拉取最新后重放未决差分。
 //
 // BASE_URL 不在本文件出现：请求走 httpUtil（baseURL 由 Axios.ets 构建期注入），
 // 二维码内容构造见 feature/dining/DiningLogic.ets 的 buildDiningJoinUrl。
@@ -253,7 +258,11 @@ export interface CreateDiningOrderForm {
   fromOrderId: number | null
 }
 
-/** 创建点单订单（返回 orderId + joinToken 供拼二维码） */
+/**
+ * 创建点单草稿（返回 orderId + joinToken 供拼二维码/深链）。
+ * 草稿协同：title/recipeIds 均可空（或 fromOrderId 复用历史菜单），创建即 DRAFT；
+ * 发起者 submit 提交后直接 FINISHED。
+ */
 export async function createDiningOrder(form: CreateDiningOrderForm)
   : Promise<BaseResponse<DiningOrderCreatedVo>> {
   const body: Record<string, Object> = {}
@@ -270,6 +279,64 @@ export async function createDiningOrder(form: CreateDiningOrderForm)
     code: res.code,
     message: res.message
   }
+}
+
+/** 提交点单请求体（DRAFT→FINISHED；title 为草稿页编辑后的最终标题，version 乐观锁） */
+export interface SubmitDiningOrderForm {
+  title: string
+  version: number
+}
+
+/**
+ * 提交点单（DRAFT→FINISHED；仅发起者；标题必填 + 菜单非空；version 乐观锁，冲突返回业务码 409）。
+ * 提交即结束：后端聚合本单菜单生成 shopping_list 快照、通知全体成员；返回 DiningOrderFinishVo。
+ */
+export async function submitDiningOrder(orderId: number, form: SubmitDiningOrderForm)
+  : Promise<BaseResponse<DiningOrderFinishVo>> {
+  const body: Record<string, Object> = {}
+  body['title'] = form.title
+  body['version'] = form.version
+  const res = await httpUtil.post<Object>(`/web/auth/dining/orders/${orderId}/submit`, body)
+  return {
+    data: res.data === null ? null : diningOrderFinishVoFromJSON(res.data),
+    code: res.code,
+    message: res.message
+  }
+}
+
+/** 草稿加菜请求体（recipeId + 客户端已知 version，乐观锁） */
+export interface AddDiningOrderDishForm {
+  recipeId: number
+  version: number
+}
+
+/**
+ * 草稿加菜（仅 DRAFT 态、全部成员可加；幂等：已存在返回成功；version 冲突返回 409）。
+ * 成功 data 恒为 null。
+ */
+export async function addDiningOrderDish(orderId: number, form: AddDiningOrderDishForm)
+  : Promise<BaseResponse<null>> {
+  const body: Record<string, Object> = {}
+  body['recipeId'] = form.recipeId
+  body['version'] = form.version
+  return httpUtil.post<null>(`/web/auth/dining/orders/${orderId}/dishes`, body)
+}
+
+/**
+ * 草稿移除菜（仅 DRAFT 态、全部成员可移除任意菜；幂等：不存在返回成功；version 冲突返回 409）。
+ * 成功 data 恒为 null。
+ */
+export async function removeDiningOrderDish(orderId: number, recipeId: number, version: number)
+  : Promise<BaseResponse<null>> {
+  return httpUtil.delete<null>(`/web/auth/dining/orders/${orderId}/dishes/${recipeId}?version=${version}`)
+}
+
+/**
+ * 放弃草稿（仅创建者 + 仅 DRAFT 态；物理删订单与菜单/成员/选菜子行）。
+ * 成功 data 恒为 null。
+ */
+export async function discardDiningOrder(orderId: number): Promise<BaseResponse<null>> {
+  return httpUtil.delete<null>(`/web/auth/dining/orders/${orderId}`)
 }
 
 /**
@@ -317,7 +384,7 @@ export async function getDiningOrderBrief(token: string): Promise<BaseResponse<D
   }
 }
 
-/** 加入订单（校验 token 匹配 + 订单 ONGOING + 未重复加入；成功 data 恒为 null） */
+/** 加入订单（校验 token 匹配 + 订单状态为 DRAFT + 未重复加入；成功 data 恒为 null） */
 export async function joinDiningOrder(orderId: number, joinToken: string): Promise<BaseResponse<null>> {
   const body: Record<string, Object> = {}
   body['joinToken'] = joinToken
@@ -329,19 +396,7 @@ export async function resetDiningJoinToken(orderId: number): Promise<BaseRespons
   return httpUtil.post<string>(`/web/auth/dining/orders/${orderId}/join-token/reset`)
 }
 
-/**
- * 结束点单（仅发起者且仅 ONGOING；生成购买清单快照，status→FINISHED；幂等返回原快照）。
- */
-export async function finishDiningOrder(orderId: number): Promise<BaseResponse<DiningOrderFinishVo>> {
-  const res = await httpUtil.post<Object>(`/web/auth/dining/orders/${orderId}/finish`)
-  return {
-    data: res.data === null ? null : diningOrderFinishVoFromJSON(res.data),
-    code: res.code,
-    message: res.message
-  }
-}
-
-// ========== 选菜（共享购物车，version 乐观并发） ==========
+// ========== 选菜（共享购物车，version 乐观并发；契约保留但停止写入） ==========
 
 /** 勾选菜品（菜须在本单菜单内；一人一菜一条，重复勾选拒绝；version 冲突返回业务码 409） */
 export async function addDiningOrderItem(orderId: number, recipeId: number, note: string,

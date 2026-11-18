@@ -1942,6 +1942,8 @@ CREATE TABLE `dining_category` (
 -- source 区分 ADMIN（运营后台录入）/ USER（用户端新增直上架）；创建人二选一落 created_by_admin_id / created_by_user_id。
 -- status 上下架：1=上架（客户端可选），0=下架（不再出现在客户端上架列表，历史点单订单不受影响）。
 -- name 不做唯一约束（同名菜谱是合法业务态，如不同来源的家传做法）。
+-- source_key 来源唯一标识（如 hoc_0001）：CSV 导入与目录式上传的幂等判重键——非空时按 key 查重命中即更新
+--（保留 id/created_at/status），未命中再按（菜名,分类）兜底；uk_source_key 保证一 key 一菜（NULL 不参与唯一裁决）。
 -- ----------------------------
 DROP TABLE IF EXISTS `dining_recipe`;
 CREATE TABLE `dining_recipe` (
@@ -1957,6 +1959,7 @@ CREATE TABLE `dining_recipe` (
   `fat_g`               DECIMAL(6,2)  NULL COMMENT '脂肪 g/100g',
   `carbs_g`             DECIMAL(6,2)  NULL COMMENT '碳水化合物 g/100g',
   `sodium_mg`           DECIMAL(8,2)  NULL COMMENT '钠 mg/100g',
+  `source_key`          VARCHAR(64)   NULL COMMENT '来源唯一标识（如 hoc_0001/htc_0001/目录名）：导入与目录式上传判重键，非空按 key 幂等更新，NULL=旧数据未标识（重导回填）',
   `source`              VARCHAR(16)   NOT NULL DEFAULT 'ADMIN' COMMENT '来源：ADMIN=运营后台录入，USER=用户端新增',
   `status`              TINYINT       NOT NULL DEFAULT 1 COMMENT '上下架：1=上架，0=下架',
   `created_by_user_id`  BIGINT        NULL COMMENT '创建人用户 ID（source=USER 时记录 users.user_id）',
@@ -1964,6 +1967,7 @@ CREATE TABLE `dining_recipe` (
   `created_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_source_key` (`source_key`) COMMENT '来源唯一标识判重（一 key 一菜，幂等更新闸门）',
   KEY `idx_category_id` (`category_id`) COMMENT '分类筛选与分类引用计数',
   KEY `idx_status` (`status`) COMMENT '客户端上架列表过滤',
   KEY `idx_name` (`name`) COMMENT '关键词模糊搜索'
@@ -2011,20 +2015,22 @@ CREATE TABLE `dining_recipe_ingredient` (
 
 -- ----------------------------
 -- Table structure for dining_order（点单订单）
--- 一人发起点单、生成二维码分享，其他人扫码加入后各自勾选想吃的菜。
--- status：ONGOING 进行中 / FINISHED 已结束（结束时锁定并写 shopping_list 快照）。
--- version：共享购物车乐观并发版本号——所有选菜变更走单行插入/删除并递增 version，
+-- 一人发起点单、生成二维码邀请，其他人加入后一起加/上架菜（共同编辑，菜单即已选清单）。
+-- 创建即 DRAFT（标题/菜单可空，全部成员可加/移除菜、可邀请）；发起者「提交」后直接 FINISHED。
+-- status：DRAFT 编辑中 / FINISHED 已提交（提交时聚合本单菜单写 shopping_list 快照）；
+--         迁移只允许 DRAFT→FINISHED（submit），无逆向。
+-- version：乐观并发版本号——草稿菜单编辑（加菜/移除）与 submit 走条件 UPDATE 递增 version，
 -- 客户端写请求携带已知 version，不匹配返回业务错误码 409（客户端拉取最新后重放）。
 -- join_token：加入凭证（二维码携带），uk_join_token 支撑扫码入口直查，重置即旧码作废。
 -- ----------------------------
 DROP TABLE IF EXISTS `dining_order`;
 CREATE TABLE `dining_order` (
   `id`              BIGINT       NOT NULL AUTO_INCREMENT COMMENT '点单订单 ID',
-  `title`           VARCHAR(64)  NOT NULL COMMENT '订单标题（如 周五晚火锅）',
+  `title`           VARCHAR(64)  NOT NULL COMMENT '订单标题（如 周五晚火锅）；草稿期允许空串，提交时必填',
   `creator_user_id` BIGINT       NOT NULL COMMENT '发起者用户 ID(users.user_id)',
-  `status`          VARCHAR(16)  NOT NULL DEFAULT 'ONGOING' COMMENT '订单状态：ONGOING进行中 / FINISHED已结束',
+  `status`          VARCHAR(16)  NOT NULL DEFAULT 'DRAFT' COMMENT '订单状态：DRAFT编辑中 / FINISHED已提交',
   `join_token`      VARCHAR(64)  NOT NULL COMMENT '加入凭证（二维码携带，重置即旧码作废）',
-  `version`         INT          NOT NULL DEFAULT 0 COMMENT '乐观并发版本号（每次选菜变更 +1，轮询协议基准）',
+  `version`         INT          NOT NULL DEFAULT 0 COMMENT '乐观并发版本号（草稿菜单编辑/submit 变更 +1，轮询协议基准）',
   `shopping_list`   JSON         DEFAULT NULL COMMENT '购买清单快照（结束时写入）。v2 字段：ingredientNames食材名并集/perRecipe按菜视图（v1）、ingredientTotals按(配料名,归一单位)聚合求和（kg→g、L→ml）、totalCalories已知热量菜份热量之和、calorieKnownDishCount/calorieUnknownDishCount热量已知与未知菜数、perDishCalories逐菜热量；老快照仅含 v1 字段，端上按字段存在性回落渲染',
   `finished_at`     DATETIME     DEFAULT NULL COMMENT '结束时间',
   `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -2053,8 +2059,8 @@ CREATE TABLE `dining_order_member` (
 
 -- ----------------------------
 -- Table structure for dining_order_menu（本单菜单）
--- 发起者从公共菜谱库勾选的菜品范围，参与者只能在此范围内选菜；
--- uk_order_recipe 保证一道菜在本单只出现一次。
+-- 本单菜单（发起者从公共菜谱库勾选）；草稿期全部成员可加菜/移除任意菜，
+-- publish 定稿后参与者只能在此范围内选菜；uk_order_recipe 保证一道菜在本单只出现一次。
 -- ----------------------------
 DROP TABLE IF EXISTS `dining_order_menu`;
 CREATE TABLE `dining_order_menu` (

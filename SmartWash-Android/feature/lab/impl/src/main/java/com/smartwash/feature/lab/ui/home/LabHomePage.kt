@@ -100,7 +100,7 @@ fun LabHomePage(
 /**
  * 玩具入口卡（卡片唯一画法，规范 §3.1：白 surface + 1dp outline 描边 +
  * level1 阴影 + radiusLg 圆角 + cardPadding 内边距）：44dp 图标容器
- * （v0.4 §3.2 主容器档 44/12/24，六色浅底语义）+ 名称 CardTitle（18/24/600）+ 描述 14sp。
+ * （v0.4 §3.2 主容器档 44/12/24，六色浅底语义）+ 名称 CardTitle（16/24/600）+ 描述 14sp。
  * 整卡 pressable（scale 0.97，reduced motion 自动降级透明度）；
  * a11y：contentDescription = 名称 + 描述。
  */

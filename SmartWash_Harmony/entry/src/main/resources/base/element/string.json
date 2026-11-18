@@ -5317,6 +5317,10 @@
       "value": "我参与的"
     },
     {
+      "name": "dining_order_status_draft",
+      "value": "草稿"
+    },
+    {
       "name": "dining_order_status_ongoing",
       "value": "进行中"
     },
@@ -5370,11 +5374,51 @@
     },
     {
       "name": "dining_order_create_submit",
-      "value": "发起点单"
+      "value": "提交订单"
     },
     {
       "name": "dining_order_create_submit_success",
-      "value": "点单已发起，分享二维码喊同学一起加入吧"
+      "value": "订单已提交，购买清单已生成"
+    },
+    {
+      "name": "dining_order_create_invite",
+      "value": "邀请"
+    },
+    {
+      "name": "dining_order_cart_title",
+      "value": "购物车"
+    },
+    {
+      "name": "dining_order_cart_empty",
+      "value": "还没选菜，点右侧加号添加"
+    },
+    {
+      "name": "dining_order_cart_remove",
+      "value": "移除"
+    },
+    {
+      "name": "dining_order_cart_summary_format",
+      "value": "已选 %d 道 · %s 人"
+    },
+    {
+      "name": "dining_order_list_dish_count_format",
+      "value": "%d 道菜"
+    },
+    {
+      "name": "dining_order_list_summary_format",
+      "value": "%d 道菜 · %s"
+    },
+    {
+      "name": "dining_order_invite_copy_done",
+      "value": "加入链接已复制，发给同学一起选菜吧"
+    },
+    {
+      "name": "dining_order_invite_unavailable",
+      "value": "仅点单发起者可邀请成员"
+    },
+    {
+      "name": "dining_order_create_write_failed",
+      "value": "菜单保存失败，请稍后重试"
     },
     {
       "name": "dining_order_create_load_failed",
@@ -5411,6 +5455,10 @@
     {
       "name": "dining_order_share_title",
       "value": "订单分享"
+    },
+    {
+      "name": "dining_order_invite_title",
+      "value": "邀请加入"
     },
     {
       "name": "dining_order_share_qr_section",
@@ -5491,6 +5539,30 @@
     {
       "name": "dining_order_detail_share",
       "value": "分享"
+    },
+    {
+      "name": "dining_order_detail_draft_badge",
+      "value": "草稿"
+    },
+    {
+      "name": "dining_order_detail_draft_hint",
+      "value": "草稿编辑中：可加菜、移除菜，发起者「发起点单」后同学再勾选"
+    },
+    {
+      "name": "dining_order_detail_add_dish",
+      "value": "添加菜品"
+    },
+    {
+      "name": "dining_order_detail_remove_dish",
+      "value": "移除菜品 %s"
+    },
+    {
+      "name": "dining_order_detail_draft_menu_count_format",
+      "value": "菜单共 %d 道菜"
+    },
+    {
+      "name": "dining_order_detail_draft_empty_menu",
+      "value": "还没有菜品，点下方「添加菜品」一起选菜"
     },
     {
       "name": "dining_order_detail_participants_format",
@@ -5651,6 +5723,14 @@
     {
       "name": "dining_order_join_param_invalid",
       "value": "加入链接不完整"
+    },
+    {
+      "name": "dining_order_join_hint",
+      "value": "同学确认加入后即可在点单页勾选想吃的菜"
+    },
+    {
+      "name": "dining_order_join_draft_hint",
+      "value": "同学确认加入后可一起加菜、选菜"
     },
     {
       "name": "dining_recipe_library_title",
@@ -5851,6 +5931,18 @@
     {
       "name": "dining_recipe_search_mode_ingredient",
       "value": "食材"
+    },
+    {
+      "name": "dining_recipe_favorite",
+      "value": "收藏"
+    },
+    {
+      "name": "dining_recipe_unfavorite",
+      "value": "取消收藏"
+    },
+    {
+      "name": "dining_recipe_favorite_failed",
+      "value": "收藏操作失败，请重试"
     },
     {
       "name": "dining_recipe_action_favorite_add_format",

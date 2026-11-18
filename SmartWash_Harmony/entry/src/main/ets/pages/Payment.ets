@@ -13,7 +13,8 @@ import { logger } from "../utils/Logger"
 import { PaymentType } from "../constant/PaymentType"
 import { Debouncer } from "../utils/DebounceUtil"
 import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, LoadingState, SelectionDot } from "../view/common/AppComponents"
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
 import { resColor } from '../utils/ResourceColor'
@@ -212,7 +213,8 @@ struct Payment {
       clearTimeout(this.amountFadeTimer)
     }
     this.amountFadeTimer = setTimeout(() => {
-      animateTo({ duration: 180, curve: Curve.EaseOut }, () => {
+      // 金额淡入 — 内容进场 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)），reduced 降级 180ms
+      animateTo(ReduceMotion.spec(MotionTiming.ENTER_CONTENT), () => {
         this.amountVisible = true
       })
     }, 60)

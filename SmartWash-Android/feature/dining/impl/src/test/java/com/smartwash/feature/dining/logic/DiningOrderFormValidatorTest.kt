@@ -116,6 +116,29 @@ class DiningOrderFormValidatorTest {
         assertEquals(DiningOrderFormError.MENU_EMPTY, result.error)
     }
 
+    // ==================== 发起点单（publish，草稿协同批次） ====================
+
+    @Test
+    fun `publish 空标题报必填`() {
+        val result = DiningOrderFormValidator.validate(title = "  ", recipeIds = listOf(1L))
+        assertFalse(result.valid)
+        assertEquals(DiningOrderFormError.TITLE_REQUIRED, result.error)
+    }
+
+    @Test
+    fun `publish 空菜单报至少选一道菜`() {
+        val result = DiningOrderFormValidator.validate(title = "周五晚火锅", recipeIds = emptyList())
+        assertFalse(result.valid)
+        assertEquals(DiningOrderFormError.MENU_EMPTY, result.error)
+    }
+
+    @Test
+    fun `publish 标题超长报超长`() {
+        val result = DiningOrderFormValidator.validate(title = "周".repeat(65), recipeIds = listOf(1L))
+        assertFalse(result.valid)
+        assertEquals(DiningOrderFormError.TITLE_TOO_LONG, result.error)
+    }
+
     // ==================== 复用历史菜单（fromOrderId） ====================
 
     @Test

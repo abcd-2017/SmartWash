@@ -9,7 +9,8 @@
 import { HttpStatusCode } from '@ohos/axios'
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { RouteNames } from '../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../constant/DesignSystem'
+import { ReduceMotion } from '../../utils/ReduceMotion'
 import {
   CONTENT_TYPE_SHORT_LINK,
   ShortCodeVo,
@@ -296,9 +297,11 @@ struct ToolboxShortCodeList {
     }
     .padding({ left: 4, right: 4, top: 8, bottom: 8 })
     .scale({
-      x: this.pressedKey === `copy-${vo.id ?? 0}` ? 0.97 : 1,
-      y: this.pressedKey === `copy-${vo.id ?? 0}` ? 0.97 : 1
+      x: this.pressedKey === `copy-${vo.id ?? 0}` ? MotionScale.Press : 1,
+      y: this.pressedKey === `copy-${vo.id ?? 0}` ? MotionScale.Press : 1
     })
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = `copy-${vo.id ?? 0}`
@@ -443,11 +446,12 @@ struct ToolboxShortCodeList {
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
-    // 按压反馈（对齐安卓 pressable scale 0.97）
+    // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
     .scale({
-      x: this.pressedKey === `card-${vo.id ?? 0}` ? 0.97 : 1,
-      y: this.pressedKey === `card-${vo.id ?? 0}` ? 0.97 : 1
+      x: this.pressedKey === `card-${vo.id ?? 0}` ? MotionScale.Press : 1,
+      y: this.pressedKey === `card-${vo.id ?? 0}` ? MotionScale.Press : 1
     })
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = `card-${vo.id ?? 0}`
@@ -525,6 +529,8 @@ struct ToolboxShortCodeList {
                 ListItem() {
                   this.ShortCodeCard(vo)
                 }
+                // 列表项进出场（对齐安卓 animatedListItem 弹簧；ArkUI 无项级 placement，淡入淡出近似）
+                .transition(ReduceMotion.listItemTransition())
               }, (vo: ShortCodeVo) => `${vo.id ?? 0}`)
 
               // 尾部：加载中 / 失败重试（对齐安卓 append LoadState：retry() 重拉失败页，页码不推进）
@@ -549,11 +555,12 @@ struct ToolboxShortCodeList {
                     // 分页失败唯一显式重试入口：上下 16 × 2 + 行高 16 = 48vp 热区
                     //（触控红线 ≥48，原 12×2 = 40 不达标；对齐安卓 audit-09 P0-1）
                     .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
-                    // 按压反馈（对齐安卓 pressable scale 0.97，套用本页卡片同款模式）
+                    // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
                     .scale({
-                      x: this.pressedKey === 'append-retry' ? 0.97 : 1,
-                      y: this.pressedKey === 'append-retry' ? 0.97 : 1
+                      x: this.pressedKey === 'append-retry' ? MotionScale.Press : 1,
+                      y: this.pressedKey === 'append-retry' ? MotionScale.Press : 1
                     })
+                    .animation(ReduceMotion.spec(MotionTiming.PRESS))
                     .onTouch((event: TouchEvent) => {
                       if (event.type === TouchType.Down) {
                         this.pressedKey = 'append-retry'

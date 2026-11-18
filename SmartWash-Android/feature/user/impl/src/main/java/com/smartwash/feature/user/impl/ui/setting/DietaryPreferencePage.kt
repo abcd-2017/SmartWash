@@ -3,7 +3,6 @@ package com.smartwash.feature.user.impl.ui.setting
 import android.widget.Toast
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Restaurant
@@ -32,19 +30,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppChipVariant
+import com.smartwash.common.ui.components.AppFilterChip
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
@@ -212,44 +210,24 @@ fun DietaryPreferencePage(
     }
 }
 
-/** 忌口 chip：48dp 最小热区；选中 primarySoft 底 + primaryDark 字，未选描边（规范 §7 自绘） */
+/**
+ * 忌口 chip —— 统一走公共 [AppFilterChip]（SOFT）：
+ * 选中 = primarySoft 浅底 + onPrimarySoft 深字，未选中 = surface 底 + 1dp outline 描边 + textSecondary
+ * （原选中 primaryDark 字统一收敛到 onPrimarySoft 令牌）；48dp 最小热区 / 常驻描边 /
+ * 恒定 SemiBold / selected 语义由公共组件内置。
+ */
 @Composable
 private fun AllergenChip(
     code: String,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(AppDimens.radiusFull))
-            .background(
-                if (selected) AppColors.colorScheme.primarySoft
-                else AppColors.colorScheme.surface,
-            )
-            .then(
-                if (!selected) {
-                    Modifier.border(
-                        width = 1.dp,
-                        color = AppColors.colorScheme.outline,
-                        shape = RoundedCornerShape(AppDimens.radiusFull),
-                    )
-                } else {
-                    Modifier
-                },
-            )
-            .pressable(onClick = onClick, debounce = false)
-            .padding(horizontal = AppDimens.spaceMd),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = allergenChipLabel(code),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) AppColors.colorScheme.primaryDark
-            else AppColors.colorScheme.textSecondary,
-        )
-    }
+    AppFilterChip(
+        text = allergenChipLabel(code),
+        selected = selected,
+        onClick = onClick,
+        variant = AppChipVariant.SOFT,
+    )
 }
 
 /** 目标 stepper 行：标签 + 单位值 + 48dp 步进按钮（- / +，步长 50） */

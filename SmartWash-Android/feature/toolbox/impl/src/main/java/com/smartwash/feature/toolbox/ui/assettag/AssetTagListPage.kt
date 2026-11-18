@@ -38,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
 import com.smartwash.common.ui.components.softCardShadow
@@ -152,6 +153,8 @@ fun AssetTagListPage(
                             ) { index ->
                                 AssetTagCard(
                                     vo = state.items[index],
+                                    // 分页/刷新增删的条目：进出场 + 位移补间（reduced motion 自动落位）
+                                    modifier = animatedListItem(),
                                     onClick = { navController.navigateToAssetTagDetail(state.items[index]) },
                                 )
                             }
@@ -217,9 +220,10 @@ private fun statusText(status: Int): String = when (status) {
 private fun AssetTagCard(
     vo: AssetTagVo,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .pressable(onClick = onClick, scaleFactor = 0.97f)
             .softCardShadow(),

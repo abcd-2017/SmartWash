@@ -10,7 +10,8 @@
 // 已知坑遵守：列表条目内容依赖状态 → 队列条目卡用 @ComponentV2 + @Param/@Event。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import { ReviewCardVo, ReviewQueueVo, ReviewText, getReviewQueue } from '../api'
 import {
@@ -22,7 +23,7 @@ import {
   reviewIsNewCard,
   reviewLoadMaterialTitles
 } from './ReviewUiCommon'
-import { AppButton, AppCard, EmptyState, SkeletonBlock } from '../../../view/common/AppComponents'
+import { AnimatedNumber, AppButton, AppCard, EmptyState, SkeletonBlock } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { REVIEW_TICK_KEY } from '../../../utils/RefreshSignal'
@@ -203,18 +204,22 @@ struct ReviewQueuePage {
                 ListItem() {
                   AppCard() {
                     Column() {
-                      Text(ReviewText.review_queue_count_format.replace('%d', `${this.queueCards().length}`))
-                        .fontSize(DesignFontSize.DATA_LARGE)
-                        .fontWeight(DesignFontWeight.BOLD)
-                        .fontFeature(DesignFontFeature.TNUM)
-                        .fontColor($r('app.color.TEXT_PRIMARY'))
+                      // 数字变化走弹簧淡入淡出（对齐安卓 AnimatedContent numberSpec；shared AnimatedNumber）
+                      AnimatedNumber({
+                        value: ReviewText.review_queue_count_format.replace('%d', `${this.queueCards().length}`),
+                        fontSize: DesignFontSize.DATA_LARGE,
+                        fontWeight: DesignFontWeight.BOLD,
+                        fontColor: $r('app.color.TEXT_PRIMARY')
+                      })
 
-                      Text(ReviewText.review_queue_breakdown_format
-                        .replace('%d', `${this.queue?.dueCount ?? 0}`)
-                        .replace('%d', `${this.queue?.newCount ?? 0}`))
-                        .fontSize(DesignFontSize.BODY_SMALL)
-                        .fontFeature(DesignFontFeature.TNUM)
-                        .fontColor($r('app.color.TEXT_SECONDARY'))
+                      AnimatedNumber({
+                        value: ReviewText.review_queue_breakdown_format
+                          .replace('%d', `${this.queue?.dueCount ?? 0}`)
+                          .replace('%d', `${this.queue?.newCount ?? 0}`),
+                        fontSize: DesignFontSize.BODY_SMALL,
+                        fontWeight: DesignFontWeight.NORMAL,
+                        fontColor: $r('app.color.TEXT_SECONDARY')
+                      })
                         .margin({ top: DesignDimens.SPACE_XS })
 
                       AppButton({
@@ -241,6 +246,8 @@ struct ReviewQueuePage {
                       }
                     })
                   }
+                  // 列表项进出场（对齐安卓 animatedListItem 弹簧；ArkUI 无项级 placement，淡入淡出近似）
+                  .transition(ReduceMotion.listItemTransition())
                 }, (card: ReviewCardVo) => `${card.id ?? 0}`)
               }
               .width('100%')
@@ -283,6 +290,8 @@ struct QueueCard {
   @Param now: number = 0
   @Event onCardClick: () => void = () => {
   }
+  // 按压态（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
+  @Local pressed: boolean = false
 
   build() {
     Column() {
@@ -336,6 +345,16 @@ struct QueueCard {
     .borderWidth(1)
     .borderColor($r('app.color.OUTLINE'))
     .alignItems(HorizontalAlign.Start)
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .scale({ x: this.pressed ? MotionScale.Press : 1, y: this.pressed ? MotionScale.Press : 1 })
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
     .onClick(() => {
       this.onCardClick()
     })

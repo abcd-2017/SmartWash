@@ -1,6 +1,6 @@
 # SmartWash Android · UI 设计规范
 
-> **状态：生效**（2026-10-02 起；**2026-10-29 按设计稿第 0 页的 DESIGN-SPEC v0.4（2026-10-24 定稿）覆写 §2.1/§2.2 的取值**，见下方「v0.4 覆写」）。
+> **状态：生效**（2026-10-02 起；**2026-10-29 按设计稿第 0 页的 DESIGN-SPEC v0.4（2026-10-24 定稿）覆写 §2.1/§2.2 的取值**，见下方「v0.4 覆写」；**2026-11-18 按 v0.5 重排字阶语义与内页页头规格**，见下方「v0.5 覆写」）。
 > **取代** `清氧v2全应用UI重设计方案.md`（该文 2026-08-29 被否决，其"禁止修改现有页面"的约束**随本文件生效而解除**）。
 >
 > 本文件是全应用 UI 的**唯一约束来源**。改 UI 前必读。
@@ -38,8 +38,8 @@ v0.4 把字阶**收敛为 8 档**，`weight` 只允许 `400/500/600/700`：
 | `display` | **36sp / 44sp / 700** + tnum | `DataLarge`（数据大字：余额、应付金额、取件码） |
 | `headline` | **28sp / 36sp / 700** | — |
 | `titleLarge` | **22sp / 28sp / 600** | `StatusLarge`（状态大字）、`RootTitle`（根页大标题） |
-| `title` | **18sp / 24sp / 600** | `AmountMedium`（金额中字，+tnum）、`PageHeader`（内页标题）、`CardTitle`（卡片标题）、`SectionTitle`（区块标题） |
-| `bodyLarge` | **16sp / 24sp / 400** | 正文 |
+| `title` | **18sp / 24sp / 600** | `PageHeader`（内页标题）、`AmountMedium`（金额中字，+tnum） |
+| `bodyLarge` | **16sp / 24sp / 400** | 正文；卡片标题 / 区块标题（`CardTitle` / `SectionTitle`）用本档 **600** 字重（16/24/600） |
 | `body` | **14sp / 20sp / 400** | 列表行主文案（§3.4 特许，配 500） |
 | `caption` | **12sp / 16sp / 400** | 辅助 / 角标 / labelSmall |
 | `captionStrong` | **12sp / 16sp / 500** | — |
@@ -52,6 +52,8 @@ v0.4 把字阶**收敛为 8 档**，`weight` 只允许 `400/500/600/700`：
 > **勘误（2026-10-31，画板实测裁定）**：上表把 `PageHeader`（内页标题）别名映射到 `title` 18 系笔误——
 > 设置 / 订单详情 / 订单列表 / 充值记录 / 优惠券 / 取件 / 寄件 / AI助手 八块内页画板页头
 > 逐板实测均为 **22sp / 28 / 600（titleLarge 档）**，代码 `AppTextStyles.PageHeader` 按画板映射到 `titleLarge`。
+>
+> **该勘误自 v0.5（2026-11-18）起作废**：`PageHeader` 统一改为 `title`（18/24/600），见下方「v0.5 覆写」。
 
 ### v0.4 · §3.2 / §3.3 / §3.4 / §4.5（设计稿实测，覆写对应表格）
 
@@ -76,6 +78,45 @@ v0.4 把字阶**收敛为 8 档**，`weight` 只允许 `400/500/600/700`：
 >
 > **退出登录**（2026-10-29 用户拍板）：次按钮形态 = `AppButton(SECONDARY)` +
 > `contentColor = dangerInk`（容器尺寸随上行定调为 48dp 胶囊）。
+
+---
+
+## v0.5 覆写（2026-11-18，最高优先级，覆盖 v0.4 对应行）
+
+设计决定（2026-11-18 拍板）：**二级页页头由「左对齐 22sp」改为「居中 + 18sp/24sp/600」**，
+同时字阶语义重排——`PageHeader` 从 `titleLarge` 移入 `title`；`CardTitle` / `SectionTitle`
+从 `title`(18) 降为 **16/24/600**（与 `bodyLarge` 同档，靠字重 600 区分）。
+下文 §2.2 / §3 的对应行作废，改用本节。
+
+### v0.5 · §2.2 排版（覆写 v0.4 §2.2 字阶表对应行）
+
+| 档 | 字号 / 行高 / 字重 | 语义别名（`AppTextStyles`） |
+|---|---|---|
+| `titleLarge` | **22sp / 28sp / 600** | `StatusLarge`（状态大字）、`RootTitle`（根页大标题） |
+| `title` | **18sp / 24sp / 600** | `PageHeader`（内页标题）、`AmountMedium`（金额中字，+tnum） |
+| `bodyLarge` | **16sp / 24sp / 400** | 正文；卡片标题 / 区块标题（`CardTitle` / `SectionTitle`）用本档 **600** 字重（16/24/600） |
+
+> ⚠️ **v0.4 §2.2 的 2026-10-31 勘误行作废**：该勘误称 `PageHeader` 按画板实测为
+> 22sp / 28 / 600（`titleLarge` 档）。自 v0.5 起 `PageHeader` 统一为 `title`(18/24/600)，
+> 不再保留 22sp 内页页头取值。`RootTitle` / `StatusLarge` 保持 22/28/600，
+> `AmountMedium` 保持 18/24/600 + tnum。
+
+### v0.5 · 内页页头规格（新增，覆写 §3 对应描述）
+
+`PageHeader` 布局改为 **Box 叠层**（返回按钮与 actions 各自绝对定位，标题层居中），规格：
+
+| 项 | 规格 |
+|---|---|
+| 标题对齐 | **相对整行居中**（不再左对齐） |
+| 标题字阶 | `title` 18sp / 24sp / 600 |
+| 标题省略 | **单行省略**（`maxLines = 1` + `TextOverflow.Ellipsis`） |
+| 返回热区 | **48dp** |
+| actions | 右侧 actions **不得挤偏标题**——标题居中于整行，actions 占位不参与标题居中计算 |
+
+### v0.5 · §2.2 硬规则（覆写「一屏一锚点」行）
+
+- **一屏只允许一个锚点级大字**（36sp 数据大字 / 状态大字），标题不参与大字竞争：
+  根页 ≤24sp、**内页页头 18sp**。
 
 ---
 
@@ -179,7 +220,7 @@ v0.4 把字阶**收敛为 8 档**，`weight` 只允许 `400/500/600/700`：
 
 **硬规则**：
 - 所有金额、数量、取件码、订单号 → **必须开 tabular numbers**（Compose：`TextStyle(fontFeatureSettings = "tnum")`），否则数字变化时会左右跳。
-- **一屏只允许一个锚点级大字**（36sp 数据大字 / 状态大字），标题不参与大字竞争：根页 ≤24sp、内页 ≤20sp。
+- **一屏只允许一个锚点级大字**（36sp 数据大字 / 状态大字），标题不参与大字竞争：根页 ≤24sp、内页页头 18sp。
 - 玄墨主题的仪式文本（卦名、干支、六神）用衬线（`FontFamily.Serif`），清氧主题**不用衬线**。
 
 ### 2.3 间距与圆角
@@ -731,3 +772,100 @@ fun DrumIcon(state: OrderStatus, tint: Color) {
 > ⚠️ 仓库 `.gitignore` 有 `**/docs/`，**整个 docs 目录不进版本控制**。
 > 原型、登记表都只在本地，换机器或他人 clone 后**拿不到这些文件**；需要让协作者也看到的话，得在 `.gitignore` 加例外。
 > 本文档已移入 `.claude/`，不受 `**/docs/` 影响，会随仓库分发。
+
+---
+
+## 附：验收截图双档（2026-11-18 增补，TD29）
+
+> 背景：2026-11-18 夜间吃啥点单链路体检发现一批「模拟器默认字体验收全绿、真机大字体必崩」的问题（菜名被固定宽元素挤到 0 宽整行消失、底部栏文字被 CTA 遮盖、副行热量永久截断）。根因是验收清单缺少 fontScale 与窄屏档。**此后任何 UI 改动合入前必须过双档截图验收**：
+
+| 档 | 设置 | 必查项 |
+|---|---|---|
+| 大字体档 | 系统「字体大小」最大档（fontScale ≥ 1.3） | 每行文字 ≤2 行省略且**关键语义（菜名/热量/计数）完整可读**；固定宽元素（图标按钮/缩略图/徽标）不挤压文本列；底部栏文字不被按钮遮盖；输入框内容不溢出 56dp 框 |
+| 默认档 | fontScale 1.0 + 窄屏（360dp 级） | 固定开销合计 ≤ 屏宽 55%（留一半给文本区）；横向滚动不出现 |
+
+执行方式：模拟器 `adb shell settings put system font_scale 1.3`（或设置面板）切档，`adb exec-out screencap -p` 截图逐页比对；修复对照案例见 `docs/吃啥安卓全面体检与修复-2026-11-18.md`（TD15–TD28）。
+
+---
+
+## 附：组件级布局规范（2026-11-18 用户复核后增补，TD35）
+
+> 背景：令牌级规范（颜色/字阶/间距）之外，卡片/头部/rail/底栏等**布局维度无规范**，导致各页面凭感觉排布（行卡横纵 padding 不对称、头部占比失控、rail 配色各显神通、底栏层数无预算）。以下为本批精修的唯一依据。
+
+| # | 规则 | 取值 |
+|---|---|---|
+| L1 | **卡片内边距**：横 `cardPadding`（20dp）/ 纵 `spaceSm`（12dp）——「外松内紧」，所有列表卡统一，禁止只给单侧 | `PaddingValues(horizontal = cardPadding, vertical = spaceSm)` |
+| L2 | **行卡结构模板**：`row{ 图(64dp) weight0, column(weight1){ 菜名(2行) / 副行(热量前置) / 摘要(1行) }, 按钮(40dp热区) }`，行高 min 72dp；按钮与文字列**垂直居中**、文字列 weight 独占余宽 | 见创建页 DishRow |
+| L3 | **rail 配色（外卖式）**：整条灰底 `surfaceVariant`；选中=白块 `surface` + `primaryDark` 字；未选中透明透灰、`textSecondary` 字 | 与右侧列表卡同色形成整体 |
+| L4 | **头部预算**：标题区+搜索区合计 ≤ 屏高 25%；输入框统一高度档（常规 56dp / compact 44dp，compact 仅用于堆叠场景） | 创建页用 compact |
+| L5 | **底栏层数 ≤3**：主行（计数+人数+清空）+ 全宽 CTA + （警示/错误最多 1 条合并展示）；人数 stepper 并入主行，取消独立份量行 | 创建页 CreateBottomBar |
+| L6 | **页面锚点唯一**：头部降权（浅底小字）、列表为中、CTA 为强——阶梯配色 | D9 |
+
+---
+
+## 附：控件尺寸档（2026-11-18 用户复核后增补，TD36）
+
+> 背景：规范有颜色/字阶/间距/圆角/按钮/卡片/图标容器/输入框，**唯独缺「胶囊 chip」与「开关」**，导致这两类控件一直凭感觉定尺寸（同一种 chip 出现 36/40/44/48 四种热区、未选中底 surface / surfaceVariant / 透明三套）。用户 2026-11-18 拍板定档，以下为**唯一依据**，新增同类控件必须先在此开档。
+
+### 胶囊筛选 chip（`AppFilterChip`）
+
+| 项 | 取值 | 依据 |
+|---|---|---|
+| 可见高度 | **32dp**（= `caption` 行高 16dp + 上下各 `spaceXs` 8dp） | 平台 AssistChip/FilterChip 标准档；与原订阅/Toolbox chip 一致 |
+| 横向内边距 | **16dp**（`spaceMd`） | 对齐「小按钮」档 |
+| 形状 | `radiusFull` 胶囊 | §2.3 圆角表 |
+| 字号/字重 | `captionStrong` 12sp/16/500（组件内统一SemiBold 600，避免字重随选中插值引发兄弟位移） | §2.2 字阶 |
+| 描边 | 常驻 1dp：选中=底色同色（无边界）；未选中=`outline` | 尺寸不跳变 |
+| 选中色 | SOLID：`primary` + `onPrimary`；SOFT：`primarySoft` + `onPrimarySoft` | §2.1 |
+| 未选中底 | `surface` | §2.1 |
+| 触控热区 | **≥48dp**（外层 `heightIn(min=48)`，可见尺寸不变） | §3.4 热区口径 |
+| 选中动画 | `selectedColor`（`defaultSpring`） | §7 |
+| 无障碍 | `semantics { selected }` | §9 验收 |
+| reduced motion | 颜色过渡降级 `CROSSFADE_ALT_MS` 180ms | §8 |
+
+### 开关（`AppSwitch`）
+
+| 项 | 取值 | 依据 |
+|---|---|---|
+| 轨道 | **44×24dp** 胶囊 | 高 = `bodyLarge` 行高 24dp，与左侧 16sp 正文齐平、不压字 |
+| thumb | **20dp** 圆形，`surface` | — |
+| 位移 | **2dp ↔ 22dp**（行程 20dp），`defaultSpring` | §7 位移一律弹簧 |
+| 轨道色 | 选中 `primary`；未选中 `surfaceVariant` + 1dp `outline` 描边 | §2.1；轮廓由描边承担 |
+| 触控热区 | **48×48dp**（外层 `defaultMinSize(48,48)`，可见尺寸不变） | §3.2 豁免项热区 48dp |
+| 按压反馈 | `pressable` scale 0.97 / 100ms | §7 |
+| 禁用态 | 整体 alpha 0.38 + 禁点 | §3.3 禁用档 |
+| 无障碍 | `Role.Switch` + `stateDescription`（开/关），可选 `contentDescription` | 平台开关语义 |
+| reduced motion | 位移/颜色降级 180ms | §8 |
+
+> 开关行 `SwitchRow`：行高 64dp（与设置页两行卡一致，§3.4），图标盒 `icon-box-小` 32dp，整行可点 + 右侧开关独立可点。
+
+---
+
+## 附：输入框皮肤档（2026-11-18 用户拍板，TD37）
+
+> 背景：认证页（登录/注册/重置密码）为品牌绿渐变 + 玻璃卡。2026-11-17「收敛表单输入」把认证页一并换成
+> `AppTextField` 常规档（`surfaceVariant` 实底），浅色下变成一块白砖、深色下变成一块纯黑砖，丢失设计稿的
+> 「透明输入行」观感；且 §3.7 要求的玻璃页占位 `rgba(255,255,255,.45)` 在常规档无法表达。用户 2026-11-18
+> 拍板补玻璃皮肤档，以下为**唯一依据**；认证页禁止再自绘 `BasicTextField`。
+
+### 输入框皮肤（`AppTextField(variant = AppFieldVariant.STANDARD / GLASS)`）
+
+| 项 | STANDARD（常规表单） | GLASS（认证页玻璃卡） |
+|---|---|---|
+| 适用 | 白卡/浅色页面一切表单 | 品牌渐变玻璃卡（登录/注册/重置密码） |
+| 容器 | `surfaceVariant` | 透明（`Color.Transparent`） |
+| 描边 | `outline`，聚焦 `primary` / 错误 `error` | 无常态描边；聚焦时底部 1dp 白 `.55` 指示线（弹簧过渡，未聚焦透明） |
+| 文字 | `textPrimary` | `#FFFFFF`（禁用整体 `.38`） |
+| 占位 | `textSecondary`，字号与正文一致 | 白 `.45`，字号与正文一致 |
+| 前缀/尾缀图标 | `textSecondary`（前缀透明度 `.5`） | 白 `.5` / `.8` |
+| 光标 | `primary`（错误 `error`） | `#FFFFFF`（错误 `ErrorLight`） |
+| 错误文案 | `error` | `ErrorLight #FFB4AB` |
+| 高度 | 常规 M3 自然高 / `compact` 52dp | **48dp** 行高（多行 `heightIn(min=48)`） |
+| 字段标签 | 页面上方自绘 label | 同左（白 12sp） |
+| reduced motion | 颜色/聚焦过渡降级 180ms | 同左 |
+
+> 玻璃档是**同一组件的第二种皮肤**，不是新组件；两种皮肤共用 `leadingIcon` / `trailingIcon` /
+> `placeholder` / `supportingText` 槽位与全部交互语义。`AppPasswordTextField` / `AppVerificationCodeField`
+> 同步支持 `variant` 下传。
+> 未纳入本档的自绘输入（工作台搜索框除外，2026-11-18 收敛；占卜追问为玄墨/宣纸子主题专用皮肤、lite 变体
+> 验证码行）需在后续单开皮肤档后再收敛，不得直接套 GLASS。

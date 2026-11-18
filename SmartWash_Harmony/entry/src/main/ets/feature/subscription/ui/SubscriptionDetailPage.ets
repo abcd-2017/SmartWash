@@ -10,7 +10,8 @@
 
 import { common, Want } from '@kit.AbilityKit'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BaseResponse } from '../../../network/BaseResponse'
 import { BizCode } from '../../../network/HttpUtil'
 import {
@@ -1020,7 +1021,11 @@ label: SubscriptionText.subscription_detail_note,
                   .width('100%')
                   .alignItems(HorizontalAlign.Start)
                   .margin({ top: DesignDimens.SPACE_XS })
-                  .animation({ duration: 220, curve: Curve.EaseInOut })
+                  // 取消路径折叠（对齐安卓 AnimatedVisibility 内容档 200ms；ArkUI 无高度退出动画，淡入淡出近似）
+                  .transition(TransitionEffect.asymmetric(
+                    TransitionEffect.OPACITY.animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT)),
+                    TransitionEffect.OPACITY.animation(ReduceMotion.spec(MotionTiming.EXIT_CONTENT))
+                  ))
                 }
               }
               .width('100%')

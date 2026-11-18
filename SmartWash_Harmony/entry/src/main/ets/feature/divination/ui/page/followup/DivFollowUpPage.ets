@@ -49,9 +49,11 @@ struct ChatBubbleView {
 
   aboutToAppear(): void {
     if (divReduceMotion()) {
+      // reduced motion：直接定格（规范 §8），仅保留可读性
       this.alpha = 1
     } else {
-      animateTo({ duration: 120 }, () => {
+      // 气泡淡入 120ms FastOutSlowIn（对齐安卓 tween(120) 默认缓动）
+      animateTo({ duration: 120, curve: Curve.FastOutSlowIn }, () => {
         this.alpha = 1
       })
     }

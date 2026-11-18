@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -45,14 +46,17 @@ fun AppVerificationCodeField(
     enabled: Boolean = true,
     countDown: Int = 0,
     sendEnabled: Boolean = true,
+    variant: AppFieldVariant = AppFieldVariant.STANDARD,
 ) {
     val colors = AppColors.colorScheme
     val canSend = sendEnabled && countDown == 0
+    val glass = variant == AppFieldVariant.GLASS
 
     AppTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier,
+        variant = variant,
         placeholder = placeholder,
         isError = isError,
         supportingText = supportingText,
@@ -69,7 +73,12 @@ fun AppVerificationCodeField(
                     )
                     .border(
                         width = 1.dp,
-                        color = if (canSend) colors.outline else colors.outline.copy(alpha = 0.55f),
+                        // 玻璃皮肤（认证页）发送按钮走白描边；常规档维持 outline
+                        color = if (glass) {
+                            Color.White.copy(alpha = if (canSend) 0.55f else 0.55f * 0.55f)
+                        } else {
+                            if (canSend) colors.outline else colors.outline.copy(alpha = 0.55f)
+                        },
                         shape = RoundedCornerShape(AppDimens.radiusMd),
                     )
                     .padding(horizontal = 14.dp),
@@ -87,7 +96,11 @@ fun AppVerificationCodeField(
                             fontWeight = FontWeight.Medium,
                             fontFeatureSettings = "tnum",
                         ),
-                        color = if (canSend) colors.textPrimary else colors.textPrimary.copy(alpha = 0.55f),
+                        color = if (glass) {
+                            Color.White.copy(alpha = if (canSend) 0.92f else 0.92f * 0.55f)
+                        } else {
+                            if (canSend) colors.textPrimary else colors.textPrimary.copy(alpha = 0.55f)
+                        },
                     )
                 }
             }

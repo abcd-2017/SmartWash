@@ -12,7 +12,8 @@
  * （参照同模块 FishPage/GameCenterPage 等 6 个玩具页的接入先例）。
  */
 
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { Debouncer } from '../../../utils/DebounceUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
@@ -47,10 +48,13 @@ export struct LabHomePage {
   @Local isError: boolean = false
   // 当前按压中的入口卡（以 routeName 为键）：@Builder 内 10 张卡共享页面状态，按键区分哪张缩放
   @Local pressedKey: string = ''
+  // reduced motion：按压取消缩放改 alpha 0.86（规范 §8）
+  @Local reduceMotion: boolean = false
   // 连点节流（对齐安卓 rememberDebouncedClick 500ms；页面销毁时清理）
   private debouncer: Debouncer = new Debouncer()
 
   aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
     this.loadEntries()
   }
 
@@ -213,14 +217,14 @@ export struct LabHomePage {
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
-    // 整卡按压反馈 + 连点节流（对齐安卓 pressable：scale 0.97 / 100ms + 500ms 防抖，
-    // 参照 GameCard 先例，跨端对比 04 #2）；
-    // reduced motion 降级不做（鸿蒙无系统动画开关可读，端限制见 BottomNavBar.ets:70）
+    // 整卡按压反馈 + 连点节流（对齐安卓 pressable：scale 0.97 / 100ms FastOutSlowIn + 500ms 防抖，
+    // 参照 GameCard 先例，跨端对比 04 #2）；reduced motion 取消缩放改 alpha 0.86（规范 §8）
     .scale({
-      x: this.pressedKey === entry.routeName ? 0.97 : 1,
-      y: this.pressedKey === entry.routeName ? 0.97 : 1
+      x: !this.reduceMotion && this.pressedKey === entry.routeName ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.pressedKey === entry.routeName ? MotionScale.Press : 1
     })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    .opacity(this.reduceMotion && this.pressedKey === entry.routeName ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = entry.routeName

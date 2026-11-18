@@ -64,6 +64,7 @@ import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.PageHeader
@@ -398,7 +399,13 @@ private fun DeliveryItemList(
             modifier = Modifier.fillMaxWidth(),
         ) {
             itemsIndexed(items, key = { _, item -> item.id }) { index, item ->
-                DeliveryItemRow(item = item, retryable = item.id in retryableIds, onClick = { onItem(item) })
+                DeliveryItemRow(
+                    item = item,
+                    retryable = item.id in retryableIds,
+                    onClick = { onItem(item) },
+                    // 轮询/历史分页增删的条目：进出场 + 位移补间（reduced motion 自动落位）
+                    modifier = animatedListItem(),
+                )
                 if (index < items.lastIndex) {
                     HorizontalDivider(
                         thickness = 0.5.dp,
@@ -457,6 +464,7 @@ private fun DeliveryItemRow(
     item: DeliveryItemVo,
     retryable: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val kind = DeliveryRules.ItemKind.fromCode(item.kind)
     val direction = DeliveryRules.Direction.fromCode(item.direction)
@@ -556,9 +564,9 @@ private fun DeliveryItemRow(
     }
     if (burnt) {
         // 焚毁占位：灰态（半透明弱化）且不可再点——内容已焚毁，仅保留对话流占位
-        Box(modifier = Modifier.alpha(0.45f)) { rowContent() }
+        Box(modifier = modifier.alpha(0.45f)) { rowContent() }
     } else {
-        Box(modifier = Modifier.pressable(onClick = onClick, debounce = false)) { rowContent() }
+        Box(modifier = modifier.pressable(onClick = onClick, debounce = false)) { rowContent() }
     }
 }
 

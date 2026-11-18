@@ -22,6 +22,7 @@ export class DiningText {
   static get dining_title(): string { return resString('dining_title') }
   static get dining_order_section_created(): string { return resString('dining_order_section_created') }
   static get dining_order_section_joined(): string { return resString('dining_order_section_joined') }
+  static get dining_order_status_draft(): string { return resString('dining_order_status_draft') }
   static get dining_order_status_ongoing(): string { return resString('dining_order_status_ongoing') }
   static get dining_order_status_finished(): string { return resString('dining_order_status_finished') }
   static get dining_order_creator_badge(): string { return resString('dining_order_creator_badge') }
@@ -37,7 +38,33 @@ export class DiningText {
   static get dining_order_create_menu_uncategorized(): string { return resString('dining_order_create_menu_uncategorized') }
   static get dining_order_create_submit(): string { return resString('dining_order_create_submit') }
   static get dining_order_create_submit_success(): string { return resString('dining_order_create_submit_success') }
+  static get dining_order_create_invite(): string { return resString('dining_order_create_invite') }
+  static get dining_order_invite_copy_done(): string { return resString('dining_order_invite_copy_done') }
+  static get dining_order_invite_unavailable(): string { return resString('dining_order_invite_unavailable') }
+  static get dining_order_create_write_failed(): string { return resString('dining_order_create_write_failed') }
   static get dining_order_create_load_failed(): string { return resString('dining_order_create_load_failed') }
+  static get dining_order_cart_title(): string { return resString('dining_order_cart_title') }
+  static get dining_order_cart_empty(): string { return resString('dining_order_cart_empty') }
+  static get dining_order_cart_remove(): string { return resString('dining_order_cart_remove') }
+
+  /** 已选 %d 道 · %s 人（底栏左侧信息区） */
+  static cartSummary(count: number, people: number): string {
+    return resString('dining_order_cart_summary_format')
+      .replace('%d', `${count}`).replace('%s', `${people}`)
+  }
+
+  /** 列表卡摘要：%d 道菜 · %s（对齐 Android dining_order_list_summary_format；无摘要时仅出菜品数） */
+  static orderListSummary(menuCount: number, ingredientSummary: string): string {
+    const summary = ingredientSummary.trim()
+    if (summary.length > 0) {
+      return resString('dining_order_list_summary_format')
+        .replace('%d', `${menuCount}`).replace('%s', summary)
+    }
+    if (menuCount <= 0) {
+      return ''
+    }
+    return fmt(resString('dining_order_list_dish_count_format'), `${menuCount}`)
+  }
   static get dining_order_error_title_required(): string { return resString('dining_order_error_title_required') }
   static get dining_order_error_title_too_long(): string { return resString('dining_order_error_title_too_long') }
   static get dining_order_error_menu_empty(): string { return resString('dining_order_error_menu_empty') }
@@ -61,6 +88,7 @@ export class DiningText {
   }
 
   static get dining_order_share_title(): string { return resString('dining_order_share_title') }
+  static get dining_order_invite_title(): string { return resString('dining_order_invite_title') }
   static get dining_order_share_qr_section(): string { return resString('dining_order_share_qr_section') }
   static get dining_order_share_qr_hint(): string { return resString('dining_order_share_qr_hint') }
   static get dining_order_share_copy_link(): string { return resString('dining_order_share_copy_link') }
@@ -85,6 +113,10 @@ export class DiningText {
 
   static get dining_order_detail_title(): string { return resString('dining_order_detail_title') }
   static get dining_order_detail_share(): string { return resString('dining_order_detail_share') }
+  static get dining_order_detail_draft_badge(): string { return resString('dining_order_detail_draft_badge') }
+  static get dining_order_detail_draft_hint(): string { return resString('dining_order_detail_draft_hint') }
+  static get dining_order_detail_add_dish(): string { return resString('dining_order_detail_add_dish') }
+  static get dining_order_detail_draft_empty_menu(): string { return resString('dining_order_detail_draft_empty_menu') }
   static get dining_order_detail_uncategorized(): string { return resString('dining_order_detail_uncategorized') }
   static get dining_order_detail_empty_menu(): string { return resString('dining_order_detail_empty_menu') }
   static get dining_order_detail_note_action(): string { return resString('dining_order_detail_note_action') }
@@ -101,6 +133,16 @@ export class DiningText {
   static get dining_order_detail_load_failed(): string { return resString('dining_order_detail_load_failed') }
   static get dining_order_detail_syncing(): string { return resString('dining_order_detail_syncing') }
   static get dining_order_conflict_refresh(): string { return resString('dining_order_conflict_refresh') }
+
+  /** 菜单共 %d 道菜 */
+  static draftMenuCount(count: number): string {
+    return fmt(resString('dining_order_detail_draft_menu_count_format'), `${count}`)
+  }
+
+  /** 移除菜品 %s（无障碍标签） */
+  static removeDishLabel(name: string): string {
+    return fmt(resString('dining_order_detail_remove_dish'), name)
+  }
 
   /** 参与者 %d 人 */
   static participants(count: number): string {
@@ -146,6 +188,8 @@ export class DiningText {
   static get dining_order_join_invalid_token(): string { return resString('dining_order_join_invalid_token') }
   static get dining_order_join_success(): string { return resString('dining_order_join_success') }
   static get dining_order_join_param_invalid(): string { return resString('dining_order_join_param_invalid') }
+  static get dining_order_join_hint(): string { return resString('dining_order_join_hint') }
+  static get dining_order_join_draft_hint(): string { return resString('dining_order_join_draft_hint') }
 
   /** 发起者：%s */
   static joinCreator(name: string): string {
@@ -249,6 +293,9 @@ export class DiningText {
   // ---- 收藏（契约 §2.3/§三.4）----
 
   static get dining_order_action_favorites(): string { return resString('dining_order_action_favorites') }
+  static get dining_recipe_favorite(): string { return resString('dining_recipe_favorite') }
+  static get dining_recipe_unfavorite(): string { return resString('dining_recipe_unfavorite') }
+  static get dining_recipe_favorite_failed(): string { return resString('dining_recipe_favorite_failed') }
   static get dining_recipe_favorites_title(): string { return resString('dining_recipe_favorites_title') }
   static get dining_recipe_favorites_empty(): string { return resString('dining_recipe_favorites_empty') }
   static get dining_recipe_favorites_load_failed(): string { return resString('dining_recipe_favorites_load_failed') }

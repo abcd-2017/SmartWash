@@ -57,6 +57,7 @@ import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppCard
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.IconBox
@@ -176,6 +177,7 @@ fun PickupPage(
                             items(orderList.itemCount) { i ->
                                 orderList[i]?.let {
                                     PickupOrderCard(
+                                        modifier = animatedListItem(),
                                         order = it,
                                         onClick = { navController.navigate(OrderRoute.PickupDelivery(orderList[i]?.orderId ?: -1, PickupDeliveryType.PICKUP.type)) }
                                     )
@@ -207,6 +209,7 @@ fun PickupPage(
 
 @Composable
 private fun PickupOrderCard(
+    modifier: Modifier = Modifier,
     order: OrderInfo,
     onClick: () -> Unit,
 ) {
@@ -214,7 +217,7 @@ private fun PickupOrderCard(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val view = currentView()
-    AppCard(onClick = onClick) {
+    AppCard(modifier = modifier, onClick = onClick) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

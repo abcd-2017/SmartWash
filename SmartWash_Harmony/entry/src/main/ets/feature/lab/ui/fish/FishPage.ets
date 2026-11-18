@@ -7,7 +7,8 @@
  * reduced motion：默认静帧 + 用户主动「播放/暂停」开关（当前 SDK 无等价 API，常量 false）。
  */
 
-import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
@@ -25,6 +26,9 @@ class FishText {
 
 /** 首次进入顶部提示停留时长（ms） */
 const HINT_STAY_MS: number = 3000
+
+/** 提示淡出时长（ms）— 对齐安卓 exitTween(DURATION_CARD_MS) 300ms；reduced 由 spec 降级 180ms */
+const HINT_FADE_MS: number = 300
 
 /** 长按阈值（ms） */
 const LONG_PRESS_MS: number = 400
@@ -52,7 +56,11 @@ export function FishBuilder() {
 @ComponentV2
 export struct FishPage {
   @Local hintVisible: boolean = true
+  // 提示淡出透明度（1→0，淡出后移除节点；对齐安卓 FirstRunHint 的 alpha 过渡）
+  @Local hintAlpha: number = 1
   @Local manualPlaying: boolean = false
+  // 按压反馈态（播放/暂停开关，对齐安卓 pressable）
+  @Local pressed: boolean = false
 
   private sim: BoidsSimulator = new BoidsSimulator()
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
@@ -60,6 +68,7 @@ export struct FishPage {
   private canvasHeight: number = 0
   private timerId: number = -1
   private hintTimerId: number = -1
+  private hintFadeTimerId: number = -1
   private lastFrameMs: number = 0
   private reduceMotion: boolean = labReduceMotion()
 
@@ -79,7 +88,7 @@ export struct FishPage {
     }
     if (!this.reduceMotion) {
       this.hintTimerId = setTimeout(() => {
-        this.hintVisible = false
+        this.hideHint()
       }, HINT_STAY_MS)
     }
   }
@@ -90,10 +99,30 @@ export struct FishPage {
       clearTimeout(this.hintTimerId)
       this.hintTimerId = -1
     }
+    if (this.hintFadeTimerId !== -1) {
+      clearTimeout(this.hintFadeTimerId)
+      this.hintFadeTimerId = -1
+    }
     if (this.longPressTimerId !== -1) {
       clearTimeout(this.longPressTimerId)
       this.longPressTimerId = -1
     }
+  }
+
+  /**
+   * 提示淡出：300ms FastOutLinearIn（对齐安卓 exitTween(DURATION_CARD_MS)），
+   * 播完再移除节点；reduced motion 不调用（提示常显，规范 §8）。
+   */
+  private hideHint(): void {
+    const spec: AnimateParam = ReduceMotion.spec(MotionTiming.EXIT_CARD)
+    animateTo(spec, () => {
+      this.hintAlpha = 0
+    })
+    const duration: number = spec.duration ?? HINT_FADE_MS
+    this.hintFadeTimerId = setTimeout(() => {
+      this.hintVisible = false
+      this.hintFadeTimerId = -1
+    }, duration)
   }
 
   private get playing(): boolean {
@@ -249,6 +278,20 @@ export struct FishPage {
     .backgroundColor($r('app.color.SURFACE'))
     .borderWidth(1)
     .borderColor($r('app.color.OUTLINE'))
+    // 播放/暂停按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+    .scale({
+      x: !this.reduceMotion && this.pressed ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.pressed ? MotionScale.Press : 1
+    })
+    .opacity(this.reduceMotion && this.pressed ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
     .onClick(() => {
       this.manualPlaying = !this.manualPlaying
       if (this.manualPlaying) {
@@ -300,6 +343,7 @@ export struct FishPage {
             .width('100%')
             .alignItems(HorizontalAlign.Center)
             .margin({ top: DesignDimens.SPACE_MD })
+            .opacity(this.hintAlpha)
           }
 
           if (this.reduceMotion) {

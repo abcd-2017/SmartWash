@@ -1,4 +1,5 @@
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { formatOrderTime } from "../utils/TimeUtil"
@@ -38,9 +39,28 @@ export struct OrderMonthCard {
   // 按压态（scale 0.97 + 100ms，对齐安卓 pressable；V2 组件内部状态用 @Local）
   @Local pressedRowId: number | null = null
   @Local pressedActionKey: string | null = null
+  // reduced motion：取消缩放，改用 alpha 0.86 保留反馈（规范 §8）
+  @Local reduceMotion: boolean = false
+
+  aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
+  }
 
   aboutToDisappear(): void {
     this.debouncer.cancel()
+  }
+
+  /** 按压缩放 — reduced motion 时恒 1（缩放降级为透明度） */
+  private pressScale(pressed: boolean): number {
+    if (!pressed || this.reduceMotion) {
+      return 1
+    }
+    return MotionScale.Press
+  }
+
+  /** 按压透明度 — 仅 reduced motion 时降到 0.86 */
+  private pressAlpha(pressed: boolean): number {
+    return pressed && this.reduceMotion ? MotionAlpha.PressReduced : 1
   }
 
   /** 轻触感（对齐安卓 HapticEffect 体系在鸿蒙的最低成本近似；时长与公共组件一致） */
@@ -99,9 +119,13 @@ export struct OrderMonthCard {
     // 行内小按钮档：36 高 / radiusMd 12 / 13sp·600（对齐安卓 OrderActionPill）
     .borderRadius(DesignDimens.RADIUS_MD)
     .backgroundColor($r('app.color.PRIMARY'))
-    // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms）
-    .scale({ x: this.pressedActionKey === btnKey ? 0.97 : 1, y: this.pressedActionKey === btnKey ? 0.97 : 1 })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn；reduced motion 降级 alpha）
+    .scale({
+      x: this.pressScale(this.pressedActionKey === btnKey),
+      y: this.pressScale(this.pressedActionKey === btnKey)
+    })
+    .opacity(this.pressAlpha(this.pressedActionKey === btnKey))
+    .animation(MotionTiming.PRESS)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedActionKey = btnKey
@@ -199,10 +223,11 @@ export struct OrderMonthCard {
               .margin({ top: DesignDimens.SPACE_SM })
               .justifyContent(FlexAlign.Center)
               .scale({
-                x: this.pressedActionKey === `${order.orderId}:cancel` ? 0.97 : 1,
-                y: this.pressedActionKey === `${order.orderId}:cancel` ? 0.97 : 1
+                x: this.pressScale(this.pressedActionKey === `${order.orderId}:cancel`),
+                y: this.pressScale(this.pressedActionKey === `${order.orderId}:cancel`)
               })
-              .animation({ duration: 100, curve: Curve.EaseOut })
+              .opacity(this.pressAlpha(this.pressedActionKey === `${order.orderId}:cancel`))
+              .animation(MotionTiming.PRESS)
               .onTouch((event: TouchEvent) => {
                 if (event.type === TouchType.Down) {
                   this.pressedActionKey = `${order.orderId}:cancel`
@@ -247,12 +272,13 @@ export struct OrderMonthCard {
       top: 12,
       bottom: 12
     })
-    // 行按压反馈（对齐安卓 pressable scale 0.97 + 100ms；动作按钮按下时行不缩放）
+    // 行按压反馈（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn；动作按钮按下时行不缩放）
     .scale({
-      x: this.pressedRowId === order.orderId && this.pressedActionKey === null ? 0.97 : 1,
-      y: this.pressedRowId === order.orderId && this.pressedActionKey === null ? 0.97 : 1
+      x: this.pressScale(this.pressedRowId === order.orderId && this.pressedActionKey === null),
+      y: this.pressScale(this.pressedRowId === order.orderId && this.pressedActionKey === null)
     })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    .opacity(this.pressAlpha(this.pressedRowId === order.orderId && this.pressedActionKey === null))
+    .animation(MotionTiming.PRESS)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedRowId = order.orderId ?? null

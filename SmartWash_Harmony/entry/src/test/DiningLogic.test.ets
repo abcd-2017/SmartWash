@@ -13,36 +13,44 @@ import {
   DINING_PEOPLE_MAX,
   DINING_PEOPLE_MIN,
   DINING_PORTION_GRAMS,
+  DiningDraftMenuEditor,
   DiningJoinEntryDecision,
   DiningJoinUrlKind,
+  DiningOrderStatus,
   DiningPortionVerdict,
   DiningRecipeShopping,
   DiningScanKind,
   DiningSelectedDish,
   DiningShoppingResult,
+  DiningStepLineKind,
   buildDiningJoinUrl,
+  buildDiningOrderDeepLink,
   buildShoppingListText,
   coerceDiningPeopleCount,
   decideDiningJoinEntry,
   diningAllergenHits,
   diningCalorieRemaining,
+  diningOrderStatusFromCode,
   diningPortionAdvice,
   diningSelectedTotalCalories,
   diningServingCalories,
   formatDiningAmount,
+  isDiningOrderJoinable,
   maskDiningPhone,
   normalizeDiningAllergen,
   normalizeDiningAllergens,
   normalizeDiningScan,
   originOf,
   parseDiningJoinUrl,
-  parseDiningShoppingList
+  parseDiningShoppingList,
+  parseDiningStepLines
 } from '../main/ets/feature/dining/DiningLogic';
 import {
   DietaryPreferenceVo,
   DiningOrderBriefVo,
   DiningRecipeVo,
   dietaryPreferenceVoFromJSON,
+  diningOrderListVoFromJSON,
   diningRecipeVoFromJSON
 } from '../main/ets/network/vo/DiningVo';
 
@@ -166,17 +174,24 @@ export default function diningLogicTest() {
     })
     it('joinEntry-已成员直达', 0, () => {
       const brief: DiningOrderBriefVo = {
-        orderId: 1, title: '周五晚火锅', status: 'ONGOING', creatorName: '139****9000',
+        orderId: 1, title: '周五晚火锅', status: 'DRAFT', creatorName: '139****9000',
         recipeCount: 3, joined: true
       }
-      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.ENTER_DETAIL)
+      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.ENTER_CREATE)
     })
-    it('joinEntry-非成员进行中确认加入', 0, () => {
+    it('joinEntry-非成员草稿确认加入', 0, () => {
+      const brief: DiningOrderBriefVo = {
+        orderId: 1, title: '周五晚火锅', status: 'DRAFT', creatorName: '139****9000',
+        recipeCount: 3, joined: false
+      }
+      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.CONFIRM_JOIN)
+    })
+    it('joinEntry-历史 ONGOING 按结束态不引导加入', 0, () => {
       const brief: DiningOrderBriefVo = {
         orderId: 1, title: '周五晚火锅', status: 'ONGOING', creatorName: '139****9000',
         recipeCount: 3, joined: false
       }
-      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.CONFIRM_JOIN)
+      expect(decideDiningJoinEntry(brief)).assertEqual(DiningJoinEntryDecision.ORDER_FINISHED)
     })
     it('joinEntry-已结束与未知态不引导加入', 0, () => {
       const finished: DiningOrderBriefVo = {
@@ -189,6 +204,133 @@ export default function diningLogicTest() {
       }
       expect(decideDiningJoinEntry(finished)).assertEqual(DiningJoinEntryDecision.ORDER_FINISHED)
       expect(decideDiningJoinEntry(dirty)).assertEqual(DiningJoinEntryDecision.ORDER_FINISHED)
+    })
+
+    // ---------- 草稿协同（DRAFT 状态 / 加入 / 深链 / 菜单状态机） ----------
+
+    it('orderStatus-状态码映射与未知兜底', 0, () => {
+      expect(diningOrderStatusFromCode('DRAFT')).assertEqual(DiningOrderStatus.DRAFT)
+      expect(diningOrderStatusFromCode('FINISHED')).assertEqual(DiningOrderStatus.FINISHED)
+      // 历史 ONGOING 与未知/空值统一保守降级为 FINISHED 档（不可写）
+      expect(diningOrderStatusFromCode('ONGOING')).assertEqual(DiningOrderStatus.FINISHED)
+      expect(diningOrderStatusFromCode('WEIRD')).assertEqual(DiningOrderStatus.FINISHED)
+      expect(diningOrderStatusFromCode(null)).assertEqual(DiningOrderStatus.FINISHED)
+    })
+    it('joinable-仅 DRAFT 可加入', 0, () => {
+      expect(isDiningOrderJoinable(DiningOrderStatus.DRAFT)).assertTrue()
+      expect(isDiningOrderJoinable(DiningOrderStatus.FINISHED)).assertFalse()
+    })
+    it('deepLink-加入深链构造与兜底', 0, () => {
+      expect(buildDiningOrderDeepLink(12, 'tok')).assertEqual('smartwash://dining/order/12?t=tok')
+      expect(buildDiningOrderDeepLink(0, 'tok')).assertNull()
+      expect(buildDiningOrderDeepLink(12, '  ')).assertNull()
+    })
+
+    it('draftEditor-未创建时切换只记意图且不落库', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      expect(editor.isCreated).assertFalse()
+      editor.onToggle(7)
+      expect(editor.orderId).assertEqual(0)
+      expect(editor.localMenu.size).assertEqual(1)
+      expect(editor.localMenu.has(7)).assertTrue()
+      const op = editor.pendingOp()
+      expect(op !== null && op.recipeId === 7 && op.add).assertTrue()
+    })
+    it('draftEditor-未创建且无切换时无待写', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      expect(editor.pendingOp()).assertNull()
+    })
+    it('draftEditor-创建后快照收敛未决', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.onToggle(7)
+      editor.onToggle(8)
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(0, editor.localMenu)
+      expect(editor.isCreated).assertTrue()
+      expect(editor.orderId).assertEqual(10)
+      expect(editor.joinToken).assertEqual('tok')
+      expect(editor.pendingOp()).assertNull()
+    })
+    it('draftEditor-写成功 version 递增且菜单落库', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(0, new Set<number>())
+      editor.onToggle(7)
+      const op = editor.pendingOp()
+      expect(op !== null).assertTrue()
+      if (op !== null) {
+        editor.onWriteSuccess(op)
+      }
+      expect(editor.serverVersion).assertEqual(1)
+      expect(editor.serverMenu.has(7)).assertTrue()
+      expect(editor.pendingOp()).assertNull()
+    })
+    it('draftEditor-写成功移除收缩菜单', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(2, new Set<number>([7, 8]))
+      editor.onToggle(7)
+      const op = editor.pendingOp()
+      expect(op !== null && op.add === false).assertTrue()
+      if (op !== null) {
+        editor.onWriteSuccess(op)
+      }
+      expect(editor.serverVersion).assertEqual(3)
+      expect(editor.serverMenu.has(7)).assertFalse()
+      expect(editor.serverMenu.has(8)).assertTrue()
+    })
+    it('draftEditor-409 快照刷新保留本地意图', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(1, new Set<number>([7]))
+      editor.onToggle(8)
+      const replay = editor.onServerSnapshot(2, new Set<number>([7, 9]))
+      expect(editor.serverVersion).assertEqual(2)
+      expect(editor.localMenu.size).assertEqual(3)
+      expect(editor.localMenu.has(9)).assertTrue()
+      expect(editor.localMenu.has(8)).assertTrue()
+      expect(replay.length).assertEqual(1)
+      expect(replay[0].recipeId).assertEqual(8)
+      expect(replay[0].add).assertTrue()
+    })
+    it('draftEditor-写失败回滚该操作且不影响其他意图', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(1, new Set<number>([7]))
+      editor.onToggle(7) // 移除 7
+      editor.onToggle(8) // 加 8
+      editor.onWriteFailure({ recipeId: 7, add: false })
+      expect(editor.localMenu.has(7)).assertTrue()
+      expect(editor.localMenu.has(8)).assertTrue()
+      const op = editor.pendingOp()
+      expect(op !== null && op.recipeId === 8 && op.add).assertTrue()
+    })
+    it('draftEditor-待写差分先加后删且稳定排序', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(0, new Set<number>([3, 4]))
+      editor.onToggle(3)
+      editor.onToggle(4)
+      editor.onToggle(1)
+      editor.onToggle(2)
+      const ops = editor.pendingOps()
+      expect(ops.length).assertEqual(4)
+      expect(ops[0].recipeId).assertEqual(1)
+      expect(ops[0].add).assertTrue()
+      expect(ops[1].recipeId).assertEqual(2)
+      expect(ops[2].recipeId).assertEqual(3)
+      expect(ops[2].add).assertFalse()
+      expect(ops[3].recipeId).assertEqual(4)
+    })
+    it('draftEditor-清空产生全部移除差分', 0, () => {
+      const editor = new DiningDraftMenuEditor()
+      editor.markCreated(10, 'tok')
+      editor.onInitialSnapshot(5, new Set<number>([7, 8]))
+      editor.onClear()
+      const ops = editor.pendingOps()
+      expect(ops.length).assertEqual(2)
+      expect(ops[0].add).assertFalse()
+      expect(ops[1].add).assertFalse()
     })
 
     // ---------- parseDiningShoppingList ----------
@@ -275,6 +417,35 @@ export default function diningLogicTest() {
       expect(formatDiningAmount(1830)).assertEqual('1830')
       expect(formatDiningAmount(666.66)).assertEqual('666.7')
       expect(formatDiningAmount(null)).assertNull()
+    })
+
+    // ---------- 步骤渲染清洗（TD24 对齐安卓 parseStepLines） ----------
+
+    it('stepLines-剥离 markdown 加粗与原文编号', 0, () => {
+      const lines = parseDiningStepLines('**1.** 打散鸡蛋\n2、热锅下油\n3) 翻炒装盘')
+      expect(lines.length).assertEqual(3)
+      expect(lines[0].kind).assertEqual(DiningStepLineKind.MAIN)
+      expect(lines[0].text).assertEqual('打散鸡蛋')
+      expect(lines[1].text).assertEqual('热锅下油')
+      expect(lines[2].text).assertEqual('翻炒装盘')
+    })
+
+    it('stepLines-「-」开头行归子注解', 0, () => {
+      const lines = parseDiningStepLines('打散鸡蛋\n- 用土鸡蛋更香\n——也可以加点料酒')
+      expect(lines.length).assertEqual(3)
+      expect(lines[0].kind).assertEqual(DiningStepLineKind.MAIN)
+      expect(lines[1].kind).assertEqual(DiningStepLineKind.SUB)
+      expect(lines[1].text).assertEqual('用土鸡蛋更香')
+      expect(lines[2].kind).assertEqual(DiningStepLineKind.SUB)
+      expect(lines[2].text).assertEqual('也可以加点料酒')
+    })
+
+    it('stepLines-空行跳过与空串返回空表', 0, () => {
+      expect(parseDiningStepLines('').length).assertEqual(0)
+      const lines = parseDiningStepLines('第一步\n\n\n第二步\n')
+      expect(lines.length).assertEqual(2)
+      expect(lines[0].text).assertEqual('第一步')
+      expect(lines[1].text).assertEqual('第二步')
     })
 
     // ---------- 购买清单快照 v2（契约 §3.3 additive，v1 存在性降级） ----------
@@ -428,6 +599,21 @@ export default function diningLogicTest() {
       expect(empty.allergens === null || empty.allergens.length === 0).assertTrue()
       expect(empty.calorieTarget).assertNull()
       expect(empty.sodiumTarget).assertNull()
+    })
+
+    it('orderList-vo 摘要字段映射与缺失兜底', 0, () => {
+      const raw: Record<string, Object> = {
+        'id': 1, 'title': '周五晚火锅', 'status': 'FINISHED',
+        'menuCount': 5, 'ingredientSummary': '西红柿、鸡蛋、葱'
+      }
+      const vo = diningOrderListVoFromJSON(raw)
+      expect(vo.menuCount).assertEqual(5)
+      expect(vo.ingredientSummary).assertEqual('西红柿、鸡蛋、葱')
+      // 后端未下发摘要：menuCount=0（消费端隐藏摘要行）、ingredientSummary 空串
+      const bareRaw: Record<string, Object> = { 'id': 2, 'title': '草稿单' }
+      const bare = diningOrderListVoFromJSON(bareRaw)
+      expect(bare.menuCount).assertEqual(0)
+      expect(bare.ingredientSummary).assertEqual('')
     })
   })
 }

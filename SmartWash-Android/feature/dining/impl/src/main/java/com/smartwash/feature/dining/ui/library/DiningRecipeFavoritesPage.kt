@@ -64,7 +64,7 @@ fun DiningRecipeFavoritesPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.background),
+            .background(AppColors.colorScheme.surface),
     ) {
         PageHeader(
             title = stringResource(R.string.dining_recipe_favorites_title),

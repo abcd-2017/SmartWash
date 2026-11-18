@@ -3,14 +3,9 @@ package com.smartwash.feature.subscription.ui
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
@@ -34,13 +29,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.smartwash.common.ui.components.AppFilterChip
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
-import com.smartwash.common.utils.defaultSpring
-import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
-import com.smartwash.common.utils.selectedColor
 import com.smartwash.feature.subscription.R
 import com.smartwash.feature.subscription.api.SubscriptionCycleType
 import com.smartwash.feature.subscription.api.SubscriptionStatus
@@ -83,8 +76,10 @@ internal fun SubscriptionTagChip(
 }
 
 /**
- * 状态筛选 chip —— 选中 = 品牌底白字，未选中 = 白底描边
- * （模式对齐 ToolboxSelectableChip / CouponPage 筛选胶囊）。
+ * 状态筛选 chip —— 统一走公共 [AppFilterChip]（SOLID）：
+ * 选中 = primary 实底 + onPrimary 白字，未选中 = surface 底 + 1dp outline 描边 + textSecondary。
+ * 48dp 最小热区 / 常驻 1dp 描边 / 恒定 SemiBold / selected 语义等口径由公共组件内置
+ * （原实现即无 haptic，故不传 hapticOnSelect）。
  */
 @Composable
 internal fun SubscriptionSelectableChip(
@@ -93,40 +88,12 @@ internal fun SubscriptionSelectableChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 选中底色 / 文字色 / 描边色统一走公共 selectedColor（弹簧过渡，reduced motion 自动降级）
-    val containerColor = selectedColor(
-        if (selected) AppColors.colorScheme.primary else MaterialTheme.colorScheme.surface
+    AppFilterChip(
+        text = text,
+        selected = selected,
+        onClick = onClick,
+        modifier = modifier,
     )
-    val contentColor = selectedColor(
-        // onPrimary 令牌（浅白/深绿）：深色模式下品牌绿提亮，白字对比度不足
-        if (selected) AppColors.colorScheme.onPrimary else AppColors.colorScheme.textSecondary
-    )
-    // 描边常驻 1dp、颜色在 outline ↔ 透明间过渡：选中切换不再让描边整条消失/出现
-    val borderColor = selectedColor(
-        if (selected) Color.Transparent else AppColors.colorScheme.outline
-    )
-    // 外层 48dp 最小热区（DESIGN-SPEC §3 触控目标 ≥48×48dp），胶囊本体居中，视觉高度不变
-    Box(
-        modifier = modifier
-            .pressable(onClick = onClick, debounce = false)
-            .heightIn(min = 48.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Surface(
-            shape = RoundedCornerShape(AppDimens.radiusFull),
-            color = containerColor,
-            border = BorderStroke(1.dp, borderColor),
-        ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelMedium,
-                // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变，兄弟 chip 连续位移观感更差
-                fontWeight = FontWeight.SemiBold,
-                color = contentColor,
-                modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceXs),
-            )
-        }
-    }
 }
 
 /**
@@ -209,54 +176,6 @@ private fun DialogTextAction(
             fontWeight = FontWeight.SemiBold,
             color = AppColors.colorScheme.textGreen,
         )
-    }
-}
-
-/**
- * 自绘开关（自动续费）—— 全库无既有 Switch 先例，且 M3 Switch 自带 state layer
- * （规范 §7 禁直接用于交互场景），故自绘：轨道 44×24 胶囊，thumb 20dp 圆点，
- * 位移走弹簧（规范 §7 位移动画禁固定时长 tween），reduced motion 经 motionSpec 自动降级 180ms。
- */
-@Composable
-internal fun SubscriptionToggle(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val thumbOffset by animateDpAsState(
-        targetValue = if (checked) 22.dp else 2.dp,
-        animationSpec = motionSpec(defaultSpring()),
-        label = "subscriptionToggleThumb",
-    )
-    val trackColor = selectedColor(
-        // 未选中轨道从装饰档 textTertiary 收敛 textSecondary（audit-14 #7）：
-        // #A9AEA9 on 白卡 2.25:1 低于图形控件 3:1 非文本对比下限（DESIGN-SPEC §10），
-        // thumb 白色（surface）在 textSecondary 轨道上辨识度足够
-        if (checked) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary
-    )
-    // 外层 48dp 最小热区（DESIGN-SPEC §3 触控目标 ≥48×48dp，与 SelectableChip 同口径），
-    // 24dp 轨道居中，视觉尺寸不变
-    Box(
-        modifier = modifier
-            .pressable(onClick = { onCheckedChange(!checked) }, debounce = false)
-            .heightIn(min = 48.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(width = 44.dp, height = 24.dp)
-                .clip(RoundedCornerShape(AppDimens.radiusFull))
-                .background(trackColor),
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            Box(
-                modifier = Modifier
-                    .padding(start = thumbOffset)
-                    .size(width = 20.dp, height = 20.dp)
-                    .clip(CircleShape)
-                    .background(AppColors.colorScheme.surface),
-            )
-        }
     }
 }
 

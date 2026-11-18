@@ -8,13 +8,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.dining.constant.DiningOrderStatus;
 import com.smartwash.dining.core.ShoppingListAssembler;
 import com.smartwash.dining.core.ShoppingListAssembler.RecipeIngredient;
-import com.smartwash.dining.core.ShoppingListAssembler.Selection;
 import com.smartwash.dining.entity.DiningOrder;
 import com.smartwash.dining.entity.DiningOrderItem;
 import com.smartwash.dining.entity.DiningOrderMember;
 import com.smartwash.dining.entity.DiningOrderMenu;
+import com.smartwash.dining.from.AddDiningOrderDishFrom;
 import com.smartwash.dining.from.CreateDiningOrderFrom;
 import com.smartwash.dining.from.JoinDiningOrderFrom;
+import com.smartwash.dining.from.SubmitDiningOrderFrom;
 import com.smartwash.dining.mapper.DiningOrderItemMapper;
 import com.smartwash.dining.mapper.DiningOrderMapper;
 import com.smartwash.dining.mapper.DiningOrderMemberMapper;
@@ -43,6 +44,7 @@ import org.springframework.util.CollectionUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +54,9 @@ import java.util.stream.Collectors;
 /**
  * 点单订单服务实现。
  * 并发纪律：加入去重先查后插给友好提示，并发窗口由 uk_order_user 唯一索引兜底裁决；
- * 选菜并发走 DiningOrderItemService 的 version 乐观并发协议，本类不直接改 version。
+ * 草稿期菜单编辑（加菜/移除）与提交点单（submit）在本类内走同一套 version 条件 UPDATE 乐观锁，
+ * 条件不匹配返回业务错误码 409（端上拉取最新后重放）。
+ * 选菜记录（dining_order_item）已停止写入：购买清单在 submit 时直接聚合本单菜单，无「选菜人」。
  */
 @Slf4j
 @Service
@@ -74,18 +78,31 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
 
     private final NoticeService noticeService;
 
+    /** version 冲突业务码（HTTP 语义冲突） */
+    private static final int VERSION_CONFLICT_CODE = 409;
+
+    /** 标题上限（与 CreateDiningOrderFrom/SubmitDiningOrderFrom 的 @Size 一致，DB 列宽 64） */
+    private static final int TITLE_MAX_LENGTH = 64;
+
+    /** 列表食材摘要最多展示的食材名个数，超出以「…」收尾 */
+    private static final int INGREDIENT_SUMMARY_LIMIT = 6;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public DiningOrderCreatedVo create(CreateDiningOrderFrom from, Long userId) {
         List<Long> recipeIds = resolveMenuRecipeIds(from, userId);
-        // 去重保序（同菜重复勾选入参防御），随后整体把关上架存在性
+        // 去重保序（同菜重复勾选入参防御），非空时整体把关上架存在性（空菜单 = 空草稿，合法）
         List<Long> distinctRecipeIds = recipeIds.stream().filter(Objects::nonNull).distinct().toList();
-        recipeGate.assertAllOnShelf(distinctRecipeIds);
+        if (!distinctRecipeIds.isEmpty()) {
+            recipeGate.assertAllOnShelf(distinctRecipeIds);
+        }
 
+        // 草稿态标题可空：DB title NOT NULL，统一落空串，submit 时再校验必填
+        String title = from.getTitle() == null ? "" : from.getTitle();
         DiningOrder order = new DiningOrder()
-                .setTitle(from.getTitle())
+                .setTitle(title)
                 .setCreatorUserId(userId)
-                .setStatus(DiningOrderStatus.ONGOING.getCode())
+                .setStatus(DiningOrderStatus.DRAFT.getCode())
                 .setJoinToken(IdUtil.fastSimpleUUID())
                 .setVersion(0);
         this.save(order);
@@ -94,8 +111,177 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
         for (Long recipeId : distinctRecipeIds) {
             menuMapper.insert(new DiningOrderMenu().setOrderId(order.getId()).setRecipeId(recipeId));
         }
-        log.info("创建点单订单, orderId: {}, userId: {}, 菜品数: {}", order.getId(), userId, distinctRecipeIds.size());
+        log.info("创建点单草稿, orderId: {}, userId: {}, 菜品数: {}", order.getId(), userId, distinctRecipeIds.size());
         return new DiningOrderCreatedVo(order.getId(), order.getJoinToken());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public DiningOrderFinishVo submit(Long orderId, SubmitDiningOrderFrom from, Long userId) {
+        // 行锁串行化「提交」与「草稿菜单编辑」：加菜/移除的 CAS 更新同一订单行会被本锁挡住，
+        // 且提交会递增 version，避免快照落库后仍有菜单写穿透到已结束订单（并发窗口丢单/脏写）。
+        DiningOrder order = orderMapper.selectForUpdate(orderId);
+        if (order == null) {
+            throw new CustomExceptions("点单不存在");
+        }
+        if (!Objects.equals(order.getCreatorUserId(), userId)) {
+            throw new CustomExceptions("仅发起者可提交点单");
+        }
+        // 幂等：已结束直接返回库内原快照，不重复聚合、不改 finished_at
+        if (DiningOrderStatus.FINISHED.getCode().equals(order.getStatus())) {
+            return toFinishVo(order);
+        }
+        if (!DiningOrderStatus.DRAFT.getCode().equals(order.getStatus())) {
+            throw new CustomExceptions("点单状态异常，无法提交");
+        }
+        // 草稿页原位编辑的标题随 submit 落库；不传沿用库内标题，最终一律校验非空
+        String title = from.getTitle() != null ? from.getTitle().trim() : order.getTitle();
+        if (title == null || title.isEmpty()) {
+            throw new CustomExceptions("订单标题不能为空");
+        }
+        if (title.length() > TITLE_MAX_LENGTH) {
+            throw new CustomExceptions("订单标题过长（上限64字符）");
+        }
+
+        List<DiningOrderMenu> menus = menuMapper.selectList(new LambdaQueryWrapper<DiningOrderMenu>()
+                .eq(DiningOrderMenu::getOrderId, orderId).orderByAsc(DiningOrderMenu::getId));
+        if (menus.isEmpty()) {
+            throw new CustomExceptions("本单菜单不能为空，无法提交点单");
+        }
+        List<Long> recipeIds = menus.stream().map(DiningOrderMenu::getRecipeId).toList();
+        Map<Long, List<String>> ingredientMap = recipeGate.getIngredients(recipeIds);
+        Map<Long, DiningRecipeGate.RecipeBrief> briefs = recipeGate.getBriefs(recipeIds);
+        // v2：配料明细（关联表主数据源）+ 一份热量（calories_total ?: calories_per_100g × 250 口径在 gate 内归一）
+        Map<Long, List<DiningRecipeGate.IngredientDetail>> amountsMap = recipeGate.getIngredientAmounts(recipeIds);
+        Map<Long, BigDecimal> caloriesMap = recipeGate.getServingCalories(recipeIds);
+
+        // 菜谱视图按本单菜单编排序；兼容回落：无关联明细的老菜谱沿用 ingredients JSON 名列表
+        // （明细为空 = 仅名并集，value/unit 缺失）；ingredients JSON 保留双写，即便有关联明细也并入名并集
+        List<RecipeIngredient> recipes = new ArrayList<>(recipeIds.size());
+        for (Long recipeId : recipeIds) {
+            DiningRecipeGate.RecipeBrief brief = briefs.get(recipeId);
+            List<ShoppingListAssembler.IngredientAmount> amounts =
+                    amountsMap.getOrDefault(recipeId, List.of()).stream()
+                            .map(detail -> new ShoppingListAssembler.IngredientAmount(
+                                    detail.name(), detail.amountValue(), detail.amountUnit()))
+                            .toList();
+            recipes.add(new RecipeIngredient(recipeId, brief == null ? null : brief.name(),
+                    ingredientMap.getOrDefault(recipeId, List.of()), amounts,
+                    caloriesMap.get(recipeId)));
+        }
+        // 菜单即已选清单：selections 传空列表 = 本单菜单全部入选，按菜视图无「选菜人」
+        ShoppingListAssembler.ShoppingList shoppingList =
+                ShoppingListAssembler.assemble(recipes, List.of());
+        String snapshot = JsonUtils.toJson(shoppingList);
+        LocalDateTime finishedAt = LocalDateTime.now();
+
+        // 状态流转条件 UPDATE 防并发：仅 DRAFT 且 version 未变才迁移，原子防并发重复提交；
+        // 同步递增 version，让并发的草稿菜单写（CAS 校验 version）在提交后直接冲突退出
+        int updated = orderMapper.update(null, new LambdaUpdateWrapper<DiningOrder>()
+                .eq(DiningOrder::getId, orderId)
+                .eq(DiningOrder::getStatus, DiningOrderStatus.DRAFT.getCode())
+                .eq(DiningOrder::getVersion, from.getVersion())
+                .set(DiningOrder::getStatus, DiningOrderStatus.FINISHED.getCode())
+                .set(DiningOrder::getTitle, title)
+                .set(DiningOrder::getShoppingList, snapshot)
+                .set(DiningOrder::getFinishedAt, finishedAt)
+                .setSql("version = version + 1"));
+        if (updated == 0) {
+            DiningOrder latest = orderMapper.selectById(orderId);
+            // 并发窗口：其他提交请求已提交 → 按幂等返回其快照
+            if (latest != null && DiningOrderStatus.FINISHED.getCode().equals(latest.getStatus())) {
+                return toFinishVo(latest);
+            }
+            if (latest != null && !Objects.equals(latest.getVersion(), from.getVersion())) {
+                throw new CustomExceptions(VERSION_CONFLICT_CODE, "订单已被他人更新，请刷新后重试");
+            }
+            throw new CustomExceptions("点单状态已变更，请刷新后重试");
+        }
+        // 仅本次真正完成 DRAFT→FINISHED 流转才发通知：已结束幂等返回与并发窗口都不重复打扰全体成员
+        noticeService.publishTargeted(
+                NoticeType.DINING_FINISH,
+                "「" + title + "」已结束点单",
+                "购买清单已生成，点击查看",
+                buildOrderDeepLink(orderId, order.getJoinToken()),
+                listNoticeReceivers(orderId, order.getCreatorUserId(), null));
+        log.info("提交点单, orderId: {}, userId: {}, 标题: {}, 菜品数: {}", orderId, userId, title, recipeIds.size());
+        return new DiningOrderFinishVo()
+                .setId(orderId)
+                .setTitle(title)
+                .setStatus(DiningOrderStatus.FINISHED.getCode())
+                .setFinishedAt(finishedAt)
+                .setShoppingList(snapshot);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addDish(Long orderId, AddDiningOrderDishFrom from, Long userId) {
+        DiningOrder order = requireDraftOrder(orderId);
+        requireMember(orderId, userId, "仅订单成员可以加菜");
+        // 幂等：已在本单菜单内直接成功返回（不重复落库、不递增 version）
+        if (isMenuDishExists(orderId, from.getRecipeId())) {
+            log.debug("加菜幂等命中, orderId: {}, recipeId: {}", orderId, from.getRecipeId());
+            return;
+        }
+        // 上新建档：下架/不存在的菜谱不得进入本单菜单
+        recipeGate.assertAllOnShelf(List.of(from.getRecipeId()));
+        casIncrementVersion(orderId, from.getVersion());
+        try {
+            menuMapper.insert(new DiningOrderMenu().setOrderId(orderId).setRecipeId(from.getRecipeId()));
+        } catch (DuplicateKeyException e) {
+            // 并发窗口撞 uk_order_recipe：他人先插入同菜，按幂等成功处理
+            log.debug("加菜并发撞唯一索引，按幂等成功处理, orderId: {}, recipeId: {}", orderId, from.getRecipeId());
+        }
+        log.info("草稿加菜, orderId: {}, recipeId: {}, userId: {}", orderId, from.getRecipeId(), userId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void removeDish(Long orderId, Long recipeId, Long version, Long userId) {
+        requireDraftOrder(orderId);
+        // 拍板②：草稿期全部成员可移除任意菜（含发起者加的菜），不校验归属
+        requireMember(orderId, userId, "仅订单成员可以移除菜");
+        // 幂等：菜已不在本单菜单内直接成功返回（不递增 version）
+        if (!isMenuDishExists(orderId, recipeId)) {
+            log.debug("移除菜幂等命中, orderId: {}, recipeId: {}", orderId, recipeId);
+            return;
+        }
+        casIncrementVersion(orderId, version);
+        menuMapper.delete(new LambdaQueryWrapper<DiningOrderMenu>()
+                .eq(DiningOrderMenu::getOrderId, orderId)
+                .eq(DiningOrderMenu::getRecipeId, recipeId));
+        log.info("草稿移除菜, orderId: {}, recipeId: {}, userId: {}", orderId, recipeId, userId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void discardDraft(Long orderId, Long userId) {
+        DiningOrder order = this.getById(orderId);
+        if (order == null) {
+            throw new CustomExceptions("点单不存在");
+        }
+        if (!Objects.equals(order.getCreatorUserId(), userId)) {
+            throw new CustomExceptions("仅发起者可放弃草稿");
+        }
+        if (!DiningOrderStatus.DRAFT.getCode().equals(order.getStatus())) {
+            throw new CustomExceptions("仅草稿可放弃");
+        }
+        // 先按 status 条件删订单行，与并发 submit 互斥：submit 已把状态推到 FINISHED 时本删除 0 行 → 拒绝，
+        // 避免出现「草稿已提交但子表被清空」的中间态
+        int deleted = orderMapper.delete(new LambdaQueryWrapper<DiningOrder>()
+                .eq(DiningOrder::getId, orderId)
+                .eq(DiningOrder::getStatus, DiningOrderStatus.DRAFT.getCode()));
+        if (deleted == 0) {
+            throw new CustomExceptions("草稿状态已变更，请刷新后重试");
+        }
+        // 子表随订单一起物理删除（项目无逻辑删除）；草稿期不应有选菜记录，仍兜底清理
+        itemMapper.delete(new LambdaQueryWrapper<DiningOrderItem>()
+                .eq(DiningOrderItem::getOrderId, orderId));
+        menuMapper.delete(new LambdaQueryWrapper<DiningOrderMenu>()
+                .eq(DiningOrderMenu::getOrderId, orderId));
+        memberMapper.delete(new LambdaQueryWrapper<DiningOrderMember>()
+                .eq(DiningOrderMember::getOrderId, orderId));
+        log.info("放弃点单草稿, orderId: {}, userId: {}", orderId, userId);
     }
 
     @Override
@@ -104,18 +290,61 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
         // 不再先全量反查 orderId 再内存排序，避免深分页时内存与 IO 放大
         Page<DiningOrder> page = orderMapper.selectMyOrderPage(
                 new Page<>(from.getPage(), from.getSize()), userId);
+        List<DiningOrder> records = page.getRecords();
+        // 列表摘要批量组装：一次查菜单 + 一次取食材名，避免逐行 N+1
+        Map<Long, Integer> menuCounts = new LinkedHashMap<>();
+        Map<Long, String> ingredientSummaries = new LinkedHashMap<>();
+        if (!records.isEmpty()) {
+            List<Long> orderIds = records.stream().map(DiningOrder::getId).toList();
+            Map<Long, List<Long>> recipeIdsByOrder = new LinkedHashMap<>();
+            for (DiningOrderMenu menu : menuMapper.selectList(new LambdaQueryWrapper<DiningOrderMenu>()
+                    .in(DiningOrderMenu::getOrderId, orderIds)
+                    .orderByAsc(DiningOrderMenu::getId))) {
+                recipeIdsByOrder.computeIfAbsent(menu.getOrderId(), k -> new ArrayList<>())
+                        .add(menu.getRecipeId());
+            }
+            List<Long> allRecipeIds = recipeIdsByOrder.values().stream()
+                    .flatMap(List::stream).distinct().toList();
+            Map<Long, List<String>> ingredientMap = allRecipeIds.isEmpty()
+                    ? Map.of() : recipeGate.getIngredients(allRecipeIds);
+            for (DiningOrder order : records) {
+                List<Long> recipeIds = recipeIdsByOrder.getOrDefault(order.getId(), List.of());
+                menuCounts.put(order.getId(), recipeIds.size());
+                ingredientSummaries.put(order.getId(), summarizeIngredients(recipeIds, ingredientMap));
+            }
+        }
         Page<DiningOrderListVo> voPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        voPage.setRecords(page.getRecords().stream()
+        voPage.setRecords(records.stream()
                 .map(order -> new DiningOrderListVo()
                         .setId(order.getId())
                         .setTitle(order.getTitle())
                         .setStatus(order.getStatus())
                         .setIsCreator(order.getCreatorUserId() != null && order.getCreatorUserId().equals(userId))
                         .setCreatorUserId(order.getCreatorUserId())
+                        .setMenuCount(menuCounts.getOrDefault(order.getId(), 0))
+                        .setIngredientSummary(ingredientSummaries.getOrDefault(order.getId(), ""))
                         .setCreatedAt(order.getCreatedAt())
                         .setFinishedAt(order.getFinishedAt()))
                 .toList());
         return voPage;
+    }
+
+    /** 食材摘要：复用购买清单聚合口径取食材名并集（保序去重），截前 6 个以「、」连接，超尾加「…」 */
+    private String summarizeIngredients(List<Long> recipeIds, Map<Long, List<String>> ingredientMap) {
+        if (recipeIds.isEmpty()) {
+            return "";
+        }
+        List<RecipeIngredient> recipes = recipeIds.stream()
+                .map(recipeId -> new RecipeIngredient(recipeId, null, ingredientMap.get(recipeId)))
+                .toList();
+        List<String> names = ShoppingListAssembler.assemble(recipes, List.of()).ingredientNames();
+        if (names.isEmpty()) {
+            return "";
+        }
+        List<String> top = names.size() > INGREDIENT_SUMMARY_LIMIT
+                ? names.subList(0, INGREDIENT_SUMMARY_LIMIT) : names;
+        String joined = String.join("、", top);
+        return names.size() > INGREDIENT_SUMMARY_LIMIT ? joined + "…" : joined;
     }
 
     @Override
@@ -160,7 +389,7 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
                     .setCategoryId(brief == null ? null : brief.categoryId());
         }).toList());
 
-        // 选菜记录（共享购物车明细）
+        // 选菜记录（历史数据，已停止写入；新单恒为空，保留字段兼容旧端）
         vo.setItems(itemMapper.selectList(new LambdaQueryWrapper<DiningOrderItem>()
                         .eq(DiningOrderItem::getOrderId, orderId).orderByAsc(DiningOrderItem::getId))
                 .stream().map(item -> new DiningOrderDetailVo.OrderItem()
@@ -211,7 +440,8 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
         if (!order.getJoinToken().equals(from.getJoinToken())) {
             throw new CustomExceptions("加入凭证无效或已重置");
         }
-        if (!DiningOrderStatus.ONGOING.getCode().equals(order.getStatus())) {
+        // 仅草稿可邀请加入（边点边邀）；已结束拒绝
+        if (!DiningOrderStatus.isJoinable(order.getStatus())) {
             throw new CustomExceptions("点单已结束，无法加入");
         }
         if (isMember(orderId, userId)) {
@@ -246,101 +476,16 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
         if (!order.getCreatorUserId().equals(userId)) {
             throw new CustomExceptions("仅发起者可重置加入凭证");
         }
-        if (!DiningOrderStatus.ONGOING.getCode().equals(order.getStatus())) {
+        if (!DiningOrderStatus.DRAFT.getCode().equals(order.getStatus())) {
             throw new CustomExceptions("点单已结束，无需重置加入凭证");
         }
         String newToken = IdUtil.fastSimpleUUID();
-        // 精确 SET join_token，不触碰 version（version 只由选菜变更协议驱动）
+        // 精确 SET join_token，不触碰 version（version 只由菜单编辑/提交流更协议驱动）
         this.update(new LambdaUpdateWrapper<DiningOrder>()
                 .eq(DiningOrder::getId, orderId)
                 .set(DiningOrder::getJoinToken, newToken));
         log.info("重置点单加入凭证, orderId: {}, userId: {}", orderId, userId);
         return newToken;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public DiningOrderFinishVo finish(Long orderId, Long userId) {
-        // 行锁串行化「结束」与「选菜写入」：选菜 CAS 更新同一订单行会被本锁挡住，
-        // 避免快照读完后、状态落库前有选菜落库而漏进购买清单（并发窗口丢单）。
-        DiningOrder order = orderMapper.selectForUpdate(orderId);
-        if (order == null) {
-            throw new CustomExceptions("点单不存在");
-        }
-        if (!Objects.equals(order.getCreatorUserId(), userId)) {
-            throw new CustomExceptions("仅发起者可结束点单");
-        }
-        // 幂等：已结束直接返回库内原快照，不重复聚合、不改 finished_at
-        if (DiningOrderStatus.FINISHED.getCode().equals(order.getStatus())) {
-            return toFinishVo(order);
-        }
-        if (!DiningOrderStatus.ONGOING.getCode().equals(order.getStatus())) {
-            throw new CustomExceptions("点单状态异常，无法结束");
-        }
-
-        List<DiningOrderMenu> menus = menuMapper.selectList(new LambdaQueryWrapper<DiningOrderMenu>()
-                .eq(DiningOrderMenu::getOrderId, orderId).orderByAsc(DiningOrderMenu::getId));
-        List<Long> recipeIds = menus.stream().map(DiningOrderMenu::getRecipeId).toList();
-        Map<Long, List<String>> ingredientMap = recipeGate.getIngredients(recipeIds);
-        Map<Long, DiningRecipeGate.RecipeBrief> briefs = recipeGate.getBriefs(recipeIds);
-        // v2：配料明细（关联表主数据源）+ 一份热量（calories_total ?: calories_per_100g × 250 口径在 gate 内归一）
-        Map<Long, List<DiningRecipeGate.IngredientDetail>> amountsMap = recipeGate.getIngredientAmounts(recipeIds);
-        Map<Long, BigDecimal> caloriesMap = recipeGate.getServingCalories(recipeIds);
-
-        // 菜谱视图按本单菜单编排序；选菜记录按勾选顺序（按菜视图内选菜人顺序）
-        // 兼容回落：无关联明细的老菜谱沿用 ingredients JSON 名列表（明细为空 = 仅名并集，value/unit 缺失）；
-        // ingredients JSON 保留双写，即便有关联明细也并入名并集（漂移数据仍可见）
-        List<RecipeIngredient> recipes = new ArrayList<>(recipeIds.size());
-        for (Long recipeId : recipeIds) {
-            DiningRecipeGate.RecipeBrief brief = briefs.get(recipeId);
-            List<ShoppingListAssembler.IngredientAmount> amounts =
-                    amountsMap.getOrDefault(recipeId, List.of()).stream()
-                            .map(detail -> new ShoppingListAssembler.IngredientAmount(
-                                    detail.name(), detail.amountValue(), detail.amountUnit()))
-                            .toList();
-            recipes.add(new RecipeIngredient(recipeId, brief == null ? null : brief.name(),
-                    ingredientMap.getOrDefault(recipeId, List.of()), amounts,
-                    caloriesMap.get(recipeId)));
-        }
-        List<Selection> selections = itemMapper.selectList(new LambdaQueryWrapper<DiningOrderItem>()
-                        .eq(DiningOrderItem::getOrderId, orderId).orderByAsc(DiningOrderItem::getId))
-                .stream().map(item -> new Selection(item.getRecipeId(), item.getUserId(), item.getNote()))
-                .toList();
-
-        ShoppingListAssembler.ShoppingList shoppingList =
-                ShoppingListAssembler.assemble(recipes, selections);
-        String snapshot = JsonUtils.toJson(shoppingList);
-        LocalDateTime finishedAt = LocalDateTime.now();
-
-        // 状态流转条件 UPDATE 防并发：仅 ONGOING 才能结束
-        int updated = orderMapper.update(null, new LambdaUpdateWrapper<DiningOrder>()
-                .eq(DiningOrder::getId, orderId)
-                .eq(DiningOrder::getStatus, DiningOrderStatus.ONGOING.getCode())
-                .set(DiningOrder::getStatus, DiningOrderStatus.FINISHED.getCode())
-                .set(DiningOrder::getShoppingList, snapshot)
-                .set(DiningOrder::getFinishedAt, finishedAt));
-        if (updated == 0) {
-            // 并发窗口：其他结束请求已提交 → 按幂等返回其快照；否则状态被异常改动，拒绝
-            DiningOrder latest = orderMapper.selectById(orderId);
-            if (latest != null && DiningOrderStatus.FINISHED.getCode().equals(latest.getStatus())) {
-                return toFinishVo(latest);
-            }
-            throw new CustomExceptions("点单状态已变更，请刷新后重试");
-        }
-        // 仅本次真正完成 ONGOING→FINISHED 流转才发通知：已结束幂等返回与并发窗口都不重复打扰全体成员
-        noticeService.publishTargeted(
-                NoticeType.DINING_FINISH,
-                "「" + order.getTitle() + "」已结束点单",
-                "购买清单已生成，点击查看",
-                buildOrderDeepLink(orderId, order.getJoinToken()),
-                listNoticeReceivers(orderId, order.getCreatorUserId(), null));
-        log.info("结束点单, orderId: {}, userId: {}, 选菜记录数: {}", orderId, userId, selections.size());
-        return new DiningOrderFinishVo()
-                .setId(orderId)
-                .setTitle(order.getTitle())
-                .setStatus(DiningOrderStatus.FINISHED.getCode())
-                .setFinishedAt(finishedAt)
-                .setShoppingList(snapshot);
     }
 
     private DiningOrderFinishVo toFinishVo(DiningOrder order) {
@@ -401,10 +546,47 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
                             .orderByAsc(DiningOrderMenu::getId))
                     .stream().map(DiningOrderMenu::getRecipeId).toList();
         }
-        if (CollectionUtils.isEmpty(from.getRecipeIds())) {
-            throw new CustomExceptions("本单菜单不能为空");
+        // 显式 recipeIds 为空 = 空草稿（合法），submit 时才校验菜单非空；
+        // 入参整体缺省时返回空列表，避免后续 stream 空指针
+        return CollectionUtils.isEmpty(from.getRecipeIds()) ? List.of() : from.getRecipeIds();
+    }
+
+    /** 仅 DRAFT 态可编辑本单菜单（加菜/移除），返回订单供调用方复用 */
+    private DiningOrder requireDraftOrder(Long orderId) {
+        DiningOrder order = this.getById(orderId);
+        if (order == null) {
+            throw new CustomExceptions("点单不存在");
         }
-        return from.getRecipeIds();
+        if (!DiningOrderStatus.DRAFT.getCode().equals(order.getStatus())) {
+            throw new CustomExceptions("点单已结束，不能编辑菜单");
+        }
+        return order;
+    }
+
+    /** 本单菜单是否已含该菜（幂等判定依据） */
+    private boolean isMenuDishExists(Long orderId, Long recipeId) {
+        Long count = menuMapper.selectCount(new LambdaQueryWrapper<DiningOrderMenu>()
+                .eq(DiningOrderMenu::getOrderId, orderId)
+                .eq(DiningOrderMenu::getRecipeId, recipeId));
+        return count != null && count > 0;
+    }
+
+    /**
+     * version 乐观并发闸门：条件 UPDATE（WHERE id=? AND version=? SET version=version+1）原子递增，
+     * 影响行数 0 = 客户端已知版本过期 → 业务错误码 409，客户端拉取最新详情后重放。
+     * 幂等命中的请求在闸门之前返回，不产生无谓版本递增。
+     */
+    private void casIncrementVersion(Long orderId, Long knownVersion) {
+        if (knownVersion == null) {
+            throw new CustomExceptions("已知版本号 version 不能为空");
+        }
+        int updated = orderMapper.update(null, new LambdaUpdateWrapper<DiningOrder>()
+                .eq(DiningOrder::getId, orderId)
+                .eq(DiningOrder::getVersion, knownVersion)
+                .setSql("version = version + 1"));
+        if (updated == 0) {
+            throw new CustomExceptions(VERSION_CONFLICT_CODE, "订单已被他人更新，请刷新后重试");
+        }
     }
 
     private boolean isMember(Long orderId, Long userId) {

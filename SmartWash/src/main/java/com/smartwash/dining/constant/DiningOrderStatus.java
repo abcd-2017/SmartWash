@@ -6,13 +6,15 @@ import java.util.Arrays;
 
 /**
  * 吃啥-点单订单状态。
- * ONGOING 进行中：可加入、可勾选/改备注/取消选菜（所有写操作均要求此状态）；
- * FINISHED 已结束：发起者锁定订单并生成购买清单快照（结束接口在 11 号票），此后拒绝一切选菜写入。
+ * 产品模型：菜单即已选清单，全员共同编辑，发起者一步「提交」→ 订单直接结束。
+ * DRAFT 草稿：编辑中——标题/菜单可空，全部成员可加/移除菜，可邀请加入；
+ * FINISHED 已结束：发起者提交并结束，已生成购买清单（食材）快照，此后拒绝一切写入。
+ * 迁移只允许 DRAFT→FINISHED（submit），无逆向。
  */
 @Getter
 public enum DiningOrderStatus {
 
-    ONGOING("ONGOING", "进行中"),
+    DRAFT("DRAFT", "草稿"),
 
     FINISHED("FINISHED", "已结束");
 
@@ -30,5 +32,10 @@ public enum DiningOrderStatus {
      */
     public static boolean isValid(String code) {
         return Arrays.stream(values()).anyMatch(s -> s.code.equals(code));
+    }
+
+    /** 是否允许加入（仅草稿可邀请加入，已结束拒绝）。 */
+    public static boolean isJoinable(String code) {
+        return DRAFT.code.equals(code);
     }
 }

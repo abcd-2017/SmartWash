@@ -8,29 +8,57 @@
 import {
   DINING_DEFAULT_CALORIE_TARGET,
   DiningIngredientTotal,
+  DiningMenuRecipe,
   DiningOrderBriefVo,
   DiningRecipeVo
 } from '../../network/vo/DiningVo'
 import { diningShoppingListFromJSON, DiningShoppingListSnapshot } from '../../network/vo/DiningVo'
 
 
-/** 点单订单状态全集（后端 dining_order.status 白名单；文案见 DiningText） */
+/**
+ * 点单订单状态全集（后端 dining_order.status 白名单；文案见 DiningText）。
+ * 契约（2026-11-18 协同点单改造）：DRAFT → FINISHED（发起者一步「提交」直接结束），
+ * 原 ONGOING 已移除，不再产生、不再消费。
+ */
 export enum DiningOrderStatus {
-  /** 进行中（可加入、可勾选/改备注/取消） */
-  ONGOING,
-  /** 已结束（发起者锁定并生成购买清单快照，拒绝一切选菜写入） */
+  /** 编辑中（标题/菜单可空，全员可加/移除菜、可邀请加入） */
+  DRAFT,
+  /** 已结束（发起者提交并生成购买清单快照，拒绝一切写入） */
   FINISHED
 }
 
 /**
- * 状态码 → 枚举；null/空白/白名单外脏数据按保守降级返回 FINISHED 档语义
- * （未知状态按「不可写」处理，交互与展示同 FINISHED——不引导用户对未知态下单）。
+ * 状态码 → 枚举；null/空白/白名单外脏数据（含历史 ONGOING）按保守降级返回 FINISHED 档语义
+ *（未知状态按「不可写」处理，交互与展示同 FINISHED——不引导用户对未知态下单）。
  */
 export function diningOrderStatusFromCode(code: string | null): DiningOrderStatus {
-  if (code === 'ONGOING') {
-    return DiningOrderStatus.ONGOING
+  if (code === 'DRAFT') {
+    return DiningOrderStatus.DRAFT
   }
   return DiningOrderStatus.FINISHED
+}
+
+/**
+ * 是否可加入（仅 DRAFT 允许成员凭凭证加入；FINISHED 与未知状态不可加入）。
+ */
+export function isDiningOrderJoinable(status: DiningOrderStatus): boolean {
+  return status === DiningOrderStatus.DRAFT
+}
+
+/** 端内加入深链 scheme + host + path 前缀（与壳层 DeepLinkRegistry 的 dining/order 契约同源） */
+const DINING_DEEP_LINK_PREFIX: string = 'smartwash://dining/order/'
+
+/**
+ * 构造端内加入深链（草稿期「邀请」复制到剪贴板的链接）：
+ * `smartwash://dining/order/{orderId}?t={joinToken}`。
+ * orderId 非正数或 token 空白返回 null（无凭证的链接无意义，页面降级提示）。
+ */
+export function buildDiningOrderDeepLink(orderId: number, joinToken: string): string | null {
+  const token = joinToken.trim()
+  if (orderId <= 0 || token.length === 0) {
+    return null
+  }
+  return DINING_DEEP_LINK_PREFIX + orderId + '?t=' + token
 }
 
 
@@ -192,9 +220,9 @@ export function parseDiningJoinUrl(raw: string | null): DiningJoinUrlParseResult
 
 /** 加入入口决策四态（对齐 Android DiningJoinEntryDecision） */
 export enum DiningJoinEntryDecision {
-  /** 已是成员：直达点单详情页 */
-  ENTER_DETAIL,
-  /** 非成员且订单进行中：展示确认加入 */
+  /** 已是成员：直达创建页（编辑态，详情页已按契约删除） */
+  ENTER_CREATE,
+  /** 非成员且订单草稿中：展示确认加入 */
   CONFIRM_JOIN,
   /** 订单已结束/状态未知：不引导加入 */
   ORDER_FINISHED,
@@ -245,9 +273,9 @@ export function decideDiningJoinEntry(brief: DiningOrderBriefVo | null): DiningJ
     return DiningJoinEntryDecision.BRIEF_UNAVAILABLE
   }
   if (brief.joined) {
-    return DiningJoinEntryDecision.ENTER_DETAIL
+    return DiningJoinEntryDecision.ENTER_CREATE
   }
-  if (diningOrderStatusFromCode(brief.status) === DiningOrderStatus.ONGOING) {
+  if (isDiningOrderJoinable(diningOrderStatusFromCode(brief.status))) {
     return DiningJoinEntryDecision.CONFIRM_JOIN
   }
   return DiningJoinEntryDecision.ORDER_FINISHED
@@ -315,6 +343,177 @@ export function validateDiningOrderReuse(title: string): DiningOrderFormValidati
 
 function invalidDiningOrderForm(error: DiningOrderFormError): DiningOrderFormValidation {
   return { valid: false, error: error, normalizedTitle: '', normalizedRecipeIds: [] }
+}
+
+
+// ========== 草稿菜单编辑状态机（对齐 Android DiningDraftMenuEditor，纯逻辑） ==========
+
+/** 一次菜单写操作（相对服务端真相的净差） */
+export interface DiningDraftOp {
+  recipeId: number
+  add: boolean
+}
+
+/**
+ * 草稿菜单编辑状态机（纯 ArkTS，无 UI/网络依赖，hypium 单测锚点）。
+ *
+ * 状态 = 草稿身份（orderId + joinToken）+ 服务端真相（serverVersion + serverMenu）
+ * + 未决操作（pending：recipeId → add/remove）。本地意图菜单由三者派生（localMenu）。
+ *
+ * 关键不变式：
+ * - 惰性创建：orderId 未落库（0）时只维护未决操作，写操作前由调用方先创建草稿；
+ * - 未决操作按「净差」记录（相对服务端真相）：反复切换同一道菜相互抵消，不产生冗余写；
+ *   写响应不回传新 version，成功后本地 +1；
+ * - 409 冲突：服务端快照只收敛「已被他人满足」的未决操作，其余保留随后重放；
+ * - 写失败（非冲突）：移除该未决操作，本地意图回滚到服务端真相 + 其余未决。
+ */
+export class DiningDraftMenuEditor {
+  /** 草稿订单 ID（0=未落库，写操作前需先创建） */
+  private orderIdValue: number = 0
+  /** 加入凭证（邀请链接 token 来源；仅发起者详情下发） */
+  private joinTokenValue: string = ''
+  /** 服务端最新 version（写操作携带的乐观并发基准） */
+  private serverVersionValue: number = 0
+  /** 服务端当前菜单（写差分基准） */
+  private serverMenuValue: Set<number> = new Set<number>()
+  /** 未决操作（recipeId → add/remove）；写成功移除，服务端快照收敛已被满足项 */
+  private pendingMap: Map<number, boolean> = new Map<number, boolean>()
+
+  /** 草稿是否已落库（未落库时写操作需先创建） */
+  get isCreated(): boolean {
+    return this.orderIdValue > 0
+  }
+
+  get orderId(): number {
+    return this.orderIdValue
+  }
+
+  get joinToken(): string {
+    return this.joinTokenValue
+  }
+
+  get serverVersion(): number {
+    return this.serverVersionValue
+  }
+
+  get serverMenu(): Set<number> {
+    return this.serverMenuValue
+  }
+
+  /** 本地意图菜单 = 服务端真相 + 未决加 - 未决移除 */
+  get localMenu(): Set<number> {
+    const result = new Set<number>()
+    this.serverMenuValue.forEach((recipeId: number): void => {
+      result.add(recipeId)
+    })
+    this.pendingMap.forEach((add: boolean, recipeId: number): void => {
+      if (add) {
+        result.add(recipeId)
+      } else {
+        result.delete(recipeId)
+      }
+    })
+    return result
+  }
+
+  /** 标记草稿已创建（惰性创建成功）：身份落库，服务端真相初始为空菜单 version=0 */
+  markCreated(orderId: number, joinToken: string): void {
+    this.orderIdValue = orderId
+    this.joinTokenValue = joinToken
+    this.serverVersionValue = 0
+    this.serverMenuValue = new Set<number>()
+    this.pendingMap = new Map<number, boolean>()
+  }
+
+  /** 首载/编辑模式进入：以服务端快照覆盖真相并清空未决（无本地未决操作） */
+  onInitialSnapshot(version: number, menu: Set<number>): void {
+    this.serverVersionValue = version
+    this.serverMenuValue = new Set<number>(menu)
+    this.pendingMap = new Map<number, boolean>()
+  }
+
+  /**
+   * 合并服务端快照（409 冲突刷新/轮询同步用）：收敛已被服务端满足的未决操作，
+   * 其余未决保留，返回需重放的差分。
+   */
+  onServerSnapshot(version: number, menu: Set<number>): Array<DiningDraftOp> {
+    this.serverVersionValue = version
+    this.serverMenuValue = new Set<number>(menu)
+    const satisfied: Array<number> = []
+    this.pendingMap.forEach((add: boolean, recipeId: number): void => {
+      if (add === menu.has(recipeId)) {
+        satisfied.push(recipeId)
+      }
+    })
+    satisfied.forEach((recipeId: number): void => {
+      this.pendingMap.delete(recipeId)
+    })
+    return this.pendingOps()
+  }
+
+  /** 用户切换一道菜：按净差记录未决（反复切换相互抵消，不产生冗余写） */
+  onToggle(recipeId: number): void {
+    const desired = !this.localMenu.has(recipeId)
+    const inServer = this.serverMenuValue.has(recipeId)
+    if (desired === inServer) {
+      this.pendingMap.delete(recipeId)
+      return
+    }
+    this.pendingMap.set(recipeId, desired)
+  }
+
+  /** 清空本地意图：撤销未决加，对服务端全部菜记未决移除 */
+  onClear(): void {
+    this.pendingMap = new Map<number, boolean>()
+    this.serverMenuValue.forEach((recipeId: number): void => {
+      this.pendingMap.set(recipeId, false)
+    })
+  }
+
+  /** 当前待写操作（未决首项；null=本地意图已与服务端一致） */
+  pendingOp(): DiningDraftOp | null {
+    const ops = this.pendingOps()
+    return ops.length > 0 ? ops[0] : null
+  }
+
+  /** 全部待写操作（先加后删、各自稳定排序） */
+  pendingOps(): Array<DiningDraftOp> {
+    const adds: Array<number> = []
+    const removes: Array<number> = []
+    this.pendingMap.forEach((add: boolean, recipeId: number): void => {
+      if (add) {
+        adds.push(recipeId)
+      } else {
+        removes.push(recipeId)
+      }
+    })
+    adds.sort((a: number, b: number): number => a - b)
+    removes.sort((a: number, b: number): number => a - b)
+    const result: Array<DiningDraftOp> = []
+    adds.forEach((recipeId: number): void => {
+      result.push({ recipeId: recipeId, add: true })
+    })
+    removes.forEach((recipeId: number): void => {
+      result.push({ recipeId: recipeId, add: false })
+    })
+    return result
+  }
+
+  /** 写成功：服务端真相前进一步（version+1 且菜单按操作落库），未决出队 */
+  onWriteSuccess(op: DiningDraftOp): void {
+    this.serverVersionValue += 1
+    if (op.add) {
+      this.serverMenuValue.add(op.recipeId)
+    } else {
+      this.serverMenuValue.delete(op.recipeId)
+    }
+    this.pendingMap.delete(op.recipeId)
+  }
+
+  /** 写失败（非冲突）：移除该未决操作，本地意图回滚到服务端真相 + 其余未决 */
+  onWriteFailure(op: DiningDraftOp): void {
+    this.pendingMap.delete(op.recipeId)
+  }
 }
 
 
@@ -501,6 +700,17 @@ export function groupDiningMenu(menu: Array<DiningMenuRecipeRow>,
 export interface DiningCategoryName {
   id: number
   name: string
+}
+
+/** 详情菜单 → 菜谱 ID 集合（过滤非法 ID，供草稿状态机快照/展示过滤） */
+export function diningMenuIdSet(menu: Array<DiningMenuRecipe>): Set<number> {
+  const ids = new Set<number>()
+  menu.forEach((row: DiningMenuRecipe): void => {
+    if (row.recipeId > 0) {
+      ids.add(row.recipeId)
+    }
+  })
+  return ids
 }
 
 /** 分类名查找：未命中给 fallback（「分类 {id}」兜底） */
@@ -714,6 +924,53 @@ export function formatDiningAmount(value: number | null): string | null {
     return `${rounded}`
   }
   return rounded.toFixed(1)
+}
+
+
+// ========== 菜谱步骤渲染清洗（TD24 对齐 Android DiningRecipeDetailPage.parseStepLines，同口径） ==========
+
+/** 步骤行类别：main = 主步骤（渲染自动序号）；sub = 子注解（缩进浅色不编号） */
+export enum DiningStepLineKind {
+  MAIN,
+  SUB
+}
+
+/** 步骤行解析产物（详情页渲染模型） */
+export interface DiningStepLine {
+  kind: DiningStepLineKind
+  text: string
+}
+
+/** 原文自带编号前缀（「1.」「2、」「3)」——HowToCook/CookLikeHOC 步骤文本常见），渲染层剥离避免双重编号 */
+const DINING_STEP_NO_PREFIX: RegExp = /^\d+[.、)）]\s*/
+/** markdown 加粗标记（HowToCook 原文加粗语法直接入库导致星号泄露渲染） */
+const DINING_STEP_BOLD_MARK: RegExp = /\*\*/g
+
+/**
+ * 步骤文本解析（TD24）：按行拆分 → 全局剥离 markdown「**」加粗标记 → 「-」开头行归
+ * 子注解（缩进浅色不编号）、其余行剥原文自带编号归主步骤（渲染层补序号，避免双重编号）。
+ * 转换器源头（TD25）已剥离「**」，渲染层保留清洗兼容存量数据。
+ * 纯函数无 UI 依赖，供详情页渲染与单测共用（与安卓 parseStepLines 同口径）。
+ */
+export function parseDiningStepLines(raw: string): Array<DiningStepLine> {
+  if (raw.length === 0) {
+    return []
+  }
+  const lines = raw.split('\n')
+  const result: Array<DiningStepLine> = []
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim()
+    if (trimmed.length === 0) {
+      continue
+    }
+    const cleaned = trimmed.replace(DINING_STEP_BOLD_MARK, '').trim()
+    if (cleaned.startsWith('-') || cleaned.startsWith('–') || cleaned.startsWith('—')) {
+      result.push({ kind: DiningStepLineKind.SUB, text: cleaned.replace(/^[-–—]+\s*/, '').trim() })
+    } else {
+      result.push({ kind: DiningStepLineKind.MAIN, text: cleaned.replace(DINING_STEP_NO_PREFIX, '').trim() })
+    }
+  }
+  return result
 }
 
 

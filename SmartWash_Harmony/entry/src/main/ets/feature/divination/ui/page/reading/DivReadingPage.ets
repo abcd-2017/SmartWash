@@ -32,7 +32,8 @@ import {
 import { DivRichText } from '../../components/DivRichText'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
-import { DesignDimens } from '../../../../../constant/DesignSystem'
+import { DesignDimens, MotionTiming } from '../../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../../utils/ReduceMotion'
 import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
 import { logger } from '../../../../../utils/Logger'
@@ -503,6 +504,9 @@ struct DivReadingPage {
                 .width('100%')
                 .padding({ top: 24, bottom: 24 })
                 .alignItems(HorizontalAlign.Center)
+                // 解读三态交叉淡变 200ms LinearOutSlowIn（对齐安卓 Crossfade(200)），reduced 降 180ms
+                .transition(TransitionEffect.OPACITY)
+                .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
               }
             } else if (this.readingState === 'error' && this.streamingMd.length === 0) {
               DivCard() {
@@ -544,6 +548,9 @@ struct DivReadingPage {
                 .width('100%')
                 .padding({ top: 24, bottom: 24 })
                 .alignItems(HorizontalAlign.Center)
+                // 解读三态交叉淡变 200ms LinearOutSlowIn（对齐安卓 Crossfade(200)），reduced 降 180ms
+                .transition(TransitionEffect.OPACITY)
+                .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
               }
             } else if (this.streamingMd.length > 0) {
               // 章节卡列表（`## ` 标题切段；无标题 hasTitles=false 时整文单卡兜底；
@@ -610,6 +617,9 @@ struct DivReadingPage {
                 }
               }
               .width('100%')
+              // 解读三态交叉淡变 200ms LinearOutSlowIn（对齐安卓 Crossfade(200)），reduced 降 180ms
+              .transition(TransitionEffect.OPACITY)
+              .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
 
               // 反馈区直显（对齐安卓 FeedbackRow 无入口按钮，compare-15 #36）
               if (this.readingState === 'success' && this.interpretationId > 0) {

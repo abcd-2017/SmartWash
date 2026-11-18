@@ -35,7 +35,8 @@ import {
   DIV_PAGE_PADDING
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
-import { DesignDimens, DesignElevation, MotionTiming } from '../../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, MotionAlpha, MotionScale, MotionTiming } from '../../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../../utils/ReduceMotion'
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { pathStack, getStringParam } from '../../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
@@ -398,7 +399,8 @@ struct DivAskPage {
           }
           .width('100%')
           .opacity(this.safetyBlocked ? 1 : 0)
-          .animation({ duration: 180, curve: Curve.EaseInOut })
+          // 表单↔高风险分流整页交叉淡变 200ms LinearOutSlowIn（对齐安卓 Crossfade(200)），reduced 降 180ms
+          .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
           .hitTestBehavior(this.safetyBlocked ? HitTestMode.Default : HitTestMode.None)
 
           // 问事表单层
@@ -552,7 +554,8 @@ struct DivAskPage {
           }
           .width('100%')
           .opacity(this.safetyBlocked ? 0 : 1)
-          .animation({ duration: 180, curve: Curve.EaseInOut })
+          // 表单↔高风险分流整页交叉淡变 200ms LinearOutSlowIn（对齐安卓 Crossfade(200)），reduced 降 180ms
+          .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
           .hitTestBehavior(this.safetyBlocked ? HitTestMode.None : HitTestMode.Default)
         }
         .width('100%')
@@ -571,6 +574,12 @@ struct ManualOption {
   @Event onAction: () => void = () => {
   }
   @Local pressed: boolean = false
+  // reduced motion：按压取消缩放改 alpha 0.86（规范 §8）
+  @Local reduceMotion: boolean = false
+
+  aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
+  }
 
   build() {
     Column() {
@@ -595,7 +604,13 @@ struct ManualOption {
       color: this.selected ? DivPalette.goldLine : DivPalette.hair,
       radius: 10
     })
-    .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
+    // 按压 100ms FastOutSlowIn scale 0.97（对齐安卓 pressable）；reduced motion 改 alpha 0.86
+    .scale({
+      x: !this.reduceMotion && this.pressed ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.pressed ? MotionScale.Press : 1
+    })
+    .opacity(this.reduceMotion && this.pressed ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressed = true

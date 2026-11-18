@@ -37,7 +37,18 @@ CSV_COLUMNS = [
     "分类名", "菜名", "食材名列表", "食材明细列表", "步骤",
     "封面对象键", "封面链接",
     "热量每100g", "整份热量", "蛋白质g", "脂肪g", "碳水g", "钠mg",
+    "唯一标识",
 ]
+
+# 来源键前缀：判重唯一标识 = <前缀>_<菜名>，与后端 source_key 列/目录名同口径
+SOURCE_PREFIX_HOC = "hoc"
+SOURCE_PREFIX_HTC = "htc"
+
+
+def make_source_key(prefix: str, name: str) -> str:
+    """来源键：hoc_/htc_ 前缀 + 规范化菜名，截到 64 字符（与 DB source_key 列宽对齐）。"""
+    normalized = re.sub(r"[\s/\\]+", "_", name.strip()).strip("_")
+    return f"{prefix}_{normalized}"[:64]
 
 # HowToCook 分类 → 吃啥分类名（与 CookLikeHOC 分类合并同名，condiment 并入酱料）
 HOWTOCOOK_CATEGORY_MAP = {
@@ -291,12 +302,13 @@ def parse_nutrition_table(section_lines):
 
 
 def join_steps(section_lines):
-    """步骤节 → 多行文本（保留序号）。"""
+    """步骤节 → 多行文本（保留序号；剥离 markdown 加粗标记，TD25：源头清洗防 ** 星号泄露渲染）。"""
     steps = []
     for line in section_lines:
         s = line.strip()
         if not s or s.startswith(("<!--", "```")):
             continue
+        s = s.replace("**", "")
         steps.append(s)
     return "\n".join(steps)[:MAX_STEPS]
 
@@ -562,11 +574,21 @@ CATEGORY_CN = {"MAIN": "主料", "AUX": "辅料", "SEASONING": "调料", "OTHER"
 def write_csvs(out_dir, hoc_recipes, htc_recipes, all_ingredients):
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    def rows_of(recipes):
+    def rows_of(recipes, source_prefix):
         rows = []
+        seen_keys = set()
         for r in recipes:
-            # 无实拍图 → 分类占位图兜底（PS 生成，category_<分类名>.png），四端展示不空窗
-            cover = r["coverKey"] or f"dining/covers/category_{r['category']}.png"
+            # 无实拍图 → 对象键留空（TD26）：端上回落「浅绿底 + 菜名首字」占位；
+            # 旧方案落分类占位图（category_*.png）缩小后语义不清且红白色跳出绿系，已废弃
+            cover = r["coverKey"] or ""
+            source_key = make_source_key(source_prefix, r["name"])
+            # 同源同名变体（源仓库存在，如「农家小炒肉（玉耳版本）」）：加序号后缀保唯一，不去重
+            if source_key in seen_keys:
+                seq = 2
+                while f"{source_key}_{seq}" in seen_keys:
+                    seq += 1
+                source_key = f"{source_key}_{seq}"
+            seen_keys.add(source_key)
             rows.append({
                 "分类名": r["category"],
                 "菜名": r["name"],
@@ -581,19 +603,20 @@ def write_csvs(out_dir, hoc_recipes, htc_recipes, all_ingredients):
                 "脂肪g": r["fat"] if r["fat"] is not None else "",
                 "碳水g": r["carbs"] if r["carbs"] is not None else "",
                 "钠mg": r["sodium"] if r["sodium"] is not None else "",
+                "唯一标识": source_key,
             })
         return rows
 
-    def write_one(filename, recipes):
+    def write_one(filename, recipes, source_prefix):
         path = out_dir / filename
         with path.open("w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
             writer.writeheader()
-            writer.writerows(rows_of(recipes))
+            writer.writerows(rows_of(recipes, source_prefix))
         return path
 
-    p1 = write_one("cooklikehoc.csv", hoc_recipes)
-    p2 = write_one("howtocook.csv", htc_recipes)
+    p1 = write_one("cooklikehoc.csv", hoc_recipes, SOURCE_PREFIX_HOC)
+    p2 = write_one("howtocook.csv", htc_recipes, SOURCE_PREFIX_HTC)
 
     ing_path = out_dir / "ingredients.csv"
     with ing_path.open("w", encoding="utf-8-sig", newline="") as f:
@@ -606,58 +629,8 @@ def write_csvs(out_dir, hoc_recipes, htc_recipes, all_ingredients):
     return p1, p2, ing_path
 
 
-def write_migration_sql(out_dir):
-    sql = """-- 吃啥配料库 + 营养列 迁移脚本（幂等，MySQL 8）
--- 用法：mysql -u<user> -p smartwash < static/dining/migration.sql
--- 说明：MySQL 8 不支持 ADD COLUMN IF NOT EXISTS，用 information_schema 条件拼 SQL 实现幂等。
-
--- 1) 配料库两表（CREATE TABLE IF NOT EXISTS 天然幂等）
-CREATE TABLE IF NOT EXISTS `dining_ingredient` (
-  `id`         BIGINT      NOT NULL AUTO_INCREMENT COMMENT '配料 ID',
-  `name`       VARCHAR(32) NOT NULL COMMENT '配料名（唯一；供应商信息不入库）',
-  `category`   VARCHAR(16) NOT NULL DEFAULT 'OTHER' COMMENT '配料分类：MAIN=主料/AUX=辅料/SEASONING=调料/OTHER=其他',
-  `created_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-配料库';
-
-CREATE TABLE IF NOT EXISTS `dining_recipe_ingredient` (
-  `id`            BIGINT        NOT NULL AUTO_INCREMENT COMMENT '关联 ID',
-  `recipe_id`     BIGINT        NOT NULL COMMENT '菜谱 ID(dining_recipe.id)',
-  `ingredient_id` BIGINT        NOT NULL COMMENT '配料 ID(dining_ingredient.id)',
-  `amount_value`  DECIMAL(10,2) NULL COMMENT '数量数值（如 575g -> 575），NULL=来源未给出',
-  `amount_unit`   VARCHAR(16)   NULL COMMENT '单位（g/kg/ml/L/个/根/片/包/勺等），NULL=未给出',
-  `created_at`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_at`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_recipe_ingredient` (`recipe_id`,`ingredient_id`),
-  KEY `idx_ingredient` (`ingredient_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-菜谱配料关联（买菜清单聚合依据）';
-
--- 2) dining_recipe 营养列（存在即跳过）
-SET @schema := DATABASE();
-SET @add := (
-  SELECT CONCAT('ALTER TABLE `dining_recipe` ',
-    CONCAT_WS(', ',
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='calories_per_100g'), 'ADD COLUMN `calories_per_100g` DECIMAL(8,2) NULL COMMENT \'热量 Kcal/100g（CookLikeHOC 营养表口径）\'', NULL),
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='calories_total'), 'ADD COLUMN `calories_total` DECIMAL(10,2) NULL COMMENT \'整份估算热量 Kcal（HowToCook 预估卡路里口径）\'', NULL),
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='protein_g'), 'ADD COLUMN `protein_g` DECIMAL(6,2) NULL COMMENT \'蛋白质 g/100g\'', NULL),
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='fat_g'), 'ADD COLUMN `fat_g` DECIMAL(6,2) NULL COMMENT \'脂肪 g/100g\'', NULL),
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='carbs_g'), 'ADD COLUMN `carbs_g` DECIMAL(6,2) NULL COMMENT \'碳水化合物 g/100g\'', NULL),
-      IF(NOT EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@schema AND TABLE_NAME='dining_recipe' AND COLUMN_NAME='sodium_mg'), 'ADD COLUMN `sodium_mg` DECIMAL(8,2) NULL COMMENT \'钠 mg/100g\'', NULL)
-    ))
-);
-SET @stmt := IF(@add IS NOT NULL AND @add <> '', @add, 'SELECT ''dining_recipe 营养列已存在，跳过''');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-"""
-    path = out_dir / "migration.sql"
-    path.write_text(sql, encoding="utf-8")
-    return path
-
-
 def write_readme(out_dir, stats):
-    readme = f"""# 吃啥菜谱库导入材料（本目录不入库，含无 LICENSE 内容）
+    readme = f"""# 吃啥菜谱库导入材料（非商用项目使用；CookLikeHOC 部分无 LICENSE，禁止任何商业用途）
 
 生成时间：{stats['generated_at']}
 来源：CookLikeHOC（无 LICENSE，仅本地使用）× HowToCook（Public Domain）
@@ -666,24 +639,23 @@ def write_readme(out_dir, stats):
 
 | 文件 | 说明 |
 |---|---|
-| cooklikehoc.csv | {stats['hoc_rows']} 行（15 分类 + 酱料），营养表口径 |
-| howtocook.csv | {stats['htc_rows']} 行（10 分类），整份热量口径 |
+| cooklikehoc.csv | {stats['hoc_rows']} 行（15 分类 + 酱料），营养表口径，含「唯一标识」列（hoc_ 前缀） |
+| howtocook.csv | {stats['htc_rows']} 行（10 分类），整份热量口径，含「唯一标识」列（htc_ 前缀） |
 | ingredients.csv | {stats['ingredient_count']} 个配料（核对用，导入自动注册为主） |
-| migration.sql | 幂等迁移脚本（配料两表 + 菜谱营养 6 列） |
 | covers/ | {stats['cover_count']} 张封面图（CookLikeHOC 原名 / HowToCook htc_ 前缀） |
 
 ## 导入步骤
 
-1. **先跑迁移**：`mysql -u<user> -p <库名> < static/dining/migration.sql`
-2. **Web 后台 → 吃啥管理 → 菜谱导入**：上传 cooklikehoc.csv → 预览核对 → 确认导入（≤500 行/文件，两个文件分别导入）
-3. 同法导入 howtocook.csv
-4. **封面**：本目录 covers/ 的图已由脚本直传 MinIO（若上传脚本已执行）；否则在 Web 后台菜谱编辑中逐张上传（对象键规则 `dining/covers/<文件名>`）
-5. **校验**：菜谱库抽查营养徽标与封面；发起一单试算买菜清单聚合与人均卡路里
+1. **迁移脚本人工维护**（转换器不再生成）：`static/dining/migration.sql`，结构变更后手工执行
+2. **Web 后台 → 吃啥管理**：文件导入上传 CSV，或目录导入选本目录（csv + image/）；唯一标识命中 = 幂等更新，重复导入不堆重复菜
+3. **封面**：本目录 covers/ 的图已由脚本直传 MinIO（若上传脚本已执行）；否则在 Web 后台菜谱编辑中逐张上传（对象键规则 `dining/covers/<文件名>`）
+4. **校验**：菜谱库抽查营养徽标与封面；发起一单试算买菜清单聚合与人均卡路里
 
 ## 口径说明
 
 - 一份热量 = 整份热量（HowToCook）?: 热量每100g × 250g（份量假设）
 - 买菜清单按（配料名, 归一单位）聚合求和；无用量配料仅按名去重
+- 唯一标识（source_key）：hoc_/htc_ 前缀 + 菜名，重复导入按它判重（优先）；无该列的旧 CSV 按（菜名, 分类）兜底
 """
     path = out_dir / "README.md"
     path.write_text(readme, encoding="utf-8")
@@ -725,7 +697,6 @@ def main():
     }
 
     p1, p2, p3 = write_csvs(out_dir, hoc_recipes, htc_recipes, all_ingredients)
-    p4 = write_migration_sql(out_dir)
     p5 = write_readme(out_dir, stats)
 
     # 行数约束检查（导入器 500 行上限）
@@ -738,7 +709,6 @@ def main():
     print(f"[完成] CookLikeHOC {stats['hoc_rows']} 行（营养表 {kcal100} 行）→ {p1}")
     print(f"[完成] HowToCook {stats['htc_rows']} 行（整份热量 {kcal_total} 行）→ {p2}")
     print(f"[完成] 配料 {stats['ingredient_count']} 个 → {p3}")
-    print(f"[完成] 迁移脚本 → {p4}")
     print(f"[完成] 封面 {stats['cover_count']} 张 → {covers_dir}")
     print(f"[完成] 导入说明 → {p5}")
 

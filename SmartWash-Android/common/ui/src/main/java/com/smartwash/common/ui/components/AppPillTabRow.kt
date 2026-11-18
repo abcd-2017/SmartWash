@@ -44,7 +44,7 @@ import com.smartwash.common.utils.selectedColor
  * 与 [AppTabBar] 的分工：本组件是"胶囊分段"形态（选中项有底色胶囊），
  * AppTabBar 是"下划线指示条"形态。页面按设计稿二选一。
  *
- * 动效：选中底色 / 文字色走 [selectedColor]（200ms 档弹簧，reduced motion 自动降级
+ * 动效：选中底色 / 文字色走 [selectedColor]（临界阻尼弹簧 1.0/350，reduced motion 自动降级
  * 180ms 纯颜色过渡）；字重统一为 SemiBold——字重渐变会让文字宽度在动画期间持续变化，
  * 在可横滚 Row 里表现为兄弟节点连续位移，观感差于一次跳变，故不做字重动画。
  * 不引入背景滑块动画（颜色过渡已足够表达选中位移）。

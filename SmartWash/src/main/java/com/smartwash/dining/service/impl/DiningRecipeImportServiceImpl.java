@@ -5,6 +5,7 @@ import cn.hutool.core.text.csv.CsvReadConfig;
 import cn.hutool.core.text.csv.CsvRow;
 import cn.hutool.core.text.csv.CsvUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.smartwash.config.MinioConfig;
 import com.smartwash.dining.entity.DiningCategory;
 import com.smartwash.dining.entity.DiningIngredient;
@@ -49,14 +50,19 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * 菜谱批量导入服务实现（03 号票 + 契约 §3.2 v2 扩展）。
@@ -76,6 +82,11 @@ import java.util.regex.Pattern;
  * 冲掉后台人工修正）+ 写 dining_recipe_ingredient 关联（明细优先带数量，名列表补充）；
  * ③营养 6 列写入 recipe；④封面对象键校验 dining/covers/ 前缀 + MinIO statObject 存在性
  * （存储缺失仅行级警告不阻断、该行封面不落库，避免端上挂空直链）。</p>
+ *
+ * <p>幂等判重（source_key 唯一标识）：可选列「唯一标识」，判重顺序 = 行 source_key 非空按 key 查
+ * →（菜名,分类）兜底查；命中即幂等更新既有菜谱（显式刷新内容列 + 重建配料关联，保留
+ * id/created_at/status/source/创建人——不静默改上下架，对齐游戏模块热修语义），未命中新增。
+ * 存量未标识菜谱靠重导按兜底键命中回填 source_key；同批内重复 source_key 为行级错误（全批回滚）。</p>
  *
  * <p>取舍说明：封面链接列仅做格式校验，导入不落库（dining_recipe.cover_object_key 存
  * MinIO 对象键，外部 URL 无法当对象键直链拼装，导入时批量下载外部图片又引入 SSRF 风险）——
@@ -107,12 +118,13 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
     private static final String COL_FAT = "脂肪g";
     private static final String COL_CARBS = "碳水g";
     private static final String COL_SODIUM = "钠mg";
+    private static final String COL_SOURCE_KEY = "唯一标识";
 
     /** 模板列顺序（导出用；解析按列名匹配，与该顺序无关） */
     private static final String[] TEMPLATE_COLUMNS = {
             COL_CATEGORY, COL_NAME, COL_INGREDIENTS, COL_INGREDIENT_DETAILS, COL_STEPS,
             COL_COVER_KEY, COL_COVER, COL_CALORIES_PER_100G, COL_CALORIES_TOTAL,
-            COL_PROTEIN, COL_FAT, COL_CARBS, COL_SODIUM
+            COL_PROTEIN, COL_FAT, COL_CARBS, COL_SODIUM, COL_SOURCE_KEY
     };
 
     /** 食材名分隔符：顿号 / 中文逗号 / 英文逗号 / 中英文分号均兼容（模板填写说明同步声明） */
@@ -146,6 +158,7 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
     private static final int STEPS_MAX = 20000;
     private static final int COVER_MAX = 500;
     private static final int COVER_KEY_MAX = 255;
+    private static final int SOURCE_KEY_MAX = 64;
 
     /** 营养列上限（对齐 DB 列精度：DECIMAL(8,2)/(10,2)/(6,2)，防入库截断异常） */
     private static final BigDecimal NUTRITION_MAX_PER_100G = new BigDecimal("999999.99");
@@ -196,6 +209,7 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
             sheet.getRow(1).createCell(2).setCellValue("西红柿、鸡蛋、葱");
             sheet.getRow(1).createCell(3).setCellValue("鸡蛋:575g、西红柿:1800g、葱:2根");
             sheet.getRow(1).createCell(4).setCellValue("1. 打蛋调匀\n2. 热锅下油炒蛋\n3. 下西红柿翻匀出锅");
+            sheet.getRow(1).createCell(13).setCellValue("hoc_0001");
             sheet.createRow(2).createCell(1).setCellValue("凉拌黄瓜");
             sheet.getRow(2).createCell(2).setCellValue("黄瓜；蒜");
             sheet.getRow(2).createCell(4).setCellValue("黄瓜拍碎，加蒜拌匀");
@@ -209,6 +223,7 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
                     "填写说明：每行一道菜；食材之间用顿号、逗号或分号分隔；"
                             + "分类不存在将自动创建（也可先在「分类管理」页创建，留空为未分类）；"
                             + "封面链接当前版本仅校验格式不导入（封面请用「封面对象键」列或在导入后于本页单独上传）；"
+                            + "同一菜谱重复导入（同唯一标识或同菜名同分类）会更新库内菜谱而非重复新增；"
                             + "单次最多导入 500 行。");
             String[] columnTips = {
                     "分类名（可空=未分类）：不存在将自动创建，也可先在「分类管理」页创建",
@@ -226,6 +241,8 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
                     "脂肪g（可空）：g/100g，数值",
                     "碳水g（可空）：g/100g，数值",
                     "钠mg（可空）：mg/100g，数值",
+                    "唯一标识（可空）：同菜谱重导/目录上传的幂等判重键（如 hoc_0001），最长 64 字；"
+                            + "非空按标识查重命中即更新（未命中再按 菜名+分类 兜底）；同批内不允许重复",
             };
             for (int i = 0; i < columnTips.length; i++) {
                 explain.createRow(i + 1).createCell(0).setCellValue(columnTips[i]);
@@ -259,20 +276,43 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         }
         Map<String, Long> categoryIdByName = loadCategoryIdByName();
         Map<String, Boolean> coverKeyCache = new HashMap<>();
-        DiningRecipeImportPreviewVo vo = new DiningRecipeImportPreviewVo()
-                .setRows(new ArrayList<>());
-        int validCount = 0;
-        int errorCount = 0;
+        List<ParsedRow> parsedRows = new ArrayList<>();
         int rowIndex = 1; // 表头占第 1 行
         for (List<String> row : dataRows) {
             rowIndex++;
             if (isBlankRow(row)) {
                 continue; // 全空行跳过（行号仍按物理行号递增，与 Excel 打开看到的行号一致）
             }
-            ParsedRow parsed = parseTableRow(rowIndex, row, columnMap, coverKeyCache);
-            vo.getRows().add(toPreviewRow(parsed, categoryIdByName));
+            parsedRows.add(parseTableRow(rowIndex, row, columnMap, coverKeyCache));
+        }
+        // 幂等判重（只读不落库）：同批重复 source_key 行级报错；既有菜谱命中标注「更新」
+        markBatchDuplicateSourceKeys(parsedRows);
+        Map<String, DiningRecipe> existingBySourceKey = loadExistingBySourceKeys(sourceKeysOf(parsedRows));
+        List<DiningRecipe> existingByName = loadExistingByNames(namesOf(parsedRows));
+
+        DiningRecipeImportPreviewVo vo = new DiningRecipeImportPreviewVo()
+                .setRows(new ArrayList<>());
+        int validCount = 0;
+        int errorCount = 0;
+        int newCount = 0;
+        int updateCount = 0;
+        for (ParsedRow parsed : parsedRows) {
+            // 预览期分类解析：已存在的分类回填 id（兜底判重依据）；不存在的分类确认时才自动创建，
+            // 库内不可能有挂在该分类下的菜谱 → 兜底禁用，该行必为新增
+            parsed.categoryId = parsed.categoryName == null ? null : categoryIdByName.get(parsed.categoryName);
+            if (parsed.categoryName != null && parsed.categoryId == null) {
+                parsed.warnings.add("分类「" + parsed.categoryName + "」不存在，确认导入时将自动创建");
+            }
+            boolean categoryResolvable = parsed.categoryName == null || parsed.categoryId != null;
+            DiningRecipe existing = resolveExistingRecipe(parsed, existingBySourceKey, existingByName, categoryResolvable);
+            vo.getRows().add(toPreviewRow(parsed, existing));
             if (parsed.errors.isEmpty()) {
                 validCount++;
+                if (existing == null) {
+                    newCount++;
+                } else {
+                    updateCount++;
+                }
             } else {
                 errorCount++;
             }
@@ -280,6 +320,8 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         vo.setTotal(vo.getRows().size());
         vo.setValidCount(validCount);
         vo.setErrorCount(errorCount);
+        vo.setNewCount(newCount);
+        vo.setUpdateCount(updateCount);
         return vo;
     }
 
@@ -299,11 +341,15 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         // 确认阶段重新逐行校验（防绕过预览直接提交；预览与确认之间分类/封面存储可能变化）
         Map<String, Boolean> coverKeyCache = new HashMap<>();
         List<ParsedRow> parsedRows = new ArrayList<>(rows.size());
+        for (DiningRecipeImportConfirmFrom.Row row : rows) {
+            parsedRows.add(parseConfirmRow(row, coverKeyCache));
+        }
+        // 同批重复 source_key 为行级错误（幂等键必须一行一个，命中更新语义才成立）
+        markBatchDuplicateSourceKeys(parsedRows);
+
         List<DiningRecipeImportResultVo.ResultRow> reportRows = new ArrayList<>(rows.size());
         boolean anyFailed = false;
-        for (DiningRecipeImportConfirmFrom.Row row : rows) {
-            ParsedRow parsed = parseConfirmRow(row, coverKeyCache);
-            parsedRows.add(parsed);
+        for (ParsedRow parsed : parsedRows) {
             DiningRecipeImportResultVo.ResultRow reportRow = new DiningRecipeImportResultVo.ResultRow()
                     .setRowNo(parsed.rowNo).setName(parsed.name);
             if (!parsed.errors.isEmpty()) {
@@ -330,7 +376,8 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         }
 
         // 主数据准备：分类自动创建（sort 递增）→ 配料按名 upsert（本批内缓存，天然幂等）；
-        // 两步都可能产生行级警告（自动创建/复用），先同步进逐行报告再落库
+        // 两步都可能产生行级警告（自动创建/复用），先同步进逐行报告再落库；
+        // 分类就位后（含自动创建的新分类）再做幂等判重，兜底键（菜名,分类）才有准确 categoryId
         ensureCategories(parsedRows);
         Map<String, Long> ingredientIdByName = ensureIngredients(parsedRows);
         for (int i = 0; i < parsedRows.size(); i++) {
@@ -338,23 +385,45 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
             reportRows.get(i).setWarnings(parsed.warnings.isEmpty() ? null : parsed.warnings);
         }
 
+        Map<String, DiningRecipe> existingBySourceKey = loadExistingBySourceKeys(sourceKeysOf(parsedRows));
+        List<DiningRecipe> existingByName = loadExistingByNames(namesOf(parsedRows));
+
         int successCount = 0;
+        int createdCount = 0;
+        int updatedCount = 0;
         for (int i = 0; i < parsedRows.size(); i++) {
             ParsedRow parsed = parsedRows.get(i);
-            DiningRecipe recipe = buildRecipe(parsed);
-            diningRecipeMapper.insert(recipe);
-            for (DiningRecipeIngredient relation : buildRelations(recipe.getId(), parsed, ingredientIdByName)) {
-                diningRecipeIngredientMapper.insert(relation);
+            DiningRecipe existing = resolveExistingRecipe(parsed, existingBySourceKey, existingByName, true);
+            DiningRecipeImportResultVo.ResultRow reportRow = reportRows.get(i);
+            if (existing == null) {
+                DiningRecipe recipe = buildRecipe(parsed);
+                diningRecipeMapper.insert(recipe);
+                for (DiningRecipeIngredient relation : buildRelations(recipe.getId(), parsed, ingredientIdByName)) {
+                    diningRecipeIngredientMapper.insert(relation);
+                }
+                reportRow.setRecipeId(recipe.getId()).setIsNew(true).setExistsKind(EXISTS_KIND_CREATE);
+                createdCount++;
+            } else {
+                // 幂等更新：显式刷新内容列 + 重建配料关联，保留 id/created_at/status/source/创建人
+                applyUpdate(existing, parsed);
+                diningRecipeIngredientMapper.delete(new LambdaQueryWrapper<DiningRecipeIngredient>()
+                        .eq(DiningRecipeIngredient::getRecipeId, existing.getId()));
+                for (DiningRecipeIngredient relation : buildRelations(existing.getId(), parsed, ingredientIdByName)) {
+                    diningRecipeIngredientMapper.insert(relation);
+                }
+                reportRow.setRecipeId(existing.getId()).setIsNew(false).setExistsKind(EXISTS_KIND_UPDATE);
+                updatedCount++;
             }
-            reportRows.get(i).setRecipeId(recipe.getId());
             successCount++;
         }
-        vo.setRolledBack(false).setSuccessCount(successCount).setFailedCount(0);
-        log.info("菜谱批量导入完成, 总数: {}, 成功: {}", rows.size(), successCount);
+        vo.setRolledBack(false).setSuccessCount(successCount).setFailedCount(0)
+                .setCreatedCount(createdCount).setUpdatedCount(updatedCount);
+        log.info("菜谱批量导入完成, 总数: {}, 成功: {}, 新增: {}, 更新: {}",
+                rows.size(), successCount, createdCount, updatedCount);
         return vo;
     }
 
-    /** 校验通过 → 构造落库实体（source=ADMIN、默认上架、创建管理员、食材 JSON 双写 + 营养 6 列 + 封面对象键） */
+    /** 校验通过 → 构造落库实体（source=ADMIN、默认上架、创建管理员、食材 JSON 双写 + 营养 6 列 + 封面对象键 + 唯一标识） */
     private DiningRecipe buildRecipe(ParsedRow parsed) {
         DiningRecipe recipe = new DiningRecipe();
         recipe.setName(parsed.name);
@@ -367,12 +436,151 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         recipe.setFatG(parsed.fatG);
         recipe.setCarbsG(parsed.carbsG);
         recipe.setSodiumMg(parsed.sodiumMg);
+        recipe.setSourceKey(parsed.sourceKey);
         // 封面对象键仅在 MinIO 中真实存在才落库（缺失场景已给行级警告），避免端上拿到挂空直链
         recipe.setCoverObjectKey(parsed.coverKeyExists ? parsed.coverObjectKey : null);
         recipe.setSource(SOURCE_ADMIN);
         recipe.setStatus(DiningRecipe.STATUS_ON_SHELF);
         recipe.setCreatedByAdminId(currentAdminId());
         return recipe;
+    }
+
+    /**
+     * 幂等更新既有菜谱（source_key/（菜名,分类）判重命中）：显式 SET 刷新内容列（可空列置空，
+     * 对齐「导入内容即权威快照」语义），保留 id/created_at/status/source/创建人——不静默改上下架，
+     * 对齐游戏模块关卡批量导入热修语义。
+     */
+    private void applyUpdate(DiningRecipe existing, ParsedRow parsed) {
+        diningRecipeMapper.update(null, new LambdaUpdateWrapper<DiningRecipe>()
+                .eq(DiningRecipe::getId, existing.getId())
+                .set(DiningRecipe::getName, parsed.name)
+                .set(DiningRecipe::getCategoryId, parsed.categoryId)
+                .set(DiningRecipe::getIngredients,
+                        parsed.ingredients.isEmpty() ? null : JsonUtils.toJson(parsed.ingredients))
+                .set(DiningRecipe::getSteps, parsed.steps)
+                .set(DiningRecipe::getCoverObjectKey, parsed.coverKeyExists ? parsed.coverObjectKey : null)
+                .set(DiningRecipe::getCaloriesPer100g, parsed.caloriesPer100g)
+                .set(DiningRecipe::getCaloriesTotal, parsed.caloriesTotal)
+                .set(DiningRecipe::getProteinG, parsed.proteinG)
+                .set(DiningRecipe::getFatG, parsed.fatG)
+                .set(DiningRecipe::getCarbsG, parsed.carbsG)
+                .set(DiningRecipe::getSodiumMg, parsed.sodiumMg)
+                // 行未带标识时保留既有 source_key（旧 CSV 重导不清空已回填的标识）
+                .set(DiningRecipe::getSourceKey,
+                        parsed.sourceKey != null ? parsed.sourceKey : existing.getSourceKey())
+                .set(DiningRecipe::getUpdatedAt, LocalDateTime.now()));
+    }
+
+    // ==================== 幂等判重（source_key 优先 →（菜名,分类）兜底） ====================
+
+    /** 同批内重复 source_key 行级报错（幂等键必须一行一个）：全部重复行标错，任一错误即全批回滚 */
+    private void markBatchDuplicateSourceKeys(List<ParsedRow> parsedRows) {
+        Map<String, Long> keyCounts = parsedRows.stream()
+                .filter(p -> p.sourceKey != null)
+                .collect(Collectors.groupingBy(p -> p.sourceKey, Collectors.counting()));
+        for (ParsedRow parsed : parsedRows) {
+            if (parsed.sourceKey != null && keyCounts.get(parsed.sourceKey) > 1) {
+                parsed.errors.add("唯一标识「" + parsed.sourceKey + "」在本批内重复，请修正后重新导入");
+            }
+        }
+    }
+
+    /**
+     * 幂等判重解析（预览与确认同一套规则）：
+     * ① 行 source_key 非空按 key 查（命中即更新——key 已在库中按幂等语义处理，不是错误）；
+     * ② 未命中再按（菜名,分类）兜底查——存量未标识菜谱靠该兜底命中回填 key；
+     * ③ 两级未命中时按「仅菜名且库内唯一」宽松兜底——覆盖分类改名场景（历史「配料」→ CSV
+     *    「酱料」：旧分类下已有菜，新分类确认时才创建，（菜名,新分类）两级键必然不命中，
+     *    无本级则整类存量菜被误判新增重复入库）。多道同名时存在歧义，保守不命中（保持新增），
+     *    避免误更新错菜；命中排除「双方都挂了不同 key」的情形（不同上游来源的菜按新增不覆盖）。
+     */
+    private DiningRecipe resolveExistingRecipe(ParsedRow parsed,
+                                               Map<String, DiningRecipe> existingBySourceKey,
+                                               List<DiningRecipe> existingByName,
+                                               boolean categoryResolvable) {
+        if (parsed.sourceKey != null) {
+            DiningRecipe byKey = existingBySourceKey.get(parsed.sourceKey);
+            if (byKey != null) {
+                return byKey;
+            }
+        }
+        if (parsed.name == null) {
+            return null;
+        }
+        if (categoryResolvable) {
+            DiningRecipe byNameAndCategory = findSameNameCategory(existingByName, parsed);
+            if (byNameAndCategory != null) {
+                return byNameAndCategory;
+            }
+        }
+        List<DiningRecipe> sameName = existingByName.stream()
+                .filter(candidate -> parsed.name.equals(candidate.getName()))
+                // 未分类（categoryId=null）的同名菜不参与宽松兜底：手工建的/历史遗留菜
+                // 不该被 CSV 行的「新分类」静默收编（保留 preview_unresolvableCategory_forcesNew 语义）
+                .filter(candidate -> candidate.getCategoryId() != null)
+                .toList();
+        if (sameName.size() != 1) {
+            return null;
+        }
+        DiningRecipe candidate = sameName.get(0);
+        if (candidate.getSourceKey() != null && parsed.sourceKey != null
+                && !candidate.getSourceKey().equals(parsed.sourceKey)) {
+            return null;
+        }
+        return candidate;
+    }
+
+    /** （菜名,分类）兜底命中：同名同分类且非「双方不同 key」冲突的既有菜谱，无命中返回 null */
+    private DiningRecipe findSameNameCategory(List<DiningRecipe> existingByName, ParsedRow parsed) {
+        for (DiningRecipe candidate : existingByName) {
+            if (!parsed.name.equals(candidate.getName())) {
+                continue;
+            }
+            if (!Objects.equals(parsed.categoryId, candidate.getCategoryId())) {
+                continue;
+            }
+            if (candidate.getSourceKey() != null && parsed.sourceKey != null
+                    && !candidate.getSourceKey().equals(parsed.sourceKey)) {
+                continue;
+            }
+            return candidate;
+        }
+        return null;
+    }
+
+    /** 批内行 source_key 集合（空标识行剔除，供批量 IN 查询） */
+    private Set<String> sourceKeysOf(List<ParsedRow> parsedRows) {
+        return parsedRows.stream().map(p -> p.sourceKey)
+                .filter(Objects::nonNull).collect(Collectors.toSet());
+    }
+
+    /** 批内行菜名集合（供（菜名,分类）兜底批量 IN 查询） */
+    private Set<String> namesOf(List<ParsedRow> parsedRows) {
+        return parsedRows.stream().map(p -> p.name)
+                .filter(Objects::nonNull).collect(Collectors.toSet());
+    }
+
+    /** 库内既有菜谱按 source_key 批量装载（uk_source_key 一 key 一菜，取最小列集） */
+    private Map<String, DiningRecipe> loadExistingBySourceKeys(Collection<String> sourceKeys) {
+        if (sourceKeys.isEmpty()) {
+            return Map.of();
+        }
+        return diningRecipeMapper.selectList(new LambdaQueryWrapper<DiningRecipe>()
+                        .in(DiningRecipe::getSourceKey, sourceKeys)
+                        .select(DiningRecipe::getId, DiningRecipe::getName, DiningRecipe::getCategoryId,
+                                DiningRecipe::getSourceKey)).stream()
+                .collect(Collectors.toMap(DiningRecipe::getSourceKey, r -> r, (a, b) -> a));
+    }
+
+    /** 库内既有菜谱按菜名批量装载（name 非唯一，返回列表供（菜名,分类）兜底过滤） */
+    private List<DiningRecipe> loadExistingByNames(Collection<String> names) {
+        if (names.isEmpty()) {
+            return List.of();
+        }
+        return diningRecipeMapper.selectList(new LambdaQueryWrapper<DiningRecipe>()
+                .in(DiningRecipe::getName, names)
+                .select(DiningRecipe::getId, DiningRecipe::getName, DiningRecipe::getCategoryId,
+                        DiningRecipe::getSourceKey));
     }
 
     /**
@@ -524,6 +732,7 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         private BigDecimal fatG;
         private BigDecimal carbsG;
         private BigDecimal sodiumMg;
+        private String sourceKey;
         private final List<String> errors = new ArrayList<>();
         private final List<String> warnings = new ArrayList<>();
     }
@@ -552,6 +761,7 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         parsed.fatG = parseNutrition(COL_FAT, cell(row, columnMap.get(COL_FAT)), parsed.errors);
         parsed.carbsG = parseNutrition(COL_CARBS, cell(row, columnMap.get(COL_CARBS)), parsed.errors);
         parsed.sodiumMg = parseNutrition(COL_SODIUM, cell(row, columnMap.get(COL_SODIUM)), parsed.errors);
+        parsed.sourceKey = trimToNull(cell(row, columnMap.get(COL_SOURCE_KEY)));
         validateParsed(parsed, coverKeyCache);
         return parsed;
     }
@@ -580,21 +790,22 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         parsed.fatG = row.getFatG();
         parsed.carbsG = row.getCarbsG();
         parsed.sodiumMg = row.getSodiumMg();
+        parsed.sourceKey = trimToNull(row.getSourceKey());
         validateParsed(parsed, coverKeyCache);
         return parsed;
     }
 
-    /** 归一结果 → 预览行（分类 id 只回填已存在的；不存在的分类以 warning 标注确认时自动创建） */
-    private DiningRecipeImportPreviewVo.PreviewRow toPreviewRow(ParsedRow parsed,
-                                                                Map<String, Long> categoryIdByName) {
-        Long categoryId = parsed.categoryName == null ? null : categoryIdByName.get(parsed.categoryName);
-        if (parsed.categoryName != null && categoryId == null) {
-            parsed.warnings.add("分类「" + parsed.categoryName + "」不存在，确认导入时将自动创建");
-        }
+    /**
+     * 归一结果 → 预览行（分类 id 已在预览循环回填：已存在的分类给 id，不存在的分类在 warnings 标注
+     * 确认时自动创建；isNew/existsKind 供前端展示「新增 N / 更新 M」，行级错误时无判重语义置 null）。
+     */
+    private DiningRecipeImportPreviewVo.PreviewRow toPreviewRow(ParsedRow parsed, DiningRecipe existing) {
+        boolean noErrors = parsed.errors.isEmpty();
+        boolean isNew = noErrors && existing == null;
         return new DiningRecipeImportPreviewVo.PreviewRow()
                 .setRowNo(parsed.rowNo)
                 .setCategoryName(parsed.categoryName)
-                .setCategoryId(categoryId)
+                .setCategoryId(parsed.categoryId)
                 .setName(parsed.name)
                 .setIngredients(parsed.ingredients)
                 .setIngredientDetails(parsed.details.stream()
@@ -610,6 +821,9 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
                 .setFatG(parsed.fatG)
                 .setCarbsG(parsed.carbsG)
                 .setSodiumMg(parsed.sodiumMg)
+                .setSourceKey(parsed.sourceKey)
+                .setIsNew(noErrors ? isNew : null)
+                .setExistsKind(noErrors ? (isNew ? EXISTS_KIND_CREATE : EXISTS_KIND_UPDATE) : null)
                 .setErrors(parsed.errors)
                 .setWarnings(parsed.warnings);
     }
@@ -724,6 +938,9 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         }
         if (StringUtils.hasText(parsed.steps) && parsed.steps.length() > STEPS_MAX) {
             parsed.errors.add("步骤内容过长（上限" + STEPS_MAX + "字符）");
+        }
+        if (StringUtils.hasText(parsed.sourceKey) && parsed.sourceKey.length() > SOURCE_KEY_MAX) {
+            parsed.errors.add("唯一标识过长（上限" + SOURCE_KEY_MAX + "字符）");
         }
         if (StringUtils.hasText(parsed.coverUrl)) {
             if (parsed.coverUrl.length() > COVER_MAX) {

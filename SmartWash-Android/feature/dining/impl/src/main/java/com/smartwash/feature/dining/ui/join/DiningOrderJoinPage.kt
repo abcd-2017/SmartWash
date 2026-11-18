@@ -61,11 +61,12 @@ fun DiningOrderJoinPage(
 
     LaunchedEffect(Unit) { viewModel.load() }
 
-    // 成员判重/加入成功 → 直达点单页；弹掉加入入口页（返回键不回此中间页）
+    // 成员判重/加入成功 → 直达创建页（编辑态：菜单即已选清单、全员共同编辑）；
+    // 弹掉加入入口页（返回键不回此中间页）
     LaunchedEffect(navigateToDetail) {
         val orderId = navigateToDetail ?: return@LaunchedEffect
         if (orderId <= 0L) return@LaunchedEffect
-        navController.navigate(DiningRoute.OrderDetail(orderId)) {
+        navController.navigate(DiningRoute.OrderCreate(orderId = orderId)) {
             popUpTo<DiningRoute.OrderJoin> { inclusive = true }
             launchSingleTop = true
         }
@@ -84,7 +85,7 @@ fun DiningOrderJoinPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.background),
+            .background(AppColors.colorScheme.surface),
     ) {
         PageHeader(
             title = stringResource(R.string.dining_order_join_title),

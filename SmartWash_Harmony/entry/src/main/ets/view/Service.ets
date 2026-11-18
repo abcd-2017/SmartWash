@@ -1,6 +1,7 @@
 import { AppButton, AppButtonVariant, EmptyState, LoadingState } from './common/AppComponents'
 import { HttpStatusCode } from "@ohos/axios"
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { getLaundryItems } from "../network/api/LaundryItemsApi"
 import { LaundryItem } from "../network/vo/LaundryItem"
 import { safeTopVp } from "../utils/SafeArea"
@@ -285,7 +286,8 @@ export struct Service {
       .width("100%")
       .height("100%")
       .opacity(this.isLoading ? 0 : 1)
-      .animation({ duration: 180, curve: Curve.EaseInOut })
+      // 内容进场 200ms 减速（对齐安卓 ServicePage Crossfade enterTween(200)），reduced 降级 180ms
+      .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
       .enabled(!this.isLoading)
 
       // 加载态（首屏请求期间全屏 Loading）

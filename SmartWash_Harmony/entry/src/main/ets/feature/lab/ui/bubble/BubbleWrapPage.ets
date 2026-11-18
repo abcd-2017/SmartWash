@@ -8,7 +8,7 @@
 
 import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, toColorString } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
-import { AppButton, PageHeader } from '../../../../view/common/AppComponents'
+import { AnimatedNumber, AppButton, PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
 import { resColor } from '../../../../utils/ResourceColor'
@@ -281,11 +281,14 @@ export struct BubbleWrapPage {
       Column() {
         PageHeader({ title: BubbleText.title })
 
-        Text(this.poppedText())
-          .fontSize(DesignFontSize.CAPTION)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor($r('app.color.TEXT_SECONDARY'))
-          .fontFeature(DesignFontFeature.TNUM)
+        // 计数变化走弹簧淡入淡出（对齐安卓 AnimatedContent numberSpec = defaultSpring()）
+        AnimatedNumber({
+          value: this.poppedText(),
+          fontSize: DesignFontSize.CAPTION,
+          fontWeight: DesignFontWeight.MEDIUM,
+          fontColor: $r('app.color.TEXT_SECONDARY'),
+          fontFeature: DesignFontFeature.TNUM
+        })
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
         Stack() {

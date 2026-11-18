@@ -2,6 +2,7 @@ package com.smartwash.feature.dining.ui.order
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +64,7 @@ import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -132,7 +134,7 @@ fun DiningOrderListPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.background)
+            .background(AppColors.colorScheme.surface)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
@@ -184,8 +186,15 @@ fun DiningOrderListPage(
                         onLoadMore = { viewModel.loadMore() },
                         onOrderClick = { order ->
                             if (order.id > 0) {
-                                // 列表卡进点单页（09 号票）；分享视图由点单页顶部分享入口进入
-                                navController.navigate(DiningRoute.OrderDetail(orderId = order.id))
+                                // 状态分流：DRAFT → 创建页（编辑态，共同编辑）；FINISHED → 购买清单结果页
+                                when (order.status) {
+                                    DiningOrderStatus.DRAFT -> navController.navigate(
+                                        DiningRoute.OrderCreate(orderId = order.id)
+                                    )
+                                    else -> navController.navigate(
+                                        DiningRoute.ShoppingList(orderId = order.id)
+                                    )
+                                }
                             }
                         },
                         onReuse = { order ->
@@ -288,11 +297,13 @@ private fun OrderListContent(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
+                    // 卡片式：左右页边距 24dp 由容器统一提供（对齐洗衣域订单列表）
                     start = AppDimens.pagePadding,
-                    top = AppDimens.spaceXs,
                     end = AppDimens.pagePadding,
+                    top = AppDimens.spaceXs,
                     bottom = navBarsBottom + FAB_SIZE + AppDimens.spaceLg * 2,
                 ),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
             ) {
                 if (createdOrders.isNotEmpty()) {
                     orderSection(
@@ -300,6 +311,8 @@ private fun OrderListContent(
                         orders = createdOrders,
                         onOrderClick = onOrderClick,
                         onReuse = onReuse,
+                        // 分区标题已表明发起关系，卡内「发起」角标冗余，仅我参与的分区展示
+                        showCreatorBadge = false,
                     )
                 }
                 if (joinedOrders.isNotEmpty()) {
@@ -308,6 +321,7 @@ private fun OrderListContent(
                         orders = joinedOrders,
                         onOrderClick = onOrderClick,
                         onReuse = onReuse,
+                        showCreatorBadge = true,
                     )
                 }
                 if (hasMore) {
@@ -344,6 +358,7 @@ private fun OrderListContent(
 
 /**
  * 我的收藏入口卡（契约 §三.4）：图标容器（橙=待办/收藏语义）+ 标题 + 箭头，整卡 pressable。
+ * 卡片式（与订单卡同画法）：GroupCard + 左右 24dp 页边距，横排 min 56dp。
  * 位于订单分区之上，作为域内常驻入口。
  */
 @Composable
@@ -361,33 +376,33 @@ private fun FavoritesEntry(onClick: () -> Unit) {
                 .fillMaxWidth()
                 .heightIn(min = 56.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
-                    .background(AppColors.colorScheme.iconContainerOrange),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Favorite,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = AppColors.colorScheme.iconForegroundOrange,
-                )
-            }
-            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-            Text(
-                text = stringResource(R.string.dining_order_action_favorites),
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.colorScheme.textPrimary,
-                modifier = Modifier.weight(1f),
-            )
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
+                .background(AppColors.colorScheme.iconContainerOrange),
+            contentAlignment = Alignment.Center,
+        ) {
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = Icons.Rounded.Favorite,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = AppColors.colorScheme.textTertiary,
+                modifier = Modifier.size(18.dp),
+                tint = AppColors.colorScheme.iconForegroundOrange,
             )
+        }
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+        Text(
+            text = stringResource(R.string.dining_order_action_favorites),
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppColors.colorScheme.textPrimary,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = AppColors.colorScheme.textTertiary,
+        )
         }
     }
 }
@@ -398,13 +413,15 @@ private fun LazyListScope.orderSection(
     orders: List<DiningOrderListItem>,
     onOrderClick: (DiningOrderListItem) -> Unit,
     onReuse: (DiningOrderListItem) -> Unit,
+    showCreatorBadge: Boolean,
 ) {
     item(key = "section_$titleRes") {
         Text(
             text = stringResource(titleRes),
             style = AppTextStyles.SectionTitle,
             color = AppColors.colorScheme.textSecondary,
-            modifier = Modifier.padding(top = AppDimens.spaceSm, bottom = AppDimens.spaceXs, start = AppDimens.spaceXxs),
+            // 页边距与卡距由列表 contentPadding/spacedBy 提供，标题仅补与上分区的额外间距
+            modifier = Modifier.padding(top = AppDimens.spaceXs),
         )
     }
     items(orders, key = { it.id }) { order ->
@@ -412,21 +429,24 @@ private fun LazyListScope.orderSection(
             order = order,
             onClick = { onOrderClick(order) },
             onReuse = { onReuse(order) },
-            modifier = Modifier.padding(bottom = AppDimens.cardSpacing),
+            showCreatorBadge = showCreatorBadge,
+            modifier = Modifier.then(animatedListItem()),
         )
     }
 }
 
 /**
- * 订单卡（GroupCard 唯一画法 + pressable 整卡按压）：
- * 状态色点（§3.5 8dp：进行中橙 / 已结束绿）+ 标题 + 发起角标 + 时间行 + 「再来一单」文字操作
- * （13 号票：带 fromOrderId 进创建页，整份复用源单菜单；内层 pressable 消费点击不进点单页）。
+ * 订单卡（卡片式，对齐洗衣域订单列表画法）：GroupCard 唯一卡片画法（白底 + 1dp outline +
+ * 软阴影 + radiusLg，默认 cardPadding 20dp 内边距），左右 24dp 页边距由列表 contentPadding
+ * 统一提供。内容：状态色点 + 标题 + 发起角标 + 已选菜品/食材摘要 + 时间行 +「再来一单」
+ * 文字操作（带 fromOrderId 进创建页整份复用源单菜单；整卡 pressable）。
  */
 @Composable
 private fun OrderCard(
     order: DiningOrderListItem,
     onClick: () -> Unit,
     onReuse: () -> Unit,
+    showCreatorBadge: Boolean,
     modifier: Modifier = Modifier,
 ) {
     GroupCard(
@@ -437,15 +457,17 @@ private fun OrderCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             StatusDot(order.status)
             Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+            val untitled = order.title.isBlank()
             Text(
-                text = order.title,
+                // 空标题（草稿未命名）显示占位锚点（次要色示占位语义），避免状态行只剩「草稿」
+                text = if (untitled) stringResource(R.string.dining_order_title_placeholder) else order.title,
                 style = MaterialTheme.typography.titleMedium,
-                color = AppColors.colorScheme.textPrimary,
+                color = if (untitled) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            if (order.isCreator) {
+            if (order.isCreator && showCreatorBadge) {
                 Spacer(modifier = Modifier.width(AppDimens.spaceXs))
                 Text(
                     text = stringResource(R.string.dining_order_creator_badge),
@@ -458,7 +480,26 @@ private fun OrderCard(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+        // 已选菜品 + 食材摘要（用户定案 2026-11-18：所有人从订单列表看到菜单与食材）
+        if (order.menuCount > 0 || order.ingredientSummary.isNotBlank()) {
+            Spacer(modifier = Modifier.height(AppDimens.space2xs))
+            Text(
+                text = if (order.ingredientSummary.isNotBlank()) {
+                    stringResource(
+                        R.string.dining_order_list_summary_format,
+                        order.menuCount,
+                        order.ingredientSummary,
+                    )
+                } else {
+                    stringResource(R.string.dining_order_list_menu_count_format, order.menuCount)
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.colorScheme.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(modifier = Modifier.height(AppDimens.spaceXs))
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (order.displayTime.isNotBlank()) {
                 Text(
@@ -470,21 +511,24 @@ private fun OrderCard(
             } else {
                 Spacer(modifier = Modifier.weight(1f))
             }
-            AppButton(
-                text = stringResource(R.string.dining_order_action_reuse),
-                onClick = onReuse,
-                variant = AppButtonVariant.TEXT,
-                small = true,
-            )
+            // 草稿不提供「再来一单」：点卡片进详情继续编辑（复用源单语义仅对已定稿单有意义）
+            if (order.status != DiningOrderStatus.DRAFT) {
+                AppButton(
+                    text = stringResource(R.string.dining_order_action_reuse),
+                    onClick = onReuse,
+                    variant = AppButtonVariant.TEXT,
+                    small = true,
+                )
+            }
         }
     }
 }
 
-/** 状态色点 + 状态小字（§3.5：进行中 #D98A26 橙 / 已结束 success 绿） */
+/** 状态色点 + 状态小字（§3.5：草稿 secondary 灰 / 已结束 success 绿） */
 @Composable
 private fun StatusDot(status: DiningOrderStatus, modifier: Modifier = Modifier) {
     val (dotColor, label) = when (status) {
-        DiningOrderStatus.ONGOING -> AppColors.colorScheme.ongoing to stringResource(R.string.dining_order_status_ongoing)
+        DiningOrderStatus.DRAFT -> MaterialTheme.colorScheme.secondary to stringResource(R.string.dining_order_status_draft)
         DiningOrderStatus.FINISHED -> AppColors.colorScheme.success to stringResource(R.string.dining_order_status_finished)
     }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {

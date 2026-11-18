@@ -43,6 +43,7 @@ import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonBlock
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -227,6 +228,7 @@ private fun QueueContent(
         }
         items(queueCards, key = { it.id }) { card ->
             QueueCard(
+                modifier = animatedListItem(),
                 card = card,
                 materialTitle = materialTitles[card.materialId],
                 now = now,
@@ -242,6 +244,7 @@ private fun QueueContent(
  */
 @Composable
 private fun QueueCard(
+    modifier: Modifier = Modifier,
     card: ReviewCardVo,
     materialTitle: String?,
     now: LocalDateTime,
@@ -249,7 +252,7 @@ private fun QueueCard(
 ) {
     // 新卡不显示到期：语义由「新卡」角标承担（原实现未短路，出现「新卡 + 7 小时后到期」冗余）
     val dueText = if (card.isNewCard) ReviewFormat.DueText.Unknown else ReviewFormat.dueTextOf(card.dueAt, now)
-    AppCard(modifier = Modifier.pressable(onClick = onClick)) {
+    AppCard(modifier = modifier.pressable(onClick = onClick)) {
         // 卡内容包卡内边距 20dp：AppCard 无默认内边距，遗漏会让文本贴 16dp 圆角切字
         // （规范 §3.1 卡内边距 / 审查矩阵 #1，与 ReviewStudyPage 卡面画法一致）
         Row(

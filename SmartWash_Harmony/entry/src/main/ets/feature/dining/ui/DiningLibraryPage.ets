@@ -4,7 +4,8 @@
 // + 右上角「新增」入口。条目点击进详情页。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   DINING_PAGE_SIZE,
@@ -17,7 +18,7 @@ import {
 } from '../../../network/api/DiningApi'
 import { diningServingCalories } from '../DiningLogic'
 import { DiningText } from '../DiningText'
-import { DiningCalorieBadge } from './DiningUiCommon'
+import { DiningCalorieBadge, DiningRecipeThumb } from './DiningUiCommon'
 import {
   AppButton,
   AppButtonVariant,
@@ -63,6 +64,8 @@ struct DiningLibraryPage {
   @Local favoritePendingIds: Array<number> = []
   // 按压反馈 key
   @Local pressedKey: string = ''
+  // reduced motion：按压取消缩放改 alpha 0.86（规范 §8）
+  @Local reduceMotion: boolean = false
   private paging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
       return this.fetchPage(page)
@@ -77,6 +80,7 @@ struct DiningLibraryPage {
   private hasShown: boolean = false
 
   async aboutToAppear(): Promise<void> {
+    this.reduceMotion = ReduceMotion.isEnabled()
     logger.debug(TAG, '菜谱库挂载，开始首载')
     // 分类目录失败不致命（分类 chips 缺失时列表仍可用「全部」浏览）
     try {
@@ -187,6 +191,9 @@ struct DiningLibraryPage {
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (this.isFirstError && this.list.length === 0) {
             Column() {
               EmptyState({ message: DiningText.dining_recipe_load_failed }) {
@@ -206,6 +213,9 @@ struct DiningLibraryPage {
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (this.list.length === 0) {
             Column() {
               EmptyState({ message: this.selectedCategoryId === 0
@@ -214,6 +224,9 @@ struct DiningLibraryPage {
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else {
             Refresh({ refreshing: $$this.isRefreshing }) {
               List({ space: DesignDimens.CARD_SPACING }) {
@@ -272,6 +285,9 @@ struct DiningLibraryPage {
               this.reloadFirst()
             })
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           }
         }
         .width('100%')
@@ -362,46 +378,44 @@ struct DiningLibraryPage {
     .backgroundColor($r('app.color.SURFACE'))
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+    // 收藏按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+    .scale({
+      x: !this.reduceMotion && this.pressedKey === `fav_${recipe.id}` ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.pressedKey === `fav_${recipe.id}` ? MotionScale.Press : 1
+    })
+    .opacity(this.reduceMotion && this.pressedKey === `fav_${recipe.id}` ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedKey = `fav_${recipe.id}`
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedKey = ''
+      }
+    })
     .onClick(() => {
       this.toggleFavorite(recipe)
     })
   }
 
-  /** 菜谱卡：名称 + 食材数·份热量徽标（无封面的轻量行卡，对齐 Android 列表卡信息密度） */
+  /** 菜谱卡：封面缩略（占位键回落首字）+ 名称（两行上限）+ 食材数·份热量徽标 */
   @Builder
   RecipeCard(recipe: DiningRecipeVo) {
     Row({ space: DesignDimens.SPACE_MD }) {
       Stack({ alignContent: Alignment.TopEnd }) {
-        if (recipe.coverUrl.length > 0) {
-          Image(recipe.coverUrl)
-            .width(72)
-            .height(72)
-            .borderRadius(DesignDimens.RADIUS_MD)
-            .objectFit(ImageFit.Cover)
-            .draggable(false)
-        } else {
-          Column() {
-            SymbolGlyph($r('sys.symbol.fork_knife'))
-              .fontSize(24)
-              .fontColor([$r('app.color.TEXT_TERTIARY')])
-          }
-          .width(72)
-          .height(72)
-          .borderRadius(DesignDimens.RADIUS_MD)
-          .backgroundColor($r('app.color.SURFACE_VARIANT'))
-          .justifyContent(FlexAlign.Center)
-        }
+        // TD18 对齐安卓定案：分类占位键（dining/covers/category_*）视为无封面回落首字
+        DiningRecipeThumb({ coverUrl: recipe.coverUrl, name: recipe.name, thumbSize: 72 })
         this.FavoriteButton(recipe)
       }
       .width(72)
       .height(72)
 
       Column({ space: 4 }) {
+        // 两行上限（TD16 对齐安卓定案）：大字体档单行 7 字即截断，行卡纵向有余量
         Text(recipe.name)
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor($r('app.color.TEXT_PRIMARY'))
-          .maxLines(1)
+          .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
         Row({ space: DesignDimens.SPACE_XS }) {
@@ -431,11 +445,13 @@ struct DiningLibraryPage {
     .borderWidth(1)
     .borderColor($r('app.color.OUTLINE'))
     .padding(DesignDimens.CARD_PADDING)
+    // 整卡按压 100ms FastOutSlowIn scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
     .scale({
-      x: this.pressedKey === `card_${recipe.id}` ? 0.97 : 1,
-      y: this.pressedKey === `card_${recipe.id}` ? 0.97 : 1
+      x: !this.reduceMotion && this.pressedKey === `card_${recipe.id}` ? MotionScale.Press : 1,
+      y: !this.reduceMotion && this.pressedKey === `card_${recipe.id}` ? MotionScale.Press : 1
     })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    .opacity(this.reduceMotion && this.pressedKey === `card_${recipe.id}` ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = `card_${recipe.id}`

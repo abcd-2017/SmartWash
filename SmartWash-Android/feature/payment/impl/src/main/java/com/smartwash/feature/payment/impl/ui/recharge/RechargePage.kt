@@ -82,6 +82,7 @@ import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.exitTween
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
 import kotlinx.coroutines.launch
 import com.smartwash.common.utils.rememberDebouncedClick
@@ -304,11 +305,12 @@ fun RechargePage(
                             }
                         }
                     // 错误提示 0ms 出现/消失导致布局跳变 → 淡入 + 纵向展开/收起
+                    // 规格经 motionSpec 包裹：reduced motion 自动降级为 180ms 纯淡入淡出（规范 §8）
                     AnimatedVisibility(
                         visible = amountError != null,
-                        enter = fadeIn(enterTween(DURATION_MICRO_MS)) +
-                            expandVertically(enterTween(DURATION_MICRO_MS)),
-                        exit = fadeOut(exitTween(140)) + shrinkVertically(exitTween(140)),
+                        enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                            expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                        exit = fadeOut(motionSpec(exitTween(140))) + shrinkVertically(motionSpec(exitTween(140))),
                     ) {
                         amountError?.let { error ->
                             Text(
@@ -356,9 +358,9 @@ fun RechargePage(
                     }
                     AnimatedVisibility(
                         visible = showPayError,
-                        enter = fadeIn(enterTween(DURATION_MICRO_MS)) +
-                            expandVertically(enterTween(DURATION_MICRO_MS)),
-                        exit = fadeOut(exitTween(140)) + shrinkVertically(exitTween(140)),
+                        enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                            expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                        exit = fadeOut(motionSpec(exitTween(140))) + shrinkVertically(motionSpec(exitTween(140))),
                     ) {
                         Text(
                             text = stringResource(R.string.select_payment_method),

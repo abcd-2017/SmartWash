@@ -7,13 +7,21 @@
 // - 进入（PUSH / isEnter）：信息卡 scale 0.94 → 1 + fade 0 → 1，模拟卡片展开；
 // - 退出（POP / isEnter）：信息卡反向收拢，模拟卡片回落。
 //
-// 时长按规范 §7 时长层级（screen 400ms，退出 ≈ 进入的 70%）。
-// reduced motion：鸿蒙当前无系统级 reduce motion 开关（G3），故不做降级分支。
+// 时长对齐安卓壳层页面转场档（进 400ms / 出 280ms，见 MotionTiming.ENTER_SCREEN / EXIT_SCREEN）。
+// reduced motion 统一降级 180ms 线性（ReduceMotion.spec），缩放/位移动画关闭。
 
-/** 进入时长（screen 档，规范 §7） */
-export const CARD_TRANSITION_ENTER_MS: number = 360
-/** 退出时长（≈ 进入的 70%） */
-export const CARD_TRANSITION_EXIT_MS: number = 250
+import { MotionDuration } from '../../constant/DesignSystem'
+import { ReduceMotion } from '../../utils/ReduceMotion'
+
+/** 进入时长（页面转场档 400ms；reduced 180ms） */
+export function cardTransitionEnterMs(): number {
+  return ReduceMotion.isEnabled() ? MotionDuration.CrossfadeAltMs : MotionDuration.ScreenMs
+}
+
+/** 退出时长（≈ 进入的 70% = 280ms；reduced 180ms） */
+export function cardTransitionExitMs(): number {
+  return ReduceMotion.isEnabled() ? MotionDuration.CrossfadeAltMs : MotionDuration.ShellExitMs
+}
 
 /**
  * 详情信息卡转场委托。
@@ -30,8 +38,8 @@ export function toolboxCardTransition(
 ): Array<NavDestinationTransition> | undefined {
   if (operation === NavigationOperation.PUSH && isEnter) {
     return [{
-      duration: CARD_TRANSITION_ENTER_MS,
-      curve: Curve.EaseInOut,
+      duration: cardTransitionEnterMs(),
+      curve: ReduceMotion.isEnabled() ? Curve.Linear : Curve.LinearOutSlowIn,
       event: () => {
         onEnter()
       }
@@ -39,8 +47,8 @@ export function toolboxCardTransition(
   }
   if (operation === NavigationOperation.POP && !isEnter) {
     return [{
-      duration: CARD_TRANSITION_EXIT_MS,
-      curve: Curve.EaseIn,
+      duration: cardTransitionExitMs(),
+      curve: ReduceMotion.isEnabled() ? Curve.Linear : Curve.FastOutLinearIn,
       event: () => {
         onExit()
       }

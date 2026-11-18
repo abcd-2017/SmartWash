@@ -13,7 +13,8 @@
  */
 
 import { image } from '@kit.ImageKit'
-import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import { DarkModeStore } from '../../../../constant/DarkModeStore'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppPillTabRow, PageHeader } from '../../../../view/common/AppComponents'
@@ -38,6 +39,9 @@ class FluidText {
 
 /** 首次进入顶部提示停留时长（ms） */
 const HINT_STAY_MS: number = 3000
+
+/** 提示淡出时长（ms）— 对齐安卓 exitTween(DURATION_CARD_MS) 300ms；reduced 由 spec 降级 180ms */
+const HINT_FADE_MS: number = 300
 
 /** 帧间隔（ms）：约 30fps */
 const FRAME_INTERVAL_MS: number = 33
@@ -100,7 +104,11 @@ export function FluidBuilder() {
 export struct FluidPage {
   @Local presetIndex: number = 0
   @Local hintVisible: boolean = true
+  // 提示淡出透明度（1→0，淡出后移除节点；对齐安卓 FirstRunHint 的 alpha 过渡）
+  @Local hintAlpha: number = 1
   @Local manualPlaying: boolean = false
+  // 按压反馈 key（重置 / 播放暂停，对齐安卓 pressable）
+  @Local pressedKey: string = ''
 
   private sim: FluidSimulator = new FluidSimulator()
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
@@ -108,6 +116,7 @@ export struct FluidPage {
   private canvasHeight: number = 0
   private timerId: number = -1
   private hintTimerId: number = -1
+  private hintFadeTimerId: number = -1
   private lastFrameMs: number = 0
   private reduceMotion: boolean = labReduceMotion()
   // 染料场 RGBA 缓冲与 PixelMap（画布尺寸变化时重建）
@@ -129,7 +138,7 @@ export struct FluidPage {
     if (!this.reduceMotion) {
       this.startLoop()
       this.hintTimerId = setTimeout(() => {
-        this.hintVisible = false
+        this.hideHint()
       }, HINT_STAY_MS)
     }
   }
@@ -140,7 +149,27 @@ export struct FluidPage {
       clearTimeout(this.hintTimerId)
       this.hintTimerId = -1
     }
+    if (this.hintFadeTimerId !== -1) {
+      clearTimeout(this.hintFadeTimerId)
+      this.hintFadeTimerId = -1
+    }
     this.releasePixelMap()
+  }
+
+  /**
+   * 提示淡出：300ms FastOutLinearIn（对齐安卓 exitTween(DURATION_CARD_MS)），
+   * 播完再移除节点；reduced motion 不调用（提示常显，规范 §8）。
+   */
+  private hideHint(): void {
+    const spec: AnimateParam = ReduceMotion.spec(MotionTiming.EXIT_CARD)
+    animateTo(spec, () => {
+      this.hintAlpha = 0
+    })
+    const duration: number = spec.duration ?? HINT_FADE_MS
+    this.hintFadeTimerId = setTimeout(() => {
+      this.hintVisible = false
+      this.hintFadeTimerId = -1
+    }, duration)
   }
 
   private get playing(): boolean {
@@ -339,6 +368,7 @@ export struct FluidPage {
             .width('100%')
             .alignItems(HorizontalAlign.Center)
             .margin({ top: DesignDimens.SPACE_MD })
+            .opacity(this.hintAlpha)
           }
 
           // GL 失败态兜底：surface 衬底胶囊 + textPrimary 文案（对齐安卓 unsupported 路径）
@@ -382,6 +412,20 @@ export struct FluidPage {
             .backgroundColor($r('app.color.SURFACE'))
             .borderWidth(1)
             .borderColor($r('app.color.OUTLINE'))
+            // 清空重来按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+            .scale({
+              x: !this.reduceMotion && this.pressedKey === 'reset' ? MotionScale.Press : 1,
+              y: !this.reduceMotion && this.pressedKey === 'reset' ? MotionScale.Press : 1
+            })
+            .opacity(this.reduceMotion && this.pressedKey === 'reset' ? MotionAlpha.PressReduced : 1)
+            .animation(MotionTiming.PRESS)
+            .onTouch((event: TouchEvent) => {
+              if (event.type === TouchType.Down) {
+                this.pressedKey = 'reset'
+              } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.pressedKey = ''
+              }
+            })
             .onClick(() => {
               this.sim.reset()
               this.drawFluid()
@@ -402,6 +446,20 @@ export struct FluidPage {
               .borderWidth(1)
               .borderColor($r('app.color.OUTLINE'))
               .margin({ left: DesignDimens.SPACE_MD })
+              // 播放/暂停按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+              .scale({
+                x: !this.reduceMotion && this.pressedKey === 'play' ? MotionScale.Press : 1,
+                y: !this.reduceMotion && this.pressedKey === 'play' ? MotionScale.Press : 1
+              })
+              .opacity(this.reduceMotion && this.pressedKey === 'play' ? MotionAlpha.PressReduced : 1)
+              .animation(MotionTiming.PRESS)
+              .onTouch((event: TouchEvent) => {
+                if (event.type === TouchType.Down) {
+                  this.pressedKey = 'play'
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                  this.pressedKey = ''
+                }
+              })
               .onClick(() => {
                 this.togglePlay()
               })

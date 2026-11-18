@@ -22,6 +22,25 @@ object DiningJoinUrlBuilder {
     /** 二维码路径前缀（与端上深链 host "dining" 对齐；端内扫码侧按此 path 识别加入链路） */
     private const val JOIN_PATH_PREFIX = "/dining/join/"
 
+    /** 端内深链 scheme（与壳层 DeepLinkParser / DiningDeepLinkModule 同口径） */
+    private const val APP_SCHEME = "smartwash"
+
+    /** 加入凭证查询键（与 DiningJoinUrlParser / 二维码 URL 的 t 键同口径） */
+    private const val TOKEN_QUERY_KEY = "t"
+
+    /**
+     * 构造端内加入深链（草稿期邀请复制到剪贴板的链接）：
+     * `smartwash://dining/order/{orderId}?t={join_token}`。
+     *
+     * @param orderId 订单 ID（创建响应/详情）
+     * @param joinToken 加入凭证（空白返回 null——无凭证的链接无意义）
+     */
+    fun buildOrderDeepLink(orderId: Long, joinToken: String): String? {
+        val token = joinToken.trim()
+        if (orderId <= 0L || token.isEmpty()) return null
+        return "$APP_SCHEME://dining/order/$orderId?$TOKEN_QUERY_KEY=$token"
+    }
+
     /**
      * 构造二维码内容 URL。
      *

@@ -58,6 +58,7 @@ import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -127,7 +128,7 @@ fun DiningOrderShoppingListPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.background),
+            .background(AppColors.colorScheme.surface),
     ) {
         PageHeader(
             title = stringResource(R.string.dining_shopping_list_title),
@@ -243,7 +244,16 @@ private fun CalorieCard(
         )
         Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
         Row(verticalAlignment = Alignment.Bottom) {
-            val formattedTotal = DiningNutritionCalculator.formatAmount(result.totalCalories)
+            // TD27/P2-8：全部菜热量未知时聚合 totalCalories=0.0——渲染「≈0」误导（仿佛确认了
+            // 零热量）；未知菜数 == 已点菜总数（按菜备菜视图仅含被点过的菜）时改显「热量未知」
+            val allCaloriesUnknown = result.calorieUnknownDishCount != null &&
+                result.perRecipe.isNotEmpty() &&
+                result.calorieUnknownDishCount == result.perRecipe.size
+            val formattedTotal = if (allCaloriesUnknown) {
+                null
+            } else {
+                DiningNutritionCalculator.formatAmount(result.totalCalories)
+            }
             Text(
                 text = if (formattedTotal != null) {
                     stringResource(R.string.dining_shopping_list_total_calories_value_format, formattedTotal)
@@ -404,13 +414,13 @@ private fun IngredientsView(
     } ?: result.ingredients.map { IngredientRowUi(name = it, amountText = null) }
 
     val checkedCount = rows.count { it.name in checked }
+    // 平铺清单：左右 24dp 页边距由容器统一提供，行间 0.5dp 发丝线
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             horizontal = AppDimens.pagePadding,
             vertical = AppDimens.spaceSm,
         ),
-        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
     ) {
         item(key = "ingredients_header") {
             Text(
@@ -421,32 +431,30 @@ private fun IngredientsView(
                 ),
                 style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
+                modifier = Modifier.padding(vertical = AppDimens.spaceXs),
             )
         }
-        item(key = "ingredients_card") {
-            GroupCard(modifier = Modifier.fillMaxWidth()) {
-                if (rows.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.dining_shopping_list_empty_ingredients),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = AppColors.colorScheme.textSecondary,
+        if (rows.isEmpty()) {
+            item(key = "ingredients_empty") {
+                Text(
+                    text = stringResource(R.string.dining_shopping_list_empty_ingredients),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.colorScheme.textSecondary,
+                )
+            }
+        } else {
+            itemsIndexed(rows, key = { _, row -> row.name }) { index, row ->
+                IngredientRow(
+                    name = row.name,
+                    amountText = row.amountText,
+                    checked = row.name in checked,
+                    onToggle = { onToggle(row.name) },
+                )
+                if (index != rows.lastIndex) {
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = AppColors.colorScheme.divider,
                     )
-                } else {
-                    rows.forEachIndexed { index, row ->
-                        IngredientRow(
-                            name = row.name,
-                            amountText = row.amountText,
-                            checked = row.name in checked,
-                            onToggle = { onToggle(row.name) },
-                        )
-                        // 卡内行间 0.5dp 发丝线（规范 §3.1：仅同一容器内部）
-                        if (index != rows.lastIndex) {
-                            HorizontalDivider(
-                                thickness = 0.5.dp,
-                                color = AppColors.colorScheme.divider,
-                            )
-                        }
-                    }
                 }
             }
         }
@@ -465,11 +473,11 @@ private fun IngredientRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            // 列表行最小 48dp 热区（规范 §3.2）
+            // 列表行最小 48dp 热区（规范 §3.2）；纵 spaceSm（左右页边距由列表容器提供）
             .heightIn(min = 48.dp)
             .pressable(onClick = onToggle, debounce = false)
             .semantics { contentDescription = name }
-            .padding(vertical = AppDimens.spaceXs),
+            .padding(vertical = AppDimens.spaceSm),
     ) {
         Box(
             modifier = Modifier
@@ -526,7 +534,7 @@ private fun IngredientRow(
     }
 }
 
-/** 按菜备菜视图：每道菜一张卡（菜名 + 选菜人 + 备注） */
+/** 按菜备菜视图：每道菜一行（平铺：菜名 + 选菜人 + 备注），行间 0.5dp 发丝线 */
 @Composable
 private fun PerRecipeView(perRecipe: List<DiningRecipeShopping>) {
     LazyColumn(
@@ -535,61 +543,74 @@ private fun PerRecipeView(perRecipe: List<DiningRecipeShopping>) {
             horizontal = AppDimens.pagePadding,
             vertical = AppDimens.spaceSm,
         ),
-        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
     ) {
         item(key = "per_recipe_header") {
             Text(
                 text = stringResource(R.string.dining_shopping_list_per_recipe_section),
                 style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
+                modifier = Modifier.padding(vertical = AppDimens.spaceXs),
             )
         }
         if (perRecipe.isEmpty()) {
             item(key = "per_recipe_empty") {
-                GroupCard(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = stringResource(R.string.dining_shopping_list_empty_per_recipe),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = AppColors.colorScheme.textSecondary,
-                    )
-                }
+                Text(
+                    text = stringResource(R.string.dining_shopping_list_empty_per_recipe),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.colorScheme.textSecondary,
+                )
             }
         } else {
             // key 用内容组合而非索引：列表重排时避免错误复用
-            itemsIndexed(perRecipe, key = { index, item -> "${item.recipeName}_$index" }) { _, recipe ->
-                RecipeCard(recipe = recipe)
+            itemsIndexed(perRecipe, key = { index, item -> "${item.recipeName}_$index" }) { index, recipe ->
+                RecipeCard(
+                    recipe = recipe,
+                    modifier = Modifier.then(animatedListItem()),
+                )
+                if (index != perRecipe.lastIndex) {
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = AppColors.colorScheme.divider,
+                    )
+                }
             }
         }
     }
 }
 
-/** 按菜卡片：菜名 + 选菜人（脱敏手机号）+ 备注 */
+/** 按菜行（平铺清单）：菜名 + 选菜人（脱敏手机号）+ 备注；行间 0.5dp 发丝线 */
 @Composable
-private fun RecipeCard(recipe: DiningRecipeShopping) {
-    GroupCard(modifier = Modifier.fillMaxWidth()) {
+private fun RecipeCard(recipe: DiningRecipeShopping, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = AppDimens.spaceSm),
+    ) {
         Text(
             text = recipe.recipeName,
             style = AppTextStyles.CardTitle,
             color = AppColors.colorScheme.textPrimary,
         )
-        Spacer(modifier = Modifier.height(AppDimens.spaceXs))
-        recipe.selectors.forEach { selector ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = selector.label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.colorScheme.textSecondary,
-                )
-                if (selector.note.isNotBlank()) {
-                    Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+        if (recipe.selectors.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(AppDimens.space2xs))
+            recipe.selectors.forEach { selector ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = stringResource(
-                            R.string.dining_shopping_list_selector_note_format,
-                            selector.note,
-                        ),
+                        text = selector.label,
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.colorScheme.textSecondary,
                     )
+                    if (selector.note.isNotBlank()) {
+                        Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+                        Text(
+                            text = stringResource(
+                                R.string.dining_shopping_list_selector_note_format,
+                                selector.note,
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.colorScheme.textSecondary,
+                        )
+                    }
                 }
             }
         }

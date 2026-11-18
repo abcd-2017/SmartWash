@@ -60,6 +60,7 @@ import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.components.SkeletonList
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -278,6 +279,7 @@ private fun MaterialListContent(
         } else {
             items(state.materials, key = { it.id }) { material ->
                 MaterialCard(
+                    modifier = animatedListItem(),
                     material = material,
                     expanded = state.expandedMaterialId == material.id,
                     cards = state.cards,
@@ -370,6 +372,7 @@ private fun CreateMaterialForm(
  */
 @Composable
 private fun MaterialCard(
+    modifier: Modifier = Modifier,
     material: MaterialVo,
     expanded: Boolean,
     cards: List<ReviewCardVo>,
@@ -387,7 +390,7 @@ private fun MaterialCard(
     onShowAddCard: () -> Unit,
 ) {
     val reduceMotion = LocalReduceMotion.current
-    AppCard {
+    AppCard(modifier = modifier) {
         // 卡内容包卡内边距 20dp：AppCard 无默认内边距，遗漏会让文本贴 16dp 圆角切字
         // （规范 §3.1 卡内边距 / 审查矩阵 #1，与队列页 QueueCard 画法一致）
         Column(modifier = Modifier.padding(AppDimens.cardPadding)) {

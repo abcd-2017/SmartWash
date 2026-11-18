@@ -14,7 +14,8 @@ import { workbenchCover } from './api'
 import { BizCode } from "../../network/HttpUtil"
 import { WorkbenchEntryVo, getWorkbenchEntries } from "../../network/api/workbench"
 import { RouteNames } from "../../constant/RouteNames"
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionDuration, MotionScale, MotionTiming } from "../../constant/DesignSystem"
+import { ReduceMotion } from "../../utils/ReduceMotion"
 import { DivColor } from "../../constant/DivTheme"
 import { pathStack } from "../../utils/PathStackUtil"
 import { showToastSafety } from "../../utils/ToastUtil"
@@ -523,10 +524,11 @@ export struct Workbench {
     })
     // 按压反馈（对齐安卓 pressable scale 0.97）
     .scale({
-      x: this.pressedKey === 'divination' ? 0.97 : 1,
-      y: this.pressedKey === 'divination' ? 0.97 : 1
+      x: this.pressedKey === 'divination' ? MotionScale.Press : 1,
+      y: this.pressedKey === 'divination' ? MotionScale.Press : 1
     })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = 'divination'
@@ -627,10 +629,11 @@ export struct Workbench {
     .backgroundColor($r('app.color.PRIMARY_SOFT'))
     // 按压反馈仅整条可点时生效（对齐安卓 pressable 条件包裹）
     .scale({
-      x: tool.target.length > 0 && this.pressedKey === `notice_${tool.entryKey}` ? 0.97 : 1,
-      y: tool.target.length > 0 && this.pressedKey === `notice_${tool.entryKey}` ? 0.97 : 1
+      x: tool.target.length > 0 && this.pressedKey === `notice_${tool.entryKey}` ? MotionScale.Press : 1,
+      y: tool.target.length > 0 && this.pressedKey === `notice_${tool.entryKey}` ? MotionScale.Press : 1
     })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = `notice_${tool.entryKey}`
@@ -698,10 +701,11 @@ export struct Workbench {
     .clip(true)
     .cardChrome()
     .scale({
-      x: this.pressedKey === `wide_${tool.entryKey}` ? 0.97 : 1,
-      y: this.pressedKey === `wide_${tool.entryKey}` ? 0.97 : 1
+      x: this.pressedKey === `wide_${tool.entryKey}` ? MotionScale.Press : 1,
+      y: this.pressedKey === `wide_${tool.entryKey}` ? MotionScale.Press : 1
     })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = `wide_${tool.entryKey}`
@@ -740,10 +744,11 @@ export struct Workbench {
         .cardChrome()
         .clip(true)
         .scale({
-          x: this.pressedKey === `tile_${tool.entryKey}` ? 0.97 : 1,
-          y: this.pressedKey === `tile_${tool.entryKey}` ? 0.97 : 1
+          x: this.pressedKey === `tile_${tool.entryKey}` ? MotionScale.Press : 1,
+          y: this.pressedKey === `tile_${tool.entryKey}` ? MotionScale.Press : 1
         })
-        .animation({ duration: 100, curve: Curve.EaseOut })
+        // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+        .animation(ReduceMotion.spec(MotionTiming.PRESS))
         .onTouch((event: TouchEvent) => {
           if (event.type === TouchType.Down) {
             this.pressedKey = `tile_${tool.entryKey}`
@@ -769,11 +774,7 @@ export struct Workbench {
       top: topSpacing,
       bottom: DesignDimens.CARD_SPACING
     })
-    .transition(TransitionEffect.OPACITY.animation({
-      duration: STAGGER_ENTER_MS,
-      delay: enterDelay,
-      curve: Curve.Friction
-    }))
+    .transition(this.staggerTransition(enterDelay))
   }
 
   /** 列表行：36vp 次级图标容器 + 14/500 主文案 + 角标 + 箭头（行高 56，规范 §3.4） */
@@ -822,10 +823,11 @@ export struct Workbench {
     .alignItems(VerticalAlign.Center)
     .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
     .scale({
-      x: this.pressedKey === `row_${tool.entryKey}` ? 0.97 : 1,
-      y: this.pressedKey === `row_${tool.entryKey}` ? 0.97 : 1
+      x: this.pressedKey === `row_${tool.entryKey}` ? MotionScale.Press : 1,
+      y: this.pressedKey === `row_${tool.entryKey}` ? MotionScale.Press : 1
     })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = `row_${tool.entryKey}`
@@ -962,10 +964,11 @@ export struct Workbench {
     .border({ width: 1, color: $r('app.color.OUTLINE') })
     .backgroundColor($r('app.color.SURFACE'))
     .scale({
-      x: this.pressedKey === `chip_${tool.entryKey}` ? 0.97 : 1,
-      y: this.pressedKey === `chip_${tool.entryKey}` ? 0.97 : 1
+      x: this.pressedKey === `chip_${tool.entryKey}` ? MotionScale.Press : 1,
+      y: this.pressedKey === `chip_${tool.entryKey}` ? MotionScale.Press : 1
     })
-    .animation({ duration: 100, curve: Curve.EaseOut })
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = `chip_${tool.entryKey}`
@@ -1247,16 +1250,30 @@ export struct Workbench {
   }
 
   /**
-   * 逐项错峰入场（对齐安卓 StaggerIn：150ms 淡入 + 40ms×6 上限错峰）。
-   * reduced motion 降级：鸿蒙端暂无统一 reduceMotion 开关（端限制，对齐报告口径），
-   * 已选用无位移纯淡入将动效敏感影响降至最低。
+   * 逐项错峰入场（对齐安卓 StaggerIn：150ms 淡入 + 弹簧轻位移 + 40ms×6 上限错峰）。
+   * reduced motion：取消错峰延迟与位移，统一降级 180ms 纯淡入（规范 §8）。
    */
   private staggerEnter(index: number): TransitionEffect {
+    return this.staggerTransition(
+      ReduceMotion.isEnabled() ? 0 : Math.min(index, STAGGER_MAX_INDEX) * STAGGER_INTERVAL_MS)
+  }
+
+  /** 错峰入场过渡（供 TileRowContent 等已算好延迟的调用点复用） */
+  private staggerTransition(delay: number): TransitionEffect {
+    if (ReduceMotion.isEnabled()) {
+      return TransitionEffect.OPACITY.animation({
+        duration: MotionDuration.CrossfadeAltMs,
+        curve: Curve.Linear
+      })
+    }
     return TransitionEffect.OPACITY.animation({
       duration: STAGGER_ENTER_MS,
-      delay: Math.min(index, STAGGER_MAX_INDEX) * STAGGER_INTERVAL_MS,
-      curve: Curve.Friction
-    })
+      delay: delay,
+      curve: Curve.FastOutSlowIn
+    }).combine(TransitionEffect.translate({ y: 12 }).animation({
+      delay: delay,
+      curve: MotionTiming.SPRING
+    }))
   }
 
   /**

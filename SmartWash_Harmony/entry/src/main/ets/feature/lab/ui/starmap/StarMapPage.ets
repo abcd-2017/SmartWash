@@ -13,7 +13,8 @@
 
 import sensor from '@ohos.sensor'
 import display from '@ohos.display'
-import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import { pathStack } from '../../../../utils/PathStackUtil'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
@@ -28,6 +29,8 @@ class StarMapText {
   static get hint(): string { return resString('lab_star_map_hint') }
   static get sensorUnavailable(): string { return resString('lab_star_map_sensor_unavailable') }
   static get nightVision(): string { return resString('lab_star_map_night_vision') }
+  static get onLabel(): string { return resString('lab_drum_cell_on') }
+  static get offLabel(): string { return resString('lab_drum_cell_off') }
   static get magnitudePrefix(): string { return resString('star_map_text_magnitude_prefix') }
   static get back(): string { return resString('lab_star_map_back') }
 }
@@ -77,6 +80,8 @@ export struct StarMapPage {
   @Local hintVisible: boolean = true
   @Local selectedName: string = ''
   @Local selectedMagnitude: number = 0
+  // 顶栏按压反馈 key（返回 / 夜视，对齐安卓 pressable）
+  @Local pressedKey: string = ''
 
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(
     new RenderingContextSettings(true))
@@ -446,6 +451,20 @@ export struct StarMapPage {
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
       .accessibilityDescription(StarMapText.back)
+      // 返回按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+      .scale({
+        x: !this.reduceMotion && this.pressedKey === 'back' ? MotionScale.Press : 1,
+        y: !this.reduceMotion && this.pressedKey === 'back' ? MotionScale.Press : 1
+      })
+      .opacity(this.reduceMotion && this.pressedKey === 'back' ? MotionAlpha.PressReduced : 1)
+      .animation(MotionTiming.PRESS)
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressedKey = 'back'
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressedKey = ''
+        }
+      })
       .onClick(() => {
         pathStack.pop()
       })
@@ -473,7 +492,26 @@ export struct StarMapPage {
         .backgroundColor(resColor('DARK_ICON_CONTAINER_PURPLE'))
       }
       .padding(DesignDimens.SPACE_XS)
-      .accessibilityText(StarMapText.nightVision)
+      // 夜视模式是开关语义的图标按钮：补 checked 状态 + 开/关文案
+      // （API 17 无 Role.Switch / stateDescription，同 AppSwitch 口径，见 view/common/AppSwitch.ets 头说明）
+      .accessibilityChecked(this.nightVision)
+      .accessibilityText(this.nightVision
+        ? `${StarMapText.nightVision}，${StarMapText.onLabel}`
+        : `${StarMapText.nightVision}，${StarMapText.offLabel}`)
+      // 夜视开关按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+      .scale({
+        x: !this.reduceMotion && this.pressedKey === 'night' ? MotionScale.Press : 1,
+        y: !this.reduceMotion && this.pressedKey === 'night' ? MotionScale.Press : 1
+      })
+      .opacity(this.reduceMotion && this.pressedKey === 'night' ? MotionAlpha.PressReduced : 1)
+      .animation(MotionTiming.PRESS)
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressedKey = 'night'
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressedKey = ''
+        }
+      })
       .onClick(() => {
         this.toggleNightVision()
       })
@@ -500,6 +538,7 @@ export struct StarMapPage {
         top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
       .margin({ top: DesignDimens.SPACE_SM })
       .opacity(this.sensorsState === 0 ? 1 : (this.hintVisible ? 1 : 0))
-      .animation({ duration: 220, curve: Curve.EaseOut })
+      // 提示停留 4000ms 后淡出：300ms FastOutLinearIn（对齐安卓 exitTween(DURATION_CARD_MS)）；reduced 降 180ms
+      .animation(ReduceMotion.spec(MotionTiming.EXIT_CARD))
   }
 }

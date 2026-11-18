@@ -46,8 +46,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -284,7 +287,7 @@ fun StarMapPage(
 }
 
 /**
- * 顶栏（暗色沉浸式自定义页头，布局与 `PageHeader` 一致：48dp 返回热区 + 22sp 标题）：
+ * 顶栏（暗色沉浸式自定义页头，布局与 `PageHeader` 一致：48dp 返回热区 + 18sp 标题）：
  * 返回箭头 + 标题 + 夜视模式开关。
  */
 @Composable
@@ -355,7 +358,12 @@ private fun NightVisionToggle(
             .size(36.dp)
             .clip(RoundedCornerShape(AppDimens.radiusMd))
             .background(DarkIconContainerPurple)
-            .semantics { contentDescription = description },
+            // 开关语义（Role.Switch + 开/关状态播报）：图标形态保留，但让 TalkBack 感知为开关
+            .semantics {
+                contentDescription = description
+                role = Role.Switch
+                stateDescription = description
+            },
         contentAlignment = Alignment.Center,
     ) {
         Icon(

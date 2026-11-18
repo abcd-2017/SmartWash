@@ -7,7 +7,8 @@
 import { HttpStatusCode } from '@ohos/axios'
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { RouteNames } from '../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../constant/DesignSystem'
+import { ReduceMotion } from '../../utils/ReduceMotion'
 import {
   AssetTagDetailParam,
   ToolboxText,
@@ -218,7 +219,12 @@ struct ToolboxAssetTagDetail {
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor($r('app.color.DANGER_INK'))
               .padding({ left: 12, right: 12, top: 12, bottom: 12 })
-              .scale({ x: this.pressedKey === 'delete' ? 0.97 : 1, y: this.pressedKey === 'delete' ? 0.97 : 1 })
+              .scale({
+                x: this.pressedKey === 'delete' ? MotionScale.Press : 1,
+                y: this.pressedKey === 'delete' ? MotionScale.Press : 1
+              })
+              // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+              .animation(ReduceMotion.spec(MotionTiming.PRESS))
               .onTouch((event: TouchEvent) => {
                 if (event.type === TouchType.Down) {
                   this.pressedKey = 'delete'

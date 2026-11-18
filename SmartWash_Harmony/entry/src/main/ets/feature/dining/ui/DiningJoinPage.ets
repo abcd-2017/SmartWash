@@ -1,16 +1,22 @@
 // 加入入口页 — 对齐 Android DiningJoinEntryPage.kt（12 号票站内信深链加入入口）
 //
 // 深链 `smartwash://dining/order/{orderId}?t={token}` 落点：brief 判重（DiningJoinEntry 纯函数）——
-// 已是成员 → replace 直达点单页；非成员且进行中 → 标题预览 + 「加入」按钮；已结束 → 提示不引导；
-// brief 失败 → 错误态重试。未登录由壳层深链守卫拦截（dining 不在公开白名单）。
+// 已是成员 → replace 直达创建页（编辑态）；非成员且 DRAFT → 标题预览 + 「加入」按钮；
+// 已结束 → 提示不引导；brief 失败 → 错误态重试。未登录由壳层深链守卫拦截（dining 不在公开白名单）。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import { DiningOrderBriefVo, getDiningOrderBrief, joinDiningOrder } from '../../../network/api/DiningApi'
-import { DiningJoinEntryDecision, decideDiningJoinEntry } from '../DiningLogic'
+import {
+  DiningJoinEntryDecision,
+  DiningOrderStatus,
+  decideDiningJoinEntry,
+  diningOrderStatusFromCode
+} from '../DiningLogic'
 import { DiningText } from '../DiningText'
-import { DiningOrderJoinParam } from '../api'
+import { DiningOrderCreateParam, DiningOrderJoinParam } from '../api'
 import { AppButton, EmptyState, SkeletonBlock } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
 import { getObjectParam, getNumberParam, getStringParam, pathStack } from '../../../utils/PathStackUtil'
@@ -95,13 +101,20 @@ struct DiningOrderJoinPage {
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_MD })
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (!this.paramValid) {
             Column() {
               EmptyState({ message: DiningText.dining_order_join_param_invalid })
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else {
+            // 注：BodyByDecision 为 @Builder 调用，无法挂 transition（同创建页 FormBody 口径）
             this.BodyByDecision()
           }
         }
@@ -171,7 +184,9 @@ struct DiningOrderJoinPage {
           .fontColor($r('app.color.TEXT_SECONDARY'))
           .width('100%')
 
-        Text('同学确认加入后即可在点单页勾选想吃的菜')
+        Text(this.isDraftBrief()
+          ? DiningText.dining_order_join_draft_hint
+          : DiningText.dining_order_join_hint)
           .fontSize(DesignFontSize.CAPTION)
           .fontColor($r('app.color.TEXT_TERTIARY'))
           .width('100%')
@@ -216,6 +231,12 @@ struct DiningOrderJoinPage {
     return decideDiningJoinEntry(this.brief)
   }
 
+  /** 草稿单加入提示（成员可一起加菜/移除，提交后结束） */
+  private isDraftBrief(): boolean {
+    return this.brief !== null
+      && diningOrderStatusFromCode(this.brief.status) === DiningOrderStatus.DRAFT
+  }
+
   /** 拉取 brief（首载/重试共用） */
   private async loadBrief(): Promise<void> {
     try {
@@ -223,10 +244,10 @@ struct DiningOrderJoinPage {
       if (res.code === BizCode.SUCCESS && res.data !== null) {
         this.brief = res.data
         logger.debug(TAG, `brief 加载成功 orderId=${res.data.orderId} joined=${res.data.joined} status=${res.data.status}`)
-        if (decideDiningJoinEntry(res.data) === DiningJoinEntryDecision.ENTER_DETAIL) {
-          // 已是成员：直达点单页（replace：入口页不留返回栈）
-          logger.debug(TAG, '已是成员，直达点单页')
-          pathStack.replacePathByName(RouteNames.DINING_ORDER_DETAIL, res.data.orderId > 0 ? res.data.orderId : this.orderId)
+        if (decideDiningJoinEntry(res.data) === DiningJoinEntryDecision.ENTER_CREATE) {
+          // 已是成员：直达创建页编辑态（replace：入口页不留返回栈）
+          logger.debug(TAG, '已是成员，直达创建页编辑态')
+          this.goCreate(res.data.orderId > 0 ? res.data.orderId : this.orderId)
         }
       } else {
         logger.warn(TAG, `brief 加载失败 code=${res.code} message=${res.message ?? ''}`)
@@ -248,7 +269,14 @@ struct DiningOrderJoinPage {
     this.isLoading = false
   }
 
-  /** 加入订单：成功 replace 进点单页 */
+  /** 落创建页编辑态（replace：加入入口页不留返回栈） */
+  private goCreate(orderId: number): void {
+    const param = new DiningOrderCreateParam()
+    param.orderId = orderId
+    pathStack.replacePathByName(RouteNames.DINING_ORDER_CREATE, param)
+  }
+
+  /** 加入订单：成功 replace 进创建页编辑态 */
   private async doJoin(): Promise<void> {
     if (this.joining || !this.paramValid) {
       return
@@ -259,7 +287,7 @@ struct DiningOrderJoinPage {
       if (res.code === BizCode.SUCCESS) {
         logger.info(TAG, `加入点单成功 orderId=${this.orderId}`)
         showToastSafety(DiningText.dining_order_join_success)
-        pathStack.replacePathByName(RouteNames.DINING_ORDER_DETAIL, this.orderId)
+        this.goCreate(this.orderId)
       } else {
         logger.warn(TAG, `加入点单未生效 code=${res.code} message=${res.message ?? ''}`)
         showToastSafety(res.message, DiningText.dining_order_join_invalid_token)

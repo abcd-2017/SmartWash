@@ -225,7 +225,13 @@ HTML/CSS、`__gThemeToggle`、`g-theme` 读写、matchMedia 监听及按钮让�
 4. **不自绘标题**：不要在 `<header>` 里写 `<h1>`——标题由 App 原生页头唯一承载（§5.1）；
    游戏 `<header>` 只放记分/状态/玩法提示/操作按钮。
 5. **字号入八档**（36/28/22/18/16/14/12，weight 仅 400/500/600/700），圆角只用
-   16/14/12/10（见 §2 与 Android `ui-design-spec.md` v0.4）。
+   16/14/12/10（见 §2 与 Android `ui-design-spec.md`）。
+   **语义映射（2026-11-18 随 Android v0.5 覆写同步，原 v0.4 映射作废）**：
+   - **标题档 = 18px**（`h2` / 覆盖层标题 `.ov-title` / `.panel h2` / `.card h2` / `.rt`）
+     ——原生内页页头已由 22px 改为 18px/600，H5 标题随之对齐；
+   - **22px 收窄为状态/数据大字档**（记分、`.stat .val` / `.score-box .val` / `.desc b` 等数字强调），
+     不再作标题用；
+   - 其余档不变：36 数据大字 / 28 结果大字 / 16 正文 / 14 列表正文 / 12 辅助。
    **对比度约束（2026-11-16 修订，原 2026-11-14 版作废）**：主 CTA 一律用 `--g-btn-primary`
    (#17734A) 底 + 白字 **16px/600**（5.85:1，普通文本档即达标，字号回到八档 bodyLarge）；
    若确需 `--g-primary` 绿底白字，字号须 **≥19px/700**（进大字档 3:1；16px 白字对品牌绿仅
@@ -236,6 +242,15 @@ HTML/CSS、`__gThemeToggle`、`g-theme` 读写、matchMedia 监听及按钮让�
 5.1. **§6.1 动效降级模板**（置于 `</style>` 前）：
    `@media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }`
    ——状态切换（overlay 显隐等）依赖 display/类名，不依赖动画存在，压平后功能不受损。
+5.2. **标题排版通则（2026-11-18 随字阶 v0.5 增补）**：
+   - 标题**不强制单行**，允许在容器内自然换行；**禁止**用固定高度硬切标题。
+   - **覆盖层标题**（`.ov-title` / `.overlay h2`）**最多两行**，超出省略：
+     `display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`
+     ——overlay 是模态层、宽度受限（padding 20–24px），需防长文案顶开按钮。
+   - **面板 / 卡片标题**（`.panel h2` / `.card h2` / `.rt`）随文档流自然换行，**不加行数限制**
+     ——它们在文档流内，多行只推高卡片，不会挤压浮层。
+   - 存量 67 款已收敛到 18px，标题规则均无 `nowrap` / 固定高度，**无需补写 clamp**；
+     本通则面向新增游戏与后续改版。
 6. 全屏视口游戏（`html,body{height:100%}` + `overflow:hidden`）在 `<head` 主题运行时里追加
    `try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}`（§5.1）；
    卡片式布局游戏不加。

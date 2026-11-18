@@ -6,7 +6,8 @@
 
 import { pasteboard } from '@kit.BasicServicesKit'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   DiningOrderDetailVo,
@@ -149,12 +150,18 @@ struct DiningShoppingListPage {
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_MD })
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (this.isError || this.detail === null) {
             Column() {
               EmptyState({ message: DiningText.dining_shopping_list_load_failed })
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else {
             Column() {
               // 标题行（订单标题 + 状态 + 结束时间）
@@ -202,6 +209,9 @@ struct DiningShoppingListPage {
             }
             .width('100%')
             .height('100%')
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           }
         }
         .width('100%')
@@ -512,9 +522,18 @@ struct DiningShoppingListPage {
     return result !== null && result.calorieUnknownDishCount !== null ? result.calorieUnknownDishCount : 0
   }
 
-  /** 总热量大字值（已知 → 「≈1830」；未知/v1 快照 → 「热量未知」） */
+  /**
+   * 总热量大字值（已知 → 「≈1830」；未知/v1 快照 → 「热量未知」）。
+   * TD27 对齐安卓定案：全部菜热量未知时后端聚合 totalCalories=0.0——渲染「≈0」误导
+   * （仿佛确认了零热量）；未知菜数 == 已点菜总数（按菜备菜视图仅含被点过的菜）时改显
+   * 「热量未知」。
+   */
   private totalCaloriesText(): string {
     const result = this.result
+    if (result !== null && result.calorieUnknownDishCount !== null && result.perRecipe.length > 0
+      && result.calorieUnknownDishCount === result.perRecipe.length) {
+      return DiningText.dining_shopping_list_total_calories_unknown
+    }
     const formatted = result !== null ? formatDiningAmount(result.totalCalories) : null
     if (formatted === null) {
       return DiningText.dining_shopping_list_total_calories_unknown

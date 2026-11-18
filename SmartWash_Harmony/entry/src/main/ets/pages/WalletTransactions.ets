@@ -1,5 +1,6 @@
 import { AppButton, AppButtonVariant, EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { getTransactions } from "../network/api/UserApi"
 import { TransactionVo } from "../network/vo/TransactionVo"
@@ -253,7 +254,8 @@ struct WalletTransactions {
             .width("100%")
             .layoutWeight(1)
             .transition(TransitionEffect.OPACITY)
-            .animation({ duration: 200, curve: Curve.EaseOut })
+            // 内容进场 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)），reduced 降级 180ms
+          .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
         } else if (this.recordList.length > 0) {
           // 与充值记录页一致：LazyColumn 触底分页，无下拉刷新入口
           List({ space: DesignDimens.CARD_SPACING }) {
@@ -261,6 +263,8 @@ struct WalletTransactions {
               ListItem() {
                 this.TransactionCard(item)
               }
+              // 列表项进出场统一走 ReduceMotion.listItemTransition（对齐安卓 animatedListItem）
+              .transition(ReduceMotion.listItemTransition())
             }, (item: TransactionVo, index: number) => `${item.transactionTime ?? ""}-${item.type ?? ""}-${index}`)
             ListItem() {
               if (this.appendError) {
@@ -302,7 +306,8 @@ struct WalletTransactions {
             return { offsetRemain: offset }
           })
           .transition(TransitionEffect.OPACITY)
-          .animation({ duration: 200, curve: Curve.EaseOut })
+          // 内容进场 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)），reduced 降级 180ms
+          .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
         } else if (this.isFirstError) {
           // 首载失败：说明 + 重试（对齐安卓 WalletListState.Error；错误态优先于空态判定，
           // 不得伪装成「暂无交易记录」）。trailing builder 后不可续链式属性，
@@ -325,7 +330,8 @@ struct WalletTransactions {
           .width("100%")
           .layoutWeight(1)
           .transition(TransitionEffect.OPACITY)
-          .animation({ duration: 200, curve: Curve.EaseOut })
+          // 内容进场 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)），reduced 降级 180ms
+          .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
         } else {
           // 空状态（规范 §3.6 空态三件套：母题 + 引导文案 + 行动按钮「去充值」，
           // 文案对齐安卓 no_wallet_transactions 修后值）

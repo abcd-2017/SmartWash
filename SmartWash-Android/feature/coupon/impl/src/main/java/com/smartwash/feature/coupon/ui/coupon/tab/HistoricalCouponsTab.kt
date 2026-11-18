@@ -20,6 +20,7 @@ import com.smartwash.feature.coupon.ui.coupon.CouponOfflineHint
 import com.smartwash.feature.coupon.ui.coupon.CouponSectionError
 import com.smartwash.feature.coupon.ui.coupon.UserCouponCard
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.model.RequestState
 
@@ -68,7 +69,11 @@ fun HistoricalCouponsTab(
                     }
                 }
                 items(historicalCoupons, key = { it.userCouponId }) { coupon ->
-                    UserCouponCard(couponVo = coupon, isHistorical = true)
+                    UserCouponCard(
+                        couponVo = coupon,
+                        isHistorical = true,
+                        modifier = animatedListItem(),
+                    )
                 }
                 if (hasMore) {
                     item(key = "historical_load_more") {

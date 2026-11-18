@@ -264,13 +264,15 @@ CREATE TABLE IF NOT EXISTS dining_recipe (
     fat_g               decimal(6,2) DEFAULT NULL,
     carbs_g             decimal(6,2) DEFAULT NULL,
     sodium_mg           decimal(8,2) DEFAULT NULL,
+    source_key          varchar(64) DEFAULT NULL,
     source              varchar(16) NOT NULL DEFAULT 'ADMIN',
     status              tinyint NOT NULL DEFAULT 1,
     created_by_user_id  bigint DEFAULT NULL,
     created_by_admin_id bigint DEFAULT NULL,
     created_at          timestamp DEFAULT CURRENT_TIMESTAMP,
     updated_at          timestamp DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    CONSTRAINT uk_dining_recipe_source_key UNIQUE (source_key)
 );
 
 -- 吃啥-配料库表（菜谱导入 upsert / DiningIngredientAdminController 端点验证用；结构对齐 smart_wash.sql）
@@ -321,6 +323,7 @@ CREATE TABLE IF NOT EXISTS dining_recipe_favorite (
 
 -- 吃啥-点单订单表（WebDiningOrderControllerIntegrationTest 的 /web/auth/dining/orders 端点验证用）
 -- shopping_list 生产库为 MySQL JSON 类型，H2 用等价 varchar 承载（MyBatis 两侧均按字符串映射）
+-- status 取值：DRAFT 草稿 / ONGOING 进行中 / FINISHED 已结束
 CREATE TABLE IF NOT EXISTS dining_order (
     id              bigint NOT NULL AUTO_INCREMENT,
     title           varchar(64) NOT NULL,

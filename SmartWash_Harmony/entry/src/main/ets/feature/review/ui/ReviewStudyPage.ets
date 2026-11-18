@@ -10,7 +10,8 @@
 // 已知坑遵守：翻面/评分态为页面自持状态；评分失败 toast 后保留当前卡重试。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionDuration, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   AnswerForm,
@@ -50,6 +51,19 @@ const REVIEW_RATINGS: Array<ReviewRating> = [
   ReviewRating.EASY
 ]
 
+/**
+ * 卡面内容切换（翻面 / 换卡）— 对齐安卓 AnimatedContent：fade + scale 0.97 弹簧。
+ * reduced motion 降级为 180ms 纯淡入、取消缩放（规范 §8）。
+ */
+function studyCardTransition(): TransitionEffect {
+  if (ReduceMotion.isEnabled()) {
+    return TransitionEffect.OPACITY.animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
+  }
+  return TransitionEffect.OPACITY.animation({ curve: MotionTiming.SPRING })
+    .combine(TransitionEffect.scale({ x: MotionScale.Press, y: MotionScale.Press })
+      .animation({ curve: MotionTiming.SPRING }))
+}
+
 @Builder
 export function ReviewStudyBuilder() {
   ReviewStudyPage()
@@ -65,6 +79,8 @@ struct ReviewStudyPage {
   @Local isFirstError: boolean = false
   /** 是否已翻面（正面问题 → 背面答案 + 评分按钮） */
   @Local flipped: boolean = false
+  /** 卡面按压态（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms） */
+  @Local cardPressed: boolean = false
   /** 评分提交态（loading 整排禁用；错误 toast 后保留当前卡） */
   @Local answerLoading: boolean = false
   /** materialId → 所属资料标题（缺失显示「未归资料」） */
@@ -261,42 +277,52 @@ struct ReviewStudyPage {
                 }
 
                 if (!this.flipped) {
-                  Text(this.currentCard()?.question ?? '')
-                    .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-                    .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor($r('app.color.TEXT_PRIMARY'))
-                    .width('100%')
-                    .margin({ top: DesignDimens.SPACE_MD })
+                  Column() {
+                    Text(this.currentCard()?.question ?? '')
+                      .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+                      .fontWeight(DesignFontWeight.SEMI_BOLD)
+                      .fontColor($r('app.color.TEXT_PRIMARY'))
+                      .width('100%')
+                      .margin({ top: DesignDimens.SPACE_MD })
 
-                  // 引导操作的可读正文（非装饰）：TEXT_TERTIARY 双主题均破 4.5:1（S1）
-                  Text(ReviewText.review_study_question_hint)
-                    .fontSize(DesignFontSize.CAPTION)
-                    .fontColor($r('app.color.TEXT_SECONDARY'))
-                    .width('100%')
-                    .margin({ top: DesignDimens.SPACE_LG })
+                    // 引导操作的可读正文（非装饰）：TEXT_TERTIARY 双主题均破 4.5:1（S1）
+                    Text(ReviewText.review_study_question_hint)
+                      .fontSize(DesignFontSize.CAPTION)
+                      .fontColor($r('app.color.TEXT_SECONDARY'))
+                      .width('100%')
+                      .margin({ top: DesignDimens.SPACE_LG })
+                  }
+                  .width('100%')
+                  .alignItems(HorizontalAlign.Start)
+                  .transition(studyCardTransition())
                 } else {
-                  // 背面问题放宽到 4 行便于长问题回看全文（S3）
-                  Text(this.currentCard()?.question ?? '')
-                    .fontSize(DesignFontSize.BODY_SMALL)
-                    .fontColor($r('app.color.TEXT_SECONDARY'))
-                    .maxLines(4)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    .width('100%')
-                    .margin({ top: DesignDimens.SPACE_MD })
+                  Column() {
+                    // 背面问题放宽到 4 行便于长问题回看全文（S3）
+                    Text(this.currentCard()?.question ?? '')
+                      .fontSize(DesignFontSize.BODY_SMALL)
+                      .fontColor($r('app.color.TEXT_SECONDARY'))
+                      .maxLines(4)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                      .width('100%')
+                      .margin({ top: DesignDimens.SPACE_MD })
 
-                  // 答案标签：小号绿字走 TEXT_GREEN（PRIMARY 在白卡仅 3.5:1 破线，S2）
-                  Text(ReviewText.review_study_answer_label)
-                    .fontSize(DesignFontSize.CAPTION)
-                    .fontWeight(DesignFontWeight.MEDIUM)
-                    .fontColor($r('app.color.TEXT_GREEN'))
-                    .width('100%')
-                    .margin({ top: DesignDimens.SPACE_MD })
+                    // 答案标签：小号绿字走 TEXT_GREEN（PRIMARY 在白卡仅 3.5:1 破线，S2）
+                    Text(ReviewText.review_study_answer_label)
+                      .fontSize(DesignFontSize.CAPTION)
+                      .fontWeight(DesignFontWeight.MEDIUM)
+                      .fontColor($r('app.color.TEXT_GREEN'))
+                      .width('100%')
+                      .margin({ top: DesignDimens.SPACE_MD })
 
-                  Text(this.currentCard()?.answer ?? '')
-                    .fontSize(DesignFontSize.BODY)
-                    .fontColor($r('app.color.TEXT_PRIMARY'))
-                    .width('100%')
-                    .margin({ top: DesignDimens.SPACE_XS })
+                    Text(this.currentCard()?.answer ?? '')
+                      .fontSize(DesignFontSize.BODY)
+                      .fontColor($r('app.color.TEXT_PRIMARY'))
+                      .width('100%')
+                      .margin({ top: DesignDimens.SPACE_XS })
+                  }
+                  .width('100%')
+                  .alignItems(HorizontalAlign.Start)
+                  .transition(studyCardTransition())
                 }
               }
               .width('100%')
@@ -313,6 +339,16 @@ struct ReviewStudyPage {
         .height('100%')
         .scrollBar(BarState.Off)
       }
+      // 卡面按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+      .scale({ x: this.cardPressed ? MotionScale.Press : 1, y: this.cardPressed ? MotionScale.Press : 1 })
+      .animation(ReduceMotion.spec(MotionTiming.PRESS))
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.cardPressed = true
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.cardPressed = false
+        }
+      })
       .width('100%')
       .layoutWeight(1)
 
@@ -330,6 +366,14 @@ struct ReviewStudyPage {
               .layoutWeight(1)
           }, (rating: ReviewRating) => `${rating}`)
         }
+        // 评分排展开/收起（对齐安卓 AnimatedVisibility：进 300ms 卡片档 / 出 180ms；reduced 180ms）
+        .transition(TransitionEffect.asymmetric(
+          TransitionEffect.OPACITY.animation(ReduceMotion.spec(MotionTiming.ENTER_CARD)),
+          TransitionEffect.OPACITY.animation(ReduceMotion.spec({
+            duration: MotionDuration.CrossfadeAltMs,
+            curve: Curve.FastOutLinearIn
+          }))
+        ))
         .width('100%')
         .margin({ top: DesignDimens.SPACE_MD })
       }

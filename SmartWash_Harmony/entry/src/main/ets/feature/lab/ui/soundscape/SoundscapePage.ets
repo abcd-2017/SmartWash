@@ -10,9 +10,10 @@
  * aboutToDisappear 释放引擎（对齐安卓 onCleared → engine.release()）。
  */
 
-import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { PageHeader } from '../../../../view/common/AppComponents'
+import { AppSwitch } from '../../../../view/common/AppSwitch'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import {
   SOUND_CHANNEL_COUNT,
@@ -107,11 +108,17 @@ const TIMER_OPTIONS: number[] = [0, 15, 30, 60]
 /** 定时到点淡出时长（ms） */
 const FADE_OUT_MS: number = 3000
 
-/** 可视化条形相位步进（每次重绘推进量） */
-const BAR_PHASE_STEP: number = 0.09
+/** 可视化条形相位单程时长（ms）— 对齐安卓 SPIN_PERIOD_MS = 900（pingPongInfinite） */
+const BAR_ONE_WAY_MS: number = 900
 
 /** 可视化条形重绘间隔（ms） */
 const BAR_INTERVAL_MS: number = 80
+
+/**
+ * 可视化条形相位步进（每次重绘推进量）：安卓相位 0→1→0 往返 1800ms 为一个视觉周期，
+ * 正弦参数随相位线性变化，故步进按「1800ms 走完一个完整正弦周期」折算。
+ */
+const BAR_PHASE_STEP: number = BAR_INTERVAL_MS / (BAR_ONE_WAY_MS * 2)
 
 /** 单路声道的 UI 状态（开关 + 独立音量，@Trace 支撑行内精细刷新） */
 @ObservedV2
@@ -138,6 +145,8 @@ export struct SoundscapePage {
   @Local timerMinutes: number = 0
   @Local timerRemainingSec: number = 0
   @Local barPhase: number = 0
+  // 按压反馈 key（CTA / 预设 / 定时档，对齐安卓 pressable）
+  @Local pressedKey: string = ''
 
   private engine: SoundscapeEngine = new SoundscapeEngine()
   private barsCtx: CanvasRenderingContext2D = new CanvasRenderingContext2D(
@@ -533,6 +542,20 @@ export struct SoundscapePage {
         .justifyContent(FlexAlign.Center)
         .borderRadius(DesignDimens.RADIUS_FULL)
         .backgroundColor($r('app.color.ON_PRIMARY'))
+        // 播放/停止按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+        .scale({
+          x: !this.reduceMotion && this.pressedKey === 'cta' ? MotionScale.Press : 1,
+          y: !this.reduceMotion && this.pressedKey === 'cta' ? MotionScale.Press : 1
+        })
+        .opacity(this.reduceMotion && this.pressedKey === 'cta' ? MotionAlpha.PressReduced : 1)
+        .animation(MotionTiming.PRESS)
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.pressedKey = 'cta'
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pressedKey = ''
+          }
+        })
         .onClick(() => {
           this.togglePlay()
         })
@@ -582,6 +605,20 @@ export struct SoundscapePage {
             }
             .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             .margin({ right: DesignDimens.SPACE_XS })
+            // 预设按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+            .scale({
+              x: !this.reduceMotion && this.pressedKey === `preset_${index}` ? MotionScale.Press : 1,
+              y: !this.reduceMotion && this.pressedKey === `preset_${index}` ? MotionScale.Press : 1
+            })
+            .opacity(this.reduceMotion && this.pressedKey === `preset_${index}` ? MotionAlpha.PressReduced : 1)
+            .animation(MotionTiming.PRESS)
+            .onTouch((event: TouchEvent) => {
+              if (event.type === TouchType.Down) {
+                this.pressedKey = `preset_${index}`
+              } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.pressedKey = ''
+              }
+            })
             .onClick(() => {
               this.applyPreset(index)
             })
@@ -686,6 +723,20 @@ export struct SoundscapePage {
           .layoutWeight(1)
           .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
           .enabled(this.playing || minutes === 0)
+          // 定时档按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+          .scale({
+            x: !this.reduceMotion && this.pressedKey === `timer_${minutes}` ? MotionScale.Press : 1,
+            y: !this.reduceMotion && this.pressedKey === `timer_${minutes}` ? MotionScale.Press : 1
+          })
+          .opacity(this.reduceMotion && this.pressedKey === `timer_${minutes}` ? MotionAlpha.PressReduced : 1)
+          .animation(MotionTiming.PRESS)
+          .onTouch((event: TouchEvent) => {
+            if (event.type === TouchType.Down) {
+              this.pressedKey = `timer_${minutes}`
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+              this.pressedKey = ''
+            }
+          })
           .onClick(() => {
             if (this.playing || minutes === 0) {
               this.selectTimer(minutes)
@@ -775,10 +826,13 @@ struct ChannelRow {
           .margin({ left: DesignDimens.SPACE_SM })
           .layoutWeight(1)
 
-        SoundToggle({
+        // 声道开关统一走公共 AppSwitch（48×28 胶囊 + 弹簧位移 + 开/关状态播报）
+        AppSwitch({
           checked: this.ui.enabled,
           accessibilityLabel: this.label,
-          onChange: () => {
+          onText: SoundscapeText.onLabel,
+          offText: SoundscapeText.offLabel,
+          onChange: (_: boolean): void => {
             this.onToggle()
           },
         })
@@ -812,56 +866,6 @@ struct ChannelRow {
       }
     }
     .width('100%')
-  }
-}
-
-/**
- * 自绘开关（48×28 胶囊）：白圆拇指左右平移，180ms 过渡（对齐安卓 SoundToggle）。
- */
-@ComponentV2
-struct SoundToggle {
-  @Param checked: boolean = false
-  @Param accessibilityLabel: string = ''
-  @Event onChange: () => void = () => {
-  }
-
-  build() {
-    // 外层补 padding 外扩热区到 48×52，视觉胶囊 48×28 不变（对齐安卓 pressable 前置）
-    Column() {
-      Stack({ alignContent: Alignment.Start }) {
-        Column() {
-          Circle()
-            .width(20)
-            .height(20)
-            .fill($r('app.color.SURFACE'))
-            .stroke($r('app.color.OUTLINE'))
-            .strokeWidth(1)
-            .translate({ x: this.checked ? 20 : 0 })
-            .animation({ duration: 180, curve: Curve.EaseInOut })
-        }
-        .width('100%')
-        .height('100%')
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Start)
-        .padding({ left: 4 })
-      }
-      .width(48)
-      .height(28)
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(this.checked ? $r('app.color.PRIMARY') : $r('app.color.SURFACE_VARIANT'))
-      .borderWidth(1)
-      .borderColor(this.checked ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
-    }
-    .width(48)
-    .constraintSize({ minHeight: 52 })
-    .justifyContent(FlexAlign.Center)
-    .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
-    .accessibilityText(this.checked ? `${this.accessibilityLabel}，${SoundscapeText.onLabel}`
-      : `${this.accessibilityLabel}，${SoundscapeText.offLabel}`)
-    .accessibilityChecked(this.checked)
-    .onClick(() => {
-      this.onChange()
-    })
   }
 }
 

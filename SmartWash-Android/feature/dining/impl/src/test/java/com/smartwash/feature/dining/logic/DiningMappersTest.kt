@@ -102,14 +102,14 @@ class DiningMappersTest {
         val item = DiningOrderListVo(
             id = 11L,
             title = "周五晚火锅",
-            status = "ONGOING",
+            status = "FINISHED",
             isCreator = true,
             creatorUserId = 9L,
             createdAt = "2026-11-13T20:30:00",
         ).toOrderListItem()
         assertEquals(11L, item.id)
         assertEquals("周五晚火锅", item.title)
-        assertEquals(DiningOrderStatus.ONGOING, item.status)
+        assertEquals(DiningOrderStatus.FINISHED, item.status)
         assertTrue(item.isCreator)
         assertEquals("2026-11-13 20:30", item.displayTime)
     }
@@ -128,6 +128,13 @@ class DiningMappersTest {
     fun `订单状态白名单外脏数据保守降级为已结束`() {
         val item = DiningOrderListVo(status = "CANCELLED").toOrderListItem()
         assertEquals(DiningOrderStatus.FINISHED, item.status)
+    }
+
+    @Test
+    fun `草稿状态映射为 DRAFT 供列表打草稿标签`() {
+        val item = DiningOrderListVo(id = 12L, title = "待定", status = "DRAFT", isCreator = true).toOrderListItem()
+        assertEquals(DiningOrderStatus.DRAFT, item.status)
+        assertTrue(item.isCreator)
     }
 
     @Test
@@ -160,7 +167,7 @@ class DiningMappersTest {
             version = 5L,
             unchanged = false,
             title = "周末大餐",
-            status = "ONGOING",
+            status = "FINISHED",
             menu = listOf(
                 DiningOrderDetailVo.MenuRecipe(recipeId = 1L, name = "番茄炒蛋", categoryId = 2L),
                 DiningOrderDetailVo.MenuRecipe(recipeId = 2L, name = "凉拌黄瓜", categoryId = null),
@@ -173,7 +180,7 @@ class DiningMappersTest {
         val detail = vo.toOrderShareDetail()
         assertEquals(11L, detail.id)
         assertEquals("周末大餐", detail.title)
-        assertEquals(DiningOrderStatus.ONGOING, detail.status)
+        assertEquals(DiningOrderStatus.FINISHED, detail.status)
         assertEquals(2, detail.menuCount)
         assertEquals(2, detail.memberCount)
     }

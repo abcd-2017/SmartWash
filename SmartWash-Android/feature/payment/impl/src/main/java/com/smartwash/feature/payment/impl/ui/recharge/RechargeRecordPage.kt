@@ -48,6 +48,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.impl.network.vo.recharge.RechargeRecordVo
 import java.util.Locale
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
@@ -196,7 +197,10 @@ fun RechargeRecordPage(
                         ) { index ->
                             val record = records[index]
                             if (record != null) {
-                                RechargeRecordCard(record)
+                                RechargeRecordCard(
+                                    modifier = animatedListItem(),
+                                    record = record
+                                )
                             }
                         }
 
@@ -298,11 +302,14 @@ private fun AppendErrorFooter(message: String?, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun RechargeRecordCard(record: RechargeRecordVo) {
+private fun RechargeRecordCard(
+    modifier: Modifier = Modifier,
+    record: RechargeRecordVo
+) {
     // DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline 描边 +
     // level1(1dp) 阴影 ≈ CSS 0 2px 12px rgba(20,40,30,.05)；内边距 20（旧实现无阴影属禁止项）
     Surface(
-        modifier = Modifier.fillMaxWidth().softCardShadow(),
+        modifier = modifier.fillMaxWidth().softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)

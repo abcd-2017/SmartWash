@@ -16,7 +16,7 @@ data class DiningOrderBriefVo(
     /** 订单 ID（确认加入后调 join 接口用） */
     val orderId: Long? = null,
     val title: String? = null,
-    /** 订单状态：ONGOING / FINISHED */
+    /** 订单状态：DRAFT / ONGOING / FINISHED（DRAFT 可加入） */
     val status: String? = null,
     /** 发起者标识（脱敏手机号，如 139****9000） */
     val creatorName: String? = null,

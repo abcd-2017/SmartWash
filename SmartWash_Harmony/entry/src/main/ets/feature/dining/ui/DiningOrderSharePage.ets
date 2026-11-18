@@ -9,10 +9,11 @@ import { image } from '@kit.ImageKit'
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { generateBarcode, scanCore } from '@kit.ScanKit'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
 import { DiningOrderDetailVo, getDiningOrderDetail, resetDiningJoinToken } from '../../../network/api/DiningApi'
-import { buildDiningJoinUrl } from '../DiningLogic'
+import { buildDiningJoinUrl, diningOrderStatusFromCode, DiningOrderStatus } from '../DiningLogic'
 import { DiningText } from '../DiningText'
 import { DiningOrderShareParam } from '../api'
 import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, SkeletonBlock } from '../../../view/common/AppComponents'
@@ -103,7 +104,7 @@ struct DiningOrderSharePage {
               pathStack.pop()
             })
 
-            Text(DiningText.dining_order_share_title)
+            Text(this.titleText())
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor($r('app.color.TEXT_PRIMARY'))
@@ -128,16 +129,23 @@ struct DiningOrderSharePage {
               top: DesignDimens.SPACE_MD
             })
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else if (this.isError || this.detail === null) {
             Column() {
               EmptyState({ message: DiningText.dining_order_share_detail_failed })
             }
             .width('100%')
             .layoutWeight(1)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           } else {
             Scroll() {
               Column() {
                 this.OrderInfoCard()
+                // 邀请与分享合一：二维码/复制/重置照常展示（与安卓同构）；仅标题按状态切换
                 this.QrSection()
                 this.ActionArea()
               }
@@ -154,6 +162,9 @@ struct DiningOrderSharePage {
             .height('100%')
             .align(Alignment.TopStart)
             .edgeEffect(EdgeEffect.Spring)
+            // 内容三态交叉淡变 300ms LinearOutSlowIn（对齐安卓 Crossfade(300)），reduced 降 180ms
+            .transition(TransitionEffect.OPACITY)
+            .animation(ReduceMotion.spec(MotionTiming.ENTER_CARD))
           }
         }
         .width('100%')
@@ -163,6 +174,16 @@ struct DiningOrderSharePage {
       }
     }
     .hideTitleBar(true)
+  }
+
+  /**
+   * 标题按状态（契约 §四，对齐安卓）：FINISHED=订单分享；其余（DRAFT/未知/详情未到）=邀请加入。
+   * 详情未到按「邀请中」降级——本页主要由创建页邀请入口进入，无空窗。
+   */
+  private titleText(): string {
+    const finished = this.detail !== null
+      && diningOrderStatusFromCode(this.detail.status) === DiningOrderStatus.FINISHED
+    return finished ? DiningText.dining_order_share_title : DiningText.dining_order_invite_title
   }
 
   /** 订单信息卡：标题 + 菜品数 + 参与者数 */

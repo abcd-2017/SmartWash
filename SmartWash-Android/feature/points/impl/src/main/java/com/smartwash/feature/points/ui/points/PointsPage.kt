@@ -1,8 +1,13 @@
 package com.smartwash.feature.points.ui.points
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,6 +74,8 @@ import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.motionSpec
@@ -304,6 +311,11 @@ private fun PointsHeroCard(
 ) {
     val signed = overview.isSignedToday
     val cycle = streakCycleProgress(overview.safeNextBonusIn)
+    // 数字变化规格（因果：签到成功 → 余额 / 累计积分变动）：弹簧淡入淡出，
+    // reduced motion 降级为 180ms 纯淡入淡出（规范 §8）。transitionSpec 非 composable 上下文，故在组合期算好。
+    val reduceMotion = LocalReduceMotion.current
+    val numberSpec: FiniteAnimationSpec<Float> =
+        if (reduceMotion) tween(CROSSFADE_ALT_MS) else defaultSpring()
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.radiusXl),
@@ -342,18 +354,30 @@ private fun PointsHeroCard(
                 // hero 次级文字改纯白，由黑纱保证 ≥4.5:1（audit-20 #1）；白 78% 仅留已签禁用 CTA
                 color = Color.White,
             )
-            Text(
-                text = "${overview.safeBalance}",
-                style = AppTextStyles.DataLarge,
-                color = Color.White,
-                modifier = Modifier.padding(top = AppDimens.spaceXxs),
-            )
-            Text(
-                text = stringResource(R.string.points_total_earned_format, overview.safeTotalEarned),
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White,
-                modifier = Modifier.padding(top = AppDimens.spaceXxs),
-            )
+            AnimatedContent(
+                targetState = overview.safeBalance,
+                transitionSpec = { fadeIn(numberSpec) togetherWith fadeOut(numberSpec) },
+                label = "pointsBalance"
+            ) { balance ->
+                Text(
+                    text = "$balance",
+                    style = AppTextStyles.DataLarge,
+                    color = Color.White,
+                    modifier = Modifier.padding(top = AppDimens.spaceXxs),
+                )
+            }
+            AnimatedContent(
+                targetState = overview.safeTotalEarned,
+                transitionSpec = { fadeIn(numberSpec) togetherWith fadeOut(numberSpec) },
+                label = "pointsTotalEarned"
+            ) { totalEarned ->
+                Text(
+                    text = stringResource(R.string.points_total_earned_format, totalEarned),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White,
+                    modifier = Modifier.padding(top = AppDimens.spaceXxs),
+                )
+            }
 
             if (overview.safeStreak > 0) {
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))

@@ -7,7 +7,8 @@
  * reduced motion：默认暂停（静帧）+ 用户主动「播放」（当前 SDK 无等价 API，常量 false）。
  */
 
-import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../../constant/DesignSystem'
+import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
@@ -410,6 +411,12 @@ struct SandTextButton {
   @Param text: string = ''
   @Event click: () => void = () => {
   }
+  @Local pressed: boolean = false
+  @Local reduceMotion: boolean = false
+
+  aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
+  }
 
   build() {
     Text(this.text)
@@ -422,6 +429,20 @@ struct SandTextButton {
         top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
       .borderRadius(DesignDimens.RADIUS_MD)
       .backgroundColor($r('app.color.SURFACE_VARIANT'))
+      // 清除/暂停按压 100ms scale 0.97（对齐安卓 pressable）；reduced 改 alpha 0.86
+      .scale({
+        x: !this.reduceMotion && this.pressed ? MotionScale.Press : 1,
+        y: !this.reduceMotion && this.pressed ? MotionScale.Press : 1
+      })
+      .opacity(this.reduceMotion && this.pressed ? MotionAlpha.PressReduced : 1)
+      .animation(MotionTiming.PRESS)
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressed = true
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressed = false
+        }
+      })
       .onClick(() => {
         this.click()
       })

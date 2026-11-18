@@ -23,45 +23,10 @@ import com.smartwash.feature.dining.logic.DiningNutritionCalculator.Nutrient
 import com.smartwash.feature.dining.logic.DiningNutritionCalculator.NutrientStatus
 
 /**
- * 吃啥营养口径共享小部件（菜谱库 / 发起点单 / 点单页共用，契约 §二/§5.1-§5.3）：
- * 热量徽标（≈N kcal/份；缺失渲染「热量未知」次级档，不占位不谎报）、营养超标警示条
+ * 吃啥营养口径共享小部件（发起点单 / 购买清单共用）：营养超标警示条
  * （warningContainer 语义容器，仅超标时出现，非阻断、估算口径）与营养项文案/单位映射
  * （文案单一事实来源在 strings.xml，数值格式化统一走 [DiningNutritionCalculator] 纯函数）。
  */
-
-/**
- * 热量徽标（契约 §5.1/§5.2/§5.3 菜品行热量展示统一画法）：≈N kcal/份（primarySoft 浅绿底 +
- * onPrimarySoft 深绿字——规范 §2.1 浅绿容器的文字配对，12sp 小字对比度达标，tnum）；
- * 热量缺失渲染「热量未知」次级档（surfaceVariant 底 + textSecondary 字）。
- */
-@Composable
-internal fun DiningCalorieBadge(
-    calories: Double?,
-    modifier: Modifier = Modifier,
-) {
-    val formatted = DiningNutritionCalculator.formatAmount(calories)
-    val known = formatted != null
-    val container = if (known) AppColors.colorScheme.primarySoft
-    else AppColors.colorScheme.surfaceVariant
-    val content = if (known) AppColors.colorScheme.onPrimarySoft
-    else AppColors.colorScheme.textSecondary
-    val text = if (known) {
-        stringResource(R.string.dining_nutrition_calorie_badge_format, formatted)
-    } else {
-        stringResource(R.string.dining_nutrition_calorie_unknown)
-    }
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-        color = content,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-            .clip(RoundedCornerShape(AppDimens.radiusSmall))
-            .background(container)
-            .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.space2xs),
-    )
-}
 
 /** 营养超标警示条（契约 §5.2/§5.3）：逐项「钠预计 2.4mg，超一餐参考 666.7mg」形态，非阻断 */
 @Composable

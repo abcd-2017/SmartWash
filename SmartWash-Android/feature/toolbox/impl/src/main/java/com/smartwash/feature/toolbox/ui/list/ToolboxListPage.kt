@@ -51,6 +51,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.PageHeader
@@ -228,6 +229,8 @@ fun ToolboxListPage(
                                 pagingItems[index]?.let { vo ->
                                     ShortCodeCard(
                                         vo = vo,
+                                        // 分页/刷新增删的条目：进出场 + 位移补间（reduced motion 自动落位）
+                                        modifier = animatedListItem(),
                                         animatedVisibilityScope = animatedVisibilityScope,
                                         sharedTransitionScope = sharedTransitionScope,
                                         onClick = { navController.navigateToShortCodeDetail(vo) },
@@ -317,6 +320,7 @@ private fun ShortCodeCard(
     // 一镜到底：与详情页信息卡共享元素（key 用短码 id，两侧一致）
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     sharedTransitionScope: SharedTransitionScope? = null,
+    modifier: Modifier = Modifier,
 ) {
     val now = remember { LocalDateTime.now() }
     val expiryState = ShortCodeRules.expiryStateOf(vo.expireAt, now)
@@ -327,7 +331,7 @@ private fun ShortCodeCard(
     val reduceMotion = LocalReduceMotion.current
 
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             // 一镜到底：列表卡与详情页信息卡共享边界，导航时平滑展开（2026-11-01）
             .then(

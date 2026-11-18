@@ -54,6 +54,7 @@ import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -232,7 +233,10 @@ fun WalletTransactionsPage(
                             ) { index ->
                                 val transaction = transactions[index]
                                 if (transaction != null) {
-                                    TransactionCard(transaction)
+                                    TransactionCard(
+                                        transaction = transaction,
+                                        modifier = animatedListItem(),
+                                    )
                                 }
                             }
 
@@ -337,10 +341,10 @@ private fun AppendErrorFooter(message: String?, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun TransactionCard(transaction: TransactionVo) {
+private fun TransactionCard(transaction: TransactionVo, modifier: Modifier = Modifier) {
     // DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline 描边 + level1 阴影
     Surface(
-        modifier = Modifier.fillMaxWidth().softCardShadow(),
+        modifier = modifier.fillMaxWidth().softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)

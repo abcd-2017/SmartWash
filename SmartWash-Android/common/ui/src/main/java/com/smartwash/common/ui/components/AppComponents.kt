@@ -70,6 +70,8 @@ import com.smartwash.common.ui.components.softCardShadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -106,27 +108,24 @@ fun PageHeader(
 ) {
     // 返回键内置连击防抖：PageHeader 是多数页面唯一返回入口，连点双 pop 会弹空导航栈（黑屏）
     val debouncedBack = rememberDebouncedClick(enabled = onBack != null) { onBack?.invoke() }
-    Row(
+    // Box 叠层：标题相对**整行宽度**居中（屏幕中心），不被返回热区 / 右侧 actions 宽度挤偏
+    // （原 Row + Spacer 写法下标题中心随 actions 宽度左移）。水平边距下沉到两侧子元素，
+    // 标题只保留对称 60dp 安全区（与 48dp 返回热区右缘对齐），保证长标题省略时不与两侧重叠。
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            // 设计稿内页页头：箭头图形左缘 24、状态栏下顶距 14。旧实现整行 24dp 边距 + 48dp 热区内缩 12，
-            // 使图形左缘落到 36、顶距 24（观感「偏右下」）；改为行首让位 12dp，图形落在 24，热区仍 48dp
-            .padding(
-                start = if (onBack != null) 12.dp else AppDimens.pagePadding,
-                end = AppDimens.pagePadding,
-                top = 2.dp,
-                bottom = 6.dp
-            ),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(top = 2.dp, bottom = 6.dp)
     ) {
         if (onBack != null) {
             // §7 禁 Material 交互组件（IconButton 自带 state layer 涟漪）：改自绘按压热区，
             // pressable 内置 indication = null + scale 0.97 按压反馈
             Box(
                 // 热区 48dp（规范 §3.2 返回箭头豁免入容器但强制 48dp 触控热区）：
-                // 行首 12 + 热区 48 → 图形居中落 [24,46]，向左越出行边距的部分是纯热区
+                // 行首让位 12 + 热区 48 → 图形居中落 [24,48]，向左越出行边距的部分是纯热区
                 modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 12.dp)
                     .size(48.dp)
                     .pressable(onClick = debouncedBack),
                 contentAlignment = Alignment.Center,
@@ -138,15 +137,24 @@ fun PageHeader(
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
-            // 标题紧随热区（左缘 60）：与箭头图形右缘 46 的视觉间距 14，对齐设计稿的 12
         }
         Text(
             text = title,
             style = AppTextStyles.PageHeader,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 60.dp)
         )
-        Spacer(modifier = Modifier.weight(1f))
-        actions()
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = AppDimens.pagePadding)
+        ) {
+            actions()
+        }
     }
 }
 
@@ -580,11 +588,13 @@ fun EmptyState(
                 tint = AppColors.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
-            // 引导文案 — 空态主文案档 bodyLarge(16sp)（字阶 §2，非 caption）
+            // 引导文案 — 空态主文案档 bodyLarge(16sp)（字阶 §2，非 caption）；多行文案
+            // 需显式居中：Text 块内默认 Start 对齐，长文案折行后整块左歪（图标居中文字偏左）
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyLarge,
-                color = AppColors.colorScheme.textSecondary
+                color = AppColors.colorScheme.textSecondary,
+                textAlign = TextAlign.Center
             )
             if (action != null) {
                 Spacer(modifier = Modifier.height(AppDimens.spaceMd))

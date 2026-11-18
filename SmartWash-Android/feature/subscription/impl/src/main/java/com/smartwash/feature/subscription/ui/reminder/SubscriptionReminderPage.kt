@@ -43,6 +43,7 @@ import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.IconBox
@@ -203,6 +204,7 @@ fun SubscriptionReminderPage(
                                 onClick = {
                                     if (reminder.isRead == 0) viewModel.markRead(reminder.reminderId)
                                 },
+                                modifier = animatedListItem(),
                             )
                         }
                     }
@@ -220,13 +222,14 @@ fun SubscriptionReminderPage(
 private fun ReminderRow(
     reminder: ReminderVo,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val type = SubscriptionReminderType.fromRawOrDefault(reminder.remindType)
     val unread = reminder.isRead == 0
     val unreadDotDesc = stringResource(R.string.subscription_reminder_unread_dot)
     // 统一走 GroupCard（规范 §3.1 唯一卡片画法：softCardShadow + 1dp 描边 + 20dp 卡内边距）
     GroupCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             // 已读条目不可点（无动作可执行），不挂点击
             .then(if (unread) Modifier.pressable(onClick = onClick, scaleFactor = 0.97f) else Modifier),

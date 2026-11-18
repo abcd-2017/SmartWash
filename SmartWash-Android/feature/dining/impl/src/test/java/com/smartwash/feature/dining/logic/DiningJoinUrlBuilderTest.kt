@@ -78,4 +78,21 @@ class DiningJoinUrlBuilderTest {
         assertNull(DiningJoinUrlBuilder.buildJoinUrl("ftp://api.example.com/", 1L, "t"))
         assertNull(DiningJoinUrlBuilder.buildJoinUrl("smartwash://dining", 1L, "t"))
     }
+
+    // ==================== 端内加入深链（草稿期邀请复制） ====================
+
+    @Test
+    fun `端内深链按 spec 拼 smartwash 协议`() {
+        assertEquals(
+            "smartwash://dining/order/42?t=abc123",
+            DiningJoinUrlBuilder.buildOrderDeepLink(orderId = 42L, joinToken = "abc123"),
+        )
+    }
+
+    @Test
+    fun `端内深链 token 空白或 orderId 非法返回 null`() {
+        assertNull(DiningJoinUrlBuilder.buildOrderDeepLink(42L, ""))
+        assertNull(DiningJoinUrlBuilder.buildOrderDeepLink(42L, "  "))
+        assertNull(DiningJoinUrlBuilder.buildOrderDeepLink(0L, "t"))
+    }
 }

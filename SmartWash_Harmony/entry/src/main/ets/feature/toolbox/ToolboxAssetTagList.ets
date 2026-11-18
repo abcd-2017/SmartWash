@@ -6,7 +6,8 @@
 
 import { HttpStatusCode } from '@ohos/axios'
 import { RouteNames } from '../../constant/RouteNames'
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../constant/DesignSystem'
+import { ReduceMotion } from '../../utils/ReduceMotion'
 import {
   AssetTagVo,
   TOOLBOX_PAGE_SIZE,
@@ -239,10 +240,12 @@ struct ToolboxAssetTagList {
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
+    // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms FastOutSlowIn，reduced 180ms）
     .scale({
-      x: this.pressedKey === `card-${vo.id ?? 0}` ? 0.97 : 1,
-      y: this.pressedKey === `card-${vo.id ?? 0}` ? 0.97 : 1
+      x: this.pressedKey === `card-${vo.id ?? 0}` ? MotionScale.Press : 1,
+      y: this.pressedKey === `card-${vo.id ?? 0}` ? MotionScale.Press : 1
     })
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressedKey = `card-${vo.id ?? 0}`
@@ -339,6 +342,8 @@ struct ToolboxAssetTagList {
                   ListItem() {
                     this.ShortCodeCard(vo)
                   }
+                  // 列表项进出场（对齐安卓 animatedListItem 弹簧；ArkUI 无项级 placement，淡入淡出近似）
+                  .transition(ReduceMotion.listItemTransition())
                 }, (vo: AssetTagVo) => `${vo.id ?? 0}`)
 
                 ListItem() {

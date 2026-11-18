@@ -41,6 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppButtonVariant
@@ -116,6 +117,7 @@ fun ServicePage(
                     // 行点击跳预约页并携带该套餐 id 作为默认选中（调研 2026-11-01 缺陷 3c）
                     item {
                         ServiceListCard(
+                            modifier = animatedListItem(),
                             items = laundryItems,
                             onReserve = { itemId ->
                                 navController.navigate(LaundryRoute.Laundry(itemId))
@@ -174,11 +176,12 @@ private fun ServiceErrorState(
  */
 @Composable
 private fun ServiceListCard(
+    modifier: Modifier = Modifier,
     items: List<LaundryItem>,
     onReserve: (Long) -> Unit
 ) {
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = AppDimens.pagePadding).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),

@@ -17,18 +17,18 @@ class DiningJoinEntryTest {
     }
 
     @Test
-    fun `已是成员直达详情`() {
+    fun `已是成员直达编辑页`() {
         assertEquals(
             DiningJoinEntryDecision.ENTER_DETAIL,
-            DiningJoinEntry.decide(brief(joined = true, status = DiningOrderStatus.ONGOING)),
+            DiningJoinEntry.decide(brief(joined = true, status = DiningOrderStatus.DRAFT)),
         )
     }
 
     @Test
-    fun `非成员且进行中展示确认加入`() {
+    fun `非成员且编辑中展示确认加入（草稿可加入一起选菜）`() {
         assertEquals(
             DiningJoinEntryDecision.CONFIRM_JOIN,
-            DiningJoinEntry.decide(brief(joined = false, status = DiningOrderStatus.ONGOING)),
+            DiningJoinEntry.decide(brief(joined = false, status = DiningOrderStatus.DRAFT)),
         )
     }
 

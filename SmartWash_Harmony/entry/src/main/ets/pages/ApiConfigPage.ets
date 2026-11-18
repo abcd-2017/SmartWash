@@ -19,7 +19,8 @@
 // 这里用「字段 + 内联展开选项面板」实现等价交互（同一份数据、同一联动语义），
 // 避免引入未验证的弹窗 API 带来真机定位/层级风险。
 
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../constant/DesignSystem'
+import { ReduceMotion } from '../utils/ReduceMotion'
 import { HttpStatusCode } from '@ohos/axios'
 import vibrator from '@ohos.vibrator'
 import {
@@ -1004,7 +1005,8 @@ struct ApiConfigDropdown {
           .fontColor([$r('app.color.TEXT_TERTIARY')])
           .margin({ left: DesignDimens.SPACE_XS })
           .rotate({ angle: this.expanded ? 180 : 0 })
-          .animation({ duration: 200, curve: Curve.EaseOut })
+          // 内容进场 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)），reduced 降级 180ms
+          .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
       }
       .width('100%')
       .height(52)

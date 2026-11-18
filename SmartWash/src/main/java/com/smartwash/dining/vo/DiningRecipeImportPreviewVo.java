@@ -14,6 +14,9 @@ import java.util.List;
  *
  * <p>v2 扩展（契约 §3.2）：PreviewRow 增加配料明细/封面对象键/营养 6 列的解析结果，
  * 以及行级 warnings（分类自动创建、封面对象键存储缺失、明细解析失败等——不阻断导入）。</p>
+ *
+ * <p>source_key 幂等判重扩展：PreviewRow 增加唯一标识回显与 isNew/existsKind（新增/更新）标注，
+ * 顶层 newCount/updateCount 供前端展示「新增 N / 更新 M」——判重顺序 source_key 优先 →（菜名,分类）兜底。</p>
  */
 @Data
 @Accessors(chain = true)
@@ -26,6 +29,12 @@ public class DiningRecipeImportPreviewVo {
     private int validCount;
 
     private int errorCount;
+
+    /** 通过校验行中判定为新增的行数（errorCount 行不计入；与 updateCount 之和 ≤ validCount） */
+    private int newCount;
+
+    /** 通过校验行中判定为更新的行数（命中库内已有菜谱或本批 source_key 判重） */
+    private int updateCount;
 
     /** 逐行预览明细（按行号升序，含失败行的错误原因） */
     private List<PreviewRow> rows;
@@ -77,6 +86,15 @@ public class DiningRecipeImportPreviewVo {
 
         /** 钠 mg/100g（可空） */
         private BigDecimal sodiumMg;
+
+        /** 唯一标识原文（可空；确认导入按 source_key 优先 →（菜名,分类）兜底幂等判重） */
+        private String sourceKey;
+
+        /** 是否新增（true=新增 / false=更新库内已有菜谱；行级错误时无判重语义） */
+        private Boolean isNew;
+
+        /** 判重结果类型：CREATE=新增 / UPDATE=更新（对齐 DiningRecipeImportService 常量），行级错误时为 null */
+        private String existsKind;
 
         /** 行级错误（空列表 = 该行通过校验；任一错误确认导入即全批回滚） */
         private List<String> errors;

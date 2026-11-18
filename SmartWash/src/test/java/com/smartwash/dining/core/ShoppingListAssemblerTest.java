@@ -17,8 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 购买清单聚合纯函数测试（spec：食材名并集去重 + 按菜视图，不聚合数量、不换算单位）。
- * 纯函数无依赖，直接断言输入输出契约；结束点单接口（11 号票）复用同一聚合口径。
+ * 购买清单聚合纯函数测试（spec：食材名并集去重 + 按菜视图）。
+ * 纯函数无依赖，直接断言输入输出契约；submit 提交点单接口复用同一聚合口径。
  */
 @DisplayName("ShoppingListAssembler 购买清单聚合测试")
 class ShoppingListAssemblerTest {
@@ -139,15 +139,20 @@ class ShoppingListAssemblerTest {
     }
 
     @Test
-    @DisplayName("空选菜记录：清单与按菜视图均为空")
-    void assemble_noSelections_emptyResult() {
+    @DisplayName("空选菜记录 = 整份菜单入选：食材并集与按菜视图覆盖全部菜，按菜视图无选菜人")
+    void assemble_noSelections_wholeMenuIncluded() {
         List<RecipeIngredient> recipes = List.of(
-                new RecipeIngredient(1L, "番茄炒蛋", List.of("西红柿")));
+                new RecipeIngredient(1L, "番茄炒蛋", List.of("西红柿", "鸡蛋")),
+                new RecipeIngredient(2L, "凉拌黄瓜", List.of("黄瓜")));
 
         ShoppingList list = ShoppingListAssembler.assemble(recipes, List.of());
 
-        assertTrue(list.ingredientNames().isEmpty());
-        assertTrue(list.perRecipe().isEmpty());
+        assertEquals(List.of("西红柿", "鸡蛋", "黄瓜"), list.ingredientNames());
+        assertEquals(2, list.perRecipe().size(), "整份菜单全部进入按菜视图");
+        assertEquals("番茄炒蛋", list.perRecipe().get(0).recipeName());
+        assertTrue(list.perRecipe().get(0).selectors().isEmpty(), "新模型无选菜人");
+        assertEquals("凉拌黄瓜", list.perRecipe().get(1).recipeName());
+        assertTrue(list.perRecipe().get(1).selectors().isEmpty());
     }
 
     @Test
@@ -331,5 +336,34 @@ class ShoppingListAssemblerTest {
         assertEquals(1, list.ingredientTotals().size());
         assertEquals(1, list.calorieUnknownDishCount(), "被勾选且热量 null 的菜计为未知");
         assertEquals(0, BigDecimal.ZERO.compareTo(list.totalCalories()));
+    }
+
+    @Test
+    @DisplayName("v2 顺序：勾选顺序与菜单顺序相反时，名并集/配料聚合/逐菜热量仍按菜单编排序输出（快照确定性）")
+    void assembleV2_outputOrder_followsMenuOrder_notSelectionOrder() {
+        List<RecipeIngredient> recipes = List.of(
+                v2Recipe(1L, "宫保鸡丁", List.of(amount("鸡胸肉", "300", "g"), amount("花生", "50", "g")), "1051"),
+                v2Recipe(2L, "凉拌黄瓜", List.of(amount("黄瓜", "400", "g"), amount("鸡蛋", "2", "个")), "120.5"));
+        // 勾选顺序故意与菜单顺序相反：黄瓜先被勾选
+        List<Selection> selections = List.of(
+                new Selection(2L, 102L, null),
+                new Selection(1L, 101L, null));
+
+        ShoppingList list = ShoppingListAssembler.assemble(recipes, selections);
+
+        // 名并集：按菜单编排序（宫保鸡丁的食材在前），与勾选先后无关
+        assertEquals(List.of("鸡胸肉", "花生", "黄瓜", "鸡蛋"), list.ingredientNames(),
+                "名并集必须跟随菜单顺序，而非首次勾选顺序");
+        // 配料聚合组：菜单在前的菜的配料组在前
+        assertEquals("鸡胸肉", list.ingredientTotals().get(0).name());
+        assertEquals("黄瓜", list.ingredientTotals().get(2).name(), "第 3 组应是菜单第 2 道菜的配料");
+        // 逐菜热量：菜单编排序
+        assertEquals("宫保鸡丁", list.perDishCalories().get(0).recipeName());
+        assertEquals("凉拌黄瓜", list.perDishCalories().get(1).recipeName());
+        // 按菜视图顺序沿用菜单编排序（宫保鸡丁在前），组内选菜人保持勾选记录顺序（行为不变）
+        assertEquals("宫保鸡丁", list.perRecipe().get(0).recipeName());
+        assertEquals(101L, list.perRecipe().get(0).selectors().get(0).userId());
+        assertEquals("凉拌黄瓜", list.perRecipe().get(1).recipeName());
+        assertEquals(102L, list.perRecipe().get(1).selectors().get(0).userId());
     }
 }

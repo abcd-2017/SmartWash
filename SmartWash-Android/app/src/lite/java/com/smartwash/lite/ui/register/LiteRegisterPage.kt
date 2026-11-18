@@ -1,6 +1,11 @@
 package com.smartwash.lite.ui.register
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,10 +65,14 @@ import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.isValidPhone
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.user.api.UserRoute
@@ -215,8 +224,14 @@ fun LiteRegisterPage(
                 isError = isPhoneError,
                 leadingIcon = Icons.Rounded.Phone,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                supportingText = if (isPhoneError) {
-                    {
+                supportingText = {
+                    AnimatedVisibility(
+                        visible = isPhoneError,
+                        enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                            expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                        exit = fadeOut(motionSpec(exitTween(140))) +
+                            shrinkVertically(motionSpec(exitTween(140))),
+                    ) {
                         Text(
                             text = stringResource(com.smartwash.common.ui.R.string.invalid_phone),
                             fontSize = 12.sp,
@@ -224,7 +239,7 @@ fun LiteRegisterPage(
                             color = AppColors.colorScheme.error
                         )
                     }
-                } else null
+                }
             )
 
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -267,8 +282,14 @@ fun LiteRegisterPage(
                 isError = isCodeError,
                 countDown = countDown,
                 sendEnabled = countDown == 0 && captchaState !is RequestState.Loading,
-                supportingText = if (isCodeError) {
-                    {
+                supportingText = {
+                    AnimatedVisibility(
+                        visible = isCodeError,
+                        enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                            expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                        exit = fadeOut(motionSpec(exitTween(140))) +
+                            shrinkVertically(motionSpec(exitTween(140))),
+                    ) {
                         Text(
                             text = stringResource(com.smartwash.feature.user.impl.R.string.invalid_verification_code),
                             fontSize = 12.sp,
@@ -276,7 +297,7 @@ fun LiteRegisterPage(
                             color = AppColors.colorScheme.error
                         )
                     }
-                } else null
+                }
             )
 
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -297,8 +318,14 @@ fun LiteRegisterPage(
                 },
                 modifier = Modifier.focusRequester(passwordFocusRequester),
                 isError = isPasswordError,
-                supportingText = if (isPasswordError) {
-                    {
+                supportingText = {
+                    AnimatedVisibility(
+                        visible = isPasswordError,
+                        enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                            expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                        exit = fadeOut(motionSpec(exitTween(140))) +
+                            shrinkVertically(motionSpec(exitTween(140))),
+                    ) {
                         Text(
                             text = stringResource(com.smartwash.common.ui.R.string.invalid_password),
                             fontSize = 12.sp,
@@ -306,7 +333,7 @@ fun LiteRegisterPage(
                             color = AppColors.colorScheme.error
                         )
                     }
-                } else null
+                }
             )
         }
 

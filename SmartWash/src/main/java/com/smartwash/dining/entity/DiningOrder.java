@@ -12,8 +12,10 @@ import java.time.LocalDateTime;
 
 /**
  * 吃啥-点单订单。
- * 一人发起（title + 从公共菜谱库勾选本单菜单）生成二维码分享，其他人扫码加入后各自勾选想吃的菜；
- * 发起者结束后锁定订单并写 shopping_list 快照（结束接口在 11 号票）。
+ * 产品模型：菜单即已选清单，全员共同编辑，发起者一步「提交」→ 订单直接结束。
+ * 一人发起（title + 从公共菜谱库勾选本单菜单）生成二维码分享，其他人扫码加入后共同加/移除菜；
+ * 创建即 DRAFT（标题/菜单可空、全部成员可加/移除菜），发起者 submit 提交即 FINISHED，
+ * 并写 shopping_list 购买清单快照（聚合本单菜单）。
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -32,7 +34,7 @@ public class DiningOrder implements Serializable {
     /** 发起者用户 ID(users.user_id) */
     private Long creatorUserId;
 
-    /** 订单状态：ONGOING 进行中 / FINISHED 已结束（DiningOrderStatus） */
+    /** 订单状态：DRAFT 草稿 / FINISHED 已结束（DiningOrderStatus） */
     private String status;
 
     /** 加入凭证（二维码携带，uk_join_token 兜底唯一；重置即旧二维码全部作废） */
@@ -41,7 +43,7 @@ public class DiningOrder implements Serializable {
     /** 乐观并发版本号：每次选菜变更条件 UPDATE +1，客户端写请求携带已知 version，不匹配返回业务错误码 409 */
     private Integer version;
 
-    /** 购买清单快照（结束时写入：食材名并集去重 + 按菜视图），本票仅定义列，11 号票写入 */
+    /** 购买清单快照（submit 提交时写入：食材名并集去重 + 按菜视图） */
     private String shoppingList;
 
     private LocalDateTime finishedAt;

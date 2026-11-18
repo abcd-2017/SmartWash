@@ -1,6 +1,7 @@
 import { BusinessError } from '@kit.BasicServicesKit'
 import { KeyboardAvoidMode } from '@kit.ArkUI'
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { RouteNames } from "../constant/RouteNames"
 import { PaymentMethod } from "../constant/PaymentMethod"
 import { RechargeType } from "../constant/RechargeType"
@@ -204,7 +205,8 @@ struct Recharge {
         .margin({ top: 8 })
         .alignSelf(ItemAlign.Start)
         .transition(TransitionEffect.OPACITY)
-        .animation({ duration: 200, curve: Curve.EaseOut })
+        // 内容进场 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)），reduced 降级 180ms
+        .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
     }
   }
 
@@ -219,7 +221,8 @@ struct Recharge {
         .margin({ top: 8 })
         .alignSelf(ItemAlign.Start)
         .transition(TransitionEffect.OPACITY)
-        .animation({ duration: 200, curve: Curve.EaseOut })
+        // 内容进场 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)），reduced 降级 180ms
+        .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
     }
   }
 
@@ -324,14 +327,14 @@ struct Recharge {
           .height(24)
           .borderRadius(12)
           .border({ width: 1, color: $r('app.color.PRIMARY'), style: BorderStyle.Solid })
-          .transition(TransitionEffect.OPACITY.animation(MotionTiming.ENTER))
+          .transition(TransitionEffect.OPACITY.animation(ReduceMotion.specCurve(MotionTiming.SELECTED)))
         // 内圆：选中时出现
         Column()
           .width(12)
           .height(12)
           .borderRadius(6)
           .backgroundColor($r('app.color.PRIMARY'))
-          .transition(TransitionEffect.scale({ x: 0, y: 0 }).animation(MotionTiming.ENTER))
+          .transition(TransitionEffect.scale({ x: 0, y: 0 }).animation(ReduceMotion.specCurve(MotionTiming.SELECTED)))
       } else {
         Column()
           .width(24)

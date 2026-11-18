@@ -8,7 +8,8 @@ import { setValue } from "../utils/StorageUtil"
 import { CommonConstants } from "../constant/CommonConstants"
 import { Debouncer } from "../utils/DebounceUtil"
 import { logger } from "../utils/Logger"
-import { DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionScale, MotionTiming } from "../constant/DesignSystem"
+import { ReduceMotion } from "../utils/ReduceMotion"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from "@ohos.vibrator"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
@@ -345,8 +346,8 @@ struct Login {
           .borderRadius(DesignDimens.RADIUS_FULL)
           .backgroundColor($r('app.color.PRIMARY'))
           .opacity(this.loginLoading ? 0.38 : 1)
-          .scale({ x: this.ctaPressed ? 0.97 : 1, y: this.ctaPressed ? 0.97 : 1 })
-          .animation({ duration: 100, curve: Curve.EaseOut })
+          .scale({ x: this.ctaPressed ? MotionScale.Press : 1, y: this.ctaPressed ? MotionScale.Press : 1 })
+          .animation(ReduceMotion.spec(MotionTiming.PRESS))
           .onTouch((event: TouchEvent) => {
             if (event.type === TouchType.Down) {
               this.ctaPressed = true
@@ -382,8 +383,8 @@ struct Login {
             .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(Color.White)
             .padding({ left: 4, right: 4, top: 16, bottom: 16 })
-            .scale({ x: this.registerPressed ? 0.97 : 1, y: this.registerPressed ? 0.97 : 1 })
-            .animation({ duration: 100, curve: Curve.EaseOut })
+            .scale({ x: this.registerPressed ? MotionScale.Press : 1, y: this.registerPressed ? MotionScale.Press : 1 })
+            .animation(ReduceMotion.spec(MotionTiming.PRESS))
             .onTouch((event: TouchEvent) => {
               if (event.type === TouchType.Down) {
                 this.registerPressed = true

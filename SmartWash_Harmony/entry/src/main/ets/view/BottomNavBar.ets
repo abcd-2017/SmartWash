@@ -1,4 +1,5 @@
-import { DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from '../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionAlpha, MotionDuration, MotionScale, MotionTiming } from '../constant/DesignSystem'
+import { ReduceMotion } from '../utils/ReduceMotion'
 import vibrator from '@ohos.vibrator'
 import { resColor } from '../utils/ResourceColor'
 
@@ -68,8 +69,9 @@ export struct BottomNav {
  * 标签恒定 12sp/500（labelSmall），只差颜色——杜绝选中瞬间字重跳变（recap §3 [V3]）。
  * 无胶囊指示器（安卓底栏无指示器，recap §3 [V2]）。
  *
- * reduced motion：当前 SDK 无系统动画时长开关可读（同 divReduceMotion 决策），
- * 降级分支待 API 可用后接入；此处动画时长 600ms 与安卓一致。
+ * reduced motion（对齐安卓 BottomNavItem）：scale 目标恒 1（无缩放），标签色降级 180ms；
+ * 系统开关经 ReduceMotion 读取（原「SDK 无 API」结论已更新：@ohos.settings 可读
+ * ANIMATOR_DURATION_SCALE，见 utils/ReduceMotion.ets）。
  */
 @ComponentV2
 export struct BottomNavItem {
@@ -85,8 +87,12 @@ export struct BottomNavItem {
   @Local selectedOpacity: number = 0
   @Local iconScale: number = 1
   @Local labelColor: ResourceColor = $r('app.color.TEXT_TERTIARY')
+  // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms；reduced motion 降级 alpha 0.86）
+  @Local pressed: boolean = false
+  @Local reduceMotion: boolean = false
 
   aboutToAppear(): void {
+    this.reduceMotion = ReduceMotion.isEnabled()
     this.applyState(false)
   }
 
@@ -95,23 +101,33 @@ export struct BottomNavItem {
     this.applyState(true)
   }
 
+  /** 目标图标缩放 — reduced motion 时恒 1（规范 §8，对齐安卓 reduceMotion 分支） */
+  private targetIconScale(): number {
+    if (this.reduceMotion) {
+      return 1
+    }
+    return this.isSelected ? MotionScale.BottomNavSelected : 1
+  }
+
   /** 同步选中态：animate=false 直接落终态（首帧/初始），true 走 600ms 交叉淡变 */
   private applyState(animate: boolean): void {
     if (animate) {
-      animateTo({ duration: 600, curve: Curve.Linear }, () => {
+      animateTo({ duration: MotionDuration.BottomNavIconMs, curve: Curve.Linear }, () => {
         this.normalOpacity = this.isSelected ? 0 : 1
         this.selectedOpacity = this.isSelected ? 1 : 0
       })
-      animateTo({ duration: 600, curve: MotionTiming.SPRING }, () => {
-        this.iconScale = this.isSelected ? 1.06 : 1
+      // 图标缩放走默认弹簧（对齐安卓 motionSpec(defaultSpring)），reduced 时经 specCurve 降级 180ms
+      animateTo(ReduceMotion.specCurve(MotionTiming.SPRING), () => {
+        this.iconScale = this.targetIconScale()
       })
-      animateTo({ duration: 200, curve: Curve.Linear }, () => {
+      // 标签色 200ms 微反馈档（对齐安卓 tween(DURATION_MICRO_MS)），reduced 降级 180ms
+      animateTo(ReduceMotion.spec({ duration: MotionDuration.MicroMs, curve: Curve.Linear }), () => {
         this.labelColor = this.isSelected ? $r('app.color.PRIMARY') : $r('app.color.TEXT_TERTIARY')
       })
     } else {
       this.normalOpacity = this.isSelected ? 0 : 1
       this.selectedOpacity = this.isSelected ? 1 : 0
-      this.iconScale = this.isSelected ? 1.06 : 1
+      this.iconScale = this.targetIconScale()
       this.labelColor = this.isSelected ? $r('app.color.PRIMARY') : $r('app.color.TEXT_TERTIARY')
     }
   }
@@ -153,6 +169,20 @@ export struct BottomNavItem {
     // 不再 .width('100%') 撑满等分槽位，热区回归内容宽（约 56–68vp）
     .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 4, bottom: 4 })
     .justifyContent(FlexAlign.Center)
+    // 按压反馈（对齐安卓 pressable）：scale 0.97 + 100ms FastOutSlowIn；reduced motion 降级 alpha 0.86
+    .scale({
+      x: this.pressed && !this.reduceMotion ? MotionScale.Press : 1,
+      y: this.pressed && !this.reduceMotion ? MotionScale.Press : 1
+    })
+    .opacity(this.pressed && this.reduceMotion ? MotionAlpha.PressReduced : 1)
+    .animation(MotionTiming.PRESS)
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
     .onClick(() => {
       this.triggerClick()
     })

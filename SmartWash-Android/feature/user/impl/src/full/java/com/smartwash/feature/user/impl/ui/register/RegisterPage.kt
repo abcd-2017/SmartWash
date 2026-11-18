@@ -2,6 +2,11 @@ package com.smartwash.feature.user.impl.ui.register
 
 import android.app.Activity
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -47,7 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.ErrorLight
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AuthGradientBottom
 import com.smartwash.common.ui.theme.AuthGradientMid
@@ -69,6 +74,7 @@ import androidx.core.view.WindowCompat
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.smartwash.common.ui.components.AppFieldVariant
 import com.smartwash.common.ui.components.AppPasswordTextField
 import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.AppVerificationCodeField
@@ -78,7 +84,11 @@ import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.ClickDebouncer
 import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.isValidPhone
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
@@ -234,7 +244,7 @@ fun RegisterPage(
                 Text(
                     text = stringResource(R.string.register),
                     modifier = Modifier.weight(1f),
-                    // 注册画板页头实测 22/600（= PageHeader 档，与清氧内页页头裁定一致）
+                    // 页头标题走 PageHeader 档 18/24/600（2026-11-18 起内页页头统一 18sp）
                     style = AppTextStyles.PageHeader,
                     color = Color.White,
                     textAlign = TextAlign.Center
@@ -343,19 +353,26 @@ fun RegisterPage(
                         }
                     },
                     modifier = Modifier.heightIn(min = 48.dp),
+                    variant = AppFieldVariant.GLASS,
                     isError = isPhoneError,
                     leadingIcon = Icons.Rounded.Phone,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    supportingText = if (isPhoneError) {
-                        {
+                    supportingText = {
+                        AnimatedVisibility(
+                            visible = isPhoneError,
+                            enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                                expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                            exit = fadeOut(motionSpec(exitTween(140))) +
+                                shrinkVertically(motionSpec(exitTween(140))),
+                        ) {
                             Text(
                                 text = stringResource(com.smartwash.common.ui.R.string.invalid_phone),
                                 fontSize = 12.sp,
                                 lineHeight = 16.sp,
-                                color = AppColors.colorScheme.error
+                                color = ErrorLight
                             )
                         }
-                    } else null
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -412,19 +429,26 @@ fun RegisterPage(
                     modifier = Modifier
                         .heightIn(min = 48.dp)
                         .focusRequester(verificationCodeFocusRequester),
+                    variant = AppFieldVariant.GLASS,
                     countDown = countDown,
                     sendEnabled = countDown == 0 && captchaState !is RequestState.Loading,
                     isError = isVerificationCodeError,
-                    supportingText = if (isVerificationCodeError) {
-                        {
+                    supportingText = {
+                        AnimatedVisibility(
+                            visible = isVerificationCodeError,
+                            enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                                expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                            exit = fadeOut(motionSpec(exitTween(140))) +
+                                shrinkVertically(motionSpec(exitTween(140))),
+                        ) {
                             Text(
                                 text = stringResource(R.string.invalid_verification_code),
                                 fontSize = 12.sp,
                                 lineHeight = 16.sp,
-                                color = AppColors.colorScheme.error
+                                color = ErrorLight
                             )
                         }
-                    } else null
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -450,17 +474,24 @@ fun RegisterPage(
                     },
                     // 最大位数由组件 maxLength 固定 16，无需页面截断
                     modifier = Modifier.focusRequester(passwordFocusRequester),
+                    variant = AppFieldVariant.GLASS,
                     isError = isPasswordError,
-                    supportingText = if (isPasswordError) {
-                        {
+                    supportingText = {
+                        AnimatedVisibility(
+                            visible = isPasswordError,
+                            enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                                expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                            exit = fadeOut(motionSpec(exitTween(140))) +
+                                shrinkVertically(motionSpec(exitTween(140))),
+                        ) {
                             Text(
                                 text = stringResource(com.smartwash.common.ui.R.string.invalid_password),
                                 fontSize = 12.sp,
                                 lineHeight = 16.sp,
-                                color = AppColors.colorScheme.error
+                                color = ErrorLight
                             )
                         }
-                    } else null
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))

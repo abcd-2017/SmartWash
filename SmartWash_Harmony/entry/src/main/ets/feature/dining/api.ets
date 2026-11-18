@@ -2,8 +2,15 @@
 // 网络接口在 network/api/DiningApi.ets、VO 在 network/vo/DiningVo.ets、纯函数在 DiningLogic.ets、
 // 文案在 DiningText.ets；本文件只承载跨文件（含深链注册表）引用的路由参数结构。
 
-/** 创建订单页路由参数（fromOrderId > 0 = 复用历史菜单模式） */
+/**
+ * 创建订单页路由参数。
+ * - orderId > 0：草稿编辑模式（加载既有 DRAFT，加/移除走 dishes，CTA=提交订单）
+ * - fromOrderId > 0：复用历史菜单模式（源单菜单只读，提交带 fromOrderId）
+ * - 二者皆空：常规模式（惰性创建 DRAFT）
+ */
 export class DiningOrderCreateParam {
+  /** 草稿编辑模式订单 ID；0 = 非草稿编辑 */
+  orderId: number = 0
   /** 复用源单 ID；0 = 常规模式 */
   fromOrderId: number = 0
   /** 源单标题（复用提示回显） */

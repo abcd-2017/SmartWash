@@ -53,6 +53,7 @@ export function getDiningRecipeList(params) {
 }
 
 // 新增菜谱：name/categoryId（可空=未分类）/ingredients（食材名数组）/steps/coverObjectKey（可空）
+// /sourceKey（可选唯一判重键，目录式上传携带；同 key 已存在时后端拒绝并提示被占用）
 // （后端默认上架并记录创建管理员；同名菜谱允许重复）
 export function addDiningRecipe(data) {
   return request({
@@ -62,7 +63,9 @@ export function addDiningRecipe(data) {
   });
 }
 
-// 更新菜谱：id + 同新增字段（字段不传即不修改；上下架走专用状态接口）
+// 更新菜谱：id + 同新增字段（字段不传即不修改；上下架走专用状态接口）。
+// sourceKey（可选）：传值时若同 key 已挂在其他菜谱（不同 id）上后端报业务冲突，不传=不修改；
+// 目录式上传按 sourceKey/（菜名,分类）判重命中后携带 id 走本接口做幂等更新
 export function updateDiningRecipe(data) {
   return request({
     url: '/admin/dining/recipes/update',

@@ -6,6 +6,7 @@ import { initPreferences } from '../utils/StorageUtil';
 import { initPickupReminder } from '../utils/ReminderService';
 import { DarkModeStore } from '../constant/DarkModeStore';
 import { ServerConfig } from '../config/ServerConfig'
+import { ReduceMotion } from '../utils/ReduceMotion'
 
 // 崩溃摘要最大长度：onUnhandledException 的 errMsg 含完整调用栈，截断防超长刷屏
 const CRASH_SUMMARY_MAX_LEN: number = 300;
@@ -56,6 +57,9 @@ export default class EntryAbility extends UIAbility {
     this.saveWidgetLaunch(want);
     // 服务端公开配置预热（非阻塞，对齐安卓 ServerConfigInitTask）：游戏桥白名单运行期读取
     ServerConfig.prefetch();
+    // reduced motion 预热：读取系统动画时长缩放写入 AppStorage，供动效降级路径统一消费
+    // （对齐安卓 MainActivity 的 isReduceMotionEnabled + LocalReduceMotion 提供）
+    ReduceMotion.refresh(this.context);
   }
 
   /**

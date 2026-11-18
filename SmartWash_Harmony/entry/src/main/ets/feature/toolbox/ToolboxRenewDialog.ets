@@ -16,10 +16,11 @@
 //   点日期按钮经 onPickDate 把「选中回填回调」交给父组件，父组件在日期弹窗确定时回调本弹窗，
 //   更新内部 @State（可见回填）并经 onDatePicked 回写父组件（供 doRenew 读取）。
 
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from '../../constant/DesignSystem'
 import { ExpiryPreset } from './ShortCodeRules'
 import { ToolboxText } from './api'
 import { AppButton, AppButtonVariant } from '../../view/common/AppComponents'
+import { ReduceMotion } from '../../utils/ReduceMotion'
 import { resColor } from '../../utils/ResourceColor'
 
 /**
@@ -37,31 +38,37 @@ export struct RenewPresetChip {
   @Local pressed: boolean = false
 
   build() {
-    Text(this.text)
-      .fontSize(DesignFontSize.CAPTION)
-      // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
-      .fontWeight(DesignFontWeight.SEMI_BOLD)
-      .fontColor(this.selected ? $r('app.color.ON_PRIMARY') : $r('app.color.TEXT_SECONDARY'))
-      // chip 内含数字（「7 天」等）：tnum 数字等宽（规范 §2.2，与创建页 chip 同款）
-      .fontFeature(DesignFontFeature.TNUM)
-      .padding({ left: 16, right: 16, top: 17, bottom: 17 })
-      .backgroundColor(this.selected ? $r('app.color.PRIMARY') : $r('app.color.SURFACE'))
-      .borderWidth(1)
-      .borderColor(this.selected ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
-      .onTouch((event: TouchEvent) => {
-        if (event.type === TouchType.Down) {
-          this.pressed = true
-        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-          this.pressed = false
-        }
-      })
-      .onClick(() => {
-        this.onSelect()
-      })
-      // 200ms 颜色过渡（对齐安卓 selectedColor）
-      .animation({ duration: 200, curve: Curve.EaseInOut })
+    // 双层结构：外层承接按压 scale（100ms FastOutSlowIn），内层 Text 承接选中色弹簧，
+    // 避免同一节点 .animation 无法区分按压与选中两套规格（与创建页 SelectableChip 同构）。
+    Column() {
+      Text(this.text)
+        .fontSize(DesignFontSize.CAPTION)
+        // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
+        .fontColor(this.selected ? $r('app.color.ON_PRIMARY') : $r('app.color.TEXT_SECONDARY'))
+        // chip 内含数字（「7 天」等）：tnum 数字等宽（规范 §2.2，与创建页 chip 同款）
+        .fontFeature(DesignFontFeature.TNUM)
+        .padding({ left: 16, right: 16, top: 17, bottom: 17 })
+        .backgroundColor(this.selected ? $r('app.color.PRIMARY') : $r('app.color.SURFACE'))
+        .borderWidth(1)
+        .borderColor(this.selected ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
+        .borderRadius(DesignDimens.RADIUS_FULL)
+        // 选中色走临界阻尼弹簧（对齐安卓 selectedColor，reduced 180ms）
+        .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
+    }
+    .scale({ x: this.pressed ? MotionScale.Press : 1, y: this.pressed ? MotionScale.Press : 1 })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
+    .onClick(() => {
+      this.onSelect()
+    })
+    // 按压反馈（对齐安卓 pressTween：100ms FastOutSlowIn，reduced 180ms）
+    .animation(ReduceMotion.spec(MotionTiming.PRESS))
   }
 }
 
@@ -78,6 +85,8 @@ export struct ToolboxRenewDialog {
   @State currentPreset: ExpiryPreset = ExpiryPreset.DAYS_7
   @State currentCustomDate: string = ""
   @State entered: boolean = false
+  // reduced motion：缩放归零只留纯淡入（规范 §8，对齐安卓 dialogEnterMotion 的 reduceMotion 分支）
+  @State reduceMotion: boolean = false
   // 自定义日期段展开态（对齐安卓 AnimatedVisibility expand/fade）
   @State customExpanded: boolean = false
   onPresetChange: (preset: ExpiryPreset) => void = () => {
@@ -101,7 +110,7 @@ export struct ToolboxRenewDialog {
   /** 弹窗统一入场（对齐安卓 dialogEnterMotion）：首帧后再触发，弹簧 scale 0.92→1 + fade */
   private playEnterMotion(): void {
     setTimeout(() => {
-      animateTo(MotionTiming.DIALOG_ENTER, () => {
+      animateTo(ReduceMotion.spec(MotionTiming.DIALOG_ENTER), () => {
         this.entered = true
       })
     }, 16)
@@ -170,7 +179,9 @@ export struct ToolboxRenewDialog {
         .opacity(this.customExpanded ? 1 : 0)
         .clip(true)
         .margin({ top: this.customExpanded ? DesignDimens.SPACE_SM : 0 })
-        .animation({ duration: 200, curve: Curve.EaseInOut })
+        // 展开内容切换（对齐安卓 AnimatedVisibility fade+expand；ArkUI 无高度退出动画，
+        // 以内容档 200ms 近似，reduced 180ms）
+        .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
 
         Divider()
           .strokeWidth(0.5)
@@ -230,9 +241,13 @@ export struct ToolboxRenewDialog {
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
-      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .scale({
+        x: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter),
+        y: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter)
+      })
       .opacity(this.entered ? 1 : 0)
       .onAppear(() => {
+        this.reduceMotion = ReduceMotion.isEnabled()
         this.playEnterMotion()
       })
     }

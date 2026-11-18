@@ -75,25 +75,118 @@ export class DesignElevation {
   static readonly FLOAT_SHADOW_OFFSET: number = 10
 }
 
-// ========== 动效词汇（对齐安卓 common/utils/AnimationUtils.kt） ==========
+// ========== 动效词汇（对齐安卓 common/utils/AnimationUtils.kt + PressFeedbackModifier.kt） ==========
+//
+// 规格来源：安卓 AnimationUtils.kt 第 7.1 节弹簧参数表 + 时长层级（动效语言 v0.4）。
+// 安卓弹簧参数（dampingRatio/stiffness）在 ArkUI 的等价物是 springMotion(response, dampingFraction)：
+// 弹簧从当前值起动画、天然可中断，不用固定时长 tween 描述位移/缩放动画（规范 §7）。
+// 注意：curve 为 springMotion 时 AnimateParam.duration 被系统忽略（弹簧无固定时长）。
+
+/** 动效时长令牌（单位 ms）— 对齐安卓 PRESS_DURATION_MS / CROSSFADE_ALT_MS / DURATION_*_MS */
+export class MotionDuration {
+  /** 按压反馈 — 配合 scale 0.97，按下瞬间必须无延迟感知 */
+  static readonly PressMs: number = 100
+  /** reduced motion 降级时长（CrossfadeAlt）— 取消缩放/位移/回弹，仅保留颜色与淡入淡出 */
+  static readonly CrossfadeAltMs: number = 180
+  /** 小组件级 — 选中态、tint、微反馈时长上限 */
+  static readonly MicroMs: number = 200
+  /** 卡片与展开级 — 内容块 / 卡片过渡 */
+  static readonly CardMs: number = 300
+  /** 页面与弹层转场级（进入） */
+  static readonly ScreenMs: number = 400
+  /** 页面与弹层转场级（退出）— 退出 ≈ 进入的 70%（400 × 0.7 = 280） */
+  static readonly ShellExitMs: number = 280
+  /** 骨架微光周期 — Linear 无限循环 */
+  static readonly ShimmerMs: number = 1400
+  /** 底栏图标交叉淡变时间线（规范 §4.5，组件特例，不属通用时长层级） */
+  static readonly BottomNavIconMs: number = 600
+}
+
+/** 动效缩放令牌 */
+export class MotionScale {
+  /** 按压缩放 — 对齐安卓 pressable(scaleFactor = 0.97f) */
+  static readonly Press: number = 0.97
+  /** 弹窗入场起始缩放 — scale 0.92 → 1 */
+  static readonly DialogEnter: number = 0.92
+  /** 页面转场起始缩放 — scale 0.95 → 1（壳层） */
+  static readonly Shell: number = 0.95
+  /** 底栏选中图标缩放 — scale 1 → 1.06 */
+  static readonly BottomNavSelected: number = 1.06
+}
+
+/** 动效透明度令牌 */
+export class MotionAlpha {
+  /** reduced motion 按压降级透明度 — 取消缩放，改用 alpha 0.86 保留反馈（规范 §8） */
+  static readonly PressReduced: number = 0.86
+}
 
 /**
- * 动效 timing — 安卓弹簧参数（dampingRatio/stiffness）在 ArkUI 的等价物是
- * springMotion(response, dampingFraction)。弹簧从当前值起动画、天然可中断，
- * 不用固定时长 tween 描述位移动画（规范 §7）。
+ * 动效 timing — 全应用唯一动效词汇，页面禁止再写魔法值。
+ * reduced motion 统一经 utils/ReduceMotion.ets 的 spec() 降级为 CrossfadeAlt（180ms）。
  */
 export class MotionTiming {
   /** 标准弹簧 — 对齐安卓 defaultSpring(1.0, 350)：临界阻尼无回弹（curves 工厂返回 ICurve） */
   static readonly SPRING: ICurve = curves.springMotion(0.4, 1)
 
   /**
+   * 弹跳弹簧 — 对齐安卓 MediumBouncy（dampingRatio 0.5；D11：收藏弹跳/加选 +→✓ 等状态
+   * 变换反馈）：阻尼欠阻尼产生一次过冲回落，response 与标准弹簧同档。
+   */
+  static readonly BOUNCY: ICurve = curves.springMotion(0.4, 0.5)
+
+  /** 选中态颜色 / 指示条 — 临界阻尼弹簧（对齐安卓 selectedColor = motionSpec(defaultSpring())） */
+  static readonly SELECTED: ICurve = curves.springMotion(0.4, 1)
+
+  /** 列表项进出场 / 位移 — 对齐安卓 animateItem(placementSpec = motionSpec(defaultSpring())) */
+  static readonly ITEM: ICurve = curves.springMotion(0.4, 1)
+
+  /** 数字变化 — 弹簧淡入淡出（对齐安卓 AnimatedContent numberSpec = defaultSpring()） */
+  static readonly NUMBER: ICurve = curves.springMotion(0.4, 1)
+
+  /** 按压反馈 — tween 而非 spring（按压要"立刻"而不是"弹一下"）；对齐安卓 pressTween() */
+  static readonly PRESS: AnimateParam = { duration: MotionDuration.PressMs, curve: Curve.FastOutSlowIn }
+
+  /** 内容进场 — 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)） */
+  static readonly ENTER_CONTENT: AnimateParam = { duration: MotionDuration.MicroMs, curve: Curve.LinearOutSlowIn }
+
+  /** 内容退出 — 200ms 加速（对齐安卓 exitTween(DURATION_MICRO_MS)） */
+  static readonly EXIT_CONTENT: AnimateParam = { duration: MotionDuration.MicroMs, curve: Curve.FastOutLinearIn }
+
+  /** 卡片级进场 — 300ms 减速（对齐安卓卡片与展开级） */
+  static readonly ENTER_CARD: AnimateParam = { duration: MotionDuration.CardMs, curve: Curve.LinearOutSlowIn }
+
+  /** 卡片级退出 — 300ms 加速 */
+  static readonly EXIT_CARD: AnimateParam = { duration: MotionDuration.CardMs, curve: Curve.FastOutLinearIn }
+
+  /** 页面转场进 — 400ms 减速（对齐安卓壳层 DURATION_SCREEN_MS） */
+  static readonly ENTER_SCREEN: AnimateParam = { duration: MotionDuration.ScreenMs, curve: Curve.LinearOutSlowIn }
+
+  /** 页面转场出 — 280ms 加速（对齐安卓壳层 400×7/10） */
+  static readonly EXIT_SCREEN: AnimateParam = { duration: MotionDuration.ShellExitMs, curve: Curve.FastOutLinearIn }
+
+  /** 交叉淡变降级档（CrossfadeAlt）— 180ms Linear */
+  static readonly CROSSFADE_ALT: AnimateParam = { duration: MotionDuration.CrossfadeAltMs, curve: Curve.Linear }
+
+  /**
    * 弹窗入场 — 对齐安卓 dialogEnterMotion：scale 0.92→1 + fade 0→1 一次性进场。
    * 退出动画受弹窗窗口机制限制（窗口由系统直接移除），两端一致不做。
    */
-  static readonly DIALOG_ENTER: AnimateParam = { duration: 220, curve: curves.springMotion(0.4, 1) }
+  static readonly DIALOG_ENTER: AnimateParam = { duration: MotionDuration.MicroMs, curve: curves.springMotion(0.4, 1) }
 
-  /** 内容进场（空态等状态到达时刻） — 同弹簧 */
-  static readonly ENTER: AnimateParam = { duration: 220, curve: curves.springMotion(0.4, 1) }
+  /** 内容进场（空态等状态到达时刻）— 弹簧，reduced motion 降级为 180ms 纯淡入 */
+  static readonly ENTER: AnimateParam = { duration: MotionDuration.MicroMs, curve: curves.springMotion(0.4, 1) }
+
+  /**
+   * 骨架微光 — 1400ms Linear 无限循环。
+   * ArkUI 无法平移渐变偏移量，调用侧以高光层 opacity 呼吸近似安卓 shimmer 扫过；
+   * reduced motion 时调用侧退化为静态底块（取消无限循环）。
+   */
+  static readonly SHIMMER: AnimateParam = {
+    duration: MotionDuration.ShimmerMs,
+    curve: Curve.Linear,
+    iterations: -1,
+    playMode: PlayMode.Alternate
+  }
 }
 
 

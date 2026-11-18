@@ -7,9 +7,10 @@
 // 选中结果以「yyyy-MM-dd」本地日期串回传（Android 侧 DatePicker 按 UTC 取整日、这里按本地时间取整日，
 // 二者对「用户选中的那一天」语义一致；短链过期时刻由 ShortCodeRules.expireAtFor 补 23:59:59）。
 
-import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionScale, MotionTiming } from '../../constant/DesignSystem'
 import { ToolboxText } from './api'
 import { formatDate } from './ShortCodeRules'
+import { ReduceMotion } from '../../utils/ReduceMotion'
 import { showToastSafety } from '../../utils/ToastUtil'
 import { resColor } from '../../utils/ResourceColor'
 import { resString } from '../../utils/ResourceString'
@@ -29,6 +30,8 @@ export struct ToolboxDatePickerDialog {
   @Prop title: string = resString('toolbox_expiry_custom_pick')
   @State selected: Date = new Date()
   @State entered: boolean = false
+  // reduced motion：缩放归零只留纯淡入（规范 §8）
+  @State reduceMotion: boolean = false
   onConfirm: (date: string) => void = () => {
   }
   onDismiss: () => void = () => {
@@ -37,7 +40,7 @@ export struct ToolboxDatePickerDialog {
   /** 弹窗统一入场（对齐安卓 dialogEnterMotion）：首帧后再触发，弹簧 scale 0.92→1 + fade */
   private playEnterMotion(): void {
     setTimeout(() => {
-      animateTo(MotionTiming.DIALOG_ENTER, () => {
+      animateTo(ReduceMotion.spec(MotionTiming.DIALOG_ENTER), () => {
         this.entered = true
       })
     }, 16)
@@ -135,9 +138,13 @@ export struct ToolboxDatePickerDialog {
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
-      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .scale({
+        x: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter),
+        y: this.entered ? 1 : (this.reduceMotion ? 1 : MotionScale.DialogEnter)
+      })
       .opacity(this.entered ? 1 : 0)
       .onAppear(() => {
+        this.reduceMotion = ReduceMotion.isEnabled()
         this.playEnterMotion()
       })
     }

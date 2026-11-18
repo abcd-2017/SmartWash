@@ -1,0 +1,520 @@
+{
+ "hit": [
+  "西红柿炒鸡蛋盖饭",
+  "香脆土豆丝饼",
+  "小炒脆笋",
+  "小炒黄牛肉",
+  "爆炒牛肉",
+  "手抓饼",
+  "蒸水蛋",
+  "Mojito莫吉托",
+  "长岛冰茶",
+  "可乐鸡翅",
+  "孜然牛肉",
+  "尖椒炒牛肉",
+  "中式馅饼",
+  "印度烤饼",
+  "醪糟小汤圆",
+  "鹰嘴豆炸饼"
+ ],
+ "miss": [
+  "Q 弹虾滑馄饨",
+  "五彩鸡丝拌面",
+  "泡椒鸡杂面",
+  "笋子鸡丁盖饭（包菜版）",
+  "笋子鸡丁盖饭（菜苔版）",
+  "紫薯杂粮饭",
+  "红米糙米红薯饭",
+  "阳春面",
+  "香辣牛腩面",
+  "鱼香肉丝盖饭（包菜版）",
+  "鱼香肉丝盖饭（菜苔版）",
+  "鸡杂手擀面",
+  "卤肉肠",
+  "咸蛋黄狮子头（卤制版）",
+  "把子肉",
+  "海带结",
+  "薄皮青椒",
+  "皮蛋瘦肉粥",
+  "葱香酱肉包",
+  "蔬菜鸡蛋卷饼",
+  "香脆春卷",
+  "香菇猪肉烧麦",
+  "香菇青菜包（菠菜面皮）",
+  "鸡丝沙汤",
+  "黑全麦鸡丁包",
+  "山药莲子鸡汤",
+  "老鸡汤",
+  "包菜炒鸡蛋",
+  "山药炒木耳",
+  "蒜苔炒木耳",
+  "蒜苔炒香干",
+  "蒜苔炒鸡胗",
+  "蒜黄炒鸡蛋",
+  "蚕豆炒虾仁",
+  "西兰花炒鸡胸肉",
+  "西芹炒虾仁",
+  "豆皮毛白菜",
+  "酸辣包菜",
+  "酸辣大白菜",
+  "青椒毛豆米",
+  "香菇青菜",
+  "鹌鹑蛋红烧肉",
+  "黄瓜炒红肠",
+  "小鸡炖蘑菇",
+  "红烧冬瓜",
+  "酸菜血旺豆腐",
+  "银鱼浦鸡蛋",
+  "炸肉肠",
+  "炸鸡排（普通鸡排）",
+  "炸鸡排（调理鸡排）",
+  "脆皮鸡翅",
+  "薯条",
+  "白灼虾（8只）",
+  "铜锅安格斯肥牛",
+  "铜锅川味水煮肉片",
+  "铜锅番茄虾滑",
+  "咸蛋黄狮子头（蒸制版）",
+  "奥尔良鸡翅",
+  "活珠子/凤凰蛋",
+  "百叶包肉",
+  "肉饼蒸蛋（常规版）",
+  "肉饼蒸蛋（马蹄版）",
+  "蒸南瓜",
+  "蒸嫩豆腐",
+  "豉汁鱼块",
+  "豌豆肉末",
+  "青椒蒸豆米",
+  "香肠蒸豆干",
+  "三鲜豆腐汤料",
+  "剁椒酱",
+  "剁椒鱼头料",
+  "卤油",
+  "原味酸菜鱼底料",
+  "姜汁",
+  "宫保鸡丁调味酱",
+  "家常小炒料",
+  "小炒河虾料",
+  "小炒肉调味汁",
+  "小炒肉调料",
+  "小炒肉调料",
+  "果味糖醋酱",
+  "毛豆烧鸡料",
+  "水煮料调味酱",
+  "油焖茄子料",
+  "炒菜基料",
+  "番茄汤膏",
+  "糊辣油",
+  "糯米酒汁",
+  "素鸡煲调味料",
+  "肥肠鸡酱料",
+  "花椒汁",
+  "葱油",
+  "蒜蓉酱",
+  "蒸蛋料",
+  "蒸鱼调味汁",
+  "血旺料",
+  "鸡汤料",
+  "豉油汁",
+  "酱蒸白干料",
+  "风干牛肉酱料",
+  "鱼香风味酱",
+  "鸡杂料",
+  "鸡汁辣鱼料",
+  "鸡油料",
+  "鸡翅调料",
+  "鸡胸肉调味汁",
+  "麻婆豆腐料",
+  "东方树叶（335mL）",
+  "劲酒",
+  "原味豆浆",
+  "原味豆浆（冲调版本）",
+  "原味豆浆（现磨版本）",
+  "奶皮子酸奶",
+  "摩登罐装可乐",
+  "摩登罐装芬达",
+  "摩登罐装雪碧",
+  "摩登零度可乐",
+  "猴头菇山药玉米糊",
+  "精酿啤酒330mL",
+  "红豆酒酿",
+  "蒙牛纯牛奶（150mL）",
+  "酒酿蛋花甜羹",
+  "银耳莲子炖梨",
+  "雪花纯生啤酒（罐装）",
+  "咖喱炒蟹",
+  "响油鳝丝",
+  "清蒸生蚝",
+  "白灼虾",
+  "肉蟹煲",
+  "酱炖蟹",
+  "吐司果酱",
+  "太阳蛋",
+  "完美水煮蛋",
+  "微波炉荷包蛋",
+  "微波炉蒸蛋",
+  "微波炉蛋糕",
+  "意式香肠北非蛋",
+  "桂圆红枣粥",
+  "水煮玉米",
+  "温泉蛋",
+  "煎饺",
+  "燕麦鸡蛋饼",
+  "牛奶燕麦",
+  "美式炒蛋",
+  "蒸花卷",
+  "蛋煎糍粑",
+  "金枪鱼酱三明治",
+  "韩国麻药鸡蛋",
+  "鸡蛋三明治",
+  "油酥",
+  "炸串酱料",
+  "简易版炒糖色",
+  "糖醋汁",
+  "蒜香酱油",
+  "奥利奥冰淇淋",
+  "红柚蛋糕",
+  "草莓冰淇淋",
+  "魔芋蛋糕",
+  "B52轰炸机",
+  "冬瓜茶",
+  "印度奶茶",
+  "可乐桶",
+  "奶茶",
+  "杨枝甘露",
+  "牛油果拉西",
+  "酸梅汤",
+  "酸梅汤（半成品加工）",
+  "乡村啤酒鸭",
+  "冷吃兔",
+  "商芝肉",
+  "奥尔良风味烤鸡腿",
+  "小炒肉",
+  "小米辣炒肉",
+  "小酥肉",
+  "山西过油肉",
+  "带把肘子",
+  "广式萝卜牛腩",
+  "枝竹羊腩煲",
+  "椒盐排条",
+  "洋葱炒猪肉",
+  "烤鸡翅",
+  "煎烤羊排",
+  "猪肉烩酸菜",
+  "甜辣烤全翅",
+  "番茄红酱",
+  "白菜猪肉炖粉条",
+  "红烧鸡翅",
+  "肉饼炖蛋",
+  "腐乳肉",
+  "萝卜炖羊排",
+  "葱烧鸡腿",
+  "蒜苔炒肉末",
+  "虎皮肘子",
+  "蚂蚁上树",
+  "西红柿牛腩",
+  "豉汁排骨",
+  "辣椒炒肉",
+  "麻辣香锅",
+  "黄瓜炒肉",
+  "半成品意面",
+  "牛油火锅底料",
+  "速冻水饺",
+  "速冻馄饨",
+  "奶油蘑菇汤",
+  "排骨山药玉米汤",
+  "排骨苦瓜汤",
+  "生汆丸子汤",
+  "番茄牛肉蛋花汤",
+  "白萝卜丝清汤",
+  "紫菜蛋花汤",
+  "西红柿鸡蛋汤",
+  "金针菇汤",
+  "黄瓜皮蛋汤",
+  "利提巧卡",
+  "印度焖饭",
+  "可乐炒饭",
+  "咸肉菜饭",
+  "手工水饺",
+  "汤面",
+  "滕州菜煎饼",
+  "炒河粉",
+  "炒馍",
+  "炸酱面",
+  "热干面",
+  "照烧鸡腿饭",
+  "煮泡面加蛋",
+  "猪油拌饭",
+  "电饭煲三文鱼炊饭",
+  "红芸豆拌饭",
+  "老干妈拌面",
+  "肉蛋盖饭",
+  "蒸卤面",
+  "蛋包饭",
+  "蛋炒饭",
+  "螺蛳粉",
+  "豆角焖面",
+  "酸辣蕨根粉",
+  "韭菜盒子",
+  "鲜肉烧卖",
+  "麻油拌面",
+  "麻辣减脂荞麦面",
+  "凉拌油麦菜",
+  "凉拌豆腐",
+  "凉拌金针菇",
+  "凉拌黄瓜",
+  "印度土豆花菜",
+  "印度葫芦丸子",
+  "家常日本豆腐",
+  "松仁玉米",
+  "水油焖蔬菜",
+  "油醋爆蛋",
+  "清炒花菜",
+  "清蒸南瓜",
+  "炒土豆和胡萝卜蒸菜",
+  "炒茄子",
+  "炒青菜",
+  "炸洋葱花",
+  "皮蛋豆腐",
+  "素炒豆角",
+  "脆皮豆腐",
+  "茄子炖土豆",
+  "葱煎豆腐",
+  "蒜蓉西兰花",
+  "蒲烧茄子",
+  "蚝油生菜",
+  "金针菇日本豆腐煲",
+  "金钱蛋",
+  "陕北熬豆角",
+  "雷椒皮蛋",
+  "韭菜炒蛋",
+  "鸡蛋火腿炒黄瓜",
+  "鸡蛋花"
+ ],
+ "failed": [
+  [
+   "姬松茸菌子鸡汤面",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "老母鸡汤面",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "糍糕",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "糯米杂谷饭团（奥尔良鸡肉馅）",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "老面馒头",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "菌菇鸡汤",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "金牌老母鸡汤",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "经典毛豆烧鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "胡萝卜炒肉丝",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "金秋板栗烧鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "甜辣辣年糕烧鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "肉汁素鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "糖糕（红糖馅）",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "[葱油](/配料/葱油.md)生菜",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "[葱油](/配料/葱油.md)青菜",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "铜锅豆花鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "砂锅老坛酸菜鱼",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "砂锅肉汁素鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "砂锅豆花鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "砂锅香辣鱿鱼",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "剁椒鱼头",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "珍珠糯米肉丸",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "番茄菌菇肉丸",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "[葱油](/配料/葱油.md)鸡（小母鸡版）",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "[葱油](/配料/葱油.md)鸡（白切鸡版）",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "[葱油](/配料/葱油.md)鸡（鸡排腿版）",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "香辣红油鸡（小母鸡版）",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "香辣红油鸡（白切鸡版）",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "香辣红油鸡（鸡排腿版）",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "调味料",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "农夫山泉矿泉水（运动盖）",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "微波葱姜黑鳕鱼",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "水煮鱼",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "红烧鱼",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "红烧鱼头",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "红烧鲤鱼",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "溏心蛋",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "空气炸锅面包片",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "胡萝卜甜糕",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "冬瓜桑拿鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "咕噜肉",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "姜葱捞鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "意式烤鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "杀猪菜",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "水煮肉片",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "糖醋里脊",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "香干肉丝",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "黄油鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "黄焖鸡",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "凉皮",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "小米粥",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "山药南瓜炖鸡汤",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "米粥",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "罗宋汤",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "腊八粥",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ],
+  [
+   "炒年糕",
+   "download: HTTP Error 429: Too many requests - please contact noc@wikimedia.org to discuss a less disruptive approach or instead use thumbnail images in sizes listed on https://w.wiki/GHai. (0c640b1)"
+  ]
+ ]
+}

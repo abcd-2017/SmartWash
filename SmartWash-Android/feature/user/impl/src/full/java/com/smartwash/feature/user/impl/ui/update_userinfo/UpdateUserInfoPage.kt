@@ -76,7 +76,9 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.Primary
+import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.motionSpec
@@ -214,7 +216,8 @@ fun UpdateUserInfoPage(
                         }
                         Text(
                             text = stringResource(R.string.complete_info),
-                            style = MaterialTheme.typography.titleLarge,
+                            // 页面标题跟随内页页头档 18/24/600（2026-11-18 统一，原 22sp 作废）
+                            style = AppTextStyles.PageHeader,
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         Text(
@@ -302,9 +305,17 @@ fun UpdateUserInfoPage(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         enabled = !isInfoLocked,
                         isError = isStudentIdError,
-                        supportingText = if (isStudentIdError) {
-                            { Text(stringResource(R.string.invalid_student_id)) }
-                        } else null,
+                        supportingText = {
+                            AnimatedVisibility(
+                                visible = isStudentIdError,
+                                enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                                    expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                                exit = fadeOut(motionSpec(exitTween(EXIT_MICRO_MS))) +
+                                    shrinkVertically(motionSpec(exitTween(EXIT_MICRO_MS))),
+                            ) {
+                                Text(stringResource(R.string.invalid_student_id))
+                            }
+                        },
                         leadingIcon = Icons.Rounded.Badge
                     )
                 }
@@ -370,9 +381,17 @@ fun SearchSchoolInput(
                 .heightIn(min = 48.dp),
             enabled = enabled,
             isError = isSchoolError,
-            supportingText = if (isSchoolError) {
-                { Text(stringResource(R.string.please_select_school)) }
-            } else null,
+            supportingText = {
+                AnimatedVisibility(
+                    visible = isSchoolError,
+                    enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                        expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                    exit = fadeOut(motionSpec(exitTween(EXIT_MICRO_MS))) +
+                        shrinkVertically(motionSpec(exitTween(EXIT_MICRO_MS))),
+                ) {
+                    Text(stringResource(R.string.please_select_school))
+                }
+            },
             leadingIcon = Icons.Rounded.School,
             trailingIcon = {
                 // 48dp 自绘清空按钮（§3.7 尾缀热区 ≥44dp；M3 IconButton 自带 state layer/涟漪，规范 §7 禁用于可点击场景）

@@ -69,4 +69,12 @@ public class AddDiningRecipeFrom {
     @DecimalMin(value = "0", message = "钠不能为负数")
     @DecimalMax(value = "999999.99", message = "钠数值过大")
     private BigDecimal sodiumMg;
+
+    /**
+     * 来源唯一标识（可选，如 hoc_0001/目录名）：目录式上传逐条创建时携带；
+     * 同 key 已存在时拒绝新增（撞 uk_source_key 前先给业务提示，幂等更新请走 update 接口）。
+     * 用户端新增不消费该字段（服务端忽略，防止用户抢占管理端判重键）。
+     */
+    @Size(max = 64, message = "唯一标识过长（上限64字符）")
+    private String sourceKey;
 }

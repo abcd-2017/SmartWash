@@ -449,13 +449,6 @@
       }
     },
     {
-      "name": "DiningOrderDetail",
-      "pageSourceFile": "src/main/ets/feature/dining/ui/DiningOrderDetailPage.ets",
-      "buildFunction": "DiningOrderDetailBuilder",
-      "data": {
-      }
-    },
-    {
       "name": "DiningOrderJoin",
       "pageSourceFile": "src/main/ets/feature/dining/ui/DiningJoinPage.ets",
       "buildFunction": "DiningOrderJoinBuilder",
