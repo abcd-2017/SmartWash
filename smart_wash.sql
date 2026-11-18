@@ -1492,7 +1492,7 @@ CREATE TABLE `game_config` (
   `category`    VARCHAR(20)  NOT NULL DEFAULT 'puzzle' COMMENT '分类: puzzle/arcade/word/board/other',
   `source_type` TINYINT      NOT NULL DEFAULT 1 COMMENT '1上传包 2外链',
   `entry_path`  VARCHAR(255) DEFAULT NULL COMMENT 'source_type=1: 包内入口相对路径,默认 index.html',
-  `url`         VARCHAR(512) NOT NULL COMMENT '最终可玩地址(https,构造规则见方案第四节)',
+  `url`         VARCHAR(512) DEFAULT NULL COMMENT 'source_type=2: 外链可玩地址(https); source_type=1 不落库,读时由 object_key+entry_path 拼装',
   `object_key`  VARCHAR(512) DEFAULT NULL COMMENT 'source_type=1: MinIO对象键前缀 game/{game_key}/',
   `file_size`   BIGINT       DEFAULT NULL COMMENT '包体积字节(source_type=1)',
   `badge`       VARCHAR(16)  DEFAULT NULL COMMENT '角标文案(新/热),空不显示',
