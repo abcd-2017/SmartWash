@@ -2,6 +2,7 @@ package com.smartwash.common.ui.components
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -54,12 +55,18 @@ fun AppTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
     interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource? = null,
+    /** L4 紧凑档：头部堆叠场景固定 44dp 高（常规档为 M3 默认 56dp），16sp 文字+占位可容纳 */
+    compact: Boolean = false,
 ) {
     val colors = AppColors.colorScheme
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.fillMaxWidth(),
+        modifier = if (compact) {
+            modifier.fillMaxWidth().height(44.dp)
+        } else {
+            modifier.fillMaxWidth()
+        },
         enabled = enabled,
         readOnly = readOnly,
         // §3.7：输入正文 16sp / Normal —— 输入是高频读写场景，禁用 14sp 及以下

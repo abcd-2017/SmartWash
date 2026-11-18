@@ -63,6 +63,7 @@ import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -412,7 +413,7 @@ private fun LazyListScope.orderSection(
             order = order,
             onClick = { onOrderClick(order) },
             onReuse = { onReuse(order) },
-            modifier = Modifier.padding(bottom = AppDimens.cardSpacing),
+            modifier = Modifier.padding(bottom = AppDimens.cardSpacing).then(animatedListItem()),
         )
     }
 }
@@ -433,6 +434,11 @@ private fun OrderCard(
         modifier = modifier
             .fillMaxWidth()
             .pressable(onClick = onClick),
+        // L1 卡片内边距：横 cardPadding / 纵 spaceSm（原 GroupCard 默认四边 20dp 纵向偏大）
+        contentPadding = PaddingValues(
+            horizontal = AppDimens.cardPadding,
+            vertical = AppDimens.spaceSm,
+        ),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             StatusDot(order.status)

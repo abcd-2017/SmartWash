@@ -785,3 +785,18 @@ fun DrumIcon(state: OrderStatus, tint: Color) {
 | 默认档 | fontScale 1.0 + 窄屏（360dp 级） | 固定开销合计 ≤ 屏宽 55%（留一半给文本区）；横向滚动不出现 |
 
 执行方式：模拟器 `adb shell settings put system font_scale 1.3`（或设置面板）切档，`adb exec-out screencap -p` 截图逐页比对；修复对照案例见 `docs/吃啥安卓全面体检与修复-2026-11-18.md`（TD15–TD28）。
+
+---
+
+## 附：组件级布局规范（2026-11-18 用户复核后增补，TD35）
+
+> 背景：令牌级规范（颜色/字阶/间距）之外，卡片/头部/rail/底栏等**布局维度无规范**，导致各页面凭感觉排布（行卡横纵 padding 不对称、头部占比失控、rail 配色各显神通、底栏层数无预算）。以下为本批精修的唯一依据。
+
+| # | 规则 | 取值 |
+|---|---|---|
+| L1 | **卡片内边距**：横 `cardPadding`（20dp）/ 纵 `spaceSm`（12dp）——「外松内紧」，所有列表卡统一，禁止只给单侧 | `PaddingValues(horizontal = cardPadding, vertical = spaceSm)` |
+| L2 | **行卡结构模板**：`row{ 图(64dp) weight0, column(weight1){ 菜名(2行) / 副行(热量前置) / 摘要(1行) }, 按钮(40dp热区) }`，行高 min 72dp；按钮与文字列**垂直居中**、文字列 weight 独占余宽 | 见创建页 DishRow |
+| L3 | **rail 配色（外卖式）**：整条灰底 `surfaceVariant`；选中=白块 `surface` + `primaryDark` 字；未选中透明透灰、`textSecondary` 字 | 与右侧列表卡同色形成整体 |
+| L4 | **头部预算**：标题区+搜索区合计 ≤ 屏高 25%；输入框统一高度档（常规 56dp / compact 44dp，compact 仅用于堆叠场景） | 创建页用 compact |
+| L5 | **底栏层数 ≤3**：主行（计数+人数+清空）+ 全宽 CTA + （警示/错误最多 1 条合并展示）；人数 stepper 并入主行，取消独立份量行 | 创建页 CreateBottomBar |
+| L6 | **页面锚点唯一**：头部降权（浅底小字）、列表为中、CTA 为强——阶梯配色 | D9 |

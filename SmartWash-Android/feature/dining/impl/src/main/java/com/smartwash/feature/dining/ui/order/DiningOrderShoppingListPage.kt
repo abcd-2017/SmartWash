@@ -58,6 +58,7 @@ import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -474,11 +475,11 @@ private fun IngredientRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            // 列表行最小 48dp 热区（规范 §3.2）
+            // 列表行最小 48dp 热区（规范 §3.2）；纵向 spaceSm 对齐 L1 卡片节奏（2026-11-18）
             .heightIn(min = 48.dp)
             .pressable(onClick = onToggle, debounce = false)
             .semantics { contentDescription = name }
-            .padding(vertical = AppDimens.spaceXs),
+            .padding(vertical = AppDimens.spaceSm),
     ) {
         Box(
             modifier = Modifier
@@ -566,7 +567,10 @@ private fun PerRecipeView(perRecipe: List<DiningRecipeShopping>) {
         } else {
             // key 用内容组合而非索引：列表重排时避免错误复用
             itemsIndexed(perRecipe, key = { index, item -> "${item.recipeName}_$index" }) { _, recipe ->
-                RecipeCard(recipe = recipe)
+                RecipeCard(
+                    recipe = recipe,
+                    modifier = Modifier.then(animatedListItem()),
+                )
             }
         }
     }
@@ -574,8 +578,8 @@ private fun PerRecipeView(perRecipe: List<DiningRecipeShopping>) {
 
 /** 按菜卡片：菜名 + 选菜人（脱敏手机号）+ 备注 */
 @Composable
-private fun RecipeCard(recipe: DiningRecipeShopping) {
-    GroupCard(modifier = Modifier.fillMaxWidth()) {
+private fun RecipeCard(recipe: DiningRecipeShopping, modifier: Modifier = Modifier) {
+    GroupCard(modifier = modifier.fillMaxWidth()) {
         Text(
             text = recipe.recipeName,
             style = AppTextStyles.CardTitle,

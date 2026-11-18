@@ -71,6 +71,7 @@ import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SmartWashAsyncImage
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -708,10 +709,11 @@ private fun CategoryRail(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // 分类项最小 48dp 热区（规范 §3.2），且让选中底铺满整行高
+                    // 分类项最小 48dp 热区（规范 §3.2）；L3 外卖式：rail 灰底（容器 surfaceVariant），
+                    // 选中=白块 surface + primaryDark 字（2026-11-18 与创建页统一）
                     .heightIn(min = 48.dp)
                     .background(
-                        if (selected) AppColors.colorScheme.primarySoft
+                        if (selected) AppColors.colorScheme.surface
                         else Color.Transparent,
                     )
                     .pressable(onClick = { onSelect(section.categoryId) }, debounce = false)
@@ -784,6 +786,7 @@ private fun DishList(
                     onToggle = { onToggle(dish.recipeId) },
                     onNote = { onNoteTarget(dish) },
                     onViewRecipe = { onViewRecipe(dish.recipeId) },
+                    modifier = Modifier.then(animatedListItem()),
                 )
             }
         }
@@ -805,10 +808,11 @@ private fun DishRow(
     onToggle: () -> Unit,
     onNote: () -> Unit,
     onViewRecipe: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             // 只读态（已结束）整行不可点：勾选框仅作展示，不触发写操作
             .then(if (readOnly) Modifier else Modifier.pressable(onClick = onToggle, debounce = false))
@@ -982,57 +986,53 @@ private fun SelectedBottomBar(
         ?.map { it.name }
         .orEmpty()
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+    // 底栏两段式（L5/TD35，与创建页统一）：信息行（已选数+已选菜名/提示）+ 全宽主行动按钮行
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(AppColors.colorScheme.surface)
             .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceSm),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.dining_order_detail_selected_count_format, cart.count),
+                style = AppTextStyles.AmountMedium,
+                color = AppColors.colorScheme.textPrimary,
+            )
+            if (syncPending) {
+                Spacer(modifier = Modifier.width(AppDimens.spaceXs))
                 Text(
-                    text = stringResource(R.string.dining_order_detail_selected_count_format, cart.count),
-                    style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.textPrimary,
-                )
-                if (syncPending) {
-                    Spacer(modifier = Modifier.width(AppDimens.spaceXs))
-                    Text(
-                        text = stringResource(R.string.dining_order_detail_syncing),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.colorScheme.ongoingInk,
-                    )
-                }
-            }
-            if (selectedNames.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.dining_order_detail_bottom_hint),
+                    text = stringResource(R.string.dining_order_detail_syncing),
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.textSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            } else {
-                Text(
-                    text = selectedNames.joinToString("、"),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.textSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    color = AppColors.colorScheme.ongoingInk,
                 )
             }
         }
-        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+        if (selectedNames.isEmpty()) {
+            Text(
+                text = stringResource(R.string.dining_order_detail_bottom_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.colorScheme.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        } else {
+            Text(
+                text = selectedNames.joinToString("、"),
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.colorScheme.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(modifier = Modifier.height(AppDimens.spaceXs))
         if (readOnly) {
             // 只读态（契约 §5.3 主行动按角色）：有清单则「查看购买清单」为本态主行动（发起者与参与者均可看）
             if (!detail?.shoppingList.isNullOrBlank()) {
                 AppButton(
                     text = stringResource(R.string.dining_order_detail_view_shopping_list),
                     onClick = onViewShoppingList,
-                    small = true,
-                    variant = AppButtonVariant.PRIMARY,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         } else if (detail?.isCreator == true) {
@@ -1040,7 +1040,7 @@ private fun SelectedBottomBar(
             AppButton(
                 text = stringResource(R.string.dining_order_detail_finish),
                 onClick = onFinish,
-                small = true,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

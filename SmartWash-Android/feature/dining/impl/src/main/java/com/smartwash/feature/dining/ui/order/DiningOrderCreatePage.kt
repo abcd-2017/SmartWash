@@ -74,6 +74,7 @@ import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SmartWashAsyncImage
+import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -320,9 +321,10 @@ fun DiningOrderCreatePage(
                                 formError == DiningOrderFormError.TITLE_TOO_LONG
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
+                                // 上下间距收紧（spaceXxs）：标题行与搜索框节奏均匀，不再头重（用户复核 2026-11-18）
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
+                                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXxs),
                             ) {
                                 if (editingTitle) {
                                     AppTextField(
@@ -380,10 +382,12 @@ fun DiningOrderCreatePage(
                                     onValueChange = viewModel::onKeywordChange,
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        // 上下间距对称（原只有 top）：修复「输入框底 padding=0 与列表相贴」（用户复核 2026-11-18）
                                         .padding(
                                             start = AppDimens.pagePadding,
                                             end = AppDimens.pagePadding,
-                                            top = AppDimens.spaceSm,
+                                            top = AppDimens.spaceXs,
+                                            bottom = AppDimens.spaceSm,
                                         ),
                                 )
                             } else {
@@ -522,9 +526,10 @@ private fun CreateCategoryRail(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            // rail 透明底（TD31）：原 surfaceVariant 整条灰绿与页面底 #F5F6F3 明度接近、发灰；
-            // 透明透出页面底，选中浅绿块成为唯一色块，对比清晰（craft-floor：无左色条方案）
-            .background(Color.Transparent),
+            // rail 外卖式配色（用户复核 2026-11-18 定案）：整条灰底（surfaceVariant），
+            // 选中项=白块（surface，与右侧列表卡同色形成整体）+ 深绿字——对齐美团分类栏
+            // 「选中=列表同色、未选中=反转色（灰）」惯例
+            .background(AppColors.colorScheme.surfaceVariant),
     ) {
         items(chips, key = { it.id ?: -1L }) { chip ->
             val selected = chip.id == selectedCategoryId
@@ -532,9 +537,10 @@ private fun CreateCategoryRail(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // 分类项最小 48dp 热区（规范 §3.2），且让选中底铺满整行高
+                    // 分类项最小 48dp 热区（规范 §3.2），且让选中底铺满整行高；
+                    // 选中=白块（surface，与列表卡同色）——外卖式「选中与列表同色」
                     .heightIn(min = 52.dp)
-                    .background(if (selected) AppColors.colorScheme.primarySoft else Color.Transparent)
+                    .background(if (selected) AppColors.colorScheme.surface else Color.Transparent)
                     .pressable(onClick = { onSelect(chip.id) }, debounce = false)
                     .padding(horizontal = AppDimens.spaceXxs, vertical = AppDimens.spaceXs),
                 contentAlignment = Alignment.Center,
@@ -616,7 +622,7 @@ private fun DishList(
                 selected = recipe.safeId in selectedIds,
                 onToggle = { onToggle(recipe.safeId) },
                 onViewRecipe = { onViewRecipe(recipe.safeId) },
-                modifier = Modifier.padding(bottom = AppDimens.cardSpacing),
+                modifier = Modifier.padding(bottom = AppDimens.cardSpacing).then(animatedListItem()),
             )
         }
         if (hasMore) {
@@ -694,7 +700,12 @@ private fun DishRow(
         modifier = modifier
             .fillMaxWidth()
             .pressable(onClick = onToggle, debounce = false),
-        contentPadding = PaddingValues(horizontal = AppDimens.cardPadding),
+        // 内外边距对称（用户复核 2026-11-18）：原只有横向，行卡上下贴边；
+        // 纵向 spaceSm 与横向 cardPadding 形成「外松内紧」节奏
+        contentPadding = PaddingValues(
+            horizontal = AppDimens.cardPadding,
+            vertical = AppDimens.spaceSm,
+        ),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -906,14 +917,7 @@ private fun CreateBottomBar(
                 .background(AppColors.colorScheme.divider),
         )
         Column(modifier = Modifier.navigationBarsPadding()) {
-            // 份量建议行（契约 §2.5/§三.5）：人数 stepper + 人均/判定文案；仅常规模式展示
-            if (!isReuseMode) {
-                PortionAdviceRow(
-                    advice = portionAdvice,
-                    peopleCount = peopleCount,
-                    onPeopleChange = onPeopleChange,
-                )
-            }
+            // 份量行已并入主信息行（用户复核 2026-11-18：人数与已选菜合并，取消独立行降高度）
             if (nutritionReport.exceededItems.isNotEmpty()) {
                 DiningNutritionWarningBar(items = nutritionReport.exceededItems)
             }
@@ -931,9 +935,8 @@ private fun CreateBottomBar(
                     ),
                 )
             }
-            // 主行改两段式（TD28/P1-2）：大字体档「计数+清空+CTA」横向总预算超屏宽（≈487dp
-            // > 393dp），单行排布必然截断/遮盖——信息行（计数+清空）与全宽 CTA 行分离，
-            // 对齐美团购物车栏惯例：全宽大按钮同时构成页面唯一视觉锚点（D9 阶梯层级）
+            // 主行改两段式（TD28/P1-2）+ 人数并入（用户复核 2026-11-18）：信息行 = 已选计数
+            // （weight）+ 人数 stepper + 清空，全宽 CTA 独立行——底栏从 5 层降到 3 层
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -948,6 +951,25 @@ private fun CreateBottomBar(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                if (!isReuseMode) {
+                    PortionStepButton(
+                        isPlus = false,
+                        enabled = peopleCount > DiningNutritionCalculator.PEOPLE_MIN,
+                        onClick = { onPeopleChange(peopleCount - 1) },
+                    )
+                    Text(
+                        text = peopleCount.toString(),
+                        style = AppTextStyles.AmountMedium,
+                        color = AppColors.colorScheme.textPrimary,
+                        maxLines = 1,
+                        modifier = Modifier.padding(horizontal = AppDimens.spaceXs),
+                    )
+                    PortionStepButton(
+                        isPlus = true,
+                        enabled = peopleCount < DiningNutritionCalculator.PEOPLE_MAX,
+                        onClick = { onPeopleChange(peopleCount + 1) },
+                    )
+                }
                 if (!isReuseMode && selectedCount > 0) {
                     AppButton(
                         text = stringResource(R.string.dining_order_create_clear),
@@ -1112,7 +1134,11 @@ private fun ReuseGroupList(
                 )
             }
             items(group.recipes, key = { it.safeId }) { recipe ->
-                ReuseRecipeRow(recipe = recipe, selected = recipe.safeId in selectedIds)
+                ReuseRecipeRow(
+                    recipe = recipe,
+                    selected = recipe.safeId in selectedIds,
+                    modifier = Modifier.then(animatedListItem()),
+                )
             }
         }
     }
@@ -1120,10 +1146,14 @@ private fun ReuseGroupList(
 
 /** 复用模式只读行：勾选框（自绘）+ 菜名 + 食材数角标；整行不可点（菜单锁定） */
 @Composable
-private fun ReuseRecipeRow(recipe: DiningRecipeVo, selected: Boolean) {
+private fun ReuseRecipeRow(
+    recipe: DiningRecipeVo,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .heightIn(min = DISH_ROW_MIN_HEIGHT)
             .padding(vertical = AppDimens.spaceSm),
@@ -1253,6 +1283,8 @@ private fun DishSearchField(
             }
         },
         singleLine = true,
+        // L4 compact：头部堆叠场景收窄到 44dp，头部区（标题+搜索）占比 ≤25% 屏高
+        compact = true,
         modifier = modifier,
     )
 }
