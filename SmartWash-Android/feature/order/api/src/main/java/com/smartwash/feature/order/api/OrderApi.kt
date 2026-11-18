@@ -4,6 +4,7 @@ import androidx.paging.PagingSource
 import com.smartwash.feature.order.api.model.OrderBrief
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderItemCount
+import com.smartwash.feature.order.api.model.OrderReview
 
 /**
  * 订单域对外服务契约（api/impl 样板的 api 侧，模式对齐 user-api 的 UserApi）。
@@ -75,6 +76,20 @@ interface OrderApi {
      * 消费方：寄件取件页（app 壳）。返回 false 表示业务失败。
      */
     suspend fun pickupOrder(orderId: Long, pickupCode: String): Boolean
+
+    /**
+     * 提交订单评价（仅已完成订单；rating 1-5 星，content 可空）。
+     *
+     * 消费方：订单详情页评价弹层。返回 false 表示业务失败（已评价过等）。
+     */
+    suspend fun submitReview(orderId: Long, rating: Int, content: String): Boolean
+
+    /**
+     * 订单评价列表（后端按创建时间倒序分页）。
+     *
+     * 消费方：订单详情页评价弹层（回显已提交评价）。
+     */
+    suspend fun getOrderReviews(orderId: Long, page: Int, size: Int): List<OrderReview>
 
     /**
      * 按状态分页浏览订单的 [PagingSource] 工厂。

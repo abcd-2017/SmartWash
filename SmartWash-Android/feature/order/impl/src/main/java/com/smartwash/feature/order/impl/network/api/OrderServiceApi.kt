@@ -1,6 +1,7 @@
 package com.smartwash.feature.order.impl.network.api
 
 import com.smartwash.common.utils.model.ApiResult
+import com.smartwash.common.utils.model.PageData
 import com.smartwash.common.network.annotation.RequireAuthorization
 import com.smartwash.feature.order.impl.network.entity.order.OrderNextStatus
 import com.smartwash.feature.order.impl.network.entity.order.ReservationLaundry
@@ -8,6 +9,8 @@ import com.smartwash.feature.order.impl.network.vo.order.OrderGroupVo
 import com.smartwash.feature.order.impl.network.vo.order.OrderInfoVo
 import com.smartwash.feature.order.impl.network.vo.order.OrderItemCountVo
 import com.smartwash.feature.order.impl.network.vo.order.OrderVo
+import com.smartwash.feature.order.impl.network.vo.review.ReviewSubmitRequest
+import com.smartwash.feature.order.impl.network.vo.review.ReviewVo
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -84,4 +87,18 @@ interface OrderServiceApi {
         @Path("orderId") orderId: Long,
         @Query("userCouponId") userCouponId: Long,
     ): ApiResult<OrderInfoVo>
+
+    @RequireAuthorization
+    @POST("/web/auth/reviews/add")
+    suspend fun addReview(
+        @Body review: ReviewSubmitRequest,
+    ): ApiResult<Boolean>
+
+    @RequireAuthorization
+    @GET("/web/auth/reviews/{orderId}")
+    suspend fun getOrderReviews(
+        @Path("orderId") orderId: Long,
+        @Query("page") page: Int = 1,
+        @Query("size") size: Int = 10,
+    ): ApiResult<PageData<ReviewVo>>
 }

@@ -5,6 +5,7 @@ import com.smartwash.feature.order.api.OrderApi
 import com.smartwash.feature.order.api.model.OrderBrief
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderItemCount
+import com.smartwash.feature.order.api.model.OrderReview
 import com.smartwash.feature.order.impl.network.api.OrderServiceApi
 import com.smartwash.feature.order.impl.paging.OrderPagingSource
 import com.smartwash.feature.order.impl.repository.OrderRepository
@@ -36,6 +37,12 @@ class OrderApiImpl @Inject constructor(
 
     override suspend fun getWashingOrder(): List<OrderBrief> =
         orderRepository.getWashingOrder()
+
+    override suspend fun submitReview(orderId: Long, rating: Int, content: String): Boolean =
+        orderRepository.submitReview(orderId, rating, content)
+
+    override suspend fun getOrderReviews(orderId: Long, page: Int, size: Int): List<OrderReview> =
+        orderRepository.getOrderReviews(orderId, page, size)
 
     override suspend fun getOrderItemCount(
         pendingPaymentStatus: String,

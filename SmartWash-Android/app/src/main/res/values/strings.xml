@@ -60,6 +60,14 @@
     <string name="pickup_code_info">取件码 %1$s · %2$d 号柜</string>
     <string name="no_pickup_code">暂无取件码，请稍后再试</string>
     <string name="contact_service_unavailable">客服暂未开通，请稍后再试</string>
+    <string name="review_order">评价此单</string>
+    <string name="review_done">已评价</string>
+    <string name="review_done_title">我的评价</string>
+    <string name="review_content_hint">说说这次洗衣的体验吧（选填）</string>
+    <string name="review_submit">提交评价</string>
+    <string name="review_close">关闭</string>
+    <string name="review_submit_success">评价提交成功，感谢反馈</string>
+    <string name="review_submit_rejected">评价提交未成功，请稍后再试</string>
     <string name="school_info">学校信息</string>
     <string name="school_name">学校名称</string>
     <string name="address">地址</string>
