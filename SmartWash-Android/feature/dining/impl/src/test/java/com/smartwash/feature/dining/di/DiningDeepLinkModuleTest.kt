@@ -72,7 +72,6 @@ class DiningDeepLinkModuleTest {
         // 占位符写法会使 navigate 生成的路由串残留 {placeholder} 无法匹配注册 pattern
         assertEquals("DiningOrderList", serializer<DiningRoute.OrderList>().descriptor.serialName)
         assertEquals("DiningOrderCreate", serializer<DiningRoute.OrderCreate>().descriptor.serialName)
-        assertEquals("DiningOrderDetail", serializer<DiningRoute.OrderDetail>().descriptor.serialName)
         assertEquals("DiningOrderShare", serializer<DiningRoute.OrderShare>().descriptor.serialName)
         assertEquals("DiningOrderJoin", serializer<DiningRoute.OrderJoin>().descriptor.serialName)
         assertEquals("DiningRecipeLibrary", serializer<DiningRoute.RecipeLibrary>().descriptor.serialName)

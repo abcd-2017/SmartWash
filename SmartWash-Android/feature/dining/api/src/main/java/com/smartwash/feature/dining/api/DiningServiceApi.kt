@@ -9,15 +9,13 @@ import com.smartwash.feature.dining.api.model.CreateDiningOrderRequest
 import com.smartwash.feature.dining.api.model.DiningCategoryVo
 import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
 import com.smartwash.feature.dining.api.model.DiningOrderCreatedVo
-import com.smartwash.feature.dining.api.model.AddDiningOrderItemRequest
 import com.smartwash.feature.dining.api.model.DiningOrderBriefVo
 import com.smartwash.feature.dining.api.model.DiningOrderDetailVo
 import com.smartwash.feature.dining.api.model.DiningOrderFinishVo
 import com.smartwash.feature.dining.api.model.DiningOrderListVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
 import com.smartwash.feature.dining.api.model.JoinDiningOrderRequest
-import com.smartwash.feature.dining.api.model.PublishDiningOrderRequest
-import com.smartwash.feature.dining.api.model.UpdateDiningOrderItemRequest
+import com.smartwash.feature.dining.api.model.SubmitDiningOrderRequest
 import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -119,15 +117,16 @@ interface DiningServiceApi {
     suspend fun createOrder(@retrofit2.http.Body request: CreateDiningOrderRequest): ApiResult<DiningOrderCreatedVo>
 
     /**
-     * 发起点单（DRAFT→ONGOING；仅发起者；标题必填 + 菜单非空；version 乐观锁，冲突返回业务码 409）。
-     * [request] 携带草稿页原位编辑后的标题与客户端已知 version。
+     * 提交点单（DRAFT→FINISHED；仅发起者；标题必填 + 菜单非空；version 乐观锁，冲突返回业务码 409）。
+     * 提交即结束：聚合本单菜单生成购买清单快照写库，status→FINISHED 并通知全体成员。
+     * [request] 携带草稿页编辑后的标题与客户端已知 version；返回购买清单快照（复用 Finish VO）。
      */
-    @POST("/web/auth/dining/orders/{id}/publish")
+    @POST("/web/auth/dining/orders/{id}/submit")
     @RequireAuthorization
-    suspend fun publishOrder(
+    suspend fun submitOrder(
         @Path("id") id: Long,
-        @Body request: PublishDiningOrderRequest,
-    ): ApiResult<Void>
+        @Body request: SubmitDiningOrderRequest,
+    ): ApiResult<DiningOrderFinishVo>
 
     /**
      * 草稿加菜（recipeId；仅 DRAFT 态、全部成员可加；幂等；version 乐观锁，冲突返回 409）。
@@ -180,7 +179,7 @@ interface DiningServiceApi {
     @RequireAuthorization
     suspend fun orderBrief(@Path("token") token: String): ApiResult<DiningOrderBriefVo>
 
-    /** 加入订单（校验 token 匹配 + 订单 ONGOING + 未重复加入；三类失败均有明确业务提示） */
+    /** 加入订单（校验 token 匹配 + 订单 DRAFT + 未重复加入；三类失败均有明确业务提示） */
     @POST("/web/auth/dining/orders/{id}/join")
     @RequireAuthorization
     suspend fun joinOrder(
@@ -192,37 +191,4 @@ interface DiningServiceApi {
     @POST("/web/auth/dining/orders/{id}/join-token/reset")
     @RequireAuthorization
     suspend fun resetJoinToken(@Path("id") id: Long): ApiResult<String>
-
-    /**
-     * 结束点单（仅发起者且仅 ONGOING；聚合所有选菜生成购买清单快照写库，status→FINISHED）。
-     * 重复调用幂等返回库内原快照；非发起者/状态异常返回后端业务失败上抛。
-     */
-    @POST("/web/auth/dining/orders/{id}/finish")
-    @RequireAuthorization
-    suspend fun finishOrder(@Path("id") id: Long): ApiResult<DiningOrderFinishVo>
-
-    /** 勾选菜品（共享购物车；菜须在本单菜单内；一人一菜一条，重复勾选拒绝；version 冲突返回业务码 409） */
-    @POST("/web/auth/dining/orders/{orderId}/items")
-    @RequireAuthorization
-    suspend fun addOrderItem(
-        @Path("orderId") orderId: Long,
-        @Body request: AddDiningOrderItemRequest,
-    ): ApiResult<Void>
-
-    /** 修改选菜备注（仅本人选菜记录；note 不传即清空；version 冲突返回业务码 409） */
-    @PUT("/web/auth/dining/orders/{orderId}/items")
-    @RequireAuthorization
-    suspend fun updateOrderItemNote(
-        @Path("orderId") orderId: Long,
-        @Body request: UpdateDiningOrderItemRequest,
-    ): ApiResult<Void>
-
-    /** 取消选菜（删除本人该菜的选菜记录；version 冲突返回业务码 409） */
-    @DELETE("/web/auth/dining/orders/{orderId}/items/{recipeId}")
-    @RequireAuthorization
-    suspend fun removeOrderItem(
-        @Path("orderId") orderId: Long,
-        @Path("recipeId") recipeId: Long,
-        @Query("version") version: Long,
-    ): ApiResult<Void>
 }

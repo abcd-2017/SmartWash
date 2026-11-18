@@ -8,7 +8,6 @@ import com.smartwash.common.utils.model.HttpStatusCode
 import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.dining.api.DiningServiceApi
 import com.smartwash.feature.dining.api.model.AddDiningOrderDishRequest
-import com.smartwash.feature.dining.api.model.AddDiningOrderItemRequest
 import com.smartwash.feature.dining.api.model.AddDiningRecipeRequest
 import com.smartwash.feature.dining.api.model.CreateDiningOrderRequest
 import com.smartwash.feature.dining.api.model.DiningCategoryVo
@@ -20,8 +19,7 @@ import com.smartwash.feature.dining.api.model.DiningOrderFinishVo
 import com.smartwash.feature.dining.api.model.DiningOrderListVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
 import com.smartwash.feature.dining.api.model.JoinDiningOrderRequest
-import com.smartwash.feature.dining.api.model.PublishDiningOrderRequest
-import com.smartwash.feature.dining.api.model.UpdateDiningOrderItemRequest
+import com.smartwash.feature.dining.api.model.SubmitDiningOrderRequest
 import com.smartwash.feature.dining.logic.DiningOrderBusinessCode
 import com.smartwash.feature.dining.logic.DiningVersionConflictException
 import okhttp3.MultipartBody
@@ -133,13 +131,17 @@ class DiningRepository @Inject constructor(
             }
 
     /**
-     * 发起点单（DRAFT→ONGOING；仅发起者；标题必填 + 菜单非空；version 乐观锁）。
+     * 提交点单（DRAFT→FINISHED；仅发起者；标题必填 + 菜单非空；version 乐观锁）。
+     * 提交即结束：后端聚合本单菜单生成购买清单快照并通知全体成员。
      * 信封 409 转译为 [DiningVersionConflictException]（端上刷新后重试），其余非 200 转译为
-     * NetworkException；成功 data 为 null 不视为失败。
+     * NetworkException；data 缺失按失败上抛。
      */
-    suspend fun publishOrder(orderId: Long, request: PublishDiningOrderRequest) {
-        diningServiceApi.publishOrder(orderId, request).ensureDiningSuccess()
-    }
+    suspend fun submitOrder(orderId: Long, request: SubmitDiningOrderRequest): DiningOrderFinishVo =
+        diningServiceApi.submitOrder(orderId, request).data
+            ?: run {
+                AppLogger.warn(TAG, "submitOrder 响应 data 为空，按失败上抛（orderId=$orderId）")
+                throw NetworkException("提交结果为空", R.string.error_network_fail)
+            }
 
     /**
      * 草稿加菜（仅 DRAFT 态、全部成员；幂等；version 乐观锁）。
@@ -206,37 +208,7 @@ class DiningRepository @Inject constructor(
             }
 
     /**
-     * 结束点单（仅发起者且仅 ONGOING；重复调用幂等返回库内原快照）。
-     * 非发起者/状态异常由后端业务失败转译上抛；data 缺失按失败处理。
-     */
-    suspend fun finishOrder(orderId: Long): DiningOrderFinishVo =
-        diningServiceApi.finishOrder(orderId).data
-            ?: run {
-                AppLogger.warn(TAG, "finishOrder 响应 data 为空，按失败上抛（orderId=$orderId）")
-                throw NetworkException("结束点单结果为空", R.string.error_network_fail)
-            }
-
-    /**
-     * 勾选菜品（共享购物车；version 为客户端已知版本）。
-     * 信封 409（版本冲突）转译为 [DiningVersionConflictException]，其余非 200 转译为
-     * NetworkException；data 恒为 null，成功即返回。
-     */
-    suspend fun addOrderItem(orderId: Long, request: AddDiningOrderItemRequest) {
-        diningServiceApi.addOrderItem(orderId, request).ensureDiningSuccess()
-    }
-
-    /** 修改选菜备注（note 传 null 即清空；version 冲突语义同 [addOrderItem]） */
-    suspend fun updateOrderItemNote(orderId: Long, request: UpdateDiningOrderItemRequest) {
-        diningServiceApi.updateOrderItemNote(orderId, request).ensureDiningSuccess()
-    }
-
-    /** 取消选菜（version 冲突语义同 [addOrderItem]） */
-    suspend fun removeOrderItem(orderId: Long, recipeId: Long, version: Long) {
-        diningServiceApi.removeOrderItem(orderId, recipeId, version).ensureDiningSuccess()
-    }
-
-    /**
-     * 选菜写接口信封校验：200 放行；409 抛 [DiningVersionConflictException]（调用方拉取最新后重放）；
+     * 菜单写接口信封校验：200 放行；409 抛 [DiningVersionConflictException]（调用方拉取最新后重放）；
      * 其余非 200 抛 NetworkException。201 通用失败已由 ResponseInterceptor 转译，正常不会到这里。
      */
     private fun ApiResult<*>.ensureDiningSuccess() {

@@ -11,7 +11,6 @@ import com.smartwash.feature.dining.ui.join.DiningOrderJoinPage
 import com.smartwash.feature.dining.ui.library.DiningRecipeFavoritesPage
 import com.smartwash.feature.dining.ui.library.DiningRecipeLibraryPage
 import com.smartwash.feature.dining.ui.order.DiningOrderCreatePage
-import com.smartwash.feature.dining.ui.order.DiningOrderDetailPage
 import com.smartwash.feature.dining.ui.order.DiningOrderListPage
 import com.smartwash.feature.dining.ui.order.DiningOrderSharePage
 import com.smartwash.feature.dining.ui.order.DiningOrderShoppingListPage
@@ -31,7 +30,6 @@ fun NavGraphBuilder.diningGraph(navController: NavHostController) {
     composable<DiningRoute.OrderList> { DiningOrderListPage(navController) }
     composable<DiningRoute.OrderCreate> { DiningOrderCreatePage(navController) }
     composable<DiningRoute.OrderJoin> { DiningOrderJoinPage(navController) }
-    composable<DiningRoute.OrderDetail> { DiningOrderDetailPage(navController) }
     composable<DiningRoute.OrderShare> { DiningOrderSharePage(navController) }
     composable<DiningRoute.ShoppingList> { DiningOrderShoppingListPage(navController) }
     composable<DiningRoute.RecipeLibrary> { DiningRecipeLibraryPage(navController) }

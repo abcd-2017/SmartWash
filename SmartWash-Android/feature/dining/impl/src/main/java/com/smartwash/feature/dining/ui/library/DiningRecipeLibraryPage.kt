@@ -85,7 +85,6 @@ import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.api.DiningRoute
-import com.smartwash.feature.dining.ui.DiningCalorieBadge
 import com.smartwash.feature.dining.logic.DiningCategoryChip
 import com.smartwash.feature.dining.logic.DiningRecipeItem
 
@@ -148,7 +147,7 @@ fun DiningRecipeLibraryPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.background)
+            .background(AppColors.colorScheme.surface)
             // 规范 §4：搜索框键盘弹出时整页上收，输入框保持可见（与 RechargePage 同口径）
             .imePadding()
     ) {
@@ -292,15 +291,16 @@ private fun CategoryRail(
                     .fillMaxWidth()
                     // 分类项最小 48dp 热区（规范 §3.2），且让选中底铺满整行高
                     .heightIn(min = 48.dp)
-                    .background(if (selected) AppColors.colorScheme.primarySoft else Color.Transparent)
+                    // 外卖式：未选中透明（rail 灰底）、选中=白块（与列表同色）
+                    .background(if (selected) AppColors.colorScheme.surface else Color.Transparent)
                     .pressable(onClick = { onSelect(chip.id) }, debounce = false)
-                    .padding(vertical = AppDimens.spaceSm, horizontal = AppDimens.spaceXxs),
+                    .padding(vertical = AppDimens.spaceXs, horizontal = AppDimens.spaceXxs),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = chip.name,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (selected) AppColors.colorScheme.primaryDark
+                    color = if (selected) AppColors.colorScheme.onPrimarySoft
                     else AppColors.colorScheme.textSecondary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -400,7 +400,7 @@ private fun LazyGridState.reachedBottom(): Boolean {
 /**
  * 封面卡（GroupCard 唯一画法 + pressable 整卡按压）：封面 4:3 固定宽高比防 CLS；
  * 封面缺失回落「分类浅底 + 菜名首字」占位（不依赖网络，契约 §5.1）。
- * 菜名 + 热量徽标（≈N kcal/份；缺失渲染「热量未知」次级档）。
+ * 菜名（16sp；热量信息已按产品口径移除，列表只留菜名）。
  */
 @Composable
 internal fun RecipeCoverCard(
@@ -416,9 +416,10 @@ internal fun RecipeCoverCard(
         contentPadding = PaddingValues(0.dp),
     ) {
         // 封面区：封面图/占位底 + 右上角收藏按钮（48dp 热区；内层 pressable 消费点击不进卡片）。
-        // 分类占位图（dining/covers/category_*.png）视为无封面（TD18）：实拍缺失回落首字占位
+        // 内置对象键（dining/covers/*）视为无封面（TD18）：实拍缺失回落首字占位；首字
+        // 对齐 BottomStart——双列窄卡上居中首字会被右上收藏按钮（48dp 圆）压住
         Box {
-            if (recipe.coverUrl.isNotBlank() && !recipe.coverUrl.contains("dining/covers/category_")) {
+            if (recipe.hasRealCover) {
                 SmartWashAsyncImage(
                     url = recipe.coverUrl,
                     modifier = Modifier
@@ -431,12 +432,14 @@ internal fun RecipeCoverCard(
                         .fillMaxWidth()
                         .aspectRatio(COVER_ASPECT)
                         .background(AppColors.colorScheme.iconContainerGreen),
-                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = recipe.name.firstOrNull()?.toString() ?: "",
                         style = MaterialTheme.typography.titleLarge,
                         color = AppColors.colorScheme.primaryDark,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(AppDimens.spaceMd),
                     )
                 }
             }
@@ -455,14 +458,12 @@ internal fun RecipeCoverCard(
         ) {
             Text(
                 text = recipe.name,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 color = AppColors.colorScheme.textPrimary,
                 // 两行上限（TD16）：大字体档单行 7 字即截断，网格卡有纵向余量
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-            DiningCalorieBadge(calories = recipe.calories)
         }
     }
 }
@@ -540,7 +541,8 @@ private fun SearchResultList(
             SearchResultRow(
                 recipe = recipe,
                 onClick = { onRecipeClick(recipe) },
-                modifier = Modifier.padding(bottom = AppDimens.cardSpacing).then(animatedListItem()),
+                // 平铺：无卡片、行间 4dp 由行内纵边距提供
+                modifier = Modifier.then(animatedListItem()),
             )
         }
         if (hasMore) {
@@ -571,48 +573,45 @@ private fun SearchResultList(
     }
 }
 
-/** 搜索结果行卡：56dp 封面缩略（缺失回落首字占位）+ 菜名 + 热量徽标 */
+/** 搜索结果行：56dp 封面缩略（缺失回落首字占位）+ 菜名；左右页边距由列表容器提供 */
 @Composable
 private fun SearchResultRow(
     recipe: DiningRecipeItem,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    GroupCard(
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
-            .pressable(onClick = onClick),
-        contentPadding = PaddingValues(AppDimens.cardPadding),
+            .pressable(onClick = onClick)
+            .padding(vertical = 4.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RecipeThumb(coverUrl = recipe.coverUrl, name = recipe.name)
-            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = recipe.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.colorScheme.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-                DiningCalorieBadge(calories = recipe.calories)
-            }
+        RecipeThumb(coverUrl = recipe.coverUrl, name = recipe.name)
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = recipe.name,
+                style = MaterialTheme.typography.bodyLarge,
+                color = AppColors.colorScheme.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
 
-/** 56dp 封面缩略（发起点单页同款）：有封面走网络图，分类占位键/缺失回落浅绿底 + 菜名首字（TD18） */
+/** 56dp 封面缩略（发起点单页同款）：真网络封面走图，内置 covers 伪键/缺失回落浅绿底 + 菜名首字（TD18） */
 @Composable
 private fun RecipeThumb(coverUrl: String, name: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(56.dp)
-            .clip(RoundedCornerShape(AppDimens.radiusMd))
+            .clip(RoundedCornerShape(AppDimens.radiusSmall))
             .background(AppColors.colorScheme.iconContainerGreen),
         contentAlignment = Alignment.Center,
     ) {
-        if (coverUrl.isNotBlank() && !coverUrl.contains("dining/covers/category_")) {
+        if (coverUrl.isNotBlank() && !coverUrl.contains("/dining/covers/")) {
             SmartWashAsyncImage(
                 url = coverUrl,
                 modifier = Modifier.fillMaxSize(),

@@ -31,6 +31,13 @@ data class DiningRecipeItem(
 ) {
     /** 食材数角标文案参数（0 时列表隐藏角标） */
     val ingredientCount: Int get() = ingredients.size
+
+    /**
+     * 是否为真实网络封面：`dining/covers/` 目录是导入数据的内置伪 key（category_、htc_
+     * 前缀），MinIO 无对应对象，走网络图只会渲染灰块，端上一律回落「浅绿底 + 菜名首字」
+     * 占位（TD18）；真实上传封面为用户上传直链，不受影响。
+     */
+    val hasRealCover: Boolean get() = coverUrl.isNotBlank() && !coverUrl.contains("/dining/covers/")
 }
 
 /** 分类筛选 chip 模型：[id] 为 null 表示「全部」伪分类（不携带筛选参数） */
@@ -50,6 +57,10 @@ data class DiningOrderListItem(
     val isCreator: Boolean,
     /** 创建时间展示文案（ISO 原文格式化，畸形原文原样返回；空串隐藏时间行） */
     val displayTime: String,
+    /** 本单菜单菜数（列表卡摘要，缺失兜底 0） */
+    val menuCount: Int,
+    /** 食材摘要（缺失/无食材为空串，列表卡摘要） */
+    val ingredientSummary: String,
 )
 
 /** 加入前预览 UI 模型（api 模块 DiningOrderBriefVo → 扫码确认弹窗渲染模型） */
@@ -100,6 +111,31 @@ fun DiningRecipeVo.toRecipeItem(): DiningRecipeItem = DiningRecipeItem(
 fun List<DiningCategoryVo>.toCategoryChips(allLabel: String): List<DiningCategoryChip> =
     listOf(DiningCategoryChip(id = null, name = allLabel)) + map { DiningCategoryChip(id = it.safeId, name = it.safeName) }
 
+/**
+ * 手机号脱敏（镜像后端 DiningOrderServiceImpl.maskPhone 规则，纯函数便于单测）：
+ * 11 位按 3+4+4 掩中间；长度 ≤5 原样返回；其余保留前 3 后 2；空值返回空串。
+ */
+fun maskDiningPhone(phone: String?): String {
+    val value = phone?.trim().orEmpty()
+    if (value.isEmpty()) return ""
+    if (value.length == 11) return value.substring(0, 3) + "****" + value.substring(7)
+    if (value.length <= 5) return value
+    return value.substring(0, 3) + "****" + value.substring(value.length - 2)
+}
+
+/**
+ * 由当前登录手机号在参与者中定位当前用户 ID（端上无 userId 契约，详情成员仅回传脱敏手机号，
+ * 故按同源脱敏规则比对；手机号缺失/未命中返回 null——降级为不识别「我」，不误判）。
+ */
+fun resolveMyUserId(
+    members: List<DiningOrderDetailVo.OrderMember>,
+    currentPhone: String?,
+): Long? {
+    val masked = maskDiningPhone(currentPhone)
+    if (masked.isEmpty()) return null
+    return members.firstOrNull { it.safePhoneMasked == masked }?.safeUserId
+}
+
 /** DiningOrderListVo → 我的订单列表项（safe 兜底 + 状态保守降级集中在映射层） */
 fun DiningOrderListVo.toOrderListItem(): DiningOrderListItem = DiningOrderListItem(
     id = safeId,
@@ -107,6 +143,8 @@ fun DiningOrderListVo.toOrderListItem(): DiningOrderListItem = DiningOrderListIt
     status = diningOrderStatusOf(safeStatus),
     isCreator = safeIsCreator,
     displayTime = formatDiningTime(createdAt),
+    menuCount = safeMenuCount,
+    ingredientSummary = safeIngredientSummary,
 )
 
 /** DiningOrderBriefVo → 加入确认模型（safe 兜底 + 状态保守降级集中在映射层） */

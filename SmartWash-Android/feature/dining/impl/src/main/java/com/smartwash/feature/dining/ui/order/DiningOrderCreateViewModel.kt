@@ -13,15 +13,15 @@ import com.smartwash.feature.dining.api.model.CreateDiningOrderRequest
 import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
 import com.smartwash.feature.dining.api.model.DiningCategoryVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
-import com.smartwash.feature.dining.api.model.PublishDiningOrderRequest
+import com.smartwash.feature.dining.api.model.SubmitDiningOrderRequest
 import com.smartwash.feature.dining.logic.DiningAllergenGuard
 import com.smartwash.feature.dining.logic.DiningDraftMenuEditor
-import com.smartwash.feature.dining.logic.DiningJoinUrlBuilder
 import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningOrderFormValidator
 import com.smartwash.feature.dining.logic.DiningOrderFormValidator.DiningOrderFormError
 import com.smartwash.feature.dining.logic.DiningVersionConflictException
 import com.smartwash.feature.dining.repository.DiningRepository
+import com.smartwash.feature.dining.sync.DiningOrderSyncChannel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -67,6 +67,7 @@ private const val KEYWORD_DEBOUNCE_MS = 300L
 class DiningOrderCreateViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val diningRepository: DiningRepository,
+    private val syncChannel: DiningOrderSyncChannel,
     private val application: Application,
 ) : ViewModel() {
 
@@ -131,6 +132,9 @@ class DiningOrderCreateViewModel @Inject constructor(
     /** 关键词搜索防抖任务（新输入取消上一次） */
     private var keywordJob: Job? = null
 
+    /** 共同编辑轮询任务（草稿落库后启动；提交/销毁时停止） */
+    private var pollJob: Job? = null
+
     /** 已勾选菜谱 ID 集合（无序集合；提交时按分组顺序展开保序提交） */
     private val _selectedRecipeIds = MutableStateFlow<Set<Long>>(emptySet())
     val selectedRecipeIds = _selectedRecipeIds.asStateFlow()
@@ -181,12 +185,12 @@ class DiningOrderCreateViewModel @Inject constructor(
     val submitState = _submitState.asStateFlow()
 
     /**
-     * 创建成功结果（orderId + joinToken + 归一化标题）：token 是端上唯一凭证来源，
-     * 一次性交付给页面跳分享视图（consumeCreatedResult 取走即清，避免成功态重放携带旧值）。
+     * 提交成功结果（orderId + 归一化标题）：一次性交付给页面进购买清单结果页
+     * （consumeSubmittedResult 取走即清，避免成功态重放携带旧值）。
      */
-    class CreatedOrder(val orderId: Long, val title: String, val joinToken: String)
+    class SubmittedOrder(val orderId: Long, val title: String)
 
-    private var createdResult: CreatedOrder? = null
+    private var submittedResult: SubmittedOrder? = null
 
     // ==================== 草稿协同（DRAFT 惰性创建 + 菜单写操作） ====================
 
@@ -196,9 +200,14 @@ class DiningOrderCreateViewModel @Inject constructor(
     /** 草稿写操作串行锁：创建 + 加菜/移除 + publish 共用，保证 version 基准始终最新 */
     private val draftWriteMutex = Mutex()
 
-    /** 邀请链接一次性事件（页面复制到剪贴板后 consume；null=无待处理） */
-    private val _inviteLink = MutableStateFlow<String?>(null)
-    val inviteLink = _inviteLink.asStateFlow()
+    /**
+     * 邀请目标一次性事件（页面跳转邀请页后 consume；null=无待处理）。
+     * 携带 orderId + joinToken 供邀请页构造加入二维码，title 仅作副标题展示。
+     */
+    class InviteTarget(val orderId: Long, val title: String, val joinToken: String)
+
+    private val _inviteTarget = MutableStateFlow<InviteTarget?>(null)
+    val inviteTarget = _inviteTarget.asStateFlow()
 
     /** 草稿写操作一次性提示（页面 Toast 后 consume；null=无待提示） */
     private val _draftMessage = MutableStateFlow<String?>(null)
@@ -241,6 +250,8 @@ class DiningOrderCreateViewModel @Inject constructor(
                     }
                     else -> fetchFirstPage()
                 }
+                // 共同编辑：草稿已落库（编辑模式）则启动轮询，实时同步他人加/移除
+                if (draftMenu.isCreated) startPolling()
                 _loadState.value = RequestState.Success
             } catch (e: CancellationException) {
                 throw e
@@ -494,12 +505,12 @@ class DiningOrderCreateViewModel @Inject constructor(
     }
 
     /**
-     * 发起点单（端上校验先行；Loading 期间防重）。成功由页面消费后进分享视图。
+     * 提交点单（端上校验先行；Loading 期间防重）。提交即结束：DRAFT→FINISHED，
+     * 后端聚合本单菜单生成购买清单并通知全体成员；成功由页面消费后进购买清单结果页。
      *
-     * 草稿协同：
      * - 常规/草稿编辑模式：校验标题必填 + 菜单非空 → 确保草稿已落库并冲刷待写菜单 →
-     *   publish（version 乐观锁；409 时刷新草稿并重放一次）；
-     * - 复用模式：标题必填 → create(fromOrderId) 复制菜单 → 取 version → publish。
+     *   submit（version 乐观锁；409 时刷新草稿并重放一次）；
+     * - 复用模式：标题必填 → create(fromOrderId) 复制菜单 → 取 version → submit。
      */
     fun submit() {
         if (_submitState.value is RequestState.Loading) return
@@ -530,13 +541,14 @@ class DiningOrderCreateViewModel @Inject constructor(
         _submitState.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                val created = if (reuseFromOrderId != null) {
-                    publishReusedOrder(reuseFromOrderId, normalizedTitle)
+                val orderId = if (reuseFromOrderId != null) {
+                    submitReusedOrder(reuseFromOrderId, normalizedTitle)
                 } else {
-                    publishDraft(normalizedTitle)
+                    submitDraft(normalizedTitle)
                 }
-                AppLogger.info(TAG, "发起点单成功 orderId=${created.orderId} 标题=$normalizedTitle")
-                createdResult = created
+                AppLogger.info(TAG, "提交点单成功 orderId=$orderId 标题=$normalizedTitle")
+                stopPolling()
+                submittedResult = SubmittedOrder(orderId, normalizedTitle)
                 _submitState.value = RequestState.Success
             } catch (e: CancellationException) {
                 throw e
@@ -547,8 +559,8 @@ class DiningOrderCreateViewModel @Inject constructor(
         }
     }
 
-    /** 常规/草稿编辑模式：确保草稿落库 + 冲刷待写菜单后 publish（409 刷新重放一次） */
-    private suspend fun publishDraft(normalizedTitle: String): CreatedOrder {
+    /** 常规/草稿编辑模式：确保草稿落库 + 冲刷待写菜单后 submit（409 刷新重放一次） */
+    private suspend fun submitDraft(normalizedTitle: String): Long {
         draftWriteMutex.withLock {
             if (!draftMenu.isCreated) {
                 createDraft()
@@ -559,40 +571,40 @@ class DiningOrderCreateViewModel @Inject constructor(
             }
         }
         return try {
-            diningRepository.publishOrder(
+            diningRepository.submitOrder(
                 draftMenu.orderId,
-                PublishDiningOrderRequest(title = normalizedTitle, version = draftMenu.serverVersion),
+                SubmitDiningOrderRequest(title = normalizedTitle, version = draftMenu.serverVersion),
             )
-            CreatedOrder(draftMenu.orderId, normalizedTitle, draftMenu.joinToken)
+            draftMenu.orderId
         } catch (e: DiningVersionConflictException) {
-            AppLogger.info(TAG, "publish 版本冲突，刷新草稿后重放 orderId=${draftMenu.orderId}")
+            AppLogger.info(TAG, "submit 版本冲突，刷新草稿后重放 orderId=${draftMenu.orderId}")
             if (!refreshDraftMenu()) throw e
-            // 服务端菜单可能被并发清空：publish 前二次校验非空（端上友好提示）
+            // 服务端菜单可能被并发清空：submit 前二次校验非空（端上友好提示）
             if (draftMenu.serverMenu.isEmpty()) {
                 throw NetworkException(
                     application.getString(R.string.dining_order_error_menu_empty),
                     R.string.dining_order_error_menu_empty,
                 )
             }
-            diningRepository.publishOrder(
+            diningRepository.submitOrder(
                 draftMenu.orderId,
-                PublishDiningOrderRequest(title = normalizedTitle, version = draftMenu.serverVersion),
+                SubmitDiningOrderRequest(title = normalizedTitle, version = draftMenu.serverVersion),
             )
-            CreatedOrder(draftMenu.orderId, normalizedTitle, draftMenu.joinToken)
+            draftMenu.orderId
         }
     }
 
-    /** 复用模式：create(fromOrderId) 复制历史菜单 → 取服务端 version → publish 定稿 */
-    private suspend fun publishReusedOrder(fromOrderId: Long, normalizedTitle: String): CreatedOrder {
+    /** 复用模式：create(fromOrderId) 复制历史菜单 → 取服务端 version → submit 提交并结束 */
+    private suspend fun submitReusedOrder(fromOrderId: Long, normalizedTitle: String): Long {
         val created = diningRepository.createOrder(
             CreateDiningOrderRequest(title = normalizedTitle, recipeIds = null, fromOrderId = fromOrderId),
         )
         val detail = diningRepository.getOrderDetail(created.safeOrderId)
-        diningRepository.publishOrder(
+        diningRepository.submitOrder(
             created.safeOrderId,
-            PublishDiningOrderRequest(title = normalizedTitle, version = detail.safeVersion),
+            SubmitDiningOrderRequest(title = normalizedTitle, version = detail.safeVersion),
         )
-        return CreatedOrder(created.safeOrderId, normalizedTitle, created.safeJoinToken)
+        return created.safeOrderId
     }
 
     /** 惰性创建草稿：携带当前标题与本地菜单（空也可），落库后服务端真相即本地菜单 */
@@ -639,6 +651,8 @@ class DiningOrderCreateViewModel @Inject constructor(
                     _draftMessage.value = application.getString(R.string.dining_order_create_write_failed)
                 }
             }
+            // 惰性创建成功后启动共同编辑轮询（同步他人加/移除）
+            if (draftMenu.isCreated) startPolling()
         }
     }
 
@@ -701,7 +715,46 @@ class DiningOrderCreateViewModel @Inject constructor(
     }
 
     /**
-     * 邀请：惰性创建草稿（空也可）并冲刷待写菜单，随后下发加入深链供页面复制。
+     * 启动共同编辑轮询（草稿落库后）：他人加/移除菜经 sync 通道实时合并进本地意图。
+     * 状态机 [DiningDraftMenuEditor.onServerSnapshot] 只收敛「已被服务端满足」的未决操作，
+     * 本地未决编辑不被覆盖；无变化（unchanged）不推进、不重建。
+     */
+    private fun startPolling() {
+        val id = draftMenu.orderId
+        if (id <= 0L) return
+        if (pollJob?.isActive == true) return
+        pollJob = viewModelScope.launch {
+            syncChannel.subscribe(id, draftMenu.serverVersion).collect { detail ->
+                if (detail.safeUnchanged) return@collect
+                draftWriteMutex.withLock {
+                    draftMenu.onServerSnapshot(
+                        detail.safeVersion,
+                        detail.safeMenu.map { it.safeRecipeId }.filter { it > 0L }.toSet(),
+                    )
+                    _selectedRecipeIds.value = draftMenu.localMenu
+                    syncSelectedRecipesFromMenu()
+                }
+                // 标题被他人/他端改动且本地为空时采纳（避免打断本地编辑）
+                if (_title.value.isBlank() && detail.safeTitle.isNotBlank()) {
+                    _title.value = detail.safeTitle
+                }
+            }
+        }
+    }
+
+    /** 停止共同编辑轮询（提交结束 / ViewModel 销毁） */
+    private fun stopPolling() {
+        pollJob?.cancel()
+        pollJob = null
+    }
+
+    override fun onCleared() {
+        stopPolling()
+        super.onCleared()
+    }
+
+    /**
+     * 邀请：惰性创建草稿（空也可）并冲刷待写菜单，随后下发邀请目标供页面跳转邀请页（二维码）。
      * 无加入凭证（非发起者详情不下发）时提示不可邀请。
      */
     fun requestInviteLink() {
@@ -713,11 +766,16 @@ class DiningOrderCreateViewModel @Inject constructor(
                         flushDraftWrites()
                     }
                 }
-                val link = DiningJoinUrlBuilder.buildOrderDeepLink(draftMenu.orderId, draftMenu.joinToken)
-                if (link == null) {
+                if (draftMenu.isCreated) startPolling()
+                val token = draftMenu.joinToken
+                if (token.isBlank()) {
                     _draftMessage.value = application.getString(R.string.dining_order_invite_unavailable)
                 } else {
-                    _inviteLink.value = link
+                    _inviteTarget.value = InviteTarget(
+                        orderId = draftMenu.orderId,
+                        title = _title.value.trim(),
+                        joinToken = token,
+                    )
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -731,9 +789,9 @@ class DiningOrderCreateViewModel @Inject constructor(
         }
     }
 
-    /** 消费邀请链接一次性事件（页面复制后调用） */
+    /** 消费邀请目标一次性事件（页面跳转邀请页后调用） */
     fun consumeInviteLink() {
-        _inviteLink.value = null
+        _inviteTarget.value = null
     }
 
     /** 消费草稿写提示（页面 Toast 后调用） */
@@ -741,11 +799,11 @@ class DiningOrderCreateViewModel @Inject constructor(
         _draftMessage.value = null
     }
 
-    /** 一次性取走创建成功结果（取后即清——成功态重放不携带旧值）；orderId 非法视为异常结果 */
-    fun consumeCreatedResult(): CreatedOrder? {
-        val result = createdResult
-        createdResult = null
-        return result?.takeIf { it.orderId > 0L && it.joinToken.isNotBlank() }
+    /** 一次性取走提交成功结果（取后即清——成功态重放不携带旧值）；orderId 非法视为异常结果 */
+    fun consumeSubmittedResult(): SubmittedOrder? {
+        val result = submittedResult
+        submittedResult = null
+        return result?.takeIf { it.orderId > 0L }
     }
 
     /**

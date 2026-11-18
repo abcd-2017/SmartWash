@@ -66,37 +66,23 @@ sealed interface DiningRoute : SmartWashRoute {
     ) : DiningRoute
 
     /**
-     * 扫码加入的承接（08 号票能力随全局扫一扫上移壳层）：扫码识别与分发移至壳层
-     * [com.smartwash.common.ui.navigation.ShellRoute.Scan]（工作台常驻入口），
-     * dining 域经 [com.smartwash.feature.dining.api.DiningApi.normalizeScanToDeepLink]
-     * 把本域加入链接归一为 smartwash:// 深链，加入入口统一落 [OrderJoin]。
-     *
-     * 点单页（美团式左分类右菜品 + 底部已选栏 + 参与者区 + 发起者结束入口，09 号票）。
-     *
-     * 从订单列表卡进入；页面自身经详情接口全量拉取（[joinToken] 仅发起者可见，供本页
-     * 顶部分享入口带往 [OrderShare]）。
-     */
-    @Serializable
-    @SerialName("DiningOrderDetail")
-    data class OrderDetail(val orderId: Long) : DiningRoute
-
-    /**
      * 点单加入入口页（12 号票）：站内信 dining 深链 `smartwash://dining/order/{orderId}?t={token}` 的落点。
      *
-     * 成员经 brief 判重后直达 [OrderDetail]；非成员展示标题预览 + 「加入」按钮，
-     * 确认加入后再进详情。[token] 为加入凭证（与后端 buildOrderDeepLink 同口径），
-     * 缺失/无效时页面按「加入凭证无效或已重置」提示。
+     * 成员经 brief 判重后直达 [OrderCreate]（编辑态，菜单即已选清单、全员共同编辑）；
+     * 非成员展示标题预览 + 「加入」按钮，确认加入后再进编辑页。[token] 为加入凭证
+     * （与后端 buildOrderDeepLink 同口径），缺失/无效时页面按「加入凭证无效或已重置」提示。
      */
     @Serializable
     @SerialName("DiningOrderJoin")
     data class OrderJoin(val orderId: Long, val token: String) : DiningRoute
 
     /**
-     * 订单分享视图（订单基本信息 + 加入二维码）。
-     * [title] 由入口顺带下发避免首帧空窗（列表页/创建页/点单页均已持有）；[joinToken] 为
-     * 可选入口值（创建响应 / 点单页详情，仅发起者可见）——进来才有值即展示二维码。
-     * 入口未携带（如旧入口直开）时分享页经详情接口自取：发起者详情全量响应会回传 token
-     * （09 号票修补条），参与者仍降级提示「凭证仅发起者可得」。
+     * 邀请 / 分享视图（订单基本信息 + 加入二维码）。
+     *
+     * 邀请与分享合一：创建页「邀请」（DRAFT 编辑中）与列表/详情入口（进行中）都落本页，
+     * 标题按状态显示「邀请加入」/「订单分享」。[title] 由入口顺带下发避免首帧空窗；
+     * [joinToken] 为可选入口值（创建响应 / 详情，仅发起者可见）——进来才有值即展示二维码。
+     * 入口未携带时经详情接口自取：发起者详情全量响应会回传 token，参与者降级提示。
      */
     @Serializable
     @SerialName("DiningOrderShare")
@@ -107,10 +93,10 @@ sealed interface DiningRoute : SmartWashRoute {
     ) : DiningRoute
 
     /**
-     * 购买清单结果页（结束点单后进入；FINISHED 只读态点单页亦可经「查看购买清单」进入）。
+     * 购买清单结果页（发起者「提交」结束后进入；订单列表 FINISHED 卡直达）。
      *
-     * 页面经详情接口拉取 shopping_list 快照与参与者（选菜人标识），渲染「按食材买菜 / 按菜备菜」
-     * 双视图；[orderId] 为唯一入口参数（标题/快照不随路由传递，避免长 JSON 进返回栈）。
+     * 页面经详情接口拉取 shopping_list 快照，渲染「按食材买菜 / 按菜备菜」双视图；
+     * [orderId] 为唯一入口参数（标题/快照不随路由传递，避免长 JSON 进返回栈）。
      */
     @Serializable
     @SerialName("DiningShoppingList")

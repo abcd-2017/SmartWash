@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,6 +32,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.rounded.Check
@@ -38,7 +40,10 @@ import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -54,15 +59,14 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
@@ -70,14 +74,15 @@ import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
-import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SmartWashAsyncImage
 import com.smartwash.common.ui.components.animatedListItem
+import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.enterTween
@@ -103,11 +108,15 @@ private val RAIL_WIDTH = 84.dp
 private fun macroAmount(value: Double): String =
     DiningNutritionCalculator.formatAmount(value).orEmpty()
 
-/** 菜品行卡封面缩略尺寸（TD30：56→64，行卡加四层信息后行高自然充裕） */
-private val DISH_COVER_SIZE = 64.dp
-
-/** 菜品行卡最小行高（TD30：随封面 64 提到 72） */
+/** 复用模式只读行最小行高（对齐行内勾选框 + 两行文字的视觉节奏） */
 private val DISH_ROW_MIN_HEIGHT = 72.dp
+
+/** 菜品行方图边长（1:1，固定尺寸——不随文字行数变化，用户定案 2026-11-18） */
+
+/** 菜品行底部容器高度：热量贴上沿、⊕ 贴下沿，比按钮触控盒(48dp)稍高（用户定案） */
+private val DISH_ROW_FOOTER_HEIGHT = 56.dp
+private val DISH_THUMB_SIZE = 64.dp
+
 
 /** 创建页内容区三态：首载骨架 / 首载失败 / 内容（菜品列表可空态） */
 private enum class CreateContentState { Skeleton, Error, Content }
@@ -149,23 +158,23 @@ fun DiningOrderCreatePage(
     val calorieTarget by viewModel.calorieTarget.collectAsState()
     val userAllergens by viewModel.userAllergens.collectAsState()
     val allergenById by viewModel.allergenById.collectAsState()
-    val inviteLink by viewModel.inviteLink.collectAsState()
+    val inviteTarget by viewModel.inviteTarget.collectAsState()
     val draftMessage by viewModel.draftMessage.collectAsState()
 
     // 首载（栈上重组不重放；失败重试显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
 
-    // 邀请链接：复制到剪贴板 + Toast（组合期禁副作用，收进 effect）
-    val clipboard = LocalClipboardManager.current
-    LaunchedEffect(inviteLink) {
-        val link = inviteLink ?: return@LaunchedEffect
-        clipboard.setText(AnnotatedString(link))
-        Toast.makeText(
-            context,
-            context.getString(R.string.dining_order_invite_copy_done),
-            Toast.LENGTH_SHORT,
-        ).show()
+    // 邀请：跳「邀请加入」（与分享同一页，二维码 + 复制链接），不再只复制到剪贴板
+    LaunchedEffect(inviteTarget) {
+        val target = inviteTarget ?: return@LaunchedEffect
         viewModel.consumeInviteLink()
+        navController.navigate(
+            DiningRoute.OrderShare(
+                orderId = target.orderId,
+                title = target.title,
+                joinToken = target.joinToken,
+            )
+        )
     }
 
     // 草稿写操作失败提示（409 未收敛/网络失败；组合期禁副作用）
@@ -196,6 +205,11 @@ fun DiningOrderCreatePage(
         counts
     }
 
+    // 已选菜列表（底栏购物车弹窗数据源；按已选集合顺序展开 VO 快照）
+    val selectedDishes = remember(selectedIds, selectedRecipes) {
+        selectedIds.mapNotNull { selectedRecipes[it] }
+    }
+
     // 已选菜营养聚合（组合期纯计算，数据源为已选 VO 快照——跨分类切换不丢口径）
     val nutritionReport = remember(selectedRecipes, selectedIds) {
         DiningNutritionCalculator.summarize(
@@ -223,28 +237,22 @@ fun DiningOrderCreatePage(
         DiningPortionAdvisor.advice(nutritionReport.totalCalories, peopleCount, calorieTarget)
     }
 
-    // 提交成功：进分享视图（携带创建响应的 orderId + joinToken——token 的唯一来源）。
-    // popUpTo 弹掉创建页：分享页返回直接回订单列表，避免返回栈残留「创建中」状态
+    // 提交成功（提交即结束）：进购买清单结果页。popUpTo 弹掉创建页：结果页返回直接回订单列表，
+    // 避免返回栈残留「编辑中」状态
     LaunchedEffect(submitState) {
         when (val state = submitState) {
             is RequestState.Success -> {
-                val created = viewModel.consumeCreatedResult()
+                val submitted = viewModel.consumeSubmittedResult()
                 viewModel.resetSubmitState()
-                if (created == null) {
-                    // token 缺失/orderId 非法视为异常创建结果（无法分享，提示后留在本页可重试）
+                if (submitted == null) {
+                    // orderId 非法视为异常提交结果（无法进结果页，提示后留在本页可重试）
                     Toast.makeText(
                         context,
                         context.getString(R.string.dining_order_create_result_invalid),
                         Toast.LENGTH_SHORT,
                     ).show()
                 } else {
-                    navController.navigate(
-                        DiningRoute.OrderShare(
-                            orderId = created.orderId,
-                            title = created.title,
-                            joinToken = created.joinToken,
-                        )
-                    ) {
+                    navController.navigate(DiningRoute.ShoppingList(orderId = submitted.orderId)) {
                         popUpTo<DiningRoute.OrderCreate> { inclusive = true }
                     }
                 }
@@ -262,7 +270,8 @@ fun DiningOrderCreatePage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.background)
+            // 列表区整体白底（用户定案 2026-11-18「整体白」）；底栏同为 surface，靠发丝线切分
+            .background(AppColors.colorScheme.surface)
             // 键盘避让决策（TD15）：本页是「表单头 + 长列表 + 固定 CTA」混合页，不再整页上收
             // （原 RechargePage 表单页口径套用导致键盘弹出列表被压缩、CTA 弹起跳变）。
             // 标题/搜索框位于页面上半部不会被键盘遮挡；键盘弹出时列表下半部被遮可接受——
@@ -314,41 +323,17 @@ fun DiningOrderCreatePage(
                         )
 
                         CreateContentState.Content -> Column(modifier = Modifier.fillMaxSize()) {
-                            // 标题行（TD32/精修定案）：头部只留搜索一个输入框——标题改「点击编辑
-                            // 原位展开」轻交互，空标题也可先行选菜/邀请（草稿协同批次复用本交互），
-                            // 必填校验在「发起点单」时触发（就近红字保留在编辑态）
-                            var editingTitle by remember { mutableStateOf(false) }
+                            // 标题行：点击标题/铅笔 → 弹窗编辑（用户定案 2026-11-18）。空标题也可先行
+                            // 选菜/邀请；必填校验在「发起点单」时触发，未填时标题下方出红字反馈
+                            var showTitleDialog by remember { mutableStateOf(false) }
                             val titleError = formError == DiningOrderFormError.TITLE_REQUIRED ||
                                 formError == DiningOrderFormError.TITLE_TOO_LONG
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                // 上下间距收紧（spaceXxs）：标题行与搜索框节奏均匀，不再头重（用户复核 2026-11-18）
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXxs),
                             ) {
-                                if (editingTitle) {
-                                    AppTextField(
-                                        value = title,
-                                        onValueChange = viewModel::onTitleChange,
-                                        placeholder = stringResource(R.string.dining_order_create_title_hint),
-                                        isError = titleError,
-                                        supportingText = {
-                                            if (titleError) {
-                                                Text(stringResource(viewModel.errorRes(formError!!)))
-                                            }
-                                        },
-                                        singleLine = true,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    Spacer(modifier = Modifier.width(AppDimens.spaceXs))
-                                    AppButton(
-                                        text = stringResource(R.string.dining_order_create_title_confirm),
-                                        onClick = { editingTitle = false },
-                                        variant = AppButtonVariant.SECONDARY,
-                                        small = true,
-                                    )
-                                } else {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = title.ifBlank {
                                             stringResource(R.string.dining_order_create_title_hint)
@@ -360,7 +345,7 @@ fun DiningOrderCreatePage(
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier
                                             .weight(1f)
-                                            .pressable(onClick = { editingTitle = true }, debounce = false),
+                                            .pressable(onClick = { showTitleDialog = true }, debounce = false),
                                     )
                                     Spacer(modifier = Modifier.width(AppDimens.spaceXs))
                                     Icon(
@@ -369,13 +354,12 @@ fun DiningOrderCreatePage(
                                         tint = AppColors.colorScheme.textSecondary,
                                         modifier = Modifier
                                             .size(22.dp)
-                                            .pressable(onClick = { editingTitle = true }, debounce = false)
+                                            .pressable(onClick = { showTitleDialog = true }, debounce = false)
                                             .padding(2.dp),
                                     )
                                 }
-                                // 显示态也要给校验反馈：空标题点「发起点单」被拦时不再无反馈
-                                // （原只在编辑态 supportingText 渲染 → 用户观感「点了没反应」）
-                                if (titleError) {
+                                // 空标题点「发起点单」被拦时的红字反馈（标题下方，就近提示）
+                                if (titleError && formError != null) {
                                     Text(
                                         text = stringResource(viewModel.errorRes(formError!!)),
                                         style = MaterialTheme.typography.labelSmall,
@@ -386,6 +370,19 @@ fun DiningOrderCreatePage(
                                         ),
                                     )
                                 }
+                            }
+                            if (showTitleDialog) {
+                                TitleEditDialog(
+                                    value = title,
+                                    onValueChange = viewModel::onTitleChange,
+                                    isError = titleError,
+                                    errorText = if (titleError && formError != null) {
+                                        stringResource(viewModel.errorRes(formError!!))
+                                    } else {
+                                        null
+                                    },
+                                    onDismiss = { showTitleDialog = false },
+                                )
                             }
 
                             // 菜品搜索（服务端模糊查询，防抖 300ms 重置分页重拉；搜索态切全库列表，
@@ -479,7 +476,11 @@ fun DiningOrderCreatePage(
                                             onViewRecipe = { recipeId ->
                                                 navController.navigate(DiningRoute.RecipeDetail(recipeId))
                                             },
-                                            modifier = Modifier.weight(1f),
+                                            // 列表区白底（用户定案「整体白」）；分类栏保持浅灰
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .fillMaxHeight()
+                                                .background(AppColors.colorScheme.surface),
                                         )
                                     }
                                 }
@@ -493,10 +494,9 @@ fun DiningOrderCreatePage(
         // 底部固定购物车栏（契约 §5.2）：营养警示条（仅超标时出现）+ 表单菜单错误 + 已选数/
         // 清空/主 CTA；navigationBarsPadding 整体抬升，背景延伸至屏底避免按钮被手势区遮挡
         CreateBottomBar(
-            selectedCount = selectedIds.size,
+            selectedDishes = selectedDishes,
             nutritionReport = nutritionReport,
             allergenHits = allergenHits,
-            portionAdvice = portionAdvice,
             peopleCount = peopleCount,
             onPeopleChange = viewModel::onPeopleChange,
             menuError = formError.takeIf {
@@ -507,6 +507,7 @@ fun DiningOrderCreatePage(
             submitLoading = submitState is RequestState.Loading,
             onSubmit = viewModel::submit,
             onRequestClear = { showClearConfirm = true },
+            onRemoveDish = { recipeId -> viewModel.toggleRecipe(recipeId) },
         )
     }
 
@@ -622,12 +623,8 @@ private fun DishList(
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = AppDimens.spaceMd,
-            top = AppDimens.spaceXs,
-            end = AppDimens.spaceMd,
-            bottom = AppDimens.spaceLg,
-        ),
+        // 平铺列表：无卡片、无左右缩进（项内自持 4dp），仅底部避让；行间隔由项内 4dp 提供
+        contentPadding = PaddingValues(bottom = AppDimens.spaceLg),
     ) {
         items(recipes, key = { it.safeId }) { recipe ->
             DishRow(
@@ -635,7 +632,7 @@ private fun DishList(
                 selected = recipe.safeId in selectedIds,
                 onToggle = { onToggle(recipe.safeId) },
                 onViewRecipe = { onViewRecipe(recipe.safeId) },
-                modifier = Modifier.padding(bottom = AppDimens.cardSpacing).then(animatedListItem()),
+                modifier = Modifier.then(animatedListItem()),
             )
         }
         if (hasMore) {
@@ -668,9 +665,9 @@ private fun DishList(
 }
 
 /**
- * 菜品行卡（用户复核 2026-11-18 定案）：GroupCard + 整卡 pressable 切换勾选。
- * 布局上下分区——内容行（封面 + 菜名单行 + 热量副行）独占整宽在上，加选按钮独立一行
- * 靠右下：信息不再与按钮横向互挤；菜名单行省略，信息做减法（仅两层）。
+ * 菜品行（用户复核 2026-11-18 定案 · 平铺外卖式）：无卡片容器，白底平铺、行间仅 4dp 留白无线。
+ * 整行点击 = 菜谱详情；只有 ⊕ 按钮 = 加菜/取消（用户定案）。内容行 = 固定尺寸封面
+ * + 菜名单行 + 食材两行；底行 = 热量（左）+ 加选按钮（右）。
  */
 @Composable
 private fun DishRow(
@@ -680,47 +677,39 @@ private fun DishRow(
     onViewRecipe: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val nutrition = DiningNutritionCalculator.dishNutrition(recipe)
-    val formattedCalories = DiningNutritionCalculator.formatAmount(nutrition.calories)
-    val calorieText = if (formattedCalories != null) {
-        stringResource(R.string.dining_nutrition_calorie_badge_format, formattedCalories)
-    } else {
-        stringResource(R.string.dining_nutrition_calorie_unknown)
-    }
-    val ingredientText = if (recipe.safeIngredients.isNotEmpty()) {
-        stringResource(
-            R.string.dining_order_create_recipe_ingredients_format,
-            recipe.safeIngredients.size,
-        )
-    } else {
-        null
-    }
-    // 副行热量前置（TD16）：大字体/窄屏截断时优先保住热量语义
-    val subLine = listOfNotNull(calorieText, ingredientText).joinToString(" · ")
-
-    GroupCard(
+    val ingredients = recipe.safeIngredients
+    // 份热量（食材下的第三行，用户定案 2026-11-18：加内容填满图高，热量口径与其他页一致）
+    val servingCalories = DiningNutritionCalculator.servingCalories(
+        recipe.caloriesTotal,
+        recipe.caloriesPer100g,
+    )
+    val formattedCalories = DiningNutritionCalculator.formatAmount(servingCalories)
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .pressable(onClick = onToggle, debounce = false),
-        contentPadding = PaddingValues(
-            horizontal = AppDimens.cardPadding,
-            vertical = AppDimens.spaceSm,
-        ),
+            .pressable(onClick = onViewRecipe, debounce = false)
+            // 列表项左距 6dp（图片左缘）、右距 12dp（按钮右缘）；行间 4dp 纯白无线
+            .padding(start = 6.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
     ) {
-        // 内容行：图 + 文字列（weight 独占整宽）；行高跟随内容（=封面 64），
-        // 原 heightIn(min=72) 比内容高出 ~12dp 堆在内容下方 = 用户看到的「底部空一大截」
         Row(
-            verticalAlignment = Alignment.CenterVertically,
+            // 顶对齐（用户定案 2026-11-18：文字与图片中线重合是错的——标题顶边贴图顶）
+            verticalAlignment = Alignment.Top,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            // 缩略图独立点击 → 菜谱详情（TD17，美团惯例：行点击=加购、点图=看详情）
             DishThumb(
                 coverUrl = recipe.safeCoverUrl,
                 name = recipe.safeName,
-                modifier = Modifier.pressable(onClick = onViewRecipe, debounce = false),
+                // 固定尺寸方图（1:1）：不随文字行数变化——带热量 4 行的行图比 3 行大一号
+                // 是 bug，图片尺寸恒定（用户定案 2026-11-18）
+                modifier = Modifier.size(DISH_THUMB_SIZE),
             )
-            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-            Column(modifier = Modifier.weight(1f)) {
+            Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    // 文字列右距 = 按钮右距(12) + 4 = 16dp，确保文字不越过添加按钮显示区
+                    .padding(end = 4.dp),
+            ) {
                 Text(
                     text = recipe.safeName,
                     style = MaterialTheme.typography.bodyLarge,
@@ -730,32 +719,54 @@ private fun DishRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (subLine.isNotBlank()) {
+                if (ingredients.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(AppDimens.space2xs))
+                    // 食材固定占两行（用户定案 2026-11-18 选 3）：不足也留白，行高统一
                     Text(
-                        text = subLine,
-                        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                        text = ingredients.joinToString("、"),
+                        style = MaterialTheme.typography.labelSmall,
                         color = AppColors.colorScheme.textSecondary,
-                        maxLines = 1,
+                        minLines = 2,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
         }
-        // 按钮行：独立一行靠右下，与内容分区（用户复核 2026-11-18「前几行内容、后几行按钮」）
-        Row(
-            horizontalArrangement = Arrangement.End,
-            modifier = Modifier.fillMaxWidth(),
+        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+        // 底部容器（用户定案 2026-11-18）：热量在左上、⊕ 在右下，父容器比按钮高一点——
+        // 两者不在同一行，热量贴上沿、按钮贴下沿
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(DISH_ROW_FOOTER_HEIGHT),
         ) {
+            if (formattedCalories != null) {
+                Text(
+                    text = stringResource(
+                        R.string.dining_nutrition_calorie_badge_format,
+                        formattedCalories,
+                    ),
+                    style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                    color = AppColors.colorScheme.textTertiary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = DISH_THUMB_SIZE + AppDimens.spaceXs),
+                )
+            }
             AddDishButton(
                 selected = selected,
                 dishName = recipe.safeName,
                 onClick = onToggle,
+                modifier = Modifier.align(Alignment.BottomEnd),
             )
         }
     }
 }
 
-/** 56dp 封面缩略（菜谱库搜索行同款）：有封面走网络图，缺失回落浅绿底 + 菜名首字 */
+/** 封面缩略（高度由调用方约束，行内与右侧文字块同高）：有封面走网络图，缺失回落浅绿底 + 菜名首字 */
 @Composable
 private fun DishThumb(coverUrl: String, name: String, modifier: Modifier = Modifier) {
     // 分类占位图（dining/covers/category_*.png）视为无封面（TD18）：缩小后语义不清且
@@ -763,8 +774,8 @@ private fun DishThumb(coverUrl: String, name: String, modifier: Modifier = Modif
     val hasRealCover = coverUrl.isNotBlank() && !coverUrl.contains("dining/covers/category_")
     Box(
         modifier = modifier
-            .size(DISH_COVER_SIZE)
-            .clip(RoundedCornerShape(AppDimens.radiusMd))
+            // 56dp 小图用最小档 10dp（radiusSmall）：12dp 占边长 21% 显得过圆
+            .clip(RoundedCornerShape(AppDimens.radiusSmall))
             .background(AppColors.colorScheme.iconContainerGreen),
         contentAlignment = Alignment.Center,
     ) {
@@ -784,8 +795,9 @@ private fun DishThumb(coverUrl: String, name: String, modifier: Modifier = Modif
 }
 
 /**
- * 加选按钮（契约 §5.2「右侧加号按钮，已选态变对勾」）：48dp 触控热区，视觉 32dp 圆——
- * 未选 outline 描边空心圆 + Canvas 白底加号（primary 线），已选 primary 实底 + 白色对勾。
+ * 加选按钮（契约 §5.2「右侧加号按钮，已选态变对勾」）：视觉 24dp 圆 + 四周 12dp padding
+ * 外扩出 48dp 触控热区（用户指定做法：外层 Box 挂点击、padding 负责扩区）——
+ * 未选 outline 描边空心圆 + Canvas 加号（primary 线），已选 primary 实底 + 白色对勾。
  * 无障碍语义由外层 semantics contentDescription 承担（图形为装饰）。
  */
 @Composable
@@ -793,6 +805,7 @@ private fun AddDishButton(
     selected: Boolean,
     dishName: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val actionLabel = if (selected) {
         stringResource(R.string.dining_order_create_recipe_deselect, dishName)
@@ -800,12 +813,11 @@ private fun AddDishButton(
         stringResource(R.string.dining_order_create_recipe_select, dishName)
     }
     Box(
-        modifier = Modifier
-            // 40dp 热区 + 28dp 视觉（TD30）：原 48/32 在窄屏挤占文字区（行宽约 17%→13%），
-            // 释放宽度给四层信息
-            .size(40.dp)
+        modifier = modifier
             .semantics { contentDescription = actionLabel }
-            .pressable(onClick = onClick, debounce = false),
+            .pressable(onClick = onClick, debounce = false)
+            // 点击区外扩：视觉 24dp + 四周 12dp padding = 48dp 触控热区
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         // 状态变换 spring 弹跳（TD19/D11）：勾选瞬间放大过冲回落（MediumBouncy 过冲特性），
@@ -817,7 +829,7 @@ private fun AddDishButton(
         )
         Box(
             modifier = Modifier
-                .size(28.dp)
+                .size(24.dp)
                 .scale(scale)
                 .then(
                     if (selected) {
@@ -840,16 +852,16 @@ private fun AddDishButton(
                     imageVector = Icons.Rounded.Check,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(14.dp),
                 )
             } else {
                 // 加号：两条圆帽线段（对齐订单列表 FAB 自绘先例，不新增 Icons.* 使用）；
                 // 令牌色在组合期取好再进 draw 块（Canvas 内不能调 composable）
                 val plusColor = AppColors.colorScheme.primary
-                Canvas(modifier = Modifier.size(14.dp)) {
-                    val stroke = 1.8.dp.toPx()
+                Canvas(modifier = Modifier.size(12.dp)) {
+                    val stroke = 1.6.dp.toPx()
                     val center = Offset(size.width / 2f, size.height / 2f)
-                    val arm = 5.dp.toPx()
+                    val arm = 4.5.dp.toPx()
                     drawLine(
                         color = plusColor,
                         start = Offset(center.x - arm, center.y),
@@ -871,16 +883,73 @@ private fun AddDishButton(
 }
 
 /**
- * 底部固定购物车栏（契约 §5.2）：营养超标警示条（仅超标时出现，非阻断，估算口径）+
- * 菜单表单错误（就近提示）+ 已选数/清空（确认）/主 CTA「发起点单」。浮层与滚动内容之间
- * 允许 0.5dp 分隔线（规范 §2.4 豁免条款）。
+ * 标题编辑弹窗（用户定案 2026-11-18）：点击标题行唤起，内嵌 [AppTextField] + 取消/确定。
+ * 输入即回写 VM（[onValueChange]）——标题校验错误随输入即时清除；确定/取消均只关弹窗。
+ */
+@Composable
+private fun TitleEditDialog(
+    value: String,
+    onValueChange: (String) -> Unit,
+    isError: Boolean,
+    errorText: String?,
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.dialogEnterMotion(),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = AppElevation.floatLayer,
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
+                Text(
+                    text = stringResource(R.string.dining_order_create_title_label),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                AppTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    placeholder = stringResource(R.string.dining_order_create_title_hint),
+                    isError = isError,
+                    supportingText = { if (errorText != null) Text(errorText) },
+                    singleLine = true,
+                )
+                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AppButton(
+                        text = stringResource(com.smartwash.common.ui.R.string.cancel),
+                        onClick = onDismiss,
+                        variant = AppButtonVariant.TEXT,
+                    )
+                    Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+                    AppButton(
+                        text = stringResource(R.string.dining_order_create_title_confirm),
+                        onClick = onDismiss,
+                        variant = AppButtonVariant.SECONDARY,
+                        small = true,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 底部固定栏（用户定案 2026-11-18「外卖式购物车」）：警示条（营养/忌口，仅出现时）+ 表单错误 +
+ * 单行「已选 N 道 · M 人」（点击开购物车弹窗）+ 右 CTA「提交订单」。
+ * 已选明细 / 移除 / 人数 stepper 全部收进弹窗；浮层与滚动内容间允许 0.5dp 发丝线（§2.4 豁免）。
  */
 @Composable
 private fun CreateBottomBar(
-    selectedCount: Int,
+    selectedDishes: List<DiningRecipeVo>,
     nutritionReport: DiningNutritionCalculator.Report,
     allergenHits: List<DiningAllergenGuard.Hit>,
-    portionAdvice: DiningPortionAdvisor.Advice?,
     peopleCount: Int,
     onPeopleChange: (Int) -> Unit,
     menuError: DiningOrderFormError?,
@@ -889,7 +958,9 @@ private fun CreateBottomBar(
     submitLoading: Boolean,
     onSubmit: () -> Unit,
     onRequestClear: () -> Unit,
+    onRemoveDish: (Long) -> Unit,
 ) {
+    var showCart by remember { mutableStateOf(false) }
     Column(
         // 固定浮层（规范 §2.4 豁免：浮层与滚动内容之间可用 0.5dp 发丝线）：
         // surface 白底承载购物车栏语义，顶部发丝线与滚动区切分
@@ -904,7 +975,6 @@ private fun CreateBottomBar(
                 .background(AppColors.colorScheme.divider),
         )
         Column(modifier = Modifier.navigationBarsPadding()) {
-            // 份量行已并入主信息行（用户复核 2026-11-18：人数与已选菜合并，取消独立行降高度）
             if (nutritionReport.exceededItems.isNotEmpty()) {
                 DiningNutritionWarningBar(items = nutritionReport.exceededItems)
             }
@@ -922,23 +992,164 @@ private fun CreateBottomBar(
                     ),
                 )
             }
-            // 主行改两段式（TD28/P1-2）+ 人数并入（用户复核 2026-11-18）：信息行 = 已选计数
-            // （weight）+ 人数 stepper + 清空，全宽 CTA 独立行——底栏从 5 层降到 3 层
+            // 单行：左「已选 · 人数」信息（点击开购物车弹窗）+ 右 CTA
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXxs),
+                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
             ) {
-                Text(
-                    text = stringResource(R.string.dining_order_create_selected_count_format, selectedCount),
-                    style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .weight(1f)
+                        .pressable(onClick = { showCart = true }, debounce = false)
+                        .padding(vertical = AppDimens.space2xs),
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.dining_order_create_selected_count_format,
+                            selectedDishes.size,
+                        ),
+                        style = AppTextStyles.AmountMedium,
+                        color = AppColors.colorScheme.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        // 与「· N 人」共享基线：18sp/12sp 混排时小字不再悬空
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                    if (!isReuseMode) {
+                        Text(
+                            text = stringResource(
+                                R.string.dining_order_create_people_count_format,
+                                peopleCount,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.colorScheme.textSecondary,
+                            maxLines = 1,
+                            modifier = Modifier.alignByBaseline(),
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = stringResource(R.string.dining_order_create_cart),
+                        tint = AppColors.colorScheme.textTertiary,
+                        modifier = Modifier
+                            .padding(start = AppDimens.space2xs)
+                            .size(18.dp),
+                    )
+                }
+                AppButton(
+                    text = stringResource(R.string.dining_order_create_submit),
+                    onClick = onSubmit,
+                    loading = submitLoading,
+                    // small=按内容宽度（非 small 默认 fillMaxWidth 会挤掉左侧信息行）
+                    small = true,
                 )
-                if (!isReuseMode) {
+            }
+        }
+    }
+    if (showCart) {
+        CartSheet(
+            dishes = selectedDishes,
+            peopleCount = peopleCount,
+            onPeopleChange = onPeopleChange,
+            onRemoveDish = onRemoveDish,
+            onClear = onRequestClear,
+            onDismiss = { showCart = false },
+        )
+    }
+}
+
+/**
+ * 购物车弹窗（用户定案 2026-11-18）：已选菜明细（缩略图 + 菜名 + 移除）+ 人数 stepper + 清空。
+ * 用 M3 ModalBottomSheet（对齐 PaymentPage 先例：surface 容器 + 自绘拖拽条 + 顶部圆角）。
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun CartSheet(
+    dishes: List<DiningRecipeVo>,
+    peopleCount: Int,
+    onPeopleChange: (Int) -> Unit,
+    onRemoveDish: (Long) -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = AppColors.colorScheme.surface,
+        tonalElevation = 0.dp,
+        shape = RoundedCornerShape(topStart = AppDimens.radiusXl, topEnd = AppDimens.radiusXl),
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(vertical = AppDimens.spaceSm)
+                    .width(32.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(AppDimens.radiusFull))
+                    .background(AppColors.colorScheme.outline),
+            )
+        },
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            // 底部不再额外加 vertical spaceSm：底部留白只由末尾 spacer 的手势条高度承担
+            contentPadding = PaddingValues(
+                start = AppDimens.pagePadding,
+                end = AppDimens.pagePadding,
+                top = AppDimens.spaceSm,
+                bottom = 0.dp,
+            ),
+        ) {
+            item(key = "header") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = stringResource(R.string.dining_order_create_cart),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = AppColors.colorScheme.textPrimary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (dishes.isNotEmpty()) {
+                        AppButton(
+                            text = stringResource(R.string.dining_order_create_clear_selected),
+                            onClick = onClear,
+                            variant = AppButtonVariant.TEXT,
+                            contentColor = AppColors.colorScheme.dangerInk,
+                            small = true,
+                        )
+                    }
+                }
+            }
+            if (dishes.isEmpty()) {
+                item(key = "empty") {
+                    EmptyState(
+                        icon = Icons.Default.Restaurant,
+                        message = stringResource(R.string.dining_order_create_cart_empty),
+                    )
+                }
+            } else {
+                items(dishes, key = { it.safeId }) { dish ->
+                    CartDishRow(dish = dish, onRemove = { onRemoveDish(dish.safeId) })
+                }
+            }
+            item(key = "people") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = AppDimens.spaceSm),
+                ) {
+                    Text(
+                        text = stringResource(R.string.dining_portion_people_label),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.colorScheme.textSecondary,
+                        modifier = Modifier.weight(1f),
+                    )
                     PortionStepButton(
                         isPlus = false,
                         enabled = peopleCount > DiningNutritionCalculator.PEOPLE_MIN,
@@ -948,7 +1159,6 @@ private fun CreateBottomBar(
                         text = peopleCount.toString(),
                         style = AppTextStyles.AmountMedium,
                         color = AppColors.colorScheme.textPrimary,
-                        maxLines = 1,
                         modifier = Modifier.padding(horizontal = AppDimens.spaceXs),
                     )
                     PortionStepButton(
@@ -957,24 +1167,43 @@ private fun CreateBottomBar(
                         onClick = { onPeopleChange(peopleCount + 1) },
                     )
                 }
-                if (!isReuseMode && selectedCount > 0) {
-                    AppButton(
-                        text = stringResource(R.string.dining_order_create_clear),
-                        onClick = onRequestClear,
-                        variant = AppButtonVariant.TEXT,
-                        contentColor = AppColors.colorScheme.dangerInk,
-                    )
-                }
             }
-            AppButton(
-                text = stringResource(R.string.dining_order_create_submit),
-                onClick = onSubmit,
-                loading = submitLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXxs),
-            )
+            // 底部不再自加 spacer：ModalBottomSheet 的 contentWindowInsets 已含系统栏内边距，
+            // 叠加会让「人数」离屏底过远（用户复核 2026-11-18）
         }
+    }
+}
+
+/** 购物车行：缩略图 + 菜名 + 移除（文字动作，dangerInk） */
+@Composable
+private fun CartDishRow(dish: DiningRecipeVo, onRemove: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AppDimens.spaceXs),
+    ) {
+        DishThumb(
+            coverUrl = dish.safeCoverUrl,
+            name = dish.safeName,
+            modifier = Modifier.size(40.dp),
+        )
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+        Text(
+            text = dish.safeName,
+            style = MaterialTheme.typography.bodyLarge,
+            color = AppColors.colorScheme.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        AppButton(
+            text = stringResource(R.string.dining_order_create_cart_remove),
+            onClick = onRemove,
+            variant = AppButtonVariant.TEXT,
+            contentColor = AppColors.colorScheme.dangerInk,
+            small = true,
+        )
     }
 }
 

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -56,7 +55,6 @@ import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppChipVariant
 import com.smartwash.common.ui.components.AppFilterChip
 import com.smartwash.common.ui.components.AppTextField
-import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SmartWashAsyncImage
 import com.smartwash.common.ui.theme.AppColors
@@ -137,7 +135,7 @@ fun DiningRecipeCreatePage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.background)
+            .background(AppColors.colorScheme.surface)
             // 规范 §4：键盘弹出时整页上收，步骤/食材等靠下输入框可经纵向滚动露出，
             // 不被软键盘遮挡（与 RechargePage 同口径）
             .imePadding()
@@ -147,6 +145,8 @@ fun DiningRecipeCreatePage(
             onBack = { navController.navigateUp() },
         )
 
+        // 平铺表单（对齐点单页标准）：SectionLabel + 控件直接陈列，无 GroupCard 包裹——
+        // 输入框/选图区自带灰底容器，再套白卡成「卡中卡」，页面臃肿且层级虚高
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -155,143 +155,130 @@ fun DiningRecipeCreatePage(
         ) {
             // 封面（可选）：16:9 选图区，选中后本地 Uri 预览
             SectionLabel(stringResource(R.string.dining_create_cover_label))
-            GroupCard(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(AppDimens.cardPadding),
-            ) {
-                CoverPicker(
-                    coverUri = coverUri?.toString(),
-                    isUploading = coverUploadState is RequestState.Loading,
-                    onPick = {
-                        imagePickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
-                    },
-                )
-            }
-            Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+            CoverPicker(
+                coverUri = coverUri?.toString(),
+                isUploading = coverUploadState is RequestState.Loading,
+                onPick = {
+                    imagePickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                },
+            )
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
             SectionLabel(stringResource(R.string.dining_create_name_label))
-            GroupCard(modifier = Modifier.fillMaxWidth()) {
-                AppTextField(
-                    value = name,
-                    onValueChange = viewModel::onNameChange,
-                    placeholder = stringResource(R.string.dining_create_name_hint),
-                    isError = formError == DiningRecipeFormError.NAME_REQUIRED ||
-                        formError == DiningRecipeFormError.NAME_TOO_LONG,
-                    supportingText = {
-                        formError?.let { error ->
-                            if (error == DiningRecipeFormError.NAME_REQUIRED ||
-                                error == DiningRecipeFormError.NAME_TOO_LONG
-                            ) {
-                                Text(stringResource(viewModel.errorRes(error)))
-                            }
+            AppTextField(
+                value = name,
+                onValueChange = viewModel::onNameChange,
+                placeholder = stringResource(R.string.dining_create_name_hint),
+                isError = formError == DiningRecipeFormError.NAME_REQUIRED ||
+                    formError == DiningRecipeFormError.NAME_TOO_LONG,
+                supportingText = {
+                    formError?.let { error ->
+                        if (error == DiningRecipeFormError.NAME_REQUIRED ||
+                            error == DiningRecipeFormError.NAME_TOO_LONG
+                        ) {
+                            Text(stringResource(viewModel.errorRes(error)))
                         }
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+                    }
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
             // 分类（chips 多选一；未分类 = 不选）
             SectionLabel(stringResource(R.string.dining_create_category_label))
-            GroupCard(modifier = Modifier.fillMaxWidth()) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
+            ) {
+                CategoryChip(
+                    label = stringResource(R.string.dining_create_category_uncategorized),
+                    selected = selectedCategoryId == null,
+                    onClick = { viewModel.selectCategory(null) },
+                )
+                categories.forEach { category ->
+                    CategoryChip(
+                        label = category.safeName,
+                        selected = selectedCategoryId == category.safeId,
+                        onClick = { viewModel.selectCategory(category.safeId) },
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+
+            // 食材（输入 + 添加 → chips 可移除）
+            SectionLabel(stringResource(R.string.dining_create_ingredients_label))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AppTextField(
+                    value = ingredientInput,
+                    onValueChange = { ingredientInput = it },
+                    placeholder = stringResource(R.string.dining_create_ingredients_hint),
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                AppButton(
+                    small = true,
+                    text = stringResource(R.string.dining_create_ingredient_add),
+                    onClick = {
+                        viewModel.addIngredient(ingredientInput)
+                        ingredientInput = ""
+                    },
+                    // 空输入禁用（VM 对空串直接 return，避免可点无反馈）
+                    enabled = ingredientInput.isNotBlank(),
+                    variant = AppButtonVariant.SECONDARY,
+                )
+            }
+            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+            if (ingredients.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.dining_create_ingredients_empty),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textSecondary,
+                )
+            } else {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                 ) {
-                    CategoryChip(
-                        label = stringResource(R.string.dining_create_category_uncategorized),
-                        selected = selectedCategoryId == null,
-                        onClick = { viewModel.selectCategory(null) },
-                    )
-                    categories.forEach { category ->
-                        CategoryChip(
-                            label = category.safeName,
-                            selected = selectedCategoryId == category.safeId,
-                            onClick = { viewModel.selectCategory(category.safeId) },
+                    ingredients.forEachIndexed { index, ingredient ->
+                        IngredientChip(
+                            label = ingredient,
+                            onRemove = { viewModel.removeIngredient(index) },
                         )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
-
-            // 食材（输入 + 添加 → chips 可移除）
-            SectionLabel(stringResource(R.string.dining_create_ingredients_label))
-            GroupCard(modifier = Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    AppTextField(
-                        value = ingredientInput,
-                        onValueChange = { ingredientInput = it },
-                        placeholder = stringResource(R.string.dining_create_ingredients_hint),
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-                    AppButton(
-                        small = true,
-                        text = stringResource(R.string.dining_create_ingredient_add),
-                        onClick = {
-                            viewModel.addIngredient(ingredientInput)
-                            ingredientInput = ""
-                        },
-                        // 空输入禁用（VM 对空串直接 return，避免可点无反馈）
-                        enabled = ingredientInput.isNotBlank(),
-                        variant = AppButtonVariant.SECONDARY,
-                    )
-                }
-                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-                if (ingredients.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.dining_create_ingredients_empty),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.colorScheme.textSecondary,
-                    )
-                } else {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
-                        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
-                    ) {
-                        ingredients.forEachIndexed { index, ingredient ->
-                            IngredientChip(
-                                label = ingredient,
-                                onRemove = { viewModel.removeIngredient(index) },
-                            )
-                        }
-                    }
-                }
-                if (formError == DiningRecipeFormError.INGREDIENT_EMPTY ||
-                    formError == DiningRecipeFormError.INGREDIENT_TOO_LONG ||
-                    formError == DiningRecipeFormError.INGREDIENT_TOO_MANY
-                ) {
-                    Spacer(modifier = Modifier.height(AppDimens.spaceXs))
-                    Text(
-                        text = stringResource(viewModel.errorRes(formError!!)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.colorScheme.error,
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
-
-            SectionLabel(stringResource(R.string.dining_create_steps_label))
-            GroupCard(modifier = Modifier.fillMaxWidth()) {
-                AppTextField(
-                    value = steps,
-                    onValueChange = viewModel::onStepsChange,
-                    placeholder = stringResource(R.string.dining_create_steps_hint),
-                    isError = formError == DiningRecipeFormError.STEPS_TOO_LONG,
-                    supportingText = {
-                        if (formError == DiningRecipeFormError.STEPS_TOO_LONG) {
-                            Text(stringResource(R.string.dining_form_error_steps_too_long))
-                        }
-                    },
-                    singleLine = false,
-                    minLines = 4,
-                    modifier = Modifier.fillMaxWidth(),
+            if (formError == DiningRecipeFormError.INGREDIENT_EMPTY ||
+                formError == DiningRecipeFormError.INGREDIENT_TOO_LONG ||
+                formError == DiningRecipeFormError.INGREDIENT_TOO_MANY
+            ) {
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+                Text(
+                    text = stringResource(viewModel.errorRes(formError!!)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.error,
                 )
             }
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+
+            SectionLabel(stringResource(R.string.dining_create_steps_label))
+            AppTextField(
+                value = steps,
+                onValueChange = viewModel::onStepsChange,
+                placeholder = stringResource(R.string.dining_create_steps_hint),
+                isError = formError == DiningRecipeFormError.STEPS_TOO_LONG,
+                supportingText = {
+                    if (formError == DiningRecipeFormError.STEPS_TOO_LONG) {
+                        Text(stringResource(R.string.dining_form_error_steps_too_long))
+                    }
+                },
+                singleLine = false,
+                minLines = 4,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             // 保存（底部 CTA；避让手势条）
             Spacer(modifier = Modifier.height(AppDimens.spaceLg))
@@ -309,14 +296,14 @@ fun DiningRecipeCreatePage(
     }
 }
 
-/** 区块标题（卡外标签行，18sp Title 档 = AppTextStyles.SectionTitle，规范 §2.2） */
+/** 区块标题（平铺标签行，18sp Title 档 = AppTextStyles.SectionTitle，规范 §2.2） */
 @Composable
 private fun SectionLabel(text: String) {
     Text(
         text = text,
         style = AppTextStyles.SectionTitle,
         color = AppColors.colorScheme.textPrimary,
-        modifier = Modifier.padding(bottom = AppDimens.spaceXs, start = AppDimens.spaceXxs),
+        modifier = Modifier.padding(bottom = AppDimens.spaceXs),
     )
 }
 

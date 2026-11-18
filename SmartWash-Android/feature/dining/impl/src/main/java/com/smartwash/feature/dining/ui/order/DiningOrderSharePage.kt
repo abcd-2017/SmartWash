@@ -123,10 +123,17 @@ fun DiningOrderSharePage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.background)
+            .background(AppColors.colorScheme.surface)
     ) {
         PageHeader(
-            title = stringResource(R.string.dining_order_share_title),
+            // 邀请与分享合一：编辑中（DRAFT）显示「邀请加入」，已结束显示「订单分享」
+            title = stringResource(
+                if (detail?.status == DiningOrderStatus.FINISHED) {
+                    R.string.dining_order_share_title
+                } else {
+                    R.string.dining_order_invite_title
+                }
+            ),
             onBack = { navController.navigateUp() },
         )
 
@@ -185,9 +192,11 @@ private fun ShareContent(
         )
     }
 
-    // 展示标题：详情成功用详情值；失败/加载中降级用路由携带标题（入口均已下发，无空窗）
+    // 展示标题：详情成功用详情值；失败/加载中降级用路由携带标题（入口均已下发，无空窗）；
+    // 草稿未命名时空串 → 占位锚点（次要色），标题行不留白只剩状态点
     val title = detail?.title?.takeIf { it.isNotBlank() } ?: viewModel.routeTitle
-    val status = detail?.status ?: DiningOrderStatus.ONGOING
+    // 详情未到按「邀请中」降级（本页主要由创建页邀请入口进入）
+    val status = detail?.status ?: DiningOrderStatus.DRAFT
     val menuCount = detail?.menuCount ?: 0
     val memberCount = detail?.memberCount ?: 0
 
@@ -197,15 +206,20 @@ private fun ShareContent(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = AppDimens.pagePadding),
     ) {
-        // 订单信息卡（视觉锚点：标题）
-        GroupCard(modifier = Modifier.fillMaxWidth()) {
+        // 订单信息（视觉锚点：标题）—— 平铺无卡，对齐点单页标准
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StatusDotSmall(status)
                 Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                val untitled = title.isBlank()
                 Text(
-                    text = title,
+                    text = if (untitled) {
+                        stringResource(R.string.dining_order_title_placeholder)
+                    } else {
+                        title
+                    },
                     style = AppTextStyles.CardTitle,
-                    color = AppColors.colorScheme.textPrimary,
+                    color = if (untitled) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textPrimary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -221,9 +235,9 @@ private fun ShareContent(
                 color = AppColors.colorScheme.textSecondary,
             )
         }
-        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+        Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
-        GroupCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.dining_order_share_qr_section),
                 style = AppTextStyles.SectionTitle,
@@ -280,56 +294,11 @@ private fun ShareContent(
     }
 }
 
-/** 二维码内容区：joinUrl 可构造 → 生成/展示；不可构造 → 凭证不可得降级提示 */
-@Composable
-private fun JoinQrContent(
-    joinUrl: String?,
-    modifier: Modifier = Modifier,
-) {
-    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        if (joinUrl == null) {
-            Text(
-                text = stringResource(R.string.dining_order_share_qr_unavailable),
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.colorScheme.textSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = AppDimens.spaceLg, horizontal = AppDimens.spaceMd),
-            )
-        } else {
-            // 二维码异步生成（先例模式）：produceState 以 url 为 key，Default 线程生成不占主线程
-            val qrBitmap by produceState<Bitmap?>(initialValue = null, key1 = joinUrl) {
-                value = withContext(Dispatchers.Default) { generateQrCodeBitmap(joinUrl, 512) }
-            }
-            val imageBitmap = qrBitmap?.asImageBitmap()
-            if (imageBitmap == null) {
-                // 生成期占位（对齐取件页「加载中」盒子语义）
-                Box(
-                    modifier = Modifier
-                        .size(200.dp)
-                        .clip(RoundedCornerShape(AppDimens.radiusMd))
-                        .background(AppColors.colorScheme.surfaceVariant),
-                )
-            } else {
-                Image(
-                    bitmap = imageBitmap,
-                    contentDescription = stringResource(R.string.dining_order_share_qr_section),
-                    modifier = Modifier
-                        .size(200.dp)
-                        .clip(RoundedCornerShape(AppDimens.radiusMd)),
-                )
-            }
-        }
-    }
-}
-
-/** 小状态色点 + 状态字（复用列表页语义：进行中橙 / 已结束绿；分享页只作信息展示） */
+/** 小状态色点 + 状态字（草稿 secondary 灰 / 已结束 success 绿；分享页只作信息展示） */
 @Composable
 private fun StatusDotSmall(status: DiningOrderStatus) {
     val (dotColor, label) = when (status) {
         DiningOrderStatus.DRAFT -> MaterialTheme.colorScheme.secondary to stringResource(R.string.dining_order_status_draft)
-        DiningOrderStatus.ONGOING -> AppColors.colorScheme.ongoing to stringResource(R.string.dining_order_status_ongoing)
         DiningOrderStatus.FINISHED -> AppColors.colorScheme.success to stringResource(R.string.dining_order_status_finished)
     }
     Row(verticalAlignment = Alignment.CenterVertically) {

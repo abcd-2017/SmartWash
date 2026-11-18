@@ -66,7 +66,6 @@ import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.logic.toRecipeItem
-import com.smartwash.feature.dining.ui.DiningCalorieBadge
 
 /** 详情内容区三态：首载骨架 / 失败 / 内容 */
 private enum class DetailContentState { Skeleton, Error, Content }
@@ -98,7 +97,7 @@ fun DiningRecipeDetailPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.background)
+            .background(AppColors.colorScheme.surface)
     ) {
         PageHeader(
             title = stringResource(R.string.dining_recipe_detail_title),
@@ -186,14 +185,28 @@ private fun DetailContent(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = AppDimens.pagePadding),
     ) {
-        // 封面 16:9（视觉锚点）；未上传渲染 surfaceVariant 占位底
-        SmartWashAsyncImage(
-            url = vo.coverUrl,
+        // 封面 16:9（视觉锚点）；内置占位键/未上传回落「浅绿底 + 首字」占位（与菜谱库同口径）
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(AppDimens.radiusLg)),
-        )
+                .clip(RoundedCornerShape(AppDimens.radiusLg))
+                .background(AppColors.colorScheme.iconContainerGreen),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (vo.hasRealCover) {
+                SmartWashAsyncImage(
+                    url = vo.coverUrl,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Text(
+                    text = vo.name.firstOrNull()?.toString() ?: "",
+                    style = MaterialTheme.typography.displaySmall,
+                    color = AppColors.colorScheme.primaryDark,
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
         Text(
@@ -208,11 +221,6 @@ private fun DetailContent(
                 style = MaterialTheme.typography.labelLarge,
                 color = AppColors.colorScheme.textSecondary,
             )
-        }
-        // 份热量徽标行（TD23/P2-5）：列表卡片有 kcal 详情页反而没有——信息回补（缺失渲染「热量未知」）
-        Spacer(modifier = Modifier.height(AppDimens.spaceXs))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            DiningCalorieBadge(calories = vo.calories)
         }
         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
@@ -324,17 +332,20 @@ internal sealed interface StepLine {
 /** 原文自带编号前缀（「1.」「2、」「3)」——HowToCook/CookLikeHOC 步骤文本常见），渲染层剥离避免双重编号 */
 private val STEP_NO_PREFIX = Regex("^\\d+[.、)）]\\s*")
 
+/** markdown 行内标记（加粗/斜体/删除线/行内代码）：HowToCook 原文标记直接入库导致符号泄露渲染 */
+private val STEP_MARKDOWN_MARKS = Regex("\\*\\*|__|~~|\\*|`")
+
 /**
- * 步骤文本解析（TD24）：按行拆分 → 全局剥离 markdown「**」标记（HowToCook 原文加粗语法
- * 直接入库导致星号泄露渲染）→ 「-」开头行归子注解、其余行剥原文编号归主步骤。
- * 纯函数无 UI 依赖，供详情页渲染与单元测试共用。
+ * 步骤文本解析（TD24）：按行拆分 → 全局剥离 markdown 行内标记（「**」加粗、反引号代码、
+ * 「~~」删除线——原文标记入库后以符号原样泄露渲染）→ 「-」开头行归子注解、其余行剥
+ * 原文编号归主步骤。纯函数无 UI 依赖，供详情页渲染与单元测试共用。
  */
 internal fun parseStepLines(raw: String): List<StepLine> = raw
     .split('\n')
     .map { it.trim() }
     .filter { it.isNotEmpty() }
     .map { line ->
-        val cleaned = line.replace("**", "").trim()
+        val cleaned = line.replace(STEP_MARKDOWN_MARKS, "").trim()
         when {
             cleaned.startsWith("-") || cleaned.startsWith("–") || cleaned.startsWith("—") ->
                 StepLine.Sub(cleaned.trimStart('-', '–', '—', ' ').trim())
