@@ -51,7 +51,7 @@ internal fun DiningNutritionWarningBar(
     modifier: Modifier = Modifier,
 ) {
     if (items.isEmpty()) return
-    var showDetail by remember { mutableStateOf(false) }
+    var showDetail by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     WarningBarShell(
         modifier = modifier,
         containerColor = AppColors.colorScheme.warningContainer,
@@ -95,7 +95,7 @@ internal fun DiningAllergenWarningBar(
     modifier: Modifier = Modifier,
 ) {
     if (hits.isEmpty()) return
-    var showDetail by remember { mutableStateOf(false) }
+    var showDetail by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     WarningBarShell(
         modifier = modifier,
         containerColor = AppColors.colorScheme.iconContainerPink,

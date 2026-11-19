@@ -35,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,8 +103,9 @@ fun DiningOrderShoppingListPage(
     val checked by viewModel.checked.collectAsState()
     val calorieTarget by viewModel.calorieTarget.collectAsState()
 
-    // 双视图切换（纯 UI 态；不参与网络请求）
-    var tab by remember { mutableStateOf(TAB_INGREDIENTS) }
+    // 双视图切换（纯 UI 态；不参与网络请求）——rememberSaveable：跳菜谱详情再返回时
+    // NavHost 已重组本页，普通 remember 必丢（返回即弹回「按食材买菜」，D28 修）
+    var tab by rememberSaveable { mutableStateOf(TAB_INGREDIENTS) }
 
     LaunchedEffect(Unit) { viewModel.load() }
 

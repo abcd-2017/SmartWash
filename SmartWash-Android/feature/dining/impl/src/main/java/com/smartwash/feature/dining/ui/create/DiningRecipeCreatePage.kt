@@ -89,7 +89,7 @@ fun DiningRecipeCreatePage(
     val submitState by viewModel.submitState.collectAsState()
     val formError by viewModel.formError.collectAsState()
 
-    var ingredientInput by remember { mutableStateOf("") }
+    var ingredientInput by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
 
     // PhotoPicker（头像上传先例）：选图即上传，成功后以本地 Uri 预览
     val imagePickerLauncher = rememberLauncherForActivityResult(
