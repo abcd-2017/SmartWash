@@ -30,6 +30,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -148,11 +149,19 @@ fun CouponPage(
         }
     }
 
+    // Toast 防重放标记（复排 A P2）：配置重建时 Error 态驻留会重放 Toast；
+    // saveable 保证重建后仍记住已提示，新一轮 Error（非 Error→Error）重新置 false 再提示
+    var loadErrorToasted by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(loadState) {
         if (loadState is RequestState.Error) {
             // 整页错误（三组全失败）已有内容区错误态承担反馈，Toast 改透出具体原因（A1 联动：
             // 业务错误 message 现在带 data 语义而非裸「失败」）
-            Toast.makeText(context, (loadState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+            if (!loadErrorToasted) {
+                Toast.makeText(context, (loadState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+                loadErrorToasted = true
+            }
+        } else {
+            loadErrorToasted = false
         }
     }
 

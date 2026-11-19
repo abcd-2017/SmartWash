@@ -18,6 +18,9 @@
     <string name="within_24_hours">24小时内</string>
     <string name="confirm_pay_format">确认支付 ¥%s</string>
     <string name="confirm_pay_question">确定要支付？</string>
+    <!-- 支付页首载失败错误态的重试按钮与兜底文案（出场淡变帧状态已翻转时兜底） -->
+    <string name="payment_retry">重试</string>
+    <string name="payment_load_failed">加载失败，请重试</string>
     <string name="insufficient_balance">余额不足</string>
     <string name="insufficient_balance_tip">当前余额不足，请先充值</string>
     <string name="go_recharge">去充值</string>

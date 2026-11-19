@@ -13,6 +13,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,12 +21,15 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.LocalOffer
@@ -43,8 +47,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,6 +67,7 @@ import com.smartwash.feature.coupon.api.CouponRoute
 import com.smartwash.feature.coupon.api.model.UsableCoupon
 import java.util.Locale
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
@@ -105,6 +112,7 @@ fun PaymentPage(
     val valueExitSpec = if (reduceMotion) tween<Float>(CROSSFADE_ALT_MS) else exitTween<Float>(120)
 
     val orderInfo by paymentViewModel.orderInfo.collectAsState()
+    val initState by paymentViewModel.initState.collectAsState()
     val paymentState by paymentViewModel.paymentState.collectAsState()
     val userCouponList by paymentViewModel.userCouponList.collectAsState()
     val calculationOrderState by paymentViewModel.calculationOrderState.collectAsState()
@@ -112,7 +120,12 @@ fun PaymentPage(
     var confirmPayShow by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var selectedCoupon by remember { mutableIntStateOf(-1) }
+    // 选中券跨页面返回保留：跳优惠券页「去领取」返回时本页组合重建，remember 会把选中
+    // 重置为 -1——券行回显「不使用」与 VM 里按券重算的折后价并存，且确认支付按无券参数
+    // 提交，UI 展示与支付参数错位（资金相关）。
+    // 存 userCouponId 而非列表索引（抽查 82ef6866 FAIL 返工）：getCanUseCoupon 无 ORDER BY，
+    // 重拉/领券后列表内容可变，索引会漂移指向另一张券；id 精确定位且 Long 可默认 saveable
+    var selectedCouponId by rememberSaveable { mutableLongStateOf(-1L) }
 
     if (orderId != null) {
         LaunchedEffect(Unit) { paymentViewModel.initData(orderId) }
@@ -144,9 +157,38 @@ fun PaymentPage(
                 (calculationOrderState as RequestState.Error).getMessage(current),
                 Toast.LENGTH_SHORT
             ).show()
+            // 选中券试算失败（如券已失效）：清除选中回「不使用」基线并重放无券试算，
+            // 否则券行回显已选而金额卡滞留旧值（抽查 82ef6866 返工项）；无券重放再失败
+            // 不会递归（selectedCouponId 已为 -1）
+            if (selectedCouponId != -1L && orderId != null) {
+                selectedCouponId = -1L
+                paymentViewModel.calculationOrder(orderId, NO_COUPON_USER_COUPON_ID)
+            }
             // 状态重放防护：Error 态复位为 Idle，否则配置重建会重放 Toast
             paymentViewModel.resetCalculationOrderState()
         }
+    }
+
+    // 选中恢复后的试算重放：组合重建（跳券页返回）会重跑 initData 覆写为基本价，
+    // 恢复的选中若不重放试算则「券行已选 + 金额卡基本价」持久错位（抽查 82ef6866 返工项）。
+    // 以 initState/userCouponList 为 key：两者落定后重放一次；手动选券由点击自行试算，
+    // orderInfo 不在 key 内故重算成功后不会再次触发（无循环）
+    LaunchedEffect(initState, userCouponList) {
+        val orderIdValue = orderId ?: return@LaunchedEffect
+        if (initState is RequestState.Success && userCouponList.isNotEmpty() &&
+            selectedCouponId != -1L && userCouponList.any { it.userCouponId == selectedCouponId }
+        ) {
+            paymentViewModel.calculationOrder(orderIdValue, selectedCouponId)
+        }
+    }
+
+    // 内容区三态推导（纯推导无副作用）：首载失败且无数据 → 错误态 / 有数据 → 内容 / 其余 → 骨架。
+    // 原实现未收集 initState，initData 失败后 orderInfo 恒 null，Crossfade 永卡骨架且骨架
+    // 分支无 PageHeader，用户只能手势返回且无重试入口
+    val contentState = when {
+        initState is RequestState.Error && orderInfo == null -> PaymentContentState.Error
+        orderInfo != null -> PaymentContentState.Content
+        else -> PaymentContentState.Loading
     }
 
     Box(
@@ -154,16 +196,59 @@ fun PaymentPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        // 首载骨架 ↔ 内容：交叉淡变（reduced motion 由 motionSpec 降级为 180ms）
+        // 骨架 ↔ 错误态 ↔ 内容：交叉淡变（reduced motion 由 motionSpec 降级为 180ms）
         Crossfade(
-            targetState = orderInfo == null,
+            targetState = contentState,
             animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
             label = "paymentContent"
-        ) { isLoading ->
-            if (isLoading) {
-                LoadingState(modifier = Modifier.fillMaxSize())
-            } else {
-                Column(modifier = Modifier.fillMaxSize()) {
+        ) { state ->
+            when (state) {
+                PaymentContentState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
+                PaymentContentState.Error -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        PageHeader(title = stringResource(R.string.payment), onBack = { navController.navigateUp() })
+                        // 错误态（三态完备性）：具体文案 + 重试 + 返回；对齐 OrderPage 错误态规范——
+                        // BoxWithConstraints 在 scroll 外层取视口高，heightIn(min) 让内容垂直居中，
+                        // verticalScroll 保留让下拉/滚动手势可达
+                        BoxWithConstraints(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = AppDimens.pagePadding)
+                        ) {
+                            val viewportHeight = maxHeight
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = viewportHeight),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    EmptyState(
+                                        // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 仅占位；
+                                        // as? 安全转换：出场淡变帧内状态可能已被重试置回 Loading，硬 cast 会崩
+                                        icon = Icons.Default.LocalOffer,
+                                        message = (initState as? RequestState.Error)?.getMessage(current)
+                                            ?: stringResource(R.string.payment_load_failed),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        action = {
+                                            AppButton(
+                                                small = true,
+                                                text = stringResource(R.string.payment_retry),
+                                                onClick = { orderId?.let { paymentViewModel.initData(it) } },
+                                                variant = AppButtonVariant.SECONDARY,
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                PaymentContentState.Content -> Column(modifier = Modifier.fillMaxSize()) {
                     PageHeader(title = stringResource(R.string.payment), onBack = { navController.navigateUp() })
 
                     Column(
@@ -342,8 +427,8 @@ fun PaymentPage(
                                     )
                                     // 「不使用」↔「-￥x」0ms 硬切 → 交叉淡变
                                     AnimatedContent(
-                                        targetState = if (selectedCoupon == -1 || userCouponList.isEmpty()) null
-                                        else userCouponList[selectedCoupon].discount,
+                                        targetState = if (selectedCouponId == -1L || userCouponList.isEmpty()) null
+                                        else userCouponList.firstOrNull { it.userCouponId == selectedCouponId }?.discount,
                                         transitionSpec = {
                                             fadeIn(valueEnterSpec) togetherWith fadeOut(valueExitSpec)
                                         },
@@ -489,14 +574,14 @@ fun PaymentPage(
                     item(key = "no_coupon") {
                         // 「不使用优惠券」显式选项：从已选券切回无券（对齐鸿蒙 Payment.ets:144-177）
                         val noCouponClick = rememberDebouncedClick {
-                            selectedCoupon = -1
+                            selectedCouponId = -1L
                             showBottomSheet = false
                             if (orderId != null) {
                                 // 后端 calculation 以 0 表示不使用优惠券（-1 会落到 selectById(-1) → 优惠券异常）
                                 paymentViewModel.calculationOrder(orderId, NO_COUPON_USER_COUPON_ID)
                             }
                         }
-                        NoCouponItem(isSelected = selectedCoupon == -1, itemClick = noCouponClick)
+                        NoCouponItem(isSelected = selectedCouponId == -1L, itemClick = noCouponClick)
                     }
                     items(
                         count = userCouponList.size,
@@ -504,13 +589,13 @@ fun PaymentPage(
                     ) { i ->
                         // 选券点击防抖：calculationOrder 无防重，连点重复发起重算请求
                         val couponClick = rememberDebouncedClick {
-                            selectedCoupon = i
+                            selectedCouponId = userCouponList[i].userCouponId
                             showBottomSheet = false
                             if (orderId != null) {
                                 paymentViewModel.calculationOrder(orderId, userCouponList[i].userCouponId)
                             }
                         }
-                        UserCouponItem(userCouponList[i], selectedCoupon == i, itemClick = couponClick)
+                        UserCouponItem(userCouponList[i], selectedCouponId == userCouponList[i].userCouponId, itemClick = couponClick)
                     }
                 }
             }
@@ -527,8 +612,8 @@ fun PaymentPage(
                 paymentViewModel.paymentOrder(
                     orderId!!,
                     PaymentType.PURSE.type,
-                    if (selectedCoupon == -1 || userCouponList.isEmpty()) null
-                    else userCouponList[selectedCoupon].userCouponId
+                    if (selectedCouponId == -1L || userCouponList.isEmpty()) null
+                    else userCouponList.firstOrNull { it.userCouponId == selectedCouponId }?.userCouponId
                 )
             },
             onDismiss = { confirmPayShow = false }
@@ -672,5 +757,8 @@ private fun NoCouponItem(
  * 传 -1 会走到 `userCouponMapper.selectById(-1)` 并抛「优惠券异常」。
  */
 private const val NO_COUPON_USER_COUPON_ID = 0L
+
+/** 支付页内容区三态：首载骨架 / 首载失败（无数据可渲染）/ 内容 */
+private enum class PaymentContentState { Loading, Error, Content }
 
 private const val TAG = "PaymentPage"
