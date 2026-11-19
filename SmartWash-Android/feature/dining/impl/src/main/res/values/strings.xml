@@ -16,6 +16,7 @@
     <string name="dining_recipe_list_empty_filtered">这个分类下还没有菜谱，看看别的分类吧</string>
     <string name="dining_recipe_list_empty_search">没有找到「%1$s」相关菜谱，换个关键词试试</string>
     <string name="dining_recipe_search_hint">搜菜名 / 食材（如：豆腐）</string>
+    <string name="dining_recipe_card_ingredient_count_format">%1$d 种食材</string>
     <string name="dining_recipe_search_mode_name">菜名</string>
     <string name="dining_recipe_search_mode_ingredient">食材</string>
     <string name="dining_recipe_action_favorite_add">收藏 %1$s</string>

@@ -64,6 +64,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -483,20 +484,38 @@ internal fun RecipeCoverCard(
                     .padding(AppDimens.spaceXs),
             )
         }
-        Text(
-            text = recipe.name,
-            style = MaterialTheme.typography.bodyLarge,
-            color = AppColors.colorScheme.textPrimary,
-            // 固定两行（TD16/D31）：单行名留白第二行，同排卡文字区等高——换行名导致
-            // 卡高不齐、封面与邻卡错位
-            maxLines = 2,
-            minLines = 2,
-            overflow = TextOverflow.Ellipsis,
+        Column(
             modifier = Modifier.padding(
                 horizontal = AppDimens.spaceSm,
                 vertical = AppDimens.spaceSm,
             ),
-        )
+        ) {
+            // 菜名 14sp Medium 单行（字阶 14 档=卡标题，原 16sp 正文档偏大；D33）
+            Text(
+                text = recipe.name,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                color = AppColors.colorScheme.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(AppDimens.space2xs))
+            // 副标题行恒占位（卡等高）：分类 · N 种食材；无内容时空行保留高度
+            val subtitle = listOfNotNull(
+                recipe.categoryName.takeIf { it.isNotBlank() },
+                if (recipe.ingredientCount > 0) {
+                    stringResource(R.string.dining_recipe_card_ingredient_count_format, recipe.ingredientCount)
+                } else {
+                    null
+                },
+            ).joinToString(" · ")
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.colorScheme.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
