@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -258,7 +259,8 @@ private fun FishPool(
  */
 @Composable
 private fun FirstRunHint(reduceMotion: Boolean, modifier: Modifier = Modifier) {
-    var visible by remember { mutableStateOf(true) }
+    // saveable：返回本页不再重复弹出首次提示
+    var visible by rememberSaveable { mutableStateOf(true) }
     LaunchedEffect(reduceMotion) {
         if (!reduceMotion) {
             delay(HINT_STAY_MS)

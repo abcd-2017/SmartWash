@@ -36,6 +36,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,7 +85,8 @@ fun DivFollowUpPage(
     viewModel: DivFollowUpViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    var input by remember { mutableStateOf("") }
+    // 追问草稿保留：push 任意二级页返回后不清空
+    var input by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
     val context = androidx.compose.ui.platform.LocalContext.current
 
