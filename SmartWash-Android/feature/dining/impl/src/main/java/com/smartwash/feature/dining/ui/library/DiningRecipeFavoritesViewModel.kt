@@ -84,8 +84,10 @@ class DiningRecipeFavoritesViewModel @Inject constructor(
     }
 
     /**
-     * 取消收藏（契约 §三.4）：乐观从列表移除，失败回滚到原位置；服务端返回当前态，
-     * 若仍为已收藏（并发/脏数据）则回滚，若已取消则保持移除。
+     * 取消收藏（契约 §三.4）：乐观从列表移除，失败回滚到原位置。
+     * 后端返回值是「调用成败」（D25 起 unfavorite 成功也返回 true，**不是收藏态**）——
+     * true=已移除保持现状，false/异常=回滚（旧写法把 true 当仍已收藏，导致收藏永远
+     * 取消不掉，D30 修）。
      */
     fun unfavorite(recipeId: Long) {
         if (recipeId <= 0L) return
@@ -96,9 +98,9 @@ class DiningRecipeFavoritesViewModel @Inject constructor(
         _recipes.value = current.filterNot { it.id == recipeId }
         viewModelScope.launch {
             try {
-                val state = diningRepository.unfavoriteRecipe(recipeId)
-                if (state) {
-                    // 服务端仍为已收藏（并发/脏数据）：回滚到原位置
+                val ok = diningRepository.unfavoriteRecipe(recipeId)
+                if (!ok) {
+                    // 调用失败（服务端未确认）：回滚到原位置
                     rollback(current, removed)
                 }
             } catch (e: CancellationException) {

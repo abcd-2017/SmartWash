@@ -25,6 +25,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -235,7 +236,8 @@ fun FluidPage(
 @Composable
 private fun FirstRunHint(reduceMotion: Boolean, modifier: Modifier = Modifier) {
     val scheme = AppColors.colorScheme
-    var visible by remember { mutableStateOf(true) }
+    // saveable：返回本页不再重复弹出首次提示
+    var visible by rememberSaveable { mutableStateOf(true) }
     LaunchedEffect(reduceMotion) {
         if (!reduceMotion) {
             delay(HINT_STAY_MS)

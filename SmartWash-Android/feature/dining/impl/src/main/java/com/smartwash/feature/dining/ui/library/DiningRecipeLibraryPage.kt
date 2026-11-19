@@ -64,6 +64,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -280,6 +281,7 @@ fun DiningRecipeLibraryPage(
                                     }
                                 },
                                 onToggleFavorite = viewModel::toggleFavorite,
+                                selectedCategoryId = selectedCategoryId,
                             )
                         }
                     }
@@ -345,9 +347,15 @@ internal fun RecipeGrid(
     onLoadMore: () -> Unit,
     onRecipeClick: (DiningRecipeItem) -> Unit,
     onToggleFavorite: (Long) -> Unit,
+    selectedCategoryId: Long?,
     modifier: Modifier = Modifier,
 ) {
     val gridState = rememberLazyGridState()
+
+    // 分类切换回顶（D32）：网格滚动位置不随分类重置会停在上类目的偏移处
+    LaunchedEffect(selectedCategoryId) {
+        gridState.scrollToItem(0)
+    }
 
     // 触底探测（对齐订单列表先例）：末两项可见即触发下一页；加载中不重入，失败保留 footer 重试
     val shouldLoadMore by remember {
@@ -459,50 +467,62 @@ internal fun RecipeCoverCard(
                         painter = painterResource(R.drawable.dining_recipe_placeholder),
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
-                        // 右侧多让位收藏按钮（48dp 圆 + 边距），线稿居左下不与其相压
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(
-                                start = AppDimens.spaceLg,
-                                top = AppDimens.spaceLg,
-                                end = AppDimens.spaceXxl,
-                                bottom = AppDimens.spaceLg,
-                            ),
+                            .padding(AppDimens.spaceLg),
                     )
                 }
             }
+            // 收藏按钮贴封面右上角（D29：不放文字行——抢占菜名视觉空间；32dp 热区 + 14dp
+            // 心形小角不遮图主体；内层 pressable 消费点击不进卡片）
+            RecipeFavoriteButton(
+                favorited = recipe.favorited,
+                recipeName = recipe.name,
+                onClick = onToggleFavorite,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(AppDimens.spaceXs),
+            )
         }
-        // 收藏按钮移出封面（原 48dp 白圆压住 4:3 封面大部分区域）——落文字行右侧，
-        // 与菜名同行；小号心形 + 投影，任意封面/占位底可读
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
             modifier = Modifier.padding(
                 horizontal = AppDimens.spaceSm,
                 vertical = AppDimens.spaceSm,
             ),
         ) {
+            // 菜名 14sp Medium 单行（字阶 14 档=卡标题，原 16sp 正文档偏大；D33）
             Text(
                 text = recipe.name,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                 color = AppColors.colorScheme.textPrimary,
-                // 两行上限（TD16）：大字体档单行 7 字即截断，网格卡有纵向余量
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
             )
-            RecipeFavoriteButton(
-                favorited = recipe.favorited,
-                recipeName = recipe.name,
-                onClick = onToggleFavorite,
+            Spacer(modifier = Modifier.height(AppDimens.space2xs))
+            // 副标题行恒占位（卡等高）：分类 · N 种食材；无内容时空行保留高度
+            val subtitle = listOfNotNull(
+                recipe.categoryName.takeIf { it.isNotBlank() },
+                if (recipe.ingredientCount > 0) {
+                    stringResource(R.string.dining_recipe_card_ingredient_count_format, recipe.ingredientCount)
+                } else {
+                    null
+                },
+            ).joinToString(" · ")
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.colorScheme.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
 
 /**
- * 封面卡收藏按钮（契约 §三.4）：位于卡片文字行右侧（原 48dp 白圆压封面大部分区域，D26 移位缩小）。
- * 32dp 热区 + 14dp 心形 + 投影（去白底圆）；已收藏=实心红心、未收藏=白色描边心；
- * 内层 pressable 消费点击（不触发整卡跳转）。
+ * 封面卡收藏按钮（契约 §三.4）：贴封面右上角（D29：不放文字行——抢占菜名视觉空间；
+ * 原 48dp 白圆压封面已弃用）——32dp 热区 + 14dp 心形 + 4dp 边距，占封面小角不遮主体；
+ * 已收藏=实心红心、未收藏=描边灰心；内层 pressable 消费点击（不触发整卡跳转）。
  */
 @Composable
 private fun RecipeFavoriteButton(
@@ -518,7 +538,8 @@ private fun RecipeFavoriteButton(
     }
     Box(
         modifier = modifier
-            .size(32.dp)
+            // 48dp 触控热区（ui-ux-pro-max 规范：Android ≥48dp；32dp 不达标且显小气）
+            .size(48.dp)
             .pressable(onClick = onClick, debounce = false)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
@@ -526,10 +547,10 @@ private fun RecipeFavoriteButton(
         Icon(
             imageVector = if (favorited) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
             contentDescription = null,
-            tint = if (favorited) AppColors.colorScheme.danger else AppColors.colorScheme.textSecondary,
-            modifier = Modifier
-                .size(14.dp)
-                .graphicsLayer { shadowElevation = 2.dp.toPx() },
+            // 未收藏=深绿描边（浅底/浅封面可读；旧版白心白边在浅图上不可见）/ 已收藏=品牌红实心
+            tint = if (favorited) AppColors.colorScheme.danger else AppColors.colorScheme.primaryDark,
+            // 不投影：阴影是卡片级语言，图标级投影在小尺寸上显脏
+            modifier = Modifier.size(18.dp),
         )
     }
 }

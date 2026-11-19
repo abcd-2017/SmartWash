@@ -40,6 +40,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -111,13 +113,14 @@ fun ApiConfigPage(
     val deleteState by settingViewModel.apiDeleteState.collectAsState()
     val fieldError by settingViewModel.apiFieldError.collectAsState()
 
-    // 表单内存态（仅编辑期存在；明文 key 不持久化）
-    var mode by remember { mutableStateOf(ApiConfigMode.CATALOG) }
-    var selectedVendorIndex by remember { mutableStateOf<Int?>(null) }
-    var selectedModelConfigId by remember { mutableStateOf<Long?>(null) }
-    var baseUrl by remember { mutableStateOf("") }
-    var model by remember { mutableStateOf("") }
-    var apiKey by remember { mutableStateOf("") }
+    // 表单内存态（仅编辑期存在；明文 key 不持久化）。2026-11-19：改为 saveable，
+    // 离开本页再返回时保留已选厂商/模型/接入点/Key，避免长表单清空重填
+    var mode by rememberSaveable(stateSaver = ApiConfigModeSaver) { mutableStateOf(ApiConfigMode.CATALOG) }
+    var selectedVendorIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    var selectedModelConfigId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var baseUrl by rememberSaveable { mutableStateOf("") }
+    var model by rememberSaveable { mutableStateOf("") }
+    var apiKey by rememberSaveable { mutableStateOf("") }
     var showKey by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     // 首次配置回填标记：回填只发生在首次拉取完成且用户尚未被覆盖输入之前
@@ -803,3 +806,9 @@ internal fun VerifiedBadge() {
  */
 private fun PlatformVendorGroupVo.displayVendor(fallback: String): String =
     vendor?.takeIf { it.isNotBlank() } ?: provider?.takeIf { it.isNotBlank() } ?: fallback
+
+/** ApiConfigMode 的 saved-state 编解码：枚举不可直接存，按 name 存字符串还原 */
+private val ApiConfigModeSaver = Saver<ApiConfigMode, String>(
+    save = { it.name },
+    restore = { saved -> ApiConfigMode.entries.firstOrNull { it.name == saved } ?: ApiConfigMode.CATALOG }
+)

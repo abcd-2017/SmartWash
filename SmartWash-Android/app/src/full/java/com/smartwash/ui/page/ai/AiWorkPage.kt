@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,7 +73,8 @@ import com.smartwash.common.utils.selectedColor
 fun AiWorkPage(
     onBack: () -> Unit = {},
 ) {
-    var inputText by remember { mutableStateOf("") }
+    // saveable：离开再进保留输入草稿
+    var inputText by rememberSaveable { mutableStateOf("") }
     var inputFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 

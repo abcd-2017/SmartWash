@@ -147,7 +147,11 @@ fun SandPage(
         if (rows <= 0) return@LaunchedEffect
         gridCols = cols
         gridRows = rows
-        sim.resize(cols, rows)
+        // 2026-11-19：返回本页时画布尺寸会重新测量，规格不变则不得 resize——
+        // SandSimulator.resize 会清空网格，导致用户画好的沙画丢失
+        if (sim.cols != cols || sim.rows != rows) {
+            sim.resize(cols, rows)
+        }
         val bmp = Bitmap.createBitmap(cols, rows, Bitmap.Config.ARGB_8888)
         bitmap = bmp
         imageBitmap = bmp.asImageBitmap()

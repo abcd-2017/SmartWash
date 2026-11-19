@@ -41,6 +41,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -95,12 +97,14 @@ fun RechargePage(
     navController: NavController, rechargeViewModel: RechargeViewModel = hiltViewModel()
 ) {
     // 默认选中第一档（2026-11-01 缺陷 8c：原初始全空导致页面无任何高亮项）
-    var selectedAmount by remember { mutableStateOf<Float?>(10f) }
-    var customAmount by remember { mutableStateOf("") }
+    var selectedAmount by rememberSaveable { mutableStateOf<Float?>(10f) }
+    var customAmount by rememberSaveable { mutableStateOf("") }
     // 默认选中微信支付（设计稿 P15：微信支付行有选中勾；原 null 导致进入页面无选中项，
     // 且未选就提交会触发「请选择支付方式」报错）
-    var selectedPaymentMethod by remember { mutableStateOf<PaymentMethod?>(PaymentMethod.WECHAT) }
-    var isCustomAmountSelected by remember { mutableStateOf(false) }
+    var selectedPaymentMethod by rememberSaveable(stateSaver = PaymentMethodSaver) {
+        mutableStateOf<PaymentMethod?>(PaymentMethod.WECHAT)
+    }
+    var isCustomAmountSelected by rememberSaveable { mutableStateOf(false) }
     var showPayError by remember { mutableStateOf(false) }
     // 金额校验失败原因（null 为通过）：文案随原因细分，见 RechargeAmountError
     var amountError by remember { mutableStateOf<RechargeAmountError?>(null) }
@@ -696,6 +700,12 @@ private const val ITEM_INDEX_PAYMENT = 2
 private enum class PaymentMethod(val payType: String, val descriptionRes: Int) {
     WECHAT("1", R.string.weixin_pay), ALIPAY("2", R.string.alipay)
 }
+
+/** PaymentMethod 的 saved-state 编解码：枚举不可直接存，按 payType 存字符串还原 */
+private val PaymentMethodSaver = Saver<PaymentMethod?, String>(
+    save = { it?.payType ?: "" },
+    restore = { saved -> PaymentMethod.entries.firstOrNull { it.payType == saved } }
+)
 
 /** 官方品牌色（规范 §10 红线豁免：第三方品牌图标与品牌色不得换；充值页/记录页共用） */
 internal val WeChatBrandGreen = Color(0xFF09BB07)

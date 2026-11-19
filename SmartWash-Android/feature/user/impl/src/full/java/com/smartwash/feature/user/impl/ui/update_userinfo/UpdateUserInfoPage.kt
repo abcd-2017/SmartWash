@@ -50,6 +50,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -99,12 +100,13 @@ fun UpdateUserInfoPage(
     navController: NavController,
     userInfoViewModel: UpdateUserInfoViewModel = hiltViewModel()
 ) {
-    var selectedSchoolId by remember { mutableLongStateOf(-1) }
-    var studentId by remember { mutableStateOf("") }
+    // 2026-11-19：saveable——搜索词/已选学校/学号构成多步中间态，返回后不得清空
+    var selectedSchoolId by rememberSaveable { mutableLongStateOf(-1) }
+    var studentId by rememberSaveable { mutableStateOf("") }
     var isSchoolError by remember { mutableStateOf(false) }
     var isStudentIdError by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
-    var query by remember { mutableStateOf("") }
+    var query by rememberSaveable { mutableStateOf("") }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // 选中后延迟收起下拉的协程句柄——连点不同学校时取消上一次，避免提前收起

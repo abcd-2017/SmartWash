@@ -117,6 +117,7 @@ fun GameWebViewPage(
                 ),
             ),
             gameBridgeApi = gameBridgeApi,
+            stateKey = url,
             modifier = Modifier
                 .fillMaxSize()
                 .navigationBarsPadding()

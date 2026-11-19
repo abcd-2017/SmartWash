@@ -101,6 +101,9 @@ class DiningRecipeImportServiceImplTest {
     @Mock
     private com.smartwash.dining.service.DiningRecipeIngredientService diningRecipeIngredientService;
 
+    @Mock
+    private com.smartwash.dining.mapper.DiningIngredientAliasMapper diningIngredientAliasMapper;
+
     private DiningRecipeImportService service;
 
     private final AtomicLong ingredientIdSeq = new AtomicLong(100);
@@ -113,6 +116,7 @@ class DiningRecipeImportServiceImplTest {
         com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(assistant, DiningCategory.class);
         com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(assistant, DiningIngredient.class);
         com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(assistant, DiningRecipeIngredient.class);
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(assistant, com.smartwash.dining.entity.DiningIngredientAlias.class);
     }
 
     @BeforeEach
@@ -124,6 +128,7 @@ class DiningRecipeImportServiceImplTest {
         ReflectionTestUtils.setField(impl, "diningRecipeIngredientMapper", recipeIngredientMapper);
         ReflectionTestUtils.setField(impl, "diningIngredientService", diningIngredientService);
         ReflectionTestUtils.setField(impl, "diningRecipeIngredientService", diningRecipeIngredientService);
+        ReflectionTestUtils.setField(impl, "diningIngredientAliasMapper", diningIngredientAliasMapper);
         ReflectionTestUtils.setField(impl, "minioClient", minioClient);
         ReflectionTestUtils.setField(impl, "minioConfig", minioConfig);
         ReflectionTestUtils.setField(impl, "securityUtil", new SecurityUtil());
@@ -226,7 +231,7 @@ class DiningRecipeImportServiceImplTest {
             assertTrue(workbook.getNumberOfSheets() >= 2, "应有填写说明 sheet");
             String explain = workbook.getSheetAt(1).getRow(0).getCell(0).getStringCellValue();
             assertTrue(explain.contains("分隔"), "说明必须写清食材分隔符约定");
-            assertTrue(explain.contains("500"), "说明必须写清单次行数上限");
+            assertTrue(explain.contains("1000"), "说明必须写清单次行数上限");
             assertTrue(explain.contains("自动创建"), "说明必须写清分类自动创建行为");
             assertTrue(explain.contains("更新"), "说明必须写清重复导入幂等更新行为");
         }
@@ -538,14 +543,14 @@ class DiningRecipeImportServiceImplTest {
     }
 
     @Test
-    @DisplayName("预览：数据行超 500 上限整体拒绝")
+    @DisplayName("预览：数据行超 1000 上限整体拒绝")
     void preview_rowLimit_rejected() {
         java.util.List<List<String>> rows = new java.util.ArrayList<>();
         rows.add(List.of("分类名", "菜名", "食材名列表", "步骤", "封面链接"));
-        for (int i = 1; i <= 501; i++) {
+        for (int i = 1; i <= 1001; i++) {
             rows.add(List.of("", "菜" + i, "盐", "煮", ""));
         }
-        expectBusinessException("500", () -> service.preview(xlsxFile(rows)));
+        expectBusinessException("1000", () -> service.preview(xlsxFile(rows)));
     }
 
     // ==================== 确认导入 ====================

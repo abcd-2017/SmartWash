@@ -40,7 +40,7 @@ public interface DiningRecipeImportService {
     byte[] buildTemplate();
 
     /**
-     * 阶段一：解析上传文件（.xlsx / .csv，≤5MB、≤500 数据行）并逐行校验，不落库。
+     * 阶段一：解析上传文件（.xlsx / .csv，≤5MB、≤1000 数据行）并逐行校验，不落库。
      * 表头缺必选列、空文件、格式不支持、超行数上限等整体性问题抛业务异常；
      * 逐行问题（菜名空/超长、食材/明细超限、步骤超长、封面格式非法、营养数值非法等）记入行级 errors。
      */

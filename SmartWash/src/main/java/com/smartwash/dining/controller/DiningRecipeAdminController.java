@@ -92,7 +92,7 @@ public class DiningRecipeAdminController {
 
     // ==================== 批量导入（03 号票，两阶段：预览不落库 → 确认整批事务） ====================
 
-    @Operation(summary = "下载菜谱导入模板", description = "动态生成 xlsx 模板（首个 sheet 为表头+示例行，第二个 sheet 为填写说明：食材分隔符/分类需先建/封面不导入/500 行上限）。列：分类名、菜名、食材名列表、步骤、封面链接")
+    @Operation(summary = "下载菜谱导入模板", description = "动态生成 xlsx 模板（首个 sheet 为表头+示例行，第二个 sheet 为填写说明：食材分隔符/分类需先建/封面不导入/1000 行上限）。列：分类名、菜名、食材名列表、步骤、封面链接")
     @GetMapping("/import/template")
     public void downloadImportTemplate(HttpServletResponse response) throws IOException {
         // 响应头语义与充值记录导出一致：附件下载，固定文件名（xlsx MIME）
@@ -101,7 +101,7 @@ public class DiningRecipeAdminController {
         response.getOutputStream().write(diningRecipeImportService.buildTemplate());
     }
 
-    @Operation(summary = "菜谱批量导入-解析预览", description = "上传 .xlsx/.csv（≤5MB、≤500 数据行），解析并逐行校验（缺列整体拒绝；菜名/分类/食材/步骤/封面链接给行号级错误），返回归一后行数据供预览确认；按 source_key 优先 →（菜名,分类）兜底判重，逐行标注 isNew/existsKind 并汇总 newCount/updateCount（新增 N / 更新 M）；本接口不落库")
+    @Operation(summary = "菜谱批量导入-解析预览", description = "上传 .xlsx/.csv（≤5MB、≤1000 数据行），解析并逐行校验（缺列整体拒绝；菜名/分类/食材/步骤/封面链接给行号级错误），返回归一后行数据供预览确认；按 source_key 优先 →（菜名,分类）兜底判重，逐行标注 isNew/existsKind 并汇总 newCount/updateCount（新增 N / 更新 M）；本接口不落库")
     @PostMapping("/import")
     public Result<DiningRecipeImportPreviewVo> previewImport(@RequestPart("file") @Parameter(description = "导入文件（.xlsx/.csv）", required = true) MultipartFile file) {
         return Result.ok(diningRecipeImportService.preview(file));

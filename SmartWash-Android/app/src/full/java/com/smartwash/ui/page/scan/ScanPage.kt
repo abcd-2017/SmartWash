@@ -41,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -104,7 +105,8 @@ fun ScanPage(
     var hasPermission by remember {
         mutableStateOf(context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
-    var requestedOnce by remember { mutableStateOf(false) }
+    // saveable：去系统设置再返回时保持「已请求过」态，按钮文案不回退
+    var requestedOnce by rememberSaveable { mutableStateOf(false) }
     var shouldShowRationale by remember {
         mutableStateOf(activity != null && activity.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA))
     }

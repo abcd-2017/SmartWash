@@ -102,7 +102,8 @@ fun PaymentPage(
     paymentViewModel: PaymentViewModel = hiltViewModel(),
 ) {
     var showRechargeDialog by remember { mutableStateOf(false) }
-    var selectedPaymentMethod by remember { mutableStateOf("balance") }
+    // saveable：从优惠券页返回时保留已选支付方式（否则静默回余额）
+    var selectedPaymentMethod by rememberSaveable { mutableStateOf("balance") }
     val current = LocalContext.current
 
     // 数值交叉淡变规格：transitionSpec 非 composable 上下文（不能调 motionSpec），

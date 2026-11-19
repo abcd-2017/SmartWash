@@ -1994,6 +1994,23 @@ CREATE TABLE `dining_ingredient` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-配料库';
 
 -- ----------------------------
+-- Table structure for dining_ingredient_alias（配料别名）
+-- 三方菜谱同物异写（食盐/食用盐/盐、番茄/西红柿）归一到规范配料：导入/建菜谱解析食材名时
+-- 先按名精确命中 dining_ingredient，未命中查本表归一到规范配料 ID，仍未命中才新建。
+-- uk_alias_name 保证一个别名只指向一个规范配料；别名指向的配料被删时别名失效（匹配按存在性过滤）。
+-- ----------------------------
+DROP TABLE IF EXISTS `dining_ingredient_alias`;
+CREATE TABLE `dining_ingredient_alias` (
+  `id`            BIGINT      NOT NULL AUTO_INCREMENT COMMENT '别名 ID',
+  `alias_name`    VARCHAR(32) NOT NULL COMMENT '别名（原始写法，唯一 uk_alias_name）',
+  `ingredient_id` BIGINT      NOT NULL COMMENT '规范配料 ID(dining_ingredient.id)',
+  `created_at`    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_alias_name` (`alias_name`),
+  KEY `idx_ingredient` (`ingredient_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-配料别名（异名归一到规范配料）';
+
+-- ----------------------------
 -- Table structure for dining_recipe_ingredient（菜谱配料关联）
 -- 菜谱 ↔ 配料 多对多关联（带数量/单位），买菜清单聚合（ShoppingListAssembler v2）的主数据源；
 -- amount_value/amount_unit 可空 = 来源未给出数量（如「适量/若干」）；uk_recipe_ingredient 保证
