@@ -97,7 +97,8 @@ fun LaundryPage(
 ) {
     val getLaundryItemState by laundryViewModel.getLaundryItemState.collectAsState()
     val laundryItems by laundryViewModel.laundryItems.collectAsState()
-    // C11：选中套餐/价格随旋转与进程重建保留（原 remember 重建即丢，选中态闪失）
+    // 2026-11-19：从支付页/服务页返回时套餐选择与金额必须保留（普通 remember 会回默认，
+    // 用户需重选，且金额进资金链路）
     var selectItemId by rememberSaveable { mutableLongStateOf(-1) }
     var totalPrice by rememberSaveable { mutableFloatStateOf(0f) }
     var showDialog by remember { mutableStateOf(false) }
