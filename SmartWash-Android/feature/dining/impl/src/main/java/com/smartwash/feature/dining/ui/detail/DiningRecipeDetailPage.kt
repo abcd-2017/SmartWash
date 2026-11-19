@@ -48,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -302,12 +303,15 @@ private fun DetailContent(
                         is StepLine.Main -> {
                             mainStepNo++
                             Row {
-                                // 固定 24dp 序号列：内容折行后悬挂缩进与首字对齐（裸 Row 折行回行首）
+                                // 固定 24dp 序号列：内容折行后悬挂缩进与首字对齐（裸 Row 折行回行首）；
+                                // 列内右对齐——「1.」与「10.」都贴列右缘，数字与内容间距恒定
+                                // （左对齐时单位数步骤间距虚大、两位数贴死，视觉参差）
                                 Text(
                                     // 步骤序号开 tabular numbers（规范 §2.2 硬规则）
                                     text = "$mainStepNo.",
                                     style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                                     color = AppColors.colorScheme.primaryDark,
+                                    textAlign = TextAlign.End,
                                     modifier = Modifier.width(24.dp),
                                 )
                                 Text(
