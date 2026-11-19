@@ -38,7 +38,7 @@ mvn clean package -DskipTests  # 打包
 | `/web/auth/**` | 是 | `ROLE_USER`（Android / 鸿蒙） |
 | `/web/**` | 否 | 公开 Web 接口 |
 
-**公开只读路径**（SecurityConfig 显式 permitAll）：`/web/laundryItems/all`、`/web/schools/allName`、`/web/payments/payType`、`/web/payments/payStatus`、`/web/app/version`、`/web/app/download`、`/web/t/**`（短链跳转）、`/web/deeplink/routes`、`/web/config`、`/web/delivery/**`（设备投递对端公开页）、`/swagger-ui/**`、`/v3/api-docs/**`。其余 `/web/**`（如 `/web/orders/status`、`/web/lockers/status`、`/web/lockers/all`）需**任意已认证**用户。
+**公开只读路径**（SecurityConfig 显式 permitAll）：`/web/laundryItems/all`、`/web/schools/allName`、`/web/payments/payType`、`/web/payments/payStatus`、`/web/app/version`、`/web/app/download`、`/web/t/**`（短链跳转）、`/web/s/**`（私密文本阅后即焚公开查看）、`/web/locker-tags/**`（柜码公开解析）、`/web/tag/**`（物品标签公开解析）、`/web/deeplink/routes`、`/web/config`、`/web/delivery/**`（设备投递对端公开页）、`/swagger-ui/**`、`/v3/api-docs/**`。其余 `/web/**`（如 `/web/orders/status`、`/web/lockers/status`、`/web/lockers/all`）需**任意已认证**用户。
 
 两种用户类型，登录流程不同：管理员（`/auth/adminUsers/login`）通过用户名认证，普通用户（`/auth/user/login`）通过手机号认证。登录成功返回**双 token**：access（TTL 2 小时）+ refresh（TTL 7 天），`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`；refresh 仅用于 `/auth/refresh` 一次性轮换，`jti` 是黑名单键。
 
@@ -51,7 +51,7 @@ mvn clean package -DskipTests  # 打包
 | `common/` | 枚举（`OrderStatus`、`LockerStatusEnum` 等）、常量、统一响应 `Result<T>`；子包 `audit/`（`@Audited` + HMAC 链）、`ratelimit/`（`@RateLimit` + Redis Lua）、`log/`（TraceId / AccessLog / 脱敏） |
 | `config/` | Security、CORS、Redis、缓存序列化、MyBatis-Plus、MinIO、OpenAPI、全局异常、JWT 入口/登出、日志过滤器注册、MDC 任务装饰器 |
 | `controller/` | `LoginController` 在顶层；`background/` 管理端 API（含 Dashboard、导出），`web/` 用户端 API |
-| `entity/` | 核心业务实体（12 张表，MyBatis-Plus 映射） |
+| `entity/` | 核心业务实体（14 个，MyBatis-Plus 映射；dining/game/divination/notice 等子域实体在各自包下） |
 | `exception/` | 自定义异常（`CustomExceptions`、`GameServiceException`、`UserAuthenticationException`） |
 | `filter/` | `JwtAuthenticationFilter` — 每次请求执行 JWT 校验 + Redis 黑名单 |
 | `from/` | 请求 DTO。命名 `{操作}{实体}From`，分页继承 `BaseSearchFrom` |
@@ -59,6 +59,7 @@ mvn clean package -DskipTests  # 打包
 | `service/` | 接口继承 `IService<T>`；实现在 `service/impl/` 继承 `ServiceImpl<M, T>` |
 | `task/` | `OrderTimeoutManager`（动态 TaskScheduler，30 分钟未支付自动取消，非 `@Scheduled`） |
 | `divination/` | 「观象台」占卜子系统（controller / core 四算法 / llm SSE 网关 / prompt / rag / entity / mapper / service / vo / from / task 用量聚合） |
+| `dining/` | 「吃啥」菜谱库与拼单点单（分类 / 菜谱 / 配料库与食材别名归一 / 点单订单 + 成员 + 本单菜单 + 选菜记录 / 购买清单快照，子包含 entity/mapper/service/controller/vo/from） |
 | `game/` | 游戏中心：游戏库 / 关卡 / 存档 / 成绩 / 排行榜，MinIO 对象存储与上传包校验 |
 | `notice/` | 站内信公告与已读记录 |
 | `points/` | 积分账户、签到、流水、月榜 |
@@ -101,7 +102,7 @@ mvn clean package -DskipTests  # 打包
 
 ## 测试
 
-`src/test` 共 36 个测试类 + `application-test.yaml` / `schema.sql`（H2 内存库，`smartwash.rate-limit.enabled=false`）。覆盖登录验证码、JWT、资金幂等、订单 CAS、游戏、工具箱、工作台等；新增核心逻辑请配套单测。
+`src/test` 共 68 个测试类 + `application-test.yaml` / `schema.sql`（H2 内存库，`smartwash.rate-limit.enabled=false`）。覆盖登录验证码、JWT、资金幂等、订单 CAS、游戏、工具箱、观象台、吃啥、工作台等；新增核心逻辑请配套单测。
 
 ## 已知坑（改动前先看）
 
