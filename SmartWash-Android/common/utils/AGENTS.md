@@ -20,6 +20,7 @@ com.smartwash.common.utils
 ├── AppConstant.kt          — 应用常量（APP_NAME, TOKEN_KEY 等）
 ├── AppLogger.kt            — 统一日志对外 API（debug/info/warn/error + maskPhone，委托 common:init 的 LogCore 内核）
 ├── BitmapUtil.kt           — ZXing 二维码生成
+├── ImageCompressUtil.kt    — 上传前本地压缩（降采样→EXIF 转正→JPEG；足够小直通原图；失败兜底直传；产物落 cacheDir）
 ├── HapticUtils.kt          — 触感反馈工具
 ├── PagingUtils.kt          — pagingFlow() 扩展
 ├── ParamValidUtils.kt      — 手机号等格式校验
@@ -33,6 +34,7 @@ com.smartwash.common.utils
 - `SharePreferenceUtils` — DataStore 的 suspend / 阻塞双模式读写
 - `PressFeedbackModifier` — 按压缩放动效 Modifier 扩展
 - `PagingUtils.pagingFlow()` — Flow 分页扩展（debounce + flatMapLatest + cachedIn）
+- `ImageCompressUtil.prepareUploadImage()` — 上传前压缩入口：最长边 1280（头像 512）/ JPEG 80 / ≤300KB 且不超上限直通原图；返回 `UploadImageResult`（临时文件 + multipart 文件名 + mime + 是否压缩），调用方上传完成后必须 `cleanup()`
 - `ApiResult<T>` — 后端响应包装，配合 Retrofit Response 使用
 - `PageData<T>` — 分页列表响应
 - `HttpStatusCode` — 业务码枚举（200/401/500 等）
@@ -42,7 +44,7 @@ com.smartwash.common.utils
 - `deeplink.DeepLinkContributor` / `DeepLinkRouteFactory` — 贡献者契约（各域 impl `@Provides @IntoSet` 注册，模式同 common:init 的 InitTask）
 
 ## 依赖关系
-- **依赖**: Android SDK、DataStore、ZXing、Hilt（仅 @Singleton 标注）、androidx.annotation、common:init（AppLogger 委托 LogCore，铁律 1 合法方向）
+- **依赖**: Android SDK、DataStore、ZXing、androidx.exifinterface（ImageCompressUtil 方向修正）、Hilt（仅 @Singleton 标注）、androidx.annotation、common:init（AppLogger 委托 LogCore，铁律 1 合法方向）
 - **被依赖**: common:network、common:ui 及所有 feature 模块（含原 common:model 的数据契约）
 
 ## 内部约定

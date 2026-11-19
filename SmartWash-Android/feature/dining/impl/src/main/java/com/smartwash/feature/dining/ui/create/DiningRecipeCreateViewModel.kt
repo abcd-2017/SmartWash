@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.common.utils.AppLogger
+import com.smartwash.common.utils.ImageCompressUtil
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.api.model.AddDiningRecipeRequest
@@ -20,7 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import javax.inject.Inject
 
 /**
@@ -130,24 +131,21 @@ class DiningRecipeCreateViewModel @Inject constructor(
         _coverUri.value = uri
         _coverUploadState.value = RequestState.Loading
         viewModelScope.launch {
+            // 上传前本地压缩（最长边 1280 / JPEG 80；足够小直通原图保留原格式与扩展名）；
+            // 压缩任一环节失败工具内部兜底原图直传，绝不阻断上传链路
+            var prepared: ImageCompressUtil.UploadImageResult? = null
             try {
-                // 头像上传先例模式：contentResolver 读 bytes + 按 MIME 推扩展名
-                // （后端校验魔数与扩展名一致性，文件名不能伪造——image/png 统一配 .png）
-                val bytes = application.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                    ?: throw IllegalStateException(application.getString(R.string.dining_create_cover_failed))
-                val mimeType = application.contentResolver.getType(uri) ?: "image/jpeg"
-                val extension = when (mimeType) {
-                    "image/png" -> "png"
-                    "image/webp" -> "webp"
-                    else -> "jpg"
-                }
-                val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
-                val part = MultipartBody.Part.createFormData("file", "cover.$extension", requestBody)
+                prepared = ImageCompressUtil.prepareUploadImage(application, uri, baseName = "cover")
+                val requestBody = prepared.file.asRequestBody(prepared.mimeType.toMediaTypeOrNull())
+                val part = MultipartBody.Part.createFormData("file", prepared.fileName, requestBody)
                 val objectKey = diningRepository.uploadCover(part)
                 coverObjectKey = objectKey
                 // 直链不落端上（对象键由后端 MinioConfig.urlOf 拼装）：本页预览用本地 Uri，
                 // 提交成功回菜谱库后由列表 SmartWashAsyncImage 按 coverUrl 回显（票验收第 4 条）
-                AppLogger.info(TAG, "菜谱封面上传成功 size=${bytes.size}B key=$objectKey")
+                AppLogger.info(
+                    TAG,
+                    "菜谱封面上传成功 file=${prepared.fileName} compressed=${prepared.compressed} size=${prepared.file.length()}B key=$objectKey",
+                )
                 _coverUploadState.value = RequestState.Success
             } catch (e: CancellationException) {
                 throw e
@@ -157,6 +155,9 @@ class DiningRecipeCreateViewModel @Inject constructor(
             } catch (e: Exception) {
                 AppLogger.error(TAG, "uploadCover: ${e.message}", e)
                 _coverUploadState.value = RequestState.Error(R.string.dining_create_cover_failed, e.message)
+            } finally {
+                // 上传完成后清理临时压缩文件（失败路径同样清理，重选图时重新生成）
+                prepared?.cleanup()
             }
         }
     }
