@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -183,28 +184,39 @@ fun IndexPage(
                         // 错误态（A3）：verticalScroll 让 PullToRefreshBox 的嵌套滚动可达——
                         // 失败状态下拉同样能重新发起请求（重试按钮是显式入口）
                         val errorContext = LocalContext.current
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                        ) {
-                            EmptyState(
-                                // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 仅占位
-                                icon = Icons.Default.LocalLaundryService,
-                                message = lastError?.getMessage(errorContext)
-                                    ?: stringResource(R.string.index_load_failed),
+                        // C-07 口径统一：与 OrderPage/PaymentPage/取件页同款——BoxWithConstraints
+                        // 在 scroll 外层取视口高（scroll 包在外面会拿到无限约束），内容垂直居中；
+                        // verticalScroll 保留下拉手势可达（失败状态下拉同样重新发起请求）
+                        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                            val viewportHeight = maxHeight
+                            Column(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 96.dp),
-                                action = {
-                                    AppButton(
-                                        small = true,
-                                        text = stringResource(R.string.retry),
-                                        onClick = { indexViewModel.getInfoData() },
-                                        variant = AppButtonVariant.SECONDARY,
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = viewportHeight),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    EmptyState(
+                                        // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 仅占位
+                                        icon = Icons.Default.LocalLaundryService,
+                                        message = lastError?.getMessage(errorContext)
+                                            ?: stringResource(R.string.index_load_failed),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        action = {
+                                            AppButton(
+                                                small = true,
+                                                text = stringResource(R.string.retry),
+                                                onClick = { indexViewModel.getInfoData() },
+                                                variant = AppButtonVariant.SECONDARY,
+                                            )
+                                        }
                                     )
                                 }
-                            )
+                            }
                         }
                     } else {
                 LazyColumn(

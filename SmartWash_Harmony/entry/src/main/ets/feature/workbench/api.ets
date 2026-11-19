@@ -196,23 +196,12 @@ export function withUniqueKeys(tools: Array<WorkbenchTool>): Array<WorkbenchTool
  * 连续 tile 两列成行，wide/notice 各占一行。
  */
 /**
- * 运营配图本地兜底（对齐安卓 LocalCoverArt.workbenchCover）。
- * 服务端未下发 imageUrl 时用本地自绘封面（media/wb_*.png），避免退化为纯文字卡；
- * 后续切云端图后本映射保留作为「无网络/无下发」时的降级资产。
+ * 工作台配图纯远程下发（对齐安卓 LocalCoverArt.workbenchCover 恒 null）：
+ * 服务端 imageUrl（MinIO）为唯一来源；本地兜底已移除（media/wb_*.png 已删），
+ * 无下发时端上退回占位图/图标（调用点 ?? placeholder）。
  */
-export function workbenchCover(entryKey: string): Resource | null {
-  switch (entryKey) {
-    case 'game-center':
-      return $r('app.media.wb_wide_game_center')
-    case 'lab':
-      return $r('app.media.wb_tile_lab')
-    case 'toolbox-short-code':
-      return $r('app.media.wb_tile_short_code')
-    case 'ai-assistant':
-      return $r('app.media.wb_tile_ai_assistant')
-    default:
-      return null
-  }
+export function workbenchCover(_entryKey: string): Resource | null {
+  return null
 }
 
 export enum WorkbenchBlockKind {

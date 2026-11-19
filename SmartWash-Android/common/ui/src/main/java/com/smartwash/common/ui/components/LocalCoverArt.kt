@@ -15,13 +15,8 @@ import com.smartwash.common.ui.R
  */
 object LocalCoverArt {
 
-    /** 工作台入口 key → 本地配图（与 workbench_entry.entry_key 对齐） */
-    private val workbench: Map<String, Int> = mapOf(
-        "game-center" to R.drawable.wb_wide_game_center,
-        "lab" to R.drawable.wb_tile_lab,
-        "toolbox-short-code" to R.drawable.wb_tile_short_code,
-        "ai-assistant" to R.drawable.wb_tile_ai_assistant,
-    )
+    // 工作台配图已改为纯远程下发（image_url → MinIO，管理端可配），本地兜底移除——
+    // workbenchCover() 恒返回 null：无 image_url 时端上退回 IconBox，不再有 res 副本
 
     /** 游戏库 game_key → 本地封面（与 game_config.game_key 对齐，'-' → '_'） */
     private val games: Map<String, Int> = mapOf(
@@ -55,24 +50,19 @@ object LocalCoverArt {
         "tetris" to R.drawable.game_tetris,
     )
 
-    /** 订单状态 → 详情页头插画（key 见 OrderStatus，此处按状态名映射） */
-    private val orderStatus: Map<String, Int> = mapOf(
-        "PENDING_PAYMENT" to R.drawable.order_status_pending,
-        "PENDING_SHIPMENT" to R.drawable.order_status_shipment,
-        "WASHING" to R.drawable.order_status_washing,
-        "READY_FOR_PICKUP" to R.drawable.order_status_pickup,
-        "COMPLETED" to R.drawable.order_status_completed,
-        "CANCELED" to R.drawable.order_status_canceled,
-    )
+    // 订单状态头插图已清理：双端详情页状态插图为 Canvas 自绘（DrumIllustration），
+    // 位图零引用（历史遗留），res 与 static/order 素材副本均已移除
 
+    /** 工作台无本地兜底（纯远程下发，见上）；保留函数签名避免调用点改动 */
     @DrawableRes
-    fun workbenchCover(entryKey: String): Int? = workbench[entryKey]
+    fun workbenchCover(entryKey: String): Int? = null
 
     @DrawableRes
     fun gameCover(gameKey: String): Int? = games[gameKey]
 
+    /** 订单状态无本地插图（Canvas 自绘，见上）；保留函数签名避免调用点改动 */
     @DrawableRes
-    fun orderStatusCover(statusName: String): Int? = orderStatus[statusName]
+    fun orderStatusCover(statusName: String): Int? = null
 
     /** 订阅详情页默认头图（泛订阅概念图，服务端头图字段落地前的本地资产） */
     @DrawableRes

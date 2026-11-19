@@ -48,6 +48,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.graphicsLayer
@@ -96,8 +97,9 @@ fun LaundryPage(
 ) {
     val getLaundryItemState by laundryViewModel.getLaundryItemState.collectAsState()
     val laundryItems by laundryViewModel.laundryItems.collectAsState()
-    var selectItemId by remember { mutableLongStateOf(-1) }
-    var totalPrice by remember { mutableFloatStateOf(0f) }
+    // C11：选中套餐/价格随旋转与进程重建保留（原 remember 重建即丢，选中态闪失）
+    var selectItemId by rememberSaveable { mutableLongStateOf(-1) }
+    var totalPrice by rememberSaveable { mutableFloatStateOf(0f) }
     var showDialog by remember { mutableStateOf(false) }
     var showChangeSchoolDialog by remember { mutableStateOf(false) }
 

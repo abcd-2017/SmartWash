@@ -284,9 +284,9 @@ fun WorkbenchPage(
                     .padding(
                         start = AppDimens.pagePadding,
                         end = AppDimens.pagePadding,
-                        top = AppDimens.spaceMd,
-                        // 头部固定后内容从其下滑过，留 12dp 呼吸空隙（P07 搜索框→内容节奏）
-                        bottom = AppDimens.spaceSm
+                        top = AppDimens.spaceMd
+                        // 底距归零（间距合同 v2 带回）：原底部 12dp 与内容块 top 叠加成 60dp
+                        // 实测空白；搜索框→内容统一由内容块 top 承担
                     )
             ) {
                 Text(
@@ -426,12 +426,12 @@ fun WorkbenchPage(
 
                     item(key = "wb_divination") {
                         // 观象台特色卡 — 玄墨渐变窗（端上固定品牌位，不随服务端下发）
-                        // 顶距：无「最近使用」时取 12dp（设计稿 P07 搜索框底→观象台卡顶 = 12，
-                        // 2026-11-06 复验原 0 导致卡片与搜索框紧贴）；有「最近使用」时仍按区块 32
+                        // 顶距：无「最近使用」时取 16dp（间距合同 v2 带回：原 12 特例与块间 16 模糊，
+                        // 统一取 cardSpacing）；有「最近使用」时仍按区块 32
                         DivinationEntryCard(
                             modifier = Modifier
                                 .padding(horizontal = AppDimens.pagePadding)
-                                .padding(top = if (recentTools.isEmpty()) AppDimens.spaceSm else AppDimens.sectionSpacing),
+                                .padding(top = if (recentTools.isEmpty()) AppDimens.cardSpacing else AppDimens.sectionSpacing),
                             onClick = { navController.navigate(DivRoute.Home) }
                         )
                     }
@@ -447,7 +447,8 @@ fun WorkbenchPage(
                                 color = AppColors.colorScheme.textPrimary,
                                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                             )
-                            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                            // 间距合同 v2 带回：标题→内容 12→8（与块间 16 拉开梯度）
+                            Spacer(modifier = Modifier.height(AppDimens.spaceXs))
                         }
                     }
 
@@ -620,8 +621,10 @@ private fun SectionHeader(title: String) {
             .padding(
                 start = AppDimens.pagePadding,
                 end = AppDimens.pagePadding,
+                // 间距合同 v2 带回：大分组上 32 / 块间 16 / 标题→内容 8（原 12 与块间 16 太接近，
+                // 标题分隔感弱、节奏模糊）
                 top = AppDimens.sectionSpacing,
-                bottom = AppDimens.spaceSm
+                bottom = AppDimens.spaceXs
             )
     )
 }
@@ -636,7 +639,8 @@ private fun RecentSection(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = AppDimens.sectionSpacing)
+            // 间距合同 v2 带回：搜索框底→chip 顶 24dp（32 实测偏大）
+            .padding(top = AppDimens.spaceXl)
     ) {
         Text(
             text = stringResource(R.string.workbench_recent_title),
@@ -885,7 +889,8 @@ private fun RowGroupCard(
         color = scheme.surface,
         border = BorderStroke(1.dp, scheme.outline)
     ) {
-        Column {
+        // 间距合同 v2 带回：卡内上下补 4dp——行间已有呼吸，卡顶/底不再贴边
+        Column(modifier = Modifier.padding(vertical = AppDimens.spaceXxs)) {
             tools.forEachIndexed { index, tool ->
                 if (index > 0) {
                     // 发丝线只出现在同一容器内部（§1.3/§3.4）

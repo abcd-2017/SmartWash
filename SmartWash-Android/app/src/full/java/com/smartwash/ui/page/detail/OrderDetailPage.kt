@@ -44,6 +44,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -887,8 +888,10 @@ private fun ReviewDialog(
     onDismiss: () -> Unit,
 ) {
     val view = currentView()
-    var rating by remember { mutableIntStateOf(existing?.rating?.takeIf { it > 0 } ?: 0) }
-    var content by remember { mutableStateOf(existing?.content.orEmpty()) }
+    // C11（复排 C-18）：初值依赖 existing——keyed rememberSaveable，existing 变化重置 +
+    // 进程重建恢复（原裸 remember 两者皆无：重建后回到空评分/空内容）
+    var rating by rememberSaveable(existing) { mutableIntStateOf(existing?.rating?.takeIf { it > 0 } ?: 0) }
+    var content by rememberSaveable(existing) { mutableStateOf(existing?.content.orEmpty()) }
     val submitting = submitState is RequestState.Loading
     val canSubmit = rating in 1..5 && !submitting
 

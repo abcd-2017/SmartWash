@@ -5,6 +5,7 @@ import com.smartwash.points.entity.PointLedger;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 积分流水 Mapper（append-only 类型级收口）。
@@ -28,4 +29,10 @@ public interface PointLedgerMapper {
      * 由 MyBatis-Plus 分页插件追加 LIMIT 并执行 COUNT，XML 不手写分页。
      */
     Page<PointLedger> selectPageByUserId(Page<PointLedger> page, @Param("userId") Long userId);
+
+    /**
+     * 月度积分榜聚合（月榜 ZSet 重建用，B6A）：map 含 userId 与 total（当月 delta 之和）。
+     * 只读聚合查询，不改变 append-only 纪律（本 mapper 仍无 update/delete）。
+     */
+    List<Map<String, Object>> selectMonthSum(@Param("month") String month);
 }
