@@ -39,6 +39,8 @@ data class DiningRecipeShopping(
     /** 菜谱 ID（>0 时购买清单可点击跳菜谱详情看做法；老快照 0=不可跳转） */
     val recipeId: Long = 0L,
     val recipeName: String,
+    /** 封面直链（空串=无封面，行内缩略图回落品牌占位图） */
+    val coverUrl: String = "",
     /** 选菜人（按勾选顺序） */
     val selectors: List<DiningSelectorShopping>,
 )
@@ -82,6 +84,7 @@ fun DiningShoppingListSnapshot.toShoppingListResult(
             DiningRecipeShopping(
                 recipeId = view.safeRecipeId,
                 recipeName = view.safeRecipeName,
+                coverUrl = view.safeCoverUrl,
                 selectors = view.safeSelectors.map { selector ->
                     DiningSelectorShopping(
                         label = labels[selector.safeUserId]?.takeIf { it.isNotBlank() }

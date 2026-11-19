@@ -303,12 +303,13 @@ public class DiningRecipeServiceImpl extends ServiceImpl<DiningRecipeMapper, Din
 
     @Override
     public boolean unfavorite(Long userId, Long recipeId) {
-        // 幂等：未收藏时删除 0 行，无异常
+        // 幂等：未收藏时删除 0 行，无异常。返回 true 表示调用成功（含幂等无操作）——
+        // 端上以返回值判成败，false 会被误判失败回滚收藏态（D25 修「详情页取消收藏无效」）
         favoriteMapper.delete(new LambdaQueryWrapper<DiningRecipeFavorite>()
                 .eq(DiningRecipeFavorite::getUserId, userId)
                 .eq(DiningRecipeFavorite::getRecipeId, recipeId));
         log.info("取消收藏, userId: {}, recipeId: {}", userId, recipeId);
-        return false;
+        return true;
     }
 
     @Override

@@ -242,18 +242,17 @@ struct DiningRecipeDetailPage {
                   // （「-」开头原文行）缩进浅色不编号；源文本已剥离「**」加粗与原文自带编号
                   ForEach(this.stepRenderLines(), (line: DiningStepRenderLine, index: number) => {
                     if (line.kind === DiningStepLineKind.MAIN) {
-                      Row({ space: DesignDimens.SPACE_XS }) {
-                        Text(`${line.no}.`)
-                          .fontSize(DesignFontSize.BODY)
+                      // 序号与内容同一 Text 块内 Span 混排（D27 对齐安卓）：数字与汉字 fontMetrics
+                      // 不同，分列两 Text 顶部对齐时基线必错开（序号飘在内容上方）；混排后同一
+                      // 渲染块基线天然共线。tnum 数字等宽，单位数序号补一空格对齐两位数宽度
+                      Text() {
+                        Span(`${line.no}.${line.no < 10 ? ' ' : ''}`)
                           .fontColor($r('app.color.PRIMARY_DARK'))
-                          .fontFeature(DesignFontFeature.TNUM)
-                        Text(line.text)
-                          .fontSize(DesignFontSize.BODY)
+                        Span(line.text)
                           .fontColor($r('app.color.TEXT_PRIMARY'))
-                          .layoutWeight(1)
                       }
+                      .fontSize(DesignFontSize.BODY)
                       .width('100%')
-                      .alignItems(VerticalAlign.Top)
                       .margin({ top: index === 0 ? 0 : DesignDimens.SPACE_SM })
                     } else {
                       Row() {

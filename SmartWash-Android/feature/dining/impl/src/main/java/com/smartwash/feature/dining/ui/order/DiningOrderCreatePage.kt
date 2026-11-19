@@ -59,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -828,22 +829,18 @@ private fun DishThumb(
                     .size(40.dp)
                     // 防连击由 VM favoritingIds 守卫（pressable 无 enabled 入参）
                     .pressable(onClick = onToggleFavorite, debounce = false),
+                contentAlignment = Alignment.Center,
             ) {
-                Box(
+                // 小号心形 + 投影（去白底圆：28dp 白圆在 64dp 图上遮挡 44%，用户反馈遮挡视线）——
+                // 未收藏白心 + 2dp 阴影在任意封面/浅绿占位底上可读，已收藏保持品牌红
+                Icon(
+                    imageVector = if (favorited) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                    contentDescription = null,
+                    tint = if (favorited) AppColors.colorScheme.danger else AppColors.colorScheme.surface,
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(AppColors.colorScheme.surface.copy(alpha = 0.72f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = if (favorited) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                        contentDescription = null,
-                        tint = if (favorited) AppColors.colorScheme.danger else AppColors.colorScheme.textSecondary,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
+                        .size(14.dp)
+                        .graphicsLayer { shadowElevation = 2.dp.toPx() },
+                )
             }
         }
     }

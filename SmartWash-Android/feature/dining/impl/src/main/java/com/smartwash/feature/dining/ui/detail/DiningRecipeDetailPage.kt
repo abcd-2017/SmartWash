@@ -48,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -113,7 +114,7 @@ fun DiningRecipeDetailPage(
                         if (favorited) R.string.dining_recipe_unfavorite else R.string.dining_recipe_favorite,
                     )
                     val favScale by animateFloatAsState(
-                        targetValue = if (favorited) 1.15f else 1f,
+                        targetValue = if (favorited) 1.06f else 1f,
                         animationSpec = spring(
                             dampingRatio = Spring.DampingRatioMediumBouncy,
                             stiffness = Spring.StiffnessMedium,
@@ -132,8 +133,10 @@ fun DiningRecipeDetailPage(
                             contentDescription = null,
                             tint = if (favorited) AppColors.colorScheme.dangerInk
                             else AppColors.colorScheme.textSecondary,
+                            // 头部操作区视觉收敛（D29）：26dp 心形 + 1.15 弹跳在标题栏显臃肿，
+                            // 改 20dp + 1.06 微弹；48dp 热区保留规范下限
                             modifier = Modifier
-                                .size(26.dp)
+                                .size(20.dp)
                                 .scale(favScale),
                         )
                     }
@@ -302,19 +305,27 @@ private fun DetailContent(
                         is StepLine.Main -> {
                             mainStepNo++
                             Row {
-                                // 固定 24dp 序号列：内容折行后悬挂缩进与首字对齐（裸 Row 折行回行首）
+                                // 固定 24dp 序号列：内容折行后悬挂缩进与首字对齐（裸 Row 折行回行首）；
+                                // 列内右对齐——「1.」与「10.」都贴列右缘，数字与内容间距恒定
+                                // （左对齐时单位数步骤间距虚大、两位数贴死，视觉参差）
                                 Text(
                                     // 步骤序号开 tabular numbers（规范 §2.2 硬规则）
                                     text = "$mainStepNo.",
                                     style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                                     color = AppColors.colorScheme.primaryDark,
+                                    textAlign = TextAlign.End,
                                     modifier = Modifier.width(24.dp),
                                 )
                                 Text(
                                     text = line.text,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = AppColors.colorScheme.textPrimary,
-                                    modifier = Modifier.weight(1f),
+                                    // 基线对齐（D27）：数字（tnum 拉丁字形）与汉字 fontMetrics 不同，
+                                    // 顶部对齐下两者基线错开 ~4dp（视觉上序号飘在内容上方）；
+                                    // alignByBaseline 让内容首行基线与序号基线严格共线
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .alignByBaseline(),
                                 )
                             }
                         }

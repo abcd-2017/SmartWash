@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.smartwash.config.MinioConfig;
 import com.smartwash.dining.constant.DiningOrderStatus;
 import com.smartwash.dining.core.ShoppingListAssembler;
 import com.smartwash.dining.core.ShoppingListAssembler.RecipeIngredient;
@@ -77,6 +78,9 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
     private final DiningOrderMapper orderMapper;
 
     private final NoticeService noticeService;
+
+    /** MinIO 配置：快照写入时把封面对象键拼成端上可直读的 URL（与菜谱读链路同口径） */
+    private final MinioConfig minioConfig;
 
     /** version 冲突业务码（HTTP 语义冲突） */
     private static final int VERSION_CONFLICT_CODE = 409;
@@ -167,7 +171,8 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
                             .toList();
             recipes.add(new RecipeIngredient(recipeId, brief == null ? null : brief.name(),
                     ingredientMap.getOrDefault(recipeId, List.of()), amounts,
-                    caloriesMap.get(recipeId)));
+                    caloriesMap.get(recipeId),
+                    brief == null ? "" : minioConfig.urlOf(brief.coverObjectKey())));
         }
         // 菜单即已选清单：selections 传空列表 = 本单菜单全部入选，按菜视图无「选菜人」
         ShoppingListAssembler.ShoppingList shoppingList =

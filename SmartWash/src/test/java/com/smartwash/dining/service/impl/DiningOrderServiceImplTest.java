@@ -98,6 +98,9 @@ class DiningOrderServiceImplTest {
     @Mock
     private NoticeService noticeService;
 
+    @Mock
+    private com.smartwash.config.MinioConfig minioConfig;
+
     private DiningOrderServiceImpl service;
 
     @BeforeAll
@@ -112,7 +115,9 @@ class DiningOrderServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new DiningOrderServiceImpl(memberMapper, menuMapper, itemMapper, recipeGate, usersMapper,
-                orderMapper, noticeService);
+                orderMapper, noticeService, minioConfig);
+        // 快照封面直链：mock 按「端点/桶/键」拼（测试只断言字段存在与格式）
+        when(minioConfig.urlOf(any())).thenAnswer(inv -> "http://minio.local/smartwash/" + inv.getArgument(0));
         ReflectionTestUtils.setField(service, "baseMapper", orderMapper);
     }
 
@@ -275,8 +280,8 @@ class DiningOrderServiceImplTest {
                 1L, List.of("西红柿", "鸡蛋", "葱"),
                 2L, List.of("黄瓜", "蒜")));
         when(recipeGate.getBriefs(anyCollection())).thenReturn(Map.of(
-                1L, new DiningRecipeGate.RecipeBrief(1L, "番茄炒蛋", 11L),
-                2L, new DiningRecipeGate.RecipeBrief(2L, "凉拌黄瓜", 11L)));
+                1L, new DiningRecipeGate.RecipeBrief(1L, "番茄炒蛋", 11L, null),
+                2L, new DiningRecipeGate.RecipeBrief(2L, "凉拌黄瓜", 11L, null)));
     }
 
     @Test
@@ -799,7 +804,7 @@ class DiningOrderServiceImplTest {
         DiningOrderMenu menu = new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(1L);
         when(menuMapper.selectList(any(Wrapper.class))).thenReturn(List.of(menu));
         when(recipeGate.getBriefs(anyCollection())).thenReturn(Map.of(
-                1L, new DiningRecipeGate.RecipeBrief(1L, "番茄炒蛋", 11L)));
+                1L, new DiningRecipeGate.RecipeBrief(1L, "番茄炒蛋", 11L, null)));
         DiningOrderItem item = new DiningOrderItem().setOrderId(ORDER_ID).setRecipeId(1L)
                 .setUserId(JOINER).setNote("不要辣");
         when(itemMapper.selectList(any(Wrapper.class))).thenReturn(List.of(item));
@@ -956,7 +961,7 @@ class DiningOrderServiceImplTest {
                 List.of(new DiningOrderMenu().setOrderId(ORDER_ID).setRecipeId(1L)));
         when(recipeGate.getIngredients(anyCollection())).thenReturn(Map.of(1L, List.of("西红柿")));
         when(recipeGate.getBriefs(anyCollection())).thenReturn(
-                Map.of(1L, new DiningRecipeGate.RecipeBrief(1L, "番茄炒蛋", 11L)));
+                Map.of(1L, new DiningRecipeGate.RecipeBrief(1L, "番茄炒蛋", 11L, null)));
         when(orderMapper.update(any(), any(Wrapper.class))).thenReturn(1);
         // 全体成员：发起者 + 参与者
         when(memberMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
@@ -994,8 +999,8 @@ class DiningOrderServiceImplTest {
                 1L, List.of("西红柿", "鸡蛋"),
                 2L, List.of("黄瓜")));
         when(recipeGate.getBriefs(anyCollection())).thenReturn(Map.of(
-                1L, new DiningRecipeGate.RecipeBrief(1L, "西红柿炒蛋", 11L),
-                2L, new DiningRecipeGate.RecipeBrief(2L, "凉拌黄瓜", 11L)));
+                1L, new DiningRecipeGate.RecipeBrief(1L, "西红柿炒蛋", 11L, null),
+                2L, new DiningRecipeGate.RecipeBrief(2L, "凉拌黄瓜", 11L, null)));
         when(recipeGate.getIngredientAmounts(anyCollection())).thenReturn(Map.of(
                 1L, List.of(new DiningRecipeGate.IngredientDetail("鸡蛋", new java.math.BigDecimal("575"), "g"),
                         new DiningRecipeGate.IngredientDetail("西红柿", new java.math.BigDecimal("1.8"), "kg"))));
