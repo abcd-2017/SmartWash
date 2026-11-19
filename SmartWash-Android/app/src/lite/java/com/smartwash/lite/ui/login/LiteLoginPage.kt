@@ -33,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,7 +91,8 @@ fun LiteLoginPage(
     val keyboardController = LocalSoftwareKeyboardController.current
     val view = currentView()
 
-    var phone by remember { mutableStateOf("") }
+    // 手机号保留：去注册再返回时不必重输（密码按隐私红线不落 saved state）
+    var phone by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPhoneError by remember { mutableStateOf(false) }
     var isPasswordError by remember { mutableStateOf(false) }

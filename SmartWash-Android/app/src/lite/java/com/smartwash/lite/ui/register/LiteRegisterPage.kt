@@ -38,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -106,8 +107,9 @@ fun LiteRegisterPage(
     val view = currentView()
     val scope = rememberCoroutineScope()
 
-    var phone by remember { mutableStateOf("") }
-    var verificationCode by remember { mutableStateOf("") }
+    // 手机号/验证码 saveable：返回登录再进注册不必重输（密码按隐私红线不落 saved state）
+    var phone by rememberSaveable { mutableStateOf("") }
+    var verificationCode by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPhoneError by remember { mutableStateOf(false) }
     var isCodeError by remember { mutableStateOf(false) }
