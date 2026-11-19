@@ -48,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -311,7 +312,14 @@ private fun DetailContent(
                                 Text(
                                     // 步骤序号开 tabular numbers（规范 §2.2 硬规则）
                                     text = "$mainStepNo.",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFeatureSettings = "tnum",
+                                        // 视觉中心对齐（D27）：汉字为对称字形（视觉中心≈基线），
+                                        // 数字无降部（视觉中心在基线上方 ~0.2 字号）——基线对齐后
+                                        // 数字底贴汉字中心、整体偏上；baselineShift(-0.2) 把数字
+                                        // 相对基线下移 20% 字号，使两者视觉中心共线
+                                        baselineShift = BaselineShift(-0.2f),
+                                    ),
                                     color = AppColors.colorScheme.primaryDark,
                                     textAlign = TextAlign.End,
                                     modifier = Modifier.width(24.dp),
@@ -320,9 +328,6 @@ private fun DetailContent(
                                     text = line.text,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = AppColors.colorScheme.textPrimary,
-                                    // 基线对齐（D27）：数字（tnum 拉丁字形）与汉字 fontMetrics 不同，
-                                    // 顶部对齐下两者基线错开 ~4dp（视觉上序号飘在内容上方）；
-                                    // alignByBaseline 让内容首行基线与序号基线严格共线
                                     modifier = Modifier
                                         .weight(1f)
                                         .alignByBaseline(),
