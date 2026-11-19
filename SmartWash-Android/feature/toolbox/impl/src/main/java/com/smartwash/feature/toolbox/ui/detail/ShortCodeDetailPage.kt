@@ -42,6 +42,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -127,8 +129,11 @@ fun ShortCodeDetailPage(
     var showRenewDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRenewDatePicker by remember { mutableStateOf(false) }
-    var renewPreset by remember { mutableStateOf(ShortCodeRules.ExpiryPreset.DAYS_7) }
-    var renewDate by remember { mutableStateOf<LocalDate?>(null) }
+    // saveable：续期已选预设/自定义日期在返回与进程重建后不回默认
+    var renewPreset by rememberSaveable(stateSaver = ExpiryPresetSaver) {
+        mutableStateOf(ShortCodeRules.ExpiryPreset.DAYS_7)
+    }
+    var renewDate by rememberSaveable(stateSaver = LocalDateSaver) { mutableStateOf<LocalDate?>(null) }
 
     // 访问明细加载会话门控（2026-11-06 闪空态回归，同款防御）：本页 statsTrigger 恒空、
     // 无刷新/重建路径，故会话退化为「首轮加载」——仍加 everLoaded 门控，
@@ -843,3 +848,18 @@ private fun openInBrowser(context: Context, url: String) {
         Toast.makeText(context, context.getString(R.string.toolbox_open_failed), Toast.LENGTH_SHORT).show()
     }
 }
+
+/** 续期预设枚举的 saved-state 编解码（按 name） */
+private val ExpiryPresetSaver = Saver<ShortCodeRules.ExpiryPreset, String>(
+    save = { it.name },
+    restore = { saved ->
+        ShortCodeRules.ExpiryPreset.entries.firstOrNull { it.name == saved }
+            ?: ShortCodeRules.ExpiryPreset.DAYS_7
+    }
+)
+
+/** LocalDate 的 saved-state 编解码（按 epochDay，-1 表示空） */
+private val LocalDateSaver = Saver<LocalDate?, Long>(
+    save = { it?.toEpochDay() ?: -1L },
+    restore = { if (it >= 0) LocalDate.ofEpochDay(it) else null }
+)

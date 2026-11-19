@@ -129,6 +129,9 @@ fun HomePage(
         }
         HorizontalPager(
             state = pagerState,
+            // 保留全部 page 组合：切 tab 不销毁原页，滚动位置/展开态等不丢
+            // （pager page 非独立返回栈项，默认 beyondViewportPageCount=0 切走即丢）
+            beyondViewportPageCount = homeTabItems.size,
             modifier = Modifier.padding(paddingValues),
         ) { page ->
             when (page) {
