@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108" fill="none">
+    <!--
+        菜谱默认占位图（D24）：无真实封面时替代「菜名首字」占位，四端视觉一致。
+        图形与 Android 端 dining_recipe_placeholder.xml（viewport 108x108）逐 path 等价：
+        碗口横线 + 半圆碗身 + 碗足 + 斜搭筷子两根 + 蒸汽两缕，品牌深绿线稿 #1E8C5C。
+        底色由消费方铺浅绿语义底（ICON_CONTAINER_GREEN），本资源只画线稿。
+    -->
+    <!-- 碗口 -->
+    <path d="M25,60 L83,60" stroke="#1E8C5C" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <!-- 碗身（半圆收底） -->
+    <path d="M29,60 C29,76 40,86 54,86 C68,86 79,76 79,60" stroke="#1E8C5C" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <!-- 碗足 -->
+    <path d="M45,86 L45,92 L63,92 L63,86" stroke="#1E8C5C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- 筷子（斜搭碗口） -->
+    <path d="M60,26 L86,54" stroke="#1E8C5C" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <path d="M71,22 L88,50" stroke="#1E8C5C" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <!-- 蒸汽两缕 -->
+    <path d="M36,36 C36,31 40,31 40,26" stroke="#1E8C5C" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M46,32 C46,27 50,27 50,22" stroke="#1E8C5C" stroke-width="4" stroke-linecap="round" fill="none"/>
+</svg>

@@ -154,15 +154,19 @@ struct DiningRecipeDetailPage {
                     .objectFit(ImageFit.Cover)
                     .draggable(false)
                 } else {
+                  // 无封面占位：品牌碗筷线稿 + 浅绿语义底（D24 替代旧叉勺图标块，对齐安卓详情页底色）
                   Column() {
-                    SymbolGlyph($r('sys.symbol.fork_knife'))
-                      .fontSize(48)
-                      .fontColor([$r('app.color.TEXT_TERTIARY')])
+                    Image($r('app.media.dining_recipe_placeholder'))
+                      .width('100%')
+                      .height('100%')
+                      .objectFit(ImageFit.Contain)
+                      .padding(DesignDimens.SPACE_XXL)
+                      .draggable(false)
                   }
                   .width('100%')
                   .aspectRatio(1.6)
                   .borderRadius(DesignDimens.CARD_RADIUS)
-                  .backgroundColor($r('app.color.SURFACE_VARIANT'))
+                  .backgroundColor($r('app.color.ICON_CONTAINER_GREEN'))
                   .justifyContent(FlexAlign.Center)
                 }
 

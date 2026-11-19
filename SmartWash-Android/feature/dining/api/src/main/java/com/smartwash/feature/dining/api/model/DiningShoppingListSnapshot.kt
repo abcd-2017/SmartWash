@@ -87,10 +87,13 @@ data class DiningShoppingListSnapshot(
     /** 按菜视图条目：一道菜及其全部选菜人（v1 字段，行为不变） */
     @Keep
     data class RecipeView(
+        /** 菜谱 ID（供购买清单跳转菜谱详情；老快照无该字段 null=不可跳转） */
+        val recipeId: Long? = null,
         val recipeName: String? = null,
         /** 选菜人列表（按勾选顺序） */
         val selectors: List<SelectorView>? = null,
     ) {
+        val safeRecipeId: Long get() = recipeId ?: 0L
         val safeRecipeName: String get() = recipeName.orEmpty()
         val safeSelectors: List<SelectorView> get() = selectors.orEmpty()
     }

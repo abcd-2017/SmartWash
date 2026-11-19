@@ -7,6 +7,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
@@ -37,6 +39,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -55,11 +59,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -151,6 +157,7 @@ fun DiningOrderCreatePage(
     val formError by viewModel.formError.collectAsState()
     val sourceTitle by viewModel.sourceTitle.collectAsState()
     val sourceMenuCount by viewModel.sourceMenuCount.collectAsState()
+    val favoritingIds by viewModel.favoritingIds.collectAsState()
     val hasMore by viewModel.hasMore.collectAsState()
     val loadMoreState by viewModel.loadMoreState.collectAsState()
     val keyword by viewModel.keyword.collectAsState()
@@ -469,6 +476,7 @@ fun DiningOrderCreatePage(
                                         DishList(
                                             recipes = recipes,
                                             selectedIds = selectedIds,
+                                            favoritingIds = favoritingIds,
                                             hasMore = hasMore,
                                             loadMoreState = loadMoreState,
                                             onLoadMore = viewModel::loadMore,
@@ -476,6 +484,7 @@ fun DiningOrderCreatePage(
                                             onViewRecipe = { recipeId ->
                                                 navController.navigate(DiningRoute.RecipeDetail(recipeId))
                                             },
+                                            onToggleFavorite = viewModel::toggleFavorite,
                                             // 列表区白底（用户定案「整体白」）；分类栏保持浅灰
                                             modifier = Modifier
                                                 .weight(1f)
@@ -597,11 +606,13 @@ private fun CreateCategoryRail(
 private fun DishList(
     recipes: List<DiningRecipeVo>,
     selectedIds: Set<Long>,
+    favoritingIds: Set<Long>,
     hasMore: Boolean,
     loadMoreState: RequestState,
     onLoadMore: () -> Unit,
     onToggle: (Long) -> Unit,
     onViewRecipe: (Long) -> Unit,
+    onToggleFavorite: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -632,6 +643,7 @@ private fun DishList(
                 selected = recipe.safeId in selectedIds,
                 onToggle = { onToggle(recipe.safeId) },
                 onViewRecipe = { onViewRecipe(recipe.safeId) },
+                onToggleFavorite = { onToggleFavorite(recipe.safeId) },
                 modifier = Modifier.then(animatedListItem()),
             )
         }
@@ -675,6 +687,7 @@ private fun DishRow(
     selected: Boolean,
     onToggle: () -> Unit,
     onViewRecipe: () -> Unit,
+    onToggleFavorite: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ingredients = recipe.safeIngredients
@@ -699,6 +712,8 @@ private fun DishRow(
             DishThumb(
                 coverUrl = recipe.safeCoverUrl,
                 name = recipe.safeName,
+                favorited = recipe.favorited == true,
+                onToggleFavorite = onToggleFavorite,
                 // 固定尺寸方图（1:1）：不随文字行数变化——带热量 4 行的行图比 3 行大一号
                 // 是 bug，图片尺寸恒定（用户定案 2026-11-18）
                 modifier = Modifier.size(DISH_THUMB_SIZE),
@@ -766,9 +781,20 @@ private fun DishRow(
     }
 }
 
-/** 封面缩略（高度由调用方约束，行内与右侧文字块同高）：有封面走网络图，缺失回落浅绿底 + 菜名首字 */
+/**
+ * 封面缩略（高度由调用方约束，行内与右侧文字块同高）：有封面走网络图，缺失回落浅绿底 +
+ * 菜名首字。[onToggleFavorite] 非空时图片左上角叠收藏心（D22 新增收藏入口）：40dp 热区
+ * 压图左上，视觉 28dp 半透明白圆底 + 16dp 心形保证任意封面/占位底上可读；内层 pressable
+ * 消费点击不触发行跳详情。购物车缩略不传该参数即无收藏层。
+ */
 @Composable
-private fun DishThumb(coverUrl: String, name: String, modifier: Modifier = Modifier) {
+private fun DishThumb(
+    coverUrl: String,
+    name: String,
+    modifier: Modifier = Modifier,
+    favorited: Boolean = false,
+    onToggleFavorite: (() -> Unit)? = null,
+) {
     // 分类占位图（dining/covers/category_*.png）视为无封面（TD18）：缩小后语义不清且
     // 红白色跳出清氧绿系，回落浅绿底 + 菜名首字更干净；转换器新数据已不再生成占位键
     val hasRealCover = coverUrl.isNotBlank() && !coverUrl.contains("dining/covers/category_")
@@ -785,11 +811,40 @@ private fun DishThumb(coverUrl: String, name: String, modifier: Modifier = Modif
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            Text(
-                text = name.firstOrNull()?.toString() ?: "",
-                style = MaterialTheme.typography.titleMedium,
-                color = AppColors.colorScheme.primaryDark,
+            // 无封面占位：品牌碗筷线稿（D24，替代首字——首字在小图上可读性差且无品牌感）
+            Image(
+                painter = painterResource(R.drawable.dining_recipe_placeholder),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(10.dp),
             )
+        }
+        if (onToggleFavorite != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .size(40.dp)
+                    // 防连击由 VM favoritingIds 守卫（pressable 无 enabled 入参）
+                    .pressable(onClick = onToggleFavorite, debounce = false),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.colorScheme.surface.copy(alpha = 0.72f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = if (favorited) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                        contentDescription = null,
+                        tint = if (favorited) AppColors.colorScheme.danger else AppColors.colorScheme.textSecondary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
         }
     }
 }

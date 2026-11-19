@@ -465,6 +465,54 @@ class DiningOrderCreateViewModel @Inject constructor(
         recordCatalog(collected)
     }
 
+    /** 收藏切换进行中的菜谱 ID（防连击重复请求） */
+    private val _favoritingIds = MutableStateFlow<Set<Long>>(emptySet())
+    val favoritingIds = _favoritingIds.asStateFlow()
+
+    /**
+     * 收藏切换（菜品行图片左上角收藏入口）：乐观更新列表与已选映射的 favorited，
+     * 服务端失败回滚（对齐菜谱库/详情页收藏模式）。
+     */
+    fun toggleFavorite(recipeId: Long) {
+        if (recipeId <= 0L || recipeId in _favoritingIds.value) return
+        val current = _recipes.value.firstOrNull { it.safeId == recipeId } ?: return
+        val target = !(current.favorited == true)
+        fun patch(list: List<DiningRecipeVo>): List<DiningRecipeVo> = list.map {
+            if (it.safeId == recipeId) it.copy(favorited = target) else it
+        }
+        _favoritingIds.value = _favoritingIds.value + recipeId
+        _recipes.value = patch(_recipes.value)
+        _selectedRecipes.value = _selectedRecipes.value.mapValues { (id, vo) ->
+            if (id == recipeId) vo.copy(favorited = target) else vo
+        }
+        viewModelScope.launch {
+            try {
+                val ok = if (target) {
+                    diningRepository.favoriteRecipe(recipeId)
+                } else {
+                    diningRepository.unfavoriteRecipe(recipeId)
+                }
+                if (!ok) rollbackFavorite(recipeId, target)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AppLogger.error(TAG, "toggleFavorite: ${e.message}", e)
+                rollbackFavorite(recipeId, target)
+            } finally {
+                _favoritingIds.value = _favoritingIds.value - recipeId
+            }
+        }
+    }
+
+    private fun rollbackFavorite(recipeId: Long, target: Boolean) {
+        _recipes.value = _recipes.value.map {
+            if (it.safeId == recipeId) it.copy(favorited = !target) else it
+        }
+        _selectedRecipes.value = _selectedRecipes.value.mapValues { (id, vo) ->
+            if (id == recipeId) vo.copy(favorited = !target) else vo
+        }
+    }
+
     fun onTitleChange(value: String) {
         _title.value = value
         clearFormError()

@@ -33,11 +33,12 @@ data class DiningRecipeItem(
     val ingredientCount: Int get() = ingredients.size
 
     /**
-     * 是否为真实网络封面：`dining/covers/` 目录是导入数据的内置伪 key（category_、htc_
-     * 前缀），MinIO 无对应对象，走网络图只会渲染灰块，端上一律回落「浅绿底 + 菜名首字」
-     * 占位（TD18）；真实上传封面为用户上传直链，不受影响。
+     * 是否为真实网络封面：`dining/covers/category_*` 是导入数据的分类占位伪 key（MinIO
+     * 无对应对象，走网络图只会渲染灰块），端上一律回落品牌占位图（TD18/D24）；htc_* 前缀
+     * 的 HowToCook 封面已补传真实对象（D24），回归真封面；用户上传直链不受影响。
      */
-    val hasRealCover: Boolean get() = coverUrl.isNotBlank() && !coverUrl.contains("/dining/covers/")
+    val hasRealCover: Boolean
+        get() = coverUrl.isNotBlank() && !coverUrl.contains("dining/covers/category_")
 }
 
 /** 分类筛选 chip 模型：[id] 为 null 表示「全部」伪分类（不携带筛选参数） */

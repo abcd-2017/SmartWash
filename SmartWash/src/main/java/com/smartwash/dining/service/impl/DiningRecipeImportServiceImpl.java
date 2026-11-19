@@ -18,6 +18,8 @@ import com.smartwash.dining.mapper.DiningIngredientMapper;
 import com.smartwash.dining.mapper.DiningRecipeIngredientMapper;
 import com.smartwash.dining.mapper.DiningRecipeMapper;
 import com.smartwash.dining.service.DiningRecipeImportService;
+import com.smartwash.dining.service.DiningRecipeIngredientService;
+import com.smartwash.dining.service.DiningIngredientService;
 import com.smartwash.dining.support.IngredientAllergenResolver;
 import com.smartwash.dining.vo.DiningRecipeImportPreviewVo;
 import com.smartwash.dining.vo.DiningRecipeImportResultVo;
@@ -56,6 +58,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -100,6 +103,12 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
 
     /** 单次导入数据行上限（对齐关卡批量导入 500 上限惯例，防超大请求） */
     public static final int MAX_IMPORT_ROWS = 500;
+
+    /** 配料关联批量写入分批大小（Db.saveBatch JDBC batch flush 粒度） */
+    private static final int RELATION_BATCH_SIZE = 200;
+
+    /** 配料名 IN 批查 / 新配料批量插入分批大小 */
+    private static final int INGREDIENT_BATCH_SIZE = 500;
 
     /** 上传文件大小上限（5MB，足够承载 500 行文本） */
     public static final long MAX_FILE_BYTES = 5L * 1024 * 1024;
@@ -167,9 +176,17 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
 
     private static final String SOURCE_ADMIN = "ADMIN";
 
-    /** 菜谱 Mapper：确认阶段逐行写入（insert 后 MyBatis 回填自增 ID 进逐行报告） */
+    /** 菜谱 Mapper：确认阶段批量写入（分批 insert 回填自增 ID 进逐行报告） */
     @Autowired
     private DiningRecipeMapper diningRecipeMapper;
+
+    /** 配料 IService：导入自动注册的新配料批量落库（D23：逐名 insert → saveBatch） */
+    @Autowired
+    private DiningIngredientService diningIngredientService;
+
+    /** 配料关联 IService：确认导入的关联重建统一批量落库（D23：逐行 insert → saveBatch） */
+    @Autowired
+    private DiningRecipeIngredientService diningRecipeIngredientService;
 
     /** 分类 Mapper：分类名 → ID 映射（一次全量拉取，分类量级小）；确认阶段自动建分类 */
     @Autowired
@@ -391,30 +408,45 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         int successCount = 0;
         int createdCount = 0;
         int updatedCount = 0;
+        // 批量写入缓冲（D23 性能加固）：配料关联合并后统一 saveBatch（行数 = 菜谱行 × 平均
+        // 配料数，逐行 insert 数千条 SQL 是导入耗时大头）；更新行旧关联删除合并为一次 IN
+        // 删除；菜谱本体保留逐行 insert（报告行需即时自增 ID）；整批事务语义不变
+        List<DiningRecipeIngredient> pendingRelations = new ArrayList<>();
+        List<Long> updateRecipeIds = new ArrayList<>();
+
         for (int i = 0; i < parsedRows.size(); i++) {
             ParsedRow parsed = parsedRows.get(i);
             DiningRecipe existing = resolveExistingRecipe(parsed, existingBySourceKey, existingByName, true);
             DiningRecipeImportResultVo.ResultRow reportRow = reportRows.get(i);
             if (existing == null) {
+                // 菜谱逐行 insert（报告行需即时自增 ID；配料关联/自动注册才走批量——
+                // 关联行数 = 行数 × 平均配料数，是耗时大头，D23）
                 DiningRecipe recipe = buildRecipe(parsed);
                 diningRecipeMapper.insert(recipe);
-                for (DiningRecipeIngredient relation : buildRelations(recipe.getId(), parsed, ingredientIdByName)) {
-                    diningRecipeIngredientMapper.insert(relation);
-                }
+                List<DiningRecipeIngredient> relations = buildRelations(recipe.getId(), parsed, ingredientIdByName);
+                pendingRelations.addAll(relations);
                 reportRow.setRecipeId(recipe.getId()).setIsNew(true).setExistsKind(EXISTS_KIND_CREATE);
                 createdCount++;
             } else {
                 // 幂等更新：显式刷新内容列 + 重建配料关联，保留 id/created_at/status/source/创建人
                 applyUpdate(existing, parsed);
-                diningRecipeIngredientMapper.delete(new LambdaQueryWrapper<DiningRecipeIngredient>()
-                        .eq(DiningRecipeIngredient::getRecipeId, existing.getId()));
-                for (DiningRecipeIngredient relation : buildRelations(existing.getId(), parsed, ingredientIdByName)) {
-                    diningRecipeIngredientMapper.insert(relation);
-                }
+                updateRecipeIds.add(existing.getId());
+                pendingRelations.addAll(buildRelations(existing.getId(), parsed, ingredientIdByName));
                 reportRow.setRecipeId(existing.getId()).setIsNew(false).setExistsKind(EXISTS_KIND_UPDATE);
                 updatedCount++;
             }
             successCount++;
+        }
+
+        // 更新行旧配料关联：逐行 delete N 次 → 一次 IN 删除
+        if (!updateRecipeIds.isEmpty()) {
+            diningRecipeIngredientMapper.delete(new LambdaQueryWrapper<DiningRecipeIngredient>()
+                    .in(DiningRecipeIngredient::getRecipeId, updateRecipeIds));
+        }
+
+        // 配料关联（新增 + 更新行重建）统一批量写入
+        if (!pendingRelations.isEmpty()) {
+            diningRecipeIngredientService.saveBatch(pendingRelations, RELATION_BATCH_SIZE);
         }
         vo.setRolledBack(false).setSuccessCount(successCount).setFailedCount(0)
                 .setCreatedCount(createdCount).setUpdatedCount(updatedCount);
@@ -654,48 +686,94 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
 
     /**
      * 配料按名 upsert（契约 §3.2 ②）：已存在直接复用（不覆盖——避免重导入冲掉后台人工修正的分类），
-     * 不存在按启发规则建新；本批内 name→id 缓存，同批重复名只查/建一次（幂等）。
+     * 不存在按启发规则建新。D23 性能加固：原逐名 selectOne+insert（500 行菜谱 ≈ 数千次 SQL）改为
+     * 批内去重后一次 IN 批查 + 未命中新配料 Db.saveBatch 批插；批量撞 uk_name（并发导入同配料）
+     * 降级逐个 upsert 保留原幂等语义。
      */
     private Map<String, Long> ensureIngredients(List<ParsedRow> parsedRows) {
-        Map<String, Long> cache = new LinkedHashMap<>();
+        Set<String> names = new LinkedHashSet<>();
         for (ParsedRow parsed : parsedRows) {
             for (String name : parsed.ingredients) {
-                ensureIngredient(name, cache);
+                names.add(name);
             }
             for (IngredientDetail detail : parsed.details) {
-                ensureIngredient(detail.getName(), cache);
+                names.add(detail.getName());
+            }
+        }
+        if (names.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+
+        // 一次 IN 批量查已有配料（分批防超长 IN 列表）
+        Map<String, Long> cache = new LinkedHashMap<>();
+        List<String> nameList = new ArrayList<>(names);
+        List<DiningIngredient> existing = new ArrayList<>();
+        for (int from = 0; from < nameList.size(); from += INGREDIENT_BATCH_SIZE) {
+            int to = Math.min(from + INGREDIENT_BATCH_SIZE, nameList.size());
+            existing.addAll(diningIngredientMapper.selectList(new LambdaQueryWrapper<DiningIngredient>()
+                    .in(DiningIngredient::getName, nameList.subList(from, to))));
+        }
+        for (DiningIngredient ingredient : existing) {
+            cache.put(ingredient.getName(), ingredient.getId());
+        }
+
+        // 未命中的新配料批量插入（Db.saveBatch 回填自增 ID）
+        List<DiningIngredient> toCreate = new ArrayList<>();
+        for (String name : nameList) {
+            if (!cache.containsKey(name)) {
+                toCreate.add(buildIngredient(name));
+            }
+        }
+        if (!toCreate.isEmpty()) {
+            try {
+                diningIngredientService.saveBatch(toCreate, INGREDIENT_BATCH_SIZE);
+            } catch (DuplicateKeyException e) {
+                // 批量撞 uk_name（并发导入同批配料）：降级逐个幂等 upsert，兜底拿准 id
+                for (DiningIngredient ingredient : toCreate) {
+                    Long id = cache.computeIfAbsent(ingredient.getName(), this::insertIngredientIdempotent);
+                    ingredient.setId(id);
+                }
+            }
+        }
+        for (DiningIngredient ingredient : toCreate) {
+            if (ingredient.getId() != null) {
+                cache.putIfAbsent(ingredient.getName(), ingredient.getId());
             }
         }
         return cache;
     }
 
-    private Long ensureIngredient(String name, Map<String, Long> cache) {
-        return cache.computeIfAbsent(name, n -> {
-            DiningIngredient existing = diningIngredientMapper.selectOne(new LambdaQueryWrapper<DiningIngredient>()
-                    .eq(DiningIngredient::getName, n));
-            if (existing != null) {
-                return existing.getId();
+    /** 按名构建新配料实体（分类/过敏原走启发规则，契约 §3.2 与后台新增配料共用命中表） */
+    private DiningIngredient buildIngredient(String name) {
+        return new DiningIngredient()
+                .setName(name)
+                .setCategory(heuristicCategory(name))
+                // 过敏原按名启发预判（契约 §2.2，与后台新增配料共用命中表）
+                .setAllergen(IngredientAllergenResolver.resolve(name));
+    }
+
+    /** 单条配料幂等 upsert（批量撞唯一键时的降级路径；并发窗口撞 uk_name 改挂先建者 id） */
+    private Long insertIngredientIdempotent(String name) {
+        DiningIngredient existing = diningIngredientMapper.selectOne(new LambdaQueryWrapper<DiningIngredient>()
+                .eq(DiningIngredient::getName, name));
+        if (existing != null) {
+            return existing.getId();
+        }
+        DiningIngredient ingredient = buildIngredient(name);
+        try {
+            diningIngredientMapper.insert(ingredient);
+            log.info("导入自动注册配料, name: {}, category: {}, allergen: {}",
+                    ingredient.getCategory(), ingredient.getAllergen(), name);
+            return ingredient.getId();
+        } catch (DuplicateKeyException e) {
+            // 并发窗口撞 uk_name：改挂先建配料的 id（幂等语义）
+            DiningIngredient raced = diningIngredientMapper.selectOne(new LambdaQueryWrapper<DiningIngredient>()
+                    .eq(DiningIngredient::getName, name));
+            if (raced == null) {
+                throw new CustomExceptions("配料写入冲突，请重试");
             }
-            DiningIngredient ingredient = new DiningIngredient()
-                    .setName(n)
-                    .setCategory(heuristicCategory(n))
-                    // 过敏原按名启发预判（契约 §2.2，与后台新增配料共用命中表）
-                    .setAllergen(IngredientAllergenResolver.resolve(n));
-            try {
-                diningIngredientMapper.insert(ingredient);
-                log.info("导入自动注册配料, name: {}, category: {}, allergen: {}",
-                        n, ingredient.getCategory(), ingredient.getAllergen());
-                return ingredient.getId();
-            } catch (DuplicateKeyException e) {
-                // 并发窗口撞 uk_name：改挂先建配料的 id（幂等语义）
-                DiningIngredient raced = diningIngredientMapper.selectOne(new LambdaQueryWrapper<DiningIngredient>()
-                        .eq(DiningIngredient::getName, n));
-                if (raced == null) {
-                    throw new CustomExceptions("配料写入冲突，请重试");
-                }
-                return raced.getId();
-            }
-        });
+            return raced.getId();
+        }
     }
 
     /** 配料分类启发（契约 §3.2，按序命中：调料 → 主料 → 辅料 → 其他） */

@@ -36,6 +36,8 @@ data class DiningIngredientTotalUi(
 
 /** 按菜备菜视图条目：一道菜及其全部选菜人 */
 data class DiningRecipeShopping(
+    /** 菜谱 ID（>0 时购买清单可点击跳菜谱详情看做法；老快照 0=不可跳转） */
+    val recipeId: Long = 0L,
     val recipeName: String,
     /** 选菜人（按勾选顺序） */
     val selectors: List<DiningSelectorShopping>,
@@ -78,6 +80,7 @@ fun DiningShoppingListSnapshot.toShoppingListResult(
         ingredients = safeIngredientNames,
         perRecipe = safePerRecipe.map { view ->
             DiningRecipeShopping(
+                recipeId = view.safeRecipeId,
                 recipeName = view.safeRecipeName,
                 selectors = view.safeSelectors.map { selector ->
                     DiningSelectorShopping(

@@ -68,6 +68,7 @@ import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.dining.R
+import com.smartwash.feature.dining.api.DiningRoute
 import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningRecipeShopping
 import com.smartwash.feature.dining.logic.DiningShoppingListResult
@@ -151,6 +152,10 @@ fun DiningOrderShoppingListPage(
                 calorieTarget = calorieTarget,
                 onToggleChecked = viewModel::toggleChecked,
                 onTabSelected = { tab = it },
+                onRecipeClick = { recipeId ->
+                    // 按菜备菜行跳菜谱详情看做法（老快照无 recipeId 时行内守卫不跳）
+                    navController.navigate(DiningRoute.RecipeDetail(recipeId))
+                },
             )
 
             loadState is RequestState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
@@ -185,6 +190,7 @@ private fun ShoppingListContent(
     calorieTarget: Int,
     onToggleChecked: (String) -> Unit,
     onTabSelected: (Int) -> Unit,
+    onRecipeClick: (Long) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // 热量卡（契约 §5.4）：总热量 tnum 大字 + 人数 stepper（1-20 本地态）+ 人均 + 今日剩余 + 未知提示；
@@ -212,7 +218,7 @@ private fun ShoppingListContent(
                     onToggle = onToggleChecked,
                 )
             } else {
-                PerRecipeView(perRecipe = result.perRecipe)
+                PerRecipeView(perRecipe = result.perRecipe, onRecipeClick = onRecipeClick)
             }
         }
     }
@@ -534,9 +540,12 @@ private fun IngredientRow(
     }
 }
 
-/** 按菜备菜视图：每道菜一行（平铺：菜名 + 选菜人 + 备注），行间 0.5dp 发丝线 */
+/** 按菜备菜视图：每道菜一行（平铺：菜名 + 选菜人 + 备注），行间 0.5dp 发丝线；行可点跳菜谱详情 */
 @Composable
-private fun PerRecipeView(perRecipe: List<DiningRecipeShopping>) {
+private fun PerRecipeView(
+    perRecipe: List<DiningRecipeShopping>,
+    onRecipeClick: (Long) -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -565,6 +574,11 @@ private fun PerRecipeView(perRecipe: List<DiningRecipeShopping>) {
             itemsIndexed(perRecipe, key = { index, item -> "${item.recipeName}_$index" }) { index, recipe ->
                 RecipeCard(
                     recipe = recipe,
+                    onClick = if (recipe.recipeId > 0L) {
+                        { onRecipeClick(recipe.recipeId) }
+                    } else {
+                        null
+                    },
                     modifier = Modifier.then(animatedListItem()),
                 )
                 if (index != perRecipe.lastIndex) {
@@ -578,12 +592,25 @@ private fun PerRecipeView(perRecipe: List<DiningRecipeShopping>) {
     }
 }
 
-/** 按菜行（平铺清单）：菜名 + 选菜人（脱敏手机号）+ 备注；行间 0.5dp 发丝线 */
+/** 按菜行（平铺清单）：菜名 + 选菜人（脱敏手机号）+ 备注；行间 0.5dp 发丝线；有 recipeId 整行可点进详情 */
 @Composable
-private fun RecipeCard(recipe: DiningRecipeShopping, modifier: Modifier = Modifier) {
+private fun RecipeCard(
+    recipe: DiningRecipeShopping,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .then(
+                if (onClick != null) {
+                    Modifier
+                        .pressable(onClick = onClick, debounce = false)
+                        .semantics { contentDescription = recipe.recipeName }
+                } else {
+                    Modifier
+                },
+            )
             .padding(vertical = AppDimens.spaceSm),
     ) {
         Text(

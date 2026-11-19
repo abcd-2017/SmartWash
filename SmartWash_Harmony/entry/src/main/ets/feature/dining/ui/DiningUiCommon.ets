@@ -126,15 +126,14 @@ export struct DiningCheckbox {
 /**
  * 菜谱封面缩略（TD18 对齐安卓定案）：dining/covers/category_*.png 分类占位键视为无封面
  * （转换器新数据已不再生成占位键，渲染层兼容存量数据）；无封面/占位键回落浅绿底 +
- * 菜名首字占位（不依赖网络，红白色跳出清氧绿系的旧占位图不再出现）。
+ * 品牌碗筷线稿占位图（D24，替代菜名首字——首字在小图上可读性差且无品牌感，
+ * 四端一致复用 Android feature/dining dining_recipe_placeholder 同款图形）。
  * 无点击逻辑：点击跳转由调用方行级手势消费，本组件只做视觉表达。
  */
 @ComponentV2
 export struct DiningRecipeThumb {
   /** 封面直链（空串 = 无封面） */
   @Param coverUrl: string = ''
-  /** 菜名（无封面回落首字占位） */
-  @Param name: string = ''
   /** 缩略边长（vp） */
   @Param thumbSize: number = 72
 
@@ -154,10 +153,13 @@ export struct DiningRecipeThumb {
           .draggable(false)
       } else {
         Column() {
-          Text(this.name.length > 0 ? this.name.charAt(0) : '')
-            .fontSize(Math.round(this.thumbSize * 0.33))
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor($r('app.color.PRIMARY_DARK'))
+          // 无封面占位：品牌碗筷线稿（D24），Contain + 内边距防止线稿顶满浅绿底
+          Image($r('app.media.dining_recipe_placeholder'))
+            .width('100%')
+            .height('100%')
+            .objectFit(ImageFit.Contain)
+            .padding(10)
+            .draggable(false)
         }
         .width(this.thumbSize)
         .height(this.thumbSize)

@@ -767,6 +767,11 @@ export interface DiningSelectorShopping {
 
 /** 按菜备菜视图条目：一道菜及其全部选菜人 */
 export interface DiningRecipeShopping {
+  /**
+   * 菜谱 ID（快照 additive 新增透传，供按菜行跳转菜谱详情看做法）。
+   * 0 = 老快照无该字段，行不可点击（对齐 Android DiningRecipeShopping.recipeId 兜底口径）。
+   */
+  recipeId: number
   recipeName: string
   selectors: Array<DiningSelectorShopping>
 }
@@ -824,7 +829,8 @@ export function toDiningShoppingResult(snapshot: DiningShoppingListSnapshot,
         isMe: myUserId !== 0 && selector.userId === myUserId
       })
     })
-    perRecipe.push({ recipeName: view.recipeName, selectors: selectors })
+    // recipeId additive 透传（老快照兜底 0，消费端 recipeId>0 才可点进菜谱详情）
+    perRecipe.push({ recipeName: view.recipeName, recipeId: view.recipeId, selectors: selectors })
   })
   // v2 字段透传（老快照 ingredientTotals 为 null → 结果模型同为 null，消费方降级渲染）
   const totals: Array<DiningIngredientTotalUi> | null = snapshot.ingredientTotals === null
