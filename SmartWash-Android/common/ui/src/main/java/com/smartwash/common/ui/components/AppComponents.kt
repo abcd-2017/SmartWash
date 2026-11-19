@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -578,6 +579,10 @@ fun EmptyState(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                // 复排 B5 组件级收口：有界约束（PullToRefreshBox / Column fillMaxSize 直挂）下
+                // fillMaxHeight 让 Arrangement.Center 生效（原 wrap 高导致 Center 空操作、内容顶部贴头）；
+                // 无限约束（LazyColumn item 内）fillMaxHeight 自动失效，保持原 wrap 行为
+                .fillMaxHeight()
                 .padding(vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
