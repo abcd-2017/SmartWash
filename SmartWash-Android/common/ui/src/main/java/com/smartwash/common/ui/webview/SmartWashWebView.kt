@@ -3,6 +3,7 @@ package com.smartwash.common.ui.webview
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Build
+import android.os.Bundle
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -48,6 +49,17 @@ import com.smartwash.network.api.GameBridgeApi
 private const val TAG = "SmartWashWebView"
 
 /**
+ * WebView 会话状态暂存：离开组合时保存 [WebView.saveState]，返回时恢复。
+ * 仅进程内内存（不持久化、不写盘），用于消除「离开页面再返回 WebView 被销毁重建、
+ * 页面历史/滚动/表单状态丢失」。key 由调用方按页面身份（通常 url）提供。
+ */
+private object WebViewStateHolder {
+    private val states = mutableMapOf<String, Bundle>()
+    fun save(key: String, state: Bundle) { states[key] = state }
+    fun consume(key: String): Bundle? = states.remove(key)
+}
+
+/**
  * 游戏桥 API 提供者（common 侧普通接口；app 壳以 Hilt @EntryPoint 继承实现，
  * 见 di/GameBridgeModule GameBridgeEntryPoint）。
  *
@@ -86,6 +98,7 @@ fun SmartWashWebView(
     bridgeThemeMode: String,
     gameBridgeApi: GameBridgeApi?,
     modifier: Modifier = Modifier,
+    stateKey: String? = null,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -191,7 +204,9 @@ fun SmartWashWebView(
                     progress = newProgress
                 }
             }
-            loadUrl(url)
+            // 会话恢复：返回本页时还原离开前的页面状态（历史/滚动/表单），否则首次加载
+            val restored = stateKey?.let { WebViewStateHolder.consume(it) }
+            if (restored != null) restoreState(restored) else loadUrl(url)
         }
     }
 
@@ -205,7 +220,17 @@ fun SmartWashWebView(
 
     // 导航条目离开时释放 WebView（销毁内部线程与 WebCore，防内存泄漏）
     DisposableEffect(Unit) {
-        onDispose { webView.destroy() }
+        onDispose {
+            // 离开前保存会话，供返回时恢复（stateKey 为空则不保存）
+            stateKey?.let { key ->
+                runCatching {
+                    val state = Bundle()
+                    webView.saveState(state)
+                    WebViewStateHolder.save(key, state)
+                }
+            }
+            webView.destroy()
+        }
     }
 
     // chrome 模式生效/复原：进入页面按当前模式设置窗口，离开时一律复原为 FULL——
