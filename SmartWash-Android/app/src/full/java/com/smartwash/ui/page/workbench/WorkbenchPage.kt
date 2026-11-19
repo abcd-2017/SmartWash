@@ -145,13 +145,10 @@ private sealed interface WorkbenchBlock {
         override val key: String get() = "wb_wide_${tool.entryKey}"
     }
 
-    /**
-     * 两列网格组卡（重设计：连续 tile 归并一张白卡，卡内两列网格——消灭「同构小卡」懒惰容器，
-     * 分组容器语义增强；见 docs/ui-scan-2026-11-18/workbench-redesign.md）
-     */
-    data class TileGroup(val tools: List<WorkbenchTool>) : WorkbenchBlock {
+    /** 两列小卡行（1~2 个 tile，奇数末位补空） */
+    data class TileRow(val tools: List<WorkbenchTool>) : WorkbenchBlock {
         override val key: String
-            get() = "wb_tilegroup_${tools.size}_" + tools.joinToString("-") { it.entryKey }
+            get() = "wb_tilerow_${tools.size}_" + tools.joinToString("-") { it.entryKey }
     }
 
     /** 列表行组（0.5dp 发丝线只出现在卡内，规范 §3.4） */
@@ -195,12 +192,11 @@ private fun List<WorkbenchTool>.toBlocks(): List<WorkbenchBlock> {
                 }
             }
             WorkbenchLayout.TILE -> {
-                // 重设计：连续 tile 跨行归并进同一张组卡（原为按行归并的独立小卡）
                 val last = blocks.lastOrNull()
-                if (!atSectionBoundary && last is WorkbenchBlock.TileGroup) {
+                if (!atSectionBoundary && last is WorkbenchBlock.TileRow && last.tools.size < GRID_COLUMNS) {
                     blocks[blocks.lastIndex] = last.copy(tools = last.tools + tool)
                 } else {
-                    blocks += WorkbenchBlock.TileGroup(listOf(tool))
+                    blocks += WorkbenchBlock.TileRow(listOf(tool))
                 }
             }
         }
@@ -289,8 +285,8 @@ fun WorkbenchPage(
                         start = AppDimens.pagePadding,
                         end = AppDimens.pagePadding,
                         top = AppDimens.spaceMd
-                        // 底距归零（间距合同 v2）：头部 bottom 12dp 与内容块 top 叠加成 60dp
-                        // 实测空白（搜索→最近使用）；搜索框→内容统一由内容块 top 承担
+                        // 底距归零（间距合同 v2 带回）：原底部 12dp 与内容块 top 叠加成 60dp
+                        // 实测空白；搜索框→内容统一由内容块 top 承担
                     )
             ) {
                 Text(
@@ -326,31 +322,24 @@ fun WorkbenchPage(
 
             LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
             if (showSkeleton) {
-                // 加载骨架（规范 §3.6：骨架屏替代转圈；重设计后真实结构 = 一张组卡内两列网格，
-                // 骨架对齐该形态：单卡 2×2 网格，卡内边距/网格距同 TileGroupCard）
+                // 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实网格一致；行距同真实网格 cardSpacing）
                 item(key = "wb_tools_skeleton") {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = AppDimens.pagePadding),
-                        shape = RoundedCornerShape(AppDimens.radiusLg),
-                        color = AppColors.colorScheme.surface,
-                        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+                    Column(
+                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
                     ) {
-                        Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
-                            repeat(2) { rowIndex ->
-                                if (rowIndex > 0) {
-                                    Spacer(modifier = Modifier.height(AppDimens.spaceMd))
-                                }
-                                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                                    repeat(GRID_COLUMNS) {
-                                        SkeletonBlock(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(96.dp),
-                                            shape = RoundedCornerShape(AppDimens.radiusMd)
-                                        )
-                                    }
+                        repeat(2) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
+                            ) {
+                                repeat(GRID_COLUMNS) {
+                                    SkeletonBlock(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(148.dp),
+                                        shape = RoundedCornerShape(AppDimens.radiusLg)
+                                    )
                                 }
                             }
                         }
@@ -405,16 +394,21 @@ fun WorkbenchPage(
                         )
                     }
                 } else if (isSearching) {
-                    // 搜索态：全部命中平铺进一张组卡（重设计：与常态同组件语言，快速扫视优先，
-                    // 分组/类型排版让位；顶距 spaceXl——搜索框无 bottom padding）
-                    item(key = "wb_search_group") {
-                        StaggerIn(index = 0, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
-                            TileGroupCard(
-                                tools = searchRows.flatten(),
+                    // 搜索态：平铺两列（快速扫视优先，分组/类型排版让位）
+                    itemsIndexed(
+                        searchRows,
+                        key = { _, rowTools ->
+                            "wb_search_${rowTools.size}_" + rowTools.joinToString("-") { it.entryKey }
+                        }
+                    ) { rowIndex, rowTools ->
+                        StaggerIn(index = rowIndex, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
+                            TileRowContent(
+                                tools = rowTools,
                                 onToolClick = handleToolClick,
-                                modifier = Modifier
-                                    .padding(horizontal = AppDimens.pagePadding)
-                                    .padding(top = AppDimens.spaceXl)
+                                // 搜索框无 bottom padding（常态下观象台卡按设计稿 P07 以 12dp 贴合其下，
+                                // 搜索框不能加 bottom），首行自担 spaceXl(24)；后续行距 cardSpacing(16)
+                                //（复排 B：top-only 合同下非首行 0 会让 tile 行距归零）
+                                topSpacing = if (rowIndex == 0) AppDimens.spaceXl else AppDimens.cardSpacing
                             )
                         }
                     }
@@ -432,12 +426,11 @@ fun WorkbenchPage(
 
                     item(key = "wb_divination") {
                         // 观象台特色卡 — 玄墨渐变窗（端上固定品牌位，不随服务端下发）
-                        // 顶距：无「最近使用」时取 12dp（设计稿 P07 搜索框底→观象台卡顶 = 12，
-                        // 2026-11-06 复验原 0 导致卡片与搜索框紧贴）；有「最近使用」时仍按区块 32
+                        // 顶距：无「最近使用」时取 16dp（间距合同 v2 带回：原 12 特例与块间 16 模糊，
+                        // 统一取 cardSpacing）；有「最近使用」时仍按区块 32
                         DivinationEntryCard(
                             modifier = Modifier
                                 .padding(horizontal = AppDimens.pagePadding)
-                                // 间距合同 v2：无「最近使用」时 16dp（原 12 特例与块间 16 模糊）；有则 32
                                 .padding(top = if (recentTools.isEmpty()) AppDimens.cardSpacing else AppDimens.sectionSpacing),
                             onClick = { navController.navigate(DivRoute.Home) }
                         )
@@ -454,6 +447,7 @@ fun WorkbenchPage(
                                 color = AppColors.colorScheme.textPrimary,
                                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                             )
+                            // 间距合同 v2 带回：标题→内容 12→8（与块间 16 拉开梯度）
                             Spacer(modifier = Modifier.height(AppDimens.spaceXs))
                         }
                     }
@@ -489,13 +483,18 @@ fun WorkbenchPage(
                                         .padding(top = blockTop)
                                 )
                             }
-                            is WorkbenchBlock.TileGroup -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
-                                TileGroupCard(
+                            is WorkbenchBlock.TileRow -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
+                                TileRowContent(
                                     tools = block.tools,
                                     onToolClick = handleToolClick,
-                                    modifier = Modifier
-                                        .padding(horizontal = AppDimens.pagePadding)
-                                        .padding(top = blockTop)
+                                    // 复排 B P1 回归修正：top-only 合同下块 bottom 已归零，
+                                    // 连续 tile 行距由本参数提供（原「prev is TileRow → 0」是
+                                    // 旧 bottom 承担合同（bottom 16）的残留，叠加后行距归零、卡边框贴合）
+                                    topSpacing = if (afterSection || afterToolsHeader) {
+                                        0.dp
+                                    } else {
+                                        AppDimens.cardSpacing
+                                    }
                                 )
                             }
                             is WorkbenchBlock.RowGroup -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
@@ -622,8 +621,8 @@ private fun SectionHeader(title: String) {
             .padding(
                 start = AppDimens.pagePadding,
                 end = AppDimens.pagePadding,
-                // 间距合同 v2 三档梯度：大分组上 32 / 块间 16 / 标题→内容 8（原 12 与块间 16
-                // 太接近，标题分隔感弱、节奏模糊）
+                // 间距合同 v2 带回：大分组上 32 / 块间 16 / 标题→内容 8（原 12 与块间 16 太接近，
+                // 标题分隔感弱、节奏模糊）
                 top = AppDimens.sectionSpacing,
                 bottom = AppDimens.spaceXs
             )
@@ -640,7 +639,8 @@ private fun RecentSection(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = AppDimens.sectionSpacing)
+            // 间距合同 v2 带回：搜索框底→chip 顶 24dp（32 实测偏大）
+            .padding(top = AppDimens.spaceXl)
     ) {
         Text(
             text = stringResource(R.string.workbench_recent_title),
@@ -773,11 +773,7 @@ private fun NoticeBar(
     }
 }
 
-/**
- * 通栏横卡（type=wide，重设计条幅化）：固定 120dp 高，左方图 96（无图时 96 浅底圆角盒 +
- * 56 图标容器）+ 右侧（标题 + 描述单行）+ 箭头。原 16:9 大图通铺信息效率低，
- * 条幅化后重点入口可扫读（见 workbench-redesign.md）
- */
+/** 通栏横卡（type=wide）：可选配图（16:9 顶部通铺）+ 图标容器行 + 右箭头 */
 @Composable
 private fun WideCard(
     tool: WorkbenchTool,
@@ -795,144 +791,84 @@ private fun WideCard(
         color = scheme.surface,
         border = BorderStroke(1.dp, scheme.outline)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .padding(AppDimens.cardPadding),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-        ) {
-            val coverModifier = Modifier
-                .size(96.dp)
-                .clip(RoundedCornerShape(AppDimens.radiusMd))
-            if (tool.hasCover()) {
-                WorkbenchCoverImage(tool = tool, modifier = coverModifier)
-            } else {
-                Box(
-                    modifier = coverModifier.background(scheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    IconBox(
-                        icon = tool.icon,
-                        size = 56.dp,
-                        iconSize = 28.dp,
-                        containerColor = containerColor,
-                        iconTint = iconTint
-                    )
-                }
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = tool.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = scheme.textPrimary
-                )
-                if (tool.description.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-                    Text(
-                        text = tool.description,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = scheme.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = scheme.textTertiary
+        Column {
+            WorkbenchCoverImage(
+                tool = tool,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
             )
+            Row(
+                modifier = Modifier.padding(AppDimens.cardPadding),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+            ) {
+                IconBox(
+                    icon = tool.icon,
+                    containerColor = containerColor,
+                    iconTint = iconTint,
+                    iconSize = 24.dp
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = tool.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = scheme.textPrimary
+                    )
+                    if (tool.description.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+                        Text(
+                            text = tool.description,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = scheme.textSecondary
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = scheme.textTertiary
+                )
+            }
         }
     }
 }
 
 /**
- * 两列网格组卡（重设计）：连续 tile 归并一张白卡，卡内两列网格——消灭「同构小卡」
- * （craft-floor Refuse：同尺寸卡作页面结构是懒惰容器），分组容器语义增强、视觉噪音下降、
- * 信息密度提升（卡高 148→~104/项）。卡内项：36dp 图标容器 + 标题 + 描述单行省略；
- * 整项热区 ≥48dp（内容 + 上下 8dp padding）；行距/列距 16（4/8 节奏）。
+ * 两列小卡行（连续 tile 归并产物；奇数个末位补空保持网格）。
+ * 行高取 IntrinsicSize.Min + tile fillMaxHeight：同行两卡描述折行数不同也等高，
+ * 短卡底部自动补齐（审查 #4）；描述本身限两行截断，从源头杜绝超长文案拉高卡片。
  */
 @Composable
-private fun TileGroupCard(
+private fun TileRowContent(
     tools: List<WorkbenchTool>,
     onToolClick: (WorkbenchTool) -> Unit,
-    modifier: Modifier = Modifier,
+    topSpacing: androidx.compose.ui.unit.Dp,
 ) {
-    val scheme = AppColors.colorScheme
-    Surface(
-        modifier = modifier
+    Row(
+        modifier = Modifier
             .fillMaxWidth()
-            .softCardShadow(),
-        shape = RoundedCornerShape(AppDimens.radiusLg),
-        color = scheme.surface,
-        border = BorderStroke(1.dp, scheme.outline)
+            .height(IntrinsicSize.Min)
+            .padding(
+                start = AppDimens.pagePadding,
+                end = AppDimens.pagePadding,
+                top = topSpacing
+                // bottom 不再承担间距（10.A 间距合同：块间距离全部由后块 top 提供）
+            ),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
     ) {
-        Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
-            tools.chunked(GRID_COLUMNS).forEachIndexed { rowIndex, rowTools ->
-                if (rowIndex > 0) {
-                    Spacer(modifier = Modifier.height(AppDimens.spaceMd))
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                    rowTools.forEach { tool ->
-                        TileGridItem(
-                            tool = tool,
-                            onClick = { onToolClick(tool) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    if (rowTools.size == 1) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** 组卡网格项：纵排（36 容器 + 标题 + 描述单行），整项 pressable 热区 ≥48dp */
-@Composable
-private fun TileGridItem(
-    tool: WorkbenchTool,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val scheme = AppColors.colorScheme
-    val (containerColor, iconTint) = workbenchTintColors(tool)
-    Column(
-        modifier = modifier
-            .pressable(onClick = onClick)
-            .padding(vertical = AppDimens.spaceXs),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        IconBox(
-            icon = tool.icon,
-            size = 40.dp,
-            iconSize = 20.dp,
-            containerColor = containerColor,
-            iconTint = iconTint
-        )
-        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-        Text(
-            text = tool.title,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = scheme.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        if (tool.description.isNotBlank()) {
-            Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-            Text(
-                text = tool.description,
-                style = MaterialTheme.typography.labelSmall,
-                color = scheme.textSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+        tools.forEach { tool ->
+            ToolTile(
+                tool = tool,
+                onClick = { onToolClick(tool) },
+                // 等高：IntrinsicSize.Min 行高下填满行高，与邻卡底部对齐（审查 #4）
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
+        }
+        if (tools.size == 1) {
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -953,7 +889,8 @@ private fun RowGroupCard(
         color = scheme.surface,
         border = BorderStroke(1.dp, scheme.outline)
     ) {
-        Column {
+        // 间距合同 v2 带回：卡内上下补 4dp——行间已有呼吸，卡顶/底不再贴边
+        Column(modifier = Modifier.padding(vertical = AppDimens.spaceXxs)) {
             tools.forEachIndexed { index, tool ->
                 if (index > 0) {
                     // 发丝线只出现在同一容器内部（§1.3/§3.4）
@@ -1307,3 +1244,78 @@ private fun DivinationCompass(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * 工具卡（type=tile，设计稿 tile3）：白卡 1px 描边 + level1 阴影 + 44dp 语义图标容器（icon.md 24）
+ * + 14sp/500 标题（与列表行/chip/公告标题同级字重统一，审查 #11）+ 12sp 描述（限两行，审查 #4）；
+ * 可选配图（顶部 96dp 通铺，图卡不再叠图标容器）；右上角 badge 角标
+ * （已知值映射矢量小图标，未知值回退清氧小胶囊，见 WorkbenchBadge）。
+ * icon/color 由 WorkbenchTint 白名单映射（未知值兜底），
+ * 触控整卡 ≥48dp、按压反馈走 pressable（scale 0.97 + indication = null，禁止 Material ripple）。
+ * 描述为空不下发占位行（卡内节奏不因空文案错位）。
+ */
+@Composable
+private fun ToolTile(
+    tool: WorkbenchTool,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = AppColors.colorScheme
+    val hasCover = tool.hasCover()
+    val (containerColor, iconTint) = workbenchTintColors(tool)
+    Surface(
+        modifier = modifier.pressable(onClick = onClick).softCardShadow(),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = scheme.surface,
+        // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+        border = BorderStroke(1.dp, scheme.outline)
+    ) {
+        Box {
+            Column {
+                WorkbenchCoverImage(
+                    tool = tool,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(96.dp)
+                )
+                Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
+                    if (!hasCover) {
+                        IconBox(
+                            icon = tool.icon,
+                            containerColor = containerColor,
+                            iconTint = iconTint,
+                            iconSize = 24.dp
+                        )
+                        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                    }
+                    Text(
+                        text = tool.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        // 14/500：与列表行主文案/chip/公告标题同级统一（审查 #11）
+                        fontWeight = FontWeight.Medium,
+                        color = scheme.textPrimary
+                    )
+                    if (tool.description.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+                        Text(
+                            text = tool.description,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = scheme.textSecondary,
+                            // 限两行 + 省略：超长描述不再无限拉高卡片（审查 #4B）
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+            // badge 角标（服务端下发）：已知值映射矢量图标，未知值回退文字胶囊（见 WorkbenchBadge）
+            tool.badge?.takeIf { it.isNotBlank() }?.let { badge ->
+                WorkbenchBadge(
+                    badge = badge,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = AppDimens.spaceSm, end = AppDimens.spaceSm),
+                )
+            }
+        }
+    }
+}
