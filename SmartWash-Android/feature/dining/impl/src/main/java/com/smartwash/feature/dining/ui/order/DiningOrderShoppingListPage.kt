@@ -3,6 +3,7 @@ package com.smartwash.feature.dining.ui.order
 import android.widget.Toast
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -38,11 +39,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -58,6 +61,7 @@ import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.SmartWashAsyncImage
 import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -592,14 +596,14 @@ private fun PerRecipeView(
     }
 }
 
-/** 按菜行（平铺清单）：菜名 + 选菜人（脱敏手机号）+ 备注；行间 0.5dp 发丝线；有 recipeId 整行可点进详情 */
+/** 按菜行（平铺清单）：56dp 封面缩略 + 菜名/选菜人（脱敏手机号）/备注；行间 0.5dp 发丝线；有 recipeId 整行可点进详情 */
 @Composable
 private fun RecipeCard(
     recipe: DiningRecipeShopping,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Row(
         modifier = modifier
             .fillMaxWidth()
             .then(
@@ -612,34 +616,67 @@ private fun RecipeCard(
                 },
             )
             .padding(vertical = AppDimens.spaceSm),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = recipe.recipeName,
-            style = AppTextStyles.CardTitle,
-            color = AppColors.colorScheme.textPrimary,
-        )
-        if (recipe.selectors.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(AppDimens.space2xs))
-            recipe.selectors.forEach { selector ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = selector.label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = AppColors.colorScheme.textSecondary,
-                    )
-                    if (selector.note.isNotBlank()) {
-                        Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+        RecipeShoppingThumb(coverUrl = recipe.coverUrl, name = recipe.recipeName)
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+        Column {
+            Text(
+                text = recipe.recipeName,
+                style = AppTextStyles.CardTitle,
+                color = AppColors.colorScheme.textPrimary,
+            )
+            if (recipe.selectors.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(AppDimens.space2xs))
+                recipe.selectors.forEach { selector ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = stringResource(
-                                R.string.dining_shopping_list_selector_note_format,
-                                selector.note,
-                            ),
+                            text = selector.label,
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.colorScheme.textSecondary,
                         )
+                        if (selector.note.isNotBlank()) {
+                            Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+                            Text(
+                                text = stringResource(
+                                    R.string.dining_shopping_list_selector_note_format,
+                                    selector.note,
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = AppColors.colorScheme.textSecondary,
+                            )
+                        }
                     }
                 }
             }
+        }
+    }
+}
+
+/** 按菜行 56dp 封面缩略（与点单页同款口径）：真封面走网络图，内置伪键/缺失回落品牌占位图（D24） */
+@Composable
+private fun RecipeShoppingThumb(coverUrl: String, name: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(56.dp)
+            .clip(RoundedCornerShape(AppDimens.radiusSmall))
+            .background(AppColors.colorScheme.iconContainerGreen),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (coverUrl.isNotBlank() && !coverUrl.contains("dining/covers/category_")) {
+            SmartWashAsyncImage(
+                url = coverUrl,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Image(
+                painter = painterResource(R.drawable.dining_recipe_placeholder),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+            )
         }
     }
 }
