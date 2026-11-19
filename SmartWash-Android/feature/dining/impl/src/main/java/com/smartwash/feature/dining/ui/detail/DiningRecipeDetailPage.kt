@@ -318,7 +318,12 @@ private fun DetailContent(
                                     text = line.text,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = AppColors.colorScheme.textPrimary,
-                                    modifier = Modifier.weight(1f),
+                                    // 基线对齐（D27）：数字（tnum 拉丁字形）与汉字 fontMetrics 不同，
+                                    // 顶部对齐下两者基线错开 ~4dp（视觉上序号飘在内容上方）；
+                                    // alignByBaseline 让内容首行基线与序号基线严格共线
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .alignByBaseline(),
                                 )
                             }
                         }
