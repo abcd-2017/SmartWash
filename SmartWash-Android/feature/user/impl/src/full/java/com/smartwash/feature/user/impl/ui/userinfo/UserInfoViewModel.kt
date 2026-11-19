@@ -154,6 +154,10 @@ class UserInfoViewModel @Inject constructor(
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "UserInfoViewModel.uploadAvatar: ${e.message}", e)
                 _avatarUploadState.value = RequestState.Error(e.resId, e.message)
+            } catch (e: CancellationException) {
+                // 取消不作为上传失败直接上抛：上传中页面销毁/会话取消时，泛化 catch 会把
+                // 协程取消置成 Error(avatar_upload_failed)，页面尚存则误弹「头像上传失败」
+                throw e
             } catch (e: Exception) {
                 AppLogger.error(TAG, "UserInfoViewModel.uploadAvatar: ${e.message}", e)
                 _avatarUploadState.value = RequestState.Error(R.string.avatar_upload_failed, e.message)

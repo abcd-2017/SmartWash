@@ -109,9 +109,11 @@ fun SettingPage(
     LaunchedEffect(Unit) {
         settingViewModel.refreshApiConfig()
     }
-    // 版本号：关于行尾注与关于弹窗同源（D-ST5）
-    val versionName = remember {
-        try {
+    // 版本号：关于行尾注与关于弹窗同源（D-ST5）。getPackageInfo 是 PackageManager Binder
+    // 查询，禁止在组合期 remember 计算块内执行——迁入 LaunchedEffect，默认值先行占位
+    var versionName by remember { mutableStateOf("1.0.0") }
+    LaunchedEffect(Unit) {
+        versionName = try {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0.0"
         } catch (_: Exception) {
             "1.0.0"

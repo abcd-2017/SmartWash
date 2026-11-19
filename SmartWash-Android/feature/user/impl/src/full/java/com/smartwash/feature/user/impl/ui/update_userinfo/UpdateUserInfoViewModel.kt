@@ -112,6 +112,10 @@ class UpdateUserInfoViewModel @Inject constructor(
         return try {
             val responseData = userApi.getUserByStudentId(studentId)
             responseData.data == true
+        } catch (e: CancellationException) {
+            // 取消不作为校验失败直接上抛：提交协程被取消时泛化 catch 返回 false，
+            // 会把取消误置成 Error(学号已被占用) 的假业务错误误导用户
+            throw e
         } catch (e: Exception) {
             AppLogger.error(TAG, "UpdateUserInfoViewModel.checkStudentId: ${e.message}", e)
             false

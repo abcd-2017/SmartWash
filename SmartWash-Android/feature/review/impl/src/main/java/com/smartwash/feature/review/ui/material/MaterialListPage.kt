@@ -129,6 +129,11 @@ fun MaterialListPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            // IME 避让：内联建资料表单的标题/原文输入框在 LazyColumn item 内，adjustResize 不
+            // resize（manifest 注释），必须由根容器消费 ime insets 让列表视口整体抬到键盘上方，
+            // 否则聚焦表单底部的 rawText 多行框时输入区与「创建」按钮被键盘遮挡且无法滚出
+            // （对照同文件 ReviewCardEditDialog 弹窗内部已有 imePadding）
+            .imePadding()
             .background(AppColors.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {

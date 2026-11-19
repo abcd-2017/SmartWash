@@ -26,7 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -117,9 +120,19 @@ fun ReviewQueuePage(
                 },
             )
 
+            // 刷新会话标志（对齐 OrderPage/SubscriptionListPage）：空队列（queue=null）下拉时
+            // 原 isRefreshing（Loading && queue!=null）恒 false，M3 松手过阈值内部 startRefresh()
+            // 无人 endRefresh() → 转圈卡死；会话期间保持指示器，加载完成/失败即停
+            var refreshSession by remember { mutableStateOf(false) }
+            LaunchedEffect(state.loadState) {
+                if (refreshSession && state.loadState !is RequestState.Loading) refreshSession = false
+            }
             PullToRefreshBox(
-                isRefreshing = state.loadState is RequestState.Loading && state.queue != null,
-                onRefresh = { viewModel.load() },
+                isRefreshing = refreshSession || (state.loadState is RequestState.Loading && state.queue != null),
+                onRefresh = {
+                    refreshSession = true
+                    viewModel.load()
+                },
                 modifier = Modifier.fillMaxSize(),
             ) {
                 when (val loadState = state.loadState) {

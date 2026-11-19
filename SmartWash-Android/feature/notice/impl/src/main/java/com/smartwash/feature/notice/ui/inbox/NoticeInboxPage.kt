@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,14 +17,17 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -100,6 +104,12 @@ fun NoticeInboxPage(
     val loadMoreState by noticeInboxViewModel.loadMoreState.collectAsState()
     val readAllState by noticeInboxViewModel.readAllState.collectAsState()
     var showReadAllDialog by remember { mutableStateOf(false) }
+    // 下拉刷新会话标志（对齐 OrderPage）：onRefresh 置位、加载完成/失败复位——指示器全程
+    // 翻转，空态分支包进刷新区后下拉也不会永卡（禁止 Loading && 数据非空 类门控）
+    var refreshSession by remember { mutableStateOf(false) }
+    LaunchedEffect(listState) {
+        if (refreshSession && listState !is RequestState.Loading) refreshSession = false
+    }
 
     // 首载：列表与未读数并行独立（未读数失败不拖垮列表）
     LaunchedEffect(Unit) { noticeInboxViewModel.load() }
@@ -192,8 +202,11 @@ fun NoticeInboxPage(
                         notices = notices,
                         hasMore = hasMore,
                         loadMoreState = loadMoreState,
-                        isRefreshing = listState is RequestState.Loading,
-                        onRefresh = { noticeInboxViewModel.load() },
+                        isRefreshing = refreshSession || listState is RequestState.Loading,
+                        onRefresh = {
+                            refreshSession = true
+                            noticeInboxViewModel.load()
+                        },
                         onLoadMore = { noticeInboxViewModel.loadMore() },
                         onNoticeClick = { notice ->
                             noticeInboxViewModel.markRead(notice.safeId)
@@ -230,24 +243,44 @@ private fun NoticeList(
     onLoadMore: () -> Unit,
     onNoticeClick: (NoticeVo) -> Unit,
 ) {
-    if (notices.isEmpty()) {
-        EmptyState(
-            // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位
-            icon = Icons.Default.Notifications,
-            // 引导式文案（§3.6）：本页无自然行动去处（等新消息送达即可），故省略行动按钮
-            message = stringResource(R.string.notice_inbox_empty),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = AppDimens.pagePadding),
-        )
-        return
-    }
-
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
         modifier = Modifier.fillMaxSize(),
     ) {
+        if (notices.isEmpty()) {
+            // 空态：滚筒母题 + 引导文案（§3.6）。原空态在刷新区之外提前 return，纯空态无任何
+            // 刷新入口、只能退出重进——包进刷新区后空态下拉同样可达。verticalScroll 包装让
+            // 下拉手势经嵌套滚动传导给 PullToRefreshBox（非滚动子项拉不动）；铺满居中对齐
+            // OrderPage 空态规范：BoxWithConstraints 在 scroll 外层取视口高做 minHeight
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = AppDimens.pagePadding),
+            ) {
+                val viewportHeight = maxHeight
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = viewportHeight),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        EmptyState(
+                            // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位
+                            icon = Icons.Default.Notifications,
+                            // 本页无自然行动去处（等新消息送达即可），故省略行动按钮
+                            message = stringResource(R.string.notice_inbox_empty),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
+        } else {
         // 列表底部避让手势条/三键导航（规范 §4：底部预留导航高度 + 余量）——末卡与
         // 「加载更多」footer 可完整滚出系统栏之下；无导航条设备回落纯 24dp 底距
         val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -296,6 +329,7 @@ private fun NoticeList(
                     }
                 }
             }
+        }
         }
     }
 }
