@@ -39,6 +39,13 @@
 > ③ Pillow `UnsharpMask(radius=0.6, percent=60, threshold=2)`；
 > ④⑤ Pillow `quantize(colors=128, method=MEDIANCUT, dither=NONE)` + 索引层颗粒 + `oxipng -o 4`。
 > 颗粒必须约束在调色板内（量化后扰动颜色索引），**不要**走 RGB 高斯噪声——会让量化体积 ×5 以上（见 §4）。
+>
+> **2026-11-19 修订（索引层颗粒的正确做法）**：MEDIANCUT 128 色板含大量间距 ≤3 的近重复色，
+> 直接逐像素扰动索引会让像素在视觉相同色之间横跳（PNG 熵爆炸，±6 噪声实测 184–214KB）。
+> 正确配方：**先合并色板内切比雪夫距离 ≤5 的近重复项（palettegen 按覆盖度合并出「分得开」色板的等价行为）
+> → RGB 加 ±6 均匀噪声 → 逐像素映射色板最近色（paletteuse dither=none 等价）**。
+> 噪声只在跨量化边界处翻转（暗角/色板稀疏区翻转更多），颗粒分布与 ffmpeg 一致，
+> 成品体积即回到 67–93KB 区间。
 
 ## 3. 硬性检查（新封面过五关）
 
@@ -69,3 +76,9 @@
   - 主体按家族风自由设计（粗描边 + 签名表情 + 三层背景 + 地面带 + 星尘 + vignette），SVG 源归档 `covers-src/`。
   - 本机无 ffmpeg，走 §2 的等价管线；体积 74–94KB、128 色，全部 ≤120KB。
   - 落位：仅 `games-library/<key>/<key>.png`（曾短暂同步 drawable-nodpi + LocalCoverArt 映射，同日按用户裁定撤除——封面只走服务端下发，缺图显示端上默认兜底）。
+
+- **2026-11-19 批次（第十批 10 款封面 PS MCP 精修补齐）**：第十批当时因本机无 ffmpeg 走等价管线
+  （Pillow Unsharp 替代 PS），本次按用户要求补齐主管线第③步并重做 ④⑤：
+  SVG 源重渲染（Chrome headless 800×450）→ **PS 2026 MCP Unsharp Mask（60% / 0.6px / 阈值 2）逐张执行**
+  → 按 §2 修订版等价配方重做颗粒+量化 → 逐张旧/新对比目检（主体、家族表情、星尘、暗角颗粒、无断层）。
+  体积 67–93KB、精确 800×450、色板合并后 20–40 色，全部 ≤120KB；仅落 `games-library/<key>/<key>.png` 一处。
