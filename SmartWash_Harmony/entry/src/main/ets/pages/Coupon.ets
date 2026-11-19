@@ -97,8 +97,11 @@ struct Coupon {
     }
   )
 
-  // Tab 标题（可用 tab 的计数在 tabLabel 中动态拼接；第三 tab 文案对齐安卓 historical_coupons「历史」）
-  private readonly tabTitles: string[] = [resString('coupon_1'), resString('claimed_coupons'), resString('historical_coupons')]
+  // Tab 标题（可领取 tab 的计数在 tabLabel 中动态拼接；第三 tab 文案对齐安卓 historical_coupons「历史」）
+  // F1 语义修正（对齐安卓 a8e7bd9d，2026-11-19 实测定案）：第一 tab 绑定可领取广场券目录
+  // （availableCoupons）计数，与用户手持可用券（已领取 tab 中标「可用」）语义错位，
+  // 出现「可用 0」而已领取 1 张可使用的自相矛盾；对齐安卓无计数版既有「可领取」口径
+  private readonly tabTitles: string[] = [resString('available_coupons'), resString('claimed_coupons'), resString('historical_coupons')]
 
   async aboutToAppear() {
     logger.debug('coupon', '优惠券页挂载，拉取三类券列表')
@@ -112,7 +115,7 @@ struct Coupon {
   /**
    * 首屏加载：可领取仍走聚合接口 allCoupons（量小、为 tab 计数），
    * 已领取/历史改走分页接口 getUserCoupon(status) 首屏（对齐后端分页改造）。
-   * 领券成功后复用本方法全量刷新，保证可用 tab 计数与已领取/历史列表一致。
+   * 领券成功后复用本方法全量刷新，保证可领取 tab 计数与已领取/历史列表一致。
    */
   async loadAllCoupons() {
     this.isLoading = true
@@ -189,7 +192,7 @@ struct Coupon {
       && this.historicalCoupons.length === 0
   }
 
-  // Tab 文案：可用 tab 带真实计数（对齐安卓 available_coupons_with_count「可用 %1$d」，无括号）
+  // Tab 文案：可领取 tab 带真实计数（对齐安卓 available_coupons_with_count 修后值「可领取 %1$d」，无括号）
   private tabLabel(index: number): string {
     return index === 0 ? `${this.tabTitles[0]} ${this.availableCoupons.length}` : this.tabTitles[index]
   }

@@ -34,7 +34,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -120,10 +122,21 @@ fun GameCenterPage(
             .collectIndexed { index, _ -> if (index > 0) gridListState.scrollToItem(0) }
     }
 
+    // 刷新会话标志（对齐 OrderPage/SubscriptionListPage）：下拉触发的本轮刷新期间保持指示器，
+    // 加载完成/失败即停。空列表下拉时原 isRefreshing（Loading && 非空）恒 false，
+    // M3 松手过阈值内部 startRefresh() 后无人 endRefresh() → 转圈卡死不消失
+    var refreshSession by remember { mutableStateOf(false) }
+    LaunchedEffect(listState) {
+        if (refreshSession && listState !is RequestState.Loading) refreshSession = false
+    }
+
     PullToRefreshBox(
-        // 首载骨架已在表达加载态，指示器仅在已有内容时的下拉刷新出现
-        isRefreshing = listState is RequestState.Loading && games.isNotEmpty(),
-        onRefresh = viewModel::loadGames,
+        // 首载骨架已在表达加载态；会话期间或已有内容重拉时转圈
+        isRefreshing = refreshSession || (listState is RequestState.Loading && games.isNotEmpty()),
+        onRefresh = {
+            refreshSession = true
+            viewModel.loadGames()
+        },
         modifier = Modifier.fillMaxSize(),
     ) {
         Column(

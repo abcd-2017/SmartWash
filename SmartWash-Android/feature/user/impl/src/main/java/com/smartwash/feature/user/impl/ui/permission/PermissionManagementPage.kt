@@ -35,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -91,7 +92,10 @@ fun PermissionManagementPage(
         granted[Perm.NOTIFICATION] = isNotificationGranted(context)
         granted[Perm.INSTALL] = context.packageManager.canRequestPackageInstalls()
     }
-    refreshGranted()
+    // 首查放 LaunchedEffect：组合期函数体直接回写 granted（mutableStateMapOf）违反
+    // 「组合期禁止状态回写」红线——每次重组都会重查一遍系统接口。首帧 granted=false 占位
+    // 由本 effect 落帧后立即修正；从系统设置返回的重查走下方 DisposableEffect 的 ON_RESUME
+    LaunchedEffect(Unit) { refreshGranted() }
 
     // 从系统设置 / 系统弹窗返回后重查授予态（权限变更不经任何回调，只能靠生命周期兜底）
     val lifecycleOwner = LocalLifecycleOwner.current

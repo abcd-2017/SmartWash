@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,11 +20,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalLaundryService
@@ -81,8 +85,8 @@ import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.performHaptic
 
-/** 取件列表三态：骨架（首载）/ 空态 / 内容 —— 禁止用 itemCount==0 一刀切（首载会先闪空态） */
-private enum class PickupListState { LOADING, EMPTY, CONTENT }
+/** 取件列表四态：骨架（首载）/ 空态 / 错误态（复排 B P2 补）/ 内容 —— 禁止用 itemCount==0 一刀切（首载会先闪空态） */
+private enum class PickupListState { LOADING, EMPTY, ERROR, CONTENT }
 
 @Composable
 fun PickupPage(
@@ -97,6 +101,8 @@ fun PickupPage(
     // 按 refresh 显式分态（paging-compose 的初始 refresh 即 Loading，不会先落空态）
     val pickupListState = when {
         orderList.loadState.refresh is LoadState.Loading && orderList.itemCount == 0 -> PickupListState.LOADING
+        // 复排 B P2：纯网络源失败不再落 CONTENT 渲染空壳（空校名行+空列表+操作栏、无重试无说明）
+        orderList.loadState.refresh is LoadState.Error && orderList.itemCount == 0 -> PickupListState.ERROR
         orderList.loadState.refresh is LoadState.NotLoading && orderList.itemCount == 0 -> PickupListState.EMPTY
         else -> PickupListState.CONTENT
     }
@@ -128,19 +134,67 @@ fun PickupPage(
                 when (state) {
                     PickupListState.LOADING -> LoadingState(modifier = Modifier.fillMaxSize())
 
-                    PickupListState.EMPTY -> EmptyState(
-                        icon = Icons.Default.LocalLaundryService,
-                        message = stringResource(R.string.no_pickup_orders),
-                        // 规范 §3.6 空态三件套：引导文案 + 行动按钮（跳预约下单，与订单列表空态一致）
-                        action = {
-                            AppButton(
-                                small = true,
-                                text = stringResource(com.smartwash.feature.order.impl.R.string.go_order),
-                                onClick = { navController.navigate(LaundryRoute.Laundry()) },
-                                variant = AppButtonVariant.PRIMARY,
-                            )
-                        },
-                    )
+                    // 空态/错误态统一铺满居中（复排 B）：EmptyState 自身不保证居中（组件 wrap 高，
+                    // Arrangement.Center 空操作），按 OrderPage/PaymentPage 的 BoxWithConstraints
+                    // （scroll 外层）模式取视口高 + heightIn 居中；verticalScroll 保留下拉手势可达
+                    PickupListState.EMPTY -> BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                        val viewportHeight = maxHeight
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = viewportHeight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                EmptyState(
+                                    icon = Icons.Default.LocalLaundryService,
+                                    message = stringResource(R.string.no_pickup_orders),
+                                    // 规范 §3.6 空态三件套：引导文案 + 行动按钮（跳预约下单，与订单列表空态一致）
+                                    action = {
+                                        AppButton(
+                                            small = true,
+                                            text = stringResource(com.smartwash.feature.order.impl.R.string.go_order),
+                                            onClick = { navController.navigate(LaundryRoute.Laundry()) },
+                                            variant = AppButtonVariant.PRIMARY,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    PickupListState.ERROR -> BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                        val viewportHeight = maxHeight
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = viewportHeight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                EmptyState(
+                                    icon = Icons.Default.LocalLaundryService,
+                                    message = stringResource(R.string.error_network_fail),
+                                    action = {
+                                        AppButton(
+                                            small = true,
+                                            text = stringResource(R.string.retry),
+                                            onClick = { orderList.retry() },
+                                            variant = AppButtonVariant.SECONDARY,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
 
                     PickupListState.CONTENT -> Column(modifier = Modifier.fillMaxSize()) {
                         Row(
@@ -174,7 +228,12 @@ fun PickupPage(
                             contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
                             verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
                         ) {
-                            items(orderList.itemCount) { i ->
+                            items(
+                                count = orderList.itemCount,
+                                // 复排 B P2：LazyColumn 无 key 会在插删时错位复用；orderId 主键唯一，
+                                // null 兜底负索引防撞
+                                key = { i -> orderList[i]?.orderId ?: -(i.toLong() + 1) }
+                            ) { i ->
                                 orderList[i]?.let {
                                     PickupOrderCard(
                                         modifier = animatedListItem(),

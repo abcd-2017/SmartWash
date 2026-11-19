@@ -238,8 +238,14 @@ fun UserInfoPage(
     // A2：失败落定后不回骨架也不渲染归零假数据——由 showErrorCard / showOfflineHint 承接
     val showSkeleton = userInfo == null && !firstLoadSettled &&
         (userInfoStatus is RequestState.Loading || userInfoStatus is RequestState.Idle)
-    // 刷新指示器：已有数据时的重拉（tab 往返/下拉/ON_RESUME）转圈；无数据刷新走骨架
-    val isRefreshing = userInfoStatus is RequestState.Loading && userInfo != null
+    // 刷新指示器：已有数据时的重拉（tab 往返/下拉/ON_RESUME）转圈；无数据刷新走骨架。
+    // 刷新会话标志（对齐 OrderPage/SubscriptionListPage）：无数据（userInfo==null）下拉时
+    // 原 isRefreshing 恒 false，M3 松手过阈值内部 startRefresh() 无人 endRefresh() → 转圈卡死
+    var refreshSession by remember { mutableStateOf(false) }
+    LaunchedEffect(userInfoStatus) {
+        if (refreshSession && userInfoStatus !is RequestState.Loading) refreshSession = false
+    }
+    val isRefreshing = refreshSession || (userInfoStatus is RequestState.Loading && userInfo != null)
     // 失败且无任何成功数据：信息卡区出错误卡（具体文案 + 重试），绝不渲染 ¥0.00/未绑定假数据
     val showErrorCard = userInfo == null && lastError != null
     // 失败但有上次成功数据（内存）：用缓存渲染 + 轻量离线提示
@@ -300,7 +306,10 @@ fun UserInfoPage(
 
                     PullToRefreshBox(
                         isRefreshing = isRefreshing,
-                        onRefresh = { userInfoViewModel.getUserInfo() },
+                        onRefresh = {
+                            refreshSession = true
+                            userInfoViewModel.getUserInfo()
+                        },
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(top = TopBarHeight)

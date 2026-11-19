@@ -34,6 +34,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -104,14 +105,22 @@ fun PaySuccessPage(
     }
 
     // 错误提示放 LaunchedEffect，禁止组合期直接弹 Toast；
-    // 失败态不再立刻复位（保留 Error 供内联重试入口呈现）
+    // 失败态不再立刻复位（保留 Error 供内联重试入口呈现）。
+    // Toast 防重放标记（复排 A P2）：配置重建时 Error 驻留会重放 Toast，saveable 记住已提示；
+    // 新一轮失败（非 Error→Error）重置标记再提示
+    var detailErrorToasted by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(getOrderDetailState) {
         if (getOrderDetailState is RequestState.Error) {
-            Toast.makeText(
-                context,
-                (getOrderDetailState as RequestState.Error).getMessage(context),
-                Toast.LENGTH_SHORT
-            ).show()
+            if (!detailErrorToasted) {
+                Toast.makeText(
+                    context,
+                    (getOrderDetailState as RequestState.Error).getMessage(context),
+                    Toast.LENGTH_SHORT
+                ).show()
+                detailErrorToasted = true
+            }
+        } else {
+            detailErrorToasted = false
         }
     }
 

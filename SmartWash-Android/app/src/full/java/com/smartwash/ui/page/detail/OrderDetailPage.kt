@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -64,8 +66,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.DialogAction
+import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.InfoRow
@@ -103,18 +107,19 @@ fun OrderDetailPage(
         }
     }
 
-    // 错误提示放 LaunchedEffect，禁止组合期直接弹 Toast
+    // 错误不再「Toast + resetState」（批次 C 实锤 P1）：原加载失败仅一次性 Toast 后 reset 回
+    // Idle，Crossfade 只判 is Success → LoadingState 全屏永驻、无重试/返回入口。改为错误驻留
+    // （对齐 PaymentPage 错误态口径）：失败由错误态分支的常驻错误卡承载具体文案 + 重试 + 返回
     val context = LocalContext.current
     val view = currentView()
-    LaunchedEffect(getOrderDetailState) {
-        if (getOrderDetailState is RequestState.Error) {
-            Toast.makeText(
-                context,
-                (getOrderDetailState as RequestState.Error).getMessage(context),
-                Toast.LENGTH_SHORT
-            ).show()
-            orderDetailViewModel.resetState()
-        }
+
+    // 内容区三态推导（纯推导无副作用）：首载失败且无数据 → 错误态 / 加载成功 → 内容 / 其余 → 骨架。
+    // orderId == -1L（路由兜底，从未发起请求）同样落错误态，与 PickupDeliveryPage 口径一致
+    val contentState = when {
+        orderId == -1L -> OrderDetailContentState.Error
+        getOrderDetailState is RequestState.Error && orderInfo == null -> OrderDetailContentState.Error
+        getOrderDetailState is RequestState.Success && orderInfo != null -> OrderDetailContentState.Content
+        else -> OrderDetailContentState.Loading
     }
 
     // 取件码弹窗开关（D-OD1，恢复旧版寄存柜取件码功能链）
@@ -153,13 +158,59 @@ fun OrderDetailPage(
             .background(AppColors.colorScheme.background)
     ) {
         Crossfade(
-            targetState = getOrderDetailState is RequestState.Success,
+            targetState = contentState,
             animationSpec = motionSpec(enterTween<Float>(DURATION_CARD_MS)),
             label = "orderDetailContent"
-        ) { ready ->
-            if (!ready) {
-                LoadingState(modifier = Modifier.fillMaxSize())
-            } else {
+        ) { state ->
+            when (state) {
+                OrderDetailContentState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
+                OrderDetailContentState.Error -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        PageHeader(title = stringResource(R.string.order_detail), onBack = { navController.navigateUp() })
+                        // 错误态（三态完备性）：具体文案 + 重试 + 返回；对齐 OrderPage/PaymentPage
+                        // 错误态规范——BoxWithConstraints 在 scroll 外层取视口高，heightIn(min) 让
+                        // 内容垂直居中，verticalScroll 保留让滚动手势可达
+                        BoxWithConstraints(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = AppDimens.pagePadding)
+                        ) {
+                            val viewportHeight = maxHeight
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = viewportHeight),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    EmptyState(
+                                        // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 仅占位
+                                        icon = Icons.Rounded.Receipt,
+                                        // orderId == -1L（无单可查兜底）无失败载荷，回退通用文案
+                                        message = (getOrderDetailState as? RequestState.Error)?.getMessage(context)
+                                            ?: stringResource(R.string.error_network_fail),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        action = if (orderId != -1L) {
+                                            {
+                                                AppButton(
+                                                    small = true,
+                                                    text = stringResource(R.string.retry),
+                                                    onClick = { orderDetailViewModel.getOrderDetail(orderId) },
+                                                    variant = AppButtonVariant.SECONDARY,
+                                                )
+                                            }
+                                        } else null
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                OrderDetailContentState.Content -> {
                 // 内容列 weight(1f) + 操作条顺序排布：内容不被固定条遮挡，让位高度动态（D-OD5）
                 Column(
                     modifier = Modifier.fillMaxSize()
@@ -296,6 +347,7 @@ fun OrderDetailPage(
                 )
             }
         }
+    }
     }
 
         // 取件码弹窗（D-OD1）：柜号 + 取件码大字 + 复制，承载旧版寄存柜信息卡的全部信息。
@@ -851,6 +903,10 @@ private fun ReviewDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 20.dp)
+                    // Dialog 是独立窗口，宿主 adjustResize 对弹窗内容无效：键盘弹出时内容区
+                    // 经 imePadding 上收，多行输入框与提交按钮不被遮挡（对齐 DivAskPage
+                    // NumbersDialog 先例注释，W1 P2 同口径）
+                    .imePadding()
             ) {
                 Text(
                     text = stringResource(
@@ -927,3 +983,6 @@ private fun ReviewDialog(
         }
     }
 }
+
+/** 订单详情内容区三态：首载骨架 / 首载失败（无数据可渲染）/ 内容（对齐 PaymentPage 口径） */
+private enum class OrderDetailContentState { Loading, Error, Content }

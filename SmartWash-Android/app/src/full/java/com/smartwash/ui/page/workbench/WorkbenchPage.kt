@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -251,15 +252,30 @@ fun WorkbenchPage(
         }
     }
 
+    // 刷新会话标志（对齐 OrderPage/SubscriptionListPage）：空态页下拉时原 isRefreshing
+    // （Loading && !showSkeleton）恒 false，M3 松手过阈值内部 startRefresh() 无人
+    // endRefresh() → 转圈卡死；会话期间保持指示器，加载完成/失败即停（批次 C 实锤 P0）
+    var refreshSession by remember { mutableStateOf(false) }
+    LaunchedEffect(entriesState) {
+        if (refreshSession && entriesState !is RequestState.Loading) refreshSession = false
+    }
+
     PullToRefreshBox(
-        // 首载骨架已在表达加载态，指示器仅在已有内容时的下拉刷新出现
-        isRefreshing = entriesState is RequestState.Loading && !showSkeleton,
-        onRefresh = { workbenchViewModel.loadEntries() },
+        // 首载骨架已在表达加载态；会话期间或已有内容重拉时转圈
+        isRefreshing = refreshSession || (entriesState is RequestState.Loading && !showSkeleton),
+        onRefresh = {
+            refreshSession = true
+            workbenchViewModel.loadEntries()
+        },
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        // imePadding（批次 C 实锤 P1）：搜索框在固定头部，键盘弹出会把 weight(1f) 的搜索
+        // 结果列表下半截盖住，靠底部的条目不可见不可点。内容列整体避让 ime 后列表收缩至
+        // 键盘上方，搜索框与结果均可达；底栏在 HomePage 的 Scaffold bottomBar 层（独立测量，
+        // 不消费本页 ime），页内避让不会把底栏顶起错位
+        Column(modifier = Modifier.fillMaxSize().imePadding()) {
             // ===== 固定头部：标题区与搜索框不随内容滚动，仅搜索框下方内容区滚动 =====
             // 标题区（顶部与其他 tab 页统一取状态栏下 16；副标题底→搜索框 20 为原特色卡节奏）
             Column(
@@ -288,9 +304,10 @@ fun WorkbenchPage(
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
                 // 搜索框 + 扫一扫常驻入口（§3.7 输入控件：16sp 正文 / 48dp 行高 / 前缀图标 16dp@0.5 / radiusButton 14；
-                // 扫码为端上固定工具位：44dp 触控目标容器（§3.2 图标进容器），不参与服务端下发与搜索过滤）
+                // 扫码为端上固定工具位：44dp 触控目标容器（§3.2 图标进容器），不参与服务端下发与搜索过滤）。
+                // 横向边距由外层头部 Column 统一提供（10.A：内层重复 pagePadding 造成搜索框比标题多缩进一档）
                 Row(
-                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -389,9 +406,9 @@ fun WorkbenchPage(
                                 tools = rowTools,
                                 onToolClick = handleToolClick,
                                 // 搜索框无 bottom padding（常态下观象台卡按设计稿 P07 以 12dp 贴合其下，
-                                // 搜索框不能加 bottom），首行自担 spaceXl(24)——真实间距 24 与注释一致
-                                //（审查 #3：原 spaceXs(8) 注释声称 24 与实现不符）
-                                topSpacing = if (rowIndex == 0) AppDimens.spaceXl else 0.dp
+                                // 搜索框不能加 bottom），首行自担 spaceXl(24)；后续行距 cardSpacing(16)
+                                //（复排 B：top-only 合同下非首行 0 会让 tile 行距归零）
+                                topSpacing = if (rowIndex == 0) AppDimens.spaceXl else AppDimens.cardSpacing
                             )
                         }
                     }
@@ -435,16 +452,15 @@ fun WorkbenchPage(
                     }
 
                     itemsIndexed(blocks, key = { _, block -> block.key }) { index, block ->
-                        // 间距责任统一（2026-11-11 审查 #1/#2）：内容块 top 按前置块判定——
-                        // Section 后 = 0（标题 bottom spaceSm=12 已承担标题→内容节奏，四种块型一致）；
-                        // 连续 tile 行 = 0（行距 16 由上一行 bottom cardSpacing 承担）；
-                        // 其余前置（观象台卡 / 其他卡片块）自担 sectionSpacing=32，消除 12/44 跳变
-                        // 与观象台卡→tile 0dp 贴合叠影。无分组时「全部工具」总标题 item 打头，
-                        // bottom spaceSm=12 同 Section，首块 top 亦为 0。
+                        // 间距合同（10.A 单一承担方）：间距全部由 top 承担，块 bottom 归零——
+                        // 旧写法前块 bottom 16 + 后块 top 32 双计成 48dp 造成「空白过多」；
+                        // 普通卡块间 = cardSpacing(16)；Section 标题自带 top sectionSpacing(32)，
+                        // 标题后首块 top = 0（标题 bottom spaceSm=12 承担标题→内容节奏）；
+                        // 连续 tile 行 = 0（TileRowContent 自身 top 由同行距逻辑给出）
                         val prev = blocks.getOrNull(index - 1)
                         val afterSection = prev is WorkbenchBlock.Section
                         val afterToolsHeader = prev == null && !hasSections
-                        val blockTop = if (afterSection || afterToolsHeader) 0.dp else AppDimens.sectionSpacing
+                        val blockTop = if (afterSection || afterToolsHeader) 0.dp else AppDimens.cardSpacing
                         when (block) {
                             is WorkbenchBlock.Section -> SectionHeader(title = block.title)
                             is WorkbenchBlock.Notice -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
@@ -454,7 +470,7 @@ fun WorkbenchPage(
                                     onDismiss = { workbenchViewModel.dismissNotice(block.tool) },
                                     modifier = Modifier
                                         .padding(horizontal = AppDimens.pagePadding)
-                                        .padding(top = blockTop, bottom = AppDimens.cardSpacing)
+                                        .padding(top = blockTop)
                                 )
                             }
                             is WorkbenchBlock.Wide -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
@@ -463,17 +479,20 @@ fun WorkbenchPage(
                                     onClick = { handleToolClick(block.tool) },
                                     modifier = Modifier
                                         .padding(horizontal = AppDimens.pagePadding)
-                                        .padding(top = blockTop, bottom = AppDimens.cardSpacing)
+                                        .padding(top = blockTop)
                                 )
                             }
                             is WorkbenchBlock.TileRow -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth().then(animatedListItem())) {
                                 TileRowContent(
                                     tools = block.tools,
                                     onToolClick = handleToolClick,
-                                    topSpacing = if (afterSection || afterToolsHeader || prev is WorkbenchBlock.TileRow) {
+                                    // 复排 B P1 回归修正：top-only 合同下块 bottom 已归零，
+                                    // 连续 tile 行距由本参数提供（原「prev is TileRow → 0」是
+                                    // 旧 bottom 承担合同（bottom 16）的残留，叠加后行距归零、卡边框贴合）
+                                    topSpacing = if (afterSection || afterToolsHeader) {
                                         0.dp
                                     } else {
-                                        AppDimens.sectionSpacing
+                                        AppDimens.cardSpacing
                                     }
                                 )
                             }
@@ -483,7 +502,7 @@ fun WorkbenchPage(
                                     onToolClick = handleToolClick,
                                     modifier = Modifier
                                         .padding(horizontal = AppDimens.pagePadding)
-                                        .padding(top = blockTop, bottom = AppDimens.cardSpacing)
+                                        .padding(top = blockTop)
                                 )
                             }
                         }
@@ -503,7 +522,8 @@ fun WorkbenchPage(
                             .padding(
                                 start = AppDimens.pagePadding,
                                 end = AppDimens.pagePadding,
-                                top = AppDimens.spaceXs,
+                                // top 提到 spaceMd：前块 bottom 已归零（10.A 间距合同），8 会贴住上一卡
+                                top = AppDimens.spaceMd,
                                 bottom = AppDimens.spaceXs
                             )
                     )
@@ -830,8 +850,8 @@ private fun TileRowContent(
             .padding(
                 start = AppDimens.pagePadding,
                 end = AppDimens.pagePadding,
-                top = topSpacing,
-                bottom = AppDimens.cardSpacing
+                top = topSpacing
+                // bottom 不再承担间距（10.A 间距合同：块间距离全部由后块 top 提供）
             ),
         horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
     ) {

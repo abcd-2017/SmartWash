@@ -8,7 +8,10 @@
     <string name="coupons">优惠券</string>
     <string name="coupon">优惠券</string>
     <string name="available_coupons">可领取</string>
-    <string name="available_coupons_with_count" formatted="false">可用 %1$d</string>
+    <!-- F1 语义修正（2026-11-19 实测定案）：带计数版原为「可用 %d」，但该 tab 展示的是可领取
+         广场券目录（availableCoupons），与用户手持可用券（已领取 tab 中标「可使用」）语义错位，
+         出现「可用 0」而已领取 1 张可使用的自相矛盾；对齐无计数版「可领取」口径 -->
+    <string name="available_coupons_with_count" formatted="false">可领取 %1$d</string>
     <string name="claimed_coupons">已领取</string>
     <string name="historical_coupons">历史</string>
     <string name="claim_success">领取成功</string>

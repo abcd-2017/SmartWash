@@ -1,4 +1,4 @@
-import { EmptyState, LoadingState, PageHeader } from "../view/common/AppComponents"
+import { AppButtonVariant, EmptyState, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { ReduceMotion } from "../utils/ReduceMotion"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
@@ -27,6 +27,10 @@ struct RechargeRecord {
   @State isLoadingMore: boolean = false
   // 首屏加载态：数据返回前展示占位，避免页面空白（对齐安卓 RechargeRecordPage.kt:111-120）
   @State isLoadingFirst: boolean = true
+  // 首载失败态（对齐钱包流水页 isFirstError 范式，扫描 #3 同口径）：page 1 失败且无内容时
+  // 置位，错误态与空态严格分离——原实现失败仅 toast 清列表落入空态，伪装「暂无充值记录」；
+  // 同域钱包流水页已按 isFirstError 修复，本页属未同步的漏改点
+  @State isFirstError: boolean = false
   // LazyForEach 数据源（读取 recordList，实例稳定不可重建，避免整表重建）
   private dataSource: LazyListDataSource<RechargeRecordVo> =
     new LazyListDataSource<RechargeRecordVo>(() => this.recordList)
@@ -64,6 +68,18 @@ struct RechargeRecord {
   }
 
   /**
+   * 首载重试：回骨架拉首页，结束（成功/失败）后复位加载态（page 1 失败路径不 throw）。
+   */
+  private async retryFirstLoad(): Promise<void> {
+    this.isLoadingFirst = true
+    try {
+      await this.fetchRecordPage(1)
+    } finally {
+      this.isLoadingFirst = false
+    }
+  }
+
+  /**
    * 按页拉取充值记录。
    * @returns 本页是否有数据（供 PagingController 判断是否封底）
    */
@@ -77,7 +93,10 @@ struct RechargeRecord {
       if (res.code === HttpStatusCode.Ok && res.data !== null) {
         let records = res.data!.records
         if (records === null || records.length === 0) {
-          if (this.recordList.length > 0) {
+          if (page === 1) {
+            // 成功空 = 真空态，复位失败态（对齐钱包流水页）
+            this.isFirstError = false
+          } else if (this.recordList.length > 0) {
             logger.debug('rechargeRecord', `已到末页 page=${page} 已加载=${this.recordList.length} 条`)
             showToastSafety(resString('recharge_record_1'))
           }
@@ -87,6 +106,7 @@ struct RechargeRecord {
           // stale-while-revalidate（对齐安卓）：刷新成功才整体替换，刷新期间旧内容保持可读
           this.recordList = records
           this.dataSource.notifyReload()
+          this.isFirstError = false
           logger.debug('rechargeRecord', `充值记录首页加载成功 count=${records.length}`)
           return true
         }
@@ -100,13 +120,20 @@ struct RechargeRecord {
       logger.warn('rechargeRecord', `充值记录加载失败 page=${page} ` +
         `code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, resString('recharge_record_2'))
+      // 首载失败且无内容：置错误态（不伪装「暂无充值记录」，给重试入口）；
+      // 有旧内容时保留 stale-while-revalidate 语义，仅 toast
+      if (page === 1 && this.recordList.length === 0) {
+        this.isFirstError = true
+      }
       return false
     } catch (err) {
-      if (page === 1) {
-        this.recordList = []
-        this.dataSource.notifyReload()
-      }
+      logger.warn('rechargeRecord', `充值记录请求异常 page=${page}`)
       showToastSafety(resString('recharge_record_3'))
+      // 首载失败且无内容：置错误态而非清列表落空态；有旧内容时不清列表
+      //（原实现整体清空，破坏 stale-while-revalidate 语义）
+      if (page === 1 && this.recordList.length === 0) {
+        this.isFirstError = true
+      }
       return false
     }
   }
@@ -226,6 +253,19 @@ struct RechargeRecord {
           .transition(TransitionEffect.OPACITY)
           // 内容进场 200ms 减速（对齐安卓 enterTween(DURATION_MICRO_MS)），reduced 降级 180ms
           .animation(ReduceMotion.spec(MotionTiming.ENTER_CONTENT))
+        } else if (this.isFirstError) {
+          // 首载失败态（对齐钱包流水页错误态：EmptyState + 重试，错误态优先于空态判定，
+          // 不得伪装「暂无充值记录」）
+          EmptyState({
+            message: resString('recharge_record_2'),
+            actionText: resString('retry'),
+            actionVariant: AppButtonVariant.SECONDARY,
+            onAction: () => {
+              this.retryFirstLoad()
+            }
+          })
+          .width("100%")
+          .layoutWeight(1)
         } else {
           // 空状态（对齐安卓 EmptyState：滚筒圆母题 + 引导文案，§3.6 禁灰色 Material 图标）
           EmptyState({ message: resString('no_recharge_records') })
