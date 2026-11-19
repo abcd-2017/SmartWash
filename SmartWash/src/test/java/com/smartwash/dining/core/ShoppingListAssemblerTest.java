@@ -171,7 +171,7 @@ class ShoppingListAssemblerTest {
 
     private RecipeIngredient v2Recipe(long id, String name, List<IngredientAmount> amounts, String calories) {
         return new RecipeIngredient(id, name, List.of(), amounts,
-                calories == null ? null : new BigDecimal(calories));
+                calories == null ? null : new BigDecimal(calories), "");
     }
 
     @Test
@@ -327,7 +327,7 @@ class ShoppingListAssemblerTest {
     void assembleV2_nullEntries_safe() {
         List<RecipeIngredient> recipes = List.of(
                 new RecipeIngredient(1L, "番茄炒蛋", Arrays.asList("西红柿"),
-                        Arrays.asList(null, amount("鸡蛋", "575", "g")), null));
+                        Arrays.asList(null, amount("鸡蛋", "575", "g")), null, ""));
         List<Selection> selections = List.of(new Selection(1L, 101L, null));
 
         ShoppingList list = ShoppingListAssembler.assemble(recipes, selections);

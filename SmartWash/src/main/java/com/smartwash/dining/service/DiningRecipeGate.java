@@ -57,7 +57,7 @@ public interface DiningRecipeGate {
      */
     Map<Long, BigDecimal> getServingCalories(Collection<Long> recipeIds);
 
-    record RecipeBrief(Long id, String name, Long categoryId) {
+    record RecipeBrief(Long id, String name, Long categoryId, String coverObjectKey) {
     }
 
     /** 菜谱配料明细视图：配料名 + 数量（value/unit 可空 = 来源未给出，如「适量」） */

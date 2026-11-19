@@ -70,7 +70,7 @@ public class WebDiningRecipeController {
         return Result.ok(diningRecipeService.favorite(currentUserId(), id));
     }
 
-    @Operation(summary = "取消收藏", description = "幂等：未收藏时为无操作（data=false）")
+    @Operation(summary = "取消收藏", description = "幂等：未收藏时为无操作；data=true 表示调用成功（端上按成败消费，勿回改 false）")
     @DeleteMapping("/{id}/favorite")
     public Result<Boolean> unfavorite(
             @PathVariable("id") @Parameter(description = "菜谱ID", required = true) Long id) {

@@ -36,11 +36,12 @@ public final class ShoppingListAssembler {
      * ingredients（食材名 JSON 名列表）保留双写、老数据回落主源。提供 v1 三参构造兼容既有调用。</p>
      */
     public record RecipeIngredient(Long recipeId, String recipeName, List<String> ingredients,
-                                   List<IngredientAmount> ingredientAmounts, BigDecimal calories) {
+                                   List<IngredientAmount> ingredientAmounts, BigDecimal calories,
+                                   String coverUrl) {
 
-        /** v1 兼容构造：仅食材名列表（无配料明细、无热量），老调用方零改动 */
+        /** v1 兼容构造：仅食材名列表（无配料明细、无热量、无封面），老调用方零改动 */
         public RecipeIngredient(Long recipeId, String recipeName, List<String> ingredients) {
-            this(recipeId, recipeName, ingredients, List.of(), null);
+            this(recipeId, recipeName, ingredients, List.of(), null, "");
         }
     }
 
@@ -83,7 +84,8 @@ public final class ShoppingListAssembler {
      * 按菜视图：一道菜及其全部选菜人。recipeId 供端上从购买清单跳转菜谱详情；
      * 老快照无该字段，端上判 id 非空才可点击。
      */
-    public record RecipeView(Long recipeId, String recipeName, List<SelectorView> selectors) {
+    public record RecipeView(Long recipeId, String recipeName, List<SelectorView> selectors,
+                             String coverUrl) {
     }
 
     /** 选菜人视图：谁选的 + 个人备注 */
@@ -156,7 +158,7 @@ public final class ShoppingListAssembler {
             }
             List<SelectorView> selectors = selectorsByRecipe.get(recipeId);
             perRecipe.add(new RecipeView(recipeId, recipe.recipeName(),
-                    selectors == null ? List.of() : List.copyOf(selectors)));
+                    selectors == null ? List.of() : List.copyOf(selectors), recipe.coverUrl()));
         });
 
         // ===== v2：配料按 (名称, 归一单位) 分组求和 + 热量汇总（仅入选的菜，均按菜单编排序） =====
