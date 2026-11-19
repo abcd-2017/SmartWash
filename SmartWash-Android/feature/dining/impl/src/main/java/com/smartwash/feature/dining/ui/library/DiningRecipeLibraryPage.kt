@@ -55,6 +55,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -470,14 +471,11 @@ internal fun RecipeCoverCard(
                     )
                 }
             }
-            RecipeFavoriteButton(
-                favorited = recipe.favorited,
-                recipeName = recipe.name,
-                onClick = onToggleFavorite,
-                modifier = Modifier.align(Alignment.TopEnd),
-            )
         }
-        Column(
+        // 收藏按钮移出封面（原 48dp 白圆压住 4:3 封面大部分区域）——落文字行右侧，
+        // 与菜名同行；小号心形 + 投影，任意封面/占位底可读
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(
                 horizontal = AppDimens.spaceSm,
                 vertical = AppDimens.spaceSm,
@@ -490,14 +488,21 @@ internal fun RecipeCoverCard(
                 // 两行上限（TD16）：大字体档单行 7 字即截断，网格卡有纵向余量
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            RecipeFavoriteButton(
+                favorited = recipe.favorited,
+                recipeName = recipe.name,
+                onClick = onToggleFavorite,
             )
         }
     }
 }
 
 /**
- * 封面卡右上角收藏按钮（契约 §三.4）：48dp 热区，已收藏=实心红心、未收藏=描边灰心；
- * 圆形半透明白底保证在封面图上可读；内层 pressable 消费点击（不触发整卡跳转）。
+ * 封面卡收藏按钮（契约 §三.4）：位于卡片文字行右侧（原 48dp 白圆压封面大部分区域，D26 移位缩小）。
+ * 32dp 热区 + 14dp 心形 + 投影（去白底圆）；已收藏=实心红心、未收藏=白色描边心；
+ * 内层 pressable 消费点击（不触发整卡跳转）。
  */
 @Composable
 private fun RecipeFavoriteButton(
@@ -513,10 +518,7 @@ private fun RecipeFavoriteButton(
     }
     Box(
         modifier = modifier
-            .padding(AppDimens.spaceXs)
-            .size(48.dp)
-            .clip(CircleShape)
-            .background(AppColors.colorScheme.surface.copy(alpha = 0.88f))
+            .size(32.dp)
             .pressable(onClick = onClick, debounce = false)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
@@ -525,7 +527,9 @@ private fun RecipeFavoriteButton(
             imageVector = if (favorited) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
             contentDescription = null,
             tint = if (favorited) AppColors.colorScheme.danger else AppColors.colorScheme.textSecondary,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier
+                .size(14.dp)
+                .graphicsLayer { shadowElevation = 2.dp.toPx() },
         )
     }
 }

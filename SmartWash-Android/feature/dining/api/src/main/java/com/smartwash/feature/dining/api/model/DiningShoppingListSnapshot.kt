@@ -92,9 +92,12 @@ data class DiningShoppingListSnapshot(
         val recipeName: String? = null,
         /** 选菜人列表（按勾选顺序） */
         val selectors: List<SelectorView>? = null,
+        /** 封面直链（供购买清单行缩略图；老快照/无封面为空串 → 端上回落品牌占位图） */
+        val coverUrl: String? = null,
     ) {
         val safeRecipeId: Long get() = recipeId ?: 0L
         val safeRecipeName: String get() = recipeName.orEmpty()
+        val safeCoverUrl: String get() = coverUrl.orEmpty()
         val safeSelectors: List<SelectorView> get() = selectors.orEmpty()
     }
 
