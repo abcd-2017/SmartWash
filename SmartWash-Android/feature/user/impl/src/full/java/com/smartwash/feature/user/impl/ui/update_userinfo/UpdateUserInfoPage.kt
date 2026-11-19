@@ -145,7 +145,7 @@ fun UpdateUserInfoPage(
         if (schoolId != null && schoolId > 0L) {
             selectedSchoolId = schoolId
             query = info.schoolVo.schoolName.orEmpty()
-            studentId = info.studentId
+            studentId = info.studentId.orEmpty()
             isSchoolError = false
             isStudentIdError = false
             isInfoLocked = true
@@ -163,6 +163,11 @@ fun UpdateUserInfoPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            // IME 避让：adjustResize 不 resize（manifest 注释），输入框所在 LazyColumn 的视口
+            // 必须由根容器消费 ime insets 才能整体抬到键盘上方——否则聚焦表单卡底部的学号框时
+            // 输入内容被键盘遮挡且无法滚到键盘上方（对齐 ChangePasswordPage/ApiConfigPage 根
+            // 容器写法；insets 经此消费后底部 CTA 栏自身的 imePadding 自动落为 0，不会叠加）
+            .imePadding()
             // 规范 §7：裸 clickable 必须配套按压反馈——统一走 pressable（内置 indication=null + scale 0.97）
             .pressable(onClick = { focusManager.clearFocus() })
             .background(AppColors.colorScheme.background)

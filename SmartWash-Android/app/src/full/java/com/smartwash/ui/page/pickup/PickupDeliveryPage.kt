@@ -110,15 +110,10 @@ fun PickupDeliveryPage(
         LaunchedEffect(Unit) { pickupDeliveryViewModel.getOrderDetail(orderId) }
     }
 
-    // 详情加载失败：Toast + 复位收进 effect。原实现在组合期直接 Toast/reset，
-    // 每次重组都会重复弹 Toast，且复位后的 Toast 与 UI 状态脱节。
-    LaunchedEffect(getOrderDetailState) {
-        val detailState = getOrderDetailState
-        if (detailState is RequestState.Error) {
-            Toast.makeText(context, detailState.getMessage(context), Toast.LENGTH_SHORT).show()
-            pickupDeliveryViewModel.resetState()
-        }
-    }
+    // 详情加载失败不再「Toast + resetState」（批次 C 实锤 P0）：原 Error 即 reset→Idle，
+    // 首载失败（orderInfo==null）时三态判定落回 LOADING 分支——ERROR 分支组合一帧即被打回
+    // 骨架，重试入口一帧即逝、页面永卡加载态。改为错误驻留（对齐 PaymentPage 错误态口径）：
+    // 失败由 ERROR 分支的常驻错误卡承载具体文案，重试按钮重新发起请求
     val pickupCode = orderInfo?.pickupCode?.let { it.split(":").getOrNull(2) } ?: ""
     val lockerNumber = orderInfo?.lockersVo?.lockerNumber ?: 0
 
@@ -167,9 +162,9 @@ fun PickupDeliveryPage(
         }
     }
 
-    // 三分态：Loading → 骨架；Error → 空态 + 重试；orderInfo != null → 内容。
-    // 原实现只判 Loading，Error 被 reset 成 Idle 后落入内容分支，QR 占位框永远"加载中"；
-    // orderId == -1L 同样会伪加载。重试只挂 Error 态（详情可能已被壳层缓存，其余分支不给入口）。
+    // 三分态：Loading → 骨架；Error（驻留）→ 常驻错误卡 + 重试；orderInfo != null → 内容。
+    // orderId == -1L（无单可查路由兜底）同样落 ERROR；重试只挂 Error 态
+    // （详情可能已被壳层缓存，其余分支不给入口）。
     val detailContentState = when {
         getOrderDetailState is RequestState.Loading -> DetailLoadState.LOADING
         getOrderDetailState is RequestState.Error -> DetailLoadState.ERROR
@@ -211,7 +206,9 @@ fun PickupDeliveryPage(
 
                     DetailLoadState.ERROR -> EmptyState(
                         icon = Icons.Rounded.Warning,
-                        message = stringResource(R.string.error_network_fail),
+                        // 错误驻留后读具体失败文案；orderId == -1L（无单可查兜底）无失败载荷，回退通用文案
+                        message = (getOrderDetailState as? RequestState.Error)?.getMessage(context)
+                            ?: stringResource(R.string.error_network_fail),
                         modifier = Modifier.fillMaxSize(),
                         action = if (orderId != -1L) {
                             {

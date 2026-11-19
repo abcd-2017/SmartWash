@@ -190,14 +190,24 @@ struct Payment {
     // 金额/券变化淡入（recap §3-I2）：先隐去旧值，试算返回后淡入新值（对齐安卓 AnimatedContent fade）
     this.amountVisible = false
     if (this.orderId !== null) {
-      let res = await calculationOrder(this.orderId, coupon?.userCouponId ?? 0)
-      if (res.code === HttpStatusCode.Ok) {
-        this.orderInfo = res.data
-        this.fadeAmountIn()
-      } else {
-        logger.warn('payment', `优惠券试算失败 orderId=${this.orderId} ` +
-          `couponId=${coupon?.userCouponId ?? 0} code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, resString('payment_4'))
+      try {
+        let res = await calculationOrder(this.orderId, coupon?.userCouponId ?? 0)
+        if (res.code === HttpStatusCode.Ok) {
+          this.orderInfo = res.data
+          this.fadeAmountIn()
+        } else {
+          logger.warn('payment', `优惠券试算失败 orderId=${this.orderId} ` +
+            `couponId=${coupon?.userCouponId ?? 0} code=${res.code} message=${res.message ?? ""}`)
+          showToastSafety(res.message, resString('payment_4'))
+          this.amountVisible = true
+        }
+      } catch (err) {
+        // 试算在选券时高频发起，弱网即可命中网络异常：原实现无 catch，异常后 amountVisible
+        // 恒 false，应付金额大字与券行永久透明只剩标题（扫描 #5）。此处复位金额显示（恢复旧
+        // 金额 stale-while-revalidate）+ toast，与业务失败路径同一复位语义
+        logger.warn('payment', `优惠券试算请求异常 orderId=${this.orderId} ` +
+          `couponId=${coupon?.userCouponId ?? 0}`)
+        showToastSafety(resString('payment_2'))
         this.amountVisible = true
       }
     } else {
@@ -305,9 +315,12 @@ struct Payment {
    * Android 支付页当前仍输出错误的「满X减X」，本端以正确语义为准。
    */
   private thresholdText(coupon: UserCouponVo): string {
-    return coupon.couponVo?.threshold === 0 ?
+    // threshold 空值兜底（抽查 WARN）：null/undefined 原样插值会渲染「满undefined元可用」，
+    // 与下方 displayValue 的空值语义一致按「无门槛」处理
+    const threshold = coupon.couponVo?.threshold
+    return threshold === undefined || threshold === null || threshold === 0 ?
       resString('no_threshold') :
-      `满${coupon.couponVo?.threshold?.toFixed(0)}元可用`
+      `满${threshold.toFixed(0)}元可用`
   }
 
   /** 空值兜底展示（问题8）：null/undefined/空串 → 「—」 */
@@ -461,7 +474,7 @@ struct Payment {
               Row() {
                 Column() {
                   Row() {
-                    Text(`${coupon.couponVo?.discount?.toFixed(2)}元优惠券`)
+                    Text(`${(coupon.couponVo?.discount ?? 0).toFixed(2)}元优惠券`)
                       .fontSize(DesignFontSize.CARD_TITLE)
                       .fontWeight(DesignFontWeight.SEMI_BOLD)
                       .fontColor($r('app.color.TEXT_PRIMARY'))
@@ -477,7 +490,7 @@ struct Payment {
                   }
 
                   Row() {
-                    Text(`有效期至${coupon.expiredAt}`)
+                    Text(`有效期至${coupon.expiredAt ?? ""}`)
                       .fontSize(DesignFontSize.CAPTION)
                       .fontColor($r('app.color.TEXT_TERTIARY'))
                   }
@@ -692,7 +705,7 @@ struct Payment {
                   .margin({ left: 12 })
 
                 // 折扣两位小数（N1）+ tnum；金额符号统一半角 ¥（G7）；色 onPrimaryContainer（V6）
-                Text(this.selectCoupon === null ? resString('do_not_use') : `-¥${this.selectCoupon.couponVo?.discount?.toFixed(2)}`)
+                Text(this.selectCoupon === null ? resString('do_not_use') : `-¥${(this.selectCoupon.couponVo?.discount ?? 0).toFixed(2)}`)
                   .fontSize(DesignFontSize.CAPTION)
                   .fontColor(this.selectCoupon === null ? $r('app.color.TEXT_SECONDARY') : $r('app.color.ON_PRIMARY_CONTAINER'))
                   .fontFeature(this.selectCoupon === null ? 'normal' : DesignFontFeature.TNUM)

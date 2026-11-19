@@ -9,7 +9,7 @@ import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
 import { LazyListDataSource, PagingController } from "../utils/PagingUtil"
-import { AppConfirmDialog, EmptyState, LoadingState } from "../view/common/AppComponents"
+import { AppButtonVariant, AppConfirmDialog, EmptyState, LoadingState } from "../view/common/AppComponents"
 import { DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { ReduceMotion } from "../utils/ReduceMotion"
 import { logger } from "../utils/Logger"
@@ -61,6 +61,10 @@ struct OrderList {
   @State isLoadingMore: boolean = false
   // 首载/页码 1 加载态：骨架门控（对齐安卓 showSkeleton = Loading && list.isEmpty()）
   @State isLoading: boolean = false
+  // 首载失败态（对齐钱包流水页 isFirstError 范式，扫描 #1 同口径）：page 1 失败且当前页签
+  // 无内容时置位，错误态与空态严格分离——原实现失败仅 toast 清列表落入空态，伪装「暂无订单」
+  // 且无重试入口，用户只能退出重进
+  @State firstLoadError: boolean = false
   // 切 tab 内容淡出/淡入（对齐安卓 AnimatedContent 300/200；ArkUI 无等价组件，用透明度近似）
   @State contentOpacity: number = 1
   private fadeTimer: number = -1
@@ -119,6 +123,10 @@ struct OrderList {
     }
     const statusSnapshot = this.orderStatus
     const seqSnapshot = this.reqSeq
+    // 首载发起先乐观复位失败态：重试/切页签重拉期间不残留上一轮错误态（失败时下方再置位）
+    if (page === 1 && this.orderStatus === statusSnapshot) {
+      this.firstLoadError = false
+    }
     try {
       let res = await getOrderList({ status: this.orderStatus, page: page, size: PAGE_SIZE })
       // 已有更新序号的第 1 页响应（连续下拉/重拉）：整体丢弃，防旧数据回写
@@ -154,16 +162,22 @@ struct OrderList {
       showToastSafety(res.message, resString('order_list_2'))
       this.isLoading = false
       this.contentOpacity = 1
+      // 首载失败且当前页签无内容：置错误态（不伪装「暂无订单」，给重试入口）；
+      // 有旧内容时保留 stale-while-revalidate 语义，仅 toast
+      if (page === 1 && this.orderStatus === statusSnapshot && this.orderListLength() === 0) {
+        this.firstLoadError = true
+      }
       return false
     } catch (err) {
       logger.warn('orderList', `订单列表请求异常 page=${page} status=${statusSnapshot}`)
-      if (page === 1 && this.orderStatus === statusSnapshot) {
-        this.sections = []
-        this.syncEntries()
-      }
       showToastSafety(resString('order_list_3'))
       this.isLoading = false
       this.contentOpacity = 1
+      // 首载失败且当前页签无内容：置错误态而非清列表落空态（对齐钱包流水页 isFirstError）；
+      // 有旧内容时不清列表（原实现整体清空，破坏 stale-while-revalidate 语义）
+      if (page === 1 && this.orderStatus === statusSnapshot && this.orderListLength() === 0) {
+        this.firstLoadError = true
+      }
       return false
     }
   }
@@ -290,11 +304,18 @@ struct OrderList {
   /**
    * 刷新当前页签（下拉刷新 / 返回页面 / 取消订单后）。
    * 不清空列表：请求返回前保留旧列表（对齐安卓 stale-while-revalidate，取消后不闪空）。
+   * 下拉刷新契约（对齐工作台 loadEntries(force) 样板）：isRefreshing 全程翻转 = 触发置 true、
+   * 请求完成（成功或失败）才复位——原实现第一步即复位，指示器随触发瞬间收起，无进度表达。
+   * @param force 下拉触发时 true（指示器亮起）；onShown/取消订单后重拉为 false（不亮指示器）
    */
-  refreshOrder() {
-    this.isRefreshing = false
+  async refreshOrder(force: boolean = false) {
+    this.isRefreshing = force
     this.paging.reset()
-    this.fetchOrderPage(1, true)
+    try {
+      await this.fetchOrderPage(1, true)
+    } finally {
+      this.isRefreshing = false
+    }
   }
 
   /** 确认取消订单：成功后 toast + 当前状态全量重拉，并打标记让订单计数同步刷新 */
@@ -409,6 +430,10 @@ struct OrderList {
                 // 已加载页签：直接复用缓存（对齐安卓 VM 按状态保留列表）
                 this.sections = cached
                 this.syncEntries()
+                // 缓存命中即该页签有真实数据，复位上一页签残留的失败态
+                // （抽查 WARN：缓存路径不走 fetchOrderPage，firstLoadError 不复位会把
+                //   真空态页签错误地显示成错误态）
+                this.firstLoadError = false
                 this.clearFadeTimer()
                 this.fadeTimer = setTimeout(() => {
                   this.contentOpacity = 1
@@ -525,8 +550,24 @@ struct OrderList {
             }
             .layoutWeight(1)
             .onRefreshing(() => {
-              this.refreshOrder()
+              this.refreshOrder(true)
             })
+          } else if (this.firstLoadError) {
+            // 首载失败态（对齐钱包流水页错误态：EmptyState + 重试，错误态优先于空态判定，
+            // 不得伪装「暂无订单」；重试回骨架重拉当前页签）
+            Column() {
+              EmptyState({
+                message: resString('order_list_2'),
+                actionText: resString('retry'),
+                actionVariant: AppButtonVariant.SECONDARY,
+                onAction: () => {
+                  this.refreshOrder(true)
+                }
+              })
+            }
+            .width("100%")
+            .layoutWeight(1)
+            .justifyContent(FlexAlign.Center)
           } else {
             // 空状态（对齐安卓 EmptyState：DrumMark 48 + 引导文案）
             Column() {

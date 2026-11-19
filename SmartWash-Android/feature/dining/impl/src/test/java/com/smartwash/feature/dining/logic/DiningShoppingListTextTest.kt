@@ -69,7 +69,7 @@ class DiningShoppingListTextTest {
             "家宴",
             DiningShoppingListResult(
                 ingredients = emptyList(),
-                perRecipe = listOf(DiningRecipeShopping("白米饭", emptyList())),
+                perRecipe = listOf(DiningRecipeShopping(recipeName = "白米饭", selectors = emptyList())),
             ),
             emptySet(),
         )
