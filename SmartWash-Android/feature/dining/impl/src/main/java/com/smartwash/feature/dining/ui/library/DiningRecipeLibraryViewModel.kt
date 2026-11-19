@@ -140,7 +140,8 @@ class DiningRecipeLibraryViewModel @Inject constructor(
 
     /**
      * 收藏/取消收藏（契约 §三.4）：乐观更新封面卡状态，失败回滚并保留当前列表。
-     * 服务端返回操作后当前态，成功后以服务端态为准（幂等）。
+     * 后端返回值是「调用成败」（D25 起 unfavorite 成功也返回 true），**不是收藏态**——
+     * 成功后按本地 target 落态（旧写法把 true 当已收藏，取消后弹回红=「闪一下」，D30 修）。
      */
     fun toggleFavorite(recipeId: Long) {
         if (recipeId <= 0L) return
@@ -151,13 +152,19 @@ class DiningRecipeLibraryViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val state = if (target) {
+                val ok = if (target) {
                     diningRepository.favoriteRecipe(recipeId)
                 } else {
                     diningRepository.unfavoriteRecipe(recipeId)
                 }
-                _recipes.value = _recipes.value.map {
-                    if (it.id == recipeId) it.copy(favorited = state) else it
+                if (ok) {
+                    _recipes.value = _recipes.value.map {
+                        if (it.id == recipeId) it.copy(favorited = target) else it
+                    }
+                } else {
+                    _recipes.value = _recipes.value.map {
+                        if (it.id == recipeId) it.copy(favorited = current.favorited) else it
+                    }
                 }
             } catch (e: CancellationException) {
                 throw e
