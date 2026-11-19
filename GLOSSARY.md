@@ -1,7 +1,7 @@
 # SmartWash 术语表（GLOSSARY）
 
 > 本文件是 SmartWash 四端（Spring Boot 后端 / Android / 鸿蒙 NEXT / Web 管理后台）共享的领域词汇表。
-> 事实来源：**当前代码**（2026-11-13 同步）+ 根目录 `smart_wash.sql` + `docs/adr/`（ADR 尚未创建，正文中的 ADR 编号为引用占位）。
+> 事实来源：**当前代码**（2026-11-20 同步）+ 根目录 `smart_wash.sql` + `docs/adr/`（ADR 尚未创建，正文中的 ADR 编号为引用占位）。
 > 与 ADR 冲突时，以 ADR 的裁定为准；本表只描述「代码现在是什么」，不替代 ADR 的「为什么这样定」。
 
 ## 维护约定
@@ -575,10 +575,10 @@
 ### 9.3 清氧设计系统（清氧·日 / 清氧·夜 / 玄墨）
 
 - **代码标识**：`清氧`、`清氧·日` / `清氧·夜`、`玄墨`、`DrumMark`（滚筒圆）、`#2D9B6A`
-- **定义**：Android 用户端设计系统（`docs/design/DESIGN-SPEC.md` v0.4 + `SmartWash-Android/DESIGN.md`）。双主题「清氧·日 / 清氧·夜」共享结构令牌，只换强调层；观象台另有「玄墨」子主题（仪式文本用衬线）。签名图形为「滚筒圆」DrumMark。
+- **定义**：Android 用户端设计系统（现行规范为 `SmartWash-Android/DESIGN.md`；早期 `docs/design/` 下的 DESIGN-SPEC v0.4 / design-tokens.json / harmony-align 已佚失，令牌事实以 `common:ui` theme 源码为准）。双主题「清氧·日 / 清氧·夜」共享结构令牌，只换强调层；观象台另有「玄墨」子主题（仪式文本用衬线）。签名图形为「滚筒圆」DrumMark。
 - **四端对应物**：
-  - Android：`common:ui`（theme + components）、`SmartWash-Android/DESIGN.md`、`docs/design/design-tokens.json`。
-  - 鸿蒙：按 Android 基准对齐（`docs/design/harmony-align/`），复用色板/字阶但不引入 Android 组件。
+  - Android：`common:ui`（theme + components）、`SmartWash-Android/DESIGN.md`。
+  - 鸿蒙：按 Android 基准对齐，复用色板/字阶但不引入 Android 组件。
   - Web：**独立的「靛蓝工作台」设计系统**（`SmartWashWeb/DESIGN.md`，Indigo/Slate），**不适用清氧**。
   - 后端：无。
 - **易混淆点**：绿色 `#2D9B6A` 是红线（玄墨子主题除外）；Android 禁用动画库（Lottie/Rive/Shimmer/Vico）、禁新增 `Icons.*`、动效必须带 reduced motion 分支；Web 与 Android 是两套设计系统，不要跨端套用色板。
@@ -601,12 +601,12 @@
 ### 10.2 积分（point_account / point_ledger / point_sign_in / PointReason）
 
 - **代码标识**：`point_account`、`point_ledger`、`point_sign_in`、`PointReason`、`PointsOverviewVo`
-- **定义**：平台积分账户（余额 / 累计获得），签到得基础分（5）+ 连签奖励（7 天周期 +10），流水记账，月榜 TOP 50。
+- **定义**：平台积分账户（余额 / 累计获得），签到得基础分（5）+ 连签奖励（7 天周期 +10），流水记账，月榜 TOP 50（Redis ZSet 承载；管理端另有 `POST /admin/points/leaderboard/rebuild` 月榜重建接口，按流水对账修复 ZSet 残留）。
 - **四端对应物**：
-  - 后端：`points/`（`PointsWebController` + `PointsProperties`）。
+  - 后端：`points/`（`PointsWebController` + `PointsAdminController`（月榜重建） + `PointsProperties`）。
   - Android：`:feature:points`（`PointsServiceApi` + 签到有礼页）。
-  - 鸿蒙：`feature/points`（`PointsApi.ets` + `Points.ets`）。
-  - Web：无对应管理页（积分仅移动端消费）。
+  - 鸿蒙：无独立 feature 域——`network/api/PointsApi.ets` + `pages/Points.ets` + `utils/PointsLogic.ets`。
+  - Web：无对应管理页（积分仅移动端消费，月榜重建为运维接口）。
 - **易混淆点**：`signIn` 幂等——重复请求 `code=200` 且 `alreadySigned=true`，不重复加分；月榜手机号后端已脱敏。
 
 ### 10.3 订阅（user_subscription / user_subscription_usage_log / subscription_reminder_log）
@@ -671,7 +671,7 @@
 ### 10.10 菜谱（dining_recipe）
 
 - **代码标识**：`dining_recipe`、`DiningRecipe`、`/admin/dining/recipes`
-- **定义**：平台公共菜谱库的正片条目：菜名（不做唯一约束）、食材名数组（`ingredients` JSON 文本，服务层与结构化 `List<String>` 互转）、步骤、封面（`cover_object_key` 存 MinIO `dining/covers/` 前缀对象键，直链由 `MinioConfig.urlOf` 拼装）、来源 `source`（ADMIN=运营录入 / USER=用户新增直上架）、上下架 `status`（1=上架 0=下架）。下架语义：不再出现在用户端上架查询，历史点单订单按菜谱 ID 引用不受影响；购买清单 = 所选菜谱食材名并集去重。
+- **定义**：平台公共菜谱库的正片条目：菜名（不做唯一约束）、食材名数组（`ingredients` JSON 文本，服务层与结构化 `List<String>` 互转）、步骤、封面（`cover_object_key` 存 MinIO `dining/covers/` 前缀对象键，直链由 `MinioConfig.urlOf` 拼装；批量导入兼容 `covers/` 封面目录路径）、来源 `source`（ADMIN=运营录入 / USER=用户新增直上架）、上下架 `status`（1=上架 0=下架）。下架语义：不再出现在用户端上架查询，历史点单订单按菜谱 ID 引用不受影响；购买清单 = 所选菜谱食材名并集去重。
 - **四端对应物**：
   - 后端：`dining/`（`DiningRecipeAdminController`，ROLE_ADMIN，写接口全 @Audited；上传校验 `RecipeImageValidator`：JPG/PNG/WebP + 魔数 + 扩展名一致性 + 5MB，走统一 `FileStorageService`）。批量导入：`DiningRecipeImportService` 两阶段——`POST /import` 解析校验（xlsx/CSV，缺列/非法分类/超长给行号级错误，**预览前不落库**）→ `POST /import/confirm` 整批事务写入（任一失败行全批不落库，`@Audited` DINING_RECIPE_IMPORT）；模板由 `GET /import/template` 动态生成。
   - Android：`:feature:dining:{api,impl}`（`DiningServiceApi`：`/web/auth/dining/recipes` 上架列表/详情/新增直上架/封面上传，用户端新增 source=USER 直上架；04 号票，封面直链匿名读依赖 MinIO 白名单 `dining/covers/`）。鸿蒙：已实现（菜谱库/详情/新增三页，封面上传同契约）。契约以 `WebDiningRecipeController` 为源。
@@ -701,10 +701,10 @@
 
 ### 10.13 配料库与营养（dining_ingredient / dining_recipe_ingredient / 菜谱营养 6 列）
 
-- **代码标识**：`dining_ingredient`、`DiningIngredient`、`/admin/dining/ingredient`；关联 `dining_recipe_ingredient`（`recipe_id` + `ingredient_id` + `amount_value` + `amount_unit`，uk(recipe_id, ingredient_id)）；菜谱营养列 `dining_recipe.calories_per_100g / calories_total / protein_g / fat_g / carbs_g / sodium_mg`（全可空）。
-- **定义**：配料库 = 菜谱食材的主数据（name 唯一、category 枚举 MAIN=主料/AUX=辅料/SEASONING=调料/OTHER=其他），导入与建菜谱时按名 upsert 自动注册，Web 后台独立管理页 CRUD（写接口 @Audited，被菜谱引用时拒绝删除）。菜谱-配料关联承载克数（`575g` → value=575/unit=g；kg 归一为 g、L 归一为 ml），是**买菜清单聚合的主数据源**——`ShoppingListAssembler` v2 按（配料名, 归一单位）分组求和产出 `ingredientTotals`，快照 JSON additive 扩展（v1 `ingredientNames`/`perRecipe` 保留兼容；老菜谱无关联数据时回落 ingredients JSON 名列表）。营养双口径：`calories_per_100g`（CookLikeHOC 每 100g 营养表）与 `calories_total`（HowToCook 整份估算）；**一份热量 = calories_total ?: calories_per_100g × 250g**（250g 为份量假设常量，四端一致）；总热量/人均卡路里在购买清单快照与 Android 端 `DiningNutritionCalculator` 同口径计算，超标提醒按一餐参考值（日参考 ÷3：热量≈667kcal/钠≈667mg 等）仅 Android 端实现。
+- **代码标识**：`dining_ingredient`、`DiningIngredient`、`/admin/dining/ingredient`；别名 `dining_ingredient_alias`（`DiningIngredientAlias`，alias_name → ingredient_id 映射）；关联 `dining_recipe_ingredient`（`recipe_id` + `ingredient_id` + `amount_value` + `amount_unit`，uk(recipe_id, ingredient_id)）；菜谱营养列 `dining_recipe.calories_per_100g / calories_total / protein_g / fat_g / carbs_g / sodium_mg`（全可空）。
+- **定义**：配料库 = 菜谱食材的主数据（name 唯一、category 枚举 MAIN=主料/AUX=辅料/SEASONING=调料/OTHER=其他），导入与建菜谱时按名 upsert 自动注册，Web 后台独立管理页 CRUD（写接口 @Audited，被菜谱引用时拒绝删除）。**食材别名归一**：批量导入解析食材列时先查 `dining_ingredient_alias` 把别名归一到规范配料名（如「西红柿→番茄」）再 upsert，解决同物异写导致的购买清单配料膨胀；导入器只读别名表，别名登记由 SQL 种子/运维维护（无端上与管理页入口）。菜谱-配料关联承载克数（`575g` → value=575/unit=g；kg 归一为 g、L 归一为 ml），是**买菜清单聚合的主数据源**——`ShoppingListAssembler` v2 按（配料名, 归一单位）分组求和产出 `ingredientTotals`，快照 JSON additive 扩展（v1 `ingredientNames`/`perRecipe` 保留兼容；老菜谱无关联数据时回落 ingredients JSON 名列表）。营养双口径：`calories_per_100g`（CookLikeHOC 每 100g 营养表）与 `calories_total`（HowToCook 整份估算）；**一份热量 = calories_total ?: calories_per_100g × 250g**（250g 为份量假设常量，四端一致）；总热量/人均卡路里在购买清单快照与 Android 端 `DiningNutritionCalculator` 同口径计算，超标提醒按一餐参考值（日参考 ÷3：热量≈667kcal/钠≈667mg 等）仅 Android 端实现。
 - **四端对应物**：
-  - 后端：`dining/`（`DiningIngredientAdminController`，导入器扩展列：食材明细列表/封面对象键/营养 5 列，分类不存在自动创建）。
+  - 后端：`dining/`（`DiningIngredientAdminController` + `DiningIngredientAliasMapper`，导入器扩展列：食材明细列表/封面对象键/营养 5 列，分类不存在自动创建）。
   - Android：`:feature:dining:{api,impl}`（VO 可空营养字段 + 快照 v2 + 美团式双栏列表热量徽标 + 购买清单人数 stepper 与人均卡路里）。
   - 鸿蒙：`DiningVo.ets` 营养可空字段同步 + 热量徽标展示（超标提醒后续批次）。
   - Web：`views/dining/DiningIngredientList.vue`（配料库管理页）+ 菜谱表单营养编辑 + 导入对话框新列说明。
