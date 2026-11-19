@@ -476,16 +476,18 @@ jobs:
           echo "Deploying version ${VERSION} via ${DEPLOY_URL}..."
 
           # 1) 触发部署：webhook 立即返回 202 + deploymentId，部署在服务器后台执行
-          TRIGGER_RESPONSE="$(
-            curl --fail-with-body \
-              --silent \
+          set +e
+          TRIGGER_HTTP="$(
+            curl --silent \
               --show-error \
               --connect-timeout 15 \
-              --max-time 60 \
+              --max-time 120 \
               --request POST \
               "$DEPLOY_URL" \
               --header "Authorization: Bearer $DEPLOY_TOKEN" \
               --header "Content-Type: application/json" \
+              --write-out '%{http_code}' \
+              --output /tmp/deploy-trigger.json \
               --data @- <<EOF
           {
             "version": "${VERSION}",
@@ -496,6 +498,17 @@ jobs:
           }
           EOF
           )"
+          TRIGGER_RC=$?
+          set -e
+          echo "trigger curl_rc=${TRIGGER_RC} http_code=${TRIGGER_HTTP}"
+          echo "--- trigger response body ---"
+          cat /tmp/deploy-trigger.json 2>/dev/null || echo "(empty body)"
+          echo "--- end body ---"
+          if [[ "$TRIGGER_RC" -ne 0 ]]; then
+            echo "trigger request failed"
+            exit "$TRIGGER_RC"
+          fi
+          TRIGGER_RESPONSE="$(cat /tmp/deploy-trigger.json)"
 
           DEPLOYMENT_ID="$(printf '%s' "$TRIGGER_RESPONSE" | jq -r '.deploymentId')"
           echo "deploymentId: ${DEPLOYMENT_ID}"
