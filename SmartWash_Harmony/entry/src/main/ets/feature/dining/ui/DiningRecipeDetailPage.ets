@@ -243,10 +243,14 @@ struct DiningRecipeDetailPage {
                   ForEach(this.stepRenderLines(), (line: DiningStepRenderLine, index: number) => {
                     if (line.kind === DiningStepLineKind.MAIN) {
                       Row({ space: DesignDimens.SPACE_XS }) {
+                        // 固定 24vp 序号列 + 右对齐：「1.」与「10.」贴列右缘，数字与内容间距恒定
+                        // （无固定宽左对齐时单位数间距虚大、两位数贴死，视觉参差——D27 对齐安卓）
                         Text(`${line.no}.`)
                           .fontSize(DesignFontSize.BODY)
                           .fontColor($r('app.color.PRIMARY_DARK'))
                           .fontFeature(DesignFontFeature.TNUM)
+                          .width(24)
+                          .textAlign(TextAlign.End)
                         Text(line.text)
                           .fontSize(DesignFontSize.BODY)
                           .fontColor($r('app.color.TEXT_PRIMARY'))
