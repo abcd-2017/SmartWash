@@ -358,7 +358,7 @@
     <!-- 批量导入弹窗（下载模板 → 上传解析预览 → 确认 → 逐行结果报告） -->
     <RecipeImportDialog v-model="importDialogVisible" @success="fetchData" />
 
-    <!-- 目录导入弹窗（选父目录：根层 CSV + image/ 封面，逐条上传单行互不阻断） -->
+    <!-- 目录导入弹窗（选父目录：根层 CSV + 封面目录 image/covers，逐条上传单行互不阻断） -->
     <DiningDirectoryImportDialog v-model="directoryImportVisible" @success="fetchData" />
   </div>
 </template>
