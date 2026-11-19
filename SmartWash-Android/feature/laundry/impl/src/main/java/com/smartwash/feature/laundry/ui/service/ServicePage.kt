@@ -97,6 +97,14 @@ fun ServicePage(
                     message = (laundryState as RequestState.Error).getMessage(context),
                     onRetry = { serviceViewModel.getLaundryItem() }
                 )
+                // 空数据态：后端返回空套餐列表（或缓存降级出空表）时不再渲染只有边框阴影的
+                // 空白卡（原 ServiceListCard 对空 items 空循环）——滚筒母题 + 引导文案铺满居中；
+                // 非滚动上下文 fillMaxSize 即可垂直居中（同 ServiceErrorState）
+                laundryItems.isEmpty() -> EmptyState(
+                    icon = Icons.Rounded.LocalLaundryService,
+                    message = stringResource(R.string.service_empty),
+                    modifier = Modifier.fillMaxSize(),
+                )
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {

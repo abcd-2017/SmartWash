@@ -13,22 +13,27 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -58,6 +63,8 @@ import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppInfoDialog
 import com.smartwash.common.ui.components.LoadingState
@@ -112,16 +119,6 @@ fun LaundryPage(
         }
     }
 
-    // 原写法把 Toast / reset 放在 when 渲染分支里（组合期副作用），重组会重复弹；
-    // 收进以状态为键的 LaunchedEffect，只在状态真正到达时执行一次
-    LaunchedEffect(getLaundryItemState) {
-        val state = getLaundryItemState
-        if (state is RequestState.Error) {
-            Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
-            laundryViewModel.resetGetLaundryItemState()
-        }
-    }
-
     // P-601：预约成功导航到支付页后必须立即 reset reservationState。此前 Success 残留在
     // ViewModel（其存活于本页返回栈条目），从支付页返回时本页重新组合，本 effect 以相同
     // key（Success）重启并重放导航体 → 瞬间又被弹回支付页，且支付页 LaunchedEffect(Unit)
@@ -161,21 +158,74 @@ fun LaundryPage(
         )
     }
 
+    // 内容区三态推导（纯推导无副作用）：无缓存且请求失败 → 错误态 / 加载中 → 骨架 / 其余 → 内容
+    // （有缓存时网络失败状态保持 Idle，缓存内容照常展示）。原实现 Error 落内容分支，
+    // 页面只剩学校卡 + 空套餐列表 + 空白 CTA，失败反馈只有一闪而过的 Toast，核心预约动线不可用
+    val contentState = when (getLaundryItemState) {
+        is RequestState.Loading -> LaundryContentState.Loading
+        is RequestState.Error -> LaundryContentState.Error
+        else -> LaundryContentState.Content
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        // 骨架 ↔ 内容整屏硬切 → 交叉淡变（reduced motion 经 motionSpec 自动降级为 180ms）
+        // 骨架 ↔ 错误态 ↔ 内容交叉淡变（reduced motion 经 motionSpec 自动降级为 180ms）
         Crossfade(
-            targetState = getLaundryItemState is RequestState.Loading,
+            targetState = contentState,
             animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
             modifier = Modifier.fillMaxSize(),
             label = "laundryContent"
-        ) { isLoading ->
-        if (isLoading) {
-            LoadingState(modifier = Modifier.fillMaxSize())
-        } else {
+        ) { state ->
+        when (state) {
+        LaundryContentState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
+        LaundryContentState.Error -> {
+        Column(modifier = Modifier.fillMaxSize()) {
+            PageHeader(title = stringResource(R.string.book_locker), onBack = { navController.navigateUp() })
+            // 错误态：具体文案 + 重试 + 返回；对齐 OrderPage 错误态规范——BoxWithConstraints
+            // 在 scroll 外层取视口高，heightIn(min) 让内容垂直居中，verticalScroll 保留让手势可达。
+            // 原失败反馈仅 Toast + 立即 reset 状态，错误落内容分支且无重试入口
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = AppDimens.pagePadding)
+            ) {
+                val viewportHeight = maxHeight
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = viewportHeight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        EmptyState(
+                            // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 仅占位；
+                            // as? 安全转换：出场淡变帧内状态可能已被重试置回 Loading，硬 cast 会崩
+                            icon = Icons.Default.LocationOn,
+                            message = (getLaundryItemState as? RequestState.Error)?.getMessage(context)
+                                ?: stringResource(R.string.error_network_fail),
+                            modifier = Modifier.fillMaxWidth(),
+                            action = {
+                                AppButton(
+                                    small = true,
+                                    text = stringResource(R.string.booking_retry),
+                                    onClick = { laundryViewModel.getLaundryItem() },
+                                    variant = AppButtonVariant.SECONDARY,
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        }
+        LaundryContentState.Content ->
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(title = stringResource(R.string.book_locker), onBack = { navController.navigateUp() })
 
@@ -260,6 +310,16 @@ fun LaundryPage(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
+                // 空套餐态（复排 A P2）：空列表不再只渲染标题+空白 CTA——滚筒母题 + 引导文案
+                // （对齐 ServicePage.kt 空数据态规范；EmptyState icon 为占位参数不渲染）
+                if (laundryItems.isEmpty()) {
+                    item(key = "laundry_empty") {
+                        EmptyState(
+                            icon = Icons.Default.LocalLaundryService,
+                            message = stringResource(R.string.service_empty),
+                        )
+                    }
+                }
                 items(laundryItems, key = { it.itemId }) { item ->
                     LaundryTypeItem(
                         modifier = animatedListItem(),
@@ -422,3 +482,6 @@ private fun LaundryTypeItem(
         }
     }
 }
+
+/** 预约页内容区三态：首载骨架 / 无缓存且请求失败 / 内容（有缓存时网络失败仍按内容降级展示） */
+private enum class LaundryContentState { Loading, Error, Content }

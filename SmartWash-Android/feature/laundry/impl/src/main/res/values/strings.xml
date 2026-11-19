@@ -22,6 +22,8 @@
     <string name="change_school_contact_service">更换学校信息请联系客服！</string>
     <!-- 投递柜卡片：学校信息未就绪时的空值占位（对齐 subscription_value_none 惯例，AND-B-010） -->
     <string name="school_info_placeholder">—</string>
+    <!-- 预约页请求失败错误态的重试按钮 -->
+    <string name="booking_retry">重试</string>
 
     <!-- 错误 -->
     <string name="error_network_fail">请求失败</string>
@@ -31,6 +33,8 @@
     <string name="service_tips">服务时间 07:00 – 22:00 · 节假日正常营业</string>
     <!-- 服务页请求失败空态的重试按钮 -->
     <string name="service_retry">重试</string>
+    <!-- 服务页后端返回空套餐列表的空数据态 -->
+    <string name="service_empty">暂无服务项目</string>
     <!-- 套餐行尾「预约 ›」胶囊文案（画板行尾动作） -->
     <string name="service_row_reserve">预约 ›</string>
     <string name="service_promo_title">新用户专享</string>
