@@ -110,7 +110,7 @@ mvn clean package -DskipTests  # 打包
 
 ## 子代理
 
-`.claude/agents/smartwash-backend.md` 为合并后的后端全栈代理，覆盖开发、审查、调试、测试、架构决策与文档同步。跨端通用方法论（systematic-debugging、test-driven-development 等）可直接调用库内 skill。
+后端全栈代理统一定义在根目录 `.zcode/agents/smartwash-backend.md`，覆盖开发、审查、调试、测试、架构决策与文档同步（子项目内不保留副本）。跨端通用方法论（systematic-debugging、test-driven-development 等）可直接调用库内 skill。
 
 ## ⛔ 红线操作表（后端特化）
 

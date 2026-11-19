@@ -99,7 +99,7 @@ toast 提示统一封装兜底（`message` 为 undefined 时不要弹 "undefined
 
 **库内 skill**：编写/排查 `.ets` 文件时调用 `arkts-development`（组件与状态管理）、`arkts-syntax-assistant`（语法迁移与严格模式）、`harmonyos-app`（Stage 模型最佳实践）。
 
-`.claude/agents/` 提供统一的鸿蒙全栈代理：
+鸿蒙全栈代理统一定义在根目录 `.zcode/agents/smartwash-harmony.md`（子项目内不保留副本）：
 
 - `smartwash-harmony` — 鸿蒙端开发 / 审查 / 调试 / 测试全栈代理（V2 生命周期 / 路由 / 401 清 token / ArkTS 严格模式 / 接口对齐）
 

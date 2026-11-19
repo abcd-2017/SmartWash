@@ -59,7 +59,7 @@
 | 鸿蒙 | `.zcode/agents/smartwash-harmony.md` | 开发、审查、调试、测试、ArkTS 语法 |
 | Web | `.zcode/agents/smartwash-web.md` | 开发、审查、调试、测试、性能 |
 
-> 各子项目 `.claude/agents/` 下存在同名早期副本，内容与根目录版本已漂移；一律以根目录 `.zcode/agents/` 为准。
+> 子代理定义仅存在于根目录 `.zcode/agents/`，子项目内不保留副本。
 
 工作流统一采用 mattpocock-skills：`/implement`（内含 `/tdd`）→ `/code-review`，调试用 `/diagnosing-bugs`，架构用 `/improve-codebase-architecture`。
 

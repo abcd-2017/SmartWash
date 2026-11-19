@@ -139,7 +139,7 @@ abstract class XxxInitModule {
 
 **自动生效 skill**：`android-kotlin`、`android-jetpack-compose`（按 `.kt` 路径触发）；按需调用 `android-clean-architecture`、`mobile-android-design`。
 
-`.claude/agents/smartwash-android.md` 提供统一的 Android 全栈代理，覆盖开发、审查、调试、测试、UI/动效专项。
+Android 全栈代理统一定义在根目录 `.zcode/agents/smartwash-android.md`（覆盖开发、审查、调试、测试、UI/动效专项），子项目内不保留副本。
 
 ## 已知坑（改动前先看）
 

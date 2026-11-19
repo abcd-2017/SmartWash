@@ -68,7 +68,7 @@ npm run preview    # 预览生产构建
 
 **库内 skill**：新页面视觉设计或整体风格调整时调用 `frontend-design` 或 `design`；无 Vue 自动生效 skill。
 
-`.claude/agents/` 提供统一的 Web 全栈代理：
+Web 全栈代理统一定义在根目录 `.zcode/agents/smartwash-web.md`（子项目内不保留副本）：
 
 - `smartwash-web` — 开发 / 审查 / 调试 / TDD 一体化代理（Vue 3 + Vite + Element Plus + Pinia）
 
