@@ -486,11 +486,26 @@ fun DiningOrderCreatePage(
                                                 navController.navigate(DiningRoute.RecipeDetail(recipeId))
                                             },
                                             onToggleFavorite = viewModel::toggleFavorite,
+                                            selectedCategoryId = selectedCategoryId,
+                                            // 搜索态全宽列表：行内水平 0 + 外层 24dp 页面边距
+                                            //（对齐菜谱库搜索行，避免贴屏幕边）；分类态贴 rail 保持 6/12
+                                            rowPadding = if (isSearching) {
+                                                PaddingValues(vertical = 4.dp)
+                                            } else {
+                                                PaddingValues(start = 6.dp, end = 12.dp, top = 4.dp, bottom = 4.dp)
+                                            },
                                             // 列表区白底（用户定案「整体白」）；分类栏保持浅灰
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .fillMaxHeight()
-                                                .background(AppColors.colorScheme.surface),
+                                                .background(AppColors.colorScheme.surface)
+                                                .then(
+                                                    if (isSearching) {
+                                                        Modifier.padding(horizontal = AppDimens.pagePadding)
+                                                    } else {
+                                                        Modifier
+                                                    },
+                                                ),
                                         )
                                     }
                                 }
@@ -614,9 +629,16 @@ private fun DishList(
     onToggle: (Long) -> Unit,
     onViewRecipe: (Long) -> Unit,
     onToggleFavorite: (Long) -> Unit,
+    selectedCategoryId: Long?,
+    rowPadding: PaddingValues = PaddingValues(start = 6.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
+
+    // 分类切换回顶（D32）：列表滚动位置不随分类重置会停在上类目的偏移处
+    LaunchedEffect(selectedCategoryId) {
+        listState.scrollToItem(0)
+    }
 
     // 触底探测（对齐订单列表先例）：末两项可见即触发下一页；加载中不重入，失败保留重试入口
     val shouldLoadMore by remember {
@@ -645,6 +667,7 @@ private fun DishList(
                 onToggle = { onToggle(recipe.safeId) },
                 onViewRecipe = { onViewRecipe(recipe.safeId) },
                 onToggleFavorite = { onToggleFavorite(recipe.safeId) },
+                rowPadding = rowPadding,
                 modifier = Modifier.then(animatedListItem()),
             )
         }
@@ -689,6 +712,7 @@ private fun DishRow(
     onToggle: () -> Unit,
     onViewRecipe: () -> Unit,
     onToggleFavorite: () -> Unit,
+    rowPadding: PaddingValues = PaddingValues(start = 6.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
     modifier: Modifier = Modifier,
 ) {
     val ingredients = recipe.safeIngredients
@@ -702,8 +726,9 @@ private fun DishRow(
         modifier = modifier
             .fillMaxWidth()
             .pressable(onClick = onViewRecipe, debounce = false)
-            // 列表项左距 6dp（图片左缘）、右距 12dp（按钮右缘）；行间 4dp 纯白无线
-            .padding(start = 6.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
+            // 行内水平边距由调用方给：分类态贴 rail（左 6/右 12），搜索态水平 0
+            // （整列表外层再套 24dp 页面边距，避免贴屏幕边）
+            .padding(rowPadding),
     ) {
         Row(
             // 顶对齐（用户定案 2026-11-18：文字与图片中线重合是错的——标题顶边贴图顶）
@@ -826,20 +851,21 @@ private fun DishThumb(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .size(40.dp)
-                    // 防连击由 VM favoritingIds 守卫（pressable 无 enabled 入参）
+                    // 48dp 触控热区（与菜谱库卡按钮同档规范，ui-ux-pro-max：Android ≥48dp）；
+                    // 防连击由 VM favoritingIds 守卫
+                    .size(48.dp)
                     .pressable(onClick = onToggleFavorite, debounce = false),
-                contentAlignment = Alignment.Center,
+                // 图标贴热区左上（图片角），热区其余为纯触控区——图标居中会让心形落在图片中心
+                contentAlignment = Alignment.TopStart,
             ) {
-                // 小号心形 + 投影（去白底圆：28dp 白圆在 64dp 图上遮挡 44%，用户反馈遮挡视线）——
-                // 未收藏白心 + 2dp 阴影在任意封面/浅绿占位底上可读，已收藏保持品牌红
+                // 未收藏=深绿描边心（浅底可读；与菜谱库同色阶）/ 已收藏=品牌红实心心
                 Icon(
                     imageVector = if (favorited) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                     contentDescription = null,
-                    tint = if (favorited) AppColors.colorScheme.danger else AppColors.colorScheme.surface,
+                    tint = if (favorited) AppColors.colorScheme.danger else AppColors.colorScheme.primaryDark,
                     modifier = Modifier
-                        .size(14.dp)
-                        .graphicsLayer { shadowElevation = 2.dp.toPx() },
+                        .padding(2.dp)
+                        .size(18.dp),
                 )
             }
         }
