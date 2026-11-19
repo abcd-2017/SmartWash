@@ -19,6 +19,7 @@
 import { fileIo as fs } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { common } from '@kit.AbilityKit'
+import { BusinessError } from '@kit.BasicServicesKit'
 import { logger } from './Logger'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
@@ -105,8 +106,13 @@ export interface UploadImagePayload {
 export async function prepareUploadImage(uri: string, baseName: string,
   maxEdge: number): Promise<UploadImagePayload> {
   let source: image.ImageSource | null = null
+  let sourceFd: number = -1
   try {
-    source = image.createImageSource(uri)
+    // image.createImageSource(uri) 在部分系统/模拟器上对 file://media/ 相册 URI 返回 undefined，
+    // 统一改为 fileIo 打开 fd 后基于 fd 构建 ImageSource（相册 URI 与普通文件 URI 均可靠）
+    const opened: fs.File = fs.openSync(uri, fs.OpenMode.READ_ONLY)
+    sourceFd = opened.fd
+    source = image.createImageSource(sourceFd)
     const info: image.ImageInfo = await source.getImageInfo()
     const rawWidth: number = info.size.width
     const rawHeight: number = info.size.height
@@ -137,11 +143,17 @@ export async function prepareUploadImage(uri: string, baseName: string,
   } catch (err) {
     // 兜底：压缩失败回退原图直传，绝不阻断上传；原图流仍不可读时 passthrough 内部上抛
     // （与既有上传失败口径一致，调用方按上传失败提示）
-    const summary: string = err instanceof Error ? err.message : ''
-    logger.warn(TAG, `上传前压缩失败，兜底原图直传：${summary}`)
+    logger.warn(TAG, `上传前压缩失败，兜底原图直传：${describeError(err)}`)
     return await passthrough(uri, baseName, '')
   } finally {
     await releaseQuietly(source)
+    if (sourceFd >= 0) {
+      try {
+        fs.closeSync(sourceFd)
+      } catch (err) {
+        logger.debug(TAG, `fd 关闭失败（忽略）：${describeError(err)}`)
+      }
+    }
   }
 }
 
@@ -306,6 +318,19 @@ function parseOrientation(raw: string): number {
   return 1
 }
 
+/**
+ * 错误摘要（兜底日志用）：部分运行时异常不是 Error 实例（如模拟器 image 框架抛出的裸对象），
+ * 只带 message 字段，直接 instanceof 判断会把内容吞成空串
+ */
+function describeError(err: Error | BusinessError): string {
+  if (err instanceof Error) {
+    return err.message
+  }
+  // instanceof 为假后 ArkTS 会把 err 收窄为 never（BusinessError 是 Error 子型），断言回 BusinessError 取 message
+  const be = err as BusinessError
+  return typeof be.message === 'string' ? be.message : JSON.stringify(err)
+}
+
 /** 透明像素铺白底（JPEG 无 alpha，直接编码透明像素会变黑底，对齐安卓 flattenOnWhite） */
 async function flattenTransparency(pixelMap: image.PixelMap): Promise<void> {
   const info: image.ImageInfo = await pixelMap.getImageInfo()
@@ -325,6 +350,7 @@ async function flattenTransparency(pixelMap: image.PixelMap): Promise<void> {
   const view: Uint8Array = new Uint8Array(buffer)
   // 预乘 alpha（解码默认）：c' = c_premul + 255*(1-a)；非预乘：c' = c*a/255 + 255*(1-a)
   const premultiplied: boolean = info.alphaType !== image.AlphaType.UNPREMUL
+  let touched: number = 0
   for (let row = 0; row < height; row++) {
     const rowStart: number = row * bytesPerRow
     for (let x = 0; x < width; x++) {
@@ -333,6 +359,7 @@ async function flattenTransparency(pixelMap: image.PixelMap): Promise<void> {
       if (alpha >= 255) {
         continue
       }
+      touched++
       const fade: number = 255 - alpha
       for (let c = 0; c < 3; c++) {
         const channel: number = view[offset + c]
@@ -341,6 +368,12 @@ async function flattenTransparency(pixelMap: image.PixelMap): Promise<void> {
         view[offset + c] = blended > 255 ? 255 : blended
       }
     }
+  }
+  if (touched === 0) {
+    // 全图不透明无像素可改：跳过回写。数据未变时 writeBufferToPixels 在部分模拟器上也会抛错，
+    // 且照片类上传（JPEG 全不透明）本就走不到改动分支，跳过既规避异常又省一次像素往返
+    logger.debug(TAG, '铺白底扫描完成：全图不透明，跳过像素回写')
+    return
   }
   await pixelMap.writeBufferToPixels(buffer)
 }
