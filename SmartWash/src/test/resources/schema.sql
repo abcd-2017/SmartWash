@@ -287,6 +287,16 @@ CREATE TABLE IF NOT EXISTS dining_ingredient (
     CONSTRAINT uk_dining_ingredient_name UNIQUE (name)
 );
 
+-- 吃啥-配料别名表（同物异写归一到规范配料：精确 → 别名 → 新建）
+CREATE TABLE IF NOT EXISTS dining_ingredient_alias (
+    id            bigint NOT NULL AUTO_INCREMENT,
+    alias_name    varchar(32) NOT NULL,
+    ingredient_id bigint NOT NULL,
+    created_at    timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_dining_ingredient_alias_name UNIQUE (alias_name)
+);
+
 -- 吃啥-菜谱配料关联表（买菜清单聚合主数据源；uk 一菜一配料一行）
 CREATE TABLE IF NOT EXISTS dining_recipe_ingredient (
     id            bigint NOT NULL AUTO_INCREMENT,

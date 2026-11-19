@@ -76,6 +76,7 @@ class DiningRecipeImportControllerIntegrationTest {
         lenient().when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
 
         jdbcTemplate.update("DELETE FROM dining_recipe_ingredient");
+        jdbcTemplate.update("DELETE FROM dining_ingredient_alias");
         jdbcTemplate.update("DELETE FROM dining_ingredient");
         jdbcTemplate.update("DELETE FROM dining_recipe");
         jdbcTemplate.update("DELETE FROM dining_category");
@@ -91,6 +92,7 @@ class DiningRecipeImportControllerIntegrationTest {
     @AfterEach
     void cleanUp() {
         jdbcTemplate.update("DELETE FROM dining_recipe_ingredient");
+        jdbcTemplate.update("DELETE FROM dining_ingredient_alias");
         jdbcTemplate.update("DELETE FROM dining_ingredient");
         jdbcTemplate.update("DELETE FROM dining_recipe");
         jdbcTemplate.update("DELETE FROM dining_category");
@@ -307,6 +309,37 @@ class DiningRecipeImportControllerIntegrationTest {
                 .compareTo(new java.math.BigDecimal(recipe.path("caloriesTotal").asText())));
         assertEquals(0, java.math.BigDecimal.valueOf(7.9)
                 .compareTo(new java.math.BigDecimal(recipe.path("proteinG").asText())));
+    }
+
+    @Test
+    @DisplayName("admin 确认导入：异名食材按别名归一到规范配料（食用盐 → 盐），不重复注册")
+    void confirm_ingredientAlias_normalizedToCanonical() throws Exception {
+        // 预置规范配料「盐」+ 别名「食用盐」→盐（模拟 migration.sql 种子执行后的状态）
+        jdbcTemplate.update("INSERT INTO dining_ingredient(id, name, category) VALUES (9201, '盐', 'SEASONING')");
+        jdbcTemplate.update("INSERT INTO dining_ingredient_alias(alias_name, ingredient_id) VALUES ('食用盐', 9201)");
+        String body = """
+                {"rows":[{"rowNo":2,"name":"咸菜汤","ingredients":["食用盐"],"steps":"煮"}]}""";
+        mockMvc.perform(post(BASE + "/import/confirm")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.rolledBack").value(false))
+                .andExpect(jsonPath("$.data.successCount").value(1));
+
+        // 异名归一：只复用预置的规范配料「盐」，不新建「食用盐」
+        assertEquals(1, countRows("dining_ingredient"), "异名必须归一到规范配料，不得重复注册");
+        assertEquals(1, countRows("dining_recipe_ingredient"), "关联必须指向规范配料");
+
+        // 列表接口食材名归一为规范名（VO 契约）
+        MvcResult listResult = mockMvc.perform(get(BASE + "/all")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        String json = listResult.getResponse().getContentAsString();
+        assertTrue(json.contains("盐"), "菜谱食材名须归一为规范名");
+        assertTrue(!json.contains("食用盐"), "食材 JSON 不应保留异名");
     }
 
     @Test

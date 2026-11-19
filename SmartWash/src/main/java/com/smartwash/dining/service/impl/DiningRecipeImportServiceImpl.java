@@ -9,11 +9,13 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.smartwash.config.MinioConfig;
 import com.smartwash.dining.entity.DiningCategory;
 import com.smartwash.dining.entity.DiningIngredient;
+import com.smartwash.dining.entity.DiningIngredientAlias;
 import com.smartwash.dining.entity.DiningRecipe;
 import com.smartwash.dining.entity.DiningRecipeIngredient;
 import com.smartwash.dining.from.DiningRecipeImportConfirmFrom;
 import com.smartwash.dining.from.DiningRecipeImportConfirmFrom.IngredientDetail;
 import com.smartwash.dining.mapper.DiningCategoryMapper;
+import com.smartwash.dining.mapper.DiningIngredientAliasMapper;
 import com.smartwash.dining.mapper.DiningIngredientMapper;
 import com.smartwash.dining.mapper.DiningRecipeIngredientMapper;
 import com.smartwash.dining.mapper.DiningRecipeMapper;
@@ -101,8 +103,8 @@ import java.util.stream.Collectors;
 public class DiningRecipeImportServiceImpl implements DiningRecipeImportService {
 
 
-    /** 单次导入数据行上限（对齐关卡批量导入 500 上限惯例，防超大请求） */
-    public static final int MAX_IMPORT_ROWS = 500;
+    /** 单次导入数据行上限（合并菜谱库 697 行一次性导入；防超大请求） */
+    public static final int MAX_IMPORT_ROWS = 1000;
 
     /** 配料关联批量写入分批大小（Db.saveBatch JDBC batch flush 粒度） */
     private static final int RELATION_BATCH_SIZE = 200;
@@ -110,7 +112,7 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
     /** 配料名 IN 批查 / 新配料批量插入分批大小 */
     private static final int INGREDIENT_BATCH_SIZE = 500;
 
-    /** 上传文件大小上限（5MB，足够承载 500 行文本） */
+    /** 上传文件大小上限（5MB，足够承载 1000 行文本） */
     public static final long MAX_FILE_BYTES = 5L * 1024 * 1024;
 
     /** 模板列名（表头按名匹配、顺序无关）——既有 5 列必选，v2 新列全部可选 */
@@ -196,6 +198,10 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
     @Autowired
     private DiningIngredientMapper diningIngredientMapper;
 
+    /** 配料别名 Mapper：解析阶段把异名（食盐/食用盐）归一到规范配料名 */
+    @Autowired
+    private DiningIngredientAliasMapper diningIngredientAliasMapper;
+
     /** 菜谱配料关联 Mapper：确认阶段写聚合主数据源（购买清单 v2） */
     @Autowired
     private DiningRecipeIngredientMapper diningRecipeIngredientMapper;
@@ -241,7 +247,7 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
                             + "分类不存在将自动创建（也可先在「分类管理」页创建，留空为未分类）；"
                             + "封面链接当前版本仅校验格式不导入（封面请用「封面对象键」列或在导入后于本页单独上传）；"
                             + "同一菜谱重复导入（同唯一标识或同菜名同分类）会更新库内菜谱而非重复新增；"
-                            + "单次最多导入 500 行。");
+                            + "单次最多导入 1000 行。");
             String[] columnTips = {
                     "分类名（可空=未分类）：不存在将自动创建，也可先在「分类管理」页创建",
                     "菜名（必填）：最长 64 字，允许重名",
@@ -302,6 +308,8 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
             }
             parsedRows.add(parseTableRow(rowIndex, row, columnMap, coverKeyCache));
         }
+        // 食材名归一（精确 → 别名 → 原名）：三方 CSV 同物异写统一到规范配料名后再判重/落库
+        canonicalizeRows(parsedRows);
         // 幂等判重（只读不落库）：同批重复 source_key 行级报错；既有菜谱命中标注「更新」
         markBatchDuplicateSourceKeys(parsedRows);
         Map<String, DiningRecipe> existingBySourceKey = loadExistingBySourceKeys(sourceKeysOf(parsedRows));
@@ -361,6 +369,8 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
         for (DiningRecipeImportConfirmFrom.Row row : rows) {
             parsedRows.add(parseConfirmRow(row, coverKeyCache));
         }
+        // 确认阶段再次归一（防绕过预览直传异名；与预览口径一致）
+        canonicalizeRows(parsedRows);
         // 同批重复 source_key 为行级错误（幂等键必须一行一个，命中更新语义才成立）
         markBatchDuplicateSourceKeys(parsedRows);
 
@@ -685,8 +695,98 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
     }
 
     /**
+     * 食材名归一（契约 §3.2 ②扩展）：把每行「食材名列表 / 明细名」从原始写法映射到规范配料名
+     * （精确命中 → 别名命中 → 原名）。三方菜谱同物异写（食盐/食用盐/盐、番茄/西红柿）据此统一，
+     * 避免配料库膨胀与买菜清单同物多行；归一后同菜内重名合并（明细保留首个，若首个无数量而后者有数量则补数量）。
+     */
+    private void canonicalizeRows(List<ParsedRow> parsedRows) {
+        Set<String> names = new LinkedHashSet<>();
+        for (ParsedRow parsed : parsedRows) {
+            names.addAll(parsed.ingredients);
+            for (IngredientDetail detail : parsed.details) {
+                if (detail.getName() != null && !detail.getName().isBlank()) {
+                    names.add(detail.getName().trim());
+                }
+            }
+        }
+        if (names.isEmpty()) {
+            return;
+        }
+        Map<String, String> canonical = loadCanonicalMap(names);
+        for (ParsedRow parsed : parsedRows) {
+            parsed.ingredients = parsed.ingredients.stream()
+                    .map(n -> canonical.getOrDefault(n, n))
+                    .distinct()
+                    .collect(Collectors.toList());
+            Map<String, IngredientDetail> byName = new LinkedHashMap<>();
+            for (IngredientDetail detail : parsed.details) {
+                String raw = detail.getName();
+                if (raw == null || raw.isBlank()) {
+                    continue;
+                }
+                String name = canonical.getOrDefault(raw.trim(), raw.trim());
+                detail.setName(name);
+                IngredientDetail exist = byName.get(name);
+                if (exist == null) {
+                    byName.put(name, detail);
+                } else if (exist.getAmountValue() == null && detail.getAmountValue() != null) {
+                    byName.put(name, detail);
+                }
+            }
+            parsed.details = new ArrayList<>(byName.values());
+        }
+    }
+
+    /**
+     * 原名 → 规范名映射：先按 dining_ingredient.name 精确命中，未命中再查别名表归一到规范配料名；
+     * 均未命中返回原名（确认阶段按原名新建）。别名指向的规范配料已删除时视为未命中（按存在性过滤）。
+     */
+    private Map<String, String> loadCanonicalMap(Collection<String> names) {
+        Map<String, String> result = new LinkedHashMap<>();
+        List<String> nameList = new ArrayList<>(new LinkedHashSet<>(names));
+        for (int from = 0; from < nameList.size(); from += INGREDIENT_BATCH_SIZE) {
+            List<String> batch = nameList.subList(from, Math.min(from + INGREDIENT_BATCH_SIZE, nameList.size()));
+            List<DiningIngredient> existing = diningIngredientMapper.selectList(
+                    new LambdaQueryWrapper<DiningIngredient>().in(DiningIngredient::getName, batch));
+            for (DiningIngredient ingredient : existing) {
+                result.putIfAbsent(ingredient.getName(), ingredient.getName());
+            }
+        }
+        List<String> missing = new ArrayList<>();
+        for (String name : nameList) {
+            if (!result.containsKey(name)) {
+                missing.add(name);
+            }
+        }
+        if (!missing.isEmpty()) {
+            for (int from = 0; from < missing.size(); from += INGREDIENT_BATCH_SIZE) {
+                List<String> batch = missing.subList(from, Math.min(from + INGREDIENT_BATCH_SIZE, missing.size()));
+                List<DiningIngredientAlias> aliases = diningIngredientAliasMapper.selectList(
+                        new LambdaQueryWrapper<DiningIngredientAlias>().in(DiningIngredientAlias::getAliasName, batch));
+                if (aliases.isEmpty()) {
+                    continue;
+                }
+                List<Long> ids = aliases.stream().map(DiningIngredientAlias::getIngredientId).distinct().collect(Collectors.toList());
+                List<DiningIngredient> targets = diningIngredientMapper.selectBatchIds(ids);
+                Map<Long, String> nameById = targets.stream()
+                        .collect(Collectors.toMap(DiningIngredient::getId, DiningIngredient::getName, (a, b) -> a));
+                for (DiningIngredientAlias alias : aliases) {
+                    String canonical = nameById.get(alias.getIngredientId());
+                    if (canonical != null) {
+                        result.putIfAbsent(alias.getAliasName(), canonical);
+                    }
+                }
+            }
+        }
+        for (String name : nameList) {
+            result.putIfAbsent(name, name);
+        }
+        return result;
+    }
+
+    /**
      * 配料按名 upsert（契约 §3.2 ②）：已存在直接复用（不覆盖——避免重导入冲掉后台人工修正的分类），
-     * 不存在按启发规则建新。D23 性能加固：原逐名 selectOne+insert（500 行菜谱 ≈ 数千次 SQL）改为
+     * 不存在按启发规则建新。D23 性能加固：原逐名 selectOne+insert（1000 行菜谱 ≈ 数千次 SQL）改为
      * 批内去重后一次 IN 批查 + 未命中新配料 Db.saveBatch 批插；批量撞 uk_name（并发导入同配料）
      * 降级逐个 upsert 保留原幂等语义。
      */
