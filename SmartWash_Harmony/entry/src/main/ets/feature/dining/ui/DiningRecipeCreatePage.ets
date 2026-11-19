@@ -4,12 +4,12 @@
 // / 封面（PhotoPicker 选择 → multipart 上传拿对象键 → 随新增回填）。source=USER 直上架。
 // 校验两层：端上 DiningLogic.validateDiningRecipeForm 先拦，后端兜底。
 
-import { fileIo as fs } from '@kit.CoreFileKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { RouteNames } from '../../../constant/RouteNames'
 import { DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
 import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { BizCode } from '../../../network/HttpUtil'
+import { DEFAULT_MAX_EDGE, UploadImagePayload, cleanupUploadTemp, prepareUploadImage } from '../../../utils/ImageCompress'
 import {
   AddDiningRecipeForm,
   DiningCategoryVo,
@@ -27,9 +27,6 @@ import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
 const TAG: string = 'diningRecipeCreate'
-
-/** 封面上限（与后端 RecipeImageValidator 一致：5MB） */
-const COVER_MAX_BYTES: number = 5 * 1024 * 1024
 
 /** 食材输入行 key 生成基准（动态行稳定 key） */
 let ingredientKeySeed: number = 0
@@ -404,7 +401,7 @@ struct DiningRecipeCreatePage {
       row.key === key ? { key: row.key, value: value } : row)
   }
 
-  /** 选封面 → 读 ArrayBuffer → multipart 上传拿对象键（对齐头像上传先例） */
+  /** 选封面 → 上传前本地压缩 → multipart 上传拿对象键（对齐安卓 DiningRecipeCreateViewModel.uploadCover） */
   private async pickAndUploadCover(): Promise<void> {
     if (this.coverUploading) {
       return
@@ -427,27 +424,17 @@ struct DiningRecipeCreatePage {
       return
     }
     this.coverUploading = true
+    let payload: UploadImagePayload | null = null
     try {
-      const stat = fs.statSync(uri)
-      if (stat.size > COVER_MAX_BYTES) {
-        showToastSafety(DiningText.dining_create_cover_failed)
-        this.coverUploading = false
-        return
-      }
-      const file = fs.openSync(uri, fs.OpenMode.READ_ONLY)
-      let buffer: ArrayBuffer
-      try {
-        buffer = new ArrayBuffer(stat.size)
-        fs.readSync(file.fd, buffer)
-      } finally {
-        fs.closeSync(file)
-      }
-      const fileName = `cover_${Date.now()}.jpg`
-      const res = await uploadDiningCover(fileName, 'image/jpeg', buffer)
+      // 上传前本地压缩（最长边 1280 / JPEG 质量 80；足够小直通原图保留原格式与扩展名）；
+      // 压缩任一环节失败工具内部兜底原图直传，绝不阻断上传链路。原 5MB 端上前置校验随压缩
+      // 移除（对齐安卓）：大图经压缩后远低于上限，5MB 校验由后端 RecipeImageValidator 兜底
+      payload = await prepareUploadImage(uri, 'cover', DEFAULT_MAX_EDGE)
+      const res = await uploadDiningCover(payload.fileName, payload.mimeType, payload.buffer)
       if (res.code === BizCode.SUCCESS && res.data !== null && res.data.length > 0) {
         this.coverObjectKey = res.data
         this.coverPreviewUri = uri
-        logger.info(TAG, `封面上传成功 objectKey=${res.data}`)
+        logger.info(TAG, `封面上传成功 objectKey=${res.data} file=${payload.fileName} compressed=${payload.compressed} size=${payload.buffer.byteLength}B`)
       } else {
         logger.warn(TAG, `封面上传被拒绝 code=${res.code} message=${res.message ?? ''}`)
         showToastSafety(res.message, DiningText.dining_create_cover_failed)
@@ -455,8 +442,11 @@ struct DiningRecipeCreatePage {
     } catch (err) {
       logger.error(TAG, '封面上传流程异常', err instanceof Error ? err.message : '')
       showToastSafety('', DiningText.dining_create_cover_failed)
+    } finally {
+      // 上传完成后清理临时压缩文件（失败路径同样清理，重选图时重新生成）
+      cleanupUploadTemp(payload === null ? '' : payload.tempPath)
+      this.coverUploading = false
     }
-    this.coverUploading = false
   }
 
   /** 提交：端上校验先行 → 新增（source=USER 直上架由后端写入） */

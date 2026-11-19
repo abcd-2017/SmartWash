@@ -45,6 +45,7 @@ import { LoadingFooter } from '../../../../view/LoadingFooter'
 import { logger } from '../../../../utils/Logger'
 import { getStringParam, pathStack } from '../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../utils/ToastUtil'
+import { DEFAULT_MAX_EDGE, UploadImagePayload, cleanupUploadTemp, prepareUploadImage, resolveImageBaseName } from '../../../../utils/ImageCompress'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../../view/common/ThemeRefresh'
 import { resColor } from '../../../../utils/ResourceColor'
@@ -399,25 +400,44 @@ struct DeliverySessionPage {
     }
   }
 
-  /** 选图片（相册选择器）→ 读为 ArrayBuffer → multipart 发布 */
+  /** 选图片（相册选择器）→ 上传前本地压缩 → multipart 发布 */
   async pickImage(): Promise<void> {
     if (this.sending) {
       return
     }
+    let uri = ''
     try {
       const photoPicker = new photoAccessHelper.PhotoViewPicker()
       const result = await photoPicker.select({
         MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
         maxSelectNumber: 1
       })
-      const uri = result.photoUris.length > 0 ? result.photoUris[0] : ''
-      if (uri.length === 0) {
-        return
-      }
-      await this.publishPicked(uri, DeliveryItemKind.IMAGE, `delivery_image_${Date.now()}.jpg`, 'image/jpeg')
+      uri = result.photoUris.length > 0 ? result.photoUris[0] : ''
     } catch (err) {
       logger.error(TAG, '选图片流程异常', err instanceof Error ? err.message : '')
       this.sendError = DeliveryText.toolbox_delivery_error_send
+      return
+    }
+    if (uri.length === 0) {
+      return
+    }
+    let payload: UploadImagePayload | null = null
+    try {
+      // 上传前本地压缩（最长边 1280 / JPEG 质量 80；足够小直通原图保留原格式与扩展名）；
+      // 压缩任一环节失败工具内部兜底原图直传，绝不阻断上传链路（对齐安卓 publishImageCompressed）。
+      // multipart 文件名保留原显示名（压缩产物换 .jpg / 直通保留原扩展名，满足后端魔数+扩展名一致性校验）
+      payload = await prepareUploadImage(uri, resolveImageBaseName(uri), DEFAULT_MAX_EDGE)
+      if (payload.buffer.byteLength > DELIVERY_MAX_FILE_BYTES) {
+        this.sendError = DeliveryText.toolbox_delivery_error_file_too_large
+        return
+      }
+      await this.publishBuffer(DeliveryItemKind.IMAGE, payload.fileName, payload.mimeType, payload.buffer)
+    } catch (err) {
+      logger.error(TAG, '图片发布流程异常', err instanceof Error ? err.message : '')
+      this.sendError = DeliveryText.toolbox_delivery_error_send
+    } finally {
+      // 上传完成后清理临时压缩文件（失败路径同样清理，重发时重新生成）
+      cleanupUploadTemp(payload === null ? '' : payload.tempPath)
     }
   }
 
@@ -443,7 +463,7 @@ struct DeliverySessionPage {
     }
   }
 
-  /** 读取所选文件并发布（单文件 20MB 上限端侧前置校验） */
+  /** 读取所选文件并发布（单文件 20MB 上限端侧前置校验；文件条目不走压缩，原样直传对齐安卓） */
   private async publishPicked(uri: string, kind: DeliveryItemKind, fileName: string,
     mimeType: string): Promise<void> {
     let buffer: ArrayBuffer | null = null
@@ -468,6 +488,12 @@ struct DeliverySessionPage {
     if (buffer === null) {
       return
     }
+    await this.publishBuffer(kind, fileName, mimeType, buffer)
+  }
+
+  /** 以内存字节发布条目（sending 防重 + 结果处理；图片压缩产物与文件直传共用） */
+  private async publishBuffer(kind: DeliveryItemKind, fileName: string, mimeType: string,
+    buffer: ArrayBuffer): Promise<void> {
     this.sendError = ''
     this.sending = true
     try {
