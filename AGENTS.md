@@ -11,7 +11,7 @@
 | 目录 | 说明 | 技术栈 | 端别文档 |
 |------|------|--------|---------|
 | `SmartWash/` | Spring Boot 3.4 后端（MyBatis-Plus + MySQL + Redis + JWT） | Java 17 / Maven | [硬规则](SmartWash/CLAUDE.md) · [工程指南](SmartWash/AGENTS.md) |
-| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：app 壳 + 5 common + 16 个 feature 域，api/impl 拆分后共 23 个子模块） | [硬规则](SmartWash-Android/CLAUDE.md) · [工程指南](SmartWash-Android/AGENTS.md) |
+| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：1 app 壳 + 5 common + 31 个 feature 子模块，16 个业务域中 update 为 api/core/impl 三段、其余 api/impl 拆分，共 37 个 Gradle 模块） | [硬规则](SmartWash-Android/CLAUDE.md) · [工程指南](SmartWash-Android/AGENTS.md) |
 | `SmartWash_Harmony/` | 鸿蒙 NEXT 用户端 | ArkTS / ArkUI / Stage 模型 | [硬规则](SmartWash_Harmony/CLAUDE.md) · [工程指南](SmartWash_Harmony/AGENTS.md) |
 | `SmartWashWeb/` | Web 管理后台 | Vue 3 / Vite / Element Plus / Pinia | [硬规则](SmartWashWeb/CLAUDE.md) · [工程指南](SmartWashWeb/AGENTS.md) |
 | `smart_wash.sql` | MySQL 建表 + 种子数据（结构变更以本文件为准） | — | — |
@@ -41,7 +41,7 @@
 
 ## 环境红线
 
-- **生产禁明文 HTTP**：鸿蒙端 BASE_URL 当前硬编码演示服务器地址（明文 HTTP），Web 端生产地址已改为构建时环境变量注入（不再写死 IP）。改动网络层时必须按环境注入（dev 内网 / prod HTTPS），禁止新增硬编码地址。Android 端 `usesCleartextTraffic=true` 为 demo 全局放行，发版前须按生产地址改为 HTTPS 并移除该开关。
+- **生产禁明文 HTTP**：三端 BASE_URL 均已构建期注入（Android `BuildConfig` / 鸿蒙 `BuildProfile` / Web Vite `define`），源码零硬编码地址，release 未注入即空串不可用。改动网络层时必须按环境注入（dev 内网 / prod HTTPS），禁止新增硬编码地址。Android 端 `usesCleartextTraffic=true` 为 demo 全局放行，发版前须按生产地址改为 HTTPS 并移除该开关。
 - **密钥不入库**：JWT_SECRET、DB 密码、高德 key/securityJsCode、支付密钥、`AUDIT_HMAC_SECRET`、`DIV_MASTER_KEY` 一律走环境变量或本地未跟踪配置文件；发现入库立即轮换。
 - **横切红线**：管理端写接口必须加 `@Audited`（HMAC 审计链）；公开高频接口按需加 `@RateLimit`（Redis Lua 分布式限流）。
 - 后端地址等环境差异见各子项目规则文档的「构建与运行」。
