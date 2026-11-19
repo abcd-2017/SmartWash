@@ -26,4 +26,13 @@
         where user_id = #{userId}
         order by created_at desc, ledger_id desc
     </select>
+
+    <!-- 月度积分榜聚合（月榜 ZSet 重建用）：ref_date 属当月，按 user 汇总 delta；
+         DATE_FORMAT 走 ref_date 列（date 类型），聚合结果供管理端重放 ZSet -->
+    <select id="selectMonthSum" resultType="java.util.Map">
+        select user_id as userId, sum(delta) as total
+        from point_ledger
+        where date_format(ref_date, '%Y%m') = #{month}
+        group by user_id
+    </select>
 </mapper>

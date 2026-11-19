@@ -433,6 +433,42 @@ public class PointsServiceImpl implements IPointsService {
     }
 
     /**
+     * 重建月榜 ZSet（B6A）：以 point_ledger 当月聚合为事实源，整体重置 Redis 月榜。
+     * 用于 ZSet 残留/漂移的一次性对账（如测试残留导致排行榜分数与账户不符）。
+     * 非事务写（ZSet 仅展示缓存），失败抛出由管理端呈现；重建后 TTL 重置。
+     */
+    @Override
+    public int rebuildMonthLeaderboard(String month) {
+        YearMonth ym = (month == null || month.isBlank())
+                ? YearMonth.now()
+                : YearMonth.parse(month, MONTH_FMT);
+        String key = LEADERBOARD_KEY_PREFIX + ym.format(MONTH_FMT);
+
+        List<Map<String, Object>> rows = ledgerMapper.selectMonthSum(ym.format(MONTH_FMT));
+        // 先删后建：避免残留成员（ledger 已无分的用户）继续挂榜
+        redisTemplate.delete(key);
+        int count = 0;
+        for (Map<String, Object> row : rows) {
+            Object userIdObj = row.get("userId");
+            Object totalObj = row.get("total");
+            if (userIdObj == null || totalObj == null) {
+                continue;
+            }
+            try {
+                long userId = Long.parseLong(String.valueOf(userIdObj));
+                double total = Double.parseDouble(String.valueOf(totalObj));
+                redisTemplate.opsForZSet().add(key, String.valueOf(userId), total);
+                count++;
+            } catch (Exception e) {
+                log.warn("月榜重建单条跳过, row: {}", row, e);
+            }
+        }
+        redisTemplate.expire(key, LEADERBOARD_TTL);
+        log.info("积分月榜重建完成, month: {}, key: {}, entries: {}", ym, key, count);
+        return count;
+    }
+
+    /**
      * 手机号脱敏，对齐 LoginController.maskPhone 同一正则口径
      */
     private String maskPhone(String phone) {

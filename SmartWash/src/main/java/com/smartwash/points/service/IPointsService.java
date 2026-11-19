@@ -34,4 +34,13 @@ public interface IPointsService {
      * 积分月榜（当前仅 scope=month）：Redis ZSet TOP N（脱敏）+ 我的排名。
      */
     LeaderboardVo getMonthLeaderboard(String scope, Long userId);
+
+    /**
+     * 重建月榜 ZSet（B6A）：以 point_ledger 当月聚合为事实源，重置 Redis 月榜。
+     * 用于 ZSet 残留/漂移的一次性对账（如测试数据残留导致排行榜与账户不一致）。
+     *
+     * @param month yyyyMM（空 = 当月）
+     * @return 重建入榜人数
+     */
+    int rebuildMonthLeaderboard(String month);
 }
