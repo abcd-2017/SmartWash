@@ -84,3 +84,8 @@ SmartWash-Android/.claude/alignment/
 
 # Kotlin 编译会话缓存
 .kotlin/
+
+# === 吃啥导入材料 ===
+# covers/ 为本地图片备份（已直传 MinIO），不入库；
+# recipes_merged.csv 是可重复导入/可版本化的数据源，纳入 Git 管理。
+/static/dining/covers/
