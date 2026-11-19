@@ -68,10 +68,12 @@ public class DiningRecipeGateImpl implements DiningRecipeGate {
         }
         List<DiningRecipe> recipes = recipeMapper.selectList(new LambdaQueryWrapper<DiningRecipe>()
                 .in(DiningRecipe::getId, distinct)
-                .select(DiningRecipe::getId, DiningRecipe::getName, DiningRecipe::getCategoryId));
+                .select(DiningRecipe::getId, DiningRecipe::getName, DiningRecipe::getCategoryId,
+                        DiningRecipe::getCoverObjectKey));
         Map<Long, RecipeBrief> result = new LinkedHashMap<>();
         for (DiningRecipe recipe : recipes) {
-            result.put(recipe.getId(), new RecipeBrief(recipe.getId(), recipe.getName(), recipe.getCategoryId()));
+            result.put(recipe.getId(), new RecipeBrief(recipe.getId(), recipe.getName(),
+                    recipe.getCategoryId(), recipe.getCoverObjectKey()));
         }
         return result;
     }

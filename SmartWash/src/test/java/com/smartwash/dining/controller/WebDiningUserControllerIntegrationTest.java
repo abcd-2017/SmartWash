@@ -203,12 +203,13 @@ class WebDiningUserControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.records[0].id").value(201))
                 .andExpect(jsonPath("$.data.records[0].favorited").value(true));
 
+        // 取消收藏返回 true（调用成功，含幂等无操作）——端上按成败消费，false 会被误判失败回滚（D25）
         mockMvc.perform(delete(RECIPES + "/201/favorite").header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").value(false));
+                .andExpect(jsonPath("$.data").value(true));
         mockMvc.perform(delete(RECIPES + "/201/favorite").header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").value(false));
+                .andExpect(jsonPath("$.data").value(true));
         mockMvc.perform(get(RECIPES + "/favorites").header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(0));

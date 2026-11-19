@@ -447,11 +447,11 @@ class DiningRecipeUserServiceImplTest {
     }
 
     @Test
-    @DisplayName("取消收藏：按 user_id + recipe_id 删除，幂等返回 false")
-    void unfavorite_deletesAndReturnsFalse() {
+    @DisplayName("取消收藏：按 user_id + recipe_id 删除，幂等返回 true（端上按成败消费）")
+    void unfavorite_deletesAndReturnsTrue() {
         when(favoriteMapper.delete(any(Wrapper.class))).thenReturn(1);
 
-        assertFalse(service.unfavorite(9102L, 5L));
+        assertTrue(service.unfavorite(9102L, 5L));
 
         verify(favoriteMapper).delete(any(Wrapper.class));
     }
