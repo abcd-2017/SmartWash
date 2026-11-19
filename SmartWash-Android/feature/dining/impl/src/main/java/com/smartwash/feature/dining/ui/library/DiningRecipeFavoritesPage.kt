@@ -129,6 +129,7 @@ fun DiningRecipeFavoritesPage(
                                 }
                             },
                             onToggleFavorite = viewModel::unfavorite,
+                            selectedCategoryId = null,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
