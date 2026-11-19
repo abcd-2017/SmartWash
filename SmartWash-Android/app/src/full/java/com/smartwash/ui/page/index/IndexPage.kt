@@ -102,6 +102,18 @@ fun IndexPage(
     val orderList by indexViewModel.orderList.collectAsState()
     val isRefreshing by indexViewModel.refreshing.collectAsState()
 
+    // 刷新会话标志（对齐 OrderPage/SubscriptionListPage）：错误态下拉走 getInfoData 转完整加载，
+    // 该路径只流转 userInfoStatus、不翻转 VM refreshing → isRefreshing 恒 false，M3 松手过阈值
+    // 内部 startRefresh() 后无人 endRefresh() → 指示器永卡（批次 C 实锤 P0）。会话期间保持
+    // 指示器，两条加载路径（userInfoStatus 流转 / VM refreshing 翻转）都空闲时才复位，
+    // 避免会话中途被另一条路径的空闲态误停
+    var refreshSession by remember { mutableStateOf(false) }
+    LaunchedEffect(userInfoStatus, isRefreshing) {
+        if (refreshSession && userInfoStatus !is RequestState.Loading && !isRefreshing) {
+            refreshSession = false
+        }
+    }
+
     // 每次 settled 落到本 tab 时刷新（原为监听 tab 栈 currentBackStackEntry，等价迁移）
     LaunchedEffect(isActive) {
         if (isActive) indexViewModel.getInfoData()
@@ -157,10 +169,14 @@ fun IndexPage(
                 // 下拉刷新（P-603/A3）：走 refreshData——有数据时强刷用户信息与进行中订单
                 // （refreshUserInfo 强制走网络，不读 UserApiImpl 缓存——下拉语义就是「拿服务端
                 // 最新值」），无数据（首刷失败）时转完整加载，失败状态下拉可重新发起请求；
-                // 指示器进度由 VM 独立 refreshing 状态承载（Loading 语义已被骨架屏占用）
+                // 指示器由「刷新会话标志 + VM 独立 refreshing 状态」共同承载（Loading 语义已被
+                // 骨架屏占用），错误态下拉也能全程翻转复位（批次 C 实锤 P0 修复）
                 PullToRefreshBox(
-                    isRefreshing = isRefreshing,
-                    onRefresh = { indexViewModel.refreshData() },
+                    isRefreshing = refreshSession || isRefreshing,
+                    onRefresh = {
+                        refreshSession = true
+                        indexViewModel.refreshData()
+                    },
                     modifier = Modifier.fillMaxSize()
                 ) {
                     if (showError) {
