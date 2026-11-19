@@ -109,11 +109,14 @@ object ImageCompressUtil {
             val decoded = resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
                 ?: error("图片解码失败 uri=$uri")
             val rotated = rotateForExif(decoded, orientation)
-            val scaled = if (maxOf(rotated.width, rotated.height) > maxEdge) {
+            // 缩放基准必须用降采样后位图自身的最长边：decoded 的 longestEdge 是原图尺寸，
+            // 与 inSampleSize 后的实际尺寸差 sample 倍，混用会把产物再缩一个采样倍
+            val rotatedLongest = maxOf(rotated.width, rotated.height)
+            val scaled = if (rotatedLongest > maxEdge) {
                 Bitmap.createScaledBitmap(
                     rotated,
-                    scaledSide(rotated.width, longestEdge, maxEdge),
-                    scaledSide(rotated.height, longestEdge, maxEdge),
+                    scaledSide(rotated.width, rotatedLongest, maxEdge),
+                    scaledSide(rotated.height, rotatedLongest, maxEdge),
                     true,
                 )
             } else {
