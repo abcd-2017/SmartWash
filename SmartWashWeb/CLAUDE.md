@@ -18,9 +18,9 @@
 SmartWash 智能洗衣管理系统的 Vue 3 后台管理端。管理主航道之外，还承载平台实验性模块的运营台：
 
 - **洗衣主航道**：学校、学生、洗护套餐、寄存柜、订单、支付记录、充值记录、优惠券、用户优惠券、角色、管理员账号、验证码查询。
-- **平台模块**：站内信（消息中心）、订阅管理、操作审计、游戏库、工作台入口、跳转路由字典、短链管理。
+- **平台模块**：站内信（消息中心）、订阅管理、操作审计、游戏库（含游戏数据平台）、工作台入口、跳转路由字典、短链管理（含设备投递 / 私密文本 / 物品标签 / 柜码）、吃啥（菜谱分类 / 菜谱库 / 配料库）。
 - **观象台**：Prompt / 语料 / 审计复审 / 用量看板 / 拦截日志 / 模型目录 / 平台设置。
-- **公开页**：设备投递对端页（`/d/:code?`，免登录，交付箱业务的对端承载）。
+- **公开页**：设备投递对端页（`/d/:code?`）、私密文本揭示页（`/s/:code?`）、物品标签寻物页（`/tag/:code`）、柜码解析页——均免登录，码即凭证。
 
 ## 常用命令
 
@@ -31,7 +31,7 @@ npm run build      # 生产构建，输出到 dist/
 npm run preview    # 预览生产构建
 ```
 
-- **测试**：vitest + happy-dom + @vue/test-utils 已配置，`package.json` 含 `test`（`vitest run`）与 `lint`/`lint:fix`。当前生效 3 个用例（`http.test.js`、`LockerList.test.js`、`toolbox.test.js`）；另有 2 个审计相关用例以 `.bak-feat-audit-log` 后缀禁用（不匹配 vitest 默认 include），需要时改后缀启用。
+- **测试**：vitest + happy-dom + @vue/test-utils 已配置，`package.json` 含 `test`（`vitest run`）与 `lint`/`lint:fix`。当前生效 13 个测试文件（`src/__tests__/`：http / LockerList / toolbox / secret / useTableList / Sidebar / dining 与游戏目录导入解析 / 配料库 / 批量上传 / 关卡导入解析等）；另有 2 个审计相关用例以 `.bak-feat-audit-log` 后缀禁用（不匹配 vitest 默认 include），需要时改后缀启用。
 - **环境变量**：生产 API 地址已改为构建时环境变量 `SMART_WASH_BASE_URL` 注入（不再写死 IP）；地图组件依赖 `VITE_AMAP_KEY` 与 `VITE_AMAP_SECURITY_CODE`，**两者已在 `.env.development`/`.env.production` 声明**（`VITE_AMAP_KEY` 当前为空需配置，`VITE_AMAP_SECURITY_CODE` 已迁移自 `index.html` 内联，旧值已泄露待轮换）。
 
 ## 技术架构
@@ -42,11 +42,11 @@ npm run preview    # 预览生产构建
 
 1. **入口** — `src/main.js`：注册 Element Plus、Pinia、Router，`$dayjs` 全局属性。
 2. **HTTP 层** — `src/utils/http.js`：默认导出 `http`（管理端实例）+ 命名导出 `envelopeHttp`（公开信封实例，供设备投递页）。请求拦截器从 `useAuthStore` 取 token 加 `Bearer` 头；响应拦截器解包 `response.data`，`code !== 200` 视为错误。**401 已统一为单飞续签**：`/auth/refresh` 换新双 token → 落盘 store → 重试原请求一次，仍 401 则清态跳 `/login?redirect=`；1.5s 去重窗防并发堆叠。新代码不要使用 `window.location.reload()`，也不要另写一套 401 处理。
-3. **API 层** — `src/api/*.js`：按领域拆分，共 23 个模块：order / user / school / laundry / locker / payment / recharge / coupon / role / adminUser / auth / dashboard / userCoupon / divination / game / toolbox / workbench / deeplink / notice / subscription / audit / captcha / delivery。统一 `request({url, method, params})` 模式，`code === 200` 时返回 `res.data`，失败抛 `Error(res.message)`。例外：`delivery.js` 用 `envelopeHttp`（公开端返回完整信封，业务码 200/403/404/409/413 由页面分支）。
+3. **API 层** — `src/api/*.js`：按领域拆分，共 30 个模块：order / user / school / laundry / locker / payment / recharge / coupon / role / adminUser / auth / dashboard / userCoupon / divination / game / gameData / toolbox / workbench / deeplink / notice / subscription / audit / captcha / delivery / config / dining / secret / assetTag / lockerTag / loginLog。统一 `request({url, method, params})` 模式，`code === 200` 时返回 `res.data`，失败抛 `Error(res.message)`。例外：`delivery.js` / `secret.js` 用 `envelopeHttp`（公开端返回完整信封，业务码 403/404/409/410/413 由页面分支）。
 4. **状态管理** — `src/stores/auth.js`：Pinia `useAuthStore` 统一管理 token / refreshToken / role（初始化从 localStorage 恢复；`setTokens` 供 401 续签后更新），路由守卫与 HTTP 拦截器统一从 store 读取登录态。不要新增裸 localStorage 读写。
 5. **路由** — `src/router/index.js`：管理页面均为 `Layout` 子路由（路径 `/`），`/login` 与 `/d/:code?`（设备投递对端页）免认证；**所有页面已使用 `() => import(...)` 懒加载**（含 404 兜底页 `NotFound.vue`，通配路由 `/:pathMatch(.*)*`）。`beforeEach` 守卫从 `useAuthStore` 检查 token/角色；侧边栏按 `MENU_GROUP_CONFIG` 分组渲染。
 6. **布局与共享层** — `src/components/Layout/`（Layout + Sidebar + Navbar，菜单/面包屑/图标由路由 `meta` 驱动）、`AmapPicker.vue` / `RegionCascader.vue`（高德选点与省市区）、`TrendChart.vue`（ECharts 趋势图）；通用逻辑抽在 `src/composables/`（`useTableList` 列表分页、`useTimeRange`、`useConfirm`、`useAnimatedNumber`）。新增页面优先复用，禁止再复制第 N 份 CRUD。
-7. **页面** — `src/views/`（目录划分与侧边栏六组菜单一一对应）：`campus/` 基础数据 3 页（学校/寄存柜/洗护套餐）+ `operations/` 业务管理 3 页（订单/支付/充值）+ `users/` 用户运营 4 页（学生/优惠券/用户优惠券/站内信）+ `platform/` 平台模块（`game/` 游戏库与数据 + `toolbox/` 短链 + `workbench/` 入口与跳转路由 + 订阅）+ `divination/` 7 个观象台页 + `system/` 系统与安全 4 页（角色/管理员/审计/验证码）+ `delivery/` 2 个公开投递页 + 登录页/首页/404。
+7. **页面** — `src/views/`（目录划分与侧边栏菜单一一对应）：`campus/` 基础数据 3 页（学校/寄存柜/洗护套餐）+ `operations/` 业务管理 3 页（订单/支付/充值）+ `users/` 用户运营 4 页（学生/优惠券/用户优惠券/站内信）+ `platform/` 平台模块（`game/` 游戏库与数据 + `toolbox/` 短链 + `workbench/` 入口与跳转路由 + 订阅）+ `dining/` 吃啥（分类/菜谱/配料库管理）+ `divination/` 7 个观象台页 + `system/` 系统与安全 4 页（角色/管理员/审计/验证码）+ 公开页（`delivery/` 2 个投递页 + `secret/` 私密文本揭示页 + `assettag/` 物品标签寻物页 + `lockertag/` 柜码落地页）+ 登录页/首页/404。
 
 ### API 响应约定
 
@@ -62,7 +62,7 @@ npm run preview    # 预览生产构建
 - 标准方法：`fetchData`、`handleSearch`、`resetSearch`、`handleCreate`、`handleEdit`、`handleDelete`、`submitForm`
 - `formatTime` 用 dayjs 格式化；枚举状态经映射函数渲染文本/标签（参考 `OrderList.vue`）
 
-**重要**：`src/composables/` 已提供 `useTableList`（列表/分页/搜索/竞态守卫）与 `useTimeRange`，新列表页必须复用；`formatTime`/`formatAmount`/`formatFileSize` 统一在 `src/utils/format.js`。枚举/字典值统一在 `src/constants/dict.js`（68 个导出，含订单/支付/充值/优惠券/短码/观象台/工作台/游戏/深链/情绪/订阅/站内信分组），与后端枚举对齐，禁止页面内联映射。
+**重要**：`src/composables/` 已提供 `useTableList`（列表/分页/搜索/竞态守卫）与 `useTimeRange`，新列表页必须复用；`formatTime`/`formatAmount`/`formatFileSize` 统一在 `src/utils/format.js`。枚举/字典值统一在 `src/constants/dict.js`（136 个导出，含订单/支付/充值/优惠券/短码/观象台/工作台/游戏/深链/情绪/订阅/站内信/吃啥/物品标签分组），与后端枚举对齐，禁止页面内联映射。
 
 ## 相关 Skills 与子代理
 
