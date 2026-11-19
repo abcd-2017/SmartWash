@@ -12,7 +12,7 @@ import { BusinessError, pasteboard } from "@kit.BasicServicesKit"
 import vibrator from "@ohos.vibrator"
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionScale, MotionTiming } from "../constant/DesignSystem"
 import { ReduceMotion } from "../utils/ReduceMotion"
-import { EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
+import { AppButtonVariant, EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
@@ -33,6 +33,11 @@ struct PickUp {
   @State isLoadingMore: boolean = false
   // 首载骨架门控（recap §8-F2/S1）：仅首屏且列表为空时展示骨架，避免首帧闪空态
   @State isFirstLoading: boolean = true
+  // 首载失败态（对齐钱包流水页 isFirstError 范式，扫描 #2 同口径）：page 1 失败且无内容时
+  // 置位，错误态与空态严格分离——原实现 fetchPickupPage 只有 try/finally 无 catch，第 1 页
+  // 直调路径（aboutToAppear/refreshOrder）绕过分页器兜底，网络异常 = 未处理 Promise 拒绝 +
+  // 静默落入「暂无可取订单」空态，无 toast、无重试
+  @State isFirstError: boolean = false
   // 底部操作栏按压态（recap §8-I1，对齐安卓 pressable scale 0.97 + 100ms）
   @State contactPressed: boolean = false
   @State copyPressed: boolean = false
@@ -58,6 +63,18 @@ struct PickUp {
   }
 
   /**
+   * 首载重试：回骨架拉首页，结束（成功/失败）后复位加载态（page 1 失败路径不 throw）。
+   */
+  private async retryFirstLoad(): Promise<void> {
+    this.isFirstLoading = true
+    try {
+      await this.fetchPickupPage(1)
+    } finally {
+      this.isFirstLoading = false
+    }
+  }
+
+  /**
    * 按页拉取可取件订单。
    * @returns 本页是否有数据（供 PagingController 判断是否封底）
    */
@@ -71,19 +88,21 @@ struct PickUp {
       if (res.code === HttpStatusCode.Ok) {
         const records: Array<OrderInfo> = res.data ?? []
         if (records.length === 0) {
-          // 第 1 页空结果：整体清空（stale-while-revalidate 语义不变）
+          // 第 1 页空结果：整体清空（stale-while-revalidate 语义不变）；成功空 = 真空态，复位失败态
           if (page === 1) {
             this.orderList = []
             this.dataSource.notifyReload()
+            this.isFirstError = false
           } else if (this.orderList.length > 0) {
             showToastSafety(resString('pick_up_1'))
           }
           return false
         }
         if (page === 1) {
-          // 第 1 页整体替换（请求期间保留旧列表，返回后整体换）
+          // 第 1 页整体替换（请求期间保留旧列表，返回后整体换）；成功即复位失败态
           this.orderList = records
           this.dataSource.notifyReload()
+          this.isFirstError = false
         } else {
           // 追加按新索引逐项通知，避免整表重建
           const startIndex: number = this.orderList.length
@@ -95,6 +114,19 @@ struct PickUp {
       logger.warn('pickup', `可取订单加载失败 page=${page} ` +
         `code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, resString('pick_up_2'))
+      // 首载业务失败且无内容：置错误态（不伪装「暂无可取订单」，给重试入口）
+      if (page === 1 && this.orderList.length === 0) {
+        this.isFirstError = true
+      }
+      return false
+    } catch (err) {
+      // 第 1 页直调路径（aboutToAppear/refreshOrder）绕过分页器兜底，必须自行 catch：
+      // 原实现 try/finally 无 catch，网络异常上抛为未处理 Promise 拒绝且静默落空态
+      logger.warn('pickup', `可取订单请求异常 page=${page}`)
+      showToastSafety(resString('order_list_3'))
+      if (page === 1 && this.orderList.length === 0) {
+        this.isFirstError = true
+      }
       return false
     } finally {
       this.isFirstLoading = false
@@ -136,10 +168,20 @@ struct PickUp {
     this.copyPickupCode(code)
   }
 
-  refreshOrder() {
-    this.isRefreshing = false
+  /**
+   * 刷新列表（下拉刷新 / 返回页面）。
+   * 下拉刷新契约（对齐工作台 loadEntries(force) 样板）：isRefreshing 全程翻转 = 触发置 true、
+   * 请求完成（成功或失败）才复位——原实现第一步即复位，指示器随触发瞬间收起，无进度表达。
+   * @param force 下拉触发时 true（指示器亮起）；onShown 重拉为 false（不亮指示器）
+   */
+  async refreshOrder(force: boolean = false) {
+    this.isRefreshing = force
     this.paging.reset()
-    this.fetchPickupPage(1)
+    try {
+      await this.fetchPickupPage(1)
+    } finally {
+      this.isRefreshing = false
+    }
   }
 
   @Builder
@@ -341,7 +383,7 @@ struct PickUp {
         // 页头（recap G4：22/600 + 48 返回热区，复用公共 PageHeader）
         PageHeader({ title: resString('service_pickup') })
 
-        // 内容区三态：首载骨架 / 空态 / 内容（recap §8-F2）
+        // 内容区四态：首载骨架 / 内容 / 首载失败 / 空态（recap §8-F2 + 扫描 #2 错误态补齐）
         if (this.isFirstLoading && this.orderList.length === 0) {
           // 首载骨架（对齐安卓 LoadingState；有旧数据时走 stale-while-revalidate 不闪骨架）
           LoadingState()
@@ -398,7 +440,7 @@ struct PickUp {
             }
             .layoutWeight(1)
             .onRefreshing(() => {
-              this.refreshOrder()
+              this.refreshOrder(true)
             })
           }
           .width("100%")
@@ -406,6 +448,22 @@ struct PickUp {
 
           // 底部操作栏（recap §8-F1：固定底部）
           this.PickupActionBar()
+        } else if (this.isFirstError) {
+          // 首载失败态（对齐钱包流水页错误态：EmptyState + 重试，错误态优先于空态判定，
+          // 不得伪装「暂无可取订单」；重试回骨架重拉首页）
+          Column() {
+            EmptyState({
+              message: resString('pick_up_2'),
+              actionText: resString('retry'),
+              actionVariant: AppButtonVariant.SECONDARY,
+              onAction: () => {
+                this.retryFirstLoad()
+              }
+            })
+          }
+          .width("100%")
+          .layoutWeight(1)
+          .justifyContent(FlexAlign.Center)
         } else {
           // 空态（recap §8-V5：安卓 EmptyState DrumMark 母题；文案对齐 no_pickup_orders）
           Column() {

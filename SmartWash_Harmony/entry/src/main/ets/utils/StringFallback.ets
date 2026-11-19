@@ -922,6 +922,7 @@ export const STRING_FALLBACK: Record<string, string> = {
   'coming_soon_1': '功能建设中',
   'coming_soon_2': '该功能正在开发中，敬请期待',
   'coupon_1': '可用',
+  'available_coupons': '可领取',
   'claimed_coupons': '已领取',
   'historical_coupons': '历史',
   'coupon_load_failed': '优惠券加载失败',

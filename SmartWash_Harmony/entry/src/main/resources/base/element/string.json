@@ -3673,6 +3673,10 @@
       "value": "可用"
     },
     {
+      "name": "available_coupons",
+      "value": "可领取"
+    },
+    {
       "name": "claimed_coupons",
       "value": "已领取"
     },

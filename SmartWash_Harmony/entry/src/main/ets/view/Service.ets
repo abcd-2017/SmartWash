@@ -163,7 +163,7 @@ export struct Service {
 
       // 右侧价格 + chevron（V2/V3：价格恒 primaryDark 600 + tnum，行尾 chevron 20 textTertiary）
       Column() {
-        Text(`¥${item.basePrice?.toFixed(2)}`)
+        Text(`¥${(item.basePrice ?? 0).toFixed(2)}`)
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor($r('app.color.PRIMARY_DARK'))

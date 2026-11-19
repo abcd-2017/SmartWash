@@ -222,7 +222,7 @@ struct Laundry {
           .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor($r('app.color.TEXT_PRIMARY'))
 
-        Text(`${item.description}`)
+        Text(`${item.description ?? ""}`)
           .fontSize(DesignFontSize.CAPTION)
           .fontColor($r('app.color.TEXT_SECONDARY'))
           .margin({ top: 4 })
@@ -231,7 +231,7 @@ struct Laundry {
       .layoutWeight(1)
 
       // 金额（V5：恒 primaryDark 600 + tnum，不随选中变色；单行防折行）
-      Text(`¥${item.basePrice?.toFixed(2)}`)
+      Text(`¥${(item.basePrice ?? 0).toFixed(2)}`)
         .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontFeature(DesignFontFeature.TNUM)
@@ -316,12 +316,12 @@ struct Laundry {
                 })
 
                 Column() {
-                  Text(`${this.userInfo?.schoolVo?.schoolName}`)
+                  Text(`${this.userInfo?.schoolVo?.schoolName ?? ""}`)
                     .fontSize(DesignFontSize.CARD_TITLE)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
                     .fontColor($r('app.color.TEXT_PRIMARY'))
 
-                  Text(`${this.userInfo?.schoolVo?.location}`)
+                  Text(`${this.userInfo?.schoolVo?.location ?? ""}`)
                     .fontSize(DesignFontSize.CAPTION)
                     .fontColor($r('app.color.TEXT_SECONDARY'))
                     .maxLines(1)

@@ -849,6 +849,7 @@ export const STRING_RES: Record<string, Resource> = {
   'coming_soon_1': $r('app.string.coming_soon_1'),
   'coming_soon_2': $r('app.string.coming_soon_2'),
   'coupon_1': $r('app.string.coupon_1'),
+  'available_coupons': $r('app.string.available_coupons'),
   'claimed_coupons': $r('app.string.claimed_coupons'),
   'historical_coupons': $r('app.string.historical_coupons'),
   'coupon_load_failed': $r('app.string.coupon_load_failed'),

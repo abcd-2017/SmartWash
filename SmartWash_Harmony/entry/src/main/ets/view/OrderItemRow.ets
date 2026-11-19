@@ -7,11 +7,11 @@ export struct OrderItemRow {
 
   build() {
     Row() {
-      Text(`${this.title}`)
+      Text(`${this.title ?? ""}`)
         .fontSize(14)
         .fontWeight(FontWeight.Regular)
 
-      Text(`${this.content}`)
+      Text(`${this.content ?? ""}`)
         .fontSize(13)
         .fontWeight(FontWeight.Medium)
         // 金额/订单号/时间等数字槽位开 tnum（DESIGN.md 数字等宽规则）
