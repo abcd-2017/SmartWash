@@ -129,6 +129,8 @@ abstract class XxxInitModule {
 - **组合期禁止副作用**：Toast、导航、状态回写一律放 `LaunchedEffect`/`SideEffect`，禁止写在 `when(state)` 渲染分支里。
 - **禁止主线程阻塞 IO**：`runBlocking` 读写 DataStore 已知会阻塞 UI 线程，一律用 suspend/flow。
 - **LazyColumn 必须给 `key`**；列表参数注意稳定性，昂贵计算用 `remember`。
+- **PullToRefreshBox 的 `isRefreshing` 必须全程翻转**：指示器复位依赖参数翻转（M3 松手即内部 startRefresh，无人代你 endRefresh）；用 `refreshSession` 会话标志模式（onRefresh 置 true，加载完成/失败复位），禁止 `Loading && 数据非空` 类门控——空态页下拉指示器永卡。
+- **空态/错误态必须铺满内容区并垂直居中**：scrollable 分支内子项拿不到有界高度（verticalScroll 传无限约束），用 `BoxWithConstraints + heightIn(min = maxHeight)` 实现，且保留滚动包装让下拉手势可达。
 - **catch 协程异常先 rethrow `CancellationException`**，否则取消会被当网络错误。
 
 ## 相关 Skills 与子代理
