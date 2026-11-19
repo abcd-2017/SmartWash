@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.exception.CustomExceptions;
+import com.smartwash.utils.ImageUploadValidator;
 import com.smartwash.workbench.entity.WorkbenchEntry;
 import com.smartwash.workbench.from.AddWorkbenchEntryFrom;
 import com.smartwash.workbench.from.SearchWorkbenchEntryFrom;
@@ -28,7 +29,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 /**
  * 工作台入口配置服务实现。
@@ -54,12 +54,6 @@ public class WorkbenchEntryServiceImpl extends ServiceImpl<WorkbenchEntryMapper,
     /** 配图存储（MinIO workbench/covers/ 前缀） */
     @Autowired
     private WorkbenchImageStorage workbenchImageStorage;
-
-    /** 配图大小上限 5MB */
-    private static final long IMAGE_MAX_BYTES = 5L * 1024 * 1024;
-
-    /** 配图类型白名单 */
-    private static final Set<String> IMAGE_CONTENT_TYPES = Set.of("image/png", "image/jpeg", "image/webp");
 
 
     @Override
@@ -181,17 +175,11 @@ public class WorkbenchEntryServiceImpl extends ServiceImpl<WorkbenchEntryMapper,
 
     @Override
     public String uploadImage(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new CustomExceptions("请选择要上传的图片");
-        }
-        if (file.getSize() > IMAGE_MAX_BYTES) {
-            throw new CustomExceptions(413, "图片大小不能超过5MB");
-        }
-        String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase(Locale.ROOT);
-        if (!IMAGE_CONTENT_TYPES.contains(contentType)) {
-            throw new CustomExceptions("仅支持 png / jpeg / webp 图片");
-        }
+        // 统一走通用图片校验器（非空 → 5MB 超限 413 → 扩展名白名单 → 魔数 → 扩展名一致性，
+        // 与菜谱封面/头像/游戏封面同口径；contentType 可被伪造，仅信真实内容）
+        ImageUploadValidator.validate(file);
         try {
+            String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase(Locale.ROOT);
             return workbenchImageStorage.putImage(file.getBytes(), contentType);
         } catch (CustomExceptions e) {
             throw e;

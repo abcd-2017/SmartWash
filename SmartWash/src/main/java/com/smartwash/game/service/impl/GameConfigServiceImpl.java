@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.config.MinioConfig;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.exception.GameServiceException;
 import com.smartwash.game.entity.GameConfig;
 import com.smartwash.game.from.SearchGameFrom;
@@ -19,6 +20,7 @@ import com.smartwash.game.support.GamePackageValidator;
 import com.smartwash.game.vo.AdminGameVo;
 import com.smartwash.game.vo.GameBatchResultVo;
 import com.smartwash.game.vo.GameVo;
+import com.smartwash.utils.ImageUploadValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -60,12 +62,6 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
     private static final int SOURCE_TYPE_EXTERNAL = 2;
 
     private static final String OBJECT_ROOT = "game/";
-
-    /** 封面上传大小上限（与工作台配图一致） */
-    private static final long COVER_MAX_BYTES = 5L * 1024 * 1024;
-    /** 允许的封面 MIME 类型 */
-    private static final java.util.Set<String> COVER_CONTENT_TYPES =
-            java.util.Set.of("image/png", "image/jpeg", "image/webp");
 
     /** 自注入：@Cacheable 方法须经代理调用才生效，同类内部直调会绕过 AOP */
     @Lazy
@@ -117,19 +113,13 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
     @Override
     @CacheEvict(value = CACHE_NAME, allEntries = true)
     public String uploadCover(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new GameServiceException(GameServiceException.BAD_REQUEST, "请选择要上传的封面图");
-        }
-        if (file.getSize() > COVER_MAX_BYTES) {
-            throw new GameServiceException(GameServiceException.PAYLOAD_TOO_LARGE, "封面大小不能超过5MB");
-        }
+        // 统一走通用图片校验器（非空 → 5MB 超限 413 → 扩展名白名单 → 魔数 → 扩展名一致性，
+        // 与菜谱封面/头像/工作台配图同口径；contentType 可被伪造，仅信真实内容）
+        ImageUploadValidator.validate(file, "请选择要上传的封面图片");
         String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase(java.util.Locale.ROOT);
-        if (!COVER_CONTENT_TYPES.contains(contentType)) {
-            throw new GameServiceException(GameServiceException.BAD_REQUEST, "仅支持 png / jpeg / webp 图片");
-        }
         try {
             return gameCoverStorage.putImage(file.getBytes(), contentType);
-        } catch (GameServiceException e) {
+        } catch (CustomExceptions e) {
             throw e;
         } catch (Exception e) {
             log.error("游戏封面上传失败", e);
