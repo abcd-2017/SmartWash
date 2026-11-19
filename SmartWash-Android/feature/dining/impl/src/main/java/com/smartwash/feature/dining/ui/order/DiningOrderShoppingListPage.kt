@@ -51,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -530,6 +531,8 @@ private fun IngredientRow(
             style = MaterialTheme.typography.bodyLarge,
             color = if (checked) AppColors.colorScheme.textSecondary
             else AppColors.colorScheme.textPrimary,
+            // 已买加中折线（清单语义：划掉=已完成，仅变灰可读性弱）
+            textDecoration = if (checked) TextDecoration.LineThrough else null,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
