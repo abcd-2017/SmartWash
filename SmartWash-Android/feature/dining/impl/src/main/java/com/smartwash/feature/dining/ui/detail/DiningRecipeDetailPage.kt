@@ -114,7 +114,7 @@ fun DiningRecipeDetailPage(
                         if (favorited) R.string.dining_recipe_unfavorite else R.string.dining_recipe_favorite,
                     )
                     val favScale by animateFloatAsState(
-                        targetValue = if (favorited) 1.15f else 1f,
+                        targetValue = if (favorited) 1.06f else 1f,
                         animationSpec = spring(
                             dampingRatio = Spring.DampingRatioMediumBouncy,
                             stiffness = Spring.StiffnessMedium,
@@ -133,8 +133,10 @@ fun DiningRecipeDetailPage(
                             contentDescription = null,
                             tint = if (favorited) AppColors.colorScheme.dangerInk
                             else AppColors.colorScheme.textSecondary,
+                            // 头部操作区视觉收敛（D29）：26dp 心形 + 1.15 弹跳在标题栏显臃肿，
+                            // 改 20dp + 1.06 微弹；48dp 热区保留规范下限
                             modifier = Modifier
-                                .size(26.dp)
+                                .size(20.dp)
                                 .scale(favScale),
                         )
                     }
