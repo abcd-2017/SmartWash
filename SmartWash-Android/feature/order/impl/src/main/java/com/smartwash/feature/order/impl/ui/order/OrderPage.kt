@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -199,8 +200,15 @@ fun OrderPage(
             // 取消订单成功后 VM 会整表 loadAllOrders()（loadState=Loading），此时 paging 仍保留旧列表，
             // 走 stale-while-revalidate，不再把有数据的列表整屏换成骨架。
             val showSkeleton = loadState is RequestState.Loading && orderList.isEmpty()
-            // 下拉刷新指示器：仅「已有列表数据且正在刷新」时转圈，首刷走骨架（对齐 SubscriptionListPage）
-            val isRefreshing = loadState is RequestState.Loading && orderList.isNotEmpty()
+            // 刷新会话标志（对齐 SubscriptionListPage 的 refreshSession）：下拉触发的本轮刷新期间
+            // 保持指示器，加载完成/失败即停。空态下拉时原 isRefreshing（Loading && 非空）恒 false，
+            // M3 松手过阈值内部 startRefresh() 后无人 endRefresh() → 转圈卡死不消失
+            var refreshSession by remember { mutableStateOf(false) }
+            LaunchedEffect(loadState) {
+                if (refreshSession && loadState !is RequestState.Loading) refreshSession = false
+            }
+            // 下拉刷新指示器：会话期间或「已有列表数据且正在刷新」时转圈，首刷走骨架（对齐 SubscriptionListPage）
+            val isRefreshing = refreshSession || (loadState is RequestState.Loading && orderList.isNotEmpty())
 
             // 内容区进出场（动效语言 v0.4）：进 300ms 减速淡入 / 出 200ms 加速淡出；
             // reduced motion 统一降级为 180ms 纯淡入（规范 §8：取消位移/缩放/旋转，保留可读性）
@@ -220,7 +228,10 @@ fun OrderPage(
             // N-05-02：走 refreshLoadedOrders 按已加载页数重拉（整表 loadAllOrders 会丢已翻页）
             PullToRefreshBox(
                 isRefreshing = isRefreshing,
-                onRefresh = { orderViewModel.refreshLoadedOrders() },
+                onRefresh = {
+                    refreshSession = true
+                    orderViewModel.refreshLoadedOrders()
+                },
                 modifier = Modifier.fillMaxSize()
             ) {
                 AnimatedContent(
@@ -236,28 +247,41 @@ fun OrderPage(
                     } else if (loadState is RequestState.Error && orderList.isEmpty()) {
                         // 错误态（N-05-03）：断网降级不得伪装成「暂无订单」空态——
                         // 具体文案 + 重试；verticalScroll 让 PullToRefreshBox 的嵌套滚动可达，
-                        // 失败状态下拉同样能重新发起请求
-                        Column(
+                        // 失败状态下拉同样能重新发起请求。铺满居中与空态分支同规范：
+                        // BoxWithConstraints（scroll 外层）取视口高，Box heightIn 居中
+                        BoxWithConstraints(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = AppDimens.pagePadding)
                         ) {
-                            EmptyState(
-                                // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 仅占位
-                                icon = Icons.Default.LocalLaundryService,
-                                message = (loadState as RequestState.Error).getMessage(context),
+                            val viewportHeight = maxHeight
+                            Column(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 96.dp),
-                                action = {
-                                    AppButton(
-                                        small = true,
-                                        text = stringResource(R.string.order_action_retry),
-                                        onClick = { orderViewModel.loadAllOrders() },
-                                        variant = AppButtonVariant.SECONDARY,
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = viewportHeight),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    EmptyState(
+                                        // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 仅占位
+                                        icon = Icons.Default.LocalLaundryService,
+                                        message = (loadState as RequestState.Error).getMessage(context),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        action = {
+                                            AppButton(
+                                                small = true,
+                                                text = stringResource(R.string.order_action_retry),
+                                                onClick = { orderViewModel.loadAllOrders() },
+                                                variant = AppButtonVariant.SECONDARY,
+                                            )
+                                        }
                                     )
                                 }
-                            )
+                            }
                         }
                     } else if (orderList.isNotEmpty()) {
                         // 按月分组构建混合列表项（D-O9：每月订单合并为一张卡，不再逐单成卡；分页逻辑保留）
@@ -385,18 +409,36 @@ fun OrderPage(
                             }
                         }
                     } else {
-                        // 空态（P09 设计稿板尾样张 + N-05-03）：白卡设计 + verticalScroll 包装，
-                        // 保证 PullToRefreshBox 的下拉手势在空态可达（原空态为非滚动组件拉不动）
-                        Column(
+                        // 空态（P09 设计稿板尾样张 + N-05-03）：白卡设计 + 内层 verticalScroll 包装，
+                        // 保证 PullToRefreshBox 的下拉手势在空态可达（原空态为非滚动组件拉不动）。
+                        // 空态卡此前内容高、顶部贴头：verticalScroll 给子项传无限高约束，fillMaxSize
+                        // 失效拿不到视口高——用 BoxWithConstraints 取视口高做 minHeight 让卡垂直居中。
+                        // ⚠️ BoxWithConstraints 必须在 scroll 外层：滚动 modifier 会把它收到的约束
+                        // 改成无限高（maxHeight=Infinity，heightIn 失效，实机复测抓过这个错）
+                        BoxWithConstraints(
                             modifier = Modifier
                                 .fillMaxSize()
                                 // 空态卡与列表分支（LazyColumn contentPadding）同用页面左右边距，避免贴边
                                 .padding(horizontal = AppDimens.pagePadding)
-                                .verticalScroll(rememberScrollState())
                         ) {
-                            OrderEmptyState(
-                                onGoOrder = { navController.navigate(LaundryRoute.Laundry()) }
-                            )
+                            // 视口高先落局部变量：嵌套 lambda 内隐式接收器解析不了 maxHeight
+                            val viewportHeight = maxHeight
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = viewportHeight),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    OrderEmptyState(
+                                        onGoOrder = { navController.navigate(LaundryRoute.Laundry()) }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
