@@ -477,7 +477,8 @@ function intersectPt(p1,p2,p3,p4){
   var t=cross2(ac,cd)/denom;
   return [p1[0]+ab[0]*t,p1[1]+ab[1]*t];
 }
-function loop(){render();requestAnimationFrame(loop)}
+var rafId=0;
+function loop(){render();rafId=requestAnimationFrame(loop)}
 /* ---------- 输入 ---------- */
 function hitVertex(x,y){
   var best=-1,bd=1e9;
@@ -566,7 +567,10 @@ window.addEventListener("keydown",function(e){
   render();
 });
 window.addEventListener("resize",resize);
-document.addEventListener("visibilitychange",function(){if(!document.hidden)render()});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){ if(rafId){cancelAnimationFrame(rafId);rafId=0} }
+  else{ if(!rafId){ rafId=requestAnimationFrame(loop) } render() }
+});
 /* ---------- 启动 ---------- */
 palLoad();loadLevel(save.lv);resize();loop();
 syncLevelsFromServer();syncSaveFromServer();

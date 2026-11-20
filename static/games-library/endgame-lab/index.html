@@ -656,7 +656,8 @@ function render(){
     ctx.strokeRect((cursor%8)*cell+1.5,((cursor/8)|0)*cell+1.5,cell-3,cell-3);
   }
 }
-function loop(){render();requestAnimationFrame(loop)}
+var rafId=0;
+function loop(){render();rafId=requestAnimationFrame(loop)}
 /* ---------- 输入 ---------- */
 function tapCell(sq){
   if(over||turn!==1)return;
@@ -741,8 +742,8 @@ window.addEventListener("keydown",function(e){
 });
 window.addEventListener("resize",resize);
 document.addEventListener("visibilitychange",function(){
-  if(!document.hidden){render();}
-  else{if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}if(turn===-1&&!over){turn=1;say("已切后台，黑方应着作废，请你重走")}}
+  if(document.hidden){ if(rafId){cancelAnimationFrame(rafId);rafId=0} if(aiTimer){clearTimeout(aiTimer);aiTimer=null} if(turn===-1&&!over){turn=1;say("已切后台，黑方应着作废，请你重走")} }
+  else{ if(!rafId){ rafId=requestAnimationFrame(loop) } render(); }
 });
 /* ---------- 启动 ---------- */
 palLoad();loadLevel(save.lv);resize();loop();

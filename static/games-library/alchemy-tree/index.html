@@ -465,9 +465,15 @@ function drawChip(x,y,r,txt,color,sel2,pulse){
   ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
   ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;
   ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.stroke();
-  ctx.fillStyle="#fff";   // 恒白：元素名压在彩色底上
+  // 元素名：surface 徽章底 + text 字色（深浅模式均达标，chip 素材色保留）
   ctx.font=txt.length>2?"700 12px sans-serif":"700 14px sans-serif";
   ctx.textAlign="center";ctx.textBaseline="middle";
+  var tw=ctx.measureText(txt).width;
+  ctx.fillStyle=PAL.surface;
+  rr(x-tw/2-5,y-8,tw+10,16,8);ctx.fill();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  rr(x-tw/2-5,y-8,tw+10,16,8);ctx.stroke();
+  ctx.fillStyle=PAL.text;
   ctx.fillText(txt,x,y+1);
   if(sel2){
     ctx.strokeStyle=PAL.deep;ctx.lineWidth=3;
@@ -503,7 +509,8 @@ function draw(){
   }
 }
 function lastIdx(id){return stock.lastIndexOf(id)}
-function loop(){draw(performance.now());requestAnimationFrame(loop)}
+var rafId=0;
+function loop(){draw(performance.now());rafId=requestAnimationFrame(loop)}
 /* ---------- 输入 ---------- */
 cv.addEventListener("pointerdown",function(e){
   var rect=cv.getBoundingClientRect();
@@ -539,7 +546,10 @@ window.addEventListener("keydown",function(e){
   else if(k===" "||k==="Enter"){if($("overlay").classList.contains("show"))$("ovBtn").click();e.preventDefault();}
 });
 window.addEventListener("resize",resize);
-document.addEventListener("visibilitychange",function(){if(!document.hidden)resize()});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){ if(rafId){cancelAnimationFrame(rafId);rafId=0} }
+  else{ if(!rafId){ rafId=requestAnimationFrame(loop) } resize() }
+});
 /* ---------- 启动 ---------- */
 palLoad();loadLevel(save.lv);resize();loop();
 syncLevelsFromServer();syncSaveFromServer();

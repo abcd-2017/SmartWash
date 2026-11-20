@@ -493,6 +493,7 @@ function draw(){
   var gx2=txp+GF.DIRS[grav][0]*cell*0.42,gy2=typ+GF.DIRS[grav][1]*cell*0.42;
   ctx.beginPath();ctx.arc(gx2,gy2,3,0,7);ctx.fill();
 }
+var rafId=0;
 function loop(){
   if(L){
     //小球缓动
@@ -502,7 +503,7 @@ function loop(){
     if(Math.abs(ty2-dispY)<0.02)dispY=ty2;
     draw(performance.now());
   }
-  requestAnimationFrame(loop);
+  rafId=requestAnimationFrame(loop);
 }
 /* ---------- 输入 ---------- */
 var swX=null,swY=null;
@@ -548,7 +549,10 @@ window.addEventListener("keydown",function(e){
   else if(k===" "||k==="Enter"){if($("overlay").classList.contains("show"))$("ovBtn").click();e.preventDefault();}
 });
 window.addEventListener("resize",resize);
-document.addEventListener("visibilitychange",function(){if(!document.hidden)resize()});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){ if(rafId){cancelAnimationFrame(rafId);rafId=0} }
+  else{ if(!rafId){ rafId=requestAnimationFrame(loop) } resize() }
+});
 /* ---------- 启动 ---------- */
 palLoad();loadLevel(save.lv);resize();loop();
 syncLevelsFromServer();syncSaveFromServer();

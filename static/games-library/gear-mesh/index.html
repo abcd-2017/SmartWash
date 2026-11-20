@@ -547,7 +547,7 @@ function draw(ts){
     px=gx(pegs[i][0]);py=gy(pegs[i][1]);
     var isDrv=i===driver,isFix=!!fixedSet[i],isPlaced=!!placed[i];
     if(!isDrv&&!isFix&&!isPlaced){
-      ctx.fillStyle=PAL.faint;
+      ctx.fillStyle=PAL.muted;
       ctx.beginPath();ctx.arc(px,py,3,0,7);ctx.fill();
       continue;
     }
@@ -568,13 +568,21 @@ function draw(ts){
     }
     if(isDrv){
       ctx.fillStyle=PAL.surface;
+      ctx.beginPath();ctx.arc(px,py+r*0.32,9,0,7);ctx.fill();
+      ctx.fillStyle=PAL.text;
       ctx.font="700 12px sans-serif";
       ctx.textAlign="center";ctx.textBaseline="middle";
       ctx.fillText("动",px,py+r*0.32);
     }
   }
 }
-function loop(ts){draw(ts);requestAnimationFrame(loop)}
+var rafId=0;
+function loop(ts){draw(ts);rafId=requestAnimationFrame(loop)}
+/* S4: 页面隐藏时暂停 rAF 循环，恢复时续跑 */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){ if(rafId){cancelAnimationFrame(rafId);rafId=0} }
+  else if(!rafId){ rafId=requestAnimationFrame(loop) }
+});
 /* ---------- 输入 ---------- */
 cv.addEventListener("pointerdown",function(e){
   var rect=cv.getBoundingClientRect();

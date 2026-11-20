@@ -562,7 +562,8 @@ function render(){
     ctx.strokeStyle=PAL.surface;ctx.lineWidth=2;ctx.stroke();
   }
 }
-function loop(){if(L)render(performance.now());requestAnimationFrame(loop)}
+var rafId=0;
+function loop(){if(L)render(performance.now());rafId=requestAnimationFrame(loop)}
 /* ---------- 输入 ---------- */
 var swX=null,swY=null;
 cv.addEventListener("pointerdown",function(e){
@@ -607,7 +608,10 @@ window.addEventListener("keydown",function(e){
   else if(k===" "||k==="Enter"){if($("overlay").classList.contains("show"))$("ovBtn").click();e.preventDefault();}
 });
 window.addEventListener("resize",resize);
-document.addEventListener("visibilitychange",function(){if(!document.hidden)resize()});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){ if(rafId){cancelAnimationFrame(rafId);rafId=0} }
+  else{ if(!rafId){ rafId=requestAnimationFrame(loop) } resize() }
+});
 /* ---------- 启动 ---------- */
 palLoad();loadLevel(save.lv);resize();loop();
 syncLevelsFromServer();syncSaveFromServer();

@@ -352,3 +352,24 @@
   家族要素（描边 / 表情 / 三层背景 / 星尘 / vignette）全部到位、撞车排查通过。
   管线脚本沉淀于 docs/cover-pipeline-test/（build_covers.py + ps-unsharp-batch.vbs，
   工作文档不入库）。
+
+- **2026-11-21（impeccable 全指令评审 · 第二批 51 款）**：
+  沿 2026-11-14 评审口径（critique/audit/layout/typeset/clarify/harden 双轨）对第二批 51 款
+  全量评审修复。机器预扫 7 类历史问题：focus-visible / prefers-reduced-motion / 面板过渡 /
+  aria-live / canvas 闭合 5 类出生即合规（51/51）；palLoad 启动链路与 visibilitychange
+  2 类经逐款甄别后按需修复。改动 40 款、11 款零改动通过，全部双 gates 复绿，全库 175 款
+  严格模式 0 违规。修复分五类：
+  1. **S4 切后台暂停补齐（13 款 rAF 类）**：隐藏 cancelAnimationFrame / 恢复续跑；
+     water-dig 补 flowT 墙钟时基平移（隐藏期不计入放水时长，唯一计时依赖款）。
+  2. **真功能 bug 1 个**：map-fold −/＋ 按钮 strict 模式 ReferenceError 完全失效（引用未声明
+     selLine），已修并经浏览器实测（＋→第 2 行 / −→第 1 行往返正常）。
+  3. **对比度修复 7 款**：gear-mesh 空轴点/「动」字、alchemy-tree 素材色块字（surface 徽章底）、
+     color-route / magnet-poles / balance-stack / water-dig canvas 信息字（恒暗/恒亮 halo，
+     §3 D2 例外类）、hex-fill 色钮字色（双主题 ≥4.5:1）。
+  4. **模板共性批量修（family A 11 款 stat padding 4→8px；family B 14 款 label 去 opacity、
+     overlay 补 fadein/pop 0.2-0.25s）**。
+  5. **文案/视觉一致性 4 处**：weight-order 快捷键说明、curling-sweep 评分档文案补全 + 补画
+     r26/r50 计分环、archery-move 8 环 27→28px 计分边界失配。
+  遗留建议（记录未动手）：hoop-shot 键盘瞄准无弹道预览；paper-fold-cut 深色洞/纸对比可在
+  §3 登记深色变体时调整；3 处无害冗余代码。浏览器抽查 3 款修复款（map-fold 按钮功能 /
+  water-dig 可玩 / gear-mesh 深色对比）全部通过。

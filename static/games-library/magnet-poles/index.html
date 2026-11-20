@@ -26,7 +26,7 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
@@ -553,6 +553,10 @@ function draw(){
     ctx.fillStyle=PAL.surface;
     ctx.font="700 "+Math.min(18,cs*0.3)+"px sans-serif";
     ctx.textAlign="center";ctx.textBaseline="middle";
+    // 素材极色块上的 N/S：恒暗/恒亮描边兜底可读（D2 例外类）
+    ctx.strokeStyle=document.documentElement.dataset.theme==="dark"?"rgba(255,255,255,.6)":"rgba(0,0,0,.55)";
+    ctx.lineWidth=3;ctx.lineJoin="round";
+    ctx.strokeText(isN?"N":"S",p2.x,p2.y);
     ctx.fillText(isN?"N":"S",p2.x,p2.y);
   }
   // 同极相邻红框
@@ -575,13 +579,13 @@ function draw(){
   for(var y5=0;y5<h;y5++){
     var cN=0;
     for(var x5=0;x5<w;x5++)if(polNow[y5*w+x5]===0)cN++;
-    ctx.fillStyle=cN>L.rowN[y5]?PAL.danger:(cov[y5*w]!==undefined||cov[y5*w+w-1]!==undefined?PAL.success:PAL.muted);
+    ctx.fillStyle=cN>L.rowN[y5]?PAL.danger:(cN===L.rowN[y5]?PAL.success:PAL.muted);
     ctx.fillText(String(L.rowN[y5]),8+w*cs-6,8+y5*cs+cs/2);
   }
   for(var x6=0;x6<w;x6++){
     var cN2=0;
     for(var y6=0;y6<h;y6++)if(polNow[y6*w+x6]===0)cN2++;
-    ctx.fillStyle=cN2>L.colN[x6]?PAL.danger:PAL.muted;
+    ctx.fillStyle=cN2>L.colN[x6]?PAL.danger:(cN2===L.colN[x6]?PAL.success:PAL.muted);
     ctx.fillText(String(L.colN[x6]),8+x6*cs+cs/2,8+h*cs-8);
   }
   // 选中/光标

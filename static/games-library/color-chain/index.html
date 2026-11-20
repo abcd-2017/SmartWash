@@ -532,7 +532,8 @@ function render(){
     ctx.strokeRect(cx2*cell+1.5,cy2*cell+1.5,cell-3,cell-3);
   }
 }
-function loop(){render();requestAnimationFrame(loop)}
+var rafId=0;
+function loop(){render();rafId=requestAnimationFrame(loop)}
 /* ---------- 输入 ---------- */
 cv.addEventListener("pointerdown",function(e){
   var rect=cv.getBoundingClientRect();
@@ -636,7 +637,10 @@ window.addEventListener("keydown",function(e){
   render();
 });
 window.addEventListener("resize",resize);
-document.addEventListener("visibilitychange",function(){if(!document.hidden)render()});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){ if(rafId){cancelAnimationFrame(rafId);rafId=0} }
+  else{ if(!rafId){ rafId=requestAnimationFrame(loop) } render() }
+});
 /* ---------- 启动 ---------- */
 palLoad();loadLevel(save.lv);resize();loop();
 syncLevelsFromServer();syncSaveFromServer();

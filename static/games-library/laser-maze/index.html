@@ -561,7 +561,13 @@ function draw(ts){
     ctx.beginPath();ctx.arc(ax+(bx-ax)*f2,ay+(by-ay)*f2,4,0,7);ctx.fill();
   }
 }
-function loop(ts){draw(ts||0);requestAnimationFrame(loop)}
+var rafId=0;
+function loop(ts){draw(ts||0);rafId=requestAnimationFrame(loop)}
+/* S4: 页面隐藏时暂停 rAF 循环，恢复时续跑 */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){ if(rafId){cancelAnimationFrame(rafId);rafId=0} }
+  else if(!rafId){ rafId=requestAnimationFrame(loop) }
+});
 /* ---------- 输入 ---------- */
 cv.addEventListener("pointerdown",function(e){
   var rect=cv.getBoundingClientRect();
