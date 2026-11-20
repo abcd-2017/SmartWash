@@ -94,8 +94,8 @@ export const relSegs = (file) => (file.webkitRelativePath || file.name).split('/
 const isCoverImage = (name) => COVER_IMAGE_EXTS.some((ext) => name.toLowerCase().endsWith(ext));
 
 /**
- * 父目录文件分组：根层 *.csv + image/ 目录索引 + 忽略清单。
- * 隐藏文件/目录（.DS_Store、.git 等）任意层级静默忽略；image/ 只索引图片扩展名的文件
+ * 父目录文件分组：根层 *.csv + 封面目录（image/covers）索引 + 忽略清单。
+ * 隐藏文件/目录（.DS_Store、.git 等）任意层级静默忽略；封面目录只索引图片扩展名的文件
  *（其他扩展名不进索引，引用它的行在行级校验以「未找到」报出）。
  * @param {File[]} files 选择父目录得到的全部文件
  * @returns {{csvFiles: File[], imageIndex: Map<string, File>, imageDirPresent: boolean,
@@ -134,7 +134,7 @@ export function splitDiningDir(files) {
 }
 
 /**
- * 目录整体校验：无 csv 或缺 image/ 目录直接整体报错（对齐任务规范，不留静默半导入）。
+ * 目录整体校验：无 csv 或缺封面目录（image/covers）直接整体报错（对齐任务规范，不留静默半导入）。
  * @param {{csvFiles: File[], imageDirPresent: boolean}} split splitDiningDir 的输出
  */
 export function inspectDiningDir(split) {
