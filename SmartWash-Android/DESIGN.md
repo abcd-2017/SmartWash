@@ -148,15 +148,25 @@ components:
     textColor: "{colors.text-primary}"
     rounded: "{rounded.input}"
     height: "48dp"
-  # TD37 输入皮肤档（2026-11-18 定）：认证页玻璃皮肤（AppTextField variant=GLASS）
+  # TD37 输入皮肤档（2026-11-18 定 / 2026-11-20 v0.5 修订）：认证页玻璃皮肤（AppTextField variant=GLASS）
+  # v0.5 修订：由「全宽透明行」改为圆角实底字段槽。原透明行无边界，且白 45%–55% 叠品牌绿
+  # 渐变仅 2.1–2.9:1（低于文本 4.5:1 / 非文本 3:1），是「页面显空、控件发弱」的根因。
+  # 槽底压深后槽内白字对比 ≥4.5:1；聚焦由描边提亮表达，取消原槽下 1dp 指示线。
   app-input-field-glass:
-    backgroundColor: "transparent"            # 透明行，透出品牌渐变
-    textColor: "#FFFFFF"                      # 禁用整体 alpha .38
-    placeholder: "#FFFFFF @ 45%"              # §3.7 玻璃页占位口径
-    rounded: "{rounded.input}"
+    backgroundColor: "#000000 @ 30%"          # 槽底：压深品牌渐变（聚焦 42%）
+    borderColor: "#FFFFFF @ 16%"              # 1dp 槽描边；聚焦 75%，selectedColor 弹簧过渡（reduced 180ms）
+    textColor: "#FFFFFF"
+    iconColor: "#FFFFFF @ 70%"
+    placeholder: "#FFFFFF @ 70%"
+    rounded: "{rounded.input}"                # 14dp（输入档）
     height: "48dp"
-    focusIndicator: "#FFFFFF @ 55%"           # 聚焦底指示线 1dp，弹簧过渡，reduced 180ms
+    paddingHorizontal: "16dp"
     error: "#FFB4AB"                          # ErrorLight，深绿玻璃底可读
+  # TD37 v0.5 玻璃卡档：卡底 8%→12%、描边 18%→22%，避免卡边缘在渐变上糊成一片
+  app-glass-card:
+    backgroundColor: "#FFFFFF @ 12%"
+    borderColor: "#FFFFFF @ 22%"
+    rounded: "{rounded.lg}"
   # TD36 控件档（2026-11-18 定）：胶囊筛选 chip
   app-filter-chip:
     backgroundColor: "{colors.primary}"        # 选中 SOLID；SOFT 选中 primary-soft；未选 surface + 1dp outline 描边

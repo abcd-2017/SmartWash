@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -237,7 +238,9 @@ fun LoginPage(
 
             // 毛玻璃输入卡片 — 内边距垂直 20 / 水平 16（DESIGN-SPEC v0.4 §5：玻璃卡统一
             // 「垂直 20 / 水平 16」，必须写双参重载 padding(horizontal, vertical)——
-            // 双位置参重载是 (start, top)，方向会反转）
+            // 双位置参重载是 (start, top)，方向会反转）。
+            // TD37 v0.5：卡底 8%→12%、边框 18%→22%，避免卡在渐变上糊成一片；
+            // 输入行由「全宽透明行」改为带实底的圆角字段槽（见 GlassTextField）
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -289,18 +292,8 @@ fun LoginPage(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // [P01] 2026-11-05 画板复裁：分隔线距卡边 16px（卡 padding 水平 16 自带缩进，
-                        // 不再额外内缩 8）
-                        .height(1.dp)
-                        .background(Color.White.copy(alpha = 0.12f))
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
+                // 字段槽自带形体与描边，卡内不再需要全宽分隔线（TD37 v0.5）
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // [P01] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
                 Text(
@@ -321,6 +314,9 @@ fun LoginPage(
                     },
                     // 最大位数由组件 maxLength 固定 16，无需页面截断
                     modifier = Modifier.focusRequester(passwordFocusRequester),
+                    // 前缀 lock 图标：与上方手机号行的 Phone 图标对齐（鸿蒙登录页同款），
+                    // 避免密码行只剩尾部可见性图标、视觉重量低于手机号行
+                    leadingIcon = Icons.Rounded.Lock,
                     variant = AppFieldVariant.GLASS,
                     isError = isPasswordError,
                     supportingText = {

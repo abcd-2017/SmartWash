@@ -30,6 +30,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -322,11 +323,8 @@ fun ResetPasswordPage(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                GlassDivider()
-
-                Spacer(modifier = Modifier.height(8.dp))
+                // 字段槽自带形体与描边，卡内不再需要全宽分隔线（TD37 v0.5）
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // 验证码行（60s 客户端倒计时，样式与注册页同模板）
                 Text(
@@ -398,11 +396,8 @@ fun ResetPasswordPage(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                GlassDivider()
-
-                Spacer(modifier = Modifier.height(8.dp))
+                // 字段槽自带形体与描边，卡内不再需要全宽分隔线（TD37 v0.5）
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
                     text = stringResource(R.string.reset_new_password),
@@ -421,6 +416,8 @@ fun ResetPasswordPage(
                     },
                     // 最大位数由组件 maxLength 固定 16，无需页面截断
                     modifier = Modifier.focusRequester(passwordFocusRequester),
+                    // 前缀 lock 图标：与上方手机号行的 Phone 图标对齐（鸿蒙重置密码页同款）
+                    leadingIcon = Icons.Rounded.Lock,
                     variant = AppFieldVariant.GLASS,
                     isError = isNewPasswordError,
                     supportingText = {
@@ -465,13 +462,3 @@ fun ResetPasswordPage(
     }
 }
 
-@Composable
-private fun GlassDivider() {
-    // 玻璃卡内分隔线：1dp 高、白 12%（对齐注册页）
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(Color.White.copy(alpha = 0.12f))
-    )
-}

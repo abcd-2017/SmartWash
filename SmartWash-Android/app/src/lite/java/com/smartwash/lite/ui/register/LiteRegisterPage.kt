@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Key
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -319,6 +320,8 @@ fun LiteRegisterPage(
                     if (it.length <= 16) password = it
                 },
                 modifier = Modifier.focusRequester(passwordFocusRequester),
+                // 前缀 lock 图标：与上方手机号行的 Phone 图标对齐，避免密码行只剩尾部可见性图标
+                leadingIcon = Icons.Rounded.Lock,
                 isError = isPasswordError,
                 supportingText = {
                     AnimatedVisibility(

@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -377,11 +378,8 @@ fun RegisterPage(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                GlassDivider()
-
-                Spacer(modifier = Modifier.height(8.dp))
+                // 字段槽自带形体与描边，卡内不再需要全宽分隔线（TD37 v0.5）
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // [P02] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
                 Text(
@@ -453,11 +451,8 @@ fun RegisterPage(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                GlassDivider()
-
-                Spacer(modifier = Modifier.height(8.dp))
+                // 字段槽自带形体与描边，卡内不再需要全宽分隔线（TD37 v0.5）
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // 设计稿注册画板密码字段为「设置密码」（登录为「密码」）
                 // [P02] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
@@ -476,6 +471,8 @@ fun RegisterPage(
                     },
                     // 最大位数由组件 maxLength 固定 16，无需页面截断
                     modifier = Modifier.focusRequester(passwordFocusRequester),
+                    // 前缀 lock 图标：与上方手机号行的 Phone 图标对齐（鸿蒙注册页同款）
+                    leadingIcon = Icons.Rounded.Lock,
                     variant = AppFieldVariant.GLASS,
                     isError = isPasswordError,
                     supportingText = {
@@ -548,14 +545,3 @@ fun RegisterPage(
     }
 }
 
-@Composable
-private fun GlassDivider() {
-    // [P01/P02] 2026-11-05 画板复裁：分隔线距卡边 16px（卡 padding 水平 16 自带缩进，
-    // 不再额外内缩），1dp 高、白 12%
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(Color.White.copy(alpha = 0.12f))
-    )
-}

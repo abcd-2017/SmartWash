@@ -187,13 +187,21 @@ val AuthGradientTop = Color(0xFF1A9E6E)
 val AuthGradientMid = Color(0xFF0D7A4A)
 val AuthGradientBottom = Color(0xFF0B5C3A)
 
-val GlassBgCard = Color.White.copy(alpha = 0.08f)       // 玻璃卡底色（设计稿登录/注册画板 .glass 卡 rgba(255,255,255,.08)）
+val GlassBgCard = Color.White.copy(alpha = 0.12f)       // 玻璃卡底色（TD37 v0.5：8%→12%，卡片边缘在渐变上可辨）
 val GlassBgSubtle = Color.White.copy(alpha = 0.10f)     // 极淡底色（设计稿品牌圆 bg 为 rgba(255,255,255,.10)）
 val GlassBg = Color.White.copy(alpha = 0.15f)           // 标准底色
-val GlassBorderSubtle = Color.White.copy(alpha = 0.18f) // 淡边框
+val GlassBorderSubtle = Color.White.copy(alpha = 0.22f) // 淡边框（8%→12% 卡底后同步加深，保持边缘可见）
 val GlassBorder = Color.White.copy(alpha = 0.2f)        // 标准边框
 val GlassInput = Color.White.copy(alpha = 0.3f)         // 输入框/按钮底
 val GlassTextSecondary = Color.White.copy(alpha = 0.4f)  // 次要文字
+
+// 玻璃字段槽（TD37 v0.5）：认证页输入行不再是"全宽透明行"，而是有实底的圆角槽——
+// 黑色 30% 压深品牌渐变，使槽内白色文字/图标对比度 ≥4.5:1（原白 45%–55% 叠渐变仅 2.1–2.9:1）。
+// 聚焦时描边转白 75%（selectedColor 弹簧过渡），替代原槽下的 1dp 指示线。
+val GlassFieldBg = Color.Black.copy(alpha = 0.30f)
+val GlassFieldBgFocused = Color.Black.copy(alpha = 0.42f)
+val GlassFieldBorder = Color.White.copy(alpha = 0.16f)
+val GlassFieldBorderFocused = Color.White.copy(alpha = 0.75f)
 val GlassTextHint = Color.White.copy(alpha = 0.6f)      // 提示文字
 val GlassTextDisabled = Color.White.copy(alpha = 0.7f)   // 禁用文字
 val GlassTextActive = Color.White.copy(alpha = 0.8f)     // 激活文字

@@ -1,6 +1,7 @@
 package com.smartwash.common.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -36,6 +39,10 @@ import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.ErrorLight
+import com.smartwash.common.ui.theme.GlassFieldBg
+import com.smartwash.common.ui.theme.GlassFieldBgFocused
+import com.smartwash.common.ui.theme.GlassFieldBorder
+import com.smartwash.common.ui.theme.GlassFieldBorderFocused
 import com.smartwash.common.utils.selectedColor
 
 /**
@@ -231,15 +238,20 @@ private fun GlassTextField(
     interactionSource: MutableInteractionSource,
 ) {
     val focused by interactionSource.collectIsFocusedAsState()
-    // 聚焦底指示线：未聚焦透明 → 聚焦白 .55，selectedColor = defaultSpring，reduced 180ms
-    val indicator = selectedColor(
-        if (focused) Color.White.copy(alpha = 0.55f) else Color.White.copy(alpha = 0f)
-    )
+    val fieldShape = RoundedCornerShape(AppDimens.inputRadius)
+    // 聚焦态：描边转白 .75、槽底加深一档；未聚焦为淡白 .16 + 黑 30%。
+    // selectedColor = defaultSpring，reduced motion 自动降级 180ms
+    val slotBorder = selectedColor(if (focused) GlassFieldBorderFocused else GlassFieldBorder)
+    val slotBackground = selectedColor(if (focused) GlassFieldBgFocused else GlassFieldBg)
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (singleLine) Modifier.height(48.dp) else Modifier.heightIn(min = 48.dp))
+                .clip(fieldShape)
+                .background(slotBackground)
+                .border(1.dp, slotBorder, fieldShape)
+                .padding(horizontal = 16.dp)
                 .alpha(if (enabled) 1f else 0.38f),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -248,7 +260,8 @@ private fun GlassTextField(
                     imageVector = leadingIcon,
                     contentDescription = leadingIconContentDescription,
                     modifier = Modifier.size(16.dp),
-                    tint = if (isError) ErrorLight else Color.White.copy(alpha = 0.5f),
+                    // 槽底已压深：白 .7 对槽底对比 ≥4.5:1（原白 .5 叠品牌绿仅 2.5:1）
+                    tint = if (isError) ErrorLight else Color.White.copy(alpha = 0.7f),
                 )
                 Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             }
@@ -272,7 +285,7 @@ private fun GlassTextField(
                             Text(
                                 text = placeholder,
                                 style = textStyle,
-                                color = Color.White.copy(alpha = 0.45f),
+                                color = Color.White.copy(alpha = 0.7f),
                             )
                         }
                         innerTextField()
@@ -284,13 +297,6 @@ private fun GlassTextField(
                 trailingIcon()
             }
         }
-        // 聚焦指示线（未聚焦 alpha 0，不占视觉；动画见 indicator）
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(indicator)
-        )
         supportingText?.invoke()
     }
 }
