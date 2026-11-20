@@ -19,14 +19,14 @@
     <string name="lite_home_recipes">菜谱库</string>
     <string name="lite_home_recipes_desc">看看大家都做什么菜</string>
     <string name="lite_home_scan">扫码加入</string>
-    <string name="lite_home_scan_desc">扫室友分享的二维码，一起选菜</string>
+    <string name="lite_home_scan_desc">扫分享二维码，一起选菜</string>
     <string name="lite_home_game">游戏</string>
     <string name="lite_home_game_desc">休闲一下，放松心情</string>
     <string name="lite_home_setting">设置</string>
 
     <!-- 登录 -->
     <string name="lite_login_title">登 录</string>
-    <string name="lite_login_subtitle">和室友一起点，今天吃什么</string>
+    <string name="lite_login_subtitle">一起点，今天吃什么</string>
     <string name="lite_no_account">没有账号？</string>
     <string name="lite_register_now">立即注册</string>
 
@@ -48,15 +48,9 @@
 
     <!-- ==================== 两变体共用文案的 lite 覆盖 ====================
       app 源集同名 key 覆盖 library 资源；full 变体不受影响（维持库内原文）。
-      1. :feature:update:core 下载通知写死「SmartWash」，lite 用户必见品牌残留；
-      2. :feature:game:impl 空态引导「去洗衣服」——lite 无洗衣业务；
-      3. :feature:dining:impl 点单链路 4 条「同学」——lite 品牌语境是「室友」
-         （与 lite_login_subtitle「和室友一起点」对齐；full 校园语境保留「同学」）。 -->
+      :feature:update:core 下载通知写死旧品牌名，lite 用户必见；:feature:game:impl
+      空态引导「去洗衣服」——lite 无洗衣业务。 -->
     <string name="download_notification_title">正在下载应用更新</string>
     <string name="download_notification_complete_tap">点击安装 %s</string>
     <string name="game_empty_message">游戏整理中，稍后再来看看</string>
-    <string name="dining_order_invite_copy_done">加入链接已复制，发给室友一起选菜吧</string>
-    <string name="dining_order_share_qr_hint">室友用 App 扫一扫，确认后即可加入点单</string>
-    <string name="dining_order_detail_draft_hint">草稿编辑中：可加菜、移除菜，发起者「发起点单」后室友再勾选</string>
-    <string name="dining_order_detail_bottom_hint">勾选想吃的菜，室友实时可见</string>
 </resources>
