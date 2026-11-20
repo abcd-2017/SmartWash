@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>密码推理</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材（--g-st- 前缀素材 token，本游戏专用）*/
+  :root {
+    --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
+    --g-primary:#2D9B6A; --g-primary-deep:#17734A; --g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
+    --g-text:#1C1C1E; --g-muted:#6B6E73; --g-faint:#A9AEA9; --g-border:#E6E9E6; --g-hairline:#EFF1EE;
+    --g-danger:#A83850; --g-warning:#9A6210; --g-success:#17734A; --g-water:#4A9FD4;
+    --g-scrim:rgba(245,246,243,.9);
+    --g-shadow:0 2px 12px rgba(20,40,30,.05);
+    --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
+
+    color-scheme:light;
+  }
+  :root[data-theme=dark] {
+    --g-bg:#141614; --g-surface:#1D201E; --g-surface2:#262A27;
+    --g-primary-deep:#5BC894; --g-primary-soft:#1D3229; --g-on-soft:#B9E8CF;
+    --g-text:#E6E9E6; --g-muted:#A9AEA9; --g-faint:#7E837D; --g-border:#2C312D; --g-hairline:#262A27;
+    --g-danger:#DB7186; --g-warning:#E2A44E; --g-success:#4ADE6E; --g-water:#6BB4DE;
+    --g-scrim:rgba(20,22,20,.9);
+    --g-shadow:0 2px 12px rgba(0,0,0,.28);
+/*==EXTRA==*/
+  .clues { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 14px; }
+  .clue {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 12px;
+    padding: 10px 12px; min-height: 44px;
+    font-size: 14px; color: var(--g-text); line-height: 1.5; text-align: left;
+  }
+  .clue .no {
+    flex: 0 0 26px; height: 26px; border-radius: 10px;
+    background: var(--g-primary-soft); color: var(--g-on-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+  }
+  .clue.bad { border-color: var(--g-danger); background: var(--g-surface); }
+  .clue.bad .no { background: var(--g-danger); color: var(--g-on-primary); }
+  .digits { display: flex; justify-content: center; gap: 12px; margin-bottom: 14px; }
+  .digit { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .digit .dval {
+    width: 64px; height: 64px; border-radius: 12px;
+    background: var(--g-surface); border: 1.5px solid var(--g-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: 700; color: var(--g-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .digit .dval.cur { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); }
+  .darr {
+    min-height: 44px; min-width: 64px; border: 1px solid var(--g-border); border-radius: 10px;
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .darr:disabled { opacity: .4; cursor: default; }
+
+    color-scheme:dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.5; }
+  .scores { display: flex; gap: 8px; }
+  .score-box {
+    background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
+    min-width: 70px; padding: 5px 8px; text-align: center; line-height: 1.3;
+  }
+  .score-box .label { display: block; font-size: 12px; opacity: .85; white-space: nowrap; }
+  .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stage { position: relative; }
+  canvas {
+    display: block; width: 100%; height: auto;
+    border: 1px solid var(--g-border); border-radius: 12px;
+    touch-action: none;
+  }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 16px; flex: 1;
+    border: 0; border-radius: 14px;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 340px; max-height: 100%; overflow: auto;
+    background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 16px;
+    box-shadow: var(--g-shadow); padding: 22px 18px; text-align: center;
+  }
+  .rt { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
+  .rs { margin: 0 0 14px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .rs b { color: var(--g-primary-deep); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .rbtns { display: flex; gap: 10px; margin-top: 16px; }
+  .rbtns .btn { flex: 1; }
+  .rhint { margin: 14px 0 0; font-size: 12px; color: var(--g-muted); line-height: 1.6; text-align: left; }
+  .lv-wrap { width: 100%; max-width: 320px; max-height: 46vh; overflow-y: auto; margin-top: 6px; }
+  .lv-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .lv-chip {
+    min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
+  .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
+  .clues { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 14px; }
+  .clue {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 12px;
+    padding: 10px 12px; min-height: 44px;
+    font-size: 14px; color: var(--g-text); line-height: 1.5; text-align: left;
+  }
+  .clue .no {
+    flex: 0 0 26px; height: 26px; border-radius: 10px;
+    background: var(--g-primary-soft); color: var(--g-on-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+  }
+  .clue.bad { border-color: var(--g-danger); background: var(--g-surface); }
+  .clue.bad .no { background: var(--g-danger); color: var(--g-on-primary); }
+  .digits { display: flex; justify-content: center; gap: 12px; margin-bottom: 14px; }
+  .digit { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .digit .dval {
+    width: 64px; height: 64px; border-radius: 12px;
+    background: var(--g-surface); border: 1.5px solid var(--g-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: 700; color: var(--g-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .digit .dval.cur { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); }
+  .darr {
+    min-height: 44px; min-width: 64px; border: 1px solid var(--g-border); border-radius: 10px;
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .darr:disabled { opacity: .4; cursor: default; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="sub">条件线索 · 推出三位密码</span>
+  <div class="scores">
+    <div class="score-box"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="score-box"><span class="label">线索</span><span class="val" id="stClue">0</span></div>
+    <div class="score-box"><span class="label">失误</span><span class="val" id="stMiss">0/3</span></div>
+  </div>
+</header>
+<div class="clues" id="clues" aria-label="线索列表"></div>
+<div class="digits" id="digits">
+  <div class="digit"><button class="darr" id="d0u" type="button" aria-label="第一位加一">+</button><div class="dval cur" id="d0">1</div><button class="darr" id="d0d" type="button" aria-label="第一位减一">−</button></div>
+  <div class="digit"><button class="darr" id="d1u" type="button" aria-label="第二位加一">+</button><div class="dval" id="d1">1</div><button class="darr" id="d1d" type="button" aria-label="第二位减一">−</button></div>
+  <div class="digit"><button class="darr" id="d2u" type="button" aria-label="第三位加一">+</button><div class="dval" id="d2">1</div><button class="darr" id="d2d" type="button" aria-label="第三位减一">−</button></div>
+</div>
+<p class="msg" id="msg" role="status" aria-live="polite">点「开始」进入第 1 关</p>
+<div class="tools">
+  <button class="btn" id="btnSubmit" type="button">验证密码</button>
+  <button class="btn ghost" id="btnLevels" type="button">选关</button>
+</div>
+<p class="foot">线索全部为真且唯一确定密码 · 键盘 ←→ 选位 ↑↓ 加减数字 · 回车验证 · 猜错会标红违规线索 · 共 3 次机会</p>
+
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel" id="panel"></div>
+</div>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作项，Tab 在层内循环，隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 调色板（颜色全部经 CSS 变量读取，JS 零颜色字面量） ========== */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim();}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),text:v("--g-text"),
+    muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),hairline:v("--g-hairline"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    onSoft:v("--g-on-soft"),onPrimary:v("--g-on-primary"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),water:v("--g-water"),
+    stA:v("--g-st-a"),stB:v("--g-st-b"),stC:v("--g-st-c"),stD:v("--g-st-d"),stE:v("--g-st-e"),stF:v("--g-st-f")};
+}
+window.__gOnTheme=function(){palLoad();if(typeof draw==="function")draw();};
+palLoad();
+
+/* ========== 通用工具与覆盖层面板 ========== */
+function $(id){return document.getElementById(id);}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+var overlayEl=$("overlay"),panelEl=$("panel");
+function showPanel(html){panelEl.innerHTML=html;overlayEl.classList.add("show");}
+function hideOverlay(){overlayEl.classList.remove("show");}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});}
+
+/* ==================== 密码推理（条件线索消元，关卡驱动，纯 DOM） ==================== */
+var GAME_KEY="lock-combo",SAVE_KEY="sw.lockcombo.v1";
+var LEVELS_KEY="sw.lockcombo.v1.levels",LEVELS_VER_KEY="sw.lockcombo.v1.levels.ver";
+
+/*XC-CORE-BEGIN*/
+var GEN={};
+function lcSeed(no){return no*7907+2017;}
+function lcRng(a){
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+/* 线索语义（生成器与验证器共用同一含义表，独立于玩法交互） */
+function lcSat(c,a){
+  switch(c.t){
+    case "pd":return a[c.p-1]===c.d;
+    case "pp":return (a[c.p-1]%2===0)===(c.par===0);
+    case "pg":return c.gt?a[c.p-1]>c.d:a[c.p-1]<c.d;
+    case "ct":return a.indexOf(c.d)>=0;
+    case "nc":return a.indexOf(c.d)<0;
+    case "sa":return a[0]+a[1]+a[2]===c.s;
+    case "nr":return a[0]!==a[1]&&a[1]!==a[2]&&a[0]!==a[2];
+    case "rp":return a[0]===a[1]||a[1]===a[2]||a[0]===a[2];
+    case "mx":return Math.max(a[0],a[1],a[2])===c.d;
+    case "mn":return Math.min(a[0],a[1],a[2])===c.d;
+    case "po":return a[c.i-1]>a[c.j-1];
+    default:return false;
+  }
+}
+function lcText(c){
+  switch(c.t){
+    case "pd":return "第"+c.p+"位是 "+c.d;
+    case "pp":return "第"+c.p+"位是"+(c.par===0?"偶数":"奇数");
+    case "pg":return "第"+c.p+"位"+(c.gt?"大于":"小于")+" "+c.d;
+    case "ct":return "密码中含有数字 "+c.d;
+    case "nc":return "密码中不含数字 "+c.d;
+    case "sa":return "三位数字之和为 "+c.s;
+    case "nr":return "三位数字互不重复";
+    case "rp":return "密码中有重复数字";
+    case "mx":return "最大数字是 "+c.d;
+    case "mn":return "最小数字是 "+c.d;
+    case "po":return "第"+c.i+"位比第"+c.j+"位大";
+    default:return "?";
+  }
+}
+/* 枚举 1..hi 的全部三位组合，返回满足全部线索的解列表 */
+function lcSolutions(clues,hi){
+  var out=[],a,i,ok;
+  for(var x=1;x<=hi;x++)for(var y=1;y<=hi;y++)for(var z=1;z<=hi;z++){
+    a=[x,y,z];ok=true;
+    for(i=0;i<clues.length;i++)if(!lcSat(clues[i],a)){ok=false;break;}
+    if(ok)out.push(a);
+  }
+  return out;
+}
+function lcClueWellFormed(c,hi){
+  if(!c||typeof c.t!=="string")return false;
+  function dgt(v){return Number.isInteger(v)&&v>=1&&v<=hi;}
+  switch(c.t){
+    case "pd":case "pp":case "pg":return dgt(c.p)&&c.p<=3&&(c.t==="pp"?c.par===0||c.par===1:dgt(c.d))&&(c.t!=="pg"||(c.gt===true||c.gt===false));
+    case "ct":case "nc":case "mx":case "mn":return dgt(c.d);
+    case "sa":return Number.isInteger(c.s)&&c.s>=3&&c.s<=hi*3;
+    case "nr":case "rp":return c.v===1;
+    case "po":return dgt(c.i)&&dgt(c.j)&&c.i!==c.j;
+    default:return false;
+  }
+}
+/* 生成：随机密码 → 收集全部真线索 → 贪心加入直至解空间收敛到唯一 */
+GEN.gen=function(no,seed){
+  var p=(no-1)/39;
+  var hi=5+Math.floor(p*4);
+  var maxClues=2+Math.floor(p*4);
+  var s=(seed==null?lcSeed(no):seed);
+  for(var att=0;att<120;att++){
+    var lv=GEN.build(no,s+att*7919,hi,maxClues,no>10);
+    if(lv&&GEN.validate(lv).ok)return lv;
+  }
+  return GEN.build(no,987654,5,6,false);
+};
+GEN.build=function(no,seed,hi,maxClues,allowDirect){
+  var rng=lcRng(seed);
+  var code=[1+Math.floor(rng()*hi),1+Math.floor(rng()*hi),1+Math.floor(rng()*hi)];
+  var pool=[],i,j,d;
+  if(allowDirect)for(i=1;i<=3;i++)pool.push({t:"pd",p:i,d:code[i-1]});
+  for(i=1;i<=3;i++)pool.push({t:"pp",p:i,par:code[i-1]%2});
+  for(i=1;i<=3;i++)for(d=1;d<hi;d++){
+    if(code[i-1]>d)pool.push({t:"pg",p:i,d:d,gt:true});
+    if(code[i-1]<d)pool.push({t:"pg",p:i,d:d,gt:false});
+  }
+  var hasDup=code[0]===code[1]||code[1]===code[2]||code[0]===code[2];
+  for(d=1;d<=hi;d++){
+    if(code.indexOf(d)>=0)pool.push({t:"ct",d:d});
+    else pool.push({t:"nc",d:d});
+  }
+  pool.push({t:"sa",s:code[0]+code[1]+code[2]});
+  pool.push(hasDup?{t:"rp",v:1}:{t:"nr",v:1});
+  pool.push({t:"mx",d:Math.max(code[0],code[1],code[2])});
+  pool.push({t:"mn",d:Math.min(code[0],code[1],code[2])});
+  for(i=1;i<=3;i++)for(j=1;j<=3;j++)if(i!==j&&code[i-1]>code[j-1])pool.push({t:"po",i:i,j:j});
+  /* 洗牌 */
+  for(i=pool.length-1;i>0;i--){var k=Math.floor(rng()*(i+1)),tmp=pool[i];pool[i]=pool[k];pool[k]=tmp;}
+  var clues=[],sols=lcSolutions(clues,hi).length;
+  for(i=0;i<pool.length&&clues.length<maxClues&&sols>1;i++){
+    var best=-1,bestCnt=sols;
+    for(j=i;j<pool.length;j++){
+      var trial=clues.concat([pool[j]]);
+      var c=lcSolutions(trial,hi).length;
+      if(c<bestCnt){bestCnt=c;best=j;if(c===1)break;}
+    }
+    if(best<0)break;
+    var sw=pool[i];pool[i]=pool[best];pool[best]=sw;
+    clues.push(pool[i]);
+    sols=bestCnt;
+  }
+  if(sols!==1||clues.length<2)return null;
+  var fin=lcSolutions(clues,hi);
+  if(fin.length!==1||fin[0][0]!==code[0]||fin[0][1]!==code[1]||fin[0][2]!==code[2])return null;
+  return {name:"密码·"+(no<10?"0"+no:no),no:no,seed:seed,hi:hi,code:code,clues:clues};
+};
+/* 独立验证器：线索结构合法 + 全枚举复核解唯一且等于密码 */
+GEN.validate=function(lv){
+  if(!lv||typeof lv!=="object")return{ok:false,why:"shape"};
+  if(!Number.isInteger(lv.hi)||lv.hi<5||lv.hi>9)return{ok:false,why:"hi"};
+  if(!Array.isArray(lv.code)||lv.code.length!==3)return{ok:false,why:"code"};
+  for(var i=0;i<3;i++)if(!(Number.isInteger(lv.code[i])&&lv.code[i]>=1&&lv.code[i]<=lv.hi))return{ok:false,why:"digit"};
+  if(!Array.isArray(lv.clues)||lv.clues.length<2||lv.clues.length>6)return{ok:false,why:"clues"};
+  for(i=0;i<lv.clues.length;i++)if(!lcClueWellFormed(lv.clues[i],lv.hi))return{ok:false,why:"clue"+i};
+  var sols=lcSolutions(lv.clues,lv.hi);
+  if(sols.length!==1)return{ok:false,why:"sols"+sols.length};
+  if(sols[0][0]!==lv.code[0]||sols[0][1]!==lv.code[1]||sols[0][2]!==lv.code[2])return{ok:false,why:"mismatch"};
+  return{ok:true,why:""};
+};
+GEN.validateLevelsAll=function(){
+  var fails=[],n=0;
+  for(var no=1;no<=40;no++){
+    var lv=GEN.gen(no,lcSeed(no));
+    var r=GEN.validate(lv);
+    if(!r.ok)fails.push(no+"("+r.why+")");
+    n++;
+  }
+  return {total:n,fails:fails,allOk:fails.length===0};
+};
+globalThis.__XC=GEN;
+/*XC-CORE-END*/
+
+/* ---------- 默认关卡（确定性种子，40 关） ---------- */
+var DEFAULT_LEVELS=[];
+(function(){
+  for(var no=1;no<=40;no++)DEFAULT_LEVELS.push({name:"密码·"+(no<10?"0"+no:no),no:no,seed:lcSeed(no),difficulty:Math.min(6,1+Math.floor((no-1)/7))});
+})();
+var LEVELS=DEFAULT_LEVELS;
+var save=loadSaveData();
+var cur=Math.min(save.lv,LEVELS.length-1);
+
+/* ---------- 状态 ---------- */
+var course=null,mistakes=0,state="ready",paused=false;
+var guess=[1,1,1],selPos=0,badTimer=null;
+var stLv=$("stLv"),stClue=$("stClue"),stMiss=$("stMiss"),msgEl=$("msg"),cluesEl=$("clues");
+var btnSubmit=$("btnSubmit"),btnLevels=$("btnLevels");
+var dEls=[$("d0"),$("d1"),$("d2")];
+function say(t){msgEl.textContent=t;}
+function totalStars(){var t=0,k;for(k in save.done)t+=save.done[k];return t;}
+function refresh(){
+  stLv.textContent=(cur+1)+"/"+LEVELS.length;
+  stClue.textContent=course?String(course.clues.length):"0";
+  stMiss.textContent=mistakes+"/3";
+}
+
+/* ---------- 关卡流程 ---------- */
+function loadLevel(idx){
+  idx=Math.max(0,Math.min(idx,LEVELS.length-1));
+  cur=idx;
+  var d=LEVELS[idx];
+  course=GEN.gen(d.no,d.seed==null?lcSeed(d.no):d.seed);
+  var chk=GEN.validate(course);
+  if(!chk.ok)course=GEN.gen(d.no,lcSeed(d.no));
+  mistakes=0;state="ready";paused=false;
+  guess=[1,1,1];selPos=0;
+  if(badTimer){clearTimeout(badTimer);badTimer=null;}
+  refresh();renderClues();renderDigits();
+}
+function enterLevel(i){loadLevel(i);showStart();}
+function startPlay(){
+  state="running";paused=false;
+  hideOverlay();
+  say("读线索，调数字，回车验证");
+}
+function selectClosed(){showStart();}
+function totalStarsNow(){return totalStars();}
+function winLevel(){
+  state="over";
+  var stars=mistakes===0?3:mistakes===1?2:1;
+  var old=parseInt(save.done[cur],10)||0;
+  if(stars>old)save.done[cur]=stars;
+  save.best=totalStars();
+  if(cur+1>save.lv)save.lv=cur+1;
+  persistSave();
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:save.lv,metricExtra:save.best}).catch(function(){});
+  refresh();
+  showWin(stars);
+}
+function failLevel(){
+  state="over";
+  showFail();
+}
+function submitGuess(){
+  if(state!=="running"||paused||!course)return;
+  var hit=guess[0]===course.code[0]&&guess[1]===course.code[1]&&guess[2]===course.code[2];
+  if(hit){winLevel();return;}
+  var bad=[];
+  for(var i=0;i<course.clues.length;i++)if(!lcSat(course.clues[i],guess))bad.push(i);
+  mistakes++;refresh();
+  var chips=cluesEl.querySelectorAll(".clue");
+  for(var j=0;j<bad.length;j++)if(chips[bad[j]])chips[bad[j]].classList.add("bad");
+  if(badTimer)clearTimeout(badTimer);
+  badTimer=setTimeout(function(){
+    for(var j=0;j<chips.length;j++)chips[j].classList.remove("bad");
+  },1600);
+  if(mistakes>=3){failLevel();return;}
+  say("不正确 · 违反第 "+bad.map(function(x){return x+1;}).join("、")+" 条线索 · 剩余 "+(3-mistakes)+" 次");
+}
+
+/* ---------- DOM 渲染 ---------- */
+function renderClues(){
+  var html="";
+  for(var i=0;i<course.clues.length;i++){
+    html+='<div class="clue"><span class="no">'+(i+1)+'</span><span>'+esc(lcText(course.clues[i]))+'</span></div>';
+  }
+  cluesEl.innerHTML=html;
+}
+function renderDigits(){
+  var hi=course?course.hi:9;
+  for(var i=0;i<3;i++){
+    dEls[i].textContent=String(guess[i]);
+    dEls[i].classList.toggle("cur",i===selPos);
+    $("d"+i+"u").disabled=guess[i]>=hi;
+    $("d"+i+"d").disabled=guess[i]<=1;
+  }
+}
+function nudge(pos,delta){
+  if(state!=="running"||paused||!course)return;
+  var hi=course.hi;
+  guess[pos]=clamp(guess[pos]+delta,1,hi);
+  renderDigits();
+}
+function setPos(p){selPos=p;renderDigits();}
+
+/* ---------- 输入 ---------- */
+(function bind(){
+  for(var i=0;i<3;i++){
+    (function(i){
+      $("d"+i+"u").addEventListener("click",function(){nudge(i,1);this.blur();});
+      $("d"+i+"d").addEventListener("click",function(){nudge(i,-1);this.blur();});
+      dEls[i].addEventListener("pointerdown",function(){setPos(i);});
+    })(i);
+  }
+})();
+window.addEventListener("keydown",function(e){
+  if(e.repeat)return;
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k==="ArrowLeft"){e.preventDefault();setPos((selPos+2)%3);}
+  else if(k==="ArrowRight"){e.preventDefault();setPos((selPos+1)%3);}
+  else if(k==="ArrowUp"){e.preventDefault();nudge(selPos,1);}
+  else if(k==="ArrowDown"){e.preventDefault();nudge(selPos,-1);}
+  else if(k>="1"&&k<="9"){
+    if(course&&parseInt(k,10)<=course.hi&&state==="running"&&!paused){
+      guess[selPos]=parseInt(k,10);
+      selPos=(selPos+1)%3;
+      renderDigits();
+    }
+  }
+  else if(k==="Backspace"){e.preventDefault();selPos=(selPos+2)%3;renderDigits();}
+  else if(k==="Enter"||k===" "){
+    if(state==="running"&&!paused){e.preventDefault();submitGuess();}
+    else if(state==="ready"||state==="over"){e.preventDefault();retry();}
+  }
+});
+btnSubmit.addEventListener("click",function(){submitGuess();this.blur();});
+btnLevels.addEventListener("click",function(){
+  if(state==="running"&&!paused){paused=true;say("选关中");}
+  openLevelSelect();this.blur();
+});
+
+/* ---------- 覆盖层 ---------- */
+function showStart(){
+  showPanel(
+    '<p class="rt">第 '+(cur+1)+' 关 · '+esc(course.name)+'</p>'+
+    '<p class="rs">'+course.clues.length+' 条线索 · 数字范围 1-'+course.hi+' · '+3+' 次机会</p>'+
+    '<div class="rbtns"><button class="btn" id="ovMain" type="button">开始</button></div>'+
+    '<p class="rhint">所有线索同时为真的三位密码只有一组。猜错时会标红违反的线索，帮你排除错误方向。</p>'
+  );
+  $("ovMain").addEventListener("click",function(){startPlay();});
+}
+function showWin(stars){
+  var last=cur>=LEVELS.length-1;
+  showPanel(
+    '<p class="rt">破译成功！</p>'+
+    '<p class="rs">密码 <b>'+course.code.join("")+'</b> · 星星 '+stars+' / 3</p>'+
+    '<div class="rbtns">'+
+      '<button class="btn ghost" id="ovReplay" type="button">重玩</button>'+
+      '<button class="btn" id="ovNext" type="button">'+(last?"已完成全部":"下一关")+'</button>'+
+    '</div>'
+  );
+  $("ovNext").addEventListener("click",function(){enterLevel(last?cur:cur+1);});
+  $("ovReplay").addEventListener("click",function(){enterLevel(cur);});
+}
+function showFail(){
+  showPanel(
+    '<p class="rt">本关失败</p>'+
+    '<p class="rs">3 次尝试均不正确</p>'+
+    '<p class="rhint">提示：先排除「不含」「大于 / 小于」这类范围线索，再用求和与奇偶收口。</p>'+
+    '<div class="rbtns"><button class="btn" id="ovRetryF" type="button">重试本关</button></div>'
+  );
+  $("ovRetryF").addEventListener("click",function(){retry();});
+}
+function showPause(){
+  showPanel(
+    '<p class="rt">已暂停</p>'+
+    '<p class="rs">线索 '+course.clues.length+' 条 · 已用 '+mistakes+' / 3 次机会</p>'+
+    '<div class="rbtns">'+
+      '<button class="btn ghost" id="ovReP" type="button">重玩本关</button>'+
+      '<button class="btn" id="ovReR" type="button">继续</button>'+
+    '</div>'
+  );
+  $("ovReR").addEventListener("click",function(){paused=false;hideOverlay();});
+  $("ovReP").addEventListener("click",function(){retry();});
+}
+function retry(){loadLevel(cur);startPlay();}
+
+/* 切后台自动暂停 */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&state==="running"&&!paused&&!overlayEl.classList.contains("show")){
+    paused=true;showPause();
+  }
+});
+
+/* ---------- 启动 ---------- */
+refresh();
+loadLevel(cur);
+showStart();
+syncLevelsFromServer();
+syncSaveFromServer();
+window.__validateLevels=GEN.validateLevelsAll;
+
+
+/* ========== 关卡公共段（DB 下发优先 + localStorage 版本缓存 + 包内默认关兜底；仅函数声明，供游戏段调用） ========== */
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!d||typeof d.name!=="string"||!d.name.trim()||!Number.isInteger(d.no)||d.no<1||!Number.isInteger(d.seed))return null;
+    if(seen[d.no])return null;
+    seen[d.no]=1;
+    list.push(d);
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||list.length<DEFAULT_LEVELS.length)return false;
+  for(var i=0;i<list.length;i++){
+    var d=list[i],lv;
+    try{lv=GEN.gen(d.no,d.seed);}catch(e){return false;}
+    if(!lv||!GEN.validate(lv).ok)return false;
+  }
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length>=DEFAULT_LEVELS.length){
+      for(var i=0;i<list.length;i++){var d=list[i];if(!d||!Number.isInteger(d.no)||!Number.isInteger(d.seed))return v;}
+      LEVELS=list;return v;
+    }
+  }catch(e){}
+  return 0;
+}
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      if(save.lv>LEVELS.length-1)save.lv=LEVELS.length-1;
+      persistSave();loadLevel(cur);
+    }
+  }).catch(function(){});
+}
+function loadSaveData(){
+  try{
+    var s=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");
+    if(s&&typeof s==="object"){
+      var done={};
+      if(s.done&&typeof s.done==="object")for(var k in s.done){var v=parseInt(s.done[k],10);if(v>0)done[k]=v;}
+      return{lv:Math.max(0,parseInt(s.lv,10)||0),done:done,best:Math.max(0,parseInt(s.best,10)||0)};
+    }
+  }catch(e){}
+  return{lv:0,done:{},best:0};
+}
+function persistSave(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson),changed=false;
+      var rl=parseInt(remote.lv,10)||0;if(rl>save.lv){save.lv=rl;changed=true;}
+      var rb=parseInt(remote.best,10)||0;if(rb>save.best){save.best=rb;changed=true;}
+      if(remote.done&&typeof remote.done==="object")for(var k in remote.done){
+        var rv=parseInt(remote.done[k],10)||0,mv=parseInt(save.done[k],10)||0;
+        if(rv>mv){save.done[k]=rv;changed=true;}
+      }
+      if(changed){persistSave();}
+    }catch(e){}
+  }).catch(function(){});
+}
+function openLevelSelect(){
+  var html='<p class="rt">选择关卡</p><p class="rs">已过关卡标绿，灰色未解锁</p><div class="lv-wrap"><div class="lv-grid">';
+  for(var i=0;i<LEVELS.length;i++){
+    var done=parseInt(save.done[i],10)>0;
+    var locked=i>save.lv;
+    html+='<button class="lv-chip'+(i===cur?" sel":"")+(done?" done":"")+'" data-i="'+i+'"'+(locked?" disabled":"")+' type="button">'+(i+1)+'</button>';
+  }
+  html+='</div></div><div class="rbtns"><button class="btn ghost" id="ovClose" type="button">返回</button></div>';
+  showPanel(html);
+  var chips=panelEl.querySelectorAll(".lv-chip");
+  for(var j=0;j<chips.length;j++){
+    chips[j].addEventListener("click",function(){
+      var i=parseInt(this.getAttribute("data-i"),10);
+      hideOverlay();enterLevel(i);
+    });
+  }
+  $("ovClose").addEventListener("click",function(){hideOverlay();selectClosed();});
+}
+
+})();
+</script>
+</body>
+</html>

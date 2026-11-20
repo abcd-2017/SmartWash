@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>解绳结</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致），无额外素材 token（顶点/绳段直接用结构 token）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .lvname { font-size: 18px; font-weight: 700; color: var(--g-primary-deep); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46%; }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="lvname" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">移动</span><span class="val" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">剩余交叉</span><span class="val" id="stCross">-</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="绳结展开：拖动圆点使绳段互不交叉" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">拖动圆点，让所有绳段互不交叉（绳段是硬绳不会弯折）</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo">撤销</button>
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：Enter 选中下一个圆点 · 方向键移动选中点 · Esc 取消选中 · U 撤销 · H 提示<br>图形源自平面图打乱，一定能展开 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">解开啦！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+/* ========== 独立验证器（纯逻辑，与交互判定互不引用）：解坐标零交叉复核 ========== */
+(function(){
+"use strict";
+function vCross(p1,p2,p3,p4){   // 严格相交（共享端点不算）
+  if(p1===p3||p1===p4||p2===p3||p2===p4)return false;
+  function d(a,b,c){return (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])}
+  var d1=d(p1,p2,p3),d2=d(p1,p2,p4),d3=d(p3,p4,p1),d4=d(p3,p4,p2);
+  return ((d1>0&&d2<0)||(d1<0&&d2>0))&&((d3>0&&d4<0)||(d3<0&&d4>0));
+}
+function vCountCross(pos,edges){
+  var c=0;
+  for(var i=0;i<edges.length;i++)for(var j=i+1;j<edges.length;j++){
+    if(vCross(pos[edges[i][0]],pos[edges[i][1]],pos[edges[j][0]],pos[edges[j][1]]))c++;
+  }
+  return c;
+}
+function vDistinct(pts){
+  var seen={};
+  for(var i=0;i<pts.length;i++){
+    var k=pts[i][0]+","+pts[i][1];
+    if(seen[k])return false;
+    seen[k]=1;
+  }
+  return true;
+}
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim()||d.name.length>24)return false;
+  if(!Array.isArray(d.pos)||d.pos.length<4||d.pos.length>12)return false;
+  if(!Array.isArray(d.sol)||d.sol.length!==d.pos.length)return false;
+  if(!Array.isArray(d.e)||!d.e.length||d.e.length>20)return false;
+  var V=d.pos.length,seen={};
+  function ptOk(p){return Array.isArray(p)&&p.length===2&&Number.isInteger(p[0])&&Number.isInteger(p[1])&&p[0]>=0&&p[0]<=9&&p[1]>=0&&p[1]<=9}
+  for(var i=0;i<V;i++){if(!ptOk(d.pos[i])||!ptOk(d.sol[i]))return false;}
+  if(!vDistinct(d.pos)||!vDistinct(d.sol))return false;
+  for(var j=0;j<d.e.length;j++){
+    var e=d.e[j];
+    if(!Array.isArray(e)||e.length!==2)return false;
+    if(!Number.isInteger(e[0])||!Number.isInteger(e[1])||e[0]<0||e[0]>=V||e[1]<0||e[1]>=V||e[0]===e[1])return false;
+    var k=Math.min(e[0],e[1])+","+Math.max(e[0],e[1]);
+    if(seen[k])return false;
+    seen[k]=1;
+  }
+  return true;
+}
+function normalizeLevel(d,idx){
+  var solC=vCountCross(d.sol,d.e);
+  var posC=vCountCross(d.pos,d.e);
+  var name=(d&&typeof d.name==="string"&&d.name.trim())?d.name:"解结·"+String(idx+1).padStart(2,"0");
+  var ok=solC===0&&posC>=1;   // 解可展开且打乱态确有结
+  return {name:name,e:d.e,pos:d.pos,sol:d.sol,par:ok?posC:0,difficulty:Number.isInteger(d.difficulty)?Math.min(9,Math.max(1,d.difficulty)):3};
+}
+window.__KF={vCross:vCross,vCountCross:vCountCross,validLevelData:validLevelData,normalizeLevel:normalizeLevel};
+})();
+</script>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ========== */
+var KF=window.__KF,GAME_KEY="knot-free",SAVE_KEY="sw.knotfree.v1";
+var RAW_LEVELS=[
+{"e":[[0,1],[1,2],[2,3],[3,0]],"pos":[[0,4],[4,1],[2,1],[3,2]],"sol":[[0,0],[3,0],[3,3],[0,3]],"d":1},
+{"e":[[0,1],[1,2],[2,3],[3,0]],"pos":[[1,2],[4,2],[0,4],[5,0]],"sol":[[0,0],[3,0],[3,3],[0,3]],"d":1},
+{"e":[[0,1],[1,2],[2,3],[3,0]],"pos":[[3,2],[1,0],[4,5],[3,5]],"sol":[[0,0],[3,0],[3,3],[0,3]],"d":1},
+{"e":[[0,1],[1,2],[2,3],[3,0]],"pos":[[4,3],[2,4],[5,1],[3,4]],"sol":[[0,0],[3,0],[3,3],[0,3]],"d":1},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,0]],"pos":[[4,2],[5,0],[2,5],[5,1],[1,1]],"sol":[[0,1],[2,0],[4,1],[3,3],[1,3]],"d":1},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,0]],"pos":[[3,4],[1,4],[4,5],[0,3],[2,4]],"sol":[[0,1],[2,0],[4,1],[3,3],[1,3]],"d":1},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,0]],"pos":[[4,5],[6,0],[0,4],[5,2],[3,1]],"sol":[[0,1],[2,0],[4,1],[3,3],[1,3]],"d":1},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,0]],"pos":[[1,5],[3,0],[1,0],[5,1],[0,3]],"sol":[[0,1],[2,0],[4,1],[3,3],[1,3]],"d":1},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0]],"pos":[[6,5],[0,3],[0,2],[6,4],[5,2],[4,4]],"sol":[[0,1],[1,0],[3,0],[4,1],[3,3],[1,3]],"d":2},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0]],"pos":[[6,1],[5,3],[1,5],[6,2],[4,0],[3,3]],"sol":[[0,1],[1,0],[3,0],[4,1],[3,3],[1,3]],"d":2},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0]],"pos":[[3,1],[6,3],[5,2],[6,5],[4,2],[2,0]],"sol":[[0,1],[1,0],[3,0],[4,1],[3,3],[1,3]],"d":2},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,0],[5,0],[5,1],[5,2],[5,3],[5,4]],"pos":[[5,5],[6,4],[0,3],[2,2],[1,3],[4,3]],"sol":[[0,1],[2,0],[4,1],[3,3],[1,3],[2,1]],"d":3},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,0],[5,0],[5,1],[5,2],[5,3],[5,4]],"pos":[[0,1],[1,2],[6,3],[0,0],[2,1],[2,4]],"sol":[[0,1],[2,0],[4,1],[3,3],[1,3],[2,1]],"d":3},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,0],[5,0],[5,1],[5,2],[5,3],[5,4]],"pos":[[5,3],[5,0],[6,4],[0,3],[1,1],[2,4]],"sol":[[0,1],[2,0],[4,1],[3,3],[1,3],[2,1]],"d":3},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,0],[5,0],[5,1],[5,2],[5,3],[5,4]],"pos":[[3,3],[0,2],[6,4],[3,4],[0,3],[6,1]],"sol":[[0,1],[2,0],[4,1],[3,3],[1,3],[2,1]],"d":3},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[6,0],[6,1],[6,2],[6,3],[6,4],[6,5]],"pos":[[0,0],[3,2],[0,4],[1,4],[2,2],[5,5],[5,2]],"sol":[[0,1],[1,0],[3,0],[4,1],[3,3],[1,3],[2,1]],"d":4},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[6,0],[6,1],[6,2],[6,3],[6,4],[6,5]],"pos":[[3,5],[4,2],[5,5],[0,5],[3,3],[4,0],[0,3]],"sol":[[0,1],[1,0],[3,0],[4,1],[3,3],[1,3],[2,1]],"d":4},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[6,0],[6,1],[6,2],[6,3],[6,4],[6,5]],"pos":[[5,4],[3,0],[2,5],[5,1],[1,3],[5,3],[1,5]],"sol":[[0,1],[1,0],[3,0],[4,1],[3,3],[1,3],[2,1]],"d":4},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[6,0],[6,1],[6,2],[6,3],[6,4],[6,5]],"pos":[[0,1],[4,5],[0,5],[6,0],[4,4],[2,4],[5,4]],"sol":[[0,1],[1,0],[3,0],[4,1],[3,3],[1,3],[2,1]],"d":4},
+{"e":[[0,1],[1,2],[3,4],[4,5],[0,3],[1,4],[2,5]],"pos":[[2,3],[5,4],[2,4],[6,3],[0,3],[0,1]],"sol":[[0,0],[2,0],[4,0],[0,2],[2,2],[4,2]],"d":2},
+{"e":[[0,1],[1,2],[3,4],[4,5],[0,3],[1,4],[2,5]],"pos":[[5,1],[3,0],[1,3],[1,0],[4,3],[6,1]],"sol":[[0,0],[2,0],[4,0],[0,2],[2,2],[4,2]],"d":2},
+{"e":[[0,1],[1,2],[3,4],[4,5],[0,3],[1,4],[2,5]],"pos":[[2,4],[4,4],[1,4],[3,0],[4,3],[6,0]],"sol":[[0,0],[2,0],[4,0],[0,2],[2,2],[4,2]],"d":2},
+{"e":[[0,1],[1,2],[3,4],[4,5],[0,3],[1,4],[2,5]],"pos":[[5,3],[1,1],[4,4],[2,2],[3,0],[4,0]],"sol":[[0,0],[2,0],[4,0],[0,2],[2,2],[4,2]],"d":2},
+{"e":[[0,1],[1,2],[2,3],[4,5],[5,6],[6,7],[0,4],[1,5],[2,6],[3,7]],"pos":[[0,1],[3,3],[4,1],[0,3],[1,2],[2,1],[4,0],[5,1]],"sol":[[0,0],[1,0],[2,0],[3,0],[0,2],[1,2],[2,2],[3,2]],"d":3},
+{"e":[[0,1],[1,2],[2,3],[4,5],[5,6],[6,7],[0,4],[1,5],[2,6],[3,7]],"pos":[[4,3],[4,4],[0,1],[5,2],[3,4],[3,2],[3,0],[5,3]],"sol":[[0,0],[1,0],[2,0],[3,0],[0,2],[1,2],[2,2],[3,2]],"d":3},
+{"e":[[0,1],[1,2],[2,3],[4,5],[5,6],[6,7],[0,4],[1,5],[2,6],[3,7]],"pos":[[5,3],[3,3],[2,2],[3,2],[1,0],[2,3],[3,1],[4,0]],"sol":[[0,0],[1,0],[2,0],[3,0],[0,2],[1,2],[2,2],[3,2]],"d":3},
+{"e":[[0,1],[1,2],[2,3],[4,5],[5,6],[6,7],[0,4],[1,5],[2,6],[3,7]],"pos":[[1,3],[4,3],[1,0],[2,3],[3,4],[4,4],[1,4],[3,0]],"sol":[[0,0],[1,0],[2,0],[3,0],[0,2],[1,2],[2,2],[3,2]],"d":3},
+{"e":[[0,1],[1,2],[3,4],[4,5],[6,7],[7,8],[0,3],[1,4],[2,5],[3,6],[4,7],[5,8]],"pos":[[5,2],[6,3],[0,6],[3,4],[0,4],[2,1],[5,0],[4,4],[1,6]],"sol":[[0,0],[2,0],[4,0],[0,2],[2,2],[4,2],[0,4],[2,4],[4,4]],"d":4},
+{"e":[[0,1],[1,2],[3,4],[4,5],[6,7],[7,8],[0,3],[1,4],[2,5],[3,6],[4,7],[5,8]],"pos":[[1,0],[3,2],[6,6],[2,5],[5,6],[2,6],[6,4],[6,1],[2,1]],"sol":[[0,0],[2,0],[4,0],[0,2],[2,2],[4,2],[0,4],[2,4],[4,4]],"d":4},
+{"e":[[0,1],[1,2],[3,4],[4,5],[6,7],[7,8],[0,3],[1,4],[2,5],[3,6],[4,7],[5,8]],"pos":[[3,0],[5,0],[0,2],[6,3],[0,5],[6,0],[4,6],[5,6],[4,3]],"sol":[[0,0],[2,0],[4,0],[0,2],[2,2],[4,2],[0,4],[2,4],[4,4]],"d":4},
+{"e":[[0,1],[1,2],[3,4],[4,5],[6,7],[7,8],[0,3],[1,4],[2,5],[3,6],[4,7],[5,8]],"pos":[[3,5],[4,0],[4,5],[1,1],[6,3],[5,2],[0,4],[5,3],[2,1]],"sol":[[0,0],[2,0],[4,0],[0,2],[2,2],[4,2],[0,4],[2,4],[4,4]],"d":4},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[6,0],[6,1],[6,2],[6,3],[6,4],[6,5]],"pos":[[4,1],[2,6],[4,5],[2,1],[6,0],[0,5],[7,2]],"sol":[[0,2],[1,0],[3,0],[5,1],[4,3],[1,4],[2,2]],"d":5},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[6,0],[6,1],[6,2],[6,3],[6,4],[6,5]],"pos":[[2,6],[6,5],[1,1],[3,2],[5,5],[0,1],[1,2]],"sol":[[0,2],[1,0],[3,0],[5,1],[4,3],[1,4],[2,2]],"d":5},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[6,0],[6,1],[6,2],[6,3],[6,4],[6,5]],"pos":[[2,2],[7,5],[5,2],[4,2],[7,6],[5,6],[7,0]],"sol":[[0,2],[1,0],[3,0],[5,1],[4,3],[1,4],[2,2]],"d":5},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[6,0],[6,1],[6,2],[6,3],[6,4],[6,5]],"pos":[[6,5],[6,4],[2,3],[4,5],[5,0],[6,2],[2,5]],"sol":[[0,2],[1,0],[3,0],[5,1],[4,3],[1,4],[2,2]],"d":5},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,0],[9,10],[10,11],[11,9],[0,9],[2,10],[4,11]],"pos":[[5,2],[0,5],[1,6],[3,6],[0,2],[7,0],[1,2],[6,4],[1,4],[0,0],[3,2],[5,6]],"sol":[[0,0],[2,0],[4,0],[5,1],[5,3],[4,4],[2,4],[0,4],[0,2],[2,2],[3,2],[2,3]],"d":6},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,0],[9,10],[10,11],[11,9],[0,9],[2,10],[4,11]],"pos":[[2,4],[3,4],[6,1],[6,0],[5,2],[6,2],[1,2],[6,5],[0,1],[4,3],[2,1],[7,2]],"sol":[[0,0],[2,0],[4,0],[5,1],[5,3],[4,4],[2,4],[0,4],[0,2],[2,2],[3,2],[2,3]],"d":6},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,0],[9,10],[10,11],[11,9],[0,9],[2,10],[4,11]],"pos":[[3,4],[6,3],[1,3],[3,2],[1,5],[1,1],[7,6],[3,1],[6,5],[4,5],[0,3],[7,1]],"sol":[[0,0],[2,0],[4,0],[5,1],[5,3],[4,4],[2,4],[0,4],[0,2],[2,2],[3,2],[2,3]],"d":6},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,0],[9,10],[10,11],[11,9],[0,9],[2,10],[4,11]],"pos":[[4,5],[4,2],[3,3],[0,1],[0,5],[6,5],[2,6],[3,0],[0,2],[5,6],[2,3],[2,1]],"sol":[[0,0],[2,0],[4,0],[5,1],[5,3],[4,4],[2,4],[0,4],[0,2],[2,2],[3,2],[2,3]],"d":6},
+{"e":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,0],[9,10],[10,11],[11,9],[0,9],[2,10],[4,11]],"pos":[[3,6],[6,5],[6,1],[0,4],[1,3],[2,5],[4,3],[6,6],[3,1],[6,2],[1,0],[1,1]],"sol":[[0,0],[2,0],[4,0],[5,1],[5,3],[4,4],[2,4],[0,4],[0,2],[2,2],[3,2],[2,3]],"d":6}
+];
+var LEVELS=RAW_LEVELS.map(function(d,i){
+  d.name="解结·"+String(i+1).padStart(2,"0");
+  return KF.normalizeLevel(d,i);
+}).filter(function(x){return x.par>0});
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seenName={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i],d;
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!KF.validLevelData(d))return null;
+    var name=(typeof d.name==="string"&&d.name.trim())?d.name:null;
+    if(name&&seenName[name])return null;
+    if(name)seenName[name]=1;
+    var n=KF.normalizeLevel(d,i);
+    if(!(n.par>0))continue;   // 验证器判不可展开/出生即解开：不进关卡表
+    list.push(n);
+  }
+  return list.length?list:null;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(KF.validLevelData)){
+      LEVELS=list.map(function(d,i){return KF.normalizeLevel(d,i)}).filter(function(x){return x.par>0});
+      if(LEVELS.length)return v;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);resize();
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档 ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0)),solved:parseInt(s.solved,10)||0}}catch(e){return{lv:0,solved:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rs=parseInt(remote.solved,10)||0;
+      if(rs>save.solved){save.solved=rs;persist();}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 交互判定（与验证器独立实现）：参数化求交，t/s 均落在开区间才计交叉 ---------- */
+function pSegCross(a,b,c,d){
+  var abx=b[0]-a[0],aby=b[1]-a[1],cdx=d[0]-c[0],cdy=d[1]-c[1];
+  var denom=abx*cdy-aby*cdx;
+  if(denom===0)return false;
+  var cax=c[0]-a[0],cay=c[1]-a[1];
+  var t=(cax*cdy-cay*cdx)/denom;
+  var s=(cax*aby-cay*abx)/denom;
+  return t>0&&t<1&&s>0&&s<1;
+}
+function pCountCross(pos,edges){
+  var c=0,i,j;
+  for(i=0;i<edges.length;i++)for(j=i+1;j<edges.length;j++){
+    var e1=edges[i],e2=edges[j];
+    if(e1[0]===e2[0]||e1[0]===e2[1]||e1[1]===e2[0]||e1[1]===e2[1])continue;
+    if(pSegCross(pos[e1[0]],pos[e1[1]],pos[e2[0]],pos[e2[1]]))c++;
+  }
+  return c;
+}
+/* ---------- 状态 ---------- */
+var lv=save.lv,pos=null,edges=null,V=0,sel=-1,dragIdx=-1,history=[],moves=0,done=false,hintShow=0;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=0,H=0,cell=1,mx=0,my=0,gx=1,gy=1;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(idx){
+  lv=Math.max(0,Math.min(idx,LEVELS.length-1));
+  var L=LEVELS[lv];
+  edges=L.e;V=L.pos.length;
+  pos=L.pos.map(function(p){return [p[0],p[1]]});
+  var c0=KF.vCountCross(pos,edges);   // 加载复核：打乱态确有交叉
+  sel=-1;dragIdx=-1;history=[];moves=0;done=false;hintShow=0;
+  gx=1;gy=1;
+  for(var i=0;i<V;i++){gx=Math.max(gx,pos[i][0],L.sol[i][0]);gy=Math.max(gy,pos[i][1],L.sol[i][1]);}
+  $("lvTag").textContent="第 "+(lv+1)+" 关";
+  $("lvRule").textContent=L.name+" · "+V+" 点 "+edges.length+" 段绳";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  if(!(c0>=0))say("关卡数据异常");
+  else if(c0===0)say("警告：本关打乱态没有交叉（数据异常）");
+  else say("当前 "+c0+" 处交叉，拖到 0 即过关");
+  updStats(c0);resize();
+}
+function updStats(c){
+  var cc=(c===undefined)?pCountCross(pos,edges):c;
+  $("stMoves").textContent=moves;
+  $("stCross").textContent=cc;
+  $("btnUndo").disabled=!history.length||done;
+  return cc;
+}
+function checkWin(){
+  var c=updStats();
+  if(c===0&&!done){
+    done=true;
+    if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+    save.solved++;persist();
+    if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:moves}).catch(function(){});
+    $("ovTitle").textContent="解开啦！";
+    $("ovDesc").innerHTML="移动 "+moves+" 次全部展开"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+    $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+    $("overlay").classList.add("show");
+    say("所有绳段不再交叉！");
+  }
+}
+function snapshot(){history.push(pos.map(function(p){return [p[0],p[1]]}))}
+function moveVertex(i,dx,dy){
+  if(done)return;
+  var nx=Math.max(0,Math.min(gx,pos[i][0]+dx));
+  var ny=Math.max(0,Math.min(gy,pos[i][1]+dy));
+  if(nx===pos[i][0]&&ny===pos[i][1])return;
+  snapshot();
+  pos[i]=[nx,ny];moves++;
+  checkWin();
+}
+function undo(){
+  if(!history.length||done)return;
+  pos=history.pop();moves=history.length+1;sel=-1;
+  say("已撤销一步");updStats();render();
+}
+function hint(){
+  if(done)return;
+  hintShow=Date.now();
+  say("已短暂显示解法位置（虚线圈）");
+}
+/* ---------- 调色板 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n2){return s.getPropertyValue(n2).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),deep:v("--g-primary-deep"),
+    danger:v("--g-danger"),warning:v("--g-warning"),primary:v("--g-primary")};
+}
+window.__gOnTheme=function(){palLoad();render()};//App 推送主题时刷新调色板并重绘
+/* ---------- 绘制 ---------- */
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.round(w);H=Math.round(w);
+  mx=Math.max(24,W*0.09);my=mx;
+  cell=Math.min((W-mx*2)/gx,(H-my*2)/gy);
+  cv.style.height=H+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  render();
+}
+function cx2(x){return mx+x*cell}
+function cy2(y){return my+y*cell}
+function render(){
+  if(!pos)return;
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle=PAL.surface2;ctx.fillRect(0,0,W,H);
+  var i;
+  if(hintShow&&Date.now()-hintShow<2600){
+    var L=LEVELS[lv];
+    ctx.strokeStyle=PAL.warning;ctx.setLineDash([4,4]);ctx.lineWidth=2;
+    for(i=0;i<V;i++){
+      ctx.beginPath();ctx.arc(cx2(L.sol[i][0]),cy2(L.sol[i][1]),cell*0.3,0,7);ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+  var crossings=[];
+  for(i=0;i<edges.length;i++)for(var j=i+1;j<edges.length;j++){
+    var e1=edges[i],e2=edges[j];
+    if(e1[0]===e2[0]||e1[0]===e2[1]||e1[1]===e2[0]||e1[1]===e2[1])continue;
+    if(pSegCross(pos[e1[0]],pos[e1[1]],pos[e2[0]],pos[e2[1]])){
+      crossings.push(intersectPt(pos[e1[0]],pos[e1[1]],pos[e2[0]],pos[e2[1]]));
+    }
+  }
+  ctx.strokeStyle=crossings.length?PAL.danger:PAL.deep;
+  ctx.lineWidth=3;ctx.lineCap="round";
+  for(i=0;i<edges.length;i++){
+    ctx.beginPath();
+    ctx.moveTo(cx2(pos[edges[i][0]][0]),cy2(pos[edges[i][0]][1]));
+    ctx.lineTo(cx2(pos[edges[i][1]][0]),cy2(pos[edges[i][1]][1]));
+    ctx.stroke();
+  }
+  for(i=0;i<crossings.length;i++){
+    if(!crossings[i])continue;
+    ctx.fillStyle=PAL.danger;
+    ctx.beginPath();ctx.arc(cx2(crossings[i][0]),cy2(crossings[i][1]),4,0,7);ctx.fill();
+  }
+  for(i=0;i<V;i++){
+    var px=cx2(pos[i][0]),py=cy2(pos[i][1]),rad=Math.max(11,cell*0.24);
+    ctx.fillStyle=PAL.primary;
+    ctx.beginPath();ctx.arc(px,py,rad,0,7);ctx.fill();
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(px,py,rad,0,7);ctx.stroke();
+    if(sel===i||dragIdx===i){
+      ctx.strokeStyle=PAL.warning;ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(px,py,rad+4,0,7);ctx.stroke();
+    }
+  }
+}
+function intersectPt(p1,p2,p3,p4){
+  function sub(a,b){return [b[0]-a[0],b[1]-a[1]]}
+  function cross2(u,v){return u[0]*v[1]-u[1]*v[0]}
+  var ab=sub(p1,p2),cd=sub(p3,p4),ac=sub(p1,p3);
+  var denom=cross2(ab,cd);
+  if(!denom)return null;
+  var t=cross2(ac,cd)/denom;
+  return [p1[0]+ab[0]*t,p1[1]+ab[1]*t];
+}
+function loop(){render();requestAnimationFrame(loop)}
+/* ---------- 输入 ---------- */
+function hitVertex(x,y){
+  var best=-1,bd=1e9;
+  for(var i=0;i<V;i++){
+    var d=Math.hypot(cx2(pos[i][0])-x,cy2(pos[i][1])-y);
+    if(d<Math.max(24,cell*0.45)&&d<bd){bd=d;best=i;}
+  }
+  return best;
+}
+var dragOff=[0,0];
+cv.addEventListener("pointerdown",function(e){
+  var rect=cv.getBoundingClientRect();
+  var x=e.clientX-rect.left,y=e.clientY-rect.top;
+  e.preventDefault();
+  if(done)return;
+  var hit=hitVertex(x,y);
+  if(hit<0){sel=-1;render();return;}
+  dragIdx=hit;sel=hit;
+  snapshot();
+  dragOff=[cx2(pos[hit][0])-x,cy2(pos[hit][1])-y];
+  cv.setPointerCapture&&cv.setPointerCapture(e.pointerId);
+  render();
+});
+cv.addEventListener("pointermove",function(e){
+  if(dragIdx<0)return;
+  var rect=cv.getBoundingClientRect();
+  var x=e.clientX-rect.left+dragOff[0],y=e.clientY-rect.top+dragOff[1];
+  pos[dragIdx]=[Math.max(0,Math.min(gx,(x-mx)/cell)),Math.max(0,Math.min(gy,(y-my)/cell))];
+  render();
+});
+function endDrag(){
+  if(dragIdx<0)return;
+  dragIdx=-1;moves++;
+  checkWin();render();
+}
+cv.addEventListener("pointerup",endDrag);
+cv.addEventListener("pointercancel",endDrag);
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",openLevelSelect);
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(done){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+    else{lv++;loadLevel(lv)}
+  }
+});
+function hideOverlay(){$("overlay").classList.remove("show")}
+function openLevelSelect(){
+  var ggrid=$("lvgrid");ggrid.hidden=false;
+  ggrid.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      ggrid.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k==="Enter"||k==="Tab"){
+    if(!done){sel=(sel+1)%V;say("已选中第 "+(sel+1)+" 个点，方向键移动");}
+    e.preventDefault();
+  }
+  else if(k==="ArrowLeft"){if(sel>=0){moveVertex(sel,-1,0);e.preventDefault();}}
+  else if(k==="ArrowRight"){if(sel>=0){moveVertex(sel,1,0);e.preventDefault();}}
+  else if(k==="ArrowUp"){if(sel>=0){moveVertex(sel,0,-1);e.preventDefault();}}
+  else if(k==="ArrowDown"){if(sel>=0){moveVertex(sel,0,1);e.preventDefault();}}
+  else if(k==="Escape"){sel=-1;}
+  else if(k==="u"||k==="U")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+  else if(k===" "&&$("overlay").classList.contains("show"))$("ovBtn").click();
+  render();
+});
+window.addEventListener("resize",resize);
+document.addEventListener("visibilitychange",function(){if(!document.hidden)render()});
+/* ---------- 启动 ---------- */
+palLoad();loadLevel(save.lv);resize();loop();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

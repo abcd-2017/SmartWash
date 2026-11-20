@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>钥匙匹配</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材（--g-st- 前缀素材 token，本游戏专用）*/
+  :root {
+    --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
+    --g-primary:#2D9B6A; --g-primary-deep:#17734A; --g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
+    --g-text:#1C1C1E; --g-muted:#6B6E73; --g-faint:#A9AEA9; --g-border:#E6E9E6; --g-hairline:#EFF1EE;
+    --g-danger:#A83850; --g-warning:#9A6210; --g-success:#17734A; --g-water:#4A9FD4;
+    --g-scrim:rgba(245,246,243,.9);
+    --g-shadow:0 2px 12px rgba(20,40,30,.05);
+    --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
+    /*素材:a=门板 b=门框 c=黄铜钥匙 d=锁孔 e=墙面 f=开门光*/
+    --g-st-a:#D9C6A0; --g-st-b:#8A6E4A; --g-st-c:#D4A94E; --g-st-d:#33363B; --g-st-e:#EDE7D8; --g-st-f:#8FC98A;
+
+    color-scheme:light;
+  }
+  :root[data-theme=dark] {
+    --g-bg:#141614; --g-surface:#1D201E; --g-surface2:#262A27;
+    --g-primary-deep:#5BC894; --g-primary-soft:#1D3229; --g-on-soft:#B9E8CF;
+    --g-text:#E6E9E6; --g-muted:#A9AEA9; --g-faint:#7E837D; --g-border:#2C312D; --g-hairline:#262A27;
+    --g-danger:#DB7186; --g-warning:#E2A44E; --g-success:#4ADE6E; --g-water:#6BB4DE;
+    --g-scrim:rgba(20,22,20,.9);
+    --g-shadow:0 2px 12px rgba(0,0,0,.28);
+    --g-st-a:#56462C; --g-st-b:#3A2E1C; --g-st-c:#B08A3E; --g-st-d:#101414; --g-st-e:#2A2620; --g-st-f:#3E7A55;
+/*==EXTRA==*/
+  canvas#cv { aspect-ratio: 390/470; background: var(--g-st-e); }
+
+    color-scheme:dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.5; }
+  .scores { display: flex; gap: 8px; }
+  .score-box {
+    background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
+    min-width: 70px; padding: 5px 8px; text-align: center; line-height: 1.3;
+  }
+  .score-box .label { display: block; font-size: 12px; opacity: .85; white-space: nowrap; }
+  .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stage { position: relative; }
+  canvas {
+    display: block; width: 100%; height: auto;
+    border: 1px solid var(--g-border); border-radius: 12px;
+    touch-action: none;
+  }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 16px; flex: 1;
+    border: 0; border-radius: 14px;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 340px; max-height: 100%; overflow: auto;
+    background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 16px;
+    box-shadow: var(--g-shadow); padding: 22px 18px; text-align: center;
+  }
+  .rt { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
+  .rs { margin: 0 0 14px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .rs b { color: var(--g-primary-deep); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .rbtns { display: flex; gap: 10px; margin-top: 16px; }
+  .rbtns .btn { flex: 1; }
+  .rhint { margin: 14px 0 0; font-size: 12px; color: var(--g-muted); line-height: 1.6; text-align: left; }
+  .lv-wrap { width: 100%; max-width: 320px; max-height: 46vh; overflow-y: auto; margin-top: 6px; }
+  .lv-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .lv-chip {
+    min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
+  .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
+  canvas#cv { aspect-ratio: 390/470; background: var(--g-st-e); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="sub">齿形对位 · 配钥开门</span>
+  <div class="scores">
+    <div class="score-box"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="score-box"><span class="label">门</span><span class="val" id="stDoor">0/0</span></div>
+    <div class="score-box"><span class="label">失误</span><span class="val" id="stMiss">0/2</span></div>
+  </div>
+</header>
+<div class="stage"><canvas id="cv" aria-label="钥匙匹配：上方门锁显示锁孔齿形，下方点选齿形吻合的钥匙" role="img"></canvas></div>
+<p class="msg" id="msg" role="status" aria-live="polite">点「开始」进入第 1 关</p>
+<div class="tools">
+  <button class="btn ghost" id="btnRetry" type="button">重玩本关</button>
+  <button class="btn ghost" id="btnLevels" type="button">选关</button>
+</div>
+<p class="foot">对比锁孔与钥匙的齿形缺口，点选完全吻合的钥匙 · 键盘 1-8 选钥匙 · 连续 2 次选错本关失败</p>
+
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel" id="panel"></div>
+</div>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作项，Tab 在层内循环，隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 调色板（颜色全部经 CSS 变量读取，JS 零颜色字面量） ========== */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim();}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),text:v("--g-text"),
+    muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),hairline:v("--g-hairline"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    onSoft:v("--g-on-soft"),onPrimary:v("--g-on-primary"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),water:v("--g-water"),
+    stA:v("--g-st-a"),stB:v("--g-st-b"),stC:v("--g-st-c"),stD:v("--g-st-d"),stE:v("--g-st-e"),stF:v("--g-st-f")};
+}
+window.__gOnTheme=function(){palLoad();if(typeof draw==="function")draw();};
+palLoad();
+
+/* ========== 通用工具与覆盖层面板 ========== */
+function $(id){return document.getElementById(id);}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+var overlayEl=$("overlay"),panelEl=$("panel");
+function showPanel(html){panelEl.innerHTML=html;overlayEl.classList.add("show");}
+function hideOverlay(){overlayEl.classList.remove("show");}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});}
+
+/* ==================== 钥匙匹配（齿形对位开门，关卡驱动） ==================== */
+var GAME_KEY="door-keys",SAVE_KEY="sw.doorkeys.v1";
+var LEVELS_KEY="sw.doorkeys.v1.levels",LEVELS_VER_KEY="sw.doorkeys.v1.levels.ver";
+
+/*XC-CORE-BEGIN*/
+var GEN={};
+function dkSeed(no){return no*7919+1013;}
+function dkRng(a){
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+/* 生成一关：doors=门的齿形列表 keys=钥匙串（door:i 正确钥 / -1 干扰钥） */
+GEN.gen=function(no,seed){
+  var p=(no-1)/39;
+  var nDoors=3+Math.floor(p*2.99);
+  var nExtra=1+Math.floor(p*2.99);
+  var L=4+(no>12?1:0)+(no>28?1:0);
+  var s=(seed==null?dkSeed(no):seed);
+  for(var att=0;att<80;att++){
+    var lv=GEN.build(no,s+att*7919,nDoors,nExtra,L);
+    if(lv&&GEN.validate(lv).ok)return lv;
+  }
+  return GEN.build(no,1234567,3,1,4);
+};
+GEN.build=function(no,seed,nDoors,nExtra,L){
+  var rng=dkRng(seed),doors=[],used={},keys=[],i,j;
+  while(doors.length<nDoors){
+    var prof=[];
+    for(i=0;i<L;i++)prof.push(Math.floor(rng()*3));
+    var sig=prof.join("");
+    if(used[sig])continue;
+    used[sig]=1;doors.push(prof);
+  }
+  for(i=0;i<nDoors;i++)keys.push({profile:doors[i].slice(),door:i});
+  for(j=0;j<nExtra;j++){
+    var base=doors[Math.floor(rng()*nDoors)].slice();
+    var pos=Math.floor(rng()*L),old=base[pos],nv,tries=0;
+    do{nv=Math.floor(rng()*3);tries++;}while(nv===old&&tries<10);
+    base[pos]=nv;
+    var sig2=base.join("");
+    if(used[sig2])continue;
+    used[sig2]=1;
+    keys.push({profile:base,door:-1});
+  }
+  return {name:"开门·"+(no<10?"0"+no:no),no:no,seed:seed,teeth:L,doors:doors,keys:keys};
+};
+/* 独立验证器：与玩法匹配逻辑相互独立——逐门统计齿形完全吻合的钥匙数必须恰为 1；
+   门齿形两两互异；干扰钥不得吻合任何门；标记一致性 */
+GEN.validate=function(lv){
+  if(!lv||!Array.isArray(lv.doors)||!Array.isArray(lv.keys)||!Number.isInteger(lv.teeth))return{ok:false,why:"shape"};
+  if(lv.doors.length<3||lv.doors.length>5)return{ok:false,why:"doors"};
+  if(lv.keys.length<lv.doors.length+1||lv.keys.length>lv.doors.length+4)return{ok:false,why:"keys"};
+  var i,j;
+  for(i=0;i<lv.doors.length;i++){
+    if(!Array.isArray(lv.doors[i])||lv.doors[i].length!==lv.teeth)return{ok:false,why:"teeth"};
+    for(j=0;j<lv.teeth;j++)if(!(lv.doors[i][j]>=0&&lv.doors[i][j]<=2))return{ok:false,why:"depth"};
+  }
+  for(i=0;i<lv.doors.length;i++)for(j=i+1;j<lv.doors.length;j++)
+    if(lv.doors[i].join("")===lv.doors[j].join(""))return{ok:false,why:"dup-door"};
+  for(i=0;i<lv.keys.length;i++){
+    var kp=lv.keys[i];
+    if(!kp||!Array.isArray(kp.profile)||kp.profile.length!==lv.teeth)return{ok:false,why:"kteeth"};
+    for(j=0;j<lv.teeth;j++)if(!(kp.profile[j]>=0&&kp.profile[j]<=2))return{ok:false,why:"kdepth"};
+    var matches=0;
+    for(j=0;j<lv.doors.length;j++)if(kp.profile.join("")===lv.doors[j].join(""))matches++;
+    if(kp.door>=0&&matches!==1)return{ok:false,why:"doorkey"+i};
+    if(kp.door<0&&matches!==0)return{ok:false,why:"decoy"+i};
+  }
+  for(i=0;i<lv.doors.length;i++){
+    var cnt=0;
+    for(j=0;j<lv.keys.length;j++)if(lv.keys[j].door===i)cnt++;
+    if(cnt!==1)return{ok:false,why:"mark"+i};
+  }
+  return{ok:true,why:""};
+};
+GEN.validateLevelsAll=function(){
+  var fails=[],n=0;
+  for(var no=1;no<=40;no++){
+    var lv=GEN.gen(no,dkSeed(no));
+    var r=GEN.validate(lv);
+    if(!r.ok)fails.push(no+"("+r.why+")");
+    n++;
+  }
+  return {total:n,fails:fails,allOk:fails.length===0};
+};
+globalThis.__XC=GEN;
+/*XC-CORE-END*/
+
+/* ---------- 默认关卡（确定性种子，40 关） ---------- */
+var DEFAULT_LEVELS=[];
+(function(){
+  for(var no=1;no<=40;no++)DEFAULT_LEVELS.push({name:"开门·"+(no<10?"0"+no:no),no:no,seed:dkSeed(no),difficulty:Math.min(6,1+Math.floor((no-1)/7))});
+})();
+var LEVELS=DEFAULT_LEVELS;
+var save=loadSaveData();
+var cur=Math.min(save.lv,LEVELS.length-1);
+
+/* ---------- 状态 ---------- */
+var course=null,doorIdx=0,mistakes=0,state="ready",paused=false;
+var fly=null,shakeT=0,openT=0,wrongT=0;
+var stLv=$("stLv"),stDoor=$("stDoor"),stMiss=$("stMiss"),msgEl=$("msg");
+var btnRetry=$("btnRetry"),btnLevels=$("btnLevels");
+function say(t){msgEl.textContent=t;}
+function totalStars(){var t=0,k;for(k in save.done)t+=save.done[k];return t;}
+function refresh(){
+  stLv.textContent=(cur+1)+"/"+LEVELS.length;
+  stDoor.textContent=course?doorIdx+"/"+course.doors.length:"0/0";
+  stMiss.textContent=mistakes+"/2";
+}
+
+/* ---------- 画布 ---------- */
+var NW=390,NH=470,W=390,H=470,S=1,offX=0,offY=0;
+var cv=$("cv"),ctx=cv.getContext("2d");
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function fit(){
+  var r=cv.getBoundingClientRect();
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.max(240,Math.floor(r.width));H=Math.max(300,Math.floor(r.height));
+  cv.width=Math.floor(W*dpr);cv.height=Math.floor(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  S=Math.min(W/NW,H/NH);offX=(W-NW*S)/2;offY=(H-NH*S)/2;
+  draw();
+}
+window.addEventListener("resize",fit);
+window.addEventListener("orientationchange",fit);
+function toNominal(ev){
+  var r=cv.getBoundingClientRect();
+  return{x:(ev.clientX-r.left-offX)/S,y:(ev.clientY-r.top-offY)/S};
+}
+
+/* ---------- 关卡流程 ---------- */
+function loadLevel(idx){
+  idx=Math.max(0,Math.min(idx,LEVELS.length-1));
+  cur=idx;
+  var d=LEVELS[idx];
+  course=GEN.gen(d.no,d.seed==null?dkSeed(d.no):d.seed);
+  var chk=GEN.validate(course);
+  if(!chk.ok)course=GEN.gen(d.no,dkSeed(d.no));
+  doorIdx=0;mistakes=0;state="ready";paused=false;
+  fly=null;shakeT=0;openT=0;wrongT=0;
+  refresh();
+}
+function enterLevel(i){loadLevel(i);showStart();}
+function startPlay(){
+  state="running";paused=false;
+  hideOverlay();
+  say("对比锁孔缺口，点选吻合的钥匙");
+  btnRetry.disabled=false;
+}
+function selectClosed(){showStart();}
+function winLevel(){
+  state="over";
+  var stars=mistakes===0?3:mistakes===1?2:1;
+  var old=parseInt(save.done[cur],10)||0;
+  if(stars>old)save.done[cur]=stars;
+  save.best=totalStars();
+  if(cur+1>save.lv)save.lv=cur+1;
+  persistSave();
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:save.lv,metricExtra:save.best}).catch(function(){});
+  refresh();
+  showWin(stars);
+}
+function failLevel(){
+  state="over";
+  showFail();
+}
+function selectKey(i){
+  if(state!=="running"||paused||fly||openT>0||!course)return;
+  if(i<0||i>=course.keys.length)return;
+  var ok=course.keys[i].profile.join("")===course.doors[doorIdx].join("");
+  fly={ki:i,t:0,ok:ok};
+}
+function step(dt){
+  if(state!=="running"||paused)return;
+  if(shakeT>0)shakeT=Math.max(0,shakeT-dt);
+  if(wrongT>0)wrongT=Math.max(0,wrongT-dt);
+  if(fly){
+    fly.t+=dt/0.38;
+    if(fly.t>=1){
+      var ok=fly.ok;fly=null;
+      if(ok){openT=0.0001;say("吻合！门开了");}
+      else{
+        mistakes++;refresh();
+        shakeT=0.4;wrongT=0.8;
+        if(mistakes>=2){failLevel();return;}
+        say("齿形不符 · 失误 "+mistakes+"/2");
+      }
+    }
+  }else if(openT>0){
+    openT+=dt/0.5;
+    if(openT>=1){
+      openT=0;doorIdx++;refresh();
+      if(doorIdx>=course.doors.length){winLevel();return;}
+      say("下一扇门");
+    }
+  }
+}
+
+/* ---------- 绘制 ---------- */
+function drawKeyShape(bx,cy,prof,tw,col,ln,alpha){
+  ctx.globalAlpha=alpha==null?1:alpha;
+  var L=prof.length;
+  ctx.fillStyle=col;ctx.strokeStyle=ln;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(bx-16,cy,12,0,6.3);ctx.stroke();
+  ctx.beginPath();ctx.arc(bx-16,cy,5,0,6.3);ctx.stroke();
+  rr(bx,cy-6,tw*L+2,12,3);ctx.fill();ctx.stroke();
+  for(var i=0;i<L;i++){
+    var d=4+prof[i]*9;
+    ctx.fillRect(bx+i*tw,cy+6,tw,d);
+    ctx.strokeRect(bx+i*tw,cy+6,tw,d);
+  }
+  ctx.globalAlpha=1;
+}
+function drawSlot(sx,sy,sw,sh,prof,tw){
+  ctx.fillStyle=PAL.stD;ctx.strokeStyle=PAL.faint;ctx.lineWidth=1.5;
+  ctx.fillRect(sx,sy,sw,sh);ctx.strokeRect(sx,sy,sw,sh);
+  for(var i=0;i<prof.length;i++){
+    var d=4+prof[i]*9;
+    ctx.fillRect(sx+i*tw,sy+sh,tw,d);
+    ctx.strokeRect(sx+i*tw,sy+sh,tw,d);
+  }
+}
+function drawCheck(x,y,rad){
+  ctx.strokeStyle=PAL.success;ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.moveTo(x-rad*0.55,y);ctx.lineTo(x-rad*0.1,y+rad*0.45);ctx.lineTo(x+rad*0.6,y-rad*0.45);
+  ctx.stroke();
+}
+function draw(){
+  if(!course)return;
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(offX,offY);ctx.scale(S,S);
+  if(shakeT>0){var a=shakeT/0.4;ctx.translate(Math.sin(shakeT*44)*5*a,0);}
+  var i;
+  // 墙面
+  ctx.fillStyle=PAL.stA;ctx.fillRect(0,0,NW,NH);
+  // 门与门框
+  var doorY=14-openT*120;
+  ctx.fillStyle=PAL.stB;
+  rr(106,doorY-6,178,158,10);ctx.fill();
+  ctx.fillStyle=PAL.stA;
+  rr(116,doorY,158,146,8);ctx.fill();
+  // 开门时门后亮起
+  if(openT>0){
+    ctx.save();ctx.globalAlpha=Math.min(1,openT*1.6);
+    ctx.fillStyle=PAL.stF;
+    rr(120,doorY+10,150,132,8);ctx.fill();
+    ctx.globalAlpha=1;
+    drawCheck(195,doorY+76,26);
+    ctx.restore();
+  }
+  // 门牌与把手
+  ctx.fillStyle=PAL.stC;
+  ctx.beginPath();ctx.arc(258,doorY+118,7,0,6.3);ctx.fill();
+  ctx.fillStyle=PAL.stB;
+  ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="alphabetic";
+  ctx.fillText("第 "+(doorIdx+1)+" / "+course.doors.length+" 扇",195,doorY+30);
+  // 锁孔（当前门齿形）
+  var L=course.teeth,tw=Math.floor(150/L),sw=tw*L,sh=26;
+  var sx=195-sw/2,sy=doorY+62;
+  drawSlot(sx,sy,sw,sh,course.doors[doorIdx],tw);
+  if(wrongT>0){
+    ctx.globalAlpha=Math.min(1,wrongT*1.2);
+    ctx.strokeStyle=PAL.danger;ctx.lineWidth=3;
+    ctx.strokeRect(sx-4,sy-4,sw+8,sh+8+22+8);
+    ctx.globalAlpha=1;
+  }
+  // 飞行动画中的钥匙插入锁孔
+  if(fly){
+    var cell=keyCell(fly.ki),src={x:cell.x+cell.w/2+10,y:cell.y+cell.h/2-4};
+    var dst={x:195-sw/2+tw*L/2+6,y:sy+sh/2};
+    var e=fly.t<1?(1-Math.pow(1-fly.t,2)):1;
+    var px=src.x+(dst.x-src.x)*e,py=src.y+(dst.y-src.y)*e;
+    ctx.save();
+    ctx.translate(px,py);ctx.rotate((1-e)*-0.6);
+    drawKeyShape(-tw*L/2-10,0,course.keys[fly.ki].profile,tw,PAL.stC,PAL.stB,0.96);
+    ctx.restore();
+  }
+  // 钥匙架
+  var n=course.keys.length,cols=2,rows=Math.ceil(n/cols);
+  for(i=0;i<n;i++){
+    var cx0=15+(i%cols)*186,cy0=212+Math.floor(i/cols)*62;
+    ctx.fillStyle=PAL.surface;ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+    rr(cx0,cy0,176,56,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle=PAL.muted;
+    ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.textAlign="left";ctx.textBaseline="alphabetic";
+    ctx.fillText(String(i+1),cx0+8,cy0+16);
+    drawKeyShape(cx0+34,cy0+32,course.keys[i].profile,tw,PAL.stC,PAL.stB,1);
+  }
+  ctx.restore();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  rr(offX+0.5,offY+0.5,NW*S-1,NH*S-1,10);ctx.stroke();
+}
+function keyCell(i){
+  return{x:15+(i%2)*186,y:212+Math.floor(i/2)*62,w:176,h:56};
+}
+
+/* ---------- 输入 ---------- */
+cv.addEventListener("pointerdown",function(ev){
+  if(state!=="running"||paused||fly||openT>0)return;
+  var p=toNominal(ev),n=course?course.keys.length:0;
+  for(var i=0;i<n;i++){
+    var c=keyCell(i);
+    if(p.x>=c.x&&p.x<=c.x+c.w&&p.y>=c.y&&p.y<=c.y+c.h){selectKey(i);ev.preventDefault();return;}
+  }
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k>="1"&&k<="8"){e.preventDefault();selectKey(parseInt(k,10)-1);}
+  else if(k===" "||k==="Enter"){
+    if(state==="ready"||state==="over"){e.preventDefault();retry();}
+  }
+});
+btnRetry.addEventListener("click",function(){retry();this.blur();});
+btnLevels.addEventListener("click",function(){
+  if(state==="running"&&!paused){paused=true;say("选关中");}
+  openLevelSelect();this.blur();
+});
+
+/* ---------- 覆盖层 ---------- */
+function showStart(){
+  var d=course;
+  showPanel(
+    '<p class="rt">第 '+(cur+1)+' 关 · '+esc(d.name)+'</p>'+
+    '<p class="rs">'+d.doors.length+' 扇门 · 钥匙串 '+d.keys.length+' 把（含 '+(d.keys.length-d.doors.length)+' 把干扰）· 齿位 '+d.teeth+'</p>'+
+    '<div class="rbtns"><button class="btn" id="ovMain" type="button">开始</button></div>'+
+    '<p class="rhint">锁孔下方显示齿形缺口，钥匙齿形必须与缺口逐位吻合。齿深三档：平 / 中 / 深。干扰钥匙与正确钥匙只差一两个齿，仔细对比。</p>'
+  );
+  $("ovMain").addEventListener("click",function(){startPlay();});
+}
+function showWin(stars){
+  var last=cur>=LEVELS.length-1;
+  showPanel(
+    '<p class="rt">过关！</p>'+
+    '<p class="rs">星星 <b>'+stars+' / 3</b>（失误 '+mistakes+' 次）</p>'+
+    '<div class="rbtns">'+
+      '<button class="btn ghost" id="ovReplay" type="button">重玩</button>'+
+      '<button class="btn" id="ovNext" type="button">'+(last?"已完成全部":"下一关")+'</button>'+
+    '</div>'
+  );
+  $("ovNext").addEventListener("click",function(){enterLevel(last?cur:cur+1);});
+  $("ovReplay").addEventListener("click",function(){enterLevel(cur);});
+}
+function showFail(){
+  showPanel(
+    '<p class="rt">本关失败</p>'+
+    '<p class="rs">连续 2 次选错钥匙 · 已开到第 '+(doorIdx+1)+' 扇门</p>'+
+    '<p class="rhint">提示：干扰钥匙与正确钥匙通常只差一个齿位，重点对比缺口最深与最浅的位置。</p>'+
+    '<div class="rbtns"><button class="btn" id="ovRetryF" type="button">重试本关</button></div>'
+  );
+  $("ovRetryF").addEventListener("click",function(){retry();});
+}
+function showPause(){
+  showPanel(
+    '<p class="rt">已暂停</p>'+
+    '<p class="rs">已开第 '+(doorIdx+1)+' / '+course.doors.length+' 扇门</p>'+
+    '<div class="rbtns">'+
+      '<button class="btn ghost" id="ovReP" type="button">重玩本关</button>'+
+      '<button class="btn" id="ovReR" type="button">继续</button>'+
+    '</div>'
+  );
+  $("ovReR").addEventListener("click",function(){paused=false;hideOverlay();});
+  $("ovReP").addEventListener("click",function(){retry();});
+}
+function retry(){loadLevel(cur);startPlay();}
+
+/* 切后台自动暂停 */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&state==="running"&&!paused&&!overlayEl.classList.contains("show")){
+    paused=true;showPause();
+  }
+});
+
+/* ---------- 主循环与启动 ---------- */
+var last=0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(!last)last=ts;
+  var dt=Math.min(0.05,((ts-last)/1000)||0);
+  last=ts;
+  step(dt);
+  draw();
+}
+fit();
+refresh();
+loadLevel(cur);
+showStart();
+syncLevelsFromServer();
+syncSaveFromServer();
+requestAnimationFrame(loop);
+window.__validateLevels=GEN.validateLevelsAll;
+
+
+/* ========== 关卡公共段（DB 下发优先 + localStorage 版本缓存 + 包内默认关兜底；仅函数声明，供游戏段调用） ========== */
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!d||typeof d.name!=="string"||!d.name.trim()||!Number.isInteger(d.no)||d.no<1||!Number.isInteger(d.seed))return null;
+    if(seen[d.no])return null;
+    seen[d.no]=1;
+    list.push(d);
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||list.length<DEFAULT_LEVELS.length)return false;
+  for(var i=0;i<list.length;i++){
+    var d=list[i],lv;
+    try{lv=GEN.gen(d.no,d.seed);}catch(e){return false;}
+    if(!lv||!GEN.validate(lv).ok)return false;
+  }
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length>=DEFAULT_LEVELS.length){
+      for(var i=0;i<list.length;i++){var d=list[i];if(!d||!Number.isInteger(d.no)||!Number.isInteger(d.seed))return v;}
+      LEVELS=list;return v;
+    }
+  }catch(e){}
+  return 0;
+}
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      if(save.lv>LEVELS.length-1)save.lv=LEVELS.length-1;
+      persistSave();loadLevel(cur);
+    }
+  }).catch(function(){});
+}
+function loadSaveData(){
+  try{
+    var s=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");
+    if(s&&typeof s==="object"){
+      var done={};
+      if(s.done&&typeof s.done==="object")for(var k in s.done){var v=parseInt(s.done[k],10);if(v>0)done[k]=v;}
+      return{lv:Math.max(0,parseInt(s.lv,10)||0),done:done,best:Math.max(0,parseInt(s.best,10)||0)};
+    }
+  }catch(e){}
+  return{lv:0,done:{},best:0};
+}
+function persistSave(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson),changed=false;
+      var rl=parseInt(remote.lv,10)||0;if(rl>save.lv){save.lv=rl;changed=true;}
+      var rb=parseInt(remote.best,10)||0;if(rb>save.best){save.best=rb;changed=true;}
+      if(remote.done&&typeof remote.done==="object")for(var k in remote.done){
+        var rv=parseInt(remote.done[k],10)||0,mv=parseInt(save.done[k],10)||0;
+        if(rv>mv){save.done[k]=rv;changed=true;}
+      }
+      if(changed){persistSave();}
+    }catch(e){}
+  }).catch(function(){});
+}
+function openLevelSelect(){
+  var html='<p class="rt">选择关卡</p><p class="rs">已过关卡标绿，灰色未解锁</p><div class="lv-wrap"><div class="lv-grid">';
+  for(var i=0;i<LEVELS.length;i++){
+    var done=parseInt(save.done[i],10)>0;
+    var locked=i>save.lv;
+    html+='<button class="lv-chip'+(i===cur?" sel":"")+(done?" done":"")+'" data-i="'+i+'"'+(locked?" disabled":"")+' type="button">'+(i+1)+'</button>';
+  }
+  html+='</div></div><div class="rbtns"><button class="btn ghost" id="ovClose" type="button">返回</button></div>';
+  showPanel(html);
+  var chips=panelEl.querySelectorAll(".lv-chip");
+  for(var j=0;j<chips.length;j++){
+    chips[j].addEventListener("click",function(){
+      var i=parseInt(this.getAttribute("data-i"),10);
+      hideOverlay();enterLevel(i);
+    });
+  }
+  $("ovClose").addEventListener("click",function(){hideOverlay();selectClosed();});
+}
+
+})();
+</script>
+</body>
+</html>

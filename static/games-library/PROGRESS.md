@@ -309,3 +309,30 @@
   scale-ball 修已知偏重关卡的候选分类与提示状态口径（翘起侧被误记为偏轻候选，致提示误报「无必胜策略」、
   候选数虚高）；补齐 river-cross / torch-bridge / water-jug / scale-ball / knight-tour / eight-queens /
   calc-doku / shikaku 8 份 README（首行元数据格式均已核验）。
+
+- **2026-11-21（新游戏·自研入库·扩展总表第二批）51 款（游戏库 124 → 175 款，A/B 两组收官）**：
+  净室自研（零外链、零素材、canvas/DOM 自绘），出生即按 §6 规范并登记 audit-gates STRICT。
+  批次范围 = 总目录 A 组遗留 11 款（#14-24 体育竞速）+ B 组剩余 40 款（#65-104 益智解谜），
+  主题运行时块与 block-drop 逐字节一致，GB 桥适配层沿 river-cross 标准形态。
+  批次清单（51 款，按 category 分组）：
+  - puzzle（36）：ripple-fill laser-maze gear-mesh fuse-cut rubik-mini rotate-pic jigsaw-snap spot-diff hidden-item maze-paint color-mix logic-box clue-grid alchemy-tree clock-gears ring-puzzle knot-free color-chain block-fit pentomino gravity-flip clone-portal shadow-match hex-fill escape-room treasure-grid number-path color-route magnet-poles water-dig map-fold paper-fold-cut balance-stack door-keys lock-combo weight-order
+  - board（3）：mate-in-one endgame-lab tsumego-go
+  - arcade（11）：hamster-run pogo-street surf-wave ski-slalom bobsled-drift canoe-rapids relay-baton hoop-shot curling-sweep archery-move clay-shoot
+  - other（1）：echo-seq
+  审计结论：`audit-gates.mjs` 全库 175 款**严格模式 0 违规**、存量模式 0 违规；
+  `theme-gates.mjs` 本批 51/51 全绿（JS 语法 / 零外链 / 体积）。
+  关卡验证总结论：43 款关卡驱动（各 40 关）全部经内嵌独立验证器逐关复核通过——
+  唯一解类（hex-fill / treasure-grid / number-path / magnet-poles / lock-combo / fuse-cut / clue-grid /
+  ripple-fill / rotate-pic / laser-maze / gear-mesh / rubik-mini 双实现 / maze-paint 哈密顿通路 /
+  pentomino 精确覆盖 / weight-order 比较次数上下界证明 / map-fold / paper-fold-cut / color-chain /
+  block-fit / gravity-flip / ring-puzzle / clock-gears / alchemy-tree / jigsaw-snap / spot-diff /
+  hidden-item / color-mix 双实现 / logic-box / ski-slalom P 控制器 / archery-move 闭式弹道 /
+  curling-sweep 求解器复跑 / relay-baton 时间窗 / door-keys 齿形吻合 / escape-room 依赖图 BFS /
+  water-dig Dijkstra / shadow-match / color-route / balance-stack 存在性验证）；
+  棋题类 mate-in-one / endgame-lab / tsumego-go 为独立验证器 × 对弈引擎双实现交叉核对；
+  8 款分数驱动（echo-seq / hamster-run / pogo-street / surf-wave / bobsled-drift / canoe-rapids /
+  hoop-shot / clay-shoot）难度递增 + 最高分持久化（desc），另经 DOM-stub 冒烟 120-300 帧无异常。
+  375px 实开（Chrome 真机 51/51）：无横向溢出、无 h1、桥主题推送 light→dark 生效、非法值拒绝、
+  深色目检 4 款代表款（escape-room / hex-fill / ski-slalom / hamster-run）布局正常。
+  体积范围：单款 17,606B（echo-seq）– 53,505B（escape-room），51 款合计约 1.55MB。
+  备注：本批统一未接 WebAudio 音效（可选项，规避静默失败风险）；封面另批制作（GAME-COVER.md 管线）。

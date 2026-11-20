@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>回声序列</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-p* 为四块音块色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-p1:#4A90C4;--g-st-p2:#C4574A;--g-st-p3:#B8912E;--g-st-p4:#3F9D77;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-p1:#5FA8D8;--g-st-p2:#D8776A;--g-st-p3:#D1AB4C;--g-st-p4:#5CB892;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .dots { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 0 2px 10px; min-height: 12px; }
+  .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--g-surface2); box-shadow: inset 0 0 0 1px var(--g-border); }
+  .dot.on { background: var(--g-primary); box-shadow: none; }
+  .dot.cur { background: var(--g-warning); box-shadow: none; }
+  .pads { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .pad {
+    min-height: 112px; border: 0; cursor: pointer;
+    border-radius: var(--g-radius);
+    font-family: inherit;
+    transition: transform .12s ease, filter .12s ease;
+    touch-action: manipulation;
+  }
+  .pad.p0 { background: var(--g-st-p1); }
+  .pad.p1 { background: var(--g-st-p2); }
+  .pad.p2 { background: var(--g-st-p3); }
+  .pad.p3 { background: var(--g-st-p4); }
+  .pad:active { transform: scale(.96); }
+  .pad.lit { filter: brightness(1.3); transform: scale(.96); }
+  .pad.err { filter: brightness(.45); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .ctl {
+    width: 100%; min-height: 48px;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-btn-primary); color: #fff;
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .ctl:active { opacity: .75; }
+  .ctl[disabled] { opacity: .45; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="stState">待开始</span><span class="sub">看一遍 · 记住 · 复现</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">已完成轮</span><span class="val" id="stScore">0</span></div>
+    <div class="stat"><span class="label">本轮长度</span><span class="val" id="stLen">-</span></div>
+    <div class="stat"><span class="label">最佳</span><span class="val" id="stBest">0</span></div>
+  </div>
+  <div class="dots" id="dots"></div>
+  <div class="pads" id="pads">
+    <button class="pad p0" data-i="0" aria-label="音块 1"></button>
+    <button class="pad p1" data-i="1" aria-label="音块 2"></button>
+    <button class="pad p2" data-i="2" aria-label="音块 3"></button>
+    <button class="pad p3" data-i="3" aria-label="音块 4"></button>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点「开始挑战」听灯光序列，然后按顺序复现</p>
+  <div class="tools">
+    <button class="btn" id="btnSound">声音：开</button>
+    <button class="btn" id="btnReset">重置</button>
+  </div>
+  <button class="ctl" id="btnGo">开始挑战</button>
+  <p class="foot">键盘：1-4 点音块 · 空格开始/再来一局 · M 静音 · 每轮加一步且节奏加快 · 切后台自动重播</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">记错啦</h2>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn primary" id="ovBtn">再来一局</button>
+    <button class="btn" id="ovClose">关闭</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);}
+  };
+})();
+
+var GAME_KEY="echo-seq",SAVE_KEY="sw.echoseq.v1";
+/* ---------- 存档（本地 + 账号双写，存最高轮数） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{best:Math.max(0,parseInt(s.best,10)||0)}}catch(e){return{best:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rb=parseInt(remote.best,10)||0;
+      if(rb>save.best){save.best=rb;persist();updStats();}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ---------- 音效（WebAudio 合成，失败静默） ---------- */
+var AC=null,muted=false;
+var FREQS=[329.63,392,493.88,587.33];   // 和弦音 E4 G4 B4 D5
+function beep(i){
+  if(muted)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==="suspended"&&AC.resume)AC.resume();
+    var o=AC.createOscillator(),g=AC.createGain();
+    o.type="sine";o.frequency.value=FREQS[i];
+    g.gain.setValueAtTime(0.001,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.22,AC.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,AC.currentTime+0.34);
+    o.connect(g);g.connect(AC.destination);
+    o.start();o.stop(AC.currentTime+0.4);
+  }catch(e){}
+}
+function buzz(){
+  if(muted)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    var o=AC.createOscillator(),g=AC.createGain();
+    o.type="sawtooth";o.frequency.value=110;
+    g.gain.setValueAtTime(0.15,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001,AC.currentTime+0.5);
+    o.connect(g);g.connect(AC.destination);
+    o.start();o.stop(AC.currentTime+0.55);
+  }catch(e){}
+}
+
+/* ---------- 状态 ---------- */
+var state="idle",seq=[],inputIdx=0,score=0,timers=[],needReplay=false;
+var pads=[].slice.call(document.querySelectorAll(".pad"));
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function clearTimers(){timers.forEach(clearTimeout);timers=[];}
+function T(fn,ms){var id=setTimeout(fn,ms);timers.push(id);return id;}
+function speed(){return Math.max(220,620-seq.length*16)}   // 播放随轮数加快
+function updStats(){
+  $("stScore").textContent=score;
+  $("stBest").textContent=save.best;
+  $("stLen").textContent=seq.length||"-";
+  $("stState").textContent=state==="showing"?"播放中":state==="input"?"你来复现":state==="over"?"已结束":"待开始";
+  var d=$("dots");d.innerHTML="";
+  for(var i=0;i<seq.length;i++){
+    var s=document.createElement("span");
+    s.className="dot"+(state==="input"&&i<inputIdx?" on":(state==="input"&&i===inputIdx?" cur":""));
+    d.appendChild(s);
+  }
+}
+function light(i,cls){pads[i].classList.add(cls||"lit");}
+function unlight(i,cls){pads[i].classList.remove(cls||"lit");}
+/* ---------- 播放序列 ---------- */
+function playSeq(){
+  clearTimers();
+  state="showing";updStats();
+  say("看仔细…第 "+(seq.length)+" 步");
+  var i=0,ms=speed();
+  function step(){
+    if(i>=seq.length){
+      state="input";inputIdx=0;updStats();
+      say("轮到你了：按顺序复现 "+seq.length+" 步");
+      return;
+    }
+    light(seq[i]);beep(seq[i]);
+    T(function(){unlight(seq[i]);i++;T(step,ms*0.32);},ms);
+  }
+  T(step,400);
+}
+/* ---------- 输入 ---------- */
+function tapPad(i){
+  if(state==="showing"||needReplay)return;   // 播放中不可点
+  if(state!=="input")return;
+  light(i);beep(i);
+  T(function(){unlight(i);},160);
+  if(seq[inputIdx]===i){
+    inputIdx++;updStats();
+    if(inputIdx>=seq.length){
+      score=seq.length;
+      if(score>save.best){save.best=score;persist();}
+      updStats();say("漂亮！下一轮多一步…");
+      T(function(){seq.push((Math.random()*4)|0);updStats();playSeq();},650);
+    }
+  }else{
+    gameOver();
+  }
+}
+function gameOver(){
+  clearTimers();buzz();
+  state="over";updStats();
+  for(var k=0;k<4;k++)light(k,"err");
+  T(function(){for(var k=0;k<4;k++)unlight(k,"err");},450);
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:save.best,metricExtra:score}).catch(function(){});
+  $("ovTitle").textContent="记错啦";
+  $("ovDesc").innerHTML="本次完成 <b>"+score+"</b> 轮 · 历史最佳 <b>"+save.best+"</b> 轮<br>分数口径：完成轮数，越大越好";
+  $("overlay").classList.add("show");
+}
+function startGame(){
+  clearTimers();
+  $("overlay").classList.remove("show");
+  seq=[(Math.random()*4)|0];inputIdx=0;score=0;needReplay=false;
+  state="showing";updStats();
+  playSeq();
+}
+function resetGame(){
+  clearTimers();
+  $("overlay").classList.remove("show");
+  state="idle";seq=[];inputIdx=0;score=0;needReplay=false;
+  updStats();say("已重置，点「开始挑战」再来");
+}
+/* ---------- 事件 ---------- */
+pads.forEach(function(p){
+  p.addEventListener("pointerdown",function(e){
+    e.preventDefault();
+    tapPad(parseInt(p.dataset.i,10));
+  });
+});
+$("btnGo").addEventListener("click",function(){
+  if(state==="idle"||state==="over")startGame();
+  else say("序列播放中，看完再复现");
+});
+$("btnReset").addEventListener("click",resetGame);
+$("btnSound").addEventListener("click",function(){
+  muted=!muted;
+  $("btnSound").textContent=muted?"声音：关":"声音：开";
+});
+$("ovBtn").addEventListener("click",startGame);
+$("ovClose").addEventListener("click",function(){$("overlay").classList.remove("show")});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="4"){tapPad(parseInt(k,10)-1);e.preventDefault();}
+  else if(k===" "||k==="Enter"){if($("overlay").classList.contains("show"))$("ovBtn").click();else $("btnGo").click();e.preventDefault();}
+  else if(k==="m"||k==="M")$("btnSound").click();
+});
+/* 切后台：播放中的序列作废，回前台自动重播 */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){
+    if(state==="showing"){clearTimers();needReplay=true;say("已切到后台，回来将重播本序列");}
+  }else{
+    if(needReplay&&state==="showing"){needReplay=false;say("欢迎回来，重播本序列");T(playSeq,400);}
+  }
+});
+/* ---------- 启动 ---------- */
+updStats();say("点「开始挑战」听灯光序列，然后按顺序复现");
+syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>
