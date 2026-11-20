@@ -145,7 +145,11 @@
     <string name="div_liuyao_yongshen">用神</string>
     <string name="div_liuyao_facts">规则事实</string>
     <string name="div_meihua_tiyong">体用生克（规则层）</string>
-    <string name="div_meihua_tiyong_line">动爻在%1$d爻 → 下卦%2$s%3$s为用，上卦%4$s%5$s为体：%6$s，%7$s。</string>
+    <!-- P2-4：体用卦位不再写死「下卦为用，上卦为体」——动爻所在卦为用（1-3 爻→下卦为用，
+         4-6 爻→上卦为用），%2/%5 由调用方按内核 chart.yong/ti 传上/下卦位标签 -->
+    <string name="div_meihua_tiyong_line">动爻在%1$d爻 → %2$s%3$s%4$s为用，%5$s%6$s%7$s为体：%8$s，%9$s。</string>
+    <string name="div_gua_pos_upper">上卦</string>
+    <string name="div_gua_pos_lower">下卦</string>
     <string name="div_qimen_yongshen">用神宫</string>
     <string name="div_qimen_facts">宫位事实</string>
     <string name="div_liuren_keti">课体 · %1$s · 九宗门 %2$s</string>

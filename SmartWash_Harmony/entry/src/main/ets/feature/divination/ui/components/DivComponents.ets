@@ -792,7 +792,11 @@ export struct DivCard {
     // 描边默认 12% 金发丝 hair（画板「卡面与背景同色仅靠发丝线区隔」口径，compare-08 #7：
     // 原 goldLine 32% 金偏重、发丝观感丢失；显式传 lineColor 的调用点不受影响）
     .border({ width: 1, color: this.lineColor ?? DivPalette.hair, radius: 16 })
-    .enabled(this.clickable)
+    // 禁止 .enabled(this.clickable)：ArkUI enabled(false) 会连坐禁用整棵子树的交互，
+    // 卡内静态展示容器（默认 clickable=false）会把内部按钮/评分 chips 全部点死
+    // （解读页错误态重试按钮、反馈面板提交按钮历史失效根因，问题13 同源）。
+    // 卡片自身可点性由下方 onClick 的 clickable 守卫承载，按压反馈计算式亦带 clickable 条件。
+    .enabled(true)
     // 规范 §7：不使用 Material ripple（原 .stateEffect() 非通用属性，实测编译报错），按压反馈由 scale 0.97 承载
     // （对齐安卓 DivCard 的 pressable：indication = null + scaleFactor 0.97）；100ms FastOutSlowIn，
     // reduced motion 取消缩放改 alpha 0.86（规范 §8）

@@ -43,6 +43,9 @@ dependencies {
     // feature 间仅 impl→他人 api 铁律先例：DivinationApi:63-65 getModels 同为跨域契约）
     implementation project(':feature:user:api')
 
+    // InitTask 契约（P2-7 会话终止清空本地案卷：DivSessionCleanInitTask 经 @IntoSet 注册）
+    implementation project(':common:init')
+
     // Room：runtime/ktx 经 common:database 的 api 传递；DivinationDatabase 在本模块编译，
     // ksp 处理器须自持（与 common:database 编译 AppDatabase 同模式）
     implementation project(':common:database')

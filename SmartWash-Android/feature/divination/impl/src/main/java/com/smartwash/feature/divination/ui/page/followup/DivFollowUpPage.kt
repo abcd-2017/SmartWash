@@ -53,11 +53,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.data.DivFollowUpTurn
+import com.smartwash.feature.divination.data.DivMarkdownParser
 import com.smartwash.feature.divination.data.DivStreamEvent
 import com.smartwash.common.ui.components.WaveIcon
 import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.feature.divination.ui.DivinationScreen
 import com.smartwash.feature.divination.ui.components.DivPageHeader
+import com.smartwash.feature.divination.ui.components.buildDivRichText
+import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.DivColors
@@ -324,17 +327,80 @@ private fun ChatBubble(
                 )
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            Text(
-                text = turn.content,
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
-                color = when {
-                    isUser -> c.onGold
-                    muted -> c.textSecondary
-                    else -> c.textPrimary
-                },
+            if (isUser) {
+                Text(
+                    text = turn.content,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    color = c.onGold,
+                )
+            } else {
+                // P2-3：assistant 气泡复用解读页同源 Markdown 解析渲染，原始 `## `/`**` 记号不再直出；
+                // 流式增量随内容重组渐进上屏、中断灰显（muted）行为不变
+                AssistantBubbleBody(content = turn.content, muted = muted)
+            }
+        }
+    }
+}
+
+/** assistant 气泡正文（P2-3，解读页同源渲染）：[DivMarkdownParser] 段切分（四段固定标题映射 +
+ *  未知标题落章节、全文无 `## ` 标题整文兜底，容错不丢文本）+ [buildDivRichText] 行内记号
+ *  （**加粗** / `- ` 列表 / `code` / 链接 / ``` 围栏，与 DivReadingPage 卡片正文同款）；
+ *  槽位/章节标题沿用解读卡片的金衬线口径，`> ` 引用行归入文末免责小字（记号不再直出）。
+ *  muted（流中断灰显，audit-23 #18）：标题与正文整体降为次级色。
+ *  流式口径：content 每次增量变化触发重切分重组，已完成段先上屏，渐进渲染与解读页一致。 */
+@Composable
+private fun AssistantBubbleBody(content: String, muted: Boolean) {
+    val c = DivColors.current
+    val reading = remember(content) { DivMarkdownParser.parse(content) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        reading.summary.takeIf { it.isNotBlank() }?.let {
+            AssistantSection(
+                title = stringResource(R.string.div_reading_summary),
+                content = it,
+                muted = muted,
             )
         }
+        reading.sections.forEach { section ->
+            AssistantSection(title = section.title, content = section.content, muted = muted)
+        }
+        reading.action.takeIf { it.isNotBlank() }?.let {
+            AssistantSection(
+                title = stringResource(R.string.div_reading_action),
+                content = it,
+                muted = muted,
+            )
+        }
+        reading.disclaimer?.takeIf { it.isNotBlank() }?.let {
+            Text(
+                text = it,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = if (muted) c.textTertiary else c.textSecondary,
+            )
+        }
+    }
+}
+
+/** 气泡内单段块：金衬线小标题（可空——无标题兜底单卡只出正文）+ 富文本正文 */
+@Composable
+private fun AssistantSection(title: String, content: String, muted: Boolean) {
+    val c = DivColors.current
+    Column {
+        if (title.isNotBlank()) {
+            Text(
+                text = buildDivRichText(title, boldColor = if (muted) c.textSecondary else c.goldText),
+                style = divSerif(14.sp, FontWeight.SemiBold, 4.sp, lineHeight = 20.sp),
+                color = if (muted) c.textSecondary else c.goldText,
+            )
+            Spacer(Modifier.height(4.dp))
+        }
+        Text(
+            text = buildDivRichText(content, codeBackground = c.gold14, linkColor = c.goldText),
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            color = if (muted) c.textSecondary else c.textPrimary,
+        )
     }
 }
 

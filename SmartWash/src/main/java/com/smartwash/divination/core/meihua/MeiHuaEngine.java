@@ -12,12 +12,13 @@ import java.util.*;
  * 梅花易数排盘引擎。
  *
  * 流程：
- * 1. 起卦：时间卦 (年支数+月数+日数)%8=上卦，+时支数%8=下卦，总数%6=动爻
+ * 1. 起卦：时间卦 (年支数+农历月数+农历日数)%8=上卦，+时支数%8=下卦，总数%6=动爻
  *    先天卦数：乾一兑二离三震四巽五坎六艮七坤八
  * 2. 排法：本卦→互卦（234爻为下互、345爻为上互）→变卦（动爻翻转）
  * 3. 断法规则层：体用——动爻所在卦为"用"，静卦为"体"
  *
- * 算法依据：术数方案 4.1（口诀级，已验证）
+ * 算法依据：术数方案 4.1（口诀级）+ Android 端 MeiHuaChart.kt 同源移植
+ * （时间卦以农历月日累加、互卦取爻与变卦翻转均用真实三爻爻值，经锚点对拍验证）
  */
 public class MeiHuaEngine {
 
@@ -32,7 +33,7 @@ public class MeiHuaEngine {
      * 梅花易数排盘入口。
      *
      * @param castAt     起卦时刻（epoch ms）
-     * @param tzOffset   时区偏移分钟
+     * @param tzOffset   时区偏移分钟（服务端排盘统一传 480=北京时间）
      * @param lines      可选：[上卦数, 下卦数, 动爻]；为空则按时间起卦
      * @param castMethod auto/time/number
      * @return 盘面 Map
@@ -52,11 +53,12 @@ public class MeiHuaEngine {
             lowerNum = lines.get(1);
             moving = lines.get(2);
         } else {
-            // 时间起卦
-            int yearZhiIdx = GanZhi.dizhiIndex(pillars.get("yearZhi"));
-            int month = dateTime.getMonthValue();
-            int day = dateTime.getDayOfMonth();
-            int hourZhiIdx = GanZhi.dizhiIndex(pillars.get("hourZhi"));
+            // 时间起卦（传统梅花按农历：年支数+农历月数+农历日数，Android 端同口径）
+            Map<String, Integer> lunar = LunarCalendar.lunarDivinationNumbers(dateTime);
+            int yearZhiIdx = lunar.get("yearZhiIdx");
+            int month = lunar.get("month");
+            int day = lunar.get("day");
+            int hourZhiIdx = lunar.get("hourZhiIdx");
 
             // 年支数：子1丑2...亥12
             int yearNum = yearZhiIdx + 1;
@@ -76,26 +78,30 @@ public class MeiHuaEngine {
 
         chart.put("upperGua", upperGua);
         chart.put("lowerGua", lowerGua);
-        chart.put("benGua", upperGua + lowerGua);
         chart.put("moving", moving);
 
-        // 本卦六爻（从上到下：上爻→初爻）
-        List<Integer> benLines = guaToLines(upperGua, lowerGua);
+        // 本卦卦码（自初爻到上爻）：下卦三爻+上卦三爻
+        String benMark = GanZhi.baguaBinary(lowerGua) + GanZhi.baguaBinary(upperGua);
+        chart.put("benMark", benMark);
+        chart.put("benGua", GanZhi.GUA64_NAME.get(benMark));
+
+        // 本卦六爻（从上到下：上爻→初爻，阳=1阴=0）
+        List<Integer> benLines = markToLines(benMark);
         chart.put("benLines", benLines);
 
-        // 互卦：取本卦 234 爻为下互、345 爻为上互
-        String huLower = yaoToGua(benLines.get(3), benLines.get(2), benLines.get(1)); // 234爻
-        String huUpper = yaoToGua(benLines.get(4), benLines.get(3), benLines.get(2)); // 345爻
-        chart.put("huGua", huUpper + huLower);
+        // 互卦：取本卦 234 爻为下互、345 爻为上互（卦码自初爻起，benMark[i] 即第 i+1 爻）
+        char[] ben = benMark.toCharArray();
+        String huMark = "" + ben[1] + ben[2] + ben[3] + ben[2] + ben[3] + ben[4];
+        chart.put("huMark", huMark);
+        chart.put("huGua", GanZhi.GUA64_NAME.get(huMark));
 
-        // 变卦：动爻翻转
-        List<Integer> bianLines = new ArrayList<>(benLines);
-        int bianIdx = 6 - moving; // 动爻位置转 index（上爻=0）
-        bianLines.set(bianIdx, bianLines.get(bianIdx) == 1 ? 0 : 1);
-        String bianUpper = yaoToGua(bianLines.get(0), bianLines.get(1), bianLines.get(2));
-        String bianLower = yaoToGua(bianLines.get(3), bianLines.get(4), bianLines.get(5));
-        chart.put("bianGua", bianUpper + bianLower);
-        chart.put("bianLines", bianLines);
+        // 变卦：动爻在卦码上的真实爻值翻转
+        char[] bian = benMark.toCharArray();
+        bian[moving - 1] = bian[moving - 1] == '1' ? '0' : '1';
+        String bianMark = new String(bian);
+        chart.put("bianMark", bianMark);
+        chart.put("bianGua", GanZhi.GUA64_NAME.get(bianMark));
+        chart.put("bianLines", markToLines(bianMark));
 
         // 体用：动爻所在卦为"用"，静卦为"体"
         String ti, yong;
@@ -118,26 +124,13 @@ public class MeiHuaEngine {
         return chart;
     }
 
-    /** 上下卦→六爻（上爻到初爻，阳=1阴=0） */
-    private List<Integer> guaToLines(String upperGua, String lowerGua) {
-        int upperIdx = baguaIndex(upperGua);
-        int lowerIdx = baguaIndex(lowerGua);
-        List<Integer> lines = new ArrayList<>();
-        // 上卦三爻（上爻、五爻、四爻）
-        lines.add((upperIdx >> 2) & 1);
-        lines.add((upperIdx >> 1) & 1);
-        lines.add(upperIdx & 1);
-        // 下卦三爻（三爻、二爻、初爻）
-        lines.add((lowerIdx >> 2) & 1);
-        lines.add((lowerIdx >> 1) & 1);
-        lines.add(lowerIdx & 1);
+    /** 卦码（自初爻到上爻，阳1阴0）→ 六爻（从上到下：上爻→初爻） */
+    private List<Integer> markToLines(String mark) {
+        List<Integer> lines = new ArrayList<>(6);
+        for (int i = 5; i >= 0; i--) {
+            lines.add(mark.charAt(i) == '1' ? 1 : 0);
+        }
         return lines;
-    }
-
-    /** 三爻→八卦名 */
-    private String yaoToGua(int upper, int middle, int lower) {
-        int code = (upper << 2) | (middle << 1) | lower;
-        return GanZhi.BAGUA_NAME[code];
     }
 
     private int baguaIndex(String name) {

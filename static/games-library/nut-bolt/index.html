@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#F5F6F3">
+<title>螺母配对</title>
+<style>
+  /*token:GAME-THEME.md§2（螺母五色素材 token 统一 --g-st- 前缀，§3 D2）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-st-n1:#2D9B6A;--g-st-n2:#D9822B;--g-st-n3:#4A9FD4;--g-st-n4:#C9526B;--g-st-n5:#8A8F87;--g-st-metal:#B9B2A4;--g-st-metal2:#8F887B;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-n1:#2D9B6A;--g-st-n2:#B8681F;--g-st-n3:#4A9FD4;--g-st-n4:#A83850;--g-st-n5:#6E736B;--g-st-metal:#5C5748;--g-st-metal2:#45412F;color-scheme:dark }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+  .boxes { display: flex; gap: 8px; }
+  .box { background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; }
+  .box.alt { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
+  .box .label { display: block; font-size: 12px; }
+  .box b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
+  .btn { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn.ghost { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
+  .btn:active { opacity: .85; }
+  .stage { position: relative; width: 100%; }
+  canvas { display: block; width: 100%; aspect-ratio: 24 / 26; border-radius: var(--g-radius-inner); border: 1px solid var(--g-border); background: var(--g-surface); touch-action: none; }
+  .overlay { position: absolute; inset: 0; border-radius: var(--g-radius-inner); background: var(--g-scrim); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; text-align: center; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .card { width: 100%; max-width: 320px; max-height: 100%; overflow: auto; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 16px; }
+  .ov-kicker { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .1em; color: var(--g-muted); }
+  .card h2 { margin: 0 0 8px; font-size: 18px; line-height: 1.25; color: var(--g-text); }
+  .ov-text { margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: var(--g-muted); }
+  .ov-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 12px; }
+  .ov-stats .st { background: var(--g-surface2); border-radius: 10px; padding: 7px 4px; }
+  .ov-stats b { display: block; font-size: 18px; color: var(--g-primary-deep); font-variant-numeric: tabular-nums; }
+  .ov-stats span { font-size: 12px; color: var(--g-muted); }
+  .ov-btns { display: grid; gap: 8px; }
+  .foot { margin: 14px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; }
+
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="boxes">
+      <div class="box"><span class="label">步数 / 预算</span><b id="hudMove">0/0</b></div>
+      <div class="box"><span class="label">收纳</span><b id="hudDone">0</b></div>
+      <div class="box alt"><span class="label">关卡</span><b id="hudLv">1</b></div>
+    </div>
+  </header>
+  <div class="toolbar">
+    <p class="hint">拧下螺母按颜色配对螺栓，步数预算内全部收纳</p>
+    <div class="boxes">
+      <button class="btn ghost" id="btnPause">暂停</button>
+      <button class="btn ghost" id="btnReset">重开</button>
+    </div>
+  </div>
+  <div class="stage">
+    <canvas id="cv" role="img" aria-label="螺母配对游戏画面"></canvas>
+    <div class="overlay" role="dialog" aria-modal="true" id="ov" aria-live="assertive">
+      <div class="card">
+        <p class="ov-kicker" id="ovK"></p>
+        <h2 id="ovT"></h2>
+        <p class="ov-text" id="ovX"></p>
+        <div class="ov-stats" id="ovS"></div>
+        <div class="ov-btns" id="ovB"></div>
+      </div>
+    </div>
+  </div>
+  <p class="foot">点螺栓柱取顶螺母/放回，收纳架从左到右按序配对 · 方向键选择 · 空格取放 · 螺柱最多叠 4 只 · 超预算失败 · P 暂停</p>
+</div>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时聚焦首个可操作项，Tab 在层内循环，隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 常量与存档 ---------- */
+var MW=480,MH=520,DEPTH=4;
+var KEY="sw.nut-bolt.v1",LKEY="sw.nut-bolt.v1.levels",VKEY="sw.nut-bolt.v1.levels.ver";
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,String(v))}catch(e){}}
+/* ---------- 关卡（包内默认，DB 下发优先，本地版本缓存兜底） ---------- */
+var DEFAULT_LEVELS=[{"n":1,"studs":[["a","b","b"],[],["c"]],"bolts":["b","c","b","a"],"budget":14},{"n":2,"studs":[["b"],["a","a","c"],[]],"bolts":["b","a","c","a"],"budget":15},{"n":3,"studs":[["c"],["a","c"],["b"]],"bolts":["a","b","c","c"],"budget":15},{"n":4,"studs":[["b","a"],["a","c"],[]],"bolts":["a","b","c","a"],"budget":14},{"n":5,"studs":[["a","c"],["b"],["c"]],"bolts":["a","b","c","c"],"budget":15},{"n":6,"studs":[["c","b"],["a"],["b"]],"bolts":["c","b","a","b"],"budget":15},{"n":7,"studs":[["a","c"],[],["c","b"]],"bolts":["a","c","b","c"],"budget":14},{"n":8,"studs":[["c","b","b","a"],[],[]],"bolts":["c","b","b","a"],"budget":16},{"n":9,"studs":[["a","b"],["c","c"],[]],"bolts":["b","c","c","a"],"budget":13},{"n":10,"studs":[["a"],["a","d","b","c"],[]],"bolts":["b","a","a","c","d"],"budget":16},{"n":11,"studs":[["a","c"],["b"],["c","d"]],"bolts":["d","c","b","c","a"],"budget":14},{"n":12,"studs":[["a"],["c","a","d"],["b"]],"bolts":["a","b","c","d","a"],"budget":15},{"n":13,"studs":[["b","a","d","d"],["c"],[]],"bolts":["c","d","b","d","a"],"budget":16},{"n":14,"studs":[["c","a","b"],["d","c"],[]],"bolts":["d","c","b","a","c"],"budget":14},{"n":15,"studs":[[],["a"],["c","b"],["d","b"]],"bolts":["b","a","d","b","c"],"budget":13},{"n":16,"studs":[["a"],[],["c","b"],["c","d"]],"bolts":["a","b","d","c","c"],"budget":13},{"n":17,"studs":[[],["d","b"],["c"],["a","c"]],"bolts":["c","b","d","c","a"],"budget":13},{"n":18,"studs":[[],["b"],["d"],["c","a","c"]],"bolts":["c","b","a","c","d"],"budget":13},{"n":19,"studs":[[],["a","d"],["b"],["e","c"]],"bolts":["c","a","e","b","d"],"budget":14},{"n":20,"studs":[["c","b"],[],[],["c","e","d","a"]],"bolts":["c","b","c","d","e","a"],"budget":17},{"n":21,"studs":[["a"],[],["b"],["e","d","c","b"]],"bolts":["e","a","c","d","b","b"],"budget":16},{"n":22,"studs":[["d"],["a","c"],["b","a","e"],[]],"bolts":["a","b","c","e","a","d"],"budget":14},{"n":23,"studs":[["a","e"],["c","d","b"],["c"],[]],"bolts":["d","c","e","c","b","a"],"budget":14},{"n":24,"studs":[["b","a"],["e"],["d"],["a","c"]],"bolts":["c","d","b","a","e","a"],"budget":14},{"n":25,"studs":[["e"],["c","d"],["b","a"],["a"]],"bolts":["a","b","c","a","d","e"],"budget":14},{"n":26,"studs":[["b","d","a"],["e"],["e"],["c"]],"bolts":["e","a","e","d","c","b"],"budget":13},{"n":27,"studs":[["e"],["d","b"],["c","a"],["a"]],"bolts":["a","c","e","a","d","b"],"budget":14},{"n":28,"studs":[["d","c","a"],["d"],["e"],["b"]],"bolts":["d","a","d","b","c","e"],"budget":13},{"n":29,"studs":[["a","b"],["c","e"],[],["d","b"]],"bolts":["d","b","e","a","b","c"],"budget":13},{"n":30,"studs":[["b","a"],["d","a"],[],["c","e","e"]],"bolts":["d","b","c","a","e","e","a"],"budget":17},{"n":31,"studs":[["b","c","a"],["a"],[],["c","d","e"]],"bolts":["b","d","a","c","c","a","e"],"budget":16},{"n":32,"studs":[["d","b","e"],["b"],["e","c"],["a"]],"bolts":["e","e","a","d","b","b","c"],"budget":16},{"n":33,"studs":[["a","c"],["c","b","d"],[],["e","c"]],"bolts":["c","c","d","b","a","c","e"],"budget":13},{"n":34,"studs":[["b","d","a"],["a"],["e","c"],["e"]],"bolts":["e","b","a","a","e","c","d"],"budget":16},{"n":35,"studs":[["e","b"],["c","d","d"],["c","a"],[]],"bolts":["e","c","d","d","a","b","c"],"budget":14},{"n":36,"studs":[["c"],["d","a"],["e"],["d","b","e"]],"bolts":["d","e","b","c","a","d","e"],"budget":13},{"n":37,"studs":[["b","e"],[],["a"],["d","d","c","a"]],"bolts":["a","a","d","c","d","b","e"],"budget":14},{"n":38,"studs":[[],["d","d"],["b","d"],["c","a","e"]],"bolts":["d","d","e","b","c","d","a"],"budget":13},{"n":39,"studs":[["e","b","a"],["c","d","c","d"],[],[]],"bolts":["c","a","e","b","c","d","d"],"budget":15},{"n":40,"studs":[["a"],["e","d"],["d"],["a","e","b","c"]],"bolts":["d","a","d","c","a","e","e","b"],"budget":15},{"n":41,"studs":[["a","c","e"],["d","b"],["a"],["c","e"]],"bolts":["c","a","c","e","e","b","a","d"],"budget":15},{"n":42,"studs":[["c","b","c"],["e","a"],["d"],["e","a"]],"bolts":["c","c","b","e","d","a","e","a"],"budget":14}];
+var LEVELS=DEFAULT_LEVELS;
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  for(var i=0;i<list.length;i++){
+    var o=list[i];
+    if(!o||typeof o!=="object"||!Array.isArray(o.studs)||!Array.isArray(o.bolts)||!(o.budget>0))return false;
+  }
+  LEVELS=list;
+  try{lsSet(LKEY,JSON.stringify(list));lsSet(VKEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(lsGet(VKEY),10)||0;
+    var list=JSON.parse(lsGet(LKEY)||"null");
+    if(Array.isArray(list)&&list.length&&list[0]&&list[0].budget>0){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels("nut-bolt").then(function(res){
+    if(!res||!Array.isArray(res.levels))return;
+    var list=[];
+    for(var i=0;i<res.levels.length;i++){
+      try{list.push(JSON.parse(res.levels[i].dataJson));}catch(e){return;}
+    }
+    if(applyLevels(list,res.version||0)){
+      if(lvIdx>LEVELS.length-1)lvIdx=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lvIdx);persist();
+      loadLevel(lvIdx);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(lsGet(KEY))||{};return{lv:Math.max(0,parseInt(s.lv,10)||0)}}catch(e){return{lv:0}}}
+var save=loadSave();
+function persist(){
+  try{lsSet(KEY,JSON.stringify(save))}catch(e){}
+  if(GB.available)GB.saveState("nut-bolt",save).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("nut-bolt").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var rlv=parseInt(JSON.parse(res.stateJson).lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(rlv,LEVELS.length-1);persist();}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 调色板:CSS变量 → canvas ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL.bg=v("--g-bg");PAL.surface=v("--g-surface");PAL.surface2=v("--g-surface2");PAL.border=v("--g-border");
+  PAL.text=v("--g-text");PAL.muted=v("--g-muted");PAL.faint=v("--g-faint");
+  PAL.primary=v("--g-primary");PAL.deep=v("--g-primary-deep");PAL.soft=v("--g-primary-soft");PAL.onSoft=v("--g-on-soft");
+  PAL.danger=v("--g-danger");PAL.warning=v("--g-warning");PAL.success=v("--g-success");
+  PAL.metal=v("--g-st-metal");PAL.metal2=v("--g-st-metal2");
+  PAL.n=["--g-st-n1","--g-st-n2","--g-st-n3","--g-st-n4","--g-st-n5"].map(function(n){return s.getPropertyValue(n).trim()});
+}
+window.__gOnTheme=function(){palLoad();draw();};
+function nutColor(ch){return PAL.n["abcde".indexOf(ch)]||PAL.metal}
+/* ---------- DOM ---------- */
+function $(id){return document.getElementById(id)}
+var cv=$("cv"),ctx=cv.getContext("2d"),ov=$("ov");
+var hudMove=$("hudMove"),hudDone=$("hudDone"),hudLv=$("hudLv");
+var ovK=$("ovK"),ovT=$("ovT"),ovX=$("ovX"),ovS=$("ovS"),ovB=$("ovB");
+var lvIdx=Math.min(save.lv,LEVELS.length-1);
+var S={phase:"menu",paused:false,studs:[],bolts:[],progress:0,hand:null,
+  moves:0,budget:0,sel:0,useKey:false,shake:0,parts:[],floats:[]};
+function curLv(){return LEVELS[Math.min(lvIdx,LEVELS.length-1)]}
+function syncHud(){
+  hudMove.textContent=S.moves+"/"+S.budget;
+  hudDone.textContent=String(S.progress)+"/"+S.bolts.length;
+  hudLv.textContent=(lvIdx+1)+"/"+LEVELS.length;
+}
+function loadLevel(n){
+  lvIdx=Math.max(0,Math.min(n,LEVELS.length-1));
+  var L=curLv();
+  S.phase="run";S.paused=false;
+  S.studs=L.studs.map(function(s){return s.slice()});
+  S.bolts=L.bolts.slice();
+  S.progress=0;
+  S.hand=null;S.moves=0;S.budget=L.budget;S.sel=0;S.useKey=false;S.shake=0;
+  S.parts.length=0;S.floats.length=0;
+  syncHud();hideOv();
+}
+/* ---------- 覆盖层 ---------- */
+function showOv(o){
+  ovK.textContent=o.k||"";ovT.textContent=o.t||"";ovX.textContent=o.x||"";
+  var st=o.stats||[];
+  ovS.style.display=st.length?"grid":"none";
+  ovS.innerHTML=st.map(function(s){return '<div class="st"><b>'+s[1]+"</b><span>"+s[0]+"</span></div>"}).join("");
+  ovB.innerHTML="";
+  (o.btns||[]).forEach(function(b){
+    var el=document.createElement("button");
+    el.className="btn"+(b[1]==="ghost"?" ghost":"");
+    el.textContent=b[0];el.addEventListener("click",b[2]);ovB.appendChild(el);
+  });
+  ov.classList.add("show");
+}
+function hideOv(){ov.classList.remove("show")}
+function pauseGame(){
+  if(S.phase!=="run"||S.paused)return;
+  S.paused=true;
+  showOv({k:"PAUSED",t:"已暂停",x:"先想清楚哪只螺母挡路，再省着步数。",
+    btns:[["继续","primary",function(){S.paused=false;hideOv()}],["重开本关","ghost",function(){loadLevel(lvIdx)}]]});
+}
+function showMenu(){
+  S.phase="menu";
+  showOv({k:"NUT AND BOLT",t:"螺母配对",
+    x:"点螺柱拧下顶部螺母，收纳架必须从左到右按序配对螺栓；挡路的先挪到别的螺柱（每柱最多 4 只）。步数预算有限，超支失败。",
+    stats:[["进度",lvIdx+1+"/"+LEVELS.length]],
+    btns:[["开始 · 第 "+(lvIdx+1)+" 关","primary",function(){loadLevel(lvIdx)}]]});
+}
+/* ---------- 动作 ---------- */
+function actStud(i){
+  if(S.hand===null){
+    if(S.studs[i].length===0){flash("空柱",PAL.muted);return}
+    S.hand=S.studs[i].pop();
+  }else{
+    if(S.studs[i].length>=DEPTH){flash("柱满（≤4）",PAL.danger);S.shake=.3;return}
+    S.studs[i].push(S.hand);
+    S.hand=null;
+    S.moves++;
+    checkBudget();
+  }
+  syncHud();
+}
+function actBolt(i){
+  if(S.hand===null)return;
+  if(i!==S.progress){flash("要从左到右按序收纳",PAL.danger);S.shake=.3;return}
+  if(S.bolts[i]!==S.hand){
+    flash("规格不符",PAL.danger);
+    S.shake=.3;
+    return;
+  }
+  S.progress++;S.hand=null;
+  S.moves++;
+  syncHud();
+  checkBudget();
+  if(S.progress===S.bolts.length)win();
+}
+function checkBudget(){
+  if(S.moves>S.budget){lose();return}
+}
+function win(){
+  S.phase="over";
+  var spare=S.budget-S.moves;
+  var next=false;
+  if(lvIdx+1<LEVELS.length&&lvIdx+1>save.lv){save.lv=lvIdx+1;next=true}
+  persist();
+  if(GB.available)GB.reportScore("nut-bolt",{metricValue:save.lv+1,metricExtra:"省"+spare+"步"}).catch(function(){});
+  var hasNext=lvIdx+1<LEVELS.length;
+  showOv({k:"ALL MATCHED",t:"全部配对",
+    x:next?"解锁下一关：颜色更多、预算更紧，规划好顺序再动手。":"全部关卡完成，工具间大师！",
+    stats:[["步数",S.moves],["预算",S.budget],["省下",spare]],
+    btns:hasNext?[["下一关","primary",function(){loadLevel(lvIdx+1)}],["重玩本关","ghost",function(){loadLevel(lvIdx)}]]
+                :[["再来一轮","primary",function(){loadLevel(0)}]]});
+}
+function lose(){
+  S.phase="over";
+  showOv({k:"OUT OF BUDGET",t:"步数超支",
+    x:"用了 "+S.moves+" 步超出预算 "+S.budget+"。每只挡路螺母都要多花两步，先收能直接配对的。",
+    stats:[["步数",S.moves],["预算",S.budget]],
+    btns:[["重试本关","primary",function(){loadLevel(lvIdx)}]]});
+}
+function flash(txt,col){S.floats.push({x:MW/2,y:150,txt:txt,col:col||PAL.danger,t:.9})}
+/* ---------- 几何 ---------- */
+function studX(i,n){return MW/2+(i-(n-1)/2)*100}
+function studY(){return 150}
+function boltX(i,n){return MW/2+(i-(n-1)/2)*52}
+function boltY(){return 430}
+/* ---------- 绘制 ---------- */
+var SC=1;
+function resize(){
+  var r=cv.getBoundingClientRect();
+  var dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
+  cv.width=Math.max(1,Math.round(r.width*dpr));
+  cv.height=Math.max(1,Math.round(r.height*dpr));
+  SC=r.width/MW;
+  ctx.setTransform(dpr*SC,0,0,dpr*SC,0,0);
+}
+function drawNut(x,y,ch,scale,ghost){
+  var s=(scale||1)*15;
+  ctx.globalAlpha=ghost?0.55:1;
+  ctx.fillStyle=nutColor(ch);
+  ctx.strokeStyle=PAL.metal2;ctx.lineWidth=1.4;
+  ctx.beginPath();
+  ctx.moveTo(x-s,y-s*0.62);
+  ctx.lineTo(x-s*0.55,y-s);
+  ctx.lineTo(x+s*0.55,y-s);
+  ctx.lineTo(x+s,y-s*0.62);
+  ctx.lineTo(x+s,y+s*0.62);
+  ctx.lineTo(x+s*0.55,y+s);
+  ctx.lineTo(x-s*0.55,y+s);
+  ctx.lineTo(x-s,y+s*0.62);
+  ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle=PAL.surface;
+  ctx.beginPath();ctx.arc(x,y,s*0.38,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+}
+function draw(){
+  ctx.fillStyle=PAL.surface2;ctx.fillRect(0,0,MW,MH);
+  ctx.fillStyle=PAL.surface;ctx.fillRect(0,MH-150,MW,150);
+  ctx.fillStyle=PAL.border;ctx.fillRect(0,MH-152,MW,2);
+  var L=curLv();
+  var n=S.studs.length;
+  ctx.fillStyle=PAL.muted;ctx.font="700 14px system-ui,sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
+  ctx.fillText("螺柱",20,120);
+  //螺柱
+  for(var i=0;i<n;i++){
+    var x=studX(i,n),y=studY();
+    var sel=S.useKey&&S.sel===i;
+    ctx.fillStyle=sel?PAL.soft:PAL.surface2;
+    ctx.strokeStyle=sel?PAL.primary:PAL.border;ctx.lineWidth=2;
+    ctx.beginPath();ctx.rect(x-30,y-40,60,190);ctx.fill();ctx.stroke();
+    ctx.fillStyle=PAL.metal;
+    ctx.fillRect(x-5,y-30,10,170);
+    for(var d=0;d<S.studs[i].length;d++){
+      drawNut(x,y+120-d*40,S.studs[i][d],1,d===S.studs[i].length-1&&S.hand!==null);
+    }
+    ctx.fillStyle=PAL.muted;ctx.font="400 12px system-ui,sans-serif";ctx.textAlign="center";
+    ctx.fillText((i+1)+" 号柱",x,y+162);
+  }
+  //手中螺母
+  if(S.hand!==null){
+    var hx=S.useKey?studX(Math.min(S.sel,n-1),n):(n>0?studX(Math.min(S.sel,n-1),n):MW/2);
+    drawNut(hx,86,S.hand,1.15,true);
+    ctx.fillStyle=PAL.muted;ctx.font="400 12px system-ui,sans-serif";ctx.textAlign="center";
+    ctx.fillText("手中 · 点同色螺栓收纳",MW/2,60);
+  }
+  //螺栓
+  var m=S.bolts.length;
+  ctx.fillStyle=PAL.muted;ctx.font="700 14px system-ui,sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
+  ctx.fillText("收纳架",20,352);
+  for(i=0;i<m;i++){
+    var bx=boltX(i,m),by=boltY();
+    var selB=S.useKey&&S.sel===n+i;
+    var filled=i<S.progress,cur=i===S.progress;
+    ctx.fillStyle=filled?PAL.soft:(selB||cur?PAL.soft:PAL.surface);
+    ctx.strokeStyle=selB?PAL.primary:(cur?nutColor(S.bolts[i]):PAL.border);ctx.lineWidth=2;
+    ctx.beginPath();ctx.rect(bx-22,by-36,44,72);ctx.fill();ctx.stroke();
+    //螺栓杆
+    ctx.fillStyle=PAL.metal;
+    ctx.fillRect(bx-4,by-24,8,48);
+    ctx.fillRect(bx-8,by+20,16,4);
+    ctx.fillRect(bx-8,by+14,16,4);
+    if(filled){
+      drawNut(bx,by-24,S.bolts[i],0.9);
+    }else{
+      //期望色空环（当前槽位实线高亮，后续虚线）
+      ctx.strokeStyle=nutColor(S.bolts[i]);
+      ctx.lineWidth=cur?2.6:1.6;
+      ctx.beginPath();ctx.arc(bx,by-24,11,0,Math.PI*2);ctx.stroke();
+      if(!cur){
+        ctx.setLineDash([3,3]);
+        ctx.beginPath();ctx.arc(bx,by-24,11,0,Math.PI*2);ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  }
+  ctx.textBaseline="alphabetic";
+  //浮字
+  ctx.textAlign="center";ctx.font="700 16px system-ui,sans-serif";
+  for(i=0;i<S.floats.length;i++){
+    var f=S.floats[i];
+    ctx.globalAlpha=Math.min(1,f.t*1.5);
+    ctx.fillStyle=f.col;ctx.fillText(f.txt,f.x,f.y);
+  }
+  ctx.globalAlpha=1;
+}
+function stepFx(dt){
+  if(S.shake>0)S.shake-=dt;
+  for(var i=S.floats.length-1;i>=0;i--){
+    var f=S.floats[i];f.y-=26*dt;f.t-=dt;
+    if(f.t<=0)S.floats.splice(i,1);
+  }
+}
+/* ---------- 输入 ---------- */
+function tapAt(x,y){
+  if(S.phase!=="run"||S.paused)return;
+  var n=S.studs.length,m=S.bolts.length;
+  for(var i=0;i<n;i++){
+    var sx=studX(i,n);
+    if(Math.abs(x-sx)<50&&y>100&&y<350){S.useKey=false;S.sel=i;actStud(i);return}
+  }
+  for(i=0;i<m;i++){
+    var bx=boltX(i,m);
+    if(Math.abs(x-bx)<26&&y>380&&y<470){S.useKey=false;S.sel=n+i;actBolt(i);return}
+  }
+}
+cv.addEventListener("pointerdown",function(e){
+  e.preventDefault();
+  try{cv.setPointerCapture(e.pointerId)}catch(err){}
+  var r=cv.getBoundingClientRect();
+  tapAt((e.clientX-r.left)/SC,(e.clientY-r.top)/SC);
+});
+cv.addEventListener("contextmenu",function(e){e.preventDefault()});
+document.addEventListener("keydown",function(e){
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].indexOf(e.code)>=0)e.preventDefault();
+  var n=S.studs.length,m=S.bolts.length,total=n+m;
+  if(e.code==="ArrowLeft"){S.sel=(S.sel+total-1)%total;S.useKey=true}
+  if(e.code==="ArrowRight"){S.sel=(S.sel+1)%total;S.useKey=true}
+  if(e.code==="Space"&&S.phase==="run"){
+    if(S.sel<n)actStud(S.sel);else actBolt(S.sel-n);
+  }
+  if(e.code==="KeyP"&&S.phase==="run"){S.paused?((S.paused=false),hideOv()):pauseGame()}
+  if(e.code==="KeyR"&&S.phase!=="menu")loadLevel(lvIdx);
+  if(e.code==="Enter"&&S.phase!=="run")loadLevel(lvIdx);
+});
+$("btnPause").addEventListener("click",pauseGame);
+$("btnReset").addEventListener("click",function(){loadLevel(lvIdx)});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&S.phase==="run"&&!S.paused)pauseGame();
+});
+/* ---------- 主循环 ---------- */
+var lastT=0;
+function loop(now){
+  requestAnimationFrame(loop);
+  if(!lastT)lastT=now;
+  var dt=Math.min(.05,(now-lastT)/1000);
+  lastT=now;
+  stepFx(dt);
+  draw();
+}
+/* ---------- 启动 ---------- */
+palLoad();
+syncHud();
+showMenu();
+resize();
+window.addEventListener("resize",resize);
+requestAnimationFrame(loop);
+syncSaveFromServer();
+syncLevelsFromServer();
+})();
+</script>
+</body>
+</html>

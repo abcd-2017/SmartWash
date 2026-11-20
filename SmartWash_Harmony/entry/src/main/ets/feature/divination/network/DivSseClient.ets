@@ -22,7 +22,8 @@
  * 终态兜底：done/error 帧为会话终态；流正常结束但两者皆未收到（后端 SseEmitter 120s 超时
  * onTimeout 只断流不发终态帧，必现场景）时补发 onFail，避免调用方 UI 永久停留 loading。
  *
- * 地址红线：BASE_URL 经 hvigor BuildProfile 注入（与 Axios.ets 同源），源码零硬编码。
+ * 地址红线：BASE_URL 经 hvigor BuildProfile 注入（与 Axios.ets 同源），源码零硬编码；
+ * 拼接经 buildSseUrl 归一化（BASE_URL 尾斜杠 / path 前导斜杠兼容），对齐 Axios 通道。
  */
 
 import { http } from '@kit.NetworkKit'
@@ -431,6 +432,23 @@ async function runBuffered(url: string, body: string, cb: DivSseCallbacks, produ
 }
 
 /**
+ * URL 归一化拼接：BASE_URL 去全部尾部斜杠 + path 去全部前导斜杠，再以单斜杠连接。
+ *
+ * 背景（P0-2）：BASE_URL 经构建注入均为带尾斜杠形态（如 http://host:8080/），而 path
+ * 带前导斜杠（如 /web/auth/div/...），裸拼接产出 `//web/auth/...` 双斜杠 URI——后端
+ * JWT 过滤器按原始 URI 前缀匹配不识别 `//web/`，跳过鉴权装配后被 Security 兜底 401，
+ * 用户被登出。归一化行为对齐 @ohos/axios 的 baseURL+url 拼接（combineURLs 单斜杠连接），
+ * 使 SSE 通道与 Axios 通道对同一 BASE_URL（带/不带尾斜杠均可）行为一致。
+ * BASE_URL 为空串（release 未注入）时产出的相对路径请求必然失败，走既有失败兜底，
+ * 与 Axios 通道「未注入即不可用」语义一致。
+ */
+function buildSseUrl(path: string): string {
+  const base = BASE_URL.replace(/\/+$/, '')
+  const rel = path.replace(/^\/+/, '')
+  return `${base}/${rel}`
+}
+
+/**
  * 发起 SSE 请求（POST，body 为纯文本 question）。
  *
  * 切换策略：先流式；流式链路失败且尚未产出任何帧、且非 401 时，
@@ -442,7 +460,7 @@ async function runBuffered(url: string, body: string, cb: DivSseCallbacks, produ
  * @param path 相对路径（如 /web/auth/div/records/1/interpret）
  */
 export async function divSsePost(path: string, question: string, cb: DivSseCallbacks): Promise<void> {
-  const url = `${BASE_URL}${path}`
+  const url = buildSseUrl(path)
   // 产出标记：any=任一内容帧已回调（不再攒流重试）；terminated=终态帧（done/error）已回调
   const produced: SseProducedFlag = { any: false, terminated: false }
   // 流终态兜底：全程结束仍未收到终态帧时补发失败回调（追问页 sending 复位 / 解读页出错误态可重试）

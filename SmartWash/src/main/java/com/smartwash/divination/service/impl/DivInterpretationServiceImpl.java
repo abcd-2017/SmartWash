@@ -162,6 +162,9 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
         String systemPrompt = packet.get("system");
         String userPrompt = packet.get("user");
         Long promptVersionId = parseVersionId(packet.get("promptVersionId"));
+        // 激活版本 outputConfig 输出参数（temperature/max_tokens）：未配置时保持默认温度 0.7、不传 max_tokens
+        Double temperature = parseNullableDouble(packet.get("temperature"));
+        Integer maxTokens = parseNullableInt(packet.get("maxTokens"));
         // 日志只打长度摘要，不打完整 prompt（含盘面与解读内容，避免刷日志）
         log.debug("prompt 组装完成, recordId: {}, kind: {}, promptVersionId: {}, userPromptChars: {}",
                 recordId, isFollowup ? "followup" : "first", promptVersionId, userPrompt.length());
@@ -173,7 +176,7 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
         LlmCallException callError = null;
         boolean clientGone = false;
         try {
-            llmResult = llmClient.chatWithFallback(provider, systemPrompt, userPrompt,
+            llmResult = llmClient.chatWithFallback(provider, systemPrompt, userPrompt, temperature, maxTokens,
                     chunk -> sseBridge.sendDelta(emitter, chunk));
         } catch (LlmCallException e) {
             callError = e;
@@ -278,5 +281,25 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
      */
     private Long parseVersionId(String versionIdStr) {
         return versionIdStr != null && !versionIdStr.isEmpty() ? Long.valueOf(versionIdStr) : 0L;
+    }
+
+    /** 激活版本输出参数解析：无值/非法值返回 null（LLM 调用保持默认温度 0.7、不传 max_tokens） */
+    private Double parseNullableDouble(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Double.valueOf(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /** 激活版本输出参数解析：无值/非法值返回 null */
+    private Integer parseNullableInt(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

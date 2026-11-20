@@ -50,4 +50,9 @@ interface DivRecordDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(record: DivRecordEntity): Long
+
+    /** 会话终止清库（P2-7 换账号隔离）：本地库无账号列，会话终止（登出/401 失效/未登录拦截）
+     *  时整表清除，保证换账号登录后旧账号卦历/案卷不再展示（清表不升级，无 schema 变更） */
+    @Query("DELETE FROM div_records")
+    suspend fun clearAll()
 }

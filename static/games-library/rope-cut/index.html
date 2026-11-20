@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>割绳取糖</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材（st- 前缀素材 token）*/
+  :root {
+    --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
+    --g-primary:#2D9B6A; --g-primary-deep:#17734A;--g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
+    --g-text:#1C1C1E; --g-muted:#6B6E73; --g-faint:#A9AEA9; --g-border:#E6E9E6; --g-hairline:#EFF1EE;
+    --g-danger:#A83850; --g-warning:#9A6210; --g-success:#17734A; --g-water:#4A9FD4;
+    --g-scrim:rgba(245,246,243,.9);
+    --g-shadow:0 2px 12px rgba(20,40,30,.05);
+    --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
+    --g-st-room1:#F0E9D8; --g-st-room2:#F8F4EA; --g-st-pin:#C07A4A; --g-st-pinln:#6B4A2E; --g-st-rope:#8A6234; --g-st-candy:#C9526B; --g-st-candyln:#8A3448;
+    color-scheme:light;
+  }
+  :root[data-theme=dark] {
+    --g-bg:#141614; --g-surface:#1D201E; --g-surface2:#262A27;
+    --g-primary-deep:#5BC894; --g-primary-soft:#1D3229; --g-on-soft:#B9E8CF;
+    --g-text:#E6E9E6; --g-muted:#A9AEA9; --g-faint:#7E837D; --g-border:#2C312D; --g-hairline:#262A27;
+    --g-danger:#DB7186; --g-warning:#E2A44E; --g-success:#4ADE6E; --g-water:#6BB4DE;
+    --g-scrim:rgba(20,22,20,.9);
+    --g-shadow:0 2px 12px rgba(0,0,0,.28);
+    --g-st-room1:#2A2618; --g-st-room2:#191711; --g-st-pin:#A9885A; --g-st-pinln:#D8BC8E; --g-st-rope:#B49C6E; --g-st-candy:#DB7186; --g-st-candyln:#F0B9C4;
+    color-scheme:dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.5; }
+  .icon-btn {
+    width: 44px; height: 44px; flex: 0 0 44px;
+    border: 1px solid var(--g-border); border-radius: 12px;
+    background: var(--g-surface); color: var(--g-text);
+    display: grid; place-items: center; cursor: pointer; font: inherit;
+    touch-action: manipulation;
+  }
+  .icon-btn:active { opacity: .8; }
+  .scores { display: flex; gap: 8px; flex: 1; }
+  .score-box {
+    background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
+    flex: 1; min-width: 0; padding: 5px 8px; text-align: center; line-height: 1.3;
+  }
+  .score-box .label { display: block; font-size: 12px; opacity: .85; white-space: nowrap; }
+  .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
+  .stat .val { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: 14px;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
+  .stage { position: relative; }
+  canvas {
+    display: block; width: 100%; aspect-ratio: 390 / 520; height: auto;
+    background: var(--g-surface2);
+    border: 1px solid var(--g-border); border-radius: 12px;
+    touch-action: none;
+  }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: absolute; inset: 0; z-index: 5;
+    border-radius: 12px; background: var(--g-scrim);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 16px; text-align: center;
+  }
+  .overlay.show { display: flex; animation: rise .18s ease-out; }
+  @keyframes rise { from { transform: translateY(6px); } to { transform: translateY(0); } }
+  .ov-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--g-primary-deep); max-width: 100%; }
+  .ov-sub { margin: 0 0 6px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .btn-row { display: flex; gap: 8px; width: 100%; max-width: 340px; }
+  .btn-row .btn { flex: 1; }
+  .lv-wrap { width: 100%; max-width: 340px; max-height: 48vh; overflow-y: auto; }
+  .lv-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+  .lv-chip {
+    min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
+  .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
+  .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background: var(--g-surface2); color: var(--g-warning); font-size: 12px; font-weight: 700; }
+  .badge.show { display: inline-block; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="sub">划断绳子，让糖果荡进怪兽嘴</span>
+    <button class="icon-btn" id="btnSelectTop" type="button" aria-label="选择关卡" title="选择关卡">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
+    </button>
+  </header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">星星</span><span class="val" id="stStars">0/3</span></div>
+    <div class="stat"><span class="label">剩余</span><span class="val" id="stTime">12.0s</span></div>
+  </div>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="割绳取糖游戏画面" role="img"></canvas>
+    <div class="overlay" role="dialog" aria-modal="true" id="ovWin">
+      <span class="badge" id="ovNew">新纪录</span>
+      <h2 class="ov-title">过关！</h2>
+      <p class="ov-sub" id="ovWinDesc"></p>
+      <div class="btn-row">
+        <button class="btn" id="btnNext" type="button">下一关</button>
+        <button class="btn ghost" id="btnReplayWin" type="button">重玩</button>
+        <button class="btn ghost" id="btnSelectWin" type="button">选关</button>
+      </div>
+    </div>
+    <div class="overlay" role="dialog" aria-modal="true" id="ovFail">
+      <h2 class="ov-title">糖果丢了</h2>
+      <p class="ov-sub" id="ovFailDesc"></p>
+      <div class="btn-row">
+        <button class="btn" id="btnRetry" type="button">重试本关</button>
+        <button class="btn ghost" id="btnSelectFail" type="button">选关</button>
+      </div>
+    </div>
+    <div class="overlay" role="dialog" aria-modal="true" id="ovSelect">
+      <h2 class="ov-title">选择关卡</h2>
+      <div class="lv-wrap"><div class="lv-grid" id="lvGrid"></div></div>
+      <div class="btn-row"><button class="btn ghost" id="btnCloseSelect" type="button">关闭</button></div>
+    </div>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+  <div class="tools"><button class="btn ghost" id="btnRetryBottom" type="button">重玩本关</button></div>
+  <p class="foot">沿弹道顺路吃星 · 划过绳即割 / 键盘 1-3 按钉点序号割 · 12 秒内进嘴过关</p>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 核心与关卡生成（确定性纯函数；XC-CORE 供 node 抽取独立复现验证） ========== */
+/*XC-CORE-BEGIN*/
+function mulberry32(a){
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+var RC={STEP:1/120,ITER:6,G:900,SEGL:12,DAMP:0.998,MOUTH_R:20,STAR_R:16,TMAX:12,NW:390,NH:520};
+/* 状态构建：verlet 质点系——糖果 + 每根绳的中间节点；初速用 px/py 偏移注入 */
+RC.makeState=function(level){
+  var h=RC.STEP;
+  var c=level.candy;
+  var st={t:0,candy:{x:c[0],y:c[1],px:c[0]-(c[2]||0)*h,py:c[1]-(c[3]||0)*h},
+    ropes:[],stars:[],status:"run"};
+  for(var k=0;k<level.pins.length;k++){
+    var pin=level.pins[k],s=level.ropes[k],nodes=[];
+    for(var j=1;j<s;j++){
+      var fx=pin[0]+(c[0]-pin[0])*j/s,fy=pin[1]+(c[1]-pin[1])*j/s;
+      nodes.push({x:fx,y:fy,px:fx,py:fy});
+    }
+    st.ropes.push({pin:pin,s:s,nodes:nodes,active:true});
+  }
+  for(var i=0;i<level.stars.length;i++)st.stars.push({x:level.stars[i][0],y:level.stars[i][1],got:false});
+  return st;
+};
+function rcIntegrate(p,h){
+  var nx=p.x+(p.x-p.px)*RC.DAMP,ny=p.y+(p.y-p.py)*RC.DAMP+RC.G*h*h;
+  p.px=p.x;p.py=p.y;p.x=nx;p.y=ny;
+}
+/* 单步物理：重力积分 + 绳约束迭代（钉点固定，糖果端权重低=更重） */
+RC.step=function(st,level,record){
+  var h=RC.STEP;
+  st.t+=h;
+  rcIntegrate(st.candy,h);
+  var k,j,i;
+  for(k=0;k<st.ropes.length;k++){
+    var rope=st.ropes[k];
+    if(!rope.active)continue;
+    for(j=0;j<rope.nodes.length;j++)rcIntegrate(rope.nodes[j],h);
+  }
+  for(i=0;i<RC.ITER;i++){
+    for(k=0;k<st.ropes.length;k++){
+      var rp=st.ropes[k];
+      if(!rp.active)continue;
+      var prev={x:rp.pin[0],y:rp.pin[1],pin:true};
+      for(j=0;j<rp.nodes.length;j++){
+        var w=j===0?1:0.5;   // 钉点段由末端全额修正，中间段两端各半
+        rcConstraint(prev,rp.nodes[j],RC.SEGL,w,w);
+        prev=rp.nodes[j];
+      }
+      var cwa=prev.pin?1:0.78;
+      rcConstraint(prev,st.candy,RC.SEGL,cwa,1-cwa);   // 糖果端更重
+    }
+  }
+  for(i=0;i<st.stars.length;i++){
+    var s2=st.stars[i];
+    if(!s2.got){
+      var dx=st.candy.x-s2.x,dy=st.candy.y-s2.y;
+      if(dx*dx+dy*dy<RC.STAR_R*RC.STAR_R)s2.got=true;
+    }
+  }
+  if(record)st.path.push([st.candy.x,st.candy.y]);
+  if(level.mouth){
+    var mx=st.candy.x-level.mouth[0],my=st.candy.y-level.mouth[1];
+    if(mx*mx+my*my<RC.MOUTH_R*RC.MOUTH_R)return "win";
+  }
+  if(st.candy.y>RC.NH+60||st.candy.x<-60||st.candy.x>RC.NW+60)return "out";
+  if(st.t>RC.TMAX)return "time";
+  return "run";
+};
+function rcConstraint(a,b,rest,wa,wb){
+  var dx=b.x-a.x,dy=b.y-a.y;
+  var d=Math.sqrt(dx*dx+dy*dy)||0.0001;
+  var diff=(d-rest)/d;
+  if(!a.pin){
+    a.x+=dx*diff*wa;a.y+=dy*diff*wa;
+  }
+  if(b!==undefined){
+    b.x-=dx*diff*wb;b.y-=dy*diff*wb;
+  }
+}
+/* 割绳：整根移除（糖果保留在余绳上） */
+RC.cut=function(st,k){
+  if(st.ropes[k]&&st.ropes[k].active)st.ropes[k].active=false;
+};
+/* 带割绳时间表的完整模拟（确定性；验证=按表回放） */
+RC.simulate=function(level,cuts,record){
+  var st=RC.makeState(level);
+  if(record)st.path=[];
+  var ci=0;
+  cuts=(cuts||[]).slice().sort(function(a,b){return a.t-b.t});
+  var guard=Math.ceil(RC.TMAX/RC.STEP)+10;
+  while(guard-->0){
+    while(ci<cuts.length&&cuts[ci].t<=st.t){RC.cut(st,cuts[ci].k);ci++;}
+    var res=RC.step(st,level,record);
+    if(res!=="run")return {status:res,t:st.t,st:st,path:st.path||null};
+  }
+  return {status:"time",t:st.t,st:st,path:st.path||null};
+};
+/* 关卡生成：按解法构造——先扫割绳时刻找穿越目标深度的弹道，再沿弹道布星、放嘴，最后整局回放确认 */
+RC.LEVEL_COUNT=40;
+RC.genLevel=function(no){
+  var tmax=RC.TMAX;
+  for(var att=0;att<40;att++){
+    var rng=mulberry32(77000+no*613+att*131);
+    var two=no>13&&rng()<0.6;
+    var py=56+rng()*46;
+    var pin1=[60+rng()*90,py],pin2=[240+rng()*80,py];
+    var level=null;
+    if(!two){
+      var n1=7+((rng()*4)|0);
+      level={name:"第"+no+"关 · 割绳取糖",pins:[pin1],ropes:[n1],
+        candy:[pin1[0],pin1[1]+n1*RC.SEGL,240+rng()*90,0],stars:[],mouth:null,tmax:tmax};
+    }else{
+      var half=(pin2[0]-pin1[0])/2;
+      var d=Math.max(half+40,85+rng()*30);
+      var cy=py+Math.sqrt(d*d-half*half);
+      var n2=Math.ceil(d/RC.SEGL);
+      level={name:"第"+no+"关 · 割绳取糖",pins:[pin1,pin2],ropes:[n2,n2],
+        candy:[(pin1[0]+pin2[0])/2,cy,(rng()<0.5?-1:1)*(240+rng()*90),0],stars:[],mouth:null,tmax:tmax};
+    }
+    var yTarget=360+rng()*100;
+    var found=null;
+    if(!two){
+      for(var t1=0.1;t1<=2.6;t1+=0.05){
+        var sim=RC.simulate(level,[{k:0,t:t1}],true);
+        var cross=rcFindCross(sim.path,yTarget,Math.round(t1/RC.STEP));
+        if(cross<0)continue;
+        var stA=sim.st;
+        var vx=stA.candy.x-stA.candy.px;
+        if(Math.abs(vx)/RC.STEP>620)continue;
+        var m=sim.path[cross];
+        if(m[0]<40||m[0]>350)continue;
+        found={cuts:[{k:0,t:t1}],cross:cross,sim:sim};
+        break;
+      }
+    }else{
+      for(var t2=0.4;t2<=2.8;t2+=0.05){
+        var sim2=RC.simulate(level,[{k:0,t:0.2},{k:1,t:t2}],true);
+        var cross2=rcFindCross(sim2.path,yTarget,Math.round(t2/RC.STEP));
+        if(cross2<0)continue;
+        var m2=sim2.path[cross2];
+        if(m2[0]<40||m2[0]>350)continue;
+        found={cuts:[{k:0,t:0.2},{k:1,t:t2}],cross:cross2,sim:sim2};
+        break;
+      }
+    }
+    if(!found)continue;
+    // 沿弹道布 3 星（最小间距 44，离嘴 ≥34）
+    var path=found.sim.path,ic=found.cross;
+    var mouthPt=path[ic];
+    var stars=[],fracs=[0.18,0.45,0.75];
+    for(var f=0;f<fracs.length;f++){
+      var idx=Math.max(1,Math.round(ic*fracs[f]));
+      if(idx>=ic)idx=ic-1;
+      var p=path[idx];
+      var ok=p[0]>24&&p[0]<RC.NW-24&&p[1]>30;
+      for(var s3=0;s3<stars.length;s3++){
+        var ddx=stars[s3][0]-p[0],ddy=stars[s3][1]-p[1];
+        if(ddx*ddx+ddy*ddy<44*44)ok=false;
+      }
+      var mdx=p[0]-mouthPt[0],mdy=p[1]-mouthPt[1];
+      if(mdx*mdx+mdy*mdy<34*34)ok=false;
+      if(ok)stars.push([Math.round(p[0]*10)/10,Math.round(p[1]*10)/10]);
+    }
+    if(stars.length<2)continue;
+    level.stars=stars;
+    level.mouth=[Math.round(mouthPt[0]*10)/10,Math.round(yTarget*10)/10];
+    level.solution=found.cuts;
+    // 终验：整局按解法回放——必须进嘴且全星
+    var final=RC.simulate(level,level.solution,true);
+    var got=0;
+    for(var g=0;g<final.st.stars.length;g++)if(final.st.stars[g].got)got++;
+    if(final.status==="win"&&got===level.stars.length)return level;
+  }
+  // 兜底关卡：直落线（必定可解）
+  var fb={name:"第"+no+"关 · 割绳取糖",pins:[[195,60]],ropes:[8],
+    candy:[195,156,0,0],stars:[[195,220],[195,300],[195,370]],mouth:[195,430],tmax:tmax,
+    solution:[{k:0,t:0.5}]};
+  return fb;
+};
+/* 在路径里找自 fromStep 起第一次向下穿越 yTarget 的步号 */
+function rcFindCross(path,yTarget,fromStep){
+  if(!path)return -1;
+  for(var i=Math.max(1,fromStep);i<path.length;i++){
+    if(path[i-1][1]<yTarget&&path[i][1]>=yTarget)return i;
+  }
+  return -1;
+}
+RC.validateAll=function(){
+  var fails=[],starSum=0,i;
+  for(i=1;i<=RC.LEVEL_COUNT;i++){
+    var L=RC.genLevel(i);
+    var r=RC.simulate(L,L.solution||[],true);
+    var got=0;
+    for(var g=0;g<r.st.stars.length;g++)if(r.st.stars[g].got)got++;
+    starSum+=got;
+    if(r.status!=="win"||got<L.stars.length)fails.push(i+"("+r.status+","+got+"/"+L.stars.length+")");
+  }
+  return {total:RC.LEVEL_COUNT,solvable:RC.LEVEL_COUNT-fails.length,fail:fails,avgStars:Math.round(starSum/RC.LEVEL_COUNT*100)/100};
+};
+globalThis.__XC=RC;
+/*XC-CORE-END*/
+
+/* ========== 画布与调色板 ========== */
+var NW=390,NH=520,W=390,H=520,S=1,offX=0,offY=0;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),danger:v("--g-danger"),warning:v("--g-warning"),
+    water:v("--g-water"),success:v("--g-success"),onPrimary:v("--g-on-primary"),
+    room1:v("--g-st-room1"),room2:v("--g-st-room2"),pin:v("--g-st-pin"),pinln:v("--g-st-pinln"),
+    rope:v("--g-st-rope"),candy:v("--g-st-candy"),candyln:v("--g-st-candyln")};
+}
+window.__gOnTheme=function(){palLoad();grads=null;};
+palLoad();
+var grads=null;
+function buildGrads(){grads=ctx.createLinearGradient(0,0,0,NH);grads.addColorStop(0,PAL.room1);grads.addColorStop(1,PAL.room2);}
+
+/* ========== 音效 ========== */
+var AC=null;
+function beep(f,d,type,vol){
+  try{
+    if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();
+    var o=AC.createOscillator(),g=AC.createGain();
+    o.type=type||"sine";o.frequency.value=f;g.gain.value=vol||0.05;
+    o.connect(g);g.connect(AC.destination);
+    g.gain.exponentialRampToValueAtTime(0.0001,AC.currentTime+(d||0.1));
+    o.start();o.stop(AC.currentTime+(d||0.1)+0.02);
+  }catch(e){}
+}
+
+/* ========== 关卡数据：包内生成 + DB 下发（整批替换，任一条非法整批放弃） ========== */
+var LEVELS=[],cur=0;
+var LEVELS_KEY="sw.ropecut.v1.levels",LEVELS_VER_KEY="sw.ropecut.v1.levels.ver";
+function buildDefaultLevels(){
+  var list=[];
+  for(var i=1;i<=RC.LEVEL_COUNT;i++)list.push(RC.genLevel(i));
+  return list;
+}
+function parseRopeLevels(res){
+  if(!res||typeof res!=="object"||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={},i;
+  for(i=0;i<res.levels.length;i++){
+    var item=res.levels[i];
+    if(!item||typeof item!=="object")return null;
+    var d;
+    try{d=JSON.parse(item.dataJson)}catch(e){return null}
+    if(!d||typeof d!=="object")return null;
+    if(typeof d.name!=="string"||!d.name.length||d.name.length>32)return null;
+    if(!Array.isArray(d.pins)||!Array.isArray(d.ropes)||d.pins.length!==d.ropes.length||!d.pins.length||d.pins.length>3)return null;
+    if(!Array.isArray(d.candy)||d.candy.length<2)return null;
+    if(!Array.isArray(d.stars)||d.stars.length>5)return null;
+    if(!Array.isArray(d.mouth)||d.mouth.length!==2)return null;
+    if(!isFinite(d.tmax)||d.tmax<5||d.tmax>20)return null;
+    if((d.solution||[]).length){
+      var chk=RC.simulate(d,d.solution,true);
+      var got=0;
+      for(var g=0;g<chk.st.stars.length;g++)if(chk.st.stars[g].got)got++;
+      if(chk.status!=="win"||got<d.stars.length)return null;   // 下发关卡必须按解法可过
+    }
+    var no=parseInt(item.levelNo,10);
+    if(!isFinite(no)||no<1)no=i+1;
+    if(seen[no])return null;
+    seen[no]=true;
+    d.no=no;
+    list.push(d);
+  }
+  list.sort(function(a,b){return a.no-b.no});
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;}
+  }catch(e){}
+  return 0;
+}
+
+/* ========== 存档（本地 + 账号双写，账号更优才覆盖；星星逐关取多） ========== */
+var KEY="sw.ropecut.v1";
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+var curSave=(function(){
+  try{
+    var s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s==="object")return{lv:parseInt(s.lv,10)||0,best:parseInt(s.best,10)||1,
+      stars:Array.isArray(s.stars)?s.stars:[]};
+  }catch(e){}
+  return{lv:0,best:1,stars:[]};
+})();
+var unlocked=clamp(curSave.best,1,1);
+function save(){
+  var data={lv:cur,best:unlocked,stars:curSave.stars};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("rope-cut",data).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("rope-cut").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rl=parseInt(r.lv,10),rb=parseInt(r.best,10);
+      if(isFinite(rl)&&rl>curSave.lv){curSave.lv=Math.min(rl,LEVELS.length-1);changed=true;}
+      if(isFinite(rb)&&rb>unlocked){unlocked=clamp(rb,1,LEVELS.length);changed=true;}
+      if(Array.isArray(r.stars)){
+        for(var i=0;i<r.stars.length&&i<curSave.stars.length;i++){
+          if((r.stars[i]|0)>curSave.stars[i]){curSave.stars[i]=r.stars[i]|0;changed=true;}
+        }
+      }
+      if(changed){save();buildLevelChips();startLevel(curSave.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ========== 游戏状态 ========== */
+var G=null;
+var state="running";
+var ui={
+  lv:document.getElementById("stLv"),stars:document.getElementById("stStars"),
+  time:document.getElementById("stTime"),msg:document.getElementById("msg"),
+  ovWin:document.getElementById("ovWin"),ovFail:document.getElementById("ovFail"),ovSelect:document.getElementById("ovSelect"),
+  ovWinDesc:document.getElementById("ovWinDesc"),ovFailDesc:document.getElementById("ovFailDesc"),
+  ovNew:document.getElementById("ovNew"),btnNext:document.getElementById("btnNext"),
+  lvGrid:document.getElementById("lvGrid")
+};
+function say(t){ui.msg.textContent=t}
+function startLevel(n){
+  cur=clamp(n,0,Math.max(0,LEVELS.length-1));
+  var L=LEVELS[cur];
+  G={L:L,st:RC.makeState(L),cutFx:[]};
+  state="running";
+  showOverlay(null);
+  buildLevelChips();
+  syncHud();
+  say(L.name+" · 划断绳子让糖荡进怪兽嘴，顺路吃星");
+  save();
+}
+function levelStars(n){return curSave.stars[n]|0}
+function finishWin(){
+  var got=0;
+  for(var i=0;i<G.st.stars.length;i++)if(G.st.stars[i].got)got++;
+  var isNew=(cur+2)>unlocked;
+  unlocked=Math.min(LEVELS.length,Math.max(unlocked,cur+2));
+  if(got>levelStars(cur))curSave.stars[cur]=got;
+  save();
+  buildLevelChips();
+  ui.ovWinDesc.textContent="收集 "+got+"/"+G.st.stars.length+" 星 · 用时 "+G.st.t.toFixed(1)+" 秒";
+  ui.ovNew.classList.toggle("show",isNew);
+  ui.btnNext.style.display=cur<LEVELS.length-1?"":"none";
+  showOverlay("win");
+  if(GB.available)GB.reportScore("rope-cut",{metricValue:cur+1,metricExtra:got}).catch(function(){});
+}
+function failLevel(reason){
+  state="failed";
+  ui.ovFailDesc.textContent=reason;
+  showOverlay("fail");
+}
+function showOverlay(name){
+  ui.ovWin.classList.toggle("show",name==="win");
+  ui.ovFail.classList.toggle("show",name==="fail");
+  ui.ovSelect.classList.toggle("show",name==="select");
+}
+function buildLevelChips(){
+  var html="";
+  for(var i=0;i<LEVELS.length;i++){
+    var cls="lv-chip"+(i===cur?" sel":"")+(i<unlocked?" done":"");
+    var dis=i<unlocked?"":" disabled";
+    html+='<button class="'+cls+'" type="button" data-lv="'+i+'"'+dis+'>'+(i+1)+'</button>';
+  }
+  ui.lvGrid.innerHTML=html;
+  var btns=ui.lvGrid.querySelectorAll(".lv-chip");
+  for(var j=0;j<btns.length;j++){
+    btns[j].addEventListener("click",function(){
+      var n=Number(this.getAttribute("data-lv"));
+      showOverlay(null);
+      startLevel(n);
+    });
+  }
+}
+
+/* ========== 更新 ========== */
+var last=0,acc=0;
+function stepFrame(dt){
+  acc+=dt;
+  var guard=0,res="run";
+  while(acc>=RC.STEP&&guard<60){
+    res=RC.step(G.st,G.L,false);
+    acc-=RC.STEP;guard++;
+    if(res!=="run")break;
+  }
+  if(guard>=60)acc=0;
+  for(var i=G.cutFx.length-1;i>=0;i--){
+    G.cutFx[i].t+=dt;
+    if(G.cutFx[i].t>0.4)G.cutFx.splice(i,1);
+  }
+  if(res==="win"){
+    state="won";
+    beep(660,0.1,"square",0.06);beep(880,0.14,"square",0.05);
+    finishWin();
+  }else if(res==="out"){
+    state="failed";
+    failLevel("糖果飞出了画面");
+  }else if(res==="time"){
+    state="failed";
+    failLevel("超时了 · 再快一点");
+  }
+}
+function syncHud(){
+  var got=0;
+  for(var i=0;i<G.st.stars.length;i++)if(G.st.stars[i].got)got++;
+  ui.lv.textContent=(cur+1)+"/"+LEVELS.length;
+  ui.stars.textContent=got+"/"+G.st.stars.length;
+  ui.time.textContent=Math.max(0,(G.L.tmax-G.st.t)).toFixed(1)+"s";
+}
+
+/* ========== 割绳输入：划过绳段即割；键盘 1-3 按序号割 ========== */
+function segHit(ax,ay,bx,by,cx2,cy2,dx2,dy2){
+  var d1x=bx-ax,d1y=by-ay,d2x=dx2-cx2,d2y=dy2-cy2;
+  var den=d1x*d2y-d1y*d2x;
+  if(Math.abs(den)<0.0001)return false;
+  var t=((cx2-ax)*d2y-(cy2-ay)*d2x)/den;
+  var u=((cx2-ax)*d1y-(cy2-ay)*d1x)/den;
+  return t>=0&&t<=1&&u>=0&&u<=1;
+}
+function tryCutSwipe(ax,ay,bx,by){
+  if(state!=="running")return;
+  var st=G.st;
+  for(var k=0;k<st.ropes.length;k++){
+    var rope=st.ropes[k];
+    if(!rope.active)continue;
+    var pts=[{x:rope.pin[0],y:rope.pin[1]}].concat(rope.nodes).concat([{x:st.candy.x,y:st.candy.y}]);
+    for(var j=0;j<pts.length-1;j++){
+      if(segHit(ax,ay,bx,by,pts[j].x,pts[j].y,pts[j+1].x,pts[j+1].y)){
+        RC.cut(st,k);
+        G.cutFx.push({x:(pts[j].x+pts[j+1].x)/2,y:(pts[j].y+pts[j+1].y)/2,t:0});
+        beep(500,0.08,"square",0.05);
+        say("割断了第 "+(k+1)+" 根绳");
+        return;
+      }
+    }
+  }
+}
+function cutByKey(k){
+  if(state!=="running")return;
+  var rope=G.st.ropes[k];
+  if(rope&&rope.active){
+    RC.cut(G.st,k);
+    var mid=rope.nodes.length?rope.nodes[Math.floor(rope.nodes.length/2)]:{x:G.st.candy.x,y:G.st.candy.y};
+    G.cutFx.push({x:mid.x,y:mid.y,t:0});
+    beep(500,0.08,"square",0.05);
+    say("割断了第 "+(k+1)+" 根绳");
+  }
+}
+
+/* ========== 绘制 ========== */
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(offX,offY);ctx.scale(S,S);
+  if(!grads)buildGrads();
+  ctx.fillStyle=grads;ctx.fillRect(0,0,NW,NH);
+  if(G){
+    var st=G.st;
+    // 怪兽（嘴）
+    var m=G.L.mouth;
+    ctx.fillStyle=PAL.primary;
+    ctx.beginPath();ctx.arc(m[0],m[1],RC.MOUTH_R+8,0,6.3);ctx.fill();
+    ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=PAL.deep;
+    ctx.beginPath();ctx.arc(m[0],m[1],RC.MOUTH_R,0,6.3);ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.85)";   // 恒白眼白，素材例外
+    ctx.beginPath();ctx.arc(m[0]-10,m[1]-16,4,0,6.3);ctx.arc(m[0]+10,m[1]-16,4,0,6.3);ctx.fill();
+    ctx.fillStyle=PAL.text;
+    ctx.beginPath();ctx.arc(m[0]-9,m[1]-16,2,0,6.3);ctx.arc(m[0]+11,m[1]-16,2,0,6.3);ctx.fill();
+    // 星星
+    for(var i=0;i<st.stars.length;i++){
+      var s2=st.stars[i];
+      ctx.globalAlpha=s2.got?0.25:1;
+      ctx.fillStyle=PAL.warning;
+      ctx.beginPath();
+      for(var a2=0;a2<10;a2++){
+        var an=a2*Math.PI/5-Math.PI/2,rr2=a2%2===0?9:4;
+        var px2=s2.x+Math.cos(an)*rr2,py2=s2.y+Math.sin(an)*rr2;
+        if(a2===0)ctx.moveTo(px2,py2);else ctx.lineTo(px2,py2);
+      }
+      ctx.closePath();ctx.fill();
+      ctx.globalAlpha=1;
+    }
+    // 绳
+    for(var k=0;k<st.ropes.length;k++){
+      var rope=st.ropes[k];
+      if(!rope.active)continue;
+      ctx.strokeStyle=PAL.rope;ctx.lineWidth=3;ctx.lineCap="round";
+      ctx.beginPath();
+      ctx.moveTo(rope.pin[0],rope.pin[1]);
+      for(var j=0;j<rope.nodes.length;j++)ctx.lineTo(rope.nodes[j].x,rope.nodes[j].y);
+      ctx.lineTo(st.candy.x,st.candy.y);
+      ctx.stroke();
+      // 钉点与序号徽标
+      ctx.fillStyle=PAL.pin;
+      ctx.beginPath();ctx.arc(rope.pin[0],rope.pin[1],9,0,6.3);ctx.fill();
+      ctx.strokeStyle=PAL.pinln;ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle=PAL.onPrimary;
+      ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+      ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText(String(k+1),rope.pin[0],rope.pin[1]+0.5);
+    }
+    // 糖果
+    ctx.fillStyle=PAL.candy;
+    rr(st.candy.x-11,st.candy.y-9,22,18,6);ctx.fill();
+    ctx.strokeStyle=PAL.candyln;ctx.lineWidth=2;ctx.stroke();
+    ctx.strokeStyle=PAL.candyln;ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(st.candy.x-11,st.candy.y);ctx.lineTo(st.candy.x+11,st.candy.y);
+    ctx.moveTo(st.candy.x,st.candy.y-9);ctx.lineTo(st.candy.x,st.candy.y+9);ctx.stroke();
+    // 割断特效
+    for(var f=0;f<G.cutFx.length;f++){
+      var fx=G.cutFx[f];
+      ctx.globalAlpha=Math.max(0,1-fx.t/0.4);
+      ctx.strokeStyle=PAL.rope;ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(fx.x-8-fx.t*22,fx.y-6);ctx.lineTo(fx.x-2-fx.t*22,fx.y+6);
+      ctx.moveTo(fx.x+2+fx.t*22,fx.y-6);ctx.lineTo(fx.x+8+fx.t*22,fx.y+6);
+      ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+    syncHud();
+  }
+  ctx.restore();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  rr(offX+0.5,offY+0.5,NW*S-1,NH*S-1,10);ctx.stroke();
+}
+
+/* ========== 输入 ========== */
+function toNominal(ev){
+  var r=cv.getBoundingClientRect();
+  return{x:(ev.clientX-r.left-offX)/S,y:(ev.clientY-r.top-offY)/S};
+}
+var swiping=false,swX=0,swY=0;
+cv.addEventListener("pointerdown",function(ev){
+  swiping=true;
+  var p=toNominal(ev);
+  swX=p.x;swY=p.y;
+  try{cv.setPointerCapture(ev.pointerId)}catch(e){}
+  ev.preventDefault();
+});
+cv.addEventListener("pointermove",function(ev){
+  if(!swiping)return;
+  var p=toNominal(ev);
+  tryCutSwipe(swX,swY,p.x,p.y);
+  swX=p.x;swY=p.y;
+  ev.preventDefault();
+});
+cv.addEventListener("pointerup",function(){swiping=false;});
+cv.addEventListener("pointercancel",function(){swiping=false;});
+
+window.addEventListener("keydown",function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k==="1")cutByKey(0);
+  else if(k==="2")cutByKey(1);
+  else if(k==="3")cutByKey(2);
+});
+
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&state==="running"){say("已暂停 · 切回继续");}
+});
+
+/* ========== 主循环与启动 ========== */
+function resize(){
+  var r=cv.getBoundingClientRect();
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.max(240,Math.floor(r.width));
+  H=Math.max(320,Math.floor(r.height));
+  cv.width=Math.floor(W*dpr);cv.height=Math.floor(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  S=Math.min(W/NW,H/NH);
+  offX=(W-NW*S)/2;offY=(H-NH*S)/2;
+}
+window.addEventListener("resize",resize);
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(!last)last=ts;
+  var dt=Math.min(0.033,(ts-last)/1000||0);
+  last=ts;
+  if(state==="running"&&G)stepFrame(dt);
+  draw();
+}
+
+document.getElementById("btnSelectTop").addEventListener("click",function(){buildLevelChips();showOverlay("select");});
+document.getElementById("btnSelectWin").addEventListener("click",function(){buildLevelChips();showOverlay("select");});
+document.getElementById("btnSelectFail").addEventListener("click",function(){buildLevelChips();showOverlay("select");});
+document.getElementById("btnCloseSelect").addEventListener("click",function(){showOverlay(null);});
+document.getElementById("btnNext").addEventListener("click",function(){startLevel(cur<LEVELS.length-1?cur+1:0);});
+document.getElementById("btnReplayWin").addEventListener("click",function(){startLevel(cur);});
+document.getElementById("btnRetry").addEventListener("click",function(){startLevel(cur);});
+document.getElementById("btnRetryBottom").addEventListener("click",function(){startLevel(cur);});
+
+/* 调试验证入口：解法回放逐关复现（进嘴 + 全星） */
+window.__validateLevels=function(){
+  try{return RC.validateAll()}catch(e){return {error:String(e)}}
+};
+
+resize();
+LEVELS=buildDefaultLevels();
+loadCachedLevels();
+cur=clamp(parseInt(curSave.lv,10)||0,0,Math.max(0,LEVELS.length-1));
+unlocked=clamp(parseInt(curSave.best,10)||1,1,Math.max(1,LEVELS.length));
+startLevel(cur);
+requestAnimationFrame(frame);
+(function(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels("rope-cut").then(function(res){
+    var list=parseRopeLevels(res);
+    if(!list||!list.length)return;
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      startLevel(cur);
+    }
+  }).catch(function(){});
+})();
+syncSaveFromServer();
+
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

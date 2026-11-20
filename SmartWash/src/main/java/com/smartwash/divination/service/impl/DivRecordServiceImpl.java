@@ -45,11 +45,13 @@ public class DivRecordServiceImpl extends ServiceImpl<DivRecordMapper, DivRecord
     @Override
     public Long createRecord(CreateRecordFrom from, Long userId) {
         // 1. 服务端 core 重算权威盘面
+        // 排盘时刻基准统一为北京时间（castAt+480min 还原墙钟）：非 +8 设备传入的 tzOffset
+        // 只用于存储展示，不参与历法计算——否则日柱/时柱会随设备时区漂移
         String serverChart = divinationCore.recalculate(
                 from.getMethod(),
                 from.getCastMethod(),
                 from.getCastAt(),
-                from.getTzOffset() != null ? from.getTzOffset() : 480,
+                480,
                 from.getLines()
         );
 

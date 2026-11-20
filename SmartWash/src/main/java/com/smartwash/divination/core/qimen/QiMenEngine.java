@@ -1,5 +1,6 @@
 package com.smartwash.divination.core.qimen;
 
+import com.nlf.calendar.Solar;
 import com.smartwash.divination.core.GanZhi;
 import com.smartwash.divination.core.LunarCalendar;
 
@@ -12,7 +13,7 @@ import java.util.*;
  * 奇门遁甲排盘引擎（拆补法定元 + 转盘）。
  *
  * 流程：
- * 1. 定阴阳遁：冬至后阳遁、夏至后阴遁
+ * 1. 定阴阳遁：按节气——冬至后~夏至前阳遁，夏至后~冬至前阴遁（取不晚于占时的最近节气）
  * 2. 定局数与三元：拆补法——日辰符头定三元
  * 3. 地盘：戊从局数宫起，阳顺阴逆排三奇六仪
  * 4. 值符值使：旬首定值符星与值使门；天盘九星转盘、八门转盘、八神
@@ -21,6 +22,12 @@ import java.util.*;
  * 锁定"拆补定元 + 转盘"一套，不混派。
  */
 public class QiMenEngine {
+
+    /** 阳遁半年节气（冬至后~夏至前）：最近已过节气落此集合为阳遁，否则阴遁 */
+    private static final Set<String> YANG_DUN_JIE_QI = Set.of(
+            "冬至", "小寒", "大寒", "立春", "雨水", "惊蛰",
+            "春分", "清明", "谷雨", "立夏", "小满", "芒种"
+    );
 
     /** 九宫名（戴九履一，左三右七，二四为肩，六八为足，五居中央） */
     private static final String[] PALACES = {
@@ -31,8 +38,9 @@ public class QiMenEngine {
             "天蓬", "天芮", "天冲", "天辅", "天禽", "天心", "天柱", "天任", "天英"
     };
 
+    /** 八门（门原位按洛书宫序，中五宫无门）：坎休、坤死、震伤、巽杜、乾开、兑惊、艮生、离景 */
     private static final String[] DOORS = {
-            "休门", "死门", "伤门", "杜门", "中五", "开门", "惊门", "生门", "景门"
+            "休门", "死门", "伤门", "杜门", "开门", "惊门", "生门", "景门"
     };
 
     private static final String[] GODS = {
@@ -52,9 +60,11 @@ public class QiMenEngine {
         Map<String, String> pillars = LunarCalendar.fourPillars(dateTime);
         chart.put("fourPillars", pillars);
 
-        // 1. 定阴阳遁（简化：按月份近似，精确版需判冬至/夏至节气时刻）
-        int month = dateTime.getMonthValue();
-        boolean yangDun = month >= 1 || month <= 6; // 冬至(12)~夏至(6)后阳遁（近似）
+        // 1. 定阴阳遁（按节气：冬至后~夏至前阳遁，夏至后~冬至前阴遁；取不晚于占时的最近节气）
+        Solar solar = Solar.fromYmdHms(dateTime.getYear(), dateTime.getMonthValue(), dateTime.getDayOfMonth(),
+                dateTime.getHour(), dateTime.getMinute(), dateTime.getSecond());
+        String prevJieQi = solar.getLunar().getPrevJieQi(true).getName();
+        boolean yangDun = YANG_DUN_JIE_QI.contains(prevJieQi);
         chart.put("yinyang", yangDun ? "阳遁" : "阴遁");
 
         // 2. 定局数（简化：根据日柱推算三元局数）
@@ -144,21 +154,33 @@ public class QiMenEngine {
         for (int i = 0; i < XUNSHOU.length; i++) {
             if (XUNSHOU[i].equals(xunShou)) { xunIdx = i; break; }
         }
-        for (int i = 0; i < 8; i++) {
-            int pos = yangDun ? (xunIdx + i) % 9 : (xunIdx - i + 9) % 9;
-            if (pos == 4) continue;
+        // 八门依次落外八宫（阳遁顺排、阴遁逆排）；中五宫无门，遇之滑过不落
+        int pos = xunIdx;
+        for (int i = 0; i < DOORS.length; i++) {
+            if (pos == 4) {
+                pos = yangDun ? (pos + 1) % 9 : (pos + 8) % 9;
+            }
             pan.set(pos, DOORS[i]);
+            pos = yangDun ? (pos + 1) % 9 : (pos + 8) % 9;
         }
+        // 中五宫门寄坤二宫（通例）：中宫显示坤二宫所落之门，保证九宫门无空值
+        pan.set(4, pan.get(1));
         return pan;
     }
 
     private List<String> calcGods(String xunShou, boolean yangDun) {
         List<String> pan = new ArrayList<>(Collections.nCopies(9, ""));
-        for (int i = 0; i < 8; i++) {
-            int pos = yangDun ? i : (8 - i);
-            if (pos >= 4) pos++;
-            if (pos < 9) pan.set(pos, GODS[i]);
+        // 八神依次落外八宫：阳遁自坎一顺排、阴遁自离九逆排；中五宫无神，遇之滑过不落
+        int pos = yangDun ? 0 : 8;
+        for (int i = 0; i < GODS.length; i++) {
+            if (pos == 4) {
+                pos = yangDun ? pos + 1 : pos - 1;
+            }
+            pan.set(pos, GODS[i]);
+            pos = yangDun ? pos + 1 : pos - 1;
         }
+        // 中五宫神寄坤二宫（通例）：中宫显示坤二宫所落之神，保证九宫神无空值
+        pan.set(4, pan.get(1));
         return pan;
     }
 
