@@ -9,6 +9,7 @@ import com.smartwash.lite.ui.home.LiteHomePage
 import com.smartwash.lite.ui.login.LiteLoginPage
 import com.smartwash.lite.ui.register.LiteRegisterPage
 import com.smartwash.lite.ui.setting.LiteSettingPage
+import com.smartwash.ui.page.scan.ScanPage
 
 /**
  * lite 变体导航图（flavor 源集贡献者注册，见 di/LiteGraphModule）。
@@ -25,6 +26,9 @@ import com.smartwash.lite.ui.setting.LiteSettingPage
  *    （full → :feature:user:impl 的 src/full 源集 UserFlavorGraphModule，lite → 本图），
  *    故 lite classpath 下 [UserRoute.Login] 只有本图一处注册，不存在「后注册覆盖」的
  *    胜出页不确定性。lite 不需要 user 域的其余页面（用户中心/钱包/密码等），本图不委托 userGraph。
+ * 4. **全局扫一扫 [ShellRoute.Scan]**：页面与 CameraX/MLKit 依赖已两变体共用（app main
+ *    源集 + implementation），full 在壳层 ShellGraph 注册、lite 在本图注册（flavor 二选一）；
+ *    lite 加入入口在 LiteHomePage 次入口卡「扫码加入」。
  */
 fun NavGraphBuilder.liteGraph(navController: NavHostController) {
     composable<ShellRoute.Home> {
@@ -38,5 +42,8 @@ fun NavGraphBuilder.liteGraph(navController: NavHostController) {
     }
     composable<UserRoute.Setting> {
         LiteSettingPage(navController)
+    }
+    composable<ShellRoute.Scan> {
+        ScanPage(navController)
     }
 }

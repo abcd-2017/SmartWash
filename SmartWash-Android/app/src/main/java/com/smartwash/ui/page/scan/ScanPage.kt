@@ -73,6 +73,7 @@ import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.pressable
 import java.util.concurrent.Executors
 
@@ -84,6 +85,9 @@ private val SCAN_FRAME_RADIUS = AppDimens.radiusMd
 
 /** 遮罩半透明黑（相机取景框外压暗，突出取景框；非配色令牌，仅取景叠加层） */
 private val SCAN_SCRIM = Color.Black.copy(alpha = 0.55f)
+
+/** 日志 tag（相机绑定失败等运行期异常留痕） */
+private const val TAG = "SmartWashScan"
 
 /**
  * 全局扫一扫页（壳层留守，工作台常驻入口）。
@@ -144,9 +148,10 @@ fun ScanPage(
         viewModel.events.collect { event ->
             when (event) {
                 is ScanDispatchEvent.Navigate -> {
-                    viewModel.navigate(navController, event.action)
-                    // 扫码页已完成使命：目标页返回不再回到相机页
+                    // 先移除相机页再压目标页：反序（原实现）会把刚 push 的目标页立即
+                    // pop 掉——扫码后视觉无反应（真机实测：识别/分发全通，栽在这一步）
                     navController.popBackStack()
+                    viewModel.navigate(navController, event.action)
                 }
 
                 is ScanDispatchEvent.CopyAndExit -> {
@@ -254,7 +259,7 @@ private fun CameraScanContent(
                 preview,
                 analysis,
             )
-        }
+        }.onFailure { AppLogger.warn(TAG, "相机绑定失败：${it.message}") }
     }
 
     Box(modifier = modifier) {

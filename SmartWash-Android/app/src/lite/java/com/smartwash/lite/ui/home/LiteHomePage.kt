@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
@@ -46,6 +47,7 @@ import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppCard
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.LocalReduceMotion
@@ -181,6 +183,22 @@ fun LiteHomePage(navController: NavController) {
             title = stringResource(R.string.lite_home_recipes),
             description = stringResource(R.string.lite_home_recipes_desc),
             onClick = { navController.navigate(DiningRoute.RecipeLibrary) },
+            entranceAlpha = entranceAlpha,
+            entranceShift = 12f,
+            reduceMotion = reduceMotion,
+        )
+
+        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+
+        // 次入口「扫码加入」— 参与他人的点单：全局扫一扫页（full 在工作台常驻入口，
+        // lite 无工作台故落首页）；识别 dining 加入链接后走本端深链落加入确认
+        LiteHomeCard(
+            icon = Icons.Filled.PhotoCamera,
+            iconContainerColor = AppColors.colorScheme.iconContainerGreen,
+            iconTint = AppColors.colorScheme.iconForegroundGreen,
+            title = stringResource(R.string.lite_home_scan),
+            description = stringResource(R.string.lite_home_scan_desc),
+            onClick = { navController.navigate(ShellRoute.Scan) },
             entranceAlpha = entranceAlpha,
             entranceShift = 12f,
             reduceMotion = reduceMotion,
