@@ -12,11 +12,8 @@
     <string name="please_login">请登录</string>
     <string name="please_re_login">请重新登录</string>
 
-    <!-- ==================== 首页 ==================== -->
-    <string name="home_greeting_morning">早上好</string>
-    <string name="home_greeting_afternoon">下午好</string>
-    <string name="home_greeting_evening">晚上好</string>
-    <string name="home_greeting_suffix">，同学</string>
+    <!-- ==================== 首页（home_greeting_* 为死资源已删除：全仓零引用，
+         该后缀是本体端遗留称呼文案，曾误导变体扫描误报 lite 登录页文案错误） ==================== -->
     <string name="account_balance_label">账户余额</string>
     <string name="home_available_coupons">可用优惠券</string>
     <string name="home_total_orders">累计订单</string>

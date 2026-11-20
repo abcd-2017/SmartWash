@@ -162,7 +162,7 @@ export const DINING_SODIUM_MAX: number = 4000
 export interface DiningOrderListVo {
   id: number
   title: string
-  /** DRAFT / FINISHED（契约移除 ONGOING；白名单外脏数据由映射层保守降级为 FINISHED） */
+  /** DRAFT / FINISHED / CANCELLED（契约移除 ONGOING；白名单外脏数据由映射层保守降级为 FINISHED） */
   status: string
   /** 是否我发起的 */
   isCreator: boolean
@@ -196,6 +196,27 @@ export function diningOrderListVoFromJSON(raw: Object): DiningOrderListVo {
     finishedAt: jsonStr(obj['finishedAt']) ?? '',
     menuCount: jsonNum(obj['menuCount']) ?? 0,
     ingredientSummary: jsonStr(obj['ingredientSummary']) ?? ''
+  }
+}
+
+
+/**
+ * 我的进行中点单（GET /web/auth/dining/orders/active 载荷）：本人作为发起者、状态 DRAFT 的唯一订单。
+ * data 整体可为 null（无进行中），消费端按 null 收敛入口（列表 FAB / lite 主 CTA）。
+ */
+export interface DiningOrderActiveVo {
+  orderId: number
+  title: string
+  status: string
+}
+
+/** JSON → DiningOrderActiveVo（data=null 由调用方判空，不进入本函数） */
+export function diningOrderActiveVoFromJSON(raw: Object): DiningOrderActiveVo {
+  const obj: Record<string, Object> = raw as Record<string, Object>
+  return {
+    orderId: jsonNum(obj['orderId']) ?? 0,
+    title: jsonStr(obj['title']) ?? '',
+    status: jsonStr(obj['status']) ?? ''
   }
 }
 

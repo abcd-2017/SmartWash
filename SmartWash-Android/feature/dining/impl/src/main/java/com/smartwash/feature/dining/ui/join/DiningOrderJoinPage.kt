@@ -35,6 +35,7 @@ import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.api.DiningRoute
+import com.smartwash.feature.dining.api.model.DiningOrderStatus
 import com.smartwash.feature.dining.logic.DiningJoinEntry
 import com.smartwash.feature.dining.logic.DiningJoinEntryDecision
 import com.smartwash.feature.dining.logic.DiningOrderBriefUi
@@ -103,11 +104,17 @@ fun DiningOrderJoinPage(
                     onJoin = viewModel::join,
                 )
 
-            // 非成员且已结束：不引导加入
+            // 非成员且不可加入（已结束 / 已取消）：不引导加入，按终态区分文案
             decision == DiningJoinEntryDecision.ORDER_FINISHED ->
                 EmptyState(
                     icon = Icons.Default.Restaurant,
-                    message = stringResource(R.string.dining_order_join_order_finished),
+                    message = stringResource(
+                        if (currentBrief?.status == DiningOrderStatus.CANCELLED) {
+                            R.string.dining_order_join_order_cancelled
+                        } else {
+                            R.string.dining_order_join_order_finished
+                        },
+                    ),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = AppDimens.pagePadding),

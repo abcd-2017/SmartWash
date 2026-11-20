@@ -2,12 +2,14 @@ package com.smartwash.feature.toolbox.ui.delivery
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.provider.OpenableColumns
 import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.common.utils.AppLogger
+import com.smartwash.common.utils.ImageCompressUtil
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.logic.DeliveryRules
@@ -390,22 +392,13 @@ class DeliverySessionViewModel @Inject constructor(
         viewModelScope.launch {
             _sendState.value = RequestState.Loading
             try {
-                val picked = resolvePickedFile(appContext, uri)
-                if (picked.size > DeliveryRules.MAX_FILE_BYTES) {
-                    _sendState.value = RequestState.Error(R.string.toolbox_delivery_error_file_too_large)
-                    return@launch
+                // 图片条目走上传前压缩管线（最长边 1280 / JPEG 80，足够小直通原图）；
+                // 文件条目任意格式不能重编码，保留原样直传
+                if (kind == DeliveryRules.ItemKind.IMAGE) {
+                    publishImageCompressed(code, uri)
+                } else {
+                    publishFileAsIs(code, uri, kind)
                 }
-                repository.publishFile(
-                    code = code,
-                    kindCode = kind.code,
-                    fileName = picked.displayName,
-                    size = picked.size,
-                    // 工厂幂等：OkHttp 重试 writeTo 时按需重开流
-                    content = { appContext.contentResolver.openInputStream(uri) },
-                )
-                _sendState.value = RequestState.Success
-                AppLogger.info(TAG, "文件条目发布成功 code=$code kind=${kind.name} fileName=${picked.displayName} size=${picked.size}B")
-                refreshNow()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
@@ -419,6 +412,85 @@ class DeliverySessionViewModel @Inject constructor(
                 _sendState.value = RequestState.Error(R.string.toolbox_delivery_error_send)
             }
         }
+    }
+
+    /**
+     * 图片条目发布：上传前本地压缩（压缩失败工具内部兜底原图直传），上传后清理临时文件。
+     * multipart 文件名保留原显示名（压缩产物换 .jpg / 直通保留原扩展名，满足后端魔数+扩展名一致性校验）。
+     */
+    private suspend fun publishImageCompressed(code: String, uri: android.net.Uri) {
+        var prepared: ImageCompressUtil.UploadImageResult? = null
+        try {
+            val result = ImageCompressUtil.prepareUploadImage(
+                appContext,
+                uri,
+                baseName = resolveImageBaseName(uri),
+            )
+            prepared = result
+            if (result.file.length() > DeliveryRules.MAX_FILE_BYTES) {
+                _sendState.value = RequestState.Error(R.string.toolbox_delivery_error_file_too_large)
+                return
+            }
+            repository.publishFile(
+                code = code,
+                kindCode = DeliveryRules.ItemKind.IMAGE.code,
+                fileName = result.fileName,
+                size = result.file.length(),
+                // 工厂幂等：OkHttp 重试 writeTo 时按需重开临时文件流
+                content = { result.file.inputStream() },
+            )
+            _sendState.value = RequestState.Success
+            AppLogger.info(
+                TAG,
+                "图片条目发布成功 code=$code fileName=${result.fileName} compressed=${result.compressed} size=${result.file.length()}B",
+            )
+            refreshNow()
+        } finally {
+            // 上传完成后清理临时压缩文件（失败路径同样清理，重发时重新生成）
+            prepared?.cleanup()
+        }
+    }
+
+    /** 文件条目发布：元信息解析 + 20MB 前置校验 + 原样直传（与既有链路一致，不走压缩） */
+    private suspend fun publishFileAsIs(code: String, uri: android.net.Uri, kind: DeliveryRules.ItemKind) {
+        val picked = resolvePickedFile(appContext, uri)
+        if (picked.size > DeliveryRules.MAX_FILE_BYTES) {
+            _sendState.value = RequestState.Error(R.string.toolbox_delivery_error_file_too_large)
+            return
+        }
+        repository.publishFile(
+            code = code,
+            kindCode = kind.code,
+            fileName = picked.displayName,
+            size = picked.size,
+            // 工厂幂等：OkHttp 重试 writeTo 时按需重开流
+            content = { appContext.contentResolver.openInputStream(uri) },
+        )
+        _sendState.value = RequestState.Success
+        AppLogger.info(TAG, "文件条目发布成功 code=$code kind=${kind.name} fileName=${picked.displayName} size=${picked.size}B")
+        refreshNow()
+    }
+
+    /** 图片条目 multipart 文件名主干：保留原显示名（去扩展名），拿不到时回退 upload_<时间戳> */
+    private suspend fun resolveImageBaseName(uri: android.net.Uri): String {
+        val displayName = runCatching {
+            appContext.contentResolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null, null, null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (index >= 0 && !cursor.isNull(index)) cursor.getString(index) else null
+                } else {
+                    null
+                }
+            }
+        }.getOrNull()?.takeIf { it.isNotBlank() }
+        return displayName
+            ?.let { it.substringBeforeLast('.', missingDelimiterValue = it) }
+            ?.takeIf { it.isNotBlank() }
+            ?: "upload_${System.currentTimeMillis()}"
     }
 
     // ---------- 条目预览与取走（保存/复制即触发 take + 焚毁） ----------

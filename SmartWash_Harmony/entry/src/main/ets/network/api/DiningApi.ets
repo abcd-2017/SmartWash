@@ -41,6 +41,7 @@ import { BaseResponse } from '../BaseResponse'
 import {
   DietaryPreferenceVo,
   DiningCategoryVo,
+  DiningOrderActiveVo,
   DiningOrderBriefVo,
   DiningOrderCreatedVo,
   DiningOrderDetailVo,
@@ -50,6 +51,7 @@ import {
   DiningRecipeVo,
   dietaryPreferenceVoFromJSON,
   diningCategoryVoFromJSON,
+  diningOrderActiveVoFromJSON,
   diningOrderBriefVoFromJSON,
   diningOrderCreatedVoFromJSON,
   diningOrderDetailVoFromJSON,
@@ -64,6 +66,7 @@ export {
   DietaryPreferenceVo,
   DiningCategoryVo,
   DiningMenuRecipe,
+  DiningOrderActiveVo,
   DiningOrderBriefVo,
   DiningOrderCreatedVo,
   DiningOrderDetailVo,
@@ -332,11 +335,32 @@ export async function removeDiningOrderDish(orderId: number, recipeId: number, v
 }
 
 /**
- * 放弃草稿（仅创建者 + 仅 DRAFT 态；物理删订单与菜单/成员/选菜子行）。
+ * 放弃草稿（cancel，仅发起者 + 仅 DRAFT）：订单状态置 CANCELLED 并写 cancelled_at，
+ * 不再物理删单——参与者仍可在「我的订单」看到该单（灰态「已取消」）。成功 data 恒为 null。
+ */
+export async function cancelDiningOrder(orderId: number): Promise<BaseResponse<null>> {
+  return httpUtil.delete<null>(`/web/auth/dining/orders/${orderId}`)
+}
+
+/**
+ * 退出点单（仅参与者非发起者 + 仅 DRAFT + 仅成员；幂等：不在单中直接成功）。
  * 成功 data 恒为 null。
  */
-export async function discardDiningOrder(orderId: number): Promise<BaseResponse<null>> {
-  return httpUtil.delete<null>(`/web/auth/dining/orders/${orderId}`)
+export async function leaveDiningOrder(orderId: number): Promise<BaseResponse<null>> {
+  return httpUtil.post<null>(`/web/auth/dining/orders/${orderId}/leave`)
+}
+
+/**
+ * 我的进行中点单（本人作为发起者、状态 DRAFT 的唯一订单；无则 data=null）。
+ * 唯一性收敛依据：列表 FAB / lite 主 CTA 有则进该单编辑态，无则空白创建页。
+ */
+export async function getActiveDiningOrder(): Promise<BaseResponse<DiningOrderActiveVo | null>> {
+  const res = await httpUtil.get<Object | null>('/web/auth/dining/orders/active')
+  return {
+    data: res.data === null ? null : diningOrderActiveVoFromJSON(res.data),
+    code: res.code,
+    message: res.message
+  }
 }
 
 /**

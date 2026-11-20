@@ -9,7 +9,7 @@ import { LoginVo, loginVoFromJSON } from "../vo/LoginVo";
 import { TransactionPageData, transactionPageFromJSON } from "../vo/TransactionVo";
 import { UserInfoVo } from "../vo/UserInfoVo";
 import { FormData, Type } from "@ohos/axios"
-import { fileIo as fs } from "@kit.CoreFileKit"
+import { AVATAR_MAX_EDGE, cleanupUploadTemp, prepareUploadImage } from "../../utils/ImageCompress"
 
 async function getCaptcha(phoneNumber: string): Promise<BaseResponse<string>> {
   return httpUtil.get<string>(`/auth/user/captcha/${phoneNumber}`);
@@ -91,21 +91,21 @@ async function unBindCampus(): Promise<BaseResponse<boolean>> {
  * 适配 @ohos/axios 的 FormData 契约（ArkTS 无浏览器 DOM FormData，原写法 new FormData() 无法编译）：
  * - 文件内容支持 internal://cache/ URI 或 ArrayBuffer，相册选择器返回的 file://media/... 均不支持；
  * - 故将所选图片读为 ArrayBuffer 后附加，经 option 指定文件名与 MIME（Type 接口）。
+ *
+ * 上传前本地压缩（对齐安卓 UserInfoViewModel.uploadAvatar）：头像上限 512px / JPEG 质量 80；
+ * 原图足够小（≤300KB 且最长边 ≤512）时直通原图保留原格式与扩展名；压缩任一环节失败
+ * 工具内部兜底原图直传，绝不阻断上传链路。上传完成后清理压缩临时文件（失败路径同样清理）。
  */
 async function uploadAvatar(uri: string): Promise<BaseResponse<string>> {
-  const formData: FormData = new FormData()
-  const stat = fs.statSync(uri)
-  const file = fs.openSync(uri, fs.OpenMode.READ_ONLY)
+  const payload = await prepareUploadImage(uri, "avatar", AVATAR_MAX_EDGE)
   try {
-    const buffer = new ArrayBuffer(stat.size)
-    fs.readSync(file.fd, buffer)
-    const option: Type = { filename: "avatar.jpg", type: "image/jpeg" }
-    formData.append("file", buffer, option)
+    const formData: FormData = new FormData()
+    const option: Type = { filename: payload.fileName, type: payload.mimeType }
+    formData.append("file", payload.buffer, option)
+    return await httpUtil.upload<string>("/web/auth/user/avatar", formData)
   } finally {
-    // 文件句柄必须释放，避免泄漏
-    fs.closeSync(file)
+    cleanupUploadTemp(payload.tempPath)
   }
-  return httpUtil.upload<string>("/web/auth/user/avatar", formData)
 }
 
 export { getCaptcha,

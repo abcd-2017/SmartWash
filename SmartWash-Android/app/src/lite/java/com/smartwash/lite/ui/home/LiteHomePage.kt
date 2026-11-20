@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
@@ -27,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +48,7 @@ import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppCard
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.LocalReduceMotion
@@ -68,8 +71,14 @@ import com.smartwash.feature.user.api.UserRoute
  * 入场动效经 [motionSpec] 提供 reduced motion 降级（降级时位移归零，仅保留淡入）。
  */
 @Composable
-fun LiteHomePage(navController: NavController) {
+fun LiteHomePage(
+    navController: NavController,
+    viewModel: LiteHomeViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+) {
     val reduceMotion = LocalReduceMotion.current
+    // 唯一性收敛：本人进行中的 DRAFT（有则主 CTA 进该单编辑态，无则空白创建页）
+    val activeOrder by viewModel.activeOrder.collectAsState()
+    LaunchedEffect(Unit) { viewModel.load() }
     // 入场状态：一次性触发，reduced motion 时位移分量归零
     var entered by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) { entered = 1 }
@@ -152,7 +161,15 @@ fun LiteHomePage(navController: NavController) {
         ) {
             AppButton(
                 text = stringResource(R.string.lite_home_create),
-                onClick = { navController.navigate(DiningRoute.OrderCreate()) },
+                onClick = {
+                    // 唯一性收敛：与列表 FAB 同口径——有本人进行中的 DRAFT 则进该单，否则空白创建页
+                    val activeId = activeOrder?.safeOrderId ?: 0L
+                    if (activeId > 0L) {
+                        navController.navigate(DiningRoute.OrderCreate(orderId = activeId))
+                    } else {
+                        navController.navigate(DiningRoute.OrderCreate())
+                    }
+                },
             )
         }
 
@@ -181,6 +198,22 @@ fun LiteHomePage(navController: NavController) {
             title = stringResource(R.string.lite_home_recipes),
             description = stringResource(R.string.lite_home_recipes_desc),
             onClick = { navController.navigate(DiningRoute.RecipeLibrary) },
+            entranceAlpha = entranceAlpha,
+            entranceShift = 12f,
+            reduceMotion = reduceMotion,
+        )
+
+        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+
+        // 次入口「扫码加入」— 参与他人的点单：全局扫一扫页（full 在工作台常驻入口，
+        // lite 无工作台故落首页）；识别 dining 加入链接后走本端深链落加入确认
+        LiteHomeCard(
+            icon = Icons.Filled.PhotoCamera,
+            iconContainerColor = AppColors.colorScheme.iconContainerGreen,
+            iconTint = AppColors.colorScheme.iconForegroundGreen,
+            title = stringResource(R.string.lite_home_scan),
+            description = stringResource(R.string.lite_home_scan_desc),
+            onClick = { navController.navigate(ShellRoute.Scan) },
             entranceAlpha = entranceAlpha,
             entranceShift = 12f,
             reduceMotion = reduceMotion,

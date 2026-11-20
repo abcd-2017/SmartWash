@@ -7,6 +7,8 @@ import com.smartwash.dining.from.CreateDiningOrderFrom;
 import com.smartwash.dining.from.JoinDiningOrderFrom;
 import com.smartwash.dining.from.SubmitDiningOrderFrom;
 import com.smartwash.dining.service.DiningOrderService;
+import com.smartwash.dining.stream.DiningOrderStreamer;
+import com.smartwash.dining.vo.DiningOrderActiveVo;
 import com.smartwash.dining.vo.DiningOrderBriefVo;
 import com.smartwash.dining.vo.DiningOrderCreatedVo;
 import com.smartwash.dining.vo.DiningOrderDetailVo;
@@ -29,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * 吃啥-订单用户端控制器。
@@ -47,6 +50,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class WebDiningOrderController {
 
     private final DiningOrderService diningOrderService;
+
+    private final DiningOrderStreamer streamer;
 
     @Operation(summary = "创建点单草稿", description = "title/recipeIds 均可空（或 fromOrderId 复用历史菜单，二者二选一）→ "
             + "创建 DRAFT 草稿，创建者自动成为首个成员，joinToken 创建时即生成（草稿即可邀请）；"
@@ -86,11 +91,19 @@ public class WebDiningOrderController {
         return Result.ok(null);
     }
 
-    @Operation(summary = "放弃草稿", description = "仅发起者、仅 DRAFT 态；物理删除订单行与菜单/成员/选菜子行"
-            + "（项目无逻辑删除）。用于清空堆积的空草稿；已提交/已结束拒绝")
+    @Operation(summary = "放弃草稿（置已取消）", description = "仅发起者、仅 DRAFT 态；订单状态置 CANCELLED 并写 cancelled_at，"
+            + "不再物理删除——参与者仍可在「我的订单」看到该单（灰态「已取消」）；已提交/已取消拒绝")
     @DeleteMapping("/{id}")
-    public Result<Void> discardDraft(@PathVariable("id") Long id) {
-        diningOrderService.discardDraft(id, currentUserId());
+    public Result<Void> cancel(@PathVariable("id") Long id) {
+        diningOrderService.cancel(id, currentUserId());
+        return Result.ok(null);
+    }
+
+    @Operation(summary = "退出点单", description = "仅参与者（非发起者）、仅 DRAFT 态、仅成员；删除成员行即脱离该单，"
+            + "订单本体保留（发起者可继续编辑/提交/放弃）；已不在单中按幂等成功返回")
+    @PostMapping("/{id}/leave")
+    public Result<Void> leave(@PathVariable("id") Long id) {
+        diningOrderService.leave(id, currentUserId());
         return Result.ok(null);
     }
 
@@ -100,6 +113,13 @@ public class WebDiningOrderController {
     @GetMapping("/my")
     public Result<Page<DiningOrderListVo>> my(@Valid BaseSearchFrom from) {
         return Result.ok(diningOrderService.pageMy(from, currentUserId()));
+    }
+
+    @Operation(summary = "我的进行中点单", description = "当前用户作为发起者、状态为 DRAFT 的唯一订单（无则 data=null）；"
+            + "列表 FAB / lite 主 CTA 据此决定进入该单编辑态还是空白创建页")
+    @GetMapping("/active")
+    public Result<DiningOrderActiveVo> myActive() {
+        return Result.ok(diningOrderService.getMyActiveOrder(currentUserId()));
     }
 
     @Operation(summary = "订单详情（轮询主接口）", description = "点单页约 3s 一次带 knownVersion 轮询："
@@ -112,6 +132,15 @@ public class WebDiningOrderController {
             @Parameter(description = "客户端已知的订单 version，可选；不传视为首次拉取（全量）")
             @RequestParam(value = "knownVersion", required = false) Long knownVersion) {
         return Result.ok(diningOrderService.detail(id, knownVersion, currentUserId()));
+    }
+
+    @Operation(summary = "订阅订单变更（SSE）", description = "仅订单成员可订阅；写操作（加/移除菜、提交、放弃、退出、加入、重置凭证）"
+            + "事务提交后推 event: changed（data={\"orderId\":N}），端上收到信号回拉 GET /{id}?knownVersion= 取最新详情；"
+            + "终态同样可订阅以感知状态变化；服务端 30s 心跳防代理断连")
+    @GetMapping("/{id}/stream")
+    public SseEmitter stream(@PathVariable("id") Long id) {
+        diningOrderService.assertReadable(id, currentUserId());
+        return streamer.subscribe(id);
     }
 
     @Operation(summary = "加入前预览 brief", description = "凭二维码里的 join_token 换订单标题/发起者/菜品数，"

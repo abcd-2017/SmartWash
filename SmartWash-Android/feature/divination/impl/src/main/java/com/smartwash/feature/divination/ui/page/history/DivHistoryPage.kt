@@ -16,13 +16,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +55,7 @@ import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
+import kotlinx.coroutines.flow.collectIndexed
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -68,6 +72,15 @@ fun DivHistoryPage(
     val uiState by viewModel.uiState.collectAsState()
     val records by viewModel.records.collectAsState()
     val view = currentView()
+
+    // 筛选切换回顶（滚动状态扫描发现）：READY→READY 时 Crossfade 分支不变、列表不重建，
+    // 新筛选结果会停在上次筛选的偏移处。snapshotFlow 跳过首次发射：进页/返回时 effect
+    // 重启不覆盖 rememberLazyListState 恢复的滚动位置（对齐 GameCenterPage 先例）
+    val historyListState = rememberLazyListState()
+    LaunchedEffect(Unit) {
+        snapshotFlow { uiState.filter }
+            .collectIndexed { index, _ -> if (index > 0) historyListState.scrollToItem(0) }
+    }
 
     DivinationScreen(scrollable = false) {
         // 颜色必须在 DivinationScreen 之内读取（默认玄墨，包根外读会让空态文案在浅色系统下不可见）
@@ -168,6 +181,7 @@ fun DivHistoryPage(
                     }
                 }
                 HistoryListState.READY -> LazyColumn(
+                    state = historyListState,
                     modifier = Modifier.weight(1f),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 4.dp),
                 ) {

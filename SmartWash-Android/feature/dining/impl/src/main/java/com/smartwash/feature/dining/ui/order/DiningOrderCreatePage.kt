@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -171,6 +172,20 @@ fun DiningOrderCreatePage(
 
     // 首载（栈上重组不重放；失败重试显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
+
+    // 搜索态「双状态」滚动契约：浏览/搜索各持独立 LazyListState——进入搜索或搜索中改词
+    // 搜索列表回顶（新结果集从头展示）；退出搜索时浏览实例从未离开记忆，切回渲染即精确
+    // 恢复到搜索前那道菜（VM 侧浏览快照零网络还原，列表逐项一致，恢复不是索引近似）
+    val browseListState = rememberLazyListState()
+    val searchListState = rememberLazyListState()
+    LaunchedEffect(keyword) {
+        if (keyword.isNotBlank()) searchListState.scrollToItem(0)
+    }
+
+    // 分类切换回顶（D32）：网格滚动位置不随分类重置会停在上类目的偏移处（仅浏览态可触发）
+    LaunchedEffect(selectedCategoryId) {
+        browseListState.scrollToItem(0)
+    }
 
     // 邀请：跳「邀请加入」（与分享同一页，二维码 + 复制链接），不再只复制到剪贴板
     LaunchedEffect(inviteTarget) {
@@ -486,7 +501,8 @@ fun DiningOrderCreatePage(
                                                 navController.navigate(DiningRoute.RecipeDetail(recipeId))
                                             },
                                             onToggleFavorite = viewModel::toggleFavorite,
-                                            selectedCategoryId = selectedCategoryId,
+                                            // 搜索态/浏览态各持独立滚动状态（双状态契约，见顶层注释）
+                                            listState = if (isSearching) searchListState else browseListState,
                                             // 搜索态全宽列表：行内水平 0 + 外层 24dp 页面边距
                                             //（对齐菜谱库搜索行，避免贴屏幕边）；分类态贴 rail 保持 6/12
                                             rowPadding = if (isSearching) {
@@ -617,6 +633,9 @@ private fun CreateCategoryRail(
 /**
  * 菜品行卡列表（契约 §5.2 右栏）：单列行卡（封面缩略 + 菜名 + 食材数·热量 + 右侧 48dp 加选
  * 按钮），触底自动加载更多（服务端分页保留），footer 三态失败不封底。
+ *
+ * 滚动状态由调用方持有（搜索态「双状态」契约）：浏览/搜索各持独立 [LazyListState] 传入，
+ * 本组件不记忆滚动——同一实例跨模式存活会带着旧偏移渲染新数据集。
  */
 @Composable
 private fun DishList(
@@ -629,17 +648,10 @@ private fun DishList(
     onToggle: (Long) -> Unit,
     onViewRecipe: (Long) -> Unit,
     onToggleFavorite: (Long) -> Unit,
-    selectedCategoryId: Long?,
+    listState: LazyListState,
     rowPadding: PaddingValues = PaddingValues(start = 6.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
     modifier: Modifier = Modifier,
 ) {
-    val listState = rememberLazyListState()
-
-    // 分类切换回顶（D32）：列表滚动位置不随分类重置会停在上类目的偏移处
-    LaunchedEffect(selectedCategoryId) {
-        listState.scrollToItem(0)
-    }
-
     // 触底探测（对齐订单列表先例）：末两项可见即触发下一页；加载中不重入，失败保留重试入口
     val shouldLoadMore by remember {
         derivedStateOf {

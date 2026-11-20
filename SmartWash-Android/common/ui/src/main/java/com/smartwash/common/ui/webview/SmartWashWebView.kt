@@ -178,6 +178,10 @@ fun SmartWashWebView(
                 ) {
                     // 仅主框架失败才进错误态（子资源 404/超时不应打断整页）
                     if (request.isForMainFrame) {
+                        // 页面主动跳外部 App（baiduapp://、intent:// 等重定向不经
+                        // shouldOverrideUrlLoading）属正常行为，不是加载失败——真机实测：
+                        // 百度码经此路径把整页误报成「页面加载失败」（net::ERR_UNKNOWN_URL_SCHEME=-10）
+                        if (error.errorCode == -10 /* ERROR_UNKNOWN_URL_SCHEME */) return
                         // 外部加载失败（WebViewClient 运行期回调，非组合期渲染路径）；
                         // 只记错误码与描述，不记完整 URL（深链/运营链接 query 不可控）
                         AppLogger.error(

@@ -46,7 +46,7 @@
 ### 模块地图
 
 ```
-:app                             壳：Application + MainActivity(NavHost 聚合 15 个 graph) + 首页/订单详情/取件/内置浏览器/工作台/更新弹窗 + 深链注册表 + InitEngine 调度
+:app                             壳：Application + MainActivity(NavHost 聚合 16 个 graph) + 首页/订单详情/取件/内置浏览器/工作台/更新弹窗 + 深链注册表 + InitEngine 调度
 :common:database                Room 主缓存库(AppDatabase v3)：洗衣项目/学校/优惠券三表（共库，T8.2 决策不拆）
 :common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / 401 单飞续签 / SSE 客户端 / @RequireAuthorization / NetworkException
 :common:utils                    跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState / DataStore 封装(SharePreferenceUtils) / 深链解析契约 / 动效触感 / 二维码 / pagingFlow
@@ -54,6 +54,8 @@
 :common:init                      InitTask 契约 + InitEngine + InitTaskRegistry（零业务依赖：仅 Android SDK + Hilt + coroutines）
 :feature:coupon:api             CouponApi 契约 + 优惠券模型 + CouponRoute
 :feature:coupon:impl            CouponRepository + CouponStatus + CouponApiImpl + EntityMappers + 三 Tab 页
+:feature:dining:api             DiningServiceApi 契约 + dining 模型（订单/菜单/购买清单快照/营养） + DiningRoute
+:feature:dining:impl            吃啥（菜谱库/详情/新增 + 点单订单创建/分享/点单页/购买清单 + 扫码加入链接归一 + version 轮询同步通道 + 深链 dining）
 :feature:divination:api         DivRoute + DivinationApi/VO 契约
 :feature:divination:impl        观象台（四套算法内核 + 卦历库 + SSE 解读网关 + BYOK 设置 + 7 页面 + 独立库）
 :feature:game:api               GameRoute + GameApi/GameVo 契约
@@ -114,7 +116,7 @@ abstract class XxxInitModule {
 
 **鉴权流程** — API 方法加 `@RequireAuthorization`，`RequestInterceptor` 经 `retrofit2.Invocation` tag 检测后从 `TokenProvider`（user:impl 的 SessionManager `@Binds`）取 token 注入 `Bearer <token>`。`ResponseInterceptor` 遇 401 清 token 并经 `SessionEventNotifier`（user:impl 的 SessionEventBus `@Binds`）通知 UI 跳登录。
 
-**路由** — 单 Activity + NavHost。各域暴露 `NavGraphBuilder.xxxGraph` 扩展函数，壳层 `MainActivity` 聚合 15 个 graph（shell/user/order/payment/laundry/coupon/notice/divination/toolbox/game/lab/review/subscription/points/delivery）；路由常量单一事实来源在各域 `*Route`。壳层路由契约 `ShellRoute`（common:ui）。
+**路由** — 单 Activity + NavHost。各域暴露 `NavGraphBuilder.xxxGraph` 扩展函数，壳层 `MainActivity` 聚合 16 个 graph（shell/user/order/payment/laundry/coupon/notice/divination/toolbox/game/lab/review/subscription/points/delivery/dining）；路由常量单一事实来源在各域 `*Route`。壳层路由契约 `ShellRoute`（common:ui）。
 
 **深链** — `smartwash://{host}` scheme。解析契约 `DeepLinkParser`/`DeepLinkAction`/`DeepLinkContributor` 在 common:utils；各域 impl（或单模块域）经 `@IntoSet` 贡献 host 路由工厂；壳层 `DeepLinkRegistry` 合并、`DeepLinkHandler` 分发（未命中查后端 `/web/deeplink/routes` 字典兜底）。host 清单与贡献者对照表见 [app/AGENTS.md](app/AGENTS.md) 深链章节。
 
@@ -137,7 +139,7 @@ abstract class XxxInitModule {
 
 **自动生效 skill**：`android-kotlin`、`android-jetpack-compose`（按 `.kt` 路径触发）；按需调用 `android-clean-architecture`、`mobile-android-design`。
 
-`.claude/agents/smartwash-android.md` 提供统一的 Android 全栈代理，覆盖开发、审查、调试、测试、UI/动效专项。
+Android 全栈代理统一定义在根目录 `.zcode/agents/smartwash-android.md`（覆盖开发、审查、调试、测试、UI/动效专项），子项目内不保留副本。
 
 ## 已知坑（改动前先看）
 

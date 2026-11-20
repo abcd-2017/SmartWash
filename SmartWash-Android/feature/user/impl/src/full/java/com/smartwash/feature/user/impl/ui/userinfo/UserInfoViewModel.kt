@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.utils.AppLogger
+import com.smartwash.common.utils.ImageCompressUtil
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.feature.notice.api.NoticeApi
@@ -18,7 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import javax.inject.Inject
 
 @HiltViewModel
@@ -139,17 +140,24 @@ class UserInfoViewModel @Inject constructor(
     fun uploadAvatar(uri: Uri) {
         _avatarUploadState.value = RequestState.Loading
         viewModelScope.launch {
+            // 上传前本地压缩（头像上限 512px / JPEG 80；足够小直通原图）；任一环节失败工具内部兜底原图直传
+            var prepared: ImageCompressUtil.UploadImageResult? = null
             try {
-                val inputStream = application.contentResolver.openInputStream(uri)
-                    ?: throw IllegalStateException(application.getString(R.string.avatar_upload_failed))
-                val bytes = inputStream.use { it.readBytes() }
-                val mimeType = application.contentResolver.getType(uri) ?: "image/jpeg"
-                val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
-                val part = MultipartBody.Part.createFormData("file", "avatar.jpg", requestBody)
+                prepared = ImageCompressUtil.prepareUploadImage(
+                    application,
+                    uri,
+                    baseName = "avatar",
+                    maxEdge = ImageCompressUtil.AVATAR_MAX_EDGE,
+                )
+                val requestBody = prepared.file.asRequestBody(prepared.mimeType.toMediaTypeOrNull())
+                val part = MultipartBody.Part.createFormData("file", prepared.fileName, requestBody)
                 userRepository.uploadAvatar(part)
                 getUserInfo()
                 // 低频关键动作成功（资料变更）
-                AppLogger.info(TAG, "头像上传成功 size=${bytes.size}B")
+                AppLogger.info(
+                    TAG,
+                    "头像上传成功 file=${prepared.fileName} compressed=${prepared.compressed} size=${prepared.file.length()}B",
+                )
                 _avatarUploadState.value = RequestState.Success
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "UserInfoViewModel.uploadAvatar: ${e.message}", e)
@@ -161,6 +169,9 @@ class UserInfoViewModel @Inject constructor(
             } catch (e: Exception) {
                 AppLogger.error(TAG, "UserInfoViewModel.uploadAvatar: ${e.message}", e)
                 _avatarUploadState.value = RequestState.Error(R.string.avatar_upload_failed, e.message)
+            } finally {
+                // 上传完成后清理临时压缩文件（失败路径同样清理，重试时重新生成）
+                prepared?.cleanup()
             }
         }
     }

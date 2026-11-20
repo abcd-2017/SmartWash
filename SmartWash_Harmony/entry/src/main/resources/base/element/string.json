@@ -5333,12 +5333,36 @@
       "value": "已结束"
     },
     {
+      "name": "dining_order_status_cancelled",
+      "value": "已取消"
+    },
+    {
       "name": "dining_order_creator_badge",
       "value": "发起"
     },
     {
       "name": "dining_order_action_reuse",
       "value": "再来一单"
+    },
+    {
+      "name": "dining_order_action_cancel",
+      "value": "放弃"
+    },
+    {
+      "name": "dining_order_cancel_confirm_title",
+      "value": "放弃这点单？"
+    },
+    {
+      "name": "dining_order_cancel_confirm_text",
+      "value": "放弃后订单会标记为「已取消」，参与的朋友仍能看到；此操作不可撤销。"
+    },
+    {
+      "name": "dining_order_cancel_success",
+      "value": "已放弃点单"
+    },
+    {
+      "name": "dining_order_cancelled_hint",
+      "value": "该点单已取消，无法继续编辑"
     },
     {
       "name": "dining_order_action_recipe_library",
@@ -5711,6 +5735,10 @@
     {
       "name": "dining_order_join_order_finished",
       "value": "该点单已结束，无法加入"
+    },
+    {
+      "name": "dining_order_join_order_cancelled",
+      "value": "该点单已取消，无法加入"
     },
     {
       "name": "dining_order_join_load_failed",

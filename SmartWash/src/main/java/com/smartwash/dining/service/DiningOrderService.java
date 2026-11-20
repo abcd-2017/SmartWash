@@ -7,6 +7,7 @@ import com.smartwash.dining.from.AddDiningOrderDishFrom;
 import com.smartwash.dining.from.CreateDiningOrderFrom;
 import com.smartwash.dining.from.JoinDiningOrderFrom;
 import com.smartwash.dining.from.SubmitDiningOrderFrom;
+import com.smartwash.dining.vo.DiningOrderActiveVo;
 import com.smartwash.dining.vo.DiningOrderBriefVo;
 import com.smartwash.dining.vo.DiningOrderCreatedVo;
 import com.smartwash.dining.vo.DiningOrderDetailVo;
@@ -24,6 +25,8 @@ public interface DiningOrderService extends IService<DiningOrder> {
     /**
      * 创建点单订单（草稿态）：标题与菜单均可空 → 落一张 DRAFT 单，生成 join_token，创建者为首个成员。
      * 菜单非空时校验菜谱上架存在；支持从历史订单复用菜单（fromOrderId，当前用户须为该单成员）。
+     * <p>唯一闸门（本期）：同一发起者同时最多一个进行中的 DRAFT——已存在时拒绝，
+     * 返回业务码 {@code 40901}（message 带既有单标题），端上据此提示并可跳该单。
      */
     DiningOrderCreatedVo create(CreateDiningOrderFrom from, Long userId);
 
@@ -47,11 +50,24 @@ public interface DiningOrderService extends IService<DiningOrder> {
     void removeDish(Long orderId, Long recipeId, Long version, Long userId);
 
     /**
-     * 放弃草稿：仅发起者、仅 DRAFT 态，物理删除订单行与其菜单/成员/选菜子行（项目无逻辑删除）。
-     * 空草稿堆积的兜底出口（方案 §七「本次做」）；与并发 submit 互斥——
-     * 先按 status 条件删订单行，submit 已把状态推到 FINISHED 时本删除 0 行并拒绝。
+     * 放弃草稿（cancel）：仅发起者、仅 DRAFT 态；订单状态置 {@code CANCELLED} 并写 cancelled_at，
+     * <p>不再物理删除——参与者仍可在「我的订单」看到该单（灰态「已取消」），满足「加入用户也要看到状态」。
+     * 与并发 submit 互斥：条件 UPDATE 仅在仍为 DRAFT 时迁移，已被提交则拒绝且不产生中间态。
      */
-    void discardDraft(Long orderId, Long userId);
+    void cancel(Long orderId, Long userId);
+
+    /**
+     * 退出点单（leave）：仅参与者（非发起者）、仅 DRAFT 态、仅成员；删除成员行即脱离该单，
+     * 订单本体保留（发起者可继续编辑/提交/放弃）。幂等：已不在单中直接成功。
+     * 发起者请走 {@link #cancel}（提示文案区分）。
+     */
+    void leave(Long orderId, Long userId);
+
+    /**
+     * 我的进行中点单（本期唯一性口径）：当前用户作为发起者、状态为 DRAFT 的订单，取最新一张；
+     * 无则返回 {@code null}（端上 FAB/CTA 据此决定进编辑态还是空白创建页）。
+     */
+    DiningOrderActiveVo getMyActiveOrder(Long userId);
 
     /**
      * 我的订单分页（我发起的 + 我参与的，按创建时间倒序，带 isCreator 标记）。
@@ -65,6 +81,12 @@ public interface DiningOrderService extends IService<DiningOrder> {
      * 仅订单成员可查看。
      */
     DiningOrderDetailVo detail(Long orderId, Long knownVersion, Long userId);
+
+    /**
+     * SSE 订阅资格校验：订单存在且当前用户为成员（与 detail 同口径，不组装载荷）。
+     * 终态（FINISHED/CANCELLED）同样允许订阅，便于端上感知状态变化。
+     */
+    void assertReadable(Long orderId, Long userId);
 
     /** 加入前预览 brief：凭 join_token 换订单标题 / 发起者 / 菜品数，用于扫码确认弹窗 */
     DiningOrderBriefVo brief(String joinToken, Long userId);

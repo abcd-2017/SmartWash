@@ -135,7 +135,12 @@ struct DiningOrderJoinPage {
         this.ConfirmJoinBody()
       } else if (this.decision() === DiningJoinEntryDecision.ORDER_FINISHED) {
         Column() {
-          EmptyState({ message: DiningText.dining_order_join_order_finished })
+          EmptyState({
+            message: this.brief !== null &&
+              diningOrderStatusFromCode(this.brief.status) === DiningOrderStatus.CANCELLED
+              ? DiningText.dining_order_join_order_cancelled
+              : DiningText.dining_order_join_order_finished
+          })
         }
         .width('100%')
         .layoutWeight(1)

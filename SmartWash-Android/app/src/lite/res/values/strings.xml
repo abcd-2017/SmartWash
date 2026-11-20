@@ -18,13 +18,15 @@
     <string name="lite_home_orders_desc">查看进行中的点单与历史记录</string>
     <string name="lite_home_recipes">菜谱库</string>
     <string name="lite_home_recipes_desc">看看大家都做什么菜</string>
+    <string name="lite_home_scan">扫码加入</string>
+    <string name="lite_home_scan_desc">扫分享二维码，一起选菜</string>
     <string name="lite_home_game">游戏</string>
     <string name="lite_home_game_desc">休闲一下，放松心情</string>
     <string name="lite_home_setting">设置</string>
 
     <!-- 登录 -->
     <string name="lite_login_title">登 录</string>
-    <string name="lite_login_subtitle">和室友一起点，今天吃什么</string>
+    <string name="lite_login_subtitle">一起点，今天吃什么</string>
     <string name="lite_no_account">没有账号？</string>
     <string name="lite_register_now">立即注册</string>
 
@@ -43,4 +45,12 @@
     <string name="lite_setting_check_update">检查更新</string>
     <string name="lite_setting_check_update_desc">当前版本 v%s</string>
     <string name="lite_setting_logout">退出登录</string>
+
+    <!-- ==================== 两变体共用文案的 lite 覆盖 ====================
+      app 源集同名 key 覆盖 library 资源；full 变体不受影响（维持库内原文）。
+      :feature:update:core 下载通知写死旧品牌名，lite 用户必见；:feature:game:impl
+      空态引导「去洗衣服」——lite 无洗衣业务。 -->
+    <string name="download_notification_title">正在下载应用更新</string>
+    <string name="download_notification_complete_tap">点击安装 %s</string>
+    <string name="game_empty_message">游戏整理中，稍后再来看看</string>
 </resources>

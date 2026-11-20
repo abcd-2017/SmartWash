@@ -8,8 +8,9 @@
 import { RouteNames } from '../../../constant/RouteNames'
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
 import { ReduceMotion } from '../../../utils/ReduceMotion'
+import { promptAction } from '@kit.ArkUI'
 import { BizCode } from '../../../network/HttpUtil'
-import { DiningOrderListVo, pageMyDiningOrders } from '../../../network/api/DiningApi'
+import { cancelDiningOrder, DiningOrderListVo, getActiveDiningOrder, pageMyDiningOrders } from '../../../network/api/DiningApi'
 import { diningOrderStatusFromCode, DiningOrderStatus, diningTimeLabel } from '../DiningLogic'
 import { DiningOrderCreateParam } from '../api'
 import { DiningText } from '../DiningText'
@@ -55,6 +56,11 @@ struct DiningOrderListPage {
   @Local createdOrders: Array<DiningOrderListVo> = []
   /** 我参与的订单 */
   @Local joinedOrders: Array<DiningOrderListVo> = []
+  /**
+   * 我发起的进行中 DRAFT 的订单 ID（唯一性收敛）：>0 时 FAB 直接进该单编辑态，
+   * 否则进空白创建页；0=无进行中（每次重拉随列表刷新；查询失败静默置 0）。
+   */
+  @Local activeOrderId: number = 0
   /** LazyForEach 数据源条目（分区标题 + 订单卡，由分区数组派生） */
   @Local entries: Array<DiningOrderListEntry> = []
   @Local isLoading: boolean = true
@@ -269,8 +275,15 @@ struct DiningOrderListPage {
               this.pressedKey = ''
             }
           })
-          .onClick(() => {
-            pathStack.pushPathByName(RouteNames.DINING_ORDER_CREATE, new DiningOrderCreateParam())
+          ..onClick(() => {
+            // 唯一性收敛：已有本人进行中的 DRAFT → 直接进该单编辑态，不再新建（无则空白创建页）
+            if (this.activeOrderId > 0) {
+              const param = new DiningOrderCreateParam()
+              param.orderId = this.activeOrderId
+              pathStack.pushPathByName(RouteNames.DINING_ORDER_CREATE, param)
+            } else {
+              pathStack.pushPathByName(RouteNames.DINING_ORDER_CREATE, new DiningOrderCreateParam())
+            }
           })
         }
         .width('100%')
@@ -350,8 +363,32 @@ struct DiningOrderListPage {
           .fontColor($r('app.color.TEXT_SECONDARY'))
           .layoutWeight(1)
 
-        // 草稿不提供「再来一单」：点卡片进详情继续编辑（复用仅对已定稿单有意义）
-        if (diningOrderStatusFromCode(order.status) !== DiningOrderStatus.DRAFT) {
+        // 草稿（发起者）：「放弃」出口（二次确认后置 CANCELLED，参与者仍可见）
+        if (diningOrderStatusFromCode(order.status) === DiningOrderStatus.DRAFT && order.isCreator) {
+          Text(DiningText.dining_order_action_cancel)
+            .fontSize(DesignFontSize.BUTTON_TEXT)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor($r('app.color.TEXT_SECONDARY'))
+            .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
+            .scale({
+              x: !this.reduceMotion && this.pressedKey === `cancel_${order.id}` ? MotionScale.Press : 1,
+              y: !this.reduceMotion && this.pressedKey === `cancel_${order.id}` ? MotionScale.Press : 1
+            })
+            .opacity(this.reduceMotion && this.pressedKey === `cancel_${order.id}` ? MotionAlpha.PressReduced : 1)
+            .animation(MotionTiming.PRESS)
+            .onTouch((event: TouchEvent) => {
+              if (event.type === TouchType.Down) {
+                this.pressedKey = `cancel_${order.id}`
+              } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.pressedKey = ''
+              }
+            })
+            .onClick(() => {
+              this.confirmCancel(order)
+            })
+        }
+        // 复用源单语义仅对已定稿单有意义（草稿点卡片继续编辑，已取消不引导复用）
+        if (diningOrderStatusFromCode(order.status) === DiningOrderStatus.FINISHED) {
           Text(DiningText.dining_order_action_reuse)
           .fontSize(DesignFontSize.BUTTON_TEXT)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
@@ -416,6 +453,55 @@ struct DiningOrderListPage {
   private reloadFirstPage(): void {
     this.paging.reset()
     this.fetchOrderPage(1)
+    this.refreshActiveOrder()
+  }
+
+  /**
+   * 拉取本人进行中的 DRAFT（唯一性收敛，FAB/CTA 收敛依据）；失败静默置 0——
+   * 最坏退回新建，后端 create 仍会以 40901 兜底提示。
+   */
+  private async refreshActiveOrder(): Promise<void> {
+    try {
+      const res = await getActiveDiningOrder()
+      this.activeOrderId = (res.code === BizCode.SUCCESS && res.data !== null) ? res.data.orderId : 0
+    } catch (err) {
+      this.activeOrderId = 0
+    }
+  }
+
+  /**
+   * 放弃草稿二次确认（系统弹窗）：确认后调 cancel（仅发起者 DRAFT），成功 toast 并刷新；
+   * 取消/弹窗异常静默。按钮文案「放弃」用危险色强调。
+   */
+  private async confirmCancel(order: DiningOrderListVo): Promise<void> {
+    let confirmed = false
+    try {
+      const result = await promptAction.showDialog({
+        title: DiningText.dining_order_cancel_confirm_title,
+        message: DiningText.dining_order_cancel_confirm_text,
+        buttons: [
+          { text: DiningText.dining_order_action_cancel, color: $r('app.color.DANGER') },
+          { text: '取消', color: $r('app.color.TEXT_SECONDARY') }
+        ]
+      })
+      confirmed = result.index === 0
+    } catch (err) {
+      confirmed = false
+    }
+    if (!confirmed) {
+      return
+    }
+    try {
+      const res = await cancelDiningOrder(order.id)
+      if (res.code === BizCode.SUCCESS) {
+        showToastSafety('', DiningText.dining_order_cancel_success)
+        this.reloadFirstPage()
+      } else {
+        showToastSafety(res.message, DiningText.dining_order_list_load_failed)
+      }
+    } catch (err) {
+      showToastSafety('', DiningText.dining_order_list_load_failed)
+    }
   }
 
   /**
@@ -527,6 +613,9 @@ struct DiningOrderListPage {
       const param = new DiningOrderCreateParam()
       param.orderId = order.id
       pathStack.pushPathByName(RouteNames.DINING_ORDER_CREATE, param)
+    } else if (status === DiningOrderStatus.CANCELLED) {
+      // 已取消为终态：不进入编辑/清单页，仅提示（避免进入无法操作的页面）
+      showToastSafety('', DiningText.dining_order_cancelled_hint)
     } else {
       pathStack.pushPathByName(RouteNames.DINING_SHOPPING_LIST, order.id)
     }

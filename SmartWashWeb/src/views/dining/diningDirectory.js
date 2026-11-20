@@ -3,9 +3,9 @@
 // 纯函数，DiningDirectoryImportDialog 与单测共用，避免第 12 份复制粘贴）。
 //
 // 目录规范：选父目录（webkitdirectory），根层仅认 *.csv 数据文件（可多个，列与导入模板一致）
-// + image/ 封面目录；.DS_Store 等隐藏文件静默忽略；其余文件/子目录给出忽略提示。
+// + 封面目录（image/ 或 covers/，大小写不敏感）；.DS_Store 等隐藏文件静默忽略；其余文件/子目录给出忽略提示。
 // CSV 行通过「封面对象键」列的文件名（如 dining/covers/番茄炒蛋.png → 番茄炒蛋.png）在
-// image/ 中找到本地封面文件，上传拿到新对象键后随 add/update 落库。
+// 封面目录中找到本地封面文件，上传拿到新对象键后随 add/update 落库。
 //
 // 判重语义与后端 DiningRecipeImportServiceImpl.resolveExistingRecipe 对齐（含 147bcb62 三级兜底）：
 // sourceKey 优先 →（菜名,分类）兜底 → 同名且库内唯一（已分类）宽松兜底（覆盖分类改名场景）；
@@ -16,7 +16,10 @@ import Papa from 'papaparse';
 
 /** 目录规范提示文案（整体报错信息尾部统一拼接） */
 export const DINING_DIR_RULES =
-  '目录规范：根层放 *.csv 数据文件（可多个，列与导入模板一致）+ image/ 封面目录，其他文件自动忽略';
+  '目录规范：根层放 *.csv 数据文件（可多个，列与导入模板一致）+ 封面目录（image/ 或 covers/），其他文件自动忽略';
+
+/** 封面目录名（大小写不敏感）：兼容历史 image/ 与项目现有 covers/ 两种命名 */
+export const COVER_DIR_NAMES = new Set(['image', 'covers']);
 
 /** 封面图片扩展名（与后端 RecipeImageValidator / 表单 accept 对齐） */
 export const COVER_IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -116,7 +119,7 @@ export function splitDiningDir(files) {
       }
       continue;
     }
-    if (segs[1].toLowerCase() === 'image') {
+    if (COVER_DIR_NAMES.has(segs[1].toLowerCase())) {
       // 封面目录（目录名大小写不敏感），内部子层级一并索引
       imageDirPresent = true;
       if (isCoverImage(name) && !imageIndex.has(name.toLowerCase())) {
@@ -139,7 +142,7 @@ export function inspectDiningDir(split) {
     return { ok: false, reason: `未找到 .csv 数据文件。${DINING_DIR_RULES}` };
   }
   if (!split.imageDirPresent) {
-    return { ok: false, reason: `未找到 image/ 封面目录。${DINING_DIR_RULES}` };
+    return { ok: false, reason: `未找到封面目录（image/ 或 covers/）。${DINING_DIR_RULES}` };
   }
   return { ok: true, reason: '' };
 }
@@ -306,7 +309,7 @@ export function buildRecipeRow(row, { rowNo, csvName, imageIndex }) {
     } else {
       item.coverFile = imageIndex.get(lower) || null;
       if (!item.coverFile) {
-        errors.push(`封面「${item.coverFileName}」在 image/ 目录中未找到`);
+        errors.push(`封面「${item.coverFileName}」在封面目录中未找到`);
       } else if (item.coverFile.size > MAX_COVER_BYTES) {
         errors.push(`封面「${item.coverFileName}」超过 5MB 上限`);
       }

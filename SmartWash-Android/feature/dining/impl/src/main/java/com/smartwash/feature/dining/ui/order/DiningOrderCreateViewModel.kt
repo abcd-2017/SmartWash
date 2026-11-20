@@ -15,6 +15,7 @@ import com.smartwash.feature.dining.api.model.DiningCategoryVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
 import com.smartwash.feature.dining.api.model.SubmitDiningOrderRequest
 import com.smartwash.feature.dining.logic.DiningAllergenGuard
+import com.smartwash.feature.dining.logic.DiningBrowseCatalog
 import com.smartwash.feature.dining.logic.DiningDraftMenuEditor
 import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningOrderFormValidator
@@ -131,6 +132,13 @@ class DiningOrderCreateViewModel @Inject constructor(
 
     /** 关键词搜索防抖任务（新输入取消上一次） */
     private var keywordJob: Job? = null
+
+    /**
+     * 浏览态数据集快照（搜索态「双状态」契约）：进入搜索前存，退出搜索零网络还原——
+     * 浏览列表与搜索前逐项一致，UI 浏览滚动位置才能精确恢复到「原来那道菜」。
+     * 快照只在关键词非空白期间被动持有，还原即置空；存取语义见 [DiningBrowseCatalog]。
+     */
+    private var browseCatalog: DiningBrowseCatalog? = null
 
     /** 共同编辑轮询任务（草稿落库后启动；提交/销毁时停止） */
     private var pollJob: Job? = null
@@ -262,12 +270,29 @@ class DiningOrderCreateViewModel @Inject constructor(
         }
     }
 
-    /** 关键词输入：防抖 300ms 重置分页重拉首页（空串=全库；结果集变化即 page=1 重取）。
-     * 复用模式不渲染搜索框，此处兜底忽略，避免只读回显被分页数据替换 */
+    /**
+     * 关键词输入三路分支（搜索态「双状态」契约）：
+     * - 空白→非空白（进入搜索）：同步存浏览快照（主线程无挂起点，相对分页写原子），
+     *   防抖后拉搜索首页——快照可能缺「存取瞬间仍在追加中的浏览页」，退出后触底可续拉；
+     * - 非空白→空白（退出搜索）：零网络还原浏览快照（[restoreBrowseCatalog]），收藏态
+     *   以搜索期间最新值合并，跳过重拉；
+     * - 非空白→非空白（改词）：防抖重拉搜索首页，浏览快照保持不动。
+     * 复用模式不渲染搜索框，此处兜底忽略，避免只读回显被分页数据替换。
+     */
     fun onKeywordChange(value: String) {
+        val wasSearching = _keyword.value.trim().isNotBlank()
         _keyword.value = value
         if (reuseFromOrderId != null) return
+        val isSearching = value.trim().isNotBlank()
         keywordJob?.cancel()
+        if (!wasSearching && isSearching) {
+            browseCatalog = DiningBrowseCatalog(_recipes.value, currentPage, _hasMore.value)
+        }
+        if (wasSearching && !isSearching) {
+            val catalog = browseCatalog ?: return
+            keywordJob = viewModelScope.launch { restoreBrowseCatalog(catalog) }
+            return
+        }
         keywordJob = viewModelScope.launch {
             delay(KEYWORD_DEBOUNCE_MS)
             _loadState.value = RequestState.Loading
@@ -281,6 +306,20 @@ class DiningOrderCreateViewModel @Inject constructor(
                 _loadState.value = RequestState.Error(e.resId, e.message)
             }
         }
+    }
+
+    /**
+     * 退出搜索：还原浏览快照（零网络）。走 [fetchMutex] 与进行中的搜索分页拉取互斥，
+     * 防止还原被追加中的搜索页覆盖；收藏态按搜索结果最新值合并（搜索期间可见且可能
+     * 被切换的菜），还原后快照即弃。无快照兜底忽略（调用方按无变化处理，保持现状重拉语义）。
+     */
+    private suspend fun restoreBrowseCatalog(catalog: DiningBrowseCatalog) = fetchMutex.withLock {
+        currentPage = catalog.page
+        _recipes.value = catalog.restoreRecipes(_recipes.value.associateBy { it.safeId })
+        _hasMore.value = catalog.hasMore
+        _loadMoreState.value = RequestState.Idle
+        browseCatalog = null
+        _loadState.value = RequestState.Success
     }
 
     /**

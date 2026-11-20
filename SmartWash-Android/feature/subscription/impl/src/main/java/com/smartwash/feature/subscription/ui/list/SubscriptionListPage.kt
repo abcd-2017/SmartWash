@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Autorenew
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -37,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -72,6 +74,7 @@ import com.smartwash.feature.subscription.R
 import com.smartwash.feature.subscription.api.SubscriptionCycleType
 import com.smartwash.feature.subscription.api.SubscriptionRoute
 import com.smartwash.feature.subscription.api.SubscriptionStatus
+import kotlinx.coroutines.flow.collectIndexed
 import com.smartwash.feature.subscription.logic.SubscriptionRules
 import com.smartwash.feature.subscription.api.network.SubscriptionVo
 import com.smartwash.feature.subscription.ui.SubscriptionSelectableChip
@@ -100,6 +103,16 @@ fun SubscriptionListPage(
     val context = LocalContext.current
     val pagingItems = viewModel.pagingFlow.collectAsLazyPagingItems()
     val selectedFilter by viewModel.statusFilter.collectAsState()
+
+    // 筛选切换回顶：切状态重建 Pager 后新结果从头展示。此前仅靠「骨架帧让 LazyColumn
+    // 离开组合销毁 state」隐式归零，无显式契约（Paging 行为变化即复现残留偏移）——显式化。
+    // snapshotFlow 跳过首次发射，进页/返回时不覆盖 rememberLazyListState 恢复位置
+    // （对齐 GameCenterPage 先例，滚动状态扫描建议项）
+    val listState = rememberLazyListState()
+    LaunchedEffect(Unit) {
+        snapshotFlow { selectedFilter }
+            .collectIndexed { index, _ -> if (index > 0) listState.scrollToItem(0) }
+    }
 
     // 刷新会话门控（2026-11-06 闪空态回归）：下拉刷新 / 变更重建 / 切换筛选都会先把列表清空为 0 项，
     // 在「清空后、新加载尚未开始」的帧里 refresh=NotLoading && itemCount=0 会命中空态分支闪一帧。
@@ -247,6 +260,7 @@ fun SubscriptionListPage(
                     }
                     else -> {
                         LazyColumn(
+                            state = listState,
                             verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
                             contentPadding = PaddingValues(
                                 horizontal = AppDimens.pagePadding,

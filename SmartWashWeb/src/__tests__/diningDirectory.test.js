@@ -54,6 +54,15 @@ describe('splitDiningDir 目录分组', () => {
     expect(res.imageIndex.get('a.png')).toBe(img2); // 先见者胜
   });
 
+  it('covers/ 目录同样识别为封面目录（兼容项目现有命名）', () => {
+    const aCsv = makeFile('a.csv', '菜谱库/a.csv');
+    const img = makeFile('番茄.png', '菜谱库/covers/番茄.png', 'img');
+    const res = splitDiningDir([aCsv, img]);
+    expect(res.csvFiles.map((f) => f.name)).toEqual(['a.csv']);
+    expect(res.imageDirPresent).toBe(true);
+    expect(res.imageIndex.get('番茄.png')).toBe(img);
+  });
+
   it('.DS_Store 等隐藏文件与隐藏目录任意层级静默忽略', () => {
     const res = splitDiningDir([
       makeFile('.DS_Store', '菜谱库/.DS_Store'),
@@ -240,7 +249,7 @@ describe('buildRecipeRow 行级预检', () => {
 
   it('封面文件名在 image/ 中找不到报错', () => {
     const res = buildRecipeRow({ 菜名: '番茄', 封面对象键: 'dining/covers/缺失.png' }, ctx());
-    expect(res.errors).toEqual(['封面「缺失.png」在 image/ 目录中未找到']);
+    expect(res.errors).toEqual(['封面「缺失.png」在封面目录中未找到']);
   });
 
   it('封面扩展名不合法报错', () => {

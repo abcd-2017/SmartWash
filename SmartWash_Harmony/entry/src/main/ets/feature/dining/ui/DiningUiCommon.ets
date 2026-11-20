@@ -18,8 +18,8 @@ import {
 import { DiningText } from '../DiningText'
 
 /**
- * 点单订单状态标签（草稿 = secondary 档 / 已结束 = surfaceVariant 底次级字）。
- * 对齐清氧小胶囊画法（radiusFull + caption 档）。契约移除 ONGOING，仅两态。
+ * 点单订单状态标签（草稿 = secondary 档 / 已结束 = surfaceVariant 底次级字 /
+ * 已取消 = error 档）。对齐清氧小胶囊画法（radiusFull + caption 档）。
  */
 @ComponentV2
 export struct DiningStatusTag {
@@ -28,15 +28,21 @@ export struct DiningStatusTag {
   build() {
     Text(this.status === DiningOrderStatus.DRAFT
       ? DiningText.dining_order_status_draft
-      : DiningText.dining_order_status_finished)
+      : (this.status === DiningOrderStatus.CANCELLED
+        ? DiningText.dining_order_status_cancelled
+        : DiningText.dining_order_status_finished))
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
       .fontColor(this.status === DiningOrderStatus.DRAFT
         ? $r('app.color.ON_SECONDARY_CONTAINER')
-        : $r('app.color.TEXT_SECONDARY'))
+        : (this.status === DiningOrderStatus.CANCELLED
+          ? $r('app.color.ON_ERROR_CONTAINER')
+          : $r('app.color.TEXT_SECONDARY')))
       .backgroundColor(this.status === DiningOrderStatus.DRAFT
         ? $r('app.color.SECONDARY_CONTAINER')
-        : $r('app.color.SURFACE_VARIANT'))
+        : (this.status === DiningOrderStatus.CANCELLED
+          ? $r('app.color.ERROR_CONTAINER')
+          : $r('app.color.SURFACE_VARIANT')))
       .borderRadius(DesignDimens.RADIUS_FULL)
       .padding({
         left: DesignDimens.SPACE_SM,

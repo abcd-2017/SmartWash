@@ -40,7 +40,7 @@ code-linter --fix            # Lint 检查
 
 ## 项目架构
 
-智慧校园洗衣服务 App（鸿蒙端），基于 **HarmonyOS NEXT Stage 模型** + **ArkTS/ArkUI 声明式框架**。接口与 Android 端保持 100% 对齐（`network/api/` 与 Android `network/api/` 逐接口一致），改接口时参照根目录 CLAUDE.md 的四端联动检查表。
+智慧校园洗衣服务 App（鸿蒙端），基于 **HarmonyOS NEXT Stage 模型** + **ArkTS/ArkUI 声明式框架**。接口契约以后端 `controller/web/` 为单一事实来源，与 Android 端各 feature 域 api 模块逐接口对齐，改接口时参照根目录 CLAUDE.md 的四端联动检查表。
 
 ### 分层结构
 
@@ -50,13 +50,14 @@ entry/src/main/ets/
   entryformability/   → EntryFormAbility（桌面卡片提供方，OrderStatusCard）
   entrybackupability/ → EntryBackupAbility（备份占位）
   pages/              → 页面组件（26 个；每个页面暴露 @Builder 函数；Index 为唯一 @Entry）
-  feature/            → 8 个业务域（divination/game/lab/notice/review/subscription/toolbox/workbench）
-                       每个域目录即模块，页面禁绕 api.ets 契约
+  feature/            → 9 个业务域（dining/divination/game/lab/notice/review/subscription/toolbox/workbench）
+                       每个域目录即模块，页面禁绕 api.ets 契约；dining 域页面在域内 ui/ 子目录，
+                       其余域页面在 pages/
   view/               → 可复用 UI 组件（IndexPage/Service/UserInfo 首页三 tab、BottomNavBar、
                         OrderCard/OrderItemRow/LoadingFooter、common/AppComponents 等）
   widget/             → 桌面卡片（OrderStatusCard：WidgetCard + WidgetOrderModel/WidgetDataLoader/WidgetFormStore）
   network/
-    api/              → 12 个 API 模块（按业务域拆分，返回 Promise<BaseResponse<T>>）
+    api/              → 13 个 API 模块（按业务域拆分，返回 Promise<BaseResponse<T>>）
     entity/           → 请求体 DTO
     vo/               → 响应值对象 DTO
     Axios.ets         → Axios 实例 + 请求/响应拦截器（401 单飞续签）
@@ -70,7 +71,7 @@ entry/src/main/ets/
 
 ### 核心设计模式
 
-**Stage 模型 + NavPathStack 路由** — `EntryAbility` 加载 `pages/Index`；`Index` 根据 token 和学校信息决定初始页（Login / AddSchool / Home）。`router_map.json` 注册 57 条命名路由（与 `RouteNames` 一一对应），页面经全局 `pathStack` 跳转。
+**Stage 模型 + NavPathStack 路由** — `EntryAbility` 加载 `pages/Index`；`Index` 根据 token 和学校信息决定初始页（Login / AddSchool / Home）。`router_map.json` 注册 71 条命名路由（与 `RouteNames` 一一对应），页面经全局 `pathStack` 跳转。
 
 **鉴权流程** — Axios 请求拦截器检测 URL 以 `/web` 开头时，从 preferences 读取 token 注入 `Authorization: Bearer <token>`；响应拦截器统一处理 401 和网络错误。401 已统一为「清 token → 清内存登录态 → replace 到登录页」+ 1.5s 防抖。
 
@@ -98,7 +99,7 @@ toast 提示统一封装兜底（`message` 为 undefined 时不要弹 "undefined
 
 **库内 skill**：编写/排查 `.ets` 文件时调用 `arkts-development`（组件与状态管理）、`arkts-syntax-assistant`（语法迁移与严格模式）、`harmonyos-app`（Stage 模型最佳实践）。
 
-`.claude/agents/` 提供统一的鸿蒙全栈代理：
+鸿蒙全栈代理统一定义在根目录 `.zcode/agents/smartwash-harmony.md`（子项目内不保留副本）：
 
 - `smartwash-harmony` — 鸿蒙端开发 / 审查 / 调试 / 测试全栈代理（V2 生命周期 / 路由 / 401 清 token / ArkTS 严格模式 / 接口对齐）
 
@@ -111,7 +112,7 @@ toast 提示统一封装兜底（`message` 为 undefined 时不要弹 "undefined
 - HTTP 客户端：`@ohos/axios` v2.2.6（注意：声明在根 `oh-package.json5`，entry 模块 dependencies 为空，属待修的依赖错位）
 - 测试框架：`@ohos/hypium` + `@ohos/hamock`（当前仅模板用例）
 - 包管理器 ohpm，Registry `https://ohpm.openharmony.cn/ohpm/`
-- 后端 API 地址当前硬编码于 `Axios.ets`（明文 HTTP，待环境化）
+- 后端 API 地址经 `entry/build-profile.json5` 构建期注入 `BuildProfile.BASE_URL`（未注入报错，源码零硬编码；明文 HTTP 的 demo 放行已随构建期注入改造收口）
 
 ---
 

@@ -1,5 +1,6 @@
 package com.smartwash.feature.dining.ui.order
 
+import android.widget.Toast
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +41,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -103,6 +106,57 @@ fun DiningOrderListPage(
     val orders by viewModel.orders.collectAsState()
     val hasMore by viewModel.hasMore.collectAsState()
     val loadMoreState by viewModel.loadMoreState.collectAsState()
+    val activeOrder by viewModel.activeOrder.collectAsState()
+    val cancelState by viewModel.cancelState.collectAsState()
+
+    // 「已取消」点击提示（组合期禁副作用，统一收进 effect）
+    var cancelledHint by remember { mutableStateOf(false) }
+    LaunchedEffect(cancelledHint) {
+        if (cancelledHint) {
+            Toast.makeText(context, context.getString(R.string.dining_order_cancelled_hint), Toast.LENGTH_SHORT).show()
+            cancelledHint = false
+        }
+    }
+
+    // 放弃草稿结果提示（成功/失败各一次，随后消费）
+    LaunchedEffect(cancelState) {
+        when (val state = cancelState) {
+            is RequestState.Success -> {
+                Toast.makeText(context, context.getString(R.string.dining_order_cancel_success), Toast.LENGTH_SHORT).show()
+                viewModel.consumeCancelState()
+            }
+            is RequestState.Error -> {
+                Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
+                viewModel.consumeCancelState()
+            }
+            else -> Unit
+        }
+    }
+
+    // 待放弃的草稿（二次确认弹窗）
+    var pendingCancel by remember { mutableStateOf<DiningOrderListItem?>(null) }
+    pendingCancel?.let { order ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { pendingCancel = null },
+            title = { Text(stringResource(R.string.dining_order_cancel_confirm_title)) },
+            text = { Text(stringResource(R.string.dining_order_cancel_confirm_text)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        pendingCancel = null
+                        viewModel.cancelOrder(order.id)
+                    },
+                ) {
+                    Text(stringResource(R.string.dining_order_cancel_confirm_yes))
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { pendingCancel = null }) {
+                    Text("取消")
+                }
+            },
+        )
+    }
 
     // 首载（返回本页经 LaunchedEffect(Unit) 不重放——栈上重组，列表保留；下拉刷新显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
@@ -189,6 +243,8 @@ fun DiningOrderListPage(
                             if (order.id > 0) {
                                 // 状态分流：DRAFT → 创建页（编辑态，共同编辑）；FINISHED → 购买清单结果页
                                 when (order.status) {
+                                    // 已取消为终态：不进入编辑/清单页，仅提示（避免进入无法操作的页面）
+                                    DiningOrderStatus.CANCELLED -> cancelledHint = true
                                     DiningOrderStatus.DRAFT -> navController.navigate(
                                         DiningRoute.OrderCreate(orderId = order.id)
                                     )
@@ -200,7 +256,7 @@ fun DiningOrderListPage(
                         },
                         onReuse = { order ->
                             // 再来一单（13 号票）：带 fromOrderId 进创建页，菜单由后端整份复用
-                            if (order.id > 0) {
+                            if (order.id > 0L) {
                                 navController.navigate(
                                     DiningRoute.OrderCreate(
                                         fromOrderId = order.id,
@@ -208,6 +264,10 @@ fun DiningOrderListPage(
                                     )
                                 )
                             }
+                        },
+                        onCancel = { order ->
+                            // 放弃草稿：二次确认后调 cancel（仅发起者 DRAFT 卡展示入口）
+                            pendingCancel = order
                         },
                         onFavoritesClick = {
                             navController.navigate(DiningRoute.RecipeFavorites)
@@ -223,7 +283,15 @@ fun DiningOrderListPage(
             // 带默认值参数的 data class 必须显式构造：裸写 OrderCreate 在 Kotlin 里是
             // Companion 实例（泛型推断为 Companion 类型），运行时 Navigation 找不到其
             // serializer 直接 SerializationException 崩溃（07 号票存量 bug）
-            onClick = { navController.navigate(DiningRoute.OrderCreate()) },
+            onClick = {
+                // 唯一性收敛：已有本人进行中的 DRAFT → 直接进该单编辑态，不再新建（无则空白创建页）
+                val activeId = activeOrder?.safeOrderId ?: 0L
+                if (activeId > 0L) {
+                    navController.navigate(DiningRoute.OrderCreate(orderId = activeId))
+                } else {
+                    navController.navigate(DiningRoute.OrderCreate())
+                }
+            },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(
@@ -254,6 +322,7 @@ private fun OrderListContent(
     onLoadMore: () -> Unit,
     onOrderClick: (DiningOrderListItem) -> Unit,
     onReuse: (DiningOrderListItem) -> Unit,
+    onCancel: (DiningOrderListItem) -> Unit,
     onFavoritesClick: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -313,6 +382,7 @@ private fun OrderListContent(
                         orders = createdOrders,
                         onOrderClick = onOrderClick,
                         onReuse = onReuse,
+                        onCancel = onCancel,
                         // 分区标题已表明发起关系，卡内「发起」角标冗余，仅我参与的分区展示
                         showCreatorBadge = false,
                     )
@@ -323,6 +393,7 @@ private fun OrderListContent(
                         orders = joinedOrders,
                         onOrderClick = onOrderClick,
                         onReuse = onReuse,
+                        onCancel = onCancel,
                         showCreatorBadge = true,
                     )
                 }
@@ -415,6 +486,7 @@ private fun LazyListScope.orderSection(
     orders: List<DiningOrderListItem>,
     onOrderClick: (DiningOrderListItem) -> Unit,
     onReuse: (DiningOrderListItem) -> Unit,
+    onCancel: (DiningOrderListItem) -> Unit,
     showCreatorBadge: Boolean,
 ) {
     item(key = "section_$titleRes") {
@@ -431,6 +503,7 @@ private fun LazyListScope.orderSection(
             order = order,
             onClick = { onOrderClick(order) },
             onReuse = { onReuse(order) },
+            onCancel = { onCancel(order) },
             showCreatorBadge = showCreatorBadge,
             modifier = Modifier.then(animatedListItem()),
         )
@@ -451,6 +524,7 @@ private fun OrderCard(
     order: DiningOrderListItem,
     onClick: () -> Unit,
     onReuse: () -> Unit,
+    onCancel: () -> Unit,
     showCreatorBadge: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -516,8 +590,18 @@ private fun OrderCard(
             } else {
                 Spacer(modifier = Modifier.weight(1f))
             }
-            // 草稿不提供「再来一单」：点卡片进详情继续编辑（复用源单语义仅对已定稿单有意义）
-            if (order.status != DiningOrderStatus.DRAFT) {
+            // 草稿（发起者）提供「放弃」出口；草稿不提供「再来一单」（点卡片进编辑态继续）
+            if (order.status == DiningOrderStatus.DRAFT) {
+                if (order.isCreator) {
+                    AppButton(
+                        text = stringResource(R.string.dining_order_action_cancel),
+                        onClick = onCancel,
+                        variant = AppButtonVariant.TEXT,
+                        small = true,
+                    )
+                }
+            } else if (order.status == DiningOrderStatus.FINISHED) {
+                // 复用源单语义仅对已定稿单有意义（草稿点卡片继续编辑，已取消不引导复用）
                 AppButton(
                     text = stringResource(R.string.dining_order_action_reuse),
                     onClick = onReuse,
@@ -535,6 +619,7 @@ private fun StatusDot(status: DiningOrderStatus, modifier: Modifier = Modifier) 
     val (dotColor, label) = when (status) {
         DiningOrderStatus.DRAFT -> MaterialTheme.colorScheme.secondary to stringResource(R.string.dining_order_status_draft)
         DiningOrderStatus.FINISHED -> AppColors.colorScheme.success to stringResource(R.string.dining_order_status_finished)
+        DiningOrderStatus.CANCELLED -> AppColors.colorScheme.error to stringResource(R.string.dining_order_status_cancelled)
     }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
         Box(
