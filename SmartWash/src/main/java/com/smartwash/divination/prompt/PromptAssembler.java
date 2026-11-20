@@ -1,8 +1,10 @@
 package com.smartwash.divination.prompt;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.smartwash.divination.entity.DivInterpretation;
 import com.smartwash.divination.entity.DivPromptVersion;
 import com.smartwash.divination.service.DivPromptService;
+import com.smartwash.utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,7 @@ import java.util.Map;
  *   <li>{@code user} — user prompt（盘面 + 领域方法 + 问题；追问时含历史解读上下文；RAG top-k 拼接位预留在盘面段之后）</li>
  *   <li>{@code method} — 术数方法</li>
  *   <li>{@code promptVersionId} — 激活版本 id（仅存在激活版本时写入，供 div_interpretation 落库）</li>
+ *   <li>{@code temperature}/{@code maxTokens} — 激活版本 outputConfig 输出参数（仅配置了才写入，供 LLM 调用接线）</li>
  * </ul></p>
  */
 @Slf4j
@@ -174,8 +177,34 @@ public class PromptAssembler {
         packet.put("method", method);
         if (promptVersion != null) {
             packet.put("promptVersionId", String.valueOf(promptVersion.getId()));
+            putOutputParams(packet, promptVersion.getOutputConfig());
         }
         return packet;
+    }
+
+    /**
+     * 解析激活版本 outputConfig（JSON，如 {"temperature":0.6,"max_tokens":2048}）写入 packet，
+     * 供 LLM 调用接线（无该字段/解析失败时不写键，调用侧保持默认温度 0.7、不传 max_tokens）。
+     */
+    private void putOutputParams(Map<String, String> packet, String outputConfig) {
+        if (outputConfig == null || outputConfig.isBlank()) {
+            return;
+        }
+        try {
+            JsonNode config = JsonUtils.readTree(outputConfig);
+            if (config == null) {
+                return;
+            }
+            if (config.hasNonNull("temperature")) {
+                packet.put("temperature", config.get("temperature").asText());
+            }
+            JsonNode maxTokens = config.hasNonNull("max_tokens") ? config.get("max_tokens") : config.get("maxTokens");
+            if (maxTokens != null) {
+                packet.put("maxTokens", maxTokens.asText());
+            }
+        } catch (Exception e) {
+            log.debug("prompt 版本 outputConfig 解析失败，按默认输出参数执行: {}", outputConfig);
+        }
     }
 
     private String nullSafe(String text) {

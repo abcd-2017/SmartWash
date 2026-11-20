@@ -78,6 +78,13 @@
             <artifactId>hutool-all</artifactId>
             <version>5.8.35</version>
         </dependency>
+        <!-- lunar-java：历法/节气/干支底座（与 Android 端观象台内核 cn.6tail:lunar 1.7.7 同源同版本，
+             四柱节气分界、农历月日、节气表均以该库为准，保证两端排盘一致） -->
+        <dependency>
+            <groupId>cn.6tail</groupId>
+            <artifactId>lunar</artifactId>
+            <version>1.7.7</version>
+        </dependency>
         <!-- POI：xlsx 导出（SXSSF 流式写出），订单/充值记录后台导出依赖 -->
         <dependency>
             <groupId>org.apache.poi</groupId>

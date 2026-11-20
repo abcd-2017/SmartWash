@@ -49,7 +49,7 @@ public class OpenAiCompatClient {
     private static final Duration PROBE_TIMEOUT = Duration.ofSeconds(10);
     /** 流式调用整体硬上限（与 SseEmitter 120s 窗口对齐） */
     private static final Duration STREAM_TOTAL_TIMEOUT = Duration.ofSeconds(120);
-    /** 解读温度（适中，兼顾稳定与文采） */
+    /** 解读默认温度（激活 prompt 版本未配置 outputConfig 时使用） */
     private static final double CHAT_TEMPERATURE = 0.7;
 
     private final OpenAiSseLineParser parser;
@@ -76,7 +76,7 @@ public class OpenAiCompatClient {
 
 
     /**
-     * 流式对话 + 一次非流式回退。
+     * 流式对话 + 一次非流式回退（默认参数：温度 0.7、不传 max_tokens）。
      *
      * @param provider      已解析的供应商配置
      * @param systemPrompt  系统提示词
@@ -88,13 +88,25 @@ public class OpenAiCompatClient {
      */
     public LlmChatResult chatWithFallback(OpenAiCompatProvider provider, String systemPrompt,
                                           String userPrompt, Consumer<String> deltaConsumer) {
+        return chatWithFallback(provider, systemPrompt, userPrompt, null, null, deltaConsumer);
+    }
+
+    /**
+     * 流式对话 + 一次非流式回退（输出参数由激活 prompt 版本接线）。
+     *
+     * @param temperature 温度（null 时用默认 {@link #CHAT_TEMPERATURE}）
+     * @param maxTokens   最大输出 token（null 时不传该字段）
+     */
+    public LlmChatResult chatWithFallback(OpenAiCompatProvider provider, String systemPrompt,
+                                          String userPrompt, Double temperature, Integer maxTokens,
+                                          Consumer<String> deltaConsumer) {
         AtomicBoolean anyDelta = new AtomicBoolean(false);
         Consumer<String> wrapped = text -> {
             anyDelta.set(true);
             deltaConsumer.accept(text);
         };
         try {
-            return doStreamCall(provider, systemPrompt, userPrompt, wrapped);
+            return doStreamCall(provider, systemPrompt, userPrompt, temperature, maxTokens, wrapped);
         } catch (ClientGoneException e) {
             // 客户端断连：原样穿透（不回退、不包装）——断连不是供应商失败，回退调用毫无意义
             throw e;
@@ -106,7 +118,7 @@ public class OpenAiCompatClient {
             }
             log.warn("LLM 流式调用失败，降级非流式重试一次, provider: {}, httpStatus: {}, 原因: {}",
                     provider.getName(), e.getHttpStatus(), e.getProviderMessage());
-            return doBlockingCall(provider, systemPrompt, userPrompt, deltaConsumer);
+            return doBlockingCall(provider, systemPrompt, userPrompt, temperature, maxTokens, deltaConsumer);
         }
     }
 
@@ -203,11 +215,12 @@ public class OpenAiCompatClient {
      * 流式调用：逐事件解析并实时回调 deltaConsumer，累积完整文本与 usage。
      */
     private LlmChatResult doStreamCall(OpenAiCompatProvider provider, String systemPrompt,
-                                       String userPrompt, Consumer<String> deltaConsumer) {
+                                       String userPrompt, Double temperature, Integer maxTokens,
+                                       Consumer<String> deltaConsumer) {
         String url = chatCompletionsUrl(provider.getBaseUrl());
         Map<String, Object> body = buildChatRequestBody(provider.getModel(),
                 List.of(new ChatMessage("system", systemPrompt), new ChatMessage("user", userPrompt)),
-                true, CHAT_TEMPERATURE, null);
+                true, temperature != null ? temperature : CHAT_TEMPERATURE, maxTokens);
 
         StringBuilder content = new StringBuilder();
         UsageHolder usage = new UsageHolder();
@@ -287,11 +300,12 @@ public class OpenAiCompatClient {
      * 仅被 {@link #chatWithFallback} 调用一次，不再递归。
      */
     private LlmChatResult doBlockingCall(OpenAiCompatProvider provider, String systemPrompt,
-                                         String userPrompt, Consumer<String> deltaConsumer) {
+                                         String userPrompt, Double temperature, Integer maxTokens,
+                                         Consumer<String> deltaConsumer) {
         String url = chatCompletionsUrl(provider.getBaseUrl());
         Map<String, Object> body = buildChatRequestBody(provider.getModel(),
                 List.of(new ChatMessage("system", systemPrompt), new ChatMessage("user", userPrompt)),
-                false, CHAT_TEMPERATURE, null);
+                false, temperature != null ? temperature : CHAT_TEMPERATURE, maxTokens);
         String respBody;
         try {
             respBody = chatWebClient.post()

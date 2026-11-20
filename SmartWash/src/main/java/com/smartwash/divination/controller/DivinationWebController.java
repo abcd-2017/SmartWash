@@ -170,9 +170,14 @@ public class DivinationWebController {
         return Result.ok(ok);
     }
 
-    /** 问题参数规范化：空白（含空 body）统一为 null，安全分流与 prompt 组装按空口径处理 */
+    /**
+     * 问题参数规范化：空白（含空 body）与空 JSON 对象等垃圾 body 统一为 null。
+     * 正常客户端不会发送 "{}"，只有脚本/异常调用会出现——按空口径处理可防止其
+     * 绕过安全分流检查并污染 prompt（safety 与 prompt 组装共用本口径）。
+     */
     private String normalizeQuestion(String question) {
-        return (question == null || question.isBlank()) ? null : question;
+        if (question == null || question.isBlank()) return null;
+        return "{}".equals(question.trim()) ? null : question;
     }
 
     private MethodVo createMethod(String code, String name, String desc) {

@@ -6,11 +6,14 @@ import com.smartwash.common.ratelimit.RateLimitExceededException;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.exception.GameServiceException;
 import com.smartwash.exception.UserAuthenticationException;
+import com.smartwash.utils.JsonUtils;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -18,6 +21,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -57,15 +62,28 @@ public class ExceptionControllerAdvice {
      *   三端拦截器按既有业务失败分支透传 message，不新增错误码、无需改端；
      * - 浏览器消费方（短链跳转等 ResponseEntity 接口）：HTTP 429，与该类接口
      *   「302/404/410 状态码即语义、不走 Result 信封」的既有设计一致。
+     *
+     * <p>两种分支均直接写 {@link HttpServletResponse} 绕开内容协商：SSE 消费方
+     * （Accept: text/event-stream）下返回 {@code ResponseEntity<Result>} 会因媒体协商失败抛
+     * {@code HttpMediaTypeNotAcceptableException}，异常处理链崩溃后被 Security 兜底成
+     * 401「登录失效」导致用户被误登出（观象台解读/追问 SSE 限流场景实测踩中）。</p>
      */
     @ExceptionHandler(value = RateLimitExceededException.class)
-    public ResponseEntity<Result<String>> handleRateLimitExceeded(RateLimitExceededException e) {
+    public void handleRateLimitExceeded(RateLimitExceededException e, HttpServletResponse response) throws IOException {
         log.warn("请求超限被拒绝：{}", e.getMessage());
         if (e.isBrowserFacing()) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(Result.build(null, HttpStatus.TOO_MANY_REQUESTS.value(), e.getMessage()));
+            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+            response.setContentType("text/plain;charset=UTF-8");
+            response.getWriter().write(e.getMessage());
+            response.getWriter().flush();
+            return;
         }
-        return ResponseEntity.ok(Result.build(null, ResultCodeEnum.FAIL.getCode(), e.getMessage()));
+        response.setStatus(HttpStatus.OK.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.getWriter().write(JsonUtils.toJson(
+                Result.build(null, ResultCodeEnum.FAIL.getCode(), e.getMessage())));
+        response.getWriter().flush();
     }
 
     @ExceptionHandler(value = UserAuthenticationException.class)
