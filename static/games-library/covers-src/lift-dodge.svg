@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#BFE6D2"/>
+      <stop offset="0.55" stop-color="#7FC79E"/>
+      <stop offset="1" stop-color="#4E9E6E"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#173E2A" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#3E7E52" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#346E46" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 92 h11 M101.5 86.5 v11" stroke-width="3.2"/>
+    <path d="M700 84 h12 M706 78 v12" stroke-width="3.4"/>
+    <path d="M726 250 h9 M730.5 245.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M72 240 h9 M76.5 235.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="170" cy="140" r="4"/><circle cx="648" cy="150" r="3.4"/><circle cx="70" cy="180" r="3"/><circle cx="742" cy="180" r="2.6"/>
+  </g>
+
+  <!-- 背景下行扶梯（淡） -->
+  <g transform="rotate(24 360 232)" opacity="0.5">
+    <rect x="90" y="204" width="540" height="56" rx="10" fill="#E8E2D0" stroke="#1E2620" stroke-width="7"/>
+    <path d="M142 204 V260 M194 204 V260 M246 204 V260 M298 204 V260 M350 204 V260 M402 204 V260 M454 204 V260 M506 204 V260 M558 204 V260" stroke="#1E2620" stroke-width="4" opacity="0.4"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="404" rx="180" ry="18" fill="#1E5A3A" opacity="0.32"/>
+
+  <!-- 主扶梯（上行，向右上） -->
+  <g transform="rotate(-24 360 232)">
+    <rect x="86" y="188" width="548" height="13" rx="6.5" fill="#8A6E4A" stroke="#1E2620" stroke-width="5"/>
+    <rect x="86" y="263" width="548" height="13" rx="6.5" fill="#8A6E4A" stroke="#1E2620" stroke-width="5"/>
+    <rect x="92" y="200" width="536" height="64" rx="10" fill="#F4F1E8" stroke="#1E2620" stroke-width="9"/>
+    <path d="M144 200 V264 M196 200 V264 M248 200 V264 M300 200 V264 M352 200 V264 M404 200 V264 M456 200 V264 M508 200 V264 M560 200 V264" stroke="#B8B2A0" stroke-width="4.5"/>
+    <g stroke="#2D9B6A" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M120 232 h30 M142 222 l10 10 -10 10"/>
+      <path d="M250 232 h30 M272 222 l10 10 -10 10"/>
+      <path d="M380 232 h30 M402 222 l10 10 -10 10"/>
+    </g>
+    <!-- 扶梯人流（路人，无签名脸） -->
+    <g stroke="#1E2620">
+      <circle cx="170" cy="158" r="15" fill="#F2DCC0" stroke-width="6"/>
+      <rect x="150" y="172" width="40" height="34" rx="14" fill="#DB7186" stroke-width="6"/>
+      <circle cx="316" cy="150" r="15" fill="#F2DCC0" stroke-width="6"/>
+      <rect x="296" y="164" width="40" height="40" rx="14" fill="#4A9FD4" stroke-width="6"/>
+      <circle cx="470" cy="142" r="15" fill="#F2DCC0" stroke-width="6"/>
+      <rect x="450" y="156" width="40" height="36" rx="14" fill="#E2A44E" stroke-width="6"/>
+    </g>
+  </g>
+
+  <!-- 跳跃小人（签名表情） -->
+  <g>
+    <path d="M340 236 Q320 214 306 196" stroke="#1E2620" stroke-width="17" fill="none" stroke-linecap="round"/>
+    <path d="M340 236 Q320 214 306 196" stroke="#2D9B6A" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M462 232 Q484 212 496 194" stroke="#1E2620" stroke-width="17" fill="none" stroke-linecap="round"/>
+    <path d="M462 232 Q484 212 496 194" stroke="#2D9B6A" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <rect x="374" y="222" width="52" height="70" rx="22" fill="#2D9B6A" stroke="#1E2620" stroke-width="8"/>
+    <path d="M390 290 Q366 312 344 308" stroke="#1E2620" stroke-width="15" fill="none" stroke-linecap="round"/>
+    <path d="M390 290 Q366 312 344 308" stroke="#17734A" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M412 290 Q438 314 462 302" stroke="#1E2620" stroke-width="15" fill="none" stroke-linecap="round"/>
+    <path d="M412 290 Q438 314 462 302" stroke="#17734A" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <circle cx="342" cy="308" r="9" fill="#1C1C1E" stroke="#1E2620" stroke-width="5"/>
+    <circle cx="464" cy="302" r="9" fill="#1C1C1E" stroke="#1E2620" stroke-width="5"/>
+    <circle cx="400" cy="192" r="32" fill="#F5DCC4" stroke="#1E2620" stroke-width="8"/>
+    <path d="M374 178 Q384 158 404 160 Q424 158 428 176" fill="#17734A" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="390" cy="192" r="5.5" fill="#1F1A14"/>
+    <circle cx="413" cy="192" r="5.5" fill="#1F1A14"/>
+    <path d="M388 208 Q401 218 415 206" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="382" cy="176" rx="10" ry="5" fill="#FFFFFF" opacity="0.5" transform="rotate(-14 382 176)"/>
+  </g>
+  <!-- 起跳弧线 -->
+  <g stroke="#FFFFFF" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.7">
+    <path d="M300 320 Q400 352 506 316" stroke-dasharray="2 16"/>
+    <path d="M330 348 Q404 372 482 344" stroke-dasharray="2 14" opacity="0.6"/>
+  </g>
+
+  <!-- 力槽 -->
+  <rect x="66" y="62" width="152" height="28" rx="14" fill="#F5F6F3" stroke="#1E2620" stroke-width="6"/>
+  <rect x="73" y="69" width="106" height="14" rx="7" fill="#4ADE6E"/>
+  <rect x="73" y="69" width="22" height="14" rx="7" fill="#FFFFFF" opacity="0.45"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

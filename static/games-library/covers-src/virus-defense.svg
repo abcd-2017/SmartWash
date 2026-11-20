@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E6E5C"/>
+      <stop offset="0.55" stop-color="#1E5244"/>
+      <stop offset="1" stop-color="#123C32"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0A2820" stop-opacity="0.32"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部基座带 -->
+  <rect y="396" width="800" height="54" fill="#0E342A" opacity="0.6"/>
+  <rect y="396" width="800" height="6" fill="#0C2C24" opacity="0.55"/>
+  <!-- 分子浮点 -->
+  <g stroke="#B9E8CF" stroke-linecap="round" fill="none" opacity="0.4">
+    <path d="M110 130 h12 M116 124 v12"/>
+    <path d="M240 70 h10 M245 65 v10"/>
+    <path d="M690 200 h9 M694.5 195.5 v9"/>
+    <path d="M120 300 h9 M124.5 295.5 v9"/>
+    <path d="M330 200 h8 M334 196 v8" opacity="0.6"/>
+    <path d="M560 60 h9 M564.5 55.5 v9" opacity="0.7"/>
+  </g>
+  <g fill="#B9E8CF" opacity="0.4">
+    <circle cx="70" cy="180" r="4"/><circle cx="620" cy="130" r="3.4"/><circle cx="60" cy="260" r="3"/><circle cx="740" cy="290" r="2.6"/>
+    <circle cx="470" cy="110" r="3"/><circle cx="180" cy="220" r="2.6"/>
+  </g>
+
+  <!-- 病毒·坦克（大，签名表情） -->
+  <g>
+    <g stroke="#1E2620" fill="#DB7186" stroke-linejoin="round">
+      <path d="M420 108 L412 78 L434 92 Z"/><path d="M488 122 L516 104 L500 130 Z"/>
+      <path d="M490 200 L520 216 L490 220 Z"/><path d="M416 212 L388 228 L420 232 Z"/>
+      <path d="M356 140 L326 128 L348 152 Z"/><path d="M350 186 L320 202 L352 200 Z"/>
+    </g>
+    <circle cx="424" cy="168" r="52" fill="#DB7186" stroke="#1E2620" stroke-width="9"/>
+    <circle cx="424" cy="168" r="52" fill="url(#gloss)"/>
+    <circle cx="406" cy="158" r="9" fill="#1F1A14"/>
+    <circle cx="442" cy="158" r="9" fill="#1F1A14"/>
+    <circle cx="409" cy="155" r="3" fill="#FFFFFF"/>
+    <circle cx="445" cy="155" r="3" fill="#FFFFFF"/>
+    <path d="M406 184 Q424 198 442 182" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="394" cy="140" r="12" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="424" cy="168" r="12" fill="#B8465E" opacity="0.55"/>
+  </g>
+
+  <!-- 病毒·快速（中） -->
+  <g>
+    <g stroke="#1E2620" fill="#4A9FD4" stroke-linejoin="round">
+      <path d="M600 96 L594 72 L612 84 Z"/><path d="M648 128 L670 118 L656 140 Z"/>
+      <path d="M646 178 L668 192 L644 190 Z"/><path d="M594 174 L574 190 L598 192 Z"/>
+    </g>
+    <circle cx="620" cy="140" r="38" fill="#4A9FD4" stroke="#1E2620" stroke-width="8"/>
+    <circle cx="620" cy="140" r="38" fill="url(#gloss)"/>
+    <circle cx="608" cy="132" r="6.5" fill="#1F1A14"/>
+    <circle cx="632" cy="132" r="6.5" fill="#1F1A14"/>
+    <path d="M608 154 Q620 164 632 152" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="606" cy="120" r="9" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <!-- 快速病毒速度线 -->
+  <g stroke="#9ED8F0" stroke-width="5" stroke-linecap="round" opacity="0.7">
+    <path d="M548 140 H570 M540 156 H560"/>
+  </g>
+
+  <!-- 病毒·普通（小） -->
+  <g>
+    <g stroke="#1E2620" fill="#E2A44E" stroke-linejoin="round">
+      <path d="M250 130 L244 108 L262 120 Z"/><path d="M298 162 L320 152 L306 174 Z"/>
+      <path d="M296 212 L318 226 L294 224 Z"/><path d="M244 208 L224 224 L248 226 Z"/>
+    </g>
+    <circle cx="270" cy="174" r="30" fill="#E2A44E" stroke="#1E2620" stroke-width="8"/>
+    <circle cx="270" cy="174" r="30" fill="url(#gloss)"/>
+    <circle cx="260" cy="168" r="5.5" fill="#1F1A14"/>
+    <circle cx="282" cy="168" r="5.5" fill="#1F1A14"/>
+    <path d="M258 188 Q270 197 282 186" stroke="#1F1A14" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="258" cy="158" r="8" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <!-- 炮台 -->
+  <g stroke-linejoin="round">
+    <path d="M368 340 L432 340 L424 302 L376 302 Z" fill="#17734A" stroke="#1E2620" stroke-width="8"/>
+    <circle cx="400" cy="286" r="42" fill="#2D9B6A" stroke="#1E2620" stroke-width="9"/>
+    <circle cx="400" cy="286" r="42" fill="url(#gloss)"/>
+    <rect x="382" y="222" width="36" height="36" rx="8" fill="#17734A" stroke="#1E2620" stroke-width="8"/>
+    <rect x="390" y="204" width="20" height="22" rx="7" fill="#1E2620"/>
+    <circle cx="400" cy="286" r="16" fill="#4ADE6E" stroke="#1E2620" stroke-width="6"/>
+    <path d="M392 280 Q400 274 410 280" stroke="#FFFFFF" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7"/>
+  </g>
+  <!-- 屏护罩弧 -->
+  <path d="M330 320 Q400 224 470 320" stroke="#7FE3EC" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.5" stroke-dasharray="10 12"/>
+
+  <!-- 上行弹束 -->
+  <g stroke-linecap="round">
+    <path d="M384 196 L384 156" stroke="#FFF2C0" stroke-width="9"/>
+    <path d="M416 196 L416 170" stroke="#FFF2C0" stroke-width="9"/>
+    <circle cx="384" cy="148" r="8" fill="#FFF2C0" stroke="#1E2620" stroke-width="5"/>
+    <circle cx="416" cy="162" r="7" fill="#FFF2C0" stroke="#1E2620" stroke-width="5"/>
+  </g>
+
+  <!-- 命中爆花 -->
+  <g stroke="#FFF2C0" stroke-width="6" stroke-linecap="round">
+    <path d="M340 108 L326 96 M348 90 L340 76 M362 116 L376 108"/>
+  </g>
+
+  <!-- 生命格 -->
+  <g>
+    <rect x="60" y="66" width="150" height="26" rx="13" fill="#F5F6F3" stroke="#1E2620" stroke-width="6"/>
+    <rect x="67" y="73" width="102" height="12" rx="6" fill="#4ADE6E"/>
+    <rect x="67" y="73" width="22" height="12" rx="6" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

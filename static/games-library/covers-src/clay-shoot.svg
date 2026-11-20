@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#BFE0F0"/>
+      <stop offset="0.55" stop-color="#9EC8E0"/>
+      <stop offset="1" stop-color="#7EB0CE"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2A5878" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部天际带 -->
+  <rect y="402" width="800" height="48" fill="#688FB0" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M420 60 h11 M425.5 54.5 v11" stroke-width="3.2"/>
+    <path d="M712 92 h12 M718 86 v12" stroke-width="3.4"/>
+    <path d="M470 170 h9 M474.5 165.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M560 320 h9 M564.5 315.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="440" cy="100" r="4"/><circle cx="700" cy="140" r="3.4"/><circle cx="360" cy="140" r="3"/><circle cx="740" cy="220" r="2.6"/>
+  </g>
+  <!-- 云 -->
+  <ellipse cx="170" cy="110" rx="55" ry="18" fill="#FFFFFF" opacity="0.5"/>
+  <ellipse cx="240" cy="142" rx="40" ry="14" fill="#FFFFFF" opacity="0.4"/>
+  <ellipse cx="620" cy="70" rx="45" ry="15" fill="#FFFFFF" opacity="0.35"/>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="432" rx="200" ry="12" fill="#3E6288" opacity="0.3"/>
+
+  <!-- 双管枪口 -->
+  <path d="M60 470 L128 414 L152 442 L84 494 Z" fill="#8A5E32" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M110 440 L330 258" stroke="#4E5860" stroke-width="26" stroke-linecap="round" fill="none"/>
+  <path d="M150 458 L372 276" stroke="#4E5860" stroke-width="26" stroke-linecap="round" fill="none"/>
+  <path d="M116 430 L322 254 M156 448 L364 272" stroke="#8A98A4" stroke-width="6" stroke-linecap="round" opacity="0.8" fill="none"/>
+  <circle cx="330" cy="258" r="18" fill="#3A444C" stroke="#1E2620" stroke-width="7"/>
+  <circle cx="330" cy="258" r="8" fill="#171C20"/>
+  <circle cx="372" cy="276" r="18" fill="#3A444C" stroke="#1E2620" stroke-width="7"/>
+  <circle cx="372" cy="276" r="8" fill="#171C20"/>
+
+  <!-- 弹道虚线 -->
+  <path d="M370 250 Q450 150 535 135" stroke="#FFF3D6" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 16" opacity="0.8" fill="none"/>
+  <path d="M395 275 Q520 200 655 235" stroke="#FFF3D6" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 16" opacity="0.8" fill="none"/>
+
+  <!-- 飞碟一号（签名表情） -->
+  <circle cx="540" cy="130" r="58" fill="#D98A26" stroke="#1E2620" stroke-width="9"/>
+  <circle cx="540" cy="130" r="38" fill="none" stroke="#E2A44E" stroke-width="5"/>
+  <circle cx="516" cy="104" r="12" fill="#FFFFFF" opacity="0.45"/>
+  <circle cx="524" cy="120" r="8" fill="#1F1A14"/>
+  <circle cx="556" cy="120" r="8" fill="#1F1A14"/>
+  <path d="M516 144 Q540 158 564 142" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- 飞碟二号 -->
+  <circle cx="660" cy="235" r="44" fill="#E2A44E" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="660" cy="235" r="28" fill="none" stroke="#FFF3D6" stroke-width="5" opacity="0.7"/>
+  <circle cx="642" cy="218" r="9" fill="#FFFFFF" opacity="0.4"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

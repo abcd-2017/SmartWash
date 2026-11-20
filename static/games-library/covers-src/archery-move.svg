@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8FC79A"/>
+      <stop offset="0.55" stop-color="#6EA978"/>
+      <stop offset="1" stop-color="#55915E"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E4628" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部草地带 -->
+  <rect y="398" width="800" height="52" fill="#468050" opacity="0.6"/>
+  <rect y="398" width="800" height="6" fill="#3C7244" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#E8F4EC" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 84 h11 M101.5 78.5 v11" stroke-width="3.2"/>
+    <path d="M400 76 h12 M406 70 v12" stroke-width="3.4"/>
+    <path d="M60 200 h9 M64.5 195.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M748 180 h9 M752.5 175.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#E8F4EC" opacity="0.5">
+    <circle cx="160" cy="130" r="4"/><circle cx="470" cy="110" r="3.4"/><circle cx="66" cy="270" r="3"/><circle cx="740" cy="120" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="560" cy="410" rx="230" ry="16" fill="#2E5A38" opacity="0.35"/>
+
+  <!-- 弓 -->
+  <path d="M150 105 Q80 235 150 365" stroke="#6B4A2E" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M150 105 L150 365" stroke="#F3EFE4" stroke-width="5" stroke-linecap="round"/>
+  <rect x="110" y="222" width="26" height="28" rx="8" fill="#8A5E32" stroke="#1E2620" stroke-width="6"/>
+  <circle cx="150" cy="105" r="8" fill="#8A5E32" stroke="#1E2620" stroke-width="6"/>
+  <circle cx="150" cy="365" r="8" fill="#8A5E32" stroke="#1E2620" stroke-width="6"/>
+
+  <!-- 飞行中的箭 -->
+  <path d="M240 226 H292 M248 244 H296" stroke="#F5F6F3" stroke-width="6" stroke-linecap="round" opacity="0.6" fill="none"/>
+  <polygon points="304,228 272,212 264,226 296,240" fill="#DB7186" stroke="#1E2620" stroke-width="5" stroke-linejoin="round"/>
+  <polygon points="304,240 270,254 278,238" fill="#DB7186" stroke="#1E2620" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M300 232 L520 244" stroke="#6B4A2E" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <polygon points="520,232 558,241 520,252" fill="#4E5E54" stroke="#1E2620" stroke-width="5" stroke-linejoin="round"/>
+
+  <!-- 移动靶（签名表情） -->
+  <path d="M540 200 Q530 230 540 262" stroke="#F5F6F3" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.6"/>
+  <path d="M740 200 Q750 230 740 262" stroke="#F5F6F3" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.6"/>
+  <path d="M640 318 L612 400 M640 318 L668 400" stroke="#8A6E4A" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <circle cx="640" cy="230" r="92" fill="#F3EFE4" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="640" cy="230" r="60" fill="#DB7186" stroke="#1E2620" stroke-width="7"/>
+  <circle cx="640" cy="230" r="30" fill="#E2A44E" stroke="#1E2620" stroke-width="7"/>
+  <circle cx="598" cy="158" r="12" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="628" cy="222" r="7" fill="#1F1A14"/>
+  <circle cx="652" cy="222" r="7" fill="#1F1A14"/>
+  <path d="M622 240 Q640 252 658 238" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

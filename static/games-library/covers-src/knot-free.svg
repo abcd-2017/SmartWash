@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#66B0DC"/>
+      <stop offset="0.55" stop-color="#4A96C4"/>
+      <stop offset="1" stop-color="#3578A2"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1D4A70" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#2A6A96" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#235C86" opacity="0.6"/>
+  <g stroke="#D8EDF9" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 86 h11 M97.5 80.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 290 h9 M68.5 285.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M748 240 h9 M752.5 235.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#D8EDF9" opacity="0.5">
+    <circle cx="146" cy="150" r="4"/><circle cx="672" cy="130" r="3.4"/><circle cx="66" cy="210" r="3"/><circle cx="752" cy="190" r="2.6"/>
+  </g>
+
+  <ellipse cx="410" cy="400" rx="250" ry="20" fill="#173F5E" opacity="0.42"/>
+
+  <!-- 绳段（深色包皮下层 + 彩色上层） -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M180 150 C230 148 270 158 300 190" stroke="#1E2620" stroke-width="15"/>
+    <path d="M180 150 C230 148 270 158 300 190" stroke="#C9526B" stroke-width="9"/>
+    <path d="M300 190 C380 110 520 92 630 130" stroke="#1E2620" stroke-width="15"/>
+    <path d="M300 190 C380 110 520 92 630 130" stroke="#E2A44E" stroke-width="9"/>
+    <path d="M300 190 C380 270 420 320 500 330 C550 336 600 330 630 320" stroke="#1E2620" stroke-width="15"/>
+    <path d="M300 190 C380 270 420 320 500 330 C550 336 600 330 630 320" stroke="#4A9FD4" stroke-width="9"/>
+    <path d="M330 310 C260 300 240 240 300 190" stroke="#1E2620" stroke-width="15"/>
+    <path d="M330 310 C260 300 240 240 300 190" stroke="#4A9FD4" stroke-width="9"/>
+    <path d="M300 190 C340 230 380 260 440 245" stroke="#1E2620" stroke-width="15"/>
+    <path d="M300 190 C340 230 380 260 440 245" stroke="#C9526B" stroke-width="9"/>
+    <path d="M440 245 C420 310 360 350 330 310" stroke="#1E2620" stroke-width="15"/>
+    <path d="M440 245 C420 310 360 350 330 310" stroke="#E2A44E" stroke-width="9"/>
+  </g>
+
+  <!-- 交叉标记 -->
+  <circle cx="398" cy="302" r="21" fill="none" stroke="#C9526B" stroke-width="4.5" stroke-dasharray="8 7"/>
+
+  <!-- 绳结圆点 -->
+  <g stroke="#1E2620" stroke-width="7">
+    <circle cx="300" cy="190" r="34" fill="#C9526B"/>
+    <circle cx="330" cy="310" r="34" fill="#E2A44E"/>
+    <circle cx="440" cy="245" r="34" fill="#4A9FD4"/>
+  </g>
+  <g fill="none" stroke="#1E2620" stroke-width="5">
+    <circle cx="180" cy="150" r="16" fill="#C9526B"/>
+    <circle cx="630" cy="130" r="16" fill="#E2A44E"/>
+    <circle cx="630" cy="320" r="16" fill="#4A9FD4"/>
+  </g>
+
+  <!-- 签名表情（蓝色绳结） -->
+  <circle cx="428" cy="236" r="6.5" fill="#0B3625"/>
+  <circle cx="452" cy="236" r="6.5" fill="#0B3625"/>
+  <circle cx="426" cy="233.5" r="2.1" fill="#FFFFFF"/>
+  <circle cx="450" cy="233.5" r="2.1" fill="#FFFFFF"/>
+  <path d="M430 258 Q440 266 450 256" stroke="#0B3625" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <circle cx="420" cy="226" r="6" fill="#FFFFFF" opacity="0.55"/>
+  <circle cx="292" cy="176" r="8" fill="#FFFFFF" opacity="0.45"/>
+  <circle cx="322" cy="296" r="8" fill="#FFFFFF" opacity="0.45"/>
+
+  <!-- 拉直方向箭头 -->
+  <g stroke="#FFFFFF" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.75">
+    <path d="M592 118 L612 110 M612 110 L598 102"/>
+    <path d="M592 332 L612 336 M612 336 L600 348"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E855C"/>
+      <stop offset="0.55" stop-color="#1F6B47"/>
+      <stop offset="1" stop-color="#14523A"/>
+    </linearGradient>
+    <linearGradient id="lens" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.1"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0B3020" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#0F3F2C" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#0C3526" opacity="0.6"/>
+  <g stroke="#BFE0CF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M724 96 h12 M730 90 v12" stroke-width="3.4"/>
+    <path d="M58 240 h9 M62.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M750 250 h9 M754.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#BFE0CF" opacity="0.5">
+    <circle cx="140" cy="150" r="4"/><circle cx="716" cy="150" r="3.4"/><circle cx="64" cy="320" r="3"/><circle cx="756" cy="330" r="2.6"/>
+  </g>
+
+  <!-- 藏起来的小物件剪影 -->
+  <g fill="#123B29" opacity="0.9">
+    <ellipse cx="170" cy="166" rx="30" ry="16"/>
+    <path d="M196 166 L218 152 L218 180 Z"/>
+    <path d="M634 128 h20 v36 q0 14 -14 14 h-16 q-8 0 -8 -8 v-6 q0 -6 6 -6 h6 q6 0 6 -6 Z"/>
+    <circle cx="172" cy="332" r="20"/>
+    <path d="M690 278 L695.3 292.7 L710.9 293.2 L698.6 302.8 L702.9 317.8 L690 309 L677.1 317.8 L681.4 302.8 L669.1 293.2 L684.7 292.7 Z"/>
+  </g>
+  <g fill="#4E8A6C" opacity="0.6">
+    <circle cx="156" cy="160" r="3.5"/><circle cx="164" cy="326" r="3.5"/><circle cx="180" cy="338" r="3.5"/><circle cx="164" cy="338" r="3"/><circle cx="180" cy="326" r="3"/>
+  </g>
+
+  <ellipse cx="480" cy="410" rx="240" ry="18" fill="#0B3020" opacity="0.45"/>
+
+  <!-- 放大镜 -->
+  <g>
+    <rect x="490" y="279" width="140" height="34" rx="17" transform="rotate(45 490 296)" fill="#B98A4E" stroke="#1E2620" stroke-width="7"/>
+    <circle cx="420" cy="225" r="100" fill="url(#lens)" stroke="#1E2620" stroke-width="10"/>
+    <circle cx="420" cy="225" r="86" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.35"/>
+    <path d="M342 170 A 95 95 0 0 1 388 136" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.6"/>
+    <!-- 镜中找到的钥匙（签名表情） -->
+    <g>
+      <circle cx="400" cy="240" r="19" fill="#D9A93B" stroke="#1E2620" stroke-width="6"/>
+      <rect x="414" y="232" width="56" height="15" rx="7" fill="#D9A93B" stroke="#1E2620" stroke-width="5"/>
+      <rect x="452" y="244" width="9" height="14" rx="3" fill="#D9A93B" stroke="#1E2620" stroke-width="4"/>
+      <rect x="468" y="244" width="9" height="11" rx="3" fill="#D9A93B" stroke="#1E2620" stroke-width="4"/>
+      <circle cx="394" cy="235" r="3.6" fill="#1F1A14"/>
+      <circle cx="406" cy="235" r="3.6" fill="#1F1A14"/>
+      <path d="M393 246 Q400 252 407 245" stroke="#1F1A14" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    </g>
+    <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.6">
+      <path d="M472 190 h9 M476.5 185.5 v9" stroke-width="2.6"/>
+      <path d="M360 290 h8 M364 286 v8" stroke-width="2.4"/>
+    </g>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A8D8E4"/>
+      <stop offset="0.3" stop-color="#8CC4D4"/>
+      <stop offset="1" stop-color="#A87848"/>
+    </linearGradient>
+    <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C89868"/>
+      <stop offset="0.55" stop-color="#B08050"/>
+      <stop offset="1" stop-color="#8E6038"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#4E3418" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 星尘点缀（空中） -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 56 h11 M97.5 50.5 v11" stroke-width="3.2"/>
+    <path d="M706 50 h12 M712 44 v12" stroke-width="3.4"/>
+    <path d="M150 96 h9 M154.5 91.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M640 92 h9 M644.5 87.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.55">
+    <circle cx="220" cy="70" r="4"/><circle cx="580" cy="60" r="3.4"/>
+  </g>
+
+  <!-- 岩壁 -->
+  <path d="M0 118 L60 100 L150 122 L250 96 L360 124 L470 98 L580 124 L690 100 L800 118 L800 450 L0 450 Z" fill="url(#rock)" stroke="#5E3E20" stroke-width="9" stroke-linejoin="round"/>
+  <!-- 岩壁裂纹与棱线 -->
+  <path d="M120 180 Q180 240 160 330 Q150 390 180 450 M420 140 Q450 220 430 320 Q418 400 448 450 M640 160 Q610 240 636 340 Q650 400 630 450" stroke="#7E5428" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M60 210 L120 230 M700 220 L760 204 M300 380 L250 420" stroke="#7E5428" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- 岩点 -->
+  <g stroke="#3A2A1E">
+    <circle cx="150" cy="200" r="20" fill="#E2A44E" stroke-width="7"/>
+    <circle cx="252" cy="252" r="16" fill="#DB7186" stroke-width="7"/>
+    <circle cx="220" cy="322" r="18" fill="#4A9FD4" stroke-width="7"/>
+    <circle cx="348" cy="180" r="17" fill="#4ADE6E" stroke-width="7"/>
+    <circle cx="452" cy="236" r="22" fill="#E2A44E" stroke-width="8"/>
+    <circle cx="560" cy="180" r="16" fill="#DB7186" stroke-width="7"/>
+    <circle cx="600" cy="300" r="19" fill="#4A9FD4" stroke-width="7"/>
+    <circle cx="500" cy="352" r="16" fill="#4ADE6E" stroke-width="7"/>
+    <circle cx="680" cy="380" r="18" fill="#E2A44E" stroke-width="7"/>
+    <circle cx="90" cy="300" r="17" fill="#DB7186" stroke-width="7"/>
+    <circle cx="700" cy="150" r="14" fill="#4A9FD4" stroke-width="6"/>
+    <circle cx="380" cy="90" r="14" fill="#E2A44E" stroke-width="6"/>
+  </g>
+  <!-- 岩点高光 -->
+  <g fill="#FFFFFF" opacity="0.4">
+    <circle cx="144" cy="194" r="6"/><circle cx="446" cy="230" r="7"/><circle cx="594" cy="294" r="6"/><circle cx="344" cy="176" r="5"/>
+  </g>
+
+  <!-- 攀岩小人（签名表情） -->
+  <g>
+    <path d="M410 262 Q440 244 452 226" stroke="#1E2620" stroke-width="15" fill="none" stroke-linecap="round"/>
+    <path d="M410 262 Q440 244 452 226" stroke="#F5DCC4" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M300 238 Q326 250 340 268" stroke="#1E2620" stroke-width="15" fill="none" stroke-linecap="round"/>
+    <path d="M300 238 Q326 250 340 268" stroke="#F5DCC4" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <rect x="330" y="256" width="92" height="76" rx="26" fill="#2D9B6A" stroke="#1E2620" stroke-width="9"/>
+    <path d="M410 322 Q430 352 424 388" stroke="#1E2620" stroke-width="16" fill="none" stroke-linecap="round"/>
+    <path d="M410 322 Q430 352 424 388" stroke="#2D9B6A" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M352 326 Q332 356 306 358" stroke="#1E2620" stroke-width="16" fill="none" stroke-linecap="round"/>
+    <path d="M352 326 Q332 356 306 358" stroke="#2D9B6A" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <circle cx="424" cy="388" r="11" fill="#E2A44E" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="306" cy="358" r="11" fill="#E2A44E" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="366" cy="216" r="34" fill="#F5DCC4" stroke="#1E2620" stroke-width="9"/>
+    <!-- 安全帽 -->
+    <path d="M334 206 Q340 178 366 176 Q394 178 398 204 L398 212 Q366 200 334 212 Z" fill="#E2A44E" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+    <circle cx="366" cy="222" r="7" fill="#1F1A14"/>
+    <circle cx="390" cy="222" r="7" fill="#1F1A14"/>
+    <path d="M362 236 Q376 246 390 234" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="352" cy="202" rx="12" ry="5" fill="#FFFFFF" opacity="0.5" transform="rotate(-12 352 202)"/>
+    <!-- 镁粉袋 -->
+    <path d="M336 322 L322 356 Q320 364 328 366 L352 366 Q360 364 358 356 L352 322" fill="#4A9FD4" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M340 318 Q344 310 350 318" stroke="#1E2620" stroke-width="5" fill="none"/>
+  </g>
+  <!-- 抓握粉雾 -->
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="458" cy="216" r="5"/><circle cx="470" cy="206" r="4"/><circle cx="464" cy="226" r="3.4"/>
+  </g>
+
+  <!-- 耐力槽 -->
+  <g>
+    <rect x="66" y="140" width="200" height="30" rx="15" fill="#F5F6F3" stroke="#1E2620" stroke-width="7"/>
+    <rect x="73" y="147" width="130" height="16" rx="8" fill="#4ADE6E"/>
+    <rect x="203" y="147" width="56" height="16" rx="8" fill="#F5F6F3" opacity="0.4"/>
+    <rect x="73" y="147" width="26" height="16" rx="8" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

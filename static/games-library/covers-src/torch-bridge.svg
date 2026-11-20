@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3E5470"/>
+      <stop offset="0.55" stop-color="#2C3E58"/>
+      <stop offset="1" stop-color="#1C2A40"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFF2C0" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#FFF2C0" stop-opacity="0.05"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0E1828" stop-opacity="0.32"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部深水带 -->
+  <rect y="396" width="800" height="54" fill="#142238" opacity="0.6"/>
+  <rect y="396" width="800" height="6" fill="#101C30" opacity="0.55"/>
+  <!-- 月亮 -->
+  <circle cx="672" cy="86" r="40" fill="#F5F0DC"/>
+  <circle cx="658" cy="76" r="9" fill="#D8D0B4"/>
+  <circle cx="684" cy="98" r="6" fill="#D8D0B4"/>
+  <circle cx="672" cy="86" r="58" fill="#F5F0DC" opacity="0.18"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#D8E4F4" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M120 84 h11 M125.5 78.5 v11" stroke-width="3.2"/>
+    <path d="M300 66 h10 M305 60.5 v10" stroke-width="2.8"/>
+    <path d="M470 96 h9 M474.5 91.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M220 130 h9 M224.5 125.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#D8E4F4" opacity="0.55">
+    <circle cx="170" cy="110" r="4"/><circle cx="390" cy="120" r="3.4"/><circle cx="90" cy="160" r="3"/><circle cx="540" cy="130" r="2.6"/>
+  </g>
+
+  <!-- 缆索 -->
+  <path d="M60 132 Q150 330 230 160 Q278 96 328 160 Q378 330 468 160 Q516 96 566 160 Q650 330 740 132" fill="none" stroke="#8FA0B4" stroke-width="7" opacity="0.8"/>
+  <!-- 桥塔 -->
+  <g stroke="#1E2620">
+    <rect x="300" y="118" width="26" height="252" rx="8" fill="#8FA0B4" stroke-width="8"/>
+    <rect x="538" y="118" width="26" height="252" rx="8" fill="#8FA0B4" stroke-width="8"/>
+    <rect x="288" y="106" width="50" height="20" rx="9" fill="#7E8FA4" stroke-width="8"/>
+    <rect x="526" y="106" width="50" height="20" rx="9" fill="#7E8FA4" stroke-width="8"/>
+  </g>
+  <!-- 吊索 -->
+  <g stroke="#8FA0B4" stroke-width="4" opacity="0.75">
+    <path d="M313 128 L273 240 M313 128 L353 240 M313 128 L233 262 M313 128 L393 262"/>
+    <path d="M551 128 L511 240 M551 128 L591 240 M551 128 L471 262 M551 128 L631 262"/>
+  </g>
+
+  <!-- 桥面 -->
+  <rect x="60" y="296" width="680" height="30" rx="8" fill="#6E5028" stroke="#1E2620" stroke-width="9"/>
+  <g stroke="#54401E" stroke-width="5" stroke-linecap="round">
+    <path d="M110 302 V320 M170 302 V320 M230 302 V320 M290 302 V320 M350 302 V320 M410 302 V320 M470 302 V320 M530 302 V320 M590 302 V320 M650 302 V320 M710 302 V320"/>
+  </g>
+  <!-- 桥面栏杆 -->
+  <g stroke="#9AA8B8" stroke-width="5" stroke-linecap="round" opacity="0.9">
+    <path d="M100 296 V278 M160 296 V278 M220 296 V278 M280 296 V278 M340 296 V278 M400 296 V278 M460 296 V278 M520 296 V278 M580 296 V278 M640 296 V278 M700 296 V278"/>
+    <path d="M96 280 H704" stroke-width="6"/>
+  </g>
+
+  <!-- 手电光束 -->
+  <path d="M642 254 L800 180 L800 356 Z" fill="url(#beam)"/>
+  <circle cx="648" cy="258" r="12" fill="#FFF2C0" stroke="#1E2620" stroke-width="6"/>
+
+  <!-- 五个过桥小人（签名表情在领头） -->
+  <g stroke="#1E2620" stroke-linejoin="round">
+    <!-- 4号（高个，慢） -->
+    <rect x="120" y="240" width="36" height="54" rx="16" fill="#F5F6F3" stroke-width="7"/>
+    <circle cx="138" cy="228" r="16" fill="#F5DCC4" stroke-width="7"/>
+    <circle cx="133" cy="226" r="3.4" fill="#1F1A14"/><circle cx="145" cy="226" r="3.4" fill="#1F1A14"/>
+    <!-- 3号（中速） -->
+    <rect x="212" y="244" width="34" height="50" rx="15" fill="#E2A44E" stroke-width="7"/>
+    <circle cx="229" cy="232" r="15" fill="#F5DCC4" stroke-width="7"/>
+    <circle cx="224" cy="230" r="3.4" fill="#1F1A14"/><circle cx="236" cy="230" r="3.4" fill="#1F1A14"/>
+    <!-- 2号（中速） -->
+    <rect x="296" y="248" width="32" height="46" rx="14" fill="#4A9FD4" stroke-width="7"/>
+    <circle cx="312" cy="236" r="14" fill="#F5DCC4" stroke-width="7"/>
+    <circle cx="307" cy="234" r="3.2" fill="#1F1A14"/><circle cx="319" cy="234" r="3.2" fill="#1F1A14"/>
+    <!-- 1号（最快） -->
+    <rect x="376" y="252" width="30" height="42" rx="13" fill="#DB7186" stroke-width="7"/>
+    <circle cx="391" cy="240" r="13" fill="#F5DCC4" stroke-width="7"/>
+    <circle cx="386" cy="238" r="3.2" fill="#1F1A14"/><circle cx="398" cy="238" r="3.2" fill="#1F1A14"/>
+    <!-- 领头持手电（签名表情） -->
+    <rect x="600" y="262" width="36" height="36" rx="14" fill="#2D9B6A" stroke-width="7"/>
+    <circle cx="620" cy="250" r="15" fill="#F5DCC4" stroke-width="7"/>
+    <circle cx="614" cy="248" r="3.4" fill="#1F1A14"/>
+    <circle cx="627" cy="248" r="3.4" fill="#1F1A14"/>
+    <path d="M614 258 Q620 263 627 257" stroke="#1F1A14" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  </g>
+  <path d="M610 262 Q618 256 634 258" stroke="#1E2620" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- 水面月影 -->
+  <g stroke="#D8D0B4" stroke-width="5" stroke-linecap="round" opacity="0.5">
+    <path d="M640 414 H690 M654 428 H700 M668 440 H712"/>
+  </g>
+  <path d="M80 414 Q120 404 160 414 M240 428 Q280 418 320 428" stroke="#4E6480" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

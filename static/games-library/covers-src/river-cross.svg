@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8EC4C4"/>
+      <stop offset="0.55" stop-color="#5E9EA8"/>
+      <stop offset="1" stop-color="#3E7A84"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E4650" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部深水带 -->
+  <rect y="394" width="800" height="56" fill="#2E6470" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#285864" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#EAF6F4" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M388 76 h11 M393.5 70.5 v11" stroke-width="3.2"/>
+    <path d="M96 88 h11 M101.5 82.5 v11" stroke-width="3"/>
+    <path d="M700 84 h12 M706 78 v12" stroke-width="3.4"/>
+    <path d="M736 240 h9 M740.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M60 250 h9 M64.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6F4" opacity="0.55">
+    <circle cx="300" cy="120" r="4"/><circle cx="480" cy="110" r="3.4"/><circle cx="70" cy="170" r="3"/><circle cx="742" cy="180" r="2.6"/>
+  </g>
+
+  <!-- 左岸 -->
+  <path d="M0 250 Q60 228 120 246 Q180 264 200 306 L200 410 L0 410 Z" fill="#6E9E5C" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+  <g stroke="#3E7E3C" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M56 254 Q52 240 58 232 M58 254 Q64 242 72 238"/>
+    <path d="M128 260 Q124 246 130 238 M130 260 Q136 248 144 244"/>
+  </g>
+  <circle cx="96" cy="216" r="30" fill="#5E8E4C" stroke="#1E2620" stroke-width="7"/>
+  <rect x="90" y="244" width="12" height="24" rx="5" fill="#8A5E32" stroke="#1E2620" stroke-width="6"/>
+
+  <!-- 右岸 -->
+  <path d="M800 244 Q740 226 686 244 Q630 262 612 304 L612 410 L800 410 Z" fill="#7EAE64" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+  <rect x="672" y="176" width="92" height="70" rx="10" fill="#E2A44E" stroke="#1E2620" stroke-width="8"/>
+  <path d="M664 178 L718 138 L772 178 Z" fill="#C05430" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+  <rect x="700" y="204" width="30" height="42" rx="6" fill="#6E4A28" stroke="#1E2620" stroke-width="6"/>
+
+  <!-- 水纹 -->
+  <path d="M216 330 Q250 318 284 330 M520 342 Q554 330 588 342 M260 388 Q294 376 328 388 M470 396 Q504 384 538 396" stroke="#CFEAE8" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.65"/>
+
+  <!-- 小船（船头签名表情） -->
+  <path d="M262 322 Q270 306 292 306 L520 306 Q542 306 550 322 Q546 356 500 364 L312 364 Q266 356 262 322 Z" fill="#B98548" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M282 326 Q330 318 400 318 Q470 318 530 326" stroke="#8A5E32" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <ellipse cx="306" cy="314" rx="36" ry="10" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="292" cy="322" r="7" fill="#1F1A14"/>
+  <circle cx="316" cy="322" r="7" fill="#1F1A14"/>
+  <path d="M290 338 Q304 346 318 336" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 船上的狼 -->
+  <g>
+    <path d="M356 306 L356 252 Q356 224 388 224 Q420 224 420 252 L420 306 Z" fill="#9AA3AD" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M366 236 L360 208 L384 222 Z" fill="#9AA3AD" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M410 236 L416 208 L392 222 Z" fill="#9AA3AD" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="380" cy="252" r="6.5" fill="#1F1A14"/>
+    <circle cx="400" cy="252" r="6.5" fill="#1F1A14"/>
+    <path d="M378 268 Q390 274 402 266" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M384 234 Q390 240 396 234" stroke="#6E7880" stroke-width="4" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 船上的羊 -->
+  <g>
+    <ellipse cx="470" cy="266" rx="44" ry="40" fill="#FFF6E8" stroke="#3A2A1E" stroke-width="9"/>
+    <g fill="#F2E4D0" stroke="#3A2A1E" stroke-width="5">
+      <circle cx="438" cy="238" r="13"/><circle cx="470" cy="230" r="13"/><circle cx="502" cy="238" r="13"/>
+      <circle cx="432" cy="268" r="12"/><circle cx="508" cy="268" r="12"/>
+    </g>
+    <circle cx="470" cy="262" r="20" fill="#EAE0D0" stroke="#3A2A1E" stroke-width="6"/>
+    <circle cx="463" cy="258" r="5" fill="#1F1A14"/>
+    <circle cx="479" cy="258" r="5" fill="#1F1A14"/>
+    <path d="M463 272 Q471 278 479 270" stroke="#1F1A14" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="446" cy="248" rx="10" ry="6" fill="#FFFFFF" opacity="0.6" transform="rotate(-16 446 248)"/>
+  </g>
+
+  <!-- 船上的白菜 -->
+  <g>
+    <circle cx="540" cy="262" r="26" fill="#7EBC6E" stroke="#1E2620" stroke-width="8"/>
+    <path d="M522 248 Q540 238 558 248 M522 276 Q540 286 558 276" stroke="#4E8E42" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M540 242 Q542 262 540 282" stroke="#4E8E42" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 木桨 -->
+  <path d="M312 358 Q288 386 300 408" stroke="#3A2A1E" stroke-width="15" fill="none" stroke-linecap="round"/>
+  <path d="M312 358 Q288 386 300 408" stroke="#A8763E" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <ellipse cx="302" cy="412" rx="16" ry="12" fill="#A8763E" stroke="#3A2A1E" stroke-width="6"/>
+
+  <!-- 水花 -->
+  <g stroke="#CFEAE8" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8">
+    <path d="M250 368 Q258 358 266 368"/>
+    <path d="M234 380 Q242 370 250 380"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C4A468"/>
+      <stop offset="0.55" stop-color="#AA8A50"/>
+      <stop offset="1" stop-color="#8F713E"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#59431E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#7A5E30" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#6C5229" opacity="0.6"/>
+  <g stroke="#F4E8CB" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M716 92 h12 M722 86 v12" stroke-width="3.4"/>
+    <path d="M62 270 h9 M66.5 265.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M748 250 h9 M752.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#F4E8CB" opacity="0.5">
+    <circle cx="146" cy="150" r="4"/><circle cx="670" cy="130" r="3.4"/><circle cx="66" cy="210" r="3"/><circle cx="750" cy="190" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="398" rx="255" ry="20" fill="#59431E" opacity="0.4"/>
+
+  <g transform="rotate(-2 400 240)">
+    <!-- 棋盘 -->
+    <rect x="180" y="110" width="440" height="260" rx="10" fill="#EFDFBB" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="180" y="110" width="440" height="260" rx="10" fill="url(#gloss)"/>
+    <g fill="#C9A96E">
+      <rect x="290" y="110" width="110" height="86.7"/>
+      <rect x="510" y="110" width="110" height="86.7"/>
+      <rect x="180" y="196.7" width="110" height="86.7"/>
+      <rect x="400" y="196.7" width="110" height="86.7"/>
+      <rect x="290" y="283.3" width="110" height="86.7"/>
+      <rect x="510" y="283.3" width="110" height="86.7"/>
+    </g>
+    <g stroke="#8A6D36" stroke-width="3.5" stroke-linecap="round">
+      <path d="M290 110 V370 M400 110 V370 M510 110 V370"/>
+      <path d="M180 196.7 H620 M180 283.3 H620"/>
+    </g>
+
+    <!-- 升变目标格高亮 -->
+    <rect x="403" y="113" width="104" height="80.7" fill="none" stroke="#17734A" stroke-width="4" stroke-dasharray="8 7"/>
+    <!-- 升变箭头 -->
+    <path d="M455 292 V178" fill="none" stroke="#17734A" stroke-width="5" stroke-dasharray="10 9" stroke-linecap="round"/>
+    <path d="M447 184 L455 170 L463 184" fill="none" stroke="#17734A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- 皇冠 -->
+    <g>
+      <path d="M437 164 L437 146 L446 155 L455 141 L464 155 L473 146 L473 164 Z" fill="#D9A93B" stroke="#3A2A1E" stroke-width="5" stroke-linejoin="round"/>
+      <rect x="437" y="164" width="36" height="8" rx="3" fill="#D9A93B" stroke="#3A2A1E" stroke-width="4"/>
+      <circle cx="455" cy="138" r="3.5" fill="#D9A93B" stroke="#3A2A1E" stroke-width="3"/>
+    </g>
+
+    <!-- 黑王 -->
+    <g>
+      <path d="M565 208 V224 M558 214 H572" stroke="#2E3230" stroke-width="7" stroke-linecap="round"/>
+      <path d="M554 266 L558 226 Q565 218 572 226 L576 266 Z" fill="#2E3230" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+      <ellipse cx="565" cy="268" rx="21" ry="8" fill="#2E3230" stroke="#3A2A1E" stroke-width="5"/>
+    </g>
+
+    <!-- 白王 -->
+    <g>
+      <path d="M345 288 V304 M338 294 H352" stroke="#F2EFE9" stroke-width="7" stroke-linecap="round"/>
+      <path d="M334 356 L338 312 Q345 304 352 312 L356 356 Z" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+      <ellipse cx="345" cy="358" rx="21" ry="8" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="5"/>
+      <path d="M337 316 Q341 313 344 316" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8"/>
+    </g>
+
+    <!-- 白兵（签名表情） -->
+    <g>
+      <circle cx="455" cy="308" r="11" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="5"/>
+      <path d="M447 356 Q447 322 455 316 Q463 322 463 356 Z" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="5" stroke-linejoin="round"/>
+      <ellipse cx="455" cy="358" rx="16" ry="7" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="5"/>
+      <circle cx="450" cy="306" r="4" fill="#1F1A14"/>
+      <circle cx="460" cy="306" r="4" fill="#1F1A14"/>
+      <circle cx="450" cy="306" r="1.5" fill="#FFFFFF"/>
+      <circle cx="460" cy="306" r="1.5" fill="#FFFFFF"/>
+      <path d="M450 316 Q455 320 460 315" stroke="#1F1A14" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

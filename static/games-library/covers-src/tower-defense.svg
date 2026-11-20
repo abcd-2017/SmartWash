@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A0C88E"/>
+      <stop offset="0.55" stop-color="#7EB26C"/>
+      <stop offset="1" stop-color="#5E9450"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E5230" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="396" width="800" height="54" fill="#547E44" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#48703A" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#EAF4E0" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M392 62 h11 M397.5 56.5 v11" stroke-width="3.2"/>
+    <path d="M96 120 h11 M101.5 114.5 v11" stroke-width="3"/>
+    <path d="M706 96 h12 M712 90 v12" stroke-width="3.4"/>
+    <path d="M64 200 h9 M68.5 195.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M736 250 h9 M740.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF4E0" opacity="0.55">
+    <circle cx="300" cy="96" r="4"/><circle cx="560" cy="90" r="3.4"/><circle cx="70" cy="150" r="3"/><circle cx="740" cy="160" r="2.6"/>
+  </g>
+
+  <!-- 蜿蜒路径 -->
+  <path d="M60 386 Q150 380 210 330 Q280 272 240 210 Q204 156 300 128 Q420 96 500 140 Q590 190 620 240 Q650 290 720 296"
+        fill="none" stroke="#7E5E30" stroke-width="62" stroke-linecap="round"/>
+  <path d="M60 386 Q150 380 210 330 Q280 272 240 210 Q204 156 300 128 Q420 96 500 140 Q590 190 620 240 Q650 290 720 296"
+        fill="none" stroke="#D8C08C" stroke-width="46" stroke-linecap="round"/>
+  <path d="M84 380 Q160 372 216 330 Q280 274 242 214 Q206 158 302 130 Q420 100 498 142 Q588 192 618 242 Q648 290 716 296"
+        fill="none" stroke="#B89858" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 18" opacity="0.8"/>
+
+  <!-- 出怪口 -->
+  <path d="M36 420 L36 348 Q90 320 128 352 Q140 388 136 420 Z" fill="#3E5230" stroke="#1E2620" stroke-width="9" stroke-linejoin="round"/>
+  <ellipse cx="82" cy="352" rx="34" ry="24" fill="#141E10" stroke="#1E2620" stroke-width="7"/>
+
+  <!-- 基地城堡 -->
+  <g stroke="#1E2620" stroke-linejoin="round">
+    <rect x="700" y="238" width="84" height="84" fill="#C9CFC7" stroke-width="9"/>
+    <rect x="688" y="214" width="30" height="30" fill="#C9CFC7" stroke-width="8"/>
+    <rect x="732" y="214" width="30" height="30" fill="#C9CFC7" stroke-width="8"/>
+    <path d="M688 214 V198 H704 V214 M732 214 V198 H748 V214 M762 214 V198 H778 V214" fill="#C9CFC7" stroke-width="8"/>
+    <rect x="726" y="284" width="30" height="38" fill="#3E2E1C" stroke-width="7"/>
+    <path d="M742 196 L742 168 L770 176 L742 186" fill="#E04848" stroke-width="7"/>
+  </g>
+  <circle cx="716" cy="258" r="9" fill="#7E8FA4" stroke="#1E2620" stroke-width="5"/>
+  <circle cx="762" cy="258" r="9" fill="#7E8FA4" stroke="#1E2620" stroke-width="5"/>
+
+  <!-- 塔位 -->
+  <g stroke="#1E2620" stroke-linejoin="round">
+    <!-- 箭塔 -->
+    <ellipse cx="330" cy="270" rx="52" ry="18" fill="#8A9B8E" stroke-width="7"/>
+    <rect x="304" y="216" width="52" height="52" rx="8" fill="#2D9B6A" stroke-width="8"/>
+    <path d="M304 216 L330 192 L356 216" fill="#17734A" stroke-width="8"/>
+    <circle cx="330" cy="238" r="12" fill="#F5F6F3" stroke-width="6"/>
+    <!-- 冰塔 -->
+    <ellipse cx="452" cy="212" rx="48" ry="17" fill="#8A9B8E" stroke-width="7"/>
+    <path d="M424 208 L452 148 L480 208 Q478 218 452 220 Q426 218 424 208 Z" fill="#7FC4E8" stroke-width="8"/>
+    <path d="M452 152 L452 202 M436 190 L466 190" stroke="#FFFFFF" stroke-width="5" opacity="0.7"/>
+    <!-- 炮塔 -->
+    <ellipse cx="568" cy="316" rx="50" ry="17" fill="#8A9B8E" stroke-width="7"/>
+    <circle cx="568" cy="284" r="34" fill="#E2A44E" stroke-width="8"/>
+    <rect x="588" y="252" width="52" height="20" rx="10" fill="#3E2E1C" stroke-width="7" transform="rotate(28 588 262)"/>
+    <circle cx="568" cy="284" r="12" fill="#B87820" stroke-width="6"/>
+  </g>
+  <!-- 炮弹 -->
+  <circle cx="668" cy="238" r="10" fill="#1C1C1E" stroke="#1E2620" stroke-width="5"/>
+  <path d="M646 250 Q656 246 662 242" stroke="#B8C4BE" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- 敌人波次 -->
+  <g stroke="#1E2620" stroke-linejoin="round">
+    <circle cx="150" cy="322" r="17" fill="#DB7186" stroke-width="7"/>
+    <circle cx="145" cy="318" r="3.4" fill="#1F1A14"/><circle cx="156" cy="318" r="3.4" fill="#1F1A14"/>
+    <circle cx="235" cy="228" r="17" fill="#DB7186" stroke-width="7"/>
+    <circle cx="230" cy="224" r="3.4" fill="#1F1A14"/><circle cx="241" cy="224" r="3.4" fill="#1F1A14"/>
+    <circle cx="330" cy="122" r="13" fill="#E2A44E" stroke-width="6"/>
+    <circle cx="326" cy="119" r="3" fill="#1F1A14"/><circle cx="335" cy="119" r="3" fill="#1F1A14"/>
+    <circle cx="452" cy="130" r="22" fill="#6E7E88" stroke-width="8"/>
+    <circle cx="446" cy="126" r="4" fill="#1F1A14"/><circle cx="459" cy="126" r="4" fill="#1F1A14"/>
+    <path d="M436 116 L444 122 M468 116 L460 122" stroke="#1E2620" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- 金币奖励 -->
+  <g fill="#F2C230" stroke="#B87820" stroke-width="5">
+    <circle cx="398" cy="200" r="14"/><circle cx="422" cy="212" r="11"/>
+  </g>
+  <path d="M394 196 Q402 192 408 198" stroke="#FFF2C0" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -336,3 +336,19 @@
   深色目检 4 款代表款（escape-room / hex-fill / ski-slalom / hamster-run）布局正常。
   体积范围：单款 17,606B（echo-seq）– 53,505B（escape-room），51 款合计约 1.55MB。
   备注：本批统一未接 WebAudio 音效（可选项，规避静默失败风险）；封面另批制作（GAME-COVER.md 管线）。
+
+- **2026-11-21（封面全量补齐 103 张 · 游戏库 175 款全覆盖）**：
+  扩展总表第一批 52 款 + 第二批 51 款按 GAME-COVER.md 方案 A（家族风·场景插画：粗描边 +
+  签名表情 + 三层背景）全部绘制落位，游戏库 175 款封面零缺失。
+  管线：4 组代理手写 SVG（covers-src/ 归档，共 175 份）→ Chrome headless 渲染 800×450 →
+  **PS 2026 COM 自动化** Unsharp Mask（60% / 0.6px / 阈值 2，单实例批量串行；本机会话无 PS MCP，
+  经 typelib 缺失绕过验证 VBScript COM 通道）→ 索引层颗粒量化（§2 修订版：色板近重复合并 +
+  RGB ±6 噪声 + 最近色映射；>120KB 自动降色板 128/96/64/48/32）→ 单处落位
+  games-library/<key>/<key>.png（2026-11-16 裁定取消 drawable 副本）。
+  终检：103/103 尺寸 800×450、体积全部 ≤120KB（新批最大 100,652B hoop-shot）；
+  全库 175 款封面零缺失（存量 3 张旧封面 120-122KB 微超预算为历史遗留，不在本批范围）；
+  逐批目检 12 张代表款（escape-room / surf-wave / hamster-run / treasure-grid / ski-slalom /
+  hoop-shot / mate-in-one / alchemy-tree / clone-portal / torch-bridge / virus-defense / sushi-grab）
+  家族要素（描边 / 表情 / 三层背景 / 星尘 / vignette）全部到位、撞车排查通过。
+  管线脚本沉淀于 docs/cover-pipeline-test/（build_covers.py + ps-unsharp-batch.vbs，
+  工作文档不入库）。

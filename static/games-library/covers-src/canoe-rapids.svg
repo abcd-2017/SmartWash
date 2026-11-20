@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#58A8D0"/>
+      <stop offset="0.55" stop-color="#3E88B4"/>
+      <stop offset="1" stop-color="#2E6E9C"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#143A5C" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部深水带 -->
+  <rect y="400" width="800" height="50" fill="#24588A" opacity="0.55"/>
+  <rect y="400" width="800" height="6" fill="#1E4C7A" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#EAF6FC" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 78 h11 M97.5 72.5 v11" stroke-width="3.2"/>
+    <path d="M708 84 h12 M714 78 v12" stroke-width="3.4"/>
+    <path d="M736 200 h9 M740.5 195.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M64 210 h9 M68.5 205.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6FC" opacity="0.5">
+    <circle cx="150" cy="130" r="4"/><circle cx="690" cy="140" r="3.4"/><circle cx="60" cy="280" r="3"/><circle cx="744" cy="280" r="2.6"/>
+  </g>
+
+  <!-- 浪沫水带 -->
+  <path d="M40 356 Q140 318 250 346 Q360 372 470 342 Q580 314 700 350 L700 398 L40 398 Z"
+        fill="#EAF6FC" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M120 330 Q170 300 230 322" stroke="#FFFFFF" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M520 318 Q570 292 630 316" stroke="#FFFFFF" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- 礁石 -->
+  <path d="M215 258 Q250 240 285 258" stroke="#FFFFFF" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <path d="M612 240 Q640 224 668 240" stroke="#FFFFFF" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <circle cx="250" cy="296" r="52" fill="#8A8F96" stroke="#1E2620" stroke-width="9"/>
+  <circle cx="230" cy="276" r="12" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="640" cy="272" r="44" fill="#7A8088" stroke="#1E2620" stroke-width="9"/>
+  <circle cx="624" cy="256" r="10" fill="#FFFFFF" opacity="0.4"/>
+
+  <!-- 皮划艇与桨手（签名表情） -->
+  <circle cx="280" cy="250" r="9" fill="#FFFFFF" opacity="0.8"/>
+  <circle cx="300" cy="238" r="7" fill="#FFFFFF" opacity="0.8"/>
+  <ellipse cx="474" cy="292" rx="17" ry="26" fill="#8A6E4A" stroke="#1E2620" stroke-width="6" transform="rotate(28 474 292)"/>
+  <path d="M388 150 L470 280" stroke="#8A6E4A" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <circle cx="430" cy="215" r="8" fill="#F2E2C8" stroke="#1E2620" stroke-width="5"/>
+  <circle cx="452" cy="244" r="8" fill="#F2E2C8" stroke="#1E2620" stroke-width="5"/>
+  <path d="M420 262 L416 216" stroke="#2D9B6A" stroke-width="24" stroke-linecap="round" fill="none"/>
+  <path d="M420 240 L460 262" stroke="#2D9B6A" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <circle cx="410" cy="196" r="28" fill="#F2E2C8" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="398" cy="182" r="7" fill="#FFFFFF" opacity="0.45"/>
+  <circle cx="400" cy="192" r="6" fill="#1F1A14"/>
+  <circle cx="420" cy="192" r="6" fill="#1F1A14"/>
+  <path d="M394 206 Q410 216 426 204" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M295 255 C300 295 350 312 430 312 C510 312 560 295 565 255 C540 275 480 284 430 284 C380 284 320 275 295 255 Z"
+        fill="#E2A44E" stroke="#1E2620" stroke-width="9" stroke-linejoin="round"/>
+  <circle cx="330" cy="268" r="9" fill="#FFFFFF" opacity="0.45"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

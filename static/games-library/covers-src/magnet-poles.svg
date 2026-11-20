@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6C94BC"/>
+      <stop offset="0.55" stop-color="#527BA6"/>
+      <stop offset="1" stop-color="#3F648C"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#22374E" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="398" width="800" height="52" fill="#35547A" opacity="0.6"/>
+  <rect y="398" width="800" height="6" fill="#2C4868" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#EAF2FA" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M108 96 h11 M113.5 90.5 v11" stroke-width="3.2"/>
+    <path d="M700 104 h12 M706 98 v12" stroke-width="3.4"/>
+    <path d="M722 290 h9 M726.5 285.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M78 280 h9 M82.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#DDEBf6" opacity="0.5">
+    <circle cx="176" cy="170" r="4"/><circle cx="646" cy="256" r="3.4"/><circle cx="70" cy="230" r="3"/><circle cx="738" cy="220" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="420" rx="244" ry="18" fill="#26436B" opacity="0.35"/>
+
+  <!-- 马蹄磁铁（开口向上，主视觉带签名表情） -->
+  <g stroke="#1E2620" stroke-linejoin="round">
+    <path d="M270 260 A130 130 0 0 0 530 260 L460 260 A60 60 0 0 1 340 260 Z" fill="#C7CFD6" stroke-width="8"/>
+    <path d="M270 260 L340 260 L340 118 Q340 105 327 105 L283 105 Q270 105 270 118 Z" fill="#D96476" stroke-width="8"/>
+    <path d="M460 260 L530 260 L530 118 Q530 105 517 105 L473 105 Q460 105 460 118 Z" fill="#4E86C9" stroke-width="8"/>
+  </g>
+  <rect x="272" y="107" width="66" height="32" rx="6" fill="#DCE4EA" stroke="#1E2620" stroke-width="6"/>
+  <rect x="462" y="107" width="66" height="32" rx="6" fill="#DCE4EA" stroke="#1E2620" stroke-width="6"/>
+  <circle cx="310" cy="330" r="12" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="380" cy="338" r="10" fill="#1F1A14"/>
+  <circle cx="420" cy="338" r="10" fill="#1F1A14"/>
+  <path d="M372 364 Q400 380 428 362" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 磁珠与斥力火花 -->
+  <circle cx="150" cy="180" r="42" fill="#D96476" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="136" cy="164" r="10" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="650" cy="180" r="42" fill="#4E86C9" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="636" cy="164" r="10" fill="#FFFFFF" opacity="0.4"/>
+  <g stroke="#F5F6F3" stroke-width="7" stroke-linecap="round" opacity="0.85">
+    <path d="M215 115 L240 128"/><path d="M205 150 L232 150"/><path d="M212 185 L238 172"/>
+    <path d="M585 115 L560 128"/><path d="M595 150 L568 150"/><path d="M588 185 L562 172"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

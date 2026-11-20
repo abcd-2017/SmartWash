@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#B8C8BE"/>
+      <stop offset="0.55" stop-color="#98AC9E"/>
+      <stop offset="1" stop-color="#7A9080"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3A5248" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 66 h11 M97.5 60.5 v11" stroke-width="3.2"/>
+    <path d="M706 62 h12 M712 56 v12" stroke-width="3.4"/>
+    <path d="M60 128 h9 M64.5 123.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M740 134 h9 M744.5 129.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="156" cy="96" r="4"/><circle cx="646" cy="88" r="3.4"/><circle cx="70" cy="102" r="3"/><circle cx="742" cy="104" r="2.6"/>
+  </g>
+
+  <!-- 对岸草地（目标） -->
+  <rect y="60" width="800" height="52" fill="#5E9E6C" opacity="0.9"/>
+  <path d="M0 112 H800" stroke="#3E7E4C" stroke-width="8"/>
+  <g fill="#F2C230" stroke="#3E7E4C" stroke-width="3">
+    <circle cx="140" cy="88" r="6"/><circle cx="420" cy="84" r="6"/><circle cx="660" cy="90" r="6"/>
+  </g>
+  <g stroke="#3E7E4C" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M240 110 Q236 98 242 90 M242 110 Q248 100 256 96"/>
+    <path d="M540 110 Q536 98 542 90 M542 110 Q548 100 556 96"/>
+  </g>
+
+  <!-- 车道 -->
+  <rect y="112" width="800" height="76" fill="#5E6E64" opacity="0.85"/>
+  <rect y="188" width="800" height="14" fill="#8A988C" opacity="0.9"/>
+  <rect y="202" width="800" height="76" fill="#54645A" opacity="0.85"/>
+  <rect y="278" width="800" height="14" fill="#8A988C" opacity="0.9"/>
+  <rect y="292" width="800" height="76" fill="#5E6E64" opacity="0.85"/>
+  <!-- 车道虚线 -->
+  <g stroke="#F5F6F3" stroke-width="7" stroke-linecap="round" opacity="0.85">
+    <path d="M60 150 H150 M230 150 H320 M400 150 H490 M570 150 H660 M740 150 H800"/>
+    <path d="M40 240 H130 M210 240 H300 M380 240 H470 M550 240 H640 M720 240 H800"/>
+    <path d="M90 330 H180 M260 330 H350 M430 330 H520 M600 330 H690 M770 330 H800"/>
+  </g>
+  <!-- 斑马线 -->
+  <g fill="#F5F6F3" opacity="0.8">
+    <rect x="90" y="368" width="42" height="82" rx="6" transform="skewX(-8)"/>
+    <rect x="210" y="368" width="42" height="82" rx="6" transform="skewX(-8)"/>
+    <rect x="330" y="368" width="42" height="82" rx="6" transform="skewX(-8)"/>
+    <rect x="450" y="368" width="42" height="82" rx="6" transform="skewX(-8)"/>
+    <rect x="570" y="368" width="42" height="82" rx="6" transform="skewX(-8)"/>
+    <rect x="690" y="368" width="42" height="82" rx="6" transform="skewX(-8)"/>
+  </g>
+
+  <!-- 车 1（上道，向左） -->
+  <g>
+    <rect x="440" y="122" width="180" height="52" rx="14" fill="#E04848" stroke="#1E2620" stroke-width="8"/>
+    <path d="M466 122 L486 104 L548 104 L566 122" fill="#B8D8E8" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="478" cy="174" r="14" fill="#2A2E32" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="588" cy="174" r="14" fill="#2A2E32" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="478" cy="174" r="5" fill="#8A939B"/>
+    <circle cx="588" cy="174" r="5" fill="#8A939B"/>
+    <circle cx="452" cy="132" r="7" fill="#FFFFFF" opacity="0.5"/>
+    <path d="M430 140 H404" stroke="#FFF2C0" stroke-width="7" stroke-linecap="round"/>
+  </g>
+
+  <!-- 车 2（中道，向右） -->
+  <g>
+    <rect x="120" y="212" width="200" height="56" rx="14" fill="#E2A44E" stroke="#1E2620" stroke-width="8"/>
+    <path d="M290 212 L312 192 L372 192 L394 212" fill="#B8D8E8" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="160" cy="268" r="15" fill="#2A2E32" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="288" cy="268" r="15" fill="#2A2E32" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="160" cy="268" r="5" fill="#8A939B"/>
+    <circle cx="288" cy="268" r="5" fill="#8A939B"/>
+    <circle cx="146" cy="224" r="7" fill="#FFFFFF" opacity="0.5"/>
+    <path d="M320 226 H348" stroke="#FFF2C0" stroke-width="7" stroke-linecap="round"/>
+  </g>
+
+  <!-- 车 3（下道，向左，探出半个） -->
+  <g>
+    <rect x="600" y="302" width="230" height="56" rx="14" fill="#4A9FD4" stroke="#1E2620" stroke-width="8"/>
+    <path d="M630 302 L652 282 L716 282 L736 302" fill="#B8D8E8" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="640" cy="358" r="15" fill="#2A2E32" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="780" cy="358" r="15" fill="#2A2E32" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="640" cy="358" r="5" fill="#8A939B"/>
+    <path d="M594 316 H566" stroke="#FFF2C0" stroke-width="7" stroke-linecap="round"/>
+  </g>
+
+  <!-- 跳跃小蛙（签名表情） -->
+  <g>
+    <ellipse cx="420" cy="408" rx="64" ry="10" fill="#3A4E44" opacity="0.35"/>
+    <path d="M376 330 Q354 356 336 364" stroke="#1E2620" stroke-width="15" fill="none" stroke-linecap="round"/>
+    <path d="M376 330 Q354 356 336 364" stroke="#3FA34D" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M464 330 Q488 356 508 362" stroke="#1E2620" stroke-width="15" fill="none" stroke-linecap="round"/>
+    <path d="M464 330 Q488 356 508 362" stroke="#3FA34D" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <ellipse cx="422" cy="298" rx="52" ry="40" fill="#3FA34D" stroke="#1E2620" stroke-width="9"/>
+    <path d="M478 296 Q502 286 512 298" stroke="#1E2620" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <path d="M478 296 Q502 286 512 298" stroke="#3FA34D" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <circle cx="402" cy="258" r="18" fill="#3FA34D" stroke="#1E2620" stroke-width="8"/>
+    <circle cx="446" cy="254" r="18" fill="#3FA34D" stroke="#1E2620" stroke-width="8"/>
+    <circle cx="402" cy="258" r="9" fill="#FFFFFF"/>
+    <circle cx="446" cy="254" r="9" fill="#FFFFFF"/>
+    <circle cx="404" cy="260" r="4.5" fill="#1F1A14"/>
+    <circle cx="444" cy="256" r="4.5" fill="#1F1A14"/>
+    <path d="M412 296 Q424 306 436 294" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <ellipse cx="390" cy="278" rx="14" ry="7" fill="#FFFFFF" opacity="0.45" transform="rotate(-14 390 278)"/>
+  </g>
+  <!-- 跳跃弧线 -->
+  <path d="M420 372 Q414 356 420 344" stroke="#FFFFFF" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="3 12" opacity="0.8"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

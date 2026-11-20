@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D9B98C"/>
+      <stop offset="0.55" stop-color="#C9A570"/>
+      <stop offset="1" stop-color="#B28C56"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#5A3E1E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#9C7A46" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#8A6A38" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M118 280 h9 M122.5 275.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M690 300 h9 M694.5 295.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.5">
+    <circle cx="170" cy="160" r="4"/><circle cx="712" cy="150" r="3.4"/><circle cx="70" cy="230" r="3"/><circle cx="740" cy="220" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="404" rx="245" ry="20" fill="#6E5028" opacity="0.35"/>
+
+  <!-- 天平立柱与底座 -->
+  <g>
+    <rect x="376" y="352" width="48" height="52" rx="8" fill="#5E4A30" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M330 404 H470" stroke="#3A2A1E" stroke-width="12" stroke-linecap="round"/>
+    <path d="M330 404 H470" stroke="#8A6A44" stroke-width="6" stroke-linecap="round"/>
+    <rect x="366" y="188" width="68" height="170" rx="10" fill="#8A6A44" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M382 210 V340" stroke="#5E4A30" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- 平衡指针 -->
+  <path d="M400 214 V186 M394 196 L400 186 L406 196" stroke="#3A2A1E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="400" cy="186" r="9" fill="#F2C14E" stroke="#3A2A1E" stroke-width="5"/>
+
+  <!-- 横梁（水平） -->
+  <g>
+    <rect x="112" y="170" width="576" height="30" rx="14" fill="#8A6A44" stroke="#3A2A1E" stroke-width="9"/>
+    <path d="M140 185 H660" stroke="#5E4A30" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="400" cy="185" r="21" fill="#D9A55C" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="392" cy="178" r="6" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <!-- 左吊链与吊盘 -->
+  <g>
+    <path d="M158 198 V252 M190 198 V252" stroke="#3A2A1E" stroke-width="7" stroke-linecap="round"/>
+    <path d="M140 252 H208" stroke="#3A2A1E" stroke-width="10" stroke-linecap="round"/>
+    <path d="M144 260 H204 L198 300 Q196 310 184 310 L164 310 Q152 310 150 300 Z"
+          fill="#7A5C28" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M150 278 H198" stroke="#5E4A30" stroke-width="5" stroke-linecap="round"/>
+    <!-- 左盘货箱（木箱，带表情） -->
+    <g>
+      <rect x="140" y="212" width="66" height="44" rx="6" fill="#D9A55C" stroke="#3A2A1E" stroke-width="7"/>
+      <path d="M140 226 H206 M173 212 V256" stroke="#3A2A1E" stroke-width="5" opacity="0.65"/>
+      <circle cx="158" cy="236" r="5" fill="#1F1A14"/>
+      <circle cx="184" cy="236" r="5" fill="#1F1A14"/>
+      <path d="M164 246 Q171 252 178 245" stroke="#1F1A14" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <rect x="146" y="178" width="54" height="36" rx="6" fill="#C08A4A" stroke="#3A2A1E" stroke-width="7"/>
+      <circle cx="160" cy="190" r="4.5" fill="#1F1A14"/>
+      <circle cx="182" cy="190" r="4.5" fill="#1F1A14"/>
+      <path d="M164 200 Q171 205 178 199" stroke="#1F1A14" stroke-width="4" fill="none" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- 右吊链与吊盘 -->
+  <g>
+    <path d="M610 198 V252 M642 198 V252" stroke="#3A2A1E" stroke-width="7" stroke-linecap="round"/>
+    <path d="M592 252 H660" stroke="#3A2A1E" stroke-width="10" stroke-linecap="round"/>
+    <path d="M596 260 H656 L650 300 Q648 310 636 310 L616 310 Q604 310 602 300 Z"
+          fill="#7A5C28" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M602 278 H650" stroke="#5E4A30" stroke-width="5" stroke-linecap="round"/>
+    <!-- 右盘货箱（蓝大箱） -->
+    <rect x="596" y="208" width="60" height="48" rx="6" fill="#6BA8D9" stroke="#3A2A1E" stroke-width="7"/>
+    <path d="M596 226 H656" stroke="#3A2A1E" stroke-width="5" opacity="0.65"/>
+    <circle cx="612" cy="190" r="5" fill="#1F1A14"/>
+    <circle cx="640" cy="190" r="5" fill="#1F1A14"/>
+    <path d="M618 200 Q626 206 634 199" stroke="#1F1A14" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <rect x="598" y="158" width="56" height="52" rx="6" fill="#B58BD0" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="612" cy="172" r="6" fill="#FFFFFF" opacity="0.45"/>
+    <path d="M598 176 H654" stroke="#3A2A1E" stroke-width="5" opacity="0.65"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

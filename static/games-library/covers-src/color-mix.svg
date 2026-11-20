@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3E88B8"/>
+      <stop offset="0.55" stop-color="#2A6C98"/>
+      <stop offset="1" stop-color="#1D5276"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0F3049" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#16405E" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#123855" opacity="0.6"/>
+  <g stroke="#CDE7F5" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 84 h11 M97.5 78.5 v11" stroke-width="3"/>
+    <path d="M718 88 h12 M724 82 v12" stroke-width="3.4"/>
+    <path d="M60 250 h9 M64.5 245.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M752 210 h9 M756.5 205.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#CDE7F5" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="672" cy="120" r="3.4"/><circle cx="66" cy="310" r="3"/><circle cx="758" cy="300" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="410" rx="268" ry="20" fill="#123855" opacity="0.45"/>
+
+  <!-- 画笔 -->
+  <g>
+    <rect x="628" y="140" width="122" height="20" rx="10" transform="rotate(35 628 150)" fill="#B98A4E" stroke="#1E2620" stroke-width="6"/>
+    <rect x="600" y="168" width="26" height="22" rx="6" transform="rotate(35 613 179)" fill="#C9CDD2" stroke="#1E2620" stroke-width="5"/>
+    <path d="M596 196 Q580 226 596 244 Q606 254 616 240 Q628 222 612 198 Z" transform="rotate(35 604 220)" fill="#C9526B" stroke="#1E2620" stroke-width="5"/>
+  </g>
+
+  <!-- 调色盘 -->
+  <ellipse cx="400" cy="272" rx="235" ry="122" fill="#C9A96E" stroke="#1E2620" stroke-width="9"/>
+  <ellipse cx="400" cy="266" rx="235" ry="122" fill="url(#gloss)"/>
+  <circle cx="565" cy="322" r="32" fill="#2A6C98" stroke="#1E2620" stroke-width="8"/>
+  <path d="M300 350 Q300 372 318 372 Q334 372 334 352" fill="none" stroke="#C9526B" stroke-width="9" stroke-linecap="round"/>
+
+  <!-- 三原色颜料 -->
+  <g stroke="#1E2620" stroke-width="6">
+    <circle cx="288" cy="218" r="35" fill="#C9526B"/>
+    <circle cx="392" cy="196" r="35" fill="#E0B13E"/>
+    <circle cx="264" cy="304" r="35" fill="#4A9FD4"/>
+  </g>
+  <circle cx="276" cy="206" r="9" fill="#FFFFFF" opacity="0.5"/>
+  <circle cx="380" cy="184" r="9" fill="#FFFFFF" opacity="0.5"/>
+  <circle cx="252" cy="292" r="9" fill="#FFFFFF" opacity="0.5"/>
+
+  <!-- 混合旋涡（签名表情） -->
+  <path d="M480 227 C515 227 540 255 536 285 C532 318 500 340 470 334 C440 328 425 300 432 272 C438 246 455 227 480 227 Z"
+        fill="#2D9B6A" stroke="#1E2620" stroke-width="7"/>
+  <path d="M452 278 Q470 248 502 260 Q528 272 516 296 Q506 314 484 308" fill="none" stroke="#E8F6EF" stroke-width="4.5" stroke-linecap="round" opacity="0.85"/>
+  <circle cx="462" cy="276" r="7.5" fill="#0B3625"/>
+  <circle cx="500" cy="276" r="7.5" fill="#0B3625"/>
+  <circle cx="459.5" cy="273.5" r="2.3" fill="#FFFFFF"/>
+  <circle cx="497.5" cy="273.5" r="2.3" fill="#FFFFFF"/>
+  <path d="M466 302 Q481 313 496 300" stroke="#0B3625" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <circle cx="448" cy="252" r="8" fill="#FFFFFF" opacity="0.5"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

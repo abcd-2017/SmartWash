@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C8E8E2"/>
+      <stop offset="0.55" stop-color="#8EC8C6"/>
+      <stop offset="1" stop-color="#5AA8A4"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6BB4DE"/>
+      <stop offset="1" stop-color="#3E84B8"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.14"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#26565C" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部台面带 -->
+  <rect y="392" width="800" height="58" fill="#3E7E7C" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#346E6E" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 92 h11 M97.5 86.5 v11" stroke-width="3.2"/>
+    <path d="M706 88 h12 M712 82 v12" stroke-width="3.4"/>
+    <path d="M64 210 h9 M68.5 205.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M736 220 h9 M740.5 215.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6F4" opacity="0.55">
+    <circle cx="156" cy="146" r="4"/><circle cx="650" cy="134" r="3.4"/><circle cx="70" cy="176" r="3"/><circle cx="742" cy="176" r="2.6"/>
+  </g>
+
+  <ellipse cx="440" cy="404" rx="250" ry="18" fill="#26565C" opacity="0.32"/>
+
+  <!-- 大壶（签名表情） -->
+  <g>
+    <path d="M258 132 L258 150 Q222 158 222 186 L222 372 Q222 396 246 396 L400 396 Q424 396 424 372 L424 186 Q424 158 388 150 L388 132 Z"
+          fill="url(#glass)" stroke="#1E2620" stroke-width="10" stroke-linejoin="round"/>
+    <rect x="246" y="112" width="154" height="26" rx="12" fill="#7FA8B8" stroke="#1E2620" stroke-width="8"/>
+    <path d="M296 150 L296 378 L340 378 L340 150" fill="url(#water)" stroke="#1E2620" stroke-width="7"/>
+    <path d="M240 168 Q244 162 250 166 Q254 170 250 176 Q244 180 240 174 Z" fill="none" opacity="0"/>
+    <!-- 水面高光 -->
+    <path d="M304 158 Q318 152 334 158" stroke="#CFE8F5" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.9"/>
+    <!-- 刻度 -->
+    <g stroke="#4E7888" stroke-width="5" stroke-linecap="round">
+      <path d="M392 210 H410 M392 254 H410 M392 298 H410 M392 342 H410"/>
+    </g>
+    <!-- 表情 -->
+    <circle cx="290" cy="238" r="9" fill="#1E2620"/>
+    <circle cx="344" cy="238" r="9" fill="#1E2620"/>
+    <circle cx="293" cy="234" r="3" fill="#FFFFFF"/>
+    <circle cx="347" cy="234" r="3" fill="#FFFFFF"/>
+    <path d="M296 262 Q316 276 338 260" stroke="#1E2620" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <!-- 壶身高光 -->
+    <path d="M244 200 L244 360" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" opacity="0.5"/>
+    <path d="M264 206 L264 250" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.35"/>
+  </g>
+
+  <!-- 小壶 -->
+  <g>
+    <path d="M492 216 L492 230 Q462 238 462 262 L462 372 Q462 394 484 394 L612 394 Q634 394 634 372 L634 262 Q634 238 604 230 L604 216 Z"
+          fill="url(#glass)" stroke="#1E2620" stroke-width="10" stroke-linejoin="round"/>
+    <rect x="478" y="198" width="140" height="24" rx="12" fill="#7FA8B8" stroke="#1E2620" stroke-width="8"/>
+    <path d="M508 232 L508 380 L548 380 L548 232" fill="url(#water)" stroke="#1E2620" stroke-width="7"/>
+    <path d="M516 242 Q528 236 542 242" stroke="#CFE8F5" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.9"/>
+    <g stroke="#4E7888" stroke-width="5" stroke-linecap="round">
+      <path d="M604 280 H620 M604 316 H620 M604 352 H620"/>
+    </g>
+    <path d="M486 268 L486 366" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+  </g>
+
+  <!-- 目标线 -->
+  <path d="M448 316 L668 316" stroke="#F2C230" stroke-width="7" stroke-linecap="round" stroke-dasharray="14 12"/>
+  <path d="M676 316 L700 316" stroke="#F2C230" stroke-width="10" stroke-linecap="round"/>
+  <g fill="#F2C230" stroke="#B87820" stroke-width="4">
+    <path d="M688 288 L694 302 L710 303 L697 313 L702 328 L688 319 L674 328 L679 313 L666 303 L682 302 Z"/>
+  </g>
+
+  <!-- 水花与水滴 -->
+  <g stroke="#3A6E8E" fill="#9ED8F0" stroke-linejoin="round">
+    <path d="M458 350 Q466 336 474 350 Q468 346 462 352 Z" stroke-width="4"/>
+    <path d="M486 130 Q494 116 502 130 Q496 126 490 132 Z" stroke-width="4" opacity="0.9"/>
+    <path d="M448 168 Q454 158 460 168 Q456 165 452 170 Z" stroke-width="4" opacity="0.8"/>
+  </g>
+  <g fill="#CFE8F5" opacity="0.85">
+    <circle cx="530" cy="150" r="6"/><circle cx="560" cy="132" r="5"/><circle cx="508" cy="176" r="5"/>
+  </g>
+  <!-- 水波纹 -->
+  <path d="M150 340 Q170 332 190 340 M120 372 Q140 364 160 372 M680 356 Q700 348 720 356" stroke="#CFE8F5" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.6"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

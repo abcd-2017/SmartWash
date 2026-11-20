@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9D8C4"/>
+      <stop offset="0.55" stop-color="#D9C0A0"/>
+      <stop offset="1" stop-color="#C2A478"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#5A3E1E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#A9885E" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#95744C" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFF8EA" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M108 270 h9 M112.5 265.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M692 270 h9 M696.5 265.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF8EA" opacity="0.5">
+    <circle cx="170" cy="160" r="4"/><circle cx="712" cy="150" r="3.4"/><circle cx="70" cy="220" r="3"/><circle cx="740" cy="210" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="390" cy="404" rx="215" ry="18" fill="#6E5028" opacity="0.32"/>
+
+  <!-- 咖啡杯（俯视，主视觉） -->
+  <g>
+    <!-- 杯托 -->
+    <ellipse cx="390" cy="252" rx="185" ry="152" fill="#E9D8C4" stroke="#3A2A1E" stroke-width="10"/>
+    <ellipse cx="390" cy="248" rx="168" ry="136" fill="#F7EFE2" stroke="#3A2A1E" stroke-width="7"/>
+    <!-- 杯沿 -->
+    <ellipse cx="390" cy="248" rx="140" ry="112" fill="#E9D8C4" stroke="#3A2A1E" stroke-width="9"/>
+    <!-- 咖啡面 -->
+    <ellipse cx="390" cy="248" rx="124" ry="98" fill="#B08356" stroke="#7A5A38" stroke-width="7"/>
+    <!-- 杯把 -->
+    <path d="M560 210 Q620 200 630 248 Q638 296 578 300" fill="none" stroke="#3A2A1E" stroke-width="14" stroke-linecap="round"/>
+    <path d="M560 214 Q606 206 614 248 Q620 284 578 292" fill="none" stroke="#D9C0A0" stroke-width="8" stroke-linecap="round"/>
+    <!-- 拉花：叶形+心形（右半实线=已描，左半虚线=待描） -->
+    <g>
+      <path d="M390 312 Q360 288 348 258 Q340 232 362 214 Q382 200 390 224 Q398 200 418 214 Q440 232 432 258 Q420 288 390 312 Z"
+            fill="#FBF7F0" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round" opacity="0.92"/>
+      <path d="M390 246 V232 M390 268 Q370 260 364 244 M390 268 Q410 260 416 244 M390 250 Q374 246 370 232 M390 250 Q406 246 410 232"
+            stroke="#E6DCC8" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <!-- 拉花签名表情 -->
+      <circle cx="376" cy="264" r="6.5" fill="#3A2A1E"/>
+      <circle cx="404" cy="264" r="6.5" fill="#3A2A1E"/>
+      <path d="M380 284 Q390 292 400 283" stroke="#3A2A1E" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <circle cx="390" cy="296" r="34" fill="url(#gloss)" opacity="0.4"/>
+    </g>
+    <!-- 待描虚线（拉花轮廓延伸） -->
+    <path d="M348 258 Q330 244 334 222 Q340 200 362 196" fill="none" stroke="#FBF7F0" stroke-width="6" stroke-linecap="round" stroke-dasharray="8 10" opacity="0.85"/>
+    <path d="M432 258 Q450 244 446 222 Q440 200 418 196" fill="none" stroke="#FBF7F0" stroke-width="6" stroke-linecap="round" stroke-dasharray="8 10" opacity="0.85"/>
+  </g>
+
+  <!-- 描线笔（右上，笔尖指向虚线） -->
+  <g transform="rotate(-28 640 140)">
+    <path d="M640 96 L628 176 L652 176 Z" fill="#D9C0A0" stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M636 130 L646 130 L644 168 L638 168 Z" fill="#5BC894"/>
+    <rect x="622" y="176" width="36" height="120" rx="10" fill="#17734A" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M630 186 V286" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+  </g>
+  <!-- 笔尖落点高亮 -->
+  <circle cx="366" cy="198" r="14" fill="none" stroke="#F2C14E" stroke-width="6" opacity="0.9"/>
+  <path d="M382 184 L404 166 M354 182 L344 166" stroke="#F2C14E" stroke-width="5" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- 蒸汽弧线 -->
+  <g stroke="#FBF7F0" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.6">
+    <path d="M300 106 Q286 84 300 62 Q314 40 300 18"/>
+    <path d="M470 100 Q456 78 470 56 Q484 34 470 12"/>
+  </g>
+
+  <!-- 咖啡豆 -->
+  <g stroke="#3A2A1E" stroke-linejoin="round">
+    <path d="M118 372 Q104 344 122 330 Q140 344 148 372 Q136 386 118 372 Z" fill="#7A5A38" stroke-width="7"/>
+    <path d="M124 340 Q130 356 126 372" stroke="#B08356" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M676 380 Q664 356 680 344 Q696 356 702 380 Q690 392 676 380 Z" fill="#8A6234" stroke-width="6"/>
+    <path d="M682 352 Q686 366 682 380" stroke="#B08356" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

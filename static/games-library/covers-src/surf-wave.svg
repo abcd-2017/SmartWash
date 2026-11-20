@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A9DCF0"/>
+      <stop offset="0.55" stop-color="#7EC2E0"/>
+      <stop offset="1" stop-color="#58A8CC"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E5A7E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部海面带 -->
+  <rect y="398" width="800" height="52" fill="#3E8FB4" opacity="0.6"/>
+  <rect y="398" width="800" height="6" fill="#3480A4" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 84 h11 M101.5 78.5 v11" stroke-width="3.2"/>
+    <path d="M704 72 h12 M710 66 v12" stroke-width="3.4"/>
+    <path d="M84 200 h9 M88.5 195.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M736 220 h9 M740.5 215.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="160" cy="120" r="4"/><circle cx="700" cy="130" r="3.4"/><circle cx="70" cy="260" r="3"/><circle cx="744" cy="270" r="2.6"/>
+  </g>
+
+  <!-- 大浪（主形体） -->
+  <path d="M30 350 C150 336 240 300 316 240 C400 175 470 130 545 122 C630 114 680 160 672 215 C665 258 628 282 588 280 C630 300 690 292 736 262 L736 350 Z"
+        fill="#58B4DC" stroke="#1E2620" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M60 348 C170 332 250 296 320 240 C390 184 460 142 530 130 C460 160 370 220 280 286 C200 338 120 350 60 348 Z" fill="#7EC6E4" opacity="0.85"/>
+  <path d="M545 122 C600 132 636 168 630 208 C626 238 600 254 572 250 C598 240 612 222 608 198 C602 168 578 152 545 122 Z"
+        fill="#2E86B4" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M110 322 Q210 292 300 246" stroke="#FFFFFF" stroke-width="10" fill="none" stroke-linecap="round" opacity="0.35"/>
+  <!-- 浪花泡沫 -->
+  <g fill="#F5FBFF" stroke="#1E2620" stroke-width="5">
+    <circle cx="600" cy="116" r="16"/><circle cx="638" cy="138" r="14"/><circle cx="660" cy="170" r="14"/>
+    <circle cx="664" cy="205" r="13"/><circle cx="648" cy="240" r="14"/><circle cx="612" cy="262" r="14"/>
+  </g>
+  <circle cx="570" cy="96" r="8" fill="#FFFFFF" opacity="0.8"/>
+  <circle cx="530" cy="88" r="6" fill="#FFFFFF" opacity="0.8"/>
+  <circle cx="640" cy="92" r="7" fill="#FFFFFF" opacity="0.8"/>
+
+  <!-- 冲浪者（签名表情） -->
+  <circle cx="250" cy="282" r="10" fill="#FFFFFF" opacity="0.7"/>
+  <circle cx="275" cy="290" r="8" fill="#FFFFFF" opacity="0.7"/>
+  <ellipse cx="330" cy="270" rx="88" ry="18" fill="#E2A44E" stroke="#1E2620" stroke-width="8" transform="rotate(-16 330 270)"/>
+  <path d="M352 252 L366 220" stroke="#2D9B6A" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <path d="M312 254 L330 222" stroke="#2D9B6A" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <path d="M360 220 L388 188" stroke="#E2A44E" stroke-width="20" stroke-linecap="round" fill="none"/>
+  <path d="M384 190 L346 164" stroke="#2D9B6A" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <path d="M390 186 L432 172" stroke="#2D9B6A" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <circle cx="398" cy="158" r="26" fill="#F2E2C8" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="386" cy="142" r="7" fill="#FFFFFF" opacity="0.45"/>
+  <circle cx="390" cy="152" r="5.5" fill="#1F1A14"/>
+  <circle cx="410" cy="152" r="5.5" fill="#1F1A14"/>
+  <path d="M384 166 Q398 175 412 164" stroke="#1F1A14" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

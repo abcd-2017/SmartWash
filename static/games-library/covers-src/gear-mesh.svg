@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5FB98B"/>
+      <stop offset="0.55" stop-color="#3E9B6E"/>
+      <stop offset="1" stop-color="#2E855C"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1B4E34" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#1E6B45" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#175C3E" opacity="0.5"/>
+  <g stroke="#CFF0DD" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M98 88 h11 M103.5 82.5 v11" stroke-width="3"/>
+    <path d="M706 92 h12 M712 86 v12" stroke-width="3.4"/>
+    <path d="M120 260 h9 M124.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M732 250 h9 M736.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#CFF0DD" opacity="0.5">
+    <circle cx="160" cy="160" r="4"/><circle cx="672" cy="130" r="3.4"/><circle cx="66" cy="220" r="3"/><circle cx="752" cy="180" r="2.6"/>
+  </g>
+
+  <ellipse cx="420" cy="408" rx="270" ry="20" fill="#134630" opacity="0.4"/>
+
+  <!-- 大齿轮（签名表情在中枢） -->
+  <g>
+    <g fill="#2D9B6A" stroke="#1E2620" stroke-width="7">
+      <rect x="288" y="122" width="24" height="26" rx="6"/>
+      <rect x="288" y="122" width="24" height="26" rx="6" transform="rotate(30 300 250)"/>
+      <rect x="288" y="122" width="24" height="26" rx="6" transform="rotate(60 300 250)"/>
+      <rect x="288" y="122" width="24" height="26" rx="6" transform="rotate(90 300 250)"/>
+      <rect x="288" y="122" width="24" height="26" rx="6" transform="rotate(120 300 250)"/>
+      <rect x="288" y="122" width="24" height="26" rx="6" transform="rotate(150 300 250)"/>
+      <rect x="288" y="122" width="24" height="26" rx="6" transform="rotate(180 300 250)"/>
+      <rect x="288" y="122" width="24" height="26" rx="6" transform="rotate(210 300 250)"/>
+      <rect x="288" y="122" width="24" height="26" rx="6" transform="rotate(240 300 250)"/>
+      <rect x="288" y="122" width="24" height="26" rx="6" transform="rotate(270 300 250)"/>
+      <rect x="288" y="122" width="24" height="26" rx="6" transform="rotate(300 300 250)"/>
+      <rect x="288" y="122" width="24" height="26" rx="6" transform="rotate(330 300 250)"/>
+    </g>
+    <circle cx="300" cy="250" r="100" fill="#2D9B6A" stroke="#1E2620" stroke-width="9"/>
+    <circle cx="300" cy="250" r="100" fill="url(#gloss)"/>
+    <circle cx="238" cy="202" r="13" fill="#FFFFFF" opacity="0.45"/>
+    <circle cx="300" cy="250" r="36" fill="#17734A" stroke="#1E2620" stroke-width="7"/>
+    <circle cx="288" cy="242" r="6" fill="#0B3625"/>
+    <circle cx="312" cy="242" r="6" fill="#0B3625"/>
+    <path d="M290 258 Q300 266 310 256" stroke="#0B3625" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 中齿轮 -->
+  <g>
+    <g fill="#4A9FD4" stroke="#1E2620" stroke-width="6">
+      <rect x="500" y="102" width="20" height="18" rx="5" transform="rotate(18 510 190)"/>
+      <rect x="500" y="102" width="20" height="18" rx="5" transform="rotate(54 510 190)"/>
+      <rect x="500" y="102" width="20" height="18" rx="5" transform="rotate(90 510 190)"/>
+      <rect x="500" y="102" width="20" height="18" rx="5" transform="rotate(126 510 190)"/>
+      <rect x="500" y="102" width="20" height="18" rx="5" transform="rotate(162 510 190)"/>
+      <rect x="500" y="102" width="20" height="18" rx="5" transform="rotate(198 510 190)"/>
+      <rect x="500" y="102" width="20" height="18" rx="5" transform="rotate(234 510 190)"/>
+      <rect x="500" y="102" width="20" height="18" rx="5" transform="rotate(270 510 190)"/>
+      <rect x="500" y="102" width="20" height="18" rx="5" transform="rotate(306 510 190)"/>
+      <rect x="500" y="102" width="20" height="18" rx="5" transform="rotate(342 510 190)"/>
+    </g>
+    <circle cx="510" cy="190" r="70" fill="#4A9FD4" stroke="#1E2620" stroke-width="8"/>
+    <circle cx="510" cy="190" r="70" fill="url(#gloss)"/>
+    <circle cx="474" cy="162" r="10" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="510" cy="190" r="24" fill="#2A6A96" stroke="#1E2620" stroke-width="6"/>
+    <path d="M510 172 L518 186 L502 186 Z" fill="#F2EFE9"/>
+  </g>
+
+  <!-- 小齿轮 -->
+  <g>
+    <g fill="#E2A44E" stroke="#1E2620" stroke-width="6">
+      <rect x="591" y="247" width="18" height="16" rx="4" transform="rotate(22 600 310)"/>
+      <rect x="591" y="247" width="18" height="16" rx="4" transform="rotate(67 600 310)"/>
+      <rect x="591" y="247" width="18" height="16" rx="4" transform="rotate(112 600 310)"/>
+      <rect x="591" y="247" width="18" height="16" rx="4" transform="rotate(157 600 310)"/>
+      <rect x="591" y="247" width="18" height="16" rx="4" transform="rotate(202 600 310)"/>
+      <rect x="591" y="247" width="18" height="16" rx="4" transform="rotate(247 600 310)"/>
+      <rect x="591" y="247" width="18" height="16" rx="4" transform="rotate(292 600 310)"/>
+      <rect x="591" y="247" width="18" height="16" rx="4" transform="rotate(337 600 310)"/>
+    </g>
+    <circle cx="600" cy="310" r="45" fill="#E2A44E" stroke="#1E2620" stroke-width="8"/>
+    <circle cx="600" cy="310" r="45" fill="url(#gloss)"/>
+    <circle cx="600" cy="310" r="16" fill="#A86818" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="584" cy="288" r="8" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

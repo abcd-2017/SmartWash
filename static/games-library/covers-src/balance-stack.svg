@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DCBE86"/>
+      <stop offset="0.55" stop-color="#C9A96C"/>
+      <stop offset="1" stop-color="#B18C50"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#5E4420" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="396" width="800" height="54" fill="#9E7A40" opacity="0.6"/>
+  <rect y="396" width="800" height="6" fill="#8C6C36" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 100 h11 M101.5 94.5 v11" stroke-width="3.2"/>
+    <path d="M706 92 h12 M712 86 v12" stroke-width="3.4"/>
+    <path d="M724 260 h9 M728.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M72 270 h9 M76.5 265.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.5">
+    <circle cx="170" cy="160" r="4"/><circle cx="712" cy="170" r="3.4"/><circle cx="62" cy="220" r="3"/><circle cx="740" cy="210" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="416" rx="222" ry="16" fill="#7A5C2C" opacity="0.35"/>
+
+  <!-- 跷跷板支点 -->
+  <polygon points="400,320 340,405 460,405" fill="#8A6A3A" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+  <!-- 吊绳 -->
+  <g stroke="#3A2A1E" stroke-width="5" stroke-linecap="round">
+    <path d="M185 326 L155 362 M185 326 L215 362"/>
+    <path d="M615 326 L585 362 M615 326 L645 362"/>
+  </g>
+  <!-- 左盘砝码 -->
+  <rect x="156" y="336" width="26" height="26" rx="4" fill="#C9B691" stroke="#3A2A1E" stroke-width="6"/>
+  <rect x="188" y="336" width="26" height="26" rx="4" fill="#A98D62" stroke="#3A2A1E" stroke-width="6"/>
+  <!-- 右盘大砝码 -->
+  <rect x="585" y="330" width="60" height="32" rx="5" fill="#8A6E4A" stroke="#3A2A1E" stroke-width="7"/>
+  <!-- 双盘（正好持平） -->
+  <path d="M148 362 Q185 398 222 362 Z" fill="#C9B691" stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M578 362 Q615 398 652 362 Z" fill="#C9B691" stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round"/>
+  <!-- 跷板横梁（主视觉，带签名表情） -->
+  <rect x="165" y="296" width="470" height="30" rx="15" fill="#B98A4E" stroke="#3A2A1E" stroke-width="8"/>
+  <path d="M185 303 H235" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+  <circle cx="378" cy="307" r="7.5" fill="#1F1A14"/>
+  <circle cx="422" cy="307" r="7.5" fill="#1F1A14"/>
+  <path d="M374 313 Q400 326 426 311" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

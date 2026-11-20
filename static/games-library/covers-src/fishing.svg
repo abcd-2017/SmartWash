@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DCEEF6"/>
+      <stop offset="0.44" stop-color="#BFE0EE"/>
+      <stop offset="0.45" stop-color="#3D7EA6"/>
+      <stop offset="1" stop-color="#1F4258"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0E1D28" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带（海床） -->
+  <rect y="394" width="800" height="56" fill="#16323E" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#12262E" opacity="0.6"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M120 320 h9 M124.5 315.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M700 320 h9 M704.5 315.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="170" cy="150" r="4"/><circle cx="712" cy="140" r="3.4"/><circle cx="90" cy="200" r="3"/><circle cx="740" cy="180" r="2.6"/>
+  </g>
+
+  <!-- 水面波浪线 -->
+  <path d="M0 202 Q60 188 120 202 Q180 216 240 202 Q300 188 360 202 Q420 216 480 202 Q540 188 600 202 Q660 216 720 202 Q760 192 800 200"
+        stroke="#DCEEF6" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M0 218 Q80 208 160 218 Q240 228 320 218 Q400 208 480 218 Q560 228 640 218 Q720 208 800 216"
+        stroke="#2E6C96" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- 海草（海床） -->
+  <g stroke="#2E5E45" stroke-width="9" fill="none" stroke-linecap="round" opacity="0.85">
+    <path d="M120 394 Q112 340 128 300"/>
+    <path d="M150 394 Q160 350 146 320"/>
+    <path d="M680 394 Q672 344 690 310"/>
+    <path d="M712 394 Q722 356 706 330"/>
+  </g>
+
+  <!-- 地面阴影（鱼下） -->
+  <ellipse cx="470" cy="392" rx="130" ry="12" fill="#0E2230" opacity="0.4"/>
+
+  <!-- 钓竿（左上） -->
+  <g>
+    <path d="M84 88 L390 176" stroke="#1E2620" stroke-width="14" stroke-linecap="round"/>
+    <path d="M84 88 L390 176" stroke="#C07A4A" stroke-width="7" stroke-linecap="round"/>
+    <path d="M96 100 Q160 118 240 142" stroke="#3A2A1E" stroke-width="5" stroke-linecap="round" opacity="0.5" fill="none"/>
+    <!-- 握把与轮 -->
+    <rect x="52" y="80" width="52" height="20" rx="9" transform="rotate(14 78 90)" fill="#6E4526" stroke="#1E2620" stroke-width="7"/>
+    <circle cx="170" cy="122" r="19" fill="#3A2A1E" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="170" cy="122" r="8" fill="#C9CFC7"/>
+    <path d="M156 138 L142 158" stroke="#1E2620" stroke-width="7" stroke-linecap="round"/>
+  </g>
+
+  <!-- 鱼线（弯曲）与浮漂 -->
+  <path d="M390 176 Q470 170 520 196" stroke="#1E2620" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M520 196 Q556 216 540 252" stroke="#1E2620" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="516" cy="200" rx="17" ry="13" fill="#D96A5A" stroke="#1E2620" stroke-width="6"/>
+  <path d="M504 209 Q516 224 528 209" stroke="#1E2620" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <!-- 水花 -->
+  <g stroke="#DCEEF6" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.8">
+    <path d="M492 224 L482 240"/>
+    <path d="M540 226 L552 240"/>
+    <path d="M516 232 L514 250"/>
+  </g>
+
+  <!-- 咬钩的鱼（主视觉，带表情，挣扎） -->
+  <g>
+    <!-- 鱼钩 -->
+    <path d="M540 252 Q540 274 558 272 Q570 270 566 258" stroke="#1E2620" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <!-- 鱼身（弯，挣扎） -->
+    <path d="M470 300 Q500 268 546 278 Q588 288 592 320 Q570 312 556 320 Q568 336 556 352 Q540 336 520 344 Q528 360 512 372 Q484 360 470 340 Q454 320 470 300 Z"
+          fill="#4A9FD4" stroke="#1E2620" stroke-width="9" stroke-linejoin="round"/>
+    <!-- 鱼尾 -->
+    <path d="M470 312 Q440 296 424 306 Q440 322 436 340 Q456 344 474 334 Z"
+          fill="#2E7EA8" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+    <!-- 鱼鳍 -->
+    <path d="M524 288 Q540 272 556 280 Q544 294 528 296 Z" fill="#2E7EA8" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+    <!-- 鱼鳞纹 -->
+    <path d="M508 300 Q522 310 516 326 M532 296 Q546 306 542 324" stroke="#1E2620" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <!-- 高光 -->
+    <path d="M496 292 Q516 282 540 284" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.4"/>
+    <!-- 表情（挣扎） -->
+    <circle cx="556" cy="308" r="8" fill="#1F1A14"/>
+    <circle cx="584" cy="312" r="8" fill="#1F1A14"/>
+    <circle cx="558" cy="305" r="3" fill="#FFFFFF"/>
+    <circle cx="586" cy="309" r="3" fill="#FFFFFF"/>
+    <path d="M560 336 Q574 344 588 332" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <!-- 汗滴 -->
+    <path d="M604 288 Q612 298 604 306 Q596 298 604 288 Z" fill="#DCEEF6" stroke="#1E2620" stroke-width="4"/>
+  </g>
+
+  <!-- 气泡 -->
+  <g fill="none" stroke="#DCEEF6" stroke-width="4" opacity="0.6">
+    <circle cx="640" cy="250" r="9"/>
+    <circle cx="662" cy="220" r="6"/>
+    <circle cx="430" cy="260" r="8"/>
+    <circle cx="414" cy="230" r="5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>
