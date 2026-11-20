@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>钓鱼达人</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材（st- 前缀素材 token）*/
+  :root {
+    --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
+    --g-primary:#2D9B6A; --g-primary-deep:#17734A;--g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
+    --g-text:#1C1C1E; --g-muted:#6B6E73; --g-faint:#A9AEA9; --g-border:#E6E9E6; --g-hairline:#EFF1EE;
+    --g-danger:#A83850; --g-warning:#9A6210; --g-success:#17734A; --g-water:#4A9FD4;
+    --g-scrim:rgba(245,246,243,.9);
+    --g-shadow:0 2px 12px rgba(20,40,30,.05);
+    --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
+    --g-st-sky:#DCEEF6; --g-st-deep1:#3D7EA6; --g-st-deep2:#1F4258; --g-st-weed:#2E5E45; --g-st-boat:#C07A4A;
+    color-scheme:light;
+  }
+  :root[data-theme=dark] {
+    --g-bg:#141614; --g-surface:#1D201E; --g-surface2:#262A27;
+    --g-primary-deep:#5BC894; --g-primary-soft:#1D3229; --g-on-soft:#B9E8CF;
+    --g-text:#E6E9E6; --g-muted:#A9AEA9; --g-faint:#7E837D; --g-border:#2C312D; --g-hairline:#262A27;
+    --g-danger:#DB7186; --g-warning:#E2A44E; --g-success:#4ADE6E; --g-water:#6BB4DE;
+    --g-scrim:rgba(20,22,20,.9);
+    --g-shadow:0 2px 12px rgba(0,0,0,.28);
+    --g-st-sky:#16232B; --g-st-deep1:#1E3E52; --g-st-deep2:#0E1D28; --g-st-weed:#1F3D2C; --g-st-boat:#6E4526;
+    color-scheme:dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.5; }
+  .icon-btn {
+    width: 44px; height: 44px; flex: 0 0 44px;
+    border: 1px solid var(--g-border); border-radius: 12px;
+    background: var(--g-surface); color: var(--g-text);
+    display: grid; place-items: center; cursor: pointer; font: inherit;
+    touch-action: manipulation;
+  }
+  .icon-btn:active { opacity: .8; }
+  .scores { display: flex; gap: 8px; flex: 1; }
+  .score-box {
+    background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
+    flex: 1; min-width: 0; padding: 5px 8px; text-align: center; line-height: 1.3;
+  }
+  .score-box .label { display: block; font-size: 12px; opacity: .85; white-space: nowrap; }
+  .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
+  .stat .val { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: 14px;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
+  .stage { position: relative; }
+  canvas {
+    display: block; width: 100%; aspect-ratio: 390 / 520; height: auto;
+    background: var(--g-surface2);
+    border: 1px solid var(--g-border); border-radius: 12px;
+    touch-action: none;
+  }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: absolute; inset: 0; z-index: 5;
+    border-radius: 12px; background: var(--g-scrim);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 16px; text-align: center;
+  }
+  .overlay.show { display: flex; animation: rise .18s ease-out; }
+  @keyframes rise { from { transform: translateY(6px); } to { transform: translateY(0); } }
+  .ov-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--g-primary-deep); max-width: 100%; }
+  .ov-sub { margin: 0 0 6px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .btn-row { display: flex; gap: 8px; width: 100%; max-width: 340px; }
+  .btn-row .btn { flex: 1; }
+  .lv-wrap { width: 100%; max-width: 340px; max-height: 48vh; overflow-y: auto; }
+  .lv-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+  .lv-chip {
+    min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
+  .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
+  .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background: var(--g-surface2); color: var(--g-warning); font-size: 12px; font-weight: 700; }
+  .badge.show { display: inline-block; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="sub">抛竿定力-咬钩 QTE-收线搏鱼</span>
+    <button class="icon-btn" id="btnSelectTop" type="button" aria-label="选择关卡" title="选择关卡">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
+    </button>
+  </header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">渔获</span><span class="val" id="stFish">0/2</span></div>
+    <div class="stat"><span class="label">剩竿</span><span class="val" id="stCasts">5</span></div>
+    <div class="stat"><span class="label">得分</span><span class="val" id="stScore">0</span></div>
+  </div>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="钓鱼达人游戏画面" role="img"></canvas>
+    <div class="overlay" role="dialog" aria-modal="true" id="ovWin">
+      <span class="badge" id="ovNew">新纪录</span>
+      <h2 class="ov-title">过关！</h2>
+      <p class="ov-sub" id="ovWinDesc"></p>
+      <div class="btn-row">
+        <button class="btn" id="btnNext" type="button">下一关</button>
+        <button class="btn ghost" id="btnReplayWin" type="button">重玩</button>
+        <button class="btn ghost" id="btnSelectWin" type="button">选关</button>
+      </div>
+    </div>
+    <div class="overlay" role="dialog" aria-modal="true" id="ovFail">
+      <h2 class="ov-title">空军收场</h2>
+      <p class="ov-sub" id="ovFailDesc"></p>
+      <div class="btn-row">
+        <button class="btn" id="btnRetry" type="button">重试本关</button>
+        <button class="btn ghost" id="btnSelectFail" type="button">选关</button>
+      </div>
+    </div>
+    <div class="overlay" role="dialog" aria-modal="true" id="ovSelect">
+      <h2 class="ov-title">选择关卡</h2>
+      <div class="lv-wrap"><div class="lv-grid" id="lvGrid"></div></div>
+      <div class="btn-row"><button class="btn ghost" id="btnCloseSelect" type="button">关闭</button></div>
+    </div>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+  <div class="tools"><button class="btn ghost" id="btnRetryBottom" type="button">重玩本关</button></div>
+  <p class="foot">点画面锁定力度抛竿 · 浮漂下沉再点起竿 · 按住收线，张力爆表会断线 · 空格 / 回车同操作</p>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 核心与关卡生成（确定性纯函数；XC-CORE 供 node 抽取独立复现验证） ========== */
+/*XC-CORE-BEGIN*/
+function mulberry32(a){
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+var FS={SPECIES:[
+    {name:"小鲫鱼",band:[0.10,0.50],power:0.5,value:20},
+    {name:"锦鲤",band:[0.20,0.70],power:0.7,value:35},
+    {name:"河豚",band:[0.40,0.85],power:0.9,value:50},
+    {name:"大鲤鱼",band:[0.30,0.80],power:1.0,value:60},
+    {name:"鲶鱼",band:[0.60,0.95],power:1.1,value:70},
+    {name:"龙虾",band:[0.70,1.00],power:1.2,value:90},
+    {name:"鳜鱼",band:[0.50,0.90],power:1.3,value:120},
+    {name:"神秘巨物",band:[0.80,1.00],power:1.5,value:200}
+  ],REEL:62,TENSION_UP:24,TENSION_DOWN:40,PULL:18,BREAK_T:0.55};
+/* 关卡生成：抛竿数 5→9、目标 45%→70% 命中率、QTE 窗口 900→420ms、鱼种池渐深 */
+FS.LEVEL_COUNT=40;
+FS.genLevel=function(no){
+  var p=(no-1)/(FS.LEVEL_COUNT-1);
+  var casts=5+Math.floor(no/9);                 // 5→9
+  var need=Math.max(2,Math.round(casts*(0.45+p*0.25)));
+  var poolSize=Math.min(FS.SPECIES.length,2+Math.floor(no/5));   // 2→8
+  var pool=[];
+  for(var i=0;i<poolSize;i++)pool.push(i);
+  return {name:"第"+no+"关 · 钓鱼达人",casts:casts,need:need,
+    win:Math.round(900-p*480),pool:pool,seed:33000+no*257};
+};
+FS.validate=function(level){
+  if(!level||typeof level!=="object")return{ok:false,why:"bad"};
+  if(!isFinite(level.casts)||level.casts<3||level.casts>15||level.casts!==(level.casts|0))return{ok:false,why:"casts"};
+  if(!isFinite(level.need)||level.need<1||level.need>level.casts||level.need!==(level.need|0))return{ok:false,why:"need"};
+  if(!isFinite(level.win)||level.win<300||level.win>1500)return{ok:false,why:"win"};
+  if(!Array.isArray(level.pool)||level.pool.length<1||level.pool.length>FS.SPECIES.length)return{ok:false,why:"pool"};
+  for(var i=0;i<level.pool.length;i++){
+    var v=level.pool[i];
+    if(!isFinite(v)||v<0||v>=FS.SPECIES.length||v!==(v|0))return{ok:false,why:"sp"+i};
+  }
+  return{ok:true,why:""};
+};
+/* 单杆状态机：power→深度；wait(咬钩)→bite(QTE 窗口)→fight(收线搏鱼)；深度不合带宽则晚咬 */
+FS.createCast=function(level,castIdx,power){
+  var rng=mulberry32((level.seed||1)+castIdx*97);
+  var depth=clampf(power,0.06,1);
+  var spIdx=level.pool[(rng()*level.pool.length)|0];
+  var sp=FS.SPECIES[spIdx];
+  var compatible=depth>=sp.band[0]-0.16&&depth<=sp.band[1]+0.16;
+  if(!compatible){
+    var cand=[];
+    for(var i=0;i<level.pool.length;i++){
+      var s2=FS.SPECIES[level.pool[i]];
+      if(depth>=s2.band[0]-0.16&&depth<=s2.band[1]+0.16)cand.push(level.pool[i]);
+    }
+    if(cand.length){spIdx=cand[(rng()*cand.length)|0];sp=FS.SPECIES[spIdx];compatible=true;}
+    else{spIdx=level.pool[(rng()*level.pool.length)|0];sp=FS.SPECIES[spIdx];}
+  }
+  var biteDelay=0.9+rng()*2.2+(compatible?0:2.5);
+  var fightD=130+depth*80+sp.power*45;
+  return {phase:"wait",t:0,biteDelay:biteDelay,winT:level.win/1000,species:spIdx,
+    D:fightD,D0:fightD,tension:0.15,breakT:0,ph:rng()*6.28,depth:depth,
+    reelTime:0,status:"run"};
+};
+function clampf(v,a,b){return Math.max(a,Math.min(b,v))}
+/* 单步：holding=收线中；返回 "bite"/"hooked"/"caught"/"break"/"miss" */
+FS.step=function(st,level,dt,holding){
+  if(st.status!=="run")return st.status;
+  st.t+=dt;
+  if(st.phase==="wait"){
+    st.biteDelay-=dt;
+    if(st.biteDelay<=0){st.phase="bite";return "bite";}
+    return "run";
+  }
+  if(st.phase==="bite"){
+    st.winT-=dt;
+    if(st.winT<=0){st.status="miss";return "miss";}
+    return "run";
+  }
+  // fight：鱼挣扎节律（周期 4s，其中 1.6s 猛冲）
+  var struggle=((st.t+st.ph)%4)<1.6;
+  if(holding){
+    st.D-=FS.REEL*(struggle?0.65:1)*dt;
+    st.tension+=FS.TENSION_UP*FS.SPECIES[st.species].power*(struggle?1.7:1)*dt;
+  }else{
+    st.D+=FS.PULL*dt;
+    st.tension-=FS.TENSION_DOWN*dt;
+    if(st.tension<0.12)st.tension=0.12;
+  }
+  if(st.tension>=1){
+    st.breakT+=dt;
+    if(st.breakT>=FS.BREAK_T){st.status="break";return "break";}
+  }else{
+    st.breakT=Math.max(0,st.breakT-dt*1.5);
+  }
+  st.reelTime+=dt;
+  if(st.D<=4){st.status="caught";return "caught";}
+  if(st.reelTime>30){st.status="break";return "break";}   // 兜底：超长搏鱼判线断
+  return "run";
+};
+/* 验证：完美策略回放——力量取鱼种带宽中点、QTE 点窗口正中、张力 <0.86 收线否则松手 */
+FS.simLevel=function(level){
+  var caught=0,value=0,perCast=[],i;
+  for(i=0;i<level.casts;i++){
+    var sp=FS.SPECIES[level.pool[0]];
+    // 力量取池内最深鱼种带宽中点（完美信息）
+    var best=level.pool[0],bd=-1;
+    for(var k=0;k<level.pool.length;k++){
+      var s2=FS.SPECIES[level.pool[k]];
+      var mid=(s2.band[0]+s2.band[1])/2;
+      if(mid>bd){bd=mid;best=level.pool[k];}
+    }
+    var power=(FS.SPECIES[best].band[0]+FS.SPECIES[best].band[1])/2;
+    var st=FS.createCast(level,i,power);
+    var guard=2400,res="run",tapped=false;
+    while(guard-->0&&res==="run"){
+      res=FS.step(st,level,1/60,st.phase==="fight"&&st.tension<0.86);
+      if(res==="bite"){
+        // QTE：窗口正中点下
+        var wait=Math.max(0,(level.win/1000)/2-st.winT);
+        st.winT-=wait;
+        if(st.winT>0){st.phase="fight";res="run";}
+        else{st.status="miss";res="miss";}
+      }
+    }
+    if(st.status==="caught"){caught++;value+=FS.SPECIES[st.species].value;}
+    perCast.push(st.status);
+  }
+  return {caught:caught,value:value,perCast:perCast.join(",")};
+};
+FS.validateAll=function(){
+  var fails=[],i;
+  for(i=1;i<=FS.LEVEL_COUNT;i++){
+    var L=FS.genLevel(i);
+    var chk=FS.validate(L);
+    if(!chk.ok){fails.push(i+"("+chk.why+")");continue;}
+    var r=FS.simLevel(L);
+    if(r.caught<L.need)fails.push(i+"("+r.caught+"/"+L.need+")");
+  }
+  return {total:FS.LEVEL_COUNT,solvable:FS.LEVEL_COUNT-fails.length,fail:fails};
+};
+globalThis.__XC=FS;
+/*XC-CORE-END*/
+
+/* ========== 画布与调色板 ========== */
+var NW=390,NH=520,W=390,H=520,S=1,offX=0,offY=0;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),danger:v("--g-danger"),warning:v("--g-warning"),
+    water:v("--g-water"),success:v("--g-success"),onPrimary:v("--g-on-primary"),surface:v("--g-surface"),surface2:v("--g-surface2"),
+    sky:v("--g-st-sky"),deep1:v("--g-st-deep1"),deep2:v("--g-st-deep2"),weed:v("--g-st-weed"),boat:v("--g-st-boat")};
+}
+window.__gOnTheme=function(){palLoad();grads=null;};
+palLoad();
+var grads=null;
+function buildGrads(){grads=ctx.createLinearGradient(0,90,0,NH);grads.addColorStop(0,PAL.deep1);grads.addColorStop(1,PAL.deep2);}
+
+/* ========== 音效 ========== */
+var AC=null;
+function beep(f,d,type,vol){
+  try{
+    if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();
+    var o=AC.createOscillator(),g=AC.createGain();
+    o.type=type||"sine";o.frequency.value=f;g.gain.value=vol||0.05;
+    o.connect(g);g.connect(AC.destination);
+    g.gain.exponentialRampToValueAtTime(0.0001,AC.currentTime+(d||0.1));
+    o.start();o.stop(AC.currentTime+(d||0.1)+0.02);
+  }catch(e){}
+}
+
+/* ========== 关卡数据：包内生成 + DB 下发（整批替换，任一条非法整批放弃） ========== */
+var LEVELS=[],cur=0;
+var LEVELS_KEY="sw.fishing.v1.levels",LEVELS_VER_KEY="sw.fishing.v1.levels.ver";
+function buildDefaultLevels(){
+  var list=[];
+  for(var i=1;i<=FS.LEVEL_COUNT;i++)list.push(FS.genLevel(i));
+  return list;
+}
+function parseFishLevels(res){
+  if(!res||typeof res!=="object"||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={},i;
+  for(i=0;i<res.levels.length;i++){
+    var item=res.levels[i];
+    if(!item||typeof item!=="object")return null;
+    var d;
+    try{d=JSON.parse(item.dataJson)}catch(e){return null}
+    if(!FS.validate(d).ok)return null;
+    if(FS.simLevel(d).caught<d.need)return null;   // 下发关卡必须可完成
+    var no=parseInt(item.levelNo,10);
+    if(!isFinite(no)||no<1)no=i+1;
+    if(seen[no])return null;
+    seen[no]=true;
+    d.no=no;
+    list.push(d);
+  }
+  list.sort(function(a,b){return a.no-b.no});
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;}
+  }catch(e){}
+  return 0;
+}
+
+/* ========== 存档（本地 + 账号双写；图鉴逐种取多） ========== */
+var KEY="sw.fishing.v1";
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+var curSave=(function(){
+  try{
+    var s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s==="object")return{lv:parseInt(s.lv,10)||0,best:parseInt(s.best,10)||1,
+      dex:Array.isArray(s.dex)?s.dex:[]};
+  }catch(e){}
+  return{lv:0,best:1,dex:[]};
+})();
+var unlocked=clamp(curSave.best,1,1);
+function save(){
+  var data={lv:cur,best:unlocked,dex:curSave.dex};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("fishing",data).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("fishing").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rl=parseInt(r.lv,10),rb=parseInt(r.best,10);
+      if(isFinite(rl)&&rl>curSave.lv){curSave.lv=Math.min(rl,LEVELS.length-1);changed=true;}
+      if(isFinite(rb)&&rb>unlocked){unlocked=clamp(rb,1,LEVELS.length);changed=true;}
+      if(Array.isArray(r.dex)){
+        for(var i=0;i<r.dex.length&&i<curSave.dex.length;i++){
+          if((r.dex[i]|0)>curSave.dex[i]){curSave.dex[i]=r.dex[i]|0;changed=true;}
+        }
+      }
+      if(changed){save();buildLevelChips();startLevel(curSave.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ========== 游戏状态 ========== */
+var G=null;   // {L, castIdx, power, meterT, st, caught, score, floatMsg}
+var state="running";
+var powerLocked=false;
+var ui={
+  lv:document.getElementById("stLv"),fish:document.getElementById("stFish"),
+  casts:document.getElementById("stCasts"),score:document.getElementById("stScore"),
+  msg:document.getElementById("msg"),
+  ovWin:document.getElementById("ovWin"),ovFail:document.getElementById("ovFail"),ovSelect:document.getElementById("ovSelect"),
+  ovWinDesc:document.getElementById("ovWinDesc"),ovFailDesc:document.getElementById("ovFailDesc"),
+  ovNew:document.getElementById("ovNew"),btnNext:document.getElementById("btnNext"),
+  lvGrid:document.getElementById("lvGrid")
+};
+function say(t){ui.msg.textContent=t}
+function startLevel(n){
+  cur=clamp(n,0,Math.max(0,LEVELS.length-1));
+  var L=LEVELS[cur];
+  G={L:L,castIdx:0,power:0,meterT:0,st:null,caught:0,score:0,floats:[],bubbles:[]};
+  for(var b=0;b<10;b++)G.bubbles.push({x:Math.random()*NW,y:120+Math.random()*360,v:14+Math.random()*18,ph:Math.random()*6.28});
+  state="running";
+  showOverlay(null);
+  buildLevelChips();
+  syncHud();
+  say(L.name+" · 点画面定力度抛竿，咬钩再点，收线控张力");
+  save();
+}
+function finishWin(){
+  var got=0;
+  for(var i=0;i<FS.SPECIES.length;i++)got+=curSave.dex[i]|0;
+  var isNew=(cur+2)>unlocked;
+  unlocked=Math.min(LEVELS.length,Math.max(unlocked,cur+2));
+  save();
+  buildLevelChips();
+  ui.ovWinDesc.textContent="渔获 "+G.caught+" 尾 · 得分 "+G.score+" · 图鉴 "+got+" 条";
+  ui.ovNew.classList.toggle("show",isNew);
+  ui.btnNext.style.display=cur<LEVELS.length-1?"":"none";
+  showOverlay("win");
+  if(GB.available)GB.reportScore("fishing",{metricValue:cur+1,metricExtra:G.score}).catch(function(){});
+}
+function failLevel(reason){
+  state="failed";
+  ui.ovFailDesc.textContent=reason;
+  showOverlay("fail");
+}
+function showOverlay(name){
+  ui.ovWin.classList.toggle("show",name==="win");
+  ui.ovFail.classList.toggle("show",name==="fail");
+  ui.ovSelect.classList.toggle("show",name==="select");
+}
+function buildLevelChips(){
+  var html="";
+  for(var i=0;i<LEVELS.length;i++){
+    var cls="lv-chip"+(i===cur?" sel":"")+(i<unlocked?" done":"");
+    var dis=i<unlocked?"":" disabled";
+    html+='<button class="'+cls+'" type="button" data-lv="'+i+'"'+dis+'>'+(i+1)+'</button>';
+  }
+  ui.lvGrid.innerHTML=html;
+  var btns=ui.lvGrid.querySelectorAll(".lv-chip");
+  for(var j=0;j<btns.length;j++){
+    btns[j].addEventListener("click",function(){
+      var n=Number(this.getAttribute("data-lv"));
+      showOverlay(null);
+      startLevel(n);
+    });
+  }
+}
+function addFloat(x,y,txt,c){G.floats.push({x:x,y:y,txt:txt,c:c,life:1.0,max:1.0});}
+
+/* ========== 抛竿 / QTE / 搏鱼输入 ========== */
+function primaryTap(){
+  if(state!=="running")return;
+  if(!G.st){
+    // 抛竿：锁定当前力度
+    G.st=FS.createCast(G.L,G.castIdx,G.power);
+    powerLocked=true;
+    beep(320,0.1,"sine",0.05);
+    say("抛竿成功，等鱼咬钩…");
+    syncHud();
+    return;
+  }
+  var st=G.st;
+  if(st.phase==="bite"){
+    st.phase="fight";
+    beep(760,0.12,"square",0.06);
+    say("咬钩了！按住收线，别让张力爆表");
+    return;
+  }
+  if(st.phase==="wait"){
+    say("鱼还没上钩，耐心等浮漂下沉");
+  }
+}
+var holding=false;
+function setHold(v){
+  if(state!=="running"||!G.st)return;
+  if(v&&!holding)beep(220,0.05,"sine",0.03);
+  holding=v;
+}
+function nextCast(reason){
+  G.castIdx++;
+  G.st=null;powerLocked=false;G.power=0;
+  say(reason);
+  if(G.castIdx>=G.L.casts){
+    if(G.caught>=G.L.need){state="won";beep(660,0.12,"square",0.06);beep(880,0.16,"square",0.05);finishWin();}
+    else failLevel("抛竿用尽，渔获 "+G.caught+"/"+G.L.need);
+  }
+}
+
+/* ========== 更新 ========== */
+var last=0;
+function step(dt){
+  // 力度条摆动
+  if(!G.st){
+    G.meterT+=dt;
+    G.power=0.5+0.48*Math.sin(G.meterT*2.6);
+  }
+  // 气泡
+  for(var b=0;b<G.bubbles.length;b++){
+    var bu=G.bubbles[b];
+    bu.y-=bu.v*dt;
+    if(bu.y<100){bu.y=NH-10;bu.x=Math.random()*NW;}
+  }
+  if(G.st){
+    var res=FS.step(G.st,G.L,dt,holding&&G.st.phase==="fight");
+    if(res==="caught"){
+      var sp=FS.SPECIES[G.st.species];
+      G.caught++;G.score+=sp.value;
+      curSave.dex[G.st.species]=(curSave.dex[G.st.species]|0)+1;
+      save();
+      addFloat(200,200,"钓到 "+sp.name+" +"+sp.value,PAL.success);
+      beep(600,0.14,"triangle",0.06);
+      syncHud();
+      nextCast("继续下一竿");
+    }else if(res==="miss"){
+      addFloat(200,180,"鱼跑了…",PAL.danger);
+      beep(240,0.15,"sawtooth",0.05);
+      nextCast("鱼溜了，再抛一竿");
+    }else if(res==="break"){
+      addFloat(200,180,"线断了！",PAL.danger);
+      beep(180,0.2,"sawtooth",0.06);
+      nextCast("线断了，张力别拉满");
+    }
+    syncHud();
+  }
+  for(var f=G.floats.length-1;f>=0;f--){
+    var fl=G.floats[f];
+    fl.y-=30*dt;fl.life-=dt;
+    if(fl.life<=0)G.floats.splice(f,1);
+  }
+}
+function syncHud(){
+  ui.lv.textContent=(cur+1)+"/"+LEVELS.length;
+  ui.fish.textContent=G.caught+"/"+G.L.need;
+  ui.casts.textContent=Math.max(0,G.L.casts-G.castIdx);
+  ui.score.textContent=String(G.score);
+}
+
+/* ========== 绘制 ========== */
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(offX,offY);ctx.scale(S,S);
+  // 天空
+  ctx.fillStyle=PAL.sky;
+  ctx.fillRect(0,0,NW,92);
+  // 水体
+  if(!grads)buildGrads();
+  ctx.fillStyle=grads;
+  ctx.fillRect(0,92,NW,NH-92);
+  // 水面线
+  ctx.strokeStyle=PAL.water;ctx.lineWidth=2.4;
+  ctx.beginPath();
+  for(var wx=0;wx<=NW;wx+=8){
+    var wy=92+Math.sin(wx*0.05+G.meterT*2)*2.4;
+    if(wx===0)ctx.moveTo(wx,wy);else ctx.lineTo(wx,wy);
+  }
+  ctx.stroke();
+  // 海草
+  ctx.fillStyle=PAL.weed;
+  for(var w2=0;w2<5;w2++){
+    var bx=30+w2*80+Math.sin(G.meterT*0.8+w2)*4;
+    ctx.beginPath();
+    ctx.moveTo(bx-6,NH);ctx.quadraticCurveTo(bx+Math.sin(G.meterT+w2)*8,NH-60,bx,NH-100);
+    ctx.quadraticCurveTo(bx+8,NH-50,bx+6,NH);
+    ctx.fill();
+  }
+  // 气泡
+  ctx.strokeStyle="rgba(255,255,255,.4)";ctx.lineWidth=1.2;   // 恒白气泡，素材例外
+  for(var b2=0;b2<G.bubbles.length;b2++){
+    ctx.beginPath();ctx.arc(G.bubbles[b2].x,G.bubbles[b2].y,3.2,0,6.3);ctx.stroke();
+  }
+  // 小船与钓竿
+  ctx.fillStyle=PAL.boat;
+  rr(20,74,90,20,8);ctx.fill();
+  ctx.strokeStyle=PAL.deep;ctx.lineWidth=1.6;ctx.stroke();
+  var rodX=100,rodY=70;
+  ctx.strokeStyle=PAL.deep;ctx.lineWidth=3;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(rodX-24,rodY+22);ctx.lineTo(rodX,rodY-24);ctx.lineTo(rodX+52,rodY+10);ctx.stroke();
+  var tipX=rodX+52,tipY=rodY+10;
+  // 钩与线
+  var hookX=200,hookY;
+  if(G.st){
+    var st=G.st;
+    var depthPx=110+st.depth*330;
+    if(st.phase==="fight"||st.status==="caught"){
+      // 搏鱼：鱼在水下 D 距离处（画在水深处）
+      hookY=clampf(110+st.depth*330,110,470);
+      hookX=200+Math.sin(st.t*3)*10;
+    }else{
+      hookY=depthPx;
+      hookX=200;
+    }
+    ctx.strokeStyle="rgba(255,255,255,.65)";ctx.lineWidth=1.2;   // 恒白鱼线，素材例外
+    ctx.beginPath();
+    ctx.moveTo(tipX,tipY);
+    ctx.quadraticCurveTo(150,(tipY+hookY)/2,hookX,hookY-14);
+    ctx.stroke();
+  }else{
+    // 未抛竿：力度条指示
+    hookY=-100;
+  }
+  // 咬钩 / 搏鱼主体
+  if(G.st){
+    var st2=G.st;
+    if(st2.phase==="bite"){
+      var frac=clampf(st2.winT/(G.L.win/1000),0,1);
+      ctx.fillStyle=PAL.warning;
+      ctx.font="700 28px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+      ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText("咬钩！",200,130);
+      ctx.strokeStyle=PAL.danger;ctx.lineWidth=4;
+      ctx.beginPath();ctx.arc(200,150,26*frac+8,0,6.3);ctx.stroke();
+    }
+    if(st2.phase==="fight"){
+      // 鱼影
+      var fx=hookX,fy=hookY+10;
+      ctx.fillStyle=PAL.water;
+      ctx.globalAlpha=0.75;
+      ctx.beginPath();ctx.ellipse(fx,fy,17,9,Math.sin(st2.t*6)*0.3,0,6.3);ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(fx-15,fy);ctx.lineTo(fx-26,fy-7);ctx.lineTo(fx-26,fy+7);ctx.closePath();ctx.fill();
+      ctx.globalAlpha=1;
+      // 张力条
+      var tx=352,ty=120,th=260;
+      ctx.fillStyle=PAL.surface;
+      rr(tx-10,ty,20,th,10);ctx.fill();
+      ctx.strokeStyle=PAL.border;ctx.lineWidth=1.4;ctx.stroke();
+      var tcol=st2.tension>0.85?PAL.danger:(st2.tension>0.6?PAL.warning:PAL.success);
+      ctx.fillStyle=tcol;
+      var th2=th*clampf(st2.tension,0,1);
+      rr(tx-8,ty+th-th2,16,Math.max(4,th2),8);ctx.fill();
+      ctx.fillStyle=PAL.muted;
+      ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+      ctx.textAlign="center";ctx.textBaseline="alphabetic";
+      ctx.fillText("张力",tx,ty-8);
+      // 收线距离
+      ctx.fillStyle=PAL.onPrimary;
+      ctx.font="700 16px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+      ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText(Math.round(st2.D)+"m",tx,ty+th+18);
+      if(st2.breakT>0){
+        ctx.fillStyle=PAL.danger;
+        ctx.font="700 14px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+        ctx.fillText("危险！",tx,ty-24);
+      }
+    }
+  }
+  // 力度条（未抛竿时）
+  if(!G.st){
+    var px2=332,py2=120,ph2=260;
+    ctx.fillStyle=PAL.surface;
+    rr(px2-10,py2,20,ph2,10);ctx.fill();
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=1.4;ctx.stroke();
+    // 鱼种深度带参考
+    for(var s3=0;s3<G.L.pool.length;s3++){
+      var sp2=FS.SPECIES[G.L.pool[s3]];
+      ctx.fillStyle=PAL.water;
+      ctx.globalAlpha=0.25;
+      ctx.fillRect(px2-10,py2+ph2*(1-sp2.band[1]),20,ph2*(sp2.band[1]-sp2.band[0]));
+      ctx.globalAlpha=1;
+    }
+    var py3=py2+ph2*(1-clampf(G.power,0,1));
+    ctx.fillStyle=PAL.warning;
+    rr(px2-8,py3-5,16,10,5);ctx.fill();
+    ctx.fillStyle=PAL.muted;
+    ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.textAlign="center";ctx.textBaseline="alphabetic";
+    ctx.fillText("抛竿力度",px2,py2-8);
+    ctx.fillStyle=PAL.text;
+    ctx.font="700 16px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.textBaseline="middle";
+    ctx.fillText(Math.round(G.power*100)+"%",px2,py3);
+  }
+  // 浮漂
+  if(G.st&&G.st.phase==="wait"){
+    var bobY=92+Math.sin(G.meterT*3)*3;
+    ctx.fillStyle=PAL.danger;
+    ctx.beginPath();ctx.arc(200,bobY,6,0,6.3);ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.6)";
+    ctx.beginPath();ctx.arc(198,bobY-2,2.2,0,6.3);ctx.fill();
+  }
+  // 浮字
+  ctx.font="700 18px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="alphabetic";
+  for(var f2=0;f2<G.floats.length;f2++){
+    var fl=G.floats[f2];
+    ctx.globalAlpha=Math.max(0,fl.life/fl.max);
+    ctx.fillStyle=fl.c;
+    ctx.fillText(fl.txt,fl.x,fl.y);
+  }
+  ctx.globalAlpha=1;
+  syncHud();
+  ctx.restore();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  rr(offX+0.5,offY+0.5,NW*S-1,NH*S-1,10);ctx.stroke();
+}
+
+/* ========== 输入：点按 = 抛竿 / QTE；按住 = 收线（触屏与键盘一致） ========== */
+cv.addEventListener("pointerdown",function(ev){
+  primaryTap();
+  setHold(true);
+  ev.preventDefault();
+});
+cv.addEventListener("pointerup",function(){setHold(false);});
+cv.addEventListener("pointercancel",function(){setHold(false);});
+
+window.addEventListener("keydown",function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k===" "||k==="Enter"){
+    e.preventDefault();
+    if(!e.repeat)primaryTap();
+    setHold(true);
+  }
+});
+window.addEventListener("keyup",function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k===" "||k==="Enter"){e.preventDefault();setHold(false);}
+});
+
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&state==="running"){say("已暂停 · 切回继续垂钓");holding=false;}
+});
+
+/* ========== 主循环与启动 ========== */
+function resize(){
+  var r=cv.getBoundingClientRect();
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.max(240,Math.floor(r.width));
+  H=Math.max(320,Math.floor(r.height));
+  cv.width=Math.floor(W*dpr);cv.height=Math.floor(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  S=Math.min(W/NW,H/NH);
+  offX=(W-NW*S)/2;offY=(H-NH*S)/2;
+}
+window.addEventListener("resize",resize);
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(!last)last=ts;
+  var dt=Math.min(0.033,(ts-last)/1000||0);
+  last=ts;
+  if(state==="running"&&G)step(dt);
+  draw();
+}
+
+document.getElementById("btnSelectTop").addEventListener("click",function(){buildLevelChips();showOverlay("select");});
+document.getElementById("btnSelectWin").addEventListener("click",function(){buildLevelChips();showOverlay("select");});
+document.getElementById("btnSelectFail").addEventListener("click",function(){buildLevelChips();showOverlay("select");});
+document.getElementById("btnCloseSelect").addEventListener("click",function(){showOverlay(null);});
+document.getElementById("btnNext").addEventListener("click",function(){startLevel(cur<LEVELS.length-1?cur+1:0);});
+document.getElementById("btnReplayWin").addEventListener("click",function(){startLevel(cur);});
+document.getElementById("btnRetry").addEventListener("click",function(){startLevel(cur);});
+document.getElementById("btnRetryBottom").addEventListener("click",function(){startLevel(cur);});
+
+/* 调试验证入口：完美策略回放逐关复现（咬钩窗口 / 收线张力动力学） */
+window.__validateLevels=function(){
+  try{return FS.validateAll()}catch(e){return {error:String(e)}}
+};
+
+resize();
+LEVELS=buildDefaultLevels();
+loadCachedLevels();
+cur=clamp(parseInt(curSave.lv,10)||0,0,Math.max(0,LEVELS.length-1));
+unlocked=clamp(parseInt(curSave.best,10)||1,1,Math.max(1,LEVELS.length));
+startLevel(cur);
+requestAnimationFrame(frame);
+(function(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels("fishing").then(function(res){
+    var list=parseFishLevels(res);
+    if(!list||!list.length)return;
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      startLevel(cur);
+    }
+  }).catch(function(){});
+})();
+syncSaveFromServer();
+
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

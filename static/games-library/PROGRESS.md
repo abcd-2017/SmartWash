@@ -286,3 +286,26 @@
   - 同步远程「九款算法游戏各扩容百关 + 六款每日挑战模式」（冲突四处全部合并双方：WorkbenchPage 搜索+扫一扫行/whack-a-mole、lights-out 每日按钮/billiards 新基线 token/memory-cards 每日挑战变量+后台计时暂停）；audit-gates 62 款 0 违规、theme-gates 62/62。
   - 统一图标库 `SW_ICON`（24 viewBox 线性、stroke=currentColor 跟随主题）：38 款游戏约 93 处 unicode 图标（→/★☆/✓✕/方向键/花色/旋转/删除等）替换为内联 SVG，消除 craft-floor「Unicode 充当图标系统」红线；CSS 伪元素图标改 DOM 注入（lights-out 星标/minesweeper 错旗）。
   - 游戏封面定版方案 A（GAME-COVER.md 决策记录）；12 款新游戏封面按 A 落地（25-36KB，covers-src 共 62 份）。
+
+- **2026-11-20（新游戏·自研入库·扩展总表第一批）52 款（游戏库 72 → 124 款）**：
+  净室自研（零外链、零素材、canvas/DOM 自绘），出生即按 §6 规范并登记 audit-gates STRICT。
+  批次清单（52 款，按 category 分组）：
+  - arcade（32）：doodle-jump helix-jump blob-eat virus-defense fishing lane-defense tower-defense rock-climb kite-duel balloon-dart pancake-flip steady-chop feather-blow lantern-rise paper-glide pinball-mini target-rush key-turn bell-strike dish-stack road-hop log-hop lift-dodge belt-sort pizza-toss pocket-putt bubble-line coin-flick hoop-roll egg-catch cargo-balance rope-swing
+  - puzzle（15）：fire-ice rope-cut nut-bolt river-cross torch-bridge water-jug scale-ball knight-tour eight-queens kakuro calc-doku slitherlink nurikabe hashi-wire shikaku
+  - other（5）：milk-tea domino-chain marble-run latte-line sushi-grab
+  审计结论：`audit-gates.mjs` 全库 124 款**严格模式 0 违规**、存量模式 0 违规（遗留项见信息行）；
+  `theme-gates.mjs` 124/124 全绿（JS 语法 / 零外链 / 体积增幅）。
+  关卡验证总结论：34 款关卡驱动（各 40-48 关）程序化可解性 / 可通关性验证全部通过——
+  15 款内置 `window.__validateLevels()` 实测 40/40 可通；13 款（kakuro / calc-doku / slitherlink /
+  nurikabe / hashi-wire / shikaku / river-cross / torch-bridge / water-jug / scale-ball / knight-tour /
+  eight-queens / cargo-balance）由游戏内嵌独立求解器逐关复核通过；5 款（steady-chop / domino-chain /
+  nut-bolt / key-turn / bell-strike）经独立模型（时间余量 / BFS 可达 / 0-1 BFS 最小步数 / 对位窗口 /
+  谱面密度）逐关复核通过；marble-run 42 关经独立束搜索（沿用包内弹珠物理，按库存逐步放置部件）复现
+  42/42 可进桶。
+  体积范围：单款 19,279B（hoop-roll）– 51,950B（bell-strike），52 款合计 1.56MB。
+  终审修复：shikaku 补全内嵌核心（44 关数据 / 存档 / 过关选关 / 关卡与存档同步）并修正唯一解校验；
+  river-cross 修 BFS 哨兵导致全关误判无解；nurikabe / slitherlink 补启动首帧绘制；knight-tour 修巡游
+  求解器重复入栈致验证 / 提示失效（并提高搜索预算）；calc-doku 移除误用格下标的除法笼校验致 21 关拒载；
+  scale-ball 修已知偏重关卡的候选分类与提示状态口径（翘起侧被误记为偏轻候选，致提示误报「无必胜策略」、
+  候选数虚高）；补齐 river-cross / torch-bridge / water-jug / scale-ball / knight-tour / eight-queens /
+  calc-doku / shikaku 8 份 README（首行元数据格式均已核验）。

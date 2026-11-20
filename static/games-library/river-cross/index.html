@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>狼羊菜渡河</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-grass:#C9E5C4;--g-st-grass2:#AFD6A8;--g-st-boat:#B98A4E;--g-st-boat2:#8F6A3A;--g-st-i1:#8A5A44;--g-st-i2:#6B7F8F;--g-st-i3:#5C9E54;--g-st-i4:#C98A3B;--g-st-i5:#8E6FA8;--g-st-i6:#C9626F;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-grass:#33422F;--g-st-grass2:#2A3627;--g-st-boat:#6E5330;--g-st-boat2:#4E3B22;--g-st-i1:#B08468;--g-st-i2:#93A6B5;--g-st-i3:#7FB877;--g-st-i4:#D9A55C;--g-st-i5:#AC90C4;--g-st-i6:#DB8290;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
+  .btn.ghost { background: transparent; color: var(--g-primary-deep); box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+
+  .pairrow { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 0 2px 8px; min-height: 22px; }
+  .pair { font-size: 12px; color: var(--g-danger); background: var(--g-surface2); border-radius: 10px; padding: 2px 10px; }
+  .pair.ok { color: var(--g-muted); }
+  .ctl.wide { width: 100%; }
+  .ctl {
+    flex: 1; min-height: 48px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-btn-primary); color: #fff;
+    font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer;
+  }
+  .ctl:active { opacity: .75; }
+  .ctl[disabled] { opacity: .45; }
+
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/46</span></div>
+    <div class="stat"><span class="label">摆渡</span><span class="val" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">参考最优</span><span class="val" id="stPar">-</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="渡河场景：左岸、河面、右岸与小船" role="img"></canvas></div>
+  <div class="pairrow" id="pairrow"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点岸上的物品装船、点船上的物品卸下，然后开船</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo">撤销</button>
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <button class="ctl wide" id="btnSail">开　船</button>
+  <p class="foot">键盘：1-9 上下物品 · 空格开船 · Z 撤销 · H 提示 · 46 关递进 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+    <button class="btn" id="ovUndo" hidden>撤销这步</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="river-cross",SAVE_KEY="sw.rivercross.v1";
+var DEFAULT_LEVELS=[{"name":"渡河·01","items":["农夫","狼","虎","羊"],"bad":[[1,3],[3,2]],"cap":2,"rower":0,"par":7,"difficulty":1},{"name":"渡河·02","items":["农夫","狼","虎","蛇","鸡"],"bad":[[1,4],[3,4]],"cap":2,"rower":0,"par":9,"difficulty":1},{"name":"渡河·03","items":["农夫","狼","鸡","羊"],"bad":[[1,2],[1,3]],"cap":3,"rower":0,"par":5,"difficulty":1,"w":[1,1,1,2]},{"name":"渡河·04","items":["农夫","狼","虎","蛇","鸡"],"bad":[[1,4],[3,4]],"cap":3,"rower":0,"par":5,"difficulty":1,"w":[1,1,1,1,2]},{"name":"渡河·05","items":["狼","虎","鹰","鸡","兔"],"bad":[[0,3],[4,0],[3,2],[4,2]],"cap":2,"rower":-1,"par":5,"difficulty":2},{"name":"渡河·06","items":["狼","虎","蛇","鹰","鸡","羊"],"bad":[[0,4],[0,5],[5,1],[2,4],[4,3]],"cap":2,"rower":-1,"par":7,"difficulty":2},{"name":"渡河·07","items":["狼","虎","蛇","鸡"],"bad":[[0,3],[2,3]],"cap":1,"rower":-1,"par":9,"difficulty":2},{"name":"渡河·08","items":["农夫","狼","虎","蛇","鹰","羊"],"bad":[[1,5],[5,2]],"cap":2,"rower":0,"par":11,"difficulty":2},{"name":"渡河·09","items":["农夫","狼","蛇","鸡"],"bad":[[1,3],[2,3]],"cap":2,"rower":0,"par":7,"difficulty":2},{"name":"渡河·10","items":["农夫","狼","虎","蛇","羊"],"bad":[[1,4],[4,2]],"cap":2,"rower":0,"par":9,"difficulty":2},{"name":"渡河·11","items":["农夫","狼","鸡","兔"],"bad":[[1,2],[3,1]],"cap":3,"rower":0,"par":5,"difficulty":3,"w":[1,1,1,2]},{"name":"渡河·12","items":["农夫","狼","虎","蛇","羊"],"bad":[[1,4],[4,2]],"cap":3,"rower":0,"par":5,"difficulty":3,"w":[1,1,1,1,2]},{"name":"渡河·13","items":["狼","虎","鸡","羊","兔"],"bad":[[0,2],[0,3],[4,0],[3,1]],"cap":2,"rower":-1,"par":5,"difficulty":3},{"name":"渡河·14","items":["狼","虎","蛇","鹰","鸡","鼠"],"bad":[[0,4],[2,4],[2,5],[4,3],[3,5]],"cap":2,"rower":-1,"par":7,"difficulty":3},{"name":"渡河·15","items":["狼","虎","蛇","羊"],"bad":[[0,3],[3,1]],"cap":1,"rower":-1,"par":9,"difficulty":4},{"name":"渡河·16","items":["农夫","狼","虎","蛇","鹰","鼠"],"bad":[[3,5],[4,5]],"cap":2,"rower":0,"par":11,"difficulty":4},{"name":"渡河·17","items":["农夫","狼","鹰","鸡"],"bad":[[1,3],[3,2]],"cap":2,"rower":0,"par":7,"difficulty":4},{"name":"渡河·18","items":["农夫","狼","虎","鹰","鸡"],"bad":[[1,4],[4,3]],"cap":2,"rower":0,"par":9,"difficulty":4},{"name":"渡河·19","items":["农夫","狼","羊","兔"],"bad":[[1,2],[3,1]],"cap":3,"rower":0,"par":5,"difficulty":4,"w":[1,1,1,2]},{"name":"渡河·20","items":["农夫","狼","虎","鹰","鸡"],"bad":[[1,4],[4,3]],"cap":3,"rower":0,"par":5,"difficulty":4,"w":[1,1,1,1,2]},{"name":"渡河·21","items":["狼","蛇","鹰","鸡","羊"],"bad":[[0,3],[0,4],[1,3],[3,2]],"cap":2,"rower":-1,"par":5,"difficulty":4},{"name":"渡河·22","items":["狼","虎","蛇","鹰","鸡","兔"],"bad":[[0,4],[5,0],[2,4],[4,3],[5,3]],"cap":2,"rower":-1,"par":7,"difficulty":4},{"name":"渡河·23","items":["狼","虎","鹰","鸡"],"bad":[[0,3],[3,2]],"cap":1,"rower":-1,"par":9,"difficulty":5},{"name":"渡河·24","items":["农夫","狼","虎","蛇","鹰","兔"],"bad":[[5,1],[5,4]],"cap":2,"rower":0,"par":11,"difficulty":5},{"name":"渡河·25","items":["农夫","狼","鹰","兔"],"bad":[[3,1],[3,2]],"cap":2,"rower":0,"par":7,"difficulty":5},{"name":"渡河·26","items":["农夫","狼","虎","鹰","羊"],"bad":[[1,4],[4,2]],"cap":2,"rower":0,"par":9,"difficulty":5},{"name":"渡河·27","items":["农夫","虎","羊","牛"],"bad":[[2,1],[3,1]],"cap":3,"rower":0,"par":5,"difficulty":5,"w":[1,1,1,2]},{"name":"渡河·28","items":["农夫","狼","虎","鹰","羊"],"bad":[[1,4],[4,2]],"cap":3,"rower":0,"par":5,"difficulty":5,"w":[1,1,1,1,2]},{"name":"渡河·29","items":["狼","蛇","鸡","羊","兔"],"bad":[[0,2],[0,3],[4,0],[1,2]],"cap":2,"rower":-1,"par":5,"difficulty":5},{"name":"渡河·30","items":["狼","虎","鹰","鸡","鼠","兔"],"bad":[[0,3],[5,0],[3,2],[2,4],[5,2]],"cap":2,"rower":-1,"par":7,"difficulty":5},{"name":"渡河·31","items":["狼","虎","鹰","羊"],"bad":[[0,3],[3,1]],"cap":1,"rower":-1,"par":9,"difficulty":6},{"name":"渡河·32","items":["农夫","狼","虎","蛇","猫","鸡"],"bad":[[1,5],[3,5]],"cap":2,"rower":0,"par":11,"difficulty":6},{"name":"渡河·33","items":["农夫","狼","虎","鹰","兔"],"bad":[[4,1],[4,3]],"cap":2,"rower":0,"par":9,"difficulty":6},{"name":"渡河·34","items":["农夫","狼","虎","鹰","兔"],"bad":[[4,1],[4,3]],"cap":3,"rower":0,"par":5,"difficulty":6,"w":[1,1,1,1,2]},{"name":"渡河·35","items":["狼","鹰","猫","鸡","兔"],"bad":[[0,3],[4,0],[3,1],[4,1]],"cap":2,"rower":-1,"par":5,"difficulty":6},{"name":"渡河·36","items":["狼","虎","鸡","羊","牛","兔"],"bad":[[0,2],[0,3],[5,0],[3,1],[4,1]],"cap":2,"rower":-1,"par":7,"difficulty":6},{"name":"渡河·37","items":["狼","虎","鹰","兔"],"bad":[[3,0],[3,2]],"cap":1,"rower":-1,"par":9,"difficulty":6},{"name":"渡河·38","items":["农夫","狼","虎","猫","羊"],"bad":[[1,4],[4,2]],"cap":2,"rower":0,"par":9,"difficulty":6},{"name":"渡河·39","items":["农夫","狼","虎","猫","羊"],"bad":[[1,4],[4,2]],"cap":3,"rower":0,"par":5,"difficulty":6,"w":[1,1,1,1,2]},{"name":"渡河·40","items":["狼","鹰","鸡","牛","兔"],"bad":[[0,2],[4,0],[2,1],[4,1]],"cap":2,"rower":-1,"par":5,"difficulty":6},{"name":"渡河·41","items":["狼","蛇","鹰","猫","鸡","鼠"],"bad":[[0,4],[1,4],[1,5],[4,2],[2,5],[3,5]],"cap":2,"rower":-1,"par":7,"difficulty":6},{"name":"渡河·42","items":["狼","虎","猫","羊"],"bad":[[0,3],[3,1]],"cap":1,"rower":-1,"par":9,"difficulty":6},{"name":"渡河·43","items":["农夫","狼","虎","鸡","牛"],"bad":[[1,3],[4,2]],"cap":3,"rower":0,"par":5,"difficulty":6,"w":[1,1,1,1,2]},{"name":"渡河·44","items":["虎","蛇","鹰","鸡","鼠"],"bad":[[1,3],[1,4],[3,2],[2,4]],"cap":2,"rower":-1,"par":5,"difficulty":6},{"name":"渡河·45","items":["农夫","狼","虎","羊","牛"],"bad":[[1,3],[3,2],[4,2]],"cap":3,"rower":0,"par":5,"difficulty":6,"w":[1,1,1,1,2]},{"name":"渡河·46","items":["蛇","鹰","猫","鼠","兔"],"bad":[[0,3],[1,3],[4,1],[2,3]],"cap":2,"rower":-1,"par":5,"difficulty":6}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seenName={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    if(seenName[d.name])return null;
+    seenName[d.name]=1;
+    list.push(normalizeLevel(d));
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){
+      LEVELS=list.map(normalizeLevel);return v;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);
+      if(typeof resize==="function")resize();
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层（lvgrid 通用） ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  var u=$("ovUndo");
+  if(u)u.hidden=true;
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+/* 单条结构校验 */
+function validLevelData(d){
+  if(!d||typeof d!=='object'||Array.isArray(d))return false;
+  if(typeof d.name!=='string'||!d.name.trim())return false;
+  if(!Array.isArray(d.items)||d.items.length<2||d.items.length>7)return false;
+  for(var i=0;i<d.items.length;i++){if(typeof d.items[i]!=='string'||!d.items[i]||d.items[i].length>4)return false;}
+  if(!Number.isInteger(d.cap)||d.cap<1||d.cap>6)return false;
+  if(d.w!==undefined){
+    if(!Array.isArray(d.w)||d.w.length!==d.items.length)return false;
+    for(var wi=0;wi<d.w.length;wi++){if(!Number.isInteger(d.w[wi])||d.w[wi]<1||d.w[wi]>2)return false;}
+  }
+  var rower=(d.rower===undefined)?-1:d.rower;
+  if(!Number.isInteger(rower)||rower<-1||rower>=d.items.length)return false;
+  if(!Array.isArray(d.bad))return false;
+  for(var j=0;j<d.bad.length;j++){
+    var p=d.bad[j];
+    if(!Array.isArray(p)||p.length!==2)return false;
+    for(var k=0;k<2;k++){if(!Number.isInteger(p[k])||p[k]<0||p[k]>=d.items.length||p[0]===p[1])return false;}
+  }
+  return true;
+}
+/* par 缺省时由内嵌 BFS 补算（依赖游戏侧 riverBFS） */
+function normalizeLevel(d){
+  var par=Number.isInteger(d.par)&&d.par>0?d.par:riverBFS(d.items.length,d.bad.map(function(p){return [p[0],p[1]];}),d.cap,(d.rower===undefined?-1:d.rower),-1);
+  var diff=Number.isInteger(d.difficulty)?Math.min(9,Math.max(1,d.difficulty)):5;
+  var w=(d.w===undefined)?null:d.w.slice();
+  return {name:String(d.name),items:d.items.slice(),bad:d.bad.map(function(p){return [p[0],p[1]];}),cap:d.cap,w:w,rower:(d.rower===undefined?-1:d.rower),par:par,difficulty:diff};
+}
+/* ---------- 独立求解器：BFS 最少摆渡（用于加载复核与提示） ---------- */
+/* badPairs:[[i,j]..]; rower:-1 或下标；start:[mask,side]，缺省为满员左岸；返回 {par, firstMove, fromPar}
+   firstMove：从 start 出发的下一跳应载物品下标数组（start 即达终点时为 []，无解为 null） */
+function riverBFS(n,badPairs,cap,rower,startMask,startSide,ws){
+  var full=(1<<n)-1;
+  var s0=(startMask===undefined||startMask<0)?full:startMask;
+  var s1=(startSide===undefined||startSide<0)?0:startSide;
+  var goal=(0*2)+1;
+  function confAt(m){for(var q=0;q<badPairs.length;q++){var p=badPairs[q];if((m>>p[0]&1)&&(m>>p[1]&1))return true;}return false;}
+  function safe(mask,side){var unatt=(side===0)?(~mask&full):mask;return !confAt(unatt);}
+  var dist=new Map(),parent=new Map();
+  var k0=s0*2+s1;dist.set(k0,0);
+  var q=[[s0,s1]];
+  while(q.length){
+    var cur=q.shift(),mask=cur[0],side=cur[1],d=dist.get(mask*2+side);
+    var key=mask*2+side;
+    if(key===goal){
+      var firstMove=[],k=goal;
+      while(k!==k0){
+        var pk=parent.get(k);
+        if(pk===k0){
+          var pm=Math.floor(k/2),pm0=Math.floor(pk/2);
+          for(var b=0;b<n;b++)if((pm^pm0)>>b&1)firstMove.push(b);
+          break;
+        }
+        k=pk;
+      }
+      return {par:d,firstMove:firstMove};
+    }
+    var here=[];
+    for(var i=0;i<n;i++)if((mask>>i&1)===(side===0?1:0))here.push(i);
+    for(var sub=0;sub<(1<<here.length);sub++){
+      var wt=0,hasRower=(rower<0);
+      for(var t=0;t<here.length;t++)if(sub>>t&1){wt+=(ws&&ws[here[t]])||1;if(here[t]===rower)hasRower=true;}
+      if(wt>cap||(rower>=0&&!hasRower))continue;
+      var nm=mask;
+      for(var u=0;u<here.length;u++)if(sub>>u&1)nm^=(1<<here[u]);
+      var ns=1-side,nk=nm*2+ns;
+      if(dist.has(nk)||!safe(nm,ns))continue;
+      dist.set(nk,d+1);parent.set(nk,key);q.push([nm,ns]);
+    }
+  }
+  return {par:0,firstMove:null};
+}
+/* ---------- 调色板：UI 走 token，水面/船/物品为素材色 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),water:v("--g-water"),
+    grass:v("--g-st-grass"),grass2:v("--g-st-grass2"),boat:v("--g-st-boat"),boat2:v("--g-st-boat2"),
+    i1:v("--g-st-i1"),i2:v("--g-st-i2"),i3:v("--g-st-i3"),i4:v("--g-st-i4"),i5:v("--g-st-i5"),i6:v("--g-st-i6")};
+}
+window.__gOnTheme=function(){palLoad()};//App 推送主题时刷新调色板，rAF 自动重绘
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,items=[],badPairs=[],cap=1,rower=-1,weights=null,hasW0=false;
+var leftMask=0,side=0,load=[],history=[],moves=0;
+var done=false,failed=false,failText="";
+var itemPos=[],hintMove=null,hintT=0;
+var boatX=0,boatTarget=0,moving=false;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=0,H=300,bankW=120;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function onBank(i){return i>=0&&i<items.length&&((leftMask>>i&1)===1)}
+/* 物品配色（语义近似归类） */
+var COLOR_MAP={"狼":1,"虎":1,"牛":1,"鹰":2,"猫":2,"鼠":2,"蛇":5,"鸡":4,"米":4,"虫":4,"羊":6,"兔":6,"菜":3,"草":3,"鹿":3};
+function colorOf(i){
+  if(rower>=0&&i===rower)return PAL.primary;
+  var c=COLOR_MAP[items[i]];
+  return [PAL.i1,PAL.i2,PAL.i3,PAL.i4,PAL.i5,PAL.i6][(c||((i%6)+1))-1];
+}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  items=L.items;badPairs=L.bad;cap=L.cap;rower=L.rower;weights=L.w||null;
+  hasW0=!!(weights&&weights.some(function(x){return x!==1}));
+  var v=riverBFS(items.length,badPairs,cap,rower,-1,-1,weights);   // 加载复核：可解性 + 最优步数
+  var par=v.par;
+  leftMask=(1<<items.length)-1;side=0;load=[];history=[];moves=0;
+  done=false;failed=false;failText="";hintMove=null;
+  boatX=0;boatTarget=0;moving=false;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  var hasW=hasW0;
+  $("lvRule").textContent=(hasW?"载重 "+cap:"限载 "+cap)+(rower>=0?"（含船夫）":"")+(badPairs.length?" · "+badPairs.map(function(p){return items[p[0]]+"·"+items[p[1]]}).join(" / ")+" 相克":"");
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  $("stPar").textContent=par>0?par:"-";
+  if(!(par>0))say("警告：内嵌求解器判定本关无解（数据异常）");
+  else if(L.par!==par)say("提示：内嵌求解器实测最优 "+par+" 步");
+  else say("点岸上的物品装船、点船上的物品卸下，然后开船");
+  renderPairs();updStats();
+}
+function renderPairs(){
+  var box=$("pairrow");box.innerHTML="";
+  function chip(t,cls){var s=document.createElement("span");s.className="pair"+(cls?" "+cls:"");s.textContent=t;box.appendChild(s);}
+  if(!badPairs.length){chip("本关任意两件都可同岸独处","ok");return;}
+  for(var i=0;i<badPairs.length;i++)chip(items[badPairs[i][0]]+"·"+items[badPairs[i][1]]+" 相克");
+}
+function updStats(){
+  $("stMoves").textContent=moves;
+  $("btnUndo").disabled=!history.length||done;
+  $("btnSail").disabled=done;
+}
+function curSafeKey(){return leftMask*2+side;}
+/* ---------- 交互 ---------- */
+function toggleItem(i){
+  if(done||failed)return;
+  var li=load.indexOf(i);
+  if(li>=0){load.splice(li,1);say("已把「"+items[i]+"」请下船");}
+  else{
+    if(onBank(i)!==(side===0)){say("「"+items[i]+"」在另一岸边，船够不着");return;}
+    var wsum2=0;
+    for(var wi2=0;wi2<load.length;wi2++)wsum2+=(weights&&weights[load[wi2]])||1;
+    wsum2+=(weights&&weights[i])||1;
+    if(wsum2>cap){say(hasW0?"载重不够，重物要单独摆":"船最多载 "+cap+" 件");return;}
+    load.push(i);say("「"+items[i]+"」已上船");
+  }
+  hintMove=null;
+}
+function sail(){
+  if(done||failed||moving)return;
+  if(rower>=0&&load.indexOf(rower)<0){say("船夫必须随船摆渡");return;}
+  var wsum=0;
+  for(var wi=0;wi<load.length;wi++)wsum+=(weights&&weights[load[wi]])||1;
+  if(wsum>cap){say("载重不够（现载 "+wsum+" / 上限 "+cap+"）");return;}
+  var nm=leftMask;
+  for(var i=0;i<load.length;i++)nm^=(1<<load[i]);
+  history.push({mask:leftMask,side:side});
+  leftMask=nm;side=1-side;load=[];
+  moves=history.length;
+  boatTarget=(side===0)?bankW+46:W-bankW-46;
+  moving=true;
+  hintMove=null;
+  var unatt=(side===0)?(~leftMask&((1<<items.length)-1)):leftMask;
+  for(var k=0;k<badPairs.length;k++){
+    var p=badPairs[k];
+    if((unatt>>p[0]&1)&&(unatt>>p[1]&1)){
+      failed=true;failText=items[p[0]]+"把"+items[p[1]]+"吃了！";
+      showFail();updStats();return;
+    }
+  }
+  updStats();
+  if(leftMask===0&&side===1){winLevel();return;}
+  say("已到对岸 · 已摆渡 "+moves+" 次");
+}
+function undo(){
+  if(!history.length||done)return;
+  var h=history.pop();
+  leftMask=h.mask;side=h.side;load=[];
+  failed=false;moves=history.length;hintMove=null;
+  boatTarget=(side===0)?bankW+46:W-bankW-46;moving=true;
+  hideOverlay();updStats();say("已撤销一步");
+}
+function hint(){
+  if(done||failed)return;
+  var v=riverBFS(items.length,badPairs,cap,rower,leftMask,side,weights);
+  if(v.par===0){say("内嵌求解器：当前局面已无法到达对岸，建议撤销几步");return;}
+  hintMove=v.firstMove||[];hintT=Date.now();
+  if(!hintMove.length){say("把船开过去就赢了");sail();return;}
+  var names=hintMove.map(function(i){return items[i]}).join("、");
+  say("求解器建议携带："+names+" 过河（共需 "+v.par+" 步）");
+}
+/* ---------- 胜负 ---------- */
+function winLevel(){
+  done=true;
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:moves}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
+  $("ovDesc").innerHTML="用 "+moves+" 次摆渡（参考最优 "+$("stPar").textContent+"）"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>46 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("ovUndo").hidden=true;
+  $("overlay").classList.add("show");
+}
+function showFail(){
+  $("ovTitle").textContent="出事了！";
+  $("ovDesc").textContent=failText+"船上没人看管的岸边会出事，撤销再想想。";
+  $("ovBtn").textContent="重开本关";
+  $("ovUndo").hidden=false;
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+/* ---------- 绘制 ---------- */
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.round(w);H=300;
+  bankW=Math.max(104,Math.min(140,Math.round(W*0.3)));
+  cv.style.height=H+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  if(!boatX)boatX=bankW+46;
+  boatTarget=(side===0)?bankW+46:W-bankW-46;
+}
+function layoutItems(){
+  itemPos=[];
+  var bx0=0,bx1=W-bankW;
+  for(var i=0;i<items.length;i++){
+    var col=i%2,row=Math.floor(i/2);
+    var left=onBank(i);
+    var cx=left?(bx0+bankW/2+(col===0?-28:28)):(bx1+bankW/2+(col===0?-28:28));
+    itemPos.push({x:cx,y:64+row*56});
+  }
+}
+function rr(x,y,w2,h2,r){
+  r=Math.min(r,w2/2,h2/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w2,y,x+w2,y+h2,r);ctx.arcTo(x+w2,y+h2,x,y+h2,r);
+  ctx.arcTo(x,y+h2,x,y,r);ctx.arcTo(x,y,x+w2,y,r);ctx.closePath();
+}
+function drawItem(x,y,r,txt,color,pulse,heavy){
+  ctx.fillStyle=color;
+  ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.stroke();
+  ctx.fillStyle=PAL.surface;
+  ctx.font=txt.length>1?"700 14px sans-serif":"700 16px sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText(txt,x,y+1);
+  if(heavy&&r>=18){   // 重物 ×2 角标（素材角标）
+    ctx.fillStyle=PAL.bg;
+    ctx.beginPath();ctx.arc(x+r-3,y-r+3,7,0,7);ctx.fill();
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(x+r-3,y-r+3,7,0,7);ctx.stroke();
+    ctx.fillStyle=PAL.text;
+    ctx.font="700 12px sans-serif";
+    ctx.fillText("2",x+r-3,y-r+3);
+  }
+  if(pulse){
+    var a=0.5+0.5*Math.sin((Date.now()-hintT)/180);
+    ctx.strokeStyle=PAL.warning;ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(x,y,r+4+a*3,0,7);ctx.stroke();
+  }
+}
+function draw(ts){
+  layoutItems();
+  var full=(1<<items.length)-1;
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  //河面
+  ctx.fillStyle=PAL.water;ctx.fillRect(bankW,0,W-bankW*2,H);
+  ctx.strokeStyle="rgba(255,255,255,.35)";ctx.lineWidth=2;   // 恒白波纹
+  var ph=(ts/900)%1;
+  for(var wy=18;wy<H;wy+=22){
+    ctx.beginPath();
+    for(var wx=bankW+6;wx<W-bankW-6;wx+=8){
+      var yy=wy+Math.sin(wx/26+ph*6.28+wy)*2.4;
+      if(wx===bankW+6)ctx.moveTo(wx,yy);else ctx.lineTo(wx,yy);
+    }
+    ctx.stroke();
+  }
+  //两岸
+  ctx.fillStyle=PAL.grass;
+  rr(0,0,bankW,H,10);ctx.fill();
+  rr(W-bankW,0,bankW,H,10);ctx.fill();
+  ctx.strokeStyle=PAL.grass2;ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(bankW-1.5,6);ctx.lineTo(bankW-1.5,H-6);ctx.moveTo(W-bankW+1.5,6);ctx.lineTo(W-bankW+1.5,H-6);ctx.stroke();
+  ctx.fillStyle=PAL.grass2;
+  for(var gy=26;gy<H;gy+=34){
+    ctx.fillRect(10+(gy%3)*bankW*0.3,gy,10,2);
+    ctx.fillRect(W-bankW+14+(gy%2)*bankW*0.4,gy+12,10,2);
+  }
+  //岸上物品
+  for(var i=0;i<items.length;i++){
+    if(load.indexOf(i)>=0)continue;
+    var p=itemPos[i],hl=hintMove&&hintMove.indexOf(i)>=0&&onBank(i)&&(side===0)===(leftMask>>i&1);
+    drawItem(p.x,p.y,20,items[i],colorOf(i),hl,weights&&weights[i]>1);
+  }
+  //船（x 向目标缓动）
+  boatX+=(boatTarget-boatX)*0.12;
+  if(Math.abs(boatTarget-boatX)<1.5){boatX=boatTarget;moving=false;}
+  var by=H/2+26,bw2=96,bh2=40;
+  ctx.fillStyle="rgba(0,0,0,.15)";   // 恒黑船影
+  ctx.beginPath();ctx.ellipse(boatX,by+bh2/2+3,bw2*0.42,6,0,0,7);ctx.fill();
+  ctx.fillStyle=PAL.boat;
+  ctx.beginPath();
+  ctx.moveTo(boatX-bw2/2,by-bh2/2+6);
+  ctx.lineTo(boatX+bw2/2,by-bh2/2+6);
+  ctx.lineTo(boatX+bw2/2-14,by+bh2/2);
+  ctx.lineTo(boatX-bw2/2+14,by+bh2/2);
+  ctx.closePath();ctx.fill();
+  ctx.strokeStyle=PAL.boat2;ctx.lineWidth=2.5;ctx.stroke();
+  ctx.strokeStyle=PAL.boat2;
+  ctx.beginPath();ctx.moveTo(boatX-bw2/2+10,by-bh2/2+6);ctx.lineTo(boatX+bw2/2-10,by-bh2/2+6);ctx.stroke();
+  //船上物品
+  for(var s2=0;s2<load.length;s2++){
+    var it=load[s2];
+    var sx=boatX+(s2-(load.length-1)/2)*30;
+    drawItem(sx,by-2,15,items[it],colorOf(it),hintMove&&hintMove.indexOf(it)>=0,false);
+  }
+  //船夫小旗：提示开船方向
+  ctx.fillStyle=PAL.primary;
+  ctx.beginPath();ctx.arc(boatX+bw2/2-22,by-bh2/2-6,6,0,7);ctx.fill();
+}
+function loop(){draw(performance.now());requestAnimationFrame(loop)}
+/* ---------- 输入 ---------- */
+cv.addEventListener("pointerdown",function(e){
+  var rect=cv.getBoundingClientRect();
+  var x=e.clientX-rect.left,y=e.clientY-rect.top;
+  e.preventDefault();
+  if(done||moving)return;
+  if(failed){say("先撤销或重开");return;}
+  //船区点击=开船
+  var by=H/2+26;
+  if(Math.abs(x-boatX)<52&&Math.abs(y-by)<30){sail();return;}
+  //物品命中（含船上的）
+  var best=-1,bd=1e9;
+  for(var i=0;i<items.length;i++){
+    var p=null;
+    if(load.indexOf(i)>=0){p={x:boatX+(load.indexOf(i)-(load.length-1)/2)*30,y:by-2};}
+    else p=itemPos[i];
+    var d=Math.hypot(p.x-x,p.y-y);
+    if(d<30&&d<bd){bd=d;best=i;}
+  }
+  if(best>=0)toggleItem(best);
+});
+cv.addEventListener("pointercancel",function(){});
+$("btnSail").addEventListener("click",sail);
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){
+  if(done)return;
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("ovUndo").hidden=true;
+  $("overlay").classList.add("show");
+});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(failed){loadLevel(lv);return;}
+  if(done){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+    else{lv++;loadLevel(lv)}
+  }
+});
+$("ovUndo").addEventListener("click",undo);
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="9"){var i=parseInt(k,10)-1;if(i<items.length)toggleItem(i);e.preventDefault();}
+  else if(k===" "||k==="Enter"){if($("overlay").classList.contains("show"))$("ovBtn").click();else sail();e.preventDefault();}
+  else if(k==="z"||k==="Z")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+});
+window.addEventListener("resize",resize);
+/* ---------- 启动 ---------- */
+palLoad();loadLevel(save.lv);resize();loop();
+syncLevelsFromServer();syncSaveFromServer();
+
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

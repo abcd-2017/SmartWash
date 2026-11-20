@@ -34,7 +34,16 @@ const STRICT = new Set([
   "tangram",
   "one-stroke", "battle-city",
   "flow-connect", "bomberman", "poem-fill", "peg-solitaire", "matchstick",
-  "spider-solitaire", "mini-golf", "penalty", "riddle", "ballz-bounce"
+  "spider-solitaire", "mini-golf", "penalty", "riddle", "ballz-bounce",
+  "doodle-jump", "helix-jump", "blob-eat", "virus-defense", "fishing", "fire-ice", "rope-cut",
+  "lane-defense", "tower-defense", "milk-tea", "rock-climb", "kite-duel", "balloon-dart",
+  "pancake-flip", "steady-chop", "feather-blow", "lantern-rise", "paper-glide", "domino-chain",
+  "marble-run", "pinball-mini", "target-rush", "nut-bolt", "key-turn", "bell-strike",
+  "dish-stack", "road-hop", "log-hop", "lift-dodge", "belt-sort", "pizza-toss",
+  "latte-line", "sushi-grab", "pocket-putt", "bubble-line", "coin-flick", "hoop-roll",
+  "egg-catch", "cargo-balance", "rope-swing", "river-cross", "torch-bridge", "water-jug",
+  "scale-ball", "knight-tour", "eight-queens", "kakuro", "calc-doku", "slitherlink",
+  "nurikabe", "hashi-wire", "shikaku"
 ]);
 
 // §2 基础 token + §3 已登记素材 token 前缀

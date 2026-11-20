@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>手电过桥</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-grass:#C9E5C4;--g-st-grass2:#AFD6A8;--g-st-plank:#C98A3B;--g-st-plank2:#8F6A3A;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-grass:#33422F;--g-st-grass2:#2A3627;--g-st-plank:#A9792F;--g-st-plank2:#5E4726;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
+  .btn.ghost { background: transparent; color: var(--g-primary-deep); box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+
+  .scene { display: flex; gap: 0; height: 200px; margin-bottom: 4px; }
+  .bank { flex: 1; min-width: 0; background: var(--g-st-grass); border-radius: var(--g-radius-inner); position: relative; padding: 30px 5px 8px; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+  .bank.torchside::after { content: ""; position: absolute; top: 6px; right: 8px; width: 10px; height: 10px; border-radius: 10px; background: var(--g-warning); box-shadow: 0 0 8px 3px rgba(217,138,38,.55); }
+  .banktag { position: absolute; top: 7px; left: 10px; font-size: 12px; color: var(--g-st-grass2); font-weight: 600; }
+  :root[data-theme=dark] .banktag { color: var(--g-on-soft); }
+  .bridge { width: 118px; position: relative; }
+  .bridge .planks { position: absolute; top: 64px; left: 0; right: 0; height: 64px; background: repeating-linear-gradient(90deg, var(--g-st-plank) 0 14px, var(--g-st-plank2) 14px 18px); border-radius: 10px; }
+  .bridge .gap { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(var(--g-bg) 62px, transparent 62px, transparent 128px, var(--g-bg) 128px); }
+  .peep {
+    width: calc(50% - 3px); min-height: 60px; border: 2px solid var(--g-border); border-radius: var(--g-radius-inner);
+    background: var(--g-surface); color: var(--g-text); font-family: inherit; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 4px 2px;
+  }
+  .peep .nm { font-size: 12px; color: var(--g-muted); }
+  .peep .sp { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .peep.sel { border-color: var(--g-primary-deep); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .peep.sel .nm { color: var(--g-on-soft); }
+  .peep.hintpeep { animation: pulse 1s infinite; border-color: var(--g-warning); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(217,138,38,.5); } 50% { box-shadow: 0 0 0 6px rgba(217,138,38,.25); } }
+  .peep.walking { animation: walk .5s ease-in-out; }
+  @keyframes walk { 0% { transform: translateX(0); opacity: 1; } 50% { transform: translateX(24px); opacity: .6; } 100% { transform: translateX(0); opacity: 1; } }
+  .ctl.wide { width: 100%; }
+  .ctl {
+    flex: 1; min-height: 48px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-btn-primary); color: #fff;
+    font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer;
+  }
+  .ctl:active { opacity: .75; }
+  .ctl[disabled] { opacity: .45; }
+
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/46</span></div>
+    <div class="stat"><span class="label">已用</span><span class="val" id="stTime">0s</span></div>
+    <div class="stat"><span class="label">限时</span><span class="val" id="stLimit">-</span></div>
+    <div class="stat"><span class="label">参考最优</span><span class="val" id="stPar">-</span></div>
+  </div>
+  <div class="scene">
+    <div class="bank" id="bankL"><span class="banktag">出发岸</span></div>
+    <div class="bridge" aria-hidden="true"><div class="planks"></div><div class="gap"></div></div>
+    <div class="bank" id="bankR"><span class="banktag">对岸</span></div>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点选 1-2 人同行（耗时按较慢者计），再点「过桥」</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo">撤销</button>
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <button class="ctl wide" id="btnGo">过　桥</button>
+  <p class="foot">手电只有一把：每次过桥的人要带着它折返 · 键盘 1-5 选人 · 空格过桥 · Z 撤销 · H 提示</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+    <button class="btn" id="ovUndo" hidden>撤销这步</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="torch-bridge",SAVE_KEY="sw.torchbridge.v1";
+var DEFAULT_LEVELS=[{"name":"过桥·01","people":[1,2,3,10],"limit":19,"par":17,"difficulty":1},{"name":"过桥·02","people":[1,2,4,10],"limit":19,"par":17,"difficulty":1},{"name":"过桥·03","people":[1,2,5,10],"limit":19,"par":17,"difficulty":1},{"name":"过桥·04","people":[1,2,6,10],"limit":19,"par":17,"difficulty":1},{"name":"过桥·05","people":[1,2,8,10],"limit":19,"par":17,"difficulty":1},{"name":"过桥·06","people":[1,2,9,10],"limit":19,"par":17,"difficulty":1},{"name":"过桥·07","people":[1,3,4,8],"limit":19,"par":17,"difficulty":1},{"name":"过桥·08","people":[1,4,5,6],"limit":19,"par":17,"difficulty":1},{"name":"过桥·09","people":[2,3,4,6],"limit":18,"par":17,"difficulty":2},{"name":"过桥·10","people":[2,3,5,6],"limit":18,"par":17,"difficulty":2},{"name":"过桥·11","people":[1,3,4,9],"limit":19,"par":18,"difficulty":2},{"name":"过桥·12","people":[1,3,5,8],"limit":19,"par":18,"difficulty":2},{"name":"过桥·13","people":[1,3,6,8],"limit":19,"par":18,"difficulty":2},{"name":"过桥·14","people":[1,2,3,12],"limit":20,"par":19,"difficulty":2},{"name":"过桥·15","people":[1,2,4,12],"limit":20,"par":19,"difficulty":2},{"name":"过桥·16","people":[1,2,5,12],"limit":20,"par":19,"difficulty":2},{"name":"过桥·17","people":[1,2,6,12],"limit":19,"par":19,"difficulty":3},{"name":"过桥·18","people":[1,2,8,12],"limit":19,"par":19,"difficulty":3},{"name":"过桥·19","people":[1,2,9,12],"limit":19,"par":19,"difficulty":3},{"name":"过桥·20","people":[1,2,10,12],"limit":19,"par":19,"difficulty":3},{"name":"过桥·21","people":[1,3,4,10],"limit":19,"par":19,"difficulty":3},{"name":"过桥·22","people":[1,3,5,9],"limit":19,"par":19,"difficulty":3},{"name":"过桥·23","people":[1,3,6,9],"limit":19,"par":19,"difficulty":3},{"name":"过桥·24","people":[1,3,8,9],"limit":19,"par":19,"difficulty":3},{"name":"过桥·25","people":[1,5,12,2,7],"limit":27,"par":25,"difficulty":4},{"name":"过桥·26","people":[1,12,8,2,5],"limit":27,"par":25,"difficulty":4},{"name":"过桥·27","people":[1,12,9,5,2],"limit":27,"par":25,"difficulty":4},{"name":"过桥·28","people":[1,12,2,10,5],"limit":27,"par":25,"difficulty":4},{"name":"过桥·29","people":[1,10,8,7,2],"limit":27,"par":25,"difficulty":4},{"name":"过桥·30","people":[1,10,2,9,7],"limit":27,"par":25,"difficulty":4},{"name":"过桥·31","people":[1,3,4,10,5],"limit":27,"par":25,"difficulty":4},{"name":"过桥·32","people":[1,7,3,10,4],"limit":27,"par":25,"difficulty":4},{"name":"过桥·33","people":[1,4,10,3,8],"limit":27,"par":25,"difficulty":4},{"name":"过桥·34","people":[1,10,3,4,9],"limit":27,"par":25,"difficulty":4},{"name":"过桥·35","people":[1,9,7,3,5],"limit":26,"par":25,"difficulty":5},{"name":"过桥·36","people":[1,8,5,3,9],"limit":26,"par":25,"difficulty":5},{"name":"过桥·37","people":[2,3,8,5,4],"limit":26,"par":25,"difficulty":5},{"name":"过桥·38","people":[2,3,4,7,8],"limit":26,"par":25,"difficulty":5},{"name":"过桥·39","people":[1,8,9,2,10],"limit":27,"par":26,"difficulty":5},{"name":"过桥·40","people":[1,7,3,5,10],"limit":27,"par":26,"difficulty":5},{"name":"过桥·41","people":[1,3,10,5,8],"limit":26,"par":26,"difficulty":5},{"name":"过桥·42","people":[1,9,10,5,3],"limit":26,"par":26,"difficulty":5},{"name":"过桥·43","people":[2,3,5,4,9],"limit":26,"par":26,"difficulty":5},{"name":"过桥·44","people":[2,4,9,3,7],"limit":26,"par":26,"difficulty":5},{"name":"过桥·45","people":[2,4,3,9,8],"limit":26,"par":26,"difficulty":5},{"name":"过桥·46","people":[2,7,3,8,5],"limit":26,"par":26,"difficulty":5}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seenName={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    if(seenName[d.name])return null;
+    seenName[d.name]=1;
+    list.push(normalizeLevel(d));
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){
+      LEVELS=list.map(normalizeLevel);return v;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);
+      if(typeof resize==="function")resize();
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层（lvgrid 通用） ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  var u=$("ovUndo");
+  if(u)u.hidden=true;
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+/* 单条结构校验 */
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Array.isArray(d.people)||d.people.length<4||d.people.length>5)return false;
+  for(var i=0;i<d.people.length;i++){if(!Number.isInteger(d.people[i])||d.people[i]<1||d.people[i]>20)return false;}
+  if(!Number.isInteger(d.limit)||d.limit<1||d.limit>99)return false;
+  if(d.par!==undefined&&(!Number.isInteger(d.par)||d.par<1||d.par>99))return false;
+  return true;
+}
+/* par 缺省时由内嵌 Dijkstra 补算；limit 至少等于 par（保证可解） */
+function normalizeLevel(d){
+  var par=(Number.isInteger(d.par)&&d.par>0)?d.par:torchDijkstra(d.people,-1,-1).par;
+  var limit=Math.max(d.limit,par);
+  var diff=Number.isInteger(d.difficulty)?Math.min(9,Math.max(1,d.difficulty)):5;
+  return {name:String(d.name),people:d.people.slice(),limit:limit,par:par,difficulty:diff};
+}
+/* ---------- 独立求解器：Dijkstra 最短总耗时（用于加载复核与提示） ---------- */
+/* start:[mask,side] 缺省满员左岸；返回 {par, firstMove:[下标..]}（无解 par=0） */
+function torchDijkstra(people,startMask,startSide){
+  var n=people.length,full=(1<<n)-1;
+  var s0=(startMask===undefined)?full:startMask;
+  var s1=(startSide===undefined)?0:startSide;
+  var dist=new Map(),parent=new Map();
+  var k0=s0*2+s1;
+  dist.set(k0,0);
+  var pq=[[0,k0]];
+  while(pq.length){
+    pq.sort(function(a,b){return a[0]-b[0];});
+    var cur=pq.shift(),d=cur[0],key=cur[1];
+    if(dist.get(key)!==d)continue;
+    var mask=Math.floor(key/2),side=key%2;
+    if(mask===0&&side===1){
+      var firstMove=[],k=key;
+      while(k!==k0){
+        var pk=parent.get(k);
+        if(pk===k0){
+          var pm=Math.floor(k/2),pm0=Math.floor(pk/2);
+          for(var b=0;b<n;b++)if((pm^pm0)>>b&1)firstMove.push(b);
+          break;
+        }
+        k=pk;
+      }
+      return {par:d,firstMove:firstMove};
+    }
+    var here=[];
+    for(var i=0;i<n;i++)if((mask>>i&1)===(side===0?1:0))here.push(i);
+    for(var a=0;a<here.length;a++){
+      for(var b2=a;b2<here.length;b2++){
+        var cost=Math.max(people[here[a]],people[b2]);
+        var nm=mask^(1<<here[a]);
+        if(b2!==a)nm^=(1<<here[b2]);
+        var nk=nm*2+(1-side);
+        var nd=d+cost;
+        if(!dist.has(nk)||dist.get(nk)>nd){
+          dist.set(nk,nd);parent.set(nk,key);
+          pq.push([nd,nk]);
+        }
+      }
+    }
+  }
+  return {par:0,firstMove:null};
+}
+/* ---------- 调色板（DOM 为主，token 直用；提示/准星色读 token） ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={warning:v("--g-warning"),deep:v("--g-primary-deep")};
+}
+window.__gOnTheme=function(){palLoad()};
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,people=[],limit=0,par=0;
+var leftMask=0,side=0,elapsed=0,sel=[],history=[];
+var done=false,failed=false;
+var NAMES=["甲","乙","丙","丁","戊"];
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  people=L.people;limit=L.limit;
+  var v=torchDijkstra(people);   // 加载复核：可解性 + 最优耗时
+  par=v.par>0?v.par:L.par||v.par;
+  leftMask=(1<<people.length)-1;side=0;elapsed=0;sel=[];history=[];
+  done=false;failed=false;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="同行按较慢者计 · 手电随行";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  $("stLimit").textContent=limit+"s";
+  $("stPar").textContent=par+"s";
+  if(!(par>0))say("警告：内嵌求解器判定本关无法过桥（数据异常）");
+  else say("点选 1-2 人同行（耗时按较慢者计），再点「过桥」");
+  render();updStats();
+}
+function updStats(){
+  $("stTime").textContent=elapsed+"s";
+  $("btnUndo").disabled=!history.length||done;
+  $("btnGo").disabled=done||sel.length<1||sel.length>2;
+}
+/* ---------- 渲染 ---------- */
+function render(){
+  var bl=$("bankL"),br=$("bankR");
+  bl.querySelectorAll(".peep").forEach(function(e){e.remove()});
+  br.querySelectorAll(".peep").forEach(function(e){e.remove()});
+  bl.classList.toggle("torchside",side===0);
+  br.classList.toggle("torchside",side===1);
+  for(var i=0;i<people.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.type="button";
+      b.className="peep"+(sel.indexOf(i)>=0?" sel":"");
+      b.dataset.idx=i;
+      b.innerHTML='<span class="nm">'+NAMES[i]+'</span><span class="sp">'+people[i]+'</span>';
+      b.setAttribute("aria-label",NAMES[i]+" 速度 "+people[i]+" 秒");
+      b.addEventListener("click",function(){toggleSel(i)});
+      (side===0?bl:br).appendChild(b);
+    })(i);
+  }
+}
+function toggleSel(i){
+  if(done||failed)return;
+  var onBank=(leftMask>>i&1)===(side===0?1:0);
+  if(!onBank){say(NAMES[i]+" 在另一岸边");return;}
+  var k=sel.indexOf(i);
+  if(k>=0)sel.splice(k,1);
+  else{
+    if(sel.length>=2){say("每次最多两人同行");return;}
+    sel.push(i);
+  }
+  render();updStats();
+}
+/* ---------- 交互 ---------- */
+function cross(){
+  if(done||failed)return;
+  if(sel.length<1||sel.length>2){say("先点选 1-2 人");return;}
+  for(var i=0;i<sel.length;i++){
+    if((leftMask>>sel[i]&1)!==(side===0?1:0)){say("所选有人不在手电这一侧");return;}
+  }
+  history.push({mask:leftMask,side:side,elapsed:elapsed});
+  var cost=0;
+  for(var j=0;j<sel.length;j++)cost=Math.max(cost,people[sel[j]]);
+  elapsed+=cost;
+  for(var m=0;m<sel.length;m++)leftMask^=(1<<sel[m]);
+  side=1-side;sel=[];
+  document.querySelectorAll(".peep").forEach(function(e){e.classList.add("walking")});
+  updStats();
+  if(leftMask===0&&side===1){winLevel();return;}
+  if(elapsed>limit){failLevel();return;}
+  say("已用 "+elapsed+"s / "+limit+"s · 剩 "+popcount(leftMask)+" 人待渡");
+}
+function popcount(m){var c=0;while(m){m&=m-1;c++}return c}
+function undo(){
+  if(!history.length||done)return;
+  var h=history.pop();
+  leftMask=h.mask;side=h.side;elapsed=h.elapsed;sel=[];
+  failed=false;
+  hideOverlay();render();updStats();say("已撤销一步");
+}
+function hint(){
+  if(done||failed)return;
+  var v=torchDijkstra(people,leftMask,side);
+  if(v.par===0){say("内嵌求解器：当前局面已无法按时过桥，建议撤销");return;}
+  document.querySelectorAll(".peep").forEach(function(e){
+    e.classList.toggle("hintpeep",v.firstMove.indexOf(+e.dataset.idx)>=0);
+  });
+  var names=v.firstMove.map(function(i){return NAMES[i]}).join("、");
+  say("求解器建议派 "+names+" 过河（还剩至少 "+v.par+"s）");
+}
+/* ---------- 胜负 ---------- */
+function winLevel(){
+  done=true;
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:elapsed}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
+  $("ovDesc").innerHTML="全部过桥，用时 <b>"+elapsed+"s</b>（限时 "+limit+"s · 参考最优 "+par+"s）"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>46 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("ovUndo").hidden=true;
+  $("overlay").classList.add("show");
+}
+function failLevel(){
+  failed=true;
+  $("ovTitle").textContent="超时了！";
+  $("ovDesc").textContent="累计 "+elapsed+"s 超过限时 "+limit+"s。注意：让最快的两人先做往返摆渡。";
+  $("ovBtn").textContent="重开本关";
+  $("ovUndo").hidden=false;
+  $("overlay").classList.add("show");
+}
+/* ---------- 输入 ---------- */
+$("btnGo").addEventListener("click",cross);
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){
+  if(done)return;
+  openLevelSelect();
+});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(failed){loadLevel(lv);return;}
+  if(done){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+    else{lv++;loadLevel(lv)}
+  }
+});
+var ovUndoEl=$("ovUndo");
+if(ovUndoEl)ovUndoEl.addEventListener("click",undo);
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="5"){var i=parseInt(k,10)-1;if(i<people.length)toggleSel(i);e.preventDefault();}
+  else if(k===" "||k==="Enter"){if($("overlay").classList.contains("show"))$("ovBtn").click();else cross();e.preventDefault();}
+  else if(k==="z"||k==="Z")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+});
+/* ---------- 启动 ---------- */
+palLoad();loadLevel(save.lv);
+syncLevelsFromServer();syncSaveFromServer();
+
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

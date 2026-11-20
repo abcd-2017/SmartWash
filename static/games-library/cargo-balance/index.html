@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>货载平衡</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-beam:#8A6A44;--g-st-beam2:#6B5236;--g-st-box1:#D9A55C;--g-st-box2:#B58BD0;--g-st-box3:#6BA8D9;--g-st-box4:#DB8290;--g-st-ful:#4A544C;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-beam:#5E4A30;--g-st-beam2:#463722;--g-st-box1:#7A5C28;--g-st-box2:#5E4576;--g-st-box3:#2F5B80;--g-st-box4:#7C4552;--g-st-ful:#3A423C;color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 12px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn[disabled] { opacity: .4; }
+  .dpad { display: flex; gap: 8px; }
+  .ctl {
+    flex: 1; min-height: 52px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-btn-primary); color: #fff;
+    font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer;
+  }
+  .ctl:active { opacity: .75; }
+  .ctl[disabled] { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.show { display: flex; }
+  .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 28px; }
+  .panel .btn { width: 100%; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">把货箱放到左右托盘，力矩别超限</span><span class="sub" id="lvTag">第 1 关</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1 / 48</span></div>
+    <div class="stat"><span class="label">已放</span><span class="val" id="stPut">0 / 6</span></div>
+    <div class="stat"><span class="label">力矩</span><span class="val" id="stTorque">0 / 11</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="货载平衡货架" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点左盘或右盘放置货箱</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo" type="button">撤销</button>
+    <button class="btn" id="btnHint" type="button">提示</button>
+    <button class="btn" id="btnReset" type="button">重开</button>
+    <button class="btn" id="btnLv" type="button">选关</button>
+  </div>
+  <div class="dpad">
+    <button class="ctl" id="cLeft" type="button">◀ 左盘</button>
+    <button class="ctl" id="cRight" type="button">右盘 ▶</button>
+  </div>
+  <p class="foot">力矩 = 右侧总重 − 左侧总重；超限即倾覆 · 已内嵌独立 DP 求解器复核可平衡性</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn" id="ovBtn" type="button">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层 ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 关卡数据（内嵌 48 关；生成器以独立 DP 验证可平衡性） ---------- */
+var DEFAULT_LEVELS=[{"name":"第 1 关","boxes":[9,6,6,7,2,6],"limit":11},{"name":"第 2 关","boxes":[6,8,1,6,8,2],"limit":7},{"name":"第 3 关","boxes":[9,3,5,3,4,8],"limit":11},{"name":"第 4 关","boxes":[2,1,5,9,5,7],"limit":7},{"name":"第 5 关","boxes":[8,3,1,3,5,9],"limit":9},{"name":"第 6 关","boxes":[5,1,4,6,7,3],"limit":8},{"name":"第 7 关","boxes":[8,7,9,4,3,8,7],"limit":9},{"name":"第 8 关","boxes":[5,6,5,8,1,2,9],"limit":5},{"name":"第 9 关","boxes":[6,1,7,8,9,5,5],"limit":7},{"name":"第 10 关","boxes":[8,9,4,5,5,7,9],"limit":8},{"name":"第 11 关","boxes":[9,6,7,6,4,4,4],"limit":9},{"name":"第 12 关","boxes":[8,2,4,2,4,8,6],"limit":10},{"name":"第 13 关","boxes":[9,6,9,1,5,5,4,5],"limit":11},{"name":"第 14 关","boxes":[6,1,4,2,5,7,7,5],"limit":6},{"name":"第 15 关","boxes":[7,9,2,4,5,7,6,8],"limit":9},{"name":"第 16 关","boxes":[2,7,9,8,7,6,2,2],"limit":7},{"name":"第 17 关","boxes":[7,4,7,6,5,7,8,1],"limit":7},{"name":"第 18 关","boxes":[4,2,1,2,3,4,8,3],"limit":4},{"name":"第 19 关","boxes":[5,3,3,4,4,1,7,1,9],"limit":7},{"name":"第 20 关","boxes":[1,4,7,1,5,7,5,8,4],"limit":7},{"name":"第 21 关","boxes":[9,2,2,4,4,2,3,3,9],"limit":11},{"name":"第 22 关","boxes":[4,8,1,4,6,3,7,7,5],"limit":5},{"name":"第 23 关","boxes":[6,7,2,8,1,2,4,9,3],"limit":6},{"name":"第 24 关","boxes":[5,7,1,6,3,8,9,8,1],"limit":7},{"name":"第 25 关","boxes":[7,2,5,4,5,7,1,2,7,3],"limit":9},{"name":"第 26 关","boxes":[2,8,3,6,2,9,6,8,8,5],"limit":6},{"name":"第 27 关","boxes":[8,5,8,5,1,2,5,9,6,7],"limit":8},{"name":"第 28 关","boxes":[8,3,7,7,9,4,9,8,9,3],"limit":9},{"name":"第 29 关","boxes":[1,7,8,8,7,1,5,3,8,2],"limit":7},{"name":"第 30 关","boxes":[8,7,4,3,6,2,6,5,5,5],"limit":9},{"name":"第 31 关","boxes":[7,5,8,3,3,3,6,7,3,1,8],"limit":8},{"name":"第 32 关","boxes":[9,6,9,1,2,3,2,9,2,4,8],"limit":11},{"name":"第 33 关","boxes":[5,3,2,4,7,9,9,7,4,9,6],"limit":8},{"name":"第 34 关","boxes":[8,4,3,6,9,2,5,2,7,3,8],"limit":9},{"name":"第 35 关","boxes":[1,9,8,3,1,1,1,7,3,2,2],"limit":9},{"name":"第 36 关","boxes":[9,1,8,1,3,3,2,1,7,6,2],"limit":11},{"name":"第 37 关","boxes":[2,7,1,2,1,3,4,1,1,2,4,7],"limit":6},{"name":"第 38 关","boxes":[7,6,9,7,9,4,2,7,4,9,3,9],"limit":8},{"name":"第 39 关","boxes":[6,9,2,4,2,2,9,7,4,5,8,8],"limit":8},{"name":"第 40 关","boxes":[8,6,6,1,8,4,9,8,3,2,4,7],"limit":10},{"name":"第 41 关","boxes":[9,1,1,3,2,3,5,2,9,4,5,3],"limit":10},{"name":"第 42 关","boxes":[5,9,1,1,5,8,6,9,5,6,3,5],"limit":7},{"name":"第 43 关","boxes":[1,1,8,5,4,8,3,1,4,4,9,9,2],"limit":7},{"name":"第 44 关","boxes":[2,2,7,6,8,4,1,8,7,6,4,4,4],"limit":7},{"name":"第 45 关","boxes":[7,3,7,2,4,5,7,1,1,7,6,1,3],"limit":9},{"name":"第 46 关","boxes":[1,7,1,2,3,7,5,5,9,1,9,3,4],"limit":8},{"name":"第 47 关","boxes":[1,2,9,1,7,3,2,5,3,5,7,3,6],"limit":7},{"name":"第 48 关","boxes":[8,8,7,9,4,4,2,6,7,4,6,7,4],"limit":9}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY="sw.cargobalance.v1.levels",LEVELS_VER_KEY="sw.cargobalance.v1.levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Array.isArray(d.boxes)||!d.boxes.length)return false;
+  for(var i=0;i<d.boxes.length;i++)if(!Number.isInteger(d.boxes[i])||d.boxes[i]<1||d.boxes[i]>20)return false;
+  if(!Number.isInteger(d.limit)||d.limit<1||d.limit>40)return false;
+  return true;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row.dataJson!=="string")return null;
+    var d;try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    var ck=d.boxes.join(",")+"|"+d.limit;
+    if(seen[ck])return null;seen[ck]=1;
+    list.push({name:String(d.name),boxes:d.boxes.map(Number),limit:d.limit});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){LEVELS=list;return v}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+/* ---------- 独立 DP 求解器：可平衡性验证 + 提示 ---------- */
+/* 状态 = 当前力矩；每放一箱 ±w，要求每一步 |力矩|<=limit。可达集合非空即可平衡。 */
+function reachableFrom(start,boxes,limit){
+  var set={};set[start]=1;
+  for(var i=0;i<boxes.length;i++){
+    var nx={},w=boxes[i];
+    for(var s in set){
+      s=+s;
+      if(Math.abs(s+w)<=limit)nx[s+w]=1;
+      if(Math.abs(s-w)<=limit)nx[s-w]=1;
+    }
+    set=nx;
+    if(!Object.keys(set).length)return [];
+  }
+  return Object.keys(set).map(Number);
+}
+function levelSolvable(L){return reachableFrom(0,L.boxes,L.limit).length>0}
+function hintSide(torque,rest,limit){
+  if(rest.length===0)return null;
+  var w=rest[0];
+  if(Math.abs(torque+w)<=limit&&reachableFrom(torque+w,rest.slice(1),limit).length)return 1;
+  if(Math.abs(torque-w)<=limit&&reachableFrom(torque-w,rest.slice(1),limit).length)return -1;
+  return null;
+}
+/* ---------- 调色板 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    success:v("--g-success"),warning:v("--g-warning"),danger:v("--g-danger"),
+    beam:v("--g-st-beam"),beam2:v("--g-st-beam2"),ful:v("--g-st-ful"),
+    boxes:[v("--g-st-box1"),v("--g-st-box2"),v("--g-st-box3"),v("--g-st-box4")]};
+}
+window.__gOnTheme=function(){palLoad()};
+/* ---------- 状态 ---------- */
+var KEY="sw.cargobalance.v1";
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object")return s}catch(e){}return{}}
+function persist(){
+  try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}
+  if(GB.available)GB.saveState("cargo-balance",save).catch(function(){});
+}
+var save=loadSave();
+save.lv=Math.min(Math.max(parseInt(save.lv,10)||0,0),LEVELS.length-1);
+save.done=save.done||{};
+var lv=save.lv,L=null,placed=[],idx=0,torque=0,tilt=0,over=false,shakeT=0;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=0,H=0,dpr=1;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+/* ---------- 布局 ---------- */
+function resize(){
+  var wCss=cv.parentElement.clientWidth||360;
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  W=wCss;H=Math.round(W*0.82);
+  cv.style.height=H+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+/* ---------- 统计 ---------- */
+function updStats(){
+  $("stLv").textContent=(lv+1)+" / "+LEVELS.length;
+  $("stPut").textContent=idx+" / "+L.boxes.length;
+  var t=$("stTorque");
+  t.textContent=torque+" / "+L.limit;
+  t.classList.toggle("low",Math.abs(torque)>L.limit*0.7);
+  $("btnUndo").disabled=!placed.length||over;
+  $("cLeft").disabled=over||idx>=L.boxes.length;
+  $("cRight").disabled=over||idx>=L.boxes.length;
+}
+/* ---------- 关卡 ---------- */
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return}
+  placed=[];idx=0;torque=0;tilt=0;over=false;
+  var ok=levelSolvable(L);
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.boxes.length+" 箱";
+  if(!ok)say("警告：内嵌 DP 求解器判定本关不可平衡（数据异常）");
+  else say("点左盘或右盘放置货箱");
+  updStats();
+}
+function place(side){
+  if(over||idx>=L.boxes.length)return;
+  var w=L.boxes[idx];
+  torque+=side*w;
+  placed.push({side:side,w:w});
+  idx++;
+  if(Math.abs(torque)>L.limit){
+    over=true;shakeT=Date.now();updStats();
+    $("ovTitle").textContent="货架倾覆";
+    $("ovDesc").innerHTML="力矩 "+torque+" 超过限位 "+L.limit+"<br>调整放置顺序再试";
+    $("ovBtn").textContent="重试本关";
+    $("overlay").classList.add("show");
+    say("货架倾覆！力矩超限");return;
+  }
+  if(idx>=L.boxes.length){winLevel();return}
+  updStats();
+  say("已放 " + w + " 到"+(side<0?"左":"右")+"盘 · 力矩 "+torque);
+}
+function undo(){
+  if(!placed.length||over)return;
+  var p=placed.pop();
+  torque-=p.side*p.w;idx--;
+  updStats();say("撤销一步");
+}
+function hint(){
+  if(over)return;
+  var rest=L.boxes.slice(idx);
+  var s=hintSide(torque,rest,L.limit);
+  if(s===null){say("当前局面已无解，先撤销几步");return}
+  say("提示：把这箱放到"+(s<0?"左":"右")+"盘仍可保持可平衡");
+}
+function winLevel(){
+  over=true;
+  save.done[lv]=true;
+  if(lv+1<LEVELS.length&&save.lv<lv+1)save.lv=lv+1;
+  persist();updStats();
+  if(GB.available)GB.reportScore("cargo-balance",{metricValue:lv+1,metricExtra:L.boxes.length}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
+  $("ovDesc").innerHTML="第 "+(lv+1)+" 关完成<br>最终力矩 "+torque+" / "+L.limit+" · 共 "+L.boxes.length+" 箱";
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+function failRetry(){
+  over=false;placed=[];idx=0;torque=0;tilt=0;
+  loadLevel(lv);
+}
+/* ---------- 主循环（倾斜动画） ---------- */
+var lastTs=0;
+function step(ts){
+  if(!lastTs)lastTs=ts;
+  var dt=Math.min(0.05,(ts-lastTs)/1000);lastTs=ts;
+  var target=L?Math.max(-1,Math.min(1,torque/L.limit))*0.20:0;
+  tilt+=(target-tilt)*Math.min(1,dt*7);
+  draw();
+  requestAnimationFrame(step);
+}
+/* ---------- 绘制 ---------- */
+function draw(){
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  var fx=W/2,fy=Math.round(H*0.66);
+  //底座
+  ctx.fillStyle=PAL.ful;
+  ctx.beginPath();ctx.moveTo(fx-26,fy+52);ctx.lineTo(fx+26,fy+52);ctx.lineTo(fx,fy);ctx.closePath();ctx.fill();
+  ctx.fillRect(fx-40,fy+52,80,8);
+  //横梁（随力矩倾斜）
+  ctx.save();
+  ctx.translate(fx,fy);ctx.rotate(tilt);
+  var beamW=Math.min(W-30,300),beamH=14;
+  ctx.fillStyle=PAL.beam;ctx.fillRect(-beamW/2,-beamH/2,beamW,beamH);
+  ctx.fillStyle=PAL.beam2;ctx.fillRect(-beamW/2,-beamH/2,beamW,4);
+  //左右托盘绳
+  ctx.strokeStyle=PAL.beam2;ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(-beamW/2+12,beamH/2);ctx.lineTo(-beamW/2+12,beamH/2+16);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(beamW/2-12,beamH/2);ctx.lineTo(beamW/2-12,beamH/2+16);ctx.stroke();
+  //已放货箱：左右按顺序码放
+  var bw=Math.min(26,Math.floor((beamW/2-24)/7)),bh=bw;
+  var lCount=0,rCount=0;
+  for(var i=0;i<placed.length;i++){
+    var p=placed[i];
+    var slot=p.side<0?lCount++:rCount++;
+    var x0=(p.side<0?-beamW/2+16-slot*bw:beamW/2-16-(slot+1)*bw);
+    var y0=-beamH/2-bh;
+    ctx.fillStyle=PAL.boxes[i%4];
+    ctx.fillRect(x0,y0,bw-2,bh);
+    ctx.strokeStyle=PAL.beam2;ctx.lineWidth=1.5;ctx.strokeRect(x0,y0,bw-2,bh);
+    ctx.fillStyle=PAL.text;
+    ctx.font="700 12px -apple-system,'PingFang SC',sans-serif";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(String(p.w),x0+(bw-2)/2,y0+bh/2);
+  }
+  //当前货箱（横梁中点上方）
+  if(!over&&idx<L.boxes.length){
+    var w=L.boxes[idx];
+    var cw=Math.min(40,Math.max(28,bw+8)),ch2=cw;
+    var cx0=-cw/2,cy0=-beamH/2-(L.boxes.length>0?0:0)-ch2-26;
+    ctx.fillStyle=PAL.boxes[idx%4];
+    ctx.fillRect(cx0,cy0,cw,ch2);
+    ctx.strokeStyle=PAL.beam2;ctx.lineWidth=2;ctx.strokeRect(cx0,cy0,cw,ch2);
+    ctx.fillStyle=PAL.text;ctx.font="700 18px -apple-system,'PingFang SC',sans-serif";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(String(w),cx0+cw/2,cy0+ch2/2);
+    ctx.fillStyle=PAL.muted;ctx.font="600 12px -apple-system,'PingFang SC',sans-serif";
+    ctx.fillText("下一箱",0,cy0-10);
+  }
+  ctx.restore();
+  //力矩表
+  var gw=Math.min(240,W-40),gx=(W-gw)/2,gy=H-26;
+  ctx.fillStyle=PAL.surface2;rr(gx,gy,gw,10,5);ctx.fill();
+  var k=Math.max(-1,Math.min(1,torque/L.limit));
+  ctx.fillStyle=Math.abs(k)>0.85?PAL.danger:(Math.abs(k)>0.6?PAL.warning:PAL.success);
+  var cw2=20;
+  rr(gx+gw/2+k*(gw/2-cw2/2)-cw2/2,gy-2,cw2,14,7);ctx.fill();
+  //限位刻度
+  ctx.fillStyle=PAL.danger;
+  ctx.fillRect(gx-2,gy-3,2,16);ctx.fillRect(gx+gw,gy-3,2,16);
+  ctx.fillStyle=PAL.muted;ctx.font="600 12px -apple-system,'PingFang SC',sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="alphabetic";
+  ctx.fillText("力矩 "+torque+" / "+L.limit,W/2,gy-8);
+  if(over&&Math.abs(torque)>L.limit){
+    ctx.fillStyle=PAL.danger;ctx.font="700 28px -apple-system,'PingFang SC',sans-serif";
+    ctx.textAlign="center";ctx.fillText("倾覆！",W/2,H*0.32);
+  }
+}
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+/* ---------- 输入 ---------- */
+$("cLeft").addEventListener("click",function(){place(-1)});
+$("cRight").addEventListener("click",function(){place(1)});
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    var b=document.createElement("button");
+    b.className="lvbtn"+(save.done[i]?" done":"");
+    b.textContent=i+1;
+    b.disabled=i>save.lv;
+    b.addEventListener("click",function(){
+      lv=+this.textContent-1;loadLevel(lv);hideOverlay();save.lv=Math.max(save.lv,lv);persist();
+    });
+    g.appendChild(b);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="通关的关卡标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(over&&Math.abs(torque)<=L.limit){
+    if(lv>=LEVELS.length-1){lv=0;loadLevel(0)}
+    else loadLevel(lv+1);
+  }else if(over){loadLevel(lv)}
+});
+window.addEventListener("keydown",function(e){
+  if(e.key==="ArrowLeft"){place(-1);e.preventDefault()}
+  else if(e.key==="ArrowRight"){place(1);e.preventDefault()}
+  else if(e.key==="z"||e.key==="Z"){undo()}
+  else if(e.key==="h"||e.key==="H"){hint()}
+});
+function hideOverlay(){$("overlay").classList.remove("show")}
+window.addEventListener("resize",resize);
+/* ---------- 启动 ---------- */
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels("cargo-balance").then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    applyLevels(list,res.version||0);
+    if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+    save.lv=Math.min(save.lv,lv);persist();
+    loadLevel(lv);
+  }).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("cargo-balance").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rl=parseInt(r.lv,10)||0;
+      if(rl>save.lv){save.lv=Math.min(LEVELS.length-1,rl);changed=true}
+      if(r.done&&typeof r.done==="object")for(var k in r.done)if(r.done[k]&&!save.done[k]){save.done[k]=true;changed=true}
+      if(changed){persist();loadLevel(save.lv)}
+    }catch(e){}
+  }).catch(function(){});
+}
+palLoad();resize();loadLevel(lv);
+requestAnimationFrame(step);
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套） */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

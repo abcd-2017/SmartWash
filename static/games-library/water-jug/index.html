@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>量水定容</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-jug:#D7E4EC;--g-st-jug2:#B9CFDD;--g-st-jugA:#4A9FD4;--g-st-jugB:#2D9B6A;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-jug:#31414C;--g-st-jug2:#26343D;--g-st-jugA:#6BB4DE;--g-st-jugB:#3FB381;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
+  .btn.ghost { background: transparent; color: var(--g-primary-deep); box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+
+  .jugs { display: flex; gap: 16px; justify-content: center; align-items: flex-end; margin-bottom: 14px; }
+  .jugbox { width: 130px; text-align: center; }
+  .jug {
+    height: 200px; border: 3px solid var(--g-st-jug2); border-top-width: 2px; border-radius: 6px 6px 14px 14px;
+    background: var(--g-st-jug); position: relative; overflow: hidden;
+  }
+  .jug .water {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: var(--g-st-jugA); transition: height .25s ease-out;
+  }
+  .jug.jB .water { background: var(--g-st-jugB); }
+  .jug .amt {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-text);
+    text-shadow: 0 1px 0 var(--g-surface);
+  }
+  .jug.hit .amt { color: var(--g-on-soft); text-shadow: none; }
+  .jug .tick { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--g-st-jug2); opacity: .6; }
+  .jugcap { font-size: 14px; color: var(--g-muted); margin-top: 6px; }
+  .jugcap b { color: var(--g-primary-deep); }
+  .ops { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .op {
+    min-height: 48px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .op:active { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .op.hintop { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-warning); }
+
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/48</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">参考最优</span><span class="val" id="stPar">-</span></div>
+  </div>
+  <div class="jugs">
+    <div class="jugbox">
+      <div class="jug jA" id="jugA"><div class="water" id="waterA"></div><div class="amt" id="amtA">0</div></div>
+      <p class="jugcap">甲壶 容量 <b id="capA">5</b> 升</p>
+    </div>
+    <div class="jugbox">
+      <div class="jug jB" id="jugB"><div class="water" id="waterB"></div><div class="amt" id="amtB">0</div></div>
+      <p class="jugcap">乙壶 容量 <b id="capB">3</b> 升</p>
+    </div>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite">任一壶恰好量出目标水量即过关</p>
+  <div class="ops" id="ops">
+    <button class="op" data-op="fillA">装满甲壶</button>
+    <button class="op" data-op="fillB">装满乙壶</button>
+    <button class="op" data-op="emptyA">倒空甲壶</button>
+    <button class="op" data-op="emptyB">倒空乙壶</button>
+    <button class="op" data-op="pourAB">甲壶 → 乙壶</button>
+    <button class="op" data-op="pourBA">乙壶 → 甲壶</button>
+  </div>
+  <div class="tools" style="margin-top:8px">
+    <button class="btn" id="btnUndo">撤销</button>
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘 1-6 对应六个操作 · Z 撤销 · H 提示 · R 重开 · 48 关由浅入深 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="water-jug",SAVE_KEY="sw.waterjug.v1";
+var DEFAULT_LEVELS=[{"name":"量水·01","a":3,"b":4,"target":2,"par":4,"difficulty":1},{"name":"量水·02","a":3,"b":5,"target":1,"par":4,"difficulty":1},{"name":"量水·03","a":4,"b":5,"target":3,"par":4,"difficulty":1},{"name":"量水·04","a":3,"b":7,"target":1,"par":4,"difficulty":1},{"name":"量水·05","a":3,"b":7,"target":6,"par":4,"difficulty":1},{"name":"量水·06","a":3,"b":8,"target":2,"par":4,"difficulty":1},{"name":"量水·07","a":3,"b":8,"target":6,"par":4,"difficulty":1},{"name":"量水·08","a":4,"b":7,"target":1,"par":4,"difficulty":1},{"name":"量水·09","a":5,"b":6,"target":4,"par":4,"difficulty":1},{"name":"量水·10","a":5,"b":7,"target":3,"par":4,"difficulty":1},{"name":"量水·11","a":4,"b":9,"target":1,"par":4,"difficulty":1},{"name":"量水·12","a":4,"b":9,"target":8,"par":4,"difficulty":1},{"name":"量水·13","a":3,"b":5,"target":4,"par":6,"difficulty":2},{"name":"量水·14","a":4,"b":5,"target":2,"par":6,"difficulty":2},{"name":"量水·15","a":3,"b":7,"target":2,"par":6,"difficulty":2},{"name":"量水·16","a":3,"b":8,"target":1,"par":6,"difficulty":2},{"name":"量水·17","a":4,"b":7,"target":6,"par":6,"difficulty":2},{"name":"量水·18","a":5,"b":6,"target":2,"par":6,"difficulty":2},{"name":"量水·19","a":5,"b":7,"target":4,"par":6,"difficulty":2},{"name":"量水·20","a":4,"b":9,"target":3,"par":6,"difficulty":2},{"name":"量水·21","a":5,"b":8,"target":6,"par":6,"difficulty":2},{"name":"量水·22","a":6,"b":7,"target":2,"par":6,"difficulty":2},{"name":"量水·23","a":5,"b":9,"target":8,"par":6,"difficulty":2},{"name":"量水·24","a":7,"b":8,"target":2,"par":6,"difficulty":2},{"name":"量水·25","a":3,"b":7,"target":5,"par":8,"difficulty":3},{"name":"量水·26","a":3,"b":8,"target":7,"par":8,"difficulty":3},{"name":"量水·27","a":4,"b":7,"target":2,"par":8,"difficulty":3},{"name":"量水·28","a":4,"b":7,"target":5,"par":8,"difficulty":3},{"name":"量水·29","a":5,"b":6,"target":3,"par":8,"difficulty":3},{"name":"量水·30","a":5,"b":7,"target":1,"par":8,"difficulty":3},{"name":"量水·31","a":4,"b":9,"target":6,"par":8,"difficulty":3},{"name":"量水·32","a":5,"b":8,"target":1,"par":8,"difficulty":3},{"name":"量水·33","a":5,"b":8,"target":7,"par":8,"difficulty":3},{"name":"量水·34","a":6,"b":7,"target":4,"par":8,"difficulty":3},{"name":"量水·35","a":5,"b":9,"target":3,"par":8,"difficulty":3},{"name":"量水·36","a":5,"b":9,"target":6,"par":8,"difficulty":3},{"name":"量水·37","a":3,"b":8,"target":4,"par":10,"difficulty":4},{"name":"量水·38","a":5,"b":7,"target":6,"par":10,"difficulty":4},{"name":"量水·39","a":4,"b":9,"target":2,"par":10,"difficulty":4},{"name":"量水·40","a":4,"b":9,"target":7,"par":10,"difficulty":4},{"name":"量水·41","a":5,"b":8,"target":4,"par":10,"difficulty":4},{"name":"量水·42","a":6,"b":7,"target":3,"par":10,"difficulty":4},{"name":"量水·43","a":5,"b":9,"target":2,"par":10,"difficulty":4},{"name":"量水·44","a":7,"b":8,"target":3,"par":10,"difficulty":4},{"name":"量水·45","a":7,"b":9,"target":6,"par":10,"difficulty":4},{"name":"量水·46","a":8,"b":9,"target":3,"par":10,"difficulty":4},{"name":"量水·47","a":5,"b":9,"target":7,"par":12,"difficulty":4},{"name":"量水·48","a":7,"b":8,"target":4,"par":12,"difficulty":4}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seenName={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    if(seenName[d.name])return null;
+    seenName[d.name]=1;
+    list.push(normalizeLevel(d));
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){
+      LEVELS=list.map(normalizeLevel);return v;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);
+      if(typeof resize==="function")resize();
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层（lvgrid 通用） ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  var u=$("ovUndo");
+  if(u)u.hidden=true;
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+/* 单条结构校验 */
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Number.isInteger(d.a)||d.a<1||d.a>12)return false;
+  if(!Number.isInteger(d.b)||d.b<1||d.b>12)return false;
+  if(!Number.isInteger(d.target)||d.target<1||d.target>Math.max(d.a,d.b))return false;
+  if(d.par!==undefined&&(!Number.isInteger(d.par)||d.par<1||d.par>30))return false;
+  return true;
+}
+/* par 缺省时由内嵌 BFS 补算 */
+function normalizeLevel(d){
+  var par=(Number.isInteger(d.par)&&d.par>0)?d.par:jugBFS(d.a,d.b,d.target,-1,-1).par;
+  var diff=Number.isInteger(d.difficulty)?Math.min(9,Math.max(1,d.difficulty)):5;
+  return {name:String(d.name),a:d.a,b:d.b,target:d.target,par:par,difficulty:diff};
+}
+/* ---------- 独立求解器：BFS 最少操作步数（用于加载复核与提示） ---------- */
+/* start:[x,y] 缺省 (0,0)；返回 {par, firstMove}（firstMove 为操作名，无解 par=0） */
+function jugBFS(a,b,target,startX,startY){
+  var OPS=["fillA","fillB","emptyA","emptyB","pourAB","pourBA"];
+  function step(x,y,op){
+    if(op==="fillA")return [a,y];
+    if(op==="fillB")return [x,b];
+    if(op==="emptyA")return [0,y];
+    if(op==="emptyB")return [x,0];
+    if(op==="pourAB")return [Math.max(0,x-(b-y)),Math.min(b,y+x)];
+    return [Math.min(a,x+y),Math.max(0,y-(a-x))];
+  }
+  var x0=(startX===undefined)?0:startX,y0=(startY===undefined)?0:startY;
+  var dist=new Map(),parent=new Map();   // parent: key -> {p:前驱key, op:操作名}
+  var k0=x0*100+y0;
+  dist.set(k0,0);
+  var q=[[x0,y0]];
+  while(q.length){
+    var cur=q.shift(),x=cur[0],y=cur[1],d=dist.get(x*100+y),key=x*100+y;
+    if(x===target||y===target){
+      var firstMove=null,k=key;
+      while(k!==k0){
+        var par=parent.get(k);
+        firstMove=par.op;
+        k=par.p;
+      }
+      return {par:d,firstMove:firstMove};
+    }
+    for(var oi=0;oi<OPS.length;oi++){
+      var op=OPS[oi],nx=step(x,y,op);
+      var nk=nx[0]*100+nx[1];
+      if(!dist.has(nk)){dist.set(nk,d+1);parent.set(nk,{p:key,op:op});q.push(nx);}
+    }
+  }
+  return {par:0,firstMove:null};
+}
+/* ---------- 调色板（DOM 直用 token；water 高度百分比计算无色值） ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  PAL={deep:s.getPropertyValue("--g-primary-deep").trim()};
+}
+window.__gOnTheme=function(){palLoad()};
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,a=5,b=3,target=4;
+var x=0,y=0,history=[],done=false;
+var OPNAMES={fillA:"装满甲壶",fillB:"装满乙壶",emptyA:"倒空甲壶",emptyB:"倒空乙壶",pourAB:"甲壶→乙壶",pourBA:"乙壶→甲壶"};
+var OPS=["fillA","fillB","emptyA","emptyB","pourAB","pourBA"];
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  a=L.a;b=L.b;target=L.target;
+  var v=jugBFS(a,b,target);   // 加载复核：可解性 + 最优步数
+  var par=v.par;
+  x=0;y=0;history=[];done=false;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="用 "+a+" 升与 "+b+" 升两只壶量出 "+target+" 升";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  $("stPar").textContent=par>0?par:"-";
+  $("capA").textContent=a;$("capB").textContent=b;
+  if(!(par>0))say("警告：内嵌求解器判定本关无法量出目标（数据异常）");
+  else say("任一壶恰好量出 "+target+" 升即过关");
+  render();updStats();
+}
+function updStats(){
+  $("stMoves").textContent=history.length;
+  $("btnUndo").disabled=!history.length||done;
+}
+/* ---------- 渲染 ---------- */
+function render(){
+  var hA=Math.round(x/a*100),hB=Math.round(y/b*100);
+  $("waterA").style.height=hA+"%";$("waterB").style.height=hB+"%";
+  $("amtA").textContent=x;$("amtB").textContent=y;
+  var hitA=x===target,hitB=y===target;
+  $("jugA").classList.toggle("hit",hitA);
+  $("jugB").classList.toggle("hit",hitB);
+}
+/* ---------- 操作 ---------- */
+function applyOp(op){
+  if(done)return;
+  var nx=x,ny=y;
+  if(op==="fillA")nx=a;else if(op==="fillB")ny=b;
+  else if(op==="emptyA")nx=0;else if(op==="emptyB")ny=0;
+  else if(op==="pourAB"){nx=Math.max(0,x-(b-y));ny=Math.min(b,y+x);}
+  else{nx=Math.min(a,x+y);ny=Math.max(0,y-(a-x));}
+  if(nx===x&&ny===y){say("这个操作没有变化");return;}
+  history.push({x:x,y:y});
+  x=nx;y=ny;render();updStats();
+  if(x===target||y===target){winLevel();return;}
+  say(OPNAMES[op]+" · 甲 "+x+" / 乙 "+y);
+}
+function undo(){
+  if(!history.length||done)return;
+  var h=history.pop();
+  x=h.x;y=h.y;render();updStats();say("已撤销一步");
+}
+function hint(){
+  if(done)return;
+  var v=jugBFS(a,b,target,x,y);
+  if(v.par===0){say("内嵌求解器：当前状态到不了目标，撤销几步再试");return;}
+  var op=v.firstMove;
+  document.querySelectorAll(".op").forEach(function(el){
+    el.classList.toggle("hintop",el.dataset.op===op);
+  });
+  say("求解器建议下一步："+OPNAMES[op]+"（还差 "+v.par+" 步）");
+}
+/* ---------- 胜负 ---------- */
+function winLevel(){
+  done=true;
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:history.length}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"量出来了！";
+  $("ovDesc").innerHTML="用 "+history.length+" 步量出 "+target+" 升（参考最优 "+$("stPar").textContent+" 步）"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>48 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+/* ---------- 输入 ---------- */
+document.querySelectorAll(".op").forEach(function(el){
+  el.addEventListener("click",function(){applyOp(el.dataset.op)});
+});
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){if(done)return;openLevelSelect()});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(done){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+    else{lv++;loadLevel(lv)}
+  }
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="6"){applyOp(OPS[parseInt(k,10)-1]);e.preventDefault();}
+  else if(k==="z"||k==="Z")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+  else if(k===" "||k==="Enter"){if($("overlay").classList.contains("show"))$("ovBtn").click();e.preventDefault();}
+});
+/* ---------- 启动 ---------- */
+palLoad();loadLevel(save.lv);
+syncLevelsFromServer();syncSaveFromServer();
+
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

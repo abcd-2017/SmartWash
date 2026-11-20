@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>数桥</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-board:#FFFFFF;--g-st-dot:#A9AEA9;--g-st-isl:#E8F6EF;--g-st-islln:#2D9B6A;--g-st-br:#1C1C1E;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-board:#1D201E;--g-st-dot:#4A544C;--g-st-isl:#1D3229;--g-st-islln:#5BC894;--g-st-br:#E6E9E6;color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .levels { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; }
+  .levels::-webkit-scrollbar { display: none; }
+  .lv { flex: 0 0 auto; min-width: 48px; min-height: 44px; padding: 4px 8px; border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); background: var(--g-surface); color: var(--g-muted); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .lv.cur { border-color: var(--g-primary); color: var(--g-primary-deep); background: var(--g-primary-soft); }
+  .lv.done { color: var(--g-primary-deep); }
+  .lv:disabled { opacity: .45; cursor: default; }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
+  .msg { min-height: 20px; margin: 10px 2px 8px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn { min-height: 44px; padding: 0 12px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn:active { opacity: .85; }
+  .btn[disabled] { opacity: .4; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.show { display: flex; }
+  .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 28px; }
+  .panel .btn { width: 100%; }
+  .lvgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 14px; }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule">岛间架桥</span></header>
+  <nav class="levels" id="levels" aria-label="关卡选择"></nav>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1 / 48</span></div>
+    <div class="stat"><span class="label">架桥</span><span class="val" id="stBr">0</span></div>
+    <div class="stat"><span class="label">完成</span><span class="val" id="stDone">0 / 0</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="数桥棋盘" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点两座同排岛屿架桥，再点一次加双桥</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo" type="button">撤销</button>
+    <button class="btn" id="btnHint" type="button">提示</button>
+    <button class="btn" id="btnReset" type="button">重开</button>
+    <button class="btn" id="btnLv" type="button">选关</button>
+  </div>
+  <p class="foot">桥只能横竖连接同排岛屿，可双桥，不可交叉 · 全部岛连通且桥数等于数字</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn" id="ovBtn" type="button">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层 ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 关卡数据（内嵌 48 关，离线生成 + 独立求解器验证唯一解） ---------- */
+var DEFAULT_LEVELS=[{"name":"第 1 关","r":6,"c":6,"islands":[[5,3,1],[3,5,1],[2,2,3],[0,3,1],[4,2,2],[4,3,2],[3,2,3],[2,3,3],[2,4,1],[1,2,1]]},{"name":"第 2 关","r":6,"c":6,"islands":[[4,0,3],[3,0,3],[4,2,3],[5,2,2],[1,1,1],[2,0,1],[3,3,2],[4,4,1],[5,0,2],[1,3,2]]},{"name":"第 3 关","r":6,"c":6,"islands":[[3,1,3],[5,0,2],[4,2,1],[3,5,3],[3,0,3],[3,2,4],[0,2,1],[5,5,2],[2,5,1],[3,4,2]]},{"name":"第 4 关","r":6,"c":6,"islands":[[1,0,2],[5,0,2],[2,3,1],[3,5,1],[1,1,4],[5,1,3],[1,5,2],[5,2,1],[0,1,1],[2,5,3]]},{"name":"第 5 关","r":6,"c":6,"islands":[[5,2,1],[3,3,2],[1,1,2],[0,5,2],[3,0,1],[0,4,3],[0,1,2],[5,4,3],[5,5,2],[1,3,2]]},{"name":"第 6 关","r":6,"c":6,"islands":[[5,5,2],[4,1,1],[3,4,2],[3,2,2],[2,0,2],[0,2,3],[0,0,2],[2,1,2],[0,5,2],[5,4,2]]},{"name":"第 7 关","r":6,"c":6,"islands":[[1,1,3],[0,5,1],[5,5,3],[5,3,3],[3,1,3],[3,5,3],[4,5,3],[1,3,3],[5,1,2],[2,1,2]]},{"name":"第 8 关","r":6,"c":6,"islands":[[2,2,3],[4,5,2],[4,3,1],[3,5,3],[5,1,1],[1,2,1],[5,2,2],[2,5,2],[3,4,2],[2,4,3]]},{"name":"第 9 关","r":6,"c":6,"islands":[[0,1,2],[1,5,2],[1,3,2],[3,3,2],[4,5,2],[0,2,3],[0,4,1],[5,1,2],[5,5,2],[3,2,2]]},{"name":"第 10 关","r":6,"c":6,"islands":[[3,0,2],[0,0,1],[1,0,3],[4,3,4],[4,2,3],[5,0,1],[2,4,1],[1,3,2],[4,4,2],[4,0,3]]},{"name":"第 11 关","r":6,"c":6,"islands":[[3,4,3],[1,2,1],[3,0,4],[0,5,2],[4,0,2],[2,5,1],[0,0,2],[4,4,2],[0,2,3],[4,3,2]]},{"name":"第 12 关","r":6,"c":6,"islands":[[3,5,1],[0,2,3],[2,2,3],[2,0,1],[0,3,3],[3,2,2],[3,3,4],[5,3,1],[4,3,2],[2,1,2]]},{"name":"第 13 关","r":6,"c":6,"islands":[[1,4,3],[5,5,1],[2,1,1],[1,3,2],[0,0,1],[0,4,3],[3,5,2],[0,5,2],[2,4,2],[0,3,3]]},{"name":"第 14 关","r":6,"c":6,"islands":[[4,2,2],[5,0,1],[5,4,2],[4,3,3],[1,3,2],[5,3,3],[0,1,1],[0,4,2],[1,2,2],[3,2,2]]},{"name":"第 15 关","r":6,"c":6,"islands":[[1,1,2],[3,0,1],[2,1,4],[2,0,2],[2,3,2],[2,4,2],[0,3,1],[5,1,1],[0,4,2],[1,4,3]]},{"name":"第 16 关","r":6,"c":6,"islands":[[2,1,3],[1,1,1],[0,5,1],[5,5,2],[2,3,2],[3,3,2],[4,5,3],[4,1,2],[5,0,1],[3,1,3]]},{"name":"第 17 关","r":7,"c":7,"islands":[[1,5,1],[3,3,1],[2,6,3],[5,4,2],[3,5,1],[0,5,2],[6,6,2],[2,1,2],[6,2,2],[3,4,3],[5,2,4],[5,1,2],[0,6,2],[4,2,1]]},{"name":"第 18 关","r":7,"c":7,"islands":[[2,5,3],[5,1,2],[4,1,1],[1,2,2],[1,5,2],[0,0,2],[0,6,2],[2,6,2],[3,2,2],[6,0,1],[0,3,2],[4,4,1],[5,2,2],[2,4,2]]},{"name":"第 19 关","r":7,"c":7,"islands":[[2,0,1],[2,6,3],[4,6,3],[2,4,3],[4,3,5],[5,3,4],[5,5,1],[5,1,2],[0,1,2],[1,4,2],[5,2,3],[4,2,2],[0,4,2],[0,3,3]]},{"name":"第 20 关","r":7,"c":7,"islands":[[6,6,2],[4,1,3],[0,3,2],[5,1,2],[0,5,1],[1,4,1],[1,2,1],[2,6,2],[3,1,1],[4,0,1],[5,2,3],[2,4,2],[6,3,2],[5,3,3]]},{"name":"第 21 关","r":7,"c":7,"islands":[[5,6,2],[0,3,2],[5,4,2],[2,6,2],[0,0,3],[4,3,2],[2,3,3],[4,1,2],[1,1,1],[3,2,1],[1,3,2],[0,2,4],[6,4,2],[6,0,2]]},{"name":"第 22 关","r":7,"c":7,"islands":[[0,5,2],[1,3,3],[0,1,1],[5,6,1],[0,3,3],[3,0,2],[5,5,2],[6,2,4],[6,0,2],[1,0,2],[0,4,3],[4,2,1],[5,3,1],[6,4,3]]},{"name":"第 23 关","r":7,"c":7,"islands":[[2,4,3],[4,2,2],[0,1,2],[6,0,2],[1,0,2],[2,0,3],[4,5,5],[6,5,2],[1,4,3],[2,5,3],[5,1,3],[0,4,2],[5,2,3],[4,6,1]]},{"name":"第 24 关","r":7,"c":7,"islands":[[0,5,2],[4,5,2],[6,6,2],[0,6,2],[5,1,2],[3,2,1],[5,4,2],[2,4,1],[3,1,2],[1,6,2],[2,5,3],[6,4,2],[4,3,2],[4,1,3]]},{"name":"第 25 关","r":7,"c":7,"islands":[[4,6,2],[3,5,1],[0,4,3],[0,6,2],[1,4,3],[5,2,2],[0,2,4],[5,1,2],[0,1,2],[6,4,2],[3,2,5],[6,6,2],[1,3,1],[3,4,5]]},{"name":"第 26 关","r":7,"c":7,"islands":[[5,6,2],[2,4,1],[1,4,3],[5,1,3],[4,1,1],[3,0,2],[1,5,2],[0,6,2],[3,3,2],[6,1,2],[0,0,2],[6,2,1],[3,5,2],[1,0,3]]},{"name":"第 27 关","r":7,"c":7,"islands":[[1,1,3],[3,6,2],[0,4,1],[0,0,2],[4,0,2],[6,3,1],[1,2,4],[6,5,3],[0,2,3],[1,6,2],[4,4,1],[5,5,1],[4,1,3],[6,6,2]]},{"name":"第 28 关","r":7,"c":7,"islands":[[6,1,1],[6,4,3],[3,2,3],[6,5,1],[3,0,2],[5,6,1],[0,2,3],[3,5,1],[2,2,2],[0,4,3],[4,4,3],[3,4,4],[4,6,2],[5,0,1]]},{"name":"第 29 关","r":7,"c":7,"islands":[[1,6,1],[5,1,2],[4,5,2],[4,2,3],[1,4,2],[3,0,2],[4,3,2],[5,5,2],[4,0,3],[6,0,1],[4,1,4],[1,1,2],[0,0,1],[2,2,1]]},{"name":"第 30 关","r":7,"c":7,"islands":[[1,1,3],[6,3,3],[1,3,3],[6,1,2],[0,4,1],[3,6,2],[0,1,3],[5,4,1],[0,0,1],[1,6,3],[5,3,3],[6,6,2],[1,5,3],[2,1,2]]},{"name":"第 31 关","r":7,"c":7,"islands":[[3,4,3],[5,1,3],[0,0,2],[2,5,4],[1,5,2],[2,4,2],[3,3,1],[1,0,2],[6,5,3],[5,4,2],[6,1,2],[4,1,1],[0,3,2],[0,6,1]]},{"name":"第 32 关","r":7,"c":7,"islands":[[6,0,1],[3,6,1],[4,2,3],[4,4,2],[6,1,3],[1,2,2],[6,6,2],[5,4,2],[6,2,3],[2,5,1],[5,1,1],[1,3,1],[6,4,3],[6,5,3]]},{"name":"第 33 关","r":7,"c":7,"islands":[[5,4,2],[1,0,3],[0,3,2],[3,1,2],[2,5,2],[4,5,1],[5,1,2],[1,3,3],[4,0,1],[0,0,2],[3,5,4],[6,4,1],[2,3,2],[3,6,1]]},{"name":"第 34 关","r":7,"c":7,"islands":[[6,6,2],[0,4,2],[4,3,2],[3,1,4],[1,0,2],[4,0,3],[2,4,2],[0,0,2],[3,2,1],[2,1,2],[3,0,4],[4,5,1],[6,0,2],[5,6,1]]},{"name":"第 35 关","r":7,"c":7,"islands":[[3,3,4],[1,0,2],[1,3,3],[3,6,3],[0,6,2],[5,2,2],[4,5,1],[1,4,1],[5,6,2],[0,0,2],[5,3,4],[2,1,1],[2,2,2],[4,6,3]]},{"name":"第 36 关","r":7,"c":7,"islands":[[2,5,2],[4,3,1],[4,0,2],[6,2,1],[3,5,3],[5,5,3],[5,2,2],[2,6,3],[1,6,1],[3,0,3],[3,2,2],[3,4,2],[5,6,2],[0,0,1]]},{"name":"第 37 关","r":8,"c":8,"islands":[[0,4,3],[3,1,4],[4,3,2],[7,5,1],[2,4,1],[5,1,1],[4,2,2],[6,2,3],[0,7,2],[7,0,2],[6,6,2],[1,0,3],[7,2,3],[3,0,3],[0,6,3],[3,6,3],[5,6,1],[0,0,3],[4,7,2]]},{"name":"第 38 关","r":8,"c":8,"islands":[[4,0,3],[0,5,2],[4,4,2],[6,7,2],[1,5,2],[3,6,3],[5,1,2],[1,0,2],[1,2,2],[3,1,2],[3,0,3],[7,4,1],[5,6,4],[6,1,4],[5,4,4],[0,3,1],[6,0,3],[5,7,3],[2,6,1]]},{"name":"第 39 关","r":8,"c":8,"islands":[[2,4,3],[5,4,4],[0,7,2],[1,4,2],[7,0,1],[5,1,3],[5,7,3],[3,4,4],[6,1,2],[0,1,2],[2,6,1],[3,5,1],[6,0,3],[2,2,1],[1,3,2],[3,3,2],[2,1,4],[2,0,2],[4,7,2]]},{"name":"第 40 关","r":8,"c":8,"islands":[[3,4,2],[3,0,2],[7,0,2],[7,2,2],[5,2,3],[0,0,2],[6,0,2],[4,1,1],[1,5,2],[5,6,2],[4,3,2],[4,7,2],[0,3,3],[4,5,2],[0,5,2],[5,7,2],[2,4,1],[5,4,3],[4,2,3]]},{"name":"第 41 关","r":8,"c":8,"islands":[[3,7,2],[0,0,2],[3,3,5],[4,3,5],[3,4,5],[6,0,2],[4,0,4],[5,4,1],[0,3,3],[7,3,1],[4,2,2],[3,1,2],[0,7,2],[4,1,4],[3,6,2],[1,2,1],[0,4,3],[6,3,4],[1,4,4]]},{"name":"第 42 关","r":8,"c":8,"islands":[[6,6,1],[2,7,2],[5,1,2],[6,2,2],[1,4,3],[5,2,4],[6,3,4],[7,0,2],[5,5,1],[2,3,2],[0,0,2],[6,4,3],[1,2,2],[2,1,2],[1,6,2],[3,7,1],[7,3,2],[0,6,2],[2,0,3]]},{"name":"第 43 关","r":8,"c":8,"islands":[[3,7,2],[5,5,4],[3,6,3],[6,1,3],[1,4,4],[1,7,1],[4,5,2],[2,4,2],[6,0,2],[6,4,2],[5,6,3],[0,6,2],[0,4,2],[7,0,2],[3,1,2],[3,3,1],[7,5,2],[7,2,2],[1,5,3]]},{"name":"第 44 关","r":8,"c":8,"islands":[[6,1,1],[4,6,1],[0,5,2],[7,0,1],[5,2,3],[5,5,3],[3,2,2],[4,1,2],[5,1,3],[5,3,4],[6,5,2],[0,3,2],[2,1,1],[7,6,3],[2,5,2],[7,3,3],[6,6,3],[7,4,3],[1,2,1]]},{"name":"第 45 关","r":8,"c":8,"islands":[[3,4,3],[5,7,4],[4,0,3],[0,2,2],[1,7,1],[6,6,4],[5,0,2],[7,3,2],[6,7,4],[0,0,2],[3,7,3],[3,3,1],[7,7,2],[7,2,2],[4,5,4],[6,5,2],[7,4,3],[4,6,3],[5,6,5]]},{"name":"第 46 关","r":8,"c":8,"islands":[[2,1,4],[7,5,3],[1,3,2],[2,4,3],[2,6,3],[4,7,1],[4,6,3],[5,3,1],[4,0,1],[7,3,2],[0,1,2],[3,5,2],[0,5,2],[0,6,2],[2,3,4],[7,6,2],[1,2,1],[3,1,4],[4,1,2]]},{"name":"第 47 关","r":8,"c":8,"islands":[[4,3,2],[7,3,3],[1,2,3],[2,7,3],[7,7,2],[4,7,3],[4,0,3],[2,1,2],[4,4,2],[2,6,4],[5,1,4],[6,1,1],[4,5,2],[1,0,3],[4,1,3],[3,2,3],[5,2,3],[3,6,2],[7,0,2]]},{"name":"第 48 关","r":8,"c":8,"islands":[[0,7,2],[4,3,1],[4,7,3],[0,1,2],[5,1,3],[7,4,2],[2,7,3],[5,5,5],[0,5,3],[5,4,6],[4,0,1],[1,4,2],[6,4,4],[1,3,2],[5,7,2],[0,2,2],[7,0,2],[5,0,3],[6,5,2]]}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY="sw.hashiwire.v1.levels",LEVELS_VER_KEY="sw.hashiwire.v1.levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(!Number.isInteger(d.r)||d.r<4||d.r>10)return false;
+  if(!Number.isInteger(d.c)||d.c<4||d.c>10)return false;
+  if(!Array.isArray(d.islands)||d.islands.length<3)return false;
+  var seen={};
+  for(var i=0;i<d.islands.length;i++){
+    var a=d.islands[i];
+    if(!Array.isArray(a)||a.length!==3)return false;
+    if(!Number.isInteger(a[0])||!Number.isInteger(a[1])||!Number.isInteger(a[2]))return false;
+    if(a[0]<0||a[0]>=d.c||a[1]<0||a[1]>=d.r)return false;
+    if(a[2]<1||a[2]>8)return false;
+    var k=a[0]+","+a[1];if(seen[k])return false;seen[k]=1;
+  }
+  return true;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row.dataJson!=="string")return null;
+    var d;try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    var ck=d.r+"x"+d.c+"|"+d.islands.map(function(a){return a.join(",")}).join(";");
+    if(seen[ck])return null;seen[ck]=1;
+    list.push({name:String(d.name||("第"+(i+1)+"关")),r:d.r,c:d.c,islands:d.islands.map(function(a){return [a[0],a[1],a[2]]})});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){LEVELS=list;return v}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+/* ---------- 候选边与交叉 ---------- */
+function candidates(islands){
+  var n=islands.length,edges=[];
+  for(var i=0;i<n;i++)for(var j=i+1;j<n;j++){
+    var a=islands[i],b=islands[j];
+    if(a[1]===b[1]){
+      var x0=Math.min(a[0],b[0]),x1=Math.max(a[0],b[0]),blocked=false;
+      for(var k=0;k<n;k++)if(k!==i&&k!==j){var c=islands[k];if(c[1]===a[1]&&c[0]>x0&&c[0]<x1){blocked=true;break}}
+      if(!blocked)edges.push({i:i,j:j,dir:"h",pos:a[1],lo:x0,hi:x1});
+    }else if(a[0]===b[0]){
+      var y0=Math.min(a[1],b[1]),y1=Math.max(a[1],b[1]),blocked2=false;
+      for(var k2=0;k2<n;k2++)if(k2!==i&&k2!==j){var c2=islands[k2];if(c2[0]===a[0]&&c2[1]>y0&&c2[1]<y1){blocked2=true;break}}
+      if(!blocked2)edges.push({i:i,j:j,dir:"v",pos:a[0],lo:y0,hi:y1});
+    }
+  }
+  return edges;
+}
+function crosses(e1,e2){
+  if(e1.dir===e2.dir)return false;
+  var h=e1.dir==="h"?e1:e2,v=e1.dir==="h"?e2:e1;
+  return v.pos>h.lo&&v.pos<h.hi&&h.pos>v.lo&&h.pos<v.hi;
+}
+/* ---------- 独立求解器：统计解数（上限 2），返回首个解的边数 ---------- */
+function hashiSolve(islands,edges,clues,cap){
+  var m=edges.length,n=islands.length;
+  var cross=edges.map(function(){return []});
+  for(var i=0;i<m;i++)for(var j=i+1;j<m;j++)if(crosses(edges[i],edges[j])){cross[i].push(j);cross[j].push(i)}
+  var cnt=new Array(m).fill(0),deg=new Array(n).fill(0);
+  var count=0,nodes=0,first=null;
+  var MAX=cap||120000;
+  function dfs(k){
+    if(count>=2||nodes>MAX)return;
+    if(k===m){
+      for(var i2=0;i2<n;i2++)if(deg[i2]!==clues[i2])return;
+      var parent=Array.from({length:n},function(_,x){return x});
+      function find(x){while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x]}return x}
+      for(var e=0;e<m;e++)if(cnt[e]>0){var a=find(edges[e].i),b=find(edges[e].j);if(a!==b)parent[a]=b}
+      var root=find(0);
+      for(var i3=1;i3<n;i3++)if(find(i3)!==root)return;
+      count++;if(!first)first=cnt.slice();
+      return;
+    }
+    nodes++;
+    var e=edges[k];
+    for(var v=0;v<=2;v++){
+      if(deg[e.i]+v>clues[e.i]||deg[e.j]+v>clues[e.j])continue;
+      var ok=true;
+      if(v>0)for(var q=0;q<cross[k].length;q++)if(cnt[cross[k][q]]>0){ok=false;break}
+      if(!ok)continue;
+      cnt[k]=v;deg[e.i]+=v;deg[e.j]+=v;
+      var feasible=true;
+      for(var i4=0;i4<n&&feasible;i4++){
+        var maxAdd=0;
+        for(var e2=k+1;e2<m;e2++)if(edges[e2].i===i4||edges[e2].j===i4)maxAdd+=2;
+        if(deg[i4]+maxAdd<clues[i4])feasible=false;
+      }
+      if(feasible)dfs(k+1);
+      cnt[k]=0;deg[e.i]-=v;deg[e.j]-=v;
+      if(count>=2||nodes>MAX)return;
+    }
+  }
+  dfs(0);
+  return {count:count,nodes:nodes,sol:first};
+}
+/* ---------- 调色板 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    success:v("--g-success"),warning:v("--g-warning"),danger:v("--g-danger"),
+    board:v("--g-st-board"),dot:v("--g-st-dot"),isl:v("--g-st-isl"),islln:v("--g-st-islln"),br:v("--g-st-br")};
+}
+window.__gOnTheme=function(){palLoad()};
+/* ---------- 状态 ---------- */
+var KEY="sw.hashiwire.v1";
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object")return s}catch(e){}return{}}
+function persist(){
+  try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}
+  if(GB.available)GB.saveState("hashi-wire",save).catch(function(){});
+}
+var save=loadSave();
+save.lv=Math.min(Math.max(parseInt(save.lv,10)||0,0),LEVELS.length-1);
+save.done=save.done||{};
+var lv=save.lv,L=null,islands=[],edges=[],cross=[],cnt=[],deg=[],history=[],over=false,cur=0;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=0,H=0,dpr=1,cell=40,pad=14;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+/* ---------- 布局 ---------- */
+function resize(){
+  var wCss=cv.parentElement.clientWidth||360;
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  var c=L?L.c:7,r=L?L.r:7;
+  cell=Math.floor((wCss-pad*2)/c);
+  cell=Math.max(24,Math.min(cell,64));
+  W=cell*c+pad*2;H=cell*r+pad*2;
+  cv.style.height=H+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+/* ---------- 统计 ---------- */
+function calcDeg(){
+  deg=islands.map(function(){return 0});
+  for(var k=0;k<edges.length;k++)if(cnt[k]>0){deg[edges[k].i]+=cnt[k];deg[edges[k].j]+=cnt[k]}
+}
+function doneCount(){
+  var d=0;for(var i=0;i<islands.length;i++)if(deg[i]===islands[i][2])d++;
+  return d;
+}
+function updStats(){
+  var bridges=0;for(var k=0;k<cnt.length;k++)bridges+=cnt[k];
+  $("stLv").textContent=(lv+1)+" / "+LEVELS.length;
+  $("stBr").textContent=bridges;
+  $("stDone").textContent=doneCount()+" / "+islands.length;
+  $("btnUndo").disabled=!history.length||over;
+}
+/* ---------- 关卡 ---------- */
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return}
+  islands=L.islands.map(function(a){return [a[0],a[1],a[2]]});
+  edges=candidates(islands);
+  cross=edges.map(function(){return []});
+  for(var i=0;i<edges.length;i++)for(var j=i+1;j<edges.length;j++)if(crosses(edges[i],edges[j])){cross[i].push(j);cross[j].push(i)}
+  cnt=edges.map(function(){return 0});
+  history=[];over=false;cur=0;
+  calcDeg();
+  $("lvTag").textContent="第 "+(lv+1)+" 关";
+  $("lvRule").textContent=L.c+"×"+L.r+" · "+islands.length+" 岛";
+  var r=hashiSolve(islands,edges,islands.map(function(a){return a[2]}),120000);
+  if(r.count!==1)say("警告：内嵌求解器判定本关解不唯一（数据异常）");
+  else say("点两座同排岛屿架桥，再点一次加双桥");
+  resize();updStats();renderLevels();
+}
+function edgeBetween(i,j){
+  for(var k=0;k<edges.length;k++)if((edges[k].i===i&&edges[k].j===j)||(edges[k].i===j&&edges[k].j===i))return k;
+  return -1;
+}
+function cycleEdge(k){
+  if(k<0||over)return;
+  var e=edges[k],nv=(cnt[k]+1)%3;
+  if(nv>0){
+    if(deg[e.i]+nv>islands[e.i][2]){say("超出该岛所需桥数");return}
+    if(deg[e.j]+nv>islands[e.j][2]){say("超出该岛所需桥数");return}
+    for(var q=0;q<cross[k].length;q++)if(cnt[cross[k][q]]>0){say("桥梁不能交叉");return}
+  }
+  history.push({k:k,prev:cnt[k]});
+  cnt[k]=nv;calcDeg();updStats();
+  if(nv===2)say("已加双桥");else if(nv===1)say("已架单桥");else say("已拆除");
+  checkWin();
+}
+function islandAt(px,py){
+  var best=-1,bd=1e9;
+  for(var i=0;i<islands.length;i++){
+    var x=pad+islands[i][0]*cell+cell/2,y=pad+islands[i][1]*cell+cell/2;
+    var d=Math.hypot(px-x,py-y);
+    if(d<bd){bd=d;best=i}
+  }
+  if(bd<=cell*0.55)return best;
+  return -1;
+}
+function undo(){
+  if(!history.length||over)return;
+  var h=history.pop();cnt[h.k]=h.prev;
+  calcDeg();updStats();say("撤销一步");
+}
+function hint(){
+  if(over)return;
+  var r=hashiSolve(islands,edges,islands.map(function(a){return a[2]}),120000);
+  if(r.count!==1||!r.sol){say("本关解不唯一，无法提示");return}
+  for(var k=0;k<edges.length;k++)if(cnt[k]!==r.sol[k]){var pv=cnt[k];cnt[k]=r.sol[k];history.push({k:k,prev:pv});break}
+  calcDeg();updStats();say("提示：已按解架了一座桥");
+  checkWin();
+}
+function checkWin(){
+  for(var i=0;i<islands.length;i++)if(deg[i]!==islands[i][2])return;
+  var parent=islands.map(function(_,x){return x});
+  function find(x){while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x]}return x}
+  for(var k=0;k<edges.length;k++)if(cnt[k]>0){var a=find(edges[k].i),b=find(edges[k].j);if(a!==b)parent[a]=b}
+  var root=find(0);
+  for(var i2=1;i2<islands.length;i2++)if(find(i2)!==root)return;
+  winLevel();
+}
+function winLevel(){
+  over=true;
+  save.done[lv]=true;
+  if(lv+1<LEVELS.length&&save.lv<lv+1)save.lv=lv+1;
+  persist();updStats();renderLevels();
+  if(GB.available)GB.reportScore("hashi-wire",{metricValue:lv+1,metricExtra:islands.length}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
+  $("ovDesc").innerHTML="第 "+(lv+1)+" 关完成<br>"+islands.length+" 座岛全部连通";
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+function renderLevels(){
+  var el=$("levels");el.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lv"+(i===lv?" cur":"")+(save.done[i]?" done":"");
+      b.textContent=i+1;b.disabled=i>save.lv;
+      b.addEventListener("click",function(){if(i===lv&&!over)return;lv=i;persist();hideOverlay();loadLevel(i)});
+      el.appendChild(b);
+    })(i);
+  }
+}
+/* ---------- 绘制 ---------- */
+function draw(){
+  ctx.fillStyle=PAL.board;ctx.fillRect(0,0,W,H);
+  if(!L)return;
+  //点
+  ctx.fillStyle=PAL.dot;
+  for(var y=0;y<L.r;y++)for(var x=0;x<L.c;x++){
+    ctx.beginPath();ctx.arc(pad+x*cell+cell/2,pad+y*cell+cell/2,2.5,0,7);ctx.fill();
+  }
+  //桥
+  ctx.strokeStyle=PAL.br;ctx.lineCap="round";
+  for(var k=0;k<edges.length;k++){
+    if(!cnt[k])continue;
+    var e=edges[k];
+    var ax=pad+islands[e.i][0]*cell+cell/2,ay=pad+islands[e.i][1]*cell+cell/2;
+    var bx=pad+islands[e.j][0]*cell+cell/2,by=pad+islands[e.j][1]*cell+cell/2;
+    var dx=bx-ax,dy=by-ay,len=Math.hypot(dx,dy),nx=-dy/len,ny=dx/len;
+    ctx.lineWidth=3;
+    for(var m=0;m<cnt[k];m++){
+      var off=(m===0?-3:3);
+      ctx.beginPath();ctx.moveTo(ax+nx*off,ay+ny*off);ctx.lineTo(bx+nx*off,by+ny*off);ctx.stroke();
+    }
+  }
+  //岛
+  for(var i=0;i<islands.length;i++){
+    var cx=pad+islands[i][0]*cell+cell/2,cy=pad+islands[i][1]*cell+cell/2;
+    var r=Math.max(12,cell*0.32);
+    var done=deg[i]===islands[i][2];
+    ctx.fillStyle=done?PAL.soft:PAL.isl;
+    ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();
+    ctx.strokeStyle=i===cur?PAL.deep:PAL.islln;ctx.lineWidth=i===cur?3:2;
+    ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.stroke();
+    ctx.fillStyle=done?PAL.deep:PAL.text;
+    ctx.font="700 "+(r>=16?18:14)+"px -apple-system,'PingFang SC',sans-serif";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(String(islands[i][2]),cx,cy+1);
+  }
+  requestAnimationFrame(draw);
+}
+/* ---------- 输入 ---------- */
+cv.addEventListener("pointerdown",function(e){
+  if(over)return;
+  var rc=cv.getBoundingClientRect();
+  var i=islandAt(e.clientX-rc.left,e.clientY-rc.top);
+  if(i<0)return;
+  if(cur===i){say("再点另一座同排的岛");return}
+  var k=edgeBetween(cur,i);
+  if(k>=0){cycleEdge(k);cur=i}
+  else{cur=i;say("已选岛，再点同排另一座岛")}
+  e.preventDefault();
+});
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){
+  if(over)return;
+  for(var k=0;k<cnt.length;k++)cnt[k]=0;
+  history=[];calcDeg();updStats();say("已清空所有桥");
+});
+$("btnLv").addEventListener("click",function(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    var b=document.createElement("button");
+    b.className="lvbtn"+(save.done[i]?" done":"");
+    b.textContent=i+1;b.disabled=i>save.lv;
+    b.addEventListener("click",function(){
+      lv=+this.textContent-1;save.lv=Math.max(save.lv,lv);persist();loadLevel(lv);hideOverlay();
+    });
+    g.appendChild(b);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="通关的关卡标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(over){
+    if(lv>=LEVELS.length-1){lv=0;loadLevel(0)}
+    else loadLevel(lv+1);
+  }
+});
+window.addEventListener("keydown",function(e){
+  if(!L)return;
+  var dirs={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+  var d=dirs[e.key];
+  if(d){
+    e.preventDefault();
+    if(over)return;
+    var x0=islands[cur][0],y0=islands[cur][1],t=-1,bd=1e9;
+    for(var i=0;i<islands.length;i++){
+      var dx=islands[i][0]-x0,dy=islands[i][1]-y0;
+      if(d[0]!==0){if(dy!==0||dx*d[0]<=0)continue;if(Math.abs(dx)<bd){bd=Math.abs(dx);t=i}}
+      else{if(dx!==0||dy*d[1]<=0)continue;if(Math.abs(dy)<bd){bd=Math.abs(dy);t=i}}
+    }
+    if(t<0){say("该方向没有岛屿");return}
+    var k=edgeBetween(cur,t);
+    if(k>=0){cycleEdge(k);cur=t}
+    return;
+  }
+  if(e.key==="z"||e.key==="Z"){undo()}
+  else if(e.key==="h"||e.key==="H"){hint()}
+  else if(e.key==="Tab"){
+    e.preventDefault();
+    cur=(cur+(e.shiftKey?-1:1)+islands.length)%islands.length;
+  }
+});
+function hideOverlay(){$("overlay").classList.remove("show")}
+window.addEventListener("resize",resize);
+/* ---------- 启动 ---------- */
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels("hashi-wire").then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    applyLevels(list,res.version||0);
+    if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+    save.lv=Math.min(save.lv,lv);persist();
+    loadLevel(lv);
+  }).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("hashi-wire").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rl=parseInt(r.lv,10)||0;
+      if(rl>save.lv){save.lv=Math.min(LEVELS.length-1,rl);changed=true}
+      if(r.done&&typeof r.done==="object")for(var k in r.done)if(r.done[k]&&!save.done[k]){save.done[k]=true;changed=true}
+      if(changed){persist();loadLevel(save.lv)}
+    }catch(e){}
+  }).catch(function(){});
+}
+palLoad();resize();loadLevel(lv);
+requestAnimationFrame(draw);
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套） */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

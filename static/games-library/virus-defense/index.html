@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>消灭病毒</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材（st- 前缀素材 token）*/
+  :root {
+    --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
+    --g-primary:#2D9B6A; --g-primary-deep:#17734A;--g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
+    --g-text:#1C1C1E; --g-muted:#6B6E73; --g-faint:#A9AEA9; --g-border:#E6E9E6; --g-hairline:#EFF1EE;
+    --g-danger:#A83850; --g-warning:#9A6210; --g-success:#17734A; --g-water:#4A9FD4;
+    --g-scrim:rgba(245,246,243,.9);
+    --g-shadow:0 2px 12px rgba(20,40,30,.05);
+    --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
+    --g-st-dish1:#E2F0EA; --g-st-dish2:#F4FAF7; --g-st-cell:#D3E6DC;
+    color-scheme:light;
+  }
+  :root[data-theme=dark] {
+    --g-bg:#141614; --g-surface:#1D201E; --g-surface2:#262A27;
+    --g-primary-deep:#5BC894; --g-primary-soft:#1D3229; --g-on-soft:#B9E8CF;
+    --g-text:#E6E9E6; --g-muted:#A9AEA9; --g-faint:#7E837D; --g-border:#2C312D; --g-hairline:#262A27;
+    --g-danger:#DB7186; --g-warning:#E2A44E; --g-success:#4ADE6E; --g-water:#6BB4DE;
+    --g-scrim:rgba(20,22,20,.9);
+    --g-shadow:0 2px 12px rgba(0,0,0,.28);
+    --g-st-dish1:#182520; --g-st-dish2:#0F1513; --g-st-cell:#24352C;
+    color-scheme:dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.5; }
+  .icon-btn {
+    width: 44px; height: 44px; flex: 0 0 44px;
+    border: 1px solid var(--g-border); border-radius: 12px;
+    background: var(--g-surface); color: var(--g-text);
+    display: grid; place-items: center; cursor: pointer; font: inherit;
+    touch-action: manipulation;
+  }
+  .icon-btn:active { opacity: .8; }
+  .scores { display: flex; gap: 8px; flex: 1; }
+  .score-box {
+    background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
+    flex: 1; min-width: 0; padding: 5px 8px; text-align: center; line-height: 1.3;
+  }
+  .score-box .label { display: block; font-size: 12px; opacity: .85; white-space: nowrap; }
+  .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
+  .stat .val { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: 14px;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
+  .stage { position: relative; }
+  canvas {
+    display: block; width: 100%; aspect-ratio: 390 / 520; height: auto;
+    background: var(--g-surface2);
+    border: 1px solid var(--g-border); border-radius: 12px;
+    touch-action: none;
+  }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: absolute; inset: 0; z-index: 5;
+    border-radius: 12px; background: var(--g-scrim);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 16px; text-align: center;
+  }
+  .overlay.show { display: flex; animation: rise .18s ease-out; }
+  @keyframes rise { from { transform: translateY(6px); } to { transform: translateY(0); } }
+  .ov-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--g-primary-deep); max-width: 100%; }
+  .ov-sub { margin: 0 0 6px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .btn-row { display: flex; gap: 8px; width: 100%; max-width: 340px; }
+  .btn-row .btn { flex: 1; }
+  .lv-wrap { width: 100%; max-width: 340px; max-height: 48vh; overflow-y: auto; }
+  .lv-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+  .lv-chip {
+    min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
+  .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
+  .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background: var(--g-surface2); color: var(--g-warning); font-size: 12px; font-weight: 700; }
+  .badge.show { display: inline-block; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="sub">固定炮位迎击病毒波次，金币升级火力</span>
+    <button class="icon-btn" id="btnSelectTop" type="button" aria-label="选择关卡" title="选择关卡">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
+    </button>
+  </header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">波次</span><span class="val" id="stWave">1/3</span></div>
+    <div class="stat"><span class="label">金币</span><span class="val" id="stCoins">30</span></div>
+    <div class="stat"><span class="label">生命</span><span class="val" id="stLives">3</span></div>
+  </div>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="消灭病毒游戏画面" role="img"></canvas>
+    <div class="overlay" role="dialog" aria-modal="true" id="ovWin">
+      <span class="badge" id="ovNew">新纪录</span>
+      <h2 class="ov-title">过关！</h2>
+      <p class="ov-sub" id="ovWinDesc"></p>
+      <div class="btn-row">
+        <button class="btn" id="btnNext" type="button">下一关</button>
+        <button class="btn ghost" id="btnReplayWin" type="button">重玩</button>
+        <button class="btn ghost" id="btnSelectWin" type="button">选关</button>
+      </div>
+    </div>
+    <div class="overlay" role="dialog" aria-modal="true" id="ovFail">
+      <h2 class="ov-title">防线失守</h2>
+      <p class="ov-sub" id="ovFailDesc"></p>
+      <div class="btn-row">
+        <button class="btn" id="btnRetry" type="button">重试本关</button>
+        <button class="btn ghost" id="btnSelectFail" type="button">选关</button>
+      </div>
+    </div>
+    <div class="overlay" role="dialog" aria-modal="true" id="ovSelect">
+      <h2 class="ov-title">选择关卡</h2>
+      <div class="lv-wrap"><div class="lv-grid" id="lvGrid"></div></div>
+      <div class="btn-row"><button class="btn ghost" id="btnCloseSelect" type="button">关闭</button></div>
+    </div>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+  <div class="tools"><button class="btn" id="btnRate" type="button">攻速（40金币）</button><button class="btn" id="btnSpread" type="button">弹道（70金币）</button><button class="btn ghost" id="btnRetryBottom" type="button">重玩</button></div>
+  <p class="foot">炮台自动索敌最逼近底病毒 · 键盘 1 升攻速 / 2 升弹道 · 消灭病毒得金币，波次清空 +30</p>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 核心与关卡生成（确定性纯函数；XC-CORE 供 node 抽取独立复现验证） ========== */
+/*XC-CORE-BEGIN*/
+function mulberry32(a){
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+var VD={NW:390,NH:520,BASE_Y:486,TURRET_X:195,BULLET_V:430,
+  MAXRATE:8,MAXSPREAD:4,KIND:{r:[14,10,20,30],hp:[1,0.55,2.4,9],spd:[1,1.7,0.55,0.45],coin:[14,16,34,100]}};
+VD.costRate=function(lv){return 30+lv*20};
+VD.costSpread=function(lv){return 50+lv*50};
+VD.interval=function(lv){return 0.6*Math.pow(0.84,lv)};
+VD.dmg=function(lv){return 14+lv*7};
+VD.streams=function(lv){return 1+lv};
+/* 关卡生成：波数 3→8、每波 5→18 只、血量 / 速度随关卡递增，每 10 关终波 Boss */
+VD.LEVEL_COUNT=40;
+VD.genLevel=function(no){
+  var rng=mulberry32(63000+no*1013);
+  var wc=3+Math.floor((no-1)/7);
+  var hpBase=13+no*3.1,spdBase=17+no*0.5;
+  var waves=[];
+  for(var w=0;w<wc;w++){
+    var boss=(no%10===0&&w===wc-1);
+    var kind=boss?3:(w===0?0:(rng()<0.4?1:(rng()<0.72?2:0)));
+    var n=boss?1:5+Math.floor(no/3);
+    var hpMul=(w===0?0.55:1);   // 首波为热身波（血量近似减半）
+    waves.push({n:n,kind:kind,
+      hp:Math.round(hpBase*hpMul*VD.KIND.hp[kind]),
+      spd:Math.round(spdBase*VD.KIND.spd[kind]*10)/10});
+  }
+  return {name:"第"+no+"关 · 消灭病毒",waves:waves,gold0:60+no*2};
+};
+VD.validate=function(level){
+  if(!level||typeof level!=="object")return{ok:false,why:"bad"};
+  if(!Array.isArray(level.waves)||level.waves.length<2||level.waves.length>12)return{ok:false,why:"waves"};
+  for(var i=0;i<level.waves.length;i++){
+    var w=level.waves[i];
+    if(!w||typeof w!=="object")return{ok:false,why:"wave"+i};
+    if(!isFinite(w.n)||w.n<1||w.n>40||w.n!==(w.n|0))return{ok:false,why:"n"+i};
+    if(!isFinite(w.hp)||w.hp<1||w.hp>100000)return{ok:false,why:"hp"+i};
+    if(!isFinite(w.spd)||w.spd<5||w.spd>200)return{ok:false,why:"spd"+i};
+    if(!isFinite(w.kind)||w.kind<0||w.kind>3||w.kind!==(w.kind|0))return{ok:false,why:"kind"+i};
+  }
+  if(level.gold0!=null&&(!isFinite(level.gold0)||level.gold0<0||level.gold0>500))return{ok:false,why:"gold"};
+  return{ok:true,why:""};
+};
+VD.createRun=function(level){
+  return {level:level,rng:mulberry32(88000+(level.no||1)*7919),
+    waveIdx:0,spawnLeft:level.waves[0].n,spawnT:0.6,
+    viruses:[],bullets:[],coins:level.gold0==null?60:level.gold0,lives:4,
+    rateLv:0,spreadLv:0,fireT:0.3,clock:0,buy:null,status:"run",spawned:0};
+};
+VD.buy=function(run,what){
+  if(run.status!=="run")return false;
+  if(what==="rate"&&run.rateLv<VD.MAXRATE){
+    var c=VD.costRate(run.rateLv);
+    if(run.coins>=c){run.coins-=c;run.rateLv++;return true;}
+  }else if(what==="spread"&&run.spreadLv<VD.MAXSPREAD){
+    var c2=VD.costSpread(run.spreadLv);
+    if(run.coins>=c2){run.coins-=c2;run.spreadLv++;return true;}
+  }
+  return false;
+};
+/* 单步：波次推进 + 病毒下压 + 自动索敌开火 + 命中结算（gameplay 与验证共用） */
+VD.step=function(run,dt){
+  if(run.status!=="run")return run.status;
+  run.clock+=dt;
+  if(run.buy){VD.buy(run,run.buy);run.buy=null;}
+  var L=run.level;
+  // 出怪
+  if(run.spawnLeft>0){
+    run.spawnT-=dt;
+    if(run.spawnT<=0){
+      run.spawnT=0.85;
+      run.spawnLeft--;
+      run.spawned++;
+      var w=L.waves[run.waveIdx];
+      var ph=run.rng()*6.28;
+      run.viruses.push({x:30+run.rng()*(VD.NW-60),y:-24,vy:w.spd,ph:ph,
+        hp:w.hp,maxhp:w.hp,kind:w.kind,r:VD.KIND.r[w.kind]});
+    }
+  }else if(run.viruses.length===0){
+    if(run.waveIdx<L.waves.length-1){
+      run.waveIdx++;
+      run.spawnLeft=L.waves[run.waveIdx].n;
+      run.spawnT=1.4;
+      run.coins+=40;   // 波次奖励
+    }else{
+      run.status="win";
+      return "win";
+    }
+  }
+  // 病毒移动
+  for(var i=run.viruses.length-1;i>=0;i--){
+    var v=run.viruses[i];
+    v.y+=v.vy*dt;
+    v.x+=Math.sin(run.clock*2+v.ph)*14*dt;
+    if(v.x<16)v.x=16;
+    if(v.x>VD.NW-16)v.x=VD.NW-16;
+    if(v.y>=VD.BASE_Y){
+      run.viruses.splice(i,1);
+      run.lives--;
+      if(run.lives<=0){run.status="fail";return "fail";}
+    }
+  }
+  // 自动索敌（最接近基地者）开火
+  var target=null,ty=-1;
+  for(var k=0;k<run.viruses.length;k++){
+    if(run.viruses[k].y>ty){ty=run.viruses[k].y;target=run.viruses[k];}
+  }
+  run.fireT-=dt;
+  if(target&&run.fireT<=0){
+    run.fireT=VD.interval(run.rateLv);
+    var ang=Math.atan2(target.y-(VD.BASE_Y-16),target.x-VD.TURRET_X);
+    var ns=VD.streams(run.spreadLv);
+    for(var s=0;s<ns;s++){
+      var off=(s-(ns-1)/2)*0.16;
+      run.bullets.push({x:VD.TURRET_X,y:VD.BASE_Y-16,
+        vx:Math.cos(ang+off)*VD.BULLET_V,vy:Math.sin(ang+off)*VD.BULLET_V,
+        dmg:VD.dmg(run.rateLv)});
+    }
+  }
+  // 子弹运动与命中
+  for(var b=run.bullets.length-1;b>=0;b--){
+    var bl=run.bullets[b];
+    bl.x+=bl.vx*dt;bl.y+=bl.vy*dt;
+    if(bl.y<-20||bl.x<-20||bl.x>VD.NW+20){run.bullets.splice(b,1);continue;}
+    for(var m=run.viruses.length-1;m>=0;m--){
+      var tv=run.viruses[m];
+      var dx=bl.x-tv.x,dy=bl.y-tv.y;
+      var rr2=(tv.r+4)*(tv.r+4);
+      if(dx*dx+dy*dy<rr2){
+        tv.hp-=bl.dmg;
+        run.bullets.splice(b,1);
+        if(tv.hp<=0){
+          run.coins+=VD.KIND.coin[tv.kind];
+          run.viruses.splice(m,1);
+        }
+        break;
+      }
+    }
+  }
+  return "run";
+};
+/* 验证：贪心升级策略（攻速优先 → 双弹道 → 攻速 → 弹道）确定性模拟 */
+VD.policySim=function(level){
+  var run=VD.createRun(level);
+  var guard=7200;   // 360s@0.05 上限
+  while(guard-->0&&run.status==="run"){
+    if(run.rateLv<5)run.buy="rate";
+    else if(run.spreadLv<2)run.buy="spread";
+    else if(run.rateLv<VD.MAXRATE)run.buy="rate";
+    else if(run.spreadLv<VD.MAXSPREAD)run.buy="spread";
+    VD.step(run,0.05);
+  }
+  return {status:run.status,lives:run.lives,rate:run.rateLv,spread:run.spreadLv,
+    t:run.clock,spawned:run.spawned,waves:L0(level)};
+  function L0(l){return l.waves.length}
+};
+VD.validateAll=function(){
+  var fails=[],lifeSum=0,i;
+  for(i=1;i<=VD.LEVEL_COUNT;i++){
+    var L=VD.genLevel(i);
+    var chk=VD.validate(L);
+    if(!chk.ok){fails.push(i+"("+chk.why+")");continue;}
+    var r=VD.policySim(L);
+    lifeSum+=r.lives;
+    if(r.status!=="win"||r.lives<1)fails.push(i+"("+r.status+",lives"+r.lives+")");
+  }
+  return {total:VD.LEVEL_COUNT,solvable:VD.LEVEL_COUNT-fails.length,fail:fails,
+    avgLives:Math.round(lifeSum/VD.LEVEL_COUNT*100)/100};
+};
+globalThis.__XC=VD;
+/*XC-CORE-END*/
+
+/* ========== 画布与调色板 ========== */
+var NW=390,NH=520,W=390,H=520,S=1,offX=0,offY=0;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),danger:v("--g-danger"),warning:v("--g-warning"),
+    water:v("--g-water"),success:v("--g-success"),onPrimary:v("--g-on-primary"),surface:v("--g-surface"),
+    dish1:v("--g-st-dish1"),dish2:v("--g-st-dish2"),cell:v("--g-st-cell")};
+}
+window.__gOnTheme=function(){palLoad();grads=null;};
+palLoad();
+var grads=null;
+function buildGrads(){grads=ctx.createLinearGradient(0,0,0,NH);grads.addColorStop(0,PAL.dish1);grads.addColorStop(1,PAL.dish2);}
+
+/* ========== 音效 ========== */
+var AC=null;
+function beep(f,d,type,vol){
+  try{
+    if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();
+    var o=AC.createOscillator(),g=AC.createGain();
+    o.type=type||"sine";o.frequency.value=f;g.gain.value=vol||0.05;
+    o.connect(g);g.connect(AC.destination);
+    g.gain.exponentialRampToValueAtTime(0.0001,AC.currentTime+(d||0.1));
+    o.start();o.stop(AC.currentTime+(d||0.1)+0.02);
+  }catch(e){}
+}
+
+/* ========== 关卡数据：包内生成 + DB 下发（整批替换，任一条非法整批放弃） ========== */
+var LEVELS=[],cur=0;
+var LEVELS_KEY="sw.virusdefense.v1.levels",LEVELS_VER_KEY="sw.virusdefense.v1.levels.ver";
+function buildDefaultLevels(){
+  var list=[];
+  for(var i=1;i<=VD.LEVEL_COUNT;i++)list.push(VD.genLevel(i));
+  return list;
+}
+function parseVirusLevels(res){
+  if(!res||typeof res!=="object"||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={},i;
+  for(i=0;i<res.levels.length;i++){
+    var item=res.levels[i];
+    if(!item||typeof item!=="object")return null;
+    var d;
+    try{d=JSON.parse(item.dataJson)}catch(e){return null}
+    if(!VD.validate(d).ok)return null;
+    if(VD.policySim(d).status!=="win")return null;   // 下发关卡必须可通关
+    var no=parseInt(item.levelNo,10);
+    if(!isFinite(no)||no<1)no=i+1;
+    if(seen[no])return null;
+    seen[no]=true;
+    d.no=no;
+    list.push(d);
+  }
+  list.sort(function(a,b){return a.no-b.no});
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;}
+  }catch(e){}
+  return 0;
+}
+
+/* ========== 存档（本地 + 账号双写，账号更优才覆盖） ========== */
+var KEY="sw.virusdefense.v1";
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+var curSave=(function(){
+  try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object")return{lv:parseInt(s.lv,10)||0,best:parseInt(s.best,10)||1};}catch(e){}
+  return{lv:0,best:1};
+})();
+var unlocked=clamp(curSave.best,1,1);
+function save(){
+  var data={lv:cur,best:unlocked};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState("virus-defense",data).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("virus-defense").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rl=parseInt(r.lv,10),rb=parseInt(r.best,10);
+      if(isFinite(rl)&&rl>curSave.lv){curSave.lv=Math.min(rl,LEVELS.length-1);changed=true;}
+      if(isFinite(rb)&&rb>unlocked){unlocked=clamp(rb,1,LEVELS.length);changed=true;}
+      if(changed){save();buildLevelChips();startLevel(curSave.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ========== 游戏状态 ========== */
+var G=null;
+var state="running";
+var ui={
+  lv:document.getElementById("stLv"),wave:document.getElementById("stWave"),
+  coins:document.getElementById("stCoins"),lives:document.getElementById("stLives"),
+  msg:document.getElementById("msg"),
+  ovWin:document.getElementById("ovWin"),ovFail:document.getElementById("ovFail"),ovSelect:document.getElementById("ovSelect"),
+  ovWinDesc:document.getElementById("ovWinDesc"),ovFailDesc:document.getElementById("ovFailDesc"),
+  ovNew:document.getElementById("ovNew"),btnNext:document.getElementById("btnNext"),
+  lvGrid:document.getElementById("lvGrid"),
+  btnRate:document.getElementById("btnRate"),btnSpread:document.getElementById("btnSpread")
+};
+function say(t){ui.msg.textContent=t}
+function startLevel(n){
+  cur=clamp(n,0,Math.max(0,LEVELS.length-1));
+  var L=LEVELS[cur];
+  G=VD.createRun(L);
+  state="running";
+  showOverlay(null);
+  buildLevelChips();
+  syncHud();
+  say(L.name+" · 击退全部波次，金币升攻速 / 弹道");
+  save();
+}
+function finishWin(){
+  var isNew=(cur+2)>unlocked;
+  unlocked=Math.min(LEVELS.length,Math.max(unlocked,cur+2));
+  save();
+  buildLevelChips();
+  ui.ovWinDesc.textContent="剩余生命 "+G.lives+" · 用时 "+G.clock.toFixed(0)+"s";
+  ui.ovNew.classList.toggle("show",isNew);
+  ui.btnNext.style.display=cur<LEVELS.length-1?"":"none";
+  showOverlay("win");
+  if(GB.available)GB.reportScore("virus-defense",{metricValue:cur+1,metricExtra:G.lives}).catch(function(){});
+}
+function failLevel(reason){
+  state="failed";
+  ui.ovFailDesc.textContent=reason;
+  showOverlay("fail");
+}
+function showOverlay(name){
+  ui.ovWin.classList.toggle("show",name==="win");
+  ui.ovFail.classList.toggle("show",name==="fail");
+  ui.ovSelect.classList.toggle("show",name==="select");
+}
+function buildLevelChips(){
+  var html="";
+  for(var i=0;i<LEVELS.length;i++){
+    var cls="lv-chip"+(i===cur?" sel":"")+(i<unlocked?" done":"");
+    var dis=i<unlocked?"":" disabled";
+    html+='<button class="'+cls+'" type="button" data-lv="'+i+'"'+dis+'>'+(i+1)+'</button>';
+  }
+  ui.lvGrid.innerHTML=html;
+  var btns=ui.lvGrid.querySelectorAll(".lv-chip");
+  for(var j=0;j<btns.length;j++){
+    btns[j].addEventListener("click",function(){
+      var n=Number(this.getAttribute("data-lv"));
+      showOverlay(null);
+      startLevel(n);
+    });
+  }
+}
+function tryBuy(what){
+  if(state!=="running"||!G)return;
+  if(VD.buy(G,what))beep(620,0.08,"square",0.05);
+  else say("金币不足");
+}
+function upgradeLabel(btn,lv,max,cost,name){
+  if(lv>=max)btn.textContent=name+" MAX";
+  else btn.textContent=name+" Lv"+lv+"（"+cost+"金币）";
+}
+
+/* ========== 更新与 HUD ========== */
+function step(dt){
+  var res=VD.step(G,dt);
+  if(res==="win"){
+    state="won";
+    beep(660,0.12,"square",0.06);beep(880,0.16,"square",0.05);
+    finishWin();
+  }else if(res==="fail"){
+    state="failed";
+    failLevel("防线被突破，病毒入侵成功");
+  }
+  syncHud();
+}
+function syncHud(){
+  ui.lv.textContent=(cur+1)+"/"+LEVELS.length;
+  ui.wave.textContent=(G.waveIdx+1)+"/"+G.level.waves.length;
+  ui.coins.textContent=String(G.coins);
+  ui.lives.textContent=String(Math.max(0,G.lives));
+  upgradeLabel(ui.btnRate,G.rateLv,VD.MAXRATE,VD.costRate(G.rateLv),"攻速");
+  upgradeLabel(ui.btnSpread,G.spreadLv,VD.MAXSPREAD,VD.costSpread(G.spreadLv),"弹道");
+  ui.btnRate.disabled=G.rateLv>=VD.MAXRATE||G.coins<VD.costRate(G.rateLv);
+  ui.btnSpread.disabled=G.spreadLv>=VD.MAXSPREAD||G.coins<VD.costSpread(G.spreadLv);
+}
+
+/* ========== 绘制 ========== */
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function kindColor(k){return k===0?PAL.water:(k===1?PAL.warning:(k===2?PAL.danger:PAL.danger))}
+function drawVirus(v){
+  var c=kindColor(v.kind);
+  // 尖刺
+  ctx.strokeStyle=c;ctx.lineWidth=2.4;
+  for(var i=0;i<8;i++){
+    var an=i*Math.PI/4+v.ph+G.clock*0.8;
+    ctx.beginPath();
+    ctx.moveTo(v.x+Math.cos(an)*v.r*0.7,v.y+Math.sin(an)*v.r*0.7);
+    ctx.lineTo(v.x+Math.cos(an)*(v.r+5),v.y+Math.sin(an)*(v.r+5));
+    ctx.stroke();
+  }
+  ctx.fillStyle=c;
+  ctx.globalAlpha=0.85;
+  ctx.beginPath();ctx.arc(v.x,v.y,v.r,0,6.3);ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.strokeStyle=PAL.deep;ctx.lineWidth=1.6;ctx.stroke();
+  // 细胞核（恒白高光，素材例外）
+  ctx.fillStyle="rgba(255,255,255,.5)";
+  ctx.beginPath();ctx.arc(v.x-v.r*0.3,v.y-v.r*0.3,v.r*0.22,0,6.3);ctx.fill();
+  // 血条
+  if(v.hp<v.maxhp){
+    ctx.fillStyle=PAL.faint;
+    ctx.fillRect(v.x-v.r,v.y-v.r-8,v.r*2,4);
+    ctx.fillStyle=PAL.danger;
+    ctx.fillRect(v.x-v.r,v.y-v.r-8,v.r*2*Math.max(0,v.hp/v.maxhp),4);
+  }
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(offX,offY);ctx.scale(S,S);
+  if(!grads)buildGrads();
+  ctx.fillStyle=grads;ctx.fillRect(0,0,NW,NH);
+  // 培养皿底
+  ctx.fillStyle=PAL.cell;
+  ctx.fillRect(0,VD.BASE_Y,NW,NH-VD.BASE_Y);
+  if(G){
+    for(var i=0;i<G.viruses.length;i++)drawVirus(G.viruses[i]);
+    // 子弹
+    ctx.strokeStyle=PAL.deep;ctx.lineWidth=3;ctx.lineCap="round";
+    for(var b=0;b<G.bullets.length;b++){
+      var bl=G.bullets[b];
+      ctx.beginPath();
+      ctx.moveTo(bl.x,bl.y);
+      ctx.lineTo(bl.x-bl.vx*0.02,bl.y-bl.vy*0.02);
+      ctx.stroke();
+    }
+    // 炮台
+    ctx.fillStyle=PAL.surface;
+    rr(VD.TURRET_X-22,VD.BASE_Y-10,44,20,8);ctx.fill();
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;ctx.stroke();
+    var target=null,ty=-1;
+    for(var k=0;k<G.viruses.length;k++)if(G.viruses[k].y>ty){ty=G.viruses[k].y;target=G.viruses[k];}
+    var ang=target?Math.atan2(target.y-(VD.BASE_Y-16),target.x-VD.TURRET_X):-Math.PI/2;
+    ctx.strokeStyle=PAL.deep;ctx.lineWidth=7;
+    ctx.beginPath();
+    ctx.moveTo(VD.TURRET_X,VD.BASE_Y-14);
+    ctx.lineTo(VD.TURRET_X+Math.cos(ang)*22,VD.BASE_Y-14+Math.sin(ang)*22);
+    ctx.stroke();
+    ctx.fillStyle=PAL.primary;
+    ctx.beginPath();ctx.arc(VD.TURRET_X,VD.BASE_Y-14,10,0,6.3);ctx.fill();
+    syncHud();
+  }
+  ctx.restore();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  rr(offX+0.5,offY+0.5,NW*S-1,NH*S-1,10);ctx.stroke();
+}
+
+/* ========== 输入 ========== */
+document.getElementById("btnRate").addEventListener("click",function(){tryBuy("rate");});
+document.getElementById("btnSpread").addEventListener("click",function(){tryBuy("spread");});
+window.addEventListener("keydown",function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k==="1")tryBuy("rate");
+  else if(k==="2")tryBuy("spread");
+});
+
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&state==="running"){say("已暂停 · 切回继续防守");}
+});
+
+/* ========== 主循环与启动 ========== */
+function resize(){
+  var r=cv.getBoundingClientRect();
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.max(240,Math.floor(r.width));
+  H=Math.max(320,Math.floor(r.height));
+  cv.width=Math.floor(W*dpr);cv.height=Math.floor(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  S=Math.min(W/NW,H/NH);
+  offX=(W-NW*S)/2;offY=(H-NH*S)/2;
+}
+window.addEventListener("resize",resize);
+var last=0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(!last)last=ts;
+  var dt=Math.min(0.033,(ts-last)/1000||0);
+  last=ts;
+  if(state==="running"&&G)step(dt);
+  draw();
+}
+
+document.getElementById("btnSelectTop").addEventListener("click",function(){buildLevelChips();showOverlay("select");});
+document.getElementById("btnSelectWin").addEventListener("click",function(){buildLevelChips();showOverlay("select");});
+document.getElementById("btnSelectFail").addEventListener("click",function(){buildLevelChips();showOverlay("select");});
+document.getElementById("btnCloseSelect").addEventListener("click",function(){showOverlay(null);});
+document.getElementById("btnNext").addEventListener("click",function(){startLevel(cur<LEVELS.length-1?cur+1:0);});
+document.getElementById("btnReplayWin").addEventListener("click",function(){startLevel(cur);});
+document.getElementById("btnRetry").addEventListener("click",function(){startLevel(cur);});
+document.getElementById("btnRetryBottom").addEventListener("click",function(){startLevel(cur);});
+
+/* 调试验证入口：贪心策略确定性模拟逐关复现 */
+window.__validateLevels=function(){
+  try{return VD.validateAll()}catch(e){return {error:String(e)}}
+};
+
+resize();
+LEVELS=buildDefaultLevels();
+loadCachedLevels();
+cur=clamp(parseInt(curSave.lv,10)||0,0,Math.max(0,LEVELS.length-1));
+unlocked=clamp(parseInt(curSave.best,10)||1,1,Math.max(1,LEVELS.length));
+startLevel(cur);
+requestAnimationFrame(frame);
+(function(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels("virus-defense").then(function(res){
+    var list=parseVirusLevels(res);
+    if(!list||!list.length)return;
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      startLevel(cur);
+    }
+  }).catch(function(){});
+})();
+syncSaveFromServer();
+
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>
