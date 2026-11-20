@@ -33,6 +33,10 @@ export class DiningText {
   static get dining_order_cancel_confirm_text(): string { return resString('dining_order_cancel_confirm_text') }
   static get dining_order_cancel_success(): string { return resString('dining_order_cancel_success') }
   static get dining_order_cancelled_hint(): string { return resString('dining_order_cancelled_hint') }
+  static get dining_order_action_leave(): string { return resString('dining_order_action_leave') }
+  static get dining_order_leave_confirm_title(): string { return resString('dining_order_leave_confirm_title') }
+  static get dining_order_leave_confirm_text(): string { return resString('dining_order_leave_confirm_text') }
+  static get dining_order_leave_success(): string { return resString('dining_order_leave_success') }
   static get dining_order_action_recipe_library(): string { return resString('dining_order_action_recipe_library') }
   static get dining_order_list_empty(): string { return resString('dining_order_list_empty') }
   static get dining_order_list_load_failed(): string { return resString('dining_order_list_load_failed') }

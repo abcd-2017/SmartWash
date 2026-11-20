@@ -108,6 +108,7 @@ fun DiningOrderListPage(
     val loadMoreState by viewModel.loadMoreState.collectAsState()
     val activeOrder by viewModel.activeOrder.collectAsState()
     val cancelState by viewModel.cancelState.collectAsState()
+    val leaveState by viewModel.leaveState.collectAsState()
 
     // 「已取消」点击提示（组合期禁副作用，统一收进 effect）
     var cancelledHint by remember { mutableStateOf(false) }
@@ -133,6 +134,21 @@ fun DiningOrderListPage(
         }
     }
 
+    // 退出点单结果提示（成功/失败各一次，随后消费）
+    LaunchedEffect(leaveState) {
+        when (val state = leaveState) {
+            is RequestState.Success -> {
+                Toast.makeText(context, context.getString(R.string.dining_order_leave_success), Toast.LENGTH_SHORT).show()
+                viewModel.consumeLeaveState()
+            }
+            is RequestState.Error -> {
+                Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
+                viewModel.consumeLeaveState()
+            }
+            else -> Unit
+        }
+    }
+
     // 待放弃的草稿（二次确认弹窗）
     var pendingCancel by remember { mutableStateOf<DiningOrderListItem?>(null) }
     pendingCancel?.let { order ->
@@ -152,6 +168,31 @@ fun DiningOrderListPage(
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { pendingCancel = null }) {
+                    Text("取消")
+                }
+            },
+        )
+    }
+
+    // 待退出的点单（参与者二次确认弹窗）
+    var pendingLeave by remember { mutableStateOf<DiningOrderListItem?>(null) }
+    pendingLeave?.let { order ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { pendingLeave = null },
+            title = { Text(stringResource(R.string.dining_order_leave_confirm_title)) },
+            text = { Text(stringResource(R.string.dining_order_leave_confirm_text)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        pendingLeave = null
+                        viewModel.leaveOrder(order.id)
+                    },
+                ) {
+                    Text(stringResource(R.string.dining_order_action_leave))
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { pendingLeave = null }) {
                     Text("取消")
                 }
             },
@@ -269,6 +310,10 @@ fun DiningOrderListPage(
                             // 放弃草稿：二次确认后调 cancel（仅发起者 DRAFT 卡展示入口）
                             pendingCancel = order
                         },
+                        onLeave = { order ->
+                            // 退出点单：二次确认后调 leave（仅参与者 DRAFT 卡展示入口）
+                            pendingLeave = order
+                        },
                         onFavoritesClick = {
                             navController.navigate(DiningRoute.RecipeFavorites)
                         },
@@ -323,6 +368,7 @@ private fun OrderListContent(
     onOrderClick: (DiningOrderListItem) -> Unit,
     onReuse: (DiningOrderListItem) -> Unit,
     onCancel: (DiningOrderListItem) -> Unit,
+    onLeave: (DiningOrderListItem) -> Unit,
     onFavoritesClick: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -383,6 +429,7 @@ private fun OrderListContent(
                         onOrderClick = onOrderClick,
                         onReuse = onReuse,
                         onCancel = onCancel,
+                        onLeave = onLeave,
                         // 分区标题已表明发起关系，卡内「发起」角标冗余，仅我参与的分区展示
                         showCreatorBadge = false,
                     )
@@ -394,6 +441,7 @@ private fun OrderListContent(
                         onOrderClick = onOrderClick,
                         onReuse = onReuse,
                         onCancel = onCancel,
+                        onLeave = onLeave,
                         showCreatorBadge = true,
                     )
                 }
@@ -487,6 +535,7 @@ private fun LazyListScope.orderSection(
     onOrderClick: (DiningOrderListItem) -> Unit,
     onReuse: (DiningOrderListItem) -> Unit,
     onCancel: (DiningOrderListItem) -> Unit,
+    onLeave: (DiningOrderListItem) -> Unit,
     showCreatorBadge: Boolean,
 ) {
     item(key = "section_$titleRes") {
@@ -504,6 +553,7 @@ private fun LazyListScope.orderSection(
             onClick = { onOrderClick(order) },
             onReuse = { onReuse(order) },
             onCancel = { onCancel(order) },
+            onLeave = { onLeave(order) },
             showCreatorBadge = showCreatorBadge,
             modifier = Modifier.then(animatedListItem()),
         )
@@ -525,6 +575,7 @@ private fun OrderCard(
     onClick: () -> Unit,
     onReuse: () -> Unit,
     onCancel: () -> Unit,
+    onLeave: () -> Unit,
     showCreatorBadge: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -592,10 +643,18 @@ private fun OrderCard(
             }
             // 草稿（发起者）提供「放弃」出口；草稿不提供「再来一单」（点卡片进编辑态继续）
             if (order.status == DiningOrderStatus.DRAFT) {
+                // 发起者「放弃」；参与者「退出」（各自二次确认后调用，出口互斥）
                 if (order.isCreator) {
                     AppButton(
                         text = stringResource(R.string.dining_order_action_cancel),
                         onClick = onCancel,
+                        variant = AppButtonVariant.TEXT,
+                        small = true,
+                    )
+                } else {
+                    AppButton(
+                        text = stringResource(R.string.dining_order_action_leave),
+                        onClick = onLeave,
                         variant = AppButtonVariant.TEXT,
                         small = true,
                     )
