@@ -126,8 +126,15 @@ class DiningMappersTest {
 
     @Test
     fun `订单状态白名单外脏数据保守降级为已结束`() {
-        val item = DiningOrderListVo(status = "CANCELLED").toOrderListItem()
+        // ONGOING 为旧状态机残留，现为白名单外脏数据（缺失/非法一律按不可写处理）
+        val item = DiningOrderListVo(status = "ONGOING").toOrderListItem()
         assertEquals(DiningOrderStatus.FINISHED, item.status)
+    }
+
+    @Test
+    fun `已取消状态映射为 CANCELLED（列表灰态展示，终态只读）`() {
+        val item = DiningOrderListVo(id = 13L, title = "已弃单", status = "CANCELLED").toOrderListItem()
+        assertEquals(DiningOrderStatus.CANCELLED, item.status)
     }
 
     @Test

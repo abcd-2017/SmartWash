@@ -1,6 +1,7 @@
 package com.smartwash.feature.dining.api
 
 import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
+import com.smartwash.feature.dining.api.model.DiningOrderActiveVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
 import com.smartwash.feature.dining.api.model.DiningScanResult
 
@@ -52,4 +53,10 @@ interface DiningApi {
      * 加入 URL 的识别知识留在本域（JoinUrlParser 单一事实源），壳层扫码零业务感知。
      */
     suspend fun normalizeScanToDeepLink(raw: String): DiningScanResult
+
+    /**
+     * 我发起的进行中点单（DRAFT；无则 null）——唯一性收敛的跨模块入口：
+     * lite 首页「发起点单」主 CTA 据此决定进该单编辑态还是空白创建页。
+     */
+    suspend fun getActiveOrder(): DiningOrderActiveVo?
 }

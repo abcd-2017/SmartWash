@@ -7,6 +7,7 @@ import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.utils.model.HttpStatusCode
 import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.dining.api.DiningServiceApi
+import com.smartwash.feature.dining.api.model.DiningOrderActiveVo
 import com.smartwash.feature.dining.api.model.AddDiningOrderDishRequest
 import com.smartwash.feature.dining.api.model.AddDiningRecipeRequest
 import com.smartwash.feature.dining.api.model.CreateDiningOrderRequest
@@ -160,12 +161,23 @@ class DiningRepository @Inject constructor(
     }
 
     /**
-     * 放弃草稿（仅发起者 + 仅 DRAFT；物理删订单与子表）。
-     * 非发起者/状态异常由后端业务失败转译上抛；成功 data 为 null 不视为失败。
+     * 放弃草稿（cancel，仅发起者 + 仅 DRAFT）：订单状态置 CANCELLED，不再物理删单——
+     * 参与者仍可在「我的订单」看到该单（灰态「已取消」）。成功 data 为 null 不视为失败。
      */
-    suspend fun discardOrder(orderId: Long) {
-        diningServiceApi.discardOrder(orderId).ensureDiningSuccess()
+    suspend fun cancelOrder(orderId: Long) {
+        diningServiceApi.cancelOrder(orderId).ensureDiningSuccess()
     }
+
+    /** 退出点单（仅参与者非发起者 + 仅 DRAFT；幂等：不在单中直接成功） */
+    suspend fun leaveOrder(orderId: Long) {
+        diningServiceApi.leaveOrder(orderId).ensureDiningSuccess()
+    }
+
+    /**
+     * 我的进行中点单（本人发起的 DRAFT；无则 null——合法语义，不按失败上抛）。
+     * 列表 FAB / lite 主 CTA 据此收敛：有则进该单编辑态，无则空白创建页。
+     */
+    suspend fun getActiveOrder(): DiningOrderActiveVo? = diningServiceApi.getActiveOrder().data
 
     /** 我的订单分页（我发起的 + 我参与的，创建时间倒序；data 缺失按失败上抛） */
     suspend fun getMyOrders(page: Int, size: Int): PageData<DiningOrderListVo> =

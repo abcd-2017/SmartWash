@@ -128,7 +128,9 @@ fun DiningOrderSharePage(
         PageHeader(
             // 邀请与分享合一：编辑中（DRAFT）显示「邀请加入」，已结束显示「订单分享」
             title = stringResource(
-                if (detail?.status == DiningOrderStatus.FINISHED) {
+                if (detail?.status == DiningOrderStatus.FINISHED ||
+                    detail?.status == DiningOrderStatus.CANCELLED
+                ) {
                     R.string.dining_order_share_title
                 } else {
                     R.string.dining_order_invite_title
@@ -294,12 +296,13 @@ private fun ShareContent(
     }
 }
 
-/** 小状态色点 + 状态字（草稿 secondary 灰 / 已结束 success 绿；分享页只作信息展示） */
+/** 小状态色点 + 状态字（草稿 secondary 灰 / 已结束 success 绿 / 已取消 error 红；分享页只作信息展示） */
 @Composable
 private fun StatusDotSmall(status: DiningOrderStatus) {
     val (dotColor, label) = when (status) {
         DiningOrderStatus.DRAFT -> MaterialTheme.colorScheme.secondary to stringResource(R.string.dining_order_status_draft)
         DiningOrderStatus.FINISHED -> AppColors.colorScheme.success to stringResource(R.string.dining_order_status_finished)
+        DiningOrderStatus.CANCELLED -> AppColors.colorScheme.error to stringResource(R.string.dining_order_status_cancelled)
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(

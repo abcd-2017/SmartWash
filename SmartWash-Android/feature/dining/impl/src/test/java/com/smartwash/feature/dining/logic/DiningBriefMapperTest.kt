@@ -53,7 +53,13 @@ class DiningBriefMapperTest {
 
     @Test
     fun `状态白名单外脏数据保守降级为已结束`() {
-        val ui = DiningOrderBriefVo(status = "CANCELLED").toBriefUi()
+        val ui = DiningOrderBriefVo(status = "ONGOING").toBriefUi()
         assertEquals(DiningOrderStatus.FINISHED, ui.status)
+    }
+
+    @Test
+    fun `已取消 brief 映射为 CANCELLED（不引导加入）`() {
+        val ui = DiningOrderBriefVo(orderId = 9L, status = "CANCELLED").toBriefUi()
+        assertEquals(DiningOrderStatus.CANCELLED, ui.status)
     }
 }

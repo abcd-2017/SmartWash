@@ -159,7 +159,8 @@ class WebDiningOrderControllerIntegrationTest {
                 Long.class, orderId), "创建者必须自动成为首个成员");
         assertEquals(0, currentVersion(orderId));
 
-        // 带标题+菜单创建：同样 DRAFT，菜单逐条落库
+        // 带标题+菜单创建：同样 DRAFT，菜单逐条落库（先把上一张空草稿置 CANCELLED 以避开唯一闸门）
+        cancelAsCreator(orderId);
         long fullId = createDraft(creatorToken, "周五晚火锅", "[101,102]");
         assertEquals("DRAFT", jdbcTemplate.queryForObject(
                 "SELECT status FROM dining_order WHERE id = ?", String.class, fullId));
@@ -200,8 +201,9 @@ class WebDiningOrderControllerIntegrationTest {
     @Test
     @DisplayName("创建：fromOrderId 复用历史菜单（成员身份才可复用；复用菜谱仍须上架）")
     void create_fromOrderId_reuse() throws Exception {
-        // 发起者建单（菜单 101/102）
+        // 发起者建单（菜单 101/102），先提交使其离开「进行中」——再来一单不受唯一闸门限制
         long sourceOrderId = createDraft(creatorToken, "源订单", "[101,102]");
+        submitAndGetSnapshot(sourceOrderId, creatorToken, currentVersion(sourceOrderId));
         // 发起者从该单复用：成功，新单菜单同样两条
         MvcResult reused = mockMvc.perform(post(BASE + "/create")
                         .header("Authorization", "Bearer " + creatorToken)
@@ -402,8 +404,8 @@ class WebDiningOrderControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("放弃草稿：仅发起者的 DRAFT 可物理删除（订单+菜单+成员），非发起者/非 DRAFT 拒绝")
-    void draft_discard_flow() throws Exception {
+    @DisplayName("放弃草稿：仅发起者 DRAFT→CANCELLED（订单与子表保留），参与者列表仍可见「已取消」")
+    void draft_cancel_flow() throws Exception {
         long orderId = createDraft(creatorToken, "待弃草稿", "[101]");
         joinOrder(joinerToken, orderId);
         assertEquals(2L, jdbcTemplate.queryForObject(
@@ -415,16 +417,35 @@ class WebDiningOrderControllerIntegrationTest {
                 .andExpect(jsonPath("$.code").value(201))
                 .andExpect(jsonPath("$.message").value("仅发起者可放弃草稿"));
 
-        // 发起者放弃：订单行与子表全清
+        // 发起者放弃：订单行保留，状态置 CANCELLED + cancelled_at；菜单/成员子表保留
         mockMvc.perform(delete(BASE + "/{id}", orderId)
                         .header("Authorization", "Bearer " + creatorToken))
                 .andExpect(jsonPath("$.code").value(200));
-        assertEquals(0L, jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM dining_order WHERE id = ?", Long.class, orderId));
-        assertEquals(0L, jdbcTemplate.queryForObject(
+        assertEquals("CANCELLED", jdbcTemplate.queryForObject(
+                "SELECT status FROM dining_order WHERE id = ?", String.class, orderId));
+        assertEquals(1L, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM dining_order WHERE id = ? AND cancelled_at IS NOT NULL",
+                Long.class, orderId));
+        assertEquals(1L, jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM dining_order_menu WHERE order_id = ?", Long.class, orderId));
-        assertEquals(0L, jdbcTemplate.queryForObject(
+        assertEquals(2L, jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM dining_order_member WHERE order_id = ?", Long.class, orderId));
+
+        // 参与者「我的订单」仍能看到该单（灰态数据源），status=CANCELLED
+        JsonNode records = getList(BASE + "/my", joinerToken);
+        boolean foundCancelled = false;
+        for (JsonNode node : records) {
+            if (node.path("id").asLong() == orderId && "CANCELLED".equals(node.path("status").asText())) {
+                foundCancelled = true;
+            }
+        }
+        assertTrue(foundCancelled, "参与者列表应保留已取消单");
+
+        // 再次放弃 → 提示已取消
+        mockMvc.perform(delete(BASE + "/{id}", orderId)
+                        .header("Authorization", "Bearer " + creatorToken))
+                .andExpect(jsonPath("$.code").value(201))
+                .andExpect(jsonPath("$.message").value("点单已取消，无需重复操作"));
 
         // 非 DRAFT（已提交）拒绝
         long finishedId = createFinishedOrder(creatorToken, "不可弃单", "[101]");
@@ -432,6 +453,92 @@ class WebDiningOrderControllerIntegrationTest {
                         .header("Authorization", "Bearer " + creatorToken))
                 .andExpect(jsonPath("$.code").value(201))
                 .andExpect(jsonPath("$.message").value("仅草稿可放弃"));
+    }
+
+    @Test
+    @DisplayName("唯一性：同一发起者已有进行中 DRAFT 时 create 拒绝（40901）；提交后可再建")
+    void create_unique_active_draft_guard() throws Exception {
+        long firstId = createDraft(creatorToken, "进行中单", "[101]");
+
+        mockMvc.perform(post(BASE + "/create")
+                        .header("Authorization", "Bearer " + creatorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"第二单\",\"recipeIds\":[102]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(40901))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("进行中单")));
+
+        // 提交后不再受限 → 可再建
+        mockMvc.perform(post(BASE + "/{id}/submit", firstId)
+                        .header("Authorization", "Bearer " + creatorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"进行中单\",\"version\":" + currentVersion(firstId) + "}"))
+                .andExpect(jsonPath("$.code").value(200));
+        mockMvc.perform(post(BASE + "/create")
+                        .header("Authorization", "Bearer " + creatorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"第二单\",\"recipeIds\":[102]}"))
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    @DisplayName("我的进行中点单 /active：本人 DRAFT 命中；FINISHED 不命中")
+    void my_active_order() throws Exception {
+        long draftId = createDraft(creatorToken, "活跃草稿", "[101]");
+
+        mockMvc.perform(get(BASE + "/active").header("Authorization", "Bearer " + creatorToken))
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.orderId").value(draftId))
+                .andExpect(jsonPath("$.data.status").value("DRAFT"));
+
+        // 提交后 active 为空
+        mockMvc.perform(post(BASE + "/{id}/submit", draftId)
+                        .header("Authorization", "Bearer " + creatorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"活跃草稿\",\"version\":" + currentVersion(draftId) + "}"))
+                .andExpect(jsonPath("$.code").value(200));
+        mockMvc.perform(get(BASE + "/active").header("Authorization", "Bearer " + creatorToken))
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    @DisplayName("退出点单：参与者退出成功并可重复幂等；发起者/已结束/已取消拒绝")
+    void leave_flow() throws Exception {
+        long orderId = createDraft(creatorToken, "协作单", "[101]");
+        joinOrder(joinerToken, orderId);
+
+        mockMvc.perform(post(BASE + "/{id}/leave", orderId)
+                        .header("Authorization", "Bearer " + joinerToken))
+                .andExpect(jsonPath("$.code").value(200));
+        assertEquals(1L, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM dining_order_member WHERE order_id = ?", Long.class, orderId));
+        // 幂等：再次退出直接成功
+        mockMvc.perform(post(BASE + "/{id}/leave", orderId)
+                        .header("Authorization", "Bearer " + joinerToken))
+                .andExpect(jsonPath("$.code").value(200));
+        // 发起者请走放弃
+        mockMvc.perform(post(BASE + "/{id}/leave", orderId)
+                        .header("Authorization", "Bearer " + creatorToken))
+                .andExpect(jsonPath("$.code").value(201))
+                .andExpect(jsonPath("$.message").value("发起者不能退出，如需结束请使用放弃草稿"));
+
+        // 已结束 / 已取消拒绝（先把上一张推入终态，避开唯一闸门）
+        mockMvc.perform(delete(BASE + "/{id}", orderId)
+                        .header("Authorization", "Bearer " + creatorToken))
+                .andExpect(jsonPath("$.code").value(200));
+        long finishedId = createFinishedOrder(creatorToken, "已结束单", "[101]");
+        mockMvc.perform(post(BASE + "/{id}/leave", finishedId)
+                        .header("Authorization", "Bearer " + joinerToken))
+                .andExpect(jsonPath("$.message").value("点单已结束，无法退出"));
+
+        long cancelledId = createDraft(creatorToken, "已取消单", "[101]");
+        mockMvc.perform(delete(BASE + "/{id}", cancelledId)
+                        .header("Authorization", "Bearer " + creatorToken))
+                .andExpect(jsonPath("$.code").value(200));
+        mockMvc.perform(post(BASE + "/{id}/leave", cancelledId)
+                        .header("Authorization", "Bearer " + joinerToken))
+                .andExpect(jsonPath("$.message").value("点单已取消，无法退出"));
     }
 
     @Test
@@ -445,11 +552,13 @@ class WebDiningOrderControllerIntegrationTest {
         JsonNode joinerList = getList(BASE + "/my", joinerToken);
         assertEquals("DRAFT", joinerList.get(0).path("status").asText(), "草稿期加入的成员同样能在列表看到草稿");
 
-        // 列表中的草稿可被放弃，放弃后不再出现
+        // 列表中的草稿可被放弃；放弃后置 CANCELLED，仍留在「我的订单」供识别（发起者/参与者均可见）
         mockMvc.perform(delete(BASE + "/{id}", draftId)
                         .header("Authorization", "Bearer " + creatorToken))
                 .andExpect(jsonPath("$.code").value(200));
-        assertEquals(0, getList(BASE + "/my", creatorToken).size());
+        JsonNode afterCancel = getList(BASE + "/my", creatorToken);
+        assertEquals(1, afterCancel.size());
+        assertEquals("CANCELLED", afterCancel.get(0).path("status").asText());
     }
 
     // ==================== 我的订单列表 ====================
@@ -477,7 +586,8 @@ class WebDiningOrderControllerIntegrationTest {
     @Test
     @DisplayName("我的订单列表：摘要字段 menuCount + ingredientSummary（食材并集，超 6 个截断加省略号）")
     void myOrders_summaryFields() throws Exception {
-        createDraft(creatorToken, "两道菜", "[101,102]");
+        long firstId = createDraft(creatorToken, "两道菜", "[101,102]");
+        cancelAsCreator(firstId);
         createDraft(creatorToken, "大杂烩", "[104]");
 
         JsonNode records = getList(BASE + "/my", creatorToken);
@@ -665,7 +775,8 @@ class WebDiningOrderControllerIntegrationTest {
                         .header("Authorization", "Bearer " + joinerToken))
                 .andExpect(jsonPath("$.code").value(200));
 
-        // 已提交单重置：拒绝
+        // 已提交单重置：拒绝（先放弃当前 DRAFT 以避开唯一闸门）
+        cancelAsCreator(orderId);
         long finishedId = createFinishedOrder(creatorToken, "已提交重置单", "[101]");
         mockMvc.perform(post(BASE + "/{id}/join-token/reset", finishedId)
                         .header("Authorization", "Bearer " + creatorToken))
@@ -880,6 +991,14 @@ class WebDiningOrderControllerIntegrationTest {
     }
 
     /** 创建草稿（DRAFT，未提交） */
+    /** 发起者放弃草稿（cancel→CANCELLED）：既有测试在需要再建第二张 DRAFT 前，用她把上一张推入终态 */
+    private void cancelAsCreator(long orderId) throws Exception {
+        mockMvc.perform(delete(BASE + "/{id}", orderId)
+                        .header("Authorization", "Bearer " + creatorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
     private long createDraft(String token, String title, String recipeIdsJson) throws Exception {
         MvcResult result = mockMvc.perform(post(BASE + "/create")
                         .header("Authorization", "Bearer " + token)

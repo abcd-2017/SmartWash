@@ -98,59 +98,91 @@ class SseClient @Inject constructor(
             requestBuilder.header("Authorization", "Bearer $token")
         }
 
-        return suspendCancellableCoroutine { continuation ->
-            // holder 用 AtomicReference 消取消竞态：invokeOnCancellation 注册可能先于
-            // source 赋值（协程在 EventSource 创建前被取消，普通 var 读到 null 漏断流），
-            // volatile 读保证取消 handler 不丢引用
-            val sourceRef = AtomicReference<EventSource?>()
+        return awaitEventStream(url, requestBuilder.build(), onEvent)
+    }
+
+    /**
+     * SSE 连接挂起主体（[post]/[get] 共用）：OkHttp EventSource 建流并挂起至终态，
+     * 逐帧回调 [onEvent]；401/HTTP 错误/网络异常归一为 [Outcome]。
+     */
+    private suspend fun awaitEventStream(
+        url: String,
+        request: Request,
+        onEvent: (name: String, data: String) -> Unit,
+    ): Outcome = suspendCancellableCoroutine { continuation ->
+        // holder 用 AtomicReference 消取消竞态：invokeOnCancellation 注册可能先于
+        // source 赋值（协程在 EventSource 创建前被取消，普通 var 读到 null 漏断流），
+        // volatile 读保证取消 handler 不丢引用
+        val sourceRef = AtomicReference<EventSource?>()
             // 协程取消（解读页返回/追问页退出）→ 断流中止服务端推流
-            continuation.invokeOnCancellation { sourceRef.get()?.cancel() }
+        continuation.invokeOnCancellation { sourceRef.get()?.cancel() }
 
-            val source = EventSources.createFactory(client).newEventSource(
-                requestBuilder.build(),
-                object : EventSourceListener() {
-                    override fun onEvent(es: EventSource, id: String?, type: String?, data: String) {
-                        if (continuation.isCancelled) return
-                        onEvent(type.orEmpty(), data)
-                    }
+        val source = EventSources.createFactory(client).newEventSource(
+            request,
+            object : EventSourceListener() {
+                override fun onEvent(es: EventSource, id: String?, type: String?, data: String) {
+                    if (continuation.isCancelled) return
+                    onEvent(type.orEmpty(), data)
+                }
 
-                    override fun onClosed(es: EventSource) {
-                        if (continuation.isCancelled) return
-                        continuation.resume(Outcome.Completed)
-                    }
+                override fun onClosed(es: EventSource) {
+                    if (continuation.isCancelled) return
+                    continuation.resume(Outcome.Completed)
+                }
 
-                    override fun onFailure(es: EventSource, t: Throwable?, response: Response?) {
-                        if (continuation.isCancelled) return
-                        when {
-                            response != null && response.code == 401 -> {
-                                AppLogger.warn(TAG, "SSE: $url — HTTP 401 登录失效")
-                                handleSessionExpired()
-                                continuation.resume(Outcome.Unauthorized)
-                            }
-                            response != null && response.code == 200 -> {
-                                // HTTP 200 + onFailure：服务端 SseEmitter complete() 后直接关 TCP 时，
-                                // okhttp-sse 以 EOF 走 onFailure 而非 onClosed（实测必现）。HTTP 层成功
-                                // 说明服务端已按 SSE 协议完成推流，按正常完成上报；内容是否完整
-                                // （done 帧是否收到）由上层 doneReceived 兜底判定，不在此吞语义
-                                AppLogger.debug(TAG, "SSE: $url — 流收尾（HTTP 200，连接关闭）")
-                                continuation.resume(Outcome.Completed)
-                            }
-                            response != null -> {
-                                AppLogger.warn(TAG, "SSE: $url — HTTP ${response.code}")
-                                continuation.resume(Outcome.HttpError(response.code))
-                            }
-                            else -> {
-                                AppLogger.warn(TAG, "SSE: $url — 连接失败: ${t?.message}")
-                                continuation.resume(Outcome.NetworkError(t?.message))
-                            }
+                override fun onFailure(es: EventSource, t: Throwable?, response: Response?) {
+                    if (continuation.isCancelled) return
+                    when {
+                        response != null && response.code == 401 -> {
+                            AppLogger.warn(TAG, "SSE: $url — HTTP 401 登录失效")
+                            handleSessionExpired()
+                            continuation.resume(Outcome.Unauthorized)
+                        }
+                        response != null && response.code == 200 -> {
+                            // HTTP 200 + onFailure：服务端 SseEmitter complete() 后直接关 TCP 时，
+                            // okhttp-sse 以 EOF 走 onFailure 而非 onClosed（实测必现）。HTTP 层成功
+                            // 说明服务端已按 SSE 协议完成推流，按正常完成上报；内容是否完整
+                            // （done 帧是否收到）由上层 doneReceived 兜底判定，不在此吞语义
+                            AppLogger.debug(TAG, "SSE: $url — 流收尾（HTTP 200，连接关闭）")
+                            continuation.resume(Outcome.Completed)
+                        }
+                        response != null -> {
+                            AppLogger.warn(TAG, "SSE: $url — HTTP ${response.code}")
+                            continuation.resume(Outcome.HttpError(response.code))
+                        }
+                        else -> {
+                            AppLogger.warn(TAG, "SSE: $url — 连接失败: ${t?.message}")
+                            continuation.resume(Outcome.NetworkError(t?.message))
                         }
                     }
-                },
-            )
-            sourceRef.set(source)
-            // 兜底「先取消、后创建完成」的时序：赋值后再查一次取消态，已取消则立即断流
-            if (continuation.isCancelled) source.cancel()
+                }
+            },
+        )
+        sourceRef.set(source)
+        // 兜底「先取消、后创建完成」的时序：赋值后再查一次取消态，已取消则立即断流
+        if (continuation.isCancelled) source.cancel()
+    }
+
+    /**
+     * GET 发起 SSE 流并挂起至流结束（点单订单变更订阅）。
+     * 与 [post] 同口径：自建客户端注入 Bearer、401 清会话并通知、HTTP 200 收尾按完成处理。
+     *
+     * @param path 相对路径（如 "web/auth/dining/orders/1/stream"，拼在 baseUrl 后）
+     */
+    suspend fun get(
+        path: String,
+        onEvent: (name: String, data: String) -> Unit,
+    ): Outcome {
+        val url = buildUrl(path)
+        val token = tokenProvider.currentToken()
+        val requestBuilder = Request.Builder()
+            .url(url)
+            .header("Accept", "text/event-stream")
+            .get()
+        if (!token.isNullOrEmpty()) {
+            requestBuilder.header("Authorization", "Bearer $token")
         }
+        return awaitEventStream(url, requestBuilder.build(), onEvent)
     }
 
     /** 401 语义与 ResponseInterceptor.handleSessionExpired 完全一致（清 token 幂等 + 事件去重） */

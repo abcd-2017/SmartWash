@@ -2,6 +2,7 @@ package com.smartwash.feature.dining.repository
 
 import com.smartwash.feature.dining.api.DiningApi
 import com.smartwash.feature.dining.api.model.DietaryPreferenceVo
+import com.smartwash.feature.dining.api.model.DiningOrderActiveVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
 import com.smartwash.feature.dining.api.model.DiningScanResult
 import com.smartwash.feature.dining.logic.DiningJoinUrlParseResult
@@ -45,6 +46,9 @@ class DiningApiImpl @Inject constructor(
 
     override suspend fun getDietaryPreference(): DietaryPreferenceVo =
         diningRepository.getDietaryPreference()
+
+    override suspend fun getActiveOrder(): DiningOrderActiveVo? =
+        diningRepository.getActiveOrder()
 
     override suspend fun saveDietaryPreference(preference: DietaryPreferenceVo) {
         diningRepository.saveDietaryPreference(preference)

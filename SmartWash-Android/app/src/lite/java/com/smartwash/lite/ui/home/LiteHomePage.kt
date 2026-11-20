@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -70,8 +71,14 @@ import com.smartwash.feature.user.api.UserRoute
  * 入场动效经 [motionSpec] 提供 reduced motion 降级（降级时位移归零，仅保留淡入）。
  */
 @Composable
-fun LiteHomePage(navController: NavController) {
+fun LiteHomePage(
+    navController: NavController,
+    viewModel: LiteHomeViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+) {
     val reduceMotion = LocalReduceMotion.current
+    // 唯一性收敛：本人进行中的 DRAFT（有则主 CTA 进该单编辑态，无则空白创建页）
+    val activeOrder by viewModel.activeOrder.collectAsState()
+    LaunchedEffect(Unit) { viewModel.load() }
     // 入场状态：一次性触发，reduced motion 时位移分量归零
     var entered by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) { entered = 1 }
@@ -154,7 +161,15 @@ fun LiteHomePage(navController: NavController) {
         ) {
             AppButton(
                 text = stringResource(R.string.lite_home_create),
-                onClick = { navController.navigate(DiningRoute.OrderCreate()) },
+                onClick = {
+                    // 唯一性收敛：与列表 FAB 同口径——有本人进行中的 DRAFT 则进该单，否则空白创建页
+                    val activeId = activeOrder?.safeOrderId ?: 0L
+                    if (activeId > 0L) {
+                        navController.navigate(DiningRoute.OrderCreate(orderId = activeId))
+                    } else {
+                        navController.navigate(DiningRoute.OrderCreate())
+                    }
+                },
             )
         }
 

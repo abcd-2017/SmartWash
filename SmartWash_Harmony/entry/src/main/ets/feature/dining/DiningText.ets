@@ -25,8 +25,14 @@ export class DiningText {
   static get dining_order_status_draft(): string { return resString('dining_order_status_draft') }
   static get dining_order_status_ongoing(): string { return resString('dining_order_status_ongoing') }
   static get dining_order_status_finished(): string { return resString('dining_order_status_finished') }
+  static get dining_order_status_cancelled(): string { return resString('dining_order_status_cancelled') }
   static get dining_order_creator_badge(): string { return resString('dining_order_creator_badge') }
   static get dining_order_action_reuse(): string { return resString('dining_order_action_reuse') }
+  static get dining_order_action_cancel(): string { return resString('dining_order_action_cancel') }
+  static get dining_order_cancel_confirm_title(): string { return resString('dining_order_cancel_confirm_title') }
+  static get dining_order_cancel_confirm_text(): string { return resString('dining_order_cancel_confirm_text') }
+  static get dining_order_cancel_success(): string { return resString('dining_order_cancel_success') }
+  static get dining_order_cancelled_hint(): string { return resString('dining_order_cancelled_hint') }
   static get dining_order_action_recipe_library(): string { return resString('dining_order_action_recipe_library') }
   static get dining_order_list_empty(): string { return resString('dining_order_list_empty') }
   static get dining_order_list_load_failed(): string { return resString('dining_order_list_load_failed') }
@@ -184,6 +190,7 @@ export class DiningText {
   static get dining_order_join_unknown_title(): string { return resString('dining_order_join_unknown_title') }
   static get dining_order_join_action(): string { return resString('dining_order_join_action') }
   static get dining_order_join_order_finished(): string { return resString('dining_order_join_order_finished') }
+  static get dining_order_join_order_cancelled(): string { return resString('dining_order_join_order_cancelled') }
   static get dining_order_join_load_failed(): string { return resString('dining_order_join_load_failed') }
   static get dining_order_join_invalid_token(): string { return resString('dining_order_join_invalid_token') }
   static get dining_order_join_success(): string { return resString('dining_order_join_success') }

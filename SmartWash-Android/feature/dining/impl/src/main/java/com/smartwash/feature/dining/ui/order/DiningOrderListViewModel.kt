@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.feature.dining.api.model.DiningOrderActiveVo
 import com.smartwash.feature.dining.logic.DiningOrderListItem
 import com.smartwash.feature.dining.logic.toOrderListItem
 import com.smartwash.feature.dining.repository.DiningRepository
@@ -48,6 +49,17 @@ class DiningOrderListViewModel @Inject constructor(
     private val _loadMoreState = MutableStateFlow<RequestState>(RequestState.Idle)
     val loadMoreState = _loadMoreState.asStateFlow()
 
+    /**
+     * 我发起的进行中 DRAFT（唯一性收敛）：null=无。列表 FAB / lite 主 CTA 据此决定
+     * 「进该单编辑态」还是「空白创建页」；每次首载/刷新/回前台随列表一并更新。
+     */
+    private val _activeOrder = MutableStateFlow<DiningOrderActiveVo?>(null)
+    val activeOrder = _activeOrder.asStateFlow()
+
+    /** 放弃草稿动作态（Loading 防重；成功一次性 Toast 后消费） */
+    private val _cancelState = MutableStateFlow<RequestState>(RequestState.Idle)
+    val cancelState = _cancelState.asStateFlow()
+
     private var currentPage = 1
     private var total = 0L
 
@@ -63,6 +75,9 @@ class DiningOrderListViewModel @Inject constructor(
                 _orders.value = page.records.map { it.toOrderListItem() }
                 _hasMore.value = _orders.value.size < total
                 _loadMoreState.value = RequestState.Idle
+                // 唯一性收敛：拉取本人进行中的 DRAFT，供 FAB/CTA 决定进编辑态还是空白创建页；
+                // active 查询失败静默置空（最坏退回新建，后端仍会以 40901 兜底提示）
+                _activeOrder.value = runCatching { diningRepository.getActiveOrder() }.getOrNull()
                 _listState.value = RequestState.Success
             } catch (e: CancellationException) {
                 throw e
@@ -94,6 +109,33 @@ class DiningOrderListViewModel @Inject constructor(
                 _loadMoreState.value = RequestState.Error(e.resId, e.message)
             }
         }
+    }
+
+    /**
+     * 放弃草稿（仅发起者的 DRAFT；二次确认由页面承担）：成功后刷新列表与 active。
+     * 后端拒绝（非发起者/已结束/已取消）转译为 NetworkException 上抛，由页面 Toast。
+     */
+    fun cancelOrder(orderId: Long) {
+        if (orderId <= 0L) return
+        if (_cancelState.value is RequestState.Loading) return
+        viewModelScope.launch {
+            _cancelState.value = RequestState.Loading
+            try {
+                diningRepository.cancelOrder(orderId)
+                _cancelState.value = RequestState.Success
+                load()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: NetworkException) {
+                AppLogger.error(TAG, "DiningOrderListViewModel.cancelOrder: ${e.message}", e)
+                _cancelState.value = RequestState.Error(e.resId, e.message)
+            }
+        }
+    }
+
+    /** 消费放弃动作态（页面 Toast 后调用，避免重放） */
+    fun consumeCancelState() {
+        _cancelState.value = RequestState.Idle
     }
 
     private companion object {

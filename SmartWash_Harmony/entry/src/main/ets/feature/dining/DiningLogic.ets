@@ -17,14 +17,17 @@ import { diningShoppingListFromJSON, DiningShoppingListSnapshot } from '../../ne
 
 /**
  * 点单订单状态全集（后端 dining_order.status 白名单；文案见 DiningText）。
- * 契约（2026-11-18 协同点单改造）：DRAFT → FINISHED（发起者一步「提交」直接结束），
+ * 契约（2026-11-20 唯一订单改造）：DRAFT → FINISHED（发起者一步「提交」直接结束）；
+ * DRAFT → CANCELLED（发起者「放弃」，终态只读、订单保留供参与者看到「已取消」）。
  * 原 ONGOING 已移除，不再产生、不再消费。
  */
 export enum DiningOrderStatus {
   /** 编辑中（标题/菜单可空，全员可加/移除菜、可邀请加入） */
   DRAFT,
   /** 已结束（发起者提交并生成购买清单快照，拒绝一切写入） */
-  FINISHED
+  FINISHED,
+  /** 已取消（发起者放弃；终态只读，订单保留供参与者在列表查看） */
+  CANCELLED
 }
 
 /**
@@ -34,6 +37,9 @@ export enum DiningOrderStatus {
 export function diningOrderStatusFromCode(code: string | null): DiningOrderStatus {
   if (code === 'DRAFT') {
     return DiningOrderStatus.DRAFT
+  }
+  if (code === 'CANCELLED') {
+    return DiningOrderStatus.CANCELLED
   }
   return DiningOrderStatus.FINISHED
 }
@@ -224,7 +230,7 @@ export enum DiningJoinEntryDecision {
   ENTER_CREATE,
   /** 非成员且订单草稿中：展示确认加入 */
   CONFIRM_JOIN,
-  /** 订单已结束/状态未知：不引导加入 */
+  /** 订单不可加入（已结束 / 已取消 / 状态未知）：不引导加入 */
   ORDER_FINISHED,
   /** brief 缺失：页面按错误态处理 */
   BRIEF_UNAVAILABLE

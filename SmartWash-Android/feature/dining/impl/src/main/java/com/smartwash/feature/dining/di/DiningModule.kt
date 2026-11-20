@@ -9,7 +9,7 @@ import com.smartwash.feature.dining.repository.DiningApiImpl
 import com.smartwash.feature.dining.repository.DiningRepository
 import com.smartwash.feature.dining.sync.DiningOrderDetailSource
 import com.smartwash.feature.dining.sync.DiningOrderSyncChannel
-import com.smartwash.feature.dining.sync.PollingDiningOrderSyncChannel
+import com.smartwash.feature.dining.sync.SseDiningOrderSyncChannel
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -33,12 +33,12 @@ abstract class DiningModule {
     abstract fun bindDiningApi(impl: DiningApiImpl): DiningApi
 
     /**
-     * 订单变更订阅通道（10 号票）：绑定轮询首实现；他日换 SSE/WebSocket 只需改本绑定，
-     * 业务代码（ViewModel）只依赖 [DiningOrderSyncChannel] 抽象。
+     * 订单变更订阅通道：绑定 SSE 主实现（[com.smartwash.feature.dining.sync.PollingDiningOrderSyncChannel]
+     * 作为其降级传输仍可注入）；业务代码（ViewModel）只依赖 [DiningOrderSyncChannel] 抽象。
      */
     @Binds
     @Singleton
-    abstract fun bindDiningOrderSyncChannel(impl: PollingDiningOrderSyncChannel): DiningOrderSyncChannel
+    abstract fun bindDiningOrderSyncChannel(impl: SseDiningOrderSyncChannel): DiningOrderSyncChannel
 }
 
 @Module

@@ -3,6 +3,7 @@ package com.smartwash.feature.dining.api
 import com.smartwash.common.network.annotation.RequireAuthorization
 import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.utils.model.PageData
+import com.smartwash.feature.dining.api.model.DiningOrderActiveVo
 import com.smartwash.feature.dining.api.model.AddDiningOrderDishRequest
 import com.smartwash.feature.dining.api.model.AddDiningRecipeRequest
 import com.smartwash.feature.dining.api.model.CreateDiningOrderRequest
@@ -151,12 +152,22 @@ interface DiningServiceApi {
     ): ApiResult<Void>
 
     /**
-     * 放弃草稿（仅发起者 + 仅 DRAFT 态；物理删订单与菜单/成员/选菜子行）。
-     * 用于清空堆积的空草稿；已定稿/已结束由后端拒绝。
+     * 放弃草稿（cancel，仅发起者 + 仅 DRAFT）：订单状态置 CANCELLED 并写 cancelled_at，
+     * 不再物理删除——参与者仍可在「我的订单」看到该单（灰态「已取消」）；已提交/已取消拒绝。
      */
     @DELETE("/web/auth/dining/orders/{id}")
     @RequireAuthorization
-    suspend fun discardOrder(@Path("id") id: Long): ApiResult<Void>
+    suspend fun cancelOrder(@Path("id") id: Long): ApiResult<Void>
+
+    /** 退出点单（仅参与者非发起者 + 仅 DRAFT + 仅成员；幂等：不在单中直接成功） */
+    @POST("/web/auth/dining/orders/{id}/leave")
+    @RequireAuthorization
+    suspend fun leaveOrder(@Path("id") id: Long): ApiResult<Void>
+
+    /** 我的进行中点单（本人发起的 DRAFT，无则 data=null）：列表 FAB / lite 主 CTA 收敛依据 */
+    @GET("/web/auth/dining/orders/active")
+    @RequireAuthorization
+    suspend fun getActiveOrder(): ApiResult<DiningOrderActiveVo>
 
     /** 我的订单分页（我发起的 + 我参与的，按创建时间倒序，带 isCreator 标记；page 从 1 起） */
     @GET("/web/auth/dining/orders/my")

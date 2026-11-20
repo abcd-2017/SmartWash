@@ -3,8 +3,9 @@ package com.smartwash.feature.dining.api.model
 /**
  * 点单订单状态全集（后端 dining/constant/DiningOrderStatus 契约，端上映射单一事实来源）。
  *
- * 两态：DRAFT（编辑中——标题/菜单可空，全员可加/移除菜、可邀请加入）与 FINISHED
- * （发起者「提交」后直接结束并生成购买清单快照，拒绝一切写入）。
+ * 三态：DRAFT（编辑中——标题/菜单可空，全员可加/移除菜、可邀请加入）、FINISHED
+ * （发起者「提交」后直接结束并生成购买清单快照，拒绝一切写入）、CANCELLED
+ * （发起者「放弃」，终态只读；不再物理删单，参与者仍可在列表看到「已取消」）。
  * 文案（dining_order_status_*）由消费方 strings.xml 映射（枚举本体不持 res）。
  */
 enum class DiningOrderStatus(
@@ -15,7 +16,10 @@ enum class DiningOrderStatus(
     DRAFT("DRAFT"),
 
     /** 已结束（已提交，购买清单已生成） */
-    FINISHED("FINISHED");
+    FINISHED("FINISHED"),
+
+    /** 已取消（发起者放弃；终态只读，订单保留供参与者查看） */
+    CANCELLED("CANCELLED");
 
     companion object {
         private val codeMap = entries.associateBy { it.code }

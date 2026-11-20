@@ -19,6 +19,8 @@ import com.smartwash.dining.mapper.DiningOrderMapper;
 import com.smartwash.dining.mapper.DiningOrderMemberMapper;
 import com.smartwash.dining.mapper.DiningOrderMenuMapper;
 import com.smartwash.dining.service.DiningRecipeGate;
+import com.smartwash.dining.stream.DiningOrderStreamer;
+import com.smartwash.dining.vo.DiningOrderActiveVo;
 import com.smartwash.dining.vo.DiningOrderDetailVo;
 import com.smartwash.dining.vo.DiningOrderFinishVo;
 import com.smartwash.dining.vo.DiningOrderListVo;
@@ -101,6 +103,9 @@ class DiningOrderServiceImplTest {
     @Mock
     private com.smartwash.config.MinioConfig minioConfig;
 
+    @Mock
+    private DiningOrderStreamer streamer;
+
     private DiningOrderServiceImpl service;
 
     @BeforeAll
@@ -115,7 +120,7 @@ class DiningOrderServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new DiningOrderServiceImpl(memberMapper, menuMapper, itemMapper, recipeGate, usersMapper,
-                orderMapper, noticeService, minioConfig);
+                orderMapper, noticeService, minioConfig, streamer);
         // 快照封面直链：mock 按「端点/桶/键」拼（测试只断言字段存在与格式）
         when(minioConfig.urlOf(any())).thenAnswer(inv -> "http://minio.local/smartwash/" + inv.getArgument(0));
         ReflectionTestUtils.setField(service, "baseMapper", orderMapper);
@@ -583,47 +588,113 @@ class DiningOrderServiceImplTest {
         verify(menuMapper, never()).delete(any(Wrapper.class));
     }
 
-    // ==================== 放弃草稿 ====================
+    // ==================== 放弃草稿（cancel，置 CANCELLED） ====================
 
     @Test
-    @DisplayName("放弃草稿：仅发起者的 DRAFT 可删，订单行按 status 条件删后清子表")
-    void discardDraft_success() {
+    @DisplayName("放弃草稿：仅发起者的 DRAFT → 条件 UPDATE 置 CANCELLED + cancelled_at，不清子表")
+    void cancel_success() {
         when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
-        when(orderMapper.delete(any(Wrapper.class))).thenReturn(1);
-        when(menuMapper.delete(any(Wrapper.class))).thenReturn(1);
-        when(memberMapper.delete(any(Wrapper.class))).thenReturn(1);
-        when(itemMapper.delete(any(Wrapper.class))).thenReturn(0);
+        when(orderMapper.update(any(), any())).thenReturn(1);
 
-        service.discardDraft(ORDER_ID, CREATOR);
+        service.cancel(ORDER_ID, CREATOR);
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<LambdaQueryWrapper<DiningOrder>> captor =
-                ArgumentCaptor.forClass(LambdaQueryWrapper.class);
-        verify(orderMapper).delete(captor.capture());
-        captor.getValue().getSqlSegment(); // 物化惰性 SQL 段，WHERE 条件参数才进入参数表
+        ArgumentCaptor<LambdaUpdateWrapper<DiningOrder>> captor =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(orderMapper).update(any(), captor.capture());
+        captor.getValue().getSqlSegment(); // 物化惰性 SQL 段，WHERE/SET 参数才进入参数表
         assertTrue(captor.getValue().getParamNameValuePairs().containsValue("DRAFT"),
-                "订单行删除必须以 DRAFT 为条件，防止误删已定稿单");
-        verify(menuMapper).delete(any(Wrapper.class));
-        verify(memberMapper).delete(any(Wrapper.class));
-        verify(itemMapper).delete(any(Wrapper.class));
+                "状态迁移必须以 DRAFT 为条件，防止误改已定稿单");
+        assertTrue(captor.getValue().getParamNameValuePairs().containsValue("CANCELLED"));
+        // 不再物理删除：订单与菜单/成员子表全部保留，参与者仍可见「已取消」
+        verify(menuMapper, never()).delete(any(Wrapper.class));
+        verify(memberMapper, never()).delete(any(Wrapper.class));
+        verify(itemMapper, never()).delete(any(Wrapper.class));
     }
 
     @Test
-    @DisplayName("放弃草稿：非发起者 / 非 DRAFT / 并发已定稿均拒绝")
-    void discardDraft_guards() {
+    @DisplayName("变更广播：放弃草稿后发布 SSE 信号（无事务上下文时立即执行）")
+    void cancel_publishesChange() {
         when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
-        expectBusinessException("仅发起者可放弃草稿", () -> service.discardDraft(ORDER_ID, JOINER));
+        when(orderMapper.update(any(), any())).thenReturn(1);
+
+        service.cancel(ORDER_ID, CREATOR);
+
+        verify(streamer).publish(ORDER_ID);
+    }
+
+    @Test
+    @DisplayName("放弃草稿：非发起者 / 非 DRAFT（已结束/已取消）/ 并发状态变更均拒绝")
+    void cancel_guards() {
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        expectBusinessException("仅发起者可放弃草稿", () -> service.cancel(ORDER_ID, JOINER));
 
         when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "FINISHED", "tok", 1, CREATOR));
-        expectBusinessException("仅草稿可放弃", () -> service.discardDraft(ORDER_ID, CREATOR));
+        expectBusinessException("仅草稿可放弃", () -> service.cancel(ORDER_ID, CREATOR));
+
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "CANCELLED", "tok", 1, CREATOR));
+        expectBusinessException("点单已取消，无需重复操作", () -> service.cancel(ORDER_ID, CREATOR));
 
         when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
-        when(orderMapper.delete(any(Wrapper.class))).thenReturn(0);
-        expectBusinessException("草稿状态已变更，请刷新后重试",
-                () -> service.discardDraft(ORDER_ID, CREATOR));
+        when(orderMapper.update(any(), any())).thenReturn(0);
+        expectBusinessException("草稿状态已变更，请刷新后重试", () -> service.cancel(ORDER_ID, CREATOR));
+    }
 
-        verify(menuMapper, never()).delete(any(Wrapper.class));
+    // ==================== 退出点单 ====================
+
+    @Test
+    @DisplayName("退出：参与者退出 DRAFT 删成员行；发起者/已结束/已取消拒绝；非成员幂等")
+    void leave_guards_and_idempotent() {
+        // 非成员：幂等直接成功，不删行
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        service.leave(ORDER_ID, JOINER);
         verify(memberMapper, never()).delete(any(Wrapper.class));
+
+        // 成员：删成员行（订单本体保留）
+        when(memberMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(memberMapper.delete(any(Wrapper.class))).thenReturn(1);
+        service.leave(ORDER_ID, JOINER);
+        verify(memberMapper).delete(any(Wrapper.class));
+
+        // 发起者不能退出（走放弃）
+        expectBusinessException("发起者不能退出，如需结束请使用放弃草稿",
+                () -> service.leave(ORDER_ID, CREATOR));
+
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "FINISHED", "tok", 1, CREATOR));
+        expectBusinessException("点单已结束，无法退出", () -> service.leave(ORDER_ID, JOINER));
+
+        when(orderMapper.selectById(ORDER_ID)).thenReturn(order(ORDER_ID, "CANCELLED", "tok", 1, CREATOR));
+        expectBusinessException("点单已取消，无法退出", () -> service.leave(ORDER_ID, JOINER));
+    }
+
+    // ==================== 我的进行中点单 ====================
+
+    @Test
+    @DisplayName("active：取本人最新 DRAFT（orderId/title/status）；无则 null")
+    void getMyActiveOrder_latestDraftOrNull() {
+        when(orderMapper.selectList(any(Wrapper.class)))
+                .thenReturn(List.of(order(ORDER_ID, "DRAFT", "tok", 2, CREATOR)));
+        DiningOrderActiveVo vo = service.getMyActiveOrder(CREATOR);
+        assertNotNull(vo);
+        assertEquals(ORDER_ID, vo.getOrderId());
+        assertEquals("DRAFT", vo.getStatus());
+
+        when(orderMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
+        assertNull(service.getMyActiveOrder(CREATOR));
+    }
+
+    @Test
+    @DisplayName("创建：已有本人进行中的 DRAFT → 唯一闸门拒绝（40901，message 带既有单标题）")
+    void create_activeExists_rejected40901() {
+        when(orderMapper.selectList(any(Wrapper.class)))
+                .thenReturn(List.of(new DiningOrder().setId(1L).setTitle("周五晚火锅").setStatus("DRAFT")));
+
+        CustomExceptions ex = assertThrows(CustomExceptions.class,
+                () -> service.create(createFrom("新点单", null, null), CREATOR));
+        assertEquals(40901, ex.getCode());
+        assertTrue(ex.getMessage().contains("周五晚火锅"));
+        verify(orderMapper, never()).insert(any(DiningOrder.class));
     }
 
     // ==================== 加入 ====================
