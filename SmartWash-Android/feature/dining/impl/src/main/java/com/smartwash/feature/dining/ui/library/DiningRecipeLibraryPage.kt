@@ -257,6 +257,8 @@ fun DiningRecipeLibraryPage(
                                     navController.navigate(DiningRoute.RecipeDetail(recipe.id))
                                 }
                             },
+                            keyword = keyword,
+                            searchByIngredient = searchByIngredient,
                         )
                     } else {
                         // 分类浏览态：左栏 + 双列封面卡网格（数据随分类/分页服务端拉取）
@@ -542,7 +544,10 @@ private fun RecipeFavoriteButton(
             .size(48.dp)
             .pressable(onClick = onClick, debounce = false)
             .semantics { contentDescription = label },
-        contentAlignment = Alignment.Center,
+        // 图标贴热区右上角：热区已贴封面右上，图标再贴热区角才会真正落在封面右上角；
+        // 居中（原状）或贴左上都会让心形落在封面内侧，双列窄卡上视觉偏中心
+        // （用户反馈「没放到右上角」——点单页 DishThumb 是同口径：热区贴图角+图标贴同侧角）
+        contentAlignment = Alignment.TopEnd,
     ) {
         Icon(
             imageVector = if (favorited) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
@@ -550,12 +555,16 @@ private fun RecipeFavoriteButton(
             // 未收藏=深绿描边（浅底/浅封面可读；旧版白心白边在浅图上不可见）/ 已收藏=品牌红实心
             tint = if (favorited) AppColors.colorScheme.danger else AppColors.colorScheme.primaryDark,
             // 不投影：阴影是卡片级语言，图标级投影在小尺寸上显脏
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier
+                .padding(2.dp)
+                .size(18.dp),
         )
     }
 }
 
-/** 搜索结果列表（契约 §5.1「搜索时切换为全库结果列表」）：单列行卡 + 触底自动加载更多 */
+/** 搜索结果列表（契约 §5.1「搜索时切换为全库结果列表」）：单列行卡 + 触底自动加载更多。
+ * 改词/切搜索模式时回顶（双状态契约的搜索态分支）：组件在搜索中保持组合、state 存活，
+ * 不复位会停在上次搜索的偏移处（与创建订单页 D32 同型，修于滚动状态扫描） */
 @Composable
 private fun SearchResultList(
     recipes: List<DiningRecipeItem>,
@@ -563,8 +572,17 @@ private fun SearchResultList(
     loadMoreState: RequestState,
     onLoadMore: () -> Unit,
     onRecipeClick: (DiningRecipeItem) -> Unit,
+    keyword: String,
+    searchByIngredient: Boolean,
 ) {
     val listState = rememberLazyListState()
+
+    // 改词/切模式（keyword、searchByIngredient 任一变化）即回顶：新结果集从头展示。
+    // 首次进入搜索态时组件新建、本就在顶，重复 scrollToItem(0) 幂等无害
+    LaunchedEffect(keyword, searchByIngredient) {
+        listState.scrollToItem(0)
+    }
+
     val shouldLoadMore by remember {
         derivedStateOf {
             val info = listState.layoutInfo
