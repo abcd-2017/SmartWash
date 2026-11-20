@@ -219,12 +219,18 @@ fun DivChartPage(
                             letterSpacing = 2.sp,
                             color = c.textSecondary,
                         )
+                        // P2-4：体用文案与内核（MeiHuaChart.build：动爻所在卦为用，1-3 爻→下卦为用、
+                        // 4-6 爻→上卦为用）对齐——用/体卦与其上/下卦位标签一律取自 chart.yong/ti 本体，
+                        // 模板不再写死「下卦为用，上卦为体」（此前动爻在上卦时文案体用颠倒）
+                        val yongIsLower = chart.yong == chart.lower
                         Text(
                             text = stringResource(
                                 R.string.div_meihua_tiyong_line,
                                 chart.movingYao,
-                                chart.lower.label, chart.lower.wuXing.label,
-                                chart.upper.label, chart.upper.wuXing.label,
+                                stringResource(if (yongIsLower) R.string.div_gua_pos_lower else R.string.div_gua_pos_upper),
+                                chart.yong.label, chart.yong.wuXing.label,
+                                stringResource(if (yongIsLower) R.string.div_gua_pos_upper else R.string.div_gua_pos_lower),
+                                chart.ti.label, chart.ti.wuXing.label,
                                 chart.tiYongRelation.label, chart.tiYongRelation.phrase,
                             ),
                             fontSize = 12.sp,

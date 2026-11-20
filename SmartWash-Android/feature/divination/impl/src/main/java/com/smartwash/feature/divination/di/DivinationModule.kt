@@ -4,14 +4,18 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.smartwash.common.init.InitTask
 import com.smartwash.feature.divination.database.DivRecordDao
 import com.smartwash.feature.divination.database.DivinationDatabase
 import com.smartwash.feature.divination.api.network.DivinationApi
+import com.smartwash.feature.divination.init.DivSessionCleanInitTask
+import com.smartwash.feature.user.api.UserApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.IntoSet
 import retrofit2.Retrofit
 import javax.inject.Singleton
 
@@ -58,4 +62,10 @@ object DivinationModule {
     @Provides
     @Singleton
     fun provideDivinationApi(retrofit: Retrofit): DivinationApi = retrofit.create(DivinationApi::class.java)
+
+    /** 会话终止清空本地案卷（P2-7 换账号隔离），启动期由 InitEngine 拉起常驻收集 */
+    @Provides
+    @IntoSet
+    fun provideDivSessionCleanInitTask(dao: DivRecordDao, userApi: UserApi): InitTask =
+        DivSessionCleanInitTask(dao, userApi)
 }
