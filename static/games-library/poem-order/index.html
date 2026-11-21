@@ -25,7 +25,7 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.bad { color: var(--g-danger); }
@@ -359,14 +359,14 @@ function syncSaveFromServer(){
   }).catch(function(){});
 }
 /* ---------- 状态 ---------- */
-var lv=save.lv,L=null,pi=0,tiles=[],used=[],placed=[],errors=0,done=false;
+var lv=save.lv,L=null,pi=0,tiles=[],used=[],placed=[],errors=0,done=false,gen=0;
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
 function loadLevel(n){
   lv=Math.max(0,Math.min(n,LEVELS.length-1));
   L=LEVELS[lv];
   if(!validLevelData(L)){say("关卡数据异常");return;}
-  pi=0;errors=0;done=false;
+  pi=0;errors=0;done=false;gen++;
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
   $("lvRule").textContent="两首全排对过关";
   $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
@@ -426,7 +426,7 @@ function pick(k){
     say("第 "+(need+1)+" 句排对了");
     if(placed.length===4){
       say("《"+L.ps[pi].hint+"》排好了！");
-      setTimeout(nextPoem,800);
+      var g=gen;setTimeout(function(){if(g!==gen)return;nextPoem()},800);
     }
   }else{
     errors++;updStats();

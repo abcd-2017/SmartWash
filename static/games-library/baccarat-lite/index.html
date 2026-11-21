@@ -25,7 +25,7 @@
   header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.plain { color: var(--g-text); }
@@ -221,19 +221,19 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a
 /* 牌值：A=1，2..9 面值，10/J/Q/K=0；总点数 mod 10 */
 function bValue(c){var r=c>>2;if(r===0)return 1;if(r<=8)return r+1;return 0;}
 function bTotal(hand){var t=0,i;for(i=0;i<hand.length;i++)t+=bValue(hand[i]);return t%10;}
-/* 表编码（权威规则表）：pTotal 0..7、玩家是否补牌、第三张值 t（-1 表示未补）→ 庄家是否补 */
+/* 表编码（权威规则表）：pTotal 为庄家总点 0..7、玩家是否补牌、第三张值 t（-1 表示未补）→ 庄家是否补 */
 function bTable(pTotal,pDrew,t){
-  if(pTotal>=6)return false;
+  if(pTotal>=7)return false;
   if(!pDrew)return pTotal<=5;
   if(pTotal<=2)return true;
   if(pTotal===3)return t!==8;
   if(pTotal===4)return t>=2&&t<=7;
   if(pTotal===5)return t>=4&&t<=7;
-  return t===6||t===7;/* pTotal===6? 不可能（6-7 玩家不补），防御分支 */
+  return t===6||t===7;/* pTotal===6：闲补 6/7 时庄补 */
 }
 /* 引擎编码（独立实现）：条件表达式直接书写 */
 function bEngine(pTotal,pDrew,t){
-  if(pTotal>=6)return false;
+  if(pTotal>=7)return false;
   if(!pDrew)return pTotal<=5;
   if(pTotal<=2)return true;
   if(pTotal===3)return t!==8;
@@ -266,7 +266,7 @@ function verifyLevelData(d){
     var t3=-1;
     if(!natural){
       if(pT<=5){var c3=shoe[ptr++];ph.push(c3);t3=bValue(c3);pT=bTotal(ph);}
-      if(bEngine(pT,t3>=0,t3)){bh.push(shoe[ptr++]);bT=bTotal(bh);}
+      if(bEngine(bT,t3>=0,t3)){bh.push(shoe[ptr++]);bT=bTotal(bh);}
     }
     if(pT<0||pT>9||bT<0||bT>9)return false;
     var bet=10,win;
@@ -283,7 +283,7 @@ function buildActive(){
   ACTIVE=[];
   for(var i=0;i<LEVELS.length;i++)if(verifyLevelData(LEVELS[i]))ACTIVE.push(LEVELS[i]);
   if(ACTIVE.length){
-    if(lv>ACTIVE.length-1)lv=ACTIVE.length-1;
+    lv=Math.min(save.lv,ACTIVE.length-1); /* 续玩：以存档进度为起点 */
     save.lv=Math.min(save.lv,lv);persist();
     loadLevel(lv);
   }
@@ -367,7 +367,7 @@ function cardName(c){return SUITS[c&3]+RANKS[c>>2]}
 function bValue(c){var r=c>>2;if(r===0)return 1;if(r<=8)return r+1;return 0;}
 function bTotal(hand){var t=0,i;for(i=0;i<hand.length;i++)t+=bValue(hand[i]);return t%10;}
 function bEngine(pTotal,pDrew,t){
-  if(pTotal>=6)return false;
+  if(pTotal>=7)return false;
   if(!pDrew)return pTotal<=5;
   if(pTotal<=2)return true;
   if(pTotal===3)return t!==8;
@@ -403,7 +403,7 @@ function doDeal(){
   var t3=-1,note="";
   if(!natural){
     if(pT<=5){var c3=shoe[ptr++];pHand.push(c3);t3=bValue(c3);pT=bTotal(pHand);note="闲补 "+cardName(c3)+" · ";}
-    if(bEngine(pT,t3>=0,t3)){var c4=shoe[ptr++];bHand.push(c4);bT=bTotal(bHand);note+="庄补 "+cardName(c4);}
+    if(bEngine(bT,t3>=0,t3)){var c4=shoe[ptr++];bHand.push(c4);bT=bTotal(bHand);note+="庄补 "+cardName(c4);}
   }else note="天牌 "+Math.max(pT,bT)+"，免补";
   var win;
   if(pT>bT)win="p";else if(bT>pT)win="b";else win="t";

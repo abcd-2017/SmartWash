@@ -25,7 +25,7 @@
   header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.plain { color: var(--g-text); }
@@ -43,7 +43,7 @@
     position: relative; aspect-ratio: 5 / 7; border-radius: 10px;
     border: 1px dashed var(--g-border); background: var(--g-surface2);
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; color: var(--g-faint); padding: 0; font-family: inherit; cursor: pointer;
+    font-size: 12px; color: var(--g-muted); padding: 0; font-family: inherit; cursor: pointer;
   }
   .mini.solid { border-style: solid; background: var(--g-primary-soft); color: var(--g-on-soft); }
   .mini .wm { font-size: 16px; }
@@ -52,7 +52,7 @@
   .col { position: relative; min-height: 58px; }
   .col .ph {
     position: absolute; inset: 0; border-radius: 10px; border: 1px dashed var(--g-border);
-    background: var(--g-surface2); color: var(--g-faint); font-size: 12px;
+    background: var(--g-surface2); color: var(--g-muted); font-size: 12px;
     display: flex; align-items: center; justify-content: center;
   }
   /* 牌面（DOM 自绘：文字 + 花色符号属内容） */
@@ -139,7 +139,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <button class="btn" id="btnReset">重开</button>
     <button class="btn" id="btnLv">选关</button>
   </div>
-  <p class="foot">键盘：1-8 选列顶串 · Shift+1-8 移入该列 · Q/W/E/R 移入自由格 · F 顶牌归位 · Z 撤销 · H 提示 · 40 关递进 · 进度自动保存</p>
+  <p class="foot">键盘：1-8 选列顶串 · Shift+1-8 移入该列 · Q/W/E/R 移入自由格 · F 选牌归位 · Z 撤销 · H 提示 · 40 关递进 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
@@ -373,16 +373,14 @@ function kickVerify(){
     if(verIdx>=LEVELS.length){clearInterval(verTimer);verTimer=null;refreshVerHud();return;}
     var i=verIdx;
     LVSTATE[i]=verifyLevelData(LEVELS[i])?1:-1;
-    if(LVSTATE[i]===1)ACTIVE.push(LEVELS[i]);
     refreshVerHud();
     if(overlayMode==="lv")renderLvGrid();
-    if(lv>=ACTIVE.length&&ACTIVE.length)loadLevel(Math.min(save.lv,ACTIVE.length-1));
   },40);
 }
-function denom(){return verTimer?LEVELS.length:ACTIVE.length}
+function denom(){return LEVELS.length}
 function refreshVerHud(){
   $("stVer").textContent=lvStateText();
-  if(ACTIVE.length)$("stLv").textContent=(Math.min(lv,ACTIVE.length-1)+1)+"/"+denom();
+  $("stLv").textContent=(Math.min(lv,LEVELS.length-1)+1)+"/"+denom();
 }
 
 /* ---------- 存档（本地 + 账号双写） ---------- */
@@ -415,9 +413,13 @@ function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cl
 function cardName(c){return SUITS[c&3]+RANKS[c>>2]}
 function topOf(a){return a.length?a[a.length-1]:-1}
 function loadLevel(n){
-  if(!ACTIVE.length)return;
-  lv=Math.max(0,Math.min(n,ACTIVE.length-1));
-  L=ACTIVE[lv];
+  n=Math.max(0,Math.min(n,LEVELS.length-1));
+  if(LVSTATE[n]!==1){
+    LVSTATE[n]=verifyLevelData(LEVELS[n])?1:-1;refreshVerHud();
+    if(overlayMode==="lv")renderLvGrid();
+    if(LVSTATE[n]!==1){say("该关校验未通过，请点「选关」换关","err");return false;}
+  }
+  lv=n;L=LEVELS[lv];
   cas=fcDeal(L.seed).map(function(s){return s.split("").map(function(ch){return ch.charCodeAt(0)-35})});
   cells=[-1,-1,-1,-1];found=[0,0,0,0];
   sel=null;moves=0;hist=[];won=false;
@@ -426,7 +428,7 @@ function loadLevel(n){
   $("stLv").textContent=(lv+1)+"/"+denom();
   $("stPar").textContent=L.par>0?L.par:"-";
   say("点牌选中（可带连串），再点目标列 / 自由格 / 归位区；双击顶牌自动归位");
-  updStats();render();
+  updStats();render();return true;
 }
 function snapshot(){return{cas:cas.map(function(a){return a.slice()}),cells:cells.slice(),found:found.slice()}}
 function capacity(){
@@ -516,11 +518,11 @@ function hint(){
 function checkWin(){
   if(found[0]===13&&found[1]===13&&found[2]===13&&found[3]===13){
     won=true;
-    if(lv<ACTIVE.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+    if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
     if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:moves}).catch(function(){});
-    $("ovTitle").textContent=(lv>=ACTIVE.length-1)?"全部通关！":"过关！";
-    $("ovDesc").innerHTML="步数 <b>"+moves+"</b>（参考 "+$("stPar").textContent+"）"+(lv<ACTIVE.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-    $("ovBtn").textContent=(lv>=ACTIVE.length-1)?"回到第 1 关":"下一关";
+    $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
+    $("ovDesc").innerHTML="步数 <b>"+moves+"</b>（参考 "+$("stPar").textContent+"）"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>"+LEVELS.length+" 关全部完成");
+    $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
     $("overlay").classList.add("show");
   }
 }
@@ -619,11 +621,12 @@ function renderLvGrid(){
   var g=$("lvgrid");
   if(overlayMode!=="lv"){g.hidden=true;return;}
   g.hidden=false;g.innerHTML="";
-  for(var i=0;i<ACTIVE.length;i++){
+  for(var i=0;i<LEVELS.length;i++){
     (function(i){
       var b=document.createElement("button");
       b.className="lvbtn"+(i<save.lv?" done":"");
       b.textContent=i+1;
+      if(LVSTATE[i]!==1)b.disabled=true;
       b.addEventListener("click",function(){
         $("overlay").classList.remove("show");overlayMode="";
         loadLevel(i);say("第 "+(i+1)+" 关");
@@ -636,7 +639,7 @@ $("ovBtn").addEventListener("click",function(){
   $("overlay").classList.remove("show");
   if(overlayMode==="lv"){overlayMode="";return;}
   if(won){
-    if(lv>=ACTIVE.length-1){loadLevel(0)}
+    if(lv>=LEVELS.length-1){loadLevel(0)}
     else loadLevel(lv+1);
   }
 });
@@ -666,9 +669,7 @@ function verifyCurrentThenStart(){
   var want=Math.min(save.lv,LEVELS.length-1),i;
   LVSTATE=[];ACTIVE=[];
   for(i=0;i<LEVELS.length;i++)LVSTATE.push(0);
-  if(want>=0&&verifyLevelData(LEVELS[want])){LVSTATE[want]=1;ACTIVE.push(LEVELS[want]);}
-  loadLevel(0);
-  save.lv=Math.min(save.lv,Math.max(0,ACTIVE.length-1));
+  if(!loadLevel(want))loadLevel(0); /* 存档关同步校验后直进；坏关回退首关 */
   refreshVerHud();
   kickVerify();
 }

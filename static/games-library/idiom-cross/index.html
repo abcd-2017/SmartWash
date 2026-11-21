@@ -26,7 +26,7 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.bad { color: var(--g-danger); }
@@ -330,7 +330,7 @@ function syncSaveFromServer(){
   }).catch(function(){});
 }
 /* ---------- 状态 ---------- */
-var lv=save.lv,L=null,gi=0,errors=0,done=false;
+var lv=save.lv,L=null,gi=0,errors=0,done=false,gen=0;
 /* 每盘运行时状态：cells = {row,col,roles:[{slot,idx}],ch,done}；poolUsed=[] */
 var st=null;
 function $(id){return document.getElementById(id)}
@@ -339,7 +339,7 @@ function loadLevel(n){
   lv=Math.max(0,Math.min(n,LEVELS.length-1));
   L=LEVELS[lv];
   if(!validLevelData(L)){say("关卡数据异常");return;}
-  gi=0;errors=0;done=false;
+  gi=0;errors=0;done=false;gen++;
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
   $("lvRule").textContent="两盘全拼对过关";
   $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
@@ -436,7 +436,7 @@ function place(ci){
     say("放对了！还差 "+remain+" 格");
     if(remain===0){
       say("这一盘拼成了："+g.h+" × "+g.v);
-      setTimeout(nextGrid,900);
+      var g=gen;setTimeout(function(){if(g!==gen)return;nextGrid()},900);
     }
   }else{
     errors++;updStats();

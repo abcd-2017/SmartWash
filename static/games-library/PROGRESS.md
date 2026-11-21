@@ -409,3 +409,28 @@
   word-search、baccarat 不画荷官人物区别于 blackjack、freecell 区别于 solitaire/spider。
   逐批目检 6 张（pinyin-tone / char-rain / glyph-pair / freecell / dudo-bluff / snake-ladder）
   家族要素全部到位。SVG 源归档 covers-src/（累计 227 份）。
+
+- **2026-11-21（impeccable 全指令评审 · 第三批 52 款）**：
+  沿第二批同款口径（critique/audit/layout/typeset/clarify/harden 双轨）对第三批 52 款全量评审修复。
+  机器预扫 7 类：焦点环/reduced-motion/过渡/aria-live/canvas 闭合 5 类出生即合规；palLoad 预扫 39 款
+  经逐款甄别实际 0 款需补（文字类 26 款纯 DOM 级联、棋牌类 canvas 款链路完整，预扫启发式过宽）；
+  visibilitychange 甄别后 10 款缺失、仅 old-maid 需动手（AI 步进隐藏暂停/恢复续走，未采用作废让先
+  ——盲抽即整回合，作废会改变平衡）。改动 51 款、dudo-bluff 零改动通过，全部双 gates 复绿，
+  全库 227 款严格模式 0 违规。修复分五类：
+  1. **进度续玩家族 bug（12/13 DOM 牌类，本批最大收获）**：buildActive「lv=0 加载且 Math.min
+     清零 save.lv」致每次打开回第 1 关并抹本地进度（11 款）；freecell/pyramid-sol 为 verify-first
+     槽位错位变体（过关后 save.lv 永不前进且跳回第 1 关）。统一修复为存档续玩 + 坏关回退。
+  2. **baccarat-lite 真 P1 规则 bug ×2**：庄家补牌判定误传玩家总点（应传庄家总点）+ 卫语句
+     `>=6` 死分支（应为 >=7）——「表 vs 引擎全域比对」两路同错故自检未暴露（双实现同错盲区），
+     修复后经独立标准庄家补牌表逐格比对通过。验证器方法论增补：交叉验证只能证明两实现一致，
+     需补「标准锚点用例」一档。
+  3. **延迟进位竞态（12/27 文字类）**：答对后 650-900ms setTimeout 进位回调在重开/选关后仍执行
+     （跳题/错位），统一引入 gen 代际计数守卫；word-burst / typing-race 暂停窗口死帧/刷分补齐。
+  4. **对比度修复 6 款**：synonym-ladder 终点文字、clock-solitaire/spit-race 主色字、char-rain
+     canvas 落字（恒暗墨目标类/恒白干扰类）、antonym-pair 快捷键文案失实、mad-lib 描边宣称补挂类、
+     freecell/pyramid 占位 faint→muted、accordion 序号 faint→muted。
+  5. **stat 水平 padding 4→8px 全批 52 款**；abalone-push 系统性错字 珒→珠（index 8 处 + README）。
+  遗留建议（记录未动手）：synonym-ladder 未上梯级幽灵答案（玩法机制变更需裁定）；breakthrough
+  斜前进空格为刻意变体（三处一致）；antonym-pair 旧缓存需 DB 版本覆盖；3 处无害死代码。
+  浏览器终验（375px 真机 52/52 + typo-hunt 纠错交互实点）全过；typo-hunt 验证器模型错位 P0
+  已随本批修复（见第三批条目）。

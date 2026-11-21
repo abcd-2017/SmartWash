@@ -25,7 +25,7 @@
   header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.plain { color: var(--g-text); }
@@ -262,7 +262,7 @@ function buildActive(){
   ACTIVE=[];
   for(var i=0;i<LEVELS.length;i++)if(verifyLevelData(LEVELS[i]))ACTIVE.push(LEVELS[i]);
   if(ACTIVE.length){
-    if(lv>ACTIVE.length-1)lv=ACTIVE.length-1;
+    lv=Math.min(save.lv,ACTIVE.length-1); /* 续玩：以存档进度为起点 */
     save.lv=Math.min(save.lv,lv);persist();
     loadLevel(lv);
   }
@@ -338,7 +338,7 @@ function syncSaveFromServer(){
 var RANKS=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
 var SUITS=["\u2660","\u2665","\u2666","\u2663"];
 var RED=[false,true,true,false];
-var lv=0,L=null,me=[],ai=[],meTurn=true,busy=false,over=false,won=false,aiPicked={};
+var lv=0,L=null,me=[],ai=[],meTurn=true,busy=false,over=false,won=false,aiPicked={},aiTimer=null,pendingAI=false;
 function $(id){return document.getElementById(id)}
 function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"")}
 function cardName(c){return c===90?"鬼":SUITS[c&3]+RANKS[c>>2]}
@@ -357,6 +357,7 @@ function loadLevel(n){
   me=discardPairs(me).hand;
   ai=discardPairs(ai).hand;
   meTurn=true;busy=false;over=false;won=false;aiPicked={};
+  if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}pendingAI=false;
   save.lv=Math.max(save.lv,lv);persist();
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name+"（"+L.pairs+" 对+鬼）";
   say("发牌完成，成对自动出手。点对手任意暗牌抽一张！");
@@ -375,9 +376,10 @@ function playerDraw(pos){
   if(checkEnd())return;
   meTurn=false;
   render();
-  setTimeout(aiStep,650);
+  aiTimer=setTimeout(aiStep,650);
 }
 function aiStep(){
+  aiTimer=null;
   if(over)return;
   /* AI 盲抽：轻度位置记忆——优先抽本轮没抽过的位置 */
   var idxs=[],i;
@@ -480,6 +482,11 @@ $("ovBtn").addEventListener("click",function(){
     if(lv>=ACTIVE.length-1)loadLevel(0);
     else loadLevel(lv+1);
   } else loadLevel(lv);
+});
+/* S4: 切后台暂停 AI 步进，恢复时续走（回合归属不变） */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){ if(aiTimer){clearTimeout(aiTimer);aiTimer=null;pendingAI=true} }
+  else if(pendingAI&&!over){ pendingAI=false; aiTimer=setTimeout(aiStep,400); }
 });
 window.addEventListener("keydown",function(e){
   var k=e.key;

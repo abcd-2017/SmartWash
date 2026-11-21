@@ -26,7 +26,7 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
@@ -420,12 +420,12 @@ function loadLevel(n){
   L=normalizeLevel(LEVELS[lv]);
   if(!validLevelData(L)){say("关卡数据异常");return;}
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
-  $("lvRule").textContent="先挤 "+L.goal+" 珒出局 · 电脑段位 "+L.skill+(L.first?" · 电脑先手":"");
+  $("lvRule").textContent="先挤 "+L.goal+" 珠出局 · 电脑段位 "+L.skill+(L.first?" · 电脑先手":"");
   $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
   bd=initBd();turn=L.first;sel=[];selDir=-1;capN=[0,0];over=false;won=false;hist=[];hintM=null;moves=0;cursor=30;
   buildDirRow();updStats();resize();drawNow();
   if(turn===1)aiTurn();
-  else say("点己方珠组队（1-3 珒成线），再用方向钮推挤；挤出对方珠得分");
+  else say("点己方珠组队（1-3 珠成线），再用方向钮推挤；挤出对方珠得分");
 }
 function buildDirRow(){
   var row=$("dirRow");row.innerHTML="";
@@ -440,7 +440,7 @@ function buildDirRow(){
 }
 function updStats(){
   $("stCap").textContent=capN[0]+"/"+capN[1];
-  $("stSel").textContent=sel.length?sel.length+" 珒":"-";
+  $("stSel").textContent=sel.length?sel.length+" 珠":"-";
 }
 function snapshot(){hist.push({bd:bd.slice(),cap:capN.slice()});if(hist.length>60)hist.shift()}
 function playerTap(i){
@@ -449,7 +449,7 @@ function playerTap(i){
     var pos=sel.indexOf(i);
     if(pos>=0){sel.splice(pos,1);selDir=-1;updStats();drawNow();return;}
     if(sel.length===0){sel=[i];updStats();drawNow();return;}
-    if(sel.length>=3){say("最多组 3 珒，先点已选珠取消");return;}
+    if(sel.length>=3){say("最多组 3 珠，先点已选珠取消");return;}
     //扩展：须与已选珠相邻且保持共线
     var adj=false;
     for(var d=0;d<6;d++)if(nbIdx(sel[0],d)===i||nbIdx(sel[sel.length-1],d)===i)adj=true;
@@ -457,7 +457,7 @@ function playerTap(i){
     var test=sel.concat([i]);
     var ok=false;
     for(var d2=0;d2<6;d2++)if(isContiguous(test,d2)){ok=true;break;}
-    if(!ok){say("三珒须在同一直线上");return;}
+    if(!ok){say("三珠须在同一直线上");return;}
     sel=test;updStats();drawNow();return;
   }
   say("点自己的深色珠");
@@ -473,7 +473,7 @@ function playerDir(d){
   var cap=execMove(bd,mv,0);
   capN[0]+=cap;moves++;sel=[];selDir=-1;hintM=null;
   updStats();
-  if(cap)say("挤出对方一珒！");
+  if(cap)say("挤出对方一珠！");
   if(capN[0]>=L.goal){endMatch(true);return;}
   turn=1;aiTurn();drawNow();
 }
@@ -513,7 +513,7 @@ function aiTurn(){
     updStats();
     if(capN[1]>=L.goal){endMatch(false);drawNow();return;}
     turn=0;
-    say(cap?"电脑挤出你一珒！":"电脑已走，请行动");
+    say(cap?"电脑挤出你一珠！":"电脑已走，请行动");
     drawNow();
   },450);
 }
@@ -523,7 +523,7 @@ function endMatch(w){
   if(w&&lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
   if(w&&GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:countBd(bd,0)}).catch(function(){});
   $("ovTitle").textContent=w?(lv>=LEVELS.length-1?"全部通关！":"过关！"):"败北";
-  $("ovDesc").innerHTML=w?("你把 "+L.goal+" 珒对方珠挤出了盘"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成")):"对方先达成挤出局数，多用二对一、三对二的推挤。";
+  $("ovDesc").innerHTML=w?("你把 "+L.goal+" 珠对方珠挤出了盘"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成")):"对方先达成挤出局数，多用二对一、三对二的推挤。";
   $("ovBtn").textContent=w?((lv>=LEVELS.length-1)?"回到第 1 关":"下一关"):"再战本关";
   $("overlay").classList.add("show");
 }
@@ -678,7 +678,7 @@ function selfTest(){
     if(a>=0&&nbIdx(a,oppDir(d))!==i)sym=false;
   }
   chk(sym,"邻接对称");
-  //初始局面各 14 珒
+  //初始局面各 14 珠
   var b0=initBd();
   chk(countBd(b0,0)===14&&countBd(b0,1)===14,"初始 14 对 14");
   //sumito 单元：2 推 1（方向 0 = q+1）
