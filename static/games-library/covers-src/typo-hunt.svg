@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9F2E9"/>
+      <stop offset="0.55" stop-color="#D2E7D8"/>
+      <stop offset="1" stop-color="#BBDACC"/>
+    </linearGradient>
+    <radialGradient id="glass" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.2"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E6B4E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#A5CDAF" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#91B99C" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M84 86 h11 M89.5 80.5 v11" stroke-width="3.2"/>
+    <path d="M706 76 h12 M712 70 v12" stroke-width="3.4"/>
+    <path d="M748 240 h9 M752.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M56 300 h9 M60.5 295.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6EE" opacity="0.55">
+    <circle cx="132" cy="140" r="4"/><circle cx="752" cy="170" r="3.4"/><circle cx="64" cy="180" r="3"/><circle cx="120" cy="330" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="430" cy="406" rx="252" ry="22" fill="#5E9478" opacity="0.35"/>
+
+  <!-- 段落卡片（主视觉，签名表情） -->
+  <rect x="190" y="80" width="430" height="290" rx="18" fill="#FBF7E8" stroke="#3A2A1E" stroke-width="9"/>
+  <circle cx="384" cy="120" r="9" fill="#1F1A14"/>
+  <circle cx="424" cy="120" r="9" fill="#1F1A14"/>
+  <path d="M390 140 Q404 152 418 139" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+  <circle cx="372" cy="108" r="9" fill="#FFFFFF" opacity="0.4"/>
+
+  <!-- 段落字块行 -->
+  <g stroke-linejoin="round">
+    <g fill="#EFF0E4" stroke="#C9C2A8" stroke-width="4">
+      <rect x="222" y="168" width="34" height="34" rx="6"/><rect x="264" y="168" width="34" height="34" rx="6"/><rect x="306" y="168" width="34" height="34" rx="6"/><rect x="348" y="168" width="34" height="34" rx="6"/><rect x="390" y="168" width="34" height="34" rx="6"/><rect x="432" y="168" width="34" height="34" rx="6"/><rect x="474" y="168" width="34" height="34" rx="6"/><rect x="516" y="168" width="34" height="34" rx="6"/><rect x="558" y="168" width="34" height="34" rx="6"/>
+      <rect x="222" y="212" width="34" height="34" rx="6"/><rect x="264" y="212" width="34" height="34" rx="6"/><rect x="306" y="212" width="34" height="34" rx="6"/><rect x="348" y="212" width="34" height="34" rx="6"/><rect x="390" y="212" width="34" height="34" rx="6"/><rect x="474" y="212" width="34" height="34" rx="6"/><rect x="516" y="212" width="34" height="34" rx="6"/><rect x="558" y="212" width="34" height="34" rx="6"/>
+      <rect x="222" y="256" width="34" height="34" rx="6"/><rect x="306" y="256" width="34" height="34" rx="6"/><rect x="348" y="256" width="34" height="34" rx="6"/><rect x="390" y="256" width="34" height="34" rx="6"/><rect x="432" y="256" width="34" height="34" rx="6"/><rect x="474" y="256" width="34" height="34" rx="6"/><rect x="516" y="256" width="34" height="34" rx="6"/><rect x="558" y="256" width="34" height="34" rx="6"/>
+      <rect x="222" y="300" width="34" height="34" rx="6"/><rect x="264" y="300" width="34" height="34" rx="6"/><rect x="306" y="300" width="34" height="34" rx="6"/><rect x="348" y="300" width="34" height="34" rx="6"/><rect x="432" y="300" width="34" height="34" rx="6"/><rect x="474" y="300" width="34" height="34" rx="6"/><rect x="516" y="300" width="34" height="34" rx="6"/>
+    </g>
+    <!-- 字块刻痕 -->
+    <g stroke="#8A9A8C" stroke-width="3.4" stroke-linecap="round" fill="none">
+      <path d="M230 178 H258 M230 192 H248"/><path d="M314 178 H342 M314 192 H330"/>
+      <path d="M398 222 H426 M398 236 H414"/><path d="M482 178 H510 M482 192 H500"/>
+      <path d="M566 222 H594 M566 236 H580"/><path d="M314 266 H342 M314 280 H330"/>
+      <path d="M524 266 H552 M524 280 H540"/><path d="M230 310 H258 M230 324 H246"/>
+      <path d="M482 310 H510 M482 324 H500"/>
+    </g>
+    <!-- 错字块（红） -->
+    <rect x="432" y="212" width="34" height="34" rx="6" fill="#F8D8D0" stroke="#C9453C" stroke-width="5"/>
+    <path d="M440 238 L458 220 M458 238 L440 220" stroke="#C9453C" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+    <!-- 已纠正块（绿） -->
+    <rect x="264" y="256" width="34" height="34" rx="6" fill="#DFF0E4" stroke="#2D9B6A" stroke-width="5"/>
+    <path d="M272 274 l8 8 l16 -16" stroke="#2D9B6A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  <!-- 红圈标记 -->
+  <ellipse cx="449" cy="229" rx="36" ry="31" fill="none" stroke="#C9453C" stroke-width="8" transform="rotate(-5 449 229)"/>
+
+  <!-- 右上红笔 -->
+  <g transform="rotate(36 660 108)">
+    <rect x="646" y="60" width="30" height="82" rx="10" fill="#C9453C" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="646" y="140" width="30" height="18" rx="6" fill="#E9C87E" stroke="#3A2A1E" stroke-width="6"/>
+    <path d="M648 158 L674 158 L661 182 Z" fill="#F2B34C" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+  </g>
+  <!-- 右下小放大镜（副元素） -->
+  <g>
+    <path d="M628 356 L668 396" stroke="#3A2A1E" stroke-width="18" stroke-linecap="round" fill="none"/>
+    <path d="M628 356 L668 396" stroke="#A87944" stroke-width="11" stroke-linecap="round" fill="none"/>
+    <circle cx="606" cy="334" r="44" fill="url(#glass)" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M584 316 Q600 304 620 308" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

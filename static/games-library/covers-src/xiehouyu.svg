@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E3EFE8"/>
+      <stop offset="0.55" stop-color="#C7E1D1"/>
+      <stop offset="1" stop-color="#ADD5C0"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E6B4E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#98C3A8" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#84AF9A" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M86 92 h11 M91.5 86.5 v11" stroke-width="3.2"/>
+    <path d="M704 84 h12 M710 78 v12" stroke-width="3.4"/>
+    <path d="M742 266 h9 M746.5 261.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M60 262 h9 M64.5 257.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6EE" opacity="0.55">
+    <circle cx="140" cy="150" r="4"/><circle cx="746" cy="160" r="3.4"/><circle cx="66" cy="190" r="3"/><circle cx="700" cy="330" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="404" rx="290" ry="22" fill="#5E9478" opacity="0.35"/>
+
+  <!-- 破折号连接线（鼓后穿过） -->
+  <path d="M278 236 H522" stroke="#3A2A1E" stroke-width="14" stroke-linecap="round" stroke-dasharray="30 20" fill="none"/>
+
+  <!-- 两半歇后语卡 -->
+  <g stroke-linejoin="round">
+    <rect x="100" y="140" width="172" height="180" rx="16" fill="#FBF7E8" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M122 176 H250 M122 204 H222 M122 232 H250 M122 260 H206" stroke="#B9CDBC" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <circle cx="122" cy="160" r="9" fill="#FFFFFF" opacity="0.4"/>
+    <rect x="528" y="140" width="172" height="180" rx="16" fill="#F6EFDB" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M550 176 H678 M550 204 H650 M550 232 H678 M550 260 H634" stroke="#B9CDBC" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <circle cx="550" cy="160" r="9" fill="#FFFFFF" opacity="0.4"/>
+    <path d="M650 296 l12 12 l24 -24" stroke="#17734A" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- 大鼓（主视觉，签名表情） -->
+  <g stroke-linejoin="round">
+    <ellipse cx="400" cy="358" rx="96" ry="20" fill="#7A2B26" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="304" y="238" width="192" height="122" rx="24" fill="#C9453C" stroke="#3A2A1E" stroke-width="9"/>
+    <ellipse cx="400" cy="238" rx="96" ry="24" fill="#E9C87E" stroke="#3A2A1E" stroke-width="8"/>
+    <g fill="#E9C87E" stroke="#3A2A1E" stroke-width="4">
+      <circle cx="318" cy="272" r="6"/><circle cx="318" cy="304" r="6"/><circle cx="318" cy="336" r="6"/>
+      <circle cx="482" cy="272" r="6"/><circle cx="482" cy="304" r="6"/><circle cx="482" cy="336" r="6"/>
+    </g>
+    <!-- 签名表情（鼓身） -->
+    <circle cx="370" cy="290" r="10" fill="#1F1A14"/>
+    <circle cx="430" cy="290" r="10" fill="#1F1A14"/>
+    <path d="M378 314 Q400 330 422 313" stroke="#1F1A14" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <circle cx="356" cy="276" r="10" fill="#FFFFFF" opacity="0.4"/>
+    <path d="M356 316 H444" stroke="#8A2A24" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+
+  <!-- 鼓槌 -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M496 160 L600 224" stroke="#3A2A1E" stroke-width="18"/>
+    <path d="M496 160 L600 224" stroke="#A87944" stroke-width="11"/>
+    <path d="M556 136 L648 190" stroke="#3A2A1E" stroke-width="18"/>
+    <path d="M556 136 L648 190" stroke="#A87944" stroke-width="11"/>
+  </g>
+  <circle cx="606" cy="228" r="14" fill="#E9C87E" stroke="#3A2A1E" stroke-width="6"/>
+  <circle cx="654" cy="194" r="14" fill="#E9C87E" stroke="#3A2A1E" stroke-width="6"/>
+  <!-- 敲击星 -->
+  <path d="M282 130 h12 M288 124 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none" opacity="0.8"/>
+  <path d="M528 106 h10 M533 101 v10" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E4EFE4"/>
+      <stop offset="0.55" stop-color="#C9E0CB"/>
+      <stop offset="1" stop-color="#AFD5B8"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E6B4E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#9FC4A2" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#8BB091" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M82 88 h11 M87.5 82.5 v11" stroke-width="3.2"/>
+    <path d="M708 78 h12 M714 72 v12" stroke-width="3.4"/>
+    <path d="M744 264 h9 M748.5 259.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M54 260 h9 M58.5 255.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6EE" opacity="0.55">
+    <circle cx="130" cy="140" r="4"/><circle cx="742" cy="140" r="3.4"/><circle cx="62" cy="190" r="3"/><circle cx="110" cy="320" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影与土丘 -->
+  <ellipse cx="430" cy="404" rx="290" ry="22" fill="#5E9478" opacity="0.35"/>
+  <ellipse cx="430" cy="392" rx="310" ry="26" fill="#8FB794" opacity="0.5"/>
+
+  <!-- 三块演变石牌（主视觉，签名表情在今字牌） -->
+  <g stroke-linejoin="round">
+    <!-- 甲骨牌 -->
+    <rect x="118" y="168" width="152" height="184" rx="24" fill="#D8D2C0" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="132" y="182" width="124" height="156" rx="16" fill="none" stroke="#B5AC94" stroke-width="5"/>
+    <circle cx="194" cy="232" r="26" fill="none" stroke="#4A4638" stroke-width="8"/>
+    <g stroke="#4A4638" stroke-width="7" stroke-linecap="round">
+      <path d="M194 194 V206"/><path d="M194 258 V270"/><path d="M156 232 H168"/><path d="M220 232 H232"/>
+    </g>
+    <path d="M162 300 H226" stroke="#4A4638" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <circle cx="148" cy="196" r="9" fill="#FFFFFF" opacity="0.35"/>
+
+    <!-- 金文牌 -->
+    <rect x="330" y="148" width="168" height="204" rx="26" fill="#CFC8B4" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="346" y="164" width="136" height="172" rx="18" fill="none" stroke="#ABA18A" stroke-width="5"/>
+    <path d="M386 240 Q414 218 442 240 Q414 262 386 240 Z" fill="none" stroke="#3E3A2E" stroke-width="8" stroke-linejoin="round"/>
+    <circle cx="414" cy="240" r="9" fill="#3E3A2E"/>
+    <g stroke="#3E3A2E" stroke-width="7" stroke-linecap="round">
+      <path d="M386 292 H442"/><path d="M386 312 H424"/><path d="M414 196 V216"/>
+    </g>
+    <circle cx="360" cy="176" r="9" fill="#FFFFFF" opacity="0.35"/>
+
+    <!-- 今字牌（签名表情） -->
+    <rect x="562" y="126" width="182" height="226" rx="28" fill="#E8E3D4" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="578" y="142" width="150" height="194" rx="20" fill="none" stroke="#C0B8A0" stroke-width="5"/>
+    <circle cx="622" cy="188" r="9" fill="#1F1A14"/>
+    <circle cx="666" cy="188" r="9" fill="#1F1A14"/>
+    <path d="M628 210 Q644 224 658 209" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+    <circle cx="612" cy="176" r="8" fill="#FFFFFF" opacity="0.5"/>
+    <g stroke="#4A4638" stroke-width="7" stroke-linecap="round">
+      <path d="M602 252 H686"/><path d="M602 276 H668"/><path d="M602 300 H686"/>
+    </g>
+    <path d="M656 326 H686" stroke="#4A4638" stroke-width="7" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- 演变箭头 -->
+  <g stroke-linecap="round">
+    <path d="M284 268 H316" stroke="#17734A" stroke-width="11" fill="none"/>
+    <path d="M312 252 L340 268 L312 284 Z" fill="#17734A" stroke="#17734A" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M512 262 H544" stroke="#17734A" stroke-width="11" fill="none"/>
+    <path d="M540 246 L568 262 L540 278 Z" fill="#17734A" stroke="#17734A" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+  <!-- 今字牌亮星 -->
+  <path d="M704 108 h12 M710 102 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none" opacity="0.8"/>
+  <path d="M520 110 h10 M525 105 v10" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.6"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

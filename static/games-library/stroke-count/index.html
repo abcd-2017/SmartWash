@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>笔画竞猜</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.bad { color: var(--g-danger); }
+  .qwrap { background: var(--g-surface); border-radius: var(--g-radius-inner); padding: 16px 10px 12px; box-shadow: var(--g-shadow); margin-bottom: 10px; }
+  .qline { display: flex; gap: 10px; justify-content: center; }
+  .zcard {
+    flex: 1; max-width: 170px; min-height: 96px;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 36px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .zcard:active { opacity: .8; }
+  .zcard.right { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-success); }
+  .zcard.wrong { box-shadow: inset 0 0 0 2px var(--g-danger); color: var(--g-danger); }
+  .zcard.dim { opacity: .4; }
+  .bar { height: 8px; border-radius: 999px; background: var(--g-surface2); margin-top: 12px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 100%; border-radius: 999px; background: var(--g-water); }
+  .qtag { text-align: center; font-size: 12px; color: var(--g-muted); margin-top: 8px; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">进度</span><span class="val" id="stQ">1/4</span></div>
+    <div class="stat"><span class="label">失误</span><span class="val" id="stErr">0</span></div>
+  </div>
+  <div class="qwrap">
+    <div class="qline" id="qline">
+      <button class="zcard" id="zA" aria-label="左边的字">山</button>
+      <button class="zcard" id="zB" aria-label="右边的字">海</button>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+    <p class="qtag">8 秒内选出笔画更多的字</p>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite">限时 8 秒：哪个字笔画多？</p>
+  <div class="tools">
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：1 / 2 选字 · 每关 4 题 · 失误 2 次本关重开 · 切后台自动暂停 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡：40 关 × 4 题，每题 [字A, 笔画A, 字B, 笔画B]（笔画差 ≥2，答案唯一） ---------- */
+var GAME_KEY="stroke-count",SAVE_KEY="sw.strokecount.v1";
+var DEFAULT_LEVELS=[
+{name:"笔画·01",qs:[["山",3,"海",10],["口",3,"湖",12],["人",2,"象",11],["木",4,"雷",13]],difficulty:1},
+{name:"笔画·02",qs:[["马",3,"虎",8],["火",4,"草",9],["云",4,"树",9],["田",5,"跑",13]],difficulty:1},
+{name:"笔画·03",qs:[["土",3,"春",9],["水",4,"秋",9],["石",5,"夏",10],["目",5,"晚",11]],difficulty:1},
+{name:"笔画·04",qs:[["手",4,"眼",11],["口",3,"蛇",11],["日",4,"星",9],["月",4,"雪",11]],difficulty:1},
+{name:"笔画·05",qs:[["鸟",5,"猫",11],["鱼",8,"虫",6],["马",3,"鹅",12],["羊",6,"猪",11]],difficulty:1},
+{name:"笔画·06",qs:[["牛",4,"狼",10],["犬",4,"狗",8],["车",4,"蛋",11],["龙",5,"鸭",10]],difficulty:1},
+{name:"笔画·07",qs:[["白",5,"黑",12],["红",6,"绿",11],["灰",6,"蓝",13],["红",6,"紫",12]],difficulty:2},
+{name:"笔画·08",qs:[["大",3,"矮",13],["小",3,"高",10],["多",6,"少",4],["快",7,"慢",14]],difficulty:2},
+{name:"笔画·09",qs:[["长",4,"短",12],["细",8,"粗",11],["厚",9,"薄",16],["深",11,"浅",8]],difficulty:2},
+{name:"笔画·10",qs:[["一",1,"林",8],["二",2,"森",12],["三",3,"碗",13],["十",2,"筷",13]],difficulty:2},
+{name:"笔画·11",qs:[["人",2,"嘴",16],["口",3,"鼻",14],["目",5,"眉",9],["手",4,"腿",13]],difficulty:2},
+{name:"笔画·12",qs:[["心",4,"椅",12],["木",4,"窗",12],["毛",4,"伞",6],["车",4,"嘴",16]],difficulty:2},
+{name:"笔画·13",qs:[["天",4,"箱",14],["云",4,"锅",12],["雨",8,"伞",6],["雪",11,"勺",3]],difficulty:2},
+{name:"笔画·14",qs:[["夏",10,"冬",5],["早",6,"晚",11],["分",4,"秒",9],["年",6,"月",4]],difficulty:3},
+{name:"笔画·15",qs:[["走",7,"跑",13],["坐",7,"站",10],["立",5,"跳",13],["来",7,"去",5]],difficulty:3},
+{name:"笔画·16",qs:[["吃",6,"睡",13],["喝",12,"打",5],["看",9,"写",5],["说",9,"唱",11]],difficulty:3},
+{name:"笔画·17",qs:[["好",6,"梦",11],["快",7,"慢",14],["高",10,"矮",13],["少",4,"满",13]],difficulty:3},
+{name:"笔画·18",qs:[["书",4,"课",10],["纸",7,"笔",10],["字",6,"画",8],["本",5,"读",10]],difficulty:3},
+{name:"笔画·19",qs:[["鸡",7,"鸭",10],["鸟",5,"鹅",12],["鱼",8,"蛇",11],["虫",6,"蜂",13]],difficulty:3},
+{name:"笔画·20",qs:[["蝶",15,"蚁",9],["蛙",12,"龟",7],["狐",8,"熊",14],["狮",9,"鹿",11]],difficulty:3},
+{name:"笔画·21",qs:[["梅",11,"兰",5],["松",8,"菊",11],["桃",10,"李",7],["果",8,"荷",10]],difficulty:3},
+{name:"笔画·22",qs:[["桥",10,"灯",6],["桌",10,"床",7],["椅",12,"门",3],["窗",12,"刀",2]],difficulty:4},
+{name:"笔画·23",qs:[["锅",12,"勺",3],["筷",13,"舟",6],["伞",6,"扇",10],["钟",9,"锁",12]],difficulty:4},
+{name:"笔画·24",qs:[["花",7,"草",9],["树",9,"叶",5],["苗",8,"荷",10],["枫",8,"桂",10]],difficulty:4},
+{name:"笔画·25",qs:[["波",8,"浪",10],["河",8,"海",10],["江",6,"湖",12],["沙",7,"洞",9]],difficulty:4},
+{name:"笔画·26",qs:[["石",5,"岛",7],["川",3,"林",8],["谷",7,"森",12],["尘",6,"崖",11]],difficulty:4},
+{name:"笔画·27",qs:[["甜",11,"苦",8],["酸",14,"咸",9],["香",9,"淡",11],["甜",11,"辣",14]],difficulty:4},
+{name:"笔画·28",qs:[["冷",7,"热",10],["暖",13,"凉",10],["明",8,"暗",13],["晴",12,"阴",6]],difficulty:4},
+{name:"笔画·29",qs:[["音",9,"歌",14],["琴",12,"弦",8],["鼓",13,"号",5],["音",9,"鼓",13]],difficulty:5},
+{name:"笔画·30",qs:[["哥",10,"弟",7],["姐",8,"奶",5],["爸",8,"妈",6],["爷",6,"婆",11]],difficulty:5},
+{name:"笔画·31",qs:[["星",9,"月",4],["云",4,"雷",13],["风",4,"雨",8],["雪",11,"霜",17]],difficulty:5},
+{name:"笔画·32",qs:[["金",8,"银",11],["铜",11,"锡",13],["铁",10,"木",4],["金",8,"铁",10]],difficulty:5},
+{name:"笔画·33",qs:[["马",3,"羊",6],["龙",5,"蛇",11],["兔",8,"鼠",13],["龙",5,"虎",8]],difficulty:5},
+{name:"笔画·34",qs:[["笑",10,"叫",5],["吵",7,"喊",12],["问",6,"答",12],["叫",5,"哭",10]],difficulty:5},
+{name:"笔画·35",qs:[["早",6,"晚",11],["夜",8,"年",6],["冬",5,"夏",10],["夜",8,"秋",9]],difficulty:5},
+{name:"笔画·36",qs:[["雨",8,"雪",11],["雷",13,"电",5],["风",4,"雾",13],["云",4,"霞",17]],difficulty:5},
+{name:"笔画·37",qs:[["红",6,"黑",12],["绿",11,"灰",6],["蓝",13,"黄",11],["紫",12,"橙",16]],difficulty:6},
+{name:"笔画·38",qs:[["一",1,"三",3],["二",2,"四",5],["五",4,"九",2],["五",4,"百",6]],difficulty:6},
+{name:"笔画·39",qs:[["门",3,"窗",12],["弓",3,"盾",9],["刀",2,"矛",5],["车",4,"帆",6]],difficulty:6},
+{name:"笔画·40",qs:[["东",5,"南",9],["里",7,"外",5],["前",9,"后",6],["川",3,"原",10]],difficulty:6}
+];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+
+/* ---------- 独立验证器：结构完整性（答案唯一性由笔画差 ≥2 保证） ---------- */
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Array.isArray(d.qs)||d.qs.length<1||d.qs.length>8)return false;
+  var seen={};
+  for(var i=0;i<d.qs.length;i++){
+    var q=d.qs[i];
+    if(!Array.isArray(q)||q.length!==4)return false;
+    var a=q[0],na=q[1],b=q[2],nb=q[3];
+    if(typeof a!=="string"||a.length!==1||typeof b!=="string"||b.length!==1)return false;
+    if(!Number.isInteger(na)||na<1||na>36)return false;
+    if(!Number.isInteger(nb)||nb<1||nb>36)return false;
+    if(a===b)return false;
+    if(na===nb)return false;                 // 禁平局
+    if(Math.abs(na-nb)<2)return false;       // 差 ≥2，肉眼可辨、答案无争议
+    var key=a<b?a+b:b+a;
+    if(seen[key])return false;
+    seen[key]=1;
+  }
+  return true;
+}
+function auditAll(){
+  var bad=[];
+  for(var i=0;i<LEVELS.length;i++)if(!validLevelData(LEVELS[i]))bad.push(i+1);
+  return bad;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d)||seen[d.name])return null;
+    seen[d.name]=1;
+    list.push({name:d.name,qs:d.qs.map(function(q){return q.slice()}),difficulty:Number.isInteger(d.difficulty)?d.difficulty:5});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var TIME_LIMIT=8000;
+var lv=save.lv,L=null,qi=0,errors=0,done=false,locked=false;
+var deadline=0,pausedLeft=0,paused=false;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  qi=0;errors=0;done=false;locked=false;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="失误 "+2+" 次重开";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  renderQ();updStats();
+  say("限时 8 秒：哪个字笔画多？");
+}
+function renderQ(){
+  locked=false;
+  var q=L.qs[qi];
+  $("zA").textContent=q[0];$("zB").textContent=q[2];
+  $("zA").className="zcard";$("zB").className="zcard";
+  $("stQ").textContent=(qi+1)+"/"+L.qs.length;
+  deadline=Date.now()+TIME_LIMIT;
+  $("barFill").style.width="100%";
+}
+function updStats(){
+  var e=$("stErr");e.textContent=errors;
+  e.className="val"+(errors>0?" bad":"");
+}
+function tick(){
+  if(done||paused||locked)return;
+  var left=deadline-Date.now();
+  if(left<=0){timeout();return;}
+  $("barFill").style.width=Math.max(0,left/TIME_LIMIT*100)+"%";
+}
+function timeout(){
+  locked=true;
+  reveal();
+  errors++;updStats();
+  say("超时！笔画多的字已标绿");
+  afterJudge();
+}
+function reveal(){
+  var q=L.qs[qi],ansIdx=q[1]>q[3]?0:1;
+  $("zA").classList.add(q[1]>q[3]?"right":"dim");
+  $("zB").classList.add(q[3]>q[1]?"right":"dim");
+  return ansIdx;
+}
+function answer(idx){
+  if(done||locked||paused)return;
+  locked=true;
+  var q=L.qs[qi],right=q[1]>q[3]?0:1;
+  if(idx===right){
+    $("zA").classList.add(idx===0?"right":"dim");
+    $("zB").classList.add(idx===1?"right":"dim");
+    say("答对！下一题");
+    setTimeout(nextQ,700);
+  }else{
+    errors++;updStats();
+    var el=$(idx===0?"zA":"zB");
+    el.classList.add("wrong");
+    $("zA").classList.add(q[1]>q[3]?"right":"dim");
+    $("zB").classList.add(q[3]>q[1]?"right":"dim");
+    say("不对！笔画多的字已标绿");
+    afterJudge();
+  }
+}
+function afterJudge(){
+  if(errors>=2){
+    setTimeout(function(){
+      done=true;
+      $("ovTitle").textContent="失误两次";
+      $("ovDesc").innerHTML="本关 4 题，失误 2 次需重开<br>再读一读笔画规则：一笔一画都要数上";
+      $("ovBtn").textContent="重开本关";
+      $("overlay").classList.add("show");
+    },900);
+  }else{
+    setTimeout(nextQ,900);
+  }
+}
+function nextQ(){
+  if(done)return;
+  qi++;
+  if(qi>=L.qs.length)winLevel();
+  else{renderQ();say("限时 8 秒：哪个字笔画多？");}
+}
+function winLevel(){
+  done=true;
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:errors}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
+  $("ovDesc").innerHTML="失误 "+errors+" 次"+(errors===0?"（又快又准）":"")+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);$("overlay").classList.remove("show");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+$("zA").addEventListener("click",function(){answer(0)});
+$("zB").addEventListener("click",function(){answer(1)});
+$("btnLv").addEventListener("click",openLevelSelect);
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(done&&errors>=2){loadLevel(lv);return;}
+  if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+  else{lv++;loadLevel(lv)}
+});
+window.addEventListener("keydown",function(e){
+  if(e.key==="1"){answer(0);e.preventDefault();}
+  else if(e.key==="2"){answer(1);e.preventDefault();}
+  else if(e.key==="Enter"&&$("overlay").classList.contains("show")){$("ovBtn").click();e.preventDefault();}
+});
+/* 计时 rAF + 切后台暂停（计时基点平移） */
+function loop(){
+  requestAnimationFrame(loop);
+  tick();
+}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){
+    if(!done&&!locked&&!paused){pausedLeft=deadline-Date.now();paused=true;}
+  }else{
+    if(paused){deadline=Date.now()+Math.max(0,pausedLeft);paused=false;}
+  }
+});
+/* ---------- 启动 ---------- */
+loadLevel(save.lv);
+var badLv=auditAll();
+if(badLv.length)say("警告：内嵌验证器发现异常关卡 "+badLv.join(","));
+loop();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

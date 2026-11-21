@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A4CDA8"/>
+      <stop offset="0.55" stop-color="#7FB385"/>
+      <stop offset="1" stop-color="#639E6C"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2A4A30" stop-opacity="0.3"/>
+    </radialGradient>
+    <path id="koma" d="M0 -25 L20 -12 L16 25 L-16 25 L-20 -12 Z"/>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#578C5F" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#4A7C52" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 72 h11 M101.5 66.5 v11" stroke-width="3.2"/>
+    <path d="M712 70 h12 M718 64 v12" stroke-width="3.4"/>
+    <path d="M60 190 h9 M64.5 185.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 210 h9 M748.5 205.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF7EE" opacity="0.5">
+    <circle cx="160" cy="120" r="4"/><circle cx="648" cy="110" r="3.4"/><circle cx="52" cy="250" r="3"/><circle cx="742" cy="270" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="414" rx="290" ry="18" fill="#2A4A30" opacity="0.35"/>
+
+  <!-- 5×5 将棋盘 -->
+  <rect x="250" y="96" width="300" height="300" fill="#F0E6C0" stroke="#3A2A1E" stroke-width="8"/>
+  <g stroke="#B8A470" stroke-width="4">
+    <path d="M310 96 V396 M370 96 V396 M430 96 V396 M490 96 V396"/>
+    <path d="M250 156 H550 M250 216 H550 M250 276 H550 M250 336 H550"/>
+  </g>
+
+  <!-- 敌方驹（尖朝下） -->
+  <g fill="#E8D9A8" stroke="#3A2A1E" stroke-width="5.5">
+    <use href="#koma" transform="translate(280 126) rotate(180)"/>
+    <use href="#koma" transform="translate(400 126) rotate(180)"/>
+    <use href="#koma" transform="translate(520 126) rotate(180)"/>
+    <use href="#koma" transform="translate(340 186) rotate(180)"/>
+    <use href="#koma" transform="translate(460 186) rotate(180)"/>
+  </g>
+  <g stroke="#B8A470" stroke-width="3.5" stroke-linecap="round">
+    <path d="M273 122 H287 M393 122 H407 M513 122 H527"/>
+    <path d="M333 182 H347 M453 182 H467"/>
+  </g>
+
+  <!-- 升变金驹 -->
+  <use href="#koma" transform="translate(400 246) scale(1.15)" fill="#F2C14E" stroke="#3A2A1E" stroke-width="5"/>
+
+  <!-- 我方驹（尖朝上） -->
+  <g fill="#E8D9A8" stroke="#3A2A1E" stroke-width="5.5">
+    <use href="#koma" transform="translate(280 306)"/>
+    <use href="#koma" transform="translate(520 306)"/>
+    <use href="#koma" transform="translate(340 366)"/>
+    <use href="#koma" transform="translate(460 366)"/>
+  </g>
+  <g stroke="#B8A470" stroke-width="3.5" stroke-linecap="round">
+    <path d="M273 308 H287 M513 308 H527"/>
+    <path d="M333 368 H347 M453 368 H467"/>
+  </g>
+
+  <!-- 持驹台 -->
+  <g>
+    <rect x="566" y="298" width="140" height="96" rx="12" fill="#E0D0A0" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#koma" transform="translate(600 344) rotate(-5) scale(0.92)" fill="#E8D9A8" stroke="#3A2A1E" stroke-width="5"/>
+    <use href="#koma" transform="translate(638 340) rotate(3) scale(0.92)" fill="#E8D9A8" stroke="#3A2A1E" stroke-width="5"/>
+    <use href="#koma" transform="translate(674 346) rotate(-3) scale(0.92)" fill="#E8D9A8" stroke="#3A2A1E" stroke-width="5"/>
+  </g>
+
+  <!-- 前景大驹（签名表情，王将） -->
+  <g transform="translate(196 318)">
+    <path d="M0 -58 L46 -28 L37 58 L-37 58 L-46 -28 Z" fill="#E8D9A8" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+    <circle cx="0" cy="-30" r="9" fill="#F2C14E" stroke="#3A2A1E" stroke-width="4"/>
+    <circle cx="-15" cy="0" r="9" fill="#1F1A14"/>
+    <circle cx="15" cy="0" r="9" fill="#1F1A14"/>
+    <circle cx="-12" cy="-3" r="3.4" fill="#FFFFFF"/>
+    <circle cx="18" cy="-3" r="3.4" fill="#FFFFFF"/>
+    <path d="M-11 22 Q0 32 11 20" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+    <circle cx="-24" cy="-38" r="9" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <!-- 打入轨迹 -->
+  <path d="M250 240 Q200 250 214 278" stroke="#F2FBF4" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="3 9" fill="none" opacity="0.85"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

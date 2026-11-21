@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>量词补位</title>
+<style>
+  /*token:GAME-THEME.md §2（全部 UI 壳走 token）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.bad { color: var(--g-danger); }
+  .stem {
+    background: var(--g-surface); border-radius: var(--g-radius-inner);
+    padding: 16px 14px; text-align: center; margin-bottom: 10px;
+    box-shadow: var(--g-shadow);
+  }
+  .stem .tag { display: block; font-size: 12px; color: var(--g-muted); margin-bottom: 6px; }
+  .stem .line { font-size: 18px; font-weight: 700; line-height: 1.8; }
+  .stem .line b { color: var(--g-warning); letter-spacing: 2px; }
+  .opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .opt {
+    min-height: 48px; padding: 10px 12px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 0 var(--g-border); text-align: center;
+  }
+  .opt:active { opacity: .8; }
+  .opt.right { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-success); }
+  .opt.wrong { background: var(--g-surface2); color: var(--g-danger); box-shadow: inset 0 0 0 2px var(--g-danger); text-decoration: line-through; }
+  .opt:disabled { cursor: default; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（注意：动效层指令，不受 §4 主题层禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">进度</span><span class="val" id="stQ">1/3</span></div>
+    <div class="stat"><span class="label">失误</span><span class="val" id="stErr">0</span></div>
+  </div>
+  <div class="stem">
+    <span class="tag" id="qTag">量词 · 第 1 / 3 题</span>
+    <div class="line" id="qLine">爷爷家养了一<b>___</b>大白马</div>
+  </div>
+  <div class="opts" id="opts"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">选出句子里该用的量词</p>
+  <div class="tools">
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：1-4 选量词 · R 重开 · 按最常用的规范搭配为准 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 量词题库：120 条 [挖空句, 正确量词]（强搭配语境，逐条人工校对） ---------- */
+var GAME_KEY="measure-fill",SAVE_KEY="sw.measurefill.v1";
+var ITEMS=[
+["爷爷家养了一___大白马","匹"],
+["牛棚里关着一___老黄牛","头"],
+["树林里窜出一___狐狸","只"],
+["河里游着一___金鱼","条"],
+["远处横着一___石桥","座"],
+["花瓶里插着一___红花","朵"],
+["院子里种着一___桂花树","棵"],
+["书架上放着一___故事书","本"],
+["厨房里挂着一___菜刀","把"],
+["桌上铺着一___白纸","张"],
+["笔筒里插着一___毛笔","支"],
+["柜子里挂着一___外衣","件"],
+["鞋架上摆着一___运动鞋","双"],
+["头上戴着一___草帽","顶"],
+["盘子里放着一___蛋糕","块"],
+["他端起一___热茶","杯"],
+["灶台上放着一___米饭","碗"],
+["篮子里装着一___苹果","个"],
+["碗里剩着几___小米","粒"],
+["夜空中闪着一___明星","颗"],
+["天上挂着一___明月","轮"],
+["天边挂着一___新月","弯"],
+["天上横着一___彩虹","道"],
+["上午下了一___大雨","场"],
+["迎面吹来一___凉风","阵"],
+["远处传来一___雷声","声"],
+["山坡上是一___松林","片"],
+["街口盖起了一___高楼","栋"],
+["学校旁有一___新教室","间"],
+["桌上摆着一___电脑","台"],
+["口袋里装着一___手机","部"],
+["墙上挂着一___山水画","幅"],
+["课本里选了一___古诗","首"],
+["报上发表了一___文章","篇"],
+["信箱里投着一___信","封"],
+["屋里点着一___油灯","盏"],
+["旗杆上飘着一___红旗","面"],
+["墙上开着一___窗户","扇"],
+["院子外砌着一___矮墙","堵"],
+["村口有一___老井","口"],
+["站台上停着一___火车","列"],
+["港口停着一___轮船","艘"],
+["手里捧着一___鲜花","束"],
+["架上挂着一___葡萄","串"],
+["盘子里滴着几___油","滴"],
+["河面上浮着一___薄冰","层"],
+["老师交给我们一___任务","项"],
+["黑板上抄着一___数学题","道"],
+["他唱了一___山歌","支"],
+["他吃了一___快餐","顿"],
+["我们开了一___班会","次"],
+["他说了一___话很有道理","席"],
+["山坡上跑着一___羊群","群"],
+["墙角住着一___蚂蚁","窝"],
+["沙漠里立着一___骆驼","峰"],
+["楼顶竖着一___旗杆","根"],
+["门口停着一___自行车","辆"],
+["天上飞着一___飞机","架"],
+["展厅里摆着一___坦克","辆"],
+["军营里开出一___大炮","门"],
+["车库里停着一___面包车","辆"],
+["桌上放着一___剪刀","把"],
+["他写了一___毛笔字","幅"],
+["老师出了一___难题","道"],
+["他得了一___奖励","份"],
+["他提出了一___建议","条"],
+["这是一___重要的会议","次"],
+["山上有一___猛虎","只"],
+["池塘里蹲着一___青蛙","只"],
+["树上落着一___小鸟","只"],
+["海里跃出一___海豚","头"],
+["草原上跑着一___骏马","匹"],
+["山崖上盘旋着一___雄鹰","只"],
+["湖面飞着一___白鹭","只"],
+["屋后结着一___大南瓜","个"],
+["地里长着一___大白菜","棵"],
+["架上结着一___黄瓜","根"],
+["菜市场卖着一___大冬瓜","个"],
+["篮里装着一___丝瓜","根"],
+["盘里放着一___红辣椒","个"],
+["地里种着一___大蒜","头"],
+["灶边放着一___生姜","块"],
+["林下长着一___蘑菇","朵"],
+["篮里晒着一___香菇","朵"],
+["早上喝了一___豆浆","杯"],
+["冰箱里取出一___酸奶","盒"],
+["面包上抹着一___黄油","层"],
+["抽屉里找出一___旧报纸","张"],
+["邮局订了一___杂志","份"],
+["墙上贴着一___课程表","张"],
+["早读时背了一___课文","段"],
+["他解出了一___难题","道"],
+["老师提了一___问题","个"],
+["卷面上写着一___满分","个"],
+["他得了一___小红花","朵"],
+["妈妈给了我一___拥抱","个"],
+["会上表彰了一___先进班组","个"],
+["台下响起一___鼓励","声"],
+["妈妈过一___生日","个"],
+["过年了发一___红包","个"],
+["农田里跑着一___拖拉机","台"],
+["车间里造着一___新机器","台"],
+["桌上放着一___小闹钟","只"],
+["手腕上戴着一___手表","块"],
+["书桌上亮着一___台灯","盏"],
+["他戴着一___近视眼镜","副"],
+["下雨天撑着一___雨伞","把"],
+["文具盒里躺着一___橡皮","块"],
+["盒里装着一___直尺","把"],
+["书包里放着一___字帖","本"],
+["他打翻了一___墨水","滴"],
+["桌上放着一___信封","个"],
+["信封上贴着一___邮票","枚"],
+["报亭卖着一___晚报","份"],
+["书架上排着一___杂志","本"],
+["早读时背了一___古诗","段"],
+["他答对了一___难题","道"],
+["操场传来一___哨声","声"],
+["农夫流了一___汗水","身"],
+["头上冒出一___汗珠","颗"],
+["林间洒下一___阳光","缕"],
+["空中飘着一___白云","朵"],
+["山腰绕着一___青雾","层"],
+["桌上摆着一___点心","盘"]
+];
+var MW_POOL=["匹","头","只","条","座","朵","棵","本","把","张","支","件","双","顶","块","杯","碗","个","粒","颗","轮","弯","道","场","阵","声","片","栋","间","台","部","幅","首","篇","封","盏","面","扇","堵","口","列","艘","束","串","滴","层","份","项","顿","次","席","群","窝","峰","根","辆","架","门","枚","段","身","盘","副"];
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/* ---------- 关卡生成器：固定种子洗题池，40 关 × 3 题，干扰量词从池抽 ---------- */
+function genLevels(){
+  var pool=[];
+  for(var i=0;i<ITEMS.length;i++)pool.push(i);
+  var r0=mulberry32(838383);
+  for(var s=pool.length-1;s>0;s--){var j=Math.floor(r0()*(s+1)),t=pool[s];pool[s]=pool[j];pool[j]=t;}
+  var list=[];
+  for(var li=0;li<40;li++){
+    var qs=[];
+    for(var q=0;q<3;q++){
+      var it=ITEMS[pool[(li*3+q)%pool.length]];
+      var r2=mulberry32(18000+li*13+q*3);
+      var opts=[it[1]],guard=0;
+      while(opts.length<(li<20?3:4)&&guard++<150){
+        var w=MW_POOL[Math.floor(r2()*MW_POOL.length)];
+        if(opts.indexOf(w)<0)opts.push(w);
+      }
+      for(var m=opts.length-1;m>0;m--){var mj=Math.floor(r2()*(m+1)),tm=opts[m];opts[m]=opts[mj];opts[mj]=tm;}
+      qs.push({s:it[0],opts:opts,ok:opts.indexOf(it[1])});
+    }
+    list.push({name:"量词·"+(li+1<10?"0":"")+(li+1),qs:qs,difficulty:Math.min(6,Math.floor(li/7)+1)});
+  }
+  return list;
+}
+var DEFAULT_LEVELS=genLevels();
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+/* ---------- 独立验证器：结构完整性 ---------- */
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Array.isArray(d.qs)||d.qs.length<1||d.qs.length>6)return false;
+  for(var i=0;i<d.qs.length;i++){
+    var q=d.qs[i];
+    if(!q||typeof q!=="object")return false;
+    if(typeof q.s!=="string"||q.s.indexOf("___")<0||q.s.length>30)return false;
+    if(!Array.isArray(q.opts)||q.opts.length<3||q.opts.length>4)return false;
+    if(!Number.isInteger(q.ok)||q.ok<0||q.ok>=q.opts.length)return false;
+    var seen={};
+    for(var k=0;k<q.opts.length;k++){
+      var o=q.opts[k];
+      if(typeof o!=="string"||!o||o.length>2)return false;
+      if(seen[o])return false;
+      seen[o]=1;
+    }
+  }
+  return true;
+}
+/* 内嵌关复核：挖空句+正确量词必须命中题库 */
+function auditAll(){
+  var bad=[];
+  for(var i=0;i<LEVELS.length;i++){
+    var L=LEVELS[i],okLv=validLevelData(L);
+    if(okLv)for(var q=0;q<L.qs.length;q++){
+      var item=L.qs[q],ans=item.opts[item.ok],hit=false;
+      for(var c=0;c<ITEMS.length;c++){
+        if(ITEMS[c][0]===item.s&&ITEMS[c][1]===ans){hit=true;break;}
+      }
+      if(!hit){okLv=false;break;}
+    }
+    if(!okLv)bad.push(i+1);
+  }
+  return bad;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d)||seen[d.name])return null;
+    seen[d.name]=1;
+    list.push({name:d.name,qs:d.qs.map(function(q){return{s:q.s,opts:q.opts.slice(),ok:q.ok}}),difficulty:Number.isInteger(d.difficulty)?d.difficulty:5});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,qi=0,errors=0,done=false,gen=0;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  qi=0;errors=0;done=false;gen++;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="三题全答完过关";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  renderQ();updStats();
+  say("选出句子里该用的量词");
+}
+function renderQ(){
+  var q=L.qs[qi];
+  $("qTag").textContent="量词 · 第 "+(qi+1)+" / "+L.qs.length+" 题";
+  $("qLine").innerHTML=q.s.replace("___","<b>___</b>");
+  var box=$("opts");box.innerHTML="";
+  for(var i=0;i<q.opts.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="opt";b.textContent=q.opts[i];
+      b.setAttribute("aria-label","量词候选 "+q.opts[i]);
+      b.addEventListener("click",function(){answer(i)});
+      box.appendChild(b);
+    })(i);
+  }
+}
+function updStats(){
+  $("stQ").textContent=(qi+1)+"/"+L.qs.length;
+  var e=$("stErr");e.textContent=errors;
+  e.className="val"+(errors>0?" bad":"");
+}
+function answer(i){
+  if(done)return;
+  var q=L.qs[qi],btn=$("opts").children[i];
+  if(i===q.ok){
+    btn.classList.add("right");
+    $("opts").querySelectorAll(".opt").forEach(function(b){b.disabled=true});
+    say("搭配正确："+q.s.replace("___",q.opts[i]));
+    var g=gen;
+    setTimeout(function(){
+      if(g!==gen)return;
+      qi++;
+      if(qi>=L.qs.length)winLevel();
+      else{renderQ();updStats();say("选出句子里该用的量词");}
+    },650);
+  }else{
+    errors++;updStats();
+    btn.classList.add("wrong");btn.disabled=true;
+    say("这个量词和名词不搭配，再想想");
+  }
+}
+function winLevel(){
+  done=true;
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:errors}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
+  $("ovDesc").innerHTML="失误 "+errors+" 次"+(errors===0?"（量词小专家）":"")+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);$("overlay").classList.remove("show");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重开")});
+$("btnLv").addEventListener("click",openLevelSelect);
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+  else{lv++;loadLevel(lv)}
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="9"){
+    var i=parseInt(k,10)-1;
+    var btns=$("opts").querySelectorAll(".opt:not(:disabled)");
+    if(i<btns.length){btns[i].click();e.preventDefault();}
+  }
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重开")}
+  else if(e.key==="Enter"&&$("overlay").classList.contains("show")){$("ovBtn").click();e.preventDefault();}
+});
+/* ---------- 启动 ---------- */
+loadLevel(save.lv);
+var badLv=auditAll();
+if(badLv.length)say("警告：内嵌验证器发现异常关卡 "+badLv.join(","));
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>五五将棋</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致），棋盘/棋子全部复用结构 token，无自造素材 token*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn { min-height: 44px; padding: 0 8px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效 */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">手数</span><span class="val" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">持驹 我/电脑</span><span class="val" id="stHand">0/0</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="五五将棋 5×5 棋盘：绿方棋子朝上为你，红方棋子倒置为电脑，两侧为持驹区" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">吃掉的子成为持驹，可打回盘中；吃掉对方王将即胜</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo">悔棋</button>
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：方向键移光标 · 回车 选子/走子/打入 · 数字 1-5 选持驹 · U 悔棋 · H 提示 · R 重开 · 40 关 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 关卡数据（AI 段位 × 让子组合产关） ---------- */
+var GAME_KEY="minishogi",SAVE_KEY="sw.minishogi.v1";
+function pad2(n){return (n<10?"0":"")+n}
+var DEFAULT_LEVELS=(function(){
+  var a=[],i,skill,h,first;
+  for(i=1;i<=40;i++){
+    skill=Math.min(6,Math.ceil(i/7));
+    h=i<=14?0:(i<=28?(i%2?1:0):(i%2?2:3));
+    first=(skill>=5&&i%4===0)?1:0;
+    a.push({name:"五五·"+pad2(i),skill:skill,h:h,first:first});
+  }
+  return a;
+})();
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=='object'||Array.isArray(d))return false;
+  if(typeof d.name!=='string'||!d.name.trim())return false;
+  if(!Number.isInteger(d.skill)||d.skill<1||d.skill>6)return false;
+  if(!Number.isInteger(d.h)||d.h<0||d.h>3)return false;
+  if(d.first!==0&&d.first!==1)return false;
+  return true;
+}
+function normalizeLevel(d){
+  return {name:String(d.name),skill:Math.min(6,Math.max(1,d.skill)),h:Math.min(3,Math.max(0,d.h)),first:d.first?1:0};
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d)||seen[d.name])return null;
+    seen[d.name]=1;list.push(normalizeLevel(d));
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){LEVELS=list.map(normalizeLevel);return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层 ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;b.disabled=i>save.lv;
+      b.addEventListener("click",function(){lv=i;persist();loadLevel(lv);hideOverlay();});
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";$("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+/* ---------- 规则引擎（纯函数，独立于 UI/AI） ----------
+   棋码：1歩 2銀 3金 4角 5飛 6王；升变 +10：11と 12全 14馬 15龍；玩家为正、电脑为负 */
+var CH={1:"歩",2:"銀",3:"金",4:"角",5:"飛",6:"王",11:"と",12:"全",14:"馬",15:"龍"};
+var PROMC={1:11,2:12,4:14,5:15};
+var VALS=[100,300,330,380,450];
+function baseType(v){var a=Math.abs(v);return a>10?a-10:a}
+function inB(r,c){return r>=0&&r<5&&c>=0&&c<5}
+function genMoves(bd,hands,side){
+  var out=[],dir=side===0?-1:1,sign=side===0?1:-1,r,c;
+  function own(v){return side===0?v>0:v<0}
+  function goldOut(r0,c0){
+    var st=[[dir,0],[dir,-1],[dir,1],[0,-1],[0,1],[-dir,0]];
+    for(var k=0;k<st.length;k++){
+      var r2=r0+st[k][0],c2=c0+st[k][1];
+      if(inB(r2,c2)&&!own(bd[r2*5+c2]))out.push({from:r0*5+c0,to:r2*5+c2});
+    }
+  }
+  for(r=0;r<5;r++)for(c=0;c<5;c++){
+    var v=bd[r*5+c];
+    if(!v||!own(v))continue;
+    var a=Math.abs(v),prom=a>10,t=prom?a-10:a;
+    if(t===1&&!prom){
+      if(inB(r+dir,c)&&!own(bd[(r+dir)*5+c]))out.push({from:r*5+c,to:(r+dir)*5+c});
+    }else if(t===2){
+      if(!prom){
+        var st=[[dir,0],[dir,-1],[dir,1],[-dir,-1],[-dir,1]];
+        for(var k=0;k<st.length;k++){
+          var r2=r+st[k][0],c2=c+st[k][1];
+          if(inB(r2,c2)&&!own(bd[r2*5+c2]))out.push({from:r*5+c,to:r2*5+c2});
+        }
+      }else{
+        goldOut(r,c);
+      }
+    }else if(t===3){
+      goldOut(r,c);
+    }else if(t===6){
+      for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+        if(!dr&&!dc)continue;
+        var r3=r+dr,c3=c+dc;
+        if(inB(r3,c3)&&!own(bd[r3*5+c3]))out.push({from:r*5+c,to:r3*5+c3});
+      }
+    }else if(t===4){
+      //角：斜线滑行；升变马加正交一步
+      for(var d2=0;d2<4;d2++){
+        var dd=[[-1,-1],[-1,1],[1,-1],[1,1]][d2];
+        var rr=r+dd[0],cc=c+dd[1];
+        while(inB(rr,cc)){
+          var q=bd[rr*5+cc];
+          if(!own(q))out.push({from:r*5+c,to:rr*5+cc});
+          if(q)break;
+          rr+=dd[0];cc+=dd[1];
+        }
+      }
+      if(prom)for(var o2=0;o2<4;o2++){
+        var oo=[[1,0],[-1,0],[0,1],[0,-1]][o2];
+        var r4=r+oo[0],c4=c+oo[1];
+        if(inB(r4,c4)&&!own(bd[r4*5+c4]))out.push({from:r*5+c,to:r4*5+c4});
+      }
+    }else if(t===5){
+      for(var d3=0;d3<4;d3++){
+        var ddo=[[1,0],[-1,0],[0,1],[0,-1]][d3];
+        var r5=r+ddo[0],c5=c+ddo[1];
+        while(inB(r5,c5)){
+          var q2=bd[r5*5+c5];
+          if(!own(q2))out.push({from:r*5+c,to:r5*5+c5});
+          if(q2)break;
+          r5+=ddo[0];c5+=ddo[1];
+        }
+      }
+      if(prom)for(var o3=0;o3<4;o3++){
+        var oo3=[[-1,-1],[-1,1],[1,-1],[1,1]][o3];
+        var r6=r+oo3[0],c6=c+oo3[1];
+        if(inB(r6,c6)&&!own(bd[r6*5+c6]))out.push({from:r*5+c,to:r6*5+c6});
+      }
+    }
+  }
+  //打入
+  for(var t2=1;t2<=5;t2++){
+    if(!hands[side][t2-1])continue;
+    for(r=0;r<5;r++)for(c=0;c<5;c++){
+      if(bd[r*5+c])continue;
+      if(t2===1){
+        if(side===0&&r===0)continue;
+        if(side===1&&r===4)continue;
+        var nifu=false;
+        for(var rr2=0;rr2<5;rr2++)if(bd[rr2*5+c]===sign*1)nifu=true;
+        if(nifu)continue;
+      }
+      out.push({drop:t2,to:r*5+c});
+    }
+  }
+  return out;
+}
+function applyMove(bd,hands,side,m){
+  var sign=side===0?1:-1,cap=0;
+  if(m.drop){
+    hands[side][m.drop-1]--;
+    bd[m.to]=sign*m.drop;
+    return {cap:0,moved:m.drop};
+  }
+  var v=bd[m.from];
+  cap=bd[m.to];
+  if(cap){
+    var bt=baseType(cap);
+    hands[side][bt-1]++;
+  }
+  bd[m.to]=v;bd[m.from]=0;
+  //升变：落点在敌阵（玩家第0行/电脑第4行）且可升变
+  var a=Math.abs(v);
+  if(a<=6&&(a===1||a===2||a===4||a===5)){
+    var row=Math.floor(m.to/5);
+    if((side===0&&row===0)||(side===1&&row===4)){
+      bd[m.to]=sign*PROMC[a];
+    }
+  }
+  return {cap:cap,moved:v};
+}
+/* ---------- AI：negamax + α-β（吃王即胜），评估=子力+持驹+升变+步兵推进 ---------- */
+var NODES=0,BUDGET=150000;
+function evalPos(bd,hands){
+  var s=0;
+  for(var i=0;i<25;i++){
+    var v=bd[i];
+    if(!v)continue;
+    var a=Math.abs(v),t=a>10?a-10:a;
+    var val=VALS[t-1]+(a>10?30:0);
+    if(t===1){
+      var row=Math.floor(i/5);
+      val+=(v>0?(4-row):row)*4;
+    }
+    s+=(v>0?-val:val);
+  }
+  for(var t2=0;t2<5;t2++){
+    s+=hands[1][t2]*VALS[t2];
+    s-=hands[0][t2]*VALS[t2];
+  }
+  return s;
+}
+function search(bd,hands,side,depth,alpha,beta){
+  NODES++;
+  if(depth<=0||NODES>BUDGET)return side===1?evalPos(bd,hands):-evalPos(bd,hands);
+  var mv=genMoves(bd,hands,side);
+  if(!mv.length)return side===1?9000+depth:-9000-depth;
+  mv.sort(function(a,b){
+    var ca=a.drop?0:Math.abs(bd[a.to]||0),cb=b.drop?0:Math.abs(bd[b.to]||0);
+    return cb-ca;
+  });
+  var best=-99999;
+  for(var i=0;i<mv.length;i++){
+    var m=mv[i];
+    if(!m.drop&&Math.abs(bd[m.to])===6)return 9900+depth;
+    var nb=bd.slice(),nh=[hands[0].slice(),hands[1].slice()];
+    applyMove(nb,nh,side,m);
+    var v=-search(nb,nh,1-side,depth-1,-beta,-alpha);
+    if(v>best)best=v;
+    if(best>alpha)alpha=best;
+    if(alpha>=beta)break;
+  }
+  return best;
+}
+function aiPick(bd,hands,side,skill){
+  NODES=0;
+  var mv=genMoves(bd,hands,side);
+  if(!mv.length)return null;
+  var dep=[0,2,2,3,3,4,4][skill]||2;
+  var scored=[];
+  for(var i=0;i<mv.length;i++){
+    var m=mv[i];
+    if(!m.drop&&Math.abs(bd[m.to])===6)return m;
+    var nb=bd.slice(),nh=[hands[0].slice(),hands[1].slice()];
+    applyMove(nb,nh,side,m);
+    var v=-search(nb,nh,1-side,dep-1,-99999,99999);
+    scored.push({m:m,v:v});
+  }
+  scored.sort(function(a,b){return b.v-a.v});
+  if(skill<=2){
+    var top=scored.filter(function(x){return scored[0].v-x.v<=120});
+    return top[Math.floor(Math.random()*top.length)].m;
+  }
+  return scored[0].m;
+}
+/* ---------- 调色板 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),onSoft:v("--g-on-soft"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success")};
+}
+window.__gOnTheme=function(){palLoad();drawNow()};
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,bd=null,hands=null,turn=0,sel=-1,cursor=12,dropSel=0;
+var over=false,won=false,aiTimer=null,hist=[],hintM=null,moves=0;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=360,H=430,cell=60,bx=30,by=60;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function initBoard(h){
+  var b=new Array(25).fill(0);
+  b[0]=-5;b[1]=-3;b[2]=-6;b[3]=-2;b[4]=-4;
+  b[7]=-1;
+  b[17]=1;
+  b[20]=4;b[21]=2;b[22]=6;b[23]=3;b[24]=5;
+  if(h===1)b[4]=0;
+  if(h===2)b[0]=0;
+  if(h===3)b[3]=0;
+  return b;
+}
+function loadLevel(n){
+  if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=normalizeLevel(LEVELS[lv]);
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="电脑段位 "+L.skill+" · "+["对等阵","电脑无角","电脑无飛","电脑無銀"][L.h]+(L.first?" · 电脑先手":"");
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  bd=initBoard(L.h);hands=[new Array(5).fill(0),new Array(5).fill(0)];
+  turn=L.first;sel=-1;dropSel=0;over=false;won=false;hist=[];hintM=null;moves=0;cursor=17;
+  updStats();drawNow();
+  if(turn===1)aiTurn();
+  else say("吃掉的子成为持驹，可打回盘中（同列不能有两枚步兵）；吃掉对方王将即胜");
+}
+function updStats(){
+  var a=0,b=0,i;
+  for(i=0;i<5;i++){a+=hands[0][i];b+=hands[1][i];}
+  $("stHand").textContent=a+"/"+b;
+  $("stMoves").textContent=moves;
+}
+function snapshot(){hist.push({bd:bd.slice(),h0:hands[0].slice(),h1:hands[1].slice(),turn:turn});if(hist.length>80)hist.shift()}
+function finishPlayer(){
+  sel=-1;dropSel=0;hintM=null;moves++;updStats();
+  turn=1;aiTurn();drawNow();
+}
+function playerTapCell(r,c){
+  var i=r*5+c,v=bd[i];
+  if(dropSel){
+    if(v!==0){say("打入只能选空格");drawNow();return;}
+    var m={drop:dropSel,to:i};
+    var leg=genMoves(bd,hands,0).some(function(x){return x.drop===dropSel&&x.to===i});
+    if(!leg){say(dropSel===1?"步兵不能打在同列已有己方步兵的一列，也不能打在敌阵底线":"这里不能打入");drawNow();return;}
+    snapshot();
+    applyMove(bd,hands,0,m);
+    finishPlayer();return;
+  }
+  if(sel<0){
+    if(v>0){sel=i;hintM=null;say("已选中，点目标格走子");}
+    else if(v<0){say("这是电脑的子");}
+    drawNow();return;
+  }
+  if(i===sel){sel=-1;drawNow();return;}
+  if(v>0){sel=i;drawNow();return;}
+  var leg=genMoves(bd,hands,0).some(function(x){return !x.drop&&x.from===sel&&x.to===i});
+  if(!leg){say("不是这颗子的合法走法");drawNow();return;}
+  snapshot();
+  var res=applyMove(bd,hands,0,{from:sel,to:i});
+  if(Math.abs(res.cap)===6){endMatch(true);drawNow();return;}
+  finishPlayer();
+}
+function playerTapHand(t){
+  if(over||turn!==0)return;
+  if(!hands[0][t-1]){say("没有这种持驹");return;}
+  if(dropSel===t){dropSel=0;sel=-1;say("取消打入");}
+  else{dropSel=t;sel=-1;say("已选持驹「"+CH[t]+"」，点棋盘空格打入");}
+  drawNow();
+}
+function aiTurn(){
+  if(aiTimer)clearTimeout(aiTimer);
+  aiTimer=setTimeout(function(){
+    aiTimer=null;
+    if(over||turn!==1)return;
+    var m=aiPick(bd,hands,1,L.skill);
+    if(!m){endMatch(true);return;}
+    var res=applyMove(bd,hands,1,m);
+    moves++;hintM=null;
+    updStats();
+    if(Math.abs(res.cap)===6){endMatch(false);drawNow();return;}
+    turn=0;
+    say((m.drop?("电脑打入「"+CH[m.drop]+"」"):"电脑已走")+"，请行动");
+    drawNow();
+  },450);
+}
+function endMatch(w){
+  over=true;won=w;
+  if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}
+  if(w&&lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(w&&GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:moves}).catch(function(){});
+  $("ovTitle").textContent=w?(lv>=LEVELS.length-1?"全部通关！":"过关！"):"败北";
+  $("ovDesc").innerHTML=w?("你吃掉了对方王将（"+moves+" 手）"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成")):"你的王将被吃，持驹要用来防守反击。";
+  $("ovBtn").textContent=w?((lv>=LEVELS.length-1)?"回到第 1 关":"下一关"):"再战本关";
+  $("overlay").classList.add("show");
+}
+function hint(){
+  if(over||turn!==0)return;
+  var m=aiPick(bd,hands,0,4);
+  if(m){
+    hintM={from:m.drop?-1:m.from,to:m.to,drop:m.drop};
+    say(m.drop?("提示：打入「"+CH[m.drop]+"」到高亮格"):"提示：高亮为推荐着法");
+  }else say("无着可走");
+  drawNow();
+}
+/* ---------- 绘制 ---------- */
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.round(w);
+  cell=Math.floor((W-20)/5);
+  bx=Math.floor((W-cell*5)/2);
+  by=Math.round(cell*0.86)+8;
+  H=by*2+cell*5+6;
+  cv.style.height=H+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function cellRect(i){
+  var r=Math.floor(i/5),c=i%5;
+  return {x:bx+c*cell,y:by+r*cell};
+}
+function drawTile(x,y,size,char,fillCol,txtCol,rot){
+  ctx.save();
+  if(rot){
+    ctx.translate(x+size/2,y+size/2);
+    ctx.rotate(Math.PI);
+    ctx.translate(-(x+size/2),-(y+size/2));
+  }
+  ctx.fillStyle=fillCol;
+  var r6=Math.min(10,size/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r6,y);ctx.lineTo(x+size-r6,y);ctx.lineTo(x+size,y+size*0.28);
+  ctx.lineTo(x+size,y+size);ctx.lineTo(x,y+size);ctx.lineTo(x,y+size*0.28);
+  ctx.closePath();ctx.fill();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle=txtCol;   // 恒白：两种棋子底色上均需恒亮
+  var fs=Math.floor(size*0.44);
+  ctx.font="700 "+fs+"px sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText(char,x+size/2,y+size*0.55+1);
+  ctx.restore();
+}
+function draw(){
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  //棋盘
+  for(var r=0;r<5;r++)for(var c=0;c<5;c++){
+    var rc=cellRect(r*5+c);
+    ctx.fillStyle=PAL.surface;
+    ctx.fillRect(rc.x,rc.y,cell-2,cell-2);
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+    ctx.strokeRect(rc.x+.5,rc.y+.5,cell-3,cell-3);
+  }
+  ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;
+  ctx.strokeRect(bx-2,by-2,cell*5+2,cell*5+2);
+  //升变区提示
+  ctx.fillStyle=PAL.soft;ctx.fillRect(bx,by,cell*5,6);
+  ctx.fillStyle=PAL.soft;ctx.fillRect(bx,by+cell*5-6,cell*5,6);
+  //持驹区
+  var names=["歩","銀","金","角","飛"];
+  for(var t=1;t<=5;t++){
+    var ax=bx+(t-1)*cell,yA=by-cell*0.86+2;
+    drawTile(ax,yA,cell-6,CH[t],hands[1][t-1]?PAL.danger:PAL.surface2,hands[1][t-1]?"#fff":PAL.muted,true);
+    if(hands[1][t-1]>1){
+      ctx.fillStyle=PAL.text;ctx.font="700 12px sans-serif";ctx.textAlign="left";
+      ctx.fillText("×"+hands[1][t-1],ax+cell-16,yA+6);
+    }
+    var yP=by+cell*5+4;
+    drawTile(ax,yP,cell-6,CH[t],hands[0][t-1]?PAL.deep:PAL.surface2,hands[0][t-1]?"#fff":PAL.muted,false);
+    if(hands[0][t-1]>1){
+      ctx.fillStyle=PAL.text;ctx.font="700 12px sans-serif";ctx.textAlign="left";
+      ctx.fillText("×"+hands[0][t-1],ax+cell-16,yP+6);
+    }
+    if(dropSel===t){
+      ctx.strokeStyle=PAL.warning;ctx.lineWidth=3;
+      ctx.strokeRect(ax-2,yP-2,cell-2,cell-2);
+    }
+  }
+  //提示
+  if(hintM){
+    ctx.strokeStyle=PAL.deep;ctx.lineWidth=3;
+    if(hintM.from>=0){var hf=cellRect(hintM.from);ctx.strokeRect(hf.x+2,hf.y+2,cell-6,cell-6);}
+    var ht=cellRect(hintM.to);ctx.strokeRect(ht.x+2,ht.y+2,cell-6,cell-6);
+  }
+  if(sel>=0){
+    var hs=cellRect(sel);
+    ctx.strokeStyle=PAL.primary;ctx.lineWidth=3;
+    ctx.strokeRect(hs.x+2,hs.y+2,cell-6,cell-6);
+  }
+  if(sel>=0&&turn===0){
+    ctx.fillStyle=PAL.warning;
+    genMoves(bd,hands,0).forEach(function(m){
+      if(m.drop||m.from!==sel)return;
+      var hp=cellRect(m.to);
+      ctx.beginPath();ctx.arc(hp.x+cell/2-1,hp.y+cell/2-1,cell*.14,0,7);ctx.fill();
+    });
+  }
+  //棋子
+  for(var i=0;i<25;i++){
+    var v=bd[i];
+    if(!v)continue;
+    var rc=cellRect(i);
+    var player=v>0;
+    var a=Math.abs(v);
+    drawTile(rc.x+1,rc.y+1,cell-4,CH[a],player?PAL.deep:PAL.danger,"#fff",!player);
+    if(i===cursor){
+      ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;
+      ctx.strokeRect(rc.x-1,rc.y-1,cell+1,cell+1);
+    }
+  }
+}
+function drawNow(){draw()}
+function loop(){draw(performance.now());requestAnimationFrame(loop)}
+/* ---------- 输入 ---------- */
+cv.addEventListener("pointerdown",function(e){
+  var rect=cv.getBoundingClientRect();
+  var x=e.clientX-rect.left,y=e.clientY-rect.top;
+  e.preventDefault();
+  //持驹区（玩家）
+  if(turn===0&&!over){
+    for(var t=1;t<=5;t++){
+      var ax=bx+(t-1)*cell,yP=by+cell*5+4;
+      if(x>=ax&&x<=ax+cell&&y>=yP&&y<=yP+cell){playerTapHand(t);return;}
+    }
+  }
+  var c=Math.floor((x-bx)/cell),r=Math.floor((y-by)/cell);
+  if(!inB(r,c))return;
+  playerTapCell(r,c);
+  drawNow();
+});
+cv.addEventListener("pointercancel",function(){});
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);});
+$("btnLv").addEventListener("click",function(){if(!over)openLevelSelect();});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(!over)return;
+  if(!won){loadLevel(lv);return;}
+  if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0);}
+  else{lv++;loadLevel(lv);}
+});
+function undo(){
+  if(!hist.length||over)return;
+  if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}
+  var h=hist.pop();
+  bd=h.bd;hands=[h.h0,h.h1];turn=0;sel=-1;dropSel=0;hintM=null;
+  updStats();drawNow();say("已悔一步");
+}
+window.addEventListener("keydown",function(e){
+  var k=e.key,r=Math.floor(cursor/5),c=cursor%5;
+  if(k>="1"&&k<="5"){playerTapHand(parseInt(k,10));e.preventDefault();}
+  else if(k==="ArrowUp"){if(r>0)cursor-=5;e.preventDefault();}
+  else if(k==="ArrowDown"){if(r<4)cursor+=5;e.preventDefault();}
+  else if(k==="ArrowLeft"){if(c>0)cursor--;e.preventDefault();}
+  else if(k==="ArrowRight"){if(c<4)cursor++;e.preventDefault();}
+  else if(k===" "||k==="Enter"){
+    if($("overlay").classList.contains("show")){$("ovBtn").click();}
+    else{
+      var v=bd[cursor];
+      if(dropSel)playerTapCell(r,c);
+      else if(sel<0&&v>0)playerTapCell(r,c);
+      else if(sel>=0)playerTapCell(r,c);
+    }
+    e.preventDefault();
+  }
+  else if(k==="Escape"){sel=-1;dropSel=0;drawNow();}
+  else if(k==="u"||k==="U")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R")loadLevel(lv);
+});
+window.addEventListener("resize",function(){resize();drawNow()});
+/* ---------- 切后台：AI 思考中断，轮次归还玩家 ---------- */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){
+    if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}
+    if(turn===1&&!over){turn=0;say("已切后台，电脑让先，请你行动");}
+  }else drawNow();
+});
+/* ---------- 内嵌独立验证器 ---------- */
+function selfTest(){
+  var total=0,ok=0,fails=[];
+  function chk(c,name){total++;if(c)ok++;else fails.push(name);}
+  chk(DEFAULT_LEVELS.length===40,"关卡数=40");
+  chk(DEFAULT_LEVELS.every(validLevelData),"关卡配置合法");
+  chk(DEFAULT_LEVELS.some(function(d){return d.h===1})&&DEFAULT_LEVELS.some(function(d){return d.h===3}),"含让子关");
+  //走法单元
+  var E=new Array(25).fill(0),H0=[new Array(5).fill(0),new Array(5).fill(0)];
+  var b1=E.slice();b1[2*5+2]=1;
+  var m1=genMoves(b1,H0,0).filter(function(m){return m.from===12});
+  chk(m1.length===1&&m1[0].to===7,"步兵只进一格");
+  var b2=E.slice();b2[2*5+2]=2;
+  var m2=genMoves(b2,H0,0).filter(function(m){return m.from===12&&!m.drop});
+  chk(m2.length===5,"银将五目标");
+  var b3=E.slice();b3[2*5+2]=3;
+  var m3=genMoves(b3,H0,0).filter(function(m){return m.from===12&&!m.drop});
+  chk(m3.length===6,"金将六目标");
+  var b4=E.slice();b4[2*5+2]=5;
+  var m4=genMoves(b4,H0,0).filter(function(m){return m.from===12&&!m.drop});
+  chk(m4.length===8,"飞车滑行八格");
+  var b5=E.slice();b5[2*5+2]=5;b5[1*5+2]=1;
+  var m5=genMoves(b5,H0,0).filter(function(m){return m.from===12&&!m.drop});
+  chk(m5.length===6&&!m5.some(function(m){return m.to===2}),"滑行被己方挡住");
+  //升变
+  var b6=E.slice();b6[1*5+3]=1;
+  var hh=[new Array(5).fill(0),new Array(5).fill(0)];
+  applyMove(b6,hh,0,{from:8,to:3});
+  chk(b6[3]===11,"步兵入敌阵升变");
+  //持驹入袋
+  var b7=E.slice();b7[2*5+0]=5;b7[0*5+0]=-2;
+  var hh2=[new Array(5).fill(0),new Array(5).fill(0)];
+  applyMove(b7,hh2,0,{from:10,to:0});
+  chk(b7[0]===15&&hh2[0][1]===1&&b7[10]===0,"吃子入袋且飛自动升变");
+  //二歩与底线禁打
+  var b8=E.slice();b8[3*5+0]=1;
+  var hh3=[new Array(5).fill(0),new Array(5).fill(0)];hh3[0][0]=2;
+  var d1=genMoves(b8,hh3,0).some(function(m){return m.drop===1&&m.to===2*5+0});
+  var d2=genMoves(b8,hh3,0).some(function(m){return m.drop===1&&m.to===0});
+  var d3=genMoves(b8,hh3,0).some(function(m){return m.drop===1&&m.to===2*5+1});
+  chk(!d1&&d3,"同列二歩禁打");
+  chk(!d2,"步兵禁打敌阵底线");
+  //吃王即胜
+  var b9=E.slice();b9[2*5+0]=5;b9[0*5+0]=-6;
+  var mk=genMoves(b9,H0,0).some(function(m){return !m.drop&&m.to===0&&Math.abs(b9[m.to])===6});
+  chk(mk,"可吃王");
+  //AI 对拍：6 局自战，着法全部来自生成器、正常分出胜负
+  function aiGame(sa,sb){
+    var b=initBoard(0),hh4=[new Array(5).fill(0),new Array(5).fill(0)],side=0,plies=0;
+    while(plies<160){
+      plies++;
+      var m=aiPick(b,hh4,side,side===0?sa:sb);
+      if(!m)return true;
+      var leg=genMoves(b,hh4,side).some(function(x){
+        return x.drop===m.drop&&x.from===m.from&&x.to===m.to;
+      });
+      if(!leg)return false;
+      var res=applyMove(b,hh4,side,m);
+      if(Math.abs(res.cap)===6)return true;
+      side=1-side;
+    }
+    return true;
+  }
+  for(var g=0;g<6;g++)chk(aiGame(1+(g%2),1+(g%2)),"AI 对拍 局"+(g+1));
+  window.__gSelfTest={ok:ok,total:total,fails:fails};
+  if(fails.length)say("警告：内嵌自检未全过（"+ok+"/"+total+"）");
+}
+/* ---------- 启动 ---------- */
+palLoad();loadLevel(save.lv);resize();loop();selfTest();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

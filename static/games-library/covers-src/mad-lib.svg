@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EDF4E6"/>
+      <stop offset="0.55" stop-color="#D8E8D0"/>
+      <stop offset="1" stop-color="#BEDCC0"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3A6B46" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#A8CBA6" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#94B795" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 90 h11 M97.5 84.5 v11" stroke-width="3.2"/>
+    <path d="M700 80 h12 M706 74 v12" stroke-width="3.4"/>
+    <path d="M740 240 h9 M744.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M58 250 h9 M62.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#F2F7E2" opacity="0.55">
+    <circle cx="140" cy="140" r="4"/><circle cx="736" cy="140" r="3.4"/><circle cx="66" cy="190" r="3"/><circle cx="700" cy="330" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="420" cy="402" rx="272" ry="22" fill="#6E9468" opacity="0.35"/>
+
+  <!-- 彩纸屑 -->
+  <g opacity="0.75" stroke-linejoin="round">
+    <rect x="96" y="96" width="18" height="18" rx="4" fill="#F2B34C" transform="rotate(18 105 105)"/>
+    <rect x="690" y="130" width="18" height="18" rx="4" fill="#2D9B6A" transform="rotate(-14 699 139)"/>
+    <circle cx="646" cy="80" r="8" fill="#E88B5A"/>
+    <circle cx="180" cy="70" r="7" fill="#3FAE7A"/>
+    <rect x="560" y="368" width="16" height="16" rx="4" fill="#F2B34C" transform="rotate(24 568 376)"/>
+    <rect x="248" y="376" width="16" height="16" rx="4" fill="#E88B5A" transform="rotate(-20 256 384)"/>
+  </g>
+
+  <!-- 趣文纸卷（主视觉载体） -->
+  <g transform="rotate(-4 400 230)">
+    <rect x="185" y="95" width="430" height="272" rx="14" fill="#FBF7E8" stroke="#3A2A1E" stroke-width="9"/>
+    <circle cx="212" cy="118" r="10" fill="#FFFFFF" opacity="0.4"/>
+    <path d="M215 152 H420" stroke="#B9CDBC" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <path d="M215 204 H296" stroke="#B9CDBC" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <path d="M414 204 H540" stroke="#B9CDBC" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <path d="M333 256 H520" stroke="#B9CDBC" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <path d="M335 308 H520" stroke="#B9CDBC" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <!-- 词性空位 -->
+    <rect x="308" y="186" width="94" height="36" rx="10" fill="#CFE9DB" stroke="#17734A" stroke-width="5"/>
+    <path d="M330 204 H380" stroke="#17734A" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <rect x="325" y="238" width="94" height="36" rx="10" fill="#F7E3B8" stroke="#C99A3A" stroke-width="5"/>
+    <path d="M347 256 H397" stroke="#C99A3A" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <rect x="217" y="290" width="94" height="36" rx="10" fill="#F2C9C0" stroke="#C9453C" stroke-width="5"/>
+    <path d="M239 308 H289" stroke="#C9453C" stroke-width="6" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- 词性骰子（主视觉，签名表情） -->
+  <g stroke-linejoin="round">
+    <path d="M545 213 L590 163 L730 163 L685 213 Z" fill="#EFE9D2" stroke="#3A2A1E" stroke-width="9"/>
+    <path d="M685 213 L730 163 L730 308 L685 358 Z" fill="#E2DCC2" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="545" y="213" width="140" height="145" rx="14" fill="#FBF7E8" stroke="#3A2A1E" stroke-width="9"/>
+    <path d="M545 227 Q545 213 559 213 L671 213 Q685 213 685 227 L685 344 Q685 358 671 358 L559 358 Q545 358 545 344 Z" fill="none" stroke="#3A2A1E" stroke-width="0"/>
+    <circle cx="612" cy="186" r="8" fill="#17734A"/>
+    <circle cx="662" cy="186" r="8" fill="#17734A"/>
+    <circle cx="637" cy="174" r="8" fill="#17734A"/>
+    <!-- 签名表情 -->
+    <circle cx="590" cy="272" r="10" fill="#1F1A14"/>
+    <circle cx="640" cy="272" r="10" fill="#1F1A14"/>
+    <path d="M598 296 Q616 312 632 295" stroke="#1F1A14" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <circle cx="570" cy="250" r="10" fill="#FFFFFF" opacity="0.4"/>
+    <!-- 骰面词性刻痕 -->
+    <path d="M615 330 H648 M615 344 H640" stroke="#8A9A8C" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+  <path d="M520 96 h12 M526 90 v12" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" fill="none" opacity="0.8"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

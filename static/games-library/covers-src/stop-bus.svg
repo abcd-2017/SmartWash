@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8BC9A4"/>
+      <stop offset="0.55" stop-color="#63B381"/>
+      <stop offset="1" stop-color="#4A9C69"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1B5538" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#3B8A55" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#317446" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 66 h11 M97.5 60.5 v11" stroke-width="3.2"/>
+    <path d="M712 70 h12 M718 64 v12" stroke-width="3.4"/>
+    <path d="M50 180 h9 M54.5 175.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M748 190 h9 M752.5 185.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF7EE" opacity="0.5">
+    <circle cx="150" cy="110" r="4"/><circle cx="640" cy="104" r="3.4"/><circle cx="48" cy="140" r="3"/><circle cx="746" cy="150" r="2.6"/>
+  </g>
+
+  <!-- 车道虚线 -->
+  <path d="M36 408 H764" stroke="#EAF7EE" stroke-width="6" stroke-dasharray="28 24" stroke-linecap="round" opacity="0.55"/>
+
+  <ellipse cx="400" cy="412" rx="282" ry="18" fill="#1B5538" opacity="0.35"/>
+
+  <!-- 巴士车身（5 扇计分车窗） -->
+  <g>
+    <path d="M146 176 L560 176 Q606 176 630 214 L638 240 Q640 250 640 260 L640 318 Q640 344 614 344 L146 344 Q120 344 120 318 L120 202 Q120 176 146 176 Z"
+          fill="#2D9B6A" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+    <rect x="134" y="188" width="420" height="16" rx="8" fill="#EAF7EE" opacity="0.45"/>
+    <!-- 挡风玻璃 -->
+    <path d="M566 196 L604 196 Q622 200 630 220 L636 238 L566 238 Z" fill="#DFF3F6" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+    <!-- 车灯 -->
+    <circle cx="626" cy="298" r="10" fill="#F2C14E" stroke="#3A2A1E" stroke-width="5"/>
+    <!-- 五扇车窗 + 窗内骰子 -->
+    <g>
+      <rect x="142" y="224" width="70" height="76" rx="10" fill="#DFF3F6" stroke="#1E5038" stroke-width="5.5"/>
+      <g transform="translate(177 262)">
+        <rect x="-20" y="-20" width="40" height="40" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="5"/>
+        <circle cx="0" cy="0" r="6" fill="#2E2A26"/>
+      </g>
+      <rect x="228" y="224" width="70" height="76" rx="10" fill="#DFF3F6" stroke="#1E5038" stroke-width="5.5"/>
+      <g transform="translate(263 262)">
+        <rect x="-20" y="-20" width="40" height="40" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="5"/>
+        <circle cx="-7" cy="-7" r="6" fill="#2E2A26"/><circle cx="7" cy="7" r="6" fill="#2E2A26"/>
+      </g>
+      <rect x="314" y="224" width="70" height="76" rx="10" fill="#DFF3F6" stroke="#1E5038" stroke-width="5.5"/>
+      <g transform="translate(349 262)">
+        <rect x="-20" y="-20" width="40" height="40" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="5"/>
+        <circle cx="-9" cy="-9" r="6" fill="#2E2A26"/><circle cx="0" cy="0" r="6" fill="#2E2A26"/><circle cx="9" cy="9" r="6" fill="#2E2A26"/>
+      </g>
+      <rect x="400" y="224" width="70" height="76" rx="10" fill="#DFF3F6" stroke="#1E5038" stroke-width="5.5"/>
+      <g transform="translate(435 262)">
+        <rect x="-20" y="-20" width="40" height="40" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="5"/>
+        <circle cx="-7" cy="-7" r="6" fill="#C8465C"/><circle cx="7" cy="-7" r="6" fill="#C8465C"/>
+        <circle cx="-7" cy="7" r="6" fill="#C8465C"/><circle cx="7" cy="7" r="6" fill="#C8465C"/>
+      </g>
+      <rect x="486" y="224" width="70" height="76" rx="10" fill="#DFF3F6" stroke="#1E5038" stroke-width="5.5"/>
+      <g transform="translate(521 262)">
+        <rect x="-20" y="-20" width="40" height="40" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="5"/>
+        <circle cx="-8" cy="-8" r="6" fill="#2E2A26"/><circle cx="8" cy="-8" r="6" fill="#2E2A26"/>
+        <circle cx="0" cy="0" r="6" fill="#2E2A26"/>
+        <circle cx="-8" cy="8" r="6" fill="#2E2A26"/><circle cx="8" cy="8" r="6" fill="#2E2A26"/>
+      </g>
+    </g>
+    <!-- 车轮 -->
+    <circle cx="196" cy="344" r="31" fill="#2E2A26" stroke="#1F1A14" stroke-width="7"/>
+    <circle cx="196" cy="344" r="13" fill="#C9C4B4"/>
+    <circle cx="466" cy="344" r="31" fill="#2E2A26" stroke="#1F1A14" stroke-width="7"/>
+    <circle cx="466" cy="344" r="13" fill="#C9C4B4"/>
+  </g>
+
+  <!-- 车顶骰子乘客（中间一枚签名表情） -->
+  <g>
+    <g transform="translate(182 146) rotate(-6)">
+      <rect x="-24" y="-24" width="48" height="48" rx="10" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+      <circle cx="-10" cy="-10" r="6" fill="#2E2A26"/><circle cx="0" cy="0" r="6" fill="#2E2A26"/><circle cx="10" cy="10" r="6" fill="#2E2A26"/>
+    </g>
+    <g transform="translate(300 142) rotate(4)">
+      <rect x="-24" y="-24" width="48" height="48" rx="10" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+      <circle cx="-10" cy="-4" r="6.5" fill="#2E2A26"/>
+      <circle cx="10" cy="-4" r="6.5" fill="#2E2A26"/>
+      <path d="M-8 10 Q0 17 8 9" stroke="#2E2A26" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <circle cx="-14" cy="-14" r="6" fill="#FFFFFF" opacity="0.45"/>
+    </g>
+    <g transform="translate(418 146) rotate(-4)">
+      <rect x="-24" y="-24" width="48" height="48" rx="10" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+      <circle cx="-9" cy="-9" r="6" fill="#C8465C"/><circle cx="9" cy="-9" r="6" fill="#C8465C"/>
+      <circle cx="0" cy="0" r="6" fill="#C8465C"/>
+      <circle cx="-9" cy="9" r="6" fill="#C8465C"/><circle cx="9" cy="9" r="6" fill="#C8465C"/>
+    </g>
+  </g>
+
+  <!-- 站牌 -->
+  <g>
+    <path d="M690 390 L690 216" stroke="#3A2A1E" stroke-width="7" stroke-linecap="round"/>
+    <rect x="654" y="158" width="72" height="60" rx="12" fill="#F2E4BC" stroke="#3A2A1E" stroke-width="7"/>
+    <g stroke="#B89A62" stroke-width="4.5" stroke-linecap="round">
+      <path d="M666 174 H714"/>
+      <path d="M666 188 H714"/>
+      <path d="M666 202 H700"/>
+    </g>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

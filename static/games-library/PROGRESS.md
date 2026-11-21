@@ -373,3 +373,64 @@
   遗留建议（记录未动手）：hoop-shot 键盘瞄准无弹道预览；paper-fold-cut 深色洞/纸对比可在
   §3 登记深色变体时调整；3 处无害冗余代码。浏览器抽查 3 款修复款（map-fold 按钮功能 /
   water-dig 可玩 / gear-mesh 深色对比）全部通过。
+
+- **2026-11-21（新游戏·自研入库·扩展总表第三批）52 款（游戏库 175 → 227 款，文字+棋牌）**：
+  净室自研（零外链、零素材、canvas/DOM 自绘），出生即按 §6 规范并登记 audit-gates STRICT。
+  批次范围 = 总目录 #105-156（C 组文字 27 款 + D 组前 25 款棋牌）；freecell 经核实与存量
+  solitaire（实为 Klondike）规则实质不同，无撞车。主题运行时块与 block-drop 逐字节一致，
+  GB 桥适配层沿 river-cross 标准形态。批次清单（52 款，按 category 分组）：
+  - word（27）：pinyin-tone radical-hunt stroke-fill word-link antonym-pair synonym-ladder proverb-fill poem-order typo-hunt sentence-fix pinyin-write measure-fill word-grid tone-tower glyph-pair couplet-pair xiehouyu twist-spot mad-lib stroke-count word-burst char-rain anagram-EN typing-race idiom-cross homophone word-hunt
+  - board（25）：freecell pyramid-sol golf-solitaire clock-solitaire accordion-sol rummy-lite old-maid war-cards spit-race three-card-monte baccarat-lite dice-poker stop-bus dudo-bluff checkers hex-line breakthrough morris-line minishogi jungle-dark backgammon-lite ludo-solo snake-ladder mancala abalone-push
+  审计结论：`audit-gates.mjs` 全库 227 款**严格模式 0 违规**、存量模式 0 违规；
+  `theme-gates.mjs` 本批 52/52 全绿。
+  关卡验证总结论：49 款关卡驱动（各 40 关）全部经内嵌独立验证器逐关复核通过——
+  freecell 最佳优先求解器、pyramid/golf/accordion 独立 DFS、rummy 精确覆盖、
+  clock 翻牌链模拟器、baccarat 第三张牌规则「表 vs 引擎」全域比对、dice-poker 计分三路一致、
+  three-card-monte 双实现交换序列交叉、old-maid/war-cards/spit-race/stop-bus 无头对局模拟
+  （结果随机类按规则一致性+守恒+可达上界口径，README 如实陈述）；棋类 12 款为梯度 AI
+  （negamax/α-β/全骰序枚举/启发式一着）× 段位×让子×先手产关，累计约 60 场 AI 对拍局验证。
+  3 款分数驱动（word-burst / char-rain / typing-race）最高分持久化（desc）。
+  word 类内容准确性：拼音声调/部首/笔顺（《通用字笔顺规范》）/反义词/量词/俗语/诗句（公版）/同音词
+  等全部自撰逐条校对，README 各自写明内容口径；内嵌验证器含泄底校验与唯一性复核。
+  375px 实开（Chrome 真机 52/52）：无横向溢出、无 h1、桥主题推送、非法值拒绝。
+  体积范围：单款 17,540B（typing-race）– 47,746B（sentence-fix），52 款合计约 1.4MB。
+  终审修复（真机抽查抓到）：**typo-hunt 验证器与数据模型错位**——验证器按「原文含正字覆盖」模型
+  而数据为「成品病句」模型，40 关全被判异常致游戏不可玩（jsdom 无头验证未暴露）；修验证器为病句
+  模型（错字按出现次序定位），删除内容不当条目（偷偷地→悄悄地 非错、叠字型错误改写文本消歧：
+  美孜孜/博博 直接以正字入文），README 验证口径同步；浏览器实测 40/40 关加载、纠错交互正常。
+
+- **2026-11-21（封面补齐 52 张 · 第三批全库 227 款全覆盖）**：
+  扩展总表第三批 52 款（文字 27 + 棋牌 25）按 GAME-COVER.md 方案 A 全部绘制落位，
+  游戏库 227 款封面零缺失。管线与第二批一致（SVG → Chrome headless 渲染 → PS 2026 COM
+  Unsharp 60%/0.6px/阈值2 → 索引层颗粒量化 → 单处落位），全部 800×450、≤120KB。
+  word 类封面执行「封面无文案」替代方案：汉字内容用米字格/笔画线条/拼音横线/字形刻痕等
+  几何语言示意（glyph-pair 的甲骨→金文→今字三段演变牌、word-grid 十字盘等），不写真实文字。
+  造型防撞：word-grid 区别于 crossword/idiom、proverb-fill 区别于 poem-fill、word-hunt 区别于
+  word-search、baccarat 不画荷官人物区别于 blackjack、freecell 区别于 solitaire/spider。
+  逐批目检 6 张（pinyin-tone / char-rain / glyph-pair / freecell / dudo-bluff / snake-ladder）
+  家族要素全部到位。SVG 源归档 covers-src/（累计 227 份）。
+
+- **2026-11-21（impeccable 全指令评审 · 第三批 52 款）**：
+  沿第二批同款口径（critique/audit/layout/typeset/clarify/harden 双轨）对第三批 52 款全量评审修复。
+  机器预扫 7 类：焦点环/reduced-motion/过渡/aria-live/canvas 闭合 5 类出生即合规；palLoad 预扫 39 款
+  经逐款甄别实际 0 款需补（文字类 26 款纯 DOM 级联、棋牌类 canvas 款链路完整，预扫启发式过宽）；
+  visibilitychange 甄别后 10 款缺失、仅 old-maid 需动手（AI 步进隐藏暂停/恢复续走，未采用作废让先
+  ——盲抽即整回合，作废会改变平衡）。改动 51 款、dudo-bluff 零改动通过，全部双 gates 复绿，
+  全库 227 款严格模式 0 违规。修复分五类：
+  1. **进度续玩家族 bug（12/13 DOM 牌类，本批最大收获）**：buildActive「lv=0 加载且 Math.min
+     清零 save.lv」致每次打开回第 1 关并抹本地进度（11 款）；freecell/pyramid-sol 为 verify-first
+     槽位错位变体（过关后 save.lv 永不前进且跳回第 1 关）。统一修复为存档续玩 + 坏关回退。
+  2. **baccarat-lite 真 P1 规则 bug ×2**：庄家补牌判定误传玩家总点（应传庄家总点）+ 卫语句
+     `>=6` 死分支（应为 >=7）——「表 vs 引擎全域比对」两路同错故自检未暴露（双实现同错盲区），
+     修复后经独立标准庄家补牌表逐格比对通过。验证器方法论增补：交叉验证只能证明两实现一致，
+     需补「标准锚点用例」一档。
+  3. **延迟进位竞态（12/27 文字类）**：答对后 650-900ms setTimeout 进位回调在重开/选关后仍执行
+     （跳题/错位），统一引入 gen 代际计数守卫；word-burst / typing-race 暂停窗口死帧/刷分补齐。
+  4. **对比度修复 6 款**：synonym-ladder 终点文字、clock-solitaire/spit-race 主色字、char-rain
+     canvas 落字（恒暗墨目标类/恒白干扰类）、antonym-pair 快捷键文案失实、mad-lib 描边宣称补挂类、
+     freecell/pyramid 占位 faint→muted、accordion 序号 faint→muted。
+  5. **stat 水平 padding 4→8px 全批 52 款**；abalone-push 系统性错字 珒→珠（index 8 处 + README）。
+  遗留建议（记录未动手）：synonym-ladder 未上梯级幽灵答案（玩法机制变更需裁定）；breakthrough
+  斜前进空格为刻意变体（三处一致）；antonym-pair 旧缓存需 DB 版本覆盖；3 处无害死代码。
+  浏览器终验（375px 真机 52/52 + typo-hunt 纠错交互实点）全过；typo-hunt 验证器模型错位 P0
+  已随本批修复（见第三批条目）。
