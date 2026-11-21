@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#33906A"/>
+      <stop offset="0.55" stop-color="#227050"/>
+      <stop offset="1" stop-color="#175C41"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0D3826" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#124A34" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#0F402C" opacity="0.6"/>
+  <g stroke="#C8EADC" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 86 h11 M97.5 80.5 v11" stroke-width="3"/>
+    <path d="M712 90 h12 M718 84 v12" stroke-width="3.4"/>
+    <path d="M62 260 h9 M66.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M748 240 h9 M752.5 235.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#C8EADC" opacity="0.5">
+    <circle cx="140" cy="150" r="4"/><circle cx="676" cy="130" r="3.4"/><circle cx="66" cy="200" r="3"/><circle cx="752" cy="180" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="404" rx="252" ry="20" fill="#0D3826" opacity="0.4"/>
+
+  <!-- 迷宫盘 -->
+  <g>
+    <rect x="180" y="105" width="440" height="280" rx="18" fill="#F2EFE9" stroke="#1E2620" stroke-width="9"/>
+    <rect x="180" y="105" width="440" height="280" rx="18" fill="url(#gloss)"/>
+    <!-- 已涂亮的路径 -->
+    <path d="M212 138 H500 Q520 138 520 158 V192 Q520 212 500 212 H240 Q220 212 220 232 V268 Q220 288 240 288 H540 Q560 288 560 308 V338"
+          fill="none" stroke="#E2A44E" stroke-width="26" stroke-linecap="round" opacity="0.3"/>
+    <path d="M212 138 H500 Q520 138 520 158 V192 Q520 212 500 212 H240 Q220 212 220 232 V268 Q220 288 240 288 H540 Q560 288 560 308 V338"
+          fill="none" stroke="#E2A44E" stroke-width="15" stroke-linecap="round"/>
+    <!-- 迷宫墙 -->
+    <g stroke="#17734A" stroke-width="10" stroke-linecap="round" fill="none">
+      <path d="M200 172 H470"/>
+      <path d="M560 168 H600"/>
+      <path d="M470 172 V232"/>
+      <path d="M420 232 H600"/>
+      <path d="M320 232 V292"/>
+      <path d="M200 292 H260"/>
+      <path d="M320 316 H520"/>
+    </g>
+    <!-- 入口 -->
+    <circle cx="212" cy="138" r="13" fill="#F2EFE9" stroke="#2D9B6A" stroke-width="6"/>
+    <!-- 涂色小球（签名表情） -->
+    <circle cx="560" cy="340" r="26" fill="#2D9B6A" stroke="#1E2620" stroke-width="7"/>
+    <circle cx="560" cy="340" r="26" fill="url(#gloss)"/>
+    <circle cx="551" cy="334" r="4.8" fill="#0B3625"/>
+    <circle cx="569" cy="334" r="4.8" fill="#0B3625"/>
+    <path d="M552 346 Q560 352 568 345" stroke="#0B3625" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="550" cy="328" r="4" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

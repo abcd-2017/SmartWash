@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8F6EF"/>
+      <stop offset="0.55" stop-color="#D2EAD9"/>
+      <stop offset="1" stop-color="#B4DAC4"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E5E44" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#94C0A6" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#80AC92" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M100 300 h9 M104.5 295.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M704 300 h9 M708.5 295.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="90" cy="160" r="4"/><circle cx="712" cy="150" r="3.4"/><circle cx="66" cy="230" r="3"/><circle cx="740" cy="220" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="386" rx="250" ry="16" fill="#5E8E70" opacity="0.3"/>
+
+  <!-- 桥（双线） -->
+  <g stroke="#1E2620" stroke-width="7" stroke-linecap="round">
+    <!-- A-B 横向双桥 -->
+    <path d="M250 140 H410 M250 168 H410"/>
+    <!-- C-D 横向单桥 -->
+    <path d="M330 300 H490"/>
+    <!-- B-D 竖向单桥 -->
+    <path d="M475 155 V235"/>
+  </g>
+  <g stroke="#5BC894" stroke-width="4" stroke-linecap="round">
+    <path d="M250 154 H410"/>
+    <path d="M330 300 H490" opacity="0.6"/>
+    <path d="M475 155 V235" opacity="0.6"/>
+  </g>
+
+  <!-- 岛（主视觉） -->
+  <g>
+    <!-- 岛 A（3 桥：三点） -->
+    <rect x="150" y="106" width="100" height="96" rx="22" fill="#E8F6EF" stroke="#1E2620" stroke-width="9"/>
+    <rect x="150" y="106" width="100" height="96" rx="22" fill="url(#gloss)"/>
+    <g fill="#17734A">
+      <circle cx="200" cy="132" r="10"/>
+      <circle cx="182" cy="154" r="10"/><circle cx="218" cy="154" r="10"/>
+      <circle cx="200" cy="176" r="10"/>
+    </g>
+    <!-- 岛 B（2 桥） -->
+    <rect x="410" y="106" width="100" height="96" rx="22" fill="#E8F6EF" stroke="#1E2620" stroke-width="9"/>
+    <rect x="410" y="106" width="100" height="96" rx="22" fill="url(#gloss)"/>
+    <g fill="#17734A">
+      <circle cx="444" cy="154" r="10"/><circle cx="478" cy="154" r="10"/>
+    </g>
+    <!-- 岛 C（1 桥，桥数小精灵） -->
+    <rect x="222" y="258" width="108" height="86" rx="22" fill="#E8F6EF" stroke="#1E2620" stroke-width="9"/>
+    <rect x="222" y="258" width="108" height="86" rx="22" fill="url(#gloss)"/>
+    <circle cx="276" cy="301" r="17" fill="#17734A"/>
+    <circle cx="270" cy="296" r="4" fill="#FFFFFF"/>
+    <circle cx="282" cy="296" r="4" fill="#FFFFFF"/>
+    <path d="M270 307 Q276 312 282 306" stroke="#FFFFFF" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <!-- 岛 D（2 桥，带表情变体？岛不带表情，由小圆点拟人） -->
+    <rect x="490" y="236" width="108" height="96" rx="22" fill="#E8F6EF" stroke="#1E2620" stroke-width="9"/>
+    <rect x="490" y="236" width="108" height="96" rx="22" fill="url(#gloss)"/>
+    <g fill="#17734A">
+      <circle cx="520" cy="272" r="10"/><circle cx="554" cy="272" r="10"/>
+      <circle cx="537" cy="298" r="10"/>
+    </g>
+  </g>
+
+  <!-- 施工中的桥（虚线预示） -->
+  <g stroke="#1E2620" stroke-width="6" stroke-linecap="round" stroke-dasharray="10 12" fill="none" opacity="0.55">
+    <path d="M300 180 Q330 220 316 258"/>
+  </g>
+  <!-- 小锤（装饰） -->
+  <g>
+    <path d="M640 356 L596 320" stroke="#1E2620" stroke-width="10" stroke-linecap="round"/>
+    <path d="M640 356 L596 320" stroke="#8A6A44" stroke-width="5" stroke-linecap="round"/>
+    <rect x="580" y="296" width="44" height="30" rx="8" transform="rotate(-38 602 311)" fill="#C9CFC7" stroke="#1E2620" stroke-width="7"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

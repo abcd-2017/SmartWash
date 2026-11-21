@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>二阶魔方</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-c1..6 为六面贴纸色，深色微降亮度）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-c1:#F0F2EF;--g-st-c2:#E7C24A;--g-st-c3:#CF5568;--g-st-c4:#E28B3D;--g-st-c5:#4A9FD4;--g-st-c6:#34A06E;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-c1:#C9CEC9;--g-st-c2:#D8B23E;--g-st-c3:#DB7186;--g-st-c4:#E2A44E;--g-st-c5:#6BB4DE;--g-st-c6:#4ADE6E;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 10px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .facebar { display: flex; gap: 6px; margin-bottom: 8px; }
+  .fbtn {
+    min-height: 44px; flex: 1; border: 0; padding: 0 4px;
+    border-radius: var(--g-radius-btn); cursor: pointer;
+    background: var(--g-btn-primary); color: #fff;
+    font-family: inherit; font-size: 16px; font-weight: 600;
+  }
+  .fbtn:active { opacity: .85; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效 */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+
+  /* 展开图 */
+  .rnet {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    background: var(--g-surface); border: 2px solid var(--g-border);
+    border-radius: var(--g-radius); padding: 10px; box-shadow: var(--g-shadow);
+  }
+  .rface { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px; border: 0; padding: 0; background: transparent; cursor: pointer; min-height: 64px; }
+  .rst { aspect-ratio: 1; border-radius: 4px; border: 1px solid rgba(0,0,0,.12); }
+  .rlb { font-size: 12px; color: var(--g-muted); text-align: center; padding-top: 2px; }
+  .fcell { display: flex; flex-direction: column; }
+  .fcell.u { grid-column: 2; grid-row: 1; }
+  .fcell.l { grid-column: 1; grid-row: 2; }
+  .fcell.f { grid-column: 2; grid-row: 2; }
+  .fcell.r { grid-column: 3; grid-row: 2; }
+  .fcell.b { grid-column: 4; grid-row: 2; }
+  .fcell.d { grid-column: 2; grid-row: 3; }
+  .lastmv { font-size: 12px; color: var(--g-muted); text-align: center; margin-top: 6px; min-height: 16px; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">已拧</span><span class="val" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">参考步数</span><span class="val" id="stPar">-</span></div>
+  </div>
+  <div class="rnet" id="rnet" aria-label="二阶魔方展开图：点各面顺时针转动"></div>
+  <div class="lastmv" id="lastmv"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点展开图中的面（或下方按钮）顺时针拧 90°，六面各自同色即复原</p>
+  <div class="facebar" id="facebar"></div>
+  <div class="tools">
+    <button class="btn" id="btnUndo">撤销</button>
+    <button class="btn" id="btnReset">重乱</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：U/D/L/R/F/B 顺拧 · Shift+同键逆拧 · Z 撤销 · 40 关递进 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="rubik-mini",SAVE_KEY="sw.rubikmini.v1";
+var DEFAULT_LEVELS=[{"name":"复原·01","scram":"DBRBF","par":8,"difficulty":1},{"name":"复原·02","scram":"RDLUR","par":8,"difficulty":1},{"name":"复原·03","scram":"FBRFU","par":8,"difficulty":1},{"name":"复原·04","scram":"LURUR","par":8,"difficulty":1},{"name":"复原·05","scram":"FDFLU","par":8,"difficulty":1},{"name":"复原·06","scram":"DUBLF","par":8,"difficulty":1},{"name":"复原·07","scram":"FDLRU","par":8,"difficulty":1},{"name":"复原·08","scram":"RBFRF","par":8,"difficulty":2},{"name":"复原·09","scram":"FDLRF","par":8,"difficulty":2},{"name":"复原·10","scram":"DRDBL","par":8,"difficulty":2},{"name":"复原·11","scram":"LFRDRFD","par":12,"difficulty":2},{"name":"复原·12","scram":"FUBFDUR","par":12,"difficulty":2},{"name":"复原·13","scram":"DULRBUR","par":12,"difficulty":2},{"name":"复原·14","scram":"DLDULFD","par":12,"difficulty":2},{"name":"复原·15","scram":"BRDLBLU","par":12,"difficulty":3},{"name":"复原·16","scram":"RLULRDL","par":12,"difficulty":3},{"name":"复原·17","scram":"BUBDFRB","par":12,"difficulty":3},{"name":"复原·18","scram":"BLFBUFD","par":12,"difficulty":3},{"name":"复原·19","scram":"BULFRDL","par":12,"difficulty":3},{"name":"复原·20","scram":"LDBUFRF","par":12,"difficulty":3},{"name":"复原·21","scram":"FLRBFDU","par":12,"difficulty":3},{"name":"复原·22","scram":"FLRBDUF","par":12,"difficulty":4},{"name":"复原·23","scram":"FLURDBDU","par":13,"difficulty":4},{"name":"复原·24","scram":"FDLFLUFD","par":13,"difficulty":4},{"name":"复原·25","scram":"UDUDFLRF","par":13,"difficulty":4},{"name":"复原·26","scram":"LULURFUR","par":13,"difficulty":4},{"name":"复原·27","scram":"RFULURBF","par":13,"difficulty":4},{"name":"复原·28","scram":"RBDLURBU","par":13,"difficulty":4},{"name":"复原·29","scram":"DFRDFURF","par":13,"difficulty":5},{"name":"复原·30","scram":"DULULFUF","par":13,"difficulty":5},{"name":"复原·31","scram":"DFBLURBD","par":13,"difficulty":5},{"name":"复原·32","scram":"LRDURFRL","par":13,"difficulty":5},{"name":"复原·33","scram":"DUDFDUBRF","par":15,"difficulty":5},{"name":"复原·34","scram":"URLRFDBRL","par":15,"difficulty":5},{"name":"复原·35","scram":"BDRBDBLRL","par":15,"difficulty":5},{"name":"复原·36","scram":"DBRBUBDUF","par":15,"difficulty":6},{"name":"复原·37","scram":"BFRDLRULB","par":15,"difficulty":6},{"name":"复原·38","scram":"LRFBLFRUR","par":15,"difficulty":6},{"name":"复原·39","scram":"RFLULRFDL","par":15,"difficulty":6},{"name":"复原·40","scram":"DLFDRBLBU","par":15,"difficulty":6}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seenName={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!verifyLevel(d))return null;
+    if(seenName[d.name])return null;
+    seenName[d.name]=1;
+    list.push(normalizeLevel(d));
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(function(d){return verifyLevel(d)})){
+      LEVELS=list.map(normalizeLevel);return v;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层 ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+//__VERIFY__START
+/* 二阶魔方双实现互验：主实现=叉积旋转；验证器=四元数旋转 + 独立还原回放 */
+var RC_AXES={U:[1,1],D:[1,0],L:[0,0],R:[0,1],F:[2,1],B:[2,0]};
+var RC_NV=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+function rcParseScram(s){
+  if(typeof s!=="string"||!s.length||s.length>12)return null;
+  var out=[];
+  for(var i=0;i<s.length;i++){
+    var ax=RC_AXES[s[i]];
+    if(!ax)return null;
+    out.push([ax[0],ax[1]]);
+  }
+  for(i=1;i<out.length;i++)if(out[i][0]===out[i-1][0]&&out[i][1]===out[i-1][1])return null;   // 连续同面
+  return out;
+}
+function rcCross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]}
+function rcDot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]}
+function rcNormIdx(m){
+  for(var i=0;i<6;i++)if(RC_NV[i][0]===m[0]&&RC_NV[i][1]===m[1]&&RC_NV[i][2]===m[2])return i;
+  return -1;
+}
+function rcNewState(){
+  var st=[];
+  for(var x=0;x<2;x++)for(var y=0;y<2;y++)for(var z=0;z<2;z++)
+    st.push({p:[x,y,z],c:[0,1,2,3,4,5]});
+  return st;
+}
+/* 主实现旋转：−90°（顺） v'=−(n×v)+n(n·v)；+90°（逆） v'=+(n×v)+n(n·v) */
+function rcRotCross(v,n,prime){
+  var s=prime?1:-1,cr=rcCross(n,v),dv=rcDot(n,v);
+  return [s*cr[0]+n[0]*dv,s*cr[1]+n[1]*dv,s*cr[2]+n[2]*dv];
+}
+function rcTurn(state,axis,layer,prime){
+  var n=[0,0,0];n[axis]=layer===1?1:-1;
+  var out=[];
+  for(var i=0;i<state.length;i++){
+    var cu={p:state[i].p.slice(),c:state[i].c.slice()};
+    if(state[i].p[axis]===layer){
+      var q=[state[i].p[0]*2-1,state[i].p[1]*2-1,state[i].p[2]*2-1];
+      var q2=rcRotCross(q,n,prime);
+      cu.p=[(q2[0]+1)/2,(q2[1]+1)/2,(q2[2]+1)/2];
+      var nc=new Array(6);
+      for(var k=0;k<6;k++){
+        var m2=rcRotCross(RC_NV[k],n,prime);
+        nc[rcNormIdx(m2)]=state[i].c[k];
+      }
+      cu.c=nc;
+    }
+    out.push(cu);
+  }
+  return out;
+}
+/* 验证器旋转：四元数 v'=q v q*（w=√2/2，vec=±√2/2·n），结果须精确落回 {0,1} 格点 */
+function rcRotQuat(v,n,prime){
+  var s=Math.SQRT1_2,w=s,sg=prime?1:-1;
+  var qv=[sg*s*n[0],sg*s*n[1],sg*s*n[2]];
+  var t=[2*(qv[1]*v[2]-qv[2]*v[1]),2*(qv[2]*v[0]-qv[0]*v[2]),2*(qv[0]*v[1]-qv[1]*v[0])];
+  var out=[v[0]+w*t[0]+(qv[1]*t[2]-qv[2]*t[1]),
+           v[1]+w*t[1]+(qv[2]*t[0]-qv[0]*t[2]),
+           v[2]+w*t[2]+(qv[0]*t[1]-qv[1]*t[0])];
+  for(var i=0;i<3;i++){
+    var r=Math.round(out[i]);
+    if(Math.abs(out[i]-r)>1e-6)return null;   // 旋转后偏离格点：实现错误
+    out[i]=r;
+  }
+  return out;
+}
+function rcTurnQuat(state,axis,layer,prime){
+  var n=[0,0,0];n[axis]=layer===1?1:-1;
+  var out=[];
+  for(var i=0;i<state.length;i++){
+    var cu={p:state[i].p.slice(),c:state[i].c.slice()};
+    if(state[i].p[axis]===layer){
+      var q=[state[i].p[0]*2-1,state[i].p[1]*2-1,state[i].p[2]*2-1];
+      var q2=rcRotQuat(q,n,prime);
+      if(!q2)return null;
+      cu.p=[(q2[0]+1)/2,(q2[1]+1)/2,(q2[2]+1)/2];
+      var nc=new Array(6);
+      for(var k=0;k<6;k++){
+        var m2=rcRotQuat(RC_NV[k],n,prime);
+        if(!m2)return null;
+        var ni=rcNormIdx(m2);
+        if(ni<0)return null;
+        nc[ni]=state[i].c[k];
+      }
+      cu.c=nc;
+    }
+    out.push(cu);
+  }
+  return out;
+}
+function rcHash(state){
+  var s="";
+  for(var i=0;i<state.length;i++){
+    s+=state[i].p.join("")+":"+state[i].c.join("")+"|";
+  }
+  return s;
+}
+function rcSolved(state){
+  for(var axis=0;axis<3;axis++)for(var layer=0;layer<2;layer++){
+    var col=-1;
+    for(var i=0;i<state.length;i++){
+      if(state[i].p[axis]!==layer)continue;
+      var nrm=RC_NV[axis*2+(layer===0?1:0)];
+      var ci=state[i].c[rcNormIdx(nrm)];
+      if(col<0)col=ci;else if(col!==ci)return false;
+    }
+  }
+  return true;
+}
+/* 加载复核：打乱合法、打乱后非复原态、双实现打乱结果一致、双实现逆序回放复原 */
+function verifyLevel(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  var mv=rcParseScram(d.scram);
+  if(!mv)return false;
+  var s1=rcNewState();
+  for(var i=0;i<mv.length;i++)s1=rcTurn(s1,mv[i][0],mv[i][1],false);
+  if(rcSolved(s1))return false;   // 打乱后仍是复原态：非谜题
+  var s2=rcNewState();
+  for(i=0;i<mv.length;i++){
+    s2=rcTurnQuat(s2,mv[i][0],mv[i][1],false);
+    if(!s2)return false;
+  }
+  if(rcHash(s1)!==rcHash(s2))return false;   // 双实现不一致
+  for(i=mv.length-1;i>=0;i--){
+    s1=rcTurn(s1,mv[i][0],mv[i][1],true);
+    s2=rcTurnQuat(s2,mv[i][0],mv[i][1],true);
+    if(!s2)return false;
+  }
+  if(!rcSolved(s1)||!rcSolved(s2))return false;   // 逆序回放必须复原
+  return true;
+}
+function normalizeLevel(d){
+  return {name:String(d.name),scram:String(d.scram),
+    par:Math.max(4,Math.ceil(String(d.scram).length*1.6)),
+    difficulty:Math.min(9,Math.max(1,Number.isInteger(d.difficulty)?d.difficulty:5))};
+}
+//__VERIFY__END
+
+/* ---------- 调色板：贴纸色素材 token ---------- */
+var SCOL=[];
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  SCOL=[];
+  for(var i=1;i<=6;i++)SCOL.push(s.getPropertyValue("--g-st-c"+i).trim());
+}
+window.__gOnTheme=function(){palLoad();renderNet()};
+/* 六面底色（normal 索引 → 贴纸色 id）：+x红 −x橙 +y白 −y黄 +z绿 −z蓝 */
+var FC=[2,3,0,1,5,4];
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,state=null,moves=0,history=[],done=false,lastMove="";
+var FACES=["U","L","F","R","B","D"];
+var FGRID={U:"u",L:"l",F:"f",R:"r",B:"b",D:"d"};
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+/* 展开图取色：face → (row,col) → cubie 坐标 + 外法线 */
+function faceCell(face,row,col){
+  var x,y,z,ni;
+  if(face==="U"){x=col;z=row;y=1;ni=2;}
+  else if(face==="D"){x=col;z=1-row;y=0;ni=3;}
+  else if(face==="F"){x=col;y=1-row;z=1;ni=4;}
+  else if(face==="B"){x=1-col;y=1-row;z=0;ni=5;}
+  else if(face==="L"){z=1-col;y=1-row;x=0;ni=1;}
+  else{z=1-col;y=1-row;x=1;ni=0;}
+  for(var i=0;i<8;i++){
+    var p=state[i].p;
+    if(p[0]===x&&p[1]===y&&p[2]===z)return SCOL[state[i].c[ni]];
+  }
+  return SCOL[0];
+}
+function buildNet(){
+  var net=$("rnet");
+  net.innerHTML="";
+  for(var fi=0;fi<FACES.length;fi++){
+    (function(face){
+      var cell=document.createElement("div");
+      cell.className="fcell "+FGRID[face];
+      var f=document.createElement("button");
+      f.type="button";
+      f.className="rface";
+      f.setAttribute("aria-label",face+" 面（"+({U:"上",D:"下",L:"左",R:"右",F:"前",B:"后"})[face]+"）");
+      for(var r=0;r<2;r++)for(var c2=0;c2<2;c2++){
+        var st=document.createElement("span");
+        st.className="rst";
+        f.appendChild(st);
+      }
+      f.addEventListener("click",function(){doTurn(face,false)});
+      var lb=document.createElement("div");
+      lb.className="rlb";
+      lb.textContent=face;
+      cell.appendChild(f);
+      cell.appendChild(lb);
+      net.appendChild(cell);
+    })(FACES[fi]);
+  }
+  var bar=$("facebar");
+  bar.innerHTML="";
+  FACES.forEach(function(face){
+    var b=document.createElement("button");
+    b.type="button";
+    b.className="fbtn";
+    b.textContent={U:"上 U",D:"下 D",L:"左 L",R:"右 R",F:"前 F",B:"后 B"}[face];
+    b.addEventListener("click",function(){doTurn(face,false)});
+    bar.appendChild(b);
+  });
+}
+function renderNet(){
+  var net=$("rnet");
+  var faces=net.querySelectorAll(".rface");
+  for(var fi=0;fi<FACES.length;fi++){
+    var f=faces[fi];
+    if(!f)continue;
+    var cells=f.children,k=0;
+    for(var r=0;r<2;r++)for(var c2=0;c2<2;c2++){
+      cells[k++].style.background=faceCell(FACES[fi],r,c2);
+    }
+  }
+}
+function doTurn(face,prime){
+  if(done)return;
+  var ax=RC_AXES[face];
+  state=rcTurn(state,ax[0],ax[1],prime);
+  history.push([face,prime]);
+  moves++;lastMove=face+(prime?"′":"");
+  $("lastmv").textContent="最后一步："+lastMove;
+  updStats();
+  if(rcSolved(state))winLevel();
+}
+function undo(){
+  if(!history.length||done)return;
+  var h=history.pop();
+  var ax=RC_AXES[h[0]];
+  state=rcTurn(state,ax[0],ax[1],!h[1]);
+  moves=Math.max(0,moves-1);
+  lastMove="";
+  $("lastmv").textContent="";
+  updStats();renderNet();say("已撤销");
+}
+function updStats(){
+  $("stMoves").textContent=moves;
+  $("btnUndo").disabled=!history.length||done;
+}
+function applyScramble(){
+  state=rcNewState();
+  var mv=rcParseScram(L.scram);
+  for(var i=0;i<mv.length;i++)state=rcTurn(state,mv[i][0],mv[i][1],false);
+  history=[];moves=0;done=false;lastMove="";
+  $("lastmv").textContent="";
+}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!verifyLevel(L)){say("关卡数据异常");return;}
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="打乱 "+L.scram.length+" 步 · 参考 ≤"+L.par+" 步复原";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  $("stPar").textContent=L.par;
+  say("点展开图中的面（或下方按钮）顺时针拧 90°，六面各自同色即复原");
+  applyScramble();updStats();renderNet();
+}
+/* ---------- 胜负 ---------- */
+function winLevel(){
+  done=true;
+  var stars=moves<=Math.ceil(L.scram.length*1.2)?3:(moves<=L.par?2:1);
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:stars}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"复原成功！";
+  $("ovDesc").innerHTML="用 "+moves+" 步复原（参考 ≤"+L.par+"）· 评价 "+stars+" 星"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+/* ---------- 输入 ---------- */
+$("btnUndo").addEventListener("click",undo);
+$("btnReset").addEventListener("click",function(){applyScramble();updStats();renderNet();say("已重新打乱")});
+$("btnLv").addEventListener("click",function(){if(done)return;openLevelSelect()});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(done){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+    else{lv++;loadLevel(lv)}
+  }
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if($("overlay").classList.contains("show")){
+    if(k===" "||k==="Enter"){$("ovBtn").click();e.preventDefault();}
+    return;
+  }
+  var up=k.toUpperCase();
+  if(RC_AXES[up]&&"UDLRFB".indexOf(up)>=0&&k.length===1){
+    doTurn(up,k!==up);   // 大写（Shift）= 逆拧
+    e.preventDefault();
+  }
+  else if(k==="z"||k==="Z")undo();
+});
+/* ---------- 启动：逐关双实现互验，不合格的关不入表 ---------- */
+(function(){
+  var ok=[];
+  for(var i=0;i<LEVELS.length;i++){
+    var pass=false;
+    try{pass=verifyLevel(LEVELS[i])}catch(e){pass=false}
+    if(pass)ok.push(LEVELS[i]);
+  }
+  if(ok.length)LEVELS=ok;
+})();
+palLoad();buildNet();loadLevel(save.lv);
+syncLevelsFromServer();syncSaveFromServer();
+
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

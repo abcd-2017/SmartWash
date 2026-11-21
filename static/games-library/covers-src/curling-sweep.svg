@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#B4CFE2"/>
+      <stop offset="0.55" stop-color="#93B5CE"/>
+      <stop offset="1" stop-color="#7A9DBA"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#34506E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部冰面带 -->
+  <rect y="402" width="800" height="48" fill="#6A8CA8" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M92 72 h11 M97.5 66.5 v11" stroke-width="3.2"/>
+    <path d="M700 68 h12 M706 62 v12" stroke-width="3.4"/>
+    <path d="M80 180 h9 M84.5 175.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M600 130 h9 M604.5 125.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="150" cy="120" r="4"/><circle cx="656" cy="104" r="3.4"/><circle cx="60" cy="250" r="3"/><circle cx="500" cy="110" r="2.6"/>
+  </g>
+
+  <!-- 大本营同心圈 -->
+  <g fill="none" stroke="#FFFFFF" opacity="0.5">
+    <circle cx="660" cy="340" r="100" stroke-width="8"/>
+    <circle cx="660" cy="340" r="64" stroke-width="6"/>
+    <circle cx="660" cy="340" r="28" stroke-width="6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="430" cy="374" rx="190" ry="14" fill="#4E6A88" opacity="0.4"/>
+
+  <!-- 冰壶（签名表情） -->
+  <rect x="225" y="228" width="30" height="44" rx="10" fill="#E2A44E" stroke="#1E2620" stroke-width="7"/>
+  <path d="M210 240 Q240 205 270 240" stroke="#E2A44E" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <ellipse cx="240" cy="315" rx="95" ry="58" fill="#B9C4CC" stroke="#1E2620" stroke-width="9"/>
+  <ellipse cx="240" cy="285" rx="70" ry="26" fill="#9FB0BC" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="198" cy="288" r="10" fill="#FFFFFF" opacity="0.45"/>
+  <circle cx="212" cy="308" r="8" fill="#1F1A14"/>
+  <circle cx="268" cy="308" r="8" fill="#1F1A14"/>
+  <path d="M206 330 Q240 346 274 328" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- 擦冰雪雾 -->
+  <path d="M360 356 Q400 364 440 358" stroke="#FFFFFF" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <circle cx="350" cy="362" r="6" fill="#FFFFFF" opacity="0.7"/>
+  <circle cx="380" cy="368" r="5" fill="#FFFFFF" opacity="0.7"/>
+
+  <!-- 冰刷 -->
+  <path d="M585 245 L430 335" stroke="#8A6E4A" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <polygon points="390,318 452,340 440,364 376,342" fill="#E8DFD2" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M398 348 L394 362 M414 354 L410 368 M430 358 L426 372" stroke="#8A8F96" stroke-width="5" stroke-linecap="round" fill="none"/>
+
+  <!-- 运动员 -->
+  <path d="M505 262 L488 318 M505 262 L525 315" stroke="#3A4A44" stroke-width="14" stroke-linecap="round" fill="none"/>
+  <path d="M480 322 L502 320 M518 318 L540 314" stroke="#1E2620" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <path d="M532 210 L505 262" stroke="#2D9B6A" stroke-width="26" stroke-linecap="round" fill="none"/>
+  <path d="M525 218 L520 278 M540 222 L500 290" stroke="#2D9B6A" stroke-width="13" stroke-linecap="round" fill="none"/>
+  <circle cx="520" cy="280" r="9" fill="#F2E2C8" stroke="#1E2620" stroke-width="6"/>
+  <circle cx="500" cy="290" r="9" fill="#F2E2C8" stroke="#1E2620" stroke-width="6"/>
+  <circle cx="540" cy="180" r="30" fill="#F2E2C8" stroke="#1E2620" stroke-width="8"/>
+  <circle cx="528" cy="162" r="8" fill="#FFFFFF" opacity="0.45"/>
+  <circle cx="530" cy="176" r="5.5" fill="#1F1A14"/>
+  <circle cx="550" cy="176" r="5.5" fill="#1F1A14"/>
+  <path d="M524 190 Q540 200 556 188" stroke="#1F1A14" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

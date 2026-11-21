@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>剪线拆弹</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-w1..6 为线色，深色提亮保可见）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-w1:#C9526B;--g-st-w2:#4A9FD4;--g-st-w3:#D9A93B;--g-st-w4:#3A3E3B;--g-st-w5:#F2F4F1;--g-st-w6:#4BAF7E;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-w1:#DB7186;--g-st-w2:#6BB4DE;--g-st-w3:#E2A44E;--g-st-w4:#B8BDB8;--g-st-w5:#E8EAE7;--g-st-w6:#6CC49A;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效 */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+
+  /* 拆弹面板 */
+  .bomb {
+    background: var(--g-surface); border: 2px solid var(--g-border);
+    border-radius: var(--g-radius); padding: 14px 10px 10px;
+    box-shadow: var(--g-shadow);
+  }
+  .bomb.shake { animation: shake .4s ease-out; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .wires { display: flex; gap: 10px; justify-content: center; }
+  .wire {
+    width: 52px; height: 168px; border: 0; padding: 0; cursor: pointer;
+    border-radius: 10px; position: relative;
+    background: var(--g-surface2);
+    font-family: inherit;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wire .cap { width: 100%; height: 18px; border-radius: 10px 10px 0 0; background: var(--g-muted); }
+  .wire .bar { width: 20px; flex: 1; border-radius: 6px; margin-top: 6px; }
+  .wire .tag { font-size: 12px; color: var(--g-muted); padding: 4px 0 2px; }
+  .wire .ord {
+    position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+    width: 22px; height: 22px; border-radius: 10px; background: var(--g-text); color: var(--g-surface);
+    font-size: 12px; font-weight: 700; line-height: 22px; text-align: center;
+  }
+  .wire.cur { outline: 2px solid var(--g-primary-deep); outline-offset: 2px; }
+  .wire.cut .bar { flex: 0 0 30%; }
+  .wire.cut .gap { flex: 1; }
+  .wire.cut { cursor: default; }
+  .clues { margin: 10px 2px 0; display: flex; flex-direction: column; gap: 6px; }
+  .clue {
+    font-size: 14px; line-height: 1.5; color: var(--g-text);
+    background: var(--g-surface2); border-radius: 10px; padding: 7px 10px;
+  }
+  .clue::before { content: "· "; color: var(--g-faint); }
+  .clue.ok { color: var(--g-success); }
+  .clue.bad { color: var(--g-danger); background: var(--g-primary-soft); }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">已剪</span><span class="val" id="stCut">0</span></div>
+    <div class="stat"><span class="label">爆炸</span><span class="val low" id="stBoom">0</span></div>
+  </div>
+  <div class="bomb" id="bomb">
+    <div class="wires" id="wires" aria-label="剪线拆弹：按线索顺序剪线"></div>
+    <div class="clues" id="clues"></div>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite">读线索，按顺序点线剪断；剪错一条就爆炸</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo">撤销</button>
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：方向键选线 · 空格剪断 · Z 撤销 · H 提示 · 40 关递进 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+    <button class="btn" id="ovUndo" hidden>撤销这步</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="fuse-cut",SAVE_KEY="sw.fusecut.v1";
+var DEFAULT_LEVELS=[{"name":"拆弹·01","wires":["红","白","黑","绿"],"clues":[{"t":"notpos","a":3,"k":2},{"t":"adj","a":1,"b":3},{"t":"before","a":0,"b":2},{"t":"before","a":1,"b":0}],"difficulty":1},{"name":"拆弹·02","wires":["黑","蓝","黄","红"],"clues":[{"t":"before","a":1,"b":3},{"t":"before","a":1,"b":2},{"t":"adj","a":3,"b":2},{"t":"next","a":0,"b":3}],"difficulty":1},{"name":"拆弹·03","wires":["黑","黄","红","蓝"],"clues":[{"t":"notpos","a":0,"k":1},{"t":"before","a":0,"b":1},{"t":"before","a":2,"b":0},{"t":"adj","a":2,"b":0},{"t":"pos","a":3,"k":4}],"difficulty":1},{"name":"拆弹·04","wires":["红","黄","蓝","白"],"clues":[{"t":"pos","a":2,"k":1},{"t":"before","a":0,"b":1},{"t":"pos","a":3,"k":4}],"difficulty":1},{"name":"拆弹·05","wires":["蓝","黄","红","白"],"clues":[{"t":"notpos","a":1,"k":1},{"t":"notpos","a":2,"k":1},{"t":"next","a":0,"b":1},{"t":"pos","a":3,"k":3}],"difficulty":1},{"name":"拆弹·06","wires":["黑","绿","黄","蓝"],"clues":[{"t":"next","a":1,"b":0},{"t":"next","a":0,"b":2},{"t":"before","a":0,"b":3}],"difficulty":1},{"name":"拆弹·07","wires":["黄","绿","白","红"],"clues":[{"t":"pos","a":0,"k":4},{"t":"pos","a":1,"k":3},{"t":"before","a":2,"b":3}],"difficulty":1},{"name":"拆弹·08","wires":["蓝","白","黑","绿"],"clues":[{"t":"notpos","a":1,"k":4},{"t":"adj","a":3,"b":0},{"t":"next","a":3,"b":0},{"t":"next","a":1,"b":3},{"t":"next","a":2,"b":1}],"difficulty":2},{"name":"拆弹·09","wires":["蓝","红","绿","黄"],"clues":[{"t":"next","a":1,"b":3},{"t":"pos","a":2,"k":1},{"t":"notpos","a":0,"k":4}],"difficulty":2},{"name":"拆弹·10","wires":["黑","红","黄","白"],"clues":[{"t":"next","a":2,"b":3},{"t":"next","a":1,"b":2},{"t":"adj","a":0,"b":3}],"difficulty":2},{"name":"拆弹·11","wires":["白","红","蓝","黄"],"clues":[{"t":"before","a":3,"b":0},{"t":"notpos","a":0,"k":4},{"t":"next","a":1,"b":2}],"difficulty":2},{"name":"拆弹·12","wires":["蓝","黄","红","绿"],"clues":[{"t":"next","a":3,"b":2},{"t":"next","a":1,"b":0},{"t":"notpos","a":0,"k":2}],"difficulty":2},{"name":"拆弹·13","wires":["红","黄","黑","白","蓝"],"clues":[{"t":"notpos","a":3,"k":5},{"t":"before","a":0,"b":4},{"t":"pos","a":3,"k":3},{"t":"pos","a":4,"k":5},{"t":"adj","a":3,"b":1},{"t":"before","a":3,"b":2}],"difficulty":2},{"name":"拆弹·14","wires":["黑","白","黄","红","蓝"],"clues":[{"t":"notpos","a":4,"k":3},{"t":"notpos","a":4,"k":1},{"t":"adj","a":3,"b":4},{"t":"adj","a":4,"b":0},{"t":"next","a":1,"b":2},{"t":"notpos","a":3,"k":3},{"t":"before","a":0,"b":3}],"difficulty":2},{"name":"拆弹·15","wires":["黄","蓝","绿","红","白"],"clues":[{"t":"adj","a":3,"b":1},{"t":"notpos","a":3,"k":5},{"t":"next","a":2,"b":4},{"t":"pos","a":3,"k":4},{"t":"next","a":0,"b":3}],"difficulty":3},{"name":"拆弹·16","wires":["蓝","白","黑","黄","绿"],"clues":[{"t":"adj","a":2,"b":1},{"t":"next","a":2,"b":4},{"t":"next","a":3,"b":1},{"t":"before","a":4,"b":0}],"difficulty":3},{"name":"拆弹·17","wires":["黄","红","黑","蓝","绿"],"clues":[{"t":"adj","a":3,"b":4},{"t":"notpos","a":1,"k":2},{"t":"notpos","a":2,"k":4},{"t":"before","a":3,"b":4},{"t":"next","a":0,"b":1},{"t":"adj","a":1,"b":3}],"difficulty":3},{"name":"拆弹·18","wires":["蓝","白","黄","黑","红"],"clues":[{"t":"next","a":3,"b":1},{"t":"before","a":1,"b":4},{"t":"adj","a":2,"b":3},{"t":"before","a":4,"b":0}],"difficulty":3},{"name":"拆弹·19","wires":["红","绿","黄","白","黑"],"clues":[{"t":"pos","a":4,"k":3},{"t":"before","a":1,"b":2},{"t":"pos","a":3,"k":4},{"t":"next","a":1,"b":0}],"difficulty":3},{"name":"拆弹·20","wires":["蓝","黑","绿","白","红"],"clues":[{"t":"adj","a":2,"b":3},{"t":"notpos","a":4,"k":4},{"t":"adj","a":4,"b":0},{"t":"notpos","a":0,"k":1},{"t":"pos","a":4,"k":5},{"t":"notpos","a":2,"k":2},{"t":"notpos","a":1,"k":3}],"difficulty":3},{"name":"拆弹·21","wires":["白","绿","蓝","红","黄"],"clues":[{"t":"next","a":2,"b":1},{"t":"notpos","a":3,"k":3},{"t":"next","a":0,"b":4},{"t":"pos","a":1,"k":4}],"difficulty":3},{"name":"拆弹·22","wires":["黄","红","蓝","绿","黑"],"clues":[{"t":"next","a":4,"b":3},{"t":"notpos","a":0,"k":2},{"t":"notpos","a":2,"k":5},{"t":"before","a":0,"b":1},{"t":"before","a":4,"b":2},{"t":"adj","a":4,"b":0}],"difficulty":4},{"name":"拆弹·23","wires":["黄","红","黑","蓝","绿"],"clues":[{"t":"notpos","a":1,"k":5},{"t":"next","a":0,"b":4},{"t":"adj","a":0,"b":3},{"t":"next","a":2,"b":1}],"difficulty":4},{"name":"拆弹·24","wires":["红","黄","绿","黑","蓝"],"clues":[{"t":"next","a":1,"b":0},{"t":"next","a":4,"b":3},{"t":"pos","a":4,"k":4},{"t":"before","a":1,"b":2}],"difficulty":4},{"name":"拆弹·25","wires":["黄","红","蓝","绿","黑"],"clues":[{"t":"before","a":3,"b":2},{"t":"adj","a":1,"b":2},{"t":"pos","a":4,"k":5},{"t":"pos","a":1,"k":4},{"t":"next","a":3,"b":0}],"difficulty":4},{"name":"拆弹·26","wires":["红","白","黑","绿","黄"],"clues":[{"t":"before","a":0,"b":1},{"t":"adj","a":3,"b":0},{"t":"adj","a":2,"b":1},{"t":"adj","a":4,"b":2},{"t":"adj","a":1,"b":3}],"difficulty":4},{"name":"拆弹·27","wires":["黑","白","红","蓝","黄"],"clues":[{"t":"adj","a":3,"b":2},{"t":"adj","a":4,"b":3},{"t":"next","a":0,"b":4},{"t":"before","a":1,"b":4}],"difficulty":4},{"name":"拆弹·28","wires":["蓝","绿","黑","黄","白"],"clues":[{"t":"adj","a":2,"b":3},{"t":"next","a":0,"b":2},{"t":"notpos","a":3,"k":5},{"t":"before","a":1,"b":4},{"t":"before","a":3,"b":1}],"difficulty":4},{"name":"拆弹·29","wires":["黄","蓝","白","红","黑","绿"],"clues":[{"t":"next","a":3,"b":1},{"t":"notpos","a":5,"k":3},{"t":"adj","a":2,"b":3},{"t":"before","a":5,"b":0},{"t":"pos","a":1,"k":4},{"t":"next","a":4,"b":0}],"difficulty":5},{"name":"拆弹·30","wires":["黑","蓝","白","绿","黄","红"],"clues":[{"t":"before","a":0,"b":5},{"t":"notpos","a":5,"k":2},{"t":"before","a":3,"b":1},{"t":"pos","a":5,"k":5},{"t":"before","a":1,"b":2},{"t":"notpos","a":2,"k":3},{"t":"before","a":1,"b":4},{"t":"pos","a":0,"k":4}],"difficulty":5},{"name":"拆弹·31","wires":["黑","绿","黄","白","蓝","红"],"clues":[{"t":"notpos","a":0,"k":1},{"t":"before","a":3,"b":0},{"t":"adj","a":3,"b":4},{"t":"next","a":4,"b":5},{"t":"notpos","a":3,"k":3},{"t":"next","a":0,"b":1},{"t":"adj","a":1,"b":2}],"difficulty":5},{"name":"拆弹·32","wires":["绿","红","黄","黑","白","蓝"],"clues":[{"t":"adj","a":4,"b":3},{"t":"notpos","a":2,"k":5},{"t":"pos","a":2,"k":1},{"t":"before","a":0,"b":1},{"t":"next","a":4,"b":0},{"t":"adj","a":3,"b":2},{"t":"adj","a":5,"b":0}],"difficulty":5},{"name":"拆弹·33","wires":["蓝","红","黄","黑","白","绿"],"clues":[{"t":"before","a":1,"b":3},{"t":"adj","a":2,"b":4},{"t":"pos","a":5,"k":4},{"t":"before","a":2,"b":3},{"t":"next","a":0,"b":2}],"difficulty":5},{"name":"拆弹·34","wires":["蓝","红","黑","绿","黄","白"],"clues":[{"t":"before","a":2,"b":4},{"t":"pos","a":0,"k":4},{"t":"next","a":1,"b":2},{"t":"notpos","a":3,"k":3},{"t":"before","a":1,"b":5},{"t":"before","a":3,"b":5},{"t":"adj","a":4,"b":5},{"t":"adj","a":0,"b":4}],"difficulty":5},{"name":"拆弹·35","wires":["蓝","白","黑","红","黄","绿"],"clues":[{"t":"next","a":3,"b":1},{"t":"notpos","a":0,"k":1},{"t":"before","a":2,"b":1},{"t":"before","a":2,"b":4},{"t":"adj","a":5,"b":3},{"t":"notpos","a":0,"k":6},{"t":"next","a":4,"b":0}],"difficulty":5},{"name":"拆弹·36","wires":["红","蓝","白","黄","黑","绿"],"clues":[{"t":"before","a":1,"b":3},{"t":"before","a":4,"b":5},{"t":"notpos","a":2,"k":2},{"t":"before","a":0,"b":4},{"t":"adj","a":1,"b":2},{"t":"notpos","a":4,"k":5},{"t":"pos","a":1,"k":4},{"t":"pos","a":5,"k":5}],"difficulty":6},{"name":"拆弹·37","wires":["白","绿","红","黄","黑","蓝"],"clues":[{"t":"notpos","a":5,"k":1},{"t":"pos","a":4,"k":3},{"t":"next","a":0,"b":1},{"t":"before","a":2,"b":3},{"t":"next","a":3,"b":0}],"difficulty":6},{"name":"拆弹·38","wires":["黑","白","绿","蓝","黄","红"],"clues":[{"t":"next","a":5,"b":1},{"t":"next","a":3,"b":0},{"t":"before","a":4,"b":0},{"t":"before","a":0,"b":1},{"t":"adj","a":2,"b":0}],"difficulty":6},{"name":"拆弹·39","wires":["红","绿","白","黑","蓝","黄"],"clues":[{"t":"before","a":1,"b":2},{"t":"notpos","a":3,"k":1},{"t":"next","a":1,"b":4},{"t":"adj","a":1,"b":0},{"t":"next","a":5,"b":3},{"t":"before","a":5,"b":1}],"difficulty":6},{"name":"拆弹·40","wires":["白","黑","黄","绿","红","蓝"],"clues":[{"t":"pos","a":1,"k":5},{"t":"pos","a":2,"k":4},{"t":"next","a":3,"b":4},{"t":"adj","a":5,"b":1},{"t":"next","a":4,"b":0}],"difficulty":6}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seenName={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!verifyLevel(d))return null;
+    if(seenName[d.name])return null;
+    seenName[d.name]=1;
+    list.push(normalizeLevel(d));
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(function(d){return verifyLevel(d)})){
+      LEVELS=list.map(normalizeLevel);return v;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0)),boom:Math.max(0,parseInt(s.boom,10)||0)}}catch(e){return{lv:0,boom:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层 ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  var u=$("ovUndo");
+  if(u)u.hidden=true;
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+//__VERIFY__START
+/* 剪线拆弹独立验证器：排列全枚举（N≤6 → ≤720），须恰有一个满足全部线索的剪序 */
+function fcParse(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return null;
+  if(typeof d.name!=="string"||!d.name.trim())return null;
+  if(!Array.isArray(d.wires)||d.wires.length<4||d.wires.length>6)return null;
+  var names={};
+  for(var i=0;i<d.wires.length;i++){
+    if(typeof d.wires[i]!=="string"||!d.wires[i]||d.wires[i].length>2||names[d.wires[i]])return null;
+    names[d.wires[i]]=1;
+  }
+  var N=d.wires.length;
+  if(!Array.isArray(d.clues)||!d.clues.length||d.clues.length>10)return null;
+  var TYPES=["before","pos","notpos","adj","next"];
+  for(i=0;i<d.clues.length;i++){
+    var c=d.clues[i];
+    if(!c||typeof c!=="object"||Array.isArray(c))return null;
+    if(TYPES.indexOf(c.t)<0)return null;
+    if(!Number.isInteger(c.a)||c.a<0||c.a>=N)return null;
+    if((c.t==="before"||c.t==="adj"||c.t==="next")){
+      if(!Number.isInteger(c.b)||c.b<0||c.b>=N||c.b===c.a)return null;
+    }
+    if(c.t==="pos"||c.t==="notpos"){
+      if(!Number.isInteger(c.k)||c.k<1||c.k>N)return null;
+    }
+    if(c.t==="pos"&&c.b!==undefined)return null;
+  }
+  return {name:d.name,wires:d.wires.slice(),clues:d.clues.map(function(c){return JSON.parse(JSON.stringify(c))}),N:N};
+}
+function fcCheck(cl,order){
+  // order[wireIdx]=剪序位置（1 起）
+  var a=cl.a,b=cl.b,k=cl.k;
+  if(cl.t==="before")return order[a]<order[b];
+  if(cl.t==="pos")return order[a]===k;
+  if(cl.t==="notpos")return order[a]!==k;
+  if(cl.t==="adj")return Math.abs(order[a]-order[b])===1;
+  if(cl.t==="next")return order[b]===order[a]+1;
+  return false;
+}
+/* 全排列枚举：返回满足全部线索的剪序数量与首个解 */
+function fcSolve(p,partial){
+  var N=p.N,order=[],used=[];
+  for(var i=0;i<N;i++){order.push(-1);used.push(false);}
+  // partial：{posOf: {wireIdx: position}} 或 null
+  var posOf=null;
+  if(partial){
+    posOf={};
+    for(var w in partial)posOf[w]=partial[w];
+  }
+  var count=0,first=null;
+  function dfs(d){
+    if(count>1)return;
+    if(d===N){
+      var seq=[];
+      for(var j=0;j<N;j++)seq[order[j]-1]=j;
+      for(j=0;j<p.clues.length;j++)if(!fcCheck(p.clues[j],order))return;
+      count++;
+      if(!first)first=seq.slice();
+      return;
+    }
+    for(var w=0;w<N;w++){
+      if(used[w])continue;
+      if(posOf&&posOf[w]!==undefined&&posOf[w]!==d+1)continue;
+      used[w]=true;order[w]=d+1;
+      // 提前剪枝：与该线相关的线索若已可判且必假则跳过
+      var ok=true;
+      for(var ci=0;ci<p.clues.length&&ok;ci++){
+        var cl=p.clues[ci];
+        var needA=order[cl.a]>0;
+        var needB=(cl.b!==undefined)?order[cl.b]>0:false;
+        if(cl.t==="before"&&needA&&needB&&order[cl.a]>=order[cl.b])ok=false;
+        if(cl.t==="adj"&&needA&&needB&&Math.abs(order[cl.a]-order[cl.b])!==1)ok=false;
+        if(cl.t==="next"&&needA&&needB&&order[cl.b]!==order[cl.a]+1)ok=false;
+        if(cl.t==="next"&&needA&&order[cl.a]===N)ok=false;
+      }
+      if(ok)dfs(d+1);
+      used[w]=false;order[w]=-1;
+    }
+  }
+  dfs(0);
+  return {count:count,first:first};
+}
+function verifyLevel(d){
+  var p=fcParse(d);
+  if(!p)return false;
+  var s=fcSolve(p,null);
+  return s.count===1&&!!s.first;
+}
+function normalizeLevel(d){
+  var p=fcParse(d);
+  return {name:String(d.name),wires:p.wires,clues:p.clues,
+    difficulty:Math.min(9,Math.max(1,Number.isInteger(d.difficulty)?d.difficulty:5))};
+}
+//__VERIFY__END
+
+/* ---------- 游戏状态 ---------- */
+var lv=save.lv,L=null,N=4,wires=[],clues=[];
+var cutOrder=[],booms=save.boom||0,done=false,failed=false,cur=0;
+var WCOLS=[];   // 线色素材：运行时读 --g-st-w1..w6（主题推送时刷新）
+function wcolLoad(){
+  var s=getComputedStyle(document.documentElement);
+  WCOLS=[];
+  for(var i=1;i<=6;i++)WCOLS.push(s.getPropertyValue("--g-st-w"+i).trim());
+}
+window.__gOnTheme=function(){wcolLoad()};
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function clueText(c){
+  var a=wires[c.a],b=c.b!==undefined?wires[c.b]:null;
+  if(c.t==="before")return "「"+a+"」要比「"+b+"」先剪";
+  if(c.t==="pos")return "「"+a+"」是第 "+c.k+" 个剪的";
+  if(c.t==="notpos")return "「"+a+"」不能是第 "+c.k+" 个剪";
+  if(c.t==="adj")return "「"+a+"」和「"+b+"」要连着剪（一前一后均可）";
+  if(c.t==="next")return "剪完「"+a+"」后，下一个立刻剪「"+b+"」";
+  return "";
+}
+/* 局面侧线索评估（与验证器不同实现：基于部分剪序推断 satisfied/violated/pending） */
+function clueStatus(c){
+  var pa=cutOrder.indexOf(c.a),pb=c.b!==undefined?cutOrder.indexOf(c.b):-2;
+  var hasA=pa>=0,hasB=pb>=0;
+  if(c.t==="before"){
+    if(hasA&&hasB)return pa<pb?1:-1;
+    return 0;
+  }
+  if(c.t==="pos")return hasA?(pa+1===c.k?1:-1):0;
+  if(c.t==="notpos")return hasA?(pa+1!==c.k?1:-1):0;
+  if(c.t==="adj"){
+    if(hasA&&hasB)return Math.abs(pa-pb)===1?1:-1;
+    return 0;
+  }
+  if(c.t==="next"){
+    if(hasA&&hasB)return pb===pa+1?1:-1;
+    if(hasA&&pa===N-1)return -1;
+    return 0;
+  }
+  return 0;
+}
+function violatedClue(){
+  for(var i=0;i<clues.length;i++)if(clueStatus(clues[i])<0)return i;
+  return -1;
+}
+function render(){
+  var box=$("wires");
+  box.innerHTML="";
+  for(var i=0;i<N;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.type="button";
+      b.className="wire"+(cutOrder.indexOf(i)>=0?" cut":"")+(cur===i&&!done?" cur":"");
+      b.setAttribute("aria-label",wires[i]+"线");
+      var cutN=cutOrder.indexOf(i);
+      b.innerHTML='<span class="cap"></span>'+
+        (cutN>=0?'<span class="ord">'+(cutN+1)+'</span>':"")+
+        '<span class="bar" style="background:'+WCOLS[i]+'"></span>'+
+        (cutN>=0?'<span class="gap"></span>':"")+
+        '<span class="tag">'+wires[i]+'</span>';
+      b.addEventListener("click",function(){cutWire(i)});
+      box.appendChild(b);
+    })(i);
+  }
+  var cl=$("clues");
+  cl.innerHTML="";
+  for(i=0;i<clues.length;i++){
+    var d=document.createElement("div");
+    var st=clueStatus(clues[i]);
+    d.className="clue"+(st>0?" ok":(st<0?" bad":""));
+    d.textContent=clueText(clues[i]);
+    cl.appendChild(d);
+  }
+  $("stCut").textContent=cutOrder.length+"/"+N;
+  $("btnUndo").disabled=!cutOrder.length||done;
+}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  var p=fcParse(L);
+  if(!p){say("关卡数据异常");return;}
+  N=p.N;wires=p.wires;clues=p.clues;
+  cutOrder=[];done=false;failed=false;cur=0;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent=N+" 根线 · "+clues.length+" 条线索 · 唯一剪序";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  $("stBoom").textContent=booms;
+  say("读线索，按顺序点线剪断；剪错一条就爆炸");
+  render();
+}
+function cutWire(i){
+  if(done)return;
+  if(failed){say("先撤销或重开");return;}
+  if(cutOrder.indexOf(i)>=0){say("这根已经剪了");return;}
+  cutOrder.push(i);
+  var bad=violatedClue();
+  render();
+  if(bad>=0){
+    failed=true;booms++;save.boom=booms;persist();
+    $("stBoom").textContent=booms;
+    if(!window.__gRM){
+      var bomb=$("bomb");
+      bomb.classList.remove("shake");
+      void bomb.offsetWidth;
+      bomb.classList.add("shake");
+    }
+    $("ovTitle").textContent="爆炸！";
+    $("ovDesc").textContent="第 "+cutOrder.length+" 剪违反了线索："+clueText(clues[bad]);
+    $("ovBtn").textContent="重开本关";
+    $("ovUndo").hidden=false;
+    $("overlay").classList.add("show");
+    return;
+  }
+  if(cutOrder.length===N)winLevel();
+  else say("已剪 "+cutOrder.length+"/"+N+" · 继续推理");
+}
+function undo(){
+  if(!cutOrder.length||done)return;
+  cutOrder.pop();
+  failed=false;
+  hideOverlay();
+  render();say("已撤销");
+}
+function hint(){
+  if(done||failed)return;
+  var partial={};
+  for(var i=0;i<cutOrder.length;i++)partial[cutOrder[i]]=i+1;
+  var p=fcParse(L);
+  var s=fcSolve(p,partial);
+  if(!s.count){say("内嵌验证器：当前剪序已无解，撤销几步再试");return;}
+  var nxt=s.first[cutOrder.length];
+  cur=nxt;
+  render();
+  say("验证器建议下一根剪「"+wires[nxt]+"」");
+}
+/* ---------- 胜负 ---------- */
+function winLevel(){
+  done=true;
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:booms}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部拆除！":"拆除成功！";
+  $("ovDesc").innerHTML=N+" 根线全部按线索剪对"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("ovUndo").hidden=true;
+  $("overlay").classList.add("show");
+}
+/* ---------- 输入 ---------- */
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){if(done)return;openLevelSelect()});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(failed){failed=false;loadLevel(lv);return;}
+  if(done){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+    else{lv++;loadLevel(lv)}
+  }
+});
+$("ovUndo").addEventListener("click",function(){
+  hideOverlay();
+  undo();
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if($("overlay").classList.contains("show"))return;   // 覆盖层内按钮自行处理
+  if(k==="ArrowUp"||k==="ArrowLeft"){cur=(cur+N-1)%N;render();e.preventDefault();}
+  else if(k==="ArrowDown"||k==="ArrowRight"){cur=(cur+1)%N;render();e.preventDefault();}
+  else if(k===" "||k==="Enter"){cutWire(cur);e.preventDefault();}
+  else if(k==="z"||k==="Z")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+});
+/* ---------- 启动：逐关独立复核，非唯一解的关不入表 ---------- */
+(function(){
+  var ok=[];
+  for(var i=0;i<LEVELS.length;i++){
+    var pass=false;
+    try{pass=verifyLevel(LEVELS[i])}catch(e){pass=false}
+    if(pass)ok.push(LEVELS[i]);
+  }
+  if(ok.length)LEVELS=ok;
+})();
+wcolLoad();loadLevel(save.lv);
+syncLevelsFromServer();syncSaveFromServer();
+
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

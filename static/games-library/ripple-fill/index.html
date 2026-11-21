@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>数波</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效 */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+
+  /* 数波棋盘：区块墙用 3px 边，普通格线用容器底色透出的 1px 缝 */
+  .sboard { display: grid; gap: 1px; padding: 2px; background: var(--g-border); border: 2px solid var(--g-muted); border-radius: var(--g-radius-inner); width: 100%; touch-action: manipulation; }
+  .scell {
+    aspect-ratio: 1; border: 0; padding: 0; min-width: 0;
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    color: var(--g-primary-deep); background: var(--g-surface);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .scell.given { color: var(--g-text); cursor: default; }
+  .scell.r0 { background: var(--g-surface); }
+  .scell.r1 { background: var(--g-surface2); }
+  .scell.r2 { background: var(--g-primary-soft); }
+  .scell.bad { color: var(--g-danger); }
+  .scell.cur { outline: 2px solid var(--g-primary-deep); outline-offset: -2px; }
+  .rules { font-size: 12px; color: var(--g-muted); text-align: center; margin: 0 2px 8px; line-height: 1.6; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">已填</span><span class="val" id="stFill">0</span></div>
+    <div class="stat"><span class="label">冲突</span><span class="val low" id="stBad">0</span></div>
+  </div>
+  <div class="sboard" id="board" aria-label="数波棋盘：区块内填数，相邻不同数"></div>
+  <p class="rules">同一区块内数字不重复 · 相邻（含斜角）两格数字不同 · 数字范围 1-5</p>
+  <p class="msg" id="msg" role="status" aria-live="polite">点格子换数字，填满全部区块即可过关</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo">撤销</button>
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：方向键移动 · 数字 1-5 填入 · 退格清除 · Z 撤销 · H 提示 · 40 关递进 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="ripple-fill",SAVE_KEY="sw.ripplefill.v1";
+var DEFAULT_LEVELS=[{"name":"数波·01","cols":5,"rows":5,"reg":"0012200123441536675367788","givens":[[0,1],[1,5],[2,4],[3,5],[4,1],[5,3],[6,2],[7,3],[8,2],[9,3],[10,1],[11,4],[12,1],[13,5],[14,1],[15,2],[16,5],[17,2],[18,4],[19,2],[20,4],[21,3],[22,1],[23,3],[24,1]],"difficulty":1},{"name":"数波·02","cols":5,"rows":5,"reg":"0011200112334225542677666","givens":[[0,1],[1,3],[2,4],[3,3],[4,4],[5,5],[6,2],[8,5],[9,2],[10,1],[11,3],[12,4],[13,3],[14,1],[15,2],[16,5],[17,1],[18,5],[19,4],[20,1],[21,3],[22,2],[23,3],[24,1]],"difficulty":1},{"name":"数波·03","cols":5,"rows":5,"reg":"0111102234002345553655776","givens":[[2,5],[3,1],[4,4],[5,4],[7,3],[9,5],[10,2],[12,4],[14,4],[15,1],[18,3],[21,4],[22,5],[23,1],[24,2]],"difficulty":1},{"name":"数波·04","cols":5,"rows":5,"reg":"0111102233044335667758887","givens":[[0,3],[1,5],[2,4],[3,2],[4,1],[5,1],[6,2],[7,1],[8,5],[9,4],[10,4],[11,5],[12,4],[13,3],[14,1],[15,2],[16,1],[17,2],[18,5],[19,2],[20,4],[21,3],[22,4],[23,1],[24,3]],"difficulty":1},{"name":"数波·05","cols":5,"rows":5,"reg":"0012200122334423345566555","givens":[[0,3],[1,1],[2,3],[3,4],[4,3],[5,5],[6,2],[7,5],[8,1],[9,5],[10,4],[11,1],[12,3],[13,4],[14,2],[15,5],[16,2],[17,5],[18,1],[19,5],[20,4],[21,1],[22,4],[23,2],[24,3]],"difficulty":1},{"name":"数波·06","cols":5,"rows":5,"reg":"0011234422356627556877588","givens":[[0,4],[1,3],[2,1],[3,4],[4,5],[5,1],[6,2],[7,5],[8,3],[9,1],[10,4],[11,3],[12,1],[13,2],[14,4],[15,5],[17,5],[18,3],[19,5],[20,3],[21,4],[22,1],[23,2],[24,1]],"difficulty":1},{"name":"数波·07","cols":5,"rows":5,"reg":"0001100111223332455544455","givens":[[0,5],[1,3],[2,1],[3,3],[5,4],[6,2],[9,1],[10,1],[12,5],[13,3],[14,4],[15,4],[16,2],[17,1],[18,2],[19,5],[20,3],[21,5],[22,4],[23,3],[24,4]],"difficulty":1},{"name":"数波·08","cols":5,"rows":5,"reg":"0011102234222345667755588","givens":[[0,4],[1,3],[2,2],[3,5],[4,3],[5,2],[6,1],[7,4],[8,1],[9,2],[10,5],[11,3],[12,2],[13,3],[14,5],[15,4],[17,4],[18,1],[19,2],[20,3],[21,5],[22,2],[23,5],[24,3]],"difficulty":2},{"name":"数波·09","cols":5,"rows":5,"reg":"0001122331223445266655776","givens":[[0,3],[1,4],[2,1],[3,4],[4,2],[5,2],[6,5],[7,3],[8,5],[9,1],[10,1],[11,4],[12,2],[13,4],[14,2],[15,2],[16,3],[17,5],[18,1],[19,3],[20,4],[21,1],[22,4],[23,2],[24,4]],"difficulty":2},{"name":"数波·10","cols":5,"rows":5,"reg":"0011200332043567445677446","givens":[[0,3],[1,4],[2,1],[3,3],[4,4],[5,2],[6,5],[7,2],[8,5],[9,2],[10,1],[11,3],[12,4],[14,4],[15,2],[16,5],[17,1],[18,5],[19,1],[20,3],[21,4],[22,2],[23,4],[24,2]],"difficulty":2},{"name":"数波·11","cols":5,"rows":5,"reg":"0011123114235542355426677","givens":[[0,1],[1,5],[2,3],[3,4],[4,5],[6,2],[7,1],[8,2],[9,3],[11,5],[12,3],[13,5],[15,3],[16,4],[17,2],[18,4],[19,2],[20,5],[23,5],[24,1]],"difficulty":2},{"name":"数波·12","cols":5,"rows":5,"reg":"0011100233422554465577688","givens":[[0,3],[1,2],[2,3],[3,1],[4,5],[5,4],[6,5],[7,4],[8,2],[9,3],[10,3],[11,1],[12,3],[13,1],[14,4],[15,4],[16,5],[17,2],[19,3],[20,3],[22,3],[23,1],[24,4]],"difficulty":2},{"name":"数波·13","cols":6,"rows":6,"reg":"00000122344153344657886677999a7bb99a","givens":[[0,4],[2,1],[3,3],[5,3],[6,2],[7,3],[8,4],[9,5],[10,4],[12,4],[13,5],[15,3],[16,2],[17,5],[18,2],[19,3],[20,4],[21,1],[22,4],[23,1],[24,4],[25,5],[26,2],[27,3],[28,5],[29,3],[30,2],[31,3],[33,4],[34,1],[35,4]],"difficulty":2},{"name":"数波·14","cols":6,"rows":6,"reg":"01112203345563344567784499888abbbaaa","givens":[[0,2],[1,1],[2,2],[3,3],[4,2],[5,3],[6,4],[7,3],[8,4],[9,5],[10,4],[11,1],[12,1],[13,5],[14,2],[15,3],[16,2],[17,3],[18,4],[20,1],[21,4],[22,1],[23,4],[24,1],[25,5],[26,2],[27,5],[28,3],[29,5],[30,4],[31,3],[32,1],[33,4],[34,2],[35,1]],"difficulty":2},{"name":"数波·15","cols":6,"rows":6,"reg":"00112203114453366655378899978899aaaa","givens":[[0,2],[1,5],[2,1],[3,3],[4,1],[5,3],[6,4],[7,3],[8,2],[9,5],[10,2],[11,4],[12,1],[14,4],[15,1],[17,5],[18,2],[19,3],[20,2],[21,5],[22,2],[23,4],[24,5],[25,4],[26,1],[27,4],[28,1],[29,5],[30,2],[32,5],[33,3],[35,4]],"difficulty":3},{"name":"数波·16","cols":6,"rows":6,"reg":"011123004423004455667458967788997aaa","givens":[[0,2],[1,3],[2,4],[3,2],[4,4],[5,2],[6,5],[9,3],[10,5],[12,3],[13,4],[14,2],[16,2],[17,1],[19,1],[20,3],[21,1],[23,4],[24,3],[25,5],[26,2],[27,4],[28,3],[29,1],[30,1],[32,1],[33,5],[34,2],[35,4]],"difficulty":3},{"name":"数波·17","cols":6,"rows":6,"reg":"0011120113420553446577886677896aabb9","givens":[[0,3],[1,2],[2,3],[3,5],[4,2],[5,4],[6,4],[7,1],[8,4],[9,1],[10,3],[11,1],[12,5],[13,2],[14,3],[15,5],[16,4],[17,5],[18,1],[19,4],[21,2],[22,1],[23,2],[24,3],[25,2],[27,5],[28,3],[30,4],[31,1],[32,4],[33,2],[34,1],[35,5]],"difficulty":3},{"name":"数波·18","cols":6,"rows":6,"reg":"0012234411234551664776689aaab899abb8","givens":[[0,3],[1,2],[2,4],[3,3],[4,5],[5,3],[6,4],[7,5],[8,1],[10,1],[11,2],[12,3],[13,2],[14,4],[15,5],[16,4],[17,3],[18,1],[19,5],[20,3],[21,1],[22,2],[23,5],[24,4],[25,2],[26,4],[27,5],[28,4],[29,3],[30,3],[31,5],[32,3],[33,2],[34,1],[35,2]],"difficulty":3},{"name":"数波·19","cols":6,"rows":6,"reg":"0122330124435564775869778869aa8bb99a","givens":[[0,5],[1,2],[2,4],[3,2],[5,2],[6,1],[7,3],[8,1],[9,3],[11,5],[12,4],[13,2],[14,4],[15,2],[16,4],[17,3],[18,5],[19,3],[20,5],[21,3],[22,1],[23,5],[24,1],[25,4],[26,1],[27,4],[28,2],[29,3],[30,5],[31,2],[32,3],[33,5],[35,5]],"difficulty":3},{"name":"数波·20","cols":6,"rows":6,"reg":"00112230455536477566667788999a8899aa","givens":[[0,3],[1,1],[2,2],[3,1],[4,5],[5,1],[6,4],[7,5],[8,3],[10,3],[11,2],[12,3],[13,1],[14,2],[15,5],[16,1],[17,5],[18,2],[19,5],[20,4],[21,3],[22,2],[23,3],[24,4],[25,3],[26,1],[27,5],[28,4],[29,5],[30,1],[32,2],[33,3],[34,1],[35,3]],"difficulty":3},{"name":"数波·21","cols":6,"rows":6,"reg":"001222301444356667556677899abb8aaabb","givens":[[0,4],[1,2],[2,1],[3,2],[4,1],[5,4],[6,5],[7,3],[8,5],[9,4],[10,5],[11,3],[12,4],[13,1],[14,2],[15,3],[16,1],[17,4],[18,3],[19,5],[20,4],[21,5],[22,2],[23,5],[24,4],[25,1],[26,3],[27,1],[28,4],[29,3],[30,3],[31,5],[32,4],[33,2],[34,5],[35,1]],"difficulty":3},{"name":"数波·22","cols":6,"rows":6,"reg":"0012223114553314663377869abb889aaacc","givens":[[0,4],[2,4],[3,1],[4,5],[5,4],[6,1],[7,2],[9,2],[10,3],[11,1],[12,4],[13,5],[14,1],[15,5],[16,4],[17,5],[18,2],[20,4],[21,3],[22,1],[25,5],[27,5],[28,4],[29,3],[30,4],[31,3],[32,4],[33,1],[34,2],[35,1]],"difficulty":4},{"name":"数波·23","cols":6,"rows":6,"reg":"001233401235444555466788667798aa7999","givens":[[0,1],[2,2],[4,2],[5,3],[6,4],[8,4],[9,1],[10,5],[11,1],[12,1],[15,3],[17,2],[19,4],[20,1],[21,2],[22,5],[23,1],[24,5],[26,5],[28,3],[29,2],[30,1],[31,3],[33,2],[34,1],[35,5]],"difficulty":4},{"name":"数波·24","cols":6,"rows":6,"reg":"000122003114553144678899677899667aaa","givens":[[0,1],[3,5],[4,2],[5,3],[6,5],[7,2],[8,1],[9,4],[10,1],[11,4],[12,1],[13,3],[16,5],[17,2],[19,4],[22,1],[23,4],[24,1],[25,2],[26,5],[27,4],[28,2],[29,5],[30,4],[31,3],[32,1],[33,3],[34,1],[35,4]],"difficulty":4},{"name":"数波·25","cols":6,"rows":6,"reg":"01122300143300443356677859978859aa88","givens":[[0,3],[1,2],[2,1],[3,2],[4,1],[5,2],[6,1],[7,4],[8,3],[9,5],[10,4],[11,3],[13,2],[14,1],[16,1],[17,5],[18,1],[19,3],[20,5],[21,3],[22,4],[23,3],[24,5],[27,1],[28,5],[29,1],[30,3],[31,1],[32,3],[33,4],[34,2],[35,4]],"difficulty":4},{"name":"数波·26","cols":6,"rows":6,"reg":"012233011333045667445687945a8899aabb","givens":[[0,3],[1,2],[2,3],[3,1],[4,2],[5,1],[6,5],[7,4],[8,5],[9,4],[10,3],[11,5],[12,2],[13,1],[14,2],[15,1],[16,2],[17,1],[18,4],[19,5],[20,4],[21,5],[22,3],[23,4],[24,1],[25,2],[26,1],[27,2],[28,1],[29,5],[30,3],[31,5],[32,3],[33,4],[34,3],[35,4]],"difficulty":4},{"name":"数波·27","cols":7,"rows":7,"reg":"00122330012233045667784569978446aab884cbbbddcceeb","givens":[[0,1],[1,3],[2,5],[3,4],[4,5],[5,4],[6,2],[7,5],[8,2],[9,1],[10,3],[11,1],[12,3],[13,5],[14,4],[15,3],[16,4],[17,2],[18,4],[19,2],[20,1],[21,5],[22,2],[23,5],[24,1],[25,5],[26,3],[27,5],[28,4],[29,1],[30,4],[31,3],[32,4],[33,1],[34,4],[35,2],[36,3],[37,5],[38,1],[39,2],[40,3],[41,5],[42,5],[43,4],[44,2],[45,4],[46,5],[47,4],[48,1]],"difficulty":4},{"name":"数波·28","cols":7,"rows":7,"reg":"0011222334552266457776445887694a88b99cadbbcccddbb","givens":[[0,5],[1,1],[2,5],[4,5],[5,1],[6,2],[7,4],[8,2],[9,4],[10,1],[12,4],[13,3],[14,5],[15,3],[16,5],[17,3],[18,5],[19,1],[20,2],[22,1],[23,2],[24,4],[26,3],[27,4],[28,4],[29,5],[30,3],[31,1],[32,5],[33,1],[34,2],[35,2],[36,1],[37,2],[38,4],[39,3],[40,4],[41,3],[42,4],[43,5],[44,3],[45,5],[46,1],[47,5],[48,1]],"difficulty":4},{"name":"数波·29","cols":7,"rows":7,"reg":"0111223014423355467839aa67889abb7cd9eefccd9fffcdd","givens":[[0,4],[1,3],[2,4],[3,2],[4,4],[5,5],[6,2],[7,2],[8,5],[9,1],[10,5],[11,1],[12,3],[13,1],[14,3],[15,4],[16,2],[17,4],[18,2],[19,4],[20,5],[21,5],[22,1],[23,5],[24,1],[25,5],[26,1],[27,2],[28,2],[29,3],[30,4],[31,2],[32,4],[33,3],[34,4],[35,1],[36,5],[37,1],[38,3],[39,1],[40,2],[41,1],[42,3],[43,2],[44,4],[45,5],[46,4],[47,5],[48,3]],"difficulty":5},{"name":"数波·30","cols":7,"rows":7,"reg":"0011222001133344553664455566778889977a8bb97aa8bb9","givens":[[0,2],[2,2],[4,4],[5,3],[6,2],[7,1],[8,4],[9,5],[10,1],[11,2],[12,5],[13,4],[14,5],[15,2],[17,4],[18,3],[19,1],[20,2],[21,3],[23,1],[24,2],[25,5],[26,4],[27,3],[28,5],[29,2],[30,5],[31,4],[32,3],[34,5],[35,3],[36,1],[37,3],[38,2],[39,5],[40,4],[41,2],[42,4],[43,2],[44,5],[45,1],[46,3]],"difficulty":5},{"name":"数波·31","cols":7,"rows":7,"reg":"01123330122234052664475899aa78889abccddebbccddebb","givens":[[0,3],[1,2],[2,3],[3,4],[4,2],[5,1],[6,5],[7,1],[8,5],[9,1],[11,3],[12,4],[13,2],[14,2],[15,3],[16,2],[18,1],[19,5],[20,3],[21,1],[22,4],[23,5],[24,3],[25,2],[26,4],[27,2],[28,5],[30,1],[31,4],[32,1],[33,3],[34,5],[35,3],[36,4],[37,5],[38,2],[39,5],[40,4],[41,1],[42,1],[43,2],[44,1],[45,3],[46,1],[47,3],[48,2]],"difficulty":5},{"name":"数波·32","cols":7,"rows":7,"reg":"012345501234567789966a7899bcaddddbcaeffgbbeeefggb","givens":[[0,2],[1,1],[2,3],[3,1],[4,3],[5,4],[6,1],[7,3],[8,4],[9,5],[10,4],[11,2],[12,5],[13,3],[14,2],[15,1],[16,2],[18,3],[19,1],[20,2],[21,3],[22,5],[23,3],[24,4],[25,2],[26,4],[27,5],[28,2],[29,4],[30,2],[31,1],[32,5],[33,1],[34,2],[35,5],[36,3],[37,5],[38,4],[39,2],[40,3],[41,5],[42,4],[43,2],[44,1],[45,3],[46,5],[47,1],[48,2]],"difficulty":5},{"name":"数波·33","cols":7,"rows":7,"reg":"0012223011122344556664475588497ab8899cabdd99caddd","givens":[[0,4],[1,1],[2,5],[3,3],[4,4],[5,2],[6,3],[7,2],[8,3],[9,2],[10,1],[11,5],[12,1],[13,4],[14,4],[15,5],[16,4],[17,3],[18,4],[19,3],[20,5],[21,1],[22,3],[23,1],[24,2],[25,1],[26,2],[27,4],[28,2],[29,4],[30,5],[31,4],[32,5],[33,3],[34,5],[35,1],[36,3],[37,2],[38,1],[39,2],[40,1],[41,2],[42,2],[43,5],[44,4],[45,5],[46,3],[47,5],[48,4]],"difficulty":5},{"name":"数波·34","cols":7,"rows":7,"reg":"0011122033145506664457768845977a8bb97cadde99ccdde","givens":[[0,2],[2,1],[3,4],[4,5],[5,1],[6,2],[7,5],[8,4],[9,5],[10,3],[11,2],[12,4],[14,1],[15,3],[16,2],[17,1],[19,1],[20,5],[21,5],[22,4],[23,5],[24,4],[25,2],[26,3],[27,2],[28,2],[32,5],[33,1],[34,5],[35,5],[37,4],[38,3],[39,2],[40,3],[41,4],[42,4],[43,3],[45,5],[46,4],[47,1],[48,5]],"difficulty":5},{"name":"数波·35","cols":7,"rows":7,"reg":"00011234556123455662377568997aab88cddbbeecddfffgg","givens":[[0,2],[1,3],[2,4],[3,5],[4,2],[5,5],[6,1],[7,4],[8,1],[9,2],[10,3],[11,4],[12,3],[13,2],[14,3],[15,5],[16,4],[17,1],[18,5],[19,1],[20,4],[21,1],[22,2],[23,3],[24,2],[25,4],[26,3],[27,2],[28,3],[29,4],[30,5],[31,1],[32,5],[33,1],[34,5],[35,5],[36,2],[37,3],[38,4],[39,3],[40,4],[41,2],[42,1],[43,4],[44,5],[45,1],[46,2],[47,1],[48,5]],"difficulty":5},{"name":"数波·36","cols":7,"rows":7,"reg":"00122345011334566133756889a7bb889aabbbcdddeeeccdd","givens":[[0,4],[1,5],[2,4],[3,2],[4,3],[5,5],[6,4],[7,1],[8,2],[9,1],[10,5],[11,1],[12,2],[13,1],[14,5],[15,3],[16,4],[17,2],[18,3],[20,5],[21,4],[22,2],[23,1],[24,5],[25,1],[26,2],[27,3],[28,5],[29,3],[30,4],[31,3],[32,4],[33,5],[34,4],[35,4],[36,2],[37,1],[38,2],[39,1],[40,2],[41,3],[42,1],[43,3],[44,4],[45,3],[46,5],[47,4],[48,5]],"difficulty":6},{"name":"数波·37","cols":7,"rows":7,"reg":"0011222331122455666445578899aa77999aabbbccddeebcc","givens":[[0,5],[2,2],[3,3],[4,1],[5,3],[6,5],[7,4],[8,3],[9,4],[10,5],[11,2],[12,4],[13,2],[14,2],[15,1],[17,3],[18,1],[19,5],[20,1],[21,4],[22,5],[23,4],[24,5],[25,4],[26,3],[27,4],[28,2],[29,1],[30,3],[31,2],[32,1],[33,5],[34,2],[35,4],[36,5],[38,5],[39,3],[40,4],[41,3],[42,2],[43,1],[44,3],[45,1],[46,2],[47,5],[48,2]],"difficulty":6},{"name":"数波·38","cols":7,"rows":7,"reg":"001112233144256666425778849977aab9c7ddab9ceeddd9c","givens":[[0,3],[1,1],[2,3],[3,1],[4,4],[5,1],[6,5],[7,2],[8,4],[9,2],[10,5],[11,3],[12,2],[13,3],[14,5],[15,3],[17,4],[18,1],[19,4],[21,4],[22,2],[23,5],[24,3],[25,2],[26,3],[27,1],[28,3],[29,1],[31,1],[32,5],[33,4],[35,5],[36,2],[37,3],[38,2],[39,3],[40,2],[41,1],[42,3],[43,1],[44,5],[45,1],[46,4],[47,5],[48,4]],"difficulty":6},{"name":"数波·39","cols":7,"rows":7,"reg":"01123340562234556227486699748aab9cdeaabccdeffccgg","givens":[[0,3],[1,4],[2,3],[3,5],[4,3],[5,1],[6,3],[7,2],[8,5],[9,1],[10,2],[11,4],[12,5],[13,2],[14,4],[15,3],[16,4],[17,3],[18,1],[19,3],[20,4],[21,1],[22,5],[23,2],[24,5],[25,2],[26,5],[27,1],[28,3],[29,4],[30,1],[31,4],[32,1],[33,3],[34,2],[35,2],[36,5],[37,2],[38,5],[39,2],[40,5],[41,4],[42,4],[43,1],[44,4],[45,1],[46,4],[47,1],[48,3]],"difficulty":6},{"name":"数波·40","cols":7,"rows":7,"reg":"00011223344155334465788996678899a67bccaaddbceeadd","givens":[[0,4],[1,3],[2,2],[3,5],[4,2],[5,1],[6,3],[7,2],[8,1],[9,4],[10,3],[11,4],[12,5],[13,2],[14,4],[15,3],[16,5],[17,2],[18,1],[19,3],[20,4],[22,1],[23,4],[24,3],[25,4],[26,2],[27,1],[28,3],[29,5],[32,1],[33,5],[34,3],[35,4],[36,1],[37,4],[38,3],[39,2],[40,4],[41,1],[42,3],[43,2],[45,1],[46,5],[47,3],[48,5]],"difficulty":6}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seenName={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!verifyLevel(d))return null;
+    if(seenName[d.name])return null;
+    seenName[d.name]=1;
+    list.push(normalizeLevel(d));
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(function(d){return verifyLevel(d)})){
+      LEVELS=list.map(normalizeLevel);return v;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层 ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+//__VERIFY__START
+/* 数波：解析区块划分 → 校验区连通与大小（2-5）→ 回掷求解器复核可解 */
+function suguruParse(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return null;
+  if(typeof d.name!=="string"||!d.name.trim())return null;
+  var cols=d.cols,rows=d.rows;
+  if(!Number.isInteger(cols)||!Number.isInteger(rows)||cols<4||cols>7||rows<4||rows>7)return null;
+  if(typeof d.reg!=="string"||d.reg.length!==cols*rows)return null;
+  var reg=[],i,ch,size={},c;
+  for(i=0;i<d.reg.length;i++){
+    ch=d.reg.charCodeAt(i);
+    if(ch>=48&&ch<=57)reg.push(ch-48);
+    else if(ch>=97&&ch<=122)reg.push(ch-97+10);
+    else return null;
+  }
+  for(i=0;i<reg.length;i++){c=reg[i];size[c]=(size[c]||0)+1;if(size[c]>5)return null;}
+  for(var r0 in size){
+    var start=-1;
+    for(i=0;i<reg.length;i++)if(reg[i]==+r0){start=i;break;}
+    if(start<0)return null;
+    var seen={},q=[start],cnt=0;seen[start]=1;
+    while(q.length){
+      var cur=q.pop();cnt++;
+      var cr=Math.floor(cur/cols),cc=cur%cols;
+      var nb=[[cr-1,cc],[cr+1,cc],[cr,cc-1],[cr,cc+1]];
+      for(var k=0;k<4;k++){
+        var nr=nb[k][0],nc=nb[k][1];
+        if(nr<0||nr>=rows||nc<0||nc>=cols)continue;
+        var ni=nr*cols+nc;
+        if(reg[ni]==+r0&&!seen[ni]){seen[ni]=1;q.push(ni);}
+      }
+    }
+    if(cnt!==size[r0])return null;
+  }
+  var givens=[];
+  if(d.givens!==undefined){
+    if(!Array.isArray(d.givens))return null;
+    for(i=0;i<d.givens.length;i++){
+      var g=d.givens[i];
+      if(!Array.isArray(g)||g.length!==2||!Number.isInteger(g[0])||!Number.isInteger(g[1]))return null;
+      if(g[0]<0||g[0]>=cols*rows||g[1]<1||g[1]>5)return null;
+      givens.push([g[0],g[1]]);
+    }
+  }
+  return {cols:cols,rows:rows,reg:reg,size:size,givens:givens};
+}
+function suguruNeighborsBad(cols,rows,vals){
+  var bad={},r,c,dr,dc,nr,nc,ni;
+  for(var i=0;i<vals.length;i++){
+    if(!vals[i])continue;
+    r=Math.floor(i/cols);c=i%cols;
+    for(dr=-1;dr<=1;dr++)for(dc=-1;dc<=1;dc++){
+      if(!dr&&!dc)continue;
+      nr=r+dr;nc=c+dc;
+      if(nr<0||nr>=rows||nc<0||nc>=cols)continue;
+      ni=nr*cols+nc;
+      if(vals[ni]===vals[i]){bad[i]=1;bad[ni]=1;}
+    }
+  }
+  return bad;
+}
+/* 回掷求解器：枚举空格候选（1-5），邻域不同数 + 区内不重复双重剪枝 */
+function suguruSolve(cols,rows,reg,givens,limit){
+  var total=cols*rows,vals=new Array(total).fill(0),i;
+  for(i=0;i<givens.length;i++)vals[givens[i][0]]=givens[i][1];
+  var empt=[];
+  for(i=0;i<total;i++)if(!vals[i])empt.push(i);
+  var rmask={};
+  for(i=0;i<total;i++){
+    var r0=reg[i];
+    rmask[r0]=rmask[r0]||(vals[i]?(1<<vals[i]):0);
+  }
+  function okAt(idx,v){
+    var r=Math.floor(idx/cols),c=idx%cols;
+    for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+      if(!dr&&!dc)continue;
+      var nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=rows||nc<0||nc>=cols)continue;
+      if(vals[nr*cols+nc]===v)return false;
+    }
+    return true;
+  }
+  var count=0,sol=null;
+  function dfs(k){
+    if(count>=limit)return;
+    if(k===empt.length){count++;sol=vals.slice();return;}
+    var idx=empt[k],rg=reg[idx];
+    for(var v=1;v<=5;v++){
+      if(rmask[rg]&(1<<v))continue;
+      if(!okAt(idx,v))continue;
+      vals[idx]=v;rmask[rg]|=(1<<v);
+      dfs(k+1);
+      vals[idx]=0;rmask[rg]&=~(1<<v);
+      if(count>=limit)return;
+    }
+  }
+  dfs(0);
+  return {count:count,sol:sol};
+}
+/* 加载复核入口：结构合法 + 给定数互不冲突 + 存在解（唯一解由构建期生成器保证） */
+function verifyLevel(d){
+  var p=suguruParse(d);
+  if(!p)return false;
+  var vals=new Array(p.cols*p.rows).fill(0),i;
+  var dup={};
+  for(i=0;i<p.givens.length;i++){
+    var g=p.givens[i];
+    if(vals[g[0]])return false;
+    vals[g[0]]=g[1];
+    var key=p.reg[g[0]]+":"+g[1];
+    if(dup[key])return false;
+    dup[key]=1;
+  }
+  if(Object.keys(suguruNeighborsBad(p.cols,p.rows,vals)).length)return false;
+  var s=suguruSolve(p.cols,p.rows,p.reg,p.givens,1);
+  return s.count>=1&&!!s.sol;
+}
+function normalizeLevel(d){
+  var p=suguruParse(d);
+  return {name:String(d.name),cols:p.cols,rows:p.rows,reg:d.reg,
+    givens:p.givens.map(function(g){return [g[0],g[1]];}),difficulty:Math.min(9,Math.max(1,Number.isInteger(d.difficulty)?d.difficulty:5))};
+}
+//__VERIFY__END
+
+/* ---------- 游戏状态 ---------- */
+var lv=save.lv,L=null,cols=5,rows=5,regIds=[],regSize={},vals=[],givens=[],history=[],done=false,cur=-1;
+var cv=document;   // 占位：本作纯 DOM
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function total(){return cols*rows}
+function cellIdx(r,c){return r*cols+c}
+function regCells(rg){
+  var out=[];
+  for(var i=0;i<total();i++)if(regIds[i]===rg)out.push(i);
+  return out;
+}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  var p=suguruParse(L);
+  if(!p){say("关卡数据异常");return;}
+  cols=p.cols;rows=p.rows;regIds=p.reg;regSize=p.size;
+  givens=p.givens.map(function(g){return g[0]});
+  vals=new Array(total()).fill(0);
+  for(var i=0;i<p.givens.length;i++)vals[p.givens[i][0]]=p.givens[i][1];
+  history=[];done=false;cur=0;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent=cols+"×"+rows+" · "+Object.keys(regSize).length+" 个区块"+(p.givens.length?" · "+p.givens.length+" 个提示数":"");
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  say("点格子换数字，填满全部区块即可过关");
+  renderBoard();render();
+}
+function renderBoard(){
+  var b=$("board");
+  b.style.gridTemplateColumns="repeat("+cols+",1fr)";
+  b.innerHTML="";
+  for(var i=0;i<total();i++){
+    (function(i){
+      var r=Math.floor(i/cols),c=i%cols,rg=regIds[i];
+      var d=document.createElement("button");
+      d.type="button";
+      d.className="scell r"+(rg%3)+(givens.indexOf(i)>=0?" given":"");
+      d.setAttribute("aria-label","行"+(r+1)+"列"+(c+1));
+      // 区块墙：与右/下邻居不同区 → 加粗边
+      if(c===cols-1||regIds[i+1]!==rg)d.style.borderRight="3px solid var(--g-muted)";
+      if(r===rows-1||regIds[i+cols]!==rg)d.style.borderBottom="3px solid var(--g-muted)";
+      d.addEventListener("click",function(){cycleCell(i)});
+      b.appendChild(d);
+    })(i);
+  }
+}
+function render(){
+  var bad=suguruNeighborsBad(cols,rows,vals);
+  // 同区重复也算冲突
+  var regionSeen={},i;
+  for(i=0;i<total();i++){
+    if(!vals[i])continue;
+    var key=regIds[i]+":"+vals[i];
+    if(regionSeen[key]!==undefined){bad[i]=1;bad[regionSeen[key]]=1;}
+    else regionSeen[key]=i;
+  }
+  var b=$("board").children;
+  var filled=0,badN=0;
+  for(i=0;i<total();i++){
+    var el=b[i];
+    el.textContent=vals[i]||"";
+    var cls="scell r"+(regIds[i]%3)+(givens.indexOf(i)>=0?" given":"");
+    if(bad[i]){cls+=" bad";badN++;}
+    if(cur===i)cls+=" cur";
+    el.className=cls;
+    if(vals[i])filled++;
+  }
+  $("stFill").textContent=filled+"/"+total();
+  $("stBad").textContent=badN;
+  $("stBad").className="val"+(badN?" low":"");
+  $("btnUndo").disabled=!history.length||done;
+  if(!done&&filled===total()&&!badN)winLevel();
+}
+function cycleCell(i){
+  if(done||givens.indexOf(i)>=0)return;
+  var nv=(vals[i]+1)%6;
+  history.push([i,vals[i]]);
+  vals[i]=nv;
+  cur=i;
+  render();
+}
+function setValue(i,v){
+  if(done||givens.indexOf(i)>=0)return;
+  if(v>5){say("数字范围是 1-5");return;}
+  history.push([i,vals[i]]);
+  vals[i]=v;
+  render();
+}
+function undo(){
+  if(!history.length||done)return;
+  var h=history.pop();
+  vals[h[0]]=h[1];
+  cur=h[0];
+  render();say("已撤销");
+}
+function hint(){
+  if(done)return;
+  var gs=[];
+  for(var i=0;i<total();i++)if(vals[i])gs.push([i,vals[i]]);
+  var s=suguruSolve(cols,rows,regIds,gs,1);
+  if(!s.count){say("内嵌求解器：当前填法已无解，撤销几步再试");return;}
+  for(i=0;i<total();i++){
+    if(!vals[i]&&s.sol[i]){
+      history.push([i,0]);
+      vals[i]=s.sol[i];
+      cur=i;
+      render();
+      say("求解器建议该格填 "+s.sol[i]);
+      return;
+    }
+  }
+}
+/* ---------- 胜负 ---------- */
+function winLevel(){
+  done=true;
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:history.length}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
+  $("ovDesc").innerHTML="全部区块填满且无冲突"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+/* ---------- 输入 ---------- */
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){if(done)return;openLevelSelect()});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(done){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+    else{lv++;loadLevel(lv)}
+  }
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if($("overlay").classList.contains("show")){
+    if(k===" "||k==="Enter"){$("ovBtn").click();e.preventDefault();}
+    return;
+  }
+  if(k==="ArrowUp"){cur=Math.max(0,cur-cols);render();e.preventDefault();}
+  else if(k==="ArrowDown"){cur=Math.min(total()-1,cur+cols);render();e.preventDefault();}
+  else if(k==="ArrowLeft"){if(cur%cols>0)cur--;render();e.preventDefault();}
+  else if(k==="ArrowRight"){if(cur%cols<cols-1)cur++;render();e.preventDefault();}
+  else if(k>="1"&&k<="5"){setValue(cur,parseInt(k,10));e.preventDefault();}
+  else if(k==="0"||k==="Backspace"||k==="Delete"||k===" "){setValue(cur,0);e.preventDefault();}
+  else if(k==="z"||k==="Z")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+});
+/* ---------- 启动：逐关独立复核，不可解的关不入表 ---------- */
+(function(){
+  var ok=[];
+  for(var i=0;i<LEVELS.length;i++){
+    var pass=false;
+    try{pass=verifyLevel(LEVELS[i])}catch(e){pass=false}
+    if(pass)ok.push(LEVELS[i]);
+  }
+  if(ok.length)LEVELS=ok;
+})();
+loadLevel(save.lv);
+syncLevelsFromServer();syncSaveFromServer();
+
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

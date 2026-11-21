@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#CFE9F4"/>
+      <stop offset="0.55" stop-color="#AFD9EC"/>
+      <stop offset="1" stop-color="#8AC2DE"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E4254" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#78AECC" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#6498B8" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M700 150 h12 M706 144 v12" stroke-width="3.4"/>
+    <path d="M110 250 h9 M114.5 245.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M704 320 h9 M708.5 315.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="160" cy="170" r="4"/><circle cx="742" cy="200" r="3.4"/><circle cx="70" cy="230" r="3"/><circle cx="250" cy="80" r="2.6"/>
+  </g>
+
+  <!-- 云朵 -->
+  <g fill="#FFFFFF" opacity="0.75">
+    <path d="M110 210 Q130 188 158 196 Q172 176 198 184 Q222 188 220 208 Q236 216 222 228 L118 228 Q98 222 110 210 Z"/>
+    <path d="M620 250 Q640 230 668 238 Q682 220 706 228 Q728 232 726 250 Q740 258 726 268 L630 268 Q612 262 620 250 Z" opacity="0.8"/>
+  </g>
+  <!-- 风线 -->
+  <g stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6">
+    <path d="M60 120 Q110 104 160 120"/>
+    <path d="M640 100 Q690 86 740 102"/>
+  </g>
+
+  <!-- 地面锚桩 -->
+  <g>
+    <path d="M120 404 V356 M104 404 H136" stroke="#3A2A1E" stroke-width="11" stroke-linecap="round"/>
+    <path d="M660 404 V360 M644 404 H676" stroke="#3A2A1E" stroke-width="11" stroke-linecap="round"/>
+    <ellipse cx="130" cy="410" rx="40" ry="8" fill="#4E7EA0" opacity="0.4"/>
+    <ellipse cx="670" cy="410" rx="40" ry="8" fill="#4E7EA0" opacity="0.4"/>
+  </g>
+
+  <!-- 左风筝线（绿，弧线到缠绕点） -->
+  <path d="M120 356 Q200 260 352 208" stroke="#17734A" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <!-- 右风筝线（粉红，弧线到缠绕点） -->
+  <path d="M660 360 Q560 280 448 200" stroke="#A83850" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- 缠绕点（结+剪刀危险光） -->
+  <g>
+    <path d="M400 204 Q392 196 400 188 Q408 196 400 204 Z" fill="#F2C14E" stroke="#1E2620" stroke-width="5"/>
+    <circle cx="400" cy="196" r="10" fill="none" stroke="#1E2620" stroke-width="6"/>
+    <g stroke="#F2C14E" stroke-width="6" stroke-linecap="round">
+      <path d="M376 178 L364 166 M424 178 L436 166 M376 218 L364 230 M424 218 L436 230"/>
+    </g>
+  </g>
+
+  <!-- 左风筝（绿菱形，带表情，主视觉） -->
+  <g transform="rotate(-16 250 130)">
+    <path d="M250 44 L322 130 L250 216 L178 130 Z" fill="#3FB57F" stroke="#1E2620" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M250 44 L250 216 M178 130 L322 130" stroke="#1E2620" stroke-width="5" opacity="0.6"/>
+    <path d="M250 44 L322 130" stroke="#5BC894" stroke-width="14" opacity="0.5" fill="none"/>
+    <circle cx="250" cy="132" r="46" fill="url(#gloss)"/>
+    <!-- 表情（在菱形中上部） -->
+    <circle cx="232" cy="118" r="8" fill="#1F1A14"/>
+    <circle cx="268" cy="118" r="8" fill="#1F1A14"/>
+    <circle cx="234" cy="115" r="3" fill="#FFFFFF"/>
+    <circle cx="270" cy="115" r="3" fill="#FFFFFF"/>
+    <path d="M236 138 Q250 150 264 136" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <!-- 尾巴 -->
+    <path d="M250 216 Q236 252 254 284 Q268 310 250 334" stroke="#1E2620" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M244 246 L226 240 L234 258 Z M258 300 L276 296 L266 314 Z" fill="#F2C14E" stroke="#1E2620" stroke-width="5" stroke-linejoin="round"/>
+  </g>
+
+  <!-- 右风筝（粉红菱形） -->
+  <g transform="rotate(14 560 110)">
+    <path d="M560 34 L624 112 L560 190 L496 112 Z" fill="#DB7186" stroke="#1E2620" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M560 34 L560 190 M496 112 L624 112" stroke="#1E2620" stroke-width="5" opacity="0.6"/>
+    <path d="M560 34 L496 112" stroke="#E693A0" stroke-width="12" opacity="0.5" fill="none"/>
+    <circle cx="560" cy="112" r="38" fill="url(#gloss)"/>
+    <circle cx="546" cy="102" r="7" fill="#1F1A14"/>
+    <circle cx="576" cy="102" r="7" fill="#1F1A14"/>
+    <path d="M550 122 Q561 132 572 120" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <!-- 尾巴 -->
+    <path d="M560 190 Q574 222 560 250 Q550 272 564 292" stroke="#1E2620" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M566 218 L584 212 L576 230 Z M556 258 L538 254 L548 272 Z" fill="#F2C14E" stroke="#1E2620" stroke-width="5" stroke-linejoin="round"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

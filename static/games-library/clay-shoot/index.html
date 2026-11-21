@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>双管飞碟</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材（--g-st- 前缀素材 token，本游戏专用）*/
+  :root {
+    --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
+    --g-primary:#2D9B6A; --g-primary-deep:#17734A; --g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
+    --g-text:#1C1C1E; --g-muted:#6B6E73; --g-faint:#A9AEA9; --g-border:#E6E9E6; --g-hairline:#EFF1EE;
+    --g-danger:#A83850; --g-warning:#9A6210; --g-success:#17734A; --g-water:#4A9FD4;
+    --g-scrim:rgba(245,246,243,.9);
+    --g-shadow:0 2px 12px rgba(20,40,30,.05);
+    --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
+    /*素材:a=天空 b=远山 c=地面 d=枪影 e=碟影衬色 f=弹孔光*/
+    --g-st-a:#CFE6F2; --g-st-b:#DDEBF2; --g-st-c:#C9B691; --g-st-d:#3A3E44; --g-st-e:#D98A26; --g-st-f:#FFF3D6;
+
+    color-scheme:light;
+  }
+  :root[data-theme=dark] {
+    --g-bg:#141614; --g-surface:#1D201E; --g-surface2:#262A27;
+    --g-primary-deep:#5BC894; --g-primary-soft:#1D3229; --g-on-soft:#B9E8CF;
+    --g-text:#E6E9E6; --g-muted:#A9AEA9; --g-faint:#7E837D; --g-border:#2C312D; --g-hairline:#262A27;
+    --g-danger:#DB7186; --g-warning:#E2A44E; --g-success:#4ADE6E; --g-water:#6BB4DE;
+    --g-scrim:rgba(20,22,20,.9);
+    --g-shadow:0 2px 12px rgba(0,0,0,.28);
+    --g-st-a:#1C2A34; --g-st-b:#16222A; --g-st-c:#554833; --g-st-d:#22262C; --g-st-e:#E2A44E; --g-st-f:#5A5238;
+/*==EXTRA==*/
+  canvas#cv { aspect-ratio: 390/460; background: var(--g-st-a); }
+
+    color-scheme:dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.5; }
+  .scores { display: flex; gap: 8px; }
+  .score-box {
+    background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
+    min-width: 70px; padding: 5px 8px; text-align: center; line-height: 1.3;
+  }
+  .score-box .label { display: block; font-size: 12px; white-space: nowrap; }
+  .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stage { position: relative; }
+  canvas {
+    display: block; width: 100%; height: auto;
+    border: 1px solid var(--g-border); border-radius: 12px;
+    touch-action: none;
+  }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 16px; flex: 1;
+    border: 0; border-radius: 14px;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; max-height: 100%; overflow: auto;
+    background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 16px;
+    box-shadow: var(--g-shadow); padding: 22px 18px; text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; }
+  }
+  .rt { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
+  .rs { margin: 0 0 14px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .rs b { color: var(--g-primary-deep); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .rbtns { display: flex; gap: 10px; margin-top: 16px; }
+  .rbtns .btn { flex: 1; }
+  .rhint { margin: 14px 0 0; font-size: 12px; color: var(--g-muted); line-height: 1.6; text-align: left; }
+  .lv-wrap { width: 100%; max-width: 320px; max-height: 46vh; overflow-y: auto; margin-top: 6px; }
+  .lv-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .lv-chip {
+    min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
+  .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
+  canvas#cv { aspect-ratio: 390/460; background: var(--g-st-a); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="sub">双管交替 · 装弹节奏</span>
+  <div class="scores">
+    <div class="score-box"><span class="label">分数</span><span class="val" id="score">0</span></div>
+    <div class="score-box"><span class="label">最高分</span><span class="val" id="best">0</span></div>
+    <div class="score-box"><span class="label">脱靶</span><span class="val" id="miss">0/5</span></div>
+  </div>
+</header>
+<div class="stage"><canvas id="cv" aria-label="双管飞碟：双管枪交替击打抛物线飞碟，两发后自动装弹" role="img"></canvas></div>
+<p class="msg" id="msg" role="status" aria-live="polite">点「开始」进靶场</p>
+<div class="tools">
+  <button class="btn" id="mainBtn">开始游戏</button>
+</div>
+<p class="foot">移动准星（触屏 / 方向键），点按 / 空格开火 · 双发后自动装弹 1.1s · 两管连续命中=双飞 +20 · 飞碟逃出 5 只结束</p>
+
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel" id="panel"></div>
+</div>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作项，Tab 在层内循环，隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 调色板（颜色全部经 CSS 变量读取，JS 零颜色字面量） ========== */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim();}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),text:v("--g-text"),
+    muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),hairline:v("--g-hairline"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    onSoft:v("--g-on-soft"),onPrimary:v("--g-on-primary"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),water:v("--g-water"),
+    stA:v("--g-st-a"),stB:v("--g-st-b"),stC:v("--g-st-c"),stD:v("--g-st-d"),stE:v("--g-st-e"),stF:v("--g-st-f")};
+}
+window.__gOnTheme=function(){palLoad();if(typeof draw==="function")draw();};
+palLoad();
+
+/* ========== 通用工具与覆盖层面板 ========== */
+function $(id){return document.getElementById(id);}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+var overlayEl=$("overlay"),panelEl=$("panel");
+function showPanel(html){panelEl.innerHTML=html;overlayEl.classList.add("show");}
+function hideOverlay(){overlayEl.classList.remove("show");}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});}
+
+/* ==================== 双管飞碟（双管交替 + 装弹管理，分数驱动） ==================== */
+var GAME_KEY="clay-shoot",SAVE_KEY="sw.clayshoot.v1";
+
+/* ---------- 状态 ---------- */
+var best=loadBestNum();
+var NW=390,NH=460,W=390,H=460,S=1,offX=0,offY=0;
+var cv=$("cv"),ctx=cv.getContext("2d");
+var scoreEl=$("score"),bestEl=$("best"),missEl=$("miss"),msgEl=$("msg"),mainBtn=$("mainBtn");
+var state="ready",paused=false;
+var clays=[],shards=[],cx=195,cy=220,shells=2,reloadT=0,pairFirst=false;
+var streak=0,score=0,misses=0,spawnT=1.0,shakeT=0,fireFlash=0,fireX=195,barrelSide=false;
+function say(t){msgEl.textContent=t;}
+function diff(){return Math.min(1,score/300);}
+function mult(){return 1+Math.min(4,Math.floor(streak/3));}
+function refresh(){
+  scoreEl.textContent=String(score);
+  bestEl.textContent=String(best);
+  missEl.textContent=misses+"/5";
+}
+
+/* ---------- 画布 ---------- */
+function rr(x0,y0,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x0+r,y0);
+  ctx.arcTo(x0+w,y0,x0+w,y0+h,r);ctx.arcTo(x0+w,y0+h,x0,y0+h,r);
+  ctx.arcTo(x0,y0+h,x0,y0,r);ctx.arcTo(x0,y0,x0+w,y0,r);
+  ctx.closePath();
+}
+function fit(){
+  var r=cv.getBoundingClientRect();
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.max(240,Math.floor(r.width));H=Math.max(300,Math.floor(r.height));
+  cv.width=Math.floor(W*dpr);cv.height=Math.floor(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  S=Math.min(W/NW,H/NH);offX=(W-NW*S)/2;offY=(H-NH*S)/2;
+  draw();
+}
+window.addEventListener("resize",fit);
+window.addEventListener("orientationchange",fit);
+
+/* ---------- 流程 ---------- */
+function resetRound(){
+  clays=[];shards=[];cx=195;cy=220;shells=2;reloadT=0;pairFirst=false;
+  streak=0;score=0;misses=0;spawnT=0.8;shakeT=0;fireFlash=0;
+  refresh();
+}
+function startGame(){
+  resetRound();
+  state="running";paused=false;
+  hideOverlay();
+  mainBtn.textContent="暂停";
+  say("双管交替 · 两发后自动装弹");
+}
+function primary(){
+  if(state==="running"){
+    paused=!paused;
+    if(paused){showPause();mainBtn.textContent="继续";}
+    else{hideOverlay();mainBtn.textContent="暂停";}
+  }else if(state==="paused"){
+    paused=false;hideOverlay();mainBtn.textContent="暂停";
+  }else startGame();
+}
+function die(){
+  if(state!=="running")return;
+  state="over";
+  var rec=score>best&&score>0;
+  if(rec){best=score;persistBestNum(best);}
+  reportBest(best);
+  refresh();
+  mainBtn.textContent="重新开始";
+  showOver(rec);
+}
+function fire(){
+  if(state!=="running"||paused)return;
+  if(reloadT>0){say("装弹中…");return;}
+  if(shells<=0){say("弹药耗尽，装弹中");return;}
+  shells--;
+  barrelSide=!barrelSide;
+  fireX=cx+(barrelSide?-15:15);
+  fireFlash=0.12;
+  shakeT=0.08;
+  /* 命中判定：最近的一只 */
+  var hit=-1,hd=1e9;
+  for(var i=0;i<clays.length;i++){
+    var d=Math.hypot(clays[i].x-cx,clays[i].y-cy);
+    if(d<30&&d<hd){hd=d;hit=i;}
+  }
+  if(hit>=0){
+    var c=clays[hit];
+    var pts=(c.big?20:10)*mult();
+    score+=pts;
+    streak++;
+    var msg="命中 +"+pts;
+    if(pairFirst){score+=20;msg="双飞！额外 +20";}
+    pairFirst=true;
+    say(msg+"（连击 x"+mult()+"）");
+    for(var s2=0;s2<6;s2++)shards.push({x:c.x,y:c.y,vx:(Math.random()*160-80),vy:-Math.random()*120-40,rot:Math.random()*6.28,t:0});
+    clays.splice(hit,1);
+  }else{
+    streak=0;pairFirst=false;
+    say("放空 · 连击中断");
+  }
+  refresh();
+  if(shells<=0)reloadT=1.1;
+}
+function step(dt){
+  if(shakeT>0)shakeT=Math.max(0,shakeT-dt);
+  if(fireFlash>0)fireFlash=Math.max(0,fireFlash-dt);
+  if(reloadT>0){
+    reloadT-=dt;
+    if(reloadT<=0){shells=2;pairFirst=false;}
+  }
+  var d=diff();
+  spawnT-=dt;
+  if(spawnT<=0){
+    spawnT=Math.max(0.75,1.7-d*0.9)*(0.8+Math.random()*0.4);
+    var dir=Math.random()<0.5?-1:1;
+    var big=Math.random()<0.12+d*0.1;
+    clays.push({
+      x:195,y:400,
+      vx:dir*(70+Math.random()*90+d*50),
+      vy:-(300+Math.random()*90+d*70)*(big?1.22:1),
+      r:big?10:12,spin:Math.random()*6.28,big:big
+    });
+  }
+  for(var i=clays.length-1;i>=0;i--){
+    var c=clays[i];
+    c.x+=c.vx*dt;c.y+=c.vy*dt;c.vy+=300*dt;c.spin+=dt*9;
+    if(c.y>NH+30||c.x<-30||c.x>NW+30){
+      clays.splice(i,1);
+      misses++;streak=0;pairFirst=false;
+      refresh();
+      say("飞碟逃了！脱靶 "+misses+"/5");
+      if(misses>=5){die();return;}
+    }
+  }
+  for(var j=shards.length-1;j>=0;j--){
+    var sh=shards[j];
+    sh.t+=dt;sh.x+=sh.vx*dt;sh.y+=sh.vy*dt;sh.vy+=420*dt;sh.rot+=dt*10;
+    if(sh.t>0.5)shards.splice(j,1);
+  }
+}
+
+/* ---------- 绘制 ---------- */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(offX,offY);ctx.scale(S,S);
+  if(shakeT>0){var a=shakeT/0.08;ctx.translate(Math.sin(shakeT*60)*3*a,0);}
+  ctx.fillStyle=PAL.stA;ctx.fillRect(0,0,NW,NH);
+  ctx.fillStyle=PAL.stB;
+  for(var h=0;h<4;h++){
+    ctx.beginPath();ctx.arc(60+h*110,NH-64,80,Math.PI,0);ctx.fill();
+  }
+  ctx.fillStyle=PAL.stC;
+  ctx.fillRect(0,NH-58,NW,58);
+  ctx.strokeStyle=PAL.stD;ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,NH-58);ctx.lineTo(NW,NH-58);ctx.stroke();
+  /* 抛碟器 */
+  ctx.fillStyle=PAL.stD;
+  rr(175,412,40,10,4);ctx.fill();
+  ctx.save();
+  ctx.translate(195,412);
+  ctx.rotate(-0.5);
+  ctx.fillStyle=PAL.stD;
+  rr(-18,-8,36,8,3);ctx.fill();
+  ctx.restore();
+  /* 飞碟 */
+  for(var i=0;i<clays.length;i++){
+    var c=clays[i];
+    ctx.fillStyle=PAL.stE;
+    ctx.beginPath();ctx.ellipse(c.x,c.y,c.r,c.r*0.45,c.spin*0.1,0,6.3);ctx.fill();
+    ctx.strokeStyle=PAL.stD;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.ellipse(c.x,c.y,c.r,c.r*0.45,c.spin*0.1,0,6.3);ctx.stroke();
+    ctx.strokeStyle=PAL.stF;
+    ctx.beginPath();ctx.ellipse(c.x,c.y-3,c.r*0.55,c.r*0.2,0,0,6.3);ctx.stroke();
+    if(c.big){
+      ctx.strokeStyle=PAL.danger;ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(c.x,c.y,c.r+6,0,6.3);ctx.stroke();
+    }
+  }
+  /* 碎片 */
+  for(var s2=0;s2<shards.length;s2++){
+    var sh=shards[s2];
+    ctx.save();
+    ctx.translate(sh.x,sh.y);
+    ctx.rotate(sh.rot);
+    ctx.globalAlpha=Math.max(0,1-sh.t*2);
+    ctx.fillStyle=PAL.stE;
+    ctx.fillRect(-4,-2,8,4);
+    ctx.globalAlpha=1;
+    ctx.restore();
+  }
+  /* 双管与枪口焰 */
+  if(fireFlash>0){
+    ctx.fillStyle=PAL.stF;
+    ctx.fillRect(fireX-4,388,8,12);
+  }
+  ctx.fillStyle=PAL.stD;
+  rr(cx-24,398,18,8,3);ctx.fill();
+  rr(cx+6,398,18,8,3);ctx.fill();
+  /* 准星 */
+  ctx.strokeStyle=PAL.text;ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(cx,cy,14,0,6.3);ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx-22,cy);ctx.lineTo(cx-8,cy);
+  ctx.moveTo(cx+8,cy);ctx.lineTo(cx+22,cy);
+  ctx.moveTo(cx,cy-22);ctx.lineTo(cx,cy-8);
+  ctx.moveTo(cx,cy+8);ctx.lineTo(cx,cy+22);
+  ctx.stroke();
+  /* 装弹环 */
+  if(reloadT>0){
+    ctx.strokeStyle=PAL.warning;ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.arc(cx,cy,20,-Math.PI/2,-Math.PI/2+(1-reloadT/1.1)*6.283);
+    ctx.stroke();
+  }
+  /* 弹药指示 */
+  ctx.fillStyle=PAL.stD;
+  ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.textAlign="left";ctx.textBaseline="alphabetic";
+  ctx.fillText(reloadT>0?"装弹 "+(reloadT).toFixed(1)+"s":"弹药 "+shells+"/2",14,26);
+  ctx.restore();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  rr(offX+0.5,offY+0.5,NW*S-1,NH*S-1,10);ctx.stroke();
+}
+
+/* ---------- 覆盖层 ---------- */
+function showPanel2(title,sub,btn){
+  showPanel(
+    '<p class="rt">'+title+'</p>'+
+    '<p class="rs">'+sub+'</p>'+
+    '<div class="rbtns"><button class="btn" id="ovMain" type="button">'+btn+'</button></div>'
+  );
+  $("ovMain").addEventListener("click",function(){primary();});
+}
+function showStart(){
+  showPanel2("准备开始","双管交替射击：两发后强制装弹 1.1s，装弹节奏与出碟节奏要错开；两管都命中=双飞 +20，飞碟逃出 5 只结束","开始游戏");
+  mainBtn.textContent="开始游戏";
+}
+function showPause(){
+  showPanel2("已暂停","分数 "+score+" · 脱靶 "+misses+"/5","继续");
+  mainBtn.textContent="继续";
+}
+function showOver(rec){
+  showPanel(
+    '<p class="rt">'+(rec?"新纪录！":"脱靶太多")+'</p>'+
+    '<p class="rs">分数 <b>'+score+'</b> · 脱靶 5 只 · 连击中断于 '+streak+'</p>'+
+    '<div class="rbtns"><button class="btn" id="ovMain" type="button">重新开始</button></div>'
+  );
+  $("ovMain").addEventListener("click",function(){primary();});
+}
+
+/* ---------- 输入 ---------- */
+function setCross(x,y){
+  cx=clamp(Math.round(x),14,NW-14);
+  cy=clamp(Math.round(y),14,NH-70);
+}
+cv.addEventListener("pointerdown",function(ev){
+  var r=cv.getBoundingClientRect();
+  setCross((ev.clientX-r.left-offX)/S,(ev.clientY-r.top-offY)/S);
+  fire();
+  ev.preventDefault();
+});
+cv.addEventListener("pointermove",function(ev){
+  var r=cv.getBoundingClientRect();
+  setCross((ev.clientX-r.left-offX)/S,(ev.clientY-r.top-offY)/S);
+});
+window.addEventListener("keydown",function(e){
+  if(e.repeat){
+    var kk=e.key.length===1?e.key.toLowerCase():e.key;
+    if(kk==="ArrowLeft"){cx=Math.max(14,cx-10);}
+    else if(kk==="ArrowRight"){cx=Math.min(NW-14,cx+10);}
+    else if(kk==="ArrowUp"){cy=Math.max(14,cy-10);}
+    else if(kk==="ArrowDown"){cy=Math.min(NH-70,cy+10);}
+    return;
+  }
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k==="ArrowLeft"){e.preventDefault();cx=Math.max(14,cx-14);}
+  else if(k==="ArrowRight"){e.preventDefault();cx=Math.min(NW-14,cx+14);}
+  else if(k==="ArrowUp"){e.preventDefault();cy=Math.max(14,cy-14);}
+  else if(k==="ArrowDown"){e.preventDefault();cy=Math.min(NH-70,cy+14);}
+  else if(k===" "){
+    e.preventDefault();
+    if(state==="running"&&!paused)fire();
+    else primary();
+  }
+});
+mainBtn.addEventListener("click",function(){primary();this.blur();});
+
+/* 切后台自动暂停 */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&state==="running"&&!paused){paused=true;showPause();}
+});
+
+/* ---------- 主循环与启动 ---------- */
+var last=0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(!last)last=ts;
+  var dt=Math.min(0.033,((ts-last)/1000)||0);
+  last=ts;
+  if(state==="running"&&!paused)step(dt);
+  draw();
+}
+fit();
+refresh();
+showStart();
+syncBestFromServer(function(rb){
+  if(rb>best){best=rb;persistBestNum(best);refresh();}
+});
+requestAnimationFrame(loop);
+
+
+/* ========== 分数驱动公共段（存档双写：本地 + 账号，冲突取高者；仅函数声明） ========== */
+function lsGet(k){try{return window.localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{window.localStorage.setItem(k,v)}catch(e){}}
+function loadBestNum(){
+  var v=parseInt(lsGet(SAVE_KEY)||"",10);
+  return v>0?v:0;
+}
+function persistBestNum(b){
+  lsSet(SAVE_KEY,String(b));
+  if(GB.available)GB.saveState(GAME_KEY,String(b)).catch(function(){});
+}
+function syncBestFromServer(apply){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var rb=parseInt(JSON.parse(res.stateJson),10)||0;
+      if(rb>0)apply(rb);
+    }catch(e){}
+  }).catch(function(){});
+}
+function reportBest(b,extra){
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:b,metricExtra:extra||null}).catch(function(){});
+}
+
+})();
+</script>
+</body>
+</html>

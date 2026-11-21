@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#58705E"/>
+      <stop offset="0.55" stop-color="#45594A"/>
+      <stop offset="1" stop-color="#354638"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#14231A" stop-opacity="0.32"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="396" width="800" height="54" fill="#2A3A2C" opacity="0.6"/>
+  <rect y="396" width="800" height="6" fill="#223024" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#E8F4EC" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M108 100 h11 M113.5 94.5 v11" stroke-width="3.2"/>
+    <path d="M700 108 h12 M706 102 v12" stroke-width="3.4"/>
+    <path d="M724 290 h9 M728.5 285.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M78 280 h9 M82.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#E8F4EC" opacity="0.5">
+    <circle cx="176" cy="170" r="4"/><circle cx="712" cy="180" r="3.4"/><circle cx="72" cy="230" r="3"/><circle cx="740" cy="220" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="440" cy="414" rx="246" ry="20" fill="#1A281E" opacity="0.4"/>
+
+  <!-- 锁梁 -->
+  <path d="M270 148 L270 108 A60 60 0 0 1 390 108 L390 148" stroke="#6E7E74" stroke-width="16" fill="none"/>
+
+  <!-- 密码转盘（主视觉，带签名表情） -->
+  <circle cx="330" cy="255" r="122" fill="#262A27" stroke="#1E2620" stroke-width="8"/>
+  <g fill="#D9C6A0">
+    <circle cx="433" cy="255" r="7"/><circle cx="402.8" cy="182.2" r="7"/><circle cx="330" cy="152" r="7"/><circle cx="257.2" cy="182.2" r="7"/>
+    <circle cx="227" cy="255" r="7"/><circle cx="257.2" cy="327.8" r="7"/><circle cx="330" cy="358" r="7"/><circle cx="402.8" cy="327.8" r="7"/>
+  </g>
+  <circle cx="330" cy="255" r="86" fill="#F3EFE4" stroke="#3A4A40" stroke-width="6"/>
+  <polygon points="330,141 318,170 342,170" fill="#E2A44E" stroke="#1E2620" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="272" cy="172" r="14" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="306" cy="242" r="10" fill="#1F1A14"/>
+  <circle cx="354" cy="242" r="10" fill="#1F1A14"/>
+  <path d="M298 274 Q330 294 362 272" stroke="#1F1A14" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+  <!-- 线索纸条 -->
+  <polygon points="555,175 690,160 700,330 565,345" fill="#F3EFE4" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+  <g stroke="#8A9A8E" stroke-width="6" stroke-linecap="round">
+    <path d="M580 212 L676 202"/><path d="M578 247 L680 237"/><path d="M576 282 L660 274"/><path d="M575 312 L642 306"/>
+  </g>
+  <circle cx="585" cy="190" r="8" fill="#FFFFFF" opacity="0.4"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

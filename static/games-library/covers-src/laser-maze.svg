@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#256B50"/>
+      <stop offset="0.55" stop-color="#174A34"/>
+      <stop offset="1" stop-color="#0F3524"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.18"/>
+    </linearGradient>
+    <radialGradient id="hit" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFD9A0" stop-opacity="0.9"/>
+      <stop offset="0.55" stop-color="#E2A44E" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#E2A44E" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0A2418" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#0C2B1D" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#0A2418" opacity="0.6"/>
+  <g stroke="#BFE6D4" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 90 h11 M101.5 84.5 v11" stroke-width="3"/>
+    <path d="M700 78 h12 M706 72 v12" stroke-width="3.4"/>
+    <path d="M150 250 h9 M154.5 245.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M740 210 h9 M744.5 205.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#BFE6D4" opacity="0.5">
+    <circle cx="180" cy="140" r="4"/><circle cx="650" cy="120" r="3.4"/><circle cx="70" cy="320" r="3"/><circle cx="752" cy="320" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="406" rx="270" ry="20" fill="#07231A" opacity="0.4"/>
+
+  <!-- 激光入射段 -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M110 208 L250 230" stroke="#C9526B" stroke-width="14" opacity="0.55"/>
+    <path d="M110 208 L250 230" stroke="#E86E82" stroke-width="9"/>
+    <path d="M110 208 L250 230" stroke="#FFFFFF" stroke-width="3.5" opacity="0.85"/>
+  </g>
+  <!-- 折射段 -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M412 252 L566 194 L648 284" stroke="#C9526B" stroke-width="14" opacity="0.55"/>
+    <path d="M412 252 L566 194 L648 284" stroke="#E86E82" stroke-width="9"/>
+    <path d="M412 252 L566 194 L648 284" stroke="#FFFFFF" stroke-width="3.5" opacity="0.85"/>
+  </g>
+
+  <!-- 靶心 -->
+  <g>
+    <rect x="622" y="306" width="52" height="12" rx="6" fill="#44524A" stroke="#1E2620" stroke-width="5"/>
+    <circle cx="648" cy="288" r="42" fill="#E9CFA0" stroke="#1E2620" stroke-width="8"/>
+    <circle cx="648" cy="288" r="27" fill="#C9526B" stroke="#1E2620" stroke-width="5"/>
+    <circle cx="648" cy="288" r="11" fill="#F2EFE9" stroke="#1E2620" stroke-width="4"/>
+    <circle cx="648" cy="288" r="66" fill="url(#hit)"/>
+    <path d="M600 262 L588 250 M610 246 L604 236" stroke="#E2A44E" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- 棱镜（签名表情） -->
+  <g>
+    <path d="M332 148 L420 240 L332 332 L244 240 Z" fill="url(#glass)" stroke="#1E2620" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M332 148 L420 240 L332 332 L244 240 Z" fill="#7FD4B0" opacity="0.35"/>
+    <path d="M300 190 L276 216" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.6"/>
+    <circle cx="292" cy="182" r="10" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="314" cy="226" r="7.5" fill="#12261C"/>
+    <circle cx="352" cy="226" r="7.5" fill="#12261C"/>
+    <circle cx="316.5" cy="223.5" r="2.4" fill="#FFFFFF"/>
+    <circle cx="354.5" cy="223.5" r="2.4" fill="#FFFFFF"/>
+    <path d="M320 252 Q333 262 346 250" stroke="#12261C" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="392" cy="212" r="5" fill="#E88A6A" opacity="0.55"/>
+    <circle cx="272" cy="268" r="5" fill="#E88A6A" opacity="0.55"/>
+  </g>
+
+  <!-- 小反射镜 -->
+  <g>
+    <rect x="468" y="330" width="44" height="12" rx="6" fill="#44524A" stroke="#1E2620" stroke-width="5"/>
+    <rect x="478" y="278" width="12" height="56" rx="6" fill="#44524A" stroke="#1E2620" stroke-width="5"/>
+    <rect x="456" y="252" width="56" height="14" rx="7" transform="rotate(38 484 259)" fill="#DDE9E2" stroke="#1E2620" stroke-width="6"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

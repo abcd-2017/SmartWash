@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2C14E"/>
+      <stop offset="0.55" stop-color="#E4AC3B"/>
+      <stop offset="1" stop-color="#D19A28"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#6E4A0E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#B8860B" opacity="0.45"/>
+  <rect y="394" width="800" height="6" fill="#A67808" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M108 250 h9 M112.5 245.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M690 250 h9 M694.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.5">
+    <circle cx="170" cy="150" r="4"/><circle cx="712" cy="160" r="3.4"/><circle cx="70" cy="220" r="3"/><circle cx="742" cy="210" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="406" rx="245" ry="18" fill="#7A5408" opacity="0.32"/>
+
+  <!-- 弹道弧线（瞄准绿） -->
+  <path d="M300 330 Q330 220 396 170" stroke="#17734A" stroke-width="6" stroke-linecap="round" stroke-dasharray="3 16" fill="none" opacity="0.8"/>
+  <path d="M288 344 L300 330" stroke="#17734A" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- 得分格盘（主视觉下半） -->
+  <g>
+    <rect x="146" y="248" width="508" height="162" rx="18" fill="#E8F6EF" stroke="#3A2A1E" stroke-width="9"/>
+    <g stroke="#3A2A1E" stroke-width="5" stroke-linecap="round" opacity="0.75">
+      <path d="M315 248 V410 M485 248 V410"/>
+      <path d="M146 302 H654 M146 356 H654"/>
+    </g>
+    <!-- 各格分值点（pips） -->
+    <g fill="#17734A">
+      <circle cx="230" cy="275" r="7"/><circle cx="230" cy="329" r="7"/><circle cx="230" cy="383" r="7"/>
+      <circle cx="400" cy="329" r="7"/><circle cx="400" cy="383" r="7"/>
+      <circle cx="570" cy="275" r="7"/><circle cx="570" cy="329" r="7"/><circle cx="570" cy="383" r="7"/>
+    </g>
+    <!-- 高亮目标格 -->
+    <rect x="485" y="248" width="169" height="54" fill="#5BC894" opacity="0.55"/>
+    <path d="M540 275 Q568 258 596 272" stroke="#17734A" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.8"/>
+  </g>
+
+  <!-- 弹飞的大金币（带表情，主视觉） -->
+  <g transform="rotate(-14 400 150)">
+    <circle cx="400" cy="150" r="92" fill="#F2C14E" stroke="#3A2A1E" stroke-width="10"/>
+    <circle cx="400" cy="150" r="70" fill="none" stroke="#C9A34A" stroke-width="7"/>
+    <circle cx="400" cy="150" r="92" fill="url(#gloss)"/>
+    <path d="M348 96 Q368 76 398 72" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.45"/>
+    <circle cx="374" cy="134" r="10" fill="#1F1A14"/>
+    <circle cx="428" cy="134" r="10" fill="#1F1A14"/>
+    <path d="M382 166 Q400 182 418 164" stroke="#1F1A14" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M396 100 Q400 92 408 96" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+  <!-- 旋转速度线 -->
+  <g stroke="#3A2A1E" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M282 108 L254 88"/>
+    <path d="M276 150 L244 152"/>
+    <path d="M290 196 L264 216"/>
+  </g>
+  <!-- 两枚散落小硬币 -->
+  <circle cx="646" cy="374" r="26" fill="#F2C14E" stroke="#3A2A1E" stroke-width="7"/>
+  <circle cx="646" cy="374" r="26" fill="url(#gloss)"/>
+  <circle cx="698" cy="404" r="18" fill="#C9A34A" stroke="#3A2A1E" stroke-width="6"/>
+  <circle cx="152" cy="140" r="22" fill="#C9A34A" stroke="#3A2A1E" stroke-width="6"/>
+  <circle cx="152" cy="140" r="22" fill="url(#gloss)"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>雪橇漂移</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材（--g-st- 前缀素材 token，本游戏专用）*/
+  :root {
+    --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
+    --g-primary:#2D9B6A; --g-primary-deep:#17734A; --g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
+    --g-text:#1C1C1E; --g-muted:#6B6E73; --g-faint:#A9AEA9; --g-border:#E6E9E6; --g-hairline:#EFF1EE;
+    --g-danger:#A83850; --g-warning:#9A6210; --g-success:#17734A; --g-water:#4A9FD4;
+    --g-scrim:rgba(245,246,243,.9);
+    --g-shadow:0 2px 12px rgba(20,40,30,.05);
+    --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
+    /*素材:a=冰道 b=雪堤 c=冰面纹 d=雪墙边 e=赛道外 f=火花高亮*/
+    --g-st-a:#DDEBF2; --g-st-b:#EAF3F8; --g-st-c:#C3D8E6; --g-st-d:#9FB8C9; --g-st-e:#B9CFDD; --g-st-f:#FFD98A;
+
+    color-scheme:light;
+  }
+  :root[data-theme=dark] {
+    --g-bg:#141614; --g-surface:#1D201E; --g-surface2:#262A27;
+    --g-primary-deep:#5BC894; --g-primary-soft:#1D3229; --g-on-soft:#B9E8CF;
+    --g-text:#E6E9E6; --g-muted:#A9AEA9; --g-faint:#7E837D; --g-border:#2C312D; --g-hairline:#262A27;
+    --g-danger:#DB7186; --g-warning:#E2A44E; --g-success:#4ADE6E; --g-water:#6BB4DE;
+    --g-scrim:rgba(20,22,20,.9);
+    --g-shadow:0 2px 12px rgba(0,0,0,.28);
+    --g-st-a:#2A3A44; --g-st-b:#1D2C36; --g-st-c:#22323C; --g-st-d:#3E5560; --g-st-e:#16222A; --g-st-f:#B98A3E;
+/*==EXTRA==*/
+  canvas#cv { aspect-ratio: 390/560; background: var(--g-st-e); }
+
+    color-scheme:dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.5; }
+  .scores { display: flex; gap: 8px; }
+  .score-box {
+    background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
+    min-width: 70px; padding: 5px 8px; text-align: center; line-height: 1.3;
+  }
+  .score-box .label { display: block; font-size: 12px; white-space: nowrap; }
+  .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stage { position: relative; }
+  canvas {
+    display: block; width: 100%; height: auto;
+    border: 1px solid var(--g-border); border-radius: 12px;
+    touch-action: none;
+  }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 16px; flex: 1;
+    border: 0; border-radius: 14px;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; max-height: 100%; overflow: auto;
+    background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 16px;
+    box-shadow: var(--g-shadow); padding: 22px 18px; text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; }
+  }
+  .rt { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
+  .rs { margin: 0 0 14px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .rs b { color: var(--g-primary-deep); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .rbtns { display: flex; gap: 10px; margin-top: 16px; }
+  .rbtns .btn { flex: 1; }
+  .rhint { margin: 14px 0 0; font-size: 12px; color: var(--g-muted); line-height: 1.6; text-align: left; }
+  .lv-wrap { width: 100%; max-width: 320px; max-height: 46vh; overflow-y: auto; margin-top: 6px; }
+  .lv-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .lv-chip {
+    min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
+  .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
+  canvas#cv { aspect-ratio: 390/560; background: var(--g-st-e); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="sub">弯道漂移 · 贴内壁提速</span>
+  <div class="scores">
+    <div class="score-box"><span class="label">里程</span><span class="val" id="score">0</span></div>
+    <div class="score-box"><span class="label">最高分</span><span class="val" id="best">0</span></div>
+    <div class="score-box"><span class="label">护甲</span><span class="val" id="hp">3</span></div>
+  </div>
+</header>
+<div class="stage"><canvas id="cv" aria-label="雪橇漂移：长雪道弯道过弯，贴内壁加速，撞外壁掉护甲" role="img"></canvas></div>
+<p class="msg" id="msg" role="status" aria-live="polite">点「开始」冲坡</p>
+<div class="tools">
+  <button class="btn" id="mainBtn">开始游戏</button>
+</div>
+<p class="foot">触屏按住左 / 右半边转向，贴住弯道内壁攒火花加速 · ← → / A D 转向 · 撞外壁 -1 护甲，护甲耗尽结束</p>
+
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel" id="panel"></div>
+</div>
+<script>
+/* 覆盖层焦点管理：显示时聚焦首个可操作项，Tab 在层内循环，隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 调色板（颜色全部经 CSS 变量读取，JS 零颜色字面量） ========== */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim();}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),text:v("--g-text"),
+    muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),hairline:v("--g-hairline"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    onSoft:v("--g-on-soft"),onPrimary:v("--g-on-primary"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),water:v("--g-water"),
+    stA:v("--g-st-a"),stB:v("--g-st-b"),stC:v("--g-st-c"),stD:v("--g-st-d"),stE:v("--g-st-e"),stF:v("--g-st-f")};
+}
+window.__gOnTheme=function(){palLoad();if(typeof draw==="function")draw();};
+palLoad();
+
+/* ========== 通用工具与覆盖层面板 ========== */
+function $(id){return document.getElementById(id);}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+var overlayEl=$("overlay"),panelEl=$("panel");
+function showPanel(html){panelEl.innerHTML=html;overlayEl.classList.add("show");}
+function hideOverlay(){overlayEl.classList.remove("show");}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});}
+
+/* ==================== 雪橇漂移（弯道侧滑 + 贴内壁加速，分数驱动） ==================== */
+var GAME_KEY="bobsled-drift",SAVE_KEY="sw.bobsleddrift.v1";
+
+/* ---------- 状态 ---------- */
+var best=loadBestNum();
+var NW=390,NH=560,W=390,H=560,S=1,offX=0,offY=0;
+var cv=$("cv"),ctx=cv.getContext("2d");
+var scoreEl=$("score"),bestEl=$("best"),hpEl=$("hp"),msgEl=$("msg"),mainBtn=$("mainBtn");
+var state="ready",paused=false;
+var s=0,v=0,x=195,vx=0,boost=0,hp=3,invuln=0,shakeT=0;
+var steer=0,touchX=null,lastScore=-1;
+var keys={left:false,right:false};
+var SLEDY=NH*0.68,HW=66;
+function say(t){msgEl.textContent=t;}
+function curScore(){return Math.floor(s/50);}
+function refresh(){
+  scoreEl.textContent=String(curScore());
+  bestEl.textContent=String(best);
+  hpEl.textContent=String(hp);
+}
+
+/* ---------- 赛道中心线 ---------- */
+function cxAt(sw){return 195+88*Math.sin(sw*0.005+1.2)+30*Math.sin(sw*0.013+4.1);}
+function baseV(){return 210+Math.min(140,s/35);}
+
+/* ---------- 画布 ---------- */
+function rr(x0,y0,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x0+r,y0);
+  ctx.arcTo(x0+w,y0,x0+w,y0+h,r);ctx.arcTo(x0+w,y0+h,x0,y0+h,r);
+  ctx.arcTo(x0,y0+h,x0,y0,r);ctx.arcTo(x0,y0,x0+w,y0,r);
+  ctx.closePath();
+}
+function fit(){
+  var r=cv.getBoundingClientRect();
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.max(240,Math.floor(r.width));H=Math.max(300,Math.floor(r.height));
+  cv.width=Math.floor(W*dpr);cv.height=Math.floor(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  S=Math.min(W/NW,H/NH);offX=(W-NW*S)/2;offY=(H-NH*S)/2;
+  draw();
+}
+window.addEventListener("resize",fit);
+window.addEventListener("orientationchange",fit);
+
+/* ---------- 流程 ---------- */
+function resetRound(){
+  s=0;x=195;vx=0;boost=0;hp=3;invuln=0;shakeT=0;steer=0;touchX=null;lastScore=-1;
+  keys.left=false;keys.right=false;
+  refresh();
+}
+function startGame(){
+  resetRound();
+  state="running";paused=false;
+  hideOverlay();
+  mainBtn.textContent="暂停";
+  say("过弯时朝内壁切入，贴住攒火花");
+}
+function primary(){
+  if(state==="running"){
+    paused=!paused;
+    if(paused){showPause();mainBtn.textContent="继续";}
+    else{hideOverlay();mainBtn.textContent="暂停";}
+  }else if(state==="paused"){
+    paused=false;hideOverlay();mainBtn.textContent="暂停";
+  }else startGame();
+}
+function die(){
+  if(state!=="running")return;
+  state="over";
+  var sc=curScore();
+  var rec=sc>best&&sc>0;
+  if(rec){best=sc;persistBestNum(best);}
+  reportBest(best);
+  refresh();
+  mainBtn.textContent="重新开始";
+  showOver(rec);
+}
+
+/* ---------- 更新 ---------- */
+function step(dt){
+  if(shakeT>0)shakeT=Math.max(0,shakeT-dt);
+  if(invuln>0)invuln=Math.max(0,invuln-dt);
+  /* 转向输入 */
+  if(keys.left&&!keys.right)steer=-1;
+  else if(keys.right&&!keys.left)steer=1;
+  else if(touchX!==null)steer=clamp((touchX-195)/90,-1,1);
+  else steer=0;
+  /* 漂移：急转时侧向抓地下降，滑移更大 */
+  var grip=Math.abs(steer)>0.7?1.7:3.2;
+  vx+=steer*560*dt;
+  vx*=Math.max(0,1-grip*dt);
+  x+=vx*dt;
+  v=baseV()+boost;
+  s+=v*dt;
+  var c=cxAt(s),c1=cxAt(s+50)-cxAt(s);
+  var innerSign=c1>0?1:-1;
+  var rel=x-c;
+  var turning=Math.abs(c1)>4;
+  /* 贴内壁加速 */
+  if(turning&&rel*innerSign>0&&Math.abs(rel)>HW-34&&Math.abs(rel)<HW-2){
+    boost=Math.min(110,boost+65*dt);
+  }else{
+    boost=Math.max(0,boost-45*dt);
+  }
+  /* 撞墙 */
+  if(Math.abs(rel)>HW-12&&invuln<=0){
+    var outer=rel*innerSign<0;
+    x=c+(rel>0?1:-1)*(HW-13);
+    if(outer){
+      hp--;invuln=1.0;boost=0;shakeT=0.35;
+      vx=-vx*0.35;
+      refresh();
+      say(hp>0?"撞上外壁！护甲 -1":"护甲耗尽");
+      if(hp<=0){die();return;}
+    }else{
+      vx=-vx*0.3;
+    }
+  }
+  var ns=curScore();
+  if(ns!==lastScore){lastScore=ns;scoreEl.textContent=String(ns);}
+}
+
+/* ---------- 绘制 ---------- */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(offX,offY);ctx.scale(S,S);
+  if(shakeT>0){var a=shakeT/0.35;ctx.translate(Math.sin(shakeT*46)*5*a,0);}
+  ctx.fillStyle=PAL.stB;ctx.fillRect(0,0,NW,NH);
+  var sledSX=clamp(x-cxAt(s)+195,10,NW-10);
+  /* 冰道条带（自远及近） */
+  for(var sy=NH+16;sy>=-16;sy-=10){
+    var sw=s+(SLEDY-sy);
+    var c=cxAt(sw);
+    ctx.fillStyle=PAL.stA;
+    ctx.fillRect(c-HW,sy-5,HW*2,10);
+    ctx.fillStyle=PAL.stD;
+    ctx.fillRect(c-HW-3,sy-5,3,10);
+    ctx.fillRect(c+HW,sy-5,3,10);
+    if(Math.floor(sw/44)%2===0){
+      ctx.fillStyle=PAL.stC;
+      ctx.fillRect(c-7,sy-2,14,4);
+    }
+  }
+  /* 雪雾近景 */
+  ctx.fillStyle=PAL.stB;
+  ctx.fillRect(0,0,NW,10);
+  /* 火花（贴内壁） */
+  var c0=cxAt(s),c1=cxAt(s+50)-cxAt(s);
+  var innerSign=c1>0?1:-1,rel0=x-c0;
+  var hugging=Math.abs(c1)>4&&rel0*innerSign>0&&Math.abs(rel0)>HW-34&&Math.abs(rel0)<HW-2&&boost>8;
+  if(hugging){
+    for(var sp=0;sp<4;sp++){
+      ctx.fillStyle=PAL.stF;
+      ctx.beginPath();
+      ctx.arc(sledSX+innerSign*16+(Math.random()*14-7),SLEDY+(Math.random()*30-15),2.5,0,6.3);
+      ctx.fill();
+    }
+  }
+  /* 雪橇 */
+  ctx.save();
+  ctx.translate(sledSX,SLEDY);
+  ctx.rotate(clamp(vx*0.0009,-0.3,0.3));
+  if(invuln>0&&Math.floor(invuln*10)%2===0)ctx.globalAlpha=0.45;
+  ctx.strokeStyle=PAL.stD;ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(-14,20);ctx.lineTo(-14,30);ctx.moveTo(14,20);ctx.lineTo(14,30);ctx.stroke();
+  ctx.fillStyle=PAL.primary;
+  rr(-16,-26,32,48,9);ctx.fill();
+  ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;
+  rr(-16,-26,32,48,9);ctx.stroke();
+  ctx.fillStyle=PAL.onPrimary;
+  ctx.beginPath();ctx.arc(-6,-10,4.5,0,6.3);ctx.arc(7,-4,4.5,0,6.3);ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.restore();
+  /* 速度显示 */
+  ctx.fillStyle=PAL.muted;
+  ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.textAlign="right";ctx.textBaseline="alphabetic";
+  ctx.fillText("速度 "+Math.round(v),NW-14,22);
+  ctx.textAlign="left";
+  ctx.fillText(hugging?"贴内壁 +火花":"",14,22);
+  ctx.restore();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  rr(offX+0.5,offY+0.5,NW*S-1,NH*S-1,10);ctx.stroke();
+}
+
+/* ---------- 覆盖层 ---------- */
+function showPanel2(title,sub,btn){
+  showPanel(
+    '<p class="rt">'+title+'</p>'+
+    '<p class="rs">'+sub+'</p>'+
+    '<div class="rbtns"><button class="btn" id="ovMain" type="button">'+btn+'</button></div>'
+  );
+  $("ovMain").addEventListener("click",function(){primary();});
+}
+function showStart(){
+  showPanel2("准备开始","弯道朝内壁切入并贴住可攒火花加速；急转会有侧滑漂移，小心外壁","开始游戏");
+  mainBtn.textContent="开始游戏";
+}
+function showPause(){
+  showPanel2("已暂停","里程 "+curScore()+" m · 护甲 "+hp,"继续");
+  mainBtn.textContent="继续";
+}
+function showOver(rec){
+  showPanel(
+    '<p class="rt">'+(rec?"新纪录！":"雪橇撞毁")+'</p>'+
+    '<p class="rs">里程 <b>'+curScore()+'</b> m</p>'+
+    '<div class="rbtns"><button class="btn" id="ovMain" type="button">重新开始</button></div>'
+  );
+  $("ovMain").addEventListener("click",function(){primary();});
+}
+
+/* ---------- 输入 ---------- */
+cv.addEventListener("pointerdown",function(ev){
+  var r=cv.getBoundingClientRect();
+  touchX=(ev.clientX-r.left-offX)/S;
+  ev.preventDefault();
+});
+cv.addEventListener("pointermove",function(ev){
+  if(touchX===null)return;
+  var r=cv.getBoundingClientRect();
+  touchX=(ev.clientX-r.left-offX)/S;
+});
+cv.addEventListener("pointerup",function(ev){touchX=null;});
+cv.addEventListener("pointercancel",function(ev){touchX=null;});
+window.addEventListener("keydown",function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k==="ArrowLeft"||k==="a"){e.preventDefault();keys.left=true;}
+  else if(k==="ArrowRight"||k==="d"){e.preventDefault();keys.right=true;}
+  else if(k===" "){
+    e.preventDefault();
+    if(state==="running"&&paused)primary();
+    else if(state!=="running")primary();
+  }
+});
+window.addEventListener("keyup",function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k==="ArrowLeft"||k==="a")keys.left=false;
+  else if(k==="ArrowRight"||k==="d")keys.right=false;
+});
+mainBtn.addEventListener("click",function(){primary();this.blur();});
+
+/* 切后台自动暂停 */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&state==="running"&&!paused){paused=true;touchX=null;showPause();}
+});
+
+/* ---------- 主循环与启动 ---------- */
+var last=0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(!last)last=ts;
+  var dt=Math.min(0.033,((ts-last)/1000)||0);
+  last=ts;
+  if(state==="running"&&!paused)step(dt);
+  draw();
+}
+fit();
+refresh();
+showStart();
+syncBestFromServer(function(rb){
+  if(rb>best){best=rb;persistBestNum(best);refresh();}
+});
+requestAnimationFrame(loop);
+
+
+/* ========== 分数驱动公共段（存档双写：本地 + 账号，冲突取高者；仅函数声明） ========== */
+function lsGet(k){try{return window.localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{window.localStorage.setItem(k,v)}catch(e){}}
+function loadBestNum(){
+  var v=parseInt(lsGet(SAVE_KEY)||"",10);
+  return v>0?v:0;
+}
+function persistBestNum(b){
+  lsSet(SAVE_KEY,String(b));
+  if(GB.available)GB.saveState(GAME_KEY,String(b)).catch(function(){});
+}
+function syncBestFromServer(apply){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var rb=parseInt(JSON.parse(res.stateJson),10)||0;
+      if(rb>0)apply(rb);
+    }catch(e){}
+  }).catch(function(){});
+}
+function reportBest(b,extra){
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:b,metricExtra:extra||null}).catch(function(){});
+}
+
+})();
+</script>
+</body>
+</html>

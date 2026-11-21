@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EFF1EE"/>
+      <stop offset="0.55" stop-color="#DCDFD8"/>
+      <stop offset="1" stop-color="#C4C9BE"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3A443C" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#AAB2A4" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#969E90" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M708 84 h12 M714 78 v12" stroke-width="3.4"/>
+    <path d="M80 280 h9 M84.5 275.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M716 280 h9 M720.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="80" cy="160" r="4"/><circle cx="720" cy="160" r="3.4"/><circle cx="64" cy="230" r="3"/><circle cx="736" cy="220" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="420" cy="410" rx="260" ry="16" fill="#5E6A5C" opacity="0.3"/>
+
+  <!-- 8x8 棋盘（左） -->
+  <g>
+    <rect x="106" y="42" width="384" height="384" rx="14" fill="#FFFFFF" stroke="#1E2620" stroke-width="9"/>
+    <g fill="#EFF1EE">
+      <rect x="154" y="42" width="48" height="48"/><rect x="250" y="42" width="48" height="48"/><rect x="346" y="42" width="48" height="48"/><rect x="442" y="42" width="48" height="48"/>
+      <rect x="106" y="90" width="48" height="48"/><rect x="202" y="90" width="48" height="48"/><rect x="298" y="90" width="48" height="48"/><rect x="394" y="90" width="48" height="48"/>
+      <rect x="154" y="138" width="48" height="48"/><rect x="250" y="138" width="48" height="48"/><rect x="346" y="138" width="48" height="48"/><rect x="442" y="138" width="48" height="48"/>
+      <rect x="106" y="186" width="48" height="48"/><rect x="202" y="186" width="48" height="48"/><rect x="298" y="186" width="48" height="48"/><rect x="394" y="186" width="48" height="48"/>
+      <rect x="154" y="234" width="48" height="48"/><rect x="250" y="234" width="48" height="48"/><rect x="346" y="234" width="48" height="48"/><rect x="442" y="234" width="48" height="48"/>
+      <rect x="106" y="282" width="48" height="48"/><rect x="202" y="282" width="48" height="48"/><rect x="298" y="282" width="48" height="48"/><rect x="394" y="282" width="48" height="48"/>
+      <rect x="154" y="330" width="48" height="48"/><rect x="250" y="330" width="48" height="48"/><rect x="346" y="330" width="48" height="48"/><rect x="442" y="330" width="48" height="48"/>
+      <rect x="106" y="378" width="48" height="48"/><rect x="202" y="378" width="48" height="48"/><rect x="298" y="378" width="48" height="48"/><rect x="394" y="378" width="48" height="48"/>
+    </g>
+    <rect x="106" y="42" width="384" height="384" rx="14" fill="none" stroke="#1E2620" stroke-width="9"/>
+  </g>
+
+  <!-- 攻击线（红，连两枚小皇后） -->
+  <path d="M226 114 L370 354" stroke="#A83850" stroke-width="6" stroke-linecap="round" stroke-dasharray="14 10" opacity="0.85"/>
+  <path d="M244 172 L442 116" stroke="#A83850" stroke-width="6" stroke-linecap="round" stroke-dasharray="14 10" opacity="0.85"/>
+  <g fill="#A83850">
+    <circle cx="226" cy="114" r="8"/><circle cx="370" cy="354" r="8"/><circle cx="244" cy="172" r="8"/><circle cx="442" cy="116" r="8"/>
+  </g>
+
+  <!-- 棋盘上的小皇后（绿，两枚） -->
+  <g>
+    <!-- 左上小皇后 -->
+    <path d="M226 96 L212 76 L226 84 L226 66 L240 84 L254 76 L240 96 Q240 104 226 104 Z"
+          fill="#2D9B6A" stroke="#1E2620" stroke-width="6" stroke-linejoin="round" transform="translate(-7 12)"/>
+    <path d="M212 114 Q226 124 240 114 L246 130 Q226 140 206 130 Z"
+          fill="#2D9B6A" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+    <!-- 右下小皇后 -->
+    <path d="M370 336 L356 316 L370 324 L370 306 L384 324 L398 316 L384 336 Q384 344 370 344 Z"
+          fill="#2D9B6A" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M356 354 Q370 364 384 354 L390 370 Q370 380 350 370 Z"
+          fill="#2D9B6A" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+  </g>
+
+  <!-- 大皇后棋子（右，金色，带表情，主视觉） -->
+  <g>
+    <!-- 底座 -->
+    <ellipse cx="590" cy="392" rx="86" ry="24" fill="#D19A28" stroke="#3A2A1E" stroke-width="9"/>
+    <ellipse cx="590" cy="384" rx="70" ry="16" fill="#F2C14E" stroke="#3A2A1E" stroke-width="7"/>
+    <!-- 锥身 -->
+    <path d="M548 240 Q590 258 632 240 L648 368 Q590 388 532 368 Z"
+          fill="#E4AC3B" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M562 300 Q590 310 618 300" stroke="#C9A34A" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M556 336 Q590 346 624 336" stroke="#C9A34A" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <!-- 领环 -->
+    <ellipse cx="590" cy="240" rx="58" ry="18" fill="#F2C14E" stroke="#3A2A1E" stroke-width="8"/>
+    <!-- 冠（三尖+珠） -->
+    <path d="M532 232 L520 168 L556 196 L590 148 L624 196 L660 168 L648 232 Q590 250 532 232 Z"
+          fill="#F2C14E" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+    <circle cx="590" cy="140" r="12" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="6"/>
+    <!-- 冠面高光 -->
+    <path d="M544 176 L552 200" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.45"/>
+    <!-- 表情 -->
+    <circle cx="568" cy="212" r="7.5" fill="#1F1A14"/>
+    <circle cx="612" cy="212" r="7.5" fill="#1F1A14"/>
+    <path d="M576 226 Q590 236 604 224" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

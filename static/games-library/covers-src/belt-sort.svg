@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8ECE6"/>
+      <stop offset="0.55" stop-color="#D6DCD4"/>
+      <stop offset="1" stop-color="#C2CCC0"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3A443C" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#ACB6A8" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#98A294" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M716 240 h9 M720.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M78 250 h9 M82.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#F2F7F0" opacity="0.5">
+    <circle cx="160" cy="160" r="4"/><circle cx="712" cy="160" r="3.4"/><circle cx="64" cy="210" r="3"/><circle cx="740" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="410" cy="404" rx="250" ry="20" fill="#5E6A5C" opacity="0.32"/>
+
+  <!-- 传送带（主视觉） -->
+  <g>
+    <rect x="96" y="236" width="520" height="64" rx="32" fill="#3A423C" stroke="#262A27" stroke-width="8"/>
+    <rect x="112" y="246" width="488" height="44" rx="22" fill="#4A544C"/>
+    <!-- 传送带滚轮 -->
+    <circle cx="128" cy="268" r="17" fill="#C9CFC7" stroke="#262A27" stroke-width="6"/>
+    <circle cx="128" cy="268" r="6" fill="#3A423C"/>
+    <circle cx="330" cy="268" r="17" fill="#C9CFC7" stroke="#262A27" stroke-width="6"/>
+    <circle cx="330" cy="268" r="6" fill="#3A423C"/>
+    <circle cx="532" cy="268" r="17" fill="#C9CFC7" stroke="#262A27" stroke-width="6"/>
+    <circle cx="532" cy="268" r="6" fill="#3A423C"/>
+    <!-- 带面横纹 -->
+    <g stroke="#3A423C" stroke-width="5" stroke-linecap="round" opacity="0.85">
+      <path d="M168 246 V290"/><path d="M232 246 V290"/><path d="M296 246 V290"/>
+      <path d="M360 246 V290"/><path d="M424 246 V290"/><path d="M488 246 V290"/>
+    </g>
+    <!-- 支腿 -->
+    <path d="M150 300 V366 M546 300 V366" stroke="#262A27" stroke-width="10" stroke-linecap="round"/>
+    <path d="M120 368 H180 M516 368 H576" stroke="#262A27" stroke-width="10" stroke-linecap="round"/>
+    <!-- 运动速度线 -->
+    <g stroke="#4A544C" stroke-width="5" stroke-linecap="round" opacity="0.7">
+      <path d="M96 218 H160"/><path d="M120 200 H180"/>
+      <path d="M660 218 H716"/>
+    </g>
+  </g>
+
+  <!-- 带上的垃圾件 -->
+  <g>
+    <!-- 香蕉皮（带表情） -->
+    <path d="M196 258 Q206 236 236 236 Q268 236 276 258 Q276 270 262 272 L214 272 Q196 272 196 258 Z"
+          fill="#F2C14E" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M204 272 Q210 296 232 294 M268 272 Q262 296 246 296" stroke="#1E2620" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="222" cy="254" r="5" fill="#1F1A14"/>
+    <circle cx="250" cy="254" r="5" fill="#1F1A14"/>
+    <path d="M226 262 Q236 269 246 261" stroke="#1F1A14" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <!-- 瓶子 -->
+    <path d="M376 224 L376 238 Q362 244 362 258 L362 292 Q362 300 370 300 L406 300 Q414 300 414 292 L414 258 Q414 244 400 238 L400 224 Z"
+          fill="#7FA8D9" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+    <rect x="374" y="216" width="28" height="12" rx="4" fill="#4A9FD4" stroke="#1E2620" stroke-width="5"/>
+    <path d="M370 256 H406 M370 270 H406" stroke="#DCEEF6" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+    <!-- 易拉罐 -->
+    <rect x="456" y="236" width="46" height="62" rx="10" fill="#9AA0A6" stroke="#1E2620" stroke-width="7"/>
+    <ellipse cx="479" cy="238" rx="20" ry="7" fill="#B0B6BC" stroke="#1E2620" stroke-width="5"/>
+    <path d="M464 252 H494" stroke="#E8B45A" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="448" cy="230" r="7" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <!-- 分类桶（右侧，一件正飞入） -->
+  <g>
+    <!-- 飞行中的苹果核 -->
+    <path d="M600 176 Q590 152 606 142 Q620 150 632 142 Q646 154 634 176 Q630 190 617 190 Q604 190 600 176 Z"
+          fill="#F6EAD8" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M617 142 L617 132" stroke="#3E5E34" stroke-width="5" stroke-linecap="round"/>
+    <path d="M617 146 Q632 136 640 146" stroke="#5E8C4A" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M560 210 Q580 196 596 186" stroke="#1E2620" stroke-width="5" stroke-linecap="round" stroke-dasharray="3 12" fill="none" opacity="0.6"/>
+    <!-- 桶 1（绿） -->
+    <path d="M646 300 L660 386 L726 386 L740 300 Z" fill="#7BC57B" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+    <ellipse cx="693" cy="300" rx="47" ry="12" fill="#8FD68F" stroke="#1E2620" stroke-width="7"/>
+    <ellipse cx="693" cy="300" rx="34" ry="8" fill="#3E5E34"/>
+    <!-- 桶 2（蓝） -->
+    <path d="M556 318 L566 386 L620 386 L632 318 Z" fill="#7FA8D9" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+    <ellipse cx="594" cy="318" rx="38" ry="10" fill="#93BCE6" stroke="#1E2620" stroke-width="7"/>
+    <ellipse cx="594" cy="318" rx="26" ry="6.5" fill="#2E5E80"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>推理网格</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效 */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+
+  /* 推理网格 */
+  .clues { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .clue { font-size: 14px; line-height: 1.5; background: var(--g-surface2); border-radius: 10px; padding: 6px 10px; color: var(--g-text); }
+  .lgcat { background: var(--g-surface); border: 2px solid var(--g-border); border-radius: var(--g-radius-inner); padding: 8px; margin-bottom: 10px; }
+  .lghead { font-size: 14px; font-weight: 600; color: var(--g-primary-deep); margin-bottom: 6px; }
+  .lgtable { display: grid; gap: 3px; }
+  .lgcell {
+    min-height: 44px; border: 0; padding: 0; cursor: pointer;
+    border-radius: 10px; background: var(--g-surface2);
+    font-family: inherit; font-size: 16px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .lgcell.lab { background: transparent; color: var(--g-muted); font-size: 12px; font-weight: 600; cursor: default; min-height: 34px; }
+  .lgcell.lab.top { font-size: 14px; }
+  .lgcell.yes { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lgcell.no { color: var(--g-danger); }
+  .lgcell.cur { outline: 2px solid var(--g-primary-deep); outline-offset: -2px; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">线索</span><span class="val" id="stClue">0</span></div>
+    <div class="stat"><span class="label">未定格</span><span class="val low" id="stBlank">-</span></div>
+  </div>
+  <div class="clues" id="clues"></div>
+  <div id="cats"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">按线索排除：点格循环 空白→✓→✕；勾对会自动排除同行同列</p>
+  <div class="tools">
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：方向键移动 · 空格标记 · H 提示 · 40 关递进 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="clue-grid",SAVE_KEY="sw.cluegrid.v1";
+var DEFAULT_LEVELS=[{"name":"推理·01","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"is","e":1,"c":1,"v":1},{"t":"is","e":0,"c":0,"v":2},{"t":"link","c1":0,"v1":1,"c2":1,"v2":1},{"t":"is","e":2,"c":1,"v":0}],"difficulty":1},{"name":"推理·02","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"is","e":2,"c":0,"v":0},{"t":"is","e":1,"c":1,"v":0},{"t":"link","c1":1,"v1":1,"c2":0,"v2":0},{"t":"is","e":0,"c":0,"v":1}],"difficulty":1},{"name":"推理·03","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"is","e":0,"c":1,"v":0},{"t":"is","e":1,"c":1,"v":2},{"t":"is","e":2,"c":0,"v":2},{"t":"link","c1":0,"v1":1,"c2":1,"v2":0}],"difficulty":1},{"name":"推理·04","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"link","c1":1,"v1":2,"c2":0,"v2":1},{"t":"is","e":2,"c":1,"v":1},{"t":"is","e":1,"c":1,"v":2},{"t":"is","e":0,"c":0,"v":0}],"difficulty":1},{"name":"推理·05","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"is","e":0,"c":0,"v":0},{"t":"is","e":1,"c":1,"v":2},{"t":"is","e":2,"c":0,"v":1},{"t":"link","c1":1,"v1":0,"c2":0,"v2":0}],"difficulty":1},{"name":"推理·06","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"link","c1":1,"v1":1,"c2":0,"v2":0},{"t":"is","e":2,"c":0,"v":0},{"t":"is","e":0,"c":0,"v":1},{"t":"is","e":1,"c":1,"v":0}],"difficulty":1},{"name":"推理·07","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"is","e":1,"c":1,"v":1},{"t":"is","e":0,"c":0,"v":1},{"t":"is","e":2,"c":1,"v":0},{"t":"is","e":2,"c":0,"v":0}],"difficulty":1},{"name":"推理·08","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"link","c1":1,"v1":0,"c2":0,"v2":2},{"t":"is","e":2,"c":1,"v":1},{"t":"is","e":0,"c":1,"v":0},{"t":"is","e":1,"c":0,"v":1}],"difficulty":2},{"name":"推理·09","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"link","c1":1,"v1":1,"c2":0,"v2":2},{"t":"is","e":1,"c":0,"v":1},{"t":"is","e":2,"c":0,"v":2},{"t":"is","e":0,"c":1,"v":0}],"difficulty":2},{"name":"推理·10","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"link","c1":0,"v1":2,"c2":1,"v2":0},{"t":"is","e":1,"c":0,"v":2},{"t":"is","e":2,"c":0,"v":1},{"t":"is","e":0,"c":1,"v":2}],"difficulty":2},{"name":"推理·11","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"link","c1":1,"v1":1,"c2":0,"v2":1},{"t":"is","e":1,"c":0,"v":0},{"t":"is","e":0,"c":1,"v":1},{"t":"is","e":2,"c":1,"v":0}],"difficulty":2},{"name":"推理·12","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"is","e":1,"c":1,"v":2},{"t":"is","e":0,"c":1,"v":1},{"t":"link","c1":1,"v1":2,"c2":0,"v2":2},{"t":"is","e":2,"c":0,"v":1}],"difficulty":2},{"name":"推理·13","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"link","c1":1,"v1":0,"c2":0,"v2":0},{"t":"is","e":2,"c":1,"v":0},{"t":"is","e":0,"c":0,"v":1},{"t":"is","e":1,"c":1,"v":2}],"difficulty":2},{"name":"推理·14","ents":["小林","小方","小雨"],"cats":[{"name":"宠物","vals":["猫","狗","鸟"]},{"name":"饮品","vals":["茶","咖","奶"]}],"clues":[{"t":"is","e":1,"c":1,"v":1},{"t":"link","c1":0,"v1":2,"c2":1,"v2":1},{"t":"is","e":0,"c":0,"v":1},{"t":"is","e":2,"c":1,"v":2}],"difficulty":2},{"name":"推理·15","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"is","e":2,"c":1,"v":1},{"t":"is","e":1,"c":0,"v":1},{"t":"link","c1":1,"v1":0,"c2":0,"v2":3},{"t":"is","e":0,"c":1,"v":0},{"t":"is","e":2,"c":0,"v":0},{"t":"is","e":3,"c":1,"v":3}],"difficulty":3},{"name":"推理·16","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"is","e":0,"c":0,"v":3},{"t":"is","e":3,"c":0,"v":2},{"t":"link","c1":1,"v1":2,"c2":0,"v2":3},{"t":"link","c1":1,"v1":0,"c2":0,"v2":2},{"t":"is","e":1,"c":1,"v":3},{"t":"is","e":2,"c":0,"v":1}],"difficulty":3},{"name":"推理·17","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"is","e":2,"c":1,"v":2},{"t":"is","e":2,"c":0,"v":3},{"t":"link","c1":1,"v1":0,"c2":0,"v2":2},{"t":"is","e":1,"c":0,"v":1},{"t":"is","e":0,"c":0,"v":2},{"t":"is","e":3,"c":1,"v":3}],"difficulty":3},{"name":"推理·18","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"link","c1":1,"v1":3,"c2":0,"v2":2},{"t":"is","e":0,"c":1,"v":1},{"t":"link","c1":0,"v1":3,"c2":1,"v2":1},{"t":"is","e":2,"c":0,"v":1},{"t":"is","e":1,"c":1,"v":3},{"t":"is","e":3,"c":1,"v":2}],"difficulty":3},{"name":"推理·19","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"is","e":2,"c":0,"v":3},{"t":"is","e":0,"c":0,"v":0},{"t":"is","e":3,"c":0,"v":1},{"t":"is","e":1,"c":1,"v":3},{"t":"is","e":2,"c":1,"v":0},{"t":"link","c1":1,"v1":1,"c2":0,"v2":0}],"difficulty":3},{"name":"推理·20","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"is","e":2,"c":0,"v":2},{"t":"is","e":2,"c":1,"v":0},{"t":"is","e":1,"c":1,"v":2},{"t":"is","e":0,"c":0,"v":3},{"t":"is","e":1,"c":0,"v":1},{"t":"is","e":3,"c":1,"v":3}],"difficulty":3},{"name":"推理·21","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"link","c1":1,"v1":0,"c2":0,"v2":0},{"t":"is","e":0,"c":1,"v":1},{"t":"is","e":1,"c":1,"v":0},{"t":"is","e":2,"c":0,"v":3},{"t":"is","e":3,"c":0,"v":2},{"t":"link","c1":1,"v1":3,"c2":0,"v2":2}],"difficulty":3},{"name":"推理·22","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"link","c1":1,"v1":2,"c2":0,"v2":0},{"t":"is","e":0,"c":1,"v":1},{"t":"link","c1":1,"v1":0,"c2":0,"v2":2},{"t":"is","e":3,"c":1,"v":0},{"t":"is","e":1,"c":1,"v":2},{"t":"is","e":2,"c":0,"v":1}],"difficulty":4},{"name":"推理·23","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"is","e":0,"c":1,"v":2},{"t":"is","e":3,"c":0,"v":0},{"t":"is","e":2,"c":0,"v":3},{"t":"link","c1":0,"v1":2,"c2":1,"v2":2},{"t":"is","e":1,"c":1,"v":3},{"t":"link","c1":0,"v1":3,"c2":1,"v2":0}],"difficulty":4},{"name":"推理·24","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"is","e":0,"c":1,"v":1},{"t":"is","e":1,"c":1,"v":2},{"t":"is","e":1,"c":0,"v":0},{"t":"is","e":2,"c":0,"v":3},{"t":"is","e":3,"c":1,"v":0},{"t":"link","c1":1,"v1":0,"c2":0,"v2":2}],"difficulty":4},{"name":"推理·25","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"link","c1":0,"v1":1,"c2":1,"v2":2},{"t":"is","e":0,"c":0,"v":3},{"t":"link","c1":0,"v1":3,"c2":1,"v2":3},{"t":"is","e":2,"c":1,"v":2},{"t":"is","e":1,"c":1,"v":0},{"t":"is","e":3,"c":0,"v":0}],"difficulty":4},{"name":"推理·26","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"is","e":0,"c":1,"v":2},{"t":"is","e":3,"c":1,"v":0},{"t":"link","c1":0,"v1":3,"c2":1,"v2":3},{"t":"is","e":0,"c":0,"v":1},{"t":"is","e":2,"c":1,"v":3},{"t":"is","e":1,"c":0,"v":0}],"difficulty":4},{"name":"推理·27","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"is","e":2,"c":1,"v":1},{"t":"is","e":1,"c":0,"v":2},{"t":"is","e":3,"c":1,"v":2},{"t":"is","e":0,"c":0,"v":0},{"t":"is","e":2,"c":0,"v":1},{"t":"link","c1":0,"v1":0,"c2":1,"v2":3}],"difficulty":4},{"name":"推理·28","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"is","e":0,"c":0,"v":1},{"t":"is","e":0,"c":1,"v":3},{"t":"is","e":3,"c":1,"v":1},{"t":"link","c1":1,"v1":1,"c2":0,"v2":3},{"t":"is","e":1,"c":0,"v":2},{"t":"is","e":2,"c":1,"v":0}],"difficulty":4},{"name":"推理·29","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"is","e":2,"c":0,"v":1},{"t":"is","e":1,"c":1,"v":0},{"t":"is","e":3,"c":0,"v":0},{"t":"is","e":0,"c":1,"v":3},{"t":"link","c1":0,"v1":3,"c2":1,"v2":0},{"t":"is","e":3,"c":1,"v":1}],"difficulty":5},{"name":"推理·30","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]}],"clues":[{"t":"link","c1":1,"v1":0,"c2":0,"v2":2},{"t":"link","c1":0,"v1":3,"c2":1,"v2":1},{"t":"is","e":2,"c":1,"v":3},{"t":"is","e":3,"c":0,"v":2},{"t":"is","e":1,"c":1,"v":1},{"t":"is","e":0,"c":0,"v":1}],"difficulty":5},{"name":"推理·31","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]},{"name":"帽子","vals":["红","黄","蓝","绿"]}],"clues":[{"t":"link","c1":2,"v1":2,"c2":1,"v2":3},{"t":"link","c1":0,"v1":1,"c2":1,"v2":3},{"t":"link","c1":0,"v1":2,"c2":1,"v2":1},{"t":"is","e":1,"c":2,"v":0},{"t":"link","c1":0,"v1":3,"c2":2,"v2":0},{"t":"link","c1":0,"v1":0,"c2":2,"v2":1},{"t":"is","e":2,"c":2,"v":2},{"t":"is","e":3,"c":2,"v":3},{"t":"is","e":0,"c":1,"v":0}],"difficulty":5},{"name":"推理·32","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]},{"name":"帽子","vals":["红","黄","蓝","绿"]}],"clues":[{"t":"link","c1":2,"v1":2,"c2":0,"v2":3},{"t":"link","c1":2,"v1":3,"c2":1,"v2":0},{"t":"link","c1":1,"v1":1,"c2":2,"v2":0},{"t":"link","c1":0,"v1":3,"c2":1,"v2":2},{"t":"is","e":3,"c":0,"v":1},{"t":"link","c1":0,"v1":2,"c2":1,"v2":3},{"t":"is","e":1,"c":1,"v":3},{"t":"is","e":2,"c":1,"v":2},{"t":"is","e":0,"c":1,"v":0}],"difficulty":5},{"name":"推理·33","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]},{"name":"帽子","vals":["红","黄","蓝","绿"]}],"clues":[{"t":"link","c1":1,"v1":0,"c2":2,"v2":2},{"t":"link","c1":2,"v1":0,"c2":0,"v2":3},{"t":"is","e":2,"c":2,"v":0},{"t":"is","e":3,"c":1,"v":0},{"t":"link","c1":0,"v1":2,"c2":1,"v2":3},{"t":"is","e":2,"c":1,"v":2},{"t":"is","e":0,"c":2,"v":3},{"t":"link","c1":1,"v1":3,"c2":2,"v2":3},{"t":"is","e":1,"c":0,"v":1}],"difficulty":5},{"name":"推理·34","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]},{"name":"帽子","vals":["红","黄","蓝","绿"]}],"clues":[{"t":"link","c1":1,"v1":3,"c2":0,"v2":2},{"t":"is","e":3,"c":1,"v":1},{"t":"is","e":2,"c":2,"v":0},{"t":"link","c1":1,"v1":1,"c2":0,"v2":1},{"t":"is","e":0,"c":1,"v":3},{"t":"is","e":1,"c":1,"v":2},{"t":"link","c1":0,"v1":3,"c2":2,"v2":0},{"t":"link","c1":2,"v1":1,"c2":0,"v2":2},{"t":"is","e":3,"c":2,"v":2}],"difficulty":5},{"name":"推理·35","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]},{"name":"帽子","vals":["红","黄","蓝","绿"]}],"clues":[{"t":"is","e":3,"c":1,"v":3},{"t":"is","e":0,"c":2,"v":3},{"t":"link","c1":1,"v1":3,"c2":2,"v2":2},{"t":"link","c1":0,"v1":2,"c2":2,"v2":1},{"t":"link","c1":2,"v1":0,"c2":0,"v2":3},{"t":"link","c1":2,"v1":3,"c2":0,"v2":1},{"t":"is","e":1,"c":1,"v":0},{"t":"is","e":2,"c":0,"v":2},{"t":"link","c1":2,"v1":1,"c2":1,"v2":2}],"difficulty":5},{"name":"推理·36","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]},{"name":"帽子","vals":["红","黄","蓝","绿"]}],"clues":[{"t":"is","e":1,"c":2,"v":3},{"t":"link","c1":2,"v1":3,"c2":0,"v2":2},{"t":"is","e":3,"c":1,"v":3},{"t":"is","e":2,"c":0,"v":3},{"t":"link","c1":1,"v1":0,"c2":2,"v2":0},{"t":"is","e":0,"c":1,"v":0},{"t":"link","c1":0,"v1":1,"c2":2,"v2":0},{"t":"is","e":2,"c":1,"v":2},{"t":"is","e":3,"c":2,"v":1}],"difficulty":6},{"name":"推理·37","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]},{"name":"帽子","vals":["红","黄","蓝","绿"]}],"clues":[{"t":"link","c1":2,"v1":1,"c2":0,"v2":2},{"t":"is","e":1,"c":0,"v":2},{"t":"is","e":3,"c":1,"v":3},{"t":"is","e":0,"c":2,"v":0},{"t":"link","c1":0,"v1":1,"c2":2,"v2":3},{"t":"is","e":3,"c":0,"v":0},{"t":"is","e":2,"c":1,"v":2},{"t":"link","c1":1,"v1":1,"c2":0,"v2":3}],"difficulty":6},{"name":"推理·38","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]},{"name":"帽子","vals":["红","黄","蓝","绿"]}],"clues":[{"t":"link","c1":0,"v1":1,"c2":2,"v2":2},{"t":"link","c1":1,"v1":1,"c2":2,"v2":2},{"t":"is","e":2,"c":1,"v":1},{"t":"link","c1":2,"v1":0,"c2":1,"v2":2},{"t":"is","e":0,"c":2,"v":0},{"t":"is","e":1,"c":2,"v":3},{"t":"link","c1":2,"v1":1,"c2":0,"v2":3},{"t":"is","e":1,"c":0,"v":0},{"t":"is","e":3,"c":1,"v":3}],"difficulty":6},{"name":"推理·39","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]},{"name":"帽子","vals":["红","黄","蓝","绿"]}],"clues":[{"t":"link","c1":2,"v1":2,"c2":1,"v2":1},{"t":"is","e":3,"c":1,"v":1},{"t":"link","c1":0,"v1":2,"c2":2,"v2":1},{"t":"link","c1":2,"v1":3,"c2":0,"v2":3},{"t":"is","e":0,"c":2,"v":0},{"t":"is","e":2,"c":1,"v":3},{"t":"link","c1":1,"v1":2,"c2":2,"v2":0},{"t":"link","c1":1,"v1":2,"c2":0,"v2":1},{"t":"is","e":1,"c":0,"v":2}],"difficulty":6},{"name":"推理·40","ents":["小林","小方","小雨","小舟"],"cats":[{"name":"宠物","vals":["猫","狗","鸟","鱼"]},{"name":"饮品","vals":["茶","咖","奶","汁"]},{"name":"帽子","vals":["红","黄","蓝","绿"]}],"clues":[{"t":"link","c1":0,"v1":2,"c2":2,"v2":1},{"t":"link","c1":1,"v1":1,"c2":0,"v2":1},{"t":"is","e":0,"c":0,"v":3},{"t":"is","e":1,"c":1,"v":2},{"t":"link","c1":1,"v1":2,"c2":0,"v2":2},{"t":"is","e":3,"c":0,"v":1},{"t":"is","e":2,"c":2,"v":2},{"t":"link","c1":1,"v1":0,"c2":2,"v2":3}],"difficulty":6}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seenName={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!verifyLevel(d))return null;
+    if(seenName[d.name])return null;
+    seenName[d.name]=1;
+    list.push(normalizeLevel(d));
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(function(d){return verifyLevel(d)})){
+      LEVELS=list.map(normalizeLevel);return v;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层 ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+//__VERIFY__START
+/* 推理网格独立验证器：全排列组合枚举（≤4!³=13824），满足全部线索的完整指派必须恰有一个 */
+function cgParse(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return null;
+  if(typeof d.name!=="string"||!d.name.trim())return null;
+  if(!Array.isArray(d.ents)||d.ents.length<3||d.ents.length>4)return null;
+  var N=d.ents.length,seenE={};
+  for(var i=0;i<N;i++){
+    if(typeof d.ents[i]!=="string"||!d.ents[i]||d.ents[i].length>3||seenE[d.ents[i]])return null;
+    seenE[d.ents[i]]=1;
+  }
+  if(!Array.isArray(d.cats)||d.cats.length<2||d.cats.length>3)return null;
+  for(i=0;i<d.cats.length;i++){
+    var cat=d.cats[i];
+    if(!cat||typeof cat!=="object")return null;
+    if(typeof cat.name!=="string"||!cat.name||cat.name.length>3)return null;
+    if(!Array.isArray(cat.vals)||cat.vals.length!==N)return null;
+    var seenV={};
+    for(var j=0;j<N;j++){
+      if(typeof cat.vals[j]!=="string"||!cat.vals[j]||cat.vals[j].length>3||seenV[cat.vals[j]])return null;
+      seenV[cat.vals[j]]=1;
+    }
+  }
+  if(!Array.isArray(d.clues)||!d.clues.length||d.clues.length>9)return null;
+  for(i=0;i<d.clues.length;i++){
+    var c=d.clues[i];
+    if(!c||typeof c!=="object")return null;
+    if(c.t==="is"||c.t==="not"){
+      if(!Number.isInteger(c.e)||c.e<0||c.e>=N)return null;
+      if(!Number.isInteger(c.c)||c.c<0||c.c>=d.cats.length)return null;
+      if(!Number.isInteger(c.v)||c.v<0||c.v>=N)return null;
+    }else if(c.t==="link"){
+      if(!Number.isInteger(c.c1)||!Number.isInteger(c.c2)||c.c1<0||c.c2<0||c.c1>=d.cats.length||c.c2>=d.cats.length||c.c1===c.c2)return null;
+      if(!Number.isInteger(c.v1)||!Number.isInteger(c.v2)||c.v1<0||c.v2<0||c.v1>=N||c.v2>=N)return null;
+    }else return null;
+  }
+  return {name:d.name,N:N,cats:d.cats,clues:d.clues};
+}
+/* 线索谓词（指派 A[c][p]=v） */
+function cgClueOK(cl,A,N){
+  if(cl.t==="is")return A[cl.c][cl.e]===cl.v;
+  if(cl.t==="not")return A[cl.c][cl.e]!==cl.v;
+  if(cl.t==="link"){
+    var p=A[cl.c1].indexOf(cl.v1);
+    return A[cl.c2][p]===cl.v2;
+  }
+  return false;
+}
+/* 枚举所有类别指派组合（每类一个 N 排列） */
+function cgEnumerate(parsed){
+  var N=parsed.N,C=parsed.cats.length;
+  var perms=[],cnt=0;
+  function buildPerm(arr,used,k){
+    if(k===N){perms.push(arr.slice());return;}
+    for(var v=0;v<N;v++)if(!used[v]){used[v]=true;arr[k]=v;buildPerm(arr,used,k+1);used[v]=false;}
+  }
+  buildPerm([],new Array(N).fill(false),0);
+  var A=[],solutions=[];
+  function dfs(ci){
+    if(cnt>1)return;
+    if(ci===C){
+      for(var j=0;j<parsed.clues.length;j++)if(!cgClueOK(parsed.clues[j],A,N))return;
+      cnt++;
+      if(solutions.length===0)solutions.push(JSON.parse(JSON.stringify(A)));
+      return;
+    }
+    for(var pi=0;pi<perms.length;pi++){
+      A[ci]=perms[pi].slice();
+      dfs(ci+1);
+      if(cnt>1)return;
+    }
+  }
+  dfs(0);
+  return {count:cnt,first:solutions[0]||null};
+}
+function verifyLevel(d){
+  var p=cgParse(d);
+  if(!p)return false;
+  var s=cgEnumerate(p);
+  return s.count===1&&!!s.first;
+}
+function normalizeLevel(d){
+  var p=cgParse(d);
+  return {name:String(d.name),ents:d.ents.slice(),cats:JSON.parse(JSON.stringify(d.cats)),
+    clues:JSON.parse(JSON.stringify(d.clues)),
+    difficulty:Math.min(9,Math.max(1,Number.isInteger(d.difficulty)?d.difficulty:5))};
+}
+//__VERIFY__END
+
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,N=3,C=2,grid=[],cur=[0,0,0],done=false;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function clueText(cl){
+  var cat1=L.cats[cl.c],cat2;
+  if(cl.t==="is")return L.ents[cl.e]+"的"+cat1.name+"是「"+cat1.vals[cl.v]+"」";
+  if(cl.t==="not")return L.ents[cl.e]+"的"+cat1.name+"不是「"+cat1.vals[cl.v]+"」";
+  if(cl.t==="link"){
+    cat2=L.cats[cl.c2];
+    return cat1.name+"是「"+cat1.vals[cl.v1]+"」的人，"+cat2.name+"是「"+cat2.vals[cl.v2]+"」";
+  }
+  return "";
+}
+/* 游戏侧从 ✓ 标记提取指派（与验证器枚举不同实现） */
+function extractAssign(){
+  var A=[];
+  for(var c=0;c<C;c++){
+    A.push(new Array(N).fill(-1));
+    for(var p2=0;p2<N;p2++)for(var v=0;v<N;v++)if(grid[c][p2][v]===1)A[c][p2]=v;
+  }
+  return A;
+}
+function winCheck(){
+  // 全部格子已定 + 每人每类恰一个 ✓ + 每值恰一人 ✓ + 线索全满足
+  var blanks=0;
+  for(var c=0;c<C;c++)for(var p2=0;p2<N;p2++)for(var v=0;v<N;v++)if(grid[c][p2][v]===0)blanks++;
+  if(blanks)return false;
+  var A=extractAssign();
+  for(c=0;c<C;c++)for(p2=0;p2<N;p2++)if(A[c][p2]<0)return false;
+  for(c=0;c<C;c++){
+    var used=new Array(N).fill(false);
+    for(p2=0;p2<N;p2++){
+      if(used[A[c][p2]])return false;
+      used[A[c][p2]]=true;
+    }
+  }
+  for(var j=0;j<L.clues.length;j++)if(!cgClueOK(L.clues[j],A,N))return false;
+  return true;
+}
+function renderClues(){
+  var box=$("clues");
+  box.innerHTML="";
+  for(var i=0;i<L.clues.length;i++){
+    var d=document.createElement("div");
+    d.className="clue";
+    d.textContent=clueText(L.clues[i]);
+    box.appendChild(d);
+  }
+  $("stClue").textContent=L.clues.length;
+}
+function renderGrid(){
+  var box=$("cats");
+  box.innerHTML="";
+  for(var c=0;c<C;c++){
+    var cat=L.cats[c];
+    var el=document.createElement("div");
+    el.className="lgcat";
+    var head=document.createElement("div");
+    head.className="lghead";
+    head.textContent=cat.name;
+    el.appendChild(head);
+    var tb=document.createElement("div");
+    tb.className="lgtable";
+    tb.style.gridTemplateColumns="56px repeat("+N+",1fr)";
+    var corner=document.createElement("div");
+    corner.className="lgcell lab";
+    tb.appendChild(corner);
+    for(var p2=0;p2<N;p2++){
+      var h=document.createElement("div");
+      h.className="lgcell lab top";
+      h.textContent=L.ents[p2];
+      tb.appendChild(h);
+    }
+    for(var v=0;v<N;v++){
+      var lab=document.createElement("div");
+      lab.className="lgcell lab";
+      lab.textContent=cat.vals[v];
+      tb.appendChild(lab);
+      for(p2=0;p2<N;p2++){
+        (function(c,v,p2){
+          var b=document.createElement("button");
+          b.type="button";
+          b.className="lgcell";
+          b.id="gc"+c+"_"+p2+"_"+v;
+          b.setAttribute("aria-label",cat.name+" "+L.ents[p2]+" "+cat.vals[v]);
+          b.addEventListener("click",function(){cycleCell(c,p2,v)});
+          tb.appendChild(b);
+        })(c,v,p2);
+      }
+    }
+    el.appendChild(tb);
+    box.appendChild(el);
+  }
+  refreshCells();
+}
+function refreshCells(){
+  var blanks=0;
+  for(var c=0;c<C;c++)for(var p2=0;p2<N;p2++)for(var v=0;v<N;v++){
+    var el=$("gc"+c+"_"+p2+"_"+v);
+    if(!el)continue;
+    var st=grid[c][p2][v];
+    el.textContent=st===1?"✓":(st===2?"✕":"");
+    el.className="lgcell"+(st===1?" yes":(st===2?" no":""))+
+      (cur[0]===c&&cur[1]===p2&&cur[2]===v?" cur":"");
+    if(st===0)blanks++;
+  }
+  $("stBlank").textContent=blanks||"0";
+}
+function cycleCell(c,p2,v){
+  if(done)return;
+  var st=grid[c][p2][v];
+  if(st===1)st=2;else if(st===2)st=0;else st=1;
+  grid[c][p2][v]=st;
+  if(st===1){
+    // 自动排除同行同列
+    for(var v2=0;v2<N;v2++)if(v2!==v&&grid[c][p2][v2]===0)grid[c][p2][v2]=2;
+    for(var p3=0;p3<N;p3++)if(p3!==p2&&grid[c][p3][v]===0)grid[c][p3][v]=2;
+  }
+  cur=[c,p2,v];
+  refreshCells();
+  if(winCheck())winLevel();
+}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  var p=cgParse(L);
+  if(!p){say("关卡数据异常");return;}
+  N=p.N;C=p.cats.length;
+  grid=[];
+  for(var c=0;c<C;c++){
+    var g2=[];
+    for(var p2=0;p2<N;p2++){
+      var row=[];
+      for(var v=0;v<N;v++)row.push(0);
+      g2.push(row);
+    }
+    grid.push(g2);
+  }
+  cur=[0,0,0];done=false;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent=N+" 人 × "+C+" 类 · 唯一解";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  say("按线索排除：点格循环 空白→✓→✕；勾对会自动排除同行同列");
+  renderClues();renderGrid();
+}
+function hint(){
+  if(done)return;
+  var p=cgParse(L);
+  var s=cgEnumerate(p);
+  if(s.count!==1){say("内嵌验证器：线索异常");return;}
+  // 找一个「✓ 应该出现但还没标」的格子
+  for(var c=0;c<C;c++)for(var p2=0;p2<N;p2++){
+    var v=s.first[c][p2];
+    if(grid[c][p2][v]!==1){
+      // 模拟点击一次（空白→✓）并自动排除
+      if(grid[c][p2][v]===0){
+        cycleCell(c,p2,v);
+        say("验证器确认："+L.ents[p2]+"的"+L.cats[c].name+"是「"+L.cats[c].vals[v]+"」，已代为标出");
+        return;
+      }
+    }
+  }
+  say("按验证器的解继续填完即可");
+}
+/* ---------- 胜负 ---------- */
+function winLevel(){
+  done=true;
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:L.clues.length}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"推理正确！";
+  $("ovDesc").innerHTML=N+" 人 × "+C+" 类全部对上（"+L.clues.length+" 条线索）"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+/* ---------- 输入 ---------- */
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){if(done)return;openLevelSelect()});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(done){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+    else{lv++;loadLevel(lv)}
+  }
+});
+function flatCells(){
+  var list=[];
+  for(var c=0;c<C;c++)for(var v=0;v<N;v++)for(var p2=0;p2<N;p2++)list.push([c,p2,v]);
+  return list;
+}
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if($("overlay").classList.contains("show")){
+    if(k===" "||k==="Enter"){$("ovBtn").click();e.preventDefault();}
+    return;
+  }
+  var cells=flatCells();
+  var flat=-1;
+  for(var i=0;i<cells.length;i++){
+    if(cells[i][0]===cur[0]&&cells[i][1]===cur[1]&&cells[i][2]===cur[2]){flat=i;break;}
+  }
+  if(k==="ArrowLeft"&&flat>0){cur=cells[flat-1];refreshCells();e.preventDefault();}
+  else if(k==="ArrowRight"&&flat<cells.length-1){cur=cells[flat+1];refreshCells();e.preventDefault();}
+  else if(k==="ArrowUp"&&flat>=N){cur=cells[flat-N];refreshCells();e.preventDefault();}
+  else if(k==="ArrowDown"&&flat+N<cells.length){cur=cells[flat+N];refreshCells();e.preventDefault();}
+  else if(k===" "||k==="Enter"){cycleCell(cur[0],cur[1],cur[2]);e.preventDefault();}
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+});
+/* ---------- 启动：逐关唯一解复核 ---------- */
+(function(){
+  var ok=[];
+  for(var i=0;i<LEVELS.length;i++){
+    var pass=false;
+    try{pass=verifyLevel(LEVELS[i])}catch(e){pass=false}
+    if(pass)ok.push(LEVELS[i]);
+  }
+  if(ok.length)LEVELS=ok;
+})();
+loadLevel(save.lv);
+syncLevelsFromServer();syncSaveFromServer();
+
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

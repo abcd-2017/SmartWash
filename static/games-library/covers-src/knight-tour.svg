@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EFF1EE"/>
+      <stop offset="0.55" stop-color="#DCE4D8"/>
+      <stop offset="1" stop-color="#C4D0BE"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3A443C" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="396" width="800" height="54" fill="#ACB8A4" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#98A490" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M700 90 h12 M706 84 v12" stroke-width="3.4"/>
+    <path d="M76 250 h9 M80.5 245.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M724 260 h9 M728.5 255.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="80" cy="170" r="4"/><circle cx="740" cy="170" r="3.4"/><circle cx="64" cy="230" r="3"/><circle cx="180" cy="80" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="420" cy="416" rx="250" ry="14" fill="#5E6E5A" opacity="0.3"/>
+
+  <!-- 5x5 棋盘 -->
+  <g>
+    <rect x="118" y="32" width="390" height="390" rx="14" fill="#FFFFFF" stroke="#1E2620" stroke-width="9"/>
+    <g fill="#EFF1EE">
+      <rect x="196" y="32" width="78" height="78"/><rect x="352" y="32" width="78" height="78"/>
+      <rect x="118" y="110" width="78" height="78"/><rect x="274" y="110" width="78" height="78"/><rect x="430" y="110" width="78" height="78"/>
+      <rect x="196" y="188" width="78" height="78"/><rect x="352" y="188" width="78" height="78"/>
+      <rect x="118" y="266" width="78" height="78"/><rect x="274" y="266" width="78" height="78"/><rect x="430" y="266" width="78" height="78"/>
+      <rect x="196" y="344" width="78" height="78"/><rect x="352" y="344" width="78" height="78"/>
+    </g>
+    <!-- 已踏格高亮（trail） -->
+    <g fill="#CFE7D9" opacity="0.85">
+      <rect x="196" y="110" width="78" height="78" rx="8"/>
+      <rect x="274" y="188" width="78" height="78" rx="8"/>
+      <rect x="430" y="188" width="78" height="78" rx="8"/>
+      <rect x="118" y="188" width="78" height="78" rx="8"/>
+    </g>
+    <rect x="118" y="32" width="390" height="390" rx="14" fill="none" stroke="#1E2620" stroke-width="9"/>
+    <!-- 缺口格（右上角深色） -->
+    <rect x="430" y="32" width="78" height="78" fill="#3A3F3B" stroke="#1E2620" stroke-width="6"/>
+    <path d="M452 54 L486 88 M486 54 L452 88" stroke="#5A605B" stroke-width="7" stroke-linecap="round"/>
+  </g>
+
+  <!-- 足迹路径（L 型虚线） -->
+  <g stroke="#24402F" stroke-width="6" stroke-linecap="round" fill="none" stroke-dasharray="12 12" opacity="0.8">
+    <path d="M235 149 H297 V227"/>
+    <path d="M235 227 L313 149"/>
+    <path d="M313 305 H375 V227"/>
+    <path d="M469 227 L391 305"/>
+    <path d="M157 227 L235 305"/>
+  </g>
+  <g fill="#24402F" opacity="0.85">
+    <circle cx="313" cy="227" r="8"/><circle cx="391" cy="305" r="8"/><circle cx="157" cy="305" r="8"/>
+  </g>
+
+  <!-- 路径延伸出棋盘 -->
+  <g stroke="#24402F" stroke-width="6" stroke-linecap="round" fill="none" stroke-dasharray="12 12" opacity="0.75">
+    <path d="M508 149 Q560 128 610 140"/>
+  </g>
+  <g fill="#24402F" opacity="0.75">
+    <ellipse cx="560" cy="126" rx="12" ry="7" transform="rotate(-14 560 126)"/>
+    <ellipse cx="600" cy="136" rx="12" ry="7" transform="rotate(-10 600 136)"/>
+  </g>
+  <!-- 终点小旗 -->
+  <path d="M648 166 V96" stroke="#1E2620" stroke-width="8" stroke-linecap="round"/>
+  <path d="M648 96 Q682 86 694 102 Q678 120 648 114 Z" fill="#17734A" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+
+  <!-- 马棋子（主视觉，带表情） -->
+  <g>
+    <!-- 底座 -->
+    <ellipse cx="313" cy="304" rx="56" ry="17" fill="#17734A" stroke="#1E2620" stroke-width="8"/>
+    <ellipse cx="313" cy="297" rx="42" ry="11" fill="#2D9B6A" stroke="#1E2620" stroke-width="6"/>
+    <!-- 马头身 -->
+    <path d="M276 296 Q268 254 290 222 Q272 202 282 176 Q290 150 318 144 L322 126 L336 144 Q364 148 376 168 Q386 182 376 188 Q362 194 350 186 Q348 214 356 244 Q366 274 356 296 Z"
+          fill="#2D9B6A" stroke="#1E2620" stroke-width="9" stroke-linejoin="round"/>
+    <!-- 鬃毛 -->
+    <path d="M292 216 Q286 228 292 240 Q280 246 284 262 Q276 268 280 284" stroke="#17734A" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- 耳内 -->
+    <path d="M322 132 L328 142" stroke="#17734A" stroke-width="5" stroke-linecap="round"/>
+    <!-- 高光 -->
+    <path d="M296 176 Q302 160 318 154" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.4" fill="none"/>
+    <!-- 表情 -->
+    <circle cx="318" cy="172" r="8" fill="#1F1A14"/>
+    <circle cx="320" cy="169" r="3" fill="#FFFFFF"/>
+    <circle cx="368" cy="176" r="4.5" fill="#1F1A14"/>
+    <path d="M356 188 Q364 192 370 186" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

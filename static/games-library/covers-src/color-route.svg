@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5D6A5F"/>
+      <stop offset="0.55" stop-color="#4C584E"/>
+      <stop offset="1" stop-color="#3C483E"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1C241E" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="398" width="800" height="52" fill="#333F35" opacity="0.6"/>
+  <rect y="398" width="800" height="6" fill="#2A342C" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#F5F6F3" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M108 100 h11 M113.5 94.5 v11" stroke-width="3.2"/>
+    <path d="M700 106 h12 M706 100 v12" stroke-width="3.4"/>
+    <path d="M726 300 h9 M730.5 295.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M76 290 h9 M80.5 285.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#E4EAE4" opacity="0.5">
+    <circle cx="170" cy="170" r="4"/><circle cx="716" cy="180" r="3.4"/><circle cx="70" cy="220" r="3"/><circle cx="744" cy="230" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="420" cy="404" rx="250" ry="18" fill="#26302A" opacity="0.35"/>
+
+  <!-- 绿色连线对 -->
+  <path d="M240 150 C340 110 480 110 580 140" stroke="#74D3A4" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M250 146 C350 112 470 112 570 138" stroke="#FFFFFF" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="2 22" opacity="0.5"/>
+  <!-- 蓝色连线对 -->
+  <path d="M660 230 C560 180 470 260 380 250" stroke="#6BB4DE" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M650 226 C556 182 470 254 386 248" stroke="#FFFFFF" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="2 22" opacity="0.5"/>
+  <!-- 粉色连线对 -->
+  <path d="M180 340 C300 402 480 380 600 330" stroke="#DB7186" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M188 334 C304 392 476 372 592 326" stroke="#FFFFFF" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="2 22" opacity="0.5"/>
+
+  <!-- 端点圆 -->
+  <g stroke="#1E2620" stroke-width="8">
+    <circle cx="240" cy="150" r="36" fill="#74D3A4"/>
+    <circle cx="580" cy="140" r="36" fill="#74D3A4"/>
+    <circle cx="660" cy="230" r="34" fill="#6BB4DE"/>
+    <circle cx="380" cy="250" r="34" fill="#6BB4DE"/>
+    <circle cx="180" cy="340" r="36" fill="#DB7186"/>
+    <circle cx="600" cy="330" r="34" fill="#DB7186"/>
+  </g>
+  <circle cx="228" cy="132" r="9" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="568" cy="122" r="8" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="648" cy="212" r="8" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="368" cy="232" r="8" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="168" cy="322" r="9" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="588" cy="312" r="8" fill="#FFFFFF" opacity="0.4"/>
+
+  <!-- 绿色起点圆：签名表情 -->
+  <circle cx="228" cy="142" r="7" fill="#1F1A14"/>
+  <circle cx="252" cy="142" r="7" fill="#1F1A14"/>
+  <path d="M221 162 Q240 174 259 160" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

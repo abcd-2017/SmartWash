@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D9BC82"/>
+      <stop offset="0.55" stop-color="#C9A96E"/>
+      <stop offset="1" stop-color="#B18F52"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#6E5428" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#99793E" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#8A6D36" opacity="0.6"/>
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 88 h11 M97.5 82.5 v11" stroke-width="3"/>
+    <path d="M712 92 h12 M718 86 v12" stroke-width="3.4"/>
+    <path d="M64 270 h9 M68.5 265.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 300 h9 M748.5 295.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.5">
+    <circle cx="150" cy="150" r="4"/><circle cx="668" cy="130" r="3.4"/><circle cx="66" cy="210" r="3"/><circle cx="750" cy="190" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="400" rx="268" ry="20" fill="#6E5428" opacity="0.38"/>
+
+  <g transform="rotate(-2 400 240)">
+    <!-- 棋盘 -->
+    <rect x="170" y="100" width="460" height="280" rx="10" fill="#EFDFBB" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="170" y="100" width="460" height="280" rx="10" fill="url(#gloss)"/>
+    <g fill="#C9A96E">
+      <rect x="285" y="100" width="115" height="93.3"/>
+      <rect x="515" y="100" width="115" height="93.3"/>
+      <rect x="170" y="193.3" width="115" height="93.3"/>
+      <rect x="400" y="193.3" width="115" height="93.3"/>
+      <rect x="285" y="286.7" width="115" height="93.3"/>
+      <rect x="515" y="286.7" width="115" height="93.3"/>
+    </g>
+    <g stroke="#8A6D36" stroke-width="3.5" stroke-linecap="round">
+      <path d="M285 100 V380 M400 100 V380 M515 100 V380"/>
+      <path d="M170 193.3 H630 M170 286.7 H630"/>
+    </g>
+
+    <!-- 将杀红环与杀势线 -->
+    <circle cx="572.5" cy="326" r="46" fill="none" stroke="#C9526B" stroke-width="5" stroke-dasharray="11 9"/>
+    <g stroke="#C9526B" stroke-width="5" stroke-linecap="round">
+      <path d="M484 316 L524 306"/>
+      <path d="M488 334 L522 330"/>
+      <path d="M482 350 L520 352"/>
+    </g>
+
+    <!-- 黑王（签名表情） -->
+    <g>
+      <path d="M572.5 292 V308 M565 298 H580" stroke="#2E3230" stroke-width="7" stroke-linecap="round"/>
+      <path d="M561 358 L565 316 Q572.5 308 580 316 L584 358 Z" fill="#2E3230" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+      <ellipse cx="572.5" cy="360" rx="21" ry="8" fill="#2E3230" stroke="#3A2A1E" stroke-width="5"/>
+      <circle cx="566" cy="326" r="4.6" fill="#F2EFE9"/>
+      <circle cx="579" cy="326" r="4.6" fill="#F2EFE9"/>
+      <circle cx="566" cy="326" r="1.8" fill="#1F1A14"/>
+      <circle cx="579" cy="326" r="1.8" fill="#1F1A14"/>
+      <path d="M568 338 Q572.5 342 577 337" stroke="#F2EFE9" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    </g>
+
+    <!-- 白后 -->
+    <g>
+      <circle cx="450" cy="302" r="4.5" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="3"/>
+      <circle cx="457.5" cy="297" r="4.5" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="3"/>
+      <circle cx="465" cy="302" r="4.5" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="3"/>
+      <rect x="445" y="304" width="25" height="9" rx="4" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="4"/>
+      <path d="M447 356 L451 316 Q457.5 309 464 316 L468 356 Z" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="5" stroke-linejoin="round"/>
+      <ellipse cx="457.5" cy="358" rx="22" ry="8" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="5"/>
+      <path d="M450 318 Q454 315 457 318" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8"/>
+    </g>
+
+    <!-- 白兵 -->
+    <g>
+      <circle cx="227.5" cy="318" r="11" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="5"/>
+      <path d="M219 356 Q219 332 227.5 326 Q236 332 236 356 Z" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="5" stroke-linejoin="round"/>
+      <ellipse cx="227.5" cy="358" rx="16" ry="7" fill="#F2EFE9" stroke="#3A2A1E" stroke-width="5"/>
+    </g>
+
+    <!-- 黑兵 -->
+    <g>
+      <circle cx="342.5" cy="134" r="10" fill="#2E3230" stroke="#3A2A1E" stroke-width="4.5"/>
+      <path d="M335 166 Q335 146 342.5 141 Q350 146 350 166 Z" fill="#2E3230" stroke="#3A2A1E" stroke-width="4.5" stroke-linejoin="round"/>
+      <ellipse cx="342.5" cy="167" rx="14" ry="6" fill="#2E3230" stroke="#3A2A1E" stroke-width="4.5"/>
+    </g>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

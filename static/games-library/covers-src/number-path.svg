@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6FBF8E"/>
+      <stop offset="0.55" stop-color="#4EA271"/>
+      <stop offset="1" stop-color="#3A8C5C"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#143E28" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="396" width="800" height="54" fill="#2F7A4E" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#266A42" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#E8F6EC" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M110 92 h11 M115.5 86.5 v11" stroke-width="3.2"/>
+    <path d="M700 100 h12 M706 94 v12" stroke-width="3.4"/>
+    <path d="M726 280 h9 M730.5 275.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M80 190 h9 M84.5 185.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#E8F6EC" opacity="0.5">
+    <circle cx="180" cy="140" r="4"/><circle cx="660" cy="110" r="3.4"/><circle cx="70" cy="250" r="3"/><circle cx="742" cy="240" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影（石阶渐远渐淡） -->
+  <ellipse cx="250" cy="414" rx="128" ry="18" fill="#1E5C3A" opacity="0.35"/>
+  <ellipse cx="410" cy="368" rx="100" ry="14" fill="#1E5C3A" opacity="0.25"/>
+  <ellipse cx="545" cy="300" rx="80" ry="12" fill="#1E5C3A" opacity="0.2"/>
+
+  <!-- 石板阶（点数递增） -->
+  <g stroke="#1E2620" stroke-width="9">
+    <circle cx="225" cy="322" r="86" fill="#F3EFE4"/>
+    <circle cx="398" cy="288" r="70" fill="#F3EFE4"/>
+    <circle cx="536" cy="230" r="58" fill="#F3EFE4"/>
+    <circle cx="648" cy="164" r="50" fill="#F3EFE4"/>
+  </g>
+  <g fill="#3A4A40">
+    <circle cx="384" cy="282" r="9"/><circle cx="412" cy="282" r="9"/>
+    <circle cx="520" cy="222" r="8"/><circle cx="536" cy="238" r="8"/><circle cx="552" cy="222" r="8"/>
+    <circle cx="632" cy="154" r="7"/><circle cx="652" cy="154" r="7"/><circle cx="632" cy="174" r="7"/><circle cx="652" cy="174" r="7"/>
+  </g>
+  <!-- 石阶间跳线 -->
+  <g stroke="#245C3E" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 14" fill="none" opacity="0.85">
+    <path d="M318 302 Q336 298 334 292"/>
+    <path d="M472 260 Q488 254 486 248"/>
+    <path d="M598 204 Q612 198 610 192"/>
+  </g>
+  <!-- 高光 -->
+  <circle cx="196" cy="286" r="14" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="368" cy="250" r="10" fill="#FFFFFF" opacity="0.35"/>
+  <circle cx="508" cy="196" r="9" fill="#FFFFFF" opacity="0.35"/>
+  <circle cx="622" cy="132" r="8" fill="#FFFFFF" opacity="0.35"/>
+
+  <!-- 首块石板：签名表情 -->
+  <circle cx="204" cy="308" r="10" fill="#1F1A14"/>
+  <circle cx="246" cy="308" r="10" fill="#1F1A14"/>
+  <path d="M196 338 Q225 357 254 336" stroke="#1F1A14" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

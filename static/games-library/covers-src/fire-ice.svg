@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9EDEA"/>
+      <stop offset="0.55" stop-color="#D4DCD6"/>
+      <stop offset="1" stop-color="#BCC9C0"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2A3630" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#9AA89C" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#86948A" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M110 240 h9 M114.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M690 240 h9 M694.5 235.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="170" cy="150" r="4"/><circle cx="712" cy="150" r="3.4"/><circle cx="70" cy="200" r="3"/><circle cx="740" cy="210" r="2.6"/>
+  </g>
+
+  <!-- 石墙砖纹 -->
+  <g stroke="#A9B4AC" stroke-width="3" opacity="0.4" fill="none">
+    <path d="M0 130 H800 M0 220 H800"/>
+    <path d="M140 0 V130 M420 0 V130 M680 0 V130 M60 130 V220 M300 130 V220 M540 130 V220 M760 130 V220 M180 220 V394 M460 220 V394 M700 220 V394"/>
+  </g>
+
+  <!-- 顶部同色双出口门（左红右蓝） -->
+  <g>
+    <rect x="330" y="52" width="140" height="96" rx="12" fill="#4A5049" stroke="#1E2620" stroke-width="8"/>
+    <rect x="342" y="64" width="58" height="72" rx="8" fill="#D96A5A" stroke="#1E2620" stroke-width="6"/>
+    <rect x="400" y="64" width="58" height="72" rx="8" fill="#6BB4DE" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="371" cy="100" r="9" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="429" cy="100" r="9" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <!-- Y 型岔路（石板路） -->
+  <g fill="#D9DFDB" stroke="#1E2620" stroke-width="7" stroke-linejoin="round">
+    <path d="M356 394 Q360 330 330 282 Q300 240 244 216 L228 246 Q286 268 306 300 Q326 336 316 394 Z"/>
+    <path d="M444 394 Q440 330 470 282 Q500 240 556 216 L572 246 Q514 268 494 300 Q474 336 484 394 Z"/>
+  </g>
+  <g stroke="#A9B4AC" stroke-width="4" stroke-linecap="round" opacity="0.7" fill="none">
+    <path d="M312 340 H368 M282 296 H338 M254 258 H306"/>
+    <path d="M432 340 H488 M462 296 H518 M494 258 H546"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="240" cy="248" rx="80" ry="12" fill="#5E6A5C" opacity="0.3"/>
+  <ellipse cx="560" cy="248" rx="80" ry="12" fill="#5E6A5C" opacity="0.3"/>
+
+  <!-- 火灵（左路上，带表情） -->
+  <g>
+    <!-- 火焰头发 -->
+    <path d="M240 108 Q222 128 226 148 Q210 152 208 172 Q208 194 228 200 L268 200 Q292 192 290 166 Q288 148 272 142 Q276 120 258 108 Q250 118 240 108 Z"
+          fill="#E8A45A" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M244 130 Q236 142 240 152" stroke="#D96A5A" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <!-- 身体 -->
+    <path d="M216 200 Q216 240 240 246 Q270 250 284 236 Q296 220 288 200 Z"
+          fill="#D96A5A" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+    <circle cx="248" cy="222" r="30" fill="url(#gloss)"/>
+    <!-- 手脚 -->
+    <path d="M218 214 L178 226 M290 212 L308 220" stroke="#1E2620" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="172" cy="228" r="8" fill="#D96A5A" stroke="#1E2620" stroke-width="5"/>
+    <circle cx="312" cy="222" r="8" fill="#D96A5A" stroke="#1E2620" stroke-width="5"/>
+    <path d="M230 248 L224 272 M262 250 L268 272" stroke="#1E2620" stroke-width="8" stroke-linecap="round"/>
+    <ellipse cx="222" cy="276" rx="12" ry="6" fill="#B8452E" stroke="#1E2620" stroke-width="5"/>
+    <ellipse cx="270" cy="276" rx="12" ry="6" fill="#B8452E" stroke="#1E2620" stroke-width="5"/>
+    <!-- 表情 -->
+    <circle cx="232" cy="170" r="7" fill="#1F1A14"/>
+    <circle cx="262" cy="170" r="7" fill="#1F1A14"/>
+    <circle cx="234" cy="167" r="2.5" fill="#FFFFFF"/>
+    <circle cx="264" cy="167" r="2.5" fill="#FFFFFF"/>
+    <path d="M236 184 Q246 192 256 183" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 冰灵（右路上，带表情） -->
+  <g>
+    <!-- 冰晶头发 -->
+    <path d="M536 108 Q520 120 524 136 Q508 144 510 162 Q514 190 540 194 L580 194 Q602 188 600 164 Q598 146 584 140 Q588 118 568 106 Q552 116 536 108 Z"
+          fill="#6BB4DE" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M552 124 L556 146 M570 122 L574 142" stroke="#4A9FD4" stroke-width="5" stroke-linecap="round"/>
+    <!-- 身体 -->
+    <path d="M522 194 Q520 236 544 244 Q574 250 590 234 Q602 218 594 194 Z"
+          fill="#4A9FD4" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+    <circle cx="554" cy="218" r="30" fill="url(#gloss)"/>
+    <!-- 手脚 -->
+    <path d="M524 208 L504 218 M596 206 L634 216" stroke="#1E2620" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="500" cy="220" r="8" fill="#4A9FD4" stroke="#1E2620" stroke-width="5"/>
+    <circle cx="638" cy="218" r="8" fill="#4A9FD4" stroke="#1E2620" stroke-width="5"/>
+    <path d="M534 246 L528 270 M566 248 L572 270" stroke="#1E2620" stroke-width="8" stroke-linecap="round"/>
+    <ellipse cx="526" cy="274" rx="12" ry="6" fill="#2E7EA8" stroke="#1E2620" stroke-width="5"/>
+    <ellipse cx="574" cy="274" rx="12" ry="6" fill="#2E7EA8" stroke="#1E2620" stroke-width="5"/>
+    <!-- 表情 -->
+    <circle cx="538" cy="164" r="7" fill="#1F1A14"/>
+    <circle cx="568" cy="164" r="7" fill="#1F1A14"/>
+    <circle cx="540" cy="161" r="2.5" fill="#FFFFFF"/>
+    <circle cx="570" cy="161" r="2.5" fill="#FFFFFF"/>
+    <path d="M542 178 Q552 186 562 177" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 压力板（路上） -->
+  <rect x="296" y="322" width="88" height="18" rx="9" fill="#B9BFC4" stroke="#1E2620" stroke-width="6"/>
+  <rect x="428" y="322" width="88" height="18" rx="9" fill="#B9BFC4" stroke="#1E2620" stroke-width="6"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

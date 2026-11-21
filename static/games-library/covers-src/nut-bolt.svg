@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#BFD4C8"/>
+      <stop offset="0.55" stop-color="#8FB4A0"/>
+      <stop offset="1" stop-color="#5E8E74"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E5A46" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部工作台带 -->
+  <rect y="392" width="800" height="58" fill="#4E7E64" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#426E56" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#F2F8F2" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 90 h11 M97.5 84.5 v11" stroke-width="3.2"/>
+    <path d="M702 84 h12 M708 78 v12" stroke-width="3.4"/>
+    <path d="M728 244 h9 M732.5 239.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M64 250 h9 M68.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#F2F8F2" opacity="0.5">
+    <circle cx="160" cy="146" r="4"/><circle cx="652" cy="140" r="3.4"/><circle cx="70" cy="200" r="3"/><circle cx="742" cy="184" r="2.6"/>
+  </g>
+
+  <ellipse cx="430" cy="406" rx="250" ry="18" fill="#2E5A46" opacity="0.32"/>
+
+  <!-- 大扳手 -->
+  <g transform="rotate(-28 400 230)">
+    <path d="M610 182 A52 52 0 1 0 610 278" fill="none" stroke="#1E2620" stroke-width="40" stroke-linecap="round"/>
+    <path d="M610 182 A52 52 0 1 0 610 278" fill="none" stroke="#C9CFC7" stroke-width="26" stroke-linecap="round"/>
+    <rect x="236" y="208" width="366" height="44" rx="22" fill="#C9CFC7" stroke="#1E2620" stroke-width="9"/>
+    <path d="M210 174 A56 56 0 1 0 210 286 A56 56 0 1 0 210 174 Z M210 200 A30 30 0 1 1 210 260 A30 30 0 1 1 210 200 Z"
+          fill="#C9CFC7" fill-rule="evenodd" stroke="#1E2620" stroke-width="9" stroke-linejoin="round"/>
+    <rect x="300" y="204" width="120" height="52" rx="18" fill="#E2A44E" stroke="#1E2620" stroke-width="8"/>
+    <path d="M324 214 V246 M352 214 V246 M380 214 V246" stroke="#B87820" stroke-width="6" stroke-linecap="round"/>
+    <ellipse cx="196" cy="208" rx="20" ry="10" fill="#FFFFFF" opacity="0.5" transform="rotate(-20 196 208)"/>
+  </g>
+
+  <!-- 立式螺栓三根 -->
+  <g stroke-linejoin="round">
+    <rect x="306" y="322" width="30" height="86" rx="6" fill="#D4DAD2" stroke="#1E2620" stroke-width="7"/>
+    <path d="M306 342 H336 M306 360 H336 M306 378 H336" stroke="#9AA398" stroke-width="5"/>
+    <polygon points="346,298 333,322 309,322 296,298 309,274 333,274" fill="#E2A44E" stroke="#1E2620" stroke-width="8"/>
+
+    <rect x="446" y="296" width="30" height="112" rx="6" fill="#D4DAD2" stroke="#1E2620" stroke-width="7"/>
+    <path d="M446 316 H476 M446 334 H476 M446 352 H476 M446 370 H476 M446 388 H476" stroke="#9AA398" stroke-width="5"/>
+    <polygon points="486,272 473,296 449,296 436,272 449,248 473,248" fill="#4A9FD4" stroke="#1E2620" stroke-width="8"/>
+
+    <rect x="580" y="338" width="26" height="70" rx="6" fill="#D4DAD2" stroke="#1E2620" stroke-width="7"/>
+    <path d="M580 356 H606 M580 374 H606" stroke="#9AA398" stroke-width="5"/>
+    <polygon points="618,318 606,338 586,338 574,318 586,298 606,298" fill="#DB7186" stroke="#1E2620" stroke-width="8"/>
+  </g>
+
+  <!-- 散落螺母 -->
+  <polygon points="688,364 674,388 646,388 632,364 646,340 674,340" fill="#C9CFC7" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+  <circle cx="660" cy="364" r="11" fill="#8FB4A0" stroke="#1E2620" stroke-width="5"/>
+  <polygon points="748,398 738,414 718,414 708,398 718,382 738,382" fill="#C9CFC7" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- 大螺帽（签名表情） -->
+  <g>
+    <polygon points="668,140 645,182 599,182 576,140 599,98 645,98" fill="#DB7186" stroke="#1E2620" stroke-width="9" stroke-linejoin="round"/>
+    <circle cx="622" cy="118" r="14" fill="#8E3E52" stroke="#1E2620" stroke-width="7"/>
+    <circle cx="606" cy="150" r="7" fill="#1F1A14"/>
+    <circle cx="638" cy="150" r="7" fill="#1F1A14"/>
+    <circle cx="608" cy="147" r="2.5" fill="#FFFFFF"/>
+    <circle cx="640" cy="147" r="2.5" fill="#FFFFFF"/>
+    <path d="M610 166 Q622 174 634 164" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <path d="M592 108 Q600 100 610 102" stroke="#FFFFFF" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.55"/>
+  </g>
+
+  <!-- 拧转火花 -->
+  <g stroke="#FFF2CC" stroke-width="5" stroke-linecap="round" opacity="0.85">
+    <path d="M700 76 L712 62 M712 84 L728 76 M692 60 L698 46"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -309,3 +309,67 @@
   scale-ball 修已知偏重关卡的候选分类与提示状态口径（翘起侧被误记为偏轻候选，致提示误报「无必胜策略」、
   候选数虚高）；补齐 river-cross / torch-bridge / water-jug / scale-ball / knight-tour / eight-queens /
   calc-doku / shikaku 8 份 README（首行元数据格式均已核验）。
+
+- **2026-11-21（新游戏·自研入库·扩展总表第二批）51 款（游戏库 124 → 175 款，A/B 两组收官）**：
+  净室自研（零外链、零素材、canvas/DOM 自绘），出生即按 §6 规范并登记 audit-gates STRICT。
+  批次范围 = 总目录 A 组遗留 11 款（#14-24 体育竞速）+ B 组剩余 40 款（#65-104 益智解谜），
+  主题运行时块与 block-drop 逐字节一致，GB 桥适配层沿 river-cross 标准形态。
+  批次清单（51 款，按 category 分组）：
+  - puzzle（36）：ripple-fill laser-maze gear-mesh fuse-cut rubik-mini rotate-pic jigsaw-snap spot-diff hidden-item maze-paint color-mix logic-box clue-grid alchemy-tree clock-gears ring-puzzle knot-free color-chain block-fit pentomino gravity-flip clone-portal shadow-match hex-fill escape-room treasure-grid number-path color-route magnet-poles water-dig map-fold paper-fold-cut balance-stack door-keys lock-combo weight-order
+  - board（3）：mate-in-one endgame-lab tsumego-go
+  - arcade（11）：hamster-run pogo-street surf-wave ski-slalom bobsled-drift canoe-rapids relay-baton hoop-shot curling-sweep archery-move clay-shoot
+  - other（1）：echo-seq
+  审计结论：`audit-gates.mjs` 全库 175 款**严格模式 0 违规**、存量模式 0 违规；
+  `theme-gates.mjs` 本批 51/51 全绿（JS 语法 / 零外链 / 体积）。
+  关卡验证总结论：43 款关卡驱动（各 40 关）全部经内嵌独立验证器逐关复核通过——
+  唯一解类（hex-fill / treasure-grid / number-path / magnet-poles / lock-combo / fuse-cut / clue-grid /
+  ripple-fill / rotate-pic / laser-maze / gear-mesh / rubik-mini 双实现 / maze-paint 哈密顿通路 /
+  pentomino 精确覆盖 / weight-order 比较次数上下界证明 / map-fold / paper-fold-cut / color-chain /
+  block-fit / gravity-flip / ring-puzzle / clock-gears / alchemy-tree / jigsaw-snap / spot-diff /
+  hidden-item / color-mix 双实现 / logic-box / ski-slalom P 控制器 / archery-move 闭式弹道 /
+  curling-sweep 求解器复跑 / relay-baton 时间窗 / door-keys 齿形吻合 / escape-room 依赖图 BFS /
+  water-dig Dijkstra / shadow-match / color-route / balance-stack 存在性验证）；
+  棋题类 mate-in-one / endgame-lab / tsumego-go 为独立验证器 × 对弈引擎双实现交叉核对；
+  8 款分数驱动（echo-seq / hamster-run / pogo-street / surf-wave / bobsled-drift / canoe-rapids /
+  hoop-shot / clay-shoot）难度递增 + 最高分持久化（desc），另经 DOM-stub 冒烟 120-300 帧无异常。
+  375px 实开（Chrome 真机 51/51）：无横向溢出、无 h1、桥主题推送 light→dark 生效、非法值拒绝、
+  深色目检 4 款代表款（escape-room / hex-fill / ski-slalom / hamster-run）布局正常。
+  体积范围：单款 17,606B（echo-seq）– 53,505B（escape-room），51 款合计约 1.55MB。
+  备注：本批统一未接 WebAudio 音效（可选项，规避静默失败风险）；封面另批制作（GAME-COVER.md 管线）。
+
+- **2026-11-21（封面全量补齐 103 张 · 游戏库 175 款全覆盖）**：
+  扩展总表第一批 52 款 + 第二批 51 款按 GAME-COVER.md 方案 A（家族风·场景插画：粗描边 +
+  签名表情 + 三层背景）全部绘制落位，游戏库 175 款封面零缺失。
+  管线：4 组代理手写 SVG（covers-src/ 归档，共 175 份）→ Chrome headless 渲染 800×450 →
+  **PS 2026 COM 自动化** Unsharp Mask（60% / 0.6px / 阈值 2，单实例批量串行；本机会话无 PS MCP，
+  经 typelib 缺失绕过验证 VBScript COM 通道）→ 索引层颗粒量化（§2 修订版：色板近重复合并 +
+  RGB ±6 噪声 + 最近色映射；>120KB 自动降色板 128/96/64/48/32）→ 单处落位
+  games-library/<key>/<key>.png（2026-11-16 裁定取消 drawable 副本）。
+  终检：103/103 尺寸 800×450、体积全部 ≤120KB（新批最大 100,652B hoop-shot）；
+  全库 175 款封面零缺失（存量 3 张旧封面 120-122KB 微超预算为历史遗留，不在本批范围）；
+  逐批目检 12 张代表款（escape-room / surf-wave / hamster-run / treasure-grid / ski-slalom /
+  hoop-shot / mate-in-one / alchemy-tree / clone-portal / torch-bridge / virus-defense / sushi-grab）
+  家族要素（描边 / 表情 / 三层背景 / 星尘 / vignette）全部到位、撞车排查通过。
+  管线脚本沉淀于 docs/cover-pipeline-test/（build_covers.py + ps-unsharp-batch.vbs，
+  工作文档不入库）。
+
+- **2026-11-21（impeccable 全指令评审 · 第二批 51 款）**：
+  沿 2026-11-14 评审口径（critique/audit/layout/typeset/clarify/harden 双轨）对第二批 51 款
+  全量评审修复。机器预扫 7 类历史问题：focus-visible / prefers-reduced-motion / 面板过渡 /
+  aria-live / canvas 闭合 5 类出生即合规（51/51）；palLoad 启动链路与 visibilitychange
+  2 类经逐款甄别后按需修复。改动 40 款、11 款零改动通过，全部双 gates 复绿，全库 175 款
+  严格模式 0 违规。修复分五类：
+  1. **S4 切后台暂停补齐（13 款 rAF 类）**：隐藏 cancelAnimationFrame / 恢复续跑；
+     water-dig 补 flowT 墙钟时基平移（隐藏期不计入放水时长，唯一计时依赖款）。
+  2. **真功能 bug 1 个**：map-fold −/＋ 按钮 strict 模式 ReferenceError 完全失效（引用未声明
+     selLine），已修并经浏览器实测（＋→第 2 行 / −→第 1 行往返正常）。
+  3. **对比度修复 7 款**：gear-mesh 空轴点/「动」字、alchemy-tree 素材色块字（surface 徽章底）、
+     color-route / magnet-poles / balance-stack / water-dig canvas 信息字（恒暗/恒亮 halo，
+     §3 D2 例外类）、hex-fill 色钮字色（双主题 ≥4.5:1）。
+  4. **模板共性批量修（family A 11 款 stat padding 4→8px；family B 14 款 label 去 opacity、
+     overlay 补 fadein/pop 0.2-0.25s）**。
+  5. **文案/视觉一致性 4 处**：weight-order 快捷键说明、curling-sweep 评分档文案补全 + 补画
+     r26/r50 计分环、archery-move 8 环 27→28px 计分边界失配。
+  遗留建议（记录未动手）：hoop-shot 键盘瞄准无弹道预览；paper-fold-cut 深色洞/纸对比可在
+  §3 登记深色变体时调整；3 处无害冗余代码。浏览器抽查 3 款修复款（map-fold 按钮功能 /
+  water-dig 可玩 / gear-mesh 深色对比）全部通过。

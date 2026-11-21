@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#CFE3C0"/>
+      <stop offset="0.55" stop-color="#B6D4A2"/>
+      <stop offset="1" stop-color="#98C280"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E4A24" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 三车道草带 -->
+  <g>
+    <rect y="252" width="800" height="56" fill="#C2D9B2" opacity="0.8"/>
+    <rect y="308" width="800" height="62" fill="#A9C88E" opacity="0.85"/>
+    <rect y="370" width="800" height="80" fill="#8FBA72" opacity="0.85"/>
+    <!-- 土壤埂 -->
+    <path d="M0 252 H800 M0 308 H800 M0 370 H800" stroke="#C7A469" stroke-width="7" stroke-linecap="round" opacity="0.8"/>
+    <path d="M0 258 H800 M0 314 H800 M0 376 H800" stroke="#A9885A" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+  </g>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 90 h12 M102 84 v12" stroke-width="3.2"/>
+    <path d="M694 78 h12 M700 72 v12" stroke-width="3.4"/>
+    <path d="M110 160 h9 M114.5 155.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M700 170 h9 M704.5 165.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="170" cy="130" r="4"/><circle cx="712" cy="120" r="3.4"/><circle cx="70" cy="190" r="3"/><circle cx="740" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 豌豆射手（左，主视觉，带表情） -->
+  <g>
+    <!-- 茎与叶 -->
+    <path d="M170 372 Q160 320 178 284" stroke="#3E7A34" stroke-width="11" fill="none" stroke-linecap="round"/>
+    <path d="M162 340 Q134 330 122 344 Q142 356 162 340 Z" fill="#5E8C4A" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M174 310 Q200 296 214 308 Q196 322 174 310 Z" fill="#5E8C4A" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+    <!-- 头 -->
+    <circle cx="196" cy="258" r="52" fill="#3FB57F" stroke="#1E2620" stroke-width="9"/>
+    <circle cx="196" cy="258" r="52" fill="url(#gloss)"/>
+    <!-- 炮口 -->
+    <ellipse cx="150" cy="250" rx="16" ry="22" fill="#17734A" stroke="#1E2620" stroke-width="7"/>
+    <ellipse cx="146" cy="250" rx="8" ry="13" fill="#1F1A14"/>
+    <!-- 表情 -->
+    <circle cx="206" cy="246" r="8" fill="#1F1A14"/>
+    <circle cx="232" cy="248" r="8" fill="#1F1A14"/>
+    <circle cx="208" cy="243" r="3" fill="#FFFFFF"/>
+    <circle cx="234" cy="245" r="3" fill="#FFFFFF"/>
+    <path d="M212 268 Q224 277 236 266" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <!-- 头顶小叶 -->
+    <path d="M200 206 Q206 188 222 186 Q218 200 206 208" fill="#5E8C4A" stroke="#1E2620" stroke-width="6" stroke-linejoin="round"/>
+  </g>
+
+  <!-- 坚果墙（左下） -->
+  <g>
+    <ellipse cx="120" cy="390" rx="52" ry="46" fill="#C7A469" stroke="#1E2620" stroke-width="9"/>
+    <ellipse cx="120" cy="390" rx="52" ry="46" fill="url(#gloss)"/>
+    <path d="M96 366 Q120 352 144 364" stroke="#A9885A" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="104" cy="384" r="7" fill="#1F1A14"/>
+    <circle cx="134" cy="384" r="7" fill="#1F1A14"/>
+    <path d="M110 402 Q120 409 130 400" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 向日葵（左上经济） -->
+  <g>
+    <path d="M296 372 Q300 330 294 300" stroke="#3E7A34" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <g stroke="#1E2620" stroke-width="7" stroke-linejoin="round">
+      <path d="M294 246 L272 264 L280 238 L262 228 L288 222 L294 196 L302 222 L328 228 L310 238 L318 264 Z" fill="#F2C14E"/>
+    </g>
+    <circle cx="294" cy="232" r="22" fill="#B8681F" stroke="#1E2620" stroke-width="7"/>
+    <circle cx="288" cy="228" r="5" fill="#1F1A14"/>
+    <circle cx="302" cy="228" r="5" fill="#1F1A14"/>
+    <path d="M288 238 Q295 243 302 237" stroke="#1F1A14" stroke-width="4" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 飞行豌豆弹 -->
+  <g>
+    <circle cx="420" cy="256" r="17" fill="#5BC894" stroke="#1E2620" stroke-width="7"/>
+    <circle cx="415" cy="250" r="6" fill="#FFFFFF" opacity="0.5"/>
+    <path d="M444 246 L470 240 M446 262 L472 258 M444 276 L466 278" stroke="#1E2620" stroke-width="5" stroke-linecap="round" opacity="0.4"/>
+  </g>
+
+  <!-- 入侵者（右，灰绿呆滞） -->
+  <g>
+    <ellipse cx="640" cy="380" rx="26" ry="8" fill="#4E6E42" opacity="0.4"/>
+    <!-- 身体 -->
+    <path d="M612 378 Q608 318 640 312 Q672 318 668 378 Z" fill="#8A9B8E" stroke="#1E2620" stroke-width="9"/>
+    <path d="M616 340 H664" stroke="#5E6E62" stroke-width="6" stroke-linecap="round"/>
+    <!-- 手臂前伸 -->
+    <path d="M614 330 Q590 324 576 336" stroke="#1E2620" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <circle cx="570" cy="338" r="10" fill="#8A9B8E" stroke="#1E2620" stroke-width="6"/>
+    <!-- 头 -->
+    <circle cx="640" cy="296" r="40" fill="#9AAE9E" stroke="#1E2620" stroke-width="9"/>
+    <circle cx="640" cy="296" r="40" fill="url(#gloss)"/>
+    <!-- 呆滞表情 -->
+    <circle cx="626" cy="288" r="8" fill="#1F1A14"/>
+    <circle cx="654" cy="288" r="8" fill="#1F1A14"/>
+    <circle cx="626" cy="288" r="3" fill="#FFFFFF"/>
+    <circle cx="654" cy="288" r="3" fill="#FFFFFF"/>
+    <path d="M628 314 Q640 308 652 314" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <!-- 头顶破洞发丝 -->
+    <path d="M616 262 Q612 250 620 244 M640 256 Q640 246 648 242" stroke="#5E6E62" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <!-- 破洞衣 -->
+    <path d="M626 360 L638 370 L628 374" stroke="#5E6E62" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

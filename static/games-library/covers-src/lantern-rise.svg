@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8B878"/>
+      <stop offset="0.55" stop-color="#D89A52"/>
+      <stop offset="1" stop-color="#C07E3E"/>
+    </linearGradient>
+    <radialGradient id="flame" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFF3B8" stop-opacity="0.95"/>
+      <stop offset="0.5" stop-color="#F2C14E" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#F2C14E" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#5A3A14" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带（峡谷底） -->
+  <rect y="394" width="800" height="56" fill="#8F6A3A" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#7A582C" opacity="0.55"/>
+  <!-- 星尘点缀（暮色星） -->
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M120 180 h9 M124.5 175.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M670 200 h9 M674.5 195.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.5">
+    <circle cx="170" cy="130" r="4"/><circle cx="712" cy="120" r="3.4"/><circle cx="80" cy="220" r="3"/><circle cx="736" cy="250" r="2.6"/>
+  </g>
+
+  <!-- 两侧峡谷岩壁 -->
+  <g>
+    <path d="M0 0 L96 0 Q104 60 88 130 Q76 200 92 280 Q104 350 88 394 L0 394 Z"
+          fill="#8F887B" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M800 0 L706 0 Q698 66 714 140 Q726 210 710 286 Q700 350 714 394 L800 394 Z"
+          fill="#8F887B" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M60 40 Q66 100 56 160 M78 210 Q72 280 80 340" stroke="#4A463E" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <path d="M742 46 Q736 110 746 170 M724 220 Q730 290 722 344" stroke="#4A463E" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <circle cx="76" cy="90" r="8" fill="#FFFFFF" opacity="0.25"/>
+    <circle cx="726" cy="110" r="7" fill="#FFFFFF" opacity="0.25"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="400" rx="150" ry="14" fill="#5E3E1C" opacity="0.35"/>
+
+  <!-- 远处小灯（两盏） -->
+  <g>
+    <path d="M180 330 Q196 330 196 348 Q196 366 180 366 Q164 366 164 348 Q164 330 180 330 Z"
+          fill="#DD9A52" stroke="#3A2A1E" stroke-width="6"/>
+    <circle cx="180" cy="348" r="12" fill="#F2C14E" opacity="0.55"/>
+    <path d="M560 372 Q574 372 574 388 Q574 404 560 404 Q546 404 546 388 Q546 372 560 372 Z"
+          fill="#DD9A52" stroke="#3A2A1E" stroke-width="5"/>
+    <circle cx="560" cy="388" r="10" fill="#F2C14E" opacity="0.55"/>
+  </g>
+
+  <!-- 孔明灯（主视觉，带表情） -->
+  <g>
+    <!-- 灯体 -->
+    <path d="M400 68 Q486 78 496 158 Q504 220 462 262 L338 262 Q296 220 304 158 Q314 78 400 68 Z"
+          fill="#DD9A52" stroke="#3A2A1E" stroke-width="10" stroke-linejoin="round"/>
+    <!-- 竖棱线 -->
+    <path d="M400 68 V262 M352 82 Q348 160 348 256 M448 82 Q452 160 452 256 M324 116 Q318 170 324 246 M476 116 Q482 170 476 246"
+          stroke="#B87438" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <!-- 开口沿 -->
+    <path d="M338 262 L462 262" stroke="#3A2A1E" stroke-width="10" stroke-linecap="round"/>
+    <path d="M352 262 L448 262" stroke="#6E4C26" stroke-width="7" stroke-linecap="round"/>
+    <!-- 内焰光 -->
+    <circle cx="400" cy="238" r="40" fill="url(#flame)"/>
+    <path d="M400 222 Q412 238 404 254 Q398 262 396 250 Q388 258 394 268 Q404 276 414 266 Q422 254 412 242 Q408 232 400 222 Z"
+          fill="#F2C14E" stroke="#B8681F" stroke-width="4" stroke-linejoin="round"/>
+    <!-- 高光 -->
+    <path d="M330 100 Q344 84 372 78" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.4" fill="none"/>
+    <circle cx="400" cy="160" r="96" fill="url(#gloss)" opacity="0.35"/>
+    <!-- 表情 -->
+    <circle cx="374" cy="176" r="10" fill="#1F1A14"/>
+    <circle cx="426" cy="176" r="10" fill="#1F1A14"/>
+    <circle cx="377" cy="172" r="3.5" fill="#FFFFFF"/>
+    <circle cx="429" cy="172" r="3.5" fill="#FFFFFF"/>
+    <path d="M384 200 Q400 212 416 198" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 上升气流线 -->
+  <g stroke="#FFF3DC" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M282 320 Q274 280 284 240"/>
+    <path d="M522 330 Q532 288 522 250"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

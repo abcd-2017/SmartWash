@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DCEAE0"/>
+      <stop offset="0.55" stop-color="#B4D2BE"/>
+      <stop offset="1" stop-color="#86B296"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E5A44" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#6E9A7C" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#5E8A6C" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 88 h11 M97.5 82.5 v11" stroke-width="3.2"/>
+    <path d="M704 82 h12 M710 76 v12" stroke-width="3.4"/>
+    <path d="M736 240 h9 M740.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M62 250 h9 M66.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="108" cy="150" r="4"/><circle cx="688" cy="140" r="3.4"/><circle cx="70" cy="300" r="3"/><circle cx="736" cy="300" r="2.6"/>
+  </g>
+
+  <!-- 数墙盘 -->
+  <rect x="150" y="65" width="500" height="320" rx="16" fill="#F7F3E6" stroke="#1E2620" stroke-width="9"/>
+  <g stroke="#C2B89A" stroke-width="3">
+    <path d="M220 75 V375 M280 75 V375 M340 75 V375 M400 75 V375 M460 75 V375 M520 75 V375 M580 75 V375" fill="none"/>
+    <path d="M160 135 H640 M160 195 H640 M160 255 H640 M160 315 H640" fill="none"/>
+  </g>
+
+  <!-- 黑海格 -->
+  <g fill="#1E2620">
+    <rect x="280" y="75" width="60" height="60" rx="7"/><rect x="340" y="75" width="60" height="60" rx="7"/>
+    <rect x="400" y="75" width="60" height="60" rx="7"/><rect x="460" y="75" width="60" height="60" rx="7"/>
+    <rect x="520" y="75" width="60" height="60" rx="7"/><rect x="580" y="75" width="60" height="60" rx="7"/>
+    <rect x="220" y="135" width="60" height="60" rx="7"/><rect x="280" y="135" width="60" height="60" rx="7"/><rect x="580" y="135" width="60" height="60" rx="7"/>
+    <rect x="160" y="195" width="60" height="60" rx="7"/><rect x="280" y="195" width="60" height="60" rx="7"/>
+    <rect x="340" y="195" width="60" height="60" rx="7"/><rect x="400" y="195" width="60" height="60" rx="7"/>
+    <rect x="460" y="195" width="60" height="60" rx="7"/><rect x="580" y="195" width="60" height="60" rx="7"/>
+    <rect x="160" y="255" width="60" height="60" rx="7"/><rect x="460" y="255" width="60" height="60" rx="7"/>
+    <rect x="520" y="255" width="60" height="60" rx="7"/><rect x="580" y="255" width="60" height="60" rx="7"/>
+    <rect x="160" y="315" width="60" height="60" rx="7"/><rect x="220" y="315" width="60" height="60" rx="7"/>
+    <rect x="340" y="315" width="60" height="60" rx="7"/><rect x="400" y="315" width="60" height="60" rx="7"/><rect x="460" y="315" width="60" height="60" rx="7"/>
+  </g>
+  <!-- 海面波纹 -->
+  <g stroke="#8FA89E" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8">
+    <path d="M362 96 Q370 90 378 96 M422 96 Q430 90 438 96 M482 156 Q490 150 498 156"/>
+    <path d="M302 276 Q310 270 318 276 M542 216 Q550 210 558 216 M182 336 Q190 330 198 336"/>
+  </g>
+
+  <!-- 数字岛 -->
+  <g fill="#2D9B6A" stroke="#1E2620" stroke-width="6">
+    <rect x="160" y="75" width="60" height="60" rx="7"/><rect x="220" y="75" width="60" height="60" rx="7"/><rect x="160" y="135" width="60" height="60" rx="7"/>
+    <rect x="400" y="135" width="60" height="60" rx="7"/><rect x="460" y="135" width="60" height="60" rx="7"/><rect x="520" y="135" width="60" height="60" rx="7"/>
+    <rect x="520" y="195" width="60" height="60" rx="7"/>
+    <rect x="220" y="255" width="60" height="60" rx="7"/><rect x="280" y="255" width="60" height="60" rx="7"/><rect x="340" y="255" width="60" height="60" rx="7"/><rect x="280" y="315" width="60" height="60" rx="7"/>
+    <rect x="400" y="255" width="60" height="60" rx="7"/>
+    <rect x="520" y="315" width="60" height="60" rx="7"/><rect x="580" y="315" width="60" height="60" rx="7"/>
+    <rect x="340" y="135" width="60" height="60" rx="7"/>
+    <rect x="220" y="195" width="60" height="60" rx="7"/>
+  </g>
+  <!-- 岛上高光 -->
+  <g fill="#FFFFFF" opacity="0.3">
+    <rect x="168" y="83" width="20" height="10" rx="5"/><rect x="408" y="143" width="20" height="10" rx="5"/>
+    <rect x="228" y="263" width="20" height="10" rx="5"/><rect x="528" y="323" width="20" height="10" rx="5"/>
+  </g>
+
+  <!-- 点数（骰式） -->
+  <g fill="#FFFFFF">
+    <circle cx="204" cy="106" r="8"/><circle cx="240" cy="112" r="8"/><circle cx="196" cy="152" r="8"/>
+    <circle cx="440" cy="165" r="8"/><circle cx="490" cy="165" r="8"/><circle cx="540" cy="165" r="8"/>
+    <circle cx="550" cy="225" r="8"/>
+    <circle cx="256" cy="292" r="8"/><circle cx="310" cy="292" r="8"/><circle cx="362" cy="292" r="8"/><circle cx="310" cy="344" r="8"/>
+    <circle cx="560" cy="345" r="8"/><circle cx="600" cy="345" r="8"/>
+    <circle cx="430" cy="285" r="8"/>
+    <circle cx="370" cy="165" r="8"/>
+    <circle cx="250" cy="225" r="8"/>
+  </g>
+
+  <!-- 涂黑笔刷提示 -->
+  <g transform="rotate(24 700 118)">
+    <rect x="668" y="108" width="72" height="20" rx="10" fill="#17734A" stroke="#1E2620" stroke-width="7"/>
+    <path d="M672 108 L656 118 L672 128" fill="#1E2620"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

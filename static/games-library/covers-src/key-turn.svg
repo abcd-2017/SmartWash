@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DAD6C8"/>
+      <stop offset="0.55" stop-color="#C9B691"/>
+      <stop offset="1" stop-color="#B09C6E"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFF3B8" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#FFF3B8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#5A4A26" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#9C8A5E" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#88764C" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFF8E8" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M108 280 h9 M112.5 275.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M690 280 h9 M694.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF8E8" opacity="0.5">
+    <circle cx="160" cy="160" r="4"/><circle cx="712" cy="160" r="3.4"/><circle cx="70" cy="220" r="3"/><circle cx="740" cy="210" r="2.6"/>
+  </g>
+
+  <!-- 锁体面板（门板底） -->
+  <rect x="170" y="60" width="460" height="360" rx="26" fill="#DAD6C8" stroke="#3A2A1E" stroke-width="9"/>
+  <rect x="190" y="80" width="420" height="320" rx="18" fill="none" stroke="#8F8062" stroke-width="5" opacity="0.7"/>
+  <circle cx="205" cy="92" r="8" fill="#FFFFFF" opacity="0.5"/>
+
+  <!-- 对齐发光点（顶部 12 点） -->
+  <circle cx="400" cy="92" r="42" fill="url(#glow)"/>
+  <path d="M400 60 L394 44 M400 60 L406 44 M388 66 L376 56 M412 66 L424 56" stroke="#F2C14E" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- 三环锁芯（主视觉，缺口对齐） -->
+  <g>
+    <!-- 外环 -->
+    <circle cx="400" cy="252" r="128" fill="none" stroke="#3A2A1E" stroke-width="17"/>
+    <circle cx="400" cy="252" r="128" fill="none" stroke="#8F8062" stroke-width="10"/>
+    <!-- 外环缺口（顶部） -->
+    <path d="M384 126 L384 152" stroke="#DAD6C8" stroke-width="22" stroke-linecap="round"/>
+    <!-- 外环刻度齿 -->
+    <g stroke="#6E6249" stroke-width="6" stroke-linecap="round">
+      <path d="M400 118 V136"/>
+      <path d="M482 142 L472 156"/>
+      <path d="M528 210 L512 218"/>
+      <path d="M528 294 L512 286"/>
+      <path d="M482 362 L472 348"/>
+      <path d="M400 386 V368"/>
+      <path d="M318 362 L328 348"/>
+      <path d="M272 294 L288 286"/>
+      <path d="M272 210 L288 218"/>
+      <path d="M318 142 L328 156"/>
+    </g>
+    <!-- 中环 -->
+    <circle cx="400" cy="252" r="88" fill="none" stroke="#3A2A1E" stroke-width="15"/>
+    <circle cx="400" cy="252" r="88" fill="none" stroke="#C9B691" stroke-width="9"/>
+    <path d="M386 168 L386 192" stroke="#DAD6C8" stroke-width="20" stroke-linecap="round"/>
+    <!-- 内芯 -->
+    <circle cx="400" cy="252" r="52" fill="#C9B691" stroke="#3A2A1E" stroke-width="11"/>
+    <circle cx="400" cy="252" r="52" fill="url(#gloss)"/>
+    <path d="M394 204 L394 224" stroke="#DAD6C8" stroke-width="16" stroke-linecap="round"/>
+    <!-- 钥匙孔 -->
+    <circle cx="400" cy="244" r="13" fill="#3A2A1E"/>
+    <path d="M394 252 L392 278 L408 278 L406 252 Z" fill="#3A2A1E"/>
+    <!-- 锁芯签名表情 -->
+    <circle cx="383" cy="222" r="6.5" fill="#3A2A1E"/>
+    <circle cx="417" cy="222" r="6.5" fill="#3A2A1E"/>
+    <path d="M384 296 Q400 306 416 294" stroke="#3A2A1E" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <!-- 指针 -->
+    <path d="M400 252 L512 168" stroke="#3A2A1E" stroke-width="9" stroke-linecap="round"/>
+    <path d="M400 252 L512 168" stroke="#F2C14E" stroke-width="4.5" stroke-linecap="round"/>
+    <circle cx="400" cy="252" r="12" fill="#F2C14E" stroke="#3A2A1E" stroke-width="6"/>
+  </g>
+
+  <!-- 三环全开小星（庆祝点缀） -->
+  <g stroke="#FFF3B8" stroke-width="5" stroke-linecap="round" fill="none">
+    <path d="M552 96 h14 M559 89 v14"/>
+    <path d="M600 130 h11 M605.5 124.5 v11"/>
+    <path d="M250 96 h11 M255.5 90.5 v11"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

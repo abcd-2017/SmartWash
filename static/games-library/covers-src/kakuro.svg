@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBFCFA"/>
+      <stop offset="0.55" stop-color="#EAEEE6"/>
+      <stop offset="1" stop-color="#D6DCCD"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3A443C" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="396" width="800" height="54" fill="#BCC2B0" opacity="0.55"/>
+  <rect y="396" width="800" height="6" fill="#A8AE9C" opacity="0.5"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h12 M102 90 v12" stroke-width="3.2"/>
+    <path d="M700 90 h12 M706 84 v12" stroke-width="3.4"/>
+    <path d="M76 250 h9 M80.5 245.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M724 260 h9 M728.5 255.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="80" cy="170" r="4"/><circle cx="740" cy="170" r="3.4"/><circle cx="64" cy="230" r="3"/><circle cx="180" cy="80" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="420" cy="412" rx="240" ry="14" fill="#5E6A5C" opacity="0.3"/>
+
+  <!-- 4x4 数谜格盘（主视觉） -->
+  <g>
+    <rect x="180" y="45" width="360" height="360" rx="16" fill="#FFFFFF" stroke="#1E2620" stroke-width="9"/>
+    <g stroke="#C9CFC7" stroke-width="4" stroke-linecap="round">
+      <path d="M270 45 V405 M360 45 V405 M450 45 V405"/>
+      <path d="M180 135 H540 M180 225 H540 M180 315 H540"/>
+    </g>
+    <!-- 黑提示格 1（左上角，斜线分割：横提示右上 2 点、纵提示左下 1 点） -->
+    <rect x="180" y="45" width="90" height="90" fill="#3A3F3B" stroke="#1E2620" stroke-width="6"/>
+    <path d="M180 135 L270 45 L270 135 Z" fill="#262A27"/>
+    <g fill="#EFF1EE">
+      <circle cx="248" cy="72" r="7"/><circle cx="248" cy="94" r="7"/>
+      <circle cx="206" cy="102" r="7"/>
+    </g>
+    <!-- 黑提示格 2（右上） -->
+    <rect x="450" y="45" width="90" height="90" fill="#3A3F3B" stroke="#1E2620" stroke-width="6"/>
+    <path d="M450 45 L540 135 L450 135 Z" fill="#262A27"/>
+    <g fill="#EFF1EE">
+      <circle cx="472" cy="70" r="7"/><circle cx="472" cy="92" r="7"/><circle cx="472" cy="114" r="7"/>
+    </g>
+    <!-- 黑提示格 3（中中） -->
+    <rect x="360" y="135" width="90" height="90" fill="#3A3F3B" stroke="#1E2620" stroke-width="6"/>
+    <path d="M360 225 L450 135 L450 225 Z" fill="#262A27"/>
+    <g fill="#EFF1EE">
+      <circle cx="428" cy="162" r="7"/><circle cx="428" cy="184" r="7"/>
+      <circle cx="386" cy="196" r="7"/>
+    </g>
+    <!-- 黑提示格 4（右下） -->
+    <rect x="450" y="315" width="90" height="90" fill="#3A3F3B" stroke="#1E2620" stroke-width="6"/>
+    <path d="M450 315 L540 405 L540 315 Z" fill="#262A27" transform="rotate(180 495 360)"/>
+    <g fill="#EFF1EE">
+      <circle cx="474" cy="344" r="7"/><circle cx="474" cy="366" r="7"/>
+    </g>
+    <!-- 选中格（浅绿）+ 填入的数字圆片（带表情） -->
+    <rect x="180" y="225" width="90" height="90" fill="#E8F6EF"/>
+    <g>
+      <circle cx="225" cy="270" r="34" fill="#2D9B6A" stroke="#1E2620" stroke-width="7"/>
+      <path d="M217 244 Q242 236 236 262 Q250 270 216 292" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <circle cx="225" cy="270" r="34" fill="url(#gloss)"/>
+      <circle cx="215" cy="260" r="6" fill="#1F1A14"/>
+      <circle cx="237" cy="260" r="6" fill="#1F1A14"/>
+      <path d="M220 276 Q226 281 232 275" stroke="#1F1A14" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    </g>
+    <!-- 填入的小数字片 -->
+    <circle cx="315" cy="180" r="26" fill="#4A9FD4" stroke="#1E2620" stroke-width="6"/>
+    <path d="M308 160 L318 154 L318 198" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="405" cy="360" r="26" fill="#E8B45A" stroke="#1E2620" stroke-width="6"/>
+    <path d="M393 342 Q417 332 411 356 Q423 366 393 378" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="495" cy="270" r="26" fill="#5BC894" stroke="#1E2620" stroke-width="6"/>
+    <path d="M485 288 L501 242 L501 288 M479 288 L507 288" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- 大铅笔（右，斜倚） -->
+  <g transform="rotate(24 660 240)">
+    <rect x="640" y="140" width="44" height="180" rx="8" fill="#F2C14E" stroke="#1E2620" stroke-width="8"/>
+    <path d="M640 140 L662 96 L684 140 Z" fill="#E6DBC6" stroke="#1E2620" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M654 116 L662 96 L670 116 L662 124 Z" fill="#3A2A1E"/>
+    <rect x="640" y="296" width="44" height="26" fill="#E693A0" stroke="#1E2620" stroke-width="7"/>
+    <path d="M652 148 V270" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.45"/>
+  </g>
+
+  <!-- 左下橡皮块 -->
+  <g transform="rotate(-10 118 356)">
+    <rect x="88" y="336" width="60" height="40" rx="10" fill="#E693A0" stroke="#1E2620" stroke-width="7"/>
+    <path d="M88 356 H148" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

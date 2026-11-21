@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#31875E"/>
+      <stop offset="0.55" stop-color="#226C4C"/>
+      <stop offset="1" stop-color="#17563B"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0C3220" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#11462E" opacity="0.55"/>
+  <rect y="392" width="800" height="6" fill="#0E3C27" opacity="0.6"/>
+  <g stroke="#C2E5D2" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M84 84 h11 M89.5 78.5 v11" stroke-width="3"/>
+    <path d="M724 88 h12 M730 82 v12" stroke-width="3.4"/>
+    <path d="M56 300 h9 M60.5 295.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M752 260 h9 M756.5 255.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#C2E5D2" opacity="0.5">
+    <circle cx="130" cy="140" r="4"/><circle cx="700" cy="140" r="3.4"/><circle cx="62" cy="200" r="3"/><circle cx="754" cy="190" r="2.6"/>
+  </g>
+
+  <ellipse cx="430" cy="404" rx="250" ry="20" fill="#0C3220" opacity="0.42"/>
+
+  <!-- 蓝色 L 五格骨牌 -->
+  <g fill="#4A90C4" stroke="#1E2620" stroke-width="5">
+    <rect x="200" y="113" width="54" height="54" rx="8"/>
+    <rect x="200" y="167" width="54" height="54" rx="8"/>
+    <rect x="200" y="221" width="54" height="54" rx="8"/>
+    <rect x="200" y="275" width="54" height="54" rx="8"/>
+    <rect x="254" y="275" width="54" height="54" rx="8"/>
+  </g>
+  <circle cx="227" cy="140" r="10" fill="url(#gloss)"/>
+
+  <!-- 黄色 U 五格骨牌 -->
+  <g fill="#B8912E" stroke="#1E2620" stroke-width="5">
+    <rect x="308" y="113" width="54" height="54" rx="8"/>
+    <rect x="416" y="113" width="54" height="54" rx="8"/>
+    <rect x="308" y="167" width="54" height="54" rx="8"/>
+    <rect x="362" y="167" width="54" height="54" rx="8"/>
+    <rect x="416" y="167" width="54" height="54" rx="8"/>
+  </g>
+  <circle cx="335" cy="140" r="10" fill="url(#gloss)"/>
+
+  <!-- 红色 P 五格骨牌（签名表情） -->
+  <g fill="#C4574A" stroke="#1E2620" stroke-width="5">
+    <rect x="470" y="113" width="54" height="54" rx="8"/>
+    <rect x="524" y="113" width="54" height="54" rx="8"/>
+    <rect x="470" y="167" width="54" height="54" rx="8"/>
+    <rect x="524" y="167" width="54" height="54" rx="8"/>
+    <rect x="470" y="221" width="54" height="54" rx="8"/>
+  </g>
+  <circle cx="497" cy="140" r="10" fill="url(#gloss)"/>
+  <circle cx="542" cy="186" r="5.5" fill="#1F1A14"/>
+  <circle cx="560" cy="186" r="5.5" fill="#1F1A14"/>
+  <circle cx="540" cy="183.5" r="1.8" fill="#FFFFFF"/>
+  <circle cx="558" cy="183.5" r="1.8" fill="#FFFFFF"/>
+  <path d="M545 204 Q551 209 557 203" stroke="#1F1A14" stroke-width="3.8" fill="none" stroke-linecap="round"/>
+  <circle cx="532" cy="176" r="6" fill="#FFFFFF" opacity="0.5"/>
+
+  <!-- 绿色 T 五格骨牌 -->
+  <g fill="#3F9D77" stroke="#1E2620" stroke-width="5">
+    <rect x="308" y="275" width="54" height="54" rx="8"/>
+    <rect x="362" y="275" width="54" height="54" rx="8"/>
+    <rect x="416" y="275" width="54" height="54" rx="8"/>
+    <rect x="362" y="329" width="54" height="54" rx="8"/>
+  </g>
+  <circle cx="335" cy="302" r="10" fill="url(#gloss)"/>
+
+  <!-- 紫色 I 五格骨牌 -->
+  <g fill="#7B62B8" stroke="#1E2620" stroke-width="5">
+    <rect x="640" y="113" width="54" height="54" rx="8"/>
+    <rect x="640" y="167" width="54" height="54" rx="8"/>
+    <rect x="640" y="221" width="54" height="54" rx="8"/>
+    <rect x="640" y="275" width="54" height="54" rx="8"/>
+    <rect x="640" y="329" width="54" height="54" rx="8"/>
+  </g>
+  <circle cx="667" cy="140" r="10" fill="url(#gloss)"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

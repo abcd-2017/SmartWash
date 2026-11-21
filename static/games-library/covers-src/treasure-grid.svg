@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E7C98F"/>
+      <stop offset="0.55" stop-color="#D9B578"/>
+      <stop offset="1" stop-color="#C7A262"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#6E4A20" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#B38C4C" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#9C7A3C" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h11 M101.5 90.5 v11" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M716 240 h9 M720.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M78 250 h9 M82.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.5">
+    <circle cx="160" cy="160" r="4"/><circle cx="712" cy="160" r="3.4"/><circle cx="64" cy="210" r="3"/><circle cx="740" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="460" cy="406" rx="252" ry="22" fill="#8A5E2E" opacity="0.35"/>
+
+  <!-- 藏宝图网格 -->
+  <rect x="150" y="100" width="500" height="270" rx="14" fill="#F2E4BC" stroke="#3A2A1E" stroke-width="9"/>
+  <g stroke="#B89A62" stroke-width="4" stroke-linecap="round" fill="none">
+    <path d="M230 100 V370 M310 100 V370 M390 100 V370 M470 100 V370 M550 100 V370"/>
+    <path d="M150 155 H650 M150 210 H650 M150 265 H650 M150 320 H650"/>
+  </g>
+  <!-- 叉形宝藏标记 -->
+  <path d="M418 196 L462 246 M462 196 L418 246" stroke="#B8452E" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <!-- 路线虚线 -->
+  <path d="M180 340 Q270 322 350 296" stroke="#B8452E" stroke-width="5" stroke-linecap="round" stroke-dasharray="9 11" fill="none" opacity="0.8"/>
+
+  <!-- 宝箱（主视觉，带签名表情） -->
+  <path d="M470 272 Q580 212 690 272 L690 296 L470 296 Z" fill="#8A5E32" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+  <rect x="470" y="296" width="220" height="100" rx="12" fill="#A8763E" stroke="#3A2A1E" stroke-width="9"/>
+  <rect x="470" y="318" width="220" height="20" fill="#D4A94E" stroke="#3A2A1E" stroke-width="6"/>
+  <rect x="556" y="312" width="48" height="40" rx="8" fill="#D4A94E" stroke="#3A2A1E" stroke-width="7"/>
+  <circle cx="580" cy="326" r="7" fill="#3A2A1E"/>
+  <path d="M580 331 L575 342 L585 342 Z" fill="#3A2A1E"/>
+  <circle cx="516" cy="246" r="12" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="552" cy="358" r="9" fill="#1F1A14"/>
+  <circle cx="608" cy="358" r="9" fill="#1F1A14"/>
+  <path d="M544 378 Q580 394 616 376" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 洒落的金币 -->
+  <circle cx="438" cy="388" r="15" fill="#D4A94E" stroke="#3A2A1E" stroke-width="6"/>
+  <circle cx="452" cy="370" r="13" fill="#D4A94E" stroke="#3A2A1E" stroke-width="6"/>
+  <circle cx="426" cy="366" r="12" fill="#D4A94E" stroke="#3A2A1E" stroke-width="6"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>
