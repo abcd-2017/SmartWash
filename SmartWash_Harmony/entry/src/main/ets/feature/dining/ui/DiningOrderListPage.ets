@@ -275,7 +275,7 @@ struct DiningOrderListPage {
               this.pressedKey = ''
             }
           })
-          ..onClick(() => {
+          .onClick(() => {
             // 唯一性收敛：已有本人进行中的 DRAFT → 直接进该单编辑态，不再新建（无则空白创建页）
             if (this.activeOrderId > 0) {
               const param = new DiningOrderCreateParam()
