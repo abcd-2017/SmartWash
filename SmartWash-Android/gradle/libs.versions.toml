@@ -1,5 +1,4 @@
 [versions]
-accompanistPermissions = "0.32.0"
 agp = "8.8.2"
 annotation = "1.8.1"
 exifinterface = "1.3.7"
@@ -45,7 +44,6 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 # buildSrc convention plugin 的编译期依赖（运行期由根 build.gradle 的 apply false 提供）
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
-accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
 androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
 # ImageCompressUtil：EXIF 方向读取修正（androidx 独立 exifinterface，替代已废弃的 android.media.ExifInterface）
 androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
