@@ -11,6 +11,13 @@ apply from: "$rootDir/config/serialization.gradle"
 
 android {
     namespace 'com.smartwash.feature.subscription'
+
+    testOptions {
+        unitTests {
+            // JVM 单测中 android.util.Log（AppLogger/LogCore）返回默认值而非抛 not mocked（dining 先例）
+            returnDefaultValues = true
+        }
+    }
 }
 
 dependencies {
@@ -40,4 +47,9 @@ dependencies {
     implementation libs.androidx.paging.compose
     // 图标（Material 内置；规范 §4.1 禁外部图标库）
     implementation libs.androidx.material.icons.extended
+
+    // JVM 单测（表单校验/日期金额换算/周期进度环纯逻辑 + 枚举防御回落 + 分页源锚点）
+    testImplementation libs.junit
+    // PagingSource.load 挂起链路单测
+    testImplementation libs.kotlinx.coroutines.test
 }

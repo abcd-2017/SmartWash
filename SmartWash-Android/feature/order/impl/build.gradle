@@ -11,6 +11,13 @@ apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.feature.order.impl'
+
+    testOptions {
+        unitTests {
+            // JVM 单测中 android.util.Log（AppLogger/LogCore）返回默认值而非抛 not mocked（dining 先例）
+            returnDefaultValues = true
+        }
+    }
 }
 
 dependencies {
@@ -48,4 +55,9 @@ dependencies {
     implementation libs.androidx.paging.runtime.ktx
     // OrderViewModel 的协程 launch
     implementation libs.kotlinx.coroutines.android
+
+    // JVM 单测（状态码映射 / VO 容错映射 / 仓库与 ViewModel 状态机锚点）
+    testImplementation libs.junit
+    // OrderViewModel/OrderPagingSource 挂起链路单测（虚拟时钟 + Main 调度器注入）
+    testImplementation libs.kotlinx.coroutines.test
 }

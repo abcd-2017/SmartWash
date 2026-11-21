@@ -10,6 +10,13 @@ apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.feature.notice'
+
+    testOptions {
+        unitTests {
+            // JVM 单测中 android.util.Log（AppLogger/LogCore）返回默认值而非抛 not mocked（dining 先例）
+            returnDefaultValues = true
+        }
+    }
 }
 
 dependencies {
@@ -39,4 +46,6 @@ dependencies {
 
     // JVM 单测（类型文案映射 / 未读角标格式化 / 时间格式化）
     testImplementation libs.junit
+    // NoticeRepository 挂起链路单测
+    testImplementation libs.kotlinx.coroutines.test
 }
