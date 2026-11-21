@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8FD0B4"/>
+      <stop offset="0.55" stop-color="#63B98E"/>
+      <stop offset="1" stop-color="#48A276"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E5E40" stop-opacity="0.3"/>
+    </radialGradient>
+    <path id="pipH" d="M0 3 C -1.5 -1 -6 -1 -6 2.5 C -6 5.5 -2 7.5 0 9.5 C 2 7.5 6 5.5 6 2.5 C 6 -1 1.5 -1 0 3 Z"/>
+    <path id="pipD" d="M0 -7 L6 0 L0 7 L-6 0 Z"/>
+    <path id="pipS" d="M0 -9 C 2 -5 6.5 -3.5 6.5 0.5 C 6.5 3.5 2.5 4.8 0.8 3 L 2.4 9 L -2.4 9 L -0.8 3 C -2.5 4.8 -6.5 3.5 -6.5 0.5 C -6.5 -3.5 -2 -5 0 -9 Z"/>
+    <g id="pipC">
+      <circle cx="0" cy="-4.2" r="3.8"/>
+      <circle cx="-3.8" cy="1.8" r="3.8"/>
+      <circle cx="3.8" cy="1.8" r="3.8"/>
+      <path d="M-1.8 3.2 L1.8 3.2 L1 9.4 L-1 9.4 Z"/>
+    </g>
+    <g id="back">
+      <rect x="-22" y="-30" width="44" height="60" rx="6" fill="#2D9B6A" stroke="#1E5038" stroke-width="5"/>
+      <rect x="-14" y="-22" width="28" height="44" rx="4" fill="none" stroke="#EAF7EE" stroke-width="2.5" opacity="0.85"/>
+    </g>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#3B9166" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#317C56" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 70 h11 M97.5 64.5 v11" stroke-width="3.2"/>
+    <path d="M716 84 h12 M722 78 v12" stroke-width="3.4"/>
+    <path d="M748 230 h9 M752.5 225.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M52 250 h9 M56.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF7EE" opacity="0.5">
+    <circle cx="150" cy="120" r="4"/><circle cx="672" cy="130" r="3.4"/><circle cx="58" cy="180" r="3"/><circle cx="744" cy="300" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="426" rx="252" ry="22" fill="#1E5E40" opacity="0.35"/>
+
+  <!-- 钟面 -->
+  <circle cx="400" cy="240" r="170" fill="#F7F3E4" stroke="#3A2A1E" stroke-width="9"/>
+  <circle cx="400" cy="240" r="128" fill="none" stroke="#D9C9A0" stroke-width="4" opacity="0.9"/>
+  <!-- 12 点位刻点 -->
+  <g fill="#3A2A1E">
+    <circle cx="400" cy="98" r="5"/><circle cx="484" cy="119" r="5"/><circle cx="538" cy="176" r="5"/><circle cx="560" cy="240" r="5"/>
+    <circle cx="538" cy="304" r="5"/><circle cx="484" cy="361" r="5"/><circle cx="400" cy="382" r="5"/><circle cx="316" cy="361" r="5"/>
+    <circle cx="262" cy="304" r="5"/><circle cx="240" cy="240" r="5"/><circle cx="262" cy="176" r="5"/><circle cx="316" cy="119" r="5"/>
+  </g>
+
+  <!-- 指针（中央牌后方） -->
+  <path d="M400 240 L318 193" stroke="#2E2A26" stroke-width="12" stroke-linecap="round"/>
+  <path d="M400 240 L513 175" stroke="#2E2A26" stroke-width="9" stroke-linecap="round"/>
+
+  <!-- 12 点位牌堆 -->
+  <g>
+    <use href="#back" transform="translate(400 70)"/>
+    <g transform="translate(485 93) rotate(30)">
+      <rect x="-22" y="-30" width="44" height="60" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="5.5"/>
+      <use href="#pipH" transform="translate(0 -2) scale(1.5)" fill="#C8465C"/>
+    </g>
+    <use href="#back" transform="translate(547 155) rotate(60)"/>
+    <use href="#back" transform="translate(570 240) rotate(90)"/>
+    <use href="#back" transform="translate(547 325) rotate(120)"/>
+    <g transform="translate(484 387) rotate(150)">
+      <rect x="-22" y="-30" width="44" height="60" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="5.5"/>
+      <use href="#pipS" transform="translate(0 -2) scale(1.5)" fill="#2E2A26"/>
+    </g>
+    <use href="#back" transform="translate(400 410) rotate(180)"/>
+    <g transform="translate(316 387) rotate(210)">
+      <rect x="-22" y="-30" width="44" height="60" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="5.5"/>
+      <use href="#pipD" transform="translate(0 -2) scale(1.5)" fill="#C8465C"/>
+    </g>
+    <use href="#back" transform="translate(253 325) rotate(240)"/>
+    <use href="#back" transform="translate(230 240) rotate(270)"/>
+    <use href="#back" transform="translate(253 155) rotate(300)"/>
+    <g transform="translate(315 93) rotate(330)">
+      <rect x="-22" y="-30" width="44" height="60" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="5.5"/>
+      <use href="#pipC" transform="translate(0 -2) scale(1.4)" fill="#2E2A26"/>
+    </g>
+  </g>
+
+  <!-- 中央 K 堆（指针牌，带签名表情） -->
+  <g>
+    <rect x="368" y="204" width="64" height="88" rx="7" fill="#2D9B6A" stroke="#1E5038" stroke-width="6"/>
+    <rect x="376" y="212" width="48" height="72" rx="5" fill="none" stroke="#EAF7EE" stroke-width="3" opacity="0.85"/>
+    <rect x="366" y="198" width="68" height="92" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipH" transform="translate(400 228) scale(2.2)" fill="#C8465C"/>
+    <circle cx="384" cy="254" r="6.5" fill="#1F1A14"/>
+    <circle cx="412" cy="254" r="6.5" fill="#1F1A14"/>
+    <path d="M388 268 Q400 278 412 266" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <circle cx="378" cy="210" r="9" fill="#FFFFFF" opacity="0.45"/>
+    <circle cx="400" cy="240" r="11" fill="#F2C14E" stroke="#3A2A1E" stroke-width="6"/>
+  </g>
+
+  <!-- 左右备用牌堆 -->
+  <g>
+    <rect x="112" y="316" width="56" height="76" rx="7" fill="#2D9B6A" stroke="#1E5038" stroke-width="5.5" transform="rotate(-6 140 354)"/>
+    <rect x="116" y="326" width="56" height="76" rx="7" fill="#2D9B6A" stroke="#1E5038" stroke-width="5.5" transform="rotate(-3 144 364)"/>
+    <rect x="120" y="336" width="56" height="76" rx="7" fill="#2D9B6A" stroke="#1E5038" stroke-width="5.5" transform="rotate(2 148 374)"/>
+    <rect x="634" y="300" width="56" height="76" rx="7" fill="#2D9B6A" stroke="#1E5038" stroke-width="5.5" transform="rotate(7 662 338)"/>
+    <rect x="630" y="310" width="56" height="76" rx="7" fill="#2D9B6A" stroke="#1E5038" stroke-width="5.5" transform="rotate(3 658 348)"/>
+    <rect x="626" y="320" width="56" height="76" rx="7" fill="#2D9B6A" stroke="#1E5038" stroke-width="5.5" transform="rotate(-2 654 358)"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

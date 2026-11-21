@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E7F1E6"/>
+      <stop offset="0.55" stop-color="#CFE5D4"/>
+      <stop offset="1" stop-color="#B7D8C5"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E6B4E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#9FC7AE" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#8BB39B" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M90 100 h11 M95.5 94.5 v11" stroke-width="3.2"/>
+    <path d="M714 88 h12 M720 82 v12" stroke-width="3.4"/>
+    <path d="M744 300 h9 M748.5 295.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M58 260 h9 M62.5 255.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6EE" opacity="0.55">
+    <circle cx="150" cy="180" r="4"/><circle cx="748" cy="200" r="3.4"/><circle cx="66" cy="200" r="3"/><circle cx="700" cy="150" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="410" rx="290" ry="18" fill="#5E9478" opacity="0.35"/>
+
+  <!-- 四张乱序诗签（主视觉） -->
+  <g stroke-linejoin="round">
+    <!-- 签一 -->
+    <g transform="rotate(-10 165 250)">
+      <rect x="115" y="135" width="100" height="230" rx="14" fill="#FBF7E8" stroke="#3A2A1E" stroke-width="8"/>
+      <circle cx="165" cy="180" r="22" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="5"/>
+      <circle cx="165" cy="180" r="6" fill="#FFFFFF"/>
+      <path d="M138 232 H192 M138 254 H180 M138 276 H192 M138 298 H168" stroke="#B9CDBC" stroke-width="8" stroke-linecap="round" fill="none"/>
+    </g>
+    <!-- 签三 -->
+    <g transform="rotate(-4 520 250)">
+      <rect x="470" y="135" width="100" height="230" rx="14" fill="#F6EFDB" stroke="#3A2A1E" stroke-width="8"/>
+      <circle cx="520" cy="180" r="22" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="5"/>
+      <circle cx="512" cy="174" r="5.5" fill="#FFFFFF"/>
+      <circle cx="528" cy="174" r="5.5" fill="#FFFFFF"/>
+      <circle cx="520" cy="188" r="5.5" fill="#FFFFFF"/>
+      <path d="M494 232 H548 M494 254 H536 M494 276 H548" stroke="#B9CDBC" stroke-width="8" stroke-linecap="round" fill="none"/>
+    </g>
+    <!-- 签四 -->
+    <g transform="rotate(9 685 245)">
+      <rect x="635" y="130" width="100" height="230" rx="14" fill="#EFF2E2" stroke="#3A2A1E" stroke-width="8"/>
+      <circle cx="685" cy="176" r="22" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="5"/>
+      <circle cx="678" cy="170" r="5.5" fill="#FFFFFF"/>
+      <circle cx="692" cy="170" r="5.5" fill="#FFFFFF"/>
+      <circle cx="678" cy="184" r="5.5" fill="#FFFFFF"/>
+      <circle cx="692" cy="184" r="5.5" fill="#FFFFFF"/>
+      <path d="M658 228 H712 M658 250 H700 M658 272 H712" stroke="#B9CDBC" stroke-width="8" stroke-linecap="round" fill="none"/>
+    </g>
+    <!-- 签二（最前，签名表情） -->
+    <g transform="rotate(6 340 240)">
+      <rect x="290" y="120" width="100" height="230" rx="14" fill="#F6F3E8" stroke="#3A2A1E" stroke-width="9"/>
+      <circle cx="340" cy="166" r="22" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="5"/>
+      <circle cx="333" cy="160" r="5.5" fill="#FFFFFF"/>
+      <circle cx="347" cy="160" r="5.5" fill="#FFFFFF"/>
+      <circle cx="322" cy="206" r="9" fill="#1F1A14"/>
+      <circle cx="358" cy="206" r="9" fill="#1F1A14"/>
+      <path d="M328 230 Q340 242 352 229" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+      <path d="M312 262 H368 M312 284 H352 M312 306 H368" stroke="#B9CDBC" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <circle cx="312" cy="140" r="9" fill="#FFFFFF" opacity="0.45"/>
+    </g>
+  </g>
+
+  <!-- 归序引导虚线 -->
+  <path d="M170 372 L340 356 L520 372 L690 366" stroke="#17734A" stroke-width="5" stroke-linecap="round" stroke-dasharray="10 12" fill="none" opacity="0.7"/>
+  <path d="M236 92 h11 M241.5 86.5 v11" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <path d="M448 84 h11 M453.5 78.5 v11" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none" opacity="0.6"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

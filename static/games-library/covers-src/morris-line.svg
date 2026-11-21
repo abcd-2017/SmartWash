@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#93C9AC"/>
+      <stop offset="0.55" stop-color="#6EB28C"/>
+      <stop offset="1" stop-color="#549B73"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1B4A34" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#4A8C66" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#3E7A56" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 70 h11 M101.5 64.5 v11" stroke-width="3.2"/>
+    <path d="M704 66 h12 M710 60 v12" stroke-width="3.4"/>
+    <path d="M58 190 h9 M62.5 185.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M742 200 h9 M746.5 195.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF7EE" opacity="0.5">
+    <circle cx="160" cy="120" r="4"/><circle cx="640" cy="110" r="3.4"/><circle cx="50" cy="260" r="3"/><circle cx="748" cy="280" r="2.6"/>
+  </g>
+
+  <ellipse cx="420" cy="430" rx="270" ry="16" fill="#1B4A34" opacity="0.35"/>
+
+  <!-- 直棋盘：三同心方 + 中点连线 -->
+  <g stroke="#3A2A1E" stroke-width="7" fill="none" stroke-linejoin="round">
+    <rect x="230" y="82" width="340" height="340"/>
+    <rect x="280" y="132" width="240" height="240"/>
+    <rect x="330" y="182" width="140" height="140"/>
+    <path d="M400 82 V132 M570 252 H520 M400 422 V372 M230 252 H280"/>
+  </g>
+
+  <!-- 空点位 -->
+  <g fill="#3A2A1E" opacity="0.75">
+    <circle cx="230" cy="252" r="5.5"/><circle cx="570" cy="252" r="5.5"/>
+    <circle cx="230" cy="422" r="5.5"/><circle cx="570" cy="422" r="5.5"/><circle cx="400" cy="422" r="5.5"/>
+    <circle cx="400" cy="132" r="5.5"/><circle cx="280" cy="252" r="5.5"/><circle cx="520" cy="252" r="5.5"/>
+    <circle cx="280" cy="372" r="5.5"/><circle cx="520" cy="132" r="5.5"/>
+    <circle cx="470" cy="182" r="5.5"/><circle cx="470" cy="322" r="5.5"/><circle cx="330" cy="322" r="5.5"/>
+  </g>
+
+  <!-- 成三金线（发光） -->
+  <path d="M230 82 H570" stroke="#F2FBF4" stroke-width="22" stroke-linecap="round" opacity="0.35"/>
+  <path d="M230 82 H570" stroke="#F2C14E" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- 成三的三枚黑子（中点带表情） -->
+  <g fill="#2E2A26" stroke="#1F1A14" stroke-width="5">
+    <circle cx="230" cy="82" r="27"/>
+    <circle cx="400" cy="82" r="30"/>
+    <circle cx="570" cy="82" r="27"/>
+  </g>
+  <circle cx="390" cy="70" r="7" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="390" cy="86" r="6" fill="#F2C14E"/>
+  <circle cx="410" cy="86" r="6" fill="#F2C14E"/>
+  <path d="M394 96 Q400 102 406 95" stroke="#F2C14E" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 盘上其他棋子 -->
+  <circle cx="400" cy="372" r="24" fill="#2E2A26" stroke="#1F1A14" stroke-width="5"/>
+  <circle cx="392" cy="364" r="7" fill="#FFFFFF" opacity="0.35"/>
+  <circle cx="330" cy="182" r="24" fill="#2E2A26" stroke="#1F1A14" stroke-width="5"/>
+  <circle cx="322" cy="174" r="7" fill="#FFFFFF" opacity="0.35"/>
+  <circle cx="280" cy="132" r="24" fill="#F6F3EA" stroke="#3A2A1E" stroke-width="6"/>
+  <circle cx="271" cy="124" r="7" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="520" cy="372" r="24" fill="#F6F3EA" stroke="#3A2A1E" stroke-width="6"/>
+  <circle cx="511" cy="364" r="7" fill="#FFFFFF" opacity="0.6"/>
+
+  <!-- 被提掉的白子（晕头转向） -->
+  <g>
+    <circle cx="652" cy="330" r="26" fill="#F6F3EA" stroke="#3A2A1E" stroke-width="6"/>
+    <circle cx="642" cy="322" r="7" fill="#FFFFFF" opacity="0.6"/>
+    <g stroke="#F2FBF4" stroke-width="4.5" stroke-linecap="round" opacity="0.85">
+      <path d="M686 300 L698 290"/>
+      <path d="M694 320 L708 314"/>
+      <path d="M678 284 L686 272"/>
+    </g>
+    <path d="M560 300 Q614 288 640 314" stroke="#F2FBF4" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="3 9" fill="none" opacity="0.8"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

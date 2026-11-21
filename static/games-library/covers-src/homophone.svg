@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E2EFE7"/>
+      <stop offset="0.55" stop-color="#C4E0D1"/>
+      <stop offset="1" stop-color="#AAD4BF"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E6B4E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#94C0A8" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#80AC95" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M86 86 h11 M91.5 80.5 v11" stroke-width="3.2"/>
+    <path d="M706 82 h12 M712 76 v12" stroke-width="3.4"/>
+    <path d="M748 270 h9 M752.5 265.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M54 260 h9 M58.5 255.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6EE" opacity="0.55">
+    <circle cx="130" cy="140" r="4"/><circle cx="750" cy="150" r="3.4"/><circle cx="64" cy="200" r="3"/><circle cx="106" cy="330" r="2.6"/>
+  </g>
+
+  <!-- 分叉路（路缘 + 路面 + 虚线） -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M400 392 V334 C392 292 320 274 240 258" stroke="#7FAE92" stroke-width="58"/>
+    <path d="M400 392 V334 C408 292 480 274 560 258" stroke="#7FAE92" stroke-width="58"/>
+    <path d="M400 392 V334 C392 292 320 274 240 258" stroke="#CFE8D8" stroke-width="46"/>
+    <path d="M400 392 V334 C408 292 480 274 560 258" stroke="#CFE8D8" stroke-width="46"/>
+    <path d="M400 384 V348" stroke="#FFFFFF" stroke-width="6" stroke-dasharray="12 12" opacity="0.6"/>
+    <path d="M398 336 Q360 306 292 284" stroke="#FFFFFF" stroke-width="6" stroke-dasharray="12 12" opacity="0.6"/>
+    <path d="M402 336 Q440 306 508 284" stroke="#FFFFFF" stroke-width="6" stroke-dasharray="12 12" opacity="0.6"/>
+  </g>
+
+  <!-- 路口路牌（签名表情） -->
+  <g stroke-linejoin="round">
+    <path d="M400 316 V232" stroke="#3A2A1E" stroke-width="18" stroke-linecap="round" fill="none"/>
+    <path d="M400 316 V232" stroke="#8A5A30" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <rect x="340" y="196" width="120" height="56" rx="12" fill="#E9C87E" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="372" cy="218" r="8" fill="#1F1A14"/>
+    <circle cx="428" cy="218" r="8" fill="#1F1A14"/>
+    <path d="M378 236 Q400 248 422 235" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="362" cy="210" r="7" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <!-- 右路正确卡（对勾，微光） -->
+  <ellipse cx="600" cy="200" rx="120" ry="110" fill="#FFFFFF" opacity="0.25"/>
+  <g stroke-linejoin="round">
+    <g transform="rotate(8 600 190)">
+      <rect x="535" y="115" width="130" height="150" rx="16" fill="#EAF6EC" stroke="#3A2A1E" stroke-width="8"/>
+      <path d="M556 146 H644 M556 172 H620 M556 198 H644" stroke="#8A9A8C" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <circle cx="556" cy="132" r="8" fill="#FFFFFF" opacity="0.5"/>
+    </g>
+    <circle cx="600" cy="288" r="27" fill="#2D9B6A" stroke="#17734A" stroke-width="7"/>
+    <path d="M586 288 l10 10 l20 -22" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  <path d="M668 138 h11 M673.5 132.5 v11" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none" opacity="0.8"/>
+
+  <!-- 左路错误卡（红叉） -->
+  <g stroke-linejoin="round">
+    <g transform="rotate(-8 200 190)">
+      <rect x="135" y="115" width="130" height="150" rx="16" fill="#FBF7E8" stroke="#3A2A1E" stroke-width="8"/>
+      <path d="M156 146 H244 M156 172 H208 M156 198 H244" stroke="#B9CDBC" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <circle cx="156" cy="132" r="8" fill="#FFFFFF" opacity="0.4"/>
+    </g>
+    <circle cx="200" cy="288" r="27" fill="#F8D8D0" stroke="#C9453C" stroke-width="7"/>
+    <path d="M188 276 L212 300 M212 276 L188 300" stroke="#C9453C" stroke-width="9" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

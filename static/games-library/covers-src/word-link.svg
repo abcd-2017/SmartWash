@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E2F1E8"/>
+      <stop offset="0.55" stop-color="#CBE6D6"/>
+      <stop offset="1" stop-color="#B4D8C4"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E6B4E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#9EC6AB" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#8AB298" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M100 88 h11 M105.5 82.5 v11" stroke-width="3.2"/>
+    <path d="M706 78 h12 M712 72 v12" stroke-width="3.4"/>
+    <path d="M736 296 h9 M740.5 291.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M60 210 h9 M64.5 205.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6EE" opacity="0.55">
+    <circle cx="152" cy="150" r="4"/><circle cx="676" cy="130" r="3.4"/><circle cx="76" cy="300" r="3"/><circle cx="748" cy="220" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="440" cy="408" rx="278" ry="20" fill="#5E9478" opacity="0.35"/>
+
+  <!-- 连词链：五块字块首尾相接（主视觉） -->
+  <g stroke-linejoin="round">
+    <!-- 衔接环 -->
+    <g fill="#E9C87E" stroke="#3A2A1E" stroke-width="6">
+      <circle cx="232" cy="240" r="17"/>
+      <circle cx="372" cy="240" r="17"/>
+      <circle cx="512" cy="240" r="17"/>
+      <circle cx="649" cy="240" r="17"/>
+    </g>
+    <!-- 字块 -->
+    <rect x="102" y="196" width="118" height="118" rx="20" fill="#F6F3E8" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="242" y="156" width="118" height="118" rx="20" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="382" y="196" width="118" height="118" rx="20" fill="#F2B34C" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="522" y="156" width="118" height="118" rx="20" fill="#3FAE7A" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="658" y="196" width="118" height="118" rx="20" fill="#E88B5A" stroke="#3A2A1E" stroke-width="9"/>
+    <!-- 抽象字形刻痕 -->
+    <g stroke-width="7" stroke-linecap="round" fill="none">
+      <path d="M132 236 H188 M132 258 H170" stroke="#8A9A8C"/>
+      <path d="M270 190 H330 M300 190 V238" stroke="#FFFFFF"/>
+      <path d="M412 236 H468 M412 258 H444" stroke="#3A2A1E" opacity="0.75"/>
+      <path d="M552 190 H608 M552 212 H608 M572 234 H594" stroke="#FFFFFF"/>
+      <path d="M688 236 H744 M700 258 H736" stroke="#3A2A1E" opacity="0.75"/>
+    </g>
+    <!-- 签名表情（链头字块） -->
+    <circle cx="136" cy="234" r="9" fill="#1F1A14"/>
+    <circle cx="184" cy="234" r="9" fill="#1F1A14"/>
+    <path d="M142 260 Q160 274 178 259" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+    <circle cx="126" cy="220" r="9" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+  <!-- 尾块待接环 -->
+  <path d="M786 240 q22 0 22 22 q0 22 -22 22" stroke="#3A2A1E" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <!-- 衔接虚线引导 -->
+  <path d="M226 128 Q440 84 654 124" stroke="#17734A" stroke-width="5" stroke-linecap="round" stroke-dasharray="10 12" fill="none" opacity="0.6"/>
+  <!-- 头块上的小星尘 -->
+  <path d="M120 148 h10 M125 143 v10" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6FBF8E"/>
+      <stop offset="0.55" stop-color="#4FAB74"/>
+      <stop offset="1" stop-color="#3A945F"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1C5A36" stop-opacity="0.3"/>
+    </radialGradient>
+    <path id="pipH" d="M0 3 C -1.5 -1 -6 -1 -6 2.5 C -6 5.5 -2 7.5 0 9.5 C 2 7.5 6 5.5 6 2.5 C 6 -1 1.5 -1 0 3 Z"/>
+    <path id="pipD" d="M0 -7 L6 0 L0 7 L-6 0 Z"/>
+    <path id="pipS" d="M0 -9 C 2 -5 6.5 -3.5 6.5 0.5 C 6.5 3.5 2.5 4.8 0.8 3 L 2.4 9 L -2.4 9 L -0.8 3 C -2.5 4.8 -6.5 3.5 -6.5 0.5 C -6.5 -3.5 -2 -5 0 -9 Z"/>
+    <g id="pipC">
+      <circle cx="0" cy="-4.2" r="3.8"/>
+      <circle cx="-3.8" cy="1.8" r="3.8"/>
+      <circle cx="3.8" cy="1.8" r="3.8"/>
+      <path d="M-1.8 3.2 L1.8 3.2 L1 9.4 L-1 9.4 Z"/>
+    </g>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#2E7A4A" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#25653C" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M70 84 h11 M75.5 78.5 v11" stroke-width="3.2"/>
+    <path d="M714 70 h12 M720 64 v12" stroke-width="3.4"/>
+    <path d="M742 210 h9 M746.5 205.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M50 254 h9 M54.5 249.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF7EE" opacity="0.5">
+    <circle cx="150" cy="136" r="4"/><circle cx="682" cy="146" r="3.4"/><circle cx="44" cy="184" r="3"/><circle cx="754" cy="292" r="2.6"/>
+  </g>
+
+  <ellipse cx="403" cy="420" rx="292" ry="24" fill="#1C5A36" opacity="0.35"/>
+
+  <!-- 顶部四自由格（空槽虚线） -->
+  <g>
+    <rect x="108" y="88" width="66" height="90" rx="9" fill="#FFFFFF" opacity="0.16"/>
+    <rect x="111" y="91" width="60" height="84" rx="8" fill="none" stroke="#F2FBF4" stroke-width="3.5" stroke-dasharray="9 8" opacity="0.85"/>
+    <rect x="182" y="88" width="66" height="90" rx="9" fill="#FFFFFF" opacity="0.16"/>
+    <rect x="185" y="91" width="60" height="84" rx="8" fill="none" stroke="#F2FBF4" stroke-width="3.5" stroke-dasharray="9 8" opacity="0.85"/>
+    <rect x="256" y="88" width="66" height="90" rx="9" fill="#FFFFFF" opacity="0.16"/>
+    <rect x="259" y="91" width="60" height="84" rx="8" fill="none" stroke="#F2FBF4" stroke-width="3.5" stroke-dasharray="9 8" opacity="0.85"/>
+    <rect x="330" y="88" width="66" height="90" rx="9" fill="#FFFFFF" opacity="0.16"/>
+    <rect x="333" y="91" width="60" height="84" rx="8" fill="none" stroke="#F2FBF4" stroke-width="3.5" stroke-dasharray="9 8" opacity="0.85"/>
+  </g>
+
+  <!-- 顶部四归位区（A 牌） -->
+  <g>
+    <rect x="406" y="91" width="62" height="86" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipS" transform="translate(437 138) scale(2.1)" fill="#2E2A26"/>
+    <rect x="480" y="91" width="62" height="86" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipH" transform="translate(511 134) scale(2.1)" fill="#C8465C"/>
+    <rect x="554" y="91" width="62" height="86" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipD" transform="translate(585 138) scale(2.1)" fill="#C8465C"/>
+    <rect x="628" y="91" width="62" height="86" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipC" transform="translate(659 138) scale(1.9)" fill="#2E2A26"/>
+  </g>
+
+  <!-- 八列阶梯牌（自上而下叠放，下层压上层） -->
+  <g>
+    <!-- 第 1 列 -->
+    <rect x="98" y="214" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipH" transform="translate(118 238) scale(1.4)" fill="#C8465C"/>
+    <rect x="98" y="244" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipS" transform="translate(118 268) scale(1.4)" fill="#2E2A26"/>
+    <rect x="98" y="274" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipD" transform="translate(118 298) scale(1.4)" fill="#C8465C"/>
+    <rect x="98" y="304" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipC" transform="translate(118 326) scale(1.3)" fill="#2E2A26"/>
+    <!-- 第 2 列 -->
+    <rect x="186" y="214" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipD" transform="translate(206 238) scale(1.4)" fill="#C8465C"/>
+    <rect x="186" y="244" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipH" transform="translate(206 268) scale(1.4)" fill="#C8465C"/>
+    <rect x="186" y="274" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipS" transform="translate(206 298) scale(1.4)" fill="#2E2A26"/>
+    <!-- 第 3 列（底牌带表情） -->
+    <rect x="274" y="214" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipC" transform="translate(294 238) scale(1.4)" fill="#2E2A26"/>
+    <rect x="274" y="244" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipD" transform="translate(294 268) scale(1.4)" fill="#C8465C"/>
+    <rect x="274" y="274" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipH" transform="translate(294 298) scale(1.4)" fill="#C8465C"/>
+    <rect x="274" y="304" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="8"/>
+    <use href="#pipH" transform="translate(314 340) scale(2.6)" fill="#C8465C"/>
+    <circle cx="296" cy="368" r="6.5" fill="#1F1A14"/>
+    <circle cx="322" cy="368" r="6.5" fill="#1F1A14"/>
+    <path d="M298 380 Q310 390 320 378" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <circle cx="288" cy="316" r="9" fill="#FFFFFF" opacity="0.45"/>
+    <!-- 第 4 列 -->
+    <rect x="362" y="214" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipS" transform="translate(382 238) scale(1.4)" fill="#2E2A26"/>
+    <rect x="362" y="244" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipC" transform="translate(382 268) scale(1.4)" fill="#2E2A26"/>
+    <!-- 第 5 列 -->
+    <rect x="450" y="214" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipH" transform="translate(470 238) scale(1.4)" fill="#C8465C"/>
+    <rect x="450" y="244" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipD" transform="translate(470 268) scale(1.4)" fill="#C8465C"/>
+    <rect x="450" y="274" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipS" transform="translate(470 298) scale(1.4)" fill="#2E2A26"/>
+    <!-- 第 6 列 -->
+    <rect x="538" y="214" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipS" transform="translate(558 238) scale(1.4)" fill="#2E2A26"/>
+    <rect x="538" y="244" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipC" transform="translate(558 268) scale(1.4)" fill="#2E2A26"/>
+    <rect x="538" y="274" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipH" transform="translate(558 298) scale(1.4)" fill="#C8465C"/>
+    <rect x="538" y="304" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipD" transform="translate(558 326) scale(1.3)" fill="#C8465C"/>
+    <!-- 第 7 列 -->
+    <rect x="626" y="214" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipD" transform="translate(646 238) scale(1.4)" fill="#C8465C"/>
+    <rect x="626" y="244" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipS" transform="translate(646 268) scale(1.4)" fill="#2E2A26"/>
+    <rect x="626" y="274" width="80" height="110" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipH" transform="translate(646 298) scale(1.4)" fill="#C8465C"/>
+  </g>
+
+  <!-- 飞向自由格的背面牌 + 速度线 -->
+  <g transform="translate(296 192) rotate(-10)">
+    <rect x="-39" y="-53" width="78" height="106" rx="8" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="-27" y="-41" width="54" height="82" rx="6" fill="none" stroke="#EAF7EE" stroke-width="3.5" opacity="0.85"/>
+    <use href="#pipD" transform="translate(0 0) scale(1.6)" fill="#EAF7EE" opacity="0.9"/>
+  </g>
+  <g stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.65">
+    <path d="M354 176 L390 172"/>
+    <path d="M352 196 L384 194"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

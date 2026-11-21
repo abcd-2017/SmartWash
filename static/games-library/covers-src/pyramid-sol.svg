@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#67B183"/>
+      <stop offset="0.55" stop-color="#4AA367"/>
+      <stop offset="1" stop-color="#338A52"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1B5A34" stop-opacity="0.3"/>
+    </radialGradient>
+    <path id="pipH" d="M0 3 C -1.5 -1 -6 -1 -6 2.5 C -6 5.5 -2 7.5 0 9.5 C 2 7.5 6 5.5 6 2.5 C 6 -1 1.5 -1 0 3 Z"/>
+    <path id="pipD" d="M0 -7 L6 0 L0 7 L-6 0 Z"/>
+    <path id="pipS" d="M0 -9 C 2 -5 6.5 -3.5 6.5 0.5 C 6.5 3.5 2.5 4.8 0.8 3 L 2.4 9 L -2.4 9 L -0.8 3 C -2.5 4.8 -6.5 3.5 -6.5 0.5 C -6.5 -3.5 -2 -5 0 -9 Z"/>
+    <g id="pipC">
+      <circle cx="0" cy="-4.2" r="3.8"/>
+      <circle cx="-3.8" cy="1.8" r="3.8"/>
+      <circle cx="3.8" cy="1.8" r="3.8"/>
+      <path d="M-1.8 3.2 L1.8 3.2 L1 9.4 L-1 9.4 Z"/>
+    </g>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#297444" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#215F38" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 76 h11 M101.5 70.5 v11" stroke-width="3.2"/>
+    <path d="M706 66 h12 M712 60 v12" stroke-width="3.4"/>
+    <path d="M744 200 h9 M748.5 195.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M56 240 h9 M60.5 235.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF7EE" opacity="0.5">
+    <circle cx="170" cy="120" r="4"/><circle cx="660" cy="90" r="3.4"/><circle cx="60" cy="180" r="3"/><circle cx="740" cy="280" r="2.6"/>
+  </g>
+
+  <ellipse cx="415" cy="428" rx="250" ry="20" fill="#1B5A34" opacity="0.35"/>
+
+  <!-- 金字塔牌堆（自底向上叠放，上层压下层） -->
+  <g>
+    <!-- 第四行 -->
+    <rect x="250" y="340" width="72" height="98" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipD" transform="translate(270 364) scale(1.3)" fill="#C8465C"/>
+    <rect x="326" y="340" width="72" height="98" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipS" transform="translate(346 364) scale(1.3)" fill="#2E2A26"/>
+    <rect x="402" y="340" width="72" height="98" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipH" transform="translate(422 364) scale(1.3)" fill="#C8465C"/>
+    <rect x="478" y="340" width="72" height="98" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipC" transform="translate(498 364) scale(1.2)" fill="#2E2A26"/>
+    <!-- 第三行 -->
+    <rect x="288" y="266" width="72" height="98" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipH" transform="translate(308 290) scale(1.3)" fill="#C8465C"/>
+    <rect x="364" y="266" width="72" height="98" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipC" transform="translate(384 290) scale(1.3)" fill="#2E2A26"/>
+    <rect x="440" y="266" width="72" height="98" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipD" transform="translate(460 290) scale(1.3)" fill="#C8465C"/>
+    <!-- 第二行 -->
+    <rect x="326" y="192" width="72" height="98" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipS" transform="translate(346 216) scale(1.3)" fill="#2E2A26"/>
+    <rect x="402" y="192" width="72" height="98" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <use href="#pipD" transform="translate(422 216) scale(1.3)" fill="#C8465C"/>
+    <!-- 顶牌 K（王冠 + 签名表情） -->
+    <rect x="364" y="118" width="72" height="98" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M384 148 L384 132 L394 142 L400 128 L406 142 L416 132 L416 148 Z" fill="#F2C14E" stroke="#3A2A1E" stroke-width="4.5" stroke-linejoin="round"/>
+    <circle cx="386" cy="164" r="6.5" fill="#1F1A14"/>
+    <circle cx="414" cy="164" r="6.5" fill="#1F1A14"/>
+    <path d="M390 178 Q400 188 410 176" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <circle cx="376" cy="128" r="9" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <!-- 成对卸下的两张牌（9+4=13） -->
+  <g>
+    <g transform="translate(614 108) rotate(-14)">
+      <rect x="-30" y="-41" width="60" height="82" rx="7" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+      <g fill="#C8465C">
+        <circle cx="-12" cy="-22" r="3"/><circle cx="0" cy="-22" r="3"/><circle cx="12" cy="-22" r="3"/>
+        <circle cx="-12" cy="-8" r="3"/><circle cx="0" cy="-8" r="3"/><circle cx="12" cy="-8" r="3"/>
+        <circle cx="-12" cy="6" r="3"/><circle cx="0" cy="6" r="3"/><circle cx="12" cy="6" r="3"/>
+      </g>
+    </g>
+    <g transform="translate(682 148) rotate(12)">
+      <rect x="-30" y="-41" width="60" height="82" rx="7" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+      <g fill="#2E2A26">
+        <circle cx="-12" cy="-22" r="3.4"/><circle cx="12" cy="-22" r="3.4"/>
+        <circle cx="-12" cy="-4" r="3.4"/><circle cx="12" cy="-4" r="3.4"/>
+        <circle cx="-12" cy="14" r="3.4"/><circle cx="12" cy="14" r="3.4"/>
+      </g>
+    </g>
+    <path d="M520 150 Q560 118 596 118" stroke="#F2FBF4" stroke-width="5" stroke-linecap="round" stroke-dasharray="3 10" fill="none" opacity="0.85"/>
+  </g>
+
+  <!-- 「13」点数骰块 -->
+  <g>
+    <rect x="606" y="252" width="96" height="96" rx="18" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="620" cy="266" r="8" fill="#FFFFFF" opacity="0.5"/>
+    <path d="M640 288 L650 278 L650 320" stroke="#2E2A26" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M668 282 Q686 276 687 292 Q687 302 678 304 Q690 306 689 320 Q688 332 668 326" stroke="#2E2A26" stroke-width="8" stroke-linecap="round" fill="none"/>
+  </g>
+  <!-- 卸牌轨迹虚线 -->
+  <path d="M560 240 Q590 236 604 262" stroke="#F2FBF4" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="3 9" fill="none" opacity="0.8"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

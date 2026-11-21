@@ -398,3 +398,14 @@
   而数据为「成品病句」模型，40 关全被判异常致游戏不可玩（jsdom 无头验证未暴露）；修验证器为病句
   模型（错字按出现次序定位），删除内容不当条目（偷偷地→悄悄地 非错、叠字型错误改写文本消歧：
   美孜孜/博博 直接以正字入文），README 验证口径同步；浏览器实测 40/40 关加载、纠错交互正常。
+
+- **2026-11-21（封面补齐 52 张 · 第三批全库 227 款全覆盖）**：
+  扩展总表第三批 52 款（文字 27 + 棋牌 25）按 GAME-COVER.md 方案 A 全部绘制落位，
+  游戏库 227 款封面零缺失。管线与第二批一致（SVG → Chrome headless 渲染 → PS 2026 COM
+  Unsharp 60%/0.6px/阈值2 → 索引层颗粒量化 → 单处落位），全部 800×450、≤120KB。
+  word 类封面执行「封面无文案」替代方案：汉字内容用米字格/笔画线条/拼音横线/字形刻痕等
+  几何语言示意（glyph-pair 的甲骨→金文→今字三段演变牌、word-grid 十字盘等），不写真实文字。
+  造型防撞：word-grid 区别于 crossword/idiom、proverb-fill 区别于 poem-fill、word-hunt 区别于
+  word-search、baccarat 不画荷官人物区别于 blackjack、freecell 区别于 solitaire/spider。
+  逐批目检 6 张（pinyin-tone / char-rain / glyph-pair / freecell / dudo-bluff / snake-ladder）
+  家族要素全部到位。SVG 源归档 covers-src/（累计 227 份）。

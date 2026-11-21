@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C7E7D6"/>
+      <stop offset="0.55" stop-color="#9CCFB6"/>
+      <stop offset="1" stop-color="#7CB89C"/>
+    </linearGradient>
+    <radialGradient id="bub" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.25"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E3A2E" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#68A386" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#568F74" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 84 h11 M101.5 78.5 v11" stroke-width="3.2"/>
+    <path d="M714 76 h12 M720 70 v12" stroke-width="3.4"/>
+    <path d="M752 250 h9 M756.5 245.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M64 290 h9 M68.5 285.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6EE" opacity="0.55">
+    <circle cx="150" cy="140" r="4"/><circle cx="756" cy="170" r="3.4"/><circle cx="70" cy="200" r="3"/><circle cx="90" cy="340" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="440" cy="404" rx="268" ry="22" fill="#3E6B55" opacity="0.35"/>
+
+  <!-- 目标词卡 -->
+  <g stroke-linejoin="round">
+    <rect x="230" y="326" width="320" height="86" rx="16" fill="#FBF7E8" stroke="#1F3A30" stroke-width="8"/>
+    <rect x="252" y="342" width="56" height="56" rx="12" fill="#2D9B6A" stroke="#1F3A30" stroke-width="6"/>
+    <rect x="318" y="342" width="56" height="56" rx="12" fill="#3FAE7A" stroke="#1F3A30" stroke-width="6"/>
+    <rect x="384" y="342" width="56" height="56" rx="12" fill="#F2B34C" stroke="#1F3A30" stroke-width="6"/>
+    <rect x="450" y="342" width="56" height="56" rx="12" fill="#FFFFFF" stroke="#17734A" stroke-width="5" stroke-dasharray="9 7"/>
+    <g stroke-width="5" stroke-linecap="round" fill="none">
+      <path d="M266 362 H294 M266 380 H280" stroke="#FFFFFF"/>
+      <path d="M332 362 H360 M346 362 V380" stroke="#FFFFFF"/>
+      <path d="M398 364 H426 M398 382 H416" stroke="#1F3A30" opacity="0.72"/>
+    </g>
+    <circle cx="252" cy="340" r="8" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <!-- 词泡泡群（主视觉，签名表情在主泡） -->
+  <g stroke-linejoin="round">
+    <circle cx="250" cy="240" r="30" fill="#F2B34C" opacity="0.92" stroke="#1F3A30" stroke-width="7"/>
+    <path d="M234 240 H266" stroke="#1F3A30" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.72"/>
+    <circle cx="300" cy="140" r="44" fill="#CBEADD" stroke="#1F3A30" stroke-width="8"/>
+    <path d="M282 132 H318 M282 152 H300" stroke="#17734A" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <circle cx="600" cy="120" r="36" fill="#DFF3E8" stroke="#1F3A30" stroke-width="8"/>
+    <path d="M586 112 H614 M586 130 H604" stroke="#17734A" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <circle cx="620" cy="240" r="26" fill="#CBEADD" stroke="#1F3A30" stroke-width="7"/>
+    <circle cx="690" cy="180" r="20" fill="#DFF3E8" stroke="#1F3A30" stroke-width="7"/>
+    <!-- 主泡泡（签名表情） -->
+    <circle cx="430" cy="180" r="66" fill="url(#bub)" stroke="#1F3A30" stroke-width="9"/>
+    <circle cx="408" cy="166" r="10" fill="#1F3A30"/>
+    <circle cx="452" cy="166" r="10" fill="#1F3A30"/>
+    <path d="M414 196 Q431 212 446 195" stroke="#1F3A30" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M392 142 Q406 128 428 124" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+
+  <!-- 爆开的泡泡 -->
+  <path d="M376 60 L348.5 67.7 L362.5 92.5 L337.7 78.5 L330 106 L322.3 78.5 L297.5 92.5 L311.5 67.7 L284 60 L311.5 52.3 L297.5 27.5 L322.3 41.5 L330 14 L337.7 41.5 L362.5 27.5 L348.5 52.3 Z"
+        fill="#FFFFFF" opacity="0.85" stroke="#1F3A30" stroke-width="7" stroke-linejoin="round"/>
+  <g fill="#FFFFFF" opacity="0.8" stroke="#1F3A30" stroke-width="4">
+    <circle cx="392" cy="38" r="8"/>
+    <circle cx="272" cy="92" r="7"/>
+    <circle cx="366" cy="118" r="6"/>
+  </g>
+  <path d="M470 62 h11 M475.5 56.5 v11" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none" opacity="0.75"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>
