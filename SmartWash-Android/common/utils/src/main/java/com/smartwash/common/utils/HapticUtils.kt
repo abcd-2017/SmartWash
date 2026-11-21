@@ -49,7 +49,8 @@ fun View.performHaptic(effect: HapticEffect) {
     // 全局开关关闭时静默返回（设置页「触感反馈」= 关）
     if (!HapticSettings.enabled) return
     when (effect) {
-        HapticEffect.LIGHT -> performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+        // LIGHT 与 SELECTION 需有区分度（评审报告 Android #33）：轻点用 CONTEXT_CLICK，选中态保留 CLOCK_TICK
+        HapticEffect.LIGHT -> performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
         HapticEffect.MEDIUM -> performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
         HapticEffect.HEAVY -> performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         HapticEffect.SUCCESS -> performHapticFeedback(HapticFeedbackConstants.CONFIRM)
