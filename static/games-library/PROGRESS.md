@@ -373,3 +373,28 @@
   遗留建议（记录未动手）：hoop-shot 键盘瞄准无弹道预览；paper-fold-cut 深色洞/纸对比可在
   §3 登记深色变体时调整；3 处无害冗余代码。浏览器抽查 3 款修复款（map-fold 按钮功能 /
   water-dig 可玩 / gear-mesh 深色对比）全部通过。
+
+- **2026-11-21（新游戏·自研入库·扩展总表第三批）52 款（游戏库 175 → 227 款，文字+棋牌）**：
+  净室自研（零外链、零素材、canvas/DOM 自绘），出生即按 §6 规范并登记 audit-gates STRICT。
+  批次范围 = 总目录 #105-156（C 组文字 27 款 + D 组前 25 款棋牌）；freecell 经核实与存量
+  solitaire（实为 Klondike）规则实质不同，无撞车。主题运行时块与 block-drop 逐字节一致，
+  GB 桥适配层沿 river-cross 标准形态。批次清单（52 款，按 category 分组）：
+  - word（27）：pinyin-tone radical-hunt stroke-fill word-link antonym-pair synonym-ladder proverb-fill poem-order typo-hunt sentence-fix pinyin-write measure-fill word-grid tone-tower glyph-pair couplet-pair xiehouyu twist-spot mad-lib stroke-count word-burst char-rain anagram-EN typing-race idiom-cross homophone word-hunt
+  - board（25）：freecell pyramid-sol golf-solitaire clock-solitaire accordion-sol rummy-lite old-maid war-cards spit-race three-card-monte baccarat-lite dice-poker stop-bus dudo-bluff checkers hex-line breakthrough morris-line minishogi jungle-dark backgammon-lite ludo-solo snake-ladder mancala abalone-push
+  审计结论：`audit-gates.mjs` 全库 227 款**严格模式 0 违规**、存量模式 0 违规；
+  `theme-gates.mjs` 本批 52/52 全绿。
+  关卡验证总结论：49 款关卡驱动（各 40 关）全部经内嵌独立验证器逐关复核通过——
+  freecell 最佳优先求解器、pyramid/golf/accordion 独立 DFS、rummy 精确覆盖、
+  clock 翻牌链模拟器、baccarat 第三张牌规则「表 vs 引擎」全域比对、dice-poker 计分三路一致、
+  three-card-monte 双实现交换序列交叉、old-maid/war-cards/spit-race/stop-bus 无头对局模拟
+  （结果随机类按规则一致性+守恒+可达上界口径，README 如实陈述）；棋类 12 款为梯度 AI
+  （negamax/α-β/全骰序枚举/启发式一着）× 段位×让子×先手产关，累计约 60 场 AI 对拍局验证。
+  3 款分数驱动（word-burst / char-rain / typing-race）最高分持久化（desc）。
+  word 类内容准确性：拼音声调/部首/笔顺（《通用字笔顺规范》）/反义词/量词/俗语/诗句（公版）/同音词
+  等全部自撰逐条校对，README 各自写明内容口径；内嵌验证器含泄底校验与唯一性复核。
+  375px 实开（Chrome 真机 52/52）：无横向溢出、无 h1、桥主题推送、非法值拒绝。
+  体积范围：单款 17,540B（typing-race）– 47,746B（sentence-fix），52 款合计约 1.4MB。
+  终审修复（真机抽查抓到）：**typo-hunt 验证器与数据模型错位**——验证器按「原文含正字覆盖」模型
+  而数据为「成品病句」模型，40 关全被判异常致游戏不可玩（jsdom 无头验证未暴露）；修验证器为病句
+  模型（错字按出现次序定位），删除内容不当条目（偷偷地→悄悄地 非错、叠字型错误改写文本消歧：
+  美孜孜/博博 直接以正字入文），README 验证口径同步；浏览器实测 40/40 关加载、纠错交互正常。

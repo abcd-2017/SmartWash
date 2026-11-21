@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>疯狂填词</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .story {
+    background: var(--g-surface); border-radius: var(--g-radius-inner);
+    padding: 14px 14px; margin-bottom: 10px; box-shadow: var(--g-shadow);
+    font-size: 16px; line-height: 2; letter-spacing: 1px;
+  }
+  .story .blank {
+    display: inline-block; min-height: 30px; padding: 0 8px;
+    border-radius: 10px; background: var(--g-surface2); color: var(--g-muted);
+    text-align: center; line-height: 30px; min-width: 64px;
+  }
+  .story .blank.act { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-primary); }
+  .story .blank.filled { background: var(--g-primary-soft); color: var(--g-on-soft); font-weight: 700; }
+  .story .blank.hit { box-shadow: inset 0 0 0 2px var(--g-success); }
+  .ptag { font-size: 12px; color: var(--g-muted); margin: 0 2px 8px; }
+  .ptag b { color: var(--g-primary-deep); font-size: 14px; }
+  .opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .opt {
+    min-height: 48px; padding: 8px 10px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 0 var(--g-border);
+  }
+  .opt:active { opacity: .8; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 360px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+    max-height: 86vh; overflow-y: auto;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .story2 { font-size: 16px; line-height: 2; text-align: left; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 12px; margin-bottom: 14px; letter-spacing: 1px; }
+  .panel .story2 b { color: var(--g-primary-deep); }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">填空</span><span class="val" id="stQ">0/3</span></div>
+    <div class="stat"><span class="label">最佳词</span><span class="val" id="stHit">0</span></div>
+  </div>
+  <div class="story" id="story" aria-label="趣文模板，按词性填空"></div>
+  <p class="ptag" id="ptag">当前空词性：<b id="ptagV">形容词</b> —— 随便选，笑点自现</p>
+  <div class="opts" id="opts"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">按词性提示选词，填完生成一篇趣文</p>
+  <div class="tools">
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：1-4 选词 · R 重开 · 创作无对错，绿色描边表示选中了预设笑点词 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">趣文出炉！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="story2" id="ovStory"></div>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 词性词池 ---------- */
+var POOLS={
+"形":["巨大","飞快","闪亮","神奇","冰凉","火红","弯弯","圆圆","明亮","调皮","温柔","光滑"],
+"名":["西瓜","月亮","蘑菇","拖鞋","铅笔","企鹅","面包","气球","小船","星星","饼干","书包"],
+"动":["唱歌","跳舞","睡觉","打滚","洗澡","散步","做梦","画画","跑步","眨眼","翻跟头","吹泡泡"],
+"副":["悄悄地","飞快地","高兴地","慢慢地","认真地","大声地","轻轻地","偷偷地","大摇大摆地","一蹦一跳地"],
+"量":["三只","七个","一头","五颗","两串","九条","一群","半个","四把","十顶"]
+};
+var TNAME={"形":"形容词","名":"名词","动":"动词","副":"副词","量":"数量词"};
+
+/* ---------- 40 篇自撰模板（每篇 3 空；tpl 中 {0}{1}{2} 与 bl 一一对应） ---------- */
+var GAME_KEY="mad-lib",SAVE_KEY="sw.madlib.v1";
+var TMPL=[
+{tpl:"今天{0}得不像话，我一路{1}，{2}笑出了声。",bl:[{t:"形",b:"神奇"},{t:"动",b:"翻跟头"},{t:"副",b:"一蹦一跳地"}]},
+{tpl:"早上出门，我发现{0}蜗牛{1}爬上了{2}。",bl:[{t:"量",b:"十顶"},{t:"副",b:"大摇大摆地"},{t:"名",b:"月亮"}]},
+{tpl:"我家{0}学会了{1}，{2}表演给全家人看。",bl:[{t:"名",b:"拖鞋"},{t:"动",b:"吹泡泡"},{t:"副",b:"高兴地"}]},
+{tpl:"{0}蚂蚁抬着半块{1}，{2}搬回洞里。",bl:[{t:"量",b:"一群"},{t:"名",b:"西瓜"},{t:"副",b:"飞快地"}]},
+{tpl:"夜里{0}发出{1}的光，原来它在{2}。",bl:[{t:"名",b:"星星"},{t:"形",b:"闪亮"},{t:"动",b:"眨眼"}]},
+{tpl:"我把{0}放进书包，它{1}说：我也要去上学。",bl:[{t:"名",b:"面包"},{t:"副",b:"悄悄地"},{t:"量",b:"半个"}]},
+{tpl:"一阵风吹来，{0}{1}滚下了山坡。",bl:[{t:"名",b:"气球"},{t:"副",b:"一蹦一跳地"},{t:"形",b:"圆圆"}]},
+{tpl:"老师{0}走进教室，怀里抱着{1}{2}。",bl:[{t:"副",b:"大摇大摆地"},{t:"量",b:"三只"},{t:"名",b:"企鹅"}]},
+{tpl:"{0}和{1}在院子里{2}，谁也不让谁。",bl:[{t:"名",b:"书包"},{t:"名",b:"拖鞋"},{t:"动",b:"打滚"}]},
+{tpl:"我画了一个{0}的太阳，太阳{1}照着我。",bl:[{t:"形",b:"火红"},{t:"副",b:"温柔地"},{t:"量",b:"九条"}]},
+{tpl:"路边{0}的{1}吸引了我，我{2}凑近去看。",bl:[{t:"形",b:"光滑"},{t:"名",b:"蘑菇"},{t:"副",b:"轻轻地"}]},
+{tpl:"妈妈买回{0}{1}，说要用来{2}。",bl:[{t:"量",b:"两串"},{t:"名",b:"饼干"},{t:"动",b:"打滚"}]},
+{tpl:"下雨天，{0}躲进{1}里避雨，一副{2}的样子。",bl:[{t:"名",b:"企鹅"},{t:"名",b:"气球"},{t:"形",b:"调皮"}]},
+{tpl:"我的{0}丢了，它{1}跑到了{2}的背上。",bl:[{t:"名",b:"铅笔"},{t:"副",b:"悄悄地"},{t:"名",b:"星星"}]},
+{tpl:"弟弟{0}宣布：他要{1}一百天！",bl:[{t:"副",b:"大声地"},{t:"动",b:"翻跟头"},{t:"量",b:"四把"}]},
+{tpl:"{0}鸽子落在{1}上，像{2}{3}。",bl:[{t:"量",b:"一群"},{t:"名",b:"月亮"},{t:"量",b:"一群"},{t:"名",b:"饼干"}]},
+{tpl:"风一吹，{0}的{1}满天飞，大家忙着{2}。",bl:[{t:"形",b:"弯弯"},{t:"名",b:"蘑菇"},{t:"动",b:"吹泡泡"}]},
+{tpl:"我{0}许愿：让{1}学会{2}。",bl:[{t:"副",b:"认真地"},{t:"名",b:"书包"},{t:"动",b:"唱歌"}]},
+{tpl:"池塘边，{0}鸭子{1}下水，溅起{2}的水花。",bl:[{t:"量",b:"三只"},{t:"副",b:"飞快地"},{t:"形",b:"冰凉"}]},
+{tpl:"半夜里，{0}敲了敲{1}的门，说想{2}。",bl:[{t:"名",b:"月亮"},{t:"名",b:"蘑菇"},{t:"动",b:"洗澡"}]},
+{tpl:"{0}从书包里探出头，{1}看了一眼黑板。",bl:[{t:"名",b:"企鹅"},{t:"副",b:"偷偷地"},{t:"形",b:"巨大"}]},
+{tpl:"操场上，大家{0}{1}，笑声像{2}一样滚来滚去。",bl:[{t:"副",b:"一蹦一跳地"},{t:"动",b:"跳舞"},{t:"名",b:"气球"}]},
+{tpl:"我种下一粒种子，它{0}长成了{1}的{2}。",bl:[{t:"副",b:"慢慢地"},{t:"形",b:"巨大"},{t:"名",b:"蘑菇"}]},
+{tpl:"云朵们排队{0}，队伍{1}得像{2}。",bl:[{t:"动",b:"散步"},{t:"形",b:"弯弯"},{t:"名",b:"小船"}]},
+{tpl:"{0}饿了，{1}啃了一口{2}。",bl:[{t:"名",b:"企鹅"},{t:"副",b:"飞快地"},{t:"名",b:"面包"}]},
+{tpl:"妹妹用{0}搭了一座桥，桥上站着{1}{2}。",bl:[{t:"名",b:"饼干"},{t:"量",b:"一群"},{t:"名",b:"星星"}]},
+{tpl:"夜晚的{0}{1}极了，星星们{2}眨眼。",bl:[{t:"名",b:"月亮"},{t:"形",b:"明亮"},{t:"副",b:"悄悄地"}]},
+{tpl:"我和{0}比赛{1}，输了的{2}钻进被窝。",bl:[{t:"名",b:"拖鞋"},{t:"动",b:"跑步"},{t:"副",b:"慢慢地"}]},
+{tpl:"{0}蜜蜂{1}飞进花丛，把{2}当成了舞台。",bl:[{t:"量",b:"一群"},{t:"副",b:"大摇大摆地"},{t:"名",b:"气球"}]},
+{tpl:"冬天来了，{0}{1}钻进被窝，做着{2}的梦。",bl:[{t:"名",b:"企鹅"},{t:"副",b:"一蹦一跳地"},{t:"形",b:"冰凉"}]},
+{tpl:"一颗{0}的流星{1}划过，许愿的人正{2}。",bl:[{t:"形",b:"闪亮"},{t:"副",b:"飞快地"},{t:"动",b:"吹泡泡"}]},
+{tpl:"{0}被风吹得{1}转圈，惊醒了{2}{3}。",bl:[{t:"名",b:"拖鞋"},{t:"副",b:"飞快地"},{t:"量",b:"一群"},{t:"名",b:"蚂蚁"}]},
+{tpl:"停电的晚上，{0}们{1}开起了大会。",bl:[{t:"名",b:"蘑菇"},{t:"副",b:"认真地"},{t:"动",b:"做梦"}]},
+{tpl:"我{0}发现{1}在{2}，吓得叫出声。",bl:[{t:"副",b:"偷偷地"},{t:"名",b:"书包"},{t:"动",b:"唱歌"}]},
+{tpl:"{0}{1}挂在墙上，每天{2}盯着我们写作业。",bl:[{t:"量",b:"四把"},{t:"名",b:"拖鞋"},{t:"副",b:"一眨一眨地"}]},
+{tpl:"春天一到，{0}们纷纷{1}，田野变得{2}极了。",bl:[{t:"名",b:"星星"},{t:"动",b:"跳舞"},{t:"形",b:"明亮"}]},
+{tpl:"爷爷{0}养了{1}{2}，说要教它们{3}。",bl:[{t:"副",b:"悄悄地"},{t:"量",b:"九条"},{t:"名",b:"小船"},{t:"动",b:"画画"}]},
+{tpl:"我把{0}的梦讲给{1}听，它{2}睡着了。",bl:[{t:"形",b:"神奇"},{t:"名",b:"企鹅"},{t:"副",b:"高兴地"}]},
+{tpl:"一场大雨后，{0}顶着一滴水{1}出门了。",bl:[{t:"名",b:"蘑菇"},{t:"副",b:"大摇大摆地"},{t:"量",b:"半个"}]},
+{tpl:"新年那天，{0}{1}{2}跳进了锣鼓队。",bl:[{t:"量",b:"一群"},{t:"名",b:"企鹅"},{t:"副",b:"一蹦一跳地"}]}
+];
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/* 生成关卡：每空 = 预设词 + 同池 3 个干扰词（固定种子） */
+function genLevels(){
+  var list=[];
+  for(var i=0;i<TMPL.length;i++){
+    var t=TMPL[i],bs=[];
+    for(var j=0;j<t.bl.length;j++){
+      var bl=t.bl[j],pool=POOLS[bl.t];
+      var r=mulberry32(5000+i*11+j*3),opts=[bl.b],used={};used[bl.b]=1;
+      var guard=0;
+      while(opts.length<4&&guard++<100){
+        var w=pool[Math.floor(r()*pool.length)];
+        if(used[w])continue;
+        used[w]=1;opts.push(w);
+      }
+      for(var m=opts.length-1;m>0;m--){var mj=Math.floor(r()*(m+1)),tm=opts[m];opts[m]=opts[mj];opts[mj]=tm;}
+      bs.push({t:bl.t,opts:opts,ok:opts.indexOf(bl.b)});
+    }
+    list.push({name:"趣文·"+(i+1<10?"0":"")+(i+1),tpl:t.tpl,bs:bs,difficulty:Math.min(6,Math.floor(i/7)+1)});
+  }
+  return list;
+}
+var DEFAULT_LEVELS=genLevels();
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+
+/* ---------- 独立验证器：结构完整性 + 词池一致性 ---------- */
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(typeof d.tpl!=="string"||d.tpl.length<10||d.tpl.length>80)return false;
+  if(!Array.isArray(d.bs)||d.bs.length<2||d.bs.length>4)return false;
+  var phs=d.tpl.match(/\{\d\}/g)||[];
+  if(phs.length!==d.bs.length)return false;    // 占位符与空数一致
+  for(var i=0;i<d.bs.length;i++){
+    var b=d.bs[i];
+    if(!b||typeof b!=="object")return false;
+    if(!POOLS[b.t])return false;               // 词性合法
+    if(!Array.isArray(b.opts)||b.opts.length<3||b.opts.length>5)return false;
+    if(!Number.isInteger(b.ok)||b.ok<0||b.ok>=b.opts.length)return false;
+    var seen={};
+    for(var k=0;k<b.opts.length;k++){
+      var o=b.opts[k];
+      if(typeof o!=="string"||!o||o.length>6)return false;
+      if(seen[o])return false;
+      seen[o]=1;
+    }
+    if(POOLS[b.t].indexOf(b.opts[b.ok])<0)return false;  // 正确项必须来自该词性词池
+  }
+  return true;
+}
+/* 生成一致性复核：每空 ok 项必须等于模板预设词 */
+function auditAll(){
+  var bad=[];
+  for(var i=0;i<LEVELS.length;i++){
+    var L=LEVELS[i],okLv=validLevelData(L);
+    if(okLv)for(var j=0;j<L.bs.length;j++){
+      if(TMPL[i]&&TMPL[i].bl[j]&&L.bs[j].opts[L.bs[j].ok]!==TMPL[i].bl[j].b){okLv=false;break;}
+    }
+    if(!okLv)bad.push(i+1);
+  }
+  return bad;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d)||seen[d.name])return null;
+    seen[d.name]=1;
+    list.push({name:d.name,tpl:d.tpl,bs:d.bs.map(function(b){return{t:b.t,opts:b.opts.slice(),ok:b.ok}}),difficulty:Number.isInteger(d.difficulty)?d.difficulty:5});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,qj=0,answers=[],done=false;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  qj=0;answers=[];done=false;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent=L.bs.length+" 个空";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  render();updStats();
+  say("按词性提示选词，填完生成一篇趣文");
+}
+function render(){
+  /* 模板按占位符切分，填过的空显示所选词 */
+  var html="";
+  var parts=L.tpl.split(/\{\d\}/);
+  for(var p=0;p<parts.length;p++){
+    html+=parts[p];
+    if(p<parts.length-1){
+      var cls="blank"+(p===qj?" act":"")+(answers[p]!==undefined?" filled":"");
+      html+='<span class="'+cls+'">'+(answers[p]!==undefined?answers[p]:"　")+"</span>";
+    }
+  }
+  $("story").innerHTML=html;
+  if(!done&&qj<L.bs.length){
+    $("ptag").hidden=false;
+    $("ptagV").textContent=TNAME[L.bs[qj].t];
+    var box=$("opts");box.innerHTML="";
+    var cur=L.bs[qj];
+    for(var k=0;k<cur.opts.length;k++){
+      (function(k){
+        var b=document.createElement("button");
+        b.className="opt";b.textContent=cur.opts[k];
+        b.setAttribute("aria-label","候选词 "+cur.opts[k]);
+        b.addEventListener("click",function(){pick(k)});
+        box.appendChild(b);
+      })(k);
+    }
+  }else{$("ptag").hidden=true;$("opts").innerHTML="";}
+}
+function updStats(){
+  $("stQ").textContent=Math.min(answers.length,L.bs.length)+"/"+L.bs.length;
+  var hit=0;
+  for(var i=0;i<L.bs.length;i++)if(answers[i]!==undefined&&L.bs[i].opts[L.bs[i].ok]===answers[i])hit++;
+  $("stHit").textContent=hit;
+}
+function pick(k){
+  if(done||qj>=L.bs.length)return;
+  answers[qj]=L.bs[qj].opts[k];
+  qj++;updStats();
+  if(qj>=L.bs.length)winLevel();
+  else{render();say("继续下一个空");}
+}
+function winLevel(){
+  done=true;
+  var hit=0;
+  for(var i=0;i<L.bs.length;i++)if(L.bs[i].opts[L.bs[i].ok]===answers[i])hit++;
+  var full="";
+  var parts=L.tpl.split(/\{\d\}/);
+  for(var p=0;p<parts.length;p++){
+    full+=parts[p];
+    if(p<parts.length-1)full+=answers[p];
+  }
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:hit}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"趣文出炉！";
+  $("ovDesc").innerHTML="命中预设笑点词 "+hit+" / "+L.bs.length+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovStory").innerHTML=full;
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);$("overlay").classList.remove("show");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重开")});
+$("btnLv").addEventListener("click",openLevelSelect);
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+  else{lv++;loadLevel(lv)}
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="9"){
+    var btns=$("opts").querySelectorAll(".opt");
+    var i=parseInt(k,10)-1;
+    if(!done&&i<btns.length){btns[i].click();e.preventDefault();}
+  }
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重开")}
+  else if(e.key==="Enter"&&$("overlay").classList.contains("show")){$("ovBtn").click();e.preventDefault();}
+});
+/* ---------- 启动 ---------- */
+loadLevel(save.lv);
+var badLv=auditAll();
+if(badLv.length)say("警告：内嵌验证器发现异常关卡 "+badLv.join(","));
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

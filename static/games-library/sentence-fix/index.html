@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>病句门诊</title>
+<style>
+  /*token:GAME-THEME.md §2（全部 UI 壳走 token）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.bad { color: var(--g-danger); }
+  .stem {
+    background: var(--g-surface); border-radius: var(--g-radius-inner);
+    padding: 14px 14px; margin-bottom: 10px; box-shadow: var(--g-shadow);
+  }
+  .stem .tag { display: block; font-size: 12px; color: var(--g-muted); margin-bottom: 6px; }
+  .stem .line { font-size: 16px; font-weight: 700; line-height: 1.8; }
+  .stem .cause { display: block; font-size: 12px; color: var(--g-warning); margin-top: 8px; }
+  .opts { display: grid; gap: 8px; }
+  .opt {
+    min-height: 48px; padding: 10px 12px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 0 var(--g-border); line-height: 1.5; text-align: center;
+  }
+  .opt:active { opacity: .8; }
+  .opt.right { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-success); }
+  .opt.wrong { background: var(--g-surface2); color: var(--g-danger); box-shadow: inset 0 0 0 2px var(--g-danger); text-decoration: line-through; }
+  .opt:disabled { cursor: default; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（注意：动效层指令，不受 §4 主题层禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">进度</span><span class="val" id="stQ">1/3</span></div>
+    <div class="stat"><span class="label">失误</span><span class="val" id="stErr">0</span></div>
+  </div>
+  <div class="stem">
+    <span class="tag" id="qTag">病句 · 第 1 / 3 题</span>
+    <div class="line" id="qLine"></div>
+    <span class="cause" id="qCause" hidden></span>
+  </div>
+  <div class="opts" id="opts"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">选出把病句改对的那一句</p>
+  <div class="tools">
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：1-4 选改法 · R 重开 · 判定后公布病因 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 病句库：120 条 [病句, 正确改法, 病因, 干扰改法1, 干扰改法2]（自撰，覆盖十大病因类型） ---------- */
+var GAME_KEY="sentence-fix",SAVE_KEY="sw.sentencefix.v1";
+var CASES=[
+["他做事很坚定。","他做事很坚决。","用词不当","他做事很固执。","他做事坚定极了。"],
+["我大约用了四十分钟左右完成作业。","我大约用了四十分钟完成作业。","重复啰嗦","我差不多用了四十分钟左右完成作业。","我大约用了四十分钟多完成作业。"],
+["我们讨论并听取了校长的报告。","我们听取并讨论了校长的报告。","语序不当","我们听取并讨论了报告的校长。","我们讨论并听取了报告的校长。"],
+["通过这次活动，使我明白了很多道理。","通过这次活动，我明白了很多道理。","成分残缺","通过这次活动，让我明白了很多道理。","通过使这次活动，我明白了很多道理。"],
+["他的写作水平明显改进了。","他的写作水平明显提高了。","搭配不当","他的写作水平明显改善加。","他的写作态度明显提高了。"],
+["我断定他大概是生病了。","我断定他是生病了。","前后矛盾","我猜测他一定是生病了。","我断定他大概是生了病吧。"],
+["菜市场里有黄瓜、西红柿、苹果等蔬菜。","菜市场里有黄瓜、西红柿等蔬菜。","分类不当","菜市场里有苹果、香蕉等蔬菜。","菜市场里有黄瓜、西红柿、苹果等水果。"],
+["虽然天气很冷，所以我们还是出发了。","虽然天气很冷，但我们还是出发了。","关联词误用","因为天气很冷，所以我们还是出发了。","虽然天气很冷，所以我们没有出发。"],
+["他的家乡是山东省济南市人。","他的家乡是山东济南。","句式杂糅","他是山东省济南市家乡。","他的家乡是济南市山东人。"],
+["这本书的内容和插图都很精美。","这本书内容丰富，插图精美。","搭配不当","这本书的内容和插图都很丰富。","这本书的内容精美，插图都很。"],
+["同学们聚精会神地倾听着老师的演讲和注目着屏幕。","同学们聚精会神地倾听着老师的演讲，注目着屏幕。","搭配不当","同学们注目着老师的演讲和屏幕。","同学们倾听着屏幕，注目着演讲。"],
+["公园里种着月季、玫瑰、松树等许多花草。","公园里种着月季、玫瑰等许多花草。","分类不当","公园里种着松树、柏树等许多花草。","公园里种着月季、玫瑰、松树等许多树木。"],
+["他首先第一个发言。","他第一个发言。","重复啰嗦","他首先发言第一个。","他首先第二个发言。"],
+["小明不但学习好，并且乐于助人。","小明不但学习好，而且乐于助人。","关联词误用","小明不但学习好，但是乐于助人。","小明不但乐于助人，而且学习很差。"],
+["我们要养成讲文明的好风气。","我们要养成讲文明的好习惯。","搭配不当","我们要形成讲文明的好习惯。","我们要养成讲文明的好风气气。"],
+["昨天傍晚下了一夜大雨。","昨夜下了一夜大雨。","前后矛盾","昨天傍晚下了一整天大雨。","昨夜傍晚下了一夜大雨。"],
+["全班同学都到了，只有王小明没有来。","除了王小明，全班同学都到了。","前后矛盾","全班同学都到了，只有王小明也来了。","全班同学都没到，只有王小明没到。"],
+["他的学习态度有了很大改善。","他的学习态度有了很大转变。","搭配不当","他的学习态度有了很大提高。","他的学习成绩有了很大转变。"],
+["听到这个消息，我的心情十分激烈。","听到这个消息，我的心情十分激动。","用词不当","听到这个消息，我的心情十分猛烈。","听到这个消息，我的心情十分强烈。"],
+["老师耐心地帮助我们改正错误，提高学习。","老师耐心地帮助我们改正错误，提高学习成绩。","成分残缺","老师耐心地帮助我们改正提高学习。","老师耐心地帮助我们错误，提高学习。"],
+["展览会上展出了两千多年前新出土的文物。","展览会上展出了新出土的两千多年前的文物。","语序不当","展览会上新出土了展出的两千多年文物。","展览会上展出了文物两千多年前的新出土。"],
+["我估算他大约有五十岁。","我估计他大约有五十岁。","用词不当","我估算他大约五十岁左右。","我估量他大约有五十岁上下。"],
+["这学期我们班差不多根本没有迟到的人。","这学期我们班几乎没有迟到的人。","前后矛盾","这学期我们班根本有很多迟到的人。","这学期我们班差不多完全没有迟到的人。"],
+["这部电影很感动人。","这部电影很动人。","用词不当","这部电影很感动了人。","这部电影感动得人。"],
+["他把教室打扫得干干净净、整整齐齐。","他把教室打扫得干干净净。","搭配不当","他把教室摆放得干干净净。","他把教室打扫得整整齐齐的书桌。"],
+["在老师的帮助下，很快完成了作业。","在老师的帮助下，我很快完成了作业。","成分残缺","在老师的帮助下，很快被我完成了作业。","帮助下，我很快完成了作业。"],
+["战士们冒着倾盆大雨和泥泞的小路前进。","战士们冒着倾盆大雨、踏着泥泞的小路前进。","搭配不当","战士们冒着泥泞的小路和倾盆大雨前进。","战士们冒着倾盆大雨和小路前进。"],
+["我们必须遵守纪律的习惯。","我们必须遵守纪律。","句式杂糅","我们必须养成遵守纪律。","我们必须遵守纪律的习惯养成。"],
+["大量植树种草能防止水土不流失。","大量植树种草能防止水土流失。","不合逻辑","大量植树种草能防止水土流失吗。","大量植树种草能防止水土流失不掉。"],
+["谁也不能否认这款产品没有优点。","谁也不能否认这款产品有优点。","不合逻辑","谁也不能否认这款产品没有没有优点。","谁都否认这款产品没有优点。"],
+["他的病已经好了，但是还躺在病床上不能动。","他的病快好了，还躺在病床上休息。","前后矛盾","他的病已经好了，所以还不能动。","他的病已经好了，仍然病得不能动。"],
+["我买了一支钢笔和一本书，它很好看。","我买了一支钢笔和一本书，书很好看。","指代不明","我买了一支钢笔和一本书，它们都很好看。","我买了一支钢笔和一本书，他很好看。"],
+["看了这部电影，受到了深刻的教育。","看了这部电影，我受到了深刻的教育。","成分残缺","看了这部电影，使受到了深刻的教育。","看了这部电影，受到了深刻的教育我。"],
+["桌子上放着许多水果，有苹果、梨、白菜等。","桌子上放着许多水果，有苹果、梨等。","分类不当","桌子上放着许多水果，有苹果、白菜、梨等。","桌子上放着许多蔬菜，有苹果、梨等。"],
+["他跑得很快，像一只敏捷的猴子。","他爬得很快，像一只敏捷的猴子。","搭配不当","他跑得很快，像一只敏捷的猎豹。","他跑得很慢，像一只敏捷的猴子。"],
+["我们需要认真克服并善于发现工作中的问题。","我们需要善于发现并认真克服工作中的问题。","语序不当","我们需要认真善于发现克服问题。","我们需要克服并发现工作中的善于问题。"],
+["小明因为肚子疼，所以坚持来上学。","小明虽然肚子疼，但还是坚持来上学。","关联词误用","小明因为肚子疼，但是坚持来上学。","小明因为肚子疼，所以没有来上学。"],
+["今天的天气非常冷得很。","今天的天气非常冷。","重复啰嗦","今天的天气非常冷得很啊。","今天的天气十分冷得很。"],
+["我为祖国感到自豪骄傲。","我为祖国感到自豪。","重复啰嗦","我为祖国感到骄傲自豪骄傲。","我为祖国感到自满。"],
+["他穿着一件白衬衫和一顶帽子。","他穿着一件白衬衫，戴着一顶帽子。","搭配不当","他穿着一件白衬衫和帽子帽子。","他穿着一顶帽子和一件白衬衫。"],
+["广场上人很多，非常热闹非凡。","广场上人很多，非常热闹。","重复啰嗦","广场上人很多少，热闹非凡。","广场上人很少，热闹非凡。"],
+["通过努力，他终于克服了自己的缺点毛病。","通过努力，他终于克服了自己的缺点。","重复啰嗦","通过努力，他终于改进了自己的缺点毛病。","通过努力，他终于克服了自己的优点点。"],
+["听说学校要举行运动会，全班人都兴高采烈。","听说学校要举行运动会，全班同学都兴高采烈。","用词不当","听说学校要举行运动会，全班动物都兴高采烈。","听说学校要举行运动会，全班人都垂头丧气。"],
+["夜空中有无数无数的星星。","夜空中有无数的星星。","重复啰嗦","夜空中有无数许多的星星。","夜空中有无数颗星星数不清。"],
+["学校开展了学雷锋的高潮。","学校掀起了学雷锋的高潮。","搭配不当","学校开展了学雷锋的活动高潮。","学校开展起了学雷锋的高潮潮。"],
+["他的普通话不仅标准，而且十分标准。","他的普通话非常标准。","重复啰嗦","他的普通话不仅标准，而且十分流利。","他的普通话不但标准，还特别不标准。"],
+["小华写完作业后，又检查了一遍作业。","小华写完作业后，又检查了一遍。","重复啰嗦","小华写完作业后，又检查了一遍作业本作业。","小华写完作业后，又写了一遍作业。"],
+["这次比赛我们班取得了很好的成就。","这次比赛我们班取得了很好的成绩。","用词不当","这次比赛我们班取得了很好的成绩绩。","这次比赛我们班完成了很好的成绩。"],
+["这个问题对我们很感兴趣。","我们对这个问题很感兴趣。","主客颠倒","这个问题对我们很有兴趣吗。","我们很感兴趣这个问题对。"],
+["我们必须改正错误，改进缺点。","我们必须改正错误，改正缺点。","搭配不当","我们必须改进错误，改正缺点。","我们必须纠正错误，改良缺点。"],
+["图书角里有《西游记》《安徒生童话》等书籍书本。","图书角里有《西游记》《安徒生童话》等书籍。","重复啰嗦","图书角里有《西游记》《安徒生童话》等书本书籍。","图书角里有《西游记》等《安徒生童话》书籍。"],
+["我的家乡是山东人。","我的家乡是山东。","句式杂糅","我是山东人家乡。","我的家乡人是山东。"],
+["两个新旧社会真是天壤之别。","新旧两个社会真是天壤之别。","语序不当","两个社会新旧真是天壤之别。","新旧社会两个真是天壤之别。"],
+["我们要不断改进学习方法，提高学习效率，改进学习成绩。","我们要不断改进学习方法，提高学习成绩。","搭配不当","我们要不断提高学习方法，改进学习效率。","我们要不断改进学习方法，提高学习效率率。"],
+["他完成了一次又一次的艰巨任务。","他一次又一次地完成了艰巨任务。","语序不当","他完成了艰巨的又一次一次任务。","他一次一次又一次地完成了艰巨任务。"],
+["碗里的汤很鲜美，喝一口让人觉得味道十分可口。","碗里的汤很鲜美，喝一口让人觉得十分可口。","重复啰嗦","碗里的汤很鲜美，喝一口让人觉得味道十分的味道。","碗里的汤很可口，喝一口让人觉得味道十分鲜美吗。"],
+["春天来了，天气渐渐的变暖和了。","春天来了，天气渐渐变暖和了。","重复啰嗦","春天来了，天气渐渐的慢慢的变暖和了。","春天来了，天气渐渐变暖和的了。"],
+["参加这次活动的有工人、学生和警察叔叔等。","参加这次活动的有工人、学生和警察等。","用词不当","参加这次活动的有工人、学生和叔叔等。","参加这次活动的有工人、学生和警察阿姨们等。"],
+["下雨了，我撑起雨伞，头上顶着帽子回家了。","下雨了，我撑着雨伞回家了。","重复啰嗦","下雨了，我撑起雨伞帽子和头顶着回家了。","下雨了，我顶着帽子和雨伞头上回家了。"],
+["全体师生和校长都参加了开学典礼。","全体师生都参加了开学典礼。","分类不当","全体师生和学生们都参加了开学典礼。","校长和全体师生们都参加了师生典礼。"],
+["我们讨论并听取了老师的建议。","我们听取并讨论了老师的建议。","语序不当","我们讨论了老师的建议并听取。","我们听取并讨论老师了建议的。"],
+["这篇作文的语句和词汇都很通顺。","这篇作文语句通顺，词汇丰富。","搭配不当","这篇作文的语句和词汇都很丰富。","这篇作文的词汇通顺，语句丰富。"],
+["爷爷经常给我们讲过去的往事。","爷爷经常给我们讲往事。","重复啰嗦","爷爷经常给我们讲过去的过去事。","爷爷经常给我们将来讲往事。"],
+["星期天，我在家里写了一篇文章和一幅画。","星期天，我在家里写了一篇文章，画了一幅画。","搭配不当","星期天，我在家里画了一篇文章，写了一幅画。","星期天，我在家里写了一篇文章画和一幅画。"],
+["夏天的青岛是人们避暑的好地方。","青岛的夏天是人们避暑的好季节。","语序不当","青岛夏天的季节是避暑的好地方。","青岛夏天的避暑是人们的好地方。"],
+["他基本上把坏习惯彻底改掉了。","他把坏习惯彻底改掉了。","前后矛盾","他基本上把坏习惯完全彻底改掉一半。","他彻底基本上改掉了坏习惯的全部。"],
+["这本书大致的内容和插图都很好。","这本书的内容和插图都很好。","重复啰嗦","这本书大致内容和插图大致都很好。","这本书大致大致的内容都很好。"],
+["我一定要改掉不好的坏习惯。","我一定要改掉坏习惯。","重复啰嗦","我一定要改掉不好的习惯毛病。","我一定要改掉好习惯的坏毛病。"],
+["经过医生的精心治疗，他很快恢复了健康好转。","经过医生的精心治疗，他很快恢复了健康。","重复啰嗦","经过医生的精心治疗，他很快恢复了健康的健康。","经过医生的治疗精心，他恢复了健康好转。"],
+["我们班取得了竞赛第一名的好成就。","我们班取得了竞赛第一名的好成绩。","用词不当","我们班取得了竞赛第一名的好成绩绩。","我们班创造了竞赛第一名的成就。"],
+["他学习很刻苦，每天晚上学习到深夜十点左右才睡觉休息。","他学习很刻苦，每天晚上学习到深夜才休息。","重复啰嗦","他学习很刻苦，每天晚上学习到深夜十点左右的深夜才睡觉。","他学习很刻苦，深夜到十点左右学习到深夜。"],
+["在公园里，我看见了一些美丽的鲜花和可爱的小狗在奔跑。","在公园里，我看见了美丽的鲜花，还看见可爱的小狗在奔跑。","搭配不当","在公园里，我看见了鲜花和小狗都美丽。","在公园里，我看见了小狗开出美丽的鲜花。"],
+["下了大雨，篮球赛只能取销了。","下大雨，篮球赛只能取消了。","用词不当","下雨了，篮球赛只能取消销了。","下大雨，篮球赛只能取销比赛。"],
+["他光荣地加入了少先队员。","他光荣地加入了少先队。","搭配不当","他光荣地参加了少先队员。","他光荣地加入了队员少先队。"],
+["老师表扬了班里的好人好事和拾金不昧的行为。","老师表扬了班里拾金不昧的同学。","分类不当","老师表扬了班里的人好事和坏行为。","老师表扬了班里的坏人和好事。"],
+["书店里有故事书、科技书和语文、数学书等。","书店里有故事书、科技书和语文书、数学书等。","分类不当","书店里有故事书、科技书和苹果等。","书店里有语文、数学和故事书科技书等。"],
+["泉水慢慢地慢慢地冒出来。","泉水慢慢地冒出来。","重复啰嗦","泉水慢慢慢慢的慢慢地冒出来。","泉水迅速慢慢地冒出来。"],
+["他的家乡处处都是美丽的景色风景。","他的家乡处处都是美丽的风景。","重复啰嗦","他的家乡处处都是美丽景色的景色。","他的家乡处处都是风景美丽的景色景。"],
+["老师要求我们按时完成各科作业和练习题。","老师要求我们按时完成各科作业和练习。","搭配不当","老师要求我们按时完成各科练习和作业题。","老师要求我们按时完成各科作业题和练习练习。"],
+["小明和小刚是好朋友，他经常帮助他学习。","小明和小刚是好朋友，小明经常帮助小刚学习。","指代不明","小明和小刚是好朋友，他们经常帮助他学习。","小明和小刚是好朋友，他经常帮助小明学习。"],
+["展览室里陈列着同学们手工制作的手工艺品。","展览室里陈列着同学们手工制作的工艺品。","重复啰嗦","展览室里陈列着同学们手工作品的手工。","展览室里制作着同学们手工的手工艺品。"],
+["他的嗓门洪亮，声音很大很大。","他的嗓门洪亮。","重复啰嗦","他的嗓门洪亮洪亮，声音很大。","他的嗓门很大，声音洪亮得很洪亮。"],
+["我班全体同学和班长都去看望生病的老师了。","我班全体同学都去看望生病的老师了。","分类不当","我班全体同学和学生们都去看望老师。","班长和全体同学们都去看望同学老师。"],
+["我们要爱护公物，不能损坏公物的一草一木。","我们要爱护公物，不能损坏公物。","分类不当","我们要爱护公物，不能损坏公物里的花盆。","我们要爱护一草一木，不能损坏公物的树木。"],
+["爷爷家的院子里种了月季、兰花、小狗等植物。","爷爷家的院子里种了月季、兰花等植物。","分类不当","爷爷家的院子里种了小狗、月季等植物。","爷爷家的院子里养了月季、兰花、小狗等动物。"],
+["长城是世界上最长的城墙，全长约一万多里。","长城是世界上最长的城墙，全长约一万里。","前后矛盾","长城是世界上最短的城墙，全长约一万多里。","长城全长约一万多里，约一万里。"],
+["他的普通话说得字正腔圆，非常好听动听。","他的普通话说得字正腔圆，非常好听。","重复啰嗦","他的普通话说得字正腔圆，好听得动听。","他的普通话字正腔圆说得好听非常好听。"],
+["老师耐心细致地为我们解答疑难问题疑难。","老师耐心细致地为我们解答疑难问题。","重复啰嗦","老师耐心细致地为我们解答问题疑难问题。","老师疑难地为我们解答耐心细致的问题。"],
+["商店里的商品琳琅满目，有文具、玩具、白菜等。","商店里的商品琳琅满目，有文具、玩具等。","分类不当","商店里的商品琳琅满目，有文具、白菜、玩具等。","商店里的蔬菜琳琅满目，有文具、玩具等。"],
+["他满怀信心地参加了比赛，结果得了最后一名，真让人兴奋极了。","他满怀信心地参加了比赛，结果得了最后一名。","前后矛盾","他满怀信心地参加了比赛，得了第一名，真让人失望。","他满怀信心地参加比赛没参加，兴奋极了。"],
+["春节联欢会上，大家表演了唱歌、跳舞和许多精彩的节目。","春节联欢会上，大家表演了唱歌、跳舞等许多精彩的节目。","分类不当","春节联欢会上，大家表演了精彩的唱歌节目和节目。","春节联欢会上，大家表演了许多节目和精彩的唱歌跳舞。"],
+["他戴着帽子、围巾和一件厚厚的大衣出门了。","他戴着帽子、围巾，穿着一件厚厚的大衣出门了。","搭配不当","他穿着帽子、围巾和一件厚厚的大衣。","他戴着一件厚厚的大衣，穿着帽子和围巾。"],
+["我班的语文成绩是全校最好的班级。","我班的语文成绩是全校最好的。","句式杂糅","我班的语文成绩是全校最好的班级成绩。","我班是全校语文成绩最好的学校。"],
+["他不但改正了错误，而且接受了批评。","他不但接受了批评，而且改正了错误。","语序不当","他不但接受批评错误，而且改正了批评。","他改正了错误不但，而且接受了批评的。"],
+["我买了笔、尺子、文具盒等学习用品和玩具。","我买了笔、尺子、文具盒等学习用品。","分类不当","我买了笔、尺子、玩具等学习用品。","我买了玩具等学习用品和笔尺子。"],
+["大家都讲卫生，我们的健康和疾病就有了保障。","大家都讲卫生，我们的健康就有了保障。","搭配不当","大家都讲卫生，我们的疾病就有了保障。","大家都讲卫生，健康和疾病都保障了。"],
+["傍晚，夕阳的余晖洒满了整个天边的一角。","傍晚，夕阳的余晖洒满天边。","重复啰嗦","傍晚，夕阳余晖的余晖洒满了天边一角。","傍晚，天边一角洒满了夕阳的余晖余晖。"],
+["我们从小要养成讲究卫生。","我们从小要养成讲究卫生的习惯。","成分残缺","我们从小要养成讲究卫生好。","我们从小讲究卫生养成要习惯。"],
+["听了他的话，我很受感动感动。","听了他的话，我很受感动。","重复啰嗦","听了他的话，我很感动受感动。","听了他的话，感动我很受感动感。"],
+["广场上到处都是五颜六色的红旗。","广场上到处都是鲜红的红旗。","搭配不当","广场上到处都是五颜六色红色的旗。","广场上红旗到处都五颜六色。"],
+["星期天，妈妈带我去逛了百货大楼，买了许多东西，有吃的、用的、玩的苹果等。","星期天，妈妈带我去逛了百货大楼，买了许多东西，有吃的、用的、玩的。","分类不当","星期天，妈妈带我去逛了百货大楼，买了苹果等吃的玩的用的东西。","星期天，妈妈带我去逛了百货大楼玩，买了东西许多。"],
+["图书馆里的书很多，琳琅满目地摆放在书架上。","图书馆里的书很多，整齐地摆放在书架上。","用词不当","图书馆里的书琳琅满目地摆放在书架。","图书馆里的书五颜六色地摆放在书架上。"],
+["他的写作文的速度很快。","他写作文的速度很快。","重复啰嗦","他的写作文写作速度很快的作文。","他写作的速度作文很快作文。"],
+["春天的杭州是一年中最美丽的季节。","杭州的春天是一年中最美丽的季节。","语序不当","杭州春天的季节是美丽的春天。","春天的季节杭州是最美丽的。"],
+["我在文具店里买了铅笔、橡皮、尺子和书本文具等。","我在文具店里买了铅笔、橡皮、尺子等文具。","分类不当","我在文具店里买了铅笔、书本、尺子等文具。","我在书店里买了铅笔、橡皮等文具书。"],
+["天气热得很，我一点食欲都没有胃口。","天气热得很，我一点食欲都没有。","重复啰嗦","天气热得很，我食欲一点都没有胃口。","天气热得很，胃口一点食欲都没有。"],
+["这学期我们学了很多知识，懂得了很多道理，明白了很多道理。","这学期我们学了很多知识，明白了很多道理。","重复啰嗦","这学期我们懂得了很多知识和道理明白。","这学期我们学了很多道理，明白了很多知识。"],
+["他手里拿着一面鲜红的红旗。","他手里拿着一面鲜红的旗子。","重复啰嗦","他手里拿着一面红旗鲜红旗。","他手里拿着旗红的一面红旗。"],
+["那个工厂的规模很大，设备也很先进先进。","那个工厂的规模很大，设备也很先进。","重复啰嗦","那个工厂规模大设备先进的先进。","那个工厂设备很大，规模也很先进。"],
+["他的成绩虽然有了进步，但是还需要进步。","他的成绩虽然有了进步，但还需要努力。","前后矛盾","他的成绩进步了，还需要退步。","他的成绩没有进步，还需要保持进步。"],
+["这件大衣的颜色和式样都美观大方。","这件大衣颜色美观，式样大方。","搭配不当","这件大衣的颜色和式样都大方。","这件大衣式样美观，颜色都。"],
+["他经常保持教室的卫生和整洁干净。","他经常保持教室的卫生和整洁。","重复啰嗦","他经常保持教室干净卫生的整洁。","他经常整洁教室的卫生和保持。"],
+["我的数学成绩比他的数学成绩要高出很多很多。","我的数学成绩比他的高出很多。","重复啰嗦","我的数学成绩比他的数学成绩数学要高。","我的成绩数学比他数学成绩高出很很多。"],
+["听了解释，我才明白这件事的来龙去脉的去向。","听了解释，我才明白这件事的来龙去脉。","重复啰嗦","听了解释，我才明白来龙去脉的去脉来龙。","听了解释来龙，我才明白这件事的去脉。"],
+["他和同桌讨论了这道题的做法方法。","他和同桌讨论了这道题的做法。","重复啰嗦","他和同桌讨论了这道题方法的做法法。","他和同桌做法了这道题的讨论方法。"],
+["他克服了重重困难，终于爬上了山顶的山峰。","他克服了重重困难，终于爬上了山顶。","重复啰嗦","他克服困难重重，终于爬上了山顶山峰。","他爬上了重重困难，终于克服了山顶。"],
+["他的学习不仅进步了，而且学习也用功了。","他的学习不仅进步了，而且更用功了。","语序不当","他不仅学习进步了，而且学习用功了学习。","他学习用功了，而且进步也学习了。"],
+["宽敞的教室里摆放着整齐的桌椅和黑板。","宽敞的教室里摆放着整齐的桌椅，墙上挂着黑板。","搭配不当","宽敞的教室里摆放着桌椅和黑板都整齐。","宽敞的黑板上摆放着教室的桌椅。"],
+["病人需要安静的休息。","病人需要安静地休息。","用词不当","病人需要安静的休息室。","病人安静需要地休息。"],
+["通过这次班会，大家明确了努力的方向目标。","通过这次班会，大家明确了努力的方向。","重复啰嗦","通过这次班会，大家明确了方向努力的目标。","通过班会这次，大家明确了目标方向目标。"],
+["老师希望我们努力学习，天天向上学习。","老师希望我们努力学习，天天向上。","重复啰嗦","老师希望我们学习努力，向上天天学习。","老师希望我们天天学习，努力向上向上。"],
+["我们要发扬成绩，克服不足的地方缺点。","我们要发扬成绩，克服不足。","重复啰嗦","我们要克服成绩，发扬不足的地方。","我们要发扬不足，克服成绩的地方。"]
+];
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/* ---------- 关卡生成器：固定种子洗题池，40 关 × 3 题 ---------- */
+function genLevels(){
+  var pool=[];
+  for(var i=0;i<CASES.length;i++)pool.push(i);
+  var r0=mulberry32(919191);
+  for(var s=pool.length-1;s>0;s--){var j=Math.floor(r0()*(s+1)),t=pool[s];pool[s]=pool[j];pool[j]=t;}
+  var fixes=[];
+  for(var k=0;k<CASES.length;k++)fixes.push(CASES[k][1]);
+  var list=[];
+  for(var li=0;li<40;li++){
+    var qs=[];
+    for(var q=0;q<3;q++){
+      var it=CASES[pool[(li*3+q)%pool.length]];
+      var opts=[it[1],it[3],it[4]];
+      var r2=mulberry32(12000+li*13+q*3);
+      var guard=0;
+      while(opts.length<(li<20?3:4)&&guard++<100){
+        var f=fixes[Math.floor(r2()*fixes.length)];
+        if(f!==it[1]&&opts.indexOf(f)<0)opts.push(f);
+      }
+      for(var m=opts.length-1;m>0;m--){var mj=Math.floor(r2()*(m+1)),tm=opts[m];opts[m]=opts[mj];opts[mj]=tm;}
+      qs.push({s:it[0],fix:it[1],cause:it[2],opts:opts,ok:opts.indexOf(it[1])});
+    }
+    list.push({name:"门诊·"+(li+1<10?"0":"")+(li+1),qs:qs,difficulty:Math.min(6,Math.floor(li/7)+1)});
+  }
+  return list;
+}
+var DEFAULT_LEVELS=genLevels();
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+/* ---------- 独立验证器：结构完整性 ---------- */
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Array.isArray(d.qs)||d.qs.length<1||d.qs.length>6)return false;
+  for(var i=0;i<d.qs.length;i++){
+    var q=d.qs[i];
+    if(!q||typeof q!=="object")return false;
+    if(typeof q.s!=="string"||!q.s||q.s.length>60)return false;
+    if(typeof q.cause!=="string"||!q.cause||q.cause.length>8)return false;
+    if(!Array.isArray(q.opts)||q.opts.length<3||q.opts.length>5)return false;
+    if(!Number.isInteger(q.ok)||q.ok<0||q.ok>=q.opts.length)return false;
+    var seen={};
+    for(var k=0;k<q.opts.length;k++){
+      var o=q.opts[k];
+      if(typeof o!=="string"||!o||o.length>60)return false;
+      if(o===q.s)return false;             /* 改正句不得与病句相同 */
+      if(seen[o])return false;
+      seen[o]=1;
+    }
+  }
+  return true;
+}
+/* 内嵌关复核：病句+正确改法+病因必须命中病句库 */
+function auditAll(){
+  var bad=[];
+  for(var i=0;i<LEVELS.length;i++){
+    var L=LEVELS[i],okLv=validLevelData(L);
+    if(okLv)for(var q=0;q<L.qs.length;q++){
+      var item=L.qs[q],ans=item.opts[item.ok],hit=false;
+      for(var c=0;c<CASES.length;c++){
+        if(CASES[c][0]===item.s&&CASES[c][1]===ans&&CASES[c][2]===item.cause){hit=true;break;}
+      }
+      if(!hit){okLv=false;break;}
+    }
+    if(!okLv)bad.push(i+1);
+  }
+  return bad;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d)||seen[d.name])return null;
+    seen[d.name]=1;
+    list.push({name:d.name,qs:d.qs.map(function(q){return{s:q.s,fix:q.fix,cause:q.cause,opts:q.opts.slice(),ok:q.ok}}),difficulty:Number.isInteger(d.difficulty)?d.difficulty:5});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,qi=0,errors=0,done=false;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  qi=0;errors=0;done=false;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="三题全答完过关";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  renderQ();updStats();
+  say("选出把病句改对的那一句");
+}
+function renderQ(){
+  var q=L.qs[qi];
+  $("qTag").textContent="病句 · 第 "+(qi+1)+" / "+L.qs.length+" 题";
+  $("qLine").textContent=q.s;
+  $("qCause").hidden=true;
+  var box=$("opts");box.innerHTML="";
+  for(var i=0;i<q.opts.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="opt";b.textContent=q.opts[i];
+      b.setAttribute("aria-label","改正候选 "+(i+1));
+      b.addEventListener("click",function(){answer(i)});
+      box.appendChild(b);
+    })(i);
+  }
+}
+function updStats(){
+  $("stQ").textContent=(qi+1)+"/"+L.qs.length;
+  var e=$("stErr");e.textContent=errors;
+  e.className="val"+(errors>0?" bad":"");
+}
+function answer(i){
+  if(done)return;
+  var q=L.qs[qi],btn=$("opts").children[i];
+  if(i===q.ok){
+    btn.classList.add("right");
+    $("opts").querySelectorAll(".opt").forEach(function(b){b.disabled=true});
+    $("qCause").hidden=false;
+    $("qCause").textContent="病因：" + q.cause;
+    say("改对了，病因是「"+q.cause+"」");
+    setTimeout(function(){
+      qi++;
+      if(qi>=L.qs.length)winLevel();
+      else{renderQ();updStats();say("选出把病句改对的那一句");}
+    },900);
+  }else{
+    errors++;updStats();
+    btn.classList.add("wrong");btn.disabled=true;
+    say("这样改还没改对，看看是不是没找到病根");
+  }
+}
+function winLevel(){
+  done=true;
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:errors}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"门诊结束！";
+  $("ovDesc").innerHTML="失误 "+errors+" 次"+(errors===0?"（妙手回春）":"")+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);$("overlay").classList.remove("show");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重开")});
+$("btnLv").addEventListener("click",openLevelSelect);
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+  else{lv++;loadLevel(lv)}
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="9"){
+    var i=parseInt(k,10)-1;
+    var btns=$("opts").querySelectorAll(".opt:not(:disabled)");
+    if(i<btns.length){btns[i].click();e.preventDefault();}
+  }
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重开")}
+  else if(e.key==="Enter"&&$("overlay").classList.contains("show")){$("ovBtn").click();e.preventDefault();}
+});
+/* ---------- 启动 ---------- */
+loadLevel(save.lv);
+var badLv=auditAll();
+if(badLv.length)say("警告：内嵌验证器发现异常关卡 "+badLv.join(","));
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

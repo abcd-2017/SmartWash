@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>错字围剿</title>
+<style>
+  /*token:GAME-THEME.md §2（全部 UI 壳走 token）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.bad { color: var(--g-danger); }
+  .board {
+    display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;
+    background: var(--g-surface); border-radius: var(--g-radius-inner);
+    padding: 14px 8px; box-shadow: var(--g-shadow); align-content: center;
+  }
+  .tchar {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 40px; min-height: 44px;
+    font-size: 22px; font-weight: 700; line-height: 1;
+    border: 0; border-radius: 10px; background: transparent; color: var(--g-text);
+    font-family: inherit; cursor: pointer; padding: 0;
+  }
+  .tchar.punc { min-width: 18px; min-height: 44px; cursor: default; color: var(--g-muted); font-weight: 400; }
+  .tchar.found { background: var(--g-primary-soft); color: var(--g-on-soft); cursor: default; }
+  .tchar.shake { animation: shake .3s ease-in-out; box-shadow: inset 0 0 0 2px var(--g-danger); }
+  @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .bar { height: 8px; border-radius: 999px; background: var(--g-surface2); margin-top: 10px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 100%; border-radius: 999px; background: var(--g-water); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（注意：动效层指令，不受 §4 主题层禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">已纠错</span><span class="val" id="stFound">0/2</span></div>
+    <div class="stat"><span class="label">失误</span><span class="val" id="stErr">0</span></div>
+  </div>
+  <div class="board" id="board" aria-label="短文，限时找出错别字"></div>
+  <div class="bar"><i id="barFill"></i></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">30 秒内点出短文里混入的错别字</p>
+  <div class="tools">
+    <button class="btn" id="btnStart">开始</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">触屏点字纠错 · 键盘 ←→ 移动游标、Enter 纠错 · 30 秒限时 · 切后台自动暂停 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 短文库：40 段自撰短文 + 错位替换对 {a:错字,b:正字,n:正字在原文中第几次出现} ---------- */
+var GAME_KEY="typo-hunt",SAVE_KEY="sw.typohunt.v1";
+var DEFAULT_LEVELS=[
+{name:"围剿·01",text:"今天天汽晴朗，我和妈妈去公园玩，看到许多美丽的花，心情非常俞快。",wrong:[{a:"汽",b:"气",n:1},{a:"俞",b:"愉",n:1}],difficulty:1},
+{name:"围剿·02",text:"明天要举行运动汇，同学们都在坐准备，希望班里能取得好成绩。",wrong:[{a:"汇",b:"会",n:1},{a:"坐",b:"做",n:1}],difficulty:1},
+{name:"围剿·03",text:"他的成积进步很快，老师表章了他，还让全班同学向他学习。",wrong:[{a:"积",b:"绩",n:1},{a:"章",b:"扬",n:1}],difficulty:1},
+{name:"围剿·04",text:"图书馆里很安静，大家都在静静的看书，我借了一本关于宇宙的书吉。",wrong:[{a:"的",b:"地",n:1},{a:"吉",b:"籍",n:1}],difficulty:1},
+{name:"围剿·05",text:"春天到了，燕子从南方飞回来了，公园里的花开得争奇斗研，引来了许多蜜峰。",wrong:[{a:"研",b:"艳",n:1},{a:"峰",b:"蜂",n:1}],difficulty:1},
+{name:"围剿·06",text:"小明的字写得工工整整，老师夸他的作页干净又漂良，让他当文娱委员。",wrong:[{a:"页",b:"业",n:1},{a:"良",b:"亮",n:1}],difficulty:1},
+{name:"围剿·07",text:"奶奶切菜时不小心切到了手，我马上帮她那来创可贴，还叮足她以后小心点。",wrong:[{a:"那",b:"拿",n:1},{a:"足",b:"嘱",n:1}],difficulty:1},
+{name:"围剿·08",text:"放学路上突然下起大雨，我们跑到亭子里避雨，等雨挺了才回家，妈妈说我像落汤鸡，真形向。",wrong:[{a:"挺",b:"停",n:1},{a:"向",b:"象",n:1}],difficulty:1},
+{name:"围剿·09",text:"爷爷很注意段练身体，每天早起跑步，身体一直很硬郎，精神也好。",wrong:[{a:"段",b:"锻",n:1},{a:"郎",b:"朗",n:1}],difficulty:1},
+{name:"围剿·10",text:"我做完了作业，还帮妈妈烧饭，妈妈夸我是个勤劳的孩子，我心里美滋滋的，比吃了密还甜。",wrong:[{a:"密",b:"蜜",n:1}],difficulty:1},
+{name:"围剿·11",text:"教室里干干净净，桌椅摆得整整齐齐，值日生把每一项工做都做得井井有挑。",wrong:[{a:"做",b:"作",n:1},{a:"挑",b:"条",n:1}],difficulty:2},
+{name:"围剿·12",text:"动物园里的猴子真调皮，一会儿爬上假山，一会儿抓耳挠塞，逗得大家哈哈大笑，仍给它一根香蕉。",wrong:[{a:"塞",b:"腮",n:1},{a:"仍",b:"扔",n:1}],difficulty:2},
+{name:"围剿·13",text:"爸爸给我买了一双新球鞋，我高兴极乐，穿上又轻又软，跑起步来轻轻松松，正合拾。",wrong:[{a:"乐",b:"了",n:1},{a:"拾",b:"适",n:1}],difficulty:2},
+{name:"围剿·14",text:"课堂上，同学们座得端端正正，认真听讲，积极举手发言，课堂记律很好。",wrong:[{a:"座",b:"坐",n:1},{a:"记",b:"纪",n:1}],difficulty:2},
+{name:"围剿·15",text:"小树苗在春风里轻轻摇摆，像在向人们招手问侯，充满了勃勃生机，看着真让人喜爱。",wrong:[{a:"侯",b:"候",n:1}],difficulty:2},
+{name:"围剿·16",text:"夏天到了，池塘里的荷花开了，一阵风佛过，送来阵阵清香，真让人心广神怡，流连忘返。",wrong:[{a:"佛",b:"拂",n:1},{a:"广",b:"旷",n:1}],difficulty:2},
+{name:"围剿·17",text:"期末考试前，我制定了复习计划，每天按步就班地复习，把错题抄在本子上，反复恋习。",wrong:[{a:"步",b:"部",n:1},{a:"恋",b:"练",n:1}],difficulty:2},
+{name:"围剿·18",text:"海水退潮后，沙滩上留下许多贝壳，五颜六色，像洒了一地的真珠，美极了，我们捡了一大代。",wrong:[{a:"真",b:"珍",n:1},{a:"代",b:"堆",n:1}],difficulty:2},
+{name:"围剿·19",text:"夜墓降临，星星在天上扎眼睛，月亮像一只弯弯的小船，静静地挂在夜空，夜色真美，让人心醉。",wrong:[{a:"墓",b:"幕",n:1},{a:"扎",b:"眨",n:1}],difficulty:3},
+{name:"围剿·20",text:"运动员们个个精神抖数，随着一声枪响，像离弦的剑一样冲出去，赛场上一片欢腾。",wrong:[{a:"数",b:"擞",n:1},{a:"剑",b:"箭",n:1}],difficulty:3},
+{name:"围剿·21",text:"秋天的果园里硕果累累，红彤彤的苹果像一个个小灯笼，把树枝都压弯了，果香沁人心卑，让人如痴如碎。",wrong:[{a:"卑",b:"脾",n:1},{a:"碎",b:"醉",n:1}],difficulty:3},
+{name:"围剿·22",text:"冬天下了一场大雪，地上铺了厚厚一层雪，小朋友们带着手套堆雪人打雪仗，个个都玩得兴高彩烈。",wrong:[{a:"带",b:"戴",n:1},{a:"彩",b:"采",n:1}],difficulty:3},
+{name:"围剿·23",text:"学习就像爬山，只要一步一个脚印，胁踏实地，坚持不懈，就一定能登上锋顶，看到最美的风景。",wrong:[{a:"胁",b:"脚",n:1},{a:"锋",b:"峰",n:1}],difficulty:3},
+{name:"围剿·24",text:"妈妈下班回来很疲惫，我给她道了一杯热茶，又帮她锤背，她欣慰地笑了，夸我长大了懂事了。",wrong:[{a:"道",b:"倒",n:1},{a:"锤",b:"捶",n:1}],difficulty:3},
+{name:"围剿·25",text:"我们班举行了朗诵比赛，小明声情并冒的朗读赢得了阵阵掌声，得了第一名。",wrong:[{a:"冒",b:"茂",n:1},{a:"的",b:"地",n:1}],difficulty:3},
+{name:"围剿·26",text:"弟弟把玩具洒了一地，妈妈让他自己收实，他还顶嘴，妈妈严素地批评了他，他惭愧地低下了头。",wrong:[{a:"实",b:"拾",n:1},{a:"素",b:"肃",n:1}],difficulty:4},
+{name:"围剿·27",text:"春天来了，柳树发芽了，小草偷偷地探出头来，到处一片生机昂然的景象，真美啊。",wrong:[{a:"昂",b:"盎",n:1}],difficulty:4},
+{name:"围剿·28",text:"医生治病救人，护士细心照故病人，他们都值得我们尊近，长大后我也想当一名医生。",wrong:[{a:"故",b:"顾",n:1},{a:"近",b:"敬",n:1}],difficulty:4},
+{name:"围剿·29",text:"放学后，我和小明在操场上打蓝球，玩得满头大汉，直到天快黑了才恋恋不舍地回家。",wrong:[{a:"蓝",b:"篮",n:1},{a:"汉",b:"汗",n:1}],difficulty:4},
+{name:"围剿·30",text:"爷爷给我讲过去的故事，他说那时候生活很困难，吃不饱穿不暖，我们要珍惜现在的辛福生活，努力学习。",wrong:[{a:"辛",b:"幸",n:1}],difficulty:4},
+{name:"围剿·31",text:"科技越来越发达，姬器人能做很多事情，我们要好好学习，长大以后为祖国做供献。",wrong:[{a:"姬",b:"机",n:1},{a:"供",b:"贡",n:1}],difficulty:4},
+{name:"围剿·32",text:"保护环境人人有则，我们要爱护花草树木，不乱扔拉圾，让家乡的天更蓝水更清。",wrong:[{a:"则",b:"责",n:1},{a:"拉",b:"垃",n:1}],difficulty:4},
+{name:"围剿·33",text:"小狗是我最好的朋有，每天我放学回家，它都摇着尾巴跑过来迎结我，可爱极了。",wrong:[{a:"有",b:"友",n:1},{a:"结",b:"接",n:1}],difficulty:5},
+{name:"围剿·34",text:"读书能曾长知识，开阔眼介，古人说读万卷书行万里路，我们要养成爱读书的好习惯。",wrong:[{a:"曾",b:"增",n:1},{a:"介",b:"界",n:1}],difficulty:5},
+{name:"围剿·35",text:"清晨，推开窗户，一屡阳光洒进屋里，空气格外清新，深深吸一口气，让人神清气爽，一天都充满活利。",wrong:[{a:"屡",b:"缕",n:1},{a:"利",b:"力",n:1}],difficulty:5},
+{name:"围剿·36",text:"博物馆里陈例着许多文物，每一件都成载着历史，我认真地听讲解员介绍，学到了很多知识。",wrong:[{a:"例",b:"列",n:1},{a:"成",b:"承",n:1}],difficulty:5},
+{name:"围剿·37",text:"爬山虽然很累，但站上山顶的那一刻，一切都直得了，远处的风景尽收眼底，让人心情舒肠。",wrong:[{a:"直",b:"值",n:1},{a:"肠",b:"畅",n:1}],difficulty:5},
+{name:"围剿·38",text:"妈妈总说我做事马糊，常常丢三拉四，我要改掉这个坏毛病，做一个细心的人。",wrong:[{a:"糊",b:"虎",n:1},{a:"拉",b:"落",n:1}],difficulty:5},
+{name:"围剿·39",text:"节约用水人人有责，洗完手要关紧水龙头，涛米水还能浇花，一水多用好处多，我们不要浪废。",wrong:[{a:"涛",b:"淘",n:1},{a:"废",b:"费",n:1}],difficulty:6},
+{name:"围剿·40",text:"新学期开始了，我给自己定了一个小目标，上课认真听讲，按时完成做业，争取天天象上。",wrong:[{a:"做",b:"作",n:1},{a:"象",b:"向",n:1}],difficulty:6}
+];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+var TIME_LIMIT=30000;
+/* ---------- 独立验证器：替换对解析 + 结构完整性 ---------- */
+function findNth(text,ch,n){
+  var cnt=0;
+  for(var i=0;i<text.length;i++){
+    if(text[i]===ch){cnt++;if(cnt===n)return i;}
+  }
+  return -1;
+}
+function resolveWrong(text,w){
+  if(!w||typeof w!=="object")return null;
+  if(typeof w.a!=="string"||w.a.length!==1)return null;
+  if(typeof w.b!=="string"||w.b.length!==1)return null;
+  if(w.a===w.b)return null;
+  var n=Number.isInteger(w.n)?w.n:1;
+  if(n<1)return null;
+  var idx=findNth(text,w.a,n);
+  if(idx<0||text[idx]!==w.a)return null;   /* 病句模型：错字按次序出现在短文中，纠错后覆盖显示正字 */
+  return {idx:idx,a:w.a,b:w.b};
+}
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(typeof d.text!=="string"||d.text.length<10||d.text.length>80)return false;
+  if(!Array.isArray(d.wrong)||d.wrong.length<1||d.wrong.length>3)return false;
+  var seenIdx={},seenA={};
+  for(var i=0;i<d.wrong.length;i++){
+    var r=resolveWrong(d.text,d.wrong[i]);
+    if(!r)return null;
+    if(seenIdx[r.idx])return null;
+    if(seenA[r.a])return null;
+    seenIdx[r.idx]=1;seenA[r.a]=1;
+  }
+  return d.wrong.map(function(w){return resolveWrong(d.text,w)});
+}
+function auditAll(){
+  var bad=[];
+  for(var i=0;i<LEVELS.length;i++)if(!validLevelData(LEVELS[i]))bad.push(i+1);
+  return bad;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    var r=validLevelData(d);
+    if(!r||seen[d.name])return null;
+    seen[d.name]=1;
+    list.push({name:d.name,text:d.text,wrong:r,difficulty:Number.isInteger(d.difficulty)?d.difficulty:5});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,wr=[],found=[],errors=0,done=false;
+var state="idle",deadline=0,pausedLeft=0,paused=false;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function isPunc(ch){return /，。！？、；：/.test(ch)}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  var r=validLevelData(L);
+  if(!r){say("关卡数据异常");return;}
+  wr=r;found=[];errors=0;done=false;state="idle";
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="混入 "+wr.length+" 个错字";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  render();updStats();
+  $("btnStart").textContent="开始";
+  say("30 秒内点出短文里混入的错别字");
+}
+function render(){
+  var b=$("board");b.innerHTML="";
+  for(var i=0;i<L.text.length;i++){
+    (function(i){
+      var ch=displayAt(i);
+      var el;
+      if(isPunc(L.text[i])){
+        el=document.createElement("span");
+        el.className="tchar punc";
+        el.textContent=L.text[i];
+      }else{
+        el=document.createElement("button");
+        var isF=found.indexOf(i)>=0;
+        el.className="tchar"+(isF?" found":"");
+        el.textContent=ch;
+        el.setAttribute("aria-label","第"+(i+1)+"字 "+ch);
+        el.addEventListener("click",function(){tryPos(i)});
+      }
+      b.appendChild(el);
+    })(i);
+  }
+}
+/* 错位处显示错字；已纠错显示正字；其余显示原文 */
+function displayAt(i){
+  for(var k=0;k<wr.length;k++){
+    if(wr[k].idx===i)return found.indexOf(i)>=0?wr[k].b:wr[k].a;
+  }
+  return L.text[i];
+}
+function updStats(){
+  $("stFound").textContent=found.length+"/"+wr.length;
+  var e=$("stErr");e.textContent=errors;
+  e.className="val"+(errors>0?" bad":"");
+}
+function tryPos(i){
+  if(done||state!=="playing"||found.indexOf(i)>=0)return;
+  var isW=wr.some(function(w){return w.idx===i});
+  if(isW){
+    found.push(i);found.sort(function(a,b){return a-b});
+    updStats();render();
+    say("纠出一个！还有 "+(wr.length-found.length)+" 个");
+    if(found.length===wr.length)endRound(true);
+  }else{
+    errors++;updStats();
+    var el=$("board").children[i];
+    el.classList.add("shake");
+    setTimeout(function(){el.classList.remove("shake")},450);
+    say("这个字没错，读一读上下文再找");
+  }
+}
+function startRound(){
+  if(state==="playing")return;
+  if(state==="paused"){
+    deadline=Date.now()+Math.max(0,pausedLeft);paused=false;state="playing";
+    $("btnStart").textContent="进行中…";
+    say("继续！");
+    return;
+  }
+  deadline=Date.now()+TIME_LIMIT;state="playing";
+  $("btnStart").textContent="进行中…";
+  say("开始！找出 "+wr.length+" 个错字");
+}
+function endRound(ok){
+  if(ok){
+    done=true;state="idle";
+    $("btnStart").textContent="开始";
+    if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+    if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:errors}).catch(function(){});
+    $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"全找出来了！";
+    $("ovDesc").innerHTML="失误 "+errors+" 次"+(errors===0?"（又快又准）":"")+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+    $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+    $("overlay").classList.add("show");
+  }else{
+    state="over";
+    $("btnStart").textContent="开始";
+    $("ovTitle").textContent="时间到！";
+    $("ovDesc").innerHTML="30 秒内没有找齐 "+wr.length+" 个错字<br>已纠出 "+found.length+" 个，点下方按钮再试一次";
+    $("ovBtn").textContent="重开本关";
+    $("overlay").classList.add("show");
+  }
+}
+function loop(){
+  requestAnimationFrame(loop);
+  if(state==="playing"&&!paused){
+    var left=deadline-Date.now();
+    if(left<=0){endRound(false);return;}
+    $("barFill").style.width=Math.max(0,left/TIME_LIMIT*100)+"%";
+  }
+}
+$("btnStart").addEventListener("click",startRound);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重开")});
+$("btnLv").addEventListener("click",function(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);$("overlay").classList.remove("show");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+});
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(state==="over"){loadLevel(lv);return;}
+  if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+  else{lv++;loadLevel(lv)}
+});
+/* 键盘：←→ 游标 + Enter 纠错 */
+var cur=-1;
+function moveCur(d){
+  var len=L.text.length;
+  do{cur=(cur+d+len)%len;}while(isPunc(L.text[cur]));
+  var el=$("board").children[cur];
+  if(el&&el.classList){
+    el.style.boxShadow="inset 0 0 0 2px var(--g-primary)";
+    setTimeout(function(){el.style.boxShadow=""},350);
+  }
+}
+document.addEventListener("keydown",function(e){
+  if(state!=="playing")return;
+  if(e.key==="ArrowLeft"){moveCur(-1);e.preventDefault();}
+  else if(e.key==="ArrowRight"){moveCur(1);e.preventDefault();}
+  else if(e.key==="Enter"){if(cur>=0)tryPos(cur);e.preventDefault();}
+});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&state==="playing"){pausedLeft=deadline-Date.now();paused=true;}
+  else if(!document.hidden&&paused){deadline=Date.now()+Math.max(0,pausedLeft);paused=false;}
+});
+/* ---------- 启动 ---------- */
+loadLevel(save.lv);
+var badLv=auditAll();
+if(badLv.length)say("警告：内嵌验证器发现异常关卡 "+badLv.join(","));
+loop();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

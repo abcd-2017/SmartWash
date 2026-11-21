@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>播棋</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致），棋盘/种子全部复用结构 token，无自造素材 token*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn { min-height: 44px; padding: 0 8px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效 */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">粮仓 我/电脑</span><span class="val" id="stStore">0/0</span></div>
+    <div class="stat"><span class="label">手数</span><span class="val" id="stMoves">0</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="播棋棋盘：上排为电脑坑与右仓，下排为你的坑与左仓，坑内圆点为种子" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点自己一坑播种，逆时针播撒；末子入己仓再播一次，末子落己方空坑可收割对坑</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo">悔棋</button>
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：数字 1-6 选你左起第几坑 · U 悔棋 · H 提示 · R 重开 · 先清空己方坑并收多粮者胜 · 40 关 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 关卡数据（坑数 × 种数 × AI 段位 × 先手组合产关） ---------- */
+var GAME_KEY="mancala",SAVE_KEY="sw.mancala.v1";
+function pad2(n){return (n<10?"0":"")+n}
+var DEFAULT_LEVELS=(function(){
+  var a=[],i;
+  for(i=1;i<=40;i++){
+    a.push({name:"播棋·"+pad2(i),pits:i<=30?6:4,seeds:i<=20?4:(i<=32?3:5),skill:Math.min(6,Math.ceil(i/7)),first:(i%5===0)?1:0});
+  }
+  return a;
+})();
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=='object'||Array.isArray(d))return false;
+  if(typeof d.name!=='string'||!d.name.trim())return false;
+  if(d.pits!==6&&d.pits!==4)return false;
+  if(d.seeds!==3&&d.seeds!==4&&d.seeds!==5)return false;
+  if(!Number.isInteger(d.skill)||d.skill<1||d.skill>6)return false;
+  if(d.first!==0&&d.first!==1)return false;
+  return true;
+}
+function normalizeLevel(d){
+  return {name:String(d.name),pits:d.pits===4?4:6,seeds:d.seeds,skill:Math.min(6,Math.max(1,d.skill)),first:d.first?1:0};
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d)||seen[d.name])return null;
+    seen[d.name]=1;list.push(normalizeLevel(d));
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){LEVELS=list.map(normalizeLevel);return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层 ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;b.disabled=i>save.lv;
+      b.addEventListener("click",function(){lv=i;persist();loadLevel(lv);hideOverlay();});
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";$("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+/* ---------- 规则引擎（纯函数；arr=坑+仓序列，玩家坑 0..n-1/仓 n，电脑坑 n+1..2n/仓 2n+1） ---------- */
+function initArr(n,seeds){
+  var a=[];
+  for(var i=0;i<2*n+2;i++)a.push(i===n||i===2*n+1?0:seeds);
+  return a;
+}
+function isOwnPit(idx,side,n){
+  if(side===0)return idx>=0&&idx<n;
+  return idx>n&&idx<=2*n;
+}
+function genMoves(arr,n,side){
+  var out=[];
+  for(var i=0;i<=2*n;i++){
+    if(i===n)continue;
+    if(isOwnPit(i,side,n)&&arr[i]>0)out.push(i);
+  }
+  return out;
+}
+function sow(arr,n,side,pit){
+  var a=arr.slice();
+  var seeds=a[pit];a[pit]=0;
+  var idx=pit,oppStore=side===0?2*n+1:n,myStore=side===0?n:2*n+1;
+  var last=-1;
+  while(seeds>0){
+    idx=(idx+1)%(2*n+2);
+    if(idx===oppStore)continue;
+    a[idx]++;seeds--;last=idx;
+  }
+  var extra=last===myStore,cap=false;
+  if(!extra&&last>=0&&isOwnPit(last,side,n)&&a[last]===1){
+    var opp=2*n-last;
+    if(a[opp]>0){a[myStore]+=a[opp]+1;a[last]=0;a[opp]=0;cap=true;}
+  }
+  return {arr:a,extra:extra,cap:cap,last:last};
+}
+function finalArr(arr,n){
+  var s0=0,s1=0,i;
+  for(i=0;i<n;i++){s0+=arr[i];s1+=arr[n+1+i];}
+  if(s0>0&&s1>0)return null;
+  var a=arr.slice();
+  for(i=0;i<n;i++){a[i]=0;a[n+1+i]=0;}
+  a[n]+=s0;a[2*n+1]+=s1;
+  return a;
+}
+function sideSeeds(arr,n,side){
+  var s=0;
+  for(var i=0;i<n;i++)s+=side===0?arr[i]:arr[n+1+i];
+  return s;
+}
+/* ---------- AI：negamax（再播同手延续），评估=仓差+己侧存子 ---------- */
+var NODES=0,BUD=90000;
+function evalArr(arr,n){
+  var s=(arr[2*n+1]-arr[n])*3;
+  s+=(sideSeeds(arr,n,1)-sideSeeds(arr,n,0))*0.12;
+  return s;
+}
+function search(arr,n,side,depth,alpha,beta){
+  NODES++;
+  var fa=finalArr(arr,n);
+  if(fa)return fa[2*n+1]-fa[n];
+  if(depth<=0||NODES>BUD)return evalArr(arr,n);
+  var mvs=genMoves(arr,n,side);
+  if(!mvs.length)return evalArr(arr,n);
+  var best=-99999;
+  for(var i=0;i<mvs.length;i++){
+    var r=sow(arr,n,side,mvs[i]);
+    var v;
+    if(r.extra)v=search(r.arr,n,side,depth-1,alpha,beta);
+    else v=-search(r.arr,n,1-side,depth-1,-beta,-alpha);
+    if(v>best)best=v;
+    if(best>alpha)alpha=best;
+    if(alpha>=beta)break;
+  }
+  return best;
+}
+function aiPick(arr,n,side,skill){
+  NODES=0;
+  var mvs=genMoves(arr,n,side);
+  if(!mvs.length)return -1;
+  var dep=[0,1,2,2,3,3,4][skill]||1;
+  var scored=[];
+  for(var i=0;i<mvs.length;i++){
+    var r=sow(arr,n,side,mvs[i]);
+    var v;
+    if(r.extra)v=search(r.arr,n,side,dep-1,-99999,99999);
+    else v=-search(r.arr,n,1-side,dep-1,-99999,99999);
+    scored.push({p:mvs[i],v:v});
+  }
+  scored.sort(function(a,b){return b.v-a.v});
+  if(skill<=2){
+    var top=scored.filter(function(x){return scored[0].v-x.v<=2});
+    return top[Math.floor(Math.random()*top.length)].p;
+  }
+  return scored[0].p;
+}
+/* ---------- 调色板 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),onSoft:v("--g-on-soft"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success")};
+}
+window.__gOnTheme=function(){palLoad();drawNow()};
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,n=6,arr=null,turn=0,over=false,won=false;
+var aiTimer=null,hist=[],hintP=-1,lastMove=-1,moves=0;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=460,H=230,pw=60;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(k){
+  if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}
+  lv=Math.max(0,Math.min(k,LEVELS.length-1));
+  L=normalizeLevel(LEVELS[lv]);
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  n=L.pits;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent=n+" 坑 × "+L.seeds+" 籽 · 电脑段位 "+L.skill+(L.first?" · 电脑先手":"");
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  arr=initArr(n,L.seeds);turn=L.first;over=false;won=false;hist=[];hintP=-1;lastMove=-1;moves=0;
+  updStats();resize();drawNow();
+  if(turn===1)aiTurn();
+  else say("点自己一坑播种；末子入己仓可再播一次，末子落己方空坑可收割对坑");
+}
+function updStats(){
+  $("stStore").textContent=arr[n]+"/"+arr[2*n+1];
+  $("stMoves").textContent=moves;
+}
+function snapshot(){hist.push(arr.slice());if(hist.length>60)hist.shift()}
+function finishPly(side,res){
+  moves++;lastMove=res.last;hintP=-1;
+  var fa=finalArr(arr,n);
+  if(fa){
+    arr=fa;updStats();drawNow();
+    endMatch(arr[2*n+1]<arr[n]);
+    return;
+  }
+  updStats();
+  if(res.extra){
+    if(side===0){say("末子入仓，再来一次！");drawNow();return;}
+    aiTurn();return;
+  }
+  turn=1-side;
+  if(side===1){say("电脑已播，请行动");}
+  if(turn===1)aiTurn();
+  else drawNow();
+}
+function playerPit(p){
+  if(over||turn!==0)return;
+  if(!isOwnPit(p,0,n)||arr[p]===0){say("选自己一侧有籽的坑");return;}
+  snapshot();
+  var r=sow(arr,n,0,p);
+  arr=r.arr;
+  finishPly(0,r);
+  drawNow();
+}
+function aiTurn(){
+  if(aiTimer)clearTimeout(aiTimer);
+  aiTimer=setTimeout(function(){
+    aiTimer=null;
+    if(over||turn!==1)return;
+    var p=aiPick(arr,n,1,L.skill);
+    if(p<0){endMatch(true);return;}
+    var r=sow(arr,n,1,p);
+    arr=r.arr;
+    say(r.cap?"电脑收割了一坑！":(r.extra?"电脑末子入仓，继续播":"电脑已播"));
+    finishPly(1,r);
+    drawNow();
+  },450);
+}
+function endMatch(w){
+  over=true;won=w;
+  if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}
+  if(w&&lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(w&&GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:arr[n]}).catch(function(){});
+  $("ovTitle").textContent=w?(lv>=LEVELS.length-1?"全部通关！":"过关！"):"败北";
+  $("ovDesc").innerHTML=w?("你收 "+arr[n]+" 籽，电脑收 "+arr[2*n+1]+" 籽"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成")):"电脑粮仓更多，多算几步再播。";
+  $("ovBtn").textContent=w?((lv>=LEVELS.length-1)?"回到第 1 关":"下一关"):"再战本关";
+  $("overlay").classList.add("show");
+}
+function hint(){
+  if(over||turn!==0)return;
+  var p=aiPick(arr,n,0,4);
+  if(p>=0){hintP=p;say("提示：建议播高亮的坑");}
+  drawNow();
+}
+/* ---------- 绘制 ---------- */
+function resize(){
+  var w=cv.parentElement.clientWidth||460,dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.round(w);
+  pw=Math.floor((W-40)/(n+2));
+  H=Math.floor(pw*2.4+40);
+  cv.style.height=H+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function pitXY(idx){
+  //布局：左仓=电脑仓；上排电脑坑(右→左)；右仓=玩家仓；下排玩家坑(左→右)，与逆时针播种方向一致
+  if(idx===n)return {x:W-44,y:40,w:34,h:H-80,store:0};    //玩家仓（右）
+  if(idx===2*n+1)return {x:10,y:40,w:34,h:H-80,store:1}; //电脑仓（左）
+  if(idx<n)return {x:44+idx*pw,y:H/2-14,w:pw-8,h:28,row:0};
+  return {x:44+(2*n-idx)*pw,y:24,w:pw-8,h:28,row:1};
+}
+function seedDots(x,y,w,h,count,seedIdx){
+  var i;
+  for(i=0;i<count&&i<14;i++){
+    var hx=(seedIdx*31+i*17)%97/97;
+    var hy=(seedIdx*17+i*29)%89/89;
+    ctx.beginPath();
+    ctx.arc(x+4+hx*(w-8),y+4+hy*(h-8),2.6,0,7);
+    ctx.fill();
+  }
+}
+function draw(){
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  var i;
+  for(i=0;i<2*n+2;i++){
+    var p=pitXY(i);
+    if(i===n||i===2*n+1){
+      ctx.fillStyle=PAL.primary;
+      ctx.beginPath();
+      var r=Math.min(10,p.w/2);
+      ctx.moveTo(p.x+r,p.y);ctx.arcTo(p.x+p.w,p.y,p.x+p.w,p.y+p.h,r);ctx.arcTo(p.x+p.w,p.y+p.h,p.x,p.y+p.h,r);
+      ctx.arcTo(p.x,p.y+p.h,p.x,p.y,r);ctx.arcTo(p.x,p.y,p.x+p.w,p.y,r);
+      ctx.closePath();ctx.fill();
+      ctx.fillStyle="#fff";   // 恒白：仓计数
+      ctx.font="700 18px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText(""+arr[i],p.x+p.w/2,p.y+p.h/2);
+      continue;
+    }
+    ctx.fillStyle=PAL.surface2;
+    ctx.beginPath();ctx.ellipse(p.x+p.w/2,p.y+p.h/2,p.w/2,p.h/2,0,0,7);ctx.fill();
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.ellipse(p.x+p.w/2,p.y+p.h/2,p.w/2,p.h/2,0,0,7);ctx.stroke();
+    ctx.fillStyle=PAL.warning;
+    seedDots(p.x,p.y,p.w,p.h,arr[i],i);
+    if(arr[i]>14){
+      ctx.fillStyle=PAL.text;ctx.font="700 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText(""+arr[i],p.x+p.w/2,p.y+p.h/2);
+    }
+    if(i===lastMove){
+      ctx.strokeStyle=PAL.primary;ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.ellipse(p.x+p.w/2,p.y+p.h/2,p.w/2+2,p.h/2+2,0,0,7);ctx.stroke();
+    }
+    if(i===hintP){
+      ctx.strokeStyle=PAL.deep;ctx.lineWidth=3;
+      ctx.beginPath();ctx.ellipse(p.x+p.w/2,p.y+p.h/2,p.w/2+3,p.h/2+3,0,0,7);ctx.stroke();
+    }
+    if(turn===0&&i<n&&arr[i]>0&&!over){
+      ctx.fillStyle=PAL.deep;
+      ctx.font="700 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText("按 "+(i+1),p.x+p.w/2,p.y+p.h+10);
+    }
+  }
+  ctx.fillStyle=PAL.muted;ctx.font="400 12px sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
+  ctx.fillText("电脑",10,14);
+  ctx.textAlign="right";
+  ctx.fillText("你（左仓是你的粮仓）",W-10,H-10);
+}
+function drawNow(){draw()}
+function loop(){draw(performance.now());requestAnimationFrame(loop)}
+/* ---------- 输入 ---------- */
+cv.addEventListener("pointerdown",function(e){
+  var rect=cv.getBoundingClientRect();
+  var x=e.clientX-rect.left,y=e.clientY-rect.top;
+  e.preventDefault();
+  for(var i=0;i<n;i++){
+    var p=pitXY(i);
+    if(x>=p.x&&x<=p.x+p.w&&y>=p.y-8&&y<=p.y+p.h+8){playerPit(i);return;}
+  }
+});
+cv.addEventListener("pointercancel",function(){});
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);});
+$("btnLv").addEventListener("click",function(){if(!over)openLevelSelect();});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(!over)return;
+  if(!won){loadLevel(lv);return;}
+  if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0);}
+  else{lv++;loadLevel(lv);}
+});
+function undo(){
+  if(!hist.length||over)return;
+  if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}
+  arr=hist.pop();turn=0;hintP=-1;lastMove=-1;
+  updStats();drawNow();say("已悔一步");
+}
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="6"){
+    var slot=parseInt(k,10)-1;   //左起第 slot 个玩家坑
+    if(slot<n)playerPit(slot);
+    e.preventDefault();
+  }
+  else if(k==="u"||k==="U")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R")loadLevel(lv);
+});
+window.addEventListener("resize",function(){resize();drawNow()});
+/* ---------- 切后台：AI 思考中断，轮次归还玩家 ---------- */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){
+    if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}
+    if(turn===1&&!over){turn=0;say("已切后台，电脑让先，请继续行动");}
+  }else drawNow();
+});
+/* ---------- 内嵌独立验证器 ---------- */
+function selfTest(){
+  var total=0,ok=0,fails=[];
+  function chk(c,name){total++;if(c)ok++;else fails.push(name);}
+  chk(DEFAULT_LEVELS.length===40,"关卡数=40");
+  chk(DEFAULT_LEVELS.every(validLevelData),"关卡配置合法");
+  chk(DEFAULT_LEVELS.some(function(d){return d.pits===4})&&DEFAULT_LEVELS.some(function(d){return d.seeds===5}),"含 4 坑/5 籽变体");
+  //播种守恒与跳过对方仓
+  var a0=initArr(6,4),sum0=0,i;
+  for(i=0;i<14;i++)sum0+=a0[i];
+  var r1=sow(a0,6,0,0);   //坑0 有4籽 → 播至坑4
+  var sum1=0;
+  for(i=0;i<14;i++)sum1+=r1.arr[i];
+  chk(sum0===sum1,"播种守恒");
+  chk(r1.arr[13]===0,"不投对方仓");
+  chk(r1.last===4&&!r1.extra&&!r1.cap,"普通播撒落点");
+  //再播：坑4 两籽 → 5、仓（末子入仓）
+  var a1=initArr(6,4);
+  a1[4]=2;a1[0]=0;
+  var r2=sow(a1,6,0,4);
+  chk(r2.extra&&r2.arr[6]===1,"末子入仓再播");
+  //跨仓播撒：坑3 四籽 → 4、5、己仓、7（跳过对方仓）
+  var r1b=sow(a0,6,0,3);
+  chk(r1b.arr[6]===1&&r1b.arr[13]===0&&r1b.last===7&&!r1b.extra,"跨仓播撒跳过对方仓");
+  //收割：坑0 一籽落坑1（原空），对坑11 有 3 籒 → 收 4
+  var a2=initArr(6,4);
+  a2[0]=1;a2[1]=0;a2[11]=3;
+  var r3=sow(a2,6,0,0);
+  chk(r3.cap&&r3.arr[6]===4&&r3.arr[1]===0&&r3.arr[11]===0,"末子落空坑收割对坑");
+  //终局收仓
+  var a3=initArr(6,4);
+  for(i=0;i<6;i++)a3[i]=0;
+  var fa=finalArr(a3,6);
+  chk(fa&&fa[13]===24&&fa[6]===0,"一方空则收尽");
+  //AI 对拍：6 局自战，守恒+终局
+  function aiGame(pits,seeds,sa,sb){
+    var a=initArr(pits,seeds),side=0,plies=0;
+    var tot=0;
+    for(i=0;i<2*pits+2;i++)tot+=a[i];
+    while(plies<400){
+      plies++;
+      if(finalArr(a,pits)){
+        var fa2=finalArr(a,pits),s=0;
+        for(i=0;i<2*pits+2;i++)s+=fa2[i];
+        return s===tot;
+      }
+      var p=(side===0?aiPick(a,pits,0,sa):aiPick(a,pits,1,sb));
+      if(p<0)return false;
+      var leg=genMoves(a,pits,side).indexOf(p)>=0;
+      if(!leg)return false;
+      var r4=sow(a,pits,side,p);
+      a=r4.arr;
+      var s2=0;
+      for(i=0;i<2*pits+2;i++)s2+=a[i];
+      if(s2!==tot)return false;
+      if(!r4.extra)side=1-side;
+    }
+    return true;
+  }
+  chk(aiGame(6,4,1,1),"AI 对拍 6坑 局1");
+  chk(aiGame(6,4,2,2),"AI 对拍 6坑 局2");
+  chk(aiGame(6,4,3,3),"AI 对拍 6坑 局3");
+  chk(aiGame(4,5,1,1),"AI 对拍 4坑5籽");
+  chk(aiGame(6,3,2,1),"AI 对拍 6坑3籽");
+  chk(aiGame(4,3,3,2),"AI 对拍 4坑3籽");
+  window.__gSelfTest={ok:ok,total:total,fails:fails};
+  if(fails.length)say("警告：内嵌自检未全过（"+ok+"/"+total+"）");
+}
+/* ---------- 启动 ---------- */
+palLoad();loadLevel(save.lv);resize();loop();selfTest();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

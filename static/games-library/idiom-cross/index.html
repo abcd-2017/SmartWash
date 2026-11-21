@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>成语十字</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.bad { color: var(--g-danger); }
+  .board { display: grid; gap: 10px; }
+  .crossbox {
+    background: var(--g-surface); border-radius: var(--g-radius-inner);
+    padding: 12px; box-shadow: var(--g-shadow);
+  }
+  .crossname { text-align: center; font-size: 12px; color: var(--g-muted); margin-bottom: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-width: 280px; margin: 0 auto; }
+  .cell {
+    aspect-ratio: 1; min-height: 44px; border: 0; border-radius: 10px;
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cell.off { background: transparent; cursor: default; pointer-events: none; }
+  .cell.done { background: var(--g-primary-soft); color: var(--g-on-soft); cursor: default; pointer-events: none; }
+  .cell.shake { animation: shake .3s ease-in-out; box-shadow: inset 0 0 0 2px var(--g-danger); }
+  .cell.sel { box-shadow: inset 0 0 0 2px var(--g-primary); }
+  .crossbox.donebox { box-shadow: var(--g-shadow), inset 0 0 0 2px var(--g-success); }
+  .pool { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0 0; }
+  .pcell {
+    min-width: 44px; min-height: 44px; border: 0; border-radius: 10px;
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 1px 0 var(--g-border);
+  }
+  .pcell.used { opacity: .2; pointer-events: none; }
+  .pcell.sel { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-primary); }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">盘面</span><span class="val" id="stGrid">0/2</span></div>
+    <div class="stat"><span class="label">失误</span><span class="val" id="stErr">0</span></div>
+  </div>
+  <div class="board" id="board"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">先点字池选字，再点空格放入，拼出纵横两个成语</p>
+  <div class="tools">
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">纵横成语共享交叉字 · 键盘 Tab 切换 + Enter 选择/放置 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 成语十字对：80 组 [横成语, 纵成语, 横共享位, 纵共享位]（均为通行成语，逐组校对） ---------- */
+var GAME_KEY="idiom-cross",SAVE_KEY="sw.idiomcross.v1";
+var PAIRS=[
+["一心一意","意气风发",3,0],["十全十美","美中不足",3,0],["天长地久","久别重逢",3,0],["山清水秀","秀外慧中",3,0],
+["风平浪静","静观其变",3,0],["花好月圆","月下老人",2,0],["火烧眉毛","毛遂自荐",2,0],["水到渠成","成竹在胸",3,0],
+["木已成舟","舟车劳顿",3,0],["土崩瓦解","解甲归田",3,0],["金玉良言","言而有信",3,0],["玉石俱焚","焚琴煮鹤",3,0],
+["龙飞凤舞","舞文弄墨",3,0],["马到成功","功成名就",3,0],["画龙点睛","龙马精神",1,0],["对牛弹琴","琴棋书画",2,0],
+["守株待兔","兔死狐悲",3,0],["亡羊补牢","牢不可破",3,0],["杀鸡儆猴","猴年马月",3,0],["井底之蛙","井井有条",0,0],
+["雪中送炭","雪上加霜",0,0],["锦上添花","花言巧语",3,0],["雨后春笋","雨过天晴",0,0],["电闪雷鸣","鸣锣开道",3,0],
+["雷厉风行","行云流水",3,0],["春暖花开","开门见山",3,0],["秋高气爽","气象万千",2,0],["海阔天空","空穴来风",3,0],
+["一鸣惊人","人山人海",2,0],["百发百中","中流砥柱",2,0],["千军万马","马首是瞻",2,0],["万水千山","山盟海誓",2,0],
+["五湖四海","海枯石烂",3,0],["六神无主","主客颠倒",3,0],["七上八下","下不为例",2,0],["八仙过海","海底捞月",3,0],
+["九牛一毛","毛骨悚然",3,0],["十面埋伏","十拿九稳",0,0],["半途而废","废寝忘食",3,0],["门庭若市","市井之徒",3,0],
+["车水马龙","龙潭虎穴",3,0],["灯红酒绿","绿林好汉",3,0],["纸上谈兵","兵临城下",3,0],["笔走龙蛇","笔下生花",0,0],
+["墨守成规","规行矩步",3,0],["天衣无缝","天罗地网",0,0],["地久天长","长驱直入",3,0],["日新月异","异想天开",3,0],
+["月明星稀","稀奇古怪",3,0],["星火燎原","原形毕露",3,0],["风雨同舟","舟车劳顿",3,0],["云开见日","日理万机",3,0],
+["电光石火","火冒三丈",3,0],["冰天雪地","地大物博",3,0],["春华秋实","实事求是",3,0],["夏日可畏","畏缩不前",3,0],
+["秋风落叶","叶落归根",2,0],["眉开眼笑","笑逐颜开",3,0],["口若悬河","口是心非",0,0],["眼疾手快","快马加鞭",3,0],
+["耳听八方","方兴未艾",3,0],["手忙脚乱","乱七八糟",3,0],["足智多谋","谋事在人",3,0],["心花怒放","放任自流",3,0],
+["高瞻远瞩","高歌猛进",0,0],["深思熟虑","深入浅出",0,0],["轻而易举","轻描淡写",0,0],["重于泰山","山穷水尽",2,0],
+["快人快语","语重心长",3,0],["好高骛远","远见卓识",3,0],["多多益善","善始善终",3,0],["少见多怪","怪模怪样",3,0],
+["老当益壮","壮志凌云",3,0],["小题大做","做贼心虚",3,0],["打草惊蛇","草木皆兵",1,0],["落花流水","水滴石穿",3,0],
+["石破天惊","惊天动地",3,0],["守口如瓶","守株待兔",0,0],["火眼金睛","金玉良言",2,0],["一帆风顺","顺风顺水",3,0]
+];
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/* ---------- 关卡：40 关 × 2 盘，字池 = 盘面 7 字 + 3 个干扰字（固定种子） ---------- */
+function genLevels(){
+  var allChars={};
+  for(var p=0;p<PAIRS.length;p++){
+    allChars[PAIRS[p][0][PAIRS[p][2]]]=1;
+    for(var c=0;c<4;c++){allChars[PAIRS[p][0][c]]=1;allChars[PAIRS[p][1][c]]=1;}
+  }
+  var charPool=[];for(var k in allChars)charPool.push(k);
+  var list=[];
+  for(var i=0;i<40;i++){
+    var rnd=mulberry32(6000+i*17),gs=[];
+    for(var g=0;g<2;g++){
+      var pair=PAIRS[(i*2+g)%PAIRS.length];
+      var need=[pair[0][pair[2]]];
+      for(var c2=0;c2<4;c2++){
+        if(c2!==pair[2])need.push(pair[0][c2]);
+        if(c2!==pair[3])need.push(pair[1][c2]);
+      }
+      var pool=need.slice(),used={};used[need.join("|")]=1;
+      for(var n=0;n<need.length;n++)used[need[n]]=1;
+      var guard=0;
+      while(pool.length<10&&guard++<200){
+        var w=charPool[Math.floor(rnd()*charPool.length)];
+        if(used[w])continue;
+        used[w]=1;pool.push(w);
+      }
+      for(var m=pool.length-1;m>0;m--){var mj=Math.floor(rnd()*(m+1)),tm=pool[m];pool[m]=pool[mj];pool[mj]=tm;}
+      gs.push({h:pair[0],v:pair[1],ch:pair[2],cv:pair[3],pool:pool});
+    }
+    list.push({name:"十字·"+(i+1<10?"0":"")+(i+1),gs:gs,difficulty:Math.min(6,Math.floor(i/7)+1)});
+  }
+  return list;
+}
+var DEFAULT_LEVELS=genLevels();
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+
+/* ---------- 独立验证器：结构完整性 + 十字共享字约束 ---------- */
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Array.isArray(d.gs)||d.gs.length<1||d.gs.length>4)return false;
+  var seen={};
+  for(var i=0;i<d.gs.length;i++){
+    var g=d.gs[i];
+    if(!g||typeof g!=="object")return false;
+    if(typeof g.h!=="string"||g.h.length!==4)return false;
+    if(typeof g.v!=="string"||g.v.length!==4)return false;
+    if(!Number.isInteger(g.ch)||g.ch<0||g.ch>3)return false;
+    if(!Number.isInteger(g.cv)||g.cv<0||g.cv>3)return false;
+    if(g.h[g.ch]!==g.v[g.cv])return false;    /* 十字约束：共享字必须一致 */
+    if(!Array.isArray(g.pool)||g.pool.length<8||g.pool.length>14)return false;
+    var seenC={};
+    for(var k=0;k<g.pool.length;k++){
+      var ch=g.pool[k];
+      if(typeof ch!=="string"||ch.length!==1)return false;
+      if(seenC[ch])return false;
+      seenC[ch]=1;
+    }
+    /* 字池必须覆盖盘面全部 7 格用字 */
+    var need={};
+    for(var c2=0;c2<4;c2++){need[g.h[c2]]=1;need[g.v[c2]]=1;}
+    for(var key in need)if(!seenC[key])return false;
+    var tag=g.h+"|"+g.v;
+    if(seen[tag])return false;
+    seen[tag]=1;
+  }
+  return true;
+}
+function auditAll(){
+  var bad=[];
+  for(var i=0;i<LEVELS.length;i++)if(!validLevelData(LEVELS[i]))bad.push(i+1);
+  return bad;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d)||seen[d.name])return null;
+    seen[d.name]=1;
+    list.push({name:d.name,gs:d.gs.map(function(g){return{h:g.h,v:g.v,ch:g.ch,cv:g.cv,pool:g.pool.slice()}}),difficulty:Number.isInteger(d.difficulty)?d.difficulty:5});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,gi=0,errors=0,done=false;
+/* 每盘运行时状态：cells = {row,col,roles:[{slot,idx}],ch,done}；poolUsed=[] */
+var st=null;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  gi=0;errors=0;done=false;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="两盘全拼对过关";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  loadGrid();updStats();
+  say("先点字池选字，再点空格放入，拼出纵横两个成语");
+}
+function loadGrid(){
+  var g=L.gs[gi];
+  st={g:g,cells:[],poolUsed:g.pool.map(function(){return false}),sel:-1,placed:{}};
+  /* 生成 4×4 格位 */
+  for(var r=0;r<4;r++)for(var c=0;c<4;c++){
+    var roles=[];
+    if(r===1)roles.push({slot:"h",idx:c});
+    if(c===g.ch)roles.push({slot:"v",idx:r});
+    if(roles.length)st.cells.push({row:r,col:c,roles:roles,ch:"",done:false});
+  }
+  renderGrid();renderPool();
+  say("横「"+"？".repeat(4)+"」纵「"+"？".repeat(4)+"」—— 从字池选字放入");
+}
+function correctFor(cell){
+  var g=st.g,need=null;
+  for(var k=0;k<cell.roles.length;k++){
+    var role=cell.roles[k];
+    var c=(role.slot==="h")?g.h[role.idx]:g.v[role.idx];
+    if(need===null)need=c;
+    else if(need!==c)need="!";   /* 理论不可达：共享字一致已由验证器保证 */
+  }
+  return need;
+}
+function renderGrid(){
+  var box=$("board");
+  box.innerHTML="";
+  var wrap=document.createElement("div");
+  wrap.className="crossbox"+(st.finished?" donebox":"");
+  wrap.innerHTML='<div class="crossname">'+(st.finished?"已拼成："+st.g.h+" × "+st.g.v:"第 "+(gi+1)+" / "+L.gs.length+" 盘 · 点字池再点空格")+'</div>';
+  var grid=document.createElement("div");
+  grid.className="grid";
+  var byPos={};
+  for(var ci=0;ci<st.cells.length;ci++)byPos[st.cells[ci].row+"_"+st.cells[ci].col]=ci;
+  for(var r=0;r<4;r++)for(var c=0;c<4;c++){
+    var key=r+"_"+c,b=document.createElement("button");
+    if(byPos[key]===undefined){b.className="cell off";b.textContent="";b.disabled=true;}
+    else{
+      var cell=st.cells[byPos[key]];
+      b.className="cell"+(cell.done?" done":"")+(st.sel>=0&&!cell.done?" sel":"");
+      b.textContent=cell.ch||"";
+      b.setAttribute("aria-label",cell.done?"已填 "+cell.ch:"空格");
+      (function(ci){
+        b.addEventListener("click",function(){place(ci)});
+      })(byPos[key]);
+    }
+    grid.appendChild(b);
+  }
+  wrap.appendChild(grid);
+  box.appendChild(wrap);
+}
+function renderPool(){
+  var g=st.g;
+  var poolEl=document.createElement("div");
+  poolEl.className="pool";
+  for(var i=0;i<g.pool.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="pcell"+(st.poolUsed[i]?" used":"")+(st.sel===i?" sel":"");
+      b.textContent=g.pool[i];
+      b.setAttribute("aria-label","字池 "+g.pool[i]);
+      b.addEventListener("click",function(){pick(i)});
+      poolEl.appendChild(b);
+    })(i);
+  }
+  $("board").appendChild(poolEl);
+}
+function updStats(){
+  $("stGrid").textContent=Math.min(gi+1,L.gs.length)+"/"+L.gs.length;
+  var e=$("stErr");e.textContent=errors;
+  e.className="val"+(errors>0?" bad":"");
+}
+function pick(i){
+  if(st.poolUsed[i])return;
+  st.sel=(st.sel===i)?-1:i;
+  renderGrid();renderPool();
+}
+function place(ci){
+  if(st.sel<0){say("先点字池选一个字");return;}
+  var cell=st.cells[ci];
+  if(cell.done)return;
+  var g=st.g,ch=g.pool[st.sel],need=correctFor(cell);
+  if(ch===need){
+    cell.ch=ch;cell.done=true;
+    st.poolUsed[st.sel]=true;st.sel=-1;
+    st.placed[ci]=true;
+    renderGrid();renderPool();
+    var remain=st.cells.filter(function(c){return !c.done}).length;
+    say("放对了！还差 "+remain+" 格");
+    if(remain===0){
+      say("这一盘拼成了："+g.h+" × "+g.v);
+      setTimeout(nextGrid,900);
+    }
+  }else{
+    errors++;updStats();
+    var gridBtns=$("board").querySelectorAll(".grid .cell");
+    /* 找到对应按钮抖动 */
+    var idx=0;
+    for(var k=0;k<gridBtns.length;k++){
+      var btn=gridBtns[k];
+      if(btn.classList.contains("off"))continue;
+      if(idx===ci){
+        btn.classList.add("shake");
+        setTimeout(function(){btn.classList.remove("shake")},400);
+        break;
+      }
+      idx++;
+    }
+    say("这个字放不进这格，想想横竖两句成语");
+  }
+}
+function nextGrid(){
+  gi++;updStats();
+  if(gi>=L.gs.length)winLevel();
+  else loadGrid();
+}
+function winLevel(){
+  done=true;
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:errors}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"十字拼成！";
+  $("ovDesc").innerHTML="失误 "+errors+" 次"+(errors===0?"（一气呵成）":"")+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);$("overlay").classList.remove("show");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重开")});
+$("btnLv").addEventListener("click",openLevelSelect);
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+  else{lv++;loadLevel(lv)}
+});
+window.addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&$("overlay").classList.contains("show")){$("ovBtn").click();e.preventDefault();}
+  else if(e.key==="r"||e.key==="R"){loadLevel(lv);say("本关已重开")}
+});
+/* ---------- 启动 ---------- */
+loadLevel(save.lv);
+var badLv=auditAll();
+if(badLv.length)say("警告：内嵌验证器发现异常关卡 "+badLv.join(","));
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

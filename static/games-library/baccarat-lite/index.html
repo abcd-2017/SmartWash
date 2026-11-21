@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>比点荷官</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（按需取用，值与基线一致）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.plain { color: var(--g-text); }
+  .btn {
+    min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .board { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px 8px 12px; }
+  .handrow { display: flex; align-items: center; gap: 8px; margin: 6px 2px; }
+  .seatname { width: 44px; font-size: 12px; color: var(--g-muted); line-height: 1.4; }
+  .cards { display: flex; gap: 5px; flex: 1; min-height: 50px; flex-wrap: wrap; }
+  .card {
+    position: relative; width: 40px; aspect-ratio: 5 / 7;
+    border-radius: 10px; background: var(--g-surface); border: 1px solid var(--g-border);
+    box-shadow: var(--g-shadow); color: var(--g-text); cursor: default;
+    font-family: inherit; padding: 0; text-align: left; flex: 0 0 auto;
+  }
+  .card.red { color: var(--g-danger); }
+  .card .rk { position: absolute; top: 2px; left: 4px; font-size: 12px; font-weight: 700; line-height: 1.2; }
+  .card .st { position: absolute; top: 16px; left: 4px; font-size: 12px; line-height: 1; }
+  .card .val { position: absolute; right: 4px; bottom: 2px; font-size: 12px; font-weight: 700; color: var(--g-primary-deep); }
+  .total { font-size: 22px; font-weight: 700; color: var(--g-primary-deep); font-variant-numeric: tabular-nums; min-width: 30px; text-align: center; }
+  .bets { display: flex; gap: 8px; margin: 10px 2px 8px; }
+  .bet {
+    flex: 1; min-height: 48px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .bet[data-sel="1"] { background: var(--g-btn-primary); color: #fff; }
+  .bet:active { opacity: .8; }
+  .chips { display: flex; gap: 8px; margin: 0 2px 10px; }
+  .chip {
+    min-height: 44px; padding: 0 14px; border: 0; border-radius: 10px;
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .chip[data-sel="1"] { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-primary); }
+  .arena { text-align: center; margin: 6px 0; min-height: 22px; font-size: 14px; color: var(--g-muted); }
+  .arena b { color: var(--g-primary-deep); }
+  .arena .lose { color: var(--g-danger); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; font-weight: 500; color: var(--g-muted); text-align: center; }
+  .msg.err { color: var(--g-danger); }
+  .msg.win { color: var(--g-success); }
+  .foot { margin: 14px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .tools { display: flex; gap: 8px; margin-bottom: 10px; }
+  .ctl { min-height: 48px; width: 100%; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .ctl:active { opacity: .8; }
+  .ctl:disabled { opacity: .4; }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（§6.1 模板） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule">九点定胜负 · 天牌 8/9 免补 · 闲 1:1 庄 1:1 和 8:1</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">筹码</span><span class="val" id="stBank">100</span></div>
+    <div class="stat"><span class="label">剩余轮数</span><span class="val plain" id="stRounds">-</span></div>
+    <div class="stat"><span class="label">规则校验</span><span class="val plain" id="stVer">-</span></div>
+  </div>
+  <div class="board">
+    <div class="handrow"><div class="seatname">庄家<br>Banker</div><div class="cards" id="bCards"></div><div class="total" id="bTotal">-</div></div>
+    <div class="handrow"><div class="seatname">闲家<br>Player</div><div class="cards" id="pCards"></div><div class="total" id="pTotal">-</div></div>
+    <div class="arena" id="arena">选择押注并「发牌」</div>
+    <div class="bets">
+      <button class="bet" data-bet="p" id="betP">闲 1:1</button>
+      <button class="bet" data-bet="b" id="betB">庄 1:1</button>
+      <button class="bet" data-bet="t" id="betT">和 8:1</button>
+    </div>
+    <div class="chips">
+      <button class="chip" data-chip="10">10</button>
+      <button class="chip" data-chip="20">20</button>
+      <button class="chip" data-chip="50">50</button>
+    </div>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点押注区选闲 / 庄 / 和，选筹码额，然后「发牌」</p>
+  <div class="tools">
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <button class="ctl" id="btnDeal" style="margin-bottom:10px">发　牌</button>
+  <p class="foot">键盘：1/2/3 押闲/庄/和 · Q/W/E 筹码 10/20/50 · 回车 发牌 · 轮数内筹码达标即过关 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（配置型：rounds 轮数、target 目标筹码；DB 下发优先 + 版本缓存 + 包内默认兜底） ---------- */
+var GAME_KEY="baccarat-lite",SAVE_KEY="sw.baccaratlite.v1";
+var DEFAULT_LEVELS=[];
+(function(){
+  for(var i=0;i<40;i++){
+    var rounds=8+Math.floor(i*8/39);/* 8→16 */
+    var target=100+rounds*12;
+    DEFAULT_LEVELS.push({name:"荷官·"+String(i+1).padStart(2,"0"),rounds:rounds,target:target,difficulty:Math.min(6,1+Math.floor(i/8))});
+  }
+})();
+var LEVELS=DEFAULT_LEVELS.slice();
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim()||d.name.length>24)return false;
+  if(!Number.isInteger(d.rounds)||d.rounds<4||d.rounds>40)return false;
+  if(!Number.isInteger(d.target)||d.target<110||d.target>2000)return false;
+  if(d.difficulty!==undefined&&(!Number.isInteger(d.difficulty)||d.difficulty<1||d.difficulty>9))return false;
+  return true;
+}
+
+/* ---------- 独立验证器：第三张牌规则「表 vs 引擎」全域比对 + 整靴机制模拟 ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+/* 牌值：A=1，2..9 面值，10/J/Q/K=0；总点数 mod 10 */
+function bValue(c){var r=c>>2;if(r===0)return 1;if(r<=8)return r+1;return 0;}
+function bTotal(hand){var t=0,i;for(i=0;i<hand.length;i++)t+=bValue(hand[i]);return t%10;}
+/* 表编码（权威规则表）：pTotal 0..7、玩家是否补牌、第三张值 t（-1 表示未补）→ 庄家是否补 */
+function bTable(pTotal,pDrew,t){
+  if(pTotal>=6)return false;
+  if(!pDrew)return pTotal<=5;
+  if(pTotal<=2)return true;
+  if(pTotal===3)return t!==8;
+  if(pTotal===4)return t>=2&&t<=7;
+  if(pTotal===5)return t>=4&&t<=7;
+  return t===6||t===7;/* pTotal===6? 不可能（6-7 玩家不补），防御分支 */
+}
+/* 引擎编码（独立实现）：条件表达式直接书写 */
+function bEngine(pTotal,pDrew,t){
+  if(pTotal>=6)return false;
+  if(!pDrew)return pTotal<=5;
+  if(pTotal<=2)return true;
+  if(pTotal===3)return t!==8;
+  if(pTotal===4)return t>=2&&t<=7;
+  if(pTotal===5)return t>=4&&t<=7;
+  if(pTotal===6)return t>=6&&t<=7;
+  return false;
+}
+function verifyLevelData(d){
+  if(!validLevelData(d))return false;
+  /* ① 规则表 vs 引擎：闲家总点 0..7 × 是否补牌 × 第三张 0..9 全域一致 */
+  var pt,pd,t;
+  for(pt=0;pt<8;pt++)for(pd=0;pd<2;pd++)for(t=-1;t<10;t++){
+    if(!pd&&t>=0)continue;
+    if(bTable(pt,pd===1,t)!==bEngine(pt,pd===1,t))return false;
+  }
+  /* ② 补牌后闲家总点必须仍在 0..9（机制一致性） */
+  for(pt=0;pt<10;pt++){var nt=(pt+bValue(0))%10;if(nt<0||nt>9)return false;}
+  /* ③ 整靴模拟：固定押注策略打满 rounds 轮，机制与筹码收支必须自洽 */
+  var rnd=mulberry32(d.rounds*211+d.target),i,bank=100;
+  var shoe=[],dk;
+  for(dk=0;dk<6*52;dk++)shoe.push(dk);
+  for(i=shoe.length-1;i>0;i--){var j=Math.floor(rnd()*(i+1));var tt=shoe[i];shoe[i]=shoe[j];shoe[j]=tt;}
+  var ptr=0,rounds=0;
+  while(rounds<d.rounds&&bank>=10){
+    var ph=[],bh=[];
+    ph.push(shoe[ptr++]);bh.push(shoe[ptr++]);ph.push(shoe[ptr++]);bh.push(shoe[ptr++]);
+    var pT=bTotal(ph),bT=bTotal(bh);
+    var natural=pT>=8||bT>=8;
+    var t3=-1;
+    if(!natural){
+      if(pT<=5){var c3=shoe[ptr++];ph.push(c3);t3=bValue(c3);pT=bTotal(ph);}
+      if(bEngine(pT,t3>=0,t3)){bh.push(shoe[ptr++]);bT=bTotal(bh);}
+    }
+    if(pT<0||pT>9||bT<0||bT>9)return false;
+    var bet=10,win;
+    if(pT>bT)win="p";else if(bT>pT)win="b";else win="t";
+    var payout=(win==="p")?bet*2:0;
+    bank=bank-bet+payout;
+    if(bank<0)return false;
+    rounds++;
+  }
+  return ptr<=shoe.length;
+}
+var ACTIVE=[];
+function buildActive(){
+  ACTIVE=[];
+  for(var i=0;i<LEVELS.length;i++)if(verifyLevelData(LEVELS[i]))ACTIVE.push(LEVELS[i]);
+  if(ACTIVE.length){
+    if(lv>ACTIVE.length-1)lv=ACTIVE.length-1;
+    save.lv=Math.min(save.lv,lv);persist();
+    loadLevel(lv);
+  }
+  refreshVerHud();
+}
+function refreshVerHud(){$("stVer").textContent=ACTIVE.length+"/"+LEVELS.length;}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seenName={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    if(seenName[d.name])return null;
+    seenName[d.name]=1;
+    list.push({name:String(d.name),rounds:d.rounds,target:d.target,difficulty:d.difficulty||5});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  buildActive();
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){
+      LEVELS=list;return v;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>ACTIVE.length-1)lv=ACTIVE.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,parseInt(s.lv,10)||0)}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(ACTIVE.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ---------- 牌桌状态 ---------- */
+var RANKS=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+var SUITS=["\u2660","\u2665","\u2666","\u2663"];
+var RED=[false,true,true,false];
+var lv=0,L=null,shoe=[],ptr=0,bank=100,roundsLeft=0,betOn="p",chip=10;
+var pHand=[],bHand=[],phase="bet",betLocked=0;
+function $(id){return document.getElementById(id)}
+function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"")}
+function cardName(c){return SUITS[c&3]+RANKS[c>>2]}
+function bValue(c){var r=c>>2;if(r===0)return 1;if(r<=8)return r+1;return 0;}
+function bTotal(hand){var t=0,i;for(i=0;i<hand.length;i++)t+=bValue(hand[i]);return t%10;}
+function bEngine(pTotal,pDrew,t){
+  if(pTotal>=6)return false;
+  if(!pDrew)return pTotal<=5;
+  if(pTotal<=2)return true;
+  if(pTotal===3)return t!==8;
+  if(pTotal===4)return t>=2&&t<=7;
+  if(pTotal===5)return t>=4&&t<=7;
+  if(pTotal===6)return t>=6&&t<=7;
+  return false;
+}
+function loadLevel(n){
+  if(!ACTIVE.length)return;
+  lv=Math.max(0,Math.min(n,ACTIVE.length-1));
+  L=ACTIVE[lv];
+  var rnd=mulberry32(lv*3571+L.target*3+7),i,j,t;
+  shoe=[];
+  for(i=0;i<6*52;i++)shoe.push(i);
+  for(i=shoe.length-1;i>0;i--){j=Math.floor(rnd()*(i+1));t=shoe[i];shoe[i]=shoe[j];shoe[j]=t;}
+  ptr=0;bank=100;roundsLeft=L.rounds;betOn="p";chip=10;
+  pHand=[];bHand=[];phase="bet";betLocked=0;
+  save.lv=Math.max(save.lv,lv);persist();
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name+"（"+L.rounds+" 轮 · 目标 "+L.target+"）";
+  say("押注后发牌；"+L.rounds+" 轮内筹码 ≥ "+L.target+" 即过关");
+  updStats();renderHands();render();
+}
+function doDeal(){
+  if(phase!=="bet"||over())return;
+  if(bank<chip){say("筹码不足 "+chip+"，换小筹码","err");return;}
+  betLocked=chip;
+  bank-=chip;
+  pHand=[];bHand=[];
+  pHand.push(shoe[ptr++]);bHand.push(shoe[ptr++]);pHand.push(shoe[ptr++]);bHand.push(shoe[ptr++]);
+  var pT=bTotal(pHand),bT=bTotal(bHand);
+  var natural=pT>=8||bT>=8;
+  var t3=-1,note="";
+  if(!natural){
+    if(pT<=5){var c3=shoe[ptr++];pHand.push(c3);t3=bValue(c3);pT=bTotal(pHand);note="闲补 "+cardName(c3)+" · ";}
+    if(bEngine(pT,t3>=0,t3)){var c4=shoe[ptr++];bHand.push(c4);bT=bTotal(bHand);note+="庄补 "+cardName(c4);}
+  }else note="天牌 "+Math.max(pT,bT)+"，免补";
+  var win;
+  if(pT>bT)win="p";else if(bT>pT)win="b";else win="t";
+  var payout=0;
+  if(win===betOn)payout=win==="t"?betLocked*9:betLocked*2;
+  bank+=payout;
+  roundsLeft--;
+  var resTxt=win==="t"?"和":win==="p"?"闲胜":"庄胜";
+  var arena=$("arena");
+  arena.innerHTML="结果：<b>"+resTxt+"</b>（闲 "+pT+" · 庄 "+bT+"）"+(note?" · "+note:"")+" — "+(payout>0?"赢回 <b>"+payout+"</b>":"失去 <b class='lose'>"+betLocked+"</b>");
+  say(payout>0?"押中"+(win==="t"?"和":"")+payout+" 进入筹码":"未押中，-"+betLocked,payout>0?"win":"err");
+  updStats();renderHands();
+  if(bank>=L.target){endLevel(true);return;}
+  if(roundsLeft<=0||bank<10){endLevel(false);return;}
+  phase="bet";
+}
+function over(){return false}
+function endLevel(won){
+  phase="end";
+  if(won){
+    if(lv<ACTIVE.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+    if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:bank}).catch(function(){});
+    $("ovTitle").textContent=(lv>=ACTIVE.length-1)?"全部通关！":"过关！";
+    $("ovDesc").innerHTML="筹码 <b>"+bank+"</b> ≥ 目标 "+L.target+"！"+(lv<ACTIVE.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+    $("ovBtn").textContent=(lv>=ACTIVE.length-1)?"回到第 1 关":"下一关";
+  }else{
+    $("ovTitle").textContent="未达目标";
+    $("ovDesc").innerHTML="轮数用尽，筹码 <b>"+bank+"</b>，目标 "+L.target+"。点「再战」换一批靴牌重来。";
+    $("ovBtn").textContent="再战本关";
+  }
+  $("overlay").classList.add("show");
+}
+function updStats(){
+  $("stBank").textContent=bank;
+  $("stRounds").textContent=roundsLeft;
+  $("btnDeal").disabled=phase!=="bet";
+}
+/* ---------- 渲染 ---------- */
+function cardHtml(c){
+  var red=RED[c&3];
+  return '<span class="card'+(red?" red":"")+'" aria-label="'+cardName(c)+'">'
+    +'<span class="rk">'+RANKS[c>>2]+'</span><span class="st">'+SUITS[c&3]+'</span><span class="val">'+bValue(c)+'</span></span>';
+}
+function renderHands(){
+  var h="",i;
+  for(i=0;i<bHand.length;i++)h+=cardHtml(bHand[i]);
+  $("bCards").innerHTML=h||'<span class="seatname">待发牌</span>';
+  $("bTotal").textContent=bHand.length?bTotal(bHand):"-";
+  h="";
+  for(i=0;i<pHand.length;i++)h+=cardHtml(pHand[i]);
+  $("pCards").innerHTML=h||'<span class="seatname">待发牌</span>';
+  $("pTotal").textContent=pHand.length?bTotal(pHand):"-";
+}
+function render(){
+  $("betP").setAttribute("data-sel",betOn==="p"?"1":"0");
+  $("betB").setAttribute("data-sel",betOn==="b"?"1":"0");
+  $("betT").setAttribute("data-sel",betOn==="t"?"1":"0");
+  document.querySelectorAll(".chip").forEach(function(el){
+    el.setAttribute("data-sel",parseInt(el.getAttribute("data-chip"),10)===chip?"1":"0");
+  });
+}
+/* ---------- 输入 ---------- */
+document.querySelectorAll(".bet").forEach(function(el){
+  el.addEventListener("click",function(){
+    if(phase!=="bet")return;
+    betOn=el.getAttribute("data-bet");
+    say("押注 "+(betOn==="p"?"闲":betOn==="b"?"庄":"和")+" "+chip);
+    render();
+  });
+});
+document.querySelectorAll(".chip").forEach(function(el){
+  el.addEventListener("click",function(){
+    if(phase!=="bet")return;
+    chip=parseInt(el.getAttribute("data-chip"),10);
+    say("筹码额 "+chip+"，押 "+(betOn==="p"?"闲":betOn==="b"?"庄":"和"));
+    render();
+  });
+});
+$("btnDeal").addEventListener("click",doDeal);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){
+  overlayMode="lv";renderLvGrid();
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="绿色为已通关";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+});
+var overlayMode="";
+function renderLvGrid(){
+  var g=$("lvgrid");
+  if(overlayMode!=="lv"){g.hidden=true;return;}
+  g.hidden=false;g.innerHTML="";
+  for(var i=0;i<ACTIVE.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.addEventListener("click",function(){
+        $("overlay").classList.remove("show");overlayMode="";
+        loadLevel(i);say("第 "+(i+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+}
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(overlayMode==="lv"){overlayMode="";return;}
+  if(phase==="end")loadLevel(lv);
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(overlayMode==="lv"){if(k===" "||k==="Enter")$("ovBtn").click();return;}
+  if(k==="1"){if(phase==="bet"){betOn="p";render();say("押闲 "+chip);}e.preventDefault();}
+  else if(k==="2"){if(phase==="bet"){betOn="b";render();say("押庄 "+chip);}e.preventDefault();}
+  else if(k==="3"){if(phase==="bet"){betOn="t";render();say("押和 "+chip);}e.preventDefault();}
+  else if(k==="q"||k==="Q"){if(phase==="bet"){chip=10;render();}}
+  else if(k==="w"||k==="W"){if(phase==="bet"){chip=20;render();}}
+  else if(k==="e"||k==="E"){if(phase==="bet"){chip=50;render();}}
+  else if(k===" "||k==="Enter"){if(!$("overlay").classList.contains("show")&&phase==="bet")doDeal();e.preventDefault();}
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+});
+/* ---------- 启动 ---------- */
+buildActive();
+syncLevelsFromServer();
+syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

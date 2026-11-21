@@ -51,7 +51,15 @@ const STRICT = new Set([
   "shadow-match", "hex-fill", "lock-combo", "escape-room", "treasure-grid", "number-path", "color-route",
   "magnet-poles", "water-dig", "map-fold", "paper-fold-cut", "weight-order", "balance-stack", "door-keys",
   "hamster-run", "pogo-street", "surf-wave", "ski-slalom", "bobsled-drift", "canoe-rapids", "relay-baton",
-  "hoop-shot", "curling-sweep", "archery-move", "clay-shoot"
+  "hoop-shot", "curling-sweep", "archery-move", "clay-shoot",
+  "pinyin-tone", "radical-hunt", "stroke-fill", "word-link", "antonym-pair", "synonym-ladder",
+  "proverb-fill", "poem-order", "typo-hunt", "sentence-fix", "pinyin-write", "measure-fill", "word-grid",
+  "tone-tower", "glyph-pair", "couplet-pair", "xiehouyu", "twist-spot", "mad-lib", "stroke-count",
+  "word-burst", "char-rain", "anagram-EN", "typing-race", "idiom-cross", "homophone", "word-hunt",
+  "freecell", "pyramid-sol", "golf-solitaire", "clock-solitaire", "accordion-sol", "rummy-lite", "old-maid",
+  "war-cards", "spit-race", "three-card-monte", "baccarat-lite", "dice-poker", "stop-bus", "dudo-bluff",
+  "checkers", "hex-line", "breakthrough", "morris-line", "minishogi", "jungle-dark", "backgammon-lite",
+  "ludo-solo", "snake-ladder", "mancala", "abalone-push"
 ]);
 
 // §2 基础 token + §3 已登记素材 token 前缀
