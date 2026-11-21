@@ -30,9 +30,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -557,5 +564,26 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         lockersMapper.updateById(freeLocker);
         log.info("分配寄存柜, lockerId: {}, schoolId: {}", freeLocker.getLockerId(), schoolId);
         return freeLocker.getLockerId();
+    }
+
+    /**
+     * 生成取件二维码（评审报告后端 #34：归属校验与生成逻辑自 controller 下沉 service）
+     */
+    @Override
+    public String generatePickupQrCode(Long userId, String pickCode) {
+        if (userId == null || !ownsPickupCode(userId, pickCode)) {
+            log.warn("取件二维码归属校验失败, userId: {}, pickCode: {}", userId, pickCode);
+            throw new CustomExceptions("无权获取该订单取件码");
+        }
+        try {
+            QRCodeWriter writer = new QRCodeWriter();
+            BitMatrix matrix = writer.encode(pickCode, BarcodeFormat.QR_CODE, 200, 200);
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            MatrixToImageWriter.writeToStream(matrix, "PNG", os);
+            return Base64.getEncoder().encodeToString(os.toByteArray());
+        } catch (Exception e) {
+            log.error("生成二维码失败", e);
+            throw new CustomExceptions("生成二维码失败");
+        }
     }
 }

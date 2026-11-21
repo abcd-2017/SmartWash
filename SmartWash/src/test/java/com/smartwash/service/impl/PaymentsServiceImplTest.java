@@ -89,14 +89,9 @@ class PaymentsServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new PaymentsServiceImpl();
-        ReflectionTestUtils.setField(service, "usersMapper", usersMapper);
-        ReflectionTestUtils.setField(service, "ordersMapper", ordersMapper);
-        ReflectionTestUtils.setField(service, "couponMapper", couponMapper);
-        ReflectionTestUtils.setField(service, "userCouponMapper", userCouponMapper);
-        ReflectionTestUtils.setField(service, "orderTimeoutManager", orderTimeoutManager);
-        ReflectionTestUtils.setField(service, "paymentGatewayService", paymentGatewayService);
-        // ServiceImpl 父类 baseMapper（save/selectOne/markSuccess 走它），构造注入不会填充，手动注入
+        // 构造注入（评审报告后端 #33）：依赖经构造器传入；ServiceImpl 父类 baseMapper 不在构造器内，仍手动注入
+        service = new PaymentsServiceImpl(usersMapper, ordersMapper, couponMapper,
+                userCouponMapper, orderTimeoutManager, paymentGatewayService);
         ReflectionTestUtils.setField(service, "baseMapper", paymentsMapper);
     }
 
