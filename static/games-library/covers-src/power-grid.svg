@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0D48C"/>
+      <stop offset="0.55" stop-color="#D8AE56"/>
+      <stop offset="1" stop-color="#B0822E"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3A2808" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#8E6A20" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#745617" opacity="0.6"/>
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 260 h9 M68.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 280 h9 M748.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="680" cy="130" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="750" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="404" rx="300" ry="20" fill="#6E4E12" opacity="0.4"/>
+
+  <!-- 电塔（主视觉） -->
+  <g stroke="#3A2A1E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M270 384 L332 128 M410 384 L368 128"/>
+    <path d="M298 322 H382 M312 210 H368"/>
+    <path d="M252 152 H430 M268 202 H414"/>
+  </g>
+  <g fill="#3A2A1E">
+    <ellipse cx="252" cy="158" rx="10" ry="14"/>
+    <ellipse cx="430" cy="158" rx="10" ry="14"/>
+    <ellipse cx="268" cy="208" rx="9" ry="12"/>
+    <ellipse cx="414" cy="208" rx="9" ry="12"/>
+  </g>
+  <!-- 电塔表情 -->
+  <circle cx="334" cy="258" r="10" fill="#1F1A14"/>
+  <circle cx="366" cy="258" r="10" fill="#1F1A14"/>
+  <circle cx="337" cy="255" r="3.2" fill="#FFFFFF"/>
+  <circle cx="369" cy="255" r="3.2" fill="#FFFFFF"/>
+  <path d="M340 284 Q350 293 360 283" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- 输电线路 -->
+  <path d="M430 150 Q560 116 648 178" stroke="#3A2A1E" stroke-width="5" fill="none"/>
+  <path d="M414 202 Q520 214 600 232" stroke="#3A2A1E" stroke-width="5" fill="none"/>
+
+  <!-- 闸刀开关（签名表情） -->
+  <g>
+    <circle cx="520" cy="214" r="9" fill="#8A9096" stroke="#3A2A1E" stroke-width="5"/>
+    <path d="M520 214 L644 176" stroke="#3A2A1E" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="648" cy="174" r="11" fill="#C4574A" stroke="#3A2A1E" stroke-width="5"/>
+    <rect x="500" y="232" width="160" height="112" rx="14" fill="#C9CDD2" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="548" cy="278" r="9" fill="#1F1A14"/>
+    <circle cx="598" cy="278" r="9" fill="#1F1A14"/>
+    <circle cx="551" cy="275" r="3" fill="#FFFFFF"/>
+    <circle cx="601" cy="275" r="3" fill="#FFFFFF"/>
+    <path d="M560 306 Q573 316 586 305" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="524" cy="254" r="10" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <!-- 负荷小屋 -->
+  <g>
+    <rect x="690" y="316" width="92" height="70" rx="8" fill="#F2E4BC" stroke="#3A2A1E" stroke-width="7"/>
+    <path d="M682 320 L736 284 L790 320 Z" fill="#B85C3A" stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M736 330 L722 356 L734 356 L726 380 L750 348 L737 348 L746 330 Z" fill="#E8C24E" stroke="#3A2A1E" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+
+  <!-- 火花 -->
+  <g stroke="#FFF3DC" stroke-width="4" stroke-linecap="round" opacity="0.9">
+    <path d="M664 148 h12 M670 142 v12"/>
+    <path d="M470 120 h10 M475 115 v10"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

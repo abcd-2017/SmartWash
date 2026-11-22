@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8AB8A8"/>
+      <stop offset="0.55" stop-color="#5F9484"/>
+      <stop offset="1" stop-color="#3C6A5C"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E3A30" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#31584C" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#27483E" opacity="0.6"/>
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 260 h9 M68.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 280 h9 M748.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="680" cy="130" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="750" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="404" rx="280" ry="20" fill="#26473C" opacity="0.4"/>
+
+  <!-- 真假按钮 -->
+  <g>
+    <circle cx="112" cy="250" r="54" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="9"/>
+    <circle cx="112" cy="250" r="54" fill="url(#gloss)"/>
+    <path d="M88 250 L106 268 L138 230" stroke="#FFFFFF" stroke-width="11" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="88" cy="214" r="12" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+  <g>
+    <circle cx="688" cy="250" r="54" fill="#C4574A" stroke="#3A2A1E" stroke-width="9"/>
+    <circle cx="688" cy="250" r="54" fill="url(#gloss)"/>
+    <path d="M666 228 L710 272 M710 228 L666 272" stroke="#FFFFFF" stroke-width="11" fill="none" stroke-linecap="round"/>
+    <circle cx="664" cy="214" r="12" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <!-- 三段论图卡 -->
+  <g stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round">
+    <rect x="210" y="80" width="380" height="62" rx="12" fill="#F2E4BC"/>
+    <rect x="210" y="170" width="380" height="62" rx="12" fill="#EAD9B8"/>
+    <rect x="210" y="256" width="380" height="78" rx="12" fill="#E8A13C"/>
+  </g>
+  <!-- 连接箭头 -->
+  <path d="M400 142 V166 M400 166 L390 156 M400 166 L410 156" stroke="#3A2A1E" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M400 232 V252 M400 252 L390 242 M400 252 L410 242" stroke="#3A2A1E" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 卡1：韦恩图 -->
+  <circle cx="332" cy="111" r="22" fill="#9CC4D8" opacity="0.55" stroke="#3A2A1E" stroke-width="4"/>
+  <circle cx="374" cy="111" r="22" fill="#E8A13C" opacity="0.5" stroke="#3A2A1E" stroke-width="4"/>
+  <!-- 卡2：包含关系 -->
+  <circle cx="352" cy="201" r="20" fill="#E8A13C" opacity="0.6" stroke="#3A2A1E" stroke-width="4"/>
+  <circle cx="430" cy="201" r="20" fill="none" stroke="#3A2A1E" stroke-width="4"/>
+  <circle cx="430" cy="201" r="5" fill="#3A2A1E"/>
+
+  <!-- 结论卡签名表情 -->
+  <circle cx="360" cy="290" r="10" fill="#1F1A14"/>
+  <circle cx="440" cy="290" r="10" fill="#1F1A14"/>
+  <circle cx="363" cy="287" r="3.2" fill="#FFFFFF"/>
+  <circle cx="443" cy="287" r="3.2" fill="#FFFFFF"/>
+  <path d="M372 316 Q400 330 428 315" stroke="#1F1A14" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <circle cx="238" cy="100" r="11" fill="#FFFFFF" opacity="0.45"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

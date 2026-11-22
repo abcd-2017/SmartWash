@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#98A2AC"/>
+      <stop offset="0.55" stop-color="#7E8894"/>
+      <stop offset="1" stop-color="#5C6470"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E242A" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="394" width="800" height="56" fill="#39404A" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#2A3038" opacity="0.5"/>
+  <g stroke="#E6ECF2" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 96 h11 M101.5 90.5 v11" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M716 240 h9 M720.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M78 250 h9 M82.5 245.5 v9" stroke-width="2.6" opacity="0.6"/>
+  </g>
+  <g fill="#E6ECF2" opacity="0.45">
+    <circle cx="160" cy="160" r="4"/><circle cx="712" cy="160" r="3.4"/><circle cx="64" cy="210" r="3"/><circle cx="740" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 隧道口 -->
+  <rect x="110" y="120" width="580" height="244" rx="26" fill="#2A323C" stroke="#3A2A1E" stroke-width="9"/>
+  <rect x="126" y="136" width="548" height="212" rx="20" fill="#1E242A"/>
+
+  <!-- 列车（主视觉，带签名表情） -->
+  <g>
+    <rect x="150" y="180" width="500" height="164" rx="26" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="150" y="180" width="500" height="28" rx="14" fill="#17734A" stroke="#3A2A1E" stroke-width="7"/>
+    <g fill="#FDF3DC" stroke="#3A2A1E" stroke-width="5">
+      <rect x="180" y="224" width="78" height="46" rx="9"/>
+      <rect x="292" y="224" width="78" height="46" rx="9"/>
+      <rect x="476" y="224" width="78" height="46" rx="9"/>
+      <rect x="588" y="224" width="48" height="46" rx="9"/>
+    </g>
+    <rect x="392" y="216" width="60" height="116" rx="8" fill="#1E8C5C" stroke="#3A2A1E" stroke-width="6"/>
+    <circle cx="375" cy="282" r="10" fill="#0B3625"/>
+    <circle cx="425" cy="282" r="10" fill="#0B3625"/>
+    <path d="M381 304 Q400 318 419 304" stroke="#0B3625" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <rect x="150" y="330" width="500" height="14" fill="#17734A"/>
+    <circle cx="178" cy="206" r="12" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+  <!-- 转向架 -->
+  <g fill="#1F1A14" stroke="#3A2A1E" stroke-width="5">
+    <rect x="196" y="344" width="70" height="22" rx="9"/>
+    <rect x="316" y="344" width="70" height="22" rx="9"/>
+    <rect x="436" y="344" width="70" height="22" rx="9"/>
+    <rect x="556" y="344" width="70" height="22" rx="9"/>
+  </g>
+
+  <!-- 站台 -->
+  <rect x="80" y="360" width="640" height="46" fill="#8A93A0" stroke="#3A2A1E" stroke-width="8"/>
+  <rect x="80" y="360" width="640" height="9" fill="#E8B34A"/>
+
+  <!-- 候车乘客 -->
+  <g stroke="#3A2A1E" stroke-width="5">
+    <circle cx="112" cy="318" r="13" fill="#4A9FD4"/><rect x="98" y="331" width="28" height="30" rx="9" fill="#4A9FD4"/>
+    <circle cx="700" cy="318" r="13" fill="#4A9FD4"/><rect x="686" y="331" width="28" height="30" rx="9" fill="#4A9FD4"/>
+  </g>
+
+  <!-- 时刻牌 -->
+  <g>
+    <path d="M360 30 V64 M440 30 V64" stroke="#3A2A1E" stroke-width="5"/>
+    <rect x="330" y="62" width="140" height="62" rx="10" fill="#FDF3DC" stroke="#3A2A1E" stroke-width="7"/>
+    <g stroke="#A9AEA9" stroke-width="4" stroke-linecap="round">
+      <path d="M346 84 H454 M346 100 H454 M346 116 H420"/>
+    </g>
+    <circle cx="356" cy="84" r="6" fill="#2D9B6A"/>
+    <circle cx="356" cy="100" r="6" fill="#E8B34A"/>
+  </g>
+  <!-- 钟 -->
+  <circle cx="700" cy="84" r="26" fill="#FDF3DC" stroke="#3A2A1E" stroke-width="7"/>
+  <path d="M700 84 L700 66 M700 84 L712 90" stroke="#3A2A1E" stroke-width="5" stroke-linecap="round"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

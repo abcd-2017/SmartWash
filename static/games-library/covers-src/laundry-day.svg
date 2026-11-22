@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#B2D8EA"/>
+      <stop offset="0.55" stop-color="#86B8D6"/>
+      <stop offset="1" stop-color="#5A8EAE"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E3444" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#4A7890" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#3C6478" opacity="0.6"/>
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 260 h9 M68.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 280 h9 M748.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="680" cy="130" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="750" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="404" rx="320" ry="20" fill="#386278" opacity="0.4"/>
+
+  <!-- 洗衣机 1 -->
+  <g>
+    <rect x="90" y="140" width="160" height="224" rx="14" fill="#F2E4BC" stroke="#3A2A1E" stroke-width="8"/>
+    <rect x="90" y="140" width="160" height="38" rx="14" fill="#C9CDD2" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="118" cy="159" r="8" fill="#3A2A1E"/>
+    <rect x="136" y="151" width="42" height="14" rx="7" fill="#8A9096" stroke="#3A2A1E" stroke-width="4"/>
+    <circle cx="170" cy="266" r="52" fill="#A8D4E8" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="170" cy="266" r="38" fill="none" stroke="#8A9096" stroke-width="5"/>
+    <path d="M136 262 Q170 278 204 262 L204 276 Q170 292 136 276 Z" fill="#7FB8D8" opacity="0.9"/>
+  </g>
+
+  <!-- 洗衣机 2（主视觉，签名表情） -->
+  <g>
+    <rect x="270" y="140" width="160" height="224" rx="14" fill="#F6E7C4" stroke="#3A2A1E" stroke-width="8"/>
+    <rect x="270" y="140" width="160" height="38" rx="14" fill="#C9CDD2" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="298" cy="159" r="8" fill="#3A2A1E"/>
+    <rect x="316" y="151" width="42" height="14" rx="7" fill="#8A9096" stroke="#3A2A1E" stroke-width="4"/>
+    <circle cx="350" cy="266" r="52" fill="#A8D4E8" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="350" cy="266" r="38" fill="#DCEEF8" stroke="#8A9096" stroke-width="5"/>
+    <circle cx="334" cy="256" r="8" fill="#1F1A14"/>
+    <circle cx="366" cy="256" r="8" fill="#1F1A14"/>
+    <circle cx="337" cy="253" r="2.6" fill="#FFFFFF"/>
+    <circle cx="369" cy="253" r="2.6" fill="#FFFFFF"/>
+    <path d="M338 282 Q350 291 362 281" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="318" cy="228" r="11" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <!-- 洗衣机 3 -->
+  <g>
+    <rect x="450" y="140" width="160" height="224" rx="14" fill="#F2E4BC" stroke="#3A2A1E" stroke-width="8"/>
+    <rect x="450" y="140" width="160" height="38" rx="14" fill="#C9CDD2" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="478" cy="159" r="8" fill="#3A2A1E"/>
+    <rect x="496" y="151" width="42" height="14" rx="7" fill="#8A9096" stroke="#3A2A1E" stroke-width="4"/>
+    <circle cx="530" cy="266" r="52" fill="#A8D4E8" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="530" cy="266" r="38" fill="none" stroke="#8A9096" stroke-width="5"/>
+    <path d="M496 268 Q530 284 564 268 L564 282 Q530 298 496 282 Z" fill="#7FB8D8" opacity="0.9"/>
+  </g>
+
+  <!-- 泡沫 -->
+  <g fill="#FFFFFF" opacity="0.85">
+    <circle cx="120" cy="128" r="14"/><circle cx="150" cy="118" r="18"/><circle cx="186" cy="128" r="13"/>
+    <circle cx="330" cy="124" r="16"/><circle cx="366" cy="116" r="19"/><circle cx="400" cy="128" r="13"/>
+  </g>
+
+  <!-- 衣篮 -->
+  <g>
+    <path d="M652 300 L758 300 L744 392 L666 392 Z" fill="#4A90C4" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+    <g stroke="#2E6E96" stroke-width="5" stroke-linecap="round">
+      <path d="M676 322 H734 M672 344 H738 M668 366 H742"/>
+    </g>
+    <path d="M668 296 Q690 262 714 282 Q736 262 752 292" fill="#E8A13C" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M682 296 Q700 274 720 288" fill="none" stroke="#3A2A1E" stroke-width="5"/>
+  </g>
+
+  <!-- 叠好的毛巾 -->
+  <g stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round">
+    <rect x="56" y="356" width="96" height="20" rx="8" fill="#E8A13C"/>
+    <rect x="62" y="334" width="84" height="20" rx="8" fill="#F2E4BC"/>
+    <rect x="68" y="312" width="72" height="20" rx="8" fill="#9CC4D8"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

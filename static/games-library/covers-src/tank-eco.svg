@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#88B8D4"/>
+      <stop offset="0.55" stop-color="#6292B2"/>
+      <stop offset="1" stop-color="#426A86"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#BCE2F2"/>
+      <stop offset="1" stop-color="#7FB8D8"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#14283A" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#365E78" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#2B4D64" opacity="0.6"/>
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 260 h9 M68.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 280 h9 M748.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="680" cy="130" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="750" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="380" cy="404" rx="290" ry="20" fill="#2A4A5E" opacity="0.4"/>
+
+  <!-- 鱼缸 -->
+  <rect x="110" y="88" width="480" height="294" rx="22" fill="#DCEEF8" opacity="0.45" stroke="#3A2A1E" stroke-width="9"/>
+  <rect x="120" y="150" width="460" height="222" rx="16" fill="url(#water)"/>
+  <path d="M120 158 Q180 146 240 158 Q300 170 360 158 Q420 146 480 158 Q540 170 580 158" stroke="#DCEEF8" stroke-width="5" fill="none" opacity="0.8"/>
+  <!-- 底砂 -->
+  <path d="M120 330 Q200 316 280 330 Q360 344 440 330 Q520 316 580 330 L580 372 L120 372 Z" fill="#C9B28A"/>
+  <!-- 水草 -->
+  <g stroke="#3E8C5A" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.9">
+    <path d="M170 350 Q160 300 178 268"/>
+    <path d="M200 352 Q210 310 196 284"/>
+    <path d="M520 350 Q512 306 530 278"/>
+  </g>
+  <!-- 加热器 -->
+  <rect x="142" y="180" width="20" height="120" rx="9" fill="#8A9096" stroke="#3A2A1E" stroke-width="6"/>
+  <rect x="148" y="200" width="8" height="60" rx="4" fill="#C4574A"/>
+  <!-- 大气泡鱼（签名表情） -->
+  <g>
+    <path d="M262 244 L214 220 L214 268 Z" fill="#D97742" stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round"/>
+    <ellipse cx="330" cy="244" rx="64" ry="42" fill="#E8A13C" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M300 208 Q316 190 334 198 Q322 212 310 216 Z" fill="#D97742" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M300 280 Q316 296 334 288 Q322 276 310 272 Z" fill="#D97742" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+    <circle cx="352" cy="234" r="9" fill="#1F1A14"/>
+    <circle cx="374" cy="240" r="8" fill="#1F1A14"/>
+    <circle cx="355" cy="231" r="3" fill="#FFFFFF"/>
+    <circle cx="376" cy="237" r="2.6" fill="#FFFFFF"/>
+    <path d="M350 262 Q362 271 374 261" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="312" cy="222" r="12" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+  <!-- 小鱼 -->
+  <g>
+    <path d="M470 300 L444 288 L444 312 Z" fill="#7A9E5F" stroke="#3A2A1E" stroke-width="5" stroke-linejoin="round"/>
+    <ellipse cx="494" cy="300" rx="26" ry="16" fill="#93B877" stroke="#3A2A1E" stroke-width="5"/>
+    <circle cx="506" cy="296" r="3.4" fill="#1F1A14"/>
+  </g>
+  <g>
+    <path d="M250 300 L230 291 L230 309 Z" fill="#7A9E5F" stroke="#3A2A1E" stroke-width="4" stroke-linejoin="round"/>
+    <ellipse cx="268" cy="300" rx="20" ry="12" fill="#93B877" stroke="#3A2A1E" stroke-width="4"/>
+    <circle cx="278" cy="297" r="2.8" fill="#1F1A14"/>
+  </g>
+  <!-- 气泡 -->
+  <g fill="none" stroke="#DCEEF8" stroke-width="4" opacity="0.75">
+    <circle cx="440" cy="200" r="8"/><circle cx="458" cy="172" r="6"/><circle cx="230" cy="200" r="7"/><circle cx="216" cy="172" r="5"/>
+  </g>
+  <path d="M138 120 L138 340" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- 温度表 -->
+  <g>
+    <rect x="624" y="150" width="24" height="182" rx="12" fill="#F2E4BC" stroke="#3A2A1E" stroke-width="6"/>
+    <circle cx="636" cy="346" r="22" fill="#C4574A" stroke="#3A2A1E" stroke-width="6"/>
+    <rect x="631" y="220" width="10" height="112" fill="#C4574A"/>
+    <g stroke="#3A2A1E" stroke-width="3.5" stroke-linecap="round">
+      <path d="M648 176 H658 M648 210 H658 M648 244 H658 M648 278 H658 M648 312 H658"/>
+    </g>
+    <circle cx="622" cy="164" r="8" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

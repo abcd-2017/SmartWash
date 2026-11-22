@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EFE9DC"/>
+      <stop offset="0.55" stop-color="#F4EFE3"/>
+      <stop offset="1" stop-color="#F7F3EA"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#5A4A32" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="394" width="800" height="56" fill="#C9B691" opacity="0.65"/>
+  <rect y="394" width="800" height="6" fill="#A8956F" opacity="0.5"/>
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.6">
+    <path d="M96 96 h11 M101.5 90.5 v11" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M716 240 h9 M720.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M78 250 h9 M82.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.6">
+    <circle cx="160" cy="160" r="4"/><circle cx="712" cy="160" r="3.4"/><circle cx="64" cy="210" r="3"/><circle cx="740" cy="200" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="404" rx="252" ry="22" fill="#A8956F" opacity="0.4"/>
+
+  <!-- 城墙 -->
+  <g>
+    <rect x="560" y="180" width="190" height="222" fill="#8A93A0" stroke="#3A2A1E" stroke-width="9"/>
+    <g fill="#8A93A0" stroke="#3A2A1E" stroke-width="7">
+      <rect x="560" y="156" width="34" height="30"/><rect x="612" y="156" width="34" height="30"/>
+      <rect x="664" y="156" width="34" height="30"/><rect x="716" y="156" width="34" height="30"/>
+    </g>
+    <path d="M596 402 V300 Q640 268 684 300 V402 Z" fill="#3A2A1E" opacity="0.85"/>
+    <path d="M600 300 L628 322 L612 344 M684 296 L660 318 L676 340" stroke="#5C6470" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <g stroke="#5C6470" stroke-width="4" stroke-linecap="round">
+      <path d="M580 210 H640 M660 240 H730 M580 260 H620 M700 260 H740"/>
+    </g>
+  </g>
+
+  <!-- 投石机 -->
+  <g>
+    <rect x="170" y="356" width="230" height="26" rx="8" fill="#8F6A3A" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M226 356 L286 168 L346 356 M250 280 H322" stroke="#8F6A3A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="286" cy="176" r="14" fill="#5C6470" stroke="#3A2A1E" stroke-width="7"/>
+    <path d="M286 176 L176 252 M286 176 L446 138" stroke="#8F6A3A" stroke-width="13" stroke-linecap="round" fill="none"/>
+    <rect x="150" y="238" width="52" height="64" rx="8" fill="#5C6470" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M446 138 Q470 132 492 140" stroke="#3A2A1E" stroke-width="6" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 弹道 -->
+  <path d="M492 150 Q580 190 628 268" stroke="#C9626F" stroke-width="7" stroke-dasharray="12 10" fill="none" stroke-linecap="round"/>
+
+  <!-- 石块（主视觉，带签名表情） -->
+  <g>
+    <circle cx="512" cy="128" r="38" fill="#6E5330" stroke="#3A2A1E" stroke-width="9"/>
+    <circle cx="512" cy="128" r="38" fill="url(#gloss)"/>
+    <circle cx="500" cy="120" r="6" fill="#F2E0B4"/>
+    <circle cx="524" cy="120" r="6" fill="#F2E0B4"/>
+    <path d="M502 140 Q512 149 522 140" stroke="#F2E0B4" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="498" cy="112" r="9" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

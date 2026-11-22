@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F6DCAB"/>
+      <stop offset="0.55" stop-color="#E9C88A"/>
+      <stop offset="1" stop-color="#D9B578"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#6E4A20" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="394" width="800" height="56" fill="#C7A262" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#A88B4E" opacity="0.5"/>
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M96 96 h11 M101.5 90.5 v11" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M716 240 h9 M720.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M78 250 h9 M82.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.5">
+    <circle cx="160" cy="160" r="4"/><circle cx="712" cy="160" r="3.4"/><circle cx="64" cy="210" r="3"/><circle cx="740" cy="200" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="402" rx="252" ry="22" fill="#8A5E2E" opacity="0.35"/>
+
+  <!-- 棋盘 -->
+    <g>
+    <rect x="150" y="292" width="500" height="122" rx="16" fill="#F2E0B4" stroke="#3A2A1E" stroke-width="9"/>
+    <g stroke="#7A5B34" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.85">
+      <path d="M250 292 V414 M350 292 V414 M450 292 V414 M550 292 V414"/>
+      <path d="M150 353 H650"/>
+    </g>
+    <rect x="548" y="300" width="44" height="47" fill="#B98A4E" opacity="0.7"/>
+    <rect x="204" y="361" width="44" height="45" fill="#B98A4E" opacity="0.7"/>
+  </g>
+
+  <!-- 射箭轨迹 -->
+  <path d="M452 178 Q560 150 600 238" stroke="#A83850" stroke-width="8" stroke-linecap="round" stroke-dasharray="13 11" fill="none"/>
+  <path d="M600 238 L578 224 L584 254 Z" fill="#A83850" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+  <!-- 被封锁格 -->
+  <rect x="596" y="250" width="72" height="72" rx="10" fill="#A83850" opacity="0.88" stroke="#3A2A1E" stroke-width="8"/>
+  <path d="M614 268 L650 304 M650 268 L614 304" stroke="#F6DCAB" stroke-width="9" stroke-linecap="round"/>
+
+  <!-- 女皇（主视觉，带签名表情） -->
+  <g>
+    <path d="M326 352 Q326 386 362 386 L438 386 Q474 386 474 352 Z" fill="#FDF3DC" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M352 352 L364 252 Q400 232 436 252 L448 352 Z" fill="#FDF3DC" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+    <ellipse cx="400" cy="272" rx="72" ry="58" fill="#FDF3DC" stroke="#3A2A1E" stroke-width="9"/>
+    <path d="M338 214 L356 166 L380 206 L400 156 L420 206 L444 166 L462 214 Z" fill="#E8B34A" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+    <circle cx="400" cy="144" r="11" fill="#E8B34A" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="378" cy="264" r="9" fill="#1F1A14"/>
+    <circle cx="422" cy="264" r="9" fill="#1F1A14"/>
+    <path d="M386 288 Q400 300 414 288" stroke="#1F1A14" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <circle cx="360" cy="238" r="14" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <!-- 小敌后剪影 -->
+  <g opacity="0.9">
+    <path d="M176 380 Q176 396 190 396 L226 396 Q240 396 240 380 Z" fill="#8E5B3B" stroke="#3A2A1E" stroke-width="7"/>
+    <path d="M192 380 L198 332 Q210 322 222 332 L228 380 Z" fill="#8E5B3B" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="210" cy="316" r="14" fill="#8E5B3B" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="202" cy="342" r="4" fill="#1F1A14"/>
+    <circle cx="218" cy="342" r="4" fill="#1F1A14"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

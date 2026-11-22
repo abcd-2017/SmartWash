@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8FC49A"/>
+      <stop offset="0.55" stop-color="#6BA878"/>
+      <stop offset="1" stop-color="#4A8458"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E3A28" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="392" width="800" height="58" fill="#3E7050" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#33603F" opacity="0.6"/>
+  <!-- 星尘 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 260 h9 M68.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 280 h9 M748.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="680" cy="130" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="750" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="392" cy="402" rx="292" ry="20" fill="#2A5A3A" opacity="0.4"/>
+
+  <!-- 五连房 -->
+  <g stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round">
+    <!-- 房1 -->
+    <path d="M112 258 L166 206 L220 258 Z" fill="#B85C3A"/>
+    <rect x="120" y="256" width="92" height="96" rx="6" fill="#F2E4BC"/>
+    <rect x="134" y="282" width="26" height="26" rx="5" fill="#9CC4D8"/>
+    <rect x="172" y="300" width="28" height="52" rx="6" fill="#8A5A3A"/>
+    <!-- 房2 -->
+    <path d="M212 258 L266 206 L320 258 Z" fill="#C98A2E"/>
+    <rect x="220" y="256" width="92" height="96" rx="6" fill="#E8B878"/>
+    <rect x="234" y="282" width="26" height="26" rx="5" fill="#F2E4BC"/>
+    <rect x="272" y="300" width="28" height="52" rx="6" fill="#8A5A3A"/>
+    <!-- 房3（主视觉，带签名表情） -->
+    <path d="M312 258 L366 206 L420 258 Z" fill="#4E8C6A"/>
+    <rect x="320" y="256" width="92" height="96" rx="6" fill="#A8D4C4"/>
+    <rect x="372" y="300" width="28" height="52" rx="6" fill="#6E4526"/>
+    <!-- 房4 -->
+    <path d="M412 258 L466 206 L520 258 Z" fill="#3E6E8C"/>
+    <rect x="420" y="256" width="92" height="96" rx="6" fill="#9CC4D8"/>
+    <rect x="434" y="282" width="26" height="26" rx="5" fill="#F2E4BC"/>
+    <rect x="472" y="300" width="28" height="52" rx="6" fill="#8A5A3A"/>
+    <!-- 房5 -->
+    <path d="M512 258 L566 206 L620 258 Z" fill="#B0526B"/>
+    <rect x="520" y="256" width="92" height="96" rx="6" fill="#D9A0A0"/>
+    <rect x="534" y="282" width="26" height="26" rx="5" fill="#F2E4BC"/>
+    <rect x="572" y="300" width="28" height="52" rx="6" fill="#8A5A3A"/>
+  </g>
+  <!-- 主房高光 -->
+  <circle cx="338" cy="226" r="12" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="340" cy="276" r="16" fill="#FFFFFF" opacity="0.3"/>
+
+  <!-- 主房签名表情 -->
+  <g>
+    <circle cx="348" cy="294" r="9" fill="#1F1A14"/>
+    <circle cx="382" cy="294" r="9" fill="#1F1A14"/>
+    <circle cx="351" cy="291" r="3" fill="#FFFFFF"/>
+    <circle cx="385" cy="291" r="3" fill="#FFFFFF"/>
+    <path d="M352 318 Q365 328 378 317" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 门前小路 -->
+  <path d="M366 352 L366 392 M400 352 L400 392" stroke="#3A2A1E" stroke-width="6" stroke-linecap="round" opacity="0.35"/>
+
+  <!-- 鱼缸（答案之鱼） -->
+  <g>
+    <circle cx="400" cy="380" r="34" fill="#CFE8F2" opacity="0.9" stroke="#3A2A1E" stroke-width="7"/>
+    <path d="M372 384 Q400 398 428 384 L428 392 Q400 406 372 392 Z" fill="#8FC4D8" opacity="0.8"/>
+    <ellipse cx="398" cy="378" rx="13" ry="8" fill="#E8A13C" stroke="#3A2A1E" stroke-width="4"/>
+    <path d="M410 378 L420 372 L420 384 Z" fill="#E8A13C" stroke="#3A2A1E" stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="392" cy="376" r="2.4" fill="#1F1A14"/>
+    <circle cx="384" cy="362" r="8" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <!-- 猫剪影 -->
+  <g fill="#3A2A1E">
+    <ellipse cx="664" cy="388" rx="26" ry="22"/>
+    <circle cx="664" cy="354" r="18"/>
+    <path d="M650 342 L646 322 L660 334 Z"/>
+    <path d="M678 342 L682 322 L668 334 Z"/>
+    <path d="M688 390 Q712 386 710 358" stroke="#3A2A1E" stroke-width="9" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 狗剪影 -->
+  <g fill="#3A2A1E">
+    <ellipse cx="82" cy="390" rx="24" ry="15"/>
+    <circle cx="62" cy="374" r="13"/>
+    <path d="M51 368 L46 354 L60 364 Z"/>
+    <path d="M73 368 L79 356 L83 370 Z"/>
+    <path d="M104 386 Q118 378 114 362" stroke="#3A2A1E" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <rect x="68" y="400" width="7" height="12" rx="3"/>
+    <rect x="90" y="400" width="7" height="12" rx="3"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

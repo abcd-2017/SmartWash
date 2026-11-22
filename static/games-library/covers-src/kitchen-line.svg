@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F6E4C4"/>
+      <stop offset="0.55" stop-color="#EBD2A8"/>
+      <stop offset="1" stop-color="#DCC090"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#6E4A20" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="394" width="800" height="56" fill="#A8763E" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#8F6A3A" opacity="0.5"/>
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.6">
+    <path d="M96 96 h11 M101.5 90.5 v11" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M716 240 h9 M720.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M78 250 h9 M82.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.55">
+    <circle cx="160" cy="160" r="4"/><circle cx="712" cy="160" r="3.4"/><circle cx="64" cy="210" r="3"/><circle cx="740" cy="200" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="404" rx="252" ry="22" fill="#8F6A3A" opacity="0.35"/>
+
+  <!-- 墙面瓷砖 -->
+  <g stroke="#E0C89A" stroke-width="3" opacity="0.8">
+    <path d="M0 120 H800 M0 200 H800 M0 280 H800"/>
+    <path d="M140 0 V330 M300 0 V330 M460 0 V330 M620 0 V330"/>
+  </g>
+
+  <!-- 置物架 -->
+  <rect x="430" y="118" width="250" height="14" rx="6" fill="#8F6A3A" stroke="#3A2A1E" stroke-width="6"/>
+  <rect x="452" y="76" width="42" height="42" rx="8" fill="#C9626F" stroke="#3A2A1E" stroke-width="6"/>
+  <rect x="506" y="84" width="38" height="34" rx="8" fill="#5C9E54" stroke="#3A2A1E" stroke-width="6"/>
+  <rect x="556" y="72" width="44" height="46" rx="8" fill="#4A9FD4" stroke="#3A2A1E" stroke-width="6"/>
+
+  <!-- 灶台 -->
+  <rect x="120" y="250" width="190" height="92" rx="12" fill="#5C6470" stroke="#3A2A1E" stroke-width="8"/>
+  <circle cx="172" cy="292" r="17" fill="#39404A" stroke="#3A2A1E" stroke-width="5"/>
+  <circle cx="256" cy="292" r="17" fill="#39404A" stroke="#3A2A1E" stroke-width="5"/>
+  <circle cx="150" cy="322" r="7" fill="#C9B691" stroke="#3A2A1E" stroke-width="4"/>
+  <circle cx="182" cy="322" r="7" fill="#C9B691" stroke="#3A2A1E" stroke-width="4"/>
+  <circle cx="288" cy="322" r="7" fill="#C9B691" stroke="#3A2A1E" stroke-width="4"/>
+
+  <!-- 蒸汽 -->
+  <g stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.85">
+    <path d="M240 172 Q230 152 244 138"/>
+    <path d="M266 172 Q256 150 272 134"/>
+    <path d="M292 172 Q282 154 298 142"/>
+  </g>
+
+  <!-- 锅（主视觉，带签名表情） -->
+  <g>
+    <rect x="188" y="198" width="16" height="26" rx="7" fill="#5C6470" stroke="#3A2A1E" stroke-width="6"/>
+    <rect x="326" y="198" width="16" height="26" rx="7" fill="#5C6470" stroke="#3A2A1E" stroke-width="6"/>
+    <rect x="200" y="182" width="130" height="80" rx="18" fill="#8A93A0" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="200" y="182" width="130" height="80" rx="18" fill="url(#gloss)"/>
+    <circle cx="244" cy="216" r="7.5" fill="#1F1A14"/>
+    <circle cx="286" cy="216" r="7.5" fill="#1F1A14"/>
+    <path d="M250 238 Q265 250 280 238" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+    <circle cx="222" cy="200" r="12" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <!-- 订单票 -->
+  <g>
+    <rect x="560" y="150" width="132" height="132" rx="10" fill="#FDF3DC" stroke="#3A2A1E" stroke-width="7"/>
+    <path d="M560 166 H692" stroke="#3A2A1E" stroke-width="5"/>
+    <g stroke="#A9AEA9" stroke-width="4" stroke-linecap="round">
+      <path d="M576 196 H676 M576 222 H676 M576 248 H640"/>
+    </g>
+    <circle cx="588" cy="196" r="8" fill="none" stroke="#2D9B6A" stroke-width="4"/>
+    <path d="M584 196 L587 200 L593 192" stroke="#2D9B6A" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <circle cx="588" cy="222" r="8" fill="none" stroke="#2D9B6A" stroke-width="4"/>
+    <path d="M584 222 L587 226 L593 218" stroke="#2D9B6A" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 操作台 -->
+  <rect x="90" y="330" width="630" height="70" fill="#8F6A3A" stroke="#3A2A1E" stroke-width="8"/>
+  <rect x="90" y="330" width="630" height="16" rx="8" fill="#A8763E" stroke="#3A2A1E" stroke-width="6"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

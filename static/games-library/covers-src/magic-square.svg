@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1E3A34"/>
+      <stop offset="0.55" stop-color="#142A26"/>
+      <stop offset="1" stop-color="#0E1E1B"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#E8B34A" stop-opacity="0.38"/>
+      <stop offset="0.6" stop-color="#E8B34A" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#E8B34A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#07100E" stop-opacity="0.34"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="394" width="800" height="56" fill="#0A1614" opacity="0.7"/>
+  <rect y="394" width="800" height="6" fill="#060E0C" opacity="0.6"/>
+  <g stroke="#FFE8BE" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 96 h11 M101.5 90.5 v11" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M716 240 h9 M720.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M78 250 h9 M82.5 245.5 v9" stroke-width="2.6" opacity="0.6"/>
+  </g>
+  <g fill="#FFE8BE" opacity="0.45">
+    <circle cx="160" cy="160" r="4"/><circle cx="712" cy="160" r="3.4"/><circle cx="64" cy="210" r="3"/><circle cx="740" cy="200" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="404" rx="252" ry="22" fill="#060E0C" opacity="0.5"/>
+
+  <!-- 幻和光环 -->
+  <circle cx="400" cy="225" r="232" fill="url(#glow)"/>
+  <circle cx="400" cy="225" r="228" fill="none" stroke="#E8B34A" stroke-width="6" opacity="0.55"/>
+  <circle cx="400" cy="225" r="204" fill="none" stroke="#E8B34A" stroke-width="3" stroke-dasharray="10 14" opacity="0.6"/>
+  <g fill="#E8B34A" stroke="#3A2A1E" stroke-width="5">
+    <circle cx="400" cy="3" r="9"/><circle cx="622" cy="225" r="9"/><circle cx="400" cy="447" r="9"/><circle cx="178" cy="225" r="9"/>
+  </g>
+
+  <!-- 3x3 发光格盘 -->
+  <g stroke="#2D9B6A" stroke-width="5">
+    <rect x="212" y="37" width="120" height="120" rx="14" fill="#16302A"/>
+    <rect x="332" y="37" width="120" height="120" rx="14" fill="#122823"/>
+    <rect x="452" y="37" width="120" height="120" rx="14" fill="#16302A"/>
+    <rect x="212" y="157" width="120" height="120" rx="14" fill="#122823"/>
+    <rect x="332" y="157" width="120" height="120" rx="14" fill="#1A3830"/>
+    <rect x="452" y="157" width="120" height="120" rx="14" fill="#122823"/>
+    <rect x="212" y="277" width="120" height="120" rx="14" fill="#16302A"/>
+    <rect x="332" y="277" width="120" height="120" rx="14" fill="#122823"/>
+    <rect x="452" y="277" width="120" height="120" rx="14" fill="#16302A"/>
+  </g>
+
+  <!-- 点数 -->
+  <g fill="#B9E8CF">
+    <circle cx="272" cy="97" r="6"/>
+    <circle cx="382" cy="82" r="6"/><circle cx="402" cy="97" r="6"/><circle cx="382" cy="112" r="6"/>
+    <circle cx="502" cy="97" r="6"/><circle cx="512" cy="87" r="6"/><circle cx="522" cy="97" r="6"/><circle cx="512" cy="107" r="6"/>
+    <circle cx="262" cy="207" r="6"/><circle cx="282" cy="207" r="6"/>
+    <circle cx="462" cy="207" r="6"/><circle cx="472" cy="197" r="6"/><circle cx="482" cy="207" r="6"/><circle cx="472" cy="217" r="6"/><circle cx="462" cy="227" r="6"/><circle cx="482" cy="227" r="6"/>
+    <circle cx="272" cy="327" r="6"/><circle cx="272" cy="337" r="6"/><circle cx="272" cy="347" r="6"/>
+    <circle cx="392" cy="337" r="6"/>
+    <circle cx="502" cy="317" r="6"/><circle cx="522" cy="317" r="6"/><circle cx="502" cy="337" r="6"/><circle cx="522" cy="337" r="6"/><circle cx="502" cy="357" r="6"/><circle cx="522" cy="357" r="6"/>
+  </g>
+
+  <!-- 中心格（主视觉，带签名表情） -->
+  <g>
+    <rect x="332" y="157" width="120" height="120" rx="14" fill="#E8B34A" stroke="#3A2A1E" stroke-width="8"/>
+    <rect x="332" y="157" width="120" height="120" rx="14" fill="url(#gloss)"/>
+    <circle cx="376" cy="207" r="9" fill="#1F1A14"/>
+    <circle cx="408" cy="207" r="9" fill="#1F1A14"/>
+    <path d="M382 232 Q392 244 402 232" stroke="#1F1A14" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <circle cx="354" cy="180" r="13" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>
