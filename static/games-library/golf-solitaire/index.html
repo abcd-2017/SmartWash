@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>高尔夫纸牌</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（按需取用，值与基线一致）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.plain { color: var(--g-text); }
+  .btn {
+    min-height: 44px; padding: 0 12px; flex: 1; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .board { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 8px 6px 12px; }
+  .fndrow { display: flex; gap: 10px; margin: 4px 8px 12px; align-items: stretch; }
+  .bigpile {
+    position: relative; width: 20%; aspect-ratio: 5 / 7; border-radius: 10px;
+    border: 1px dashed var(--g-border); background: var(--g-surface2);
+    font-family: inherit; padding: 0; cursor: pointer; color: var(--g-text);
+  }
+  .bigpile.solid { background: var(--g-primary-soft); border-style: solid; }
+  .bigpile .top { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: var(--g-muted); line-height: 1.4; }
+  .bigpile .top b { font-size: 28px; line-height: 1.2; }
+  .fndtip { flex: 1; display: flex; flex-direction: column; justify-content: center; font-size: 12px; color: var(--g-muted); line-height: 1.6; min-width: 0; }
+  .cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 0 2px; }
+  .col { position: relative; min-height: 96px; }
+  .col .ph { position: absolute; inset: 0; border-radius: 10px; border: 1px dashed var(--g-border); background: var(--g-surface2); color: var(--g-muted); font-size: 12px; display: flex; align-items: center; justify-content: center; }
+  .card {
+    position: absolute; left: 0; width: 100%; aspect-ratio: 5 / 7;
+    top: calc(var(--i) * var(--step, 16px));
+    border-radius: 10px; background: var(--g-surface); border: 1px solid var(--g-border);
+    box-shadow: var(--g-shadow); color: var(--g-text); cursor: pointer;
+    font-family: inherit; padding: 0; text-align: left;
+  }
+  .card.red { color: var(--g-danger); }
+  .card.playable { border-color: var(--g-primary); }
+  .card .rk { position: absolute; top: 2px; left: 4px; font-size: 12px; font-weight: 700; line-height: 1.2; }
+  .card .st { position: absolute; top: 16px; left: 4px; font-size: 12px; line-height: 1; }
+  .card .cen { position: absolute; right: 4px; bottom: 2px; font-size: 16px; line-height: 1; opacity: .8; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; font-weight: 500; color: var(--g-muted); text-align: center; }
+  .msg.err { color: var(--g-danger); }
+  .msg.win { color: var(--g-success); }
+  .foot { margin: 14px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .tools { display: flex; gap: 8px; margin-bottom: 10px; }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（§6.1 模板） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule">列顶牌点数 = 基牌 ±1（K-A 环绕）即可收</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">已收</span><span class="val plain" id="stOff">0/28</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val plain" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">参考步数</span><span class="val plain" id="stPar">-</span></div>
+  </div>
+  <div class="board">
+    <div class="fndrow">
+      <button class="bigpile solid" id="baseBtn" aria-label="基础堆当前基牌"><span class="top" id="baseTop"></span></button>
+      <button class="bigpile" id="stockBtn" aria-label="牌堆：换基牌"><span class="top" id="stockTop"></span></button>
+      <div class="fndtip">点列顶牌收进基础堆（点数须为基牌 ±1，K-A 环绕）；收下的牌成为新基牌。无牌可收时点牌堆换基牌，七列全收空即胜。</div>
+    </div>
+    <div class="cols" id="cols"></div>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点可收的列顶牌（绿色描边），或点牌堆换基牌</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo">撤销</button>
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：1-7 收对应列顶牌 · D 换基牌 · U 撤销 · H 提示 · R 重开 · 40 关递进 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+    <button class="btn" id="ovStay" hidden>留在本关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（发局号种子产局；DB 下发优先 + 版本缓存 + 包内默认兜底） ---------- */
+var GAME_KEY="golf-solitaire",SAVE_KEY="sw.golfsolitaire.v1";
+var DEFAULT_LEVELS=[{"name":"高尔夫·01","seed":209,"par":42,"difficulty":1},{"name":"高尔夫·02","seed":358,"par":44,"difficulty":1},{"name":"高尔夫·03","seed":236,"par":46,"difficulty":1},{"name":"高尔夫·04","seed":44,"par":47,"difficulty":1},{"name":"高尔夫·05","seed":247,"par":47,"difficulty":1},{"name":"高尔夫·06","seed":266,"par":47,"difficulty":1},{"name":"高尔夫·07","seed":365,"par":47,"difficulty":1},{"name":"高尔夫·08","seed":29,"par":48,"difficulty":1},{"name":"高尔夫·09","seed":164,"par":48,"difficulty":2},{"name":"高尔夫·10","seed":168,"par":48,"difficulty":2},{"name":"高尔夫·11","seed":309,"par":48,"difficulty":2},{"name":"高尔夫·12","seed":38,"par":49,"difficulty":2},{"name":"高尔夫·13","seed":55,"par":49,"difficulty":2},{"name":"高尔夫·14","seed":63,"par":49,"difficulty":2},{"name":"高尔夫·15","seed":106,"par":49,"difficulty":2},{"name":"高尔夫·16","seed":187,"par":49,"difficulty":2},{"name":"高尔夫·17","seed":188,"par":49,"difficulty":3},{"name":"高尔夫·18","seed":332,"par":49,"difficulty":3},{"name":"高尔夫·19","seed":364,"par":49,"difficulty":3},{"name":"高尔夫·20","seed":371,"par":49,"difficulty":3},{"name":"高尔夫·21","seed":381,"par":49,"difficulty":3},{"name":"高尔夫·22","seed":388,"par":49,"difficulty":3},{"name":"高尔夫·23","seed":389,"par":49,"difficulty":3},{"name":"高尔夫·24","seed":10,"par":50,"difficulty":3},{"name":"高尔夫·25","seed":26,"par":50,"difficulty":4},{"name":"高尔夫·26","seed":130,"par":50,"difficulty":4},{"name":"高尔夫·27","seed":287,"par":50,"difficulty":4},{"name":"高尔夫·28","seed":307,"par":50,"difficulty":4},{"name":"高尔夫·29","seed":317,"par":50,"difficulty":4},{"name":"高尔夫·30","seed":385,"par":50,"difficulty":4},{"name":"高尔夫·31","seed":392,"par":50,"difficulty":4},{"name":"高尔夫·32","seed":60,"par":51,"difficulty":4},{"name":"高尔夫·33","seed":170,"par":51,"difficulty":5},{"name":"高尔夫·34","seed":183,"par":51,"difficulty":5},{"name":"高尔夫·35","seed":193,"par":51,"difficulty":5},{"name":"高尔夫·36","seed":214,"par":51,"difficulty":5},{"name":"高尔夫·37","seed":246,"par":51,"difficulty":5},{"name":"高尔夫·38","seed":248,"par":51,"difficulty":5},{"name":"高尔夫·39","seed":293,"par":51,"difficulty":5},{"name":"高尔夫·40","seed":368,"par":51,"difficulty":5}];
+var LEVELS=DEFAULT_LEVELS.slice();
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim()||d.name.length>24)return false;
+  if(!Number.isInteger(d.seed)||d.seed<1||d.seed>999999999)return false;
+  if(d.par!==undefined&&(!Number.isInteger(d.par)||d.par<1||d.par>999))return false;
+  if(d.difficulty!==undefined&&(!Number.isInteger(d.difficulty)||d.difficulty<1||d.difficulty>9))return false;
+  return true;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seenName={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    if(seenName[d.name])return null;
+    seenName[d.name]=1;
+    list.push({name:String(d.name),seed:d.seed,par:d.par||0,difficulty:d.difficulty||5});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  buildActive();
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData)){
+      LEVELS=list;return v;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>ACTIVE.length-1)lv=ACTIVE.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+
+/* ---------- 独立验证器（DFS 可解性证明，与玩法引擎相互独立） ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function golfDeal(seed){
+  var d=[],i,j,t,rnd=mulberry32(seed*7717+31);
+  for(i=0;i<52;i++)d.push(i);
+  for(i=51;i>0;i--){j=Math.floor(rnd()*(i+1));t=d[i];d[i]=d[j];d[j]=t;}
+  var cols=[[],[],[],[],[],[],[]];
+  for(i=0;i<28;i++)cols[i%7].push(d[i]);
+  return {cols:cols,stock:d.slice(28)};
+}
+/* 状态=(7 列剩余深度, 已翻张数 sp)；基底=stock[sp-1]。收牌：列顶 rank=基底±1（模 13 环绕） */
+function golfSolve(cols,stock,cap){
+  var seen=new Set(),nodes=0,hitCap=false;
+  function canTake(r,base){var lo=(base+12)%13,hi=(base+1)%13;return r===lo||r===hi;}
+  function dfs(dep,sp,acts){
+    var allEmpty=true,c;
+    for(c=0;c<7;c++)if(dep[c]){allEmpty=false;break;}
+    if(allEmpty)return acts;
+    if(nodes++>cap){hitCap=true;return null;}
+    var k=dep.join("")+","+sp;
+    if(seen.has(k))return null;
+    seen.add(k);
+    var base=stock[sp-1]>>2;
+    for(c=0;c<7;c++){
+      if(!dep[c])continue;
+      if(canTake(cols[c][dep[c]-1]>>2,base)){
+        var nd=dep.slice();nd[c]--;
+        var res=dfs(nd,sp,acts.concat([{t:"take",c:c}]));
+        if(res)return res;
+      }
+    }
+    if(sp<stock.length)return dfs(dep,sp+1,acts.concat([{t:"draw"}]));
+    return null;
+  }
+  var res=dfs(cols.map(function(a){return a.length}),1,[]);
+  return res?{solved:true,acts:res}:{solved:false,cap:hitCap};
+}
+function verifyLevelData(d){
+  if(!validLevelData(d))return false;
+  var g=golfDeal(d.seed);
+  return golfSolve(g.cols,g.stock,200000).solved;
+}
+/* 校验器极快（单关 <1ms），加载时同步复核全部关卡，坏关不进关卡表 */
+var ACTIVE=[];
+function buildActive(){
+  ACTIVE=[];
+  for(var i=0;i<LEVELS.length;i++)if(verifyLevelData(LEVELS[i]))ACTIVE.push(LEVELS[i]);
+  if(ACTIVE.length){
+    lv=Math.min(save.lv,ACTIVE.length-1); /* 续玩：以存档进度为起点 */
+    save.lv=Math.min(save.lv,lv);persist();
+    loadLevel(lv);
+  }
+}
+
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,parseInt(s.lv,10)||0)}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(ACTIVE.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ---------- 牌桌状态 ---------- */
+var RANKS=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+var SUITS=["\u2660","\u2665","\u2666","\u2663"];
+var RED=[false,true,true,false];
+var lv=0,L=null,cols=[],stock=[],dep=[],sp=1,base=0,baseCode=0;
+var moves=0,hist=[],won=false,lost=false,hintCol=-1;
+function $(id){return document.getElementById(id)}
+function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"")}
+function cardName(c){return SUITS[c&3]+RANKS[c>>2]}
+function colTop(c){return dep[c]>0?cols[c][dep[c]-1]:-1}
+function canTake(r,b){var lo=(b+12)%13,hi=(b+1)%13;return r===lo||r===hi}
+function loadLevel(n){
+  if(!ACTIVE.length)return;
+  lv=Math.max(0,Math.min(n,ACTIVE.length-1));
+  L=ACTIVE[lv];
+  var g=golfDeal(L.seed);
+  cols=g.cols;stock=g.stock;dep=cols.map(function(a){return a.length});
+  sp=1;baseCode=stock[0];base=baseCode>>2;
+  moves=0;hist=[];won=false;lost=false;hintCol=-1;
+  save.lv=Math.max(save.lv,lv);persist();
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("stPar").textContent=L.par>0?L.par:"-";
+  say("点可收的列顶牌（绿色描边），或点牌堆换基牌");
+  updStats();render();
+}
+function snapshot(){return{dep:dep.slice(),sp:sp,baseCode:baseCode}}
+function doTake(c){
+  hist.push(snapshot());
+  var c0=colTop(c);
+  dep[c]--;baseCode=c0;base=baseCode>>2;moves++;hintCol=-1;
+  say("收下 "+cardName(c0)+"，新基牌点数 "+RANKS[base]+"（任意花色）","win");
+  updStats();render();checkEnd();
+}
+function doDraw(){
+  if(sp>=stock.length){say("牌堆已用尽","err");return;}
+  hist.push(snapshot());
+  sp++;baseCode=stock[sp-1];base=baseCode>>2;moves++;hintCol=-1;
+  say("翻出 "+cardName(stock[sp-1])+" 作为新基牌");
+  updStats();render();checkEnd();
+}
+function undo(){
+  if(!hist.length||won)return;
+  var s=hist.pop();
+  dep=s.dep;sp=s.sp;baseCode=s.baseCode;base=baseCode>>2;
+  lost=false;moves=Math.max(0,moves-1);hintCol=-1;
+  say("已撤销一步");updStats();render();
+}
+function anyTake(){
+  for(var c=0;c<7;c++){var t=colTop(c);if(t>=0&&canTake(t>>2,base))return c;}
+  return -1;
+}
+function hint(){
+  if(won||lost)return;
+  var g={cols:cols,stock:stock};
+  var r=golfSolve(cols,stock,200000);
+  if(!r.solved){say("求解器未找到取胜路线，建议撤销几步","err");return;}
+  if(!r.acts.length){say("七列已收空","win");return;}
+  var a=r.acts[0];
+  if(a.t==="take")say("求解器建议：收第 "+(a.c+1)+" 列顶牌（还需约 "+r.acts.length+" 步）");
+  else say("求解器建议：翻牌换基牌（还需约 "+r.acts.length+" 步）");
+  hintCol=a.t==="take"?a.c:-2;
+  render();
+  setTimeout(function(){hintCol=-1;render();},2400);
+}
+function checkEnd(){
+  var allEmpty=true,c;
+  for(c=0;c<7;c++)if(dep[c])allEmpty=false;
+  if(allEmpty){
+    won=true;
+    if(lv<ACTIVE.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+    if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:moves}).catch(function(){});
+    $("ovTitle").textContent=(lv>=ACTIVE.length-1)?"全部通关！":"过关！";
+    $("ovDesc").innerHTML="28 张全部收空！步数 <b>"+moves+"</b>（参考 "+$("stPar").textContent+"）"+(lv<ACTIVE.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+    $("ovBtn").textContent=(lv>=ACTIVE.length-1)?"回到第 1 关":"下一关";
+    $("ovStay").hidden=true;
+    $("overlay").classList.add("show");
+  } else if(anyTake()<0&&sp>=stock.length){
+    lost=true;
+    var left=dep.reduce(function(a,b){return a+b},0);
+    $("ovTitle").textContent="无路可走了";
+    $("ovDesc").innerHTML="牌堆用尽且没有可收的列顶牌，还剩 <b>"+left+"</b> 张。撤销几步换个顺序，或重开本关。";
+    $("ovBtn").textContent="重开本关";
+    $("ovStay").hidden=false;
+    $("overlay").classList.add("show");
+  }
+}
+function updStats(){
+  $("stOff").textContent=(28-dep.reduce(function(a,b){return a+b},0))+"/28";
+  $("stMoves").textContent=moves;
+  $("btnUndo").disabled=!hist.length||won;
+}
+/* ---------- 渲染 ---------- */
+function cardHtml(c,i,col,playable){
+  var red=RED[c&3];
+  return '<button class="card'+(red?" red":"")+(playable?" playable":"")+'" data-col="'+col+'" style="--i:'+i+'" aria-label="'+cardName(c)+'">'
+    +'<span class="rk">'+RANKS[c>>2]+'</span><span class="st">'+SUITS[c&3]+'</span><span class="cen">'+SUITS[c&3]+'</span></button>';
+}
+function render(){
+  var maxN=1,c,h="",i;
+  for(c=0;c<7;c++)maxN=Math.max(maxN,dep[c]);
+  var avail=$("cols").clientWidth||347;
+  var cw=(avail-24)/7;
+  var cardH=cw*7/5;
+  var st=Math.max(13,Math.min(18,Math.floor((118-cardH)/Math.max(1,maxN-1))));
+  for(c=0;c<7;c++){
+    var inner=dep[c]?'':'<span class="ph">空</span>';
+    for(i=0;i<dep[c];i++){
+      var top=i===dep[c]-1;
+      var play=top&&!lost&&canTake(cols[c][i]>>2,base);
+      inner+=cardHtml(cols[c][i],i,c,play);
+    }
+    h+='<div class="col" data-colall="'+c+'" style="--step:'+st+'px">'+inner+'</div>';
+  }
+  $("cols").innerHTML=h;
+  var bc=$("baseTop");
+  bc.innerHTML="<b>"+RANKS[baseCode>>2]+"</b>"+SUITS[baseCode&3];
+  $("baseBtn").style.color=RED[baseCode&3]?"var(--g-danger)":"var(--g-text)";
+  $("stockTop").innerHTML=sp<stock.length?"<b>"+(stock.length-sp)+"</b>张":"<b>空</b>";
+}
+/* ---------- 输入 ---------- */
+$("cols").addEventListener("click",function(e){
+  if(won||lost)return;
+  var card=e.target.closest("[data-col]");
+  var colB=e.target.closest("[data-colall]");
+  var c=card?parseInt(card.getAttribute("data-col"),10):(colB?parseInt(colB.getAttribute("data-colall"),10):-1);
+  if(c<0)return;
+  var t=colTop(c);
+  if(t<0){say("这一列已经空了","err");return;}
+  if(canTake(t>>2,base))doTake(c);
+  else say(cardName(t)+" 收不进：点数须为基牌 "+RANKS[base]+" 的 ±1","err");
+});
+$("stockBtn").addEventListener("click",function(){
+  if(won||lost)return;
+  if(anyTake()>=0&&!lost){/* 仍允许主动翻牌 */ }
+  doDraw();
+});
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){
+  overlayMode="lv";renderLvGrid();
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="绿色为已通关";
+  $("ovBtn").textContent="取消";
+  $("ovStay").hidden=true;
+  $("overlay").classList.add("show");
+});
+var overlayMode="";
+function renderLvGrid(){
+  var g=$("lvgrid");
+  if(overlayMode!=="lv"){g.hidden=true;return;}
+  g.hidden=false;g.innerHTML="";
+  for(var i=0;i<ACTIVE.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.addEventListener("click",function(){
+        $("overlay").classList.remove("show");overlayMode="";
+        loadLevel(i);say("第 "+(i+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+}
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(overlayMode==="lv"){overlayMode="";return;}
+  if(won){
+    if(lv>=ACTIVE.length-1)loadLevel(0);
+    else loadLevel(lv+1);
+  } else if(lost) loadLevel(lv);
+});
+$("ovStay").addEventListener("click",function(){$("overlay").classList.remove("show")});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(overlayMode==="lv"){if(k===" "||k==="Enter")$("ovBtn").click();return;}
+  if(/^Digit[1-7]$/.test(e.code)){
+    var c=parseInt(e.code.slice(5),10)-1;
+    if(won||lost)return;
+    var t=colTop(c);
+    if(t<0){say("这一列已经空了","err");return;}
+    if(canTake(t>>2,base))doTake(c);else say(cardName(t)+" 收不进：点数须为基牌 "+RANKS[base]+" 的 ±1","err");
+    e.preventDefault();
+  }
+  else if(k==="d"||k==="D"){if(!won&&!lost)doDraw();}
+  else if(k==="u"||k==="U")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+});
+/* ---------- 启动 ---------- */
+buildActive();
+syncLevelsFromServer();
+syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

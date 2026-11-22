@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E4F1E4"/>
+      <stop offset="0.55" stop-color="#CBE5D3"/>
+      <stop offset="1" stop-color="#B3D6C2"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E6B4E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#A0C9AC" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#8CB79B" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 90 h11 M93.5 84.5 v11" stroke-width="3.2"/>
+    <path d="M712 84 h12 M718 78 v12" stroke-width="3.4"/>
+    <path d="M744 236 h9 M748.5 231.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M56 226 h9 M60.5 221.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6EE" opacity="0.55">
+    <circle cx="136" cy="150" r="4"/><circle cx="736" cy="160" r="3.4"/><circle cx="70" cy="310" r="3"/><circle cx="756" cy="300" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="408" rx="268" ry="20" fill="#5E9478" opacity="0.35"/>
+
+  <!-- 天梯梯柱 -->
+  <path d="M128 372 L546 178" stroke="#3A2A1E" stroke-width="26" stroke-linecap="round" fill="none"/>
+  <path d="M128 372 L546 178" stroke="#8A5A30" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <path d="M118 340 L536 146" stroke="#3A2A1E" stroke-width="26" stroke-linecap="round" fill="none"/>
+  <path d="M118 340 L536 146" stroke="#8A5A30" stroke-width="16" stroke-linecap="round" fill="none"/>
+
+  <!-- 四级台阶 + 台阶上的词砖 -->
+  <g stroke-linejoin="round">
+    <rect x="112" y="330" width="150" height="34" rx="12" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="8"/>
+    <rect x="242" y="270" width="150" height="34" rx="12" fill="#3FAE7A" stroke="#3A2A1E" stroke-width="8"/>
+    <rect x="372" y="210" width="150" height="34" rx="12" fill="#F2B34C" stroke="#3A2A1E" stroke-width="8"/>
+    <rect x="502" y="150" width="150" height="34" rx="12" fill="#E88B5A" stroke="#3A2A1E" stroke-width="8"/>
+    <!-- 台阶词砖刻痕 -->
+    <g stroke-width="6" stroke-linecap="round" fill="none">
+      <path d="M150 300 H222 M150 318 H204" stroke="#FFFFFF"/>
+      <path d="M280 240 H352 M280 258 H334" stroke="#FFFFFF"/>
+      <path d="M410 180 H482 M410 198 H466" stroke="#3A2A1E" opacity="0.72"/>
+      <path d="M540 120 H612 M540 138 H596" stroke="#3A2A1E" opacity="0.72"/>
+    </g>
+  </g>
+
+  <!-- 向上路径虚线 -->
+  <path d="M172 322 L310 262 L440 202 L580 140" stroke="#17734A" stroke-width="6" stroke-linecap="round" stroke-dasharray="11 12" fill="none" opacity="0.85"/>
+  <path d="M570 130 L596 118 L588 146 Z" fill="#17734A" stroke="#17734A" stroke-width="4" stroke-linejoin="round"/>
+
+  <!-- 登梯小圆团（签名表情） -->
+  <g>
+    <circle cx="452" cy="166" r="30" fill="#FBF7E8" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="442" cy="158" r="6" fill="#1F1A14"/>
+    <circle cx="464" cy="158" r="6" fill="#1F1A14"/>
+    <path d="M445 174 Q453 182 462 173" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M424 152 L408 136 M482 152 L498 138" stroke="#3A2A1E" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <circle cx="444" cy="152" r="7" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <!-- 顶部目标星砖 -->
+  <g stroke-linejoin="round">
+    <rect x="562" y="84" width="86" height="60" rx="14" fill="#F7D774" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M590 104 L598 118 L614 120 L602 130 L606 146 L590 138 L574 146 L578 130 L566 120 L582 118 Z" fill="#FFFFFF" stroke="#C99A3A" stroke-width="4"/>
+    <circle cx="580" cy="98" r="7" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

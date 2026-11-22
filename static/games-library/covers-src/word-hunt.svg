@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8F3EA"/>
+      <stop offset="0.55" stop-color="#CFE7D9"/>
+      <stop offset="1" stop-color="#B5D9C6"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E6B4E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#A0CBB2" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#8CB7A0" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M80 90 h11 M85.5 84.5 v11" stroke-width="3.2"/>
+    <path d="M716 84 h12 M722 78 v12" stroke-width="3.4"/>
+    <path d="M750 260 h9 M754.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M56 300 h9 M60.5 295.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6EE" opacity="0.55">
+    <circle cx="124" cy="150" r="4"/><circle cx="750" cy="160" r="3.4"/><circle cx="66" cy="220" r="3"/><circle cx="700" cy="120" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="430" cy="406" rx="270" ry="22" fill="#5E9478" opacity="0.35"/>
+
+  <!-- 主题标签 -->
+  <g stroke-linejoin="round">
+    <rect x="84" y="78" width="124" height="48" rx="10" fill="#FBF7E8" stroke="#3A2A1E" stroke-width="7"/>
+    <path d="M104 96 H188 M104 112 H160" stroke="#8A9A8C" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <circle cx="102" cy="94" r="7" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <!-- 字海网格卡（倾斜） -->
+  <g transform="rotate(-5 400 230)" stroke-linejoin="round">
+    <rect x="200" y="66" width="430" height="324" rx="18" fill="#F4F9EE" stroke="#3A2A1E" stroke-width="9"/>
+    <g stroke="#C2D8C2" stroke-width="4" fill="none">
+      <path d="M296 94 V350"/><path d="M360 94 V350"/><path d="M424 94 V350"/><path d="M488 94 V350"/><path d="M552 94 V350"/>
+      <path d="M232 158 H616"/><path d="M232 222 H616"/><path d="M232 286 H616"/>
+    </g>
+    <!-- 单元刻痕 -->
+    <g stroke="#9FB3A2" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.85">
+      <path d="M246 112 H282 M246 128 H268"/><path d="M310 112 H346 M310 128 H332"/>
+      <path d="M438 176 H474 M438 192 H460"/><path d="M502 176 H538 M502 192 H524"/>
+      <path d="M246 240 H282 M246 256 H264"/><path d="M502 240 H538 M502 256 H522"/>
+      <path d="M374 304 H410 M374 320 H392"/><path d="M566 304 H602 M566 320 H584"/>
+      <path d="M566 112 H602 M566 128 H582"/><path d="M438 240 H474"/>
+    </g>
+    <!-- 荧光圈选环 -->
+    <ellipse cx="390" cy="190" rx="112" ry="52" fill="#D9F26A" opacity="0.55" stroke="#A9C93A" stroke-width="8"/>
+    <circle cx="230" cy="90" r="10" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <!-- 荧光笔（主视觉，签名表情） -->
+  <g transform="rotate(18 629 297)" stroke-linejoin="round">
+    <rect x="590" y="228" width="78" height="22" rx="8" fill="#17734A" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="596" y="250" width="66" height="106" rx="14" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M610 356 L650 356 L642 392 L618 392 Z" fill="#E9C87E" stroke="#3A2A1E" stroke-width="7"/>
+    <path d="M618 392 L642 392 L638 404 L622 404 Z" fill="#D9F26A" stroke="#3A2A1E" stroke-width="5"/>
+    <circle cx="614" cy="282" r="8" fill="#1F1A14"/>
+    <circle cx="640" cy="282" r="8" fill="#1F1A14"/>
+    <path d="M620 302 Q630 312 638 301" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="612" cy="264" r="8" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+  <!-- 圈选轨迹 -->
+  <path d="M596 384 Q540 366 508 322" stroke="#A9C93A" stroke-width="6" stroke-linecap="round" stroke-dasharray="9 10" fill="none" opacity="0.8"/>
+  <path d="M470 356 h11 M475.5 350.5 v11" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none" opacity="0.7"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

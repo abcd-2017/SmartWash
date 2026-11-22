@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8CCB9C"/>
+      <stop offset="0.55" stop-color="#66B27B"/>
+      <stop offset="1" stop-color="#4C9C62"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1B5538" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#42905A" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#377C4C" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 60 h11 M97.5 54.5 v11" stroke-width="3.2"/>
+    <path d="M706 68 h12 M712 62 v12" stroke-width="3.4"/>
+    <path d="M56 200 h9 M60.5 195.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 220 h9 M748.5 215.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF7EE" opacity="0.5">
+    <circle cx="140" cy="120" r="4"/><circle cx="656" cy="110" r="3.4"/><circle cx="48" cy="170" r="3"/><circle cx="748" cy="300" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="410" rx="262" ry="18" fill="#1B5538" opacity="0.35"/>
+
+  <!-- 棋盘 -->
+  <rect x="172" y="88" width="456" height="296" fill="#F2E8CC"/>
+  <g fill="#5FA578">
+    <rect x="248" y="88" width="76" height="74"/><rect x="400" y="88" width="76" height="74"/><rect x="552" y="88" width="76" height="74"/>
+    <rect x="172" y="162" width="76" height="74"/><rect x="324" y="162" width="76" height="74"/><rect x="476" y="162" width="76" height="74"/>
+    <rect x="248" y="236" width="76" height="74"/><rect x="400" y="236" width="76" height="74"/><rect x="552" y="236" width="76" height="74"/>
+    <rect x="172" y="310" width="76" height="74"/><rect x="324" y="310" width="76" height="74"/><rect x="476" y="310" width="76" height="74"/>
+  </g>
+  <rect x="172" y="88" width="456" height="296" fill="none" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+
+  <!-- 对岸终点旗 -->
+  <g>
+    <path d="M600 88 L600 50" stroke="#3A2A1E" stroke-width="6" stroke-linecap="round"/>
+    <path d="M600 50 L644 62 L600 74 Z" fill="#C04A5E" stroke="#3A2A1E" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M172 88 H628" stroke="#F2FBF4" stroke-width="5" stroke-dasharray="14 12" stroke-linecap="round" opacity="0.85"/>
+  </g>
+
+  <!-- 红方（防守两排） -->
+  <g>
+    <g fill="#C04A5E" stroke="#3A2A1E" stroke-width="6.5">
+      <circle cx="210" cy="123" r="24"/><circle cx="286" cy="123" r="24"/><circle cx="362" cy="123" r="24"/>
+      <circle cx="438" cy="123" r="24"/><circle cx="514" cy="123" r="24"/><circle cx="590" cy="123" r="24"/>
+      <circle cx="286" cy="197" r="24"/><circle cx="514" cy="197" r="24"/>
+    </g>
+    <g fill="none" stroke="#8E3040" stroke-width="4">
+      <circle cx="210" cy="123" r="13"/><circle cx="286" cy="123" r="13"/><circle cx="362" cy="123" r="13"/>
+      <circle cx="438" cy="123" r="13"/><circle cx="514" cy="123" r="13"/><circle cx="590" cy="123" r="13"/>
+      <circle cx="286" cy="197" r="13"/><circle cx="514" cy="197" r="13"/>
+    </g>
+    <!-- 被吃倒下的红子 -->
+    <ellipse cx="438" cy="142" rx="27" ry="21" fill="#C04A5E" stroke="#3A2A1E" stroke-width="6" transform="rotate(-22 438 142)"/>
+    <g stroke="#F2FBF4" stroke-width="4" stroke-linecap="round" opacity="0.85">
+      <path d="M470 116 L482 106"/>
+      <path d="M478 134 L492 128"/>
+    </g>
+  </g>
+
+  <!-- 绿方（推进两排半） -->
+  <g>
+    <g fill="#2D9B6A" stroke="#3A2A1E" stroke-width="6.5">
+      <circle cx="210" cy="345" r="24"/><circle cx="286" cy="345" r="24"/><circle cx="362" cy="345" r="24"/>
+      <circle cx="438" cy="345" r="24"/><circle cx="514" cy="345" r="24"/><circle cx="590" cy="345" r="24"/>
+      <circle cx="286" cy="271" r="24"/><circle cx="438" cy="271" r="24"/><circle cx="590" cy="271" r="24"/>
+    </g>
+    <g fill="none" stroke="#1E7A50" stroke-width="4">
+      <circle cx="210" cy="345" r="13"/><circle cx="286" cy="345" r="13"/><circle cx="362" cy="345" r="13"/>
+      <circle cx="438" cy="345" r="13"/><circle cx="514" cy="345" r="13"/><circle cx="590" cy="345" r="13"/>
+      <circle cx="286" cy="271" r="13"/><circle cx="438" cy="271" r="13"/><circle cx="590" cy="271" r="13"/>
+    </g>
+    <!-- 先锋绿子（签名表情） -->
+    <circle cx="362" cy="197" r="25" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="354" cy="190" r="7" fill="#1F1A14"/>
+    <circle cx="370" cy="190" r="7" fill="#1F1A14"/>
+    <circle cx="356" cy="188" r="2.6" fill="#FFFFFF"/>
+    <circle cx="372" cy="188" r="2.6" fill="#FFFFFF"/>
+    <path d="M355 206 Q362 212 369 204" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="348" cy="182" r="9" fill="#FFFFFF" opacity="0.45"/>
+    <g stroke="#F2FBF4" stroke-width="5" stroke-linecap="round" opacity="0.7">
+      <path d="M340 236 L336 262"/>
+      <path d="M384 236 L380 262"/>
+    </g>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

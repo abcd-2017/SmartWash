@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7FBFD8"/>
+      <stop offset="0.55" stop-color="#58A6C2"/>
+      <stop offset="1" stop-color="#3F8EA9"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#143D52" stop-opacity="0.3"/>
+    </radialGradient>
+    <path id="hx" d="M0 -40 L34.6 -20 L34.6 20 L0 40 L-34.6 20 L-34.6 -20 Z"/>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#35809A" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#2C6E86" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M84 76 h11 M89.5 70.5 v11" stroke-width="3.2"/>
+    <path d="M716 84 h12 M722 78 v12" stroke-width="3.4"/>
+    <path d="M56 200 h9 M60.5 195.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M746 220 h9 M750.5 215.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF7F4" opacity="0.5">
+    <circle cx="130" cy="130" r="4"/><circle cx="676" cy="120" r="3.4"/><circle cx="50" cy="280" r="3"/><circle cx="750" cy="300" r="2.6"/>
+  </g>
+
+  <ellipse cx="388" cy="412" rx="240" ry="16" fill="#143D52" opacity="0.35"/>
+
+  <!-- 六角盘底 -->
+  <polygon points="388,128 613,258 388,388 163,258" fill="#E8F4F8" stroke="#1E2620" stroke-width="8" stroke-linejoin="round"/>
+
+  <!-- 六角蜂窝格 -->
+  <g fill="#F6FBFC" stroke="#1E2620" stroke-width="4">
+    <use href="#hx" x="236" y="168"/><use href="#hx" x="312" y="168"/><use href="#hx" x="388" y="168"/><use href="#hx" x="464" y="168"/><use href="#hx" x="540" y="168"/>
+    <use href="#hx" x="198" y="228"/><use href="#hx" x="274" y="228"/><use href="#hx" x="350" y="228"/><use href="#hx" x="426" y="228"/><use href="#hx" x="502" y="228"/><use href="#hx" x="578" y="228"/>
+    <use href="#hx" x="236" y="288"/><use href="#hx" x="312" y="288"/><use href="#hx" x="388" y="288"/><use href="#hx" x="464" y="288"/><use href="#hx" x="540" y="288"/>
+    <use href="#hx" x="198" y="348"/><use href="#hx" x="274" y="348"/><use href="#hx" x="350" y="348"/><use href="#hx" x="426" y="348"/><use href="#hx" x="502" y="348"/><use href="#hx" x="578" y="348"/>
+  </g>
+
+  <!-- 盘边染色：绿连上下，红连左右 -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M163 258 L388 128" stroke="#1E7A50" stroke-width="11"/>
+    <path d="M388 388 L613 258" stroke="#1E7A50" stroke-width="11"/>
+    <path d="M388 128 L613 258" stroke="#C04A5E" stroke-width="11"/>
+    <path d="M163 258 L388 388" stroke="#C04A5E" stroke-width="11"/>
+  </g>
+
+  <!-- 红方连线（未贯通） -->
+  <path d="M464 168 L388 168 L312 228 L236 288 L236 300" stroke="#A83850" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <g fill="#C04A5E" stroke="#1E2620" stroke-width="5">
+    <circle cx="464" cy="168" r="20"/>
+    <circle cx="388" cy="168" r="20"/>
+    <circle cx="312" cy="228" r="20"/>
+    <circle cx="236" cy="288" r="20"/>
+    <circle cx="236" cy="300" r="15"/>
+  </g>
+
+  <!-- 绿方贯通链 -->
+  <path d="M274 194 L274 228 L312 288 L350 348 L426 366" stroke="#1E7A50" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <g fill="#2D9B6A" stroke="#1E2620" stroke-width="5">
+    <circle cx="274" cy="194" r="15"/>
+    <circle cx="274" cy="228" r="20"/>
+    <circle cx="312" cy="288" r="24"/>
+    <circle cx="350" cy="348" r="20"/>
+    <circle cx="426" cy="366" r="15"/>
+  </g>
+
+  <!-- 链端棋子（签名表情） -->
+  <g>
+    <circle cx="312" cy="288" r="24" fill="#2D9B6A" stroke="#1E2620" stroke-width="6"/>
+    <circle cx="301" cy="281" r="6.5" fill="#1F1A14"/>
+    <circle cx="323" cy="281" r="6.5" fill="#1F1A14"/>
+    <circle cx="303" cy="279" r="2.4" fill="#FFFFFF"/>
+    <circle cx="325" cy="279" r="2.4" fill="#FFFFFF"/>
+    <path d="M303 297 Q312 305 321 296" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="298" cy="274" r="7" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <!-- 贯通星光 -->
+  <g stroke="#F2FBF4" stroke-width="4.5" stroke-linecap="round" opacity="0.9">
+    <path d="M262 168 L262 156 M256 162 L268 162"/>
+    <path d="M446 388 L446 376 M440 382 L452 382"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

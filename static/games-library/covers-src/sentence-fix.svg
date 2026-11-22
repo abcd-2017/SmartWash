@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E4F0EC"/>
+      <stop offset="0.55" stop-color="#CBDFD6"/>
+      <stop offset="1" stop-color="#B2D3C6"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E6B4E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#9EC6B4" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#8AB2A2" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 92 h11 M93.5 86.5 v11" stroke-width="3.2"/>
+    <path d="M702 82 h12 M708 76 v12" stroke-width="3.4"/>
+    <path d="M742 286 h9 M746.5 281.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M60 260 h9 M64.5 255.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6EE" opacity="0.55">
+    <circle cx="140" cy="150" r="4"/><circle cx="744" cy="160" r="3.4"/><circle cx="66" cy="180" r="3"/><circle cx="716" cy="340" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="430" cy="406" rx="248" ry="22" fill="#5E9478" opacity="0.35"/>
+
+  <!-- 体温计（右侧副元素） -->
+  <g stroke-linejoin="round">
+    <rect x="620" y="106" width="38" height="176" rx="19" fill="#FBF7E8" stroke="#3A2A1E" stroke-width="8"/>
+    <rect x="631" y="178" width="16" height="106" rx="8" fill="#D8465F"/>
+    <circle cx="639" cy="312" r="36" fill="#D8465F" stroke="#3A2A1E" stroke-width="8"/>
+    <g stroke="#3A2A1E" stroke-width="4" stroke-linecap="round">
+      <path d="M612 130 H602"/><path d="M612 156 H602"/><path d="M612 182 H602"/><path d="M612 208 H602"/><path d="M612 234 H602"/>
+    </g>
+    <circle cx="628" cy="122" r="7" fill="#FFFFFF" opacity="0.45"/>
+    <circle cx="628" cy="302" r="9" fill="#FFFFFF" opacity="0.3"/>
+  </g>
+
+  <!-- 处方笺板夹（主视觉，签名表情） -->
+  <rect x="200" y="88" width="350" height="292" rx="16" fill="#F7F3E2" stroke="#3A2A1E" stroke-width="9"/>
+  <rect x="222" y="112" width="306" height="244" rx="10" fill="#FBF7E8" stroke="#B7AA8A" stroke-width="6"/>
+  <rect x="318" y="68" width="114" height="44" rx="14" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="8"/>
+  <path d="M368 82 H382 M375 75 V89" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <!-- 病句行 -->
+  <path d="M244 154 H480" stroke="#B9CDBC" stroke-width="13" stroke-linecap="round" fill="none"/>
+  <path d="M244 194 H400" stroke="#B9CDBC" stroke-width="13" stroke-linecap="round" fill="none"/>
+  <path d="M244 234 H452" stroke="#B9CDBC" stroke-width="13" stroke-linecap="round" fill="none"/>
+  <circle cx="242" cy="134" r="10" fill="#FFFFFF" opacity="0.4"/>
+  <!-- 签名表情 -->
+  <circle cx="300" cy="296" r="9" fill="#1F1A14"/>
+  <circle cx="336" cy="296" r="9" fill="#1F1A14"/>
+  <path d="M306 316 Q320 328 332 315" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 诊断对勾章 -->
+  <circle cx="486" cy="296" r="50" fill="#2D9B6A" opacity="0.92" stroke="#17734A" stroke-width="7"/>
+  <path d="M462 296 l16 16 l34 -34" stroke="#FFFFFF" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="470" cy="278" r="9" fill="#FFFFFF" opacity="0.35"/>
+  <!-- 章外星尘 -->
+  <path d="M540 232 h11 M545.5 226.5 v11" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none" opacity="0.7"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

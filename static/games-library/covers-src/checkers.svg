@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7CC49A"/>
+      <stop offset="0.55" stop-color="#5AAB7C"/>
+      <stop offset="1" stop-color="#419663"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1B5438" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#357E52" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#2C6A44" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M90 66 h11 M95.5 60.5 v11" stroke-width="3.2"/>
+    <path d="M700 62 h12 M706 56 v12" stroke-width="3.4"/>
+    <path d="M56 180 h9 M60.5 175.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 200 h9 M748.5 195.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF7EE" opacity="0.5">
+    <circle cx="160" cy="110" r="4"/><circle cx="640" cy="100" r="3.4"/><circle cx="50" cy="240" r="3"/><circle cx="740" cy="260" r="2.6"/>
+  </g>
+
+  <ellipse cx="420" cy="430" rx="260" ry="16" fill="#1B5438" opacity="0.35"/>
+
+  <!-- 棋盘底 + 深色格 -->
+  <rect x="206" y="76" width="348" height="348" fill="#F2E8CC"/>
+  <g fill="#4E9C6E">
+    <rect x="264" y="76" width="58" height="58"/><rect x="380" y="76" width="58" height="58"/><rect x="496" y="76" width="58" height="58"/>
+    <rect x="206" y="134" width="58" height="58"/><rect x="322" y="134" width="58" height="58"/><rect x="438" y="134" width="58" height="58"/>
+    <rect x="264" y="192" width="58" height="58"/><rect x="380" y="192" width="58" height="58"/><rect x="496" y="192" width="58" height="58"/>
+    <rect x="206" y="250" width="58" height="58"/><rect x="322" y="250" width="58" height="58"/><rect x="438" y="250" width="58" height="58"/>
+    <rect x="264" y="308" width="58" height="58"/><rect x="380" y="308" width="58" height="58"/><rect x="496" y="308" width="58" height="58"/>
+    <rect x="206" y="366" width="58" height="58"/><rect x="322" y="366" width="58" height="58"/><rect x="438" y="366" width="58" height="58"/>
+  </g>
+  <rect x="206" y="76" width="348" height="348" fill="none" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+
+  <!-- 绿兵 -->
+  <g>
+    <circle cx="235" cy="395" r="24" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="235" cy="395" r="13" fill="none" stroke="#1E7A50" stroke-width="4"/>
+    <circle cx="467" cy="395" r="24" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="467" cy="395" r="13" fill="none" stroke="#1E7A50" stroke-width="4"/>
+    <circle cx="351" cy="395" r="24" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="351" cy="395" r="13" fill="none" stroke="#1E7A50" stroke-width="4"/>
+  </g>
+
+  <!-- 被跳吃的红子（晕头转向） -->
+  <g>
+    <circle cx="351" cy="279" r="24" fill="#C04A5E" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="351" cy="279" r="13" fill="none" stroke="#8E3040" stroke-width="4"/>
+    <g stroke="#F2FBF4" stroke-width="4.5" stroke-linecap="round" opacity="0.85">
+      <path d="M382 246 L394 234"/>
+      <path d="M392 262 L406 254"/>
+      <path d="M366 240 L374 226"/>
+    </g>
+  </g>
+
+  <!-- 跳吃弧线 -->
+  <path d="M252 372 Q316 226 418 266" stroke="#F2FBF4" stroke-width="5" stroke-linecap="round" stroke-dasharray="4 11" fill="none" opacity="0.9"/>
+  <path d="M404 250 L424 268 L400 276 Z" fill="#F2FBF4" opacity="0.9"/>
+
+  <!-- 王冠棋子（签名表情） -->
+  <g>
+    <circle cx="467" cy="279" r="40" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="467" cy="279" r="24" fill="none" stroke="#1E7A50" stroke-width="5"/>
+    <path d="M441 254 L441 232 L455 246 L467 228 L479 246 L493 232 L493 254 Z" fill="#F2C14E" stroke="#3A2A1E" stroke-width="5" stroke-linejoin="round"/>
+    <circle cx="454" cy="276" r="8" fill="#1F1A14"/>
+    <circle cx="480" cy="276" r="8" fill="#1F1A14"/>
+    <circle cx="457" cy="273" r="2.8" fill="#FFFFFF"/>
+    <circle cx="483" cy="273" r="2.8" fill="#FFFFFF"/>
+    <path d="M458 292 Q467 300 476 290" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="442" cy="250" r="10" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <!-- 盘外被吃红子堆 -->
+  <g>
+    <ellipse cx="622" cy="330" rx="28" ry="22" fill="#C04A5E" stroke="#3A2A1E" stroke-width="7" transform="rotate(-16 622 330)"/>
+    <ellipse cx="612" cy="376" rx="28" ry="22" fill="#C04A5E" stroke="#3A2A1E" stroke-width="7" transform="rotate(10 612 376)"/>
+    <path d="M598 316 L590 304 M634 310 L638 296" stroke="#F2FBF4" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

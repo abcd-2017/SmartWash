@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#85CC84"/>
+      <stop offset="0.55" stop-color="#5FB266"/>
+      <stop offset="1" stop-color="#469C50"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E5636" stop-opacity="0.3"/>
+    </radialGradient>
+    <path id="pipH" d="M0 3 C -1.5 -1 -6 -1 -6 2.5 C -6 5.5 -2 7.5 0 9.5 C 2 7.5 6 5.5 6 2.5 C 6 -1 1.5 -1 0 3 Z"/>
+    <path id="pipD" d="M0 -7 L6 0 L0 7 L-6 0 Z"/>
+    <path id="pipS" d="M0 -9 C 2 -5 6.5 -3.5 6.5 0.5 C 6.5 3.5 2.5 4.8 0.8 3 L 2.4 9 L -2.4 9 L -0.8 3 C -2.5 4.8 -6.5 3.5 -6.5 0.5 C -6.5 -3.5 -2 -5 0 -9 Z"/>
+    <g id="pipC">
+      <circle cx="0" cy="-4.2" r="3.8"/>
+      <circle cx="-3.8" cy="1.8" r="3.8"/>
+      <circle cx="3.8" cy="1.8" r="3.8"/>
+      <path d="M-1.8 3.2 L1.8 3.2 L1 9.4 L-1 9.4 Z"/>
+    </g>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#3B8A44" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#317438" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M70 92 h11 M75.5 86.5 v11" stroke-width="3.2"/>
+    <path d="M724 78 h12 M730 72 v12" stroke-width="3.4"/>
+    <path d="M754 220 h9 M758.5 215.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M48 260 h9 M52.5 255.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#F0FAEC" opacity="0.5">
+    <circle cx="160" cy="130" r="4"/><circle cx="690" cy="120" r="3.4"/><circle cx="54" cy="190" r="3"/><circle cx="748" cy="300" r="2.6"/>
+  </g>
+
+  <ellipse cx="392" cy="418" rx="320" ry="24" fill="#1E5636" opacity="0.32"/>
+
+  <!-- 七列牌（高尔夫纸牌列） -->
+  <g>
+    <!-- 第 1 列：4 张 -->
+    <rect x="80" y="238" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipH" transform="translate(97 258) scale(1.1)" fill="#C8465C"/>
+    <rect x="80" y="254" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipS" transform="translate(97 274) scale(1.1)" fill="#2E2A26"/>
+    <rect x="80" y="270" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipD" transform="translate(97 290) scale(1.1)" fill="#C8465C"/>
+    <rect x="80" y="286" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipC" transform="translate(97 306) scale(1)" fill="#2E2A26"/>
+    <!-- 第 2 列：5 张 -->
+    <rect x="140" y="222" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipD" transform="translate(157 242) scale(1.1)" fill="#C8465C"/>
+    <rect x="140" y="238" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipH" transform="translate(157 258) scale(1.1)" fill="#C8465C"/>
+    <rect x="140" y="254" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipC" transform="translate(157 274) scale(1)" fill="#2E2A26"/>
+    <rect x="140" y="270" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipS" transform="translate(157 290) scale(1.1)" fill="#2E2A26"/>
+    <rect x="140" y="286" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipH" transform="translate(157 306) scale(1.1)" fill="#C8465C"/>
+    <!-- 第 3 列：3 张 -->
+    <rect x="200" y="254" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipS" transform="translate(217 274) scale(1.1)" fill="#2E2A26"/>
+    <rect x="200" y="270" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipD" transform="translate(217 290) scale(1.1)" fill="#C8465C"/>
+    <rect x="200" y="286" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipH" transform="translate(217 306) scale(1.1)" fill="#C8465C"/>
+    <!-- 第 4 列：4 张 -->
+    <rect x="260" y="238" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipC" transform="translate(277 258) scale(1)" fill="#2E2A26"/>
+    <rect x="260" y="254" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipD" transform="translate(277 274) scale(1.1)" fill="#C8465C"/>
+    <rect x="260" y="270" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipS" transform="translate(277 290) scale(1.1)" fill="#2E2A26"/>
+    <rect x="260" y="286" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipD" transform="translate(277 306) scale(1.1)" fill="#C8465C"/>
+    <!-- 第 5 列：2 张 -->
+    <rect x="320" y="270" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipH" transform="translate(337 290) scale(1.1)" fill="#C8465C"/>
+    <rect x="320" y="286" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipC" transform="translate(337 306) scale(1)" fill="#2E2A26"/>
+    <!-- 第 6 列：5 张 -->
+    <rect x="380" y="222" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipS" transform="translate(397 242) scale(1.1)" fill="#2E2A26"/>
+    <rect x="380" y="238" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipH" transform="translate(397 258) scale(1.1)" fill="#C8465C"/>
+    <rect x="380" y="254" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipD" transform="translate(397 274) scale(1.1)" fill="#C8465C"/>
+    <rect x="380" y="270" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipH" transform="translate(397 290) scale(1.1)" fill="#C8465C"/>
+    <rect x="380" y="286" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipS" transform="translate(397 306) scale(1.1)" fill="#2E2A26"/>
+    <!-- 第 7 列：3 张 -->
+    <rect x="440" y="254" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipD" transform="translate(457 274) scale(1.1)" fill="#C8465C"/>
+    <rect x="440" y="270" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipC" transform="translate(457 290) scale(1)" fill="#2E2A26"/>
+    <rect x="440" y="286" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6"/>
+    <use href="#pipH" transform="translate(457 306) scale(1.1)" fill="#C8465C"/>
+  </g>
+
+  <!-- 果岭土丘 -->
+  <path d="M492 420 Q492 334 560 326 L692 326 Q756 334 756 420 Z" fill="#83C98E" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+  <!-- 归位牌堆 -->
+  <g>
+    <rect x="590" y="214" width="66" height="92" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="590" y="230" width="66" height="92" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7"/>
+    <rect x="590" y="246" width="66" height="92" rx="8" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="8"/>
+    <use href="#pipH" transform="translate(623 292) scale(2.4)" fill="#C8465C"/>
+    <circle cx="604" cy="262" r="8" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+  <!-- 小旗 -->
+  <g>
+    <path d="M706 326 L706 208" stroke="#3A2A1E" stroke-width="7" stroke-linecap="round"/>
+    <path d="M706 208 L754 221 L706 234 Z" fill="#C8465C" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+  </g>
+
+  <!-- 收牌弧线 + 飞行中的牌 -->
+  <path d="M420 220 Q520 150 600 210" stroke="#F2FBF4" stroke-width="5" stroke-linecap="round" stroke-dasharray="4 11" fill="none" opacity="0.85"/>
+  <g transform="translate(508 208) rotate(18)">
+    <rect x="-27" y="-37" width="54" height="74" rx="6" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="6.5"/>
+    <use href="#pipS" transform="translate(-8 -14) scale(1.2)" fill="#2E2A26"/>
+  </g>
+  <g stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.65">
+    <path d="M446 208 L478 200"/>
+    <path d="M444 228 L474 222"/>
+  </g>
+
+  <!-- 高尔夫球（签名表情） -->
+  <g>
+    <circle cx="664" cy="380" r="37" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="650" cy="366" r="3.2" fill="#D8D4C8"/>
+    <circle cx="680" cy="358" r="3.2" fill="#D8D4C8"/>
+    <circle cx="688" cy="384" r="3.2" fill="#D8D4C8"/>
+    <circle cx="646" cy="390" r="3.2" fill="#D8D4C8"/>
+    <circle cx="654" cy="376" r="6.5" fill="#1F1A14"/>
+    <circle cx="678" cy="376" r="6.5" fill="#1F1A14"/>
+    <path d="M658 392 Q666 400 674 390" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="652" cy="362" r="10" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

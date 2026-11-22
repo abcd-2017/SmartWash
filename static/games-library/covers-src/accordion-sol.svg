@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7FC2A8"/>
+      <stop offset="0.55" stop-color="#57A986"/>
+      <stop offset="1" stop-color="#3F916E"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E4E38" stop-opacity="0.3"/>
+    </radialGradient>
+    <path id="pipH" d="M0 3 C -1.5 -1 -6 -1 -6 2.5 C -6 5.5 -2 7.5 0 9.5 C 2 7.5 6 5.5 6 2.5 C 6 -1 1.5 -1 0 3 Z"/>
+    <path id="pipD" d="M0 -7 L6 0 L0 7 L-6 0 Z"/>
+    <path id="pipS" d="M0 -9 C 2 -5 6.5 -3.5 6.5 0.5 C 6.5 3.5 2.5 4.8 0.8 3 L 2.4 9 L -2.4 9 L -0.8 3 C -2.5 4.8 -6.5 3.5 -6.5 0.5 C -6.5 -3.5 -2 -5 0 -9 Z"/>
+    <g id="pipC">
+      <circle cx="0" cy="-4.2" r="3.8"/>
+      <circle cx="-3.8" cy="1.8" r="3.8"/>
+      <circle cx="3.8" cy="1.8" r="3.8"/>
+      <path d="M-1.8 3.2 L1.8 3.2 L1 9.4 L-1 9.4 Z"/>
+    </g>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#337C5C" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#2A6A4E" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M84 82 h11 M89.5 76.5 v11" stroke-width="3.2"/>
+    <path d="M712 70 h12 M718 64 v12" stroke-width="3.4"/>
+    <path d="M750 240 h9 M754.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M48 268 h9 M52.5 263.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF7F2" opacity="0.5">
+    <circle cx="150" cy="128" r="4"/><circle cx="668" cy="120" r="3.4"/><circle cx="56" cy="190" r="3"/><circle cx="742" cy="310" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="420" rx="318" ry="22" fill="#1E4E38" opacity="0.35"/>
+
+  <!-- 左端已压缩的两叠牌堆 -->
+  <g>
+    <rect x="76" y="248" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" transform="rotate(-3 118 306)"/>
+    <rect x="84" y="256" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" transform="rotate(2 126 314)"/>
+    <rect x="90" y="262" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" transform="rotate(-1 132 320)"/>
+    <use href="#pipS" transform="translate(112 292) scale(1.5)" fill="#2E2A26"/>
+    <use href="#pipD" transform="translate(124 306) scale(1.5)" fill="#C8465C"/>
+    <use href="#pipH" transform="translate(136 320) scale(1.5)" fill="#C8465C"/>
+    <circle cx="104" cy="276" r="10" fill="#FFFFFF" opacity="0.45"/>
+    <rect x="176" y="252" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" transform="rotate(2 218 310)"/>
+    <rect x="184" y="260" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" transform="rotate(-2 226 318)"/>
+    <use href="#pipC" transform="translate(210 296) scale(1.5)" fill="#2E2A26"/>
+    <use href="#pipH" transform="translate(222 312) scale(1.5)" fill="#C8465C"/>
+  </g>
+
+  <!-- 展开的牌列（手风琴褶，交替微转） -->
+  <g>
+    <rect x="292" y="244" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" transform="rotate(-4 334 302)"/>
+    <use href="#pipH" transform="translate(314 272) scale(1.5)" fill="#C8465C"/>
+    <rect x="356" y="244" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" transform="rotate(3 398 302)"/>
+    <use href="#pipS" transform="translate(378 272) scale(1.5)" fill="#2E2A26"/>
+    <rect x="420" y="244" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" transform="rotate(-3 462 302)"/>
+    <use href="#pipD" transform="translate(442 272) scale(1.5)" fill="#C8465C"/>
+    <!-- 中段牌（签名表情） -->
+    <rect x="484" y="244" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="8" transform="rotate(4 526 302)"/>
+    <use href="#pipH" transform="translate(508 276) scale(2.4)" fill="#C8465C"/>
+    <circle cx="506" cy="306" r="6.5" fill="#1F1A14"/>
+    <circle cx="530" cy="306" r="6.5" fill="#1F1A14"/>
+    <path d="M509 318 Q521 328 531 316" stroke="#1F1A14" stroke-width="5.5" fill="none" stroke-linecap="round" transform="rotate(4 526 302)"/>
+    <circle cx="497" cy="258" r="10" fill="#FFFFFF" opacity="0.45"/>
+    <rect x="548" y="244" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" transform="rotate(-3 590 302)"/>
+    <use href="#pipC" transform="translate(572 272) scale(1.5)" fill="#2E2A26"/>
+    <rect x="612" y="244" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" transform="rotate(3 654 302)"/>
+    <use href="#pipS" transform="translate(636 272) scale(1.5)" fill="#2E2A26"/>
+    <rect x="676" y="244" width="84" height="116" rx="9" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" transform="rotate(-4 718 302)"/>
+    <use href="#pipD" transform="translate(700 272) scale(1.5)" fill="#C8465C"/>
+  </g>
+
+  <!-- 压缩方向大箭头 -->
+  <g stroke="#F2FBF4" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.9">
+    <path d="M700 196 L360 196"/>
+    <path d="M378 178 L352 196 L378 214"/>
+  </g>
+  <!-- 尾部速度线 -->
+  <g stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.6">
+    <path d="M704 226 L744 224"/>
+    <path d="M700 250 L736 250"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

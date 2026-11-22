@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>词泡泡</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .target {
+    background: var(--g-surface); border-radius: var(--g-radius-inner);
+    padding: 10px; text-align: center; margin-bottom: 10px; box-shadow: var(--g-shadow);
+  }
+  .target .word { font-size: 22px; font-weight: 700; letter-spacing: 6px; color: var(--g-text); }
+  .target .word b { color: var(--g-primary-deep); }
+  .target .tip { display: block; font-size: 12px; color: var(--g-muted); margin-top: 4px; }
+  .bubbles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .bub {
+    aspect-ratio: 1; min-height: 48px; border: 0; border-radius: 999px;
+    background: var(--g-surface); color: var(--g-text);
+    font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 1px 0 var(--g-border), inset 0 -4px 0 rgba(0,0,0,.06);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .12s, opacity .2s;
+  }
+  .bub:active { transform: scale(.92); }
+  .bub.pop { background: var(--g-primary-soft); color: var(--g-on-soft); transform: scale(.6); opacity: .25; pointer-events: none; }
+  .bub.miss { animation: shake .3s ease-in-out; background: var(--g-surface2); color: var(--g-danger); }
+  .bub.hint { box-shadow: inset 0 0 0 2px var(--g-warning); }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  .combo { text-align: center; font-size: 14px; color: var(--g-muted); margin: 10px 0 0; min-height: 20px; }
+  .combo b { color: var(--g-warning); font-size: 16px; }
+  .bar { height: 8px; border-radius: 999px; background: var(--g-surface2); margin-top: 10px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 100%; border-radius: 999px; background: var(--g-water); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .bigscore { font-size: 36px; font-weight: 700; color: var(--g-primary-deep); margin: 0 0 4px; font-variant-numeric: tabular-nums; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">60 秒 · 按顺序点泡泡拼出目标词</span><span class="sub" id="bestTag">最高分 0</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">分数</span><span class="val" id="stScore">0</span></div>
+    <div class="stat"><span class="label">连击</span><span class="val" id="stCombo">0</span></div>
+    <div class="stat"><span class="label">词数</span><span class="val" id="stWords">0</span></div>
+  </div>
+  <div class="target">
+    <span class="word" id="tWord">准备开始</span>
+    <span class="tip" id="tTip">点下方泡泡拼出这个词</span>
+  </div>
+  <div class="bubbles" id="bubbles"></div>
+  <p class="combo" id="comboTag"></p>
+  <div class="bar" id="barWrap" hidden><i id="barFill"></i></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点「开始挑战」进入 60 秒限时赛</p>
+  <div class="tools">
+    <button class="btn primary" id="btnStart">开始挑战</button>
+  </div>
+  <p class="foot">键盘：1-9 / 0 / Q / W 按位置点泡泡 · 空格暂停 · 切后台自动暂停 · 成绩自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">时间到！</h2>
+    <p class="bigscore" id="ovScore">0</p>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn primary" id="ovBtn">再来一局</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 词库：常见成语（四字）+ 常用词（二字），自撰常用表 ---------- */
+var GAME_KEY="word-burst",SAVE_KEY="sw.wordburst.v1";
+var IDIOMS=["一心一意","十全十美","三心二意","四面八方","五颜六色","七上八下","九牛一毛","百发百中","千军万马","万水千山",
+"山清水秀","鸟语花香","花好月圆","风和日丽","春暖花开","秋高气爽","雪中送炭","火上加油","水深火热","天长地久",
+"守株待兔","画蛇添足","亡羊补牢","刻舟求剑","狐假虎威","井底之蛙","对牛弹琴","画龙点睛","杯弓蛇影","掩耳盗铃",
+"海阔天空","水到渠成","木已成舟","马到成功","龙飞凤舞","百鸟朝凤","一鸣惊人","大名鼎鼎","井井有条","雪上加霜",
+"锦上添花","雨过天晴","雷厉风行","电光石火","灯红酒绿","纸上谈兵","墨守成规","天罗地网","日新月异","月明星稀",
+"石破天惊","落花流水","水滴石穿","足智多谋","眉开眼笑","口是心非","耳听八方","眼疾手快","手忙脚乱","心花怒放"];
+var WORDS=["太阳","月亮","书本","小鸟","牛奶","面包","书包","老师","朋友","森林","花园","小河","白云","星星","苹果","西瓜","房子","窗户","火车","汽车","飞机","轮船","雨伞","帽子","鞋子","手套","铅笔","橡皮","尺子","剪刀","灯笼","青蛙"];
+var POOL=(IDIOMS.join("")+WORDS.join("")).split("");
+
+/* ---------- 状态 ---------- */
+var ROUND_MS=60000;
+var state="idle";   // idle | playing | paused | over
+var word="",chars=[],popIdx=0,score=0,combo=0,maxCombo=0,wordsDone=0,recent=[];
+var deadline=0,pausedLeft=0;
+var allBubbles=[];
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{best:parseInt(s.best,10)||0}}catch(e){return{best:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rb=parseInt(remote.best,10)||0;
+      if(rb>save.best){save.best=rb;persist();paintBest();}
+    }catch(e){}
+  }).catch(function(){});
+}
+function paintBest(){$("bestTag").textContent="最高分 "+save.best}
+/* ---------- 出题 ---------- */
+function pickWord(){
+  var pool=Math.random()<0.65?IDIOMS:WORDS;
+  var i,n=pool.length,guard=0;
+  do{i=Math.floor(Math.random()*n);guard++;}while(recent.indexOf(pool[i])>=0&&guard<60);
+  recent.push(pool[i]);if(recent.length>12)recent.shift();
+  return pool[i];
+}
+function newWord(){
+  word=pickWord();popIdx=0;
+  var bubs=word.split(""),need=12;
+  var guard=0;
+  while(bubs.length<need&&guard++<200){
+    var c=POOL[Math.floor(Math.random()*POOL.length)];
+    bubs.push(c);
+  }
+  /* 打乱 */
+  for(var i=bubs.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=bubs[i];bubs[i]=bubs[j];bubs[j]=t;}
+  chars=bubs;
+  paintTarget();
+  var box=$("bubbles");box.innerHTML="";
+  allBubbles=[];
+  var KEYS=["1","2","3","4","5","6","7","8","9","0","Q","W"];
+  for(var k=0;k<chars.length;k++){
+    (function(k){
+      var b=document.createElement("button");
+      b.className="bub";b.textContent=chars[k];
+      b.setAttribute("aria-label","泡泡 "+chars[k]);
+      b.addEventListener("click",function(){tap(k)});
+      box.appendChild(b);allBubbles.push(b);
+    })(k);
+  }
+}
+function paintTarget(){
+  var done=word.slice(0,popIdx),rest=word.slice(popIdx);
+  $("tWord").innerHTML=done+"<b>"+rest+"</b>";
+  $("tTip").textContent=word.length+" 字 · 已拼 "+popIdx;
+}
+/* ---------- 计分 ---------- */
+function tap(k){
+  if(state!=="playing")return;
+  var need=word[popIdx];
+  var el=allBubbles[k];
+  if(el.classList.contains("pop"))return;
+  if(chars[k]===need){
+    el.classList.add("pop");
+    combo++;
+    if(combo>maxCombo)maxCombo=combo;
+    score+=10+Math.min(combo,20)*2;
+    popIdx++;
+    paintTarget();paintStats();
+    if(popIdx>=word.length){
+      wordsDone++;
+      score+=word.length*20+Math.min(combo,30)*5;
+      say("「"+word+"」消除！+"+(word.length*20));
+      paintStats();
+      setTimeout(function(){if(state==="playing")newWord()},450);
+    }
+    paintCombo();
+  }else{
+    combo=0;paintStats();paintCombo();
+    el.classList.add("miss");
+    setTimeout(function(){el.classList.remove("miss")},320);
+    say("下一个字是「"+need+"」，连击断了");
+  }
+}
+function paintStats(){
+  $("stScore").textContent=score;
+  $("stCombo").textContent=combo;
+  $("stWords").textContent=wordsDone;
+}
+function paintCombo(){
+  $("comboTag").innerHTML=combo>=3?"连击 <b>"+combo+"</b> ×"+Math.min(combo,20)*2+" 加成":"";
+}
+/* ---------- 流程 ---------- */
+function startRound(){
+  score=0;combo=0;maxCombo=0;wordsDone=0;recent=[];
+  deadline=Date.now()+ROUND_MS;
+  state="playing";
+  $("btnStart").disabled=true;
+  $("btnStart").textContent="挑战中…";
+  $("barWrap").hidden=false;
+  $("overlay").classList.remove("show");
+  newWord();paintStats();paintCombo();
+  say("按顺序点泡泡，拼出目标词！");
+}
+function pauseRound(){
+  if(state!=="playing")return;
+  pausedLeft=deadline-Date.now();
+  state="paused";
+  $("btnStart").textContent="继续";
+  say("已暂停，点「继续」接着拼");
+}
+function resumeRound(){
+  if(state!=="paused")return;
+  deadline=Date.now()+Math.max(0,pausedLeft);
+  state="playing";
+  $("btnStart").textContent="挑战中…";
+  say("继续！");
+  /* 暂停发生在换词延迟窗口内时，恢复后补上换词，避免空盘卡死到计时结束 */
+  if(popIdx>=word.length){newWord();}
+}
+function endRound(){
+  state="over";
+  var isNew=score>save.best;
+  if(isNew){save.best=score;persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:score,metricExtra:maxCombo}).catch(function(){});
+  $("ovTitle").textContent=isNew?"新纪录！":"时间到！";
+  $("ovScore").textContent=score;
+  $("ovDesc").innerHTML="拼出 "+wordsDone+" 个词 · 最大连击 "+maxCombo+"<br>最高分 "+save.best;
+  $("btnStart").disabled=false;
+  $("btnStart").textContent="开始挑战";
+  $("barWrap").hidden=true;
+  $("overlay").classList.add("show");
+}
+$("btnStart").addEventListener("click",function(){
+  if(state==="playing")return;
+  if(state==="paused")resumeRound();
+  else startRound();
+});
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  startRound();
+});
+/* 计时 rAF + 切后台暂停 */
+function loop(){
+  requestAnimationFrame(loop);
+  if(state==="playing"){
+    var left=deadline-Date.now();
+    if(left<=0){endRound();return;}
+    $("barFill").style.width=Math.max(0,left/ROUND_MS*100)+"%";
+  }
+}
+document.addEventListener("keydown",function(e){
+  if(e.key===" "){
+    e.preventDefault();
+    if(state==="playing")pauseRound();
+    else if(state==="paused")resumeRound();
+    return;
+  }
+  if(state!=="playing")return;
+  var k=e.key.toUpperCase();
+  var KEYS=["1","2","3","4","5","6","7","8","9","0","Q","W"];
+  var i=KEYS.indexOf(k);
+  if(i>=0&&i<allBubbles.length){tap(i);e.preventDefault();}
+});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&state==="playing")pauseRound();
+});
+/* ---------- 启动 ---------- */
+paintBest();
+newWord();
+loop();
+syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

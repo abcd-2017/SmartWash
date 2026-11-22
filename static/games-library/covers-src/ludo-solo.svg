@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#94D2A4"/>
+      <stop offset="0.55" stop-color="#6EB884"/>
+      <stop offset="1" stop-color="#52A06A"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1B5538" stop-opacity="0.3"/>
+    </radialGradient>
+    <g id="pawn">
+      <circle r="13" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="5"/>
+      <circle r="6" fill="none" stroke="#B8A470" stroke-width="2.5"/>
+    </g>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#44945C" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#38804E" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M84 64 h11 M89.5 58.5 v11" stroke-width="3.2"/>
+    <path d="M712 62 h12 M718 56 v12" stroke-width="3.4"/>
+    <path d="M50 210 h9 M54.5 205.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M746 230 h9 M750.5 225.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF7EE" opacity="0.5">
+    <circle cx="130" cy="120" r="4"/><circle cx="672" cy="110" r="3.4"/><circle cx="46" cy="170" r="3"/><circle cx="750" cy="180" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="420" rx="280" ry="18" fill="#1B5538" opacity="0.35"/>
+
+  <!-- 四角基地 -->
+  <g stroke="#3A2A1E" stroke-width="8">
+    <rect x="106" y="86" width="84" height="84" rx="18" fill="#C04A5E"/>
+    <rect x="610" y="86" width="84" height="84" rx="18" fill="#E8B93E"/>
+    <rect x="106" y="300" width="84" height="84" rx="18" fill="#4A9FD4"/>
+    <rect x="610" y="300" width="84" height="84" rx="18" fill="#2D9B6A"/>
+  </g>
+  <use href="#pawn" transform="translate(134 116)"/>
+  <use href="#pawn" transform="translate(162 140)"/>
+  <use href="#pawn" transform="translate(638 116)"/>
+  <use href="#pawn" transform="translate(666 140)"/>
+  <use href="#pawn" transform="translate(134 330)"/>
+  <use href="#pawn" transform="translate(162 354)"/>
+  <use href="#pawn" transform="translate(638 330)"/>
+  <use href="#pawn" transform="translate(666 354)"/>
+
+  <!-- 十字航线 -->
+  <g stroke="#3A2A1E" stroke-width="6" fill="#F2E8CC" stroke-linejoin="round">
+    <rect x="372" y="84" width="56" height="116"/>
+    <rect x="372" y="320" width="56" height="116"/>
+    <rect x="184" y="224" width="156" height="56"/>
+    <rect x="460" y="224" width="156" height="56"/>
+    <rect x="340" y="200" width="120" height="120"/>
+  </g>
+  <g stroke="#D9C9A0" stroke-width="3">
+    <path d="M372 123 H428 M372 162 H428"/>
+    <path d="M372 359 H428 M372 398 H428"/>
+    <path d="M236 224 V280 M288 224 V280"/>
+    <path d="M512 224 V280 M564 224 V280"/>
+  </g>
+  <!-- 中央终点三角 -->
+  <g opacity="0.9">
+    <path d="M400 214 L380 252 L420 252 Z" fill="#C04A5E"/>
+    <path d="M446 260 L406 240 L406 280 Z" fill="#E8B93E"/>
+    <path d="M400 306 L380 268 L420 268 Z" fill="#4A9FD4"/>
+    <path d="M354 260 L394 240 L394 280 Z" fill="#2D9B6A"/>
+  </g>
+
+  <!-- 航线虚线 -->
+  <path d="M190 342 L250 252 L372 252 M428 252 L616 252 Q664 246 662 174" stroke="#FDFBF4" stroke-width="5" stroke-linecap="round" stroke-dasharray="10 12" fill="none" opacity="0.85"/>
+
+  <!-- 绿方飞机（签名表情） -->
+  <g transform="translate(430 148) rotate(22)">
+    <path d="M0 -42 L30 26 L0 13 L-30 26 Z" fill="#FDFBF4" stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M0 -42 L0 13" stroke="#3A2A1E" stroke-width="3.5" opacity="0.45"/>
+    <circle cx="-8" cy="-8" r="6" fill="#1F1A14"/>
+    <circle cx="8" cy="-8" r="6" fill="#1F1A14"/>
+    <circle cx="-6" cy="-10" r="2.4" fill="#FFFFFF"/>
+    <circle cx="10" cy="-10" r="2.4" fill="#FFFFFF"/>
+    <path d="M-5 4 Q0 9 5 3" stroke="#1F1A14" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="-13" cy="-24" r="7" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  <g stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.65">
+    <path d="M360 196 L390 210"/>
+    <path d="M352 172 L378 184"/>
+  </g>
+
+  <!-- 起飞光点 -->
+  <circle cx="470" cy="106" r="6" fill="#F2C14E" stroke="#3A2A1E" stroke-width="3.5"/>
+  <circle cx="500" cy="88" r="4.5" fill="#F2C14E" stroke="#3A2A1E" stroke-width="3"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

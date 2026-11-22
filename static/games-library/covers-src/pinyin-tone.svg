@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E3F1E7"/>
+      <stop offset="0.55" stop-color="#CFE7D8"/>
+      <stop offset="1" stop-color="#B9DBC7"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E6B4E" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 底部地面带 -->
+  <rect y="394" width="800" height="56" fill="#A3CCB4" opacity="0.55"/>
+  <rect y="394" width="800" height="6" fill="#8FBBA1" opacity="0.55"/>
+  <!-- 星尘点缀 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M92 100 h11 M97.5 94.5 v11" stroke-width="3.2"/>
+    <path d="M700 84 h12 M706 78 v12" stroke-width="3.4"/>
+    <path d="M724 250 h9 M728.5 245.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M76 262 h9 M80.5 257.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#EAF6EE" opacity="0.55">
+    <circle cx="150" cy="170" r="4"/><circle cx="712" cy="170" r="3.4"/><circle cx="70" cy="200" r="3"/><circle cx="746" cy="310" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="420" cy="406" rx="252" ry="22" fill="#5E9478" opacity="0.35"/>
+
+  <!-- 四层声调塔（主视觉，带签名表情） -->
+  <g stroke-linejoin="round">
+    <rect x="205" y="328" width="250" height="46" rx="12" fill="#2D9B6A" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="228" y="280" width="204" height="46" rx="12" fill="#3FAE7A" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="252" y="232" width="156" height="46" rx="12" fill="#F2B34C" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="276" y="184" width="108" height="46" rx="12" fill="#E88B5A" stroke="#3A2A1E" stroke-width="9"/>
+    <!-- 各层音调刻痕 -->
+    <path d="M288 342 L362 364" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.9"/>
+    <path d="M302 294 L364 310 L398 291" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9"/>
+    <path d="M282 268 L378 244" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.9"/>
+    <!-- 塔顶浮标：阴平一横 -->
+    <path d="M300 168 L362 168" stroke="#F6F3E8" stroke-width="10" stroke-linecap="round"/>
+    <!-- 签名表情（塔顶砖） -->
+    <circle cx="306" cy="200" r="8" fill="#1F1A14"/>
+    <circle cx="354" cy="200" r="8" fill="#1F1A14"/>
+    <path d="M312 215 Q330 227 348 214" stroke="#1F1A14" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="296" cy="192" r="8" fill="#FFFFFF" opacity="0.35"/>
+  </g>
+  <!-- 塔基座 -->
+  <rect x="188" y="374" width="284" height="20" rx="10" fill="#7FB99A" stroke="#3A2A1E" stroke-width="7"/>
+
+  <!-- 飞来的音节卡 -->
+  <g transform="rotate(8 615 212)">
+    <rect x="560" y="148" width="112" height="130" rx="16" fill="#FBF7E8" stroke="#3A2A1E" stroke-width="8"/>
+    <path d="M586 244 L646 178" stroke="#17734A" stroke-width="11" stroke-linecap="round" fill="none"/>
+    <path d="M592 186 H618" stroke="#C9C2A8" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="586" cy="168" r="9" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+  <!-- 飞行轨迹 -->
+  <path d="M546 222 Q486 196 438 214" stroke="#17734A" stroke-width="6" stroke-linecap="round" stroke-dasharray="10 12" fill="none" opacity="0.8"/>
+  <path d="M552 158 q-24 20 -10 48" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.55"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>
