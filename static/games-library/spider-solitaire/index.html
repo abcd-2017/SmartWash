@@ -49,7 +49,7 @@
     display: flex; align-items: center; justify-content: center;
     color: var(--g-primary); font-size: 22px; font-weight: 700;
   }
-  .stock.empty { border: 1px dashed var(--g-border); background: var(--g-surface2); color: var(--g-faint); font-size: 14px; cursor: default; }
+  .stock.empty { border: 1px dashed var(--g-border); background: var(--g-surface2); color: var(--g-muted); font-size: 14px; cursor: default; }
   .stock .cnt {
     position: absolute; right: 2px; bottom: 2px; min-width: 20px; height: 18px; padding: 0 4px;
     border-radius: 10px; background: var(--g-primary-soft); color: var(--g-on-soft);
@@ -60,7 +60,7 @@
   .fnd {
     border: 1px dashed var(--g-border); border-radius: 8px; background: var(--g-surface2);
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px; color: var(--g-faint); min-height: 44px;
+    font-size: 18px; color: var(--g-muted); min-height: 44px;
   }
   .fnd.full { border-style: solid; border-color: var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
   .board { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; --cardH: 44px; }
@@ -69,7 +69,7 @@
   .col-empty {
     height: var(--cardH); border-radius: 8px; border: 1px dashed var(--g-border);
     background: var(--g-surface2); display: flex; align-items: center; justify-content: center;
-    color: var(--g-faint); font-size: 14px;
+    color: var(--g-muted); font-size: 14px;
   }
   .card {
     position: absolute; left: 0; right: 0; height: var(--cardH);
