@@ -7,7 +7,7 @@
 <title>三段论</title>
 <style>
   /*token:GAME-THEME.md §2 基线（值与基线一致）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#B9E8CF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;color-scheme:light }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;color-scheme:light }
   :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
 
   * { box-sizing: border-box; }
@@ -36,8 +36,8 @@
   .prem .tag { display: inline-block; font-size: 12px; color: var(--g-muted); background: var(--g-surface2); border-radius: 10px; padding: 1px 8px; margin-right: 6px; }
   .concl { font-size: 16px; line-height: 1.8; margin: 8px 0 4px; font-weight: 600; }
   .flash { height: 22px; font-size: 16px; font-weight: 700; text-align: center; margin: 8px 0; }
-  .flash.ok { color: var(--g-success); animation: flashout .45s ease-out; }
-  .flash.no { color: var(--g-danger); animation: flashout .45s ease-out; }
+  .flash.ok { color: var(--g-success); animation: flashout .45s ease-out forwards; }
+  .flash.no { color: var(--g-danger); animation: flashout .45s ease-out forwards; }
   @keyframes flashout { from { opacity: 1; } to { opacity: 0; } }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -529,6 +529,8 @@ function updStats(){
 }
 function flash(ok,txt){
   var el=$("flash");
+  el.className="flash";
+  void el.offsetWidth;   /* 重启动画，避免上一次淡出态残留 */
   el.className="flash "+(ok?"ok":"no");
   el.textContent=txt;
 }
@@ -540,9 +542,11 @@ function renderQ(){
   $("p3").textContent=sent(q.q3,q.terms);
   $("btnYes").disabled=done;
   $("btnNo").disabled=done;
+  $("btnYes").classList.remove("picked");$("btnNo").classList.remove("picked");
 }
 function judge(saidValid){
   if(done)return;
+  var _t=Date.now();if(saidValid===judge._i&&_t-judge._t<300)return;judge._i=saidValid;judge._t=_t;
   var q=L.qs[qi];
   gen++;
   $("btnYes").classList.add(saidValid?"picked":"");

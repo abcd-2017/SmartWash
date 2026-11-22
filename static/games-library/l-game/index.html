@@ -507,7 +507,7 @@ function undo(){
   updStats();draw();say("已悔棋");
 }
 function hint(){
-  if(over||side!==2)return;
+  if(over||side!==1)return;
   if(phase===0){startMove();return;}
   var r=aiBestMove(1,Math.min(2,L.depth),0);
   if(!r){endGame(false,"电脑判定你已无路");return;}
@@ -613,7 +613,7 @@ $("btnNext").addEventListener("click",function(){
   if(phase===1&&legalPl.length){selIdx=(selIdx+1)%legalPl.length;draw();}
 });
 $("btnAct").addEventListener("click",function(){
-  if(over||side!==2)return;
+  if(over||side!==1)return;
   if(phase===0)startMove();
   else if(phase===1)confirmPlacement();
   else if(phase===2)skipCoin();

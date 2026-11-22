@@ -349,16 +349,17 @@ function buildPiles(){
 }
 function renderPiles(){
   var rows=$("piles").children;
-  var n=Math.floor(cur/piles.length),c2=cur%piles.length;
+  var flat=0;
   for(var p=0;p<piles.length;p++){
     var row=rows[p];
-    row.className="prow"+((side===1&&n===p)?" psel":"");
+    var start=flat;flat+=piles[p];
+    row.className="prow"+((side===1&&cur>=start&&cur<flat)?" psel":"");
     var coins=row.querySelectorAll(".coin");
     var coinArr=[];
     for(var k=0;k<coins.length;k++)coinArr.push(coins[k]);
     for(var c=0;c<coinArr.length;c++){
       var gone=c>=piles[p];
-      var idx=p*20+c;
+      var idx=start+c;
       coinArr[c].className="coin"+(gone?" taken":"")+(gone&&c<piles[p]+curTake?" mark":"")+((side===1&&idx===cur)?" cur":"");
       coinArr[c].textContent=gone?"·":String(c+1);
     }

@@ -410,6 +410,7 @@ function palLoad(){
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
     danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
     water:v("--g-water"),floor:v("--g-st-floor"),aisle:v("--g-st-aisle"),belt:v("--g-st-belt")};
+  PAL.badgeText=document.documentElement.dataset.theme==="dark"?PAL.bg:PAL.surface;
 }
 window.__gOnTheme=function(){palLoad()};
 palLoad();
@@ -584,7 +585,7 @@ function draw(){
       ctx.fillRect(px+2,py+2,cell-4,cell-4);
       ctx.strokeStyle=catColor(sc);ctx.lineWidth=2;
       ctx.strokeRect(px+3,py+3,cell-6,cell-6);
-      ctx.fillStyle=catColor(sc);
+      ctx.fillStyle=PAL.text;   /* 类别字母用正文色保证可读，颜色仅作辅助 */
       ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
       ctx.textAlign="center";ctx.textBaseline="middle";
       ctx.fillText(["A","B","C"][sc],px+cell/2,py+cell/2);
@@ -609,7 +610,7 @@ function draw(){
     ctx.fillRect(qx+2,qy+cell-13,Math.max(2,(cell-12)*frac),3);
   }
   if(queue.length>5){
-    ctx.fillStyle=PAL.muted;
+    ctx.fillStyle=PAL.surface;
     ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
     ctx.textAlign="center";ctx.textBaseline="middle";
     ctx.fillText("+"+(queue.length-5),cell/2,4+5*(cell-8));
@@ -619,7 +620,7 @@ function draw(){
   ctx.fillStyle=PAL.deep;
   ctx.beginPath();ctx.arc(fx,fy,cell*0.32,0,7);ctx.fill();
   ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;ctx.stroke();
-  ctx.fillStyle=PAL.surface;
+  ctx.fillStyle=PAL.badgeText;
   ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
   ctx.textAlign="center";ctx.textBaseline="middle";
   ctx.fillText("叉",fx,fy+1);

@@ -121,7 +121,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <button class="btn" id="btnReset">重开</button>
     <button class="btn" id="btnLv">选关</button>
   </div>
-  <p class="foot">键盘：方向键选格 · 数字键填充 · 0/退格清除 · U 撤销 · H 提示 · R 重开<br>规则：每行每列 1..n 各出现一次，蓝色不等号必须全部成立</p>
+  <p class="foot">键盘：方向键选格 · 数字键填充 · 0/退格清除 · U 撤销 · H 提示 · R 重开<br>规则：每行每列 1..n 各出现一次，橙色不等号必须全部成立</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
@@ -336,6 +336,13 @@ function buildBoard(){
   for(var r=0;r<n;r++){
     rows.push({type:"cell",r:r,c:0});
     for(c=1;c<n;c++){rows.push({type:"chip",r:r,c:c-1,dir:"h"});rows.push({type:"cell",r:r,c:c});}
+    /* 行间垂直不等号行：紧跟本行单元格之后，符号落在单元格列上 */
+    if(r<n-1){
+      for(var vc=0;vc<n;vc++){
+        rows.push({type:"vchip",r:r,c:vc});
+        if(vc<n-1)rows.push({type:"voff"});
+      }
+    }
   }
   for(var item=0;item<rows.length;item++){
     (function(item){
@@ -346,6 +353,14 @@ function buildBoard(){
         s.id="chip"+it.r+"_"+it.c+"_"+it.dir;
         s.textContent="·";
         box.appendChild(s);
+      } else if(it.type==="vchip"){
+        var e=document.createElement("span");
+        e.className="chip";
+        e.id="chip"+it.r+"_"+it.c+"_v";
+        e.textContent="·";
+        box.appendChild(e);
+      } else if(it.type==="voff"){
+        var e2=document.createElement("span");e2.className="chip off";box.appendChild(e2);
       } else {
         var b=document.createElement("button");
         b.className="cell";
@@ -355,26 +370,6 @@ function buildBoard(){
         box.appendChild(b);
       }
     })(item);
-  }
-  // 行间距用 chip 占位（垂直符号行）
-  var vrows=[];
-  for(var vr=0;vr<n-1;vr++){
-    for(var vc=0;vc<n;vc++){
-      vrows.push({r:vr,c:vc});
-      if(vc<n-1)vrows.push(null);
-    }
-    if(vr<n-2)vrows.push(null,null);
-  }
-  for(var vi=0;vi<vrows.length;vi++){
-    var e;
-    if(vrows[vi]===null){e=document.createElement("span");e.className="chip off";box.appendChild(e);}
-    else{
-      e=document.createElement("span");
-      e.className="chip";
-      e.id="chip"+vrows[vi].r+"_"+vrows[vi].c+"_v";
-      e.textContent="·";
-      box.appendChild(e);
-    }
   }
   renderAll();
 }

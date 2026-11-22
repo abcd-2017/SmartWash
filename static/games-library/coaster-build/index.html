@@ -393,6 +393,7 @@ function palLoad(){
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
     danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
     water:v("--g-water")};
+  PAL.badgeText=document.documentElement.dataset.theme==="dark"?PAL.bg:PAL.surface;
 }
 window.__gOnTheme=function(){palLoad()};
 palLoad();
@@ -481,7 +482,7 @@ function winLevel(){
   persist();
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:cur+1,metricExtra:attempts}).catch(function(){});
   $("ovTitle").textContent=(cur>=LEVELS.length-1)?"全部通关！":"到站成功！";
-  $("ovDesc").innerHTML="试跑 "+attempts+" 次 · 进站速度 "+run.v2+"（限 1.0~2.2）"+(cur<LEVELS.length-1?"<br>已解锁第 "+(cur+2)+" 关":"<br>40 关全部完成");
+  $("ovDesc").innerHTML="试跑 "+attempts+" 次 · 进站速度 "+Math.sqrt(run.v2).toFixed(2)+"（限 1.0~2.2）"+(cur<LEVELS.length-1?"<br>已解锁第 "+(cur+2)+" 关":"<br>40 关全部完成");
   $("ovBtn").textContent=(cur>=LEVELS.length-1)?"回到第 1 关":"下一关";
   $("ovRetry").hidden=true;
   ovMode="win";
@@ -546,7 +547,7 @@ function draw(){
   //站台
   ctx.fillStyle=PAL.primary;
   ctx.fillRect(W-30,140,20,36);
-  ctx.fillStyle=PAL.surface;
+  ctx.fillStyle=PAL.badgeText;
   ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
   ctx.textAlign="center";ctx.textBaseline="middle";
   ctx.fillText("站",W-20,158);

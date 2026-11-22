@@ -529,11 +529,12 @@ function draw(){
   }
   for(var k=0;k<dotPos.length;k++){
     var p=dotPos[k],c2=st.calls[p.id];
-    var urgent=c2.st==="wait"&&(st.t-c2.born)>L.patience*0.6;
-    ctx.fillStyle=c2.elev>=0?PAL.success:(urgent?PAL.danger:PAL.water);
+    var assigned=c2.elev>=0;
+    var urgent=!assigned&&c2.st==="wait"&&(st.t-c2.born)>L.patience*0.6;
+    ctx.fillStyle=assigned?PAL.success:(urgent?PAL.danger:PAL.water);
     ctx.beginPath();ctx.arc(p.x,p.y,14,0,7);ctx.fill();
     ctx.strokeStyle=k===selCall?PAL.warning:PAL.border;ctx.lineWidth=k===selCall?3:1.5;ctx.stroke();
-    ctx.fillStyle=PAL.surface;
+    ctx.fillStyle=(!assigned&&!urgent)?(document.documentElement.dataset.theme==="dark"?PAL.surface:PAL.text):PAL.surface;
     ctx.font="700 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
     ctx.fillText("→"+c2.to,p.x,p.y+1);
   }

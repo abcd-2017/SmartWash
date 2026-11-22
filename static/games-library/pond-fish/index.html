@@ -69,6 +69,9 @@
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
+  /* 鱼塘专属：6 个操作钮在 375px 下两列排布，避免一行六列挤成窄条 */
+  .tools .btn { flex: 1 1 45%; }
+
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
   @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
 

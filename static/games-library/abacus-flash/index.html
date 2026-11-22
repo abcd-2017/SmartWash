@@ -78,19 +78,19 @@
     display: flex; justify-content: center; gap: 14px;
     background: var(--g-surface2); border-radius: 10px; padding: 10px 8px;
   }
-  .rod { display: flex; flex-direction: column; align-items: center; width: 52px; }
+  .rod { display: flex; flex-direction: column; align-items: center; width: 56px; }
   .rod.cur .rline { background: var(--g-primary-deep); }
   .rline { width: 2px; flex: 1; background: var(--g-border); display: flex; flex-direction: column; align-items: center; }
-  .upzone { display: flex; flex-direction: column; gap: 3px; padding-bottom: 6px; border-bottom: 2px solid var(--g-text); min-height: 40px; justify-content: flex-end; }
-  .dnzone { display: flex; flex-direction: column-reverse; gap: 3px; padding-top: 6px; border-top: 0; min-height: 96px; }
+  .upzone { display: flex; flex-direction: column; gap: 3px; padding-bottom: 6px; border-bottom: 2px solid var(--g-text); min-height: 44px; justify-content: flex-end; }
+  .dnzone { display: flex; flex-direction: column-reverse; gap: 3px; padding-top: 6px; border-top: 0; min-height: 108px; }
   .bead {
-    width: 36px; height: 16px; border-radius: 8px;
+    width: 44px; height: 24px; border-radius: 10px;
     border: 1px solid var(--g-border);
     background: var(--g-surface); color: var(--g-faint);
     font-family: inherit; cursor: pointer; padding: 0; font-size: 12px;
   }
   .bead.active { background: var(--g-primary); border-color: var(--g-primary-deep); }
-  .rodlabel { font-size: 12px; color: var(--g-faint); margin-top: 4px; }
+  .rodlabel { font-size: 12px; color: var(--g-muted); margin-top: 4px; }
 
   @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}

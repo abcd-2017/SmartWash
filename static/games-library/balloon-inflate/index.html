@@ -332,8 +332,9 @@ function draw(ts){
     return;
   }
   var r=24+st.k*6;
-  var wob=st.k>0&&r>90?Math.sin(ts/40)*3:Math.sin(ts/300)*1.5;
-  var sque=1+(pumping?animT*0.5:0);
+  var rm=!!window.__gRM;
+  var wob=rm?0:(st.k>0&&r>90?Math.sin(ts/40)*3:Math.sin(ts/300)*1.5);
+  var sque=rm?1:(1+(pumping?animT*0.5:0));
   var rx=r*sque,ry=r/sque;
   ctx.fillStyle=PAL.bal;
   ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,7);ctx.fill();

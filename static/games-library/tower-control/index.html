@@ -519,16 +519,16 @@ function draw(){
   }
   /* 起飞队列（下排右侧） */
   var dx=W-110,dy=ry+60;
-  ctx.fillStyle=PAL.muted;ctx.font="400 12px sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
+  ctx.fillStyle=PAL.text;ctx.font="400 12px sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
   ctx.fillText("起飞队列",dx,dy-18);
   for(var k=0;k<st.dep.length&&k<6;k++){
     drawPlane(dx+16+k*14,dy,10,PAL.dep);
   }
   if(st.dep.length>6){
-    ctx.fillStyle=PAL.muted;ctx.font="700 12px sans-serif";
+    ctx.fillStyle=PAL.text;ctx.font="700 12px sans-serif";
     ctx.fillText("+"+(st.dep.length-6),dx+16+6*14,dy);
   }
-  ctx.fillStyle=PAL.muted;
+  ctx.fillStyle=PAL.text;
   ctx.font="400 12px sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
   ctx.fillText("点候机卡放行着陆 · 「放一架起飞」放行右列",14,H-14);
 }

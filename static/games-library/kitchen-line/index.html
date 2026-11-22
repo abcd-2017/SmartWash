@@ -468,7 +468,7 @@ function draw(){
     rr(x0+4,36,sw-8,170,12);ctx.fill();
     ctx.strokeStyle=PAL.border;ctx.lineWidth=1;ctx.stroke();
     if(!o){
-      ctx.fillStyle=PAL.faint;
+      ctx.fillStyle=PAL.muted;
       ctx.font="400 14px sans-serif";ctx.textAlign="center";
       ctx.fillText("空位",x0+sw/2,120);
       continue;
@@ -503,7 +503,7 @@ function draw(){
     /* 出餐箭头 */
     if(!o.need.length){}
   }
-  ctx.fillStyle=PAL.muted;
+  ctx.fillStyle=PAL.text;
   ctx.font="400 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
   ctx.fillText("黄框=下一味 · 耐心条走完即砸单",W/2,H-14);
 }

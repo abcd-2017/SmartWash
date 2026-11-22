@@ -544,7 +544,7 @@ function draw(){
     ctx.fillStyle=typeColor(c.type);ctx.globalAlpha=0.18;
     ctx.fillRect(qx,qy,qw,44);ctx.globalAlpha=1;
     ctx.strokeStyle=typeColor(c.type);ctx.lineWidth=1.5;ctx.strokeRect(qx+0.5,qy+0.5,qw-1,43);
-    ctx.fillStyle=typeColor(c.type);
+    ctx.fillStyle=PAL.text;   /* 类型名用正文色，卡片颜色仅作辅助 */
     ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
     ctx.textAlign="center";ctx.textBaseline="middle";
     ctx.fillText(LD.TYPE[c.type],qx+qw/2,qy+16);
@@ -587,8 +587,8 @@ function draw(){
     ctx.textAlign="center";
     ctx.fillText(String(m2+1),dcx,my+86);
     if(M.type>=0&&M.cust){
-      //顾客剩余耐心提示（在机上时不适用，显示已等待）
-      ctx.fillStyle=PAL.faint;
+      //机上订单类型（muted 承载信息，faint 仅装饰）
+      ctx.fillStyle=PAL.muted;
       ctx.font="12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
       ctx.fillText(LD.TYPE[M.type],dcx,my-4);
     }

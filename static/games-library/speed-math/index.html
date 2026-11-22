@@ -33,8 +33,8 @@
   .stage { background: var(--g-surface); border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); padding: 14px; }
   .q { text-align: center; font-size: 36px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 10px 0 6px; }
   .flash { height: 22px; font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 8px; }
-  .flash.ok { color: var(--g-success); animation: flashout .45s ease-out; }
-  .flash.no { color: var(--g-danger); animation: flashout .45s ease-out; }
+  .flash.ok { color: var(--g-success); animation: flashout .45s ease-out forwards; }
+  .flash.no { color: var(--g-danger); animation: flashout .45s ease-out forwards; }
   @keyframes flashout { from { opacity: 1; } to { opacity: 0; } }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -286,9 +286,13 @@ function paintBest(){$("stBest").textContent=save.best;}
 function updStats(){
   $("stScore").textContent=score;
   $("btnReset").disabled=over;
+  $("btnStart").disabled=!over;
+  $("btnStart").textContent=over?"开始挑战":"挑战中…";
 }
 function flash(ok,txt){
   var el=$("flash");
+  el.className="flash";
+  void el.offsetWidth;   /* 重启动画，避免上一次淡出态残留 */
   el.className="flash "+(ok?"ok":"no");
   el.textContent=txt;
 }
@@ -345,6 +349,7 @@ function nextQ(){
 }
 function pick(i){
   if(over||!cur)return;
+  var _t=Date.now();if(i===pick._i&&_t-pick._t<300)return;pick._i=i;pick._t=_t;
   gen++;
   var cards=$("optgrid").querySelectorAll(".opt");
   for(var c=0;c<cards.length;c++)if(+cards[c].getAttribute("data-i")===i)cards[c].classList.add("picked");

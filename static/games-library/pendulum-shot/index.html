@@ -385,6 +385,7 @@ function say(t){$("msg").textContent=t}
 function loadLevel(n){
   lv=Math.max(0,Math.min(n,LEVELS.length-1));
   L=LEVELS[lv];
+  for(var si=0;si<L.st.length;si++)L.st[si].got=false;
   mode="aim";t=0;ball=null;trail=[];shots=0;stars=0;
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
   $("lvRule").textContent=(L.mw>0?"有活动墙 · ":"")+"靶径 "+L.tg[2];

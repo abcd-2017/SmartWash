@@ -34,8 +34,8 @@
   .qtag { font-size: 12px; color: var(--g-muted); margin-bottom: 8px; }
   .qtext { font-size: 18px; font-weight: 600; line-height: 1.6; margin-bottom: 12px; }
   .flash { height: 22px; font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 8px; }
-  .flash.ok { color: var(--g-success); animation: flashout .45s ease-out; }
-  .flash.no { color: var(--g-danger); animation: flashout .45s ease-out; }
+  .flash.ok { color: var(--g-success); animation: flashout .45s ease-out forwards; }
+  .flash.no { color: var(--g-danger); animation: flashout .45s ease-out forwards; }
   @keyframes flashout { from { opacity: 1; } to { opacity: 0; } }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -330,19 +330,11 @@ function verifyLevelData(d){
       var y=q.y,m=q.m,dd=q.dd;
       if(ANCHOR[y]===undefined)return "年份无锚点";
       if(m<1||m>12||dd<1||dd>31)return "日期越界";
-      /* 独立路径：从 2024-01-01 逐日步进到目标日 */
-      var cur=0,yy=2024,mm=1,ddx=1;
-      var guard=0;
-      while(guard++<2000){
-        if(yy===y&&mm===m&&ddx===dd)break;
-        ddx++;
-        var md=MDAYS[mm-1]+((mm===2&&isLeap(yy))?1:0);
-        if(ddx>md){ddx=1;mm++;if(mm>12){mm=1;yy++;cur=((cur+365+(isLeap(yy-1)?1:0))%7+7)%7;mm=1;cur=((cur+((isLeap(yy-1)?1:0)))%7+7)%7;cur=((cur)%7+7)%7;}}
-      }
-      if(guard>=2000)return "日历步进未收敛";
-      /* cur 为已完整经过的年贡献；跨年处理简化：直接用 ANCHOR 校验 */
-      want=((ANCHOR[y]+(function(){var t=dd;for(var ii=0;ii<m-1;ii++)t+=MDAYS[ii];if(isLeap(y)&&m>2)t+=1;return t;})()-1)%7+7)%7;
-      if(((cur%7)+7)%7!==want&&false)return "";
+      var dim=MDAYS[m-1]+((m===2&&isLeap(y))?1:0);
+      if(dd>dim)return "日期越界";
+      /* 独立路径：Date.UTC 取真实星期（0=周日 → 0=周一），与生成器的锚点+序数公式不同 */
+      var wd=new Date(Date.UTC(y,m-1,dd)).getUTCDay();
+      want=(wd+6)%7;
     }else return "题型异常";
     if(WNAME[want]!==ansName)return "答案不符";
     var cnt=0;
@@ -438,6 +430,8 @@ function updStats(){
 }
 function flash(ok,txt){
   var el=$("flash");
+  el.className="flash";
+  void el.offsetWidth;   /* 重启动画，避免上一次淡出态残留 */
   el.className="flash "+(ok?"ok":"no");
   el.textContent=txt;
 }
@@ -459,6 +453,7 @@ function renderQ(){
 }
 function pick(i){
   if(done)return;
+  var _t=Date.now();if(i===pick._i&&_t-pick._t<300)return;pick._i=i;pick._t=_t;
   var q=L.qs[qi];
   gen++;
   var cards=$("optgrid").querySelectorAll(".opt");

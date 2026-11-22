@@ -29,6 +29,7 @@
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
+  .stat .val.good { color: var(--g-success); }
   .stage { position: relative; }
   canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
@@ -433,7 +434,7 @@ function updStats(){
   var d=distTo(VW,HW,n,pawns[1],goalOf(1));
   var el=$("stDist");
   el.textContent=d<0?"-":d;
-  el.className="val"+(d>=0&&d<=2?" low":"");
+  el.className="val"+(d>=0&&d<=2?" good":"");
   $("btnUndo").disabled=hist.length<2||over;
 }
 /* ---------- 交互 ---------- */

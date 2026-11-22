@@ -406,6 +406,7 @@ function palLoad(){
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
     danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
     meadow:v("--g-st-meadow"),petal:v("--g-st-petal")};
+  PAL.badgeText=document.documentElement.dataset.theme==="dark"?PAL.bg:PAL.surface;
 }
 window.__gOnTheme=function(){palLoad()};
 palLoad();
@@ -570,7 +571,7 @@ function draw(){
       ctx.beginPath();ctx.arc(fl[0],fl[1],r+5,0,7);ctx.stroke();
       ctx.fillStyle=PAL.deep;
       ctx.beginPath();ctx.arc(fl[0]+r+5,fl[1]-r-5,8,0,7);ctx.fill();
-      ctx.fillStyle=PAL.surface;
+      ctx.fillStyle=PAL.badgeText;
       ctx.fillText(String(at+1),fl[0]+r+5,fl[1]-r-5+1);
     }
   }
@@ -583,7 +584,7 @@ function draw(){
     if(k===0)ctx.moveTo(hx,hy);else ctx.lineTo(hx,hy);
   }
   ctx.closePath();ctx.fill();
-  ctx.fillStyle=PAL.surface;
+  ctx.fillStyle=PAL.badgeText;
   ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
   ctx.textAlign="center";ctx.textBaseline="middle";
   ctx.fillText("巢",L.hive[0],L.hive[1]+1);

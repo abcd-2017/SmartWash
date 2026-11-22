@@ -440,7 +440,7 @@ function loadLevel(n){
   $("btnPause").textContent="暂停";
   $("lvTag").textContent="第 "+(cur+1)+" 关 · "+L.name;
   $("lvRule").textContent=L.fish+" 条鱼 · 舒适 "+L.lo+"~"+L.hi+"℃ · 室温 "+L.roomT+"℃";
-  $("stLv").textContent="";$("stLv").style.display="none";
+  $("stLv").parentElement.style.display="none";   /* 本作关卡名在页头，隐藏多余的空统计卡 */
   say("点「加热器」把水温拉进绿区；饿过半要喂料，水质变差快换水");
   resize();syncHud();draw();
 }

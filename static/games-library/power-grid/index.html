@@ -424,6 +424,7 @@ function palLoad(){
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
     danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
     water:v("--g-water")};
+  PAL.badgeText=document.documentElement.dataset.theme==="dark"?PAL.bg:PAL.surface;
 }
 window.__gOnTheme=function(){palLoad()};
 palLoad();
@@ -549,7 +550,7 @@ function draw(){
     ctx.fillRect(mx-7,my-7,14,14);
     ctx.strokeStyle=hintEdge===e?PAL.warning:PAL.border;
     ctx.lineWidth=hintEdge===e?2.5:1;ctx.strokeRect(mx-7,my-7,14,14);
-    ctx.fillStyle=mask[e]?PAL.surface:PAL.muted;
+    ctx.fillStyle=mask[e]?PAL.badgeText:PAL.muted;
     ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
     ctx.textAlign="center";ctx.textBaseline="middle";
     ctx.fillText(String(e+1),mx,my+1);
@@ -560,7 +561,7 @@ function draw(){
     ctx.fillStyle=PAL.primary;
     ctx.beginPath();ctx.arc(p1[0],p1[1],16,0,7);ctx.fill();
     ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;ctx.stroke();
-    ctx.fillStyle=PAL.surface;
+    ctx.fillStyle=PAL.badgeText;
     ctx.font="700 14px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
     ctx.textAlign="center";ctx.textBaseline="middle";
     ctx.fillText(String(L.gens[g]),p1[0],p1[1]);
@@ -573,7 +574,7 @@ function draw(){
     ctx.fillStyle=served[l]>=L.loads[l]?PAL.success:PAL.warning;
     ctx.beginPath();ctx.arc(p2[0],p2[1],16,0,7);ctx.fill();
     ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;ctx.stroke();
-    ctx.fillStyle=PAL.surface;
+    ctx.fillStyle=PAL.badgeText;
     ctx.font="700 14px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
     ctx.textAlign="center";ctx.textBaseline="middle";
     ctx.fillText(String(L.loads[l]),p2[0],p2[1]);

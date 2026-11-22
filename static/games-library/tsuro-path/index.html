@@ -405,7 +405,7 @@ function playerPlace(){
   var st=stones[1];
   var fc=frontCell(st);
   if(fc<0){endGame(false,"你的棋子前方无路可落牌");return;}
-  if(tiles[fc]){say("前方格已被占，滑动会自动续走");return;}
+  if(tiles[fc]){endGame(false,"你的棋子前方被旧牌占住，无牌可落");return;}
   hist.push(snap());
   handP.splice(selCard,1);
   var refill=drawCard();

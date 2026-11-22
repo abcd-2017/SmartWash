@@ -128,7 +128,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <button class="btn" id="btnReset">重开</button>
     <button class="btn" id="btnLv">选关</button>
   </div>
-  <p class="foot">键盘：方向键选格 · Enter 放牌 · U 撤销 · H 提示 · R 重开<br>牌型分：同花顺 100 / 四条 50 / 葫芦 25 / 同花 20 / 顺子 15 / 三条 10 / 两对 5 / 一对 2（王牌万能）</p>
+  <p class="foot">键盘：方向键选格 · Enter 放牌 · U 撤销 · H 提示 · R 重开<br>牌型分：皇家同花顺 100 / 同花顺 75 / 四条 50 / 葫芦 25 / 同花 20 / 顺子 15 / 三条 10 / 两对 5 / 一对 2（王牌万能）</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
@@ -441,6 +441,15 @@ function hint(){
     if(v>bestV){bestV=v;best=i;}
   }
   if(best>=0){cur=best;renderGrid();say("提示：这张牌放高亮格，估分 "+bestV);}
+}
+function endGame(w){
+  over=true;won=w;
+  if(w&&lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:w?lv+1:lv,metricExtra:finalScore}).catch(function(){});
+  $("ovTitle").textContent=w?(lv>=LEVELS.length-1?"全部通关！":"过关！"):"未达标";
+  $("ovDesc").innerHTML="最终得分 "+finalScore+" / 目标 "+L.target+(w&&lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"");
+  $("ovBtn").textContent=w?(lv>=LEVELS.length-1?"回到第 1 关":"下一关"):"再试一次";
+  $("overlay").classList.add("show");updStats();
 }
 $("btnUndo").addEventListener("click",undo);
 $("btnHint").addEventListener("click",hint);
