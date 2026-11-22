@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>点石成金</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）；涨跌语义色直用 success/danger 结构 token*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 5px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .btn { min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; }
+  .btn.buy { background: var(--g-btn-primary); color: #fff; }
+  .btn.sell { background: var(--g-danger); color: #fff; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">模拟仓 · 60 个交易日</span><span class="sub" id="lvRule">本金 1000 · 低买高卖</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">总资产</span><span class="val" id="stNet">1000</span></div>
+    <div class="stat"><span class="label">现金</span><span class="val" id="stCash">1000</span></div>
+    <div class="stat"><span class="label">持股</span><span class="val" id="stSh">0</span></div>
+    <div class="stat"><span class="label">交易日</span><span class="val" id="stDay">0/60</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="股价折线图：走势、买卖标记与现价" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点「开市」开始交易：低位买入、高位卖出，60 日后结算资产</p>
+  <div class="tools">
+    <button class="btn buy" id="btnBuy">买入（全仓）</button>
+    <button class="btn sell" id="btnSell">卖出（清仓）</button>
+    <button class="btn" id="btnPause">暂停</button>
+    <button class="btn" id="btnNew">开市</button>
+  </div>
+  <p class="foot">键盘：B 买入 · S 卖出 · 空格 暂停/继续 · R 重新开市 · 波动随交易日递增 · 最高分自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">收盘！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn primary" id="ovBtn">再来一局</button>
+  </div>
+</div>
+
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);}
+  };
+})();
+
+/* ========== 核心与验证（确定性纯函数；XC-CORE 供 node 抽取独立复现） ========== */
+/*XC-CORE-BEGIN*/
+function mulberry32(a){
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+var ST={DAYS:60,START:1000};
+/* 确定性价格序列：六阶段波动递增，后期偶发跳空（崩 12% / 暴涨 10%） */
+ST.genSeries=function(seed){
+  var rng=mulberry32(seed),p=100,out=[];
+  for(var d=0;d<ST.DAYS;d++){
+    var ph=Math.min(5,Math.floor(d/10));
+    var vol=0.8+ph*0.5;
+    p=p*(1+(rng()-0.47)*vol/100);
+    var roll=rng();
+    if(ph>=2&&roll<0.06)p*=0.88;
+    else if(ph>=2&&roll>0.94)p*=1.1;
+    if(p<8)p=8;
+    out.push(Math.round(p*100)/100);
+  }
+  return out;
+};
+/* 交易回放：ops[d]="buy"/"sell"（全仓进出），返回{final,peak,trace} */
+ST.trade=function(series,ops){
+  var cash=ST.START,sh=0,peak=cash,trace=[];
+  for(var d=0;d<series.length;d++){
+    var op=ops&&ops[d];
+    if(op==="buy"&&cash>0){sh+=cash/series[d];cash=0;}
+    else if(op==="sell"&&sh>0){cash+=sh*series[d];sh=0;}
+    var nw=cash+sh*series[d];
+    if(nw>peak)peak=nw;
+    trace.push(Math.round(nw*100)/100);
+  }
+  return {final:Math.round((cash+sh*series[series.length-1])*100)/100,peak:Math.round(peak*100)/100,trace:trace};
+};
+ST.runTests=function(){
+  var pass=0,rows=[];
+  function ck(name,ok,got){rows.push({name:name,ok:!!ok,got:got});if(ok)pass++;}
+  var s=ST.genSeries(42);
+  ck("genSeries 长度 60",s.length===60,s.length);
+  ck("genSeries 价格下限",s.every(function(v){return isFinite(v)&&v>=8}),Math.min.apply(null,s));
+  var s2=ST.genSeries(42);
+  ck("genSeries 种子确定性",JSON.stringify(s)===JSON.stringify(s2),"replay");
+  var t1=ST.trade([100,120],{0:"buy",1:"sell"});
+  ck("锚点·低买高卖 1000→1200",t1.final===1200,t1.final);
+  var t2=ST.trade([100,50],{0:"buy"});
+  ck("锚点·满仓遇腰斩 1000→500",t2.final===500,t2.final);
+  var t3=ST.trade([100,90,110],{});
+  ck("锚点·空仓保值 1000",t3.final===1000&&t3.peak===1000,t3.final);
+  var t4=ST.trade([100,110,121],{0:"buy",2:"sell"});
+  ck("锚点·持股两日复利 1210",t4.final===1210,t4.final);
+  return {total:7,pass:pass,rows:rows};
+};
+globalThis.__XC=ST;
+/*XC-CORE-END*/
+
+/* ========== 存档（本地 + 账号双写） ========== */
+var GAME_KEY="stock-tap",SAVE_KEY="sw.stocktap.v1";
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{best:parseInt(s.best,10)||0,runs:parseInt(s.runs,10)||0}}catch(e){return{best:0,runs:0}}}
+var save=loadSave();
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),ch=false;
+      if((parseInt(r.best,10)||0)>save.best){save.best=parseInt(r.best,10)||0;ch=true;}
+      if((parseInt(r.runs,10)||0)>save.runs){save.runs=parseInt(r.runs,10)||0;ch=true;}
+      if(ch)persist();
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ========== 调色板 ========== */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success")};
+}
+window.__gOnTheme=function(){palLoad()};
+palLoad();
+
+/* ========== 画布 ========== */
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=0,H=240;
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.round(w);H=240;
+  cv.style.height=H+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener("resize",resize);
+
+/* ========== 状态 ========== */
+var seed=0,series=[],day=0,cash=0,sh=0,ops=null,marks=null;
+var state="idle";   // idle | running | paused | ended
+var runBest=0,runPeak=0;
+var acc=0,TICK=0.6;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function netWorth(){return series.length?cash+sh*series[Math.max(0,day-1)]:ST.START}
+function newGame(){
+  seed=(Date.now()%1000000000)|0;
+  series=ST.genSeries(seed);
+  day=0;cash=ST.START;sh=0;ops={};marks=[];
+  runPeak=ST.START;state="running";acc=0;
+  $("btnNew").textContent="重开";
+  $("btnPause").textContent="暂停";$("btnPause").disabled=false;
+  say("开市！第 1 日价格 "+series[0]+" · B 买入 / S 卖出");
+  syncHud();
+}
+function endGame(){
+  state="ended";
+  var nw=Math.round(netWorth());
+  save.runs++;
+  if(nw>save.best)save.best=nw;
+  persist();
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:save.best,metricExtra:nw}).catch(function(){});
+  $("ovTitle").textContent="收盘结算";
+  $("ovDesc").innerHTML="本局总资产 <b>"+nw+"</b>（本金 1000）<br>收益 "+(nw>=ST.START?"+":"")+Math.round((nw-ST.START)/ST.START*100)+"% · 历史最佳 <b>"+save.best+"</b>";
+  $("ovBtn").textContent="再来一局";
+  $("overlay").classList.add("show");
+}
+function doBuy(){
+  if(state!=="running"||day<1)return;
+  var p=series[day-1];
+  if(cash<=0){say("已满仓，没有现金可买");return;}
+  sh+=cash/p;cash=0;
+  ops[day-1]="buy";marks.push({d:day-1,k:"buy"});
+  say("以 "+p+" 全仓买入 · 持股 "+sh.toFixed(2));
+  syncHud();
+}
+function doSell(){
+  if(state!=="running"||day<1)return;
+  var p=series[day-1];
+  if(sh<=0){say("没有持股可卖");return;}
+  cash+=sh*p;sh=0;
+  ops[day-1]="sell";marks.push({d:day-1,k:"sell"});
+  say("以 "+p+" 清仓 · 现金 "+Math.round(cash));
+  syncHud();
+}
+function togglePause(){
+  if(state==="running"){state="paused";$("btnPause").textContent="继续";say("已暂停 · 空格或点按钮继续");}
+  else if(state==="paused"){state="running";$("btnPause").textContent="暂停";say("继续交易");}
+}
+function syncHud(){
+  var nw=netWorth();
+  $("stNet").textContent=Math.round(nw);
+  $("stNet").className="val"+(nw<ST.START?" low":"");
+  $("stCash").textContent=Math.round(cash);
+  $("stSh").textContent=sh>0?sh.toFixed(2):"0";
+  $("stDay").textContent=Math.min(day,ST.DAYS)+"/"+ST.DAYS;
+}
+
+/* ========== 步进（dt 累积制：切后台停帧即冻结，无到期基点平移需求） ========== */
+function step(dt){
+  if(state!=="running")return;
+  acc+=dt;
+  while(acc>=TICK&&state==="running"){
+    acc-=TICK;
+    if(day>=ST.DAYS){endGame();break;}
+    day++;
+    var nw=netWorth();
+    if(nw>runPeak)runPeak=nw;
+    if(day%10===0)say("第 "+day+" 日 · 资产 "+Math.round(nw)+"（波动加大）");
+    syncHud();
+  }
+}
+
+/* ========== 绘制 ========== */
+function draw(){
+  ctx.fillStyle=PAL.surface2;ctx.fillRect(0,0,W,H);
+  if(!series.length){
+    ctx.fillStyle=PAL.muted;
+    ctx.font="700 14px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText("点「开市」生成行情",W/2,H/2);
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+    ctx.strokeRect(0.5,0.5,W-1,H-1);
+    return;
+  }
+  var win=Math.min(30,day||1),d0=Math.max(0,day-win),d1=Math.max(d0+1,day);
+  var lo=1e9,hi=-1e9;
+  for(var i=d0;i<d1&&i<series.length;i++){if(series[i]<lo)lo=series[i];if(series[i]>hi)hi=series[i];}
+  var pad=(hi-lo)*0.15+0.5;lo-=pad;hi+=pad;
+  var gx0=34,gx1=W-10,gy0=12,gy1=H-26;
+  function X(d){return gx0+(d-d0)/(d1-d0)*(gx1-gx0)}
+  function Y(v){return gy1-(v-lo)/(hi-lo)*(gy1-gy0)}
+  //网格
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  for(var g=1;g<4;g++){
+    var gy=gy0+(gy1-gy0)*g/4;
+    ctx.beginPath();ctx.moveTo(gx0,gy);ctx.lineTo(gx1,gy);ctx.stroke();
+  }
+  //价格线
+  ctx.strokeStyle=PAL.primary;ctx.lineWidth=2;
+  ctx.beginPath();
+  for(var j=d0;j<d1&&j<series.length;j++){
+    var px=X(j),py=Y(series[j]);
+    if(j===d0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+  //现价点
+  if(day>0){
+    var ci=Math.min(day,series.length)-1;
+    ctx.fillStyle=PAL.deep;
+    ctx.beginPath();ctx.arc(X(ci),Y(series[ci]),4,0,7);ctx.fill();
+  }
+  //买卖标记
+  for(var m=0;m<marks.length;m++){
+    var mk=marks[m];
+    if(mk.d<d0)continue;
+    var mx=X(mk.d),my=Y(series[mk.d]);
+    ctx.fillStyle=mk.k==="buy"?PAL.warning:PAL.danger;
+    ctx.beginPath();
+    if(mk.k==="buy"){ctx.moveTo(mx,my+8);ctx.lineTo(mx-5,my+16);ctx.lineTo(mx+5,my+16);}
+    else{ctx.moveTo(mx,my-8);ctx.lineTo(mx-5,my-16);ctx.lineTo(mx+5,my-16);}
+    ctx.closePath();ctx.fill();
+  }
+  //刻度与标签
+  ctx.fillStyle=PAL.muted;
+  ctx.font="12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.textAlign="right";ctx.textBaseline="middle";
+  ctx.fillText(String(Math.round(hi-pad)),gx0-4,gy0+4);
+  ctx.fillText(String(Math.round(lo+pad)),gx0-4,gy1-4);
+  ctx.textAlign="left";
+  ctx.fillText("第 "+Math.min(day,ST.DAYS)+" 日",gx0+2,gy1+12);
+  ctx.textAlign="right";
+  ctx.fillText("现价 "+(day>0?series[day-1]:"-"),gx1,gy1+12);
+  //状态角标
+  if(state==="paused"||state==="idle"){
+    ctx.fillStyle=PAL.warning;
+    ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.textAlign="center";
+    ctx.fillText(state==="paused"?"已暂停":"未开市",W/2,gy0+8);
+  }
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  ctx.strokeRect(0.5,0.5,W-1,H-1);
+}
+
+/* ========== 主循环（rAF + visibilitychange 停帧/续跑，dt 钳制 0.05） ========== */
+var rafPending=false,lastTs=0;
+function frame(ts){
+  rafPending=false;
+  if(document.hidden)return;
+  if(!lastTs)lastTs=ts;
+  var dt=Math.min(0.05,(ts-lastTs)/1000||0);
+  lastTs=ts;
+  step(dt);draw();
+  rafPending=true;requestAnimationFrame(frame);
+}
+function kick(){if(!rafPending&&!document.hidden){rafPending=true;requestAnimationFrame(frame);}}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){lastTs=0;if(state==="running")say("已暂停 · 切回继续交易");}
+  else{lastTs=0;kick();}
+});
+
+/* ========== 输入 ========== */
+$("btnBuy").addEventListener("click",doBuy);
+$("btnSell").addEventListener("click",doSell);
+$("btnPause").addEventListener("click",togglePause);
+$("btnNew").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  newGame();
+});
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  newGame();
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k==="b"){doBuy();e.preventDefault();}
+  else if(k==="s"){doSell();e.preventDefault();}
+  else if(k===" "){e.preventDefault();if(state==="running"||state==="paused")togglePause();else if(state==="ended"){$("overlay").classList.remove("show");newGame();}else newGame();}
+  else if(k==="r"){$("overlay").classList.remove("show");newGame();}
+});
+
+/* 调试验证入口：锚点用例（node 抽取 XC-CORE 独立复现） */
+window.__validateLevels=function(){try{return ST.runTests()}catch(e){return {error:String(e)}}};
+
+/* ========== 启动 ========== */
+resize();draw();syncHud();
+requestAnimationFrame(frame);
+syncSaveFromServer();
+
+})();
+</script>
+
+</body>
+</html>

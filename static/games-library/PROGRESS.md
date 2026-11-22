@@ -434,3 +434,23 @@
   斜前进空格为刻意变体（三处一致）；antonym-pair 旧缓存需 DB 版本覆盖；3 处无害死代码。
   浏览器终验（375px 真机 52/52 + typo-hunt 纠错交互实点）全过；typo-hunt 验证器模型错位 P0
   已随本批修复（见第三批条目）。
+
+- **2026-11-22（新游戏·自研入库·扩展总表第四批）52 款（游戏库 227 → 279 款，收官批次）**：
+  净室自研（零外链、零素材、canvas/DOM 自绘），出生即按 §6 规范并登记 audit-gates STRICT。
+  批次范围 = 总目录 #157-208（D 组收尾 8 款棋类 + E 组物理·模拟·经营 25 款 + F 组数字·逻辑 19 款）。
+  本批 brief 直接注入 W2/W3 评审沉淀的「已知坑清单」（存档续玩起步、计时基点平移、代际守卫、
+  验证器锚点用例、stat padding、foot 绑定一致），实现期缺陷率显著下降：375px 真机 52/52 零缺陷
+  （W2/W3 各抓到真 bug），锚点用例纪律在开发期自纠 5 处真缺陷（ataxx 阵营参数、l-game 阵营码、
+  tsuro DECK 死循环、poker-sol 三条误判、magic-square 剪枝非唯一）。
+  批次清单（52 款，按 category 分组）：
+  - board（7）：amazon-queens ataxx-flood quoridor-lite tsuro-path bingo-line poker-sol nim-coins
+  - puzzle（13）：l-game dam-gates chain-blast signal-cross power-grid futoshiki binary-taku magic-square prime-fact fraction-pie logic-owners number-maze tower-sum
+  - arcade（3）：pendulum-shot trebuchet bee-lines
+  - other（29）：bridge-build tower-crane balloon-inflate seesaw-stack kitchen-line elevator-rush metro-dispatch tower-control stock-tap ant-trail tank-eco bonsai-trim garden-waters laundry-day well-drill coaster-build pond-fish warehouse-rush discount-math unit-quiz clock-math money-change abacus-flash sequence-next syllogism-judge calendar-quiz dice-odds chem-balance speed-math
+  审计结论：`audit-gates.mjs` 全库 279 款**严格模式 0 违规**；`theme-gates.mjs` 本批 52/52 全绿。
+  关卡验证：47 款关卡驱动各 40 关 + 5 款分数驱动；全部经内嵌独立验证器 + 标准锚点用例逐关复核
+  （physics 类确定性种子回放、grid 类唯一解双实现、调度类策略回放基准、数谜类公式交叉）；
+  5 款分数驱动（tower-crane / balloon-inflate / seesaw-stack / stock-tap / speed-math）最高分持久化。
+  375px 真机 52/52：零横向溢出、无 h1、无验证器告警、主题推送/非法值拒绝。
+  体积范围：单款 19,214B（balloon-inflate）– 41,475B（tsuro-path），52 款合计约 1.4MB。
+  备注：X3/X4 代理执行中曾因账号配额中断，经恢复续跑完成全部交付（无残迹）。

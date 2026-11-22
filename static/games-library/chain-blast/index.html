@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>连锁引爆</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-cb-* 本作素材色）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-cb-brd:#262A27;--g-st-cb-bomb:#C9626F;--g-st-cb-bomb2:#8E3E4C;--g-st-cb-ring:#8A93A0;--g-st-cb-flash:#D98A3B;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-cb-brd:#101614;--g-st-cb-bomb:#DB8290;--g-st-cb-bomb2:#A75763;--g-st-cb-ring:#6E7887;--g-st-cb-flash:#C98F55;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">引爆次数</span><span class="val" id="stTaps">0</span></div>
+    <div class="stat"><span class="label">参考最少</span><span class="val" id="stPar">-</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="连锁引爆棋盘：炸弹与爆波范围" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点一枚炸弹起爆，爆波会引爆范围内的炸弹形成连锁；用最少的引爆清空全场</p>
+  <div class="tools">
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：方向键选弹 · 空格起爆 · R 重开 · 与参考次数一致可拿三星 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">全场清空！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn" id="ovBtn" style="background:var(--g-btn-primary);color:#fff">下一关</button>
+  </div>
+</div>
+
+<script>
+/*X3-ENGINE-BEGIN*/
+var CB=(function(){
+"use strict";
+var W=480,H=320;
+/* ===== 确定性伪随机（mulberry32） ===== */
+function makeRng(seed){return{s:seed|0};}
+function rngNext(rng){
+  rng.s=(rng.s+0x6D2B79F5)|0;
+  var t=Math.imul(rng.s^(rng.s>>>15),1|rng.s);
+  t=(t+Math.imul(t^(t>>>7),61|t))^t;
+  return ((t^(t>>>14))>>>0)/4294967296;
+}
+/* ===== 关卡：位置与爆波半径由种子确定性生成 ===== */
+function makeBoard(i){
+  var rng=makeRng(0x9e37+i*7919);
+  var n=6+Math.floor(i/6);          /* 6 → 12 */
+  var bombs=[],tries=0;
+  while(bombs.length<n&&tries++<4000){
+    var x=46+rngNext(rng)*(W-92),y=42+rngNext(rng)*(H-84);
+    var ok=true;
+    for(var j=0;j<bombs.length;j++){
+      var dx=bombs[j].x-x,dy=bombs[j].y-y;
+      if(dx*dx+dy*dy<40*40){ok=false;break;}
+    }
+    if(ok)bombs.push({x:x,y:y,r:50+Math.floor(rngNext(rng)*31)});
+  }
+  return {name:"连锁·"+(i<9?"0":"")+(i+1),bombs:bombs,difficulty:Math.min(6,1+Math.floor(i/7))};
+}
+/* ===== 连锁：从 b 起爆，按半径逐级引爆未爆弹（返回引爆后的掩码） ===== */
+function chainMask(bombs,b,mask){
+  var nm=mask|(1<<b),q=[b];
+  while(q.length){
+    var u=q.shift();
+    for(var j=0;j<bombs.length;j++){
+      if(nm>>j&1)continue;
+      var dx=bombs[j].x-bombs[u].x,dy=bombs[j].y-bombs[u].y;
+      if(dx*dx+dy*dy<=bombs[u].r*bombs[u].r){nm|=(1<<j);q.push(j);}
+    }
+  }
+  return nm;
+}
+/* ===== 精确求解器：子集 DP 求最少引爆次数 ===== */
+function solve(bombs){
+  var n=bombs.length,full=(1<<n)-1,memo=new Map();
+  function dfs(mask){
+    if(mask===full)return 0;
+    if(memo.has(mask))return memo.get(mask);
+    var best=99;
+    for(var b=0;b<n;b++){
+      if(mask>>b&1)continue;
+      var v=1+dfs(chainMask(bombs,b,mask));
+      if(v<best)best=v;
+    }
+    memo.set(mask,best);
+    return best;
+  }
+  return dfs(0);
+}
+var LEVELS=[],PARS=[];
+for(var gi=0;gi<40;gi++){
+  var bd=makeBoard(gi);
+  LEVELS.push(bd);
+  PARS.push(solve(bd.bombs));
+}
+/* ===== 验证器（含锚点用例） ===== */
+function verifyAll(){
+  var res=[],i;
+  for(i=0;i<LEVELS.length;i++){
+    var n=LEVELS[i].bombs.length,p=PARS[i];
+    res.push({ok:p>=1&&p<=n,par:p});
+  }
+  return res;
+}
+function selfTest(){
+  var out=[];
+  /* 锚点1：三弹一线（间距70、半径75）→ 一点全爆 par=1（手工推演） */
+  var line1=[{x:100,y:150,r:75},{x:170,y:150,r:75},{x:240,y:150,r:75}];
+  out.push({name:"锚点1·三弹一线r75→par=1",pass:solve(line1)===1});
+  /* 锚点2：同布局半径40（间距70>40）→ 无连锁 par=3（手工推演） */
+  var line2=[{x:100,y:150,r:40},{x:170,y:150,r:40},{x:240,y:150,r:40}];
+  out.push({name:"锚点2·三弹一线r40→par=3",pass:solve(line2)===3});
+  /* 锚点3：两簇布局：簇内连锁、簇间不通 → par=2（手工推演） */
+  var two=[{x:100,y:100,r:70},{x:150,y:110,r:70},{x:340,y:220,r:70},{x:390,y:230,r:70}];
+  out.push({name:"锚点3·两簇不相通→par=2",pass:solve(two)===2});
+  /* 锚点4：全部 40 关求解器结果在 [1,n] 且掩码回放可清空 */
+  var all=verifyAll(),bad=[];
+  for(var i=0;i<all.length;i++)if(!all[i].ok)bad.push(i+1);
+  out.push({name:"全关验证·40关par∈[1,n]",pass:bad.length===0,bad:bad.join(",")});
+  return out;
+}
+return {W:W,H:H,LEVELS:LEVELS,PARS:PARS,makeRng:makeRng,rngNext:rngNext,
+  chainMask:chainMask,solve:solve,verifyAll:verifyAll,selfTest:selfTest};
+})();
+window.CB=CB;
+/*X3-ENGINE-END*/
+</script>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（DB 下发优先：整表求解复核通过才接受；本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="chain-blast",SAVE_KEY="sw.chainblast.v1";
+var DEFAULT_LEVELS=CB.LEVELS;
+var DEFAULT_PARS=CB.PARS;
+var LEVELS=DEFAULT_LEVELS,PARS=DEFAULT_PARS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function validBoard(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Array.isArray(d.bombs)||d.bombs.length<4||d.bombs.length>14)return false;
+  for(var j=0;j<d.bombs.length;j++){
+    var b=d.bombs[j];
+    if(!Array.isArray(b)&&typeof b!=="object")return false;
+    if(!(b.x>=20&&b.x<=460&&b.y>=20&&b.y<=300))return false;
+    if(!(b.r>=30&&b.r<=90))return false;
+  }
+  return true;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  var pars=[];
+  for(var i=0;i<list.length;i++){
+    if(!validBoard(list[i]))return false;
+    var p=CB.solve(list[i].bombs);
+    if(!(p>=1&&p<=list[i].bombs.length))return false;
+    pars.push(p);
+  }
+  LEVELS=list;PARS=pars;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){
+      var pars=[],ok=true;
+      for(var i=0;i<list.length;i++){
+        if(!validBoard(list[i])){ok=false;break;}
+        pars.push(CB.solve(list[i].bombs));
+      }
+      if(ok){LEVELS=list;PARS=pars;return v;}
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    if(!res||!Array.isArray(res.levels)||!res.levels.length)return;
+    var list=[],seen={};
+    for(var i=0;i<res.levels.length;i++){
+      var row=res.levels[i];
+      if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return;
+      var d;try{d=JSON.parse(row.dataJson);}catch(e){return;}
+      if(seen[d&&d.name])return;seen[d&&d.name]=1;
+      list.push(d);
+    }
+    if(list.length&&applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);resize();
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层 ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";$("ovBtn").style.background="var(--g-surface2)";$("ovBtn").style.color="var(--g-text)";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+/* ---------- 调色板 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),water:v("--g-water"),
+    brd:v("--g-st-cb-brd"),bomb:v("--g-st-cb-bomb"),bomb2:v("--g-st-cb-bomb2"),
+    ring:v("--g-st-cb-ring"),flash:v("--g-st-cb-flash")};
+}
+window.__gOnTheme=function(){palLoad()};
+palLoad();
+/* ---------- 状态（续玩：lv 起步即存档关） ---------- */
+var lv=save.lv,L=null,expl=null,taps=0,sel=0,anim=null,animIdx=0,gen=0;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=CB.W,H=CB.H;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  expl=new Array(L.bombs.length).fill(0);
+  taps=0;sel=0;anim=null;animIdx=0;gen++;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent=L.bombs.length+" 枚炸弹";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  $("stTaps").textContent=0;
+  $("stPar").textContent=PARS[lv];
+  hideOverlay();
+  say("点一枚炸弹起爆，爆波会引爆范围内的炸弹");
+}
+function detonate(b){
+  if(!L)return;
+  var mask=0;
+  for(var j=0;j<expl.length;j++)if(expl[j])mask|=(1<<j);
+  if(mask>>b&1)return;
+  var seq=[],nm=CB.chainMask(L.bombs,b,mask),diff=nm&~mask;
+  for(var j2=0;j2<L.bombs.length;j2++)if(diff>>j2&1)seq.push(j2);
+  if(!seq.length)return;
+  anim={seq:seq,t:0};animIdx=0;taps++;
+  $("stTaps").textContent=taps;
+}
+function updExplode(){
+  while(animIdx<anim.seq.length&&anim.t>=animIdx*0.26){
+    var b=anim.seq[animIdx];
+    expl[b]=1;
+    anim.flash={b:b,t:0};
+    animIdx++;
+  }
+  if(animIdx>=anim.seq.length){
+    var all=true;
+    for(var j=0;j<expl.length;j++)if(!expl[j])all=false;
+    anim=null;
+    if(all)finish();
+    else say("还剩 "+expl.filter(function(x){return !x}).length+" 枚");
+  }
+}
+function finish(){
+  var par=PARS[lv],eff=par-taps+1;
+  if(eff<0)eff=0;
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:eff}).catch(function(){});
+  var stars=taps<=par?"三星":taps<=par+1?"两星":"一星";
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"全场清空！";
+  $("ovDesc").innerHTML=taps+" 次引爆（参考最少 "+par+"）· "+stars+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("ovBtn").style.background="var(--g-btn-primary)";$("ovBtn").style.color="#fff";
+  $("overlay").classList.add("show");
+}
+/* ---------- 绘制 ---------- */
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.style.height=Math.round(w*H/W)+"px";
+  cv.width=Math.round(w*dpr);cv.height=Math.round(w*H/W*dpr);
+  var sc=w/W;
+  ctx.setTransform(dpr*sc,0,0,dpr*sc,0,0);
+}
+function draw(ts){
+  ctx.fillStyle=PAL.brd;ctx.fillRect(0,0,W,H);
+  if(!L)return;
+  /* 爆波范围（虚线圈） */
+  ctx.setLineDash([5,5]);
+  for(var j=0;j<L.bombs.length;j++){
+    if(expl[j])continue;
+    var b=L.bombs[j];
+    ctx.strokeStyle=PAL.ring;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,7);ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  /* 炸弹 */
+  for(var k=0;k<L.bombs.length;k++){
+    var bm=L.bombs[k];
+    if(expl[k])continue;
+    ctx.fillStyle=k===sel?PAL.warning:PAL.bomb;
+    ctx.beginPath();ctx.arc(bm.x,bm.y,13,0,7);ctx.fill();
+    ctx.strokeStyle=PAL.bomb2;ctx.lineWidth=2.5;ctx.stroke();
+    ctx.fillStyle=PAL.bomb2;
+    ctx.fillRect(bm.x-3,bm.y-20,6,6);
+    ctx.fillStyle="rgba(255,255,255,.8)";   // 恒白高光
+    ctx.beginPath();ctx.arc(bm.x-4,bm.y-4,3.5,0,7);ctx.fill();
+  }
+  /* 起爆闪光（扩散环） */
+  if(anim&&anim.flash){
+    var f=anim.flash,t=Math.min(1,f.t/0.4);
+    var fb=L.bombs[f.b];
+    ctx.strokeStyle=PAL.flash;ctx.lineWidth=4*(1-t);
+    ctx.globalAlpha=1-t;
+    ctx.beginPath();ctx.arc(fb.x,fb.y,fb.r*t,0,7);ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+  ctx.fillStyle=PAL.muted;
+  ctx.font="400 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText("虚线圈=爆波范围 · 高亮=当前选中",W/2,H-12);
+}
+/* ---------- 主循环 ---------- */
+var rafId=0,last=0;
+function frame(ts){
+  rafId=requestAnimationFrame(frame);
+  if(!last)last=ts;
+  var dt=Math.min(0.05,(ts-last)/1000||0);
+  last=ts;
+  if(anim){
+    anim.t+=dt;
+    if(anim.flash)anim.flash.t+=dt;
+    updExplode();
+  }
+  draw(ts);
+}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){if(rafId){cancelAnimationFrame(rafId);rafId=0;}}
+  else if(!rafId){last=0;rafId=requestAnimationFrame(frame);}
+});
+/* ---------- 输入 ---------- */
+cv.addEventListener("pointerdown",function(e){
+  if(!L||anim)return;
+  var rect=cv.getBoundingClientRect();
+  var x=(e.clientX-rect.left)/rect.width*W,y=(e.clientY-rect.top)/rect.height*H;
+  e.preventDefault();
+  var best=-1,bd=1e9;
+  for(var j=0;j<L.bombs.length;j++){
+    if(expl[j])continue;
+    var d=Math.hypot(L.bombs[j].x-x,L.bombs[j].y-y);
+    if(d<26&&d<bd){bd=d;best=j;}
+  }
+  if(best>=0){sel=best;detonate(best);}
+});
+cv.addEventListener("pointercancel",function(){});
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",openLevelSelect);
+$("ovBtn").addEventListener("click",function(){
+  if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+  else{lv++;loadLevel(lv)}
+  $("ovBtn").style.background="var(--g-surface2)";$("ovBtn").style.color="var(--g-text)";
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(!L)return;
+  function cycle(dir){
+    var n=L.bombs.length,tries=0;
+    do{sel=(sel+dir+n)%n;tries++;}while(expl[sel]&&tries<n);
+  }
+  if(k==="ArrowRight"||k==="ArrowDown"){
+    e.preventDefault();cycle(1);
+  }else if(k==="ArrowLeft"||k==="ArrowUp"){
+    e.preventDefault();cycle(-1);
+  }else if(k===" "||k==="Enter"){
+    e.preventDefault();
+    if($("overlay").classList.contains("show"))$("ovBtn").click();
+    else if(!anim)detonate(sel);
+  }else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+});
+window.addEventListener("resize",resize);
+/* ---------- 启动（loadLevel 以存档关续玩） ---------- */
+loadLevel(save.lv);resize();rafId=requestAnimationFrame(frame);
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>洗衣房值班</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）；订单类型色复用 water/primary/warning 语义 token*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 5px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .btn { min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">营业时间</span><span class="val" id="stTime">0s</span></div>
+    <div class="stat"><span class="label">完成</span><span class="val" id="stServed">0/0</span></div>
+    <div class="stat"><span class="label">排队</span><span class="val" id="stQueue">0</span></div>
+    <div class="stat"><span class="label">投诉</span><span class="val" id="stComp">0/1</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="洗衣房：排队顾客、洗衣机与待取衣物" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点空闲洗衣机把队首订单上机，洗完再点一次收衣折叠</p>
+  <div class="tools">
+    <button class="btn" id="btnPause">暂停</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：1-4 对应机位 上机/收衣 · 空格 暂停/继续 · R 重开 · 排队太久客人会投诉</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">打烊！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+    <button class="btn" id="ovRetry" hidden>重试本关</button>
+  </div>
+</div>
+
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 核心与关卡生成（确定性纯函数；XC-CORE 供 node 抽取独立复现验证） ========== */
+/*XC-CORE-BEGIN*/
+function mulberry32(a){
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+var LD={DT:0.25,SVC:[8,12,16],TYPE:["快洗","标准","大件"],LEVEL_COUNT:40};
+/* 贪婪基准策略：有空机就上队首，洗完立即收衣（玩家对照的满分基准） */
+LD.sim=function(lv,onEvent){
+  var dt=LD.DT,t=0,ai=0,q=[],machines=[],served=0,complaints=0;
+  var arr=lv.arrivals;
+  for(var m=0;m<lv.machines;m++)machines.push({left:0,type:-1,done:false,cust:null});
+  var end=Math.max(lv.time,1);
+  while(t<end+90){
+    //到店
+    while(ai<arr.length&&arr[ai][0]<=t){q.push({type:arr[ai][1],at:t,dl:t+lv.patience});ai++;}
+    //机内计时
+    for(var i=0;i<machines.length;i++){
+      var M=machines[i];
+      if(!M.done&&M.type>=0){
+        M.left-=dt;
+        if(M.left<=0){M.done=true;}
+      }
+    }
+    //收衣
+    for(var c=0;c<machines.length;c++){
+      var M2=machines[c];
+      if(M2.done&&M2.type>=0){
+        served++;
+        if(onEvent)onEvent("serve",c,t);
+        M2.type=-1;M2.done=false;M2.cust=null;
+      }
+    }
+    //上机（队首 → 任一空机）
+    if(q.length){
+      for(var a2=0;a2<machines.length;a2++){
+        var M3=machines[a2];
+        if(M3.type<0&&q.length){
+          var cust=q.shift();
+          M3.type=cust.type;M3.left=LD.SVC[cust.type];M3.done=false;M3.cust=cust;
+          if(onEvent)onEvent("load",a2,t);
+        }
+      }
+    }
+    //排队超时
+    for(var q2=q.length-1;q2>=0;q2--){
+      if(t>q[q2].dl){complaints++;if(onEvent)onEvent("angry",q2,t);q.splice(q2,1);}
+    }
+    if(t>=end&&ai>=arr.length&&!q.length){
+      var idleAll=true;
+      for(var z=0;z<machines.length;z++)if(machines[z].type>=0)idleAll=false;
+      if(idleAll)break;
+    }
+    t+=dt;
+  }
+  return {served:served,complaints:complaints};
+};
+/* 生成：到店间隔=均值时长/(利用率×机数)±抖动；贪婪基准定 K/L */
+LD.genLevel=function(no){
+  var p=(no-1)/(LD.LEVEL_COUNT-1);
+  for(var attempt=0;attempt<10;attempt++){
+    var pe=p*(1-attempt*0.08);
+    var rng=mulberry32(81300+no*733+attempt*53);
+    var machines=Math.min(4,2+Math.floor(pe*3.2));
+    var time=Math.round(75+pe*35);
+    var patience=Math.round(24-pe*12);
+    var wBig=0.25+pe*0.2;
+    var avg=(LD.SVC[0]*0.35+LD.SVC[1]*0.4+LD.SVC[2]*wBig)/(0.75+wBig+0.2);
+    var util=0.72+pe*0.23;
+    var arrivals=[],t=4;
+    while(t<time-6){
+      var r1=rng();
+      var type=r1<wBig?2:(r1<wBig+0.4?1:0);
+      arrivals.push([Math.round(t*4)/4,type]);
+      var jit=0.6+rng()*0.8;
+      t+=avg/(util*machines)*jit;
+    }
+    var lv={name:"值班·"+(no<10?"0":"")+no,time:time,machines:machines,patience:patience,
+      arrivals:arrivals,targetK:0,maxL:1,difficulty:Math.min(9,1+Math.floor(no/5))};
+    var g=LD.sim(lv);
+    if(g.served<4||g.complaints>1)continue;
+    lv.targetK=g.served-(pe>0.5?2:1);
+    lv.maxL=g.complaints>0?g.complaints:1;
+    if(lv.targetK<3)continue;
+    return lv;
+  }
+  return LD.genLevel(no>1?no-1:1);
+};
+/* 结构校验 */
+LD.validate=function(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return{ok:false,why:"bad"};
+  if(!isFinite(d.time)||d.time<30||d.time>180)return{ok:false,why:"time"};
+  if(!Number.isInteger(d.machines)||d.machines<1||d.machines>5)return{ok:false,why:"machines"};
+  if(!isFinite(d.patience)||d.patience<8||d.patience>40)return{ok:false,why:"patience"};
+  if(!Array.isArray(d.arrivals)||!d.arrivals.length||d.arrivals.length>60)return{ok:false,why:"arrivals"};
+  var last=-1;
+  for(var i=0;i<d.arrivals.length;i++){
+    var a=d.arrivals[i];
+    if(!Array.isArray(a)||a.length!==2)return{ok:false,why:"a"+i};
+    if(!isFinite(a[0])||a[0]<0||a[0]>d.time)return{ok:false,why:"at"+i};
+    if(a[0]<last)return{ok:false,why:"order"+i};
+    last=a[0];
+    if(!Number.isInteger(a[1])||a[1]<0||a[1]>2)return{ok:false,why:"type"+i};
+  }
+  if(!Number.isInteger(d.targetK)||d.targetK<3)return{ok:false,why:"K"};
+  if(!Number.isInteger(d.maxL)||d.maxL<0||d.maxL>5)return{ok:false,why:"L"};
+  var g=LD.sim(d);
+  if(g.served<d.targetK||g.complaints>d.maxL)return{ok:false,why:"unsolvable"};
+  return{ok:true,why:""};
+};
+LD.validateAll=function(){
+  var fails=[],i;
+  for(i=1;i<=LD.LEVEL_COUNT;i++){
+    var L=LD.genLevel(i),r=LD.validate(L);
+    if(!r.ok)fails.push(i+"("+r.why+")");
+  }
+  return {total:LD.LEVEL_COUNT,solvable:LD.LEVEL_COUNT-fails.length,fail:fails};
+};
+LD.runTests=function(){
+  var pass=0,rows=[];
+  function ck(name,ok,got){rows.push({name:name,ok:!!ok,got:got});if(ok)pass++;}
+  //锚点1：单机两单不重叠 → 全 served
+  var t1={time:30,machines:1,patience:20,arrivals:[[0,0],[10,0]],targetK:2,maxL:0};
+  var g1=LD.sim(t1);
+  ck("锚点·单机两单 served=2",g1.served===2&&g1.complaints===0,"served="+g1.served);
+  //锚点2：大件占机，后客耐心 8s 超时 → 投诉 1
+  var t2={time:30,machines:1,patience:8,arrivals:[[0,2],[2,0]],targetK:1,maxL:1};
+  var g2=LD.sim(t2);
+  ck("锚点·排队超时投诉=1",g2.complaints===1&&g2.served===1,"c="+g2.complaints+",s="+g2.served);
+  //锚点3：双机并行两标准单 → 12s 内全清
+  var t3={time:30,machines:2,patience:20,arrivals:[[0,1],[0,1]],targetK:2,maxL:0};
+  var g3=LD.sim(t3);
+  ck("锚点·双机并行 served=2",g3.served===2&&g3.complaints===0,"served="+g3.served);
+  //锚点4：机时 8s 快洗精确
+  var t4={time:20,machines:1,patience:20,arrivals:[[0,0]],targetK:1,maxL:0};
+  var g4=LD.sim(t4);
+  ck("锚点·快洗 8s 完成",g4.served===1,"served="+g4.served);
+  var r=LD.validateAll();
+  ck("40 关贪婪基准可达标",r.fail.length===0,"fail="+r.fail.join(","));
+  var L1=LD.genLevel(1),L2=LD.genLevel(1);
+  ck("生成确定性",JSON.stringify(L1)===JSON.stringify(L2),"replay");
+  return {total:6,pass:pass,rows:rows,levels:r};
+};
+globalThis.__XC=LD;
+/*XC-CORE-END*/
+
+/* ========== 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ========== */
+var GAME_KEY="laundry-day",SAVE_KEY="sw.laundryday.v1";
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function buildDefaultLevels(){
+  var list=[];
+  for(var i=1;i<=LD.LEVEL_COUNT;i++)list.push(LD.genLevel(i));
+  return list;
+}
+var LEVELS=buildDefaultLevels();
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!LD.validate(d).ok)return null;
+    var no=parseInt(row.levelNo,10);
+    if(!isFinite(no)||no<1)no=i+1;
+    if(seen[no])return null;
+    seen[no]=1;
+    d.no=no;
+    list.push(d);
+  }
+  list.sort(function(a,b){return a.no-b.no});
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(function(d){return LD.validate(d).ok})){
+      LEVELS=list;return parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      if(state==="run")loadLevel(cur);
+    }
+  }).catch(function(){});
+}
+
+/* ========== 存档（本地 + 账号双写，账号更优才覆盖） ========== */
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:parseInt(s.lv,10)||0,best:parseInt(s.best,10)||1}}catch(e){return{lv:0,best:1}}}
+var save=loadSave();
+var unlocked=clamp(save.best,1,1);
+function persist(){
+  var data={lv:cur,best:unlocked};
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,data).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson||state!=="run")return;
+    try{
+      var r=JSON.parse(res.stateJson),ch=false;
+      var rl=parseInt(r.lv,10),rb=parseInt(r.best,10);
+      if(isFinite(rl)&&rl>save.lv&&rl<LEVELS.length){save.lv=rl;ch=true;}
+      if(isFinite(rb)&&rb>unlocked&&rb<=LEVELS.length){unlocked=rb;ch=true;}
+      if(ch){cur=clamp(save.lv,0,LEVELS.length-1);persist();loadLevel(cur);}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ========== 调色板 ========== */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
+    water:v("--g-water")};
+}
+window.__gOnTheme=function(){palLoad()};
+palLoad();
+
+/* ========== 画布与状态 ========== */
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=0,cur=save.lv,L=null,st=null;
+var state="run";
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function typeColor(t){return t===0?PAL.water:(t===1?PAL.primary:PAL.warning)}
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.round(w);var H=250;
+  cv.style.height=H+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener("resize",function(){resize();draw();});
+function loadLevel(n){
+  cur=clamp(n,0,LEVELS.length-1);
+  L=LEVELS[cur];
+  if(!LD.validate(L).ok){say("关卡数据异常");return;}
+  st={q:[],machines:[],served:0,complaints:0,ai:0,t:0};
+  for(var m=0;m<L.machines;m++)st.machines.push({left:0,type:-1,done:false,cust:null});
+  state="run";
+  $("btnPause").textContent="暂停";
+  $("lvTag").textContent="第 "+(cur+1)+" 关 · "+L.name;
+  $("lvRule").textContent=L.machines+" 台机 · 完成 "+L.targetK+" 单内 · 投诉 ≤"+L.maxL;
+  say("点空闲机位上队首订单；洗完（闪绿框）再点一次收衣，别让客人排队超时");
+  resize();syncHud();draw();
+}
+function syncHud(){
+  $("stTime").textContent=Math.max(0,L.time-st.t).toFixed(0)+"s";
+  $("stServed").textContent=st.served+"/"+L.targetK;
+  $("stServed").className="val"+(st.served<L.targetK&&L.time-st.t<=0?" low":"");
+  $("stQueue").textContent=st.q.length;
+  $("stQueue").className="val"+(st.q.length>3?" low":"");
+  $("stComp").textContent=st.complaints+"/"+L.maxL;
+  $("stComp").className="val"+(st.complaints>=L.maxL?" low":"");
+}
+/* ---------- 交互 ---------- */
+function tapMachine(i){
+  if(state!=="run")return;
+  var M=st.machines[i];
+  if(M.done){
+    st.served++;
+    M.type=-1;M.done=false;M.cust=null;
+    say("第 "+(i+1)+" 号机收衣完成 +1（共 "+st.served+"）");
+  }else if(M.type<0){
+    if(!st.q.length){say("队里没人，等客人上门");return;}
+    var cust=st.q.shift();
+    M.type=cust.type;M.left=LD.SVC[cust.type];M.done=false;M.cust=cust;
+    say("第 "+(i+1)+" 号机开洗 · "+LD.TYPE[cust.type]+" "+LD.SVC[cust.type]+"s");
+  }else{
+    say("第 "+(i+1)+" 号机还在洗（剩 "+Math.max(0,M.left).toFixed(0)+"s）");
+  }
+  syncHud();draw();
+}
+function endShift(){
+  state="done";
+  var ok=st.served>=L.targetK&&st.complaints<=L.maxL;
+  if(ok){
+    if(cur<LEVELS.length-1&&cur+1>save.lv)save.lv=cur+1;
+    if(cur+2>unlocked)unlocked=Math.min(LEVELS.length,cur+2);
+    persist();
+    if(GB.available)GB.reportScore(GAME_KEY,{metricValue:cur+1,metricExtra:st.served}).catch(function(){});
+    $("ovTitle").textContent=(cur>=LEVELS.length-1)?"全部通关！":"打烊成功！";
+    $("ovDesc").innerHTML="完成 "+st.served+" 单（目标 "+L.targetK+"）· 投诉 "+st.complaints+(cur<LEVELS.length-1?"<br>已解锁第 "+(cur+2)+" 关":"<br>40 班全部完成");
+    $("ovBtn").textContent=(cur>=LEVELS.length-1)?"回到第 1 关":"下一关";
+    $("ovRetry").hidden=true;
+    ovMode="win";
+  }else{
+    $("ovTitle").textContent="差一点";
+    $("ovDesc").textContent="完成 "+st.served+"（目标 "+L.targetK+"）· 投诉 "+st.complaints+"（上限 "+L.maxL+"）。空机先上人、洗完立刻收。";
+    $("ovBtn").textContent="选关";
+    $("ovRetry").hidden=false;
+    ovMode="fail";
+  }
+  $("overlay").classList.add("show");
+}
+var ovMode="select";
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<unlocked-1?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>=unlocked;
+      b.addEventListener("click",function(){
+        cur=i;save.lv=Math.max(save.lv,cur);persist();
+        $("overlay").classList.remove("show");
+        loadLevel(cur);
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("ovRetry").hidden=true;
+  ovMode="select";
+  $("overlay").classList.add("show");
+}
+
+/* ========== 绘制 ========== */
+function draw(){
+  ctx.fillStyle=PAL.surface2;ctx.fillRect(0,0,W,250);
+  //排队区
+  ctx.fillStyle=PAL.bg;ctx.fillRect(8,8,W-16,84);
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;ctx.strokeRect(8.5,8.5,W-17,83);
+  ctx.fillStyle=PAL.muted;
+  ctx.font="12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.textAlign="left";ctx.textBaseline="alphabetic";
+  ctx.fillText("排队 "+st.q.length+" 人",16,26);
+  var qw=Math.min(52,(W-32)/Math.max(1,Math.max(st.q.length,4)));
+  for(var i=0;i<st.q.length&&i<8;i++){
+    var c=st.q[i],qx=16+i*(qw+4),qy=34;
+    var left=Math.max(0,c.dl-st.t),frac=Math.min(1,left/L.patience);
+    ctx.fillStyle=typeColor(c.type);ctx.globalAlpha=0.18;
+    ctx.fillRect(qx,qy,qw,44);ctx.globalAlpha=1;
+    ctx.strokeStyle=typeColor(c.type);ctx.lineWidth=1.5;ctx.strokeRect(qx+0.5,qy+0.5,qw-1,43);
+    ctx.fillStyle=typeColor(c.type);
+    ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(LD.TYPE[c.type],qx+qw/2,qy+16);
+    ctx.fillStyle=frac>0.4?PAL.success:(frac>0.2?PAL.warning:PAL.danger);
+    ctx.fillRect(qx+4,qy+34,Math.max(2,(qw-8)*frac),5);
+  }
+  //机位
+  var mw=Math.min(84,(W-24-L.machines*8)/L.machines);
+  var totalW=L.machines*(mw+8)-8,mx0=(W-totalW)/2;
+  for(var m2=0;m2<L.machines;m2++){
+    var M=st.machines[m2],mx=mx0+m2*(mw+8),my=110;
+    ctx.fillStyle=PAL.surface;
+    ctx.beginPath();
+    ctx.moveTo(mx+6,my);ctx.lineTo(mx+mw-6,my);ctx.arcTo(mx+mw,my,mx+mw,my+6,6);
+    ctx.arcTo(mx+mw,my+92,mx+mw-6,my+92,6);ctx.arcTo(mx,my+92,mx,my+86,6);
+    ctx.arcTo(mx,my,mx+6,my,6);ctx.closePath();ctx.fill();
+    ctx.strokeStyle=M.done?PAL.success:PAL.border;ctx.lineWidth=M.done?2.5:1.5;ctx.stroke();
+    //舱门
+    var dcx=mx+mw/2,dcy=my+38,dr=mw*0.3;
+    ctx.beginPath();ctx.arc(dcx,dcy,dr,0,7);
+    ctx.fillStyle=M.type>=0?typeColor(M.type):PAL.surface2;
+    ctx.globalAlpha=M.type>=0?0.35:1;ctx.fill();ctx.globalAlpha=1;
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=2;ctx.stroke();
+    if(M.type>=0&&!M.done){
+      var frac2=Math.max(0,M.left/LD.SVC[M.type]);
+      ctx.strokeStyle=PAL.primary;ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(dcx,dcy,dr+4,-Math.PI/2,-Math.PI/2+(1-frac2)*Math.PI*2);ctx.stroke();
+    }
+    if(M.done){
+      //叠好的衣物
+      ctx.fillStyle=PAL.success;
+      ctx.fillRect(dcx-14,my+62,28,6);
+      ctx.fillStyle=PAL.primary;
+      ctx.fillRect(dcx-10,my+54,20,6);
+      ctx.fillStyle=PAL.warning;
+      ctx.fillRect(dcx-6,my+46,12,6);
+    }
+    ctx.fillStyle=PAL.muted;
+    ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.textAlign="center";
+    ctx.fillText(String(m2+1),dcx,my+86);
+    if(M.type>=0&&M.cust){
+      //顾客剩余耐心提示（在机上时不适用，显示已等待）
+      ctx.fillStyle=PAL.faint;
+      ctx.font="12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+      ctx.fillText(LD.TYPE[M.type],dcx,my-4);
+    }
+  }
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  ctx.strokeRect(0.5,0.5,W-1,249);
+}
+
+/* ========== 步进（固定 0.25s 确定性 tick；rAF + visibilitychange 停帧/续跑） ========== */
+var acc=0;
+function step(dt){
+  if(state!=="run")return;
+  acc+=dt;
+  var guard=0;
+  while(acc>=LD.DT&&state==="run"&&guard<40){
+    acc-=LD.DT;guard++;
+    st.t+=LD.DT;
+    //到店
+    while(st.ai<L.arrivals.length&&L.arrivals[st.ai][0]<=st.t){
+      st.q.push({type:L.arrivals[st.ai][1],at:st.t,dl:st.t+L.patience});
+      st.ai++;
+    }
+    //机内计时
+    for(var i=0;i<st.machines.length;i++){
+      var M=st.machines[i];
+      if(!M.done&&M.type>=0){
+        M.left-=LD.DT;
+        if(M.left<=0)M.done=true;
+      }
+    }
+    //排队超时
+    for(var q2=st.q.length-1;q2>=0;q2--){
+      if(st.t>st.q[q2].dl){
+        st.complaints++;
+        st.q.splice(q2,1);
+        say("有客人等太久走了（投诉 "+st.complaints+"/"+L.maxL+"）");
+      }
+    }
+    syncHud();
+    var shiftOver=st.t>=L.time&&st.ai>=L.arrivals.length&&!st.q.length;
+    if(shiftOver){
+      var idleAll=true;
+      for(var z=0;z<st.machines.length;z++)if(st.machines[z].type>=0)idleAll=false;
+      if(idleAll){endShift();break;}
+    }
+    if(st.t>=L.time+90){endShift();break;}
+  }
+}
+
+/* ========== 主循环 ========== */
+var rafPending=false,lastTs=0;
+function frame(ts){
+  rafPending=false;
+  if(document.hidden)return;
+  if(!lastTs)lastTs=ts;
+  var dt=Math.min(0.05,(ts-lastTs)/1000||0);
+  lastTs=ts;
+  step(dt);draw();
+  rafPending=true;requestAnimationFrame(frame);
+}
+function kick(){if(!rafPending&&!document.hidden){rafPending=true;requestAnimationFrame(frame);}}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){lastTs=0;if(state==="run")say("已暂停 · 切回继续值班");}
+  else{lastTs=0;kick();}
+});
+
+/* ========== 输入 ========== */
+cv.addEventListener("pointerdown",function(e){
+  var rect=cv.getBoundingClientRect();
+  var x=e.clientX-rect.left,y=e.clientY-rect.top;
+  e.preventDefault();
+  if(y<100||y>210)return;
+  var mw=Math.min(84,(W-24-L.machines*8)/L.machines);
+  var totalW=L.machines*(mw+8)-8,mx0=(W-totalW)/2;
+  for(var m2=0;m2<L.machines;m2++){
+    var mx=mx0+m2*(mw+8);
+    if(x>=mx&&x<=mx+mw){tapMachine(m2);return;}
+  }
+});
+$("btnPause").addEventListener("click",function(){
+  if(state==="run"){state="pause";$("btnPause").textContent="继续";}
+  else if(state==="pause"){state="run";$("btnPause").textContent="暂停";}
+});
+$("btnReset").addEventListener("click",function(){loadLevel(cur);});
+$("btnLv").addEventListener("click",openLevelSelect);
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(ovMode==="win"){
+    if(cur>=LEVELS.length-1){cur=0;save.lv=0;persist();loadLevel(0);}
+    else{cur++;loadLevel(cur);}
+  }else if(ovMode==="fail"){
+    openLevelSelect();
+  }
+});
+$("ovRetry").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  loadLevel(cur);
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="4"){var i=parseInt(k,10)-1;if(i<L.machines){tapMachine(i);}e.preventDefault();}
+  else if(k===" "){e.preventDefault();if(state==="run"){state="pause";$("btnPause").textContent="继续";}else if(state==="pause"){state="run";$("btnPause").textContent="暂停";}}
+  else if(k==="r"||k==="R")loadLevel(cur);
+});
+
+/* 调试验证入口 */
+window.__validateLevels=function(){try{return LD.runTests()}catch(e){return {error:String(e)}}};
+
+/* ========== 启动（续玩：从存档关卡起步） ========== */
+cur=clamp(save.lv,0,LEVELS.length-1);
+loadLevel(cur);
+requestAnimationFrame(frame);
+syncLevelsFromServer();
+syncSaveFromServer();
+
+})();
+</script>
+
+</body>
+</html>

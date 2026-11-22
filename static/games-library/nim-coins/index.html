@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>取子博弈</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（按需裁剪）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .piles { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+  .prow { display: flex; align-items: center; gap: 6px; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); padding: 8px 10px; flex-wrap: wrap; }
+  .prow.psel { border-color: var(--g-primary-deep); }
+  .prow .tag { font-size: 12px; color: var(--g-muted); min-width: 34px; }
+  .coin {
+    min-height: 44px; min-width: 44px; padding: 0;
+    border: 0; border-radius: 10px; background: var(--g-surface2);
+    font-family: inherit; font-size: 16px; font-weight: 700;
+    color: var(--g-primary-deep); cursor: pointer;
+    font-variant-numeric: tabular-nums;
+  }
+  .coin.taken { background: transparent; color: var(--g-faint); cursor: default; box-shadow: inset 0 0 0 1px var(--g-border); }
+  .coin.mark { box-shadow: inset 0 0 0 2px var(--g-danger); color: var(--g-danger); }
+  .coin.cur { box-shadow: inset 0 0 0 2px var(--g-muted); }
+  .coin.taken.cur { box-shadow: inset 0 0 0 2px var(--g-muted); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 10px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">剩币</span><span class="val" id="stLeft">-</span></div>
+    <div class="stat"><span class="label">手数</span><span class="val" id="stMoves">0</span></div>
+  </div>
+  <div class="piles" id="piles" aria-label="硬币堆"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点一枚硬币：它和它右侧的整段一起被拿走</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo">悔棋</button>
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：方向键选币 · Enter 拿走该段 · U 悔棋 · H 提示 · R 重开<br>规则：轮流从单一堆取任意枚（点哪枚连右侧整段一起拿）——拿到最后一枚的人输</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">对局结束</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="nim-coins",SAVE_KEY="sw.nimcoins.v1";
+var DEFAULT_LEVELS=[{"name":"取子·01","piles":[2,2],"noise":3,"first":1},{"name":"取子·02","piles":[3,3],"noise":3,"first":1},{"name":"取子·03","piles":[1,1],"noise":3,"first":1},{"name":"取子·04","piles":[3,4],"noise":2,"first":1},{"name":"取子·05","piles":[2,3,2],"noise":2,"first":1},{"name":"取子·06","piles":[3,1],"noise":2,"first":1},{"name":"取子·07","piles":[4,4],"noise":2,"first":1},{"name":"取子·08","piles":[3,5],"noise":2,"first":1},{"name":"取子·09","piles":[4,5],"noise":2,"first":0},{"name":"取子·10","piles":[3,4,5],"noise":2,"first":1},{"name":"取子·11","piles":[5,5],"noise":2,"first":1},{"name":"取子·12","piles":[4,6],"noise":1,"first":1},{"name":"取子·13","piles":[1,1,1],"noise":1,"first":0},{"name":"取子·14","piles":[5,6],"noise":1,"first":1},{"name":"取子·15","piles":[3,4,3],"noise":1,"first":1},{"name":"取子·16","piles":[2,5,2],"noise":1,"first":0},{"name":"取子·17","piles":[5,7],"noise":1,"first":1},{"name":"取子·18","piles":[4,4,4],"noise":1,"first":1},{"name":"取子·19","piles":[6,7],"noise":1,"first":1},{"name":"取子·20","piles":[3,5,7],"noise":1,"first":0},{"name":"取子·21","piles":[4,5,6],"noise":1,"first":1},{"name":"取子·22","piles":[2,2,5],"noise":0,"first":1},{"name":"取子·23","piles":[5,5,5],"noise":0,"first":0},{"name":"取子·24","piles":[6,6,6],"noise":0,"first":1},{"name":"取子·25","piles":[3,4,5,6],"noise":0,"first":1},{"name":"取子·26","piles":[7,7],"noise":0,"first":0},{"name":"取子·27","piles":[2,4,6,8],"noise":0,"first":1},{"name":"取子·28","piles":[5,6,7],"noise":0,"first":1},{"name":"取子·29","piles":[1,4,5],"noise":0,"first":0},{"name":"取子·30","piles":[6,7,8],"noise":0,"first":1},{"name":"取子·31","piles":[4,5,5,5],"noise":0,"first":1},{"name":"取子·32","piles":[7,8,9],"noise":0,"first":0},{"name":"取子·33","piles":[3,5,7,9],"noise":0,"first":1},{"name":"取子·34","piles":[2,3,4,5,6],"noise":0,"first":1},{"name":"取子·35","piles":[8,9,10],"noise":0,"first":0},{"name":"取子·36","piles":[4,6,8,10],"noise":0,"first":1},{"name":"取子·37","piles":[5,7,9,11],"noise":0,"first":1},{"name":"取子·38","piles":[1,1,2,4,8],"noise":0,"first":0},{"name":"取子·39","piles":[6,7,8,9],"noise":0,"first":1},{"name":"取子·40","piles":[3,5,7,9,11],"noise":0,"first":1}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Array.isArray(d.piles)||d.piles.length<1||d.piles.length>5)return false;
+  var total=0,i;
+  for(i=0;i<d.piles.length;i++){
+    if(!Number.isInteger(d.piles[i])||d.piles[i]<1||d.piles[i]>11)return false;
+    total+=d.piles[i];
+  }
+  if(total<2)return false;
+  if(!Number.isInteger(d.noise)||d.noise<0||d.noise>3)return false;
+  if(d.first!==0&&d.first!==1)return false;
+  return true;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row.dataJson!=="string")return null;
+    var d;try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    var ck=d.piles.join(",")+"|"+d.noise+"|"+d.first;
+    if(seen[ck])return null;seen[ck]=1;
+    list.push({name:String(d.name),piles:d.piles.slice(),noise:d.noise,first:d.first});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData))LEVELS=list;
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+/* ---------- 博弈引擎：misère Nim（拿最后一枚输） ---------- */
+/* 精确求解器（记忆化，独立于 AI 策略；仅小局面）：当前行动方是否必胜 */
+function exactWin(piles,memo){
+  var total=0,i;
+  for(i=0;i<piles.length;i++)total+=piles[i];
+  if(total===0)return false;
+  var key=piles.slice().sort(function(a,b){return a-b}).join(",");
+  memo=memo||{};
+  if(memo[key]!==undefined)return memo[key];
+  var win=false;
+  for(i=0;i<piles.length&&!win;i++){
+    for(var take=1;take<=piles[i];take++){
+      var np=piles.slice();np[i]-=take;
+      var nt=0,k;
+      for(k=0;k<np.length;k++)nt+=np[k];
+      if(nt===0)continue;            // 拿最后一枚 = 自己输，不作为胜着
+      if(!exactWin(np,memo)){win=true;break;}
+    }
+  }
+  memo[key]=win;
+  return win;
+}
+/* XOR 量（用于理论着选择） */
+function xorAll(piles){var x=0;for(var i=0;i<piles.length;i++)x^=piles[i];return x;}
+/* AI：必胜局面走必胜着（优先异或归零着），必败局面拖大堆；noise 概率随机失误 */
+function aiPick(piles,noise){
+  var memo={},moves=[],i,take;
+  for(i=0;i<piles.length;i++)for(take=1;take<=piles[i];take++){
+    var np=piles.slice();np[i]-=take;
+    var nt=0,k;
+    for(k=0;k<np.length;k++)nt+=np[k];
+    moves.push({i:i,take:take,nt:nt,win:nt>0&&!exactWin(np,memo)});
+  }
+  if(noise>0&&Math.random()<noise*0.15){
+    return moves[Math.floor(Math.random()*moves.length)];
+  }
+  var winners=moves.filter(function(m){return m.win});
+  if(winners.length){
+    var theory=winners.filter(function(m){
+      var np=piles.slice();np[m.i]-=m.take;
+      return xorAll(np)===0;
+    });
+    var pool=theory.length?theory:winners;
+    return pool[0];
+  }
+  var big=-1;
+  for(i=0;i<piles.length;i++)if(big<0||piles[i]>piles[big])big=i;
+  return {i:big,take:1};
+}
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,piles=[],side=1,over=false,won=false,hist=[],moves=0,cur=-1,curTake=0;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function total(){var s=0;for(var i=0;i<piles.length;i++)s+=piles[i];return s;}
+function loadLevel(x){
+  lv=Math.max(0,Math.min(x,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  piles=L.piles.slice();
+  side=L.first===1?1:2;over=false;won=false;hist=[{p:piles.slice(),who:0}];moves=0;cur=-1;curTake=0;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="堆 "+L.piles.join("·")+(L.noise?" · 电脑松弛"+L.noise:" · 电脑精准")+(L.first===0?" · 电脑先取":"");
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  buildPiles();updStats();
+  if(side===2){say("电脑先取…");scheduleAI();}
+  else say("点一枚硬币：它和它右侧的整段一起被拿走");
+}
+function buildPiles(){
+  var box=$("piles");
+  box.innerHTML="";
+  for(var p=0;p<piles.length;p++){
+    (function(p){
+      var row=document.createElement("div");
+      row.className="prow";
+      var tag=document.createElement("span");
+      tag.className="tag";
+      tag.textContent="第 "+(p+1)+" 堆";
+      row.appendChild(tag);
+      for(var c=0;c<piles[p];c++){
+        (function(c){
+          var b=document.createElement("button");
+          b.className="coin";
+          b.setAttribute("aria-label","第"+(p+1)+"堆第"+(c+1)+"枚");
+          b.addEventListener("click",function(){tapCoin(p,c)});
+          row.appendChild(b);
+        })(c);
+      }
+      box.appendChild(row);
+    })(p);
+  }
+  renderPiles();
+}
+function renderPiles(){
+  var rows=$("piles").children;
+  var n=Math.floor(cur/piles.length),c2=cur%piles.length;
+  for(var p=0;p<piles.length;p++){
+    var row=rows[p];
+    row.className="prow"+((side===1&&n===p)?" psel":"");
+    var coins=row.querySelectorAll(".coin");
+    var coinArr=[];
+    for(var k=0;k<coins.length;k++)coinArr.push(coins[k]);
+    for(var c=0;c<coinArr.length;c++){
+      var gone=c>=piles[p];
+      var idx=p*20+c;
+      coinArr[c].className="coin"+(gone?" taken":"")+(gone&&c<piles[p]+curTake?" mark":"")+((side===1&&idx===cur)?" cur":"");
+      coinArr[c].textContent=gone?"·":String(c+1);
+    }
+  }
+}
+function updStats(){
+  $("stLeft").textContent=total();
+  $("stMoves").textContent=moves;
+  $("btnUndo").disabled=hist.length<2||over;
+}
+/* ---------- 交互 ---------- */
+function tapCoin(p,c){
+  if(over)return;
+  if(side!==1){say("等电脑取…");return;}
+  if(c>=piles[p])return;
+  take({i:p,take:piles[p]-c},1);
+}
+function take(mv,who){
+  var before=piles.slice();
+  piles[mv.i]-=mv.take;
+  hist.push({p:before,who:who});
+  moves++;curTake=mv.take;
+  var left=total();
+  updStats();renderPiles();
+  if(left===0){endGame(who===2,""+(who===1?"你":"电脑")+"拿了最后一枚！");return;}
+  if(who===1){side=2;say("电脑思考中…");scheduleAI();}
+  else{side=1;say("轮到你 · 拿到最后一枚的人输");}
+}
+function endGame(w,t){
+  over=true;won=w;cancelAI();
+  if(w&&lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:w?lv+1:lv,metricExtra:moves}).catch(function(){});
+  $("ovTitle").textContent=w?(lv>=LEVELS.length-1?"全部通关！":"过关！"):"败局";
+  $("ovDesc").innerHTML=t+"（共 "+moves+" 手）"+(w&&lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"");
+  $("ovBtn").textContent=w?(lv>=LEVELS.length-1?"回到第 1 关":"下一关"):"再来一次";
+  $("overlay").classList.add("show");updStats();
+}
+/* ---------- AI 调度（切后台作废思考 + 轮次归还） ---------- */
+var aiTimer=null;
+function scheduleAI(){
+  cancelAI();
+  aiTimer=setTimeout(function(){
+    aiTimer=null;
+    if(over||side!==2)return;
+    var mv=aiPick(piles,L.noise);
+    take(mv,2);
+  },420);
+}
+function cancelAI(){if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}}
+function undo(){
+  if(hist.length<2||over)return;
+  cancelAI();
+  while(hist.length&&hist[hist.length-1].who===2)hist.pop();
+  if(!hist.length)return;
+  var h=hist.pop();
+  piles=h.p.slice();
+  side=1;moves=hist.length-1;cur=-1;curTake=0;
+  updStats();renderPiles();say("已悔棋");
+}
+function hint(){
+  if(over||side!==1)return;
+  var mv=aiPick(piles,0);
+  var memo={};
+  var winning=exactWin(piles,memo);
+  if(!winning)say("局面不利（先取必败），建议从最大堆取 1 枚拖延");
+  else say("提示：取第 "+(mv.i+1)+" 堆 "+mv.take+" 枚");
+}
+/* ---------- 键盘 ---------- */
+function coinCount(){var s=0;for(var i=0;i<piles.length;i++)s+=piles[i];return s;}
+function coinAt(idx){
+  var acc=0;
+  for(var p=0;p<piles.length;p++){
+    if(idx<acc+piles[p])return {p:p,c:idx-acc};
+    acc+=piles[p];
+  }
+  return null;
+}
+window.addEventListener("keydown",function(e){
+  var k=e.key,N=coinCount();
+  if(k==="ArrowLeft"||k==="ArrowRight"||k==="ArrowUp"||k==="ArrowDown"){
+    if(cur<0)cur=0;
+    var step=(k==="ArrowLeft"||k==="ArrowUp")?-1:1;
+    cur=Math.max(0,Math.min(N-1,cur+step));
+    e.preventDefault();renderPiles();
+  }
+  else if(k===" "||k==="Enter"){
+    if($("overlay").classList.contains("show")){$("ovBtn").click();}
+    else if(cur>=0){var cc=coinAt(cur);if(cc&&side===1)take({i:cc.p,take:piles[cc.p]-cc.c},1);}
+    e.preventDefault();
+  }
+  else if(k==="u"||k==="U")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本局已重置")}
+});
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本局已重置")});
+$("btnLv").addEventListener("click",function(){if(!over)openLevelSelect();});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(over){if(won&&lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0);}else loadLevel(won?lv+1:lv);}
+});
+/* ---------- 切后台：AI 思考作废，轮次归还玩家（纯事件驱动 DOM，无计时器/rAF） ---------- */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){cancelAI();if(side===2&&!over){side=1;say("已切后台，电脑让先，请行动");updStats();}}
+});
+/* ---------- 内嵌独立验证器（锚点用例 + 策略×精确解交叉核对 + AI 对拍） ---------- */
+function selfTest(){
+  var total=0,ok=0,fails=[];
+  function chk(c,name){total++;if(c)ok++;else fails.push(name);}
+  chk(DEFAULT_LEVELS.length===40,"关卡数=40");
+  chk(DEFAULT_LEVELS.every(validLevelData),"关卡配置合法");
+  /* 锚点①：misère 已知胜负（手推） */
+  var memo={};
+  chk(exactWin([1],memo)===false,"锚点:[1]先手必败");
+  chk(exactWin([1,1],memo)===true,"锚点:[1,1]先手必胜");
+  chk(exactWin([1,1,1],memo)===false,"锚点:[1,1,1]先手必败");
+  chk(exactWin([2,2],memo)===false,"锚点:[2,2]先手必败");
+  chk(exactWin([2],memo)===true,"锚点:[2]先手必胜");
+  chk(exactWin([3,1],memo)===true,"锚点:[3,1]先手必胜");
+  chk(exactWin([3,4,5],memo)===true,"锚点:[3,4,5]先手必胜");
+  chk(exactWin([4,5,6],memo)===true,"锚点:[4,5,6]先手必胜");
+  chk(exactWin([1,4,5],memo)===false,"锚点:[1,4,5]先手必败");
+  /* 锚点②：AI 策略与精确解交叉——必胜局面 AI 一手后对手必败 */
+  (function(){
+    var cases=[[1,1],[2],[3,1],[3,4,5]];
+    var ok2=true;
+    for(var ci=0;ci<cases.length;ci++){
+      var mv=aiPick(cases[ci].slice(),0);
+      var np=cases[ci].slice();np[mv.i]-=mv.take;
+      var nt=0,k;
+      for(k=0;k<np.length;k++)nt+=np[k];
+      if(nt===0||exactWin(np,{}))ok2=false;
+    }
+    chk(ok2,"锚点:AI必胜局面一手制胜");
+  })();
+  /* 锚点③：必败局面 AI 至少合法拖延（1 枚） */
+  (function(){
+    var mv=aiPick([2,2],0);
+    chk(mv.take===1,"锚点:必败局面取1拖延");
+  })();
+  /* AI 对拍 4 局：合法推进、终局与规则一致（拿最后一枚者负） */
+  var g;
+  for(g=0;g<4;g++)chk(aiGame(),"AI 对拍 局"+(g+1));
+  window.__gSelfTest={ok:ok,total:total,fails:fails};
+  if(fails.length)say("警告：内嵌自检未全过（"+ok+"/"+total+"）");
+}
+function aiGame(){
+  var keepP=piles,keepS=side,keepL=L,keepM=moves;
+  piles=L.piles.slice();
+  side=1;moves=0;
+  var lastTaker=0,plies=0;
+  while(plies<200&&total()>0){
+    var mv=aiPick(piles,plies%3===0?1:0);
+    if(!mv||mv.take<=0||mv.i<0||mv.i>=piles.length||mv.take>piles[mv.i]){lastTaker=-1;break;}
+    piles[mv.i]-=mv.take;
+    lastTaker=side;plies++;
+    side=3-side;
+  }
+  var res=total()===0&&lastTaker>0;
+  piles=keepP;side=keepS;L=keepL;moves=keepM;
+  return res;
+}
+/* ---------- 启动（续玩：从存档关卡起步） ---------- */
+loadLevel(save.lv);selfTest();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

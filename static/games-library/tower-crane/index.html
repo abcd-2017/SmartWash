@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>塔吊堆楼</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-cr-* 本作素材色）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-cr-sky1:#DFF2E8;--g-st-cr-sky2:#F3FAF5;--g-st-cr-steel:#8A93A0;--g-st-cr-steel2:#5C6470;--g-st-cr-blk1:#D98A3B;--g-st-cr-blk2:#C9626F;--g-st-cr-base:#8F6A3A;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-cr-sky1:#182420;--g-st-cr-sky2:#101614;--g-st-cr-steel:#6E7887;--g-st-cr-steel2:#4A515C;--g-st-cr-blk1:#C98F55;--g-st-cr-blk2:#DB8290;--g-st-cr-base:#6E5330;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .stats { display: flex; gap: 8px; flex: 1; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .btn {
+    min-height: 44px; padding: 0 18px;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-btn-primary); color: #fff;
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="stats">
+      <div class="stat"><span class="label">层数</span><span class="val" id="stScore">0</span></div>
+      <div class="stat"><span class="label">最高层</span><span class="val" id="stBest">0</span></div>
+      <div class="stat"><span class="label">楼体倾斜</span><span class="val" id="stLean">0%</span></div>
+    </div>
+    <button class="btn" id="mainBtn">开始</button>
+  </header>
+  <div class="stage"><canvas id="cv" aria-label="塔吊堆楼游戏画面：吊摆落块堆楼" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">看准摆锤荡到楼位，点画布放块；摆越快楼越高块越窄</p>
+  <p class="foot">键盘：空格 落块 · P 暂停 · 层数越高摆速越快 · 最高层数上报排行</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">准备开工</h2>
+    <p class="desc" id="ovDesc">点画布或按空格把吊块放到楼下；偏移太多会滑落，楼身重心偏出基座会倒塌</p>
+    <button class="btn" id="ovBtn" style="background:var(--g-btn-primary);color:#fff">开始游戏</button>
+  </div>
+</div>
+
+<script>
+/*X3-ENGINE-BEGIN*/
+var TC=(function(){
+"use strict";
+/* ===== 世界常量（逻辑坐标，确定性固定步长） ===== */
+var W=480,H=560,GROUND=530,PIVOT_Y=36,ROPE=96,BLK_H=26,BLK_W0=76,BLK_W_MIN=40,
+    BASE_W=140,BASE_H=26,G=1400,DT=1/120,LEAN_LIM=62,PERFECT=5;
+/* ===== 对局状态 ===== */
+function newGame(){
+  return {t:0,stack:[{x:W/2,w:BASE_W}],fall:null,score:0,over:false,reason:null,
+    combo:0,lastDx:0,shakeT:0};
+}
+function blkW(score){return Math.max(BLK_W_MIN,BLK_W0-Math.floor(score/4)*4);}
+function swingA(score){return Math.min(0.8,0.35+score*0.012);}
+function swingW(score){return Math.min(3.4,2.2+score*0.03);}
+/* 摆锤位置与速度：θ=A·sin(ωt) */
+function hook(st){
+  var A=swingA(st.score),om=swingW(st.score),th=A*Math.sin(om*st.t);
+  var dth=A*om*Math.cos(om*st.t);
+  var x=W/2+ROPE*Math.sin(th),y=PIVOT_Y+ROPE*Math.cos(th);
+  return {x:x,y:y,th:th,vx:ROPE*Math.cos(th)*dth,vy:-ROPE*Math.sin(th)*dth};
+}
+function stackTopY(st){return GROUND-BASE_H-st.stack.length*BLK_H;}
+function leanPct(st){
+  var s=0,i;
+  for(i=1;i<st.stack.length;i++)s+=st.stack[i].x;
+  var com=st.stack.length>1?s/(st.stack.length-1):W/2;
+  return Math.abs(com-W/2)/LEAN_LIM;
+}
+/* 释放吊块（当前摆速决定初速度） */
+function release(st){
+  if(st.over||st.fall)return false;
+  var h=hook(st),w=blkW(st.score);
+  st.fall={x:h.x,y:h.y+BLK_H/2+4,vx:h.vx,vy:h.vy,w:w};
+  return true;
+}
+/* 单步推进：吊块下落 → 落板判定 → 倾覆判定 */
+function step(st,dt){
+  if(st.over)return;
+  st.t+=dt;
+  if(st.shakeT>0)st.shakeT-=dt;
+  if(!st.fall)return;
+  var f=st.fall;
+  f.vy+=G*dt;
+  f.x+=f.vx*dt;f.y+=f.vy*dt;
+  var top=st.stack[st.stack.length-1];
+  var topY=stackTopY(st);
+  if(f.y+BLK_H/2>=topY){
+    var dx=f.x-top.x;
+    st.lastDx=dx;
+    if(Math.abs(dx)>(top.w+f.w)/2){
+      st.over=true;st.reason="miss";st.fall=null;return;
+    }
+    st.stack.push({x:f.x,w:f.w});
+    st.fall=null;
+    st.score++;
+    st.combo=Math.abs(dx)<PERFECT?st.combo+1:0;
+    st.shakeT=0.25;
+    /* 重心越出基座 → 倒塌 */
+    var s=0,i;
+    for(i=1;i<st.stack.length;i++)s+=st.stack[i].x;
+    var com=s/(st.stack.length-1);
+    if(Math.abs(com-W/2)>LEAN_LIM){st.over=true;st.reason="topple";}
+    /* 楼顶到吊钩 → 封顶 */
+    else if(stackTopY(st)<PIVOT_Y+ROPE+BLK_H){st.over=true;st.reason="roof";}
+  }
+}
+/* ===== 验证器（含锚点用例）：确定性相位驱动 ===== */
+/* 以固定步长推进到目标相位再释放 */
+function runScript(seq){
+  var st=newGame();
+  for(var s=0;s<seq.length;s++){
+    var target=seq[s],guard=200000;
+    while(!st.over&&guard-->0){
+      var th=swingA(st.score)*Math.sin(swingW(st.score)*st.t);
+      if(Math.abs(th-target)<0.004){release(st);break;}
+      step(st,DT);
+    }
+    guard=200000;
+    while(st.fall&&guard-->0)step(st,DT);
+  }
+  return st;
+}
+function selfTest(){
+  var out=[];
+  /* 锚点1：摆顶(θ=A)连放 3 块 → 不塌，重心偏移≈ROPE·sin(A)（期望 25~55px） */
+  var st=runScript([0.35,0.35,0.35]);
+  var off=leanPct(st)*62;
+  out.push({name:"锚点1·摆顶连放3块不塌且重心偏移在物理期望区",pass:!st.over&&st.score===3&&off>25&&off<55});
+  /* 锚点2：摆速零点(θ=0,速度最大)连放 → 重心偏移累积至倒塌/脱板 */
+  var st2=runScript([0,0,0,0,0,0,0,0,0,0]);
+  out.push({name:"锚点2·高速相位连放必出事",pass:st2.over&&(st2.reason==="topple"||st2.reason==="miss")&&st2.score<10});
+  /* 锚点3：release 返回值与状态一致性（塌后不可再放） */
+  var st3=runScript([0.35]);
+  out.push({name:"锚点3·正常落块计层+1",pass:st3.score===1&&!st3.over});
+  return out;
+}
+return {W:W,H:H,GROUND:GROUND,PIVOT_Y:PIVOT_Y,ROPE:ROPE,BLK_H:BLK_H,BLK_W0:BLK_W0,
+  BASE_W:BASE_W,BASE_H:BASE_H,DT:DT,LEAN_LIM:LEAN_LIM,PERFECT:PERFECT,
+  newGame:newGame,hook:hook,stackTopY:stackTopY,leanPct:leanPct,
+  blkW:blkW,swingA:swingA,swingW:swingW,release:release,step:step,selfTest:selfTest};
+})();
+window.TC=TC;
+/*X3-ENGINE-END*/
+</script>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);}
+  };
+})();
+
+/* ---------- 调色板：UI 走 token，天空/塔吊/楼块为素材色 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
+    sky1:v("--g-st-cr-sky1"),sky2:v("--g-st-cr-sky2"),
+    steel:v("--g-st-cr-steel"),steel2:v("--g-st-cr-steel2"),
+    blk1:v("--g-st-cr-blk1"),blk2:v("--g-st-cr-blk2"),base:v("--g-st-cr-base")};
+}
+window.__gOnTheme=function(){palLoad()};
+palLoad();
+/* ---------- 存档（最高层数，本地 + 账号双写） ---------- */
+var GAME_KEY="tower-crane",SAVE_KEY="sw.towercrane.v1";
+function storeGet(k){try{return window.localStorage.getItem(k)}catch(e){return null}}
+function storeSet(k,val){try{window.localStorage.setItem(k,val)}catch(e){}}
+var best=parseInt(storeGet(SAVE_KEY)||"0",10)||0;
+$("stBest").textContent=best;
+function persistBest(){
+  storeSet(SAVE_KEY,String(best));
+  if(GB.available)GB.saveState(GAME_KEY,String(best)).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var rb=parseInt(JSON.parse(res.stateJson),10)||0;
+      if(rb>best){best=rb;persistBest();$("stBest").textContent=best;}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=TC.W,H=TC.H;
+var st=null,state="ready";
+function $(id){return document.getElementById(id)}
+function showOverlay(t,s,b){$("ovTitle").textContent=t;$("ovDesc").textContent=s;$("ovBtn").textContent=b;$("overlay").classList.add("show")}
+function hideOverlay(){$("overlay").classList.remove("show")}
+function updStats(){
+  $("stScore").textContent=st?st.score:0;
+  var lean=st?Math.round(TC.leanPct(st)*100):0;
+  $("stLean").textContent=lean+"%";
+  $("stLean").classList.toggle("low",lean>=80);
+}
+function startGame(){
+  st=TC.newGame();state="running";hideOverlay();
+  $("mainBtn").textContent="暂停";updStats();
+  say("看准摆锤荡到楼位，点画布放块");
+}
+function endGame(){
+  state="over";
+  var isRecord=st.score>best&&st.score>0;
+  if(isRecord){best=st.score;persistBest();$("stBest").textContent=best;}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:best}).catch(function(){});
+  var reason=st.reason==="miss"?"吊块滑出楼面":st.reason==="topple"?"楼身重心偏出基座，倒塌了":"封顶完成！";
+  showOverlay("收工",reason+" · 本轮 "+st.score+" 层"+(isRecord?" · 新纪录":""),"再来一轮");
+  $("mainBtn").textContent="重新开始";
+}
+function primary(){
+  if(state==="running"){
+    state="paused";showOverlay("已暂停","吊块悬在半空，回来继续","继续");$("mainBtn").textContent="继续";
+  }else if(state==="paused"){
+    state="running";hideOverlay();$("mainBtn").textContent="暂停";
+  }else startGame();
+}
+function act(){
+  if(state!=="running")return;
+  if(st.over){endGame();return;}
+  TC.release(st);
+}
+function say(t){$("msg").textContent=t}
+/* ---------- 绘制 ---------- */
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.style.height=Math.round(w*H/W)+"px";
+  cv.width=Math.round(w*dpr);cv.height=Math.round(w*H/W*dpr);
+  var sc=w/W;
+  ctx.setTransform(dpr*sc,0,0,dpr*sc,0,0);
+}
+function rr(x,y,w2,h2,r){
+  r=Math.min(r,w2/2,h2/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w2,y,x+w2,y+h2,r);ctx.arcTo(x+w2,y+h2,x,y+h2,r);
+  ctx.arcTo(x,y+h2,x,y,r);ctx.arcTo(x,y,x+w2,y,r);ctx.closePath();
+}
+function draw(){
+  var g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,PAL.sky1);g.addColorStop(1,PAL.sky2);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  if(!st)return;
+  var h=TC.hook(st);
+  /* 塔身与吊臂（素材） */
+  ctx.fillStyle=PAL.steel;
+  ctx.fillRect(W-34,PIVOT_Y,16,TC.GROUND-PIVOT_Y);
+  ctx.fillStyle=PAL.steel2;
+  ctx.fillRect(W-34,PIVOT_Y,16,10);
+  for(var sy=PIVOT_Y+30;sy<TC.GROUND;sy+=34){ctx.fillRect(W-34,sy,16,3);}
+  ctx.fillStyle=PAL.steel;
+  ctx.fillRect(30,PIVOT_Y-8,W-60,12);
+  ctx.fillStyle=PAL.steel2;
+  for(var jx=48;jx<W-60;jx+=30)ctx.fillRect(jx,PIVOT_Y-8,4,12);
+  /* 配重与小车 */
+  ctx.fillStyle=PAL.steel2;
+  rr(W-70,PIVOT_Y-22,34,16,4);ctx.fill();
+  rr(h.x-14,PIVOT_Y-14,28,14,4);ctx.fill();
+  /* 吊缆与吊块 */
+  ctx.strokeStyle=PAL.steel2;ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(h.x,PIVOT_Y);ctx.lineTo(h.x,h.y);ctx.stroke();
+  if(!st.fall){
+    var bw=TC.blkW(st.score);
+    ctx.fillStyle=st.combo>0?PAL.primary:PAL.blk1;
+    rr(h.x-bw/2,h.y,bw,TC.BLK_H,4);ctx.fill();
+    ctx.strokeStyle=PAL.steel2;ctx.lineWidth=2;ctx.stroke();
+  }
+  /* 楼体 */
+  ctx.fillStyle=PAL.base;
+  rr(W/2-TC.BASE_W/2,TC.GROUND-TC.BASE_H,TC.BASE_W,TC.BASE_H,4);ctx.fill();
+  for(var i=1;i<st.stack.length;i++){
+    var b=st.stack[i],by=TC.GROUND-TC.BASE_H-(st.stack.length-i)*TC.BLK_H;
+    ctx.fillStyle=(i%2)?PAL.blk1:PAL.blk2;
+    rr(b.x-b.w/2,by,b.w,TC.BLK_H-2,3);ctx.fill();
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=1;ctx.stroke();
+  }
+  if(st.fall){
+    var f=st.fall;
+    ctx.fillStyle=PAL.blk1;
+    rr(f.x-f.w/2,f.y-TC.BLK_H/2,f.w,TC.BLK_H,4);ctx.fill();
+    ctx.strokeStyle=PAL.steel2;ctx.lineWidth=2;ctx.stroke();
+  }
+  /* 倾斜表：重心点 + 基座边界 */
+  var lean=TC.leanPct(st);
+  ctx.strokeStyle=lean>0.8?PAL.danger:PAL.warning;
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(W/2-TC.LEAN_LIM,TC.GROUND+8);ctx.lineTo(W/2+TC.LEAN_LIM,TC.GROUND+8);ctx.stroke();
+  var com=W/2;
+  if(st.stack.length>1){
+    var s2=0;
+    for(var k=1;k<st.stack.length;k++)s2+=st.stack[k].x;
+    com=s2/(st.stack.length-1);
+  }
+  ctx.fillStyle=lean>0.8?PAL.danger:PAL.deep;
+  ctx.beginPath();ctx.arc(com,TC.GROUND+8,4,0,7);ctx.fill();
+}
+/* ---------- 主循环（切后台停续，dt 钳制防穿透） ---------- */
+var rafId=0,last=0;
+function frame(ts){
+  rafId=requestAnimationFrame(frame);
+  if(!last)last=ts;
+  var dt=Math.min(0.05,(ts-last)/1000||0);
+  last=ts;
+  if(state==="running"){
+    var guard=0;
+    var acc=dt;
+    while(acc>0&&guard++<16){
+      var s=Math.min(TC.DT,acc);
+      TC.step(st,s);acc-=s;
+      if(st.over){endGame();break;}
+    }
+    updStats();
+  }
+  draw();
+}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){
+    if(rafId){cancelAnimationFrame(rafId);rafId=0;}
+    if(state==="running"){state="paused";showOverlay("已暂停","回到游戏继续吊装","继续");$("mainBtn").textContent="继续";}
+  }else if(!rafId){last=0;rafId=requestAnimationFrame(frame);}
+});
+/* ---------- 输入 ---------- */
+cv.addEventListener("pointerdown",function(e){act();e.preventDefault();});
+cv.addEventListener("pointercancel",function(){});
+$("mainBtn").addEventListener("click",function(){primary();this.blur();});
+$("ovBtn").addEventListener("click",function(){primary();this.blur();});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k===" "||k==="Enter"){e.preventDefault();
+    if($("overlay").classList.contains("show"))primary();else act();}
+  else if(k==="p"||k==="P")primary();
+});
+window.addEventListener("resize",resize);
+/* ---------- 启动 ---------- */
+resize();draw();
+syncSaveFromServer();
+rafId=requestAnimationFrame(frame);
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

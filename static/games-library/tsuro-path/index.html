@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>波路牌</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（按需裁剪）+ §3 素材 token（--g-bd1/--g-bd2/--g-line 牌面）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-bd1:#F6DCAB;--g-bd2:#ECCF92;--g-line:#7A5B34;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-bd1:#4A3D26;--g-bd2:#3A2F1D;--g-line:#9A845C;color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 10px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">回合</span><span class="val" id="stTurn">0</span></div>
+    <div class="stat"><span class="label">牌堆</span><span class="val" id="stDeck">-</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" role="img" aria-label="波路牌棋盘：路径牌与双方棋子"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点手牌选牌 → 旋转 → 点「落牌」放到你棋子前方</p>
+  <div class="tools">
+    <button class="btn" id="btnRot">⟳ 旋转</button>
+    <button class="btn primary" id="btnPlace">落牌</button>
+    <button class="btn" id="btnUndo">悔棋</button>
+  </div>
+  <div class="tools">
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：←→ 切手牌 · ↑ 旋转 · Enter 落牌 · U 悔棋 · H 提示 · R 重开<br>规则：把牌放到棋子正前方，路会把双方棋子一起推走；出界即淘汰，最后存活者胜（同段相撞双双出局，落牌方判负）</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">对局结束</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="tsuro-path",SAVE_KEY="sw.tsuropath.v1";
+var DEFAULT_LEVELS=[{"name":"波路·01","size":5,"hand":3,"skill":1,"rowP":2,"rowA":2},{"name":"波路·02","size":5,"hand":3,"skill":1,"rowP":2,"rowA":2},{"name":"波路·03","size":5,"hand":3,"skill":1,"rowP":2,"rowA":2},{"name":"波路·04","size":5,"hand":3,"skill":2,"rowP":2,"rowA":2},{"name":"波路·05","size":5,"hand":3,"skill":2,"rowP":2,"rowA":2},{"name":"波路·06","size":5,"hand":4,"skill":2,"rowP":2,"rowA":2},{"name":"波路·07","size":5,"hand":4,"skill":2,"rowP":2,"rowA":2},{"name":"波路·08","size":5,"hand":4,"skill":3,"rowP":2,"rowA":2},{"name":"波路·09","size":5,"hand":4,"skill":3,"rowP":2,"rowA":2},{"name":"波路·10","size":5,"hand":5,"skill":3,"rowP":2,"rowA":2},{"name":"波路·11","size":6,"hand":3,"skill":1,"rowP":2,"rowA":3},{"name":"波路·12","size":6,"hand":3,"skill":2,"rowP":2,"rowA":3},{"name":"波路·13","size":6,"hand":3,"skill":2,"rowP":2,"rowA":3},{"name":"波路·14","size":6,"hand":4,"skill":2,"rowP":2,"rowA":3},{"name":"波路·15","size":6,"hand":4,"skill":2,"rowP":1,"rowA":4},{"name":"波路·16","size":6,"hand":4,"skill":3,"rowP":2,"rowA":3},{"name":"波路·17","size":6,"hand":4,"skill":3,"rowP":1,"rowA":4},{"name":"波路·18","size":6,"hand":5,"skill":3,"rowP":2,"rowA":3},{"name":"波路·19","size":6,"hand":5,"skill":3,"rowP":1,"rowA":4},{"name":"波路·20","size":6,"hand":5,"skill":3,"rowP":0,"rowA":5},{"name":"波路·21","size":7,"hand":3,"skill":2,"rowP":3,"rowA":3},{"name":"波路·22","size":7,"hand":3,"skill":2,"rowP":3,"rowA":3},{"name":"波路·23","size":7,"hand":4,"skill":2,"rowP":3,"rowA":3},{"name":"波路·24","size":7,"hand":4,"skill":2,"rowP":2,"rowA":4},{"name":"波路·25","size":7,"hand":4,"skill":3,"rowP":3,"rowA":3},{"name":"波路·26","size":7,"hand":4,"skill":3,"rowP":2,"rowA":4},{"name":"波路·27","size":7,"hand":5,"skill":3,"rowP":3,"rowA":3},{"name":"波路·28","size":7,"hand":5,"skill":3,"rowP":2,"rowA":4},{"name":"波路·29","size":7,"hand":5,"skill":3,"rowP":1,"rowA":5},{"name":"波路·30","size":7,"hand":5,"skill":3,"rowP":0,"rowA":6},{"name":"波路·31","size":7,"hand":5,"skill":3,"rowP":3,"rowA":3},{"name":"波路·32","size":7,"hand":5,"skill":3,"rowP":2,"rowA":4},{"name":"波路·33","size":7,"hand":5,"skill":3,"rowP":1,"rowA":5},{"name":"波路·34","size":7,"hand":5,"skill":3,"rowP":3,"rowA":3},{"name":"波路·35","size":7,"hand":5,"skill":3,"rowP":2,"rowA":4},{"name":"波路·36","size":7,"hand":5,"skill":3,"rowP":1,"rowA":5},{"name":"波路·37","size":7,"hand":5,"skill":3,"rowP":0,"rowA":6},{"name":"波路·38","size":7,"hand":5,"skill":3,"rowP":3,"rowA":3},{"name":"波路·39","size":7,"hand":5,"skill":3,"rowP":2,"rowA":4},{"name":"波路·40","size":7,"hand":5,"skill":3,"rowP":0,"rowA":6}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Number.isInteger(d.size)||d.size<5||d.size>7)return false;
+  if(!Number.isInteger(d.hand)||d.hand<3||d.hand>5)return false;
+  if(!Number.isInteger(d.skill)||d.skill<1||d.skill>3)return false;
+  if(!Number.isInteger(d.rowP)||d.rowP<0||d.rowP>=d.size)return false;
+  if(!Number.isInteger(d.rowA)||d.rowA<0||d.rowA>=d.size)return false;
+  return true;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row.dataJson!=="string")return null;
+    var d;try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    var ck=[d.size,d.hand,d.skill,d.rowP,d.rowA].join("|");
+    if(seen[ck])return null;seen[ck]=1;
+    list.push({name:String(d.name),size:d.size,hand:d.hand,skill:d.skill,rowP:d.rowP,rowA:d.rowA});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData))LEVELS=list;
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      loadLevel(lv);resize();
+    }
+  }).catch(function(){});
+}
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+/* ---------- 牌引擎：8 端点顺时针（0-1上 2-3右 4-5下 6-7左）；牌=8 元配对表 ---------- */
+var CROSS=[5,4,7,6,1,0,3,2];              // 跨格后进入邻格的端点
+var SIDED=[[-1,0],[0,1],[1,0],[0,-1]];    // 端点组 k=floor(ep/2) 的出界方向
+function effPartner(tile,rot,ep){
+  return (tile[(ep-2*rot+16)%8]+2*rot)%8;
+}
+function rotated(tile,rot){
+  var out=new Array(8);
+  for(var k=0;k<8;k++)out[(k+2*rot)%8]=(tile[k]+2*rot)%8;
+  return out;
+}
+/* 固定牌库：确定性随机生成 36 张（无同侧配对、旋转去重） */
+var DECK=(function(){
+  var seed=20261121;
+  function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
+  var seen={},out=[],guard=0;
+  while(out.length<36&&guard++<4000){
+    var pts=[0,1,2,3,4,5,6,7],tile=new Array(8).fill(-1),ok=true;
+    while(pts.length){
+      var a=pts.splice(Math.floor(rnd()*pts.length),1)[0];
+      var cand=[];
+      for(var i=0;i<pts.length;i++)if(Math.floor(pts[i]/2)!==Math.floor(a/2))cand.push(pts[i]);
+      if(!cand.length){ok=false;break;}
+      var b=pts.splice(pts.indexOf(cand[Math.floor(rnd()*cand.length)]),1)[0];
+      tile[a]=b;tile[b]=a;
+    }
+    if(!ok)continue;
+    var key=tile.join(",");
+    if(seen[key])continue;
+    seen[key]=1;out.push(tile.slice());
+  }
+  return out;
+})();
+/* 棋子滑动：从 (cell,ep) 沿牌路推进，直到出界(-1) / 前方空格停下 / 环绕 */
+function slide(tiles,n,cell,ep,visited){
+  visited=visited||{};
+  var guard=0;
+  while(guard++<200){
+    var key=cell+"_"+ep;
+    if(visited[key])return {cell:cell,ep:ep,state:"loop"};
+    visited[key]=1;
+    var t=tiles[cell];
+    if(!t)return {cell:cell,ep:ep,state:"rest"};
+    var p=effPartner(t.p,t.r,ep);
+    var side=Math.floor(p/2);
+    var r=Math.floor(cell/n)+SIDED[side][0],c=cell%n+SIDED[side][1];
+    if(r<0||r>=n||c<0||c>=n)return {cell:-1,ep:p,state:"out"};
+    var next=r*n+c;
+    if(!tiles[next])return {cell:cell,ep:ep,state:"rest",face:p};
+    cell=next;ep=CROSS[p];
+  }
+  return {cell:cell,ep:ep,state:"loop"};
+}
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,n=5,tiles=null,stones={1:null,2:null},handP=[],handA=[],deck=[],turn=0,side=1,selCard=0,selRot=0,over=false,won=false,hist=[],hintM=null;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d"),W=0,H=0;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function shuffleDeck(){
+  deck=DECK.map(function(t,i){return {p:t,r:0,i:i}}).slice();
+  for(var i=deck.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1)),tmp=deck[i];deck[i]=deck[j];deck[j]=tmp;
+  }
+}
+function drawCard(){
+  if(!deck.length)return null;
+  return deck.pop();
+}
+function loadLevel(x){
+  lv=Math.max(0,Math.min(x,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  n=L.size;
+  tiles=new Array(n*n).fill(null);
+  shuffleDeck();
+  handP=[];handA=[];
+  for(var i=0;i<L.hand;i++){var c1=drawCard();if(c1)handP.push(c1);var c2=drawCard();if(c2)handA.push(c2);}
+  stones={1:{cell:L.rowP*n,ep:6,virtual:true},2:{cell:L.rowA*n+n-1,ep:3,virtual:true}};
+  turn=0;side=1;selCard=0;selRot=0;over=false;won=false;hist=[snap()];hintM=null;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent=n+"路 · 手牌"+L.hand+" · 电脑段位"+L.skill;
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  updStats();resize();
+  say("点手牌选牌 → 旋转 → 点「落牌」放到你棋子前方");
+}
+function snap(){
+  return {
+    tiles:tiles.map(function(t){return t?{p:t.p.slice(),r:t.r}:null}),
+    s:{1:stones[1]?{cell:stones[1].cell,ep:stones[1].ep,virtual:!!stones[1].virtual}:null,
+       2:stones[2]?{cell:stones[2].cell,ep:stones[2].ep,virtual:!!stones[2].virtual}:null},
+    hp:handP.map(function(c){return {p:c.p.slice(),r:c.r}}),
+    ha:handA.map(function(c){return {p:c.p.slice(),r:c.r}}),
+    dk:deck.slice(),tn:turn,who:side
+  };
+}
+function restore(h){
+  tiles=h.tiles.map(function(t){return t?{p:t.p.slice(),r:t.r}:null});
+  stones={1:h.s[1]?{cell:h.s[1].cell,ep:h.s[1].ep,virtual:h.s[1].virtual}:null,
+          2:h.s[2]?{cell:h.s[2].cell,ep:h.s[2].ep,virtual:h.s[2].virtual}:null};
+  handP=h.hp.map(function(c){return {p:c.p.slice(),r:c.r}});
+  handA=h.ha.map(function(c){return {p:c.p.slice(),r:c.r}});
+  deck=h.dk.slice();
+  turn=h.tn;side=h.who;
+}
+function frontCell(st){
+  if(st.virtual)return st.cell;
+  var t=tiles[st.cell];
+  if(!t)return -1;
+  var p=effPartner(t.p,t.r,st.ep);
+  var side2=Math.floor(p/2);
+  var r=Math.floor(st.cell/n)+SIDED[side2][0],c=st.cell%n+SIDED[side2][1];
+  if(r<0||r>=n||c<0||c>=n)return -2;
+  return r*n+c;
+}
+function updStats(){
+  $("stTurn").textContent=turn;
+  $("stDeck").textContent=deck.length;
+  $("btnUndo").disabled=hist.length<2||over;
+  $("btnPlace").disabled=over||side!==1;
+  $("btnRot").disabled=over||side!==1;
+}
+/* ---------- 落牌与滑动 ---------- */
+function entryEpOf(st){
+  if(st.virtual)return st.ep;
+  var curT=tiles[st.cell];
+  if(!curT)return st.ep;
+  return CROSS[effPartner(curT.p,curT.r,st.ep)];
+}
+function placeAndSlide(card,st,who){
+  var fc=frontCell(st);
+  tiles[fc]={p:card.p.slice(),r:card.r};
+  var res1=slide(tiles,n,fc,entryEpOf(st),{});
+  if(res1.state==="out")return {me:"out"};
+  if(res1.state==="loop"){stones[who]={cell:res1.cell,ep:res1.ep,virtual:false};return {me:"rest"};}
+  stones[who]={cell:res1.cell,ep:res1.ep,virtual:false};
+  var other=3-who;
+  if(stones[other]){
+    var oc=stones[other].cell;
+    if(tiles[oc]){
+      var res2=slide(tiles,n,stones[other].cell,stones[other].ep,{});
+      if(res2.state==="out")return {me:"rest",other:"out"};
+      stones[other]={cell:res2.cell,ep:res2.ep,virtual:false};
+    }
+  }
+  /* 相撞：同格同段 */
+  var s1=stones[1],s2=stones[2];
+  if(s1&&s2&&s1.cell===s2.cell&&s1.cell>=0){
+    var t3=tiles[s1.cell];
+    if(t3){
+      var e1=s1.ep,e2=s2.ep;
+      var sameSeg=effPartner(t3.p,t3.r,e1)===e2||e1===e2;
+      if(sameSeg)return {me:"rest",other:"rest",crash:true};
+    }
+  }
+  return {me:"rest",other:"rest"};
+}
+function playerPlace(){
+  if(over||side!==1)return;
+  var card=handP[selCard];
+  if(!card){say("没有手牌了");return;}
+  var st=stones[1];
+  var fc=frontCell(st);
+  if(fc<0){endGame(false,"你的棋子前方无路可落牌");return;}
+  if(tiles[fc]){say("前方格已被占，滑动会自动续走");return;}
+  hist.push(snap());
+  handP.splice(selCard,1);
+  var refill=drawCard();
+  if(refill)handP.push(refill);
+  var r=placeAndSlide(card,st,1);
+  turn++;selCard=Math.min(selCard,Math.max(0,handP.length-1));selRot=0;hintM=null;
+  updStats();draw();
+  if(r.crash){endGame(false,"两条路撞进同一段——落牌方判负");return;}
+  if(r.me==="out"){endGame(false,"你的棋子被推出了棋盘！");return;}
+  if(r.other==="out"){endGame(true,"电脑的棋子被推出了棋盘！");return;}
+  if(!handP.length&&!handA.length){endDraw();return;}
+  side=2;say("电脑思考中…");
+  scheduleAI();
+}
+function endDraw(){
+  over=true;won=false;cancelAI();
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv,metricExtra:turn}).catch(function(){});
+  $("ovTitle").textContent="和局";
+  $("ovDesc").innerHTML="牌堆耗尽双方仍存活。";
+  $("ovBtn").textContent="再来一次";
+  $("overlay").classList.add("show");updStats();
+}
+function endGame(w,t){
+  over=true;won=w;cancelAI();
+  if(w&&lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:w?lv+1:lv,metricExtra:turn}).catch(function(){});
+  $("ovTitle").textContent=w?(lv>=LEVELS.length-1?"全部通关！":"过关！"):"败局";
+  $("ovDesc").innerHTML=t+"（共 "+turn+" 回合）"+(w&&lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"");
+  $("ovBtn").textContent=w?(lv>=LEVELS.length-1?"回到第 1 关":"下一关"):"再来一次";
+  $("overlay").classList.add("show");updStats();
+}
+/* ---------- AI（候选=手牌×4 旋转，模拟滑行结局 + 位置启发） ---------- */
+function aiBestCard(){
+  var st=stones[2];
+  var fc=frontCell(st);
+  if(fc<0||tiles[fc])return null;
+  var best=null,bestV=-Infinity;
+  for(var i=0;i<handA.length;i++){
+    for(var r=0;r<4;r++){
+      var keepTiles=tiles[fc],keepS1=stones[1],keepS2=stones[2];
+      tiles[fc]={p:handA[i].p.slice(),r:r};
+      var v;
+      var res1=slide(tiles,n,fc,entryEpOf(st),{});
+      if(res1.state==="out")v=-1000;
+      else{
+        var s1=stones[1];
+        var res2=s1&&tiles[s1.cell]?slide(tiles,n,s1.cell,s1.ep,{}):null;
+        if(res2&&res2.state==="out")v=1000;
+        else if(res2&&res1.cell===res2.cell&&res1.cell>=0){
+          var t3=tiles[res1.cell];
+          if(t3&&(effPartner(t3.p,t3.r,res1.ep)===res2.ep||res1.ep===res2.ep))v=-900;
+          else v=posScore(res1,res2);
+        }
+        else v=posScore(res1,res2);
+      }
+      tiles[fc]=keepTiles;stones[1]=keepS1;stones[2]=keepS2;
+      var noise=L.skill<3?(Math.random()*2-1)*(L.skill===1?60:20):0;
+      v+=noise;
+      if(v>bestV){bestV=v;best={i:i,r:r};}
+    }
+  }
+  return best;
+}
+function posScore(mine,opp){
+  return edgeDist(opp?opp.cell:-1)*12-edgeDist(mine?mine.cell:-1)*10;
+}
+/* ---------- AI 调度（切后台作废思考 + 轮次归还） ---------- */
+var aiTimer=null;
+function scheduleAI(){
+  cancelAI();
+  aiTimer=setTimeout(function(){
+    aiTimer=null;
+    if(over||side!==2)return;
+    var pick=aiBestCard();
+    if(!pick){endGame(true,"电脑无牌可落");return;}
+    var card=handA[pick.i];
+    hist.push(snap());
+    handA.splice(pick.i,1);
+    var refill=drawCard();
+    if(refill)handA.push(refill);
+    var r=placeAndSlide({p:card.p,r:pick.r},stones[2],2);
+    turn++;hintM=null;
+    updStats();draw();
+    if(r.crash){endGame(true,"两条路撞进同一段——落牌方判负");return;}
+    if(r.me==="out"){endGame(true,"电脑的棋子被推出了棋盘！");return;}
+    if(r.other==="out"){endGame(false,"你的棋子被推出了棋盘！");return;}
+    if(!handP.length&&!handA.length){endDraw();return;}
+    side=1;say("轮到你 · 点手牌选牌");
+  },420);
+}
+function cancelAI(){if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}}
+function undo(){
+  if(hist.length<2||over)return;
+  cancelAI();
+  while(hist.length&&hist[hist.length-1].who===2)hist.pop();
+  if(!hist.length)return;
+  var h=hist.pop();
+  restore(h);
+  side=1;selCard=0;selRot=0;hintM=null;
+  updStats();draw();say("已悔棋");
+}
+function hint(){
+  if(over||side!==1)return;
+  var best=null,bestV=-Infinity;
+  var fc=frontCell(stones[1]);
+  if(fc<0||tiles[fc]){say("前方无空格可落牌");return;}
+  for(var i=0;i<handP.length;i++)for(var r=0;r<4;r++){
+    var keepT=tiles[fc],keep1=stones[1],keep2=stones[2];
+    tiles[fc]={p:handP[i].p.slice(),r:r};
+    var res1=slide(tiles,n,fc,entryEpOf(stones[1]),{});
+    var v;
+    if(res1.state==="out")v=-1000;
+    else{
+      var s2=stones[2];
+      var res2=s2&&tiles[s2.cell]?slide(tiles,n,s2.cell,s2.ep,{}):null;
+      if(res2&&res2.state==="out")v=1000;
+      else v=posScore(res1,res2);
+    }
+    tiles[fc]=keepT;stones[1]=keep1;stones[2]=keep2;
+    if(v>bestV){bestV=v;best={i:i,r:r};}
+  }
+  if(!best){say("无可用牌");return;}
+  selCard=best.i;selRot=best.r;hintM=true;
+  say("提示：第 "+(best.i+1)+" 张牌旋转 "+best.r*90+"° 落下");
+  draw();
+}
+/* ---------- 绘制 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(k){return s.getPropertyValue(k).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    danger:v("--g-danger"),warning:v("--g-warning"),water:v("--g-water"),bd1:v("--g-bd1"),bd2:v("--g-bd2"),line:v("--g-line")};
+}
+window.__gOnTheme=function(){palLoad();draw();};
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.max(220,Math.min(w,470));
+  H=Math.round(W*(n+1.6)/n);
+  cv.style.height=H+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  draw();
+}
+function rr2(x,y,w2,h2,r){
+  r=Math.min(r,w2/2,h2/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w2,y,x+w2,y+h2,r);ctx.arcTo(x+w2,y+h2,x,y+h2,r);
+  ctx.arcTo(x,y+h2,x,y,r);ctx.arcTo(x,y,x+w2,y,r);ctx.closePath();
+}
+function epPos(cell,ep,cs){
+  var r=Math.floor(cell/n),c=cell%n,f=(ep%2)?0.72:0.28,side2=Math.floor(ep/2);
+  if(side2===0)return [c*cs+f*cs,r*cs+2];
+  if(side2===1)return [c*cs+cs-2,r*cs+f*cs];
+  if(side2===2)return [c*cs+f*cs,r*cs+cs-2];
+  return [c*cs+2,r*cs+f*cs];
+}
+function drawTile(x,y,size,tile,rot,ghost){
+  var cs=size,pairs=[];
+  for(var k=0;k<8;k++){
+    var kk=(k+2*rot)%8;
+    if(kk<k)continue;
+    pairs.push([(k+2*rot)%8,(tile[k]+2*rot)%8]);
+  }
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.globalAlpha=ghost?0.45:1;
+  ctx.fillStyle=ghost?PAL.soft:PAL.surface;
+  rr2(0,0,cs,cs,10);ctx.fill();
+  ctx.strokeStyle=ghost?PAL.deep:PAL.border;ctx.lineWidth=ghost?2:1.5;
+  rr2(0,0,cs,cs,10);ctx.stroke();
+  ctx.strokeStyle=ghost?PAL.deep:PAL.line;ctx.lineWidth=2.5;
+  for(var i=0;i<pairs.length;i++){
+    var a=epPos(0,pairs[i][0],cs),b=epPos(0,pairs[i][1],cs);
+    ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+  }
+  ctx.restore();
+  ctx.globalAlpha=1;
+}
+function draw(){
+  if(!tiles||!ctx)return;
+  var cs=W/n,i;
+  ctx.fillStyle=PAL.bd1;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=PAL.bd2;
+  for(var r=0;r<n;r++)for(var c=0;c<n;c++)if((r+c)%2===0)ctx.fillRect(c*cs,r*cs,cs,cs);
+  ctx.strokeStyle=PAL.line;ctx.lineWidth=1;
+  for(i=0;i<=n;i++){
+    ctx.beginPath();ctx.moveTo(i*cs,0);ctx.lineTo(i*cs,n*cs);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,i*cs);ctx.lineTo(W,i*cs);ctx.stroke();
+  }
+  for(i=0;i<n*n;i++){
+    if(!tiles[i])continue;
+    var tx=(i%n)*cs,ty=Math.floor(i/n)*cs;
+    ctx.fillStyle=PAL.surface;
+    rr2(tx+1,ty+1,cs-2,cs-2,10);ctx.fill();
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;
+    rr2(tx+1,ty+1,cs-2,cs-2,10);ctx.stroke();
+    var t=tiles[i],pairs=[];
+    for(var k=0;k<8;k++){
+      var kk=(k+2*t.r)%8;
+      if(kk<k)continue;
+      pairs.push([(k+2*t.r)%8,(t.p[k]+2*t.r)%8]);
+    }
+    ctx.strokeStyle=PAL.line;ctx.lineWidth=2.5;
+    for(var p2=0;p2<pairs.length;p2++){
+      var a=epPos(i,pairs[p2][0],cs),b=epPos(i,pairs[p2][1],cs);
+      ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+    }
+  }
+  /* 幽灵牌：落牌预览 */
+  if(side===1&&!over){
+    var fc=frontCell(stones[1]);
+    var card=handP[selCard];
+    if(fc>=0&&!tiles[fc]&&card)drawTile((fc%n)*cs+1,Math.floor(fc/n)*cs+1,cs-2,card.p,selRot,true);
+  }
+  if(hintM&&side===1&&!over){
+    var hc=frontCell(stones[1]);
+    var hcard=handP[selCard];
+    if(hc>=0&&!tiles[hc]&&hcard){
+      ctx.strokeStyle=PAL.warning;ctx.lineWidth=3;
+      rr2((hc%n)*cs+2,Math.floor(hc/n)*cs+2,cs-4,cs-4,10);ctx.stroke();
+    }
+  }
+  /* 棋子 */
+  var stones2=[[stones[1],PAL.deep],[stones[2],PAL.water]];
+  for(i=0;i<2;i++){
+    var st=stones2[i][0];
+    if(!st)continue;
+    var px,py;
+    if(st.virtual){
+      var row=Math.floor(st.cell/n);
+      py=row*cs+cs/2;
+      if(st.ep===6){px=5;py+=cs*0.18;}else{px=W-5;py-=cs*0.18;}
+    } else {
+      px=(st.cell%n)*cs+cs/2;py=Math.floor(st.cell/n)*cs+cs/2;
+      var off=epPos(st.cell,st.ep,cs);
+      px=(px+off[0])/2;py=(py+off[1])/2;
+    }
+    ctx.fillStyle=stones2[i][1];
+    ctx.beginPath();ctx.arc(px,py,cs*0.16,0,7);ctx.fill();
+    ctx.strokeStyle=PAL.surface;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(px,py,cs*0.16,0,7);ctx.stroke();
+  }
+  /* 手牌区 */
+  var hy=n*cs+10,hs=Math.min(78,(W-20)/Math.max(1,handP.length)-8);
+  for(i=0;i<handP.length;i++){
+    var hx=10+i*(hs+8);
+    drawTile(hx,hy,hs,handP[i].p,handP[i].r,false);
+    if(i===selCard){
+      ctx.strokeStyle=PAL.deep;ctx.lineWidth=3;
+      rr2(hx-2,hy-2,hs+4,hs+4,12);ctx.stroke();
+    }
+  }
+  if(!handP.length){
+    ctx.fillStyle=PAL.muted;
+    ctx.font="600 14px sans-serif";ctx.textAlign="center";
+    ctx.fillText("手牌已用完",W/2,hy+30);
+  }
+}
+/* ---------- 输入 ---------- */
+function tapHand(mx,my){
+  var hy=n*cs0()+10,hs=Math.min(78,(W-20)/Math.max(1,handP.length)-8);
+  if(my<hy-6||my>hy+hs+6)return false;
+  for(var i=0;i<handP.length;i++){
+    var hx=10+i*(hs+8);
+    if(mx>=hx-4&&mx<=hx+hs+4){
+      if(selCard===i){selRot=(selRot+1)%4;}
+      else{selCard=i;selRot=0;}
+      hintM=null;draw();
+      return true;
+    }
+  }
+  return false;
+}
+function cs0(){return W/n;}
+cv.addEventListener("pointerdown",function(e){
+  var rect=cv.getBoundingClientRect();
+  var mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  e.preventDefault();
+  if(over)return;
+  if(side!==1){say("等电脑落牌…");return;}
+  if(tapHand(mx,my))return;
+  if(my<n*cs0()&&stones[1]){
+    /* 点棋子=选中提示 */
+    var col=Math.floor(mx/cs0()),row=Math.floor(my/cs0());
+    var cell=row*n+col;
+    if(cell===stones[1].cell){say("落牌点=棋子正前方高亮格");return;}
+  }
+});
+cv.addEventListener("pointercancel",function(){});
+$("btnRot").addEventListener("click",function(){if(side===1&&!over){selRot=(selRot+1)%4;hintM=null;draw();}});
+$("btnPlace").addEventListener("click",playerPlace);
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本局已重置")});
+$("btnLv").addEventListener("click",function(){if(!over)openLevelSelect();});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(over){if(won&&lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0);}else loadLevel(won?lv+1:lv);}
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k==="ArrowLeft"){if(side===1&&!over&&handP.length){selCard=(selCard-1+handP.length)%handP.length;selRot=0;hintM=null;draw();}e.preventDefault();}
+  else if(k==="ArrowRight"){if(side===1&&!over&&handP.length){selCard=(selCard+1)%handP.length;selRot=0;hintM=null;draw();}e.preventDefault();}
+  else if(k==="ArrowUp"){if(side===1&&!over){selRot=(selRot+1)%4;hintM=null;draw();}e.preventDefault();}
+  else if(k===" "||k==="Enter"){
+    if($("overlay").classList.contains("show")){$("ovBtn").click();}
+    else playerPlace();
+    e.preventDefault();
+  }
+  else if(k==="u"||k==="U")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本局已重置")}
+});
+window.addEventListener("resize",resize);
+/* ---------- 切后台：AI 思考作废，轮次归还玩家（纯事件重绘，无 rAF/计时器） ---------- */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){cancelAI();if(side===2&&!over){side=1;say("已切后台，电脑让先，请行动");updStats();}}
+  else draw();
+});
+/* ---------- 内嵌独立验证器（锚点用例 + 引擎一致性 + AI 对拍） ---------- */
+function selfTest(){
+  var total=0,ok=0,fails=[];
+  function chk(c,name){total++;if(c)ok++;else fails.push(name);}
+  chk(DEFAULT_LEVELS.length===40,"关卡数=40");
+  chk(DEFAULT_LEVELS.every(validLevelData),"关卡配置合法");
+  /* 锚点①：跨格映射自反（cross[k]=j ⟺ cross[j]=k，手推） */
+  var k;
+  for(k=0;k<8;k++)chk(CROSS[CROSS[k]]===k,"锚点:CROSS自反 ep"+k);
+  /* 锚点②：直通牌（0↔5,1↔4,2↔7,3↔6）各旋转不变（手推） */
+  (function(){
+    var st={p:[5,4,7,6,1,0,3,2],r:0};
+    var ok2=true;
+    for(var r=0;r<4;r++){
+      for(var e2=0;e2<8;e2++){
+        var p=effPartner(st.p,r,e2);
+        if(Math.floor(p/2)!==(Math.floor(e2/2)+2)%4)ok2=false;
+      }
+    }
+    chk(ok2,"锚点:直通牌旋转不变");
+  })();
+  /* 锚点③：旋转公式一致性——rotated(tile,r) 后 effPartner(p',0,k)===effPartner(p,r,k) */
+  (function(){
+    var t=DECK[0],ok3=true;
+    for(var r=0;r<4;r++){
+      var t2=rotated(t,r);
+      for(var e2=0;e2<8;e2++)if(effPartner(t2,0,e2)!==effPartner(t,r,e2))ok3=false;
+    }
+    chk(ok3,"锚点:旋转公式一致");
+  })();
+  /* 锚点④：牌库结构——36 张、全为对合（8 端点两两配对）、无同侧配对 */
+  chk(DECK.length===36,"锚点:牌库36张");
+  (function(){
+    var ok4=true;
+    for(var i=0;i<DECK.length;i++){
+      var t=DECK[i];
+      for(var e2=0;e2<8;e2++){
+        var p=t[e2];
+        if(p<0||p>7||t[p]!==e2)ok4=false;
+        if(Math.floor(e2/2)===Math.floor(p/2))ok4=false;
+      }
+    }
+    chk(ok4,"锚点:牌全为跨侧对合");
+  })();
+  /* 锚点⑤：滑行锚点——直通牌两连停在 (r,1)（手推）；三连整行滑出界（手推） */
+  (function(){
+    var st={p:[5,4,7,6,1,0,3,2],r:0};
+    var tl=[{p:st.p,r:0},{p:st.p,r:0}];
+    var res=slide(tl,3,0,7,{});
+    chk(res.cell===1&&res.state==="rest","锚点:直通两连滑一格停");
+    tl.push({p:st.p,r:0});
+    var res2=slide(tl,3,0,7,{});
+    chk(res2.cell===-1&&res2.state==="out","锚点:直通三连滑出界");
+  })();
+  /* 锚点⑥：环绕检测——环形布置回到起点 */
+  (function(){
+    var t=DECK[0],res;
+    var tl=[];
+    for(var i=0;i<9;i++)tl.push({p:t,r:0});
+    res=slide(tl,3,0,0,{});
+    chk(res.state==="loop"||res.state==="out","锚点:长滑有终态");
+  })();
+  /* AI 对拍 3 局：走法来自手牌枚举、必有终局 */
+  var g;
+  for(g=0;g<3;g++)chk(aiGame(),"AI 对拍 局"+(g+1));
+  window.__gSelfTest={ok:ok,total:total,fails:fails};
+  if(fails.length)say("警告：内嵌自检未全过（"+ok+"/"+total+"）");
+}
+function aiGame(){
+  var keepN=n,keepT=tiles,keepS=stones,keepHP=handP,keepHA=handA,keepD=deck,keepSide=side,keepL=L;
+  n=5;tiles=new Array(25).fill(null);shuffleDeck();
+  handP=[];handA=[];
+  for(var i=0;i<3;i++){handP.push(drawCard());handA.push(drawCard());}
+  stones={1:{cell:2*5,ep:6,virtual:true},2:{cell:2*5+4,ep:3,virtual:true}};
+  side=1;
+  var plies=0,res=null;
+  while(plies<120){
+    if(side===1){
+      var pickP=null;
+      var fc=frontCell(stones[1]);
+      if(fc<0||tiles[fc]){res=true;break;}
+      pickP=aiBestCardFor(1);
+      if(!pickP){res=true;break;}
+      var c1=handP[pickP.i];handP.splice(pickP.i,1);
+      var rf=drawCard();if(rf)handP.push(rf);
+      var r1=placeAndSlide({p:c1.p,r:pickP.r},stones[1],1);
+      if(r1.crash||r1.me==="out"||r1.other==="out"){res=true;break;}
+      side=2;
+    } else {
+      var fc2=frontCell(stones[2]);
+      if(fc2<0||tiles[fc2]){res=true;break;}
+      var pickA=aiBestCardFor(2);
+      if(!pickA){res=true;break;}
+      var c2=handA[pickA.i];handA.splice(pickA.i,1);
+      var rf2=drawCard();if(rf2)handA.push(rf2);
+      var r2=placeAndSlide({p:c2.p,r:pickA.r},stones[2],2);
+      if(r2.crash||r2.me==="out"||r2.other==="out"){res=true;break;}
+      side=1;
+    }
+    if(!handP.length&&!handA.length){res=true;break;}
+    plies++;
+  }
+  n=keepN;tiles=keepT;stones=keepS;handP=keepHP;handA=keepHA;deck=keepD;side=keepSide;L=keepL;
+  return res!==null;
+}
+/* 双侧通用选牌（AI 对拍用）：枚举手牌×旋转，模拟滑行 */
+function aiBestCardFor(sd){
+  var hand=sd===1?handP:handA;
+  var st=stones[sd];
+  var fc=frontCell(st);
+  if(fc<0||tiles[fc])return null;
+  var best=null,bestV=-Infinity;
+  for(var i=0;i<hand.length;i++){
+    for(var r=0;r<4;r++){
+      var keepT=tiles[fc],keep1=stones[1],keep2=stones[2];
+      tiles[fc]={p:hand[i].p.slice(),r:r};
+      var res1=slide(tiles,n,fc,entryEpOf(st),{});
+      var v;
+      if(res1.state==="out")v=-1000;
+      else{
+        var other=stones[3-sd];
+        var res2=other&&tiles[other.cell]?slide(tiles,n,other.cell,other.ep,{}):null;
+        if(res2&&res2.state==="out")v=1000;
+        else if(res2&&res1.cell===res2.cell&&res1.cell>=0){
+          var t3=tiles[res1.cell];
+          if(t3&&(effPartner(t3.p,t3.r,res1.ep)===res2.ep||res1.ep===res2.ep))v=-900;
+          else v=posScoreFor(sd,res1,res2);
+        }
+        else v=posScoreFor(sd,res1,res2);
+      }
+      tiles[fc]=keepT;stones[1]=keep1;stones[2]=keep2;
+      if(v>bestV){bestV=v;best={i:i,r:r};}
+    }
+  }
+  return best;
+}
+function edgeDist(cell){
+  if(cell<0)return 0;
+  var r=Math.floor(cell/n),c=cell%n;
+  return Math.min(Math.min(r,n-1-r),Math.min(c,n-1-c));
+}
+function posScoreFor(sd,mine,opp){
+  var myEdge=edgeDist(mine?mine.cell:-1),opEdge=edgeDist(opp?opp.cell:-1);
+  return sd===1?opEdge*12-myEdge*10:myEdge*12-opEdge*10;
+}
+/* ---------- 启动（续玩：从存档关卡起步） ---------- */
+palLoad();loadLevel(save.lv);selfTest();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

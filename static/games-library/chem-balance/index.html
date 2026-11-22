@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>方程配平</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { background: var(--g-surface); border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); padding: 14px 10px; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* 方程配平专属 */
+  .eq { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 6px; font-size: 18px; font-weight: 600; line-height: 1.4; }
+  .eq .f { font-variant-numeric: tabular-nums; }
+  .eq .arrow { color: var(--g-muted); padding: 0 2px; }
+  .slot {
+    width: 44px; height: 44px; border: 1px dashed var(--g-border); border-radius: 10px;
+    background: var(--g-bg); color: var(--g-primary-deep);
+    font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer; padding: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .slot.cur { outline: 2px solid var(--g-primary-deep); outline-offset: 1px; border-style: solid; }
+  .slot.err { border-color: var(--g-danger); color: var(--g-danger); border-style: solid; }
+  .keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
+  .key {
+    min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 600; cursor: pointer; padding: 0;
+  }
+  .key:active { opacity: .8; }
+  .ctl { min-height: 48px; width: 100%; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: #fff; font-family: inherit; font-size: 18px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+  .ctl:active { opacity: .75; }
+  .ctl[disabled] { opacity: .45; }
+
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">反应名</span><span class="val" id="stName">-</span></div>
+    <div class="stat"><span class="label">机会</span><span class="val" id="stCh">3</span></div>
+  </div>
+  <div class="stage">
+    <div class="eq" id="eq"></div>
+    <div class="keypad" id="keypad"></div>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点虚线槽再点数字键填系数，使两边各元素原子数相等</p>
+  <div class="tools">
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnClear">清空</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <button class="ctl" id="btnSubmit">提交答案</button>
+  <p class="foot">键盘：←/→ 切槽 · 1-9 填系数 · Backspace 清除 · Enter 提交 · H 提示 · R 重开 · L 选关</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡（种子制：genLevel 生成 + 独立验证器逐关复核 + 缓存） ---------- */
+var GAME_KEY="chem-balance",SAVE_KEY="sw.chembalance.v1";
+var LEVELS=[];for(var _i=0;_i<40;_i++)LEVELS.push(27001+_i*61);
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function applySeeds(seeds,ver){
+  if(!Array.isArray(seeds)||seeds.length<8||!seeds.every(function(s){return Number.isInteger(s)&&s>0&&s<1e9;}))return false;
+  LEVELS=seeds.slice();
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(LEVELS));localStorage.setItem(LEVELS_VER_KEY,String(ver||0));}catch(e){}
+  return true;
+}
+function loadCachedSeeds(){
+  try{
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length>=8&&list.every(function(s){return Number.isInteger(s)&&s>0&&s<1e9;})){
+      LEVELS=list;return true;
+    }
+  }catch(e){}
+  return false;
+}
+loadCachedSeeds();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    if(!res||!Array.isArray(res.levels)||!res.levels.length)return;
+    var seeds=[];
+    for(var i=0;i<res.levels.length;i++){
+      var row=res.levels[i];
+      if(!row||typeof row.dataJson!=="string")return;
+      try{var d=JSON.parse(row.dataJson);if(!d||!Number.isInteger(d.seed))return;seeds.push(d.seed);}catch(e){return;}
+    }
+    if(applySeeds(seeds,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+/* ---------- 自撰方程库（42 条常见反应，最小系数 ≤6；全部经独立验证器枚举复核唯一最小整数解） ---------- */
+/* 结构 [formulas[], ans[], arrow(反应物数), name] */
+var EQS=[
+  [["C","O₂","CO₂"],[1,1,1],2,"碳完全燃烧"],
+  [["Mg","O₂","MgO"],[2,1,2],2,"镁条燃烧"],
+  [["H₂","O₂","H₂O"],[2,1,2],2,"氢气燃烧"],
+  [["H₂O","H₂","O₂"],[2,2,1],1,"水电解"],
+  [["H₂","Cl₂","HCl"],[1,1,2],2,"氢气在氯气中燃烧"],
+  [["CaCO₃","CaO","CO₂"],[1,1,1],1,"碳酸钙高温分解"],
+  [["CaO","H₂O","Ca(OH)₂"],[1,1,1],2,"生石灰遇水"],
+  [["SO₃","H₂O","H₂SO₄"],[1,1,1],2,"三氧化硫遇水"],
+  [["SO₂","O₂","SO₃"],[2,1,2],2,"二氧化硫催化氧化"],
+  [["H₂O₂","H₂O","O₂"],[2,2,1],1,"过氧化氢分解"],
+  [["N₂","H₂","NH₃"],[1,3,2],2,"合成氨"],
+  [["Na","Cl₂","NaCl"],[2,1,2],2,"钠在氯气中燃烧"],
+  [["NO","O₂","NO₂"],[2,1,2],2,"一氧化氮遇氧"],
+  [["Fe","O₂","Fe₃O₄"],[3,2,1],2,"铁在氧气中燃烧"],
+  [["Al","O₂","Al₂O₃"],[4,3,2],2,"铝箔燃烧"],
+  [["KClO₃","KCl","O₂"],[2,2,3],1,"氯酸钾分解"],
+  [["CH₄","O₂","CO₂","H₂O"],[1,2,1,2],2,"甲烷燃烧"],
+  [["CO","O₂","CO₂"],[2,1,2],2,"一氧化碳燃烧"],
+  [["Zn","HCl","ZnCl₂","H₂"],[1,2,1,1],2,"锌与稀盐酸"],
+  [["Fe","CuSO₄","FeSO₄","Cu"],[1,1,1,1],2,"铁与硫酸铜"],
+  [["NaOH","HCl","NaCl","H₂O"],[1,1,1,1],2,"盐酸中和烧碱"],
+  [["NaOH","H₂SO₄","Na₂SO₄","H₂O"],[2,1,1,2],2,"硫酸中和烧碱"],
+  [["CaCO₃","HCl","CaCl₂","H₂O","CO₂"],[1,2,1,1,1],2,"碳酸钙与盐酸"],
+  [["Fe₂O₃","CO","Fe","CO₂"],[1,3,2,3],2,"高炉炼铁"],
+  [["C₂H₅OH","O₂","CO₂","H₂O"],[1,3,2,3],2,"酒精燃烧"],
+  [["C₃H₈","O₂","CO₂","H₂O"],[1,5,3,4],2,"丙烷燃烧"],
+  [["CuO","H₂","Cu","H₂O"],[1,1,1,1],2,"氢气还原氧化铜"],
+  [["C","CuO","Cu","CO₂"],[1,2,2,1],2,"碳还原氧化铜"],
+  [["Na₂CO₃","HCl","NaCl","H₂O","CO₂"],[1,2,2,1,1],2,"纯碱与盐酸"],
+  [["CuSO₄","NaOH","Cu(OH)₂","Na₂SO₄"],[1,2,1,1],2,"硫酸铜与烧碱"],
+  [["Al","HCl","AlCl₃","H₂"],[2,6,2,3],2,"铝与稀盐酸"],
+  [["H₂SO₄","KOH","K₂SO₄","H₂O"],[1,2,1,2],2,"硫酸中和氢氧化钾"],
+  [["AgNO₃","NaCl","AgCl","NaNO₃"],[1,1,1,1],2,"检验氯离子"],
+  [["BaCl₂","Na₂SO₄","BaSO₄","NaCl"],[1,1,1,2],2,"检验硫酸根"],
+  [["KMnO₄","K₂MnO₄","MnO₂","O₂"],[2,1,1,1],1,"高锰酸钾分解"],
+  [["Cu","AgNO₃","Cu(NO₃)₂","Ag"],[1,2,1,2],2,"铜与硝酸银"],
+  [["Fe₃O₄","CO","Fe","CO₂"],[1,4,3,4],2,"四氧化三铁炼铁"],
+  [["NH₃","O₂","NO","H₂O"],[4,5,4,6],2,"氨的催化氧化"],
+  [["NO₂","H₂O","HNO₃","NO"],[3,1,2,1],2,"二氧化氮与水"],
+  [["SO₂","NaOH","Na₂SO₃","H₂O"],[1,2,1,1],2,"烧碱吸收二氧化硫"],
+  [["Ca(OH)₂","CO₂","CaCO₃","H₂O"],[1,1,1,1],2,"石灰水变浑浊"],
+  [["CO₂","H₂O","C₆H₁₂O₆","O₂"],[6,6,1,6],2,"光合作用"]
+];
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+/* 分子式解析（Unicode 下标 → 数字，支持一层括号） */
+function parseFormula(f){
+  f=f.replace(/[₀₁₂₃₄₅₆₇₈₉]/g,function(c){return String("₀₁₂₃₄₅₆₇₈₉".indexOf(c));});
+  var stack=[{}],i=0;
+  while(i<f.length){
+    if(f.charAt(i)==="("){stack.push({});i++;continue;}
+    if(f.charAt(i)===")"){
+      i++;var num="";
+      while(i<f.length&&f.charAt(i)>="0"&&f.charAt(i)<="9"){num+=f.charAt(i);i++;}
+      var mult=num?parseInt(num,10):1;
+      var top=stack.pop(),base=stack[stack.length-1];
+      for(var el in top)base[el]=(base[el]||0)+top[el]*mult;
+      continue;
+    }
+    var sym=f.charAt(i);
+    if(i+1<f.length&&f.charAt(i+1)>="a"&&f.charAt(i+1)<="z"){sym+=f.charAt(i+1);i++;}
+    i++;var cnt="";
+    while(i<f.length&&f.charAt(i)>="0"&&f.charAt(i)<="9"){cnt+=f.charAt(i);i++;}
+    var n=cnt?parseInt(cnt,10):1;
+    var cur=stack[stack.length-1];
+    cur[sym]=(cur[sym]||0)+n;
+  }
+  return stack[0];
+}
+/* genLevel：按难度从库取方程 */
+function genLevel(seed,idx,attempt){
+  attempt=attempt||0;
+  var rng=mulberry32(seed);
+  var poolIdx;
+  if(idx<14)poolIdx=idx;
+  else if(idx<28)poolIdx=14+(idx-14);
+  else poolIdx=28+(idx-28);
+  if(poolIdx>=EQS.length)poolIdx=poolIdx%EQS.length;
+  var eq=EQS[poolIdx];
+  return {formulas:eq[0],ans:eq[1],arrow:eq[2],name:eq[3],seed:seed,poolIdx:poolIdx};
+}
+function gcd(a,b){while(b){var t=a%b;a=b;b=t;}return a;}
+/* 暴力枚举守恒解（验证器路径，只计 gcd=1 的最小整数解） */
+function enumSolutions(formulas,arrow){
+  var maps=[];
+  for(var i=0;i<formulas.length;i++)maps.push(parseFormula(formulas[i]));
+  var elems={};
+  for(var m=0;m<maps.length;m++)for(var el in maps[m])elems[el]=1;
+  var elemList=[];
+  for(var e2 in elems)elemList.push(e2);
+  var count=0,found=null;
+  var total=1;
+  for(var t=0;t<formulas.length;t++)total*=6;
+  for(var code=0;code<total;code++){
+    var x=code,coefs=[],ok=true,g=0;
+    for(var c=0;c<formulas.length;c++){coefs.push(x%6+1);x=Math.floor(x/6);}
+    for(var ei=0;ei<elemList.length&&ok;ei++){
+      var bal=0;
+      for(var s=0;s<formulas.length;s++){
+        var side=(s<arrow)?1:-1;
+        bal+=(maps[s][elemList[ei]]||0)*coefs[s]*side;
+      }
+      if(bal!==0)ok=false;
+    }
+    if(!ok)continue;
+    for(var g2=0;g2<coefs.length;g2++)g=gcd(g,coefs[g2]);
+    if(g!==1)continue;
+    count++;if(!found)found=coefs.slice();
+    if(count>1)break;
+  }
+  return {count:count,first:found};
+}
+/* 独立验证器：结构校验 + 枚举唯一最小守恒解 + 与库答案一致 */
+function verifyLevelData(d){
+  if(!d||typeof d!=="object")return "数据异常";
+  if(!Array.isArray(d.formulas)||d.formulas.length<3||d.formulas.length>5)return "物种数异常";
+  if(!Array.isArray(d.ans)||d.ans.length!==d.formulas.length)return "答案结构异常";
+  if(!Number.isInteger(d.arrow)||d.arrow<1||d.arrow>=d.formulas.length)return "箭头位置异常";
+  for(var i=0;i<d.ans.length;i++){
+    if(!Number.isInteger(d.ans[i])||d.ans[i]<1||d.ans[i]>6)return "系数越界";
+    if(typeof d.formulas[i]!=="string"||d.formulas[i].length<1||d.formulas[i].length>12)return "分子式异常";
+  }
+  if(typeof d.name!=="string"||!d.name)return "反应名异常";
+  for(var f=0;f<d.formulas.length;f++){
+    var pm=parseFormula(d.formulas[f]);
+    var any=false;
+    for(var k in pm)any=true;
+    if(!any)return "分子式解析为空";
+  }
+  var sol=enumSolutions(d.formulas,d.arrow);
+  if(sol.count!==1)return "最小守恒解数="+sol.count+"（应为 1）";
+  for(var a=0;a<d.ans.length;a++)if(d.ans[a]!==sol.first[a])return "库答案与唯一守恒解不符";
+  return null;
+}
+/* 标准锚点用例（人工核对） */
+function verifyAnchors(){
+  var m1=parseFormula("Ca(OH)₂");
+  if(m1.Ca!==1||m1.O!==2||m1.H!==2)return "锚点1 Ca(OH)₂ 解析失败";
+  var m2=parseFormula("Cu(NO₃)₂");
+  if(m2.Cu!==1||m2.N!==2||m2.O!==6)return "锚点2 Cu(NO₃)₂ 解析失败";
+  var m3=parseFormula("C₆H₁₂O₆");
+  if(m3.C!==6||m3.H!==12||m3.O!==6)return "锚点3 C₆H₁₂O₆ 解析失败";
+  /* 锚点4：水电解 2H₂O→2H₂+O₂ 唯一最小解 */
+  var s4=enumSolutions(["H₂O","H₂","O₂"],1);
+  if(s4.count!==1||s4.first[0]!==2||s4.first[1]!==2||s4.first[2]!==1)return "锚点4 水电解唯一解失败";
+  /* 锚点5：甲烷燃烧 CH₄+2O₂→CO₂+2H₂O 唯一最小解 */
+  var s5=enumSolutions(["CH₄","O₂","CO₂","H₂O"],2);
+  if(s5.count!==1||s5.first[1]!==2||s5.first[3]!==2)return "锚点5 甲烷燃烧唯一解失败";
+  return null;
+}
+function selfCheck(){
+  var err=verifyAnchors();
+  for(var i=0;i<LEVELS.length;i++){
+    var e=safeVerify(LEVELS[i],i);
+    if(e&&!err)err="第 "+(i+1)+" 关 "+e;
+  }
+  if(err)say("数据校验告警："+err);
+}
+function safeVerify(seed,idx){
+  try{
+    var d=genLevel(seed,idx);
+    return verifyLevelData(d);
+  }catch(e){return "生成异常";}
+}
+/* ---------- 状态与渲染 ---------- */
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+var lv=save.lv,L=null,vals=[],cur=0,chances=3,done=false,errSet={},hints=3;
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  var d=null;
+  for(var t=0;t<3;t++){
+    d=genLevel(LEVELS[lv]+t*9973,lv);
+    if(!verifyLevelData(d))break;
+    d=null;
+  }
+  if(!d){say("本关数据异常，已回退");if(lv>0){lv--;save.lv=Math.min(save.lv,lv);persist();loadLevel(lv);return;}return;}
+  L=d;
+  vals=[];
+  for(var i=0;i<L.ans.length;i++)vals.push(null);
+  cur=0;chances=3;done=false;errSet={};hints=3;
+  $("lvTag").textContent="第 "+(lv+1)+" 关";
+  $("lvRule").textContent="系数 1-6";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  $("stName").textContent=L.name.length>4?L.name.slice(0,4):L.name;
+  updStats();renderEq();renderKeypad();
+  say("配平 "+L.name+"：点虚线槽填系数，使各元素原子守恒");
+}
+function filled(){
+  for(var i=0;i<vals.length;i++)if(vals[i]===null)return false;
+  return true;
+}
+function updStats(){
+  var ch=$("stCh");ch.textContent=Math.max(0,chances);
+  if(chances<=1)ch.classList.add("low");else ch.classList.remove("low");
+  $("btnSubmit").disabled=!filled()||done;
+  $("btnHint").disabled=hints<=0||done;
+}
+function renderEq(){
+  var g=$("eq");g.innerHTML="";
+  var half=Math.ceil(L.formulas.length/2);
+  for(var i=0;i<L.formulas.length;i++){
+    (function(i){
+      if(i===half){
+        var ar=document.createElement("span");ar.className="arrow";ar.textContent="→";
+        g.appendChild(ar);
+      }else if(i>0){
+        var pl=document.createElement("span");pl.textContent="+";
+        g.appendChild(pl);
+      }
+      var b=document.createElement("button");
+      b.className="slot";
+      b.setAttribute("data-i",i);
+      b.setAttribute("aria-label","系数槽 "+(i+1));
+      b.addEventListener("click",function(){cur=i;paintEq();});
+      g.appendChild(b);
+      var f=document.createElement("span");f.className="f";f.textContent=L.formulas[i];
+      g.appendChild(f);
+    })(i);
+  }
+  paintEq();
+}
+function paintEq(){
+  var slots=$("eq").querySelectorAll(".slot");
+  for(var i=0;i<slots.length;i++){
+    var v=vals[i];
+    slots[i].className="slot"+(!done&&i===cur?" cur":"")+(errSet[i]?" err":"");
+    slots[i].textContent=v===null?"?":String(v);
+    slots[i].disabled=done;
+  }
+}
+function renderKeypad(){
+  var g=$("keypad");g.innerHTML="";
+  for(var k=1;k<=6;k++){
+    (function(k){
+      var b=document.createElement("button");
+      b.className="key";
+      b.textContent=k;
+      b.addEventListener("click",function(){inputDigit(k);});
+      g.appendChild(b);
+    })(k);
+  }
+}
+function inputDigit(k){
+  if(done)return;
+  vals[cur]=k;
+  delete errSet[cur];
+  cur=Math.min(vals.length-1,cur+1);
+  paintEq();updStats();
+}
+function clearCell(){
+  if(done)return;
+  vals[cur]=null;
+  delete errSet[cur];
+  paintEq();updStats();
+}
+function submit(){
+  if(done||!filled())return;
+  var bad=0;
+  for(var i=0;i<vals.length;i++)if(vals[i]!==L.ans[i]){errSet[i]=1;bad++;}
+  paintEq();
+  if(!bad){winLevel();return;}
+  chances--;updStats();
+  if(chances<=0){failLevel("有 "+bad+" 个系数不对，机会用完了");return;}
+  say("有 "+bad+" 个标红系数不对（按元素守恒逐个检查），还剩 "+chances+" 次机会");
+}
+function hint(){
+  if(done||hints<=0)return;
+  vals[cur]=L.ans[cur];
+  delete errSet[cur];
+  hints--;paintEq();updStats();
+  say("已把光标槽填上正确系数");
+}
+function winLevel(){
+  done=true;paintEq();updStats();
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:3-Math.max(0,chances)}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
+  $("ovDesc").innerHTML=L.name+" 配平完成 · 剩余机会 "+chances+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+function failLevel(reason){
+  done=true;paintEq();updStats();
+  $("ovTitle").textContent="配平失败";
+  $("ovDesc").textContent=reason+"。重开本关再来，提示键可以确认一槽。";
+  $("ovBtn").textContent="重开本关";
+  $("overlay").classList.add("show");
+}
+/* ---------- 键盘 ---------- */
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="6"){inputDigit(+k);e.preventDefault();}
+  else if(k==="ArrowLeft"){cur=Math.max(0,cur-1);paintEq();e.preventDefault();}
+  else if(k==="ArrowRight"){cur=Math.min(vals.length-1,cur+1);paintEq();e.preventDefault();}
+  else if(k==="Backspace"){clearCell();e.preventDefault();}
+  else if(k==="Enter"||k===" "){
+    if($("overlay").classList.contains("show")){$("ovBtn").click();e.preventDefault();return;}
+    if(!done)submit();
+    e.preventDefault();
+  }
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置");}
+  else if(k==="l"||k==="L"){if(!done)openLevelSelect();}
+});
+$("btnHint").addEventListener("click",hint);
+$("btnClear").addEventListener("click",function(){
+  if(done)return;
+  for(var i=0;i<vals.length;i++)vals[i]=null;
+  errSet={};paintEq();updStats();say("已清空");
+});
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置");});
+$("btnLv").addEventListener("click",function(){if(!done)openLevelSelect();});
+$("btnSubmit").addEventListener("click",submit);
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(chances<=0){loadLevel(lv);return;}
+  if(done){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0);}
+    else{lv++;save.lv=Math.max(save.lv,lv);persist();loadLevel(lv);}
+  }else loadLevel(lv);
+});
+/* ---------- 启动 ---------- */
+loadLevel(save.lv);
+selfCheck();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

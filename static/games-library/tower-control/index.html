@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>塔台放行</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-tc-* 本作素材色）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-tc-rwy:#5C6470;--g-st-tc-rwy2:#39404A;--g-st-tc-plane:#4A9FD4;--g-st-tc-dep:#8A93A0;--g-st-tc-gnd:#C9B691;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-tc-rwy:#39404A;--g-st-tc-rwy2:#262A27;--g-st-tc-plane:#6BB4DE;--g-st-tc-dep:#6E7887;--g-st-tc-gnd:#5E5340;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">已放行 / 目标</span><span class="val" id="stSrv">0</span></div>
+    <div class="stat"><span class="label">剩余时间</span><span class="val" id="stTick">0</span></div>
+    <div class="stat"><span class="label">事故</span><span class="val" id="stStrike">0/3</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="塔台放行场景：跑道、候机队列与起飞队列" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">跑道空闲时点候机飞机放行着陆（燃油有限先落油少的），或点起飞队列放起飞；跑道占用时强放算冲突</p>
+  <div class="tools">
+    <button class="btn" id="btnGo">放一架起飞</button>
+    <button class="btn" id="btnPause">暂停</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：1-6 放行对应候机 · Q 放起飞 · R 重开 · 40 关递进 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">交班！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn" id="ovBtn" style="background:var(--g-btn-primary);color:#fff">下一关</button>
+  </div>
+</div>
+
+<script>
+/*X3-ENGINE-BEGIN*/
+var TC2=(function(){
+"use strict";
+/* ===== 世界常量（离散 tick） ===== */
+var W=480,H=320,LAND_T=3,HOLD_MAX=6;
+/* ===== 确定性伪随机（mulberry32） ===== */
+function makeRng(seed){return{s:seed|0};}
+function rngNext(rng){
+  rng.s=(rng.s+0x6D2B79F5)|0;
+  var t=Math.imul(rng.s^(rng.s>>>15),1|rng.s);
+  t=(t+Math.imul(t^(t>>>7),61|t))^t;
+  return ((t^(t>>>14))>>>0)/4294967296;
+}
+/* 到港航班由种子确定性生成：{t, kind:L/T, fuel} */
+function genTraffic(lv){
+  var rng=makeRng(lv.seed>>>0),out=[],j;
+  var n=lv.target+6;
+  for(j=0;j<n;j++){
+    var tt=2+j*lv.span+Math.floor(rngNext(rng)*3);
+    if(tt>lv.ticks-8)tt=lv.ticks-8;
+    var kind=(rngNext(rng)<(0.68+ (j%3)*0.06))?"L":"T";
+    out.push({t:tt,kind:kind,fuel:lv.fuel});
+  }
+  out.sort(function(a,b){return a.t-b.t||(a.kind<b.kind?-1:1);});
+  return out;
+}
+/* ===== 对局状态 ===== */
+function newState(lv){
+  return {t:0,hold:[],dep:[],freeAt:0,handled:0,strikes:0,spawnIdx:0,
+    win:false,over:false,reason:null};
+}
+function strike(st,why){
+  st.strikes++;
+  if(st.strikes>=3){st.over=true;st.reason=why;}
+}
+/* 放行：跑道被占时强放记冲突；候机燃油耗尽记备降 */
+function serve(lv,st,kind,idx){
+  if(st.over||st.win)return false;
+  if(kind==="L"){
+    var p=st.hold[idx];
+    if(!p)return false;
+  }else{
+    if(!st.dep.length)return false;
+  }
+  if(st.t<st.freeAt){strike(st,"conflict");return false;}
+  st.freeAt=st.t+lv.landT;
+  if(kind==="L")st.hold.splice(idx,1);
+  else st.dep.shift();
+  st.handled++;
+  if(st.handled>=lv.target)st.win=true;
+  return true;
+}
+/* ===== 共享单步：到港 → 燃油消耗 → 胜负 ===== */
+function simTick(lv,st){
+  if(st.over||st.win)return st;
+  while(st.spawnIdx<lv.traffic.length&&lv.traffic[st.spawnIdx].t<=st.t){
+    var c=lv.traffic[st.spawnIdx++];
+    if(c.kind==="L"){
+      if(st.hold.length>=lv.holdMax){strike(st,"stack");if(st.over)return st;}
+      else st.hold.push({fuel:c.fuel});
+    }else{
+      st.dep.push({});
+    }
+  }
+  for(var i=st.hold.length-1;i>=0;i--){
+    st.hold[i].fuel--;
+    if(st.hold[i].fuel<=0){st.hold.splice(i,1);strike(st,"fuel");if(st.over)return st;}
+  }
+  st.t++;
+  if(st.t>=lv.ticks&&!st.win){st.over=true;st.reason="time";}
+  return st;
+}
+/* ===== 验证器策略：EDF（先落油最少的候机；无候机则放起飞） ===== */
+function policySim(lv){
+  var st=newState(lv),guard=lv.ticks+50;
+  while(!st.over&&!st.win&&guard-->0){
+    if(st.freeAt<=st.t){
+      if(st.hold.length){
+        var mi=0;
+        for(var k=1;k<st.hold.length;k++)if(st.hold[k].fuel<st.hold[mi].fuel)mi=k;
+        serve(lv,st,"L",mi);
+      }else if(st.dep.length){
+        serve(lv,st,"T",0);
+      }
+    }
+    simTick(lv,st);
+  }
+  return st;
+}
+/* ===== 关卡（第 1 关手工锚点关；其余公式化生成 + 策略回放收敛，坏关不进表） ===== */
+var L1={name:"塔台·01",seed:20261122,ticks:80,target:12,landT:LAND_T,holdMax:HOLD_MAX,
+  fuel:26,span:5,difficulty:1};
+L1.traffic=genTraffic(L1);
+function genLevel(i){
+  var lv={name:"塔台·"+(i<9?"0":"")+(i+1),seed:1000+i*77,
+    ticks:80+Math.floor(i/2)*4,target:10+Math.floor(i/2),
+    landT:LAND_T,holdMax:HOLD_MAX,
+    fuel:24+(i%4)*6,span:5,difficulty:Math.min(6,1+Math.floor(i/7)),traffic:null};
+  lv.traffic=genTraffic(lv);
+  /* 收敛调整：加燃油→降目标→加班次时长（坏关不进表） */
+  for(var tries=0;tries<10;tries++){
+    var st=policySim(lv);
+    if(st.win&&!st.over)break;
+    if(tries<4)lv.fuel+=6;
+    else if(tries<8)lv.target=Math.max(5,lv.target-1);
+    else lv.ticks+=10;
+  }
+  return lv;
+}
+var LEVELS=[L1];
+for(var gi=1;gi<40;gi++)LEVELS.push(genLevel(gi));
+function verifyAll(){
+  var res=[],i;
+  for(i=0;i<LEVELS.length;i++){var st=policySim(LEVELS[i]);res.push({ok:st.win&&!st.over,out:st.handled});}
+  return res;
+}
+function selfTest(){
+  var out=[];
+  /* 锚点1：第 1 关 EDF 策略达成目标且零事故 */
+  var s1=policySim(L1);
+  out.push({name:"锚点1·第1关EDF放行12架零事故",pass:s1.win&&s1.handled>=12&&s1.strikes===0});
+  /* 锚点2：合成「4 机同刻同燃油、单跑道」→ 其余 3 架燃油耗尽备降满 3 次判负（人工推演） */
+  var jam4={name:"jam4",seed:1,ticks:60,target:6,landT:3,holdMax:6,fuel:3,span:2,difficulty:6,
+    traffic:[{t:0,kind:"L",fuel:3},{t:0,kind:"L",fuel:3},{t:0,kind:"L",fuel:3},{t:0,kind:"L",fuel:3}]};
+  var st2=policySim(jam4);
+  out.push({name:"锚点2·四机同刻单跑道必备降满3次",pass:st2.over&&st2.reason==="fuel"});
+  /* 锚点3：全部 40 关策略回放可达成 */
+  var all=verifyAll(),bad=[];
+  for(var i=0;i<all.length;i++)if(!all[i].ok)bad.push(i+1);
+  out.push({name:"全关验证·40关EDF回放可达成",pass:bad.length===0,bad:bad.join(",")});
+  return out;
+}
+return {W:W,H:H,LAND_T:LAND_T,HOLD_MAX:HOLD_MAX,LEVELS:LEVELS,genTraffic:genTraffic,
+  newState:newState,serve:serve,simTick:simTick,policySim:policySim,
+  verifyAll:verifyAll,selfTest:selfTest};
+})();
+window.TC2=TC2;
+/*X3-ENGINE-END*/
+</script>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（DB 下发优先：整表 EDF 回放通过才接受；本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="tower-control",SAVE_KEY="sw.towercontrol.v1";
+var DEFAULT_LEVELS=TC2.LEVELS;
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Number.isInteger(d.ticks)||d.ticks<30||d.ticks>240)return false;
+  if(!Number.isInteger(d.target)||d.target<1)return false;
+  if(!Number.isInteger(d.landT)||d.landT<1||d.landT>8)return false;
+  if(!Number.isInteger(d.holdMax)||d.holdMax<2||d.holdMax>10)return false;
+  if(!Number.isInteger(d.fuel)||d.fuel<3||d.fuel>120)return false;
+  if(!Number.isInteger(d.span)||d.span<1||d.span>20)return false;
+  if(!Array.isArray(d.traffic)||d.traffic.length<d.target)return false;
+  for(var j=0;j<d.traffic.length;j++){
+    var c=d.traffic[j];
+    if(!c||!Number.isInteger(c.t)||c.t<0||c.t>=d.ticks)return false;
+    if(c.kind!=="L"&&c.kind!=="T")return false;
+  }
+  var probe=TC2.policySim(d);
+  return probe.win===true&&!probe.over;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  for(var i=0;i<list.length;i++)if(!validLevelData(list[i]))return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){
+      var ok=true;
+      for(var i=0;i<list.length;i++)if(!validLevelData(list[i])){ok=false;break;}
+      if(ok){LEVELS=list;return v;}
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    if(!res||!Array.isArray(res.levels)||!res.levels.length)return;
+    var list=[],seen={};
+    for(var i=0;i<res.levels.length;i++){
+      var row=res.levels[i];
+      if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return;
+      var d;try{d=JSON.parse(row.dataJson);}catch(e){return;}
+      if(seen[d&&d.name])return;seen[d&&d.name]=1;
+      list.push(d);
+    }
+    if(list.length&&applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);resize();
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层 ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";$("ovBtn").style.background="var(--g-surface2)";$("ovBtn").style.color="var(--g-text)";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+/* ---------- 调色板 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),water:v("--g-water"),
+    rwy:v("--g-st-tc-rwy"),rwy2:v("--g-st-tc-rwy2"),
+    plane:v("--g-st-tc-plane"),dep:v("--g-st-tc-dep"),gnd:v("--g-st-tc-gnd")};
+}
+window.__gOnTheme=function(){palLoad()};
+palLoad();
+/* ---------- 状态（续玩：lv 起步即存档关） ---------- */
+var lv=save.lv,L=null,st=null,state="running",gen=0,sel=-1,cardPos=[];
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=TC2.W,H=TC2.H;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  st=TC2.newState(L);state="running";gen++;sel=-1;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="单次占用 "+L.landT+" tick";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  updStats();
+  $("btnPause").textContent="暂停";
+  hideOverlay();
+  say("跑道空闲时点候机飞机放行；先落油少的");
+}
+function updStats(){
+  $("stSrv").textContent=st.handled+"/"+L.target;
+  $("stTick").textContent=Math.max(0,L.ticks-st.t);
+  $("stStrike").textContent=st.strikes+"/3";
+  $("stStrike").classList.toggle("low",st.strikes>0);
+}
+function finish(){
+  state="over";gen++;
+  if(st.win){
+    if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+    if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:st.handled}).catch(function(){});
+    $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"交班！";
+    $("ovDesc").innerHTML="共放行 "+st.handled+" 架次，事故 "+st.strikes+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+    $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+    $("ovBtn").style.background="var(--g-btn-primary)";$("ovBtn").style.color="#fff";
+  }else{
+    var why=st.reason==="conflict"?"跑道占用时强放，冲突满 3 次":st.reason==="fuel"?"燃油耗尽备降满 3 次":st.reason==="stack"?"等待区溢出满 3 次":"时间到，没放完目标架次";
+    $("ovTitle").textContent="停止运行";
+    $("ovDesc").textContent=why+"。盯紧油量、留足间隔。";
+    $("ovBtn").textContent="重试本关";
+    $("ovBtn").style.background="var(--g-btn-primary)";$("ovBtn").style.color="#fff";
+  }
+  $("overlay").classList.add("show");
+}
+/* ---------- 绘制 ---------- */
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.style.height=Math.round(w*H/W)+"px";
+  cv.width=Math.round(w*dpr);cv.height=Math.round(w*H/W*dpr);
+  var sc=w/W;
+  ctx.setTransform(dpr*sc,0,0,dpr*sc,0,0);
+}
+function rr(x,y,w2,h2,r){
+  r=Math.min(r,w2/2,h2/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w2,y,x+w2,y+h2,r);ctx.arcTo(x+w2,y+h2,x,y+h2,r);
+  ctx.arcTo(x,y+h2,x,y,r);ctx.arcTo(x,y,x+w2,y,r);ctx.closePath();
+}
+function drawPlane(x,y,s,color){
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.moveTo(x,y-s);ctx.lineTo(x+s*0.28,y-s*0.2);ctx.lineTo(x+s,y+s*0.45);ctx.lineTo(x+s*0.28,y+s*0.5);
+  ctx.lineTo(x+s*0.28,y+s);ctx.lineTo(x+s*0.5,y+s*0.85);ctx.lineTo(x,y+s*0.7);
+  ctx.lineTo(x-s*0.5,y+s*0.85);ctx.lineTo(x-s*0.28,y+s);ctx.lineTo(x-s*0.28,y+s*0.5);
+  ctx.lineTo(x-s,y+s*0.45);ctx.lineTo(x-s*0.28,y-s*0.2);
+  ctx.closePath();ctx.fill();
+}
+function draw(){
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  if(!st)return;
+  var ry=H/2+46;
+  /* 地面与跑道 */
+  ctx.fillStyle=PAL.gnd;ctx.fillRect(0,ry+26,W,H-ry-26);
+  ctx.fillStyle=PAL.rwy;
+  rr(16,ry,W-32,20,6);ctx.fill();
+  ctx.strokeStyle=PAL.rwy2;ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle=PAL.surface;
+  for(var d=34;d<W-44;d+=34)ctx.fillRect(d,ry+9,16,2);
+  /* 跑道占用指示 */
+  if(st.t<st.freeAt){
+    var pr=(st.freeAt-st.t)/L.landT;
+    ctx.fillStyle=PAL.danger;
+    rr(16,ry-14,(W-32)*Math.max(0,Math.min(1,pr)),6,3);ctx.fill();
+    ctx.fillStyle=PAL.text;ctx.font="600 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText("跑道占用中…",W/2,ry-24);
+  }else{
+    ctx.fillStyle=PAL.success;ctx.font="600 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText("跑道空闲",W/2,ry-24);
+  }
+  /* 候机卡片（上排） */
+  cardPos=[];
+  var cw=64,gap=8,x0=14;
+  for(var i=0;i<st.hold.length;i++){
+    var cx=x0+i*(cw+gap),cy=40;
+    var p=st.hold[i];
+    var danger=p.fuel<=5;
+    ctx.fillStyle=PAL.surface;
+    rr(cx,cy,cw,84,10);ctx.fill();
+    ctx.strokeStyle=(sel===i)?PAL.warning:(danger?PAL.danger:PAL.border);
+    ctx.lineWidth=(sel===i)?3:1.5;ctx.stroke();
+    drawPlane(cx+cw/2,cy+30,16,PAL.plane);
+    /* 燃油条 */
+    var fr=Math.max(0,p.fuel/L.fuel);
+    ctx.fillStyle=PAL.surface2;
+    rr(cx+8,cy+56,cw-16,8,4);ctx.fill();
+    ctx.fillStyle=danger?PAL.danger:(fr<0.35?PAL.warning:PAL.success);
+    rr(cx+8,cy+56,(cw-16)*fr,8,4);ctx.fill();
+    ctx.fillStyle=PAL.muted;ctx.font="600 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText((i+1)+"号·油"+p.fuel,cx+cw/2,cy+74);
+    cardPos.push({x:cx,y:cy,w:cw,h:84,id:i});
+  }
+  if(!st.hold.length){
+    ctx.fillStyle=PAL.muted;ctx.font="400 12px sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
+    ctx.fillText("等待区空",14,60);
+  }
+  /* 起飞队列（下排右侧） */
+  var dx=W-110,dy=ry+60;
+  ctx.fillStyle=PAL.muted;ctx.font="400 12px sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
+  ctx.fillText("起飞队列",dx,dy-18);
+  for(var k=0;k<st.dep.length&&k<6;k++){
+    drawPlane(dx+16+k*14,dy,10,PAL.dep);
+  }
+  if(st.dep.length>6){
+    ctx.fillStyle=PAL.muted;ctx.font="700 12px sans-serif";
+    ctx.fillText("+"+(st.dep.length-6),dx+16+6*14,dy);
+  }
+  ctx.fillStyle=PAL.muted;
+  ctx.font="400 12px sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
+  ctx.fillText("点候机卡放行着陆 · 「放一架起飞」放行右列",14,H-14);
+}
+/* ---------- tick 节拍（rAF 驱动；切后台 rAF 停 → 时间自动冻结） ---------- */
+var TICK_SEC=0.45,acc=0;
+var rafId=0,last=0;
+function frame(ts){
+  rafId=requestAnimationFrame(frame);
+  if(!last)last=ts;
+  var dt=Math.min(0.05,(ts-last)/1000||0);
+  last=ts;
+  if(state==="running"){
+    acc+=dt;
+    var n=0;
+    while(acc>=TICK_SEC&&n++<4){
+      acc-=TICK_SEC;
+      TC2.simTick(L,st);
+      updStats();
+      if(st.over||st.win){finish();break;}
+    }
+  }
+  draw();
+}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){
+    if(rafId){cancelAnimationFrame(rafId);rafId=0;}
+    if(state==="running"){state="paused";$("btnPause").textContent="继续";say("已暂停——回到游戏继续指挥");}
+  }else if(!rafId){last=0;rafId=requestAnimationFrame(frame);}
+});
+/* ---------- 输入 ---------- */
+cv.addEventListener("pointerdown",function(e){
+  if(state!=="running")return;
+  var r=cv.getBoundingClientRect();
+  var x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;
+  e.preventDefault();
+  var best=-1,bd=1e9;
+  for(var i=0;i<cardPos.length;i++){
+    var c=cardPos[i];
+    if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h){best=i;break;}
+  }
+  if(best>=0){sel=best;TC2.serve(L,st,"L",best);}
+});
+cv.addEventListener("pointercancel",function(){});
+$("btnGo").addEventListener("click",function(){
+  if(state!=="running")return;
+  TC2.serve(L,st,"T",0);
+});
+$("btnPause").addEventListener("click",function(){
+  if(state==="running"){state="paused";$("btnPause").textContent="继续";say("已暂停");}
+  else if(state==="paused"){state="running";$("btnPause").textContent="暂停";say("继续指挥");}
+});
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){if(state!=="over")openLevelSelect();});
+$("ovBtn").addEventListener("click",function(){
+  if(st.win){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+    else{lv++;loadLevel(lv)}
+  }else loadLevel(lv);
+  $("ovBtn").style.background="var(--g-surface2)";$("ovBtn").style.color="var(--g-text)";
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="6"){
+    var idx=parseInt(k,10)-1;
+    if(idx<st.hold.length){sel=idx;TC2.serve(L,st,"L",idx);}
+    e.preventDefault();
+  }else if(k==="q"||k==="Q"){TC2.serve(L,st,"T",0);}
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+});
+window.addEventListener("resize",resize);
+/* ---------- 启动（loadLevel 以存档关续玩） ---------- */
+loadLevel(save.lv);resize();rafId=requestAnimationFrame(frame);
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>
