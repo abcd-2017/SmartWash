@@ -434,3 +434,57 @@
   斜前进空格为刻意变体（三处一致）；antonym-pair 旧缓存需 DB 版本覆盖；3 处无害死代码。
   浏览器终验（375px 真机 52/52 + typo-hunt 纠错交互实点）全过；typo-hunt 验证器模型错位 P0
   已随本批修复（见第三批条目）。
+
+- **2026-11-22（新游戏·自研入库·扩展总表第四批）52 款（游戏库 227 → 279 款，收官批次）**：
+  净室自研（零外链、零素材、canvas/DOM 自绘），出生即按 §6 规范并登记 audit-gates STRICT。
+  批次范围 = 总目录 #157-208（D 组收尾 8 款棋类 + E 组物理·模拟·经营 25 款 + F 组数字·逻辑 19 款）。
+  本批 brief 直接注入 W2/W3 评审沉淀的「已知坑清单」（存档续玩起步、计时基点平移、代际守卫、
+  验证器锚点用例、stat padding、foot 绑定一致），实现期缺陷率显著下降：375px 真机 52/52 零缺陷
+  （W2/W3 各抓到真 bug），锚点用例纪律在开发期自纠 5 处真缺陷（ataxx 阵营参数、l-game 阵营码、
+  tsuro DECK 死循环、poker-sol 三条误判、magic-square 剪枝非唯一）。
+  批次清单（52 款，按 category 分组）：
+  - board（7）：amazon-queens ataxx-flood quoridor-lite tsuro-path bingo-line poker-sol nim-coins
+  - puzzle（13）：l-game dam-gates chain-blast signal-cross power-grid futoshiki binary-taku magic-square prime-fact fraction-pie logic-owners number-maze tower-sum
+  - arcade（3）：pendulum-shot trebuchet bee-lines
+  - other（29）：bridge-build tower-crane balloon-inflate seesaw-stack kitchen-line elevator-rush metro-dispatch tower-control stock-tap ant-trail tank-eco bonsai-trim garden-waters laundry-day well-drill coaster-build pond-fish warehouse-rush discount-math unit-quiz clock-math money-change abacus-flash sequence-next syllogism-judge calendar-quiz dice-odds chem-balance speed-math
+  审计结论：`audit-gates.mjs` 全库 279 款**严格模式 0 违规**；`theme-gates.mjs` 本批 52/52 全绿。
+  关卡验证：47 款关卡驱动各 40 关 + 5 款分数驱动；全部经内嵌独立验证器 + 标准锚点用例逐关复核
+  （physics 类确定性种子回放、grid 类唯一解双实现、调度类策略回放基准、数谜类公式交叉）；
+  5 款分数驱动（tower-crane / balloon-inflate / seesaw-stack / stock-tap / speed-math）最高分持久化。
+  375px 真机 52/52：零横向溢出、无 h1、无验证器告警、主题推送/非法值拒绝。
+  体积范围：单款 19,214B（balloon-inflate）– 41,475B（tsuro-path），52 款合计约 1.4MB。
+  备注：X3/X4 代理执行中曾因账号配额中断，经恢复续跑完成全部交付（无残迹）。
+
+- **2026-11-22（封面补齐 52 张 · 第四批全库 279 款全覆盖）**：
+  第四批 52 款按 GAME-COVER.md 方案 A 全部绘制落位，游戏库 279 款封面零缺失、全部 800×450、
+  ≤120KB。管线与前三批一致（SVG → Chrome headless 渲染 → PS 2026 COM Unsharp → 索引层
+  颗粒量化 → 单处落位）；数字类封面为避开 `<text>` 约束，数字/符号统一用圆头七段笔画 path
+  手绘（与文字类几何字形语言同口径）。逐批目检 6 张（laundry-day / stock-tap / bridge-build /
+  前三批各批代表）家族要素到位。另补记：kitchen-line README 因代理配额中断漏写，已随本批补齐。
+
+- **2026-11-22（impeccable + ui-ux-pro-max 双 skill 扫描 · 第四批 52 款）**：
+  按用户指定，用 impeccable（craft-floor + critique/audit/layout/typeset/clarify/harden）
+  与 ui-ux-pro-max（优先级表 Accessibility→Touch→Performance→Style→Layout→Typography→
+  Animation→Forms→Navigation + 定向检索：touch target / reduced motion / focus keyboard /
+  color contrast）双 skill 对第四批 52 款全量扫描修复。机器预扫 7 类：焦点环/reduced-motion/
+  过渡/aria-live/canvas 闭合出生即合规；palLoad/visibilitychange 经逐款甄别（canvas 款链路
+  完整、DOM 款不适用、6 款纯事件驱动不适用），无需补；save-lv 仅 5 款分数驱动不适用。
+  改动 34 款、18 款零改动通过，全部双 gates 复绿，全库 279 款严格模式 0 违规；375px 实测
+  52/52 无横向滚动、无 console 报错。修复分五类：
+  1. **真 P0/P1 功能缺陷 4 个**：poker-sol 未定义 `endGame()` 致第 25 张牌 ReferenceError
+     结算永不出现（+脚注口径修正）；l-game 守卫写成 AI 侧致玩家「走子/提示」完全失效；
+     tsuro-path 前方格被旧牌占时软锁（改判负终局）；chem-balance 箭头位置 ceil(n/2) 而非
+     `L.arrow`，5 个分解反应题面与答案矛盾。
+  2. **canvas 信息字对比度系统性修复**：`--g-muted` 在深色/中明度素材底普遍 1.6–2.8:1，
+     10 余款按「浅深双主题均 ≥3:1」改 text/素材环色（badgeText 模式）；futoshiki 不等号行
+     布局错位（n≥5）修正 + 文案色更正。
+  3. **交互硬化**：8 款答题游戏加同选项 300ms 防连点 + 闪字动画 forwards 防回弹残留；
+     sequence-next 干扰项洗牌下标失效修正（原干扰项恒为 ans+1..3）；calendar-quiz 死代码
+     验证器改 `Date.UTC` 独立校验（2024-2027 共 1461 天零偏差）。
+  4. **语义/状态修复**：quoridor-lite 接近终点 danger→success；pendulum-shot 重试后
+     星星重置；balloon-inflate canvas 发抖随 reduced-motion 降级；coaster-build 结算
+     v²→sqrt(v²) 速度口径；nim-coins 键盘光标扁平索引。
+  5. **布局/热区**：pond-fish 六钮一行挤成窄条改两列；abacus-flash 算珠触屏热区 36×16→44×24。
+  遗留建议（记录未改）：well-drill 存档键 `sw.welldill.v1` 拼写（红线不改键，建议下版迁移）；
+  canvas 常驻 rAF 建议改「主题钩子补 draw + 空闲停帧」；调度类开局即 running 建议统一补
+  「开始」态；dice-odds 验证器 gapN 口径；若干死代码；Unicode 字形（★/✓）属品类惯例。

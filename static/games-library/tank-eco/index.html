@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>鱼缸生态</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-tank:#C7E5F2;--g-st-tank2:#A8D4E8;--g-st-fish1:#E8A13C;--g-st-fish2:#D97742;--g-st-fish3:#7A9E5F;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-tank:#243A46;--g-st-tank2:#1E2F3A;--g-st-fish1:#EDB060;--g-st-fish2:#E08A57;--g-st-fish3:#93B877;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 5px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .btn { min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; }
+  .btn.on { background: var(--g-danger); color: #fff; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">剩余</span><span class="val" id="stTime">0s</span></div>
+    <div class="stat"><span class="label">水温</span><span class="val" id="stTemp">0</span></div>
+    <div class="stat"><span class="label">水质</span><span class="val" id="stQ">0</span></div>
+    <div class="stat"><span class="label">鱼健康</span><span class="val" id="stHp">0</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="鱼缸：水温计、水质、鱼群与饲料" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">开加热器把水温拉进绿区，按时喂料、水质差了换水，撑过整段时间</p>
+  <div class="tools">
+    <button class="btn" id="btnHeat">加热器 关</button>
+    <button class="btn" id="btnFeed">喂料 ×0</button>
+    <button class="btn" id="btnWater">换水 ×0</button>
+    <button class="btn" id="btnPause">暂停</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：H 加热器 · F 喂料 · W 换水 · 空格 暂停/继续 · R 重开 · 料别一次倒太多，会坏水</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+    <button class="btn" id="ovRetry" hidden>重试本关</button>
+  </div>
+</div>
+
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 核心与关卡生成（确定性纯函数；XC-CORE 供 node 抽取独立复现验证） ========== */
+/*XC-CORE-BEGIN*/
+function mulberry32(a){
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+var TE={DT:0.25,HEAT:0.9,COOL:0.015,DMG_T:2.2,DMG_H:1.6,DMG_Q:1.8,REGEN:1.2,
+  RELIEF:45,EAT:0.012,DISSOLVE:0.01,POOLW:0.35,LEVEL_COUNT:40};
+TE.newState=function(lv,bigFood){
+  return {t:lv.roomT,q:88,hunger:20,hp:100,pool:0,
+    food:bigFood?1e9:lv.food,water:bigFood?1e9:lv.water,
+    heater:false,t0:lv.time,dead:false,minHp:100,feeds:0,waters:0,clock:0};
+};
+/* 单步：input={heater,feed,water}；返回 "run"|"dead"|"done" */
+TE.tick=function(st,lv,input){
+  if(st.dead)return"dead";
+  st.heater=!!input.heater;
+  if(input.feed&&st.food>0){st.food--;st.pool+=1;st.feeds++;}
+  if(input.water&&st.water>0){st.water--;st.q=Math.min(100,st.q+35);st.waters++;}
+  st.t+=((st.heater?TE.HEAT:0)+(lv.roomT-st.t)*TE.COOL)*TE.DT;
+  st.hunger=Math.min(120,st.hunger+lv.hRate*TE.DT);
+  var eat=Math.min(st.pool,lv.fish*TE.EAT*TE.DT);
+  st.pool=Math.max(0,st.pool-eat);
+  st.hunger=Math.max(0,st.hunger-eat*TE.RELIEF);
+  st.pool=Math.max(0,st.pool-st.pool*TE.DISSOLVE*TE.DT);
+  st.q=Math.max(0,st.q-(lv.fish*lv.wasteK+st.pool*TE.POOLW)*TE.DT);
+  var dmg=0;
+  if(st.t<lv.lo||st.t>lv.hi)dmg+=TE.DMG_T;
+  if(st.hunger>78)dmg+=TE.DMG_H;
+  if(st.q<42)dmg+=TE.DMG_Q;
+  if(dmg>0)st.hp-=dmg*TE.DT;
+  else st.hp=Math.min(100,st.hp+TE.REGEN*TE.DT);
+  if(st.hp<st.minHp)st.minHp=st.hp;
+  st.t0-=TE.DT;st.clock+=TE.DT;
+  if(st.hp<=0){st.dead=true;return"dead";}
+  if(st.t0<=0)return"done";
+  return"run";
+};
+/* 参考策略：温度乒乓在中值、饿过半就喂、差水就换 */
+TE.policyInput=function(st,lv){
+  return {heater:st.t<=(lv.lo+lv.hi)/2,
+    feed:st.hunger>50&&st.food>0,
+    water:st.q<45&&st.water>0};
+};
+TE.runPolicy=function(lv,bigFood){
+  var st=TE.newState(lv,bigFood),r="run";
+  while(r==="run")r=TE.tick(st,lv,TE.policyInput(st,lv));
+  return st;
+};
+/* 生成：参数随关卡收紧；用参考策略实测用量定预算，回放保证满血余量 */
+TE.genLevel=function(no){
+  var p=(no-1)/(TE.LEVEL_COUNT-1);
+  for(var attempt=0;attempt<10;attempt++){
+    var pe=p*(1-attempt*0.06);
+    var bandW=8-pe*3.5,mid=25;
+    var lv={name:"鱼缸·"+(no<10?"0":"")+no,
+      time:Math.round(50+pe*35),
+      fish:2+Math.floor(pe*3),
+      lo:Math.round((mid-bandW/2)*2)/2,hi:Math.round((mid+bandW/2)*2)/2,
+      roomT:Math.round((13+pe*3)*10)/10,
+      hRate:Math.round((0.9+pe*0.5)*100)/100,
+      wasteK:Math.round((0.09+pe*0.05)*100)/100,
+      difficulty:Math.min(9,1+Math.floor(no/5))};
+    var probe=TE.runPolicy(lv,true);
+    if(probe.dead)continue;
+    lv.food=probe.feeds+2;
+    lv.water=probe.waters+1;
+    var st=TE.runPolicy(lv,false);
+    if(st.dead||st.minHp<25)continue;
+    return lv;
+  }
+  return TE.genLevel(no>1?no-1:1);
+};
+/* 结构校验 */
+TE.validate=function(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return{ok:false,why:"bad"};
+  if(!isFinite(d.time)||d.time<30||d.time>120)return{ok:false,why:"time"};
+  if(!Number.isInteger(d.fish)||d.fish<1||d.fish>6)return{ok:false,why:"fish"};
+  if(!isFinite(d.lo)||!isFinite(d.hi)||d.lo<15||d.hi>32||d.hi-d.lo<3.5)return{ok:false,why:"band"};
+  if(!isFinite(d.roomT)||d.roomT>=d.lo-1)return{ok:false,why:"room"};
+  if(!isFinite(d.hRate)||d.hRate<0.2||d.hRate>1.5)return{ok:false,why:"hrate"};
+  if(!isFinite(d.wasteK)||d.wasteK<0.05||d.wasteK>0.3)return{ok:false,why:"waste"};
+  if(!Number.isInteger(d.food)||d.food<1||d.food>60)return{ok:false,why:"food"};
+  if(!Number.isInteger(d.water)||d.water<1||d.water>20)return{ok:false,why:"water"};
+  var st=TE.runPolicy(d,false);
+  if(st.dead||st.minHp<20)return{ok:false,why:"unsolvable"};
+  return{ok:true,why:"",minHp:st.minHp};
+};
+TE.validateAll=function(){
+  var fails=[],i;
+  for(i=1;i<=TE.LEVEL_COUNT;i++){
+    var L=TE.genLevel(i),r=TE.validate(L);
+    if(!r.ok)fails.push(i+"("+r.why+")");
+  }
+  return {total:TE.LEVEL_COUNT,solvable:TE.LEVEL_COUNT-fails.length,fail:fails};
+};
+TE.runTests=function(){
+  var pass=0,rows=[];
+  function ck(name,ok,got){rows.push({name:name,ok:!!ok,got:got});if(ok)pass++;}
+  //锚点1：室温在舒适带内且关加热 → 恒温不变（精确）
+  var lv={time:50,fish:2,lo:21,hi:29,roomT:24,hRate:0.9,wasteK:0.09,food:10,water:5};
+  var st=TE.newState(lv,false);
+  for(var i=0;i<200;i++)TE.tick(st,lv,{heater:false,feed:false,water:false});
+  ck("锚点·无热源恒温 24.0",st.t===24&&st.q>0&&st.dead===false,"t="+st.t);
+  //锚点2：换水 +35（同拍衰减后 ≥84.9）
+  var st2=TE.newState(lv,false);st2.q=50;
+  TE.tick(st2,lv,{heater:false,feed:false,water:true});
+  ck("锚点·换水 +35",st2.water===4&&st2.q>84.9&&st2.q<=85,"q="+st2.q);
+  //锚点3：出舒适区单步扣血 0.55（2.2×0.25）
+  var st3=TE.newState(lv,false);st3.t=18;st3.hunger=0;st3.q=100;
+  var hp0=st3.hp;
+  TE.tick(st3,lv,{heater:false,feed:false,water:false});
+  ck("锚点·失温单步扣血 0.55",Math.abs((hp0-st3.hp)-0.55)<1e-9,hp0-st3.hp);
+  //锚点4：喂料入池、预算扣减（精确）
+  var st4=TE.newState(lv,false);
+  TE.tick(st4,lv,{heater:false,feed:true,water:false});
+  ck("锚点·喂料 池+1 料-1",st4.pool>0&&st4.pool<=1&&st4.food===9&&st4.feeds===1,"pool="+st4.pool.toFixed(3));
+  //锚点5：血量见底一拍即死
+  var st5=TE.newState(lv,false);st5.t=18;st5.hunger=0;st5.q=100;st5.hp=0.5;
+  var r5=TE.tick(st5,lv,{heater:false,feed:false,water:false});
+  ck("锚点·濒死一拍判定",r5==="dead"&&st5.dead,"r="+r5);
+  var r=TE.validateAll();
+  ck("40 关策略回放全部存活",r.fail.length===0,"fail="+r.fail.join(","));
+  var L1=TE.genLevel(1),L2=TE.genLevel(1);
+  ck("生成确定性",JSON.stringify(L1)===JSON.stringify(L2),"replay");
+  return {total:7,pass:pass,rows:rows,levels:r};
+};
+globalThis.__XC=TE;
+/*XC-CORE-END*/
+
+/* ========== 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ========== */
+var GAME_KEY="tank-eco",SAVE_KEY="sw.tankeco.v1";
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function buildDefaultLevels(){
+  var list=[];
+  for(var i=1;i<=TE.LEVEL_COUNT;i++)list.push(TE.genLevel(i));
+  return list;
+}
+var LEVELS=buildDefaultLevels();
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!TE.validate(d).ok)return null;
+    var no=parseInt(row.levelNo,10);
+    if(!isFinite(no)||no<1)no=i+1;
+    if(seen[no])return null;
+    seen[no]=1;
+    d.no=no;
+    list.push(d);
+  }
+  list.sort(function(a,b){return a.no-b.no});
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(function(d){return TE.validate(d).ok})){
+      LEVELS=list;return parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      if(state!=="done")loadLevel(cur);
+    }
+  }).catch(function(){});
+}
+
+/* ========== 存档（本地 + 账号双写，账号更优才覆盖） ========== */
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:parseInt(s.lv,10)||0,best:parseInt(s.best,10)||1}}catch(e){return{lv:0,best:1}}}
+var save=loadSave();
+var unlocked=clamp(save.best,1,1);
+function persist(){
+  var data={lv:cur,best:unlocked};
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,data).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson||state!=="run")return;
+    try{
+      var r=JSON.parse(res.stateJson),ch=false;
+      var rl=parseInt(r.lv,10),rb=parseInt(r.best,10);
+      if(isFinite(rl)&&rl>save.lv&&rl<LEVELS.length){save.lv=rl;ch=true;}
+      if(isFinite(rb)&&rb>unlocked&&rb<=LEVELS.length){unlocked=rb;ch=true;}
+      if(ch){cur=clamp(save.lv,0,LEVELS.length-1);persist();loadLevel(cur);}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ========== 调色板 ========== */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
+    water:v("--g-water"),tank:v("--g-st-tank"),tank2:v("--g-st-tank2"),
+    fish1:v("--g-st-fish1"),fish2:v("--g-st-fish2"),fish3:v("--g-st-fish3")};
+}
+window.__gOnTheme=function(){palLoad()};
+palLoad();
+
+/* ========== 画布与状态 ========== */
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=0,cur=save.lv,L=null,st=null,pendingFeed=false,pendingWater=false;
+var state="run";   // run | pause | done
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.round(w);var H=250;
+  cv.style.height=H+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener("resize",function(){resize();draw();});
+function loadLevel(n){
+  cur=clamp(n,0,LEVELS.length-1);
+  L=LEVELS[cur];
+  if(!TE.validate(L).ok){say("关卡数据异常");return;}
+  st=TE.newState(L,false);
+  pendingFeed=false;pendingWater=false;state="run";
+  $("btnHeat").textContent="加热器 关";$("btnHeat").classList.remove("on");
+  $("btnFeed").textContent="喂料 ×"+L.food;
+  $("btnWater").textContent="换水 ×"+L.water;
+  $("btnPause").textContent="暂停";
+  $("lvTag").textContent="第 "+(cur+1)+" 关 · "+L.name;
+  $("lvRule").textContent=L.fish+" 条鱼 · 舒适 "+L.lo+"~"+L.hi+"℃ · 室温 "+L.roomT+"℃";
+  $("stLv").parentElement.style.display="none";   /* 本作关卡名在页头，隐藏多余的空统计卡 */
+  say("点「加热器」把水温拉进绿区；饿过半要喂料，水质变差快换水");
+  resize();syncHud();draw();
+}
+function syncHud(){
+  $("stTime").textContent=Math.max(0,st.t0).toFixed(0)+"s";
+  var out=st.t<L.lo||st.t>L.hi;
+  $("stTemp").textContent=st.t.toFixed(1);
+  $("stTemp").className="val"+(out?" low":"");
+  $("stQ").textContent=Math.round(st.q);
+  $("stQ").className="val"+(st.q<42?" low":"");
+  $("stHp").textContent=Math.round(st.hp);
+  $("stHp").className="val"+(st.hp<40?" low":"");
+}
+/* ---------- 交互 ---------- */
+function toggleHeat(){
+  if(state!=="run")return;
+  st.heater=!st.heater;
+  $("btnHeat").textContent=st.heater?"加热器 开":"加热器 关";
+  $("btnHeat").classList.toggle("on",st.heater);
+}
+function feed(){
+  if(state!=="run")return;
+  if(st.food<=0){say("饲料用完了");return;}
+  pendingFeed=true;
+  say("撒下一份饲料（浮在水里太久会坏水）");
+}
+function changeWater(){
+  if(state!=="run")return;
+  if(st.water<=0){say("换水次数用完了");return;}
+  pendingWater=true;
+  say("换水：水质回升");
+}
+function winLevel(){
+  state="done";
+  if(cur<LEVELS.length-1&&cur+1>save.lv)save.lv=cur+1;
+  if(cur+2>unlocked)unlocked=Math.min(LEVELS.length,cur+2);
+  persist();
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:cur+1,metricExtra:Math.round(st.minHp)}).catch(function(){});
+  $("ovTitle").textContent=(cur>=LEVELS.length-1)?"全部通关！":"打烊成功！";
+  $("ovDesc").innerHTML="全缸 "+L.fish+" 条鱼健在 · 最低健康 "+Math.round(st.minHp)+(cur<LEVELS.length-1?"<br>已解锁第 "+(cur+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(cur>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("ovRetry").hidden=true;
+  ovMode="win";
+  $("overlay").classList.add("show");
+}
+function failLevel(){
+  state="done";
+  $("ovTitle").textContent="鱼出事了";
+  $("ovDesc").textContent="有鱼没能撑住。水温要盯住绿区，料要少喂勤喂，水质见红马上换水。";
+  $("ovBtn").textContent="选关";
+  $("ovRetry").hidden=false;
+  ovMode="fail";
+  $("overlay").classList.add("show");
+}
+var ovMode="select";
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<unlocked-1?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>=unlocked;
+      b.addEventListener("click",function(){
+        cur=i;save.lv=Math.max(save.lv,cur);persist();
+        $("overlay").classList.remove("show");
+        loadLevel(cur);
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("ovRetry").hidden=true;
+  ovMode="select";
+  $("overlay").classList.add("show");
+}
+
+/* ========== 绘制 ========== */
+function rr(x,y,w2,h2,r){
+  r=Math.min(r,w2/2,h2/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w2,y,x+w2,y+h2,r);ctx.arcTo(x+w2,y+h2,x,y+h2,r);
+  ctx.arcTo(x,y+h2,x,y,r);ctx.arcTo(x,y,x+w2,y,r);ctx.closePath();
+}
+function draw(){
+  ctx.fillStyle=PAL.surface2;ctx.fillRect(0,0,W,250);
+  var tx=10,ty=10,tw=W-20,th=190;
+  //缸体
+  ctx.fillStyle=PAL.tank;rr(tx,ty,tw,th,10);ctx.fill();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=2;ctx.stroke();
+  //温度计（右侧）
+  var gx=tx+tw-26,gy0=ty+14,gy1=ty+th-14;
+  ctx.fillStyle=PAL.surface;
+  rr(gx-7,gy0,14,gy1-gy0,7);ctx.fill();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;ctx.stroke();
+  function tempY(v){return gy1-(v-10)/(30-10)*(gy1-gy0)}
+  //舒适绿区
+  ctx.fillStyle=PAL.success;ctx.globalAlpha=0.35;
+  ctx.fillRect(gx-7,tempY(L.hi),14,tempY(L.lo)-tempY(L.hi));
+  ctx.globalAlpha=1;
+  //水银柱
+  ctx.fillStyle=st.t<L.lo||st.t>L.hi?PAL.danger:PAL.success;
+  rr(gx-3,tempY(st.t),6,gy1-tempY(st.t),3);ctx.fill();
+  ctx.fillStyle=PAL.muted;
+  ctx.font="12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText("温",gx,gy0-8);
+  //水质条（底部）
+  var bw=tw-70,bx=tx+14,by=ty+th-16;
+  ctx.fillStyle=PAL.surface;rr(bx,by,bw,8,4);ctx.fill();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle=st.q<42?PAL.danger:(st.q<60?PAL.warning:PAL.success);
+  rr(bx,by,Math.max(3,bw*st.q/100),8,4);ctx.fill();
+  ctx.fillStyle=PAL.muted;ctx.textAlign="left";
+  ctx.fillText("水质",bx,by-9);
+  //加热器状态（左）
+  ctx.fillStyle=st.heater?PAL.danger:PAL.faint;
+  ctx.textAlign="left";ctx.textBaseline="alphabetic";
+  ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillText(st.heater?"加热中":"加热器关",tx+14,ty+22);
+  //鱼
+  var fishes=[PAL.fish1,PAL.fish2,PAL.fish3];
+  for(var i=0;i<L.fish;i++){
+    var sp=26+i*7;
+    var fx=tx+24+((st.clock*sp+i*97)%(tw-70));
+    var fy=ty+46+i*26+Math.sin(st.clock*2.2+i*1.7)*7;
+    var dir=Math.floor((st.clock*sp+i*97)/(tw-70))%2===0?1:-1;
+    ctx.fillStyle=fishes[i%3];
+    ctx.beginPath();
+    ctx.ellipse(fx,fy,11,6,0,0,7);ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(fx-dir*11,fy);ctx.lineTo(fx-dir*17,fy-5);ctx.lineTo(fx-dir*17,fy+5);
+    ctx.closePath();ctx.fill();
+  }
+  //饲料颗粒
+  var dots=Math.min(24,Math.round(st.pool*3));
+  for(var d=0;d<dots;d++){
+    var age=(st.clock*9+d*37)%90;
+    var dxp=tx+20+((d*53)%(tw-60)),dyp=ty+18+(age%40);
+    ctx.fillStyle=PAL.warning;
+    ctx.beginPath();ctx.arc(dxp,dyp,2.4,0,7);ctx.fill();
+  }
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  ctx.strokeRect(0.5,0.5,W-1,249);
+}
+
+/* ========== 步进（固定 0.25s 确定性 tick；rAF + visibilitychange 停帧/续跑） ========== */
+var acc=0;
+function step(dt){
+  if(state!=="run")return;
+  acc+=dt;
+  var guard=0;
+  while(acc>=TE.DT&&state==="run"&&guard<40){
+    acc-=TE.DT;guard++;
+    var r=TE.tick(st,L,{heater:st.heater,feed:pendingFeed,water:pendingWater});
+    pendingFeed=false;pendingWater=false;
+    syncHud();
+    if(r==="dead"){failLevel();break;}
+    if(r==="done"){winLevel();break;}
+  }
+}
+
+/* ========== 主循环 ========== */
+var rafPending=false,lastTs=0;
+function frame(ts){
+  rafPending=false;
+  if(document.hidden)return;
+  if(!lastTs)lastTs=ts;
+  var dt=Math.min(0.05,(ts-lastTs)/1000||0);
+  lastTs=ts;
+  step(dt);draw();
+  rafPending=true;requestAnimationFrame(frame);
+}
+function kick(){if(!rafPending&&!document.hidden){rafPending=true;requestAnimationFrame(frame);}}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){lastTs=0;if(state==="run")say("已暂停 · 切回继续照料");}
+  else{lastTs=0;kick();}
+});
+
+/* ========== 输入 ========== */
+$("btnHeat").addEventListener("click",toggleHeat);
+$("btnFeed").addEventListener("click",feed);
+$("btnWater").addEventListener("click",changeWater);
+$("btnPause").addEventListener("click",function(){
+  if(state==="run"){state="pause";$("btnPause").textContent="继续";}
+  else if(state==="pause"){state="run";$("btnPause").textContent="暂停";}
+});
+$("btnReset").addEventListener("click",function(){loadLevel(cur);});
+$("btnLv").addEventListener("click",openLevelSelect);
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(ovMode==="win"){
+    if(cur>=LEVELS.length-1){cur=0;save.lv=0;persist();loadLevel(0);}
+    else{cur++;loadLevel(cur);}
+  }else if(ovMode==="fail"){
+    openLevelSelect();
+  }
+});
+$("ovRetry").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  loadLevel(cur);
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k==="h"){toggleHeat();e.preventDefault();}
+  else if(k==="f"){feed();e.preventDefault();}
+  else if(k==="w"){changeWater();e.preventDefault();}
+  else if(k===" "){e.preventDefault();if(state==="run"){state="pause";$("btnPause").textContent="继续";}else if(state==="pause"){state="run";$("btnPause").textContent="暂停";}}
+  else if(k==="r"){loadLevel(cur);}
+});
+
+/* 调试验证入口 */
+window.__validateLevels=function(){try{return TE.runTests()}catch(e){return {error:String(e)}}};
+
+/* ========== 启动（续玩：从存档关卡起步） ========== */
+cur=clamp(save.lv,0,LEVELS.length-1);
+loadLevel(cur);
+requestAnimationFrame(frame);
+syncLevelsFromServer();
+syncSaveFromServer();
+
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>三段论</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { background: var(--g-surface); border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); padding: 14px 12px; }
+  .qtag { font-size: 12px; color: var(--g-muted); margin-bottom: 10px; }
+  .prem { font-size: 16px; line-height: 1.8; margin-bottom: 2px; }
+  .prem .tag { display: inline-block; font-size: 12px; color: var(--g-muted); background: var(--g-surface2); border-radius: 10px; padding: 1px 8px; margin-right: 6px; }
+  .concl { font-size: 16px; line-height: 1.8; margin: 8px 0 4px; font-weight: 600; }
+  .flash { height: 22px; font-size: 16px; font-weight: 700; text-align: center; margin: 8px 0; }
+  .flash.ok { color: var(--g-success); animation: flashout .45s ease-out forwards; }
+  .flash.no { color: var(--g-danger); animation: flashout .45s ease-out forwards; }
+  @keyframes flashout { from { opacity: 1; } to { opacity: 0; } }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* 三段论专属 */
+  .judge { display: flex; gap: 8px; margin-top: 8px; }
+  .jbtn {
+    min-height: 52px; flex: 1; border: 1px solid var(--g-border); border-radius: 10px;
+    background: var(--g-bg); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 600; cursor: pointer; padding: 8px;
+  }
+  .jbtn.picked { border-color: var(--g-primary-deep); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .jbtn:disabled { cursor: default; }
+
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">进度</span><span class="val" id="stProg">0/6</span></div>
+    <div class="stat"><span class="label">剩余秒</span><span class="val" id="stTime">90</span></div>
+  </div>
+  <div class="stage">
+    <div class="qtag" id="qtag">第 1 题 · 结论能从前提必然推出吗？</div>
+    <div class="prem"><span class="tag">大前提</span><span id="p1"></span></div>
+    <div class="prem"><span class="tag">小前提</span><span id="p2"></span></div>
+    <div class="concl"><span class="tag">结论</span><span id="p3"></span></div>
+    <div class="flash" id="flash"></div>
+    <div class="judge">
+      <button class="jbtn" id="btnYes">必然成立</button>
+      <button class="jbtn" id="btnNo">不必然成立</button>
+    </div>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite">判断结论是否从两个前提必然推出；答错扣 8 秒，错满 3 题失败</p>
+  <div class="tools">
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：1 必然成立 · 2 不必然成立 · R 重开 · L 选关 · 切后台自动暂停计时</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡（种子制：genLevel 生成 + 独立验证器逐关复核 + 缓存） ---------- */
+var GAME_KEY="syllogism-judge",SAVE_KEY="sw.syllogismjudge.v1";
+var LEVELS=[];for(var _i=0;_i<40;_i++)LEVELS.push(21001+_i*43);
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function applySeeds(seeds,ver){
+  if(!Array.isArray(seeds)||seeds.length<8||!seeds.every(function(s){return Number.isInteger(s)&&s>0&&s<1e9;}))return false;
+  LEVELS=seeds.slice();
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(LEVELS));localStorage.setItem(LEVELS_VER_KEY,String(ver||0));}catch(e){}
+  return true;
+}
+function loadCachedSeeds(){
+  try{
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length>=8&&list.every(function(s){return Number.isInteger(s)&&s>0&&s<1e9;})){
+      LEVELS=list;return true;
+    }
+  }catch(e){}
+  return false;
+}
+loadCachedSeeds();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    if(!res||!Array.isArray(res.levels)||!res.levels.length)return;
+    var seeds=[];
+    for(var i=0;i<res.levels.length;i++){
+      var row=res.levels[i];
+      if(!row||typeof row.dataJson!=="string")return;
+      try{var d=JSON.parse(row.dataJson);if(!d||!Number.isInteger(d.seed))return;seeds.push(d.seed);}catch(e){return;}
+    }
+    if(applySeeds(seeds,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+/* ---------- 语义枚举（生成器路径：位掩码遍历） ---------- */
+/* 命题 [type, subjIdx, predIdx]：type 0=A 全肯 1=E 全否 2=I 特肯 3=O 特否 */
+/* 4 个个体 × 3 个词项（0=S 1=P 2=M），真值矩阵编码为 12 位掩码 */
+function predVal(term,i,mask){return (mask>>(term*4+i))&1;}
+function holdsGen(q,mask){
+  var t=q[0],S=q[1],P=q[2];
+  var xAll=true,xyAllNot=true,xSome=false,xySome=false;
+  for(var i=0;i<4;i++){
+    var px=predVal(S,i,mask)===1,py=predVal(P,i,mask)===1;
+    if(px&&!py)xAll=false;
+    if(px&&py)xyAllNot=false;
+    if(px&&py)xSome=true;
+    if(px&&!py)xySome=true;
+  }
+  if(t===0)return xAll;
+  if(t===1)return xyAllNot;
+  if(t===2)return xSome;
+  return xySome;
+}
+function evalGen(q1,q2,q3){
+  var sat=0,always=true;
+  for(var mask=0;mask<4096;mask++){
+    if(!holdsGen(q1,mask))continue;
+    if(!holdsGen(q2,mask))continue;
+    sat++;
+    if(!holdsGen(q3,mask))always=false;
+  }
+  return {sat:sat,valid:sat>0&&always};
+}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+var TERMS=["程序员","夜猫子","金鱼","松树","月季","公交车","大学生","厨师","雨伞","吉他","西瓜","企鹅","咖啡","长跑者","机器人","猫","竹子","诗人"];
+function diffOf(idx){
+  if(idx<12)return {q:6,time:90,two:0.35};
+  if(idx<26)return {q:8,time:85,two:0.45};
+  return {q:10,time:80,two:0.5};
+}
+/* 经典有效式表（现代语义，无条件式）：[figure,大前提型,小前提型,结论型] */
+var VALID_FORMS=[
+  [0,0,0,0],[0,1,0,1],[0,0,2,2],[0,1,3,3],
+  [1,1,0,1],[1,0,0,1],[1,1,3,3],[1,0,3,3],
+  [2,0,2,2],[2,1,3,3],[2,2,0,2],[2,3,0,3],
+  [3,0,0,1],[3,1,3,3],[3,2,0,2]
+];
+/* genLevel：一关 = q 道三段论判断题（必然/不必然各半） */
+function genLevel(seed,idx,attempt){
+  attempt=attempt||0;
+  var rng=mulberry32(seed);
+  var dc=diffOf(idx);
+  var qs=[],tries=0;
+  var poolAll=VALID_FORMS;
+  var poolEasy=[];
+  for(var vf=0;vf<VALID_FORMS.length;vf++){
+    var f0=VALID_FORMS[vf];
+    if(f0[1]===0&&f0[2]===0||f0[1]===0&&f0[2]===2&&f0[3]===2||f0[1]===2&&f0[2]===0&&f0[3]===2)poolEasy.push(f0);
+  }
+  if(!poolEasy.length)poolEasy=poolAll;
+  while(qs.length<dc.q&&tries<dc.q*80){
+    tries++;
+    var wantValid=qs.length%2===0;
+    var figure,t1,t2,t3;
+    if(wantValid){
+      var pool=idx<26?poolEasy:poolAll;
+      var f=pool[Math.floor(rng()*pool.length)];
+      figure=f[0];t1=f[1];t2=f[2];t3=f[3];
+    }else{
+      figure=Math.floor(rng()*4);
+      var types=idx<26?[0,2]:[0,1,2,3];
+      t1=types[Math.floor(rng()*types.length)];
+      t2=types[Math.floor(rng()*types.length)];
+      t3=types[Math.floor(rng()*types.length)];
+    }
+    var used={},terms=[];
+    while(terms.length<3){
+      var w=Math.floor(rng()*TERMS.length);
+      if(used[w])continue;
+      used[w]=1;terms.push(w);
+    }
+    /* figure 1: MP / SM；2: PM / SM；3: MP / MS；4: PM / MS（角色槽：0=S 1=P 2=M） */
+    var q1,q2,q3;
+    if(figure===0){q1=[t1,2,1];q2=[t2,0,2];}
+    else if(figure===1){q1=[t1,1,2];q2=[t2,0,2];}
+    else if(figure===2){q1=[t1,2,1];q2=[t2,2,0];}
+    else{q1=[t1,1,2];q2=[t2,2,0];}
+    q3=[t3,0,1];
+    var r=evalGen(q1,q2,q3);
+    if(r.sat===0)continue;
+    if(wantValid){
+      if(!r.valid)continue;
+    }else{
+      if(r.valid)continue;
+    }
+    qs.push({q1:q1,q2:q2,q3:q3,terms:terms,valid:r.valid});
+  }
+  if(qs.length<dc.q){
+    if(attempt>=5)return {dc:dc,qs:[],seed:seed};
+    return genLevel((seed*47+61)%1000000007,idx,attempt+1);
+  }
+  return {dc:dc,qs:qs,seed:seed};
+}
+/* 独立验证器：递归组合枚举（与位掩码遍历不同路径） */
+function predValVer(term,i,assign){return assign[term*4+i];}
+function holdsVer(q,assign){
+  var t=q[0],S=q[1],P=q[2];
+  if(t===0){
+    for(var i=0;i<4;i++)if(predValVer(S,i,assign)===1&&predValVer(P,i,assign)===0)return false;
+    return true;
+  }
+  if(t===1){
+    for(var j=0;j<4;j++)if(predValVer(S,j,assign)===1&&predValVer(P,j,assign)===1)return false;
+    return true;
+  }
+  if(t===2){
+    for(var k=0;k<4;k++)if(predValVer(S,k,assign)===1&&predValVer(P,k,assign)===1)return true;
+    return false;
+  }
+  for(var m=0;m<4;m++)if(predValVer(S,m,assign)===1&&predValVer(P,m,assign)===0)return true;
+  return false;
+}
+function evalVer(q1,q2,q3){
+  var assign=[],sat=0,always=true;
+  (function rec(p){
+    if(sat>0&&p===12){/*短路不可行，继续*/}
+    if(p===12){
+      if(holdsVer(q1,assign)&&holdsVer(q2,assign)){
+        sat++;
+        if(!holdsVer(q3,assign))always=false;
+      }
+      return;
+    }
+    for(var v=0;v<2&&sat<4096;v++){
+      assign[p]=v;
+      rec(p+1);
+    }
+  })(0);
+  return {sat:sat,valid:sat>0&&always};
+}
+/* 独立验证器主函数 */
+function verifyLevelData(d){
+  if(!d||typeof d!=="object")return "数据异常";
+  if(!d.dc||!Array.isArray(d.qs)||!d.qs.length)return "结构异常";
+  var qn=d.dc.q||d.qs.length;
+  if(d.qs.length!==qn)return "题量不符";
+  for(var i=0;i<d.qs.length;i++){
+    var q=d.qs[i];
+    if(!Array.isArray(q.terms)||q.terms.length!==3)return "词项异常";
+    var seen={};
+    for(var t=0;t<3;t++){
+      var w=q.terms[t];
+      if(!Number.isInteger(w)||w<0||w>=TERMS.length||seen[w])return "词项越界或重复";
+      seen[w]=1;
+    }
+    if(!Array.isArray(q.q1)||!Array.isArray(q.q2)||!Array.isArray(q.q3))return "命题结构异常";
+    var all=[q.q1,q.q2,q.q3];
+    for(var p=0;p<3;p++){
+      if(all[p].length!==3)return "命题字段异常";
+      if(!Number.isInteger(all[p][0])||all[p][0]<0||all[p][0]>3)return "命题类型越界";
+      if(!Number.isInteger(all[p][1])||!Number.isInteger(all[p][2]))return "词项下标异常";
+      if(all[p][1]===all[p][2])return "命题两端词项相同";
+    }
+    /* 三段论角色核对（角色槽号：0=S 1=P 2=M）：q1 连接 M/P，q2 连接 S/M，q3 连接 S/P */
+    if(!sameRole(q.q1,[2,1])&&!sameRole(q.q1,[1,2]))return "大前提词项角色不符";
+    if(!sameRole(q.q2,[0,2])&&!sameRole(q.q2,[2,0]))return "小前提词项角色不符";
+    if(!sameRole(q.q3,[0,1]))return "结论词项角色不符";
+    var r=evalVer(q.q1,q.q2,q.q3);
+    if(r.sat===0)return "前提不可满足";
+    if(r.valid!==q.valid)return "真值判定不一致("+r.valid+"≠"+q.valid+")";
+  }
+  return null;
+}
+function sameRole(q,pair){
+  return (q[1]===pair[0]&&q[2]===pair[1]);
+}
+/* 标准锚点用例（经典三段论有效式 / 无效式，人工核对） */
+function verifyAnchors(){
+  /* Barbara AAA-1：所有 M 是 P；所有 S 是 M → 所有 S 是 P（必然） */
+  var r1=evalGen([0,2,1],[0,0,2],[0,0,1]);
+  if(!r1.valid||r1.sat===0)return "锚点1 Barbara 应必然";
+  /* Celarent EAE-1：所有 M 不是 P；所有 S 是 M → 所有 S 不是 P（必然） */
+  var r2=evalGen([1,2,1],[0,0,2],[1,0,1]);
+  if(!r2.valid)return "锚点2 Celarent 应必然";
+  /* Darii AII-1：所有 M 是 P；有些 S 是 M → 有些 S 是 P（必然） */
+  var r3=evalGen([0,2,1],[2,0,2],[2,0,1]);
+  if(!r3.valid)return "锚点3 Darii 应必然";
+  /* 无效式 AAA-2：所有 P 是 M；所有 S 是 M → 所有 S 是 P（不必然） */
+  var r4=evalGen([0,1,2],[0,0,2],[0,0,1]);
+  if(r4.valid||r4.sat===0)return "锚点4 AAA-2 应不必然";
+  /* 无效式：所有 M 不是 P；有些 S 不是 M → 有些 S 是 P（不必然） */
+  var r5=evalGen([1,2,1],[3,0,2],[2,0,1]);
+  if(r5.valid)return "锚点5 应不必然";
+  /* 双实现对拍：上述全部两法一致 */
+  var pair=[[ [0,2,1],[0,0,2],[0,0,1] ],[ [1,2,1],[0,0,2],[1,0,1] ],[ [0,2,1],[2,0,2],[2,0,1] ],[ [0,1,2],[0,0,2],[0,0,1] ]];
+  for(var i=0;i<pair.length;i++){
+    var a=evalGen(pair[i][0],pair[i][1],pair[i][2]);
+    var b=evalVer(pair[i][0],pair[i][1],pair[i][2]);
+    if(a.valid!==b.valid||a.sat!==b.sat)return "锚点对拍失败 case"+i;
+  }
+  return null;
+}
+function selfCheck(){
+  var err=verifyAnchors();
+  for(var i=0;i<LEVELS.length;i++){
+    var e=safeVerify(LEVELS[i],i);
+    if(e&&!err)err="第 "+(i+1)+" 关 "+e;
+  }
+  if(err)say("数据校验告警："+err);
+}
+function safeVerify(seed,idx){
+  try{
+    var d=genLevel(seed,idx);
+    return verifyLevelData(d);
+  }catch(e){return "生成异常";}
+}
+/* ---------- 状态与渲染（限时模板） ---------- */
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+var lv=save.lv,L=null,qi=0,wrong=0,done=false;
+var timer=null,deadline=0,pausedLeft=0,gen=0;
+function sent(q,terms){
+  /* q[1]/q[2] 为角色槽：0=S 1=P 2=M，映射到词项 */
+  function name(slot){
+    if(slot===0)return TERMS[terms[0]];
+    if(slot===1)return TERMS[terms[1]];
+    return TERMS[terms[2]];
+  }
+  var x=name(q[1]),y=name(q[2]);
+  if(q[0]===0)return "所有"+x+"都是"+y;
+  if(q[0]===1)return "所有"+x+"都不是"+y;
+  if(q[0]===2)return "有些"+x+"是"+y;
+  return "有些"+x+"不是"+y;
+}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  var d=null;
+  for(var t=0;t<3;t++){
+    d=genLevel(LEVELS[lv]+t*9973,lv);
+    if(!verifyLevelData(d))break;
+    d=null;
+  }
+  if(!d){say("本关数据异常，已回退");if(lv>0){lv--;save.lv=Math.min(save.lv,lv);persist();loadLevel(lv);return;}return;}
+  L=d;qi=0;wrong=0;done=false;pausedLeft=0;gen++;
+  $("lvTag").textContent="第 "+(lv+1)+" 关";
+  $("lvRule").textContent=d.dc.q+" 道题 · "+d.dc.time+" 秒 · 错≤2";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  updStats();renderQ();
+  hideOverlay();
+  startTimer(d.dc.time);
+  say("判断结论能否从前提必然推出；答错扣 8 秒");
+}
+function startTimer(sec){
+  deadline=Date.now()+sec*1000;
+  if(timer)clearInterval(timer);
+  timer=setInterval(tick,200);
+  updStats();
+}
+function stopTimer(){if(timer){clearInterval(timer);timer=null;}}
+function tick(){
+  var s=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+  var el=$("stTime");el.textContent=s;
+  if(s<=10)el.classList.add("low");else el.classList.remove("low");
+  if(Date.now()>=deadline)failLevel("时间到了");
+}
+function pauseGame(){
+  if(document.hidden&&timer){
+    pausedLeft=Math.max(0,deadline-Date.now());
+    stopTimer();gen++;
+  }
+}
+function resumeGame(){
+  if(!document.hidden&&pausedLeft>0&&!done){
+    deadline=Date.now()+pausedLeft;pausedLeft=0;gen++;
+    if(!timer)timer=setInterval(tick,200);
+  }
+}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden)pauseGame();else resumeGame();
+});
+function updStats(){
+  $("stProg").textContent=qi+"/"+L.dc.q;
+  $("btnLv").disabled=done;
+}
+function flash(ok,txt){
+  var el=$("flash");
+  el.className="flash";
+  void el.offsetWidth;   /* 重启动画，避免上一次淡出态残留 */
+  el.className="flash "+(ok?"ok":"no");
+  el.textContent=txt;
+}
+function renderQ(){
+  var q=L.qs[qi];
+  $("qtag").textContent="第 "+(qi+1)+" / "+L.dc.q+" 题 · 已错 "+wrong;
+  $("p1").textContent=sent(q.q1,q.terms);
+  $("p2").textContent=sent(q.q2,q.terms);
+  $("p3").textContent=sent(q.q3,q.terms);
+  $("btnYes").disabled=done;
+  $("btnNo").disabled=done;
+  $("btnYes").classList.remove("picked");$("btnNo").classList.remove("picked");
+}
+function judge(saidValid){
+  if(done)return;
+  var _t=Date.now();if(saidValid===judge._i&&_t-judge._t<300)return;judge._i=saidValid;judge._t=_t;
+  var q=L.qs[qi];
+  gen++;
+  $("btnYes").classList.add(saidValid?"picked":"");
+  $("btnNo").classList.add(!saidValid?"picked":"");
+  var ok=saidValid===q.valid;
+  if(ok)flash(true,"✓");
+  else flash(false,"✗");
+  if(!ok){
+    wrong++;
+    deadline-=8000;
+    if(wrong>2){stopTimer();failLevel("错误满 3 题（本题结论"+(q.valid?"确实":"并不")+"必然成立）");return;}
+    say("答错了，本题结论"+(q.valid?"能从前提必然推出":"不能必然推出（存在反例模型）")+" · 扣 8 秒");
+  }
+  qi++;
+  if(qi>=L.dc.q){stopTimer();winLevel();return;}
+  updStats();renderQ();
+}
+function winLevel(){
+  done=true;gen++;
+  var used=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+  if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:used}).catch(function(){});
+  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
+  $("ovDesc").innerHTML="答对 "+(L.dc.q-wrong)+" / "+L.dc.q+" 题 · 剩余 "+used+" 秒"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("overlay").classList.add("show");
+}
+function failLevel(reason){
+  done=true;gen++;stopTimer();
+  $("ovTitle").textContent="挑战失败";
+  $("ovDesc").textContent=reason;
+  $("ovBtn").textContent="重试本关";
+  $("overlay").classList.add("show");
+}
+/* ---------- 键盘 ---------- */
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k==="1"){judge(true);e.preventDefault();}
+  else if(k==="2"){judge(false);e.preventDefault();}
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置");}
+  else if(k==="l"||k==="L"){if(!done)openLevelSelect();}
+  else if(k==="Enter"||k===" "){if($("overlay").classList.contains("show")){$("ovBtn").click();e.preventDefault();}}
+});
+$("btnYes").addEventListener("click",function(){judge(true);});
+$("btnNo").addEventListener("click",function(){judge(false);});
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置");});
+$("btnLv").addEventListener("click",function(){if(!done)openLevelSelect();});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(done){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0);}
+    else{lv++;save.lv=Math.max(save.lv,lv);persist();loadLevel(lv);}
+  }else loadLevel(lv);
+});
+/* ---------- 启动 ---------- */
+loadLevel(save.lv);
+selfCheck();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2F8A66"/>
+      <stop offset="0.55" stop-color="#257A58"/>
+      <stop offset="1" stop-color="#1B5E44"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0B3625" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="394" width="800" height="56" fill="#14493A" opacity="0.6"/>
+  <rect y="394" width="800" height="6" fill="#0B3625" opacity="0.5"/>
+  <g stroke="#DCF2E8" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M96 96 h11 M101.5 90.5 v11" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M716 240 h9 M720.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M78 250 h9 M82.5 245.5 v9" stroke-width="2.6" opacity="0.6"/>
+  </g>
+  <g fill="#DCF2E8" opacity="0.45">
+    <circle cx="160" cy="160" r="4"/><circle cx="712" cy="160" r="3.4"/><circle cx="64" cy="210" r="3"/><circle cx="740" cy="200" r="2.6"/>
+  </g>
+
+  <ellipse cx="400" cy="404" rx="252" ry="22" fill="#0B3625" opacity="0.4"/>
+
+  <!-- 5x5 牌阵 -->
+  <g stroke="#3A2A1E" stroke-width="4">
+    <rect x="120" y="35" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="178" y="35" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="236" y="35" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="294" y="35" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="352" y="35" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="120" y="111" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="178" y="111" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="236" y="111" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="294" y="111" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="352" y="111" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="120" y="187" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="178" y="187" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="236" y="187" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="294" y="187" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="352" y="187" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="120" y="263" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="178" y="263" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="236" y="263" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="294" y="263" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="352" y="263" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="120" y="339" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="178" y="339" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="236" y="339" width="52" height="70" rx="7" fill="#FDF3DC"/>
+    <rect x="294" y="339" width="52" height="70" rx="7" fill="#F6E9D2"/>
+    <rect x="352" y="339" width="52" height="70" rx="7" fill="#FDF3DC"/>
+  </g>
+  <!-- 牌面花色点 -->
+  <g fill="#A83850">
+    <circle cx="146" cy="70" r="9"/><circle cx="204" cy="146" r="9"/><circle cx="262" cy="222" r="9"/>
+    <circle cx="320" cy="298" r="9"/><circle cx="378" cy="374" r="9"/>
+  </g>
+  <g fill="#1C1C1E">
+    <circle cx="204" cy="70" r="9"/><circle cx="262" cy="146" r="9"/><circle cx="320" cy="222" r="9"/>
+    <circle cx="378" cy="298" r="9"/><circle cx="146" cy="374" r="9"/>
+  </g>
+  <!-- 亮牌手（中间行高亮） -->
+  <rect x="112" y="179" width="304" height="86" rx="12" fill="none" stroke="#E8B34A" stroke-width="7" opacity="0.9"/>
+
+  <!-- 亮牌手牌（主视觉，带签名表情） -->
+  <g stroke="#3A2A1E" stroke-width="5">
+    <g transform="translate(428 196) rotate(-16)">
+      <rect width="70" height="96" rx="9" fill="#FDF3DC"/>
+      <path d="M35 34 L47 50 L35 66 L23 50 Z" fill="#A83850"/>
+    </g>
+    <g transform="translate(492 172) rotate(-8)">
+      <rect width="70" height="96" rx="9" fill="#FDF3DC"/>
+      <circle cx="35" cy="48" r="15" fill="#1C1C1E"/>
+    </g>
+    <g transform="translate(556 162)">
+      <rect width="70" height="96" rx="9" fill="#FDF3DC"/>
+      <circle cx="26" cy="38" r="6.5" fill="#1F1A14"/>
+      <circle cx="44" cy="38" r="6.5" fill="#1F1A14"/>
+      <path d="M28 62 Q35 71 42 62" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M35 20 L45 32 L35 44 L25 32 Z" fill="#A83850"/>
+    </g>
+    <g transform="translate(620 172) rotate(8)">
+      <rect width="70" height="96" rx="9" fill="#FDF3DC"/>
+      <path d="M35 30 Q47 46 35 62 Q23 46 35 30 Z" fill="#A83850"/>
+    </g>
+    <g transform="translate(684 196) rotate(16)">
+      <rect width="70" height="96" rx="9" fill="#FDF3DC"/>
+      <circle cx="35" cy="48" r="15" fill="#1C1C1E"/>
+    </g>
+  </g>
+  <circle cx="574" cy="184" r="11" fill="#FFFFFF" opacity="0.45"/>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

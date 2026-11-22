@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#88B0D8"/>
+      <stop offset="0.55" stop-color="#6288B8"/>
+      <stop offset="1" stop-color="#405C8A"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#141E30" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#344E74" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#29405E" opacity="0.6"/>
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 260 h9 M68.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 280 h9 M748.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="680" cy="130" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="750" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="390" cy="404" rx="300" ry="20" fill="#263E5E" opacity="0.4"/>
+
+  <!-- 期望柱状 -->
+  <g stroke="#3A2A1E" stroke-width="6">
+    <rect x="450" y="356" width="330" height="10" rx="4" fill="#3A2A1E"/>
+    <rect x="470" y="288" width="46" height="68" rx="8" fill="#C9CDD2"/>
+    <rect x="546" y="248" width="46" height="108" rx="8" fill="#C9CDD2"/>
+    <rect x="622" y="198" width="46" height="158" rx="8" fill="#E8A13C"/>
+    <rect x="698" y="228" width="46" height="128" rx="8" fill="#C9CDD2"/>
+  </g>
+  <g fill="#3A2A1E">
+    <circle cx="493" cy="278" r="6"/><circle cx="569" cy="238" r="6"/><circle cx="721" cy="218" r="6"/>
+  </g>
+  <circle cx="645" cy="186" r="8" fill="#FFF3DC" stroke="#3A2A1E" stroke-width="4"/>
+  <!-- 选中箭头 -->
+  <path d="M645 128 V168 M645 168 L634 156 M645 168 L656 156" stroke="#3A2A1E" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 大骰子（主视觉，签名表情） -->
+  <g>
+    <rect x="110" y="150" width="180" height="180" rx="26" fill="#F2E4BC" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="110" y="150" width="180" height="180" rx="26" fill="url(#gloss)"/>
+    <circle cx="150" cy="190" r="10" fill="#3A2A1E"/>
+    <circle cx="250" cy="290" r="10" fill="#3A2A1E"/>
+    <circle cx="168" cy="232" r="11" fill="#1F1A14"/>
+    <circle cx="232" cy="232" r="11" fill="#1F1A14"/>
+    <circle cx="171" cy="229" r="3.4" fill="#FFFFFF"/>
+    <circle cx="235" cy="229" r="3.4" fill="#FFFFFF"/>
+    <path d="M182 272 Q200 286 218 271" stroke="#1F1A14" stroke-width="7" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 小骰子 -->
+  <g transform="rotate(14 340 320)">
+    <rect x="306" y="286" width="70" height="70" rx="14" fill="#E8A13C" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="328" cy="308" r="7" fill="#3A2A1E"/>
+    <circle cx="354" cy="334" r="7" fill="#3A2A1E"/>
+    <circle cx="328" cy="334" r="7" fill="#3A2A1E"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

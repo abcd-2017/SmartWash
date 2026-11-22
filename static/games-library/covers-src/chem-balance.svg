@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#93C8B4"/>
+      <stop offset="0.55" stop-color="#63A48E"/>
+      <stop offset="1" stop-color="#407868"/>
+    </linearGradient>
+    <linearGradient id="flaskGlass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.15"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#16302A" stop-opacity="0.3"/>
+    </radialGradient>
+    <clipPath id="bulb">
+      <circle cx="240" cy="270" r="100"/>
+    </clipPath>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#356355" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#2A5246" opacity="0.6"/>
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 260 h9 M68.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 280 h9 M748.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="680" cy="130" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="750" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="404" rx="300" ry="20" fill="#285246" opacity="0.4"/>
+
+  <!-- 烧瓶（主视觉，签名表情） -->
+  <g>
+    <rect x="212" y="76" width="56" height="110" fill="url(#flaskGlass)" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="240" cy="270" r="105" fill="url(#flaskGlass)" stroke="#3A2A1E" stroke-width="9"/>
+    <rect x="140" y="288" width="200" height="100" fill="#5FA08C" opacity="0.85" clip-path="url(#bulb)"/>
+    <path d="M140 292 Q165 282 190 292 Q215 302 240 292 Q265 282 290 292 Q315 302 340 292" stroke="#3E7A66" stroke-width="5" fill="none" opacity="0.8" clip-path="url(#bulb)"/>
+    <g fill="#FFFFFF" opacity="0.6">
+      <circle cx="200" cy="330" r="9"/><circle cx="258" cy="346" r="6"/><circle cx="232" cy="312" r="5"/>
+    </g>
+    <path d="M168 212 A105 105 0 0 1 214 168" stroke="#FFFFFF" stroke-width="10" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <!-- 表情 -->
+    <circle cx="205" cy="242" r="12" fill="#1F1A14"/>
+    <circle cx="275" cy="242" r="12" fill="#1F1A14"/>
+    <circle cx="208" cy="239" r="3.6" fill="#FFFFFF"/>
+    <circle cx="278" cy="239" r="3.6" fill="#FFFFFF"/>
+    <path d="M218 280 Q240 294 262 279" stroke="#1F1A14" stroke-width="7" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 反应箭头 -->
+  <path d="M386 240 H438 M438 240 L428 231 M438 240 L428 249" stroke="#3A2A1E" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 系数 2 -->
+  <g stroke="#3A2A1E" stroke-width="5" stroke-linecap="round" fill="none">
+    <path d="M452 180 H472 M472 180 V197 M472 197 H452 M452 197 V214 M452 214 H472"/>
+  </g>
+
+  <!-- 分子块 A -->
+  <g>
+    <rect x="490" y="160" width="130" height="90" rx="14" fill="#E8A13C" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="526" cy="205" r="16" fill="#C4574A" stroke="#3A2A1E" stroke-width="5"/>
+    <circle cx="576" cy="205" r="16" fill="#4A90C4" stroke="#3A2A1E" stroke-width="5"/>
+    <path d="M542 205 H560" stroke="#3A2A1E" stroke-width="5"/>
+    <circle cx="508" cy="182" r="10" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <!-- 加号 -->
+  <path d="M652 190 V220 M637 205 H667" stroke="#3A2A1E" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- 分子块 B（签名表情） -->
+  <g>
+    <rect x="682" y="160" width="108" height="90" rx="14" fill="#9CC4D8" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="714" cy="196" r="7" fill="#1F1A14"/>
+    <circle cx="750" cy="196" r="7" fill="#1F1A14"/>
+    <circle cx="716" cy="194" r="2.2" fill="#FFFFFF"/>
+    <circle cx="752" cy="194" r="2.2" fill="#FFFFFF"/>
+    <path d="M720 222 Q732 231 744 221" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="700" cy="182" r="9" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

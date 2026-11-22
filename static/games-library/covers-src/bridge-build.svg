@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#BFE7F0"/>
+      <stop offset="0.55" stop-color="#D8EFE8"/>
+      <stop offset="1" stop-color="#F3FAF5"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3E4A42" stop-opacity="0.28"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="420" width="800" height="30" fill="#8F6A3A" opacity="0.35"/>
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.6">
+    <path d="M96 96 h11 M101.5 90.5 v11" stroke-width="3.2"/>
+    <path d="M694 84 h12 M700 78 v12" stroke-width="3.4"/>
+    <path d="M716 240 h9 M720.5 235.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M78 250 h9 M82.5 245.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.55">
+    <circle cx="160" cy="160" r="4"/><circle cx="712" cy="160" r="3.4"/><circle cx="64" cy="210" r="3"/><circle cx="740" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 峡谷 -->
+  <path d="M300 210 L500 210 L500 450 L300 450 Z" fill="#3E4A42" opacity="0.85"/>
+  <path d="M60 450 L60 200 Q120 168 182 190 L300 212 L300 450 Z" fill="#C9B691" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M740 450 L740 200 Q680 168 618 190 L500 212 L500 450 Z" fill="#C9B691" stroke="#3A2A1E" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M96 260 Q140 250 176 268 M640 250 Q690 244 716 262 M120 340 Q170 330 210 350" stroke="#A8956F" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- 桁架桥 -->
+  <g stroke="#B98A4E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M290 212 H510"/>
+    <path d="M290 212 V282 M345 212 V282 M400 212 V282 M455 212 V282 M510 212 V282"/>
+    <path d="M290 282 L345 212 M345 282 L400 212 M455 282 L510 212"/>
+    <path d="M400 282 L455 212" stroke="#C9626F" stroke-width="8"/>
+  </g>
+  <rect x="282" y="278" width="236" height="20" rx="6" fill="#8F6A3A" stroke="#3A2A1E" stroke-width="8"/>
+
+  <!-- 小卡车（主视觉，带签名表情） -->
+  <g>
+    <rect x="348" y="238" width="92" height="36" rx="9" fill="#C9626F" stroke="#3A2A1E" stroke-width="8"/>
+    <rect x="440" y="248" width="42" height="26" rx="7" fill="#A83850" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="378" cy="282" r="14" fill="#1F1A14" stroke="#3A2A1E" stroke-width="6"/>
+    <circle cx="458" cy="282" r="14" fill="#1F1A14" stroke="#3A2A1E" stroke-width="6"/>
+    <circle cx="366" cy="252" r="5.5" fill="#FDF3DC"/>
+    <circle cx="388" cy="252" r="5.5" fill="#FDF3DC"/>
+    <path d="M370 264 Q377 270 384 264" stroke="#FDF3DC" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="360" cy="244" r="8" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

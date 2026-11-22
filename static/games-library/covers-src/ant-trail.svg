@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D2B282"/>
+      <stop offset="0.55" stop-color="#AE8752"/>
+      <stop offset="1" stop-color="#825E32"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2E1E0C" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#6B4A24" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#573A1B" opacity="0.6"/>
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 260 h9 M68.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 280 h9 M748.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="680" cy="130" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="750" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="380" cy="404" rx="300" ry="20" fill="#57390F" opacity="0.4"/>
+
+  <!-- 蚁巢 -->
+  <g>
+    <path d="M58 366 A72 72 0 0 1 202 366 Z" fill="#8A5A3A" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+    <ellipse cx="130" cy="366" rx="24" ry="13" fill="#3A2A1E"/>
+    <circle cx="96" cy="322" r="10" fill="#FFFFFF" opacity="0.3"/>
+  </g>
+
+  <!-- 食物 -->
+  <g>
+    <circle cx="664" cy="300" r="32" fill="#E8C24E" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="652" cy="290" r="5" fill="#8A5A3A"/>
+    <circle cx="672" cy="288" r="5" fill="#8A5A3A"/>
+    <circle cx="664" cy="310" r="5" fill="#8A5A3A"/>
+    <circle cx="682" cy="306" r="4" fill="#8A5A3A"/>
+    <circle cx="648" cy="312" r="4" fill="#8A5A3A"/>
+  </g>
+
+  <!-- 信息素轨迹 -->
+  <path d="M150 336 Q250 392 330 330 Q420 252 500 302 Q580 348 636 318" stroke="#F2E4BC" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="14 12" opacity="0.9"/>
+
+  <!-- 小蚁 1 -->
+  <g fill="#3A2A1E">
+    <ellipse cx="238" cy="352" rx="14" ry="10"/>
+    <circle cx="258" cy="348" r="8"/>
+    <circle cx="272" cy="344" r="9"/>
+    <path d="M246 360 L238 372 M256 360 L254 372 M266 358 L272 370" stroke="#3A2A1E" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <!-- 小蚁 2 -->
+  <g fill="#3A2A1E">
+    <ellipse cx="528" cy="318" rx="14" ry="10"/>
+    <circle cx="548" cy="314" r="8"/>
+    <circle cx="562" cy="310" r="9"/>
+    <path d="M536 326 L528 338 M546 326 L544 338 M556 324 L562 336" stroke="#3A2A1E" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <!-- 主蚁（签名表情） -->
+  <g>
+    <!-- 腿 -->
+    <g stroke="#3A2A1E" stroke-width="6" stroke-linecap="round" fill="none">
+      <path d="M330 286 L306 320 M352 288 L346 324 M374 284 L384 320"/>
+      <path d="M300 300 L278 330 M322 306 L312 338 M344 306 L346 340"/>
+    </g>
+    <!-- 腹部 -->
+    <ellipse cx="292" cy="278" rx="50" ry="38" fill="#8A5A3A" stroke="#3A2A1E" stroke-width="7"/>
+    <path d="M258 262 Q292 244 326 262" stroke="#3A2A1E" stroke-width="5" fill="none" opacity="0.6"/>
+    <!-- 胸部 -->
+    <circle cx="360" cy="266" r="28" fill="#A8763E" stroke="#3A2A1E" stroke-width="7"/>
+    <!-- 头 -->
+    <circle cx="416" cy="248" r="30" fill="#8A5A3A" stroke="#3A2A1E" stroke-width="7"/>
+    <!-- 触角 -->
+    <path d="M408 220 Q398 200 384 196 M424 218 Q430 196 444 190" stroke="#3A2A1E" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- 表情 -->
+    <circle cx="404" cy="240" r="7" fill="#1F1A14"/>
+    <circle cx="426" cy="242" r="7" fill="#1F1A14"/>
+    <circle cx="406" cy="237" r="2.4" fill="#FFFFFF"/>
+    <circle cx="428" cy="239" r="2.4" fill="#FFFFFF"/>
+    <path d="M406 264 Q416 272 426 263" stroke="#1F1A14" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="398" cy="226" r="9" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <!-- 草叶 -->
+  <g stroke="#5E7A3A" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.85">
+    <path d="M70 392 Q62 350 78 320"/>
+    <path d="M100 392 Q108 356 96 330"/>
+    <path d="M720 392 Q712 352 728 326"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

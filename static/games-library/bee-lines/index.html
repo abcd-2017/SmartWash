@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>蜜蜂采蜜</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-meadow:#E4F0DC;--g-st-petal:#E8B94C;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-meadow:#2A3627;--g-st-petal:#E8B94C;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 5px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .btn { min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">航程</span><span class="val" id="stDist">0</span></div>
+    <div class="stat"><span class="label">载重</span><span class="val" id="stLoad">0</span></div>
+    <div class="stat"><span class="label">目标蜜</span><span class="val" id="stTarget">0</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="草场花丛、蜂巢与采蜜航线" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点花朵规划航线（点已选的花可取消），装满蜜一次带回</p>
+  <div class="tools">
+    <button class="btn" id="btnReset">重置航线</button>
+    <button class="btn primary" id="btnFly">起飞</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：1-8 选中/取消花朵 · Enter 起飞 · R 重置航线 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+    <button class="btn" id="ovRetry" hidden>重新规划</button>
+  </div>
+</div>
+
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ========== 核心与关卡生成（确定性纯函数；XC-CORE 供 node 抽取独立复现验证） ========== */
+/*XC-CORE-BEGIN*/
+function mulberry32(a){
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+var BL={W:340,H:260,HIVE:[170,238],LEVEL_COUNT:40};
+BL.dist=function(a,b){return Math.hypot(a[0]-b[0],a[1]-b[1])};
+/* Held-Karp：载重≤cap 且环路≤energy 时可采的最大蜜量（flowers[i]=[x,y,n]） */
+BL.maxCollect=function(flowers,cap,energy,hive){
+  var n=flowers.length,full=1<<n,i,j,m;
+  var dh=[],dd=[];
+  for(i=0;i<n;i++){
+    dh.push(BL.dist(hive,flowers[i]));
+    dd.push([]);
+    for(j=0;j<n;j++)dd[i].push(BL.dist(flowers[i],flowers[j]));
+  }
+  var dp=[];
+  for(m=0;m<full;m++)dp.push(new Array(n).fill(1e9));
+  for(i=0;i<n;i++)dp[1<<i][i]=dh[i];
+  var best=0,bestMask=0,bestLoop=0;
+  for(m=1;m<full;m++){
+    var load=0;
+    for(i=0;i<n;i++)if(m>>i&1)load+=flowers[i][2];
+    if(load>cap)continue;
+    for(i=0;i<n;i++){
+      if(!(m>>i&1))continue;
+      var cur=dp[m][i];
+      if(cur>1e8)continue;
+      var loop=cur+dh[i];
+      if(loop<=energy&&load>best){best=load;bestMask=m;bestLoop=loop;}
+      for(j=0;j<n;j++){
+        if(m>>j&1)continue;
+        if(load+flowers[j][2]>cap)continue;
+        var nm=m|(1<<j),nv=cur+dd[i][j];
+        if(nv<dp[nm][j])dp[nm][j]=nv;
+      }
+    }
+  }
+  return {best:best,mask:bestMask,loop:Math.round(bestLoop*10)/10};
+};
+BL.routeDist=function(flowers,route,hive){
+  var d=0,prev=hive;
+  for(var i=0;i<route.length;i++){d+=BL.dist(prev,flowers[route[i]]);prev=flowers[route[i]];}
+  return Math.round((d+BL.dist(prev,hive))*10)/10;
+};
+/* 生成：花位随机（间距约束），cap/体力由最优解回推，target=最优蜜量（必须满规划） */
+BL.genLevel=function(no){
+  for(var attempt=0;attempt<20;attempt++){
+    var rng=mulberry32(77000+no*613+attempt*17);
+    var n=4+Math.min(4,Math.floor((no-1)/8));
+    var flowers=[],tries=0;
+    while(flowers.length<n&&tries<300){
+      tries++;
+      var fx=30+rng()*280,fy=22+rng()*175;
+      var p=[Math.round(fx),Math.round(fy)];
+      if(BL.dist(p,BL.HIVE)<52)continue;
+      var okP=true;
+      for(var q=0;q<flowers.length;q++)if(BL.dist(p,flowers[q])<40){okP=false;break;}
+      if(!okP)continue;
+      p.push(1+Math.floor(rng()*3));
+      flowers.push(p);
+    }
+    if(flowers.length<n)continue;
+    var cap=Math.round((2.5+rng()*1.5+no*0.04)*2)/2;
+    var total=0;
+    for(var t2=0;t2<n;t2++)total+=flowers[t2][2];
+    var inf=BL.maxCollect(flowers,cap,1e9,BL.HIVE);
+    if(inf.best<3||total<inf.best+2)continue;   // 必须有取舍（载重约束生效）
+    var slack=Math.max(4,26-no*0.5);
+    var energy=Math.round((inf.loop+slack)*10)/10;
+    var lv={name:"采蜜·"+(no<10?"0":"")+no,hive:BL.HIVE.slice(),flowers:flowers,
+      cap:cap,energy:energy,target:inf.best,par:inf.best,difficulty:Math.min(9,1+Math.floor(no/5))};
+    var re=BL.maxCollect(flowers,cap,energy,BL.HIVE);
+    if(re.best<lv.target)continue;
+    return lv;
+  }
+  return BL.genLevel(no>1?no-1:1);
+};
+/* 结构校验 */
+BL.validate=function(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return{ok:false,why:"bad"};
+  if(!Array.isArray(d.hive)||d.hive.length!==2)return{ok:false,why:"hive"};
+  if(!Array.isArray(d.flowers)||d.flowers.length<3||d.flowers.length>10)return{ok:false,why:"flowers"};
+  var total=0;
+  for(var i=0;i<d.flowers.length;i++){
+    var f=d.flowers[i];
+    if(!Array.isArray(f)||f.length!==3)return{ok:false,why:"f"+i};
+    if(!isFinite(f[0])||!isFinite(f[1])||f[0]<0||f[0]>BL.W||f[1]<0||f[1]>BL.H)return{ok:false,why:"fpos"+i};
+    if(!Number.isInteger(f[2])||f[2]<1||f[2]>3)return{ok:false,why:"fn"+i};
+    total+=f[2];
+  }
+  if(!isFinite(d.cap)||d.cap<=0||d.cap>20)return{ok:false,why:"cap"};
+  if(!isFinite(d.energy)||d.energy<20)return{ok:false,why:"energy"};
+  if(!isFinite(d.target)||d.target<1||d.target>total)return{ok:false,why:"target"};
+  var best=BL.maxCollect(d.flowers,d.cap,d.energy,d.hive);
+  if(best.best<d.target)return{ok:false,why:"unsolvable"};
+  return{ok:true,why:"",best:best.best};
+};
+BL.validateAll=function(){
+  var fails=[],tight=0,i;
+  for(i=1;i<=BL.LEVEL_COUNT;i++){
+    var L=BL.genLevel(i),r=BL.validate(L);
+    if(!r.ok)fails.push(i+"("+r.why+")");
+    if(r.best===L.target)tight++;
+  }
+  return {total:BL.LEVEL_COUNT,solvable:BL.LEVEL_COUNT-fails.length,fail:fails,tight:tight};
+};
+BL.runTests=function(){
+  var pass=0,rows=[];
+  function ck(name,ok,got){rows.push({name:name,ok:!!ok,got:got});if(ok)pass++;}
+  var F=[[30,0,2],[0,40,3],[100,100,1]],H=[0,0];
+  var a=BL.maxCollect(F,5,1e9,H);
+  ck("锚点·载重约束最优 5",a.best===5&&a.loop===120,"best="+a.best+",loop="+a.loop);
+  var b=BL.maxCollect(F,5,119,H);
+  ck("锚点·体力约束最优 3",b.best===3,"best="+b.best);
+  var c=BL.maxCollect(F,2,1e9,H);
+  ck("锚点·小载重最优 2",c.best===2,"best="+c.best);
+  var d1=BL.routeDist(F,[0,1],H);
+  ck("锚点·航线距离 120",d1===120,d1);
+  var L1=BL.genLevel(1),v1=BL.validate(L1);
+  ck("第1关可解且达标",v1.ok&&v1.best>=L1.target,"best="+v1.best+"/"+L1.target);
+  var r=BL.validateAll();
+  ck("40 关全可解",r.fail.length===0,"fail="+r.fail.join(","));
+  var L2=JSON.stringify(BL.genLevel(7)),L3=JSON.stringify(BL.genLevel(7));
+  ck("生成确定性",L2===L3,"replay");
+  return {total:7,pass:pass,rows:rows,levels:r};
+};
+globalThis.__XC=BL;
+/*XC-CORE-END*/
+
+/* ========== 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ========== */
+var GAME_KEY="bee-lines",SAVE_KEY="sw.beelines.v1";
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function buildDefaultLevels(){
+  var list=[];
+  for(var i=1;i<=BL.LEVEL_COUNT;i++)list.push(BL.genLevel(i));
+  return list;
+}
+var LEVELS=buildDefaultLevels();
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return null;
+    var d;
+    try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!BL.validate(d).ok)return null;
+    var no=parseInt(row.levelNo,10);
+    if(!isFinite(no)||no<1)no=i+1;
+    if(seen[no])return null;
+    seen[no]=1;
+    d.no=no;
+    list.push(d);
+  }
+  list.sort(function(a,b){return a.no-b.no});
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(function(d){return BL.validate(d).ok})){
+      LEVELS=list;return parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      loadLevel(cur);
+    }
+  }).catch(function(){});
+}
+
+/* ========== 存档（本地 + 账号双写，账号更优才覆盖） ========== */
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:parseInt(s.lv,10)||0,best:parseInt(s.best,10)||1}}catch(e){return{lv:0,best:1}}}
+var save=loadSave();
+var unlocked=clamp(save.best,1,1);
+function persist(){
+  var data={lv:cur,best:unlocked};
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,data).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson||state!=="edit")return;
+    try{
+      var r=JSON.parse(res.stateJson),ch=false;
+      var rl=parseInt(r.lv,10),rb=parseInt(r.best,10);
+      if(isFinite(rl)&&rl>save.lv&&rl<LEVELS.length){save.lv=rl;ch=true;}
+      if(isFinite(rb)&&rb>unlocked&&rb<=LEVELS.length){unlocked=rb;ch=true;}
+      if(ch){cur=clamp(save.lv,0,LEVELS.length-1);persist();loadLevel(cur);}
+    }catch(e){}
+  }).catch(function(){});
+}
+
+/* ========== 调色板 ========== */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
+    meadow:v("--g-st-meadow"),petal:v("--g-st-petal")};
+  PAL.badgeText=document.documentElement.dataset.theme==="dark"?PAL.bg:PAL.surface;
+}
+window.__gOnTheme=function(){palLoad()};
+palLoad();
+
+/* ========== 画布与状态 ========== */
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=0,S=1,offX=0,offY=0,NW=BL.W,NH=BL.H;
+var cur=save.lv,L=null,route=[],state="edit";
+var fly=null;   // {s: 已飞距离, path:[[x,y]..], legs:[累计长度], collected}
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.round(w);
+  var H2=Math.round(W*NH/NW);
+  cv.style.height=H2+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H2*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  S=W/NW;
+}
+window.addEventListener("resize",function(){resize();draw();});
+function loadLevel(n){
+  cur=clamp(n,0,LEVELS.length-1);
+  L=LEVELS[cur];
+  if(!BL.validate(L).ok){say("关卡数据异常");return;}
+  route=[];state="edit";fly=null;
+  $("lvTag").textContent="第 "+(cur+1)+" 关 · "+L.name;
+  $("lvRule").textContent="载重 "+L.cap+" · 体力 "+L.energy+" · 目标蜜 "+L.target;
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  say("点花朵规划航线（点已选的花可取消），装满蜜一次带回");
+  syncHud();resize();draw();
+}
+function loadOf(r){
+  var s=0;
+  for(var i=0;i<r.length;i++)s+=L.flowers[r[i]][2];
+  return s;
+}
+function syncHud(){
+  $("stDist").textContent=BL.routeDist(L.flowers,route,L.hive)+"/"+L.energy;
+  $("stDist").className="val"+(BL.routeDist(L.flowers,route,L.hive)>L.energy?" low":"");
+  $("stLoad").textContent=loadOf(route)+"/"+L.cap;
+  $("stLoad").className="val"+(loadOf(route)>L.cap?" low":"");
+  $("stTarget").textContent=(fly?fly.collected:0)+"/"+L.target;
+}
+/* ---------- 交互 ---------- */
+function toggleFlower(i){
+  if(state!=="edit")return;
+  var at=route.indexOf(i);
+  if(at>=0){route.splice(at,1);say("已从航线移除一朵");}
+  else{
+    if(loadOf(route)+L.flowers[i][2]>L.cap){say("超载了（载重 "+L.cap+"），先去掉一朵");return;}
+    route.push(i);
+    say("第 "+route.length+" 站已加入航线");
+  }
+  syncHud();draw();
+}
+function flyRoute(){
+  if(state!=="edit")return;
+  if(!route.length){say("先点花朵规划航线");return;}
+  var d=BL.routeDist(L.flowers,route,L.hive);
+  if(d>L.energy){say("航程 "+d+" 超出体力 "+L.energy+"，去掉一站试试");return;}
+  //构造折线与累计腿长
+  var path=[L.hive.slice()],legs=[0],acc2=0,prev=L.hive;
+  for(var i=0;i<route.length;i++){
+    var p=L.flowers[route[i]];
+    acc2+=BL.dist(prev,p);legs.push(acc2);path.push(p.slice());prev=p;
+  }
+  acc2+=BL.dist(prev,L.hive);legs.push(acc2);path.push(L.hive.slice());
+  fly={s:0,path:path,legs:legs,collected:0,next:0,dist:d};
+  state="fly";
+  $("btnFly").disabled=true;
+  say("飞行中…");
+}
+function settle(){
+  state="edit";fly=null;
+  $("btnFly").disabled=false;
+  if(flyCol>=L.target)winLevel();
+  else failLevel();
+}
+var flyCol=0,ovMode="select";
+function winLevel(){
+  var collected=flyCol;
+  if(cur<LEVELS.length-1&&cur+1>save.lv)save.lv=cur+1;
+  if(cur+2>unlocked)unlocked=Math.min(LEVELS.length,cur+2);
+  persist();
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:cur+1,metricExtra:collected}).catch(function(){});
+  $("ovTitle").textContent=(cur>=LEVELS.length-1)?"全部通关！":"满载而归！";
+  $("ovDesc").innerHTML="收成 "+collected+" 蜜（目标 "+L.target+"，满载 "+L.par+"）"+(cur<LEVELS.length-1?"<br>已解锁第 "+(cur+2)+" 关":"<br>40 关全部完成");
+  $("ovBtn").textContent=(cur>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("ovRetry").hidden=true;
+  ovMode="win";
+  $("overlay").classList.add("show");
+}
+function failLevel(){
+  $("ovTitle").textContent="蜜不够";
+  $("ovDesc").textContent="这次只带回 "+flyCol+" 蜜，目标 "+L.target+"。调整航线顺序更省体力。";
+  $("ovBtn").textContent="选关";
+  $("ovRetry").hidden=false;
+  ovMode="fail";
+  $("overlay").classList.add("show");
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<unlocked-1?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>=unlocked;
+      b.addEventListener("click",function(){
+        cur=i;save.lv=Math.max(save.lv,cur);persist();
+        $("overlay").classList.remove("show");
+        loadLevel(cur);
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("ovRetry").hidden=true;
+  ovMode="select";
+  $("overlay").classList.add("show");
+}
+
+/* ========== 绘制 ========== */
+function draw(){
+  ctx.save();
+  ctx.translate(offX,offY);ctx.scale(S,S);
+  ctx.fillStyle=PAL.meadow;ctx.fillRect(0,0,NW,NH);
+  //航线
+  if(route.length){
+    ctx.strokeStyle=PAL.primary;ctx.globalAlpha=0.55;ctx.lineWidth=2;
+    ctx.setLineDash([6,5]);
+    ctx.beginPath();
+    ctx.moveTo(L.hive[0],L.hive[1]);
+    for(var i=0;i<route.length;i++)ctx.lineTo(L.flowers[route[i]][0],L.flowers[route[i]][1]);
+    ctx.lineTo(L.hive[0],L.hive[1]);
+    ctx.stroke();
+    ctx.setLineDash([]);ctx.globalAlpha=1;
+  }
+  //花朵
+  for(var f=0;f<L.flowers.length;f++){
+    var fl=L.flowers[f],at=route.indexOf(f);
+    var r=8+fl[2]*1.6;
+    ctx.fillStyle=PAL.petal;
+    for(var p=0;p<5;p++){
+      var ang=p/5*Math.PI*2-Math.PI/2;
+      ctx.beginPath();
+      ctx.arc(fl[0]+Math.cos(ang)*r*0.72,fl[1]+Math.sin(ang)*r*0.72,r*0.42,0,7);
+      ctx.fill();
+    }
+    ctx.fillStyle=PAL.surface;
+    ctx.beginPath();ctx.arc(fl[0],fl[1],r*0.52,0,7);ctx.fill();
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle=PAL.text;
+    ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(String(fl[2]),fl[0],fl[1]+1);
+    if(at>=0){
+      ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(fl[0],fl[1],r+5,0,7);ctx.stroke();
+      ctx.fillStyle=PAL.deep;
+      ctx.beginPath();ctx.arc(fl[0]+r+5,fl[1]-r-5,8,0,7);ctx.fill();
+      ctx.fillStyle=PAL.badgeText;
+      ctx.fillText(String(at+1),fl[0]+r+5,fl[1]-r-5+1);
+    }
+  }
+  //蜂巢
+  ctx.fillStyle=PAL.primary;
+  ctx.beginPath();
+  for(var k=0;k<6;k++){
+    var ang2=k/6*Math.PI*2-Math.PI/2;
+    var hx=L.hive[0]+Math.cos(ang2)*14,hy=L.hive[1]+Math.sin(ang2)*14;
+    if(k===0)ctx.moveTo(hx,hy);else ctx.lineTo(hx,hy);
+  }
+  ctx.closePath();ctx.fill();
+  ctx.fillStyle=PAL.badgeText;
+  ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText("巢",L.hive[0],L.hive[1]+1);
+  //蜜蜂（编辑态停巢上，飞行态沿航线）
+  var bx=L.hive[0],by=L.hive[1]-14;
+  if(state==="fly"&&fly){
+    var pos=posAt(fly);
+    bx=pos[0];by=pos[1];
+  }
+  ctx.fillStyle=PAL.warning;
+  ctx.beginPath();ctx.ellipse(bx,by,8,5.5,0,0,7);ctx.fill();
+  ctx.fillStyle=PAL.text;
+  ctx.fillRect(bx-3,by-5,2.4,10);
+  ctx.fillRect(bx+1.5,by-5,2.4,10);
+  ctx.restore();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  ctx.strokeRect(offX+0.5,offY+0.5,NW*S-1,NH*S-1);
+}
+function posAt(fly){
+  var s=fly.s;
+  for(var i=1;i<fly.legs.length;i++){
+    if(s<=fly.legs[i]){
+      var t=(s-fly.legs[i-1])/Math.max(0.001,fly.legs[i]-fly.legs[i-1]);
+      var a=fly.path[i-1],b=fly.path[i];
+      return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+    }
+  }
+  return fly.path[fly.path.length-1];
+}
+
+/* ========== 步进（飞行动画推进；rAF + visibilitychange 停帧/续跑，dt 钳制） ========== */
+var SPEED=72;
+function step(dt){
+  syncHud();
+  if(state!=="fly"||!fly)return;
+  fly.s+=SPEED*dt;
+  while(fly.next<route.length&&fly.s>=fly.legs[fly.next+1]){
+    fly.collected+=L.flowers[route[fly.next]][2];
+    fly.next++;
+  }
+  if(fly.s>=fly.dist){
+    flyCol=fly.collected;
+    settle();
+  }
+}
+
+/* ========== 主循环 ========== */
+var rafPending=false,lastTs=0;
+function frame(ts){
+  rafPending=false;
+  if(document.hidden)return;
+  if(!lastTs)lastTs=ts;
+  var dt=Math.min(0.05,(ts-lastTs)/1000||0);
+  lastTs=ts;
+  step(dt);draw();
+  rafPending=true;requestAnimationFrame(frame);
+}
+function kick(){if(!rafPending&&!document.hidden){rafPending=true;requestAnimationFrame(frame);}}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){lastTs=0;}
+  else{lastTs=0;kick();}
+});
+
+/* ========== 输入 ========== */
+cv.addEventListener("pointerdown",function(e){
+  var rect=cv.getBoundingClientRect();
+  var x=(e.clientX-rect.left-offX)/S,y=(e.clientY-rect.top-offY)/S;
+  e.preventDefault();
+  for(var i=0;i<L.flowers.length;i++){
+    if(BL.dist([x,y],L.flowers[i])<20){toggleFlower(i);return;}
+  }
+});
+$("btnFly").addEventListener("click",flyRoute);
+$("btnReset").addEventListener("click",function(){
+  if(state!=="edit")return;
+  route=[];say("航线已清空");syncHud();draw();
+});
+$("btnLv").addEventListener("click",openLevelSelect);
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  if(ovMode==="win"){
+    if(cur>=LEVELS.length-1){cur=0;save.lv=0;persist();loadLevel(0);}
+    else{cur++;loadLevel(cur);}
+  }else if(ovMode==="fail"){
+    openLevelSelect();
+  }
+});
+$("ovRetry").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  route=[];syncHud();draw();
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k>="1"&&k<="8"){var i=parseInt(k,10)-1;if(i<L.flowers.length)toggleFlower(i);e.preventDefault();}
+  else if(k==="Enter"){e.preventDefault();flyRoute();}
+  else if(k==="r"||k==="R"){if(state==="edit"){route=[];say("航线已清空");syncHud();draw();}}
+  else if(k==="Backspace"){e.preventDefault();if(state==="edit"&&route.length){route.pop();syncHud();draw();}}
+});
+
+/* 调试验证入口 */
+window.__validateLevels=function(){try{return BL.runTests()}catch(e){return {error:String(e)}}};
+
+/* ========== 启动（续玩：从存档关卡起步） ========== */
+cur=clamp(save.lv,0,LEVELS.length-1);
+loadLevel(cur);
+requestAnimationFrame(frame);
+syncLevelsFromServer();
+syncSaveFromServer();
+
+})();
+</script>
+
+</body>
+</html>

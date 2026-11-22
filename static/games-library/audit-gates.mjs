@@ -59,7 +59,15 @@ const STRICT = new Set([
   "freecell", "pyramid-sol", "golf-solitaire", "clock-solitaire", "accordion-sol", "rummy-lite", "old-maid",
   "war-cards", "spit-race", "three-card-monte", "baccarat-lite", "dice-poker", "stop-bus", "dudo-bluff",
   "checkers", "hex-line", "breakthrough", "morris-line", "minishogi", "jungle-dark", "backgammon-lite",
-  "ludo-solo", "snake-ladder", "mancala", "abalone-push"
+  "ludo-solo", "snake-ladder", "mancala", "abalone-push",
+  "amazon-queens", "ataxx-flood", "l-game", "quoridor-lite", "tsuro-path", "bingo-line", "poker-sol", "nim-coins",
+  "bridge-build", "tower-crane", "dam-gates", "balloon-inflate", "pendulum-shot", "trebuchet", "seesaw-stack",
+  "chain-blast", "kitchen-line", "signal-cross", "elevator-rush", "metro-dispatch", "tower-control", "stock-tap",
+  "ant-trail", "bee-lines", "tank-eco", "bonsai-trim", "garden-waters", "laundry-day", "power-grid", "well-drill",
+  "coaster-build", "pond-fish", "warehouse-rush",
+  "futoshiki", "binary-taku", "magic-square", "prime-fact", "fraction-pie", "discount-math", "unit-quiz",
+  "clock-math", "money-change", "abacus-flash", "sequence-next", "logic-owners", "syllogism-judge",
+  "calendar-quiz", "dice-odds", "chem-balance", "speed-math", "number-maze", "tower-sum"
 ]);
 
 // §2 基础 token + §3 已登记素材 token 前缀

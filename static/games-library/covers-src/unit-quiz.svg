@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A8D2E6"/>
+      <stop offset="0.55" stop-color="#79AECF"/>
+      <stop offset="1" stop-color="#4E84A4"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1E3A4A" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#3E6E88" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#335D74" opacity="0.6"/>
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 260 h9 M68.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 280 h9 M748.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="680" cy="130" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="750" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="380" cy="404" rx="290" ry="20" fill="#2C586E" opacity="0.4"/>
+
+  <!-- 直尺 -->
+  <g>
+    <rect x="92" y="140" width="36" height="236" rx="7" fill="#E8C24E" stroke="#3A2A1E" stroke-width="7"/>
+    <g stroke="#3A2A1E" stroke-width="3.5" stroke-linecap="round">
+      <path d="M92 164 H112 M92 188 H106 M92 212 H112 M92 236 H106 M92 260 H112 M92 284 H106 M92 308 H112 M92 332 H106 M92 356 H112"/>
+    </g>
+    <circle cx="110" cy="154" r="5" fill="#3A2A1E"/>
+    <circle cx="102" cy="158" r="8" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <!-- 天平（主视觉） -->
+  <g>
+    <!-- 底座 -->
+    <path d="M278 366 L382 366 L364 332 L296 332 Z" fill="#8A5A3A" stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round"/>
+    <!-- 立柱 -->
+    <rect x="316" y="216" width="28" height="122" rx="9" fill="#C9CDD2" stroke="#3A2A1E" stroke-width="7"/>
+    <!-- 横梁 -->
+    <rect x="168" y="202" width="324" height="20" rx="10" fill="#E8A13C" stroke="#3A2A1E" stroke-width="7"/>
+    <!-- 左盘 -->
+    <path d="M190 222 L212 272 M252 222 L230 272" stroke="#3A2A1E" stroke-width="6" stroke-linecap="round"/>
+    <path d="M184 272 Q212 300 240 272 Z" fill="#C9CDD2" stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round"/>
+    <!-- 右盘 -->
+    <path d="M430 222 L452 272 M492 222 L470 272" stroke="#3A2A1E" stroke-width="6" stroke-linecap="round"/>
+    <path d="M424 272 Q452 300 480 272 Z" fill="#C9CDD2" stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round"/>
+    <!-- 左盘砝码 -->
+    <path d="M196 268 L196 250 Q196 242 204 242 L220 242 Q228 242 228 250 L228 268 Z" fill="#8A9096" stroke="#3A2A1E" stroke-width="5"/>
+    <path d="M202 242 Q212 230 222 242" fill="none" stroke="#3A2A1E" stroke-width="5" stroke-linecap="round"/>
+    <!-- 表盘（签名表情） -->
+    <circle cx="330" cy="172" r="30" fill="#F2E4BC" stroke="#3A2A1E" stroke-width="7"/>
+    <circle cx="320" cy="166" r="5" fill="#1F1A14"/>
+    <circle cx="340" cy="166" r="5" fill="#1F1A14"/>
+    <path d="M321 182 Q330 189 339 181" stroke="#1F1A14" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <path d="M330 172 L344 160" stroke="#C4574A" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="330" cy="172" r="4" fill="#3A2A1E"/>
+    <circle cx="316" cy="152" r="7" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <!-- 换算箭头 -->
+  <path d="M520 240 H566 M566 240 L554 230 M566 240 L554 250" stroke="#3A2A1E" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 时钟 -->
+  <g>
+    <circle cx="640" cy="220" r="72" fill="#F2E4BC" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="640" cy="220" r="72" fill="url(#gloss)"/>
+    <g stroke="#8A7A5E" stroke-width="5" stroke-linecap="round">
+      <path d="M640 162 V176 M698 220 H684 M640 278 V264 M582 220 H596"/>
+      <path d="M681 179 L671 189 M681 261 L671 251 M599 261 L609 251 M599 179 L609 189"/>
+    </g>
+    <path d="M640 220 L640 176" stroke="#3A2A1E" stroke-width="9" stroke-linecap="round"/>
+    <path d="M640 220 L672 234" stroke="#3A2A1E" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="640" cy="220" r="8" fill="#3A2A1E"/>
+    <circle cx="614" cy="176" r="12" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

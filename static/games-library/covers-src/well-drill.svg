@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DCE9F2"/>
+      <stop offset="0.5" stop-color="#C9B088"/>
+      <stop offset="1" stop-color="#6E5436"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#241A0C" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <!-- 地层剖面 -->
+  <path d="M0 212 Q200 202 400 212 Q600 222 800 210 L800 286 Q600 296 400 286 Q200 276 0 288 Z" fill="#C9A876"/>
+  <path d="M0 288 Q200 278 400 288 Q600 298 800 286 L800 356 Q600 366 400 356 Q200 346 0 358 Z" fill="#9A7B52"/>
+  <path d="M0 358 Q200 348 400 358 Q600 368 800 356 L800 450 L0 450 Z" fill="#78766E"/>
+  <!-- 岩层纹 -->
+  <g stroke="#5E5C56" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7">
+    <path d="M80 400 Q140 390 200 402 M300 420 Q360 410 420 422 M520 400 Q580 390 640 402 M180 436 Q240 426 300 438"/>
+  </g>
+  <!-- 草皮 -->
+  <path d="M0 210 Q200 200 400 210 Q600 220 800 208 L800 220 L0 220 Z" fill="#5E8C4A"/>
+  <g stroke="#4A7038" stroke-width="4" stroke-linecap="round">
+    <path d="M60 210 L56 196 M84 210 L88 198 M700 208 L696 194 M724 208 L728 196"/>
+  </g>
+  <!-- 星尘 -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 140 h9 M68.5 135.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 160 h9 M748.5 155.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="150" cy="120" r="4"/><circle cx="680" cy="110" r="3.4"/><circle cx="70" cy="170" r="3"/><circle cx="750" cy="120" r="2.6"/>
+  </g>
+
+  <!-- 村庄 -->
+  <g>
+    <rect x="648" y="150" width="86" height="62" rx="6" fill="#F2E4BC" stroke="#3A2A1E" stroke-width="7"/>
+    <path d="M640 154 L691 122 L742 154 Z" fill="#B85C3A" stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round"/>
+    <rect x="680" y="178" width="24" height="34" rx="4" fill="#8A5A3A" stroke="#3A2A1E" stroke-width="5"/>
+  </g>
+
+  <!-- 井架 -->
+  <g stroke="#3A2A1E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M250 212 L292 108 L334 212"/>
+    <path d="M266 172 H318 M278 140 H306"/>
+  </g>
+  <rect x="284" y="150" width="16" height="246" fill="#8A9096" stroke="#3A2A1E" stroke-width="6"/>
+  <path d="M276 396 L308 396 L292 428 Z" fill="#3A2A1E"/>
+
+  <!-- 含水层 -->
+  <ellipse cx="292" cy="404" rx="86" ry="34" fill="#4A9FD4" stroke="#3A2A1E" stroke-width="6"/>
+  <ellipse cx="292" cy="398" rx="60" ry="18" fill="#6BB4DE" opacity="0.8"/>
+
+  <!-- 水滴（签名表情） -->
+  <g>
+    <path d="M292 360 Q272 392 292 404 Q312 392 292 360 Z" fill="#A8D4E8" stroke="#3A2A1E" stroke-width="5" stroke-linejoin="round"/>
+    <circle cx="284" cy="384" r="5" fill="#1F1A14"/>
+    <circle cx="300" cy="384" r="5" fill="#1F1A14"/>
+    <circle cx="286" cy="382" r="1.8" fill="#FFFFFF"/>
+    <circle cx="302" cy="382" r="1.8" fill="#FFFFFF"/>
+    <path d="M284 394 Q292 400 300 393" stroke="#1F1A14" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="280" cy="372" r="5" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

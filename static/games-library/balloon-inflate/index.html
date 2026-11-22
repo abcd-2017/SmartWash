@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>吹气控爆</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-bi-* 本作素材色）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-bi-sky1:#DFF2E8;--g-st-bi-sky2:#F3FAF5;--g-st-bi-bal:#D96A7A;--g-st-bi-bal2:#A83850;--g-st-bi-hl:#FFFFFF;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-bi-sky1:#182420;--g-st-bi-sky2:#101614;--g-st-bi-bal:#C25F6E;--g-st-bi-bal2:#8E4150;--g-st-bi-hl:#FFFFFF;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .ctl {
+    width: 100%; min-height: 48px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-btn-primary); color: #fff;
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .ctl:active { opacity: .75; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">气球 · 第 1 只</span><span class="sub" id="lvRule">爆 3 次收工</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">本球价值</span><span class="val" id="stCur">0</span></div>
+    <div class="stat"><span class="label">钱罐</span><span class="val" id="stBank">0</span></div>
+    <div class="stat"><span class="label">历史最高</span><span class="val" id="stBest">0</span></div>
+    <div class="stat"><span class="label">已爆</span><span class="val" id="stPops">0/3</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="吹气控爆游戏画面：越吹越大的气球" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">连点「吹」把气球吹大，价值随之上涨；觉得要爆了就赶紧「存」进钱罐</p>
+  <div class="tools">
+    <button class="btn" id="btnBank">存进钱罐</button>
+  </div>
+  <button class="ctl" id="btnPump">吹 一 口</button>
+  <p class="foot">键盘：空格 吹气 · Enter 存钱 · 气球发抖说明接近爆点 · 爆 3 次结束，钱罐最高值上报排行</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">收工！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn" id="ovBtn" style="background:var(--g-btn-primary);color:#fff">再开一轮</button>
+  </div>
+</div>
+
+<script>
+/*X3-ENGINE-BEGIN*/
+var BI=(function(){
+"use strict";
+/* ===== 确定性伪随机（mulberry32，锚点用例可复现） ===== */
+function makeRng(seed){return{s:seed|0};}
+function rngNext(rng){
+  rng.s=(rng.s+0x6D2B79F5)|0;
+  var t=Math.imul(rng.s^(rng.s>>>15),1|rng.s);
+  t=(t+Math.imul(t^(t>>>7),61|t))^t;
+  return ((t^(t>>>14))>>>0)/4294967296;
+}
+/* ===== 常量 ===== */
+var POP_MIN=4,POP_MAX=14,MAX_POPS=3;
+/* 隐藏爆点：第 idx 只气球的吹气上限（吹到 popK+1 口才爆，popK 口以内安全） */
+function drawPop(rng){return POP_MIN+Math.floor(rngNext(rng)*(POP_MAX-POP_MIN+1));}
+function newGame(seed){
+  var rng=makeRng(seed|0);
+  return {rng:rng,idx:0,k:0,popK:drawPop(rng),bank:0,pops:0,over:false,reason:null,
+    poppedNow:false,bankedNow:0};
+}
+/* 连打吹气：k+1；超过隐藏爆点即爆（价值归零），爆满 3 只收工 */
+function pump(st){
+  if(st.over)return st;
+  st.poppedNow=false;
+  st.k++;
+  if(st.k>st.popK){
+    st.poppedNow=true;
+    st.pops++;
+    st.k=0;st.idx++;
+    st.popK=drawPop(st.rng);
+    if(st.pops>=MAX_POPS){st.over=true;st.reason="pops";}
+  }
+  return st;
+}
+/* 存钱：本球价值入罐，换新球 */
+function bank(st){
+  if(st.over||st.k<=0)return st;
+  st.bankedNow=st.k;
+  st.bank+=st.k;
+  st.k=0;st.idx++;
+  st.popK=drawPop(st.rng);
+  return st;
+}
+/* ===== 验证器（含锚点用例，固定种子） ===== */
+function selfTest(){
+  var out=[];
+  /* 锚点1：seed=20261122 第 0 只球 popK=13（确定性抽样）→ 吹 9 口安全、第 10 口爆 */
+  var st=newGame(20261122);
+  var pk0=st.popK;
+  var safe=true;
+  for(var i=0;i<pk0;i++)if(pump(st).poppedNow)safe=false;
+  out.push({name:"锚点1·popK口以内吹不爆",pass:safe&&st.k===pk0&&!st.poppedNow});
+  pump(st);
+  out.push({name:"锚点2·第popK+1口必爆且换新球",pass:st.poppedNow&&st.pops===1&&st.k===0&&st.idx===1});
+  /* 锚点3：存钱入罐 */
+  var st2=newGame(20261122);
+  pump(st2);pump(st2);pump(st2);pump(st2);pump(st2);
+  bank(st2);
+  out.push({name:"锚点3·存5口入罐5分",pass:st2.bank===5&&st2.bankedNow===5&&st2.k===0});
+  /* 锚点4：连爆 3 只 → 收工 */
+  var st3=newGame(20261122);
+  var guard=0;
+  while(!st3.over&&guard++<1000)pump(st3);
+  out.push({name:"锚点4·爆满3只收工",pass:st3.over&&st3.reason==="pops"&&st3.pops===3});
+  return out;
+}
+return {POP_MIN:POP_MIN,POP_MAX:POP_MAX,MAX_POPS:MAX_POPS,
+  makeRng:makeRng,rngNext:rngNext,newGame:newGame,pump:pump,bank:bank,selfTest:selfTest};
+})();
+window.BI=BI;
+/*X3-ENGINE-END*/
+</script>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);}
+  };
+})();
+
+/* ---------- 调色板 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
+    sky1:v("--g-st-bi-sky1"),sky2:v("--g-st-bi-sky2"),bal:v("--g-st-bi-bal"),bal2:v("--g-st-bi-bal2")};
+}
+window.__gOnTheme=function(){palLoad()};
+palLoad();
+/* ---------- 存档（历史最高钱罐，本地 + 账号双写） ---------- */
+var GAME_KEY="balloon-inflate",SAVE_KEY="sw.ballooninflate.v1";
+function storeGet(k){try{return window.localStorage.getItem(k)}catch(e){return null}}
+function storeSet(k,val){try{window.localStorage.setItem(k,val)}catch(e){}}
+var best=parseInt(storeGet(SAVE_KEY)||"0",10)||0;
+$("stBest").textContent=best;
+function persistBest(){
+  storeSet(SAVE_KEY,String(best));
+  if(GB.available)GB.saveState(GAME_KEY,String(best)).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var rb=parseInt(JSON.parse(res.stateJson),10)||0;
+      if(rb>best){best=rb;persistBest();$("stBest").textContent=best;}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 状态 ---------- */
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=480,H=340;
+var st=null,animT=0,popT=0,pumping=false;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function startGame(){
+  st=BI.newGame((Date.now()&0x7fffffff)|1);
+  pumping=false;popT=0;
+  $("ovBtn").style.background="var(--g-surface2)";$("ovBtn").style.color="var(--g-text)";
+  hideOverlay();updAll();
+  $("lvRule").textContent="爆 "+BI.MAX_POPS+" 次收工";
+  say("连点「吹」把气球吹大；气球发抖说明接近爆点，快存！");
+}
+function updAll(){
+  $("stCur").textContent=st.k;
+  $("stBank").textContent=st.bank;
+  $("stPops").textContent=st.pops+"/"+BI.MAX_POPS;
+  $("lvTag").textContent="气球 · 第 "+(st.idx+1)+" 只";
+}
+function doPump(){
+  if(!st||st.over){return;}
+  BI.pump(st);
+  pumping=true;animT=0.18;
+  if(st.poppedNow){popT=0.5;say("砰！爆了，这只的分没了");}
+  updAll();
+  if(st.over)endGame();
+}
+function doBank(){
+  if(!st||st.over)return;
+  if(st.k<=0){say("球还没吹，先吹几口");return;}
+  var v=st.k;
+  BI.bank(st);
+  say("存入 "+v+" 分，换新球");
+  updAll();
+}
+function endGame(){
+  var isRecord=st.bank>best&&st.bank>0;
+  if(isRecord){best=st.bank;persistBest();$("stBest").textContent=best;}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:best}).catch(function(){});
+  $("ovTitle").textContent="收工！";
+  $("ovDesc").textContent="爆满 3 只气球，钱罐定格 "+st.bank+" 分"+(isRecord?" · 新纪录":"");
+  $("ovBtn").textContent="再开一轮";
+  $("ovBtn").style.background="var(--g-btn-primary)";$("ovBtn").style.color="#fff";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+/* ---------- 绘制 ---------- */
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.style.height=Math.round(w*H/W)+"px";
+  cv.width=Math.round(w*dpr);cv.height=Math.round(w*H/W*dpr);
+  var sc=w/W;
+  ctx.setTransform(dpr*sc,0,0,dpr*sc,0,0);
+}
+function rr(x,y,w2,h2,r){
+  r=Math.min(r,w2/2,h2/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w2,y,x+w2,y+h2,r);ctx.arcTo(x+w2,y+h2,x,y+h2,r);
+  ctx.arcTo(x,y+h2,x,y,r);ctx.arcTo(x,y,x+w2,y,r);ctx.closePath();
+}
+function draw(ts){
+  var g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,PAL.sky1);g.addColorStop(1,PAL.sky2);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  if(!st){return;}
+  var cx=W/2,cy=H/2+10;
+  if(popT>0){
+    /* 爆裂碎片 */
+    var t=1-popT/0.5;
+    ctx.strokeStyle=PAL.bal;ctx.lineWidth=3;
+    for(var i=0;i<8;i++){
+      var a=i*0.785;
+      var r1=40+t*90,r2=r1+26*(1-t);
+      ctx.globalAlpha=Math.max(0,1-t);
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1);
+      ctx.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+    return;
+  }
+  var r=24+st.k*6;
+  var rm=!!window.__gRM;
+  var wob=rm?0:(st.k>0&&r>90?Math.sin(ts/40)*3:Math.sin(ts/300)*1.5);
+  var sque=rm?1:(1+(pumping?animT*0.5:0));
+  var rx=r*sque,ry=r/sque;
+  ctx.fillStyle=PAL.bal;
+  ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,7);ctx.fill();
+  ctx.strokeStyle=PAL.bal2;ctx.lineWidth=3;ctx.stroke();
+  /* 高光（恒白素材） */
+  ctx.fillStyle="rgba(255,255,255,.7)";
+  ctx.beginPath();ctx.ellipse(cx-rx*0.35,cy-ry*0.4,rx*0.18,ry*0.12,-0.6,0,7);ctx.fill();
+  /* 气球结与线 */
+  ctx.fillStyle=PAL.bal2;
+  ctx.beginPath();ctx.moveTo(cx-8,cy+ry-2);ctx.lineTo(cx+8,cy+ry-2);ctx.lineTo(cx,cy+ry+10);ctx.closePath();ctx.fill();
+  ctx.strokeStyle=PAL.bal2;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(cx,cy+ry+10);
+  ctx.quadraticCurveTo(cx+18,cy+ry+40,cx,cy+ry+66);
+  ctx.stroke();
+  /* 本球价值 */
+  ctx.fillStyle=PAL.text;
+  ctx.font="700 22px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText(st.k>0?String(st.k):"",cx,cy);
+  if(st.k>0&&r>90){
+    ctx.fillStyle=PAL.danger;
+    ctx.font="600 14px sans-serif";
+    ctx.fillText("危险！",cx,cy-ry-14);
+  }
+}
+/* ---------- 主循环（切后台停续；纯动画计时用局部 t，不影响玩法状态） ---------- */
+var rafId=0,last=0;
+function frame(ts){
+  rafId=requestAnimationFrame(frame);
+  if(!last)last=ts;
+  var dt=Math.min(0.05,(ts-last)/1000||0);
+  last=ts;
+  if(animT>0)animT-=dt;
+  if(popT>0)popT-=dt;
+  draw(ts);
+}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){if(rafId){cancelAnimationFrame(rafId);rafId=0;}}
+  else if(!rafId){last=0;rafId=requestAnimationFrame(frame);}
+});
+/* ---------- 输入 ---------- */
+cv.addEventListener("pointerdown",function(e){doPump();e.preventDefault();});
+cv.addEventListener("pointercancel",function(){});
+$("btnPump").addEventListener("click",doPump);
+$("btnBank").addEventListener("click",doBank);
+$("ovBtn").addEventListener("click",startGame);
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k===" "){e.preventDefault();doPump();}
+  else if(k==="Enter"){e.preventDefault();doBank();}
+});
+window.addEventListener("resize",resize);
+/* ---------- 启动 ---------- */
+startGame();
+resize();rafId=requestAnimationFrame(frame);
+syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

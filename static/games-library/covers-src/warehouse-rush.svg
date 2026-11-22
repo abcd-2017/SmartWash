@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#CCD4C6"/>
+      <stop offset="0.55" stop-color="#A2AC92"/>
+      <stop offset="1" stop-color="#747E62"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#20241A" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#5E6A52" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#4C5742" opacity="0.6"/>
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none" opacity="0.5">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 260 h9 M68.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 280 h9 M748.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="680" cy="130" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="750" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="400" cy="404" rx="320" ry="20" fill="#4A5440" opacity="0.4"/>
+
+  <!-- 左货架 -->
+  <g>
+    <rect x="76" y="100" width="12" height="262" fill="#8A5A3A" stroke="#3A2A1E" stroke-width="5"/>
+    <rect x="236" y="100" width="12" height="262" fill="#8A5A3A" stroke="#3A2A1E" stroke-width="5"/>
+    <rect x="76" y="148" width="172" height="10" fill="#A8763E" stroke="#3A2A1E" stroke-width="4"/>
+    <rect x="76" y="228" width="172" height="10" fill="#A8763E" stroke="#3A2A1E" stroke-width="4"/>
+    <rect x="76" y="308" width="172" height="10" fill="#A8763E" stroke="#3A2A1E" stroke-width="4"/>
+    <g stroke="#3A2A1E" stroke-width="5">
+      <rect x="100" y="106" width="60" height="42" fill="#C9A876"/>
+      <rect x="172" y="114" width="54" height="34" fill="#9CC4D8"/>
+      <rect x="110" y="186" width="70" height="42" fill="#E8A13C"/>
+      <rect x="192" y="194" width="44" height="34" fill="#C9A876"/>
+      <rect x="104" y="266" width="64" height="42" fill="#9CC4D8"/>
+      <rect x="180" y="274" width="54" height="34" fill="#E8A13C"/>
+    </g>
+  </g>
+
+  <!-- 右货架 -->
+  <g>
+    <rect x="576" y="100" width="12" height="262" fill="#8A5A3A" stroke="#3A2A1E" stroke-width="5"/>
+    <rect x="736" y="100" width="12" height="262" fill="#8A5A3A" stroke="#3A2A1E" stroke-width="5"/>
+    <rect x="576" y="148" width="172" height="10" fill="#A8763E" stroke="#3A2A1E" stroke-width="4"/>
+    <rect x="576" y="228" width="172" height="10" fill="#A8763E" stroke="#3A2A1E" stroke-width="4"/>
+    <rect x="576" y="308" width="172" height="10" fill="#A8763E" stroke="#3A2A1E" stroke-width="4"/>
+    <g stroke="#3A2A1E" stroke-width="5">
+      <rect x="600" y="106" width="62" height="42" fill="#E8A13C"/>
+      <rect x="676" y="114" width="52" height="34" fill="#C9A876"/>
+      <rect x="606" y="186" width="66" height="42" fill="#9CC4D8"/>
+      <rect x="690" y="194" width="44" height="34" fill="#E8A13C"/>
+      <rect x="600" y="266" width="60" height="42" fill="#C9A876"/>
+      <rect x="676" y="274" width="52" height="34" fill="#9CC4D8"/>
+    </g>
+  </g>
+
+  <!-- 叉车（主视觉，签名表情） -->
+  <g>
+    <!-- 货叉与门架 -->
+    <rect x="306" y="238" width="14" height="112" fill="#8A9096" stroke="#3A2A1E" stroke-width="6"/>
+    <path d="M306 326 H250 M306 340 H250" stroke="#3A2A1E" stroke-width="8" stroke-linecap="round"/>
+    <!-- 箱体 -->
+    <rect x="244" y="280" width="76" height="48" rx="6" fill="#C9A876" stroke="#3A2A1E" stroke-width="6"/>
+    <path d="M244 296 H320 M282 280 V328" stroke="#A87F4E" stroke-width="4"/>
+    <!-- 车身 -->
+    <rect x="320" y="272" width="160" height="82" rx="16" fill="#E8C24E" stroke="#3A2A1E" stroke-width="8"/>
+    <!-- 驾驶室护架 -->
+    <path d="M420 272 V214 H480 V272" fill="none" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+    <rect x="432" y="238" width="34" height="34" rx="6" fill="#3A2A1E"/>
+    <!-- 表情 -->
+    <circle cx="352" cy="302" r="10" fill="#1F1A14"/>
+    <circle cx="396" cy="302" r="10" fill="#1F1A14"/>
+    <circle cx="355" cy="299" r="3.2" fill="#FFFFFF"/>
+    <circle cx="399" cy="299" r="3.2" fill="#FFFFFF"/>
+    <path d="M362 328 Q374 338 388 327" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+    <!-- 轮子 -->
+    <circle cx="352" cy="362" r="22" fill="#3A2A1E"/>
+    <circle cx="352" cy="362" r="8" fill="#C9CDD2"/>
+    <circle cx="446" cy="362" r="22" fill="#3A2A1E"/>
+    <circle cx="446" cy="362" r="8" fill="#C9CDD2"/>
+    <circle cx="336" cy="290" r="11" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+
+  <!-- 地面货箱 -->
+  <g stroke="#3A2A1E" stroke-width="5">
+    <rect x="500" y="352" width="56" height="36" rx="5" fill="#9CC4D8"/>
+    <rect x="560" y="344" width="48" height="44" rx="5" fill="#E8A13C"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>

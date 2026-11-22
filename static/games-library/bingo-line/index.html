@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>宾果连线</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（按需裁剪）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .callbar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .callnum {
+    width: 64px; height: 64px; border-radius: var(--g-radius-inner);
+    background: var(--g-surface); border: 2px solid var(--g-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 700; color: var(--g-primary-deep);
+    font-variant-numeric: tabular-nums;
+  }
+  .callnum.empty { color: var(--g-faint); }
+  .history { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; }
+  .chip { font-size: 12px; color: var(--g-muted); background: var(--g-surface2); border-radius: 10px; padding: 2px 8px; }
+  .card { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 8px; }
+  .cell {
+    aspect-ratio: 1/1; min-height: 44px; border: 0; padding: 0;
+    border-radius: 10px; background: var(--g-surface);
+    font-family: inherit; font-size: 16px; font-weight: 600;
+    color: var(--g-text); cursor: pointer; font-variant-numeric: tabular-nums;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cell.free { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .cell.daub { background: var(--g-btn-primary); color: #fff; }
+  .cell.linehl { box-shadow: inset 0 0 0 2px var(--g-warning); }
+  .cell.bad { background: var(--g-surface2); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 10px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">已连线</span><span class="val" id="stLines">0</span></div>
+    <div class="stat"><span class="label">剩余叫号</span><span class="val" id="stCalls">-</span></div>
+  </div>
+  <div class="callbar">
+    <div class="callnum empty" id="callnum">?</div>
+    <div class="history" id="history"></div>
+  </div>
+  <div class="card" id="card" aria-label="宾果卡片 5x5"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点「叫号」开新号码，再点卡片上对应的格子</p>
+  <div class="tools">
+    <button class="btn primary" id="btnCall">叫　号</button>
+    <button class="btn" id="btnReset">换卡重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：空格 叫号 · 方向键选格 · Enter 盖章 · R 换卡重开<br>规则：连线目标 = 完成指定条数（横/竖/斜）；叫号用完仍未达标即败</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">对局结束</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="bingo-line",SAVE_KEY="sw.bingoline.v1";
+var DEFAULT_LEVELS=[{"name":"宾果·01","target":1,"calls":34,"free":1},{"name":"宾果·02","target":1,"calls":33,"free":1},{"name":"宾果·03","target":1,"calls":32,"free":1},{"name":"宾果·04","target":1,"calls":31,"free":1},{"name":"宾果·05","target":1,"calls":30,"free":1},{"name":"宾果·06","target":1,"calls":29,"free":1},{"name":"宾果·07","target":1,"calls":28,"free":1},{"name":"宾果·08","target":1,"calls":27,"free":1},{"name":"宾果·09","target":1,"calls":26,"free":0},{"name":"宾果·10","target":1,"calls":25,"free":0},{"name":"宾果·11","target":1,"calls":24,"free":0},{"name":"宾果·12","target":1,"calls":23,"free":0},{"name":"宾果·13","target":2,"calls":30,"free":1},{"name":"宾果·14","target":2,"calls":29,"free":1},{"name":"宾果·15","target":2,"calls":28,"free":1},{"name":"宾果·16","target":2,"calls":27,"free":1},{"name":"宾果·17","target":2,"calls":26,"free":1},{"name":"宾果·18","target":2,"calls":25,"free":0},{"name":"宾果·19","target":2,"calls":24,"free":0},{"name":"宾果·20","target":2,"calls":23,"free":0},{"name":"宾果·21","target":2,"calls":22,"free":0},{"name":"宾果·22","target":2,"calls":21,"free":0},{"name":"宾果·23","target":2,"calls":20,"free":0},{"name":"宾果·24","target":2,"calls":20,"free":0},{"name":"宾果·25","target":3,"calls":26,"free":1},{"name":"宾果·26","target":3,"calls":25,"free":1},{"name":"宾果·27","target":3,"calls":24,"free":1},{"name":"宾果·28","target":3,"calls":23,"free":0},{"name":"宾果·29","target":3,"calls":22,"free":0},{"name":"宾果·30","target":3,"calls":21,"free":0},{"name":"宾果·31","target":3,"calls":20,"free":0},{"name":"宾果·32","target":3,"calls":20,"free":0},{"name":"宾果·33","target":3,"calls":19,"free":0},{"name":"宾果·34","target":3,"calls":18,"free":0},{"name":"宾果·35","target":4,"calls":24,"free":1},{"name":"宾果·36","target":4,"calls":23,"free":1},{"name":"宾果·37","target":4,"calls":22,"free":0},{"name":"宾果·38","target":4,"calls":21,"free":0},{"name":"宾果·39","target":5,"calls":22,"free":1},{"name":"宾果·40","target":5,"calls":21,"free":0}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Number.isInteger(d.target)||d.target<1||d.target>5)return false;
+  if(!Number.isInteger(d.calls)||d.calls<15||d.calls>40)return false;
+  if(d.free!==0&&d.free!==1)return false;
+  return true;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row.dataJson!=="string")return null;
+    var d;try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    var ck=d.target+"|"+d.calls+"|"+d.free;
+    if(seen[ck])return null;seen[ck]=1;
+    list.push({name:String(d.name),target:d.target,calls:d.calls,free:d.free});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData))LEVELS=list;
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+/* ---------- 引擎：5x5 卡，B1-15 I16-30 N31-45 G46-60 O61-75 ---------- */
+var LINES=[];
+(function(){
+  var i,j;
+  for(i=0;i<5;i++){
+    var row=[];for(j=0;j<5;j++)row.push(i*5+j);LINES.push(row);
+    var col=[];for(j=0;j<5;j++)col.push(j*5+i);LINES.push(col);
+  }
+  LINES.push([0,6,12,18,24]);
+  LINES.push([4,8,12,16,20]);
+})();
+/* 独立数线器：给定盖章集合，返回成线条数与成线格集（与 UI 完全独立） */
+function countLines(daub){
+  var n=0,cells={};
+  for(var i=0;i<LINES.length;i++){
+    var line=LINES[i],full=true;
+    for(var k=0;k<5;k++)if(!daub[line[k]]){full=false;break;}
+    if(full){
+      n++;
+      for(k=0;k<5;k++)cells[line[k]]=1;
+    }
+  }
+  return {count:n,cells:cells};
+}
+function genCard(free){
+  var card=new Array(25).fill(0);
+  for(var col=0;col<5;col++){
+    var pool=[];
+    for(var v=col*15+1;v<=col*15+15;v++)pool.push(v);
+    for(var k=pool.length-1;k>0;k--){
+      var j=Math.floor(Math.random()*(k+1)),tmp=pool[k];pool[k]=pool[j];pool[j]=tmp;
+    }
+    for(var r=0;r<5;r++)card[r*5+col]=pool[r];
+  }
+  if(free)card[12]=0;   // 0 = 免费格
+  return card;
+}
+function genCalls(){
+  var pool=[];
+  for(var v=1;v<=75;v++)pool.push(v);
+  for(var k=pool.length-1;k>0;k--){
+    var j=Math.floor(Math.random()*(k+1)),tmp=pool[k];pool[k]=pool[j];pool[j]=tmp;
+  }
+  return pool;
+}
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,card=null,daub={},called={},seq=[],callIdx=0,lines=0,lineCells={},over=false,won=false,cur=12;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(x){
+  lv=Math.max(0,Math.min(x,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  card=genCard(L.free);
+  daub={};called={};seq=genCalls();callIdx=0;lines=0;lineCells={};
+  if(L.free){daub[12]=1;}
+  over=false;won=false;cur=12;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent="目标 "+L.target+" 条连线 · 限 "+L.calls+" 次叫号"+(L.free?" · 中央免费":"");
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  buildCard();updStats();
+  $("callnum").textContent="?";$("callnum").className="callnum empty";
+  renderHistory();
+  say("点「叫号」开新号码，再点卡片上对应的格子");
+}
+function buildCard(){
+  var box=$("card");
+  box.innerHTML="";
+  for(var i=0;i<25;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.setAttribute("aria-label","格"+(Math.floor(i/5)+1)+"-"+(i%5+1));
+      b.addEventListener("click",function(){tapCell(i)});
+      box.appendChild(b);
+    })(i);
+  }
+  renderCard();
+}
+function renderCard(){
+  var cells=$("card").children;
+  for(var i=0;i<25;i++){
+    var b=cells[i];
+    var isFree=card[i]===0;
+    b.className="cell"+(isFree?" free":"")+(daub[i]&&!isFree?" daub":"")+(lineCells[i]?" linehl":"");
+    b.textContent=isFree?"★":String(card[i]);
+  }
+}
+function renderHistory(){
+  var box=$("history");
+  box.innerHTML="";
+  var start=Math.max(0,callIdx-8);
+  for(var i=start;i<callIdx;i++){
+    var s=document.createElement("span");
+    s.className="chip";
+    s.textContent=String(seq[i]);
+    box.appendChild(s);
+  }
+}
+function updStats(){
+  $("stLines").textContent=lines+"/"+L.target;
+  $("stCalls").textContent=Math.max(0,L.calls-callIdx);
+  $("stCalls").className="val"+((L.calls-callIdx)<=5?" low":"");
+  $("btnCall").disabled=over||callIdx>=L.calls;
+}
+function tapCell(i){
+  if(over)return;
+  if(card[i]===0){say("中央是免费格，已自动盖章");return;}
+  if(daub[i]){say("已盖过章");return;}
+  if(!called[card[i]]){say("这个号码还没被叫到，看看大数字");return;}
+  daub[i]=1;
+  var r=countLines(daub);
+  var gained=r.count-lines;
+  lines=r.count;lineCells=r.cells;
+  updStats();renderCard();
+  if(gained>0){
+    say("BINGO！连线 +"+gained+"（"+lines+"/"+L.target+"）");
+    if(lines>=L.target){endGame(true);return;}
+  } else say("盖章成功 · "+lines+"/"+L.target+" 条");
+}
+function doCall(){
+  if(over)return;
+  if(callIdx>=L.calls){endGame(false);return;}
+  var num=seq[callIdx++];
+  called[num]=1;
+  var el=$("callnum");
+  el.textContent=String(num);
+  el.className="callnum";
+  renderHistory();updStats();
+  say("叫号 "+num+" · 在卡片上找到它点一下");
+  if(callIdx>=L.calls){
+    if(lines>=L.target){endGame(true);return;}
+    say("最后一次叫号！"+(L.calls-callIdx)+" 次剩余");
+  }
+}
+function endGame(w){
+  over=true;won=w;
+  var full=countLines(new Array(25).fill(1)).count;
+  if(w&&lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+  if(GB.available)GB.reportScore(GAME_KEY,{metricValue:w?lv+1:lv,metricExtra:lines}).catch(function(){});
+  $("ovTitle").textContent=w?(lv>=LEVELS.length-1?"全部通关！":"BINGO 过关！"):"挑战失败";
+  $("ovDesc").innerHTML=(w?"完成 "+lines+" 条连线":"完成 "+lines+"/"+L.target+" 条")+"（整卡满线 = "+full+" 条）"+(w&&lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"");
+  $("ovBtn").textContent=w?(lv>=LEVELS.length-1?"回到第 1 关":"下一关"):"再试一次";
+  $("overlay").classList.add("show");updStats();
+}
+$("btnCall").addEventListener("click",doCall);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("已换新卡")});
+$("btnLv").addEventListener("click",function(){if(!over)openLevelSelect();});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(over){if(won&&lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0);}else loadLevel(won?lv+1:lv);}
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k===" "){
+    if($("overlay").classList.contains("show")){$("ovBtn").click();}
+    else doCall();
+    e.preventDefault();
+  }
+  else if(k==="ArrowUp"||k==="ArrowDown"||k==="ArrowLeft"||k==="ArrowRight"){
+    var r=Math.floor(cur/5),c=cur%5;
+    if(k==="ArrowUp")r=Math.max(0,r-1);
+    if(k==="ArrowDown")r=Math.min(4,r+1);
+    if(k==="ArrowLeft")c=Math.max(0,c-1);
+    if(k==="ArrowRight")c=Math.min(4,c+1);
+    cur=r*5+c;e.preventDefault();
+    var cells=$("card").children;
+    for(var i=0;i<25;i++)cells[i].style.boxShadow=i===cur&&!lineCells[i]?"inset 0 0 0 2px var(--g-muted)":"";
+  }
+  else if(k==="Enter"){
+    if(!$("overlay").classList.contains("show"))tapCell(cur);
+    e.preventDefault();
+  }
+  else if(k==="r"||k==="R"){loadLevel(lv);say("已换新卡")}
+});
+/* ---------- 内嵌独立验证器（锚点用例 + 发牌结构 + 数线交叉） ---------- */
+function selfTest(){
+  var total=0,ok=0,fails=[];
+  function chk(c,name){total++;if(c)ok++;else fails.push(name);}
+  chk(DEFAULT_LEVELS.length===40,"关卡数=40");
+  chk(DEFAULT_LEVELS.every(validLevelData),"关卡配置合法");
+  /* 锚点①：满卡 12 线（5 横 + 5 竖 + 2 斜，手算） */
+  (function(){
+    var all=new Array(25).fill(1);
+    var r=countLines(all);
+    chk(r.count===12,"锚点:满卡12线");
+  })();
+  /* 锚点②：首行+首列 → 2 线（手算） */
+  (function(){
+    var d=new Array(25).fill(0);
+    for(var c=0;c<5;c++)d[c]=1;
+    for(var r2=0;r2<5;r2++)d[r2*5]=1;
+    chk(countLines(d).count===2,"锚点:首行首列2线");
+  })();
+  /* 锚点③：主对角 1 线；主对角+副对角+中行 = 3 线（手算） */
+  (function(){
+    var d=new Array(25).fill(0);
+    [0,6,12,18,24].forEach(function(i){d[i]=1});
+    chk(countLines(d).count===1,"锚点:主对角1线");
+    [4,8,16,20].forEach(function(i){d[i]=1});
+    d[10]=1;d[11]=1;d[13]=1;d[14]=1;
+    chk(countLines(d).count===3,"锚点:双斜+中行3线");
+  })();
+  /* 锚点④：空卡 0 线 */
+  chk(countLines(new Array(25).fill(0)).count===0,"锚点:空卡0线");
+  /* 发牌结构：列号域正确 + 无重复 + 免费格位置 */
+  (function(){
+    var ok5=true;
+    for(var t=0;t<50;t++){
+      var c=genCard(t%2);
+      var seen={};
+      for(var r=0;r<5;r++)for(var col=0;col<5;col++){
+        var v=c[r*5+col];
+        if(v===0){if(!(t%2===1&&r*5+col===12))ok5=false;continue;}
+        if(v<col*15+1||v>col*15+15)ok5=false;
+        if(seen[v])ok5=false;
+        seen[v]=1;
+      }
+    }
+    chk(ok5,"发牌:列号域/无重复/免费格");
+  })();
+  /* 叫号序列：75 个全覆盖无重复 */
+  (function(){
+    var s=genCalls();
+    chk(s.length===75&&new Set(s).size===75,"叫号:75无重复");
+  })();
+  window.__gSelfTest={ok:ok,total:total,fails:fails};
+  if(fails.length)say("警告：内嵌自检未全过（"+ok+"/"+total+"）");
+}
+/* ---------- 启动（续玩：从存档关卡起步） ---------- */
+loadLevel(save.lv);selfTest();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

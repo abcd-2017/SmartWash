@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>不等数独</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（按需裁剪）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .board { display: grid; gap: 0; margin-bottom: 10px; }
+  .cell {
+    border: 0; padding: 0; min-height: 44px;
+    border-radius: 10px; background: var(--g-surface);
+    font-family: inherit; font-size: 18px; font-weight: 700;
+    color: var(--g-text); cursor: pointer; font-variant-numeric: tabular-nums;
+    box-shadow: inset 0 0 0 1px var(--g-border);
+  }
+  .cell.fixed { background: var(--g-surface2); color: var(--g-muted); cursor: default; }
+  .cell.sel { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+  .cell.bad { color: var(--g-danger); box-shadow: inset 0 0 0 2px var(--g-danger); }
+  .chip { display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--g-warning); }
+  .chip.off { color: var(--g-faint); font-weight: 400; }
+  .pad { display: flex; gap: 8px; margin-bottom: 8px; }
+  .key {
+    min-height: 44px; flex: 1; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 10px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn:disabled { opacity: .35; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见（S5） */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">待填</span><span class="val" id="stBlank">-</span></div>
+    <div class="stat"><span class="label">冲突</span><span class="val" id="stBad">0</span></div>
+  </div>
+  <div class="board" id="board" aria-label="不等数独盘面"></div>
+  <div class="pad" id="pad"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">选格 → 点数字填充；行列不得重复，且要满足全部不等号</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo">撤销</button>
+    <button class="btn" id="btnHint">提示</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：方向键选格 · 数字键填充 · 0/退格清除 · U 撤销 · H 提示 · R 重开<br>规则：每行每列 1..n 各出现一次，橙色不等号必须全部成立</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">对局结束</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn primary" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 关卡数据（离线生成 + 离线求解器全量复核，DB 下发优先） ---------- */
+var GAME_KEY="futoshiki",SAVE_KEY="sw.futoshiki.v1";
+var DEFAULT_LEVELS=[{"name":"不等·01","n":4,"g":["0102","4200","0320","2403"],"h":["00>","00>","000","<00"],"v":["0<>0","00>0","0<0>"],"sol":"3142423113242413"},{"name":"不等·02","n":4,"g":["3104","0413","0002","0031"],"h":["0<0","000","0<0","000"],"v":["0<00",">0<>","00>>"],"sol":"3124241313424231"},{"name":"不等·03","n":4,"g":["3410","1234","4100","0000"],"h":["0><","<00","0<0","<00"],"v":["0>00","<00>","0000"],"sol":"3412123441232341"},{"name":"不等·04","n":4,"g":["4102","0421","0004","0203"],"h":["00>","0>>","000","0<0"],"v":["0<00","0>00",">00>"],"sol":"4132342123141243"},{"name":"不等·05","n":4,"g":["0231","1420","0014","0000"],"h":["000","000","<00","0<>"],"v":[">0>0","<>0<","000>"],"sol":"4231142323143142"},{"name":"不等·06","n":4,"g":["0020","0001","0342","2410"],"h":["000",">00","<00","<00"],"v":["00<0","00<0","<<><"],"sol":"3124423113422413"},{"name":"不等·07","n":4,"g":["2000","3200","1020","0312"],"h":["0<<","0<0","000","0>0"],"v":["<<<0","000<","0>00"],"sol":"2134324114234312"},{"name":"不等·08","n":4,"g":["0041","4003","3024","0400"],"h":["000","00<",">00","<0>"],"v":["0>00","00<<","><00"],"sol":"2341421331241432"},{"name":"不等·09","n":4,"g":["3020","0000","1342","4003"],"h":["<0>","00<","0<>","00<"],"v":["0000","00<0","<00<"],"sol":"3421213413424213"},{"name":"不等·10","n":4,"g":["0004","1342","0030","2400"],"h":[">00","<<0",">00","<00"],"v":["00<0","0>>>",">000"],"sol":"3124134242312413"},{"name":"不等·11","n":4,"g":["0032","0240","0310","4100"],"h":["<00","0<>","00<","0<0"],"v":["<0<0","000<","0><0"],"sol":"1432324123144123"},{"name":"不等·12","n":4,"g":["4210","3020","0000","0342"],"h":[">00","000","><<","<<>"],"v":[">000",">000","0<00"],"sol":"4213342121341342"},{"name":"不等·13","n":5,"g":["03201","12400","30000","20010","01024"],"h":["0><0","00>0","0>0>","<<00",">000"],"v":["00<><","0<>0>",">0000","00>0<"],"sol":"4325112435351422451351324"},{"name":"不等·14","n":5,"g":["03250","30004","10035","00500","01042"],"h":[">000","00<0","0<00","<<>0",">000"],"v":["0<00<",">000<","0<<>>","0>>00"],"sol":"4325135124124352451351342"},{"name":"不等·15","n":5,"g":["30520","04013","03052","00040","02030"],"h":["000<","0000","0<<>","<><0",">000"],"v":["000>0","00<<0","<<0>>","00>><"],"sol":"3152454213134522534142135"},{"name":"不等·16","n":5,"g":["00400","10020","30042","50210","02100"],"h":["0000","00>0",">0>0",">00<","0>00"],"v":["0<>0<","0>000","<<>0<",">>0<<"],"sol":"2345115324315425421342135"},{"name":"不等·17","n":5,"g":["30410","00200","40032","00040","03024"],"h":["0<>0","0>00","><0>","<0<0",">0<<"],"v":[">0000","0><>>","0<0<0","00000"],"sol":"3241514253415322534153124"},{"name":"不等·18","n":5,"g":["41000","00004","10203","24500","00015"],"h":[">000",">0<0","<000","0<0>","0<0<"],"v":["<00>0",">000>","<><>>","<00>0"],"sol":"4135253124152432453132415"},{"name":"不等·19","n":5,"g":["04003","03504","32140","01000","00001"],"h":["<0<0","0<0<","00<0","0<0>","<>00"],"v":["00<00","00>0<","0><>>",">0>>0"],"sol":"1425323514321455143245321"},{"name":"不等·20","n":5,"g":["35200","00000","24050","00302","10420"],"h":["<0>0",">00>","0><0","><0>","<<>0"],"v":["00<<0","00000","<000>","><0>0"],"sol":"3521442531241535134213425"},{"name":"不等·21","n":5,"g":["51320","00100","00013","15002","00200"],"h":["0<00","00<<","<<00","0>0>","0><>"],"v":[">0>0<",">00>>",">0>00","00>0>"],"sol":"5132432145245131543243251"},{"name":"不等·22","n":5,"g":["45002","10003","50200","03000","30500"],"h":["<>><","000>","><0<","000<","00>>"],"v":["00<00","<00>0","0<>0<","0<<0>"],"sol":"4531212453512342314534521"},{"name":"不等·23","n":5,"g":["01043","00324","02010","00002","04000"],"h":["0<<>","<>0<","0000",">>00","<00>"],"v":["0<00<","0><>0","0<00>","><<00"],"sol":"5124315324324154315224531"},{"name":"不等·24","n":5,"g":["00300","10403","40201","04000","30010"],"h":[">000","<0>0",">>0>","<0<0","000<"],"v":["0<00<","<0><>",">0>>0","0>0>0"],"sol":"5134215423432512413532514"},{"name":"不等·25","n":5,"g":["24300","00040","40013","03020","00400"],"h":["<>0>",">00<","0<><",">>00","0>00"],"v":["<>00<","00<0>","0<00<","0<<<0"],"sol":"2435131245425135312415432"},{"name":"不等·26","n":5,"g":["42510","00250","30005","00040","20000"],"h":["><0<","<><>","0><<","0<00","<00>"],"v":[">0><0","0<0>0","<0<00","0000>"],"sol":"4251313254341255134225431"},{"name":"不等·27","n":5,"g":["32005","20050","50030","05302","00000"],"h":[">><<","0<<0","0<00","0>0<","0<><"],"v":["00<<>","0000<","000>>",">>0<0"],"sol":"3214523451512344531214523"},{"name":"不等·28","n":5,"g":["10040","01004","50010","30001","00130"],"h":["000>",">0<>","0>>0","00>0",">><0"],"v":["<0><<","<<00>","0000>","0>><<"],"sol":"1354221354542133542142135"},{"name":"不等·29","n":6,"g":["020106","004200","100632","000020","002000","200340"],"h":["0<><0","0<><0","00<>0","0>000","<0000","0<><>"],"v":["00<<00","><000>","<>>>><",">0<>0<","0>0><>"],"sol":"423156514263145632631524362415256341"},{"name":"不等·30","n":6,"g":["004000","000013","250004","400000","160040","305006"],"h":["><>00","0>00<","00><<",">>0>>","00>00","><>0<"],"v":["0<>0><","><<0<0","<>>0<0","0<<00<","000<>0"],"sol":"524361642513256134431652163245315426"},{"name":"不等·31","n":6,"g":["450000","000425","000060","000002","120046","300050"],"h":["<0<><",">0<>0","0<0<>","><>0>","<00<<","<>0<0"],"v":["0><><0","00<00>","0<0>00","00>00<","<0>>0>"],"sol":"452613613425234561546132125346361254"},{"name":"不等·32","n":6,"g":["610000","006530","050060","030000","040026","060005"],"h":[">00<0",">0>>>","00<<0","<0<0<","00<><","0000<"],"v":["0<0<0>","><>><<","0><<00","00>00<","><<0<>"],"sol":"614253426531153462235614541326362145"},{"name":"不等·33","n":6,"g":["416000","004000","000500","053600","020036","000065"],"h":["00><0","000>0","0><0<","<><>0","0000<","0>0<>"],"v":["<0><>>","<>0<00","00<<<>",">><>><","<00>0>"],"sol":"416253564312631524253641125436342165"},{"name":"不等·34","n":6,"g":["050001","002400","500040","020010","063000","045000"],"h":[">>>0>","><00>",">0<<0","0<0>0","<0>0>","<00>0"],"v":[">>><00","00>>0<",">><<0>",">0>>00","0>00>>"],"sol":"654321312465531246426513263154145632"},{"name":"不等·35","n":6,"g":["201450","000010","004020","500200","025040","000000"],"h":["<><0<",">>0><","<><>0","0<0<<","<<<>0","000<>"],"v":["<<<>00","00<0<>","00<>0<",">0>0<0","00>>00"],"sol":"231456642315364521516234125643453162"},{"name":"不等·36","n":6,"g":["100000","002000","403000","050013","201500","300400"],"h":["00><0",">0><<",">000>",">>0><","0>00>","0>>>0"],"v":["<0>>00",">0<000","<<<>0<","00><<0","<<<>>>"],"sol":"126345542136413652654213231564365421"},{"name":"不等·37","n":6,"g":["000100","000500","500010","050003","410025","040050"],"h":["0<><>","0>0>0","><0><","00<<>","0<<><","0>000"],"v":["><0<0>","000>0<","<<0>00","0><<><","><>0<<"],"sol":"325164264531536412651243413625142356"},{"name":"不等·38","n":6,"g":["164500","000000","020100","006300","000060","500010"],"h":["<><0<","0><>0","0<><0","><><0","<<000",">>0><"],"v":["<>00<<","00<0<<","0>0000","><>>0>","0>>0><"],"sol":"164523251634623145416352345261532416"},{"name":"不等·39","n":6,"g":["400006","000652","000040","000461","020000","000100"],"h":["0<<><","0>0>>","0000<","<0><0","><00<","0>>0<"],"v":["><><<>","0<<0><","<00<0>","<>0>><","<0>0<0"],"sol":"412536341652163245235461526314654123"},{"name":"不等·40","n":6,"g":["310060","645023","000000","200000","000600","000200"],"h":["><<<0","><0<0",">0>0>","0><<<","<0<0<","0>>0<"],"v":["<00000","00<<<>","><00<0","0<<0>>","><<><<"],"sol":"312564645123526341231456453612164235"}];
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Number.isInteger(d.n)||d.n<4||d.n>6)return false;
+  if(!Array.isArray(d.g)||d.g.length!==d.n)return false;
+  if(!Array.isArray(d.h)||d.h.length!==d.n)return false;
+  if(!Array.isArray(d.v)||d.v.length!==d.n-1)return false;
+  var i,j;
+  for(i=0;i<d.n;i++){
+    if(typeof d.g[i]!=="string"||d.g[i].length!==d.n||/[^0-9]/.test(d.g[i]))return false;
+    if(typeof d.h[i]!=="string"||d.h[i].length!==d.n-1||/[^0<>]/.test(d.h[i]))return false;
+  }
+  for(i=0;i<d.n-1;i++){
+    if(typeof d.v[i]!=="string"||d.v[i].length!==d.n||/[^0<>]/.test(d.v[i]))return false;
+  }
+  if(typeof d.sol!=="string"||d.sol.length!==d.n*d.n||/[^0-9]/.test(d.sol))return false;
+  return true;
+}
+function parseDbLevels(res){
+  if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
+  var list=[],seen={};
+  for(var i=0;i<res.levels.length;i++){
+    var row=res.levels[i];
+    if(!row||typeof row.dataJson!=="string")return null;
+    var d;try{d=JSON.parse(row.dataJson);}catch(e){return null;}
+    if(!validLevelData(d))return null;
+    var ck=d.sol;
+    if(seen[ck])return null;seen[ck]=1;
+    list.push({name:String(d.name),n:d.n,g:d.g.slice(),h:d.h.slice(),v:d.v.slice(),sol:d.sol});
+  }
+  return list;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length&&list.every(validLevelData))LEVELS=list;
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    var list=parseDbLevels(res);
+    if(!list)return;
+    if(applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      loadLevel(lv);
+    }
+  }).catch(function(){});
+}
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+
+/* ---------- 求解器（独立实现）：统计解数（上限 2） ---------- */
+function countSolutions(n,given,h,v,cap){
+  var count=0,nodes=0;
+  var usedR=[],usedC=[];
+  for(var r=0;r<n;r++){usedR.push(new Array(n+1).fill(false));usedC.push(new Array(n+1).fill(false));}
+  var grid=[];
+  for(r=0;r<n;r++)grid.push(given[r].split("").map(Number));
+  for(r=0;r<n;r++)for(var c=0;c<n;c++){if(grid[r][c]){usedR[r][grid[r][c]]=true;usedC[c][grid[r][c]]=true;}}
+  function bt(idx){
+    if(count>=cap||nodes>200000)return;
+    nodes++;
+    if(idx===n*n){count++;return;}
+    var rr=Math.floor(idx/n),cc=idx%n;
+    if(grid[rr][cc]){bt(idx+1);return;}
+    for(var val=1;val<=n;val++){
+      if(usedR[rr][val]||usedC[cc][val])continue;
+      var ok=true;
+      if(cc>0&&h[rr][cc-1]==="<"&&grid[rr][cc-1]&&grid[rr][cc-1]>=val)ok=false;
+      if(ok&&cc>0&&h[rr][cc-1]===">"&&grid[rr][cc-1]&&grid[rr][cc-1]<=val)ok=false;
+      if(ok&&cc<n-1&&h[rr][cc]==="<"&&grid[rr][cc+1]&&grid[rr][cc+1]<=val)ok=false;
+      if(ok&&cc<n-1&&h[rr][cc]===">"&&grid[rr][cc+1]&&grid[rr][cc+1]>=val)ok=false;
+      if(ok&&rr>0&&v[rr-1][cc]==="<"&&grid[rr-1][cc]&&grid[rr-1][cc]>=val)ok=false;
+      if(ok&&rr>0&&v[rr-1][cc]===">"&&grid[rr-1][cc]&&grid[rr-1][cc]<=val)ok=false;
+      if(ok&&rr<n-1&&v[rr][cc]==="<"&&grid[rr+1][cc]&&grid[rr+1][cc]<=val)ok=false;
+      if(ok&&rr<n-1&&v[rr][cc]===">"&&grid[rr+1][cc]&&grid[rr+1][cc]>=val)ok=false;
+      if(!ok)continue;
+      grid[rr][cc]=val;usedR[rr][val]=true;usedC[cc][val]=true;
+      bt(idx+1);
+      grid[rr][cc]=0;usedR[rr][val]=false;usedC[cc][val]=false;
+      if(count>=cap)return;
+    }
+  }
+  bt(0);
+  return count;
+}
+/* ---------- 状态 ---------- */
+var lv=save.lv,L=null,n=4,user=[],given=[],hist=[],sel=0,over=false,won=false;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(x){
+  lv=Math.max(0,Math.min(x,LEVELS.length-1));
+  L=LEVELS[lv];
+  if(!validLevelData(L)){say("关卡数据异常");return;}
+  n=L.n;
+  given=[];user=[];
+  for(var r=0;r<n;r++){
+    given.push(L.g[r].split("").map(Number));
+    user.push(L.g[r].split("").map(Number));
+  }
+  hist=[];sel=-1;over=false;won=false;
+  var cnt=countSolutions(n,L.g,L.h,L.v,2);
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent=n+"阶"+(cnt===1?"":" · ⚠解数"+cnt);
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  buildBoard();buildPad();updStats();
+  if(cnt!==1)say("警告：内嵌求解器判定本关解不唯一（数据异常）");
+  else say("选格 → 点数字填充；行列不得重复，且要满足全部不等号");
+}
+function cellEls(){return $("board").querySelectorAll(".cell");}
+function buildBoard(){
+  var box=$("board");
+  box.innerHTML="";
+  var cols="";
+  for(var c=0;c<n;c++){
+    if(c>0)cols+="16px ";
+    cols+="1fr ";
+  }
+  box.style.gridTemplateColumns=cols.trim();
+  box.style.gridAutoRows="minmax(44px,auto)";
+  var rows=[];
+  for(var r=0;r<n;r++){
+    rows.push({type:"cell",r:r,c:0});
+    for(c=1;c<n;c++){rows.push({type:"chip",r:r,c:c-1,dir:"h"});rows.push({type:"cell",r:r,c:c});}
+    /* 行间垂直不等号行：紧跟本行单元格之后，符号落在单元格列上 */
+    if(r<n-1){
+      for(var vc=0;vc<n;vc++){
+        rows.push({type:"vchip",r:r,c:vc});
+        if(vc<n-1)rows.push({type:"voff"});
+      }
+    }
+  }
+  for(var item=0;item<rows.length;item++){
+    (function(item){
+      var it=rows[item];
+      if(it.type==="chip"){
+        var s=document.createElement("span");
+        s.className="chip";
+        s.id="chip"+it.r+"_"+it.c+"_"+it.dir;
+        s.textContent="·";
+        box.appendChild(s);
+      } else if(it.type==="vchip"){
+        var e=document.createElement("span");
+        e.className="chip";
+        e.id="chip"+it.r+"_"+it.c+"_v";
+        e.textContent="·";
+        box.appendChild(e);
+      } else if(it.type==="voff"){
+        var e2=document.createElement("span");e2.className="chip off";box.appendChild(e2);
+      } else {
+        var b=document.createElement("button");
+        b.className="cell";
+        b.id="cell"+it.r+"_"+it.c;
+        b.setAttribute("aria-label","格"+(it.r+1)+"-"+(it.c+1));
+        b.addEventListener("click",function(){sel=it.r*n+it.c;renderAll();});
+        box.appendChild(b);
+      }
+    })(item);
+  }
+  renderAll();
+}
+function buildPad(){
+  var box=$("pad");
+  box.innerHTML="";
+  for(var v=1;v<=n;v++){
+    (function(v){
+      var b=document.createElement("button");
+      b.className="key";
+      b.textContent=String(v);
+      b.addEventListener("click",function(){inputNum(v)});
+      box.appendChild(b);
+    })(v);
+  }
+  var clr=document.createElement("button");
+  clr.className="key";
+  clr.textContent="清";
+  clr.addEventListener("click",function(){inputNum(0)});
+  box.appendChild(clr);
+}
+function inputNum(v){
+  if(over||sel<0)return;
+  var r=Math.floor(sel/n),c=sel%n;
+  if(given[r][c]){say("提示格不能改");return;}
+  hist.push({i:sel,prev:user[r][c]});
+  user[r][c]=v;
+  updStats();renderAll();checkWin();
+}
+function conflicts(){
+  var bad={},i,j,count=0;
+  for(i=0;i<n;i++){
+    var seen={};
+    for(j=0;j<n;j++){
+      var v=user[i][j];
+      if(!v)continue;
+      if(seen[v]){bad[i*n+j]=1;bad[i*n+seen[v]]=1;count++;}
+      else seen[v]=1;
+    }
+  }
+  for(j=0;j<n;j++){
+    var seen2={};
+    for(i=0;i<n;i++){
+      var v2=user[i][j];
+      if(!v2)continue;
+      if(seen2[v2]){bad[i*n+j]=1;bad[seen2[v2]*n+j]=1;count++;}
+      else seen2[v2]=1;
+    }
+  }
+  var r2,c2;
+  for(r2=0;r2<n;r2++)for(c2=0;c2<n-1;c2++){
+    var s=L.h[r2][c2],a=user[r2][c2],b=user[r2][c2+1];
+    if(s==="<"&&a&&b&&a>=b){bad[r2*n+c2]=1;bad[r2*n+c2+1]=1;count++;}
+    if(s===">"&&a&&b&&a<=b){bad[r2*n+c2]=1;bad[r2*n+c2+1]=1;count++;}
+  }
+  for(r2=0;r2<n-1;r2++)for(c2=0;c2<n;c2++){
+    var s2=L.v[r2][c2],a2=user[r2][c2],b2=user[r2+1][c2];
+    if(s2==="<"&&a2&&b2&&a2>=b2){bad[r2*n+c2]=1;bad[(r2+1)*n+c2]=1;count++;}
+    if(s2===">"&&a2&&b2&&a2<=b2){bad[r2*n+c2]=1;bad[(r2+1)*n+c2]=1;count++;}
+  }
+  return {bad:bad,count:count};
+}
+function renderAll(){
+  var cells=cellEls();
+  var cf=conflicts();
+  for(var r=0;r<n;r++)for(var c=0;c<n;c++){
+    var b=cells[r*n+c],idx=r*n+c;
+    b.className="cell"+(given[r][c]?" fixed":"")+(idx===sel?" sel":"")+(cf.bad[idx]?" bad":"");
+    b.textContent=user[r][c]?String(user[r][c]):"";
+  }
+  for(r=0;r<n;r++)for(c=0;c<n-1;c++){
+    var s=L.h[r][c];
+    $("chip"+r+"_"+c+"_h").textContent=s==="0"?"·":s;
+    $("chip"+r+"_"+c+"_h").className="chip"+(s==="0"?" off":"");
+  }
+  for(r=0;r<n-1;r++)for(c=0;c<n;c++){
+    var s2=L.v[r][c];
+    $("chip"+r+"_"+c+"_v").textContent=s2==="0"?"·":s2;
+    $("chip"+r+"_"+c+"_v").className="chip"+(s2==="0"?" off":"");
+  }
+}
+function updStats(){
+  var blank=0;
+  for(var r=0;r<n;r++)for(var c=0;c<n;c++)if(!user[r][c])blank++;
+  $("stBlank").textContent=blank;
+  $("stBad").textContent=conflicts().count;
+  $("stBad").className="val"+(conflicts().count?" low":"");
+  $("btnUndo").disabled=!hist.length||over;
+}
+function checkWin(){
+  var blank=0;
+  for(var r=0;r<n;r++)for(var c=0;c<n;c++)if(!user[r][c])blank++;
+  if(blank===0&&conflicts().count===0){
+    over=true;won=true;
+    if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+    if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:hist.length}).catch(function(){});
+    $("ovTitle").textContent=(lv>=LEVELS.length-1?"全部通关！":"过关！");
+    $("ovDesc").innerHTML="不等号全部成立！共填 "+hist.length+" 步。"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"");
+    $("ovBtn").textContent=(lv>=LEVELS.length-1?"回到第 1 关":"下一关");
+    $("overlay").classList.add("show");
+    updStats();
+  }
+}
+function undo(){
+  if(!hist.length||over)return;
+  var h=hist.pop();
+  user[Math.floor(h.i/n)][h.i%n]=h.prev;
+  updStats();renderAll();say("已撤销");
+}
+function hint(){
+  if(over)return;
+  if(sel<0){say("先选一个空格");return;}
+  var r=Math.floor(sel/n),c=sel%n;
+  if(given[r][c]){say("提示格不能改");return;}
+  var v=Number(L.sol[sel]);
+  hist.push({i:sel,prev:user[r][c]});
+  user[r][c]=v;
+  updStats();renderAll();checkWin();
+  say("已填入正确数字 "+v);
+}
+$("btnUndo").addEventListener("click",undo);
+$("btnHint").addEventListener("click",hint);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){if(!over)openLevelSelect();});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(over){if(won&&lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0);}else loadLevel(won?lv+1:lv);}
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k==="ArrowUp"||k==="ArrowDown"||k==="ArrowLeft"||k==="ArrowRight"){
+    if(sel<0)sel=Math.floor(n*n/2);
+    var r=Math.floor(sel/n),c=sel%n;
+    if(k==="ArrowUp")r=Math.max(0,r-1);
+    if(k==="ArrowDown")r=Math.min(n-1,r+1);
+    if(k==="ArrowLeft")c=Math.max(0,c-1);
+    if(k==="ArrowRight")c=Math.min(n-1,c+1);
+    sel=r*n+c;e.preventDefault();renderAll();
+  }
+  else if(/^[1-9]$/.test(k)){inputNum(parseInt(k,10));e.preventDefault();}
+  else if(k==="0"||k==="Backspace"){inputNum(0);e.preventDefault();}
+  else if(k==="u"||k==="U")undo();
+  else if(k==="h"||k==="H")hint();
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+});
+/* ---------- 内嵌独立验证器（锚点用例 + 40 关全量复核） ---------- */
+function selfTest(){
+  var total=0,ok=0,fails=[];
+  function chk(c,name){total++;if(c)ok++;else fails.push(name);}
+  chk(DEFAULT_LEVELS.length===40,"关卡数=40");
+  chk(DEFAULT_LEVELS.every(validLevelData),"关卡配置合法");
+  /* 锚点①：手排 4 阶拉丁方 + 全部不等号（手算逐项核对）
+     1 2 3 4 / 3 4 1 2 / 2 1 4 3 / 4 3 2 1 */
+  (function(){
+    var g=["1234","3412","2143","4321"];
+    var h=["<<<","<><","><0",">>>"];
+    var v=["<<>>",">><<","<<>>"];
+    var cnt=countSolutions(4,g,h,v,2);
+    chk(cnt===1,"锚点:满格题唯一");
+    // 挖两格：(0,0) 与 (0,1)，列约束强制回原值
+    var g2=["0034","3412","2143","4321"];
+    var cnt2=countSolutions(4,g2,h,v,2);
+    chk(cnt2===1,"锚点:挖两格仍唯一");
+    var g3=["0000","0000","0000","0000"];
+    var cnt3=countSolutions(4,g3,h,v,2);
+    chk(cnt3>0,"锚点:空盘有解");
+  })();
+  /* 40 关全量复核：唯一解 + sol 即求解器首解 */
+  (function(){
+    var allOk=true;
+    for(var i=0;i<LEVELS.length;i++){
+      var d=LEVELS[i];
+      if(!validLevelData(d)){allOk=false;break;}
+      var grid=[];
+      for(var r=0;r<d.n;r++)grid.push(d.g[r].split("").map(Number));
+      // 求解器首解与 sol 比对
+      var count=0,first=null;
+      var usedR=[],usedC=[];
+      for(var rr=0;rr<d.n;rr++){usedR.push(new Array(d.n+1).fill(false));usedC.push(new Array(d.n+1).fill(false));}
+      for(rr=0;rr<d.n;rr++)for(var cc=0;cc<d.n;cc++)if(grid[rr][cc]){usedR[rr][grid[rr][cc]]=true;usedC[cc][grid[rr][cc]]=true;}
+      function bt(idx){
+        if(count>=2)return;
+        if(idx===d.n*d.n){if(!first)first=grid.map(function(row){return row.join("")}).join("");count++;return;}
+        var r2=Math.floor(idx/d.n),c2=idx%d.n;
+        if(grid[r2][c2]){bt(idx+1);return;}
+        for(var val=1;val<=d.n;val++){
+          if(usedR[r2][val]||usedC[c2][val])continue;
+          var ok=true;
+          if(c2>0&&d.h[r2][c2-1]==="<"&&grid[r2][c2-1]&&grid[r2][c2-1]>=val)ok=false;
+          if(ok&&c2>0&&d.h[r2][c2-1]===">"&&grid[r2][c2-1]&&grid[r2][c2-1]<=val)ok=false;
+          if(ok&&c2<d.n-1&&d.h[r2][c2]==="<"&&grid[r2][c2+1]&&grid[r2][c2+1]<=val)ok=false;
+          if(ok&&c2<d.n-1&&d.h[r2][c2]===">"&&grid[r2][c2+1]&&grid[r2][c2+1]>=val)ok=false;
+          if(ok&&r2>0&&d.v[r2-1][c2]==="<"&&grid[r2-1][c2]&&grid[r2-1][c2]>=val)ok=false;
+          if(ok&&r2>0&&d.v[r2-1][c2]===">"&&grid[r2-1][c2]&&grid[r2-1][c2]<=val)ok=false;
+          if(ok&&r2<d.n-1&&d.v[r2][c2]==="<"&&grid[r2+1][c2]&&grid[r2+1][c2]<=val)ok=false;
+          if(ok&&r2<d.n-1&&d.v[r2][c2]===">"&&grid[r2+1][c2]&&grid[r2+1][c2]>=val)ok=false;
+          if(!ok)continue;
+          grid[r2][c2]=val;usedR[r2][val]=true;usedC[c2][val]=true;
+          bt(idx+1);
+          grid[r2][c2]=0;usedR[r2][val]=false;usedC[c2][val]=false;
+          if(count>=2)return;
+        }
+      }
+      bt(0);
+      if(count!==1||first!==d.sol){allOk=false;break;}
+    }
+    chk(allOk,"40关:唯一解且sol一致");
+  })();
+  window.__gSelfTest={ok:ok,total:total,fails:fails};
+  if(fails.length)say("警告：内嵌自检未全过（"+ok+"/"+total+"）");
+}
+/* ---------- 启动（续玩：从存档关卡起步） ---------- */
+loadLevel(save.lv);selfTest();
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+</body>
+</html>

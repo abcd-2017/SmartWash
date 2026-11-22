@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>地铁发车</title>
+<style>
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-md-* 本作素材色）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-md-rail:#5C6470;--g-st-md-stat:#8A93A0;--g-st-md-train:#2D9B6A;--g-st-md-train2:#17734A;--g-st-md-pax:#4A9FD4;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-md-rail:#39404A;--g-st-md-stat:#4A515C;--g-st-md-train:#2D9B6A;--g-st-md-train2:#5BC894;--g-st-md-pax:#6BB4DE;color-scheme:dark }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.low { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .ctl {
+    width: 100%; min-height: 48px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-btn-primary); color: #fff;
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .ctl:active { opacity: .75; }
+  .ctl[disabled] { opacity: .45; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; margin-bottom: 8px; }
+  .panel .btn:last-child { margin-bottom: 0; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn {
+    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+
+  /* P2: 键盘焦点可见 */
+  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
+})();
+</script>
+
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
+    <div class="stat"><span class="label">送达 / 目标</span><span class="val" id="stSrv">0</span></div>
+    <div class="stat"><span class="label">剩余时间</span><span class="val" id="stTick">0</span></div>
+    <div class="stat"><span class="label">滞留</span><span class="val" id="stLost">0</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="地铁线路场景：车站、候车队伍与列车" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">看准站台队伍长度择机发车；车满走人或旅客被挤爆都会扣分，发太早又拉不满人</p>
+  <div class="tools">
+    <button class="ctl" id="btnGo" style="width:auto;flex:1;padding:0 18px">发一班车</button>
+    <button class="btn" id="btnPause">暂停</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <p class="foot">键盘：空格 发车 · R 重开 · 车底空跑浪费班次 · 40 关递进 · 进度自动保存</p>
+</div>
+<div class="overlay" role="dialog" aria-modal="true" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">收车！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn" id="ovBtn" style="background:var(--g-btn-primary);color:#fff">下一关</button>
+  </div>
+</div>
+
+<script>
+/*X3-ENGINE-BEGIN*/
+var MD=(function(){
+"use strict";
+/* ===== 世界常量（离散 tick） ===== */
+var W=480,H=340,HOP=2,DWELL=1;
+/* ===== 确定性伪随机（mulberry32） ===== */
+function makeRng(seed){return{s:seed|0};}
+function rngNext(rng){
+  rng.s=(rng.s+0x6D2B79F5)|0;
+  var t=Math.imul(rng.s^(rng.s>>>15),1|rng.s);
+  t=(t+Math.imul(t^(t>>>7),61|t))^t;
+  return ((t^(t>>>14))>>>0)/4294967296;
+}
+/* 客流生成：每站按到达率产生乘客（目的站恒更靠后），冻结为 arr[站]=[{t,d}] */
+function genArr(lv){
+  var rng=makeRng(lv.seed>>>0),arr=[],s,t;
+  for(s=0;s<lv.S;s++){
+    var list=[];
+    for(t=0;t<lv.ticks;t++)if(rngNext(rng)<lv.rates[s])list.push({t:t,d:s+1+Math.floor(rngNext(rng)*(lv.S-1-s))});
+    arr.push(list);
+  }
+  return arr;
+}
+/* ===== 对局状态 ===== */
+function newState(lv){
+  var trains=[],k;
+  for(k=0;k<lv.K;k++)trains.push({state:"idle",prog:0,station:-1,riders:[]});
+  var q=[],i;
+  for(i=0;i<lv.S;i++)q.push([]);
+  return {t:0,trains:trains,q:q,idx:new Array(lv.S).fill(0),delivered:0,lost:0,
+    cd:0,win:false,over:false,reason:null};
+}
+/* 发车：首辆空闲车上线 */
+function dispatch(lv,st){
+  for(var k=0;k<st.trains.length;k++){
+    if(st.trains[k].state==="idle"){
+      st.trains[k].state="go";st.trains[k].prog=HOP;st.trains[k].station=-1;
+      st.cd=lv.cd;
+      return true;
+    }
+  }
+  return false;
+}
+/* ===== 共享单步：到站 → 开关门上下客 → 终点折返 → 发车 → 滞留判定 ===== */
+function simTick(lv,st,go){
+  if(st.over||st.win)return st;
+  var s,k,i;
+  if(st.cd>0)st.cd--;
+  if(go)dispatch(lv,st);
+  /* 到站运行 */
+  for(k=0;k<st.trains.length;k++){
+    var tr=st.trains[k];
+    if(tr.state==="idle")continue;
+    tr.prog--;
+    if(tr.prog>0)continue;
+    if(tr.state==="go"){
+      tr.station++;
+      tr.state="dwell";tr.prog=DWELL;
+      /* 下客 */
+      var before=tr.riders.length;
+      tr.riders=tr.riders.filter(function(d){return d!==tr.station;});
+      st.delivered+=before-tr.riders.length;
+      /* 上客 */
+      var take=Math.min(lv.cap-tr.riders.length,st.q[tr.station].length);
+      for(i=0;i<take;i++)tr.riders.push(st.q[tr.station][i].d);
+      if(take>0)st.q[tr.station]=st.q[tr.station].slice(take);
+      if(tr.riders.length>lv.cap)tr.riders.length=lv.cap;
+      continue;
+    }
+    if(tr.state==="dwell"){
+      if(tr.station>=lv.S-1){tr.state="turn";tr.prog=lv.rt;}
+      else{tr.state="go";tr.prog=HOP;}
+      continue;
+    }
+    if(tr.state==="turn"){tr.state="idle";tr.station=-1;tr.prog=0;}
+  }
+  /* 新乘客到达（被挤爆计滞留） */
+  for(s=0;s<lv.S;s++){
+    var list=lv.arr[s];
+    while(st.idx[s]<list.length&&list[st.idx[s]].t<=st.t){
+      var item=list[st.idx[s]++];
+      if(st.q[s].length>=lv.cap){st.lost++;}
+      else st.q[s].push(item);
+    }
+  }
+  st.t++;
+  if(st.lost>lv.lostMax){st.over=true;st.reason="lost";return st;}
+  if(st.delivered>=lv.target){st.win=true;return st;}
+  if(st.t>=lv.ticks){st.over=true;st.reason="time";}
+  return st;
+}
+/* ===== 验证器策略：场上有积压且车库有空车时立即发车 ===== */
+function policySim(lv){
+  var st=newState(lv),guard=lv.ticks+50;
+  while(!st.over&&!st.win&&guard-->0){
+    var maxQ=0;
+    for(var s=0;s<lv.S;s++)if(st.q[s].length>maxQ)maxQ=st.q[s].length;
+    var idle=false;
+    for(var k=0;k<st.trains.length;k++)if(st.trains[k].state==="idle"){idle=true;break;}
+    simTick(lv,st,(idle&&st.cd<=0&&maxQ>=2));
+  }
+  return st;
+}
+/* ===== 关卡（第 1 关手工锚点关；其余公式化生成 + 策略回放收敛，坏关不进表） ===== */
+var L1={name:"发车·01",seed:20261122,ticks:100,S:6,K:2,cap:44,hop:HOP,dwell:DWELL,rt:3,cd:2,
+  rates:[0.10,0.12,0.10,0.12,0.10,0.08],target:26,lostMax:3,difficulty:1};
+L1.arr=genArr(L1);
+function genLevel(i){
+  var S=6+(i%3);
+  var lv={name:"发车·"+(i<9?"0":"")+(i+1),seed:1000+i*77,ticks:100+Math.floor(i/2)*4,
+    S:S,K:2+(i>=18?1:0),cap:40+(i%4)*8,hop:HOP,dwell:DWELL,rt:3,cd:2+(i>=28?1:0),
+    rates:[],target:0,lostMax:3,difficulty:Math.min(6,1+Math.floor(i/7)),arr:null};
+  var s;
+  for(s=0;s<S;s++)lv.rates.push(0.09+((i*3)%5)*0.02+((i+s)%3)*0.01);
+  lv.arr=genArr(lv);
+  var N=0;
+  for(s=0;s<S;s++)N+=lv.arr[s].length;
+  lv.target=Math.max(6,Math.round(N*0.8));
+  /* 收敛调整：加编组→降目标→加车（坏关不进表） */
+  for(var tries=0;tries<10;tries++){
+    var st=policySim(lv);
+    if(st.win&&!st.over)break;
+    if(tries<4)lv.cap+=10;
+    else if(tries<8)lv.target=Math.max(4,lv.target-Math.ceil(N*0.05));
+    else if(lv.K<4)lv.K++;
+    else break;
+  }
+  return lv;
+}
+var LEVELS=[L1];
+for(var gi=1;gi<40;gi++)LEVELS.push(genLevel(gi));
+function verifyAll(){
+  var res=[],i;
+  for(i=0;i<LEVELS.length;i++){var st=policySim(LEVELS[i]);res.push({ok:st.win&&!st.over,out:st.delivered});}
+  return res;
+}
+function selfTest(){
+  var out=[];
+  /* 锚点1：第 1 关策略回放达成目标且零滞留 */
+  var s1=policySim(L1);
+  out.push({name:"锚点1·第1关策略送达≥26人零滞留",pass:s1.win&&s1.delivered>=26&&s1.lost===0});
+  /* 锚点2：合成单点爆量关（小容量单站瞬时涌入）→ 必因滞留超标判负 */
+  var burst={name:"burst",seed:1,ticks:60,S:4,K:1,cap:4,hop:HOP,dwell:DWELL,rt:2,cd:1,
+    rates:[0,0,0,0],target:50,lostMax:1,difficulty:6,
+    arr:[[],[],[{t:5,d:3},{t:5,d:3},{t:5,d:3},{t:5,d:3},{t:5,d:3},{t:6,d:3},{t:6,d:3},{t:6,d:3}],[]]};
+  var st2=policySim(burst);
+  out.push({name:"锚点2·爆量小站必致滞留判负",pass:st2.over&&st2.reason==="lost"});
+  /* 锚点3：全部 40 关策略回放可达成 */
+  var all=verifyAll(),bad=[];
+  for(var i=0;i<all.length;i++)if(!all[i].ok)bad.push(i+1);
+  out.push({name:"全关验证·40关策略回放可达成",pass:bad.length===0,bad:bad.join(",")});
+  return out;
+}
+return {W:W,H:H,HOP:HOP,DWELL:DWELL,LEVELS:LEVELS,genArr:genArr,newState:newState,dispatch:dispatch,
+  simTick:simTick,policySim:policySim,verifyAll:verifyAll,selfTest:selfTest};
+})();
+window.MD=MD;
+/*X3-ENGINE-END*/
+</script>
+
+<script>
+(function(){
+"use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+
+/* ---------- 关卡数据（DB 下发优先：整表策略回放通过才接受；本地缓存兜底，包内默认关兜底） ---------- */
+var GAME_KEY="metro-dispatch",SAVE_KEY="sw.metrodispatch.v1";
+var DEFAULT_LEVELS=MD.LEVELS;
+var LEVELS=DEFAULT_LEVELS;
+var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
+function validLevelData(d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return false;
+  if(typeof d.name!=="string"||!d.name.trim())return false;
+  if(!Number.isInteger(d.ticks)||d.ticks<40||d.ticks>240)return false;
+  if(!Number.isInteger(d.S)||d.S<3||d.S>9)return false;
+  if(!Number.isInteger(d.K)||d.K<1||d.K>4)return false;
+  if(!Number.isInteger(d.cap)||d.cap<10||d.cap>200)return false;
+  if(!Number.isInteger(d.hop)||d.hop<1||d.hop>4)return false;
+  if(!Number.isInteger(d.dwell)||d.dwell<1||d.dwell>4)return false;
+  if(!Number.isInteger(d.rt)||d.rt<1||d.rt>8)return false;
+  if(!Number.isInteger(d.cd)||d.cd<0||d.cd>8)return false;
+  if(!Number.isInteger(d.lostMax)||d.lostMax<0||d.lostMax>20)return false;
+  if(!Number.isInteger(d.target)||d.target<1)return false;
+  if(!Array.isArray(d.arr)||d.arr.length!==d.S)return false;
+  for(var s=0;s<d.S;s++){
+    if(!Array.isArray(d.arr[s]))return false;
+    for(var j=0;j<d.arr[s].length;j++){
+      var p=d.arr[s][j];
+      if(!p||!Number.isInteger(p.t)||p.t<0||p.t>=d.ticks)return false;
+      if(!Number.isInteger(p.d)||p.d<=s||p.d>=d.S)return false;
+    }
+    for(var t=1;t<d.arr[s].length;t++)if(d.arr[s][t].t<d.arr[s][t-1].t)return false;
+  }
+  var probe=MD.policySim(d);
+  return probe.win===true&&!probe.over;
+}
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  for(var i=0;i<list.length;i++)if(!validLevelData(list[i]))return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){
+      var ok=true;
+      for(var i=0;i<list.length;i++)if(!validLevelData(list[i])){ok=false;break;}
+      if(ok){LEVELS=list;return v;}
+    }
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels(GAME_KEY).then(function(res){
+    if(!res||!Array.isArray(res.levels)||!res.levels.length)return;
+    var list=[],seen={};
+    for(var i=0;i<res.levels.length;i++){
+      var row=res.levels[i];
+      if(!row||typeof row!=="object"||typeof row.dataJson!=="string")return;
+      var d;try{d=JSON.parse(row.dataJson);}catch(e){return;}
+      if(seen[d&&d.name])return;seen[d&&d.name]=1;
+      list.push(d);
+    }
+    if(list.length&&applyLevels(list,res.version||0)){
+      if(lv>LEVELS.length-1)lv=LEVELS.length-1;
+      save.lv=Math.min(save.lv,lv);persist();
+      loadLevel(lv);resize();
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,Math.min(LEVELS.length-1,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
+}
+var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState(GAME_KEY).then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();loadLevel(save.lv);}
+    }catch(e){}
+  }).catch(function(){});
+}
+/* ---------- 选关浮层 ---------- */
+function openLevelSelect(){
+  var g=$("lvgrid");g.hidden=false;g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    (function(i){
+      var b=document.createElement("button");
+      b.className="lvbtn"+(i<save.lv?" done":"");
+      b.textContent=i+1;
+      b.disabled=i>save.lv;
+      b.addEventListener("click",function(){
+        lv=i;save.lv=Math.max(save.lv,lv);persist();
+        loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+      });
+      g.appendChild(b);
+    })(i);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";$("ovBtn").style.background="var(--g-surface2)";$("ovBtn").style.color="var(--g-text)";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+/* ---------- 调色板 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),water:v("--g-water"),
+    rail:v("--g-st-md-rail"),stat:v("--g-st-md-stat"),
+    train:v("--g-st-md-train"),train2:v("--g-st-md-train2"),pax:v("--g-st-md-pax")};
+}
+window.__gOnTheme=function(){palLoad()};
+palLoad();
+/* ---------- 状态（续玩：lv 起步即存档关） ---------- */
+var lv=save.lv,L=null,st=null,state="running",gen=0;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=MD.W,H=MD.H;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function loadLevel(n){
+  lv=Math.max(0,Math.min(n,LEVELS.length-1));
+  L=LEVELS[lv];
+  st=MD.newState(L);state="running";gen++;
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvRule").textContent=L.S+" 站 · " + L.K+" 组车";
+  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
+  updStats();updBtns();
+  $("btnPause").textContent="暂停";
+  hideOverlay();
+  say("看准站台队伍长度择机发车；空跑浪费班次");
+}
+function updStats(){
+  $("stSrv").textContent=st.delivered+"/"+L.target;
+  $("stTick").textContent=Math.max(0,L.ticks-st.t);
+  $("stLost").textContent=st.lost;
+  $("stLost").classList.toggle("low",st.lost>0);
+}
+function updBtns(){
+  var idle=false;
+  for(var k=0;k<st.trains.length;k++)if(st.trains[k].state==="idle"){idle=true;break;}
+  $("btnGo").disabled=state!=="running"||!idle||st.cd>0||st.over||st.win;
+}
+function finish(){
+  state="over";gen++;
+  if(st.win){
+    if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+    if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:st.delivered}).catch(function(){});
+    $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"收车！";
+    $("ovDesc").innerHTML="安全送达 "+st.delivered+" 人，滞留 "+st.lost+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+    $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+    $("ovBtn").style.background="var(--g-btn-primary)";$("ovBtn").style.color="#fff";
+  }else{
+    var why=st.reason==="lost"?"旅客被挤爆滞留超标，调度被通报":"时间到，还有旅客没送完";
+    $("ovTitle").textContent="晚点通报";
+    $("ovDesc").textContent=why+"。盯紧大站、提前发车。";
+    $("ovBtn").textContent="重试本关";
+    $("ovBtn").style.background="var(--g-btn-primary)";$("ovBtn").style.color="#fff";
+  }
+  $("overlay").classList.add("show");updBtns();
+}
+/* ---------- 绘制 ---------- */
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.style.height=Math.round(w*H/W)+"px";
+  cv.width=Math.round(w*dpr);cv.height=Math.round(w*H/W*dpr);
+  var sc=w/W;
+  ctx.setTransform(dpr*sc,0,0,dpr*sc,0,0);
+}
+function rr(x,y,w2,h2,r){
+  r=Math.min(r,w2/2,h2/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w2,y,x+w2,y+h2,r);ctx.arcTo(x+w2,y+h2,x,y+h2,r);
+  ctx.arcTo(x,y+h2,x,y,r);ctx.arcTo(x,y,x+w2,y,r);ctx.closePath();
+}
+function draw(){
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  if(!st)return;
+  var lineY=H/2+20,depotX=34;
+  var span=W-depotX-60;
+  function sx(s){return depotX+span*(L.S===1?0.5:s/(L.S-1));}
+  /* 车库 */
+  ctx.fillStyle=PAL.stat;
+  rr(depotX-18,44,36,60,8);ctx.fill();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle=PAL.text;ctx.font="400 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText("车厂",depotX,74);
+  /* 轨道与车站 */
+  ctx.strokeStyle=PAL.rail;ctx.lineWidth=6;
+  ctx.beginPath();ctx.moveTo(depotX,lineY);ctx.lineTo(sx(L.S-1)+24,lineY);ctx.stroke();
+  for(var s=0;s<L.S;s++){
+    var x=sx(s);
+    ctx.fillStyle=PAL.surface;
+    ctx.beginPath();ctx.arc(x,lineY,10,0,7);ctx.fill();
+    ctx.strokeStyle=PAL.stat;ctx.lineWidth=3;ctx.stroke();
+    ctx.fillStyle=PAL.muted;
+    ctx.font="400 12px sans-serif";
+    ctx.fillText((s+1)+"号站",x,lineY+26);
+    /* 候车队伍（堆叠点） */
+    var n=Math.min(24,st.q[s].length);
+    for(var d=0;d<n;d++){
+      ctx.fillStyle=st.q[s].length>=L.cap-2?PAL.danger:PAL.pax;
+      ctx.beginPath();ctx.arc(x-14+ (d%12)*5, lineY+34+Math.floor(d/12)*6, 2.2,0,7);ctx.fill();
+    }
+    if(st.q[s].length>n){
+      ctx.fillStyle=PAL.danger;ctx.font="700 12px sans-serif";
+      ctx.fillText("+"+(st.q[s].length-n),x+22,lineY+40);
+    }
+  }
+  /* 列车（位置=站间插值） */
+  for(var k=0;k<st.trains.length;k++){
+    var tr=st.trains[k];
+    if(tr.state==="idle"){
+      ctx.fillStyle=PAL.train2;
+      rr(depotX-14+k*0,48+k*18,28,12,4);ctx.fill();
+      continue;
+    }
+    var pos;
+    if(tr.station<0){
+      var p=1-tr.prog/(L.hop||2);
+      pos=depotX+(sx(0)-depotX)*p;
+    }else if(tr.state==="go"){
+      var st2=tr.station+1;
+      var p2=1-tr.prog/(L.hop||2);
+      pos=sx(tr.station)+(sx(Math.min(st2,L.S-1))-sx(tr.station))*p2;
+    }else if(tr.state==="turn"){
+      pos=sx(L.S-1)+12;
+    }else{
+      pos=sx(tr.station);
+    }
+    ctx.fillStyle=PAL.train;
+    rr(pos-16,lineY-9,32,18,5);ctx.fill();
+    ctx.strokeStyle=PAL.train2;ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=PAL.surface;
+    ctx.font="700 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(String(tr.riders.length),pos,lineY+1);
+  }
+  ctx.fillStyle=PAL.muted;
+  ctx.font="400 12px sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
+  ctx.fillText("车上数字=载客数",12,H-14);
+}
+/* ---------- tick 节拍（rAF 驱动；切后台 rAF 停 → 时间自动冻结） ---------- */
+var TICK_SEC=0.5,acc=0;
+var rafId=0,last=0;
+function frame(ts){
+  rafId=requestAnimationFrame(frame);
+  if(!last)last=ts;
+  var dt=Math.min(0.05,(ts-last)/1000||0);
+  last=ts;
+  if(state==="running"){
+    acc+=dt;
+    var n=0;
+    while(acc>=TICK_SEC&&n++<4){
+      acc-=TICK_SEC;
+      MD.simTick(L,st,false);
+      updStats();updBtns();
+      if(st.over||st.win){finish();break;}
+    }
+  }
+  draw();
+}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){
+    if(rafId){cancelAnimationFrame(rafId);rafId=0;}
+    if(state==="running"){state="paused";$("btnPause").textContent="继续";say("已暂停——回到游戏继续调度");}
+  }else if(!rafId){last=0;rafId=requestAnimationFrame(frame);}
+});
+/* ---------- 输入 ---------- */
+$("btnGo").addEventListener("click",function(){
+  if(state!=="running")return;
+  MD.dispatch(L,st);
+  updBtns();
+});
+$("btnPause").addEventListener("click",function(){
+  if(state==="running"){state="paused";$("btnPause").textContent="继续";say("已暂停");}
+  else if(state==="paused"){state="running";$("btnPause").textContent="暂停";say("继续调度");}
+});
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){if(state!=="over")openLevelSelect();});
+$("ovBtn").addEventListener("click",function(){
+  if(st.win){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+    else{lv++;loadLevel(lv)}
+  }else loadLevel(lv);
+  $("ovBtn").style.background="var(--g-surface2)";$("ovBtn").style.color="var(--g-text)";
+});
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k===" "||k==="Enter"){e.preventDefault();if($("btnGo").disabled)$("btnPause").click();else $("btnGo").click();}
+  else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
+});
+window.addEventListener("resize",resize);
+/* ---------- 启动（loadLevel 以存档关续玩） ---------- */
+loadLevel(save.lv);resize();rafId=requestAnimationFrame(frame);
+syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+(function(){
+  var els=document.querySelectorAll(".overlay, .sheet");
+  if(!els.length)return;
+  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+  var lastFocus=null;
+  function focusFirst(el){
+    if(el.dataset.foc)return;el.dataset.foc="1";
+    if(!lastFocus)lastFocus=document.activeElement;
+    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  }
+  function restore(el){
+    if(!el.dataset.foc)return;delete el.dataset.foc;
+    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+  }
+  function trap(el,e){
+    if(e.key!=="Tab")return;
+    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+  }
+  function watch(el){
+    try{new MutationObserver(function(){
+      if(shown(el))focusFirst(el);else restore(el);
+    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+    el.addEventListener("keydown",function(e){trap(el,e)});
+  }
+  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+</body>
+</html>

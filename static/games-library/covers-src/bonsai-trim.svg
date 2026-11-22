@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D1BA92"/>
+      <stop offset="0.55" stop-color="#A88E5E"/>
+      <stop offset="1" stop-color="#7A643C"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.35" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2A1E0E" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect y="392" width="800" height="58" fill="#644E2C" opacity="0.6"/>
+  <rect y="392" width="800" height="6" fill="#523E22" opacity="0.6"/>
+  <g stroke="#FFF3DC" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M88 84 h11 M93.5 78.5 v11" stroke-width="3"/>
+    <path d="M712 88 h12 M718 82 v12" stroke-width="3.4"/>
+    <path d="M64 260 h9 M68.5 255.5 v9" stroke-width="2.6" opacity="0.7"/>
+    <path d="M744 280 h9 M748.5 275.5 v9" stroke-width="2.6" opacity="0.65"/>
+  </g>
+  <g fill="#FFF3DC" opacity="0.5">
+    <circle cx="150" cy="140" r="4"/><circle cx="680" cy="130" r="3.4"/><circle cx="70" cy="210" r="3"/><circle cx="750" cy="200" r="2.6"/>
+  </g>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="380" cy="404" rx="290" ry="20" fill="#4A3818" opacity="0.4"/>
+
+  <!-- 目标轮廓虚影 -->
+  <ellipse cx="370" cy="168" rx="188" ry="112" fill="none" stroke="#FFF3DC" stroke-width="6" stroke-dasharray="14 12" opacity="0.8"/>
+
+  <!-- 盆景 -->
+  <g>
+    <!-- 树干 -->
+    <path d="M370 330 C350 290 392 270 370 240 C350 210 382 190 370 158" stroke="#8A5A3A" stroke-width="16" fill="none" stroke-linecap="round"/>
+    <path d="M370 262 Q410 250 436 226" stroke="#8A5A3A" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <!-- 树冠 -->
+    <g stroke="#3A2A1E" stroke-width="7" stroke-linejoin="round">
+      <ellipse cx="312" cy="192" rx="72" ry="34" fill="#5E8C4A"/>
+      <ellipse cx="424" cy="152" rx="78" ry="38" fill="#6E9C56"/>
+      <ellipse cx="352" cy="112" rx="68" ry="32" fill="#5E8C4A"/>
+    </g>
+    <g stroke="#4A7038" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8">
+      <path d="M268 188 Q300 176 340 190"/>
+      <path d="M380 146 Q420 132 462 148"/>
+      <path d="M316 106 Q348 94 384 108"/>
+    </g>
+    <circle cx="300" cy="120" r="14" fill="#FFFFFF" opacity="0.35"/>
+    <!-- 盆 -->
+    <path d="M250 336 L490 336 L466 392 L274 392 Z" fill="#B98A4E" stroke="#3A2A1E" stroke-width="8" stroke-linejoin="round"/>
+    <rect x="238" y="320" width="264" height="22" rx="9" fill="#8F6A3A" stroke="#3A2A1E" stroke-width="7"/>
+    <!-- 盆签名表情 -->
+    <circle cx="332" cy="364" r="10" fill="#1F1A14"/>
+    <circle cx="408" cy="364" r="10" fill="#1F1A14"/>
+    <circle cx="335" cy="361" r="3.2" fill="#FFFFFF"/>
+    <circle cx="411" cy="361" r="3.2" fill="#FFFFFF"/>
+    <path d="M348 382 Q370 392 392 381" stroke="#1F1A14" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+    <circle cx="270" cy="352" r="12" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+
+  <!-- 剪刀 -->
+  <g>
+    <path d="M620 250 L702 204 L706 214 L628 258 Z" fill="#C9CDD2" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M620 250 L702 296 L696 304 L614 260 Z" fill="#C9CDD2" stroke="#3A2A1E" stroke-width="6" stroke-linejoin="round"/>
+    <circle cx="600" cy="232" r="17" fill="none" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="600" cy="270" r="17" fill="none" stroke="#3A2A1E" stroke-width="8"/>
+    <circle cx="620" cy="250" r="8" fill="#E8A13C" stroke="#3A2A1E" stroke-width="5"/>
+  </g>
+
+  <!-- 剪下的枝条 -->
+  <g>
+    <path d="M724 168 Q740 180 752 196" stroke="#8A5A3A" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <ellipse cx="742" cy="164" rx="18" ry="10" fill="#6E9C56" stroke="#3A2A1E" stroke-width="5" transform="rotate(-24 742 164)"/>
+    <ellipse cx="762" cy="192" rx="16" ry="9" fill="#5E8C4A" stroke="#3A2A1E" stroke-width="5" transform="rotate(18 762 192)"/>
+    <path d="M700 150 L684 138 M716 176 L704 168" stroke="#3A2A1E" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  </g>
+  <!-- 落叶 -->
+  <g fill="#6E9C56" stroke="#3A2A1E" stroke-width="4">
+    <ellipse cx="560" cy="398" rx="14" ry="7" transform="rotate(-16 560 398)"/>
+    <ellipse cx="600" cy="408" rx="12" ry="6" transform="rotate(12 600 408)"/>
+  </g>
+
+  <rect width="800" height="450" fill="url(#vign)"/>
+</svg>
