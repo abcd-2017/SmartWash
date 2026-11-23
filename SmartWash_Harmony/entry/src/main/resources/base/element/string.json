@@ -5365,6 +5365,22 @@
       "value": "该点单已取消，无法继续编辑"
     },
     {
+      "name": "dining_order_action_leave",
+      "value": "退出"
+    },
+    {
+      "name": "dining_order_leave_confirm_title",
+      "value": "退出这点单？"
+    },
+    {
+      "name": "dining_order_leave_confirm_text",
+      "value": "退出后你将不再收到该单的协作更新，也不能再看到后续菜单；此操作不可撤销。"
+    },
+    {
+      "name": "dining_order_leave_success",
+      "value": "已退出点单"
+    },
+    {
       "name": "dining_order_action_recipe_library",
       "value": "菜谱库"
     },

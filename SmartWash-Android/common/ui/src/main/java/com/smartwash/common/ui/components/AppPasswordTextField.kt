@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -36,6 +37,8 @@ import com.smartwash.common.utils.pressable
  *
  * @param maxLength 最大位数，超出直接截断、不报错（沿用原 PasswordInput 行为）；
  *   传 null 则不限制长度（如投递进入密码 4-64 位由业务侧规则校验的场景）
+ * @param leadingIcon 前缀图标（与 [AppTextField] 同槽位）：认证页密码行补 lock 图标，
+ *   与同行手机号框的 Phone 图标对齐；默认 null（无图标）
  */
 @Composable
 fun AppPasswordTextField(
@@ -43,6 +46,8 @@ fun AppPasswordTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String? = null,
+    leadingIcon: ImageVector? = null,
+    leadingIconContentDescription: String? = null,
     isError: Boolean = false,
     supportingText: (@Composable () -> Unit)? = null,
     enabled: Boolean = true,
@@ -62,6 +67,8 @@ fun AppPasswordTextField(
         },
         modifier = modifier,
         placeholder = placeholder,
+        leadingIcon = leadingIcon,
+        leadingIconContentDescription = leadingIconContentDescription,
         isError = isError,
         supportingText = supportingText,
         enabled = enabled,

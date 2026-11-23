@@ -14,14 +14,16 @@ import { resString } from '../utils/ResourceString'
 // ================= 页面级设计常量（对齐认证页玻璃风格，与 Login/Register 同源，DesignSystem.ets 暂无对应 token）=================
 const BUTTON_FONT_SIZE: number = 15
 const BUTTON_LETTER_SPACING: number = 1
-// 玻璃卡底白 8%（对齐 Login/Register GLASS_CARD_BG）
-const GLASS_CARD_BG: number = 0x14FFFFFF
-// 卡内分隔线白 12%
-const GLASS_DIVIDER: number = 0x1FFFFFFF
-// 占位符白 45%
-const GLASS_PLACEHOLDER: number = 0x73FFFFFF
-// 前缀图标白 50%
-const GLASS_PREFIX: number = 0x80FFFFFF
+// 玻璃卡底白 12%（对齐 Login/Register GLASS_CARD_BG；TD37 v0.5 由 8% 加厚）
+const GLASS_CARD_BG: number = 0x1FFFFFFF
+// 占位符白 70%（对齐 Android contentColor.copy(alpha = 0.7f)）
+const GLASS_PLACEHOLDER: number = 0xB3FFFFFF
+// 前缀图标白 70%（对齐 Android contentColor.copy(alpha = 0.7f)）
+const GLASS_PREFIX: number = 0xB3FFFFFF
+// TD37 v0.5：字段槽（圆角 14 实底）——黑 30% 压深品牌渐变，使槽内白字对比度 ≥4.5:1
+const GLASS_FIELD_BG: number = 0x4D000000
+// 字段槽描边白 16%
+const GLASS_FIELD_BORDER: number = 0x29FFFFFF
 // 尾部图标白 92%
 const GLASS_ICON_ACTIVE: number = 0xEBFFFFFF
 // 发送验证码按钮禁用态：描边白 30%×0.55、文字白 92%×0.55（对齐 Register 发送按钮）
@@ -257,6 +259,12 @@ struct ResetPassword {
             .width("100%")
             .height(48)
             .alignItems(VerticalAlign.Center)
+            // TD37 v0.5：字段槽 = 黑 30% 实底 + 1vp 白 16% 描边 + 14vp 圆角（替代原全宽透明行）
+            .borderRadius(DesignDimens.INPUT_RADIUS)
+            .backgroundColor(GLASS_FIELD_BG)
+            .border({ width: 1, color: GLASS_FIELD_BORDER, style: BorderStyle.Solid })
+            .padding({ left: 16, right: 16 })
+            .margin({ bottom: 12 })
 
             if (this.checkPhoneNumber) {
               Text($r('app.string.invalid_phone'))
@@ -266,12 +274,6 @@ struct ResetPassword {
                 .margin({ top: 4 })
                 .transition(TransitionEffect.OPACITY)
             }
-
-            // 卡内分隔线（白 12% / 1dp / 缩进 24，对齐 Register）
-            Divider()
-              .color(GLASS_DIVIDER)
-              .strokeWidth(1)
-              .margin({ left: 24, right: 24, top: 8, bottom: 8 })
 
             // 验证码输入行（高 48 + Key 16 + 发送按钮，对齐 Register 验证码行）
             Row() {
@@ -322,6 +324,12 @@ struct ResetPassword {
             .width("100%")
             .height(48)
             .alignItems(VerticalAlign.Center)
+            // TD37 v0.5：与手机号行同款的实底字段槽
+            .borderRadius(DesignDimens.INPUT_RADIUS)
+            .backgroundColor(GLASS_FIELD_BG)
+            .border({ width: 1, color: GLASS_FIELD_BORDER, style: BorderStyle.Solid })
+            .padding({ left: 16, right: 16 })
+            .margin({ bottom: 12 })
 
             if (this.checkCode) {
               Text($r('app.string.invalid_verification_code'))
@@ -331,12 +339,6 @@ struct ResetPassword {
                 .margin({ top: 4 })
                 .transition(TransitionEffect.OPACITY)
             }
-
-            // 卡内分隔线（白 12% / 1dp / 缩进 24）
-            Divider()
-              .color(GLASS_DIVIDER)
-              .strokeWidth(1)
-              .margin({ left: 24, right: 24, top: 8, bottom: 8 })
 
             // 新密码输入行（占位「设置新密码」，对齐 Register 密码行）
             Row() {
@@ -375,6 +377,11 @@ struct ResetPassword {
             .width("100%")
             .height(48)
             .alignItems(VerticalAlign.Center)
+            // TD37 v0.5：与手机号行同款的实底字段槽
+            .borderRadius(DesignDimens.INPUT_RADIUS)
+            .backgroundColor(GLASS_FIELD_BG)
+            .border({ width: 1, color: GLASS_FIELD_BORDER, style: BorderStyle.Solid })
+            .padding({ left: 16, right: 16 })
 
             if (this.checkPassword) {
               Text($r('app.string.invalid_password'))

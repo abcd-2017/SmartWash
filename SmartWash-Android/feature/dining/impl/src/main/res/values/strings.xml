@@ -125,6 +125,11 @@
     <string name="dining_order_cancel_confirm_yes">放弃</string>
     <string name="dining_order_cancel_success">已放弃点单</string>
     <string name="dining_order_cancelled_hint">该点单已取消，无法继续编辑</string>
+    <!-- 参与者退出协作单（leave）：仅非发起者的 DRAFT 卡展示 -->
+    <string name="dining_order_action_leave">退出</string>
+    <string name="dining_order_leave_confirm_title">退出这点单？</string>
+    <string name="dining_order_leave_confirm_text">退出后你将不再收到该单的协作更新，也不能再看到后续菜单；此操作不可撤销。</string>
+    <string name="dining_order_leave_success">已退出点单</string>
 
     <!-- 创建订单页 -->
     <string name="dining_order_create_title">发起点单</string>

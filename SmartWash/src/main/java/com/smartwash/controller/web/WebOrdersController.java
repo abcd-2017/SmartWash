@@ -10,7 +10,6 @@ import com.smartwash.common.OrderStatus;
 import com.smartwash.common.Result;
 import com.smartwash.common.ratelimit.RateLimit;
 import com.smartwash.from.order.*;
-import com.smartwash.exception.CustomExceptions;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
@@ -23,13 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
-
-import java.io.ByteArrayOutputStream;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -141,21 +133,8 @@ public class WebOrdersController {
     @Operation(summary = "生成取件二维码", description = "根据取件码生成二维码图片（Base64编码的PNG），仅允许订单归属用户调用")
     @GetMapping("/auth/orders/generateQrCode/{pickCode}")
     public Result<String> generateQrCode(@PathVariable("pickCode") @Parameter(description = "取件码", required = true) String pickCode) {
-        // 归属校验（评审报告后端 #42）：任意认证用户不得对任意字符串生成取件二维码，仅订单归属用户可获取
+        // 归属校验与生成在服务层（评审报告后端 #34）
         LoginUser loginUser = UserContextHolder.getUser();
-        if (loginUser == null || !ordersService.ownsPickupCode(loginUser.getUserId(), pickCode)) {
-            log.warn("取件二维码归属校验失败, userId: {}, pickCode: {}", loginUser == null ? null : loginUser.getUserId(), pickCode);
-            throw new CustomExceptions("无权获取该订单取件码");
-        }
-        try {
-            QRCodeWriter writer = new QRCodeWriter();
-            BitMatrix matrix = writer.encode(pickCode, BarcodeFormat.QR_CODE, 200, 200);
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            MatrixToImageWriter.writeToStream(matrix, "PNG", os);
-            return Result.ok(Base64.getEncoder().encodeToString(os.toByteArray()));
-        } catch (Exception e) {
-            log.error("生成二维码失败", e);
-            return Result.failMsg("生成二维码失败");
-        }
+        return Result.ok(ordersService.generatePickupQrCode(loginUser == null ? null : loginUser.getUserId(), pickCode));
     }
 }

@@ -9,9 +9,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.FocusInteraction
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +25,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -35,13 +33,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Badge
-import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.School
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,11 +52,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -62,38 +65,31 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.feature.user.impl.R
 import com.smartwash.common.ui.components.AppCard
 import com.smartwash.common.ui.components.AppTextField
+import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AuthCtaButton
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.feature.laundry.api.model.SchoolOption
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.Primary
 import com.smartwash.common.utils.DURATION_MICRO_MS
-import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
-import com.smartwash.common.utils.selectedColor
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 // 退出时长 ≈ 进入（DURATION_MICRO_MS）的 70%（动效语言 v0.4）
 private const val EXIT_MICRO_MS = 140
-
-/** 选中高亮至少可见的时长——颜色过渡走完再收焦点收起下拉 */
-private const val SELECTION_SETTLE_MS = 180L
 
 @Composable
 fun UpdateUserInfoPage(
@@ -102,20 +98,21 @@ fun UpdateUserInfoPage(
 ) {
     // 2026-11-19：saveable——搜索词/已选学校/学号构成多步中间态，返回后不得清空
     var selectedSchoolId by rememberSaveable { mutableLongStateOf(-1) }
+    // 展示用校名（只读选择行的回填值）；搜索词只在 Sheet 内临时存在，选中才落回本字段
+    var query by rememberSaveable { mutableStateOf("") }
     var studentId by rememberSaveable { mutableStateOf("") }
     var isSchoolError by remember { mutableStateOf(false) }
     var isStudentIdError by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
-    var query by rememberSaveable { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    // 选中后延迟收起下拉的协程句柄——连点不同学校时取消上一次，避免提前收起
-    var dismissJob by remember { mutableStateOf<Job?>(null) }
+
+    // 学校选择改为「只读选择行 + 底部 Sheet」：进页不再有可聚焦文本框，从源头消除
+    // 自动拉起输入法与输入框/下拉同屏的问题（搜索能力收进 Sheet 内）
+    var showSchoolSheet by rememberSaveable { mutableStateOf(false) }
+    var sheetQuery by rememberSaveable { mutableStateOf("") }
 
     val schoolList by userInfoViewModel.schools.collectAsState()
-    val interactionSource = remember { MutableInteractionSource() }
-    val keyboardController = LocalSoftwareKeyboardController.current
-    var isSearchFocused by remember { mutableStateOf(false) }
     val updateState by userInfoViewModel.updateState.collectAsState()
 
     // 信息锁定：已填写学校/学号的用户进入本页即为只读态（只能由管理员修改）
@@ -154,14 +151,6 @@ fun UpdateUserInfoPage(
         }
     }
 
-    LaunchedEffect(interactionSource) {
-        interactionSource.interactions.collect {
-            if (it is FocusInteraction.Focus) isSearchFocused = true
-            else if (it is FocusInteraction.Unfocus) isSearchFocused = false
-        }
-    }
-    LaunchedEffect(Unit) { userInfoViewModel.searchSchool() }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -170,8 +159,12 @@ fun UpdateUserInfoPage(
             // 输入内容被键盘遮挡且无法滚到键盘上方（对齐 ChangePasswordPage/ApiConfigPage 根
             // 容器写法；insets 经此消费后底部 CTA 栏自身的 imePadding 自动落为 0，不会叠加）
             .imePadding()
-            // 规范 §7：裸 clickable 必须配套按压反馈——统一走 pressable（内置 indication=null + scale 0.97）
-            .pressable(onClick = { focusManager.clearFocus() })
+            // 规范 §7：裸 clickable 必须配套按压反馈——统一走 pressable（内置 indication=null + scale 0.97）。
+            // 学号框聚焦时点空白处收键盘（学校行已不是文本框，不再需要为其清焦点）
+            .pressable(onClick = {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+            })
             .background(AppColors.colorScheme.background)
     ) {
         LazyColumn(
@@ -261,36 +254,22 @@ fun UpdateUserInfoPage(
                         color = AppColors.colorScheme.textSecondary
                     )
 
-                    // 学校搜索输入框 — 与标签间距 24（spacedBy 16 + 上内边距 8）— 信息锁定后禁用编辑
-                    SearchSchoolInput(
+                    // 学校选择行 — 与标签间距 24（spacedBy 16 + 上内边距 8）— 信息锁定后禁用
+                    SchoolSelectorField(
                         query = query,
-                        interactionSource = interactionSource,
-                        isSchoolError = isSchoolError,
-                        isSearchFocused = isSearchFocused,
-                        schoolList = schoolList,
-                        selectedSchoolId = selectedSchoolId,
+                        isError = isSchoolError,
                         enabled = !isInfoLocked,
-                        modifier = Modifier.padding(top = 8.dp),
-                        itemClick = { school ->
-                            selectedSchoolId = school.schoolId
-                            query = school.schoolName
-                            isSchoolError = false
-                            // 先让选中高亮落地，再收焦点收起下拉（收起走 exit 动画）
-                            dismissJob?.cancel()
-                            dismissJob = scope.launch {
-                                delay(SELECTION_SETTLE_MS)
-                                focusManager.clearFocus()
-                                keyboardController?.hide()
-                                isSearchFocused = false
-                            }
-                        },
-                        clearOnClick = {
-                            query = ""
-                            userInfoViewModel.updateSearchName(query)
-                        }
+                        onClick = { showSchoolSheet = true },
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                    AnimatedVisibility(
+                        visible = isSchoolError,
+                        enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                            expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+                        exit = fadeOut(motionSpec(exitTween(EXIT_MICRO_MS))) +
+                            shrinkVertically(motionSpec(exitTween(EXIT_MICRO_MS))),
                     ) {
-                        query = it
-                        userInfoViewModel.updateSearchName(query)
+                        Text(stringResource(R.string.please_select_school))
                     }
 
                     // 学号标签 — 与上一输入框间距 24（spacedBy 16 + 上内边距 8）
@@ -362,77 +341,161 @@ fun UpdateUserInfoPage(
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
         }
     }
+
+    if (showSchoolSheet) {
+        SchoolPickerSheet(
+            sheetQuery = sheetQuery,
+            schoolList = schoolList,
+            selectedSchoolId = selectedSchoolId,
+            onQueryChange = { sheetQuery = it; userInfoViewModel.updateSearchName(it) },
+            onSelect = { school ->
+                selectedSchoolId = school.schoolId
+                query = school.schoolName
+                isSchoolError = false
+                // 与关闭 Sheet 同路径清空搜索词：下次打开回到全量列表，不残留上次的过滤条件
+                sheetQuery = ""
+                userInfoViewModel.updateSearchName("")
+                showSchoolSheet = false
+            },
+            onDismiss = {
+                // 关闭即丢弃搜索词，下次打开回到全量列表
+                sheetQuery = ""
+                userInfoViewModel.updateSearchName("")
+                showSchoolSheet = false
+            },
+        )
+    }
 }
 
+/**
+ * 学校只读选择行 — 视觉与 [AppTextField] STANDARD 皮肤同款（surfaceVariant 底 + outline 描边 +
+ * 14dp 圆角 + 前缀 16dp/.5 + 56dp 行高），但不是文本框：点击整行开 Sheet。
+ *
+ * 为什么不直接用 `AppTextField(readOnly=true)`：readOnly 仍可聚焦、会唤起输入法并显示光标，
+ * 与「点击展开下拉」的语义相反；自绘只读行从根上没有输入连接，进页不会弹键盘。
+ */
 @Composable
-fun SearchSchoolInput(
+private fun SchoolSelectorField(
     query: String,
-    interactionSource: MutableInteractionSource,
-    isSchoolError: Boolean,
-    isSearchFocused: Boolean,
+    isError: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .alpha(if (enabled) 1f else 0.38f)
+            .then(if (enabled) Modifier.pressable(onClick = onClick, debounce = false) else Modifier),
+        shape = RoundedCornerShape(AppDimens.inputRadius),
+        color = AppColors.colorScheme.surfaceVariant,
+        border = BorderStroke(
+            1.dp,
+            if (isError) AppColors.colorScheme.error else AppColors.colorScheme.outline
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.School,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = AppColors.colorScheme.textSecondary.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+            Text(
+                text = query.ifBlank { stringResource(R.string.select_school) },
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (query.isBlank()) {
+                    AppColors.colorScheme.textSecondary
+                } else {
+                    AppColors.colorScheme.textPrimary
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Rounded.ExpandMore,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = AppColors.colorScheme.textSecondary
+            )
+        }
+    }
+}
+
+/**
+ * 学校选择底部 Sheet（对齐 PaymentPage 先例：surface 容器 + 自绘拖拽条 + 顶部圆角）。
+ *
+ * 搜索框在 Sheet 内部：只有用户主动点击选择行后才可能出键盘，且此时下拉列表本来就该出现，
+ * 不存在「进页自动拉起输入法」与「输入框/下拉同屏非预期弹起」的冲突。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SchoolPickerSheet(
+    sheetQuery: String,
     schoolList: List<SchoolOption>,
     selectedSchoolId: Long,
-    enabled: Boolean = true,
-    modifier: Modifier = Modifier,
-    itemClick: (SchoolOption) -> Unit,
-    clearOnClick: () -> Unit,
-    onValueChange: (String) -> Unit
+    onQueryChange: (String) -> Unit,
+    onSelect: (SchoolOption) -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    Column(modifier = modifier) {
-        AppTextField(
-            value = query,
-            onValueChange = onValueChange,
-            placeholder = stringResource(R.string.search_school),
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = AppColors.colorScheme.surface,
+        tonalElevation = 0.dp,
+        shape = RoundedCornerShape(topStart = AppDimens.radiusXl, topEnd = AppDimens.radiusXl),
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(vertical = AppDimens.spaceSm)
+                    .width(32.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(AppDimens.radiusFull))
+                    .background(AppColors.colorScheme.outline)
+            )
+        },
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 48.dp),
-            enabled = enabled,
-            isError = isSchoolError,
-            supportingText = {
-                AnimatedVisibility(
-                    visible = isSchoolError,
-                    enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
-                        expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
-                    exit = fadeOut(motionSpec(exitTween(EXIT_MICRO_MS))) +
-                        shrinkVertically(motionSpec(exitTween(EXIT_MICRO_MS))),
-                ) {
-                    Text(stringResource(R.string.please_select_school))
-                }
-            },
-            leadingIcon = Icons.Rounded.School,
-            trailingIcon = {
-                // 48dp 自绘清空按钮（§3.7 尾缀热区 ≥44dp；M3 IconButton 自带 state layer/涟漪，规范 §7 禁用于可点击场景）
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .then(
-                            if (enabled) Modifier.pressable(onClick = clearOnClick, debounce = false)
-                            else Modifier
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Rounded.Clear,
-                        contentDescription = stringResource(R.string.clear),
-                        modifier = Modifier.size(20.dp),
-                        tint = AppColors.colorScheme.textSecondary
-                    )
-                }
-            },
-            interactionSource = interactionSource
-        )
-
-        // 下拉列表：展开/收起走弹簧 + 淡入，替代 0ms 出现/消失
-        AnimatedVisibility(
-            visible = isSearchFocused && schoolList.isNotEmpty(),
-            enter = fadeIn(motionSpec(defaultSpring())) +
-                expandVertically(motionSpec(defaultSpring())),
-            exit = fadeOut(motionSpec(exitTween(EXIT_MICRO_MS))) +
-                shrinkVertically(motionSpec(exitTween(EXIT_MICRO_MS))),
+                .padding(horizontal = AppDimens.pagePadding)
+                .padding(bottom = AppDimens.pagePadding)
         ) {
-            Column {
-                Spacer(modifier = Modifier.height(8.dp))
-                SchoolItem(schoolList, selectedSchoolId, itemClick)
+            Text(
+                text = stringResource(R.string.select_school),
+                style = MaterialTheme.typography.headlineSmall,
+                color = AppColors.colorScheme.textPrimary
+            )
+
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+
+            AppTextField(
+                value = sheetQuery,
+                onValueChange = onQueryChange,
+                placeholder = stringResource(R.string.search_school),
+                leadingIcon = Icons.Rounded.Search,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+
+            if (schoolList.isEmpty()) {
+                EmptyState(icon = Icons.Rounded.School, message = stringResource(R.string.school_not_found))
+            } else {
+                // 单卡承载整份列表（规范 §3.1：卡是容器，行不各自套卡）
+                AppCard {
+                    LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                        items(schoolList, key = { it.schoolId }) { school ->
+                            SchoolItem(school, selectedSchoolId == school.schoolId) { onSelect(school) }
+                        }
+                    }
+                }
             }
         }
     }
@@ -440,50 +503,49 @@ fun SearchSchoolInput(
 
 @Composable
 fun SchoolItem(
-    schoolList: List<SchoolOption>,
-    selectedSchoolId: Long,
-    onClick: (SchoolOption) -> Unit
+    school: SchoolOption,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
-    // 规范 §3.1 标准卡片 + §3.4 列表行（56dp 行高、图标容器、发丝线）；选中项 brand-soft 高亮
-    AppCard {
-        LazyColumn(
+    // 规范 §3.4 列表行（56dp 行高、发丝线）；选中项 brand-soft 高亮。
+    // 整份列表共用外层一张 AppCard（§3.1：卡是容器，行不各自套卡）
+    Column {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 200.dp)
-        ) {
-            items(schoolList, key = { it.schoolId }) { school ->
-                val isSelected = school.schoolId == selectedSchoolId
-                // 选中态背景/文字色统一走 selectedColor 过渡（reduced motion 降级为 180ms 纯颜色变化）
-                val rowBackground = selectedColor(
+                .height(56.dp)
+                .background(
                     if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                 )
-                val rowTextColor = selectedColor(
-                    if (isSelected) AppColors.colorScheme.textGreenOnTint else AppColors.colorScheme.textPrimary
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .background(rowBackground)
-                        .pressable(onClick = { onClick(school) })
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 列表行主文案按规范 §3.4 取 14sp/500（titleSmall 档，原 12sp 低于规范）；
-                    // 字重固定，选中只靠背景+文字色区分，避免字重跳变导致行内重排
-                    Text(
-                        text = school.schoolName,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = rowTextColor,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = AppColors.colorScheme.hairline,
-                    modifier = Modifier.padding(horizontal = 14.dp)
+                .pressable(onClick = onClick, debounce = false)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // 列表行主文案按规范 §3.4 取 14sp/500（titleSmall 档，原 12sp 低于规范）；
+            // 字重固定，选中只靠背景+文字色区分，避免字重跳变导致行内重排
+            Text(
+                text = school.schoolName,
+                style = MaterialTheme.typography.titleSmall,
+                color = if (isSelected) {
+                    AppColors.colorScheme.textGreenOnTint
+                } else {
+                    AppColors.colorScheme.textPrimary
+                },
+                modifier = Modifier.weight(1f)
+            )
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = AppColors.colorScheme.textGreenOnTint
                 )
             }
         }
+        HorizontalDivider(
+            thickness = 0.5.dp,
+            color = AppColors.colorScheme.hairline,
+            modifier = Modifier.padding(horizontal = 14.dp)
+        )
     }
 }

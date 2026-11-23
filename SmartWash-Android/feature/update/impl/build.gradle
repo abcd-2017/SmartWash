@@ -10,6 +10,13 @@ apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.feature.update'
+
+    testOptions {
+        unitTests {
+            // JVM 单测中 android.util.Log（AppLogger/LogCore）返回默认值而非抛 not mocked（dining 先例）
+            returnDefaultValues = true
+        }
+    }
 }
 
 dependencies {
@@ -30,4 +37,14 @@ dependencies {
     implementation libs.androidx.lifecycle.viewmodel
     // UpdateEventBus/UpdateViewModel 的协程与 Flow
     implementation libs.kotlinx.coroutines.core
+
+    // JVM 单测（事件总线 replay/DROP_OLDEST 契约 + 更新状态机锚点）
+    testImplementation libs.junit
+    // UpdateViewModel viewModelScope 的 Main 调度器注入
+    testImplementation libs.kotlinx.coroutines.test
+    // UpdateViewModel 构造链需要 Context（SessionManager 同款 Robolectric 先例）
+    testImplementation libs.robolectric
+    // android-all 框架包走 Gradle 依赖（CI gradle 缓存），避免 Robolectric 运行期自取
+    testImplementation libs.androidAllInstrumented
+    testImplementation libs.androidx.test.core
 }

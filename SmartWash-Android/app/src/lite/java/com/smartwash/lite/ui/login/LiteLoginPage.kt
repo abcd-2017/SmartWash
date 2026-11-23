@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -227,6 +228,8 @@ fun LiteLoginPage(
                     isPasswordError = if (it.length >= 6) false else isPasswordError
                 },
                 modifier = Modifier.focusRequester(passwordFocusRequester),
+                // 前缀 lock 图标：与上方手机号行的 Phone 图标对齐，避免密码行只剩尾部可见性图标
+                leadingIcon = Icons.Rounded.Lock,
                 isError = isPasswordError,
                 supportingText = {
                     AnimatedVisibility(

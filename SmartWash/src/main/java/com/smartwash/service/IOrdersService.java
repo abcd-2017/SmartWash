@@ -51,4 +51,13 @@ public interface IOrdersService extends IService<Orders> {
      * @return true=该用户名下存在匹配订单，允许生成二维码
      */
     boolean ownsPickupCode(Long userId, String pickCode);
+
+    /**
+     * 生成取件二维码（Base64 PNG）：归属校验失败/生成失败抛业务异常（评审报告后端 #34 业务逻辑下沉）
+     *
+     * @param userId   当前登录用户 ID（null 视为无归属）
+     * @param pickCode 取件码随机段
+     * @return Base64 编码的 PNG
+     */
+    String generatePickupQrCode(Long userId, String pickCode);
 }

@@ -85,6 +85,8 @@
     <string name="student_id">学号</string>
     <string name="invalid_student_id">请输入正确的学号</string>
     <string name="search_school">搜索学校</string>
+    <string name="select_school">选择学校</string>
+    <string name="school_not_found">未找到匹配的学校</string>
     <string name="please_select_school">请选择学校</string>
     <string name="modify_success">修改成功</string>
     <string name="error_student_id_registered">该学号已注册</string>

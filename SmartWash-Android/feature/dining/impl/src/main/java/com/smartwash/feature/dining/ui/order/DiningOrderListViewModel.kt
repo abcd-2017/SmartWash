@@ -60,6 +60,10 @@ class DiningOrderListViewModel @Inject constructor(
     private val _cancelState = MutableStateFlow<RequestState>(RequestState.Idle)
     val cancelState = _cancelState.asStateFlow()
 
+    /** 退出点单动作态（参与者；Loading 防重；成功一次性 Toast 后消费） */
+    private val _leaveState = MutableStateFlow<RequestState>(RequestState.Idle)
+    val leaveState = _leaveState.asStateFlow()
+
     private var currentPage = 1
     private var total = 0L
 
@@ -131,6 +135,33 @@ class DiningOrderListViewModel @Inject constructor(
                 _cancelState.value = RequestState.Error(e.resId, e.message)
             }
         }
+    }
+
+    /**
+     * 退出点单（仅参与者；二次确认由页面承担）：成功后刷新列表与 active。
+     * 后端拒绝（发起者/已结束/已取消）转译为 NetworkException 上抛，由页面 Toast。
+     */
+    fun leaveOrder(orderId: Long) {
+        if (orderId <= 0L) return
+        if (_leaveState.value is RequestState.Loading) return
+        viewModelScope.launch {
+            _leaveState.value = RequestState.Loading
+            try {
+                diningRepository.leaveOrder(orderId)
+                _leaveState.value = RequestState.Success
+                load()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: NetworkException) {
+                AppLogger.error(TAG, "DiningOrderListViewModel.leaveOrder: ${e.message}", e)
+                _leaveState.value = RequestState.Error(e.resId, e.message)
+            }
+        }
+    }
+
+    /** 消费退出动作态（页面 Toast 后调用，避免重放） */
+    fun consumeLeaveState() {
+        _leaveState.value = RequestState.Idle
     }
 
     /** 消费放弃动作态（页面 Toast 后调用，避免重放） */

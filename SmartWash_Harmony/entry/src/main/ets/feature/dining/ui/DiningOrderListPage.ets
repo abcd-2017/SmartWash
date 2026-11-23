@@ -10,7 +10,7 @@ import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, Motion
 import { ReduceMotion } from '../../../utils/ReduceMotion'
 import { promptAction } from '@kit.ArkUI'
 import { BizCode } from '../../../network/HttpUtil'
-import { cancelDiningOrder, DiningOrderListVo, getActiveDiningOrder, pageMyDiningOrders } from '../../../network/api/DiningApi'
+import { cancelDiningOrder, DiningOrderListVo, getActiveDiningOrder, leaveDiningOrder, pageMyDiningOrders } from '../../../network/api/DiningApi'
 import { diningOrderStatusFromCode, DiningOrderStatus, diningTimeLabel } from '../DiningLogic'
 import { DiningOrderCreateParam } from '../api'
 import { DiningText } from '../DiningText'
@@ -275,7 +275,7 @@ struct DiningOrderListPage {
               this.pressedKey = ''
             }
           })
-          ..onClick(() => {
+          .onClick(() => {
             // 唯一性收敛：已有本人进行中的 DRAFT → 直接进该单编辑态，不再新建（无则空白创建页）
             if (this.activeOrderId > 0) {
               const param = new DiningOrderCreateParam()
@@ -363,28 +363,32 @@ struct DiningOrderListPage {
           .fontColor($r('app.color.TEXT_SECONDARY'))
           .layoutWeight(1)
 
-        // 草稿（发起者）：「放弃」出口（二次确认后置 CANCELLED，参与者仍可见）
-        if (diningOrderStatusFromCode(order.status) === DiningOrderStatus.DRAFT && order.isCreator) {
-          Text(DiningText.dining_order_action_cancel)
+        // 草稿操作：发起者「放弃」/ 参与者「退出」（各自二次确认后调用）
+        if (diningOrderStatusFromCode(order.status) === DiningOrderStatus.DRAFT) {
+          Text(order.isCreator ? DiningText.dining_order_action_cancel : DiningText.dining_order_action_leave)
             .fontSize(DesignFontSize.BUTTON_TEXT)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor($r('app.color.TEXT_SECONDARY'))
             .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             .scale({
-              x: !this.reduceMotion && this.pressedKey === `cancel_${order.id}` ? MotionScale.Press : 1,
-              y: !this.reduceMotion && this.pressedKey === `cancel_${order.id}` ? MotionScale.Press : 1
+              x: !this.reduceMotion && this.pressedKey === `draft_${order.id}` ? MotionScale.Press : 1,
+              y: !this.reduceMotion && this.pressedKey === `draft_${order.id}` ? MotionScale.Press : 1
             })
-            .opacity(this.reduceMotion && this.pressedKey === `cancel_${order.id}` ? MotionAlpha.PressReduced : 1)
+            .opacity(this.reduceMotion && this.pressedKey === `draft_${order.id}` ? MotionAlpha.PressReduced : 1)
             .animation(MotionTiming.PRESS)
             .onTouch((event: TouchEvent) => {
               if (event.type === TouchType.Down) {
-                this.pressedKey = `cancel_${order.id}`
+                this.pressedKey = `draft_${order.id}`
               } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
                 this.pressedKey = ''
               }
             })
             .onClick(() => {
-              this.confirmCancel(order)
+              if (order.isCreator) {
+                this.confirmCancel(order)
+              } else {
+                this.confirmLeave(order)
+              }
             })
         }
         // 复用源单语义仅对已定稿单有意义（草稿点卡片继续编辑，已取消不引导复用）
@@ -495,6 +499,40 @@ struct DiningOrderListPage {
       const res = await cancelDiningOrder(order.id)
       if (res.code === BizCode.SUCCESS) {
         showToastSafety('', DiningText.dining_order_cancel_success)
+        this.reloadFirstPage()
+      } else {
+        showToastSafety(res.message, DiningText.dining_order_list_load_failed)
+      }
+    } catch (err) {
+      showToastSafety('', DiningText.dining_order_list_load_failed)
+    }
+  }
+
+  /**
+   * 退出点单二次确认（系统弹窗，仅参与者）：确认后调 leave，成功 toast 并刷新；取消静默。
+   */
+  private async confirmLeave(order: DiningOrderListVo): Promise<void> {
+    let confirmed = false
+    try {
+      const result = await promptAction.showDialog({
+        title: DiningText.dining_order_leave_confirm_title,
+        message: DiningText.dining_order_leave_confirm_text,
+        buttons: [
+          { text: DiningText.dining_order_action_leave, color: $r('app.color.DANGER') },
+          { text: '取消', color: $r('app.color.TEXT_SECONDARY') }
+        ]
+      })
+      confirmed = result.index === 0
+    } catch (err) {
+      confirmed = false
+    }
+    if (!confirmed) {
+      return
+    }
+    try {
+      const res = await leaveDiningOrder(order.id)
+      if (res.code === BizCode.SUCCESS) {
+        showToastSafety('', DiningText.dining_order_leave_success)
         this.reloadFirstPage()
       } else {
         showToastSafety(res.message, DiningText.dining_order_list_load_failed)

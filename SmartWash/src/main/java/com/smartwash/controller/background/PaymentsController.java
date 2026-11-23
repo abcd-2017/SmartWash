@@ -11,7 +11,6 @@ import com.smartwash.from.payment.SearchPaymentFrom;
 import com.smartwash.service.IPaymentsService;
 import com.smartwash.vo.payment.PaymentVo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,11 +50,7 @@ public class PaymentsController {
     @Operation(summary = "分页查询支付记录列表", description = "根据条件分页查询支付记录列表")
     @GetMapping("/all")
     public Result<Page<PaymentVo>> getAllPayments(SearchPaymentFrom paymentFrom) {
-        String phoneNumber = paymentFrom.getPhoneNumber();
-        if (StringUtils.hasText(phoneNumber)) {
-            if (phoneNumber.length() > 11) return Result.failMsg("手机号长度错误");
-            if (!phoneNumber.matches("^(\\+86)?1[3-9]\\d{9}$")) return Result.failMsg("手机号格式错误");
-        }
+        // 手机号校验在服务层（评审报告后端 #34）
         return Result.ok(paymentsService.getAllPayments(paymentFrom));
     }
 

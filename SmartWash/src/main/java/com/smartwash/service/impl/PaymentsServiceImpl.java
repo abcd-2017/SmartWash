@@ -25,8 +25,8 @@ import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.payment.PaymentVo;
 import com.smartwash.vo.users.UserVo;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -41,22 +41,27 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> implements IPaymentsService {
-    @Autowired
-    private UsersMapper usersMapper;
-    @Autowired
-    private OrdersMapper ordersMapper;
-    @Autowired
-    private CouponMapper couponMapper;
-    @Autowired
-    private UserCouponMapper userCouponMapper;
-    @Autowired
-    private OrderTimeoutManager orderTimeoutManager;
-    @Autowired
-    private PaymentGatewayService paymentGatewayService;
+    private final UsersMapper usersMapper;
+    private final OrdersMapper ordersMapper;
+    private final CouponMapper couponMapper;
+    private final UserCouponMapper userCouponMapper;
+    private final OrderTimeoutManager orderTimeoutManager;
+    private final PaymentGatewayService paymentGatewayService;
 
     @Override
     public Page<PaymentVo> getAllPayments(SearchPaymentFrom searchUserFrom) {
+        // 手机号校验（评审报告后端 #34：业务逻辑下沉，controller 只做委托；CustomExceptions 走全局信封 FAIL+原消息）
+        String phoneNumber = searchUserFrom.getPhoneNumber();
+        if (StringUtils.hasText(phoneNumber)) {
+            if (phoneNumber.length() > 11) {
+                throw new CustomExceptions("手机号长度错误");
+            }
+            if (!phoneNumber.matches("^(\\+86)?1[3-9]\\d{9}$")) {
+                throw new CustomExceptions("手机号格式错误");
+            }
+        }
         Page<Payments> page = new Page<>(searchUserFrom.getPage(), searchUserFrom.getSize());
         LambdaQueryWrapper<Payments> queryWrapper = getRechargeRecordsLambdaQueryWrapper(searchUserFrom);
 
