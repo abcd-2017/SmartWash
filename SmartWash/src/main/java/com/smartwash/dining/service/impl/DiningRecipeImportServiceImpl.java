@@ -103,8 +103,8 @@ import java.util.stream.Collectors;
 public class DiningRecipeImportServiceImpl implements DiningRecipeImportService {
 
 
-    /** 单次导入数据行上限（合并菜谱库 697 行一次性导入；防超大请求） */
-    public static final int MAX_IMPORT_ROWS = 1000;
+    /** 单次导入数据行上限（全库合并 1221 行可一次导入；防超大请求） */
+    public static final int MAX_IMPORT_ROWS = 2000;
 
     /** 配料关联批量写入分批大小（Db.saveBatch JDBC batch flush 粒度） */
     private static final int RELATION_BATCH_SIZE = 200;
@@ -112,7 +112,7 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
     /** 配料名 IN 批查 / 新配料批量插入分批大小 */
     private static final int INGREDIENT_BATCH_SIZE = 500;
 
-    /** 上传文件大小上限（5MB，足够承载 1000 行文本） */
+    /** 上传文件大小上限（5MB，足够承载 2000 行文本） */
     public static final long MAX_FILE_BYTES = 5L * 1024 * 1024;
 
     /** 模板列名（表头按名匹配、顺序无关）——既有 5 列必选，v2 新列全部可选 */
@@ -247,7 +247,7 @@ public class DiningRecipeImportServiceImpl implements DiningRecipeImportService 
                             + "分类不存在将自动创建（也可先在「分类管理」页创建，留空为未分类）；"
                             + "封面链接当前版本仅校验格式不导入（封面请用「封面对象键」列或在导入后于本页单独上传）；"
                             + "同一菜谱重复导入（同唯一标识或同菜名同分类）会更新库内菜谱而非重复新增；"
-                            + "单次最多导入 1000 行。");
+                            + "单次最多导入 " + MAX_IMPORT_ROWS + " 行。");
             String[] columnTips = {
                     "分类名（可空=未分类）：不存在将自动创建，也可先在「分类管理」页创建",
                     "菜名（必填）：最长 64 字，允许重名",
