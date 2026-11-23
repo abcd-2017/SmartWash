@@ -1,7 +1,7 @@
 # SmartWash 术语表（GLOSSARY）
 
 > 本文件是 SmartWash 四端（Spring Boot 后端 / Android / 鸿蒙 NEXT / Web 管理后台）共享的领域词汇表。
-> 事实来源：**当前代码**（2026-11-20 同步）+ 根目录 `smart_wash.sql` + `docs/adr/`（ADR 尚未创建，正文中的 ADR 编号为引用占位）。
+> 事实来源：**当前代码**（2026-11-24 同步）+ 根目录 `smart_wash.sql` + `docs/adr/`（ADR 尚未创建，正文中的 ADR 编号为引用占位）。
 > 与 ADR 冲突时，以 ADR 的裁定为准；本表只描述「代码现在是什么」，不替代 ADR 的「为什么这样定」。
 
 ## 维护约定
@@ -354,7 +354,7 @@
   - Android：`ui/page/webview/WebViewPage.kt`（挂载）、`GameThemeBridge.kt`、`GameChrome.kt`。
   - 后端：无（纯端侧协议）。
   - 鸿蒙：`pages/WebPage.ets` 内置浏览器承接 H5 游戏；主题桥能力待与 Android 对齐。
-  - H5：`games-library/GAME-THEME.md`（H5 侧权威文档，20 款游戏内联同一运行时）。
+  - H5：`games-library/GAME-THEME.md`（H5 侧权威文档，全量 168 款内联同一运行时）。
 - **易混淆点**：桥生效的**host 白名单**只含「后端 API host + 运行期下发的 MinIO endpoint」；白名单外 `getTheme` 返回空串、`setChrome` 忽略、推送跳过。`system` 是协议保留值，H5 已裁撤 matchMedia 监听，无桥恒浅色。
 - → ADR-0005
 
@@ -364,7 +364,7 @@
 - **定义**：游戏账号存档（按 `game_key` + 用户）、成绩上报与排行榜、关卡热更新下发。Android 经 app 壳的 `GameBridgeApi` 访问 `/web/auth/game/state|score|leaderboard|levels`；后端 `WebGameDataController`（用户端）+ `GameDataAdminController`（管理端查询/关卡维护）。
 - **四端对应物**：
   - 后端：`game/entity/{GameUserSave,GameScoreEntry,GameLevel}.java`、`game/service/impl/*`。
-  - Android：`app/network/api/GameBridgeApi.kt`（壳层桥链，非 `:feature:game`）。
+  - Android：`:common:network` 的 `network/api/GameBridgeApi.kt`（桥链契约下沉 common，非 `:feature:game`；app 壳 `di/GameBridgeModule` 供给 EntryPoint）。
   - 鸿蒙：无对应实现（游戏中心仅列表 + WebView）。
   - Web：`views/game/GameData.vue` + `api/gameData.js`（关卡/存档/成绩管理）。
 - **易混淆点**：`state` 是客户端自定义结构的整块 JSON 存档；`score` 是单条成绩，排行榜按其聚合；`levels` 由管理端热更新，端上拉取即可玩新关卡，无需发版。

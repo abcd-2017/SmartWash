@@ -4,7 +4,7 @@
 
 - **Gradle 坐标**：`:feature:lab:impl`
 - **包名**：`com.smartwash.feature.lab`（与模块路径解耦，契约见 `:feature:lab:api`）
-- **职责**：三个纯本地解压玩具（泡泡纸 / 呼吸引导 / 指尖鱼群）+ 实验舱首页入口卡。**模块内零网络请求、零后端接口、零数据库**——不依赖 `:common:network`，不建 Api/Repository 网络层；玩具状态全部会话内即弃（泡泡纸计数不持久化）。
+- **职责**：十个纯本地解压玩具（泡泡纸 / 呼吸引导 / 指尖鱼群 / 落沙实验室 / 指尖流体 / 滚筒节拍机 / 今日一画 / 声景混音器 / 泡泡精灵 / 掌上星图）+ 实验舱首页入口卡。**模块内零网络请求、零后端接口、零数据库**——不依赖 `:common:network`，不建 Api/Repository 网络层；玩具状态全部会话内即弃（泡泡纸计数不持久化）。
 - **入口**（完全复用「纯深链 + 后端配置卡片」架构，同 `:feature:game`）：
   - 深链 `smartwash://lab`（本模块 `di/LabDeepLinkModule` 经 `@IntoSet` 贡献 host `lab` → `LabRoute.Home`）
   - 后端 `workbench_entry` 配置的工作台卡片（`smart_wash.sql` 种子登记，`icon key = science`、`color = purple`、`target = smartwash://lab`），`WorkbenchPage` 零改动
@@ -19,11 +19,18 @@ com.smartwash.feature.lab（契约在 :feature:lab:api）
 ├── util/                           # （玩具音效等纯本地工具）
 │   └── PopSoundPlayer.kt           # AudioTrack 程序化合成 pop 短音（零音频资产）
 └── ui/
-    ├── LabGraph.kt                 # NavGraphBuilder.labGraph：4 个 composable 注册
-    ├── home/                       # 实验舱首页（三张玩具入口卡）
+    ├── LabGraph.kt                 # NavGraphBuilder.labGraph：11 个 composable 注册（首页 + 10 玩具）
+    ├── home/                       # 实验舱首页（十张玩具入口卡）
     ├── bubble/                     # 泡泡纸（Canvas 泡泡网格 + 戳破动画 + pop 音）
     ├── breath/                     # 呼吸引导（相位状态机 + 圆环动效 + tnum 倒计时）
-    └── fish/                       # 指尖鱼群（BoidsSimulator 内核 + withFrameNanos tick）
+    ├── fish/                       # 指尖鱼群（BoidsSimulator 内核 + withFrameNanos tick）
+    ├── sand/                       # 落沙实验室（元素反应模拟）
+    ├── fluid/                      # 指尖流体（彩色漩涡）
+    ├── drum/                       # 滚筒节拍机（8 音色 × 16 步）
+    ├── painting/                   # 今日一画（每日水墨山水）
+    ├── soundscape/                 # 声景混音器（环境音叠混）
+    ├── pet/                        # 泡泡精灵（PetEngine 内核）
+    └── starmap/                    # 掌上星图（StarMapEngine 内核）
 ```
 
 > 模块无存储 key / 日志 TAG 等常量需求（玩具状态不持久化、不写 Log），不设 LabConstant。
@@ -32,7 +39,7 @@ com.smartwash.feature.lab（契约在 :feature:lab:api）
 
 | 暴露点 | 消费方 | 说明 |
 |--------|--------|------|
-| `NavGraphBuilder.labGraph` | app 壳 MainActivity NavHost | 一行聚合 4 个页面 |
+| `NavGraphBuilder.labGraph` | app 壳 MainActivity NavHost | 一行聚合 11 个页面 |
 | `LabDeepLinkModule`（Hilt） | 壳层 DeepLinkRegistry | `@IntoSet` 贡献 host `lab` |
 | `LabRoute` / `LabToy` | `:feature:lab:api` | 路由单一事实来源（feature 不反向依赖壳层 PageConstant） |
 
@@ -45,7 +52,7 @@ com.smartwash.feature.lab（契约在 :feature:lab:api）
 ## 5. 内部约定
 
 1. **纯本地模块**：禁止新增 Retrofit/Room/DataStore 依赖；玩具状态（泡泡阵列、戳破计数、呼吸相位、鱼群）一律 ViewModel 内存态，退出页面即弃。
-2. **模拟内核与 UI 分离**：`BoidsSimulator` 是零 Compose/零 Android 依赖的纯 Kotlin 类；Page 只负责 `withFrameNanos` 驱动 tick 与绘制。锚点单测（邻居查询等价暴力全扫 / 聚集收敛 / 冲击波径向 / 边界回转 / 确定性 / 限幅夹界等）**仅本地验证**——`src/test/` 不入库（共享规则：新增测试文件一律不提交），干净 checkout 上测试为空属预期，非缺失。
+2. **模拟内核与 UI 分离**：`BoidsSimulator` / `SandSimulator` / `PetEngine` / `StarMapEngine` 等是零 Compose/零 Android 依赖的纯 Kotlin 类；Page 只负责 `withFrameNanos` 驱动 tick 与绘制。锚点单测已入库 3 个（`SandSimulatorTest` / `PetEngineTest` / `StarMapEngineTest`）；共享规则下**新增**测试文件不提交。
 3. **动效**：只允许 `:common:utils` AnimationUtils vocabulary（defaultSpring/pressTween/DURATION_* 常量），禁止页面写魔法时长；**每个动效必须有 LocalReduceMotion 降级分支**（泡泡纸：戳破直接消失态；呼吸：圆环静止固定尺寸、文字与触觉保留；鱼群：默认静帧 + 用户主动播放/暂停开关，触觉保留）。
 4. **触觉**：统一 `:common:utils` HapticUtils（performHaptic），reduced motion 下保留；泡泡三档力度跟泡泡大小档走。
 5. **交互反馈**：禁 Material ripple/state layer，一律 `pressable`（PressFeedbackModifier 旧 pressScale/pressAlpha 写法无效，勿模仿）。

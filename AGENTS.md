@@ -11,10 +11,13 @@
 | 目录 | 说明 | 技术栈 | 端别文档 |
 |------|------|--------|---------|
 | `SmartWash/` | Spring Boot 3.4 后端（MyBatis-Plus + MySQL + Redis + JWT） | Java 17 / Maven | [硬规则](SmartWash/CLAUDE.md) · [工程指南](SmartWash/AGENTS.md) |
-| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：1 app 壳 + 5 common + 31 个 feature 子模块，16 个业务域中 update 为 api/core/impl 三段、其余 api/impl 拆分，共 37 个 Gradle 模块） | [硬规则](SmartWash-Android/CLAUDE.md) · [工程指南](SmartWash-Android/AGENTS.md) |
+| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：1 app 壳 + 5 common + 31 个 feature 子模块，15 个业务域中 update 为 api/core/impl 三段、其余 api/impl 拆分，共 37 个 Gradle 模块） | [硬规则](SmartWash-Android/CLAUDE.md) · [工程指南](SmartWash-Android/AGENTS.md) |
 | `SmartWash_Harmony/` | 鸿蒙 NEXT 用户端 | ArkTS / ArkUI / Stage 模型 | [硬规则](SmartWash_Harmony/CLAUDE.md) · [工程指南](SmartWash_Harmony/AGENTS.md) |
 | `SmartWashWeb/` | Web 管理后台 | Vue 3 / Vite / Element Plus / Pinia | [硬规则](SmartWashWeb/CLAUDE.md) · [工程指南](SmartWashWeb/AGENTS.md) |
+| `static/` | 平台资产正本库：H5 游戏库（`games-library/`，168 款）+ 吃啥素材 + 支付/订单/订阅/工作台视觉素材 | 纯静态资源 | [游戏库目录规范](static/games-library/README.md) |
 | `smart_wash.sql` | MySQL 建表 + 种子数据（结构变更以本文件为准） | — | — |
+
+> 根级另有 `deploy/deploy.sh`（部署脚本）、`script/`（维护脚本，如 `clean.sh`）、`PRODUCT.md`（产品定位 / 原则 / 品牌约定）。
 
 ## 全局规则
 
@@ -48,7 +51,7 @@
 
 ## 相关 Skills 与子代理编制
 
-**库内 Skills**（`~/.agents/skills/`，共 40 个，ZCode 用户级发现路径兼容）：Android 端 `android-kotlin`、`android-jetpack-compose` 按 `.kt` 路径自动生效；鸿蒙按需调用 `arkts-development`、`arkts-syntax-assistant`、`harmonyos-app`；Web 视觉用 `frontend-design`/`design`；跨端通用方法论 `systematic-debugging`、`test-driven-development`、`verification-before-completion` 等可直接调用。
+**库内 Skills**（`~/.agents/skills/`，共 77 个，ZCode 用户级发现路径兼容）：Android 端 `android-kotlin`、`android-jetpack-compose` 按 `.kt` 路径自动生效；鸿蒙按需调用 `arkts-development`、`arkts-syntax-assistant`、`harmonyos-app`；Web 视觉用 `frontend-design`/`design`；跨端通用方法论 `systematic-debugging`、`test-driven-development`、`verification-before-completion` 等可直接调用。
 
 **工作流方法论**（mattpocock-skills 系列，用户级 skill，与编码工具无关）：工作流统一采用 `implement`（内含 `tdd`）→ `code-review` 双轴审查，调试用 `diagnosing-bugs`，架构用 `improve-codebase-architecture` + `codebase-design`。
 
