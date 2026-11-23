@@ -44,5 +44,7 @@ dependencies {
     testImplementation libs.kotlinx.coroutines.test
     // UpdateViewModel 构造链需要 Context（SessionManager 同款 Robolectric 先例）
     testImplementation libs.robolectric
+    // android-all 框架包走 Gradle 依赖（CI gradle 缓存），避免 Robolectric 运行期自取
+    testImplementation libs.androidAllInstrumented
     testImplementation libs.androidx.test.core
 }
