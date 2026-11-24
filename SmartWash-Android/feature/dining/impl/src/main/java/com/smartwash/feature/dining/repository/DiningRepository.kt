@@ -7,6 +7,8 @@ import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.utils.model.HttpStatusCode
 import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.dining.api.DiningServiceApi
+import com.smartwash.feature.dining.api.model.DiningCollaboratorVo
+import com.smartwash.feature.dining.api.model.DiningInviteVo
 import com.smartwash.feature.dining.api.model.DiningOrderActiveVo
 import com.smartwash.feature.dining.api.model.AddDiningOrderDishRequest
 import com.smartwash.feature.dining.api.model.AddDiningRecipeRequest
@@ -19,6 +21,7 @@ import com.smartwash.feature.dining.api.model.DiningOrderDetailVo
 import com.smartwash.feature.dining.api.model.DiningOrderFinishVo
 import com.smartwash.feature.dining.api.model.DiningOrderListVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
+import com.smartwash.feature.dining.api.model.InviteDiningOrderRequest
 import com.smartwash.feature.dining.api.model.JoinDiningOrderRequest
 import com.smartwash.feature.dining.api.model.SubmitDiningOrderRequest
 import com.smartwash.feature.dining.logic.DiningOrderBusinessCode
@@ -218,6 +221,39 @@ class DiningRepository @Inject constructor(
                 AppLogger.warn(TAG, "resetJoinToken 响应 data 为空，按失败上抛（orderId=$orderId）")
                 throw NetworkException("重置凭证结果为空", R.string.error_network_fail)
             }
+
+    /**
+     * 在线心跳（仅订单成员；成功 data 为 null 不视为失败）。
+     * 失败静默吞掉（在线状态是展示性点缀，不该让页面报错）。
+     */
+    suspend fun presence(orderId: Long) {
+        runCatching { diningServiceApi.presence(orderId) }
+            .onFailure { AppLogger.warn(TAG, "presence 上报失败（静默）：orderId=$orderId, ${it.message}") }
+    }
+
+    /** 协作过的用户（data 缺失/失败按空列表处理——邀请页次要列表，不封底） */
+    suspend fun collaborators(): List<DiningCollaboratorVo> =
+        runCatching { diningServiceApi.collaborators().data }
+            .getOrNull()
+            ?: run {
+                AppLogger.warn(TAG, "collaborators 响应 data 为空，按空列表处理")
+                emptyList()
+            }
+
+    /** 本单已邀请列表（data 缺失按空列表处理） */
+    suspend fun invites(orderId: Long): List<DiningInviteVo> =
+        runCatching { diningServiceApi.invites(orderId).data }
+            .getOrNull()
+            ?: emptyList()
+
+    /**
+     * 定向邀请（成功 data 为 null 不视为失败；业务失败由后端转译上抛）。
+     * 邀请是用户主动动作，失败需明确提示（对齐 resetJoinToken 口径）。
+     */
+    suspend fun invite(orderId: Long, inviteeIds: List<Long>) {
+        diningServiceApi.invite(orderId, InviteDiningOrderRequest(inviteeIds))
+            .ensureDiningSuccess()
+    }
 
     /**
      * 菜单写接口信封校验：200 放行；409 抛 [DiningVersionConflictException]（调用方拉取最新后重放）；

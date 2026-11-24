@@ -210,7 +210,12 @@ fun NoticeInboxPage(
                         onLoadMore = { noticeInboxViewModel.loadMore() },
                         onNoticeClick = { notice ->
                             noticeInboxViewModel.markRead(notice.safeId)
-                            handleDeepLink(context, navController, notice.safeDeepLink)
+                            handleDeepLink(
+                                context,
+                                navController,
+                                noticeInboxViewModel.normalizeDeepLink(notice.safeDeepLink),
+                                noticeInboxViewModel.deepLinkScheme,
+                            )
                         },
                     )
                 }
@@ -426,6 +431,13 @@ private fun NoticeTypeTag(type: NoticeType) {
             AppColors.colorScheme.iconContainerOrange to AppColors.colorScheme.onWarningContainer
         NoticeType.ANNOUNCEMENT ->
             AppColors.colorScheme.iconContainerBlue to AppColors.colorScheme.iconForegroundBlue
+        // 点单通知：邀请/加入=橙（待办语义），结束=绿（完成语义）
+        NoticeType.DINING_JOIN ->
+            AppColors.colorScheme.iconContainerOrange to AppColors.colorScheme.onWarningContainer
+        NoticeType.DINING_INVITE ->
+            AppColors.colorScheme.iconContainerOrange to AppColors.colorScheme.onWarningContainer
+        NoticeType.DINING_FINISH ->
+            AppColors.colorScheme.primarySoft to AppColors.colorScheme.onPrimarySoft
         NoticeType.UNKNOWN ->
             AppColors.colorScheme.surfaceVariant to AppColors.colorScheme.textSecondary
     }
@@ -462,11 +474,17 @@ private fun noticeTimeLabel(parts: NoticeTimeParts): String = when (parts.bucket
  *   分支同语义，避免 external browser 拉起）；
  * - 其余 scheme（后端契约外）忽略，仅标记已读不跳转。
  */
-private fun handleDeepLink(context: Context, navController: NavHostController, link: String) {
+private fun handleDeepLink(
+    context: Context,
+    navController: NavHostController,
+    link: String,
+    scheme: String,
+) {
     if (link.isBlank()) return
     val uri = Uri.parse(link)
     when (uri.scheme?.lowercase()) {
-        "smartwash" -> runCatching {
+        // 本端 scheme（full=smartwash / lite=todayeat）；深链已由 ViewModel 归一为本端
+        scheme -> runCatching {
             // 显式限定本应用包名：避免系统 chooser 拦截，确保落回 MainActivity 既有深链入口
             context.startActivity(
                 Intent(Intent.ACTION_VIEW, uri).setPackage(context.packageName)

@@ -2,6 +2,7 @@ package com.smartwash.lite.ui.setting
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,11 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.Icon
@@ -29,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -53,6 +57,7 @@ import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
+import com.smartwash.feature.notice.api.NoticeRoute
 import com.smartwash.feature.user.api.UserRoute
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -76,6 +81,7 @@ fun LiteSettingPage(
     val context = LocalContext.current
     val view = currentView()
     val userInfo by settingViewModel.userInfo.collectAsState()
+    val unreadCount by settingViewModel.unreadCount.collectAsState()
 
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -149,6 +155,34 @@ fun LiteSettingPage(
                     horizontal = AppDimens.cardPadding
                 ),
             ) {
+                // 消息中心（点单邀请 / 加入 / 结束等业务通知）
+                LiteSettingRow(
+                    icon = Icons.Filled.Notifications,
+                    containerColor = AppColors.colorScheme.iconContainerOrange,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
+                    title = stringResource(com.smartwash.feature.notice.R.string.notice_title),
+                    onClick = { navController.navigate(NoticeRoute.Inbox) },
+                    trailing = {
+                        if (unreadCount > 0) {
+                            Text(
+                                text = unreadCount.coerceAtMost(99).toString(),
+                                style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                                color = AppColors.colorScheme.onPrimarySoft,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(AppDimens.radiusFull))
+                                    .background(AppColors.colorScheme.iconContainerOrange)
+                                    .padding(horizontal = 7.dp, vertical = 2.dp),
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Filled.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = AppColors.colorScheme.textTertiary,
+                            )
+                        }
+                    },
+                )
                 // 检查更新（lite 手动链路：拉版本 → 下载 → 安装，见 LiteUpdateSection）
                 LiteUpdateSection(workManager)
             }

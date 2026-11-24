@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,7 +32,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -63,6 +67,9 @@ import com.smartwash.common.utils.generateQrCodeBitmap
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.feature.dining.R
+import com.smartwash.feature.dining.api.model.DiningCollaboratorVo
+import com.smartwash.feature.dining.api.model.DiningInviteVo
+import com.smartwash.feature.dining.api.model.DiningOrderDetailVo
 import com.smartwash.feature.dining.api.model.DiningOrderStatus
 import com.smartwash.feature.dining.logic.DiningOrderShareDetail
 import kotlinx.coroutines.Dispatchers
@@ -113,6 +120,29 @@ fun DiningOrderSharePage(
                 is RequestState.Error -> {
                     Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
                     viewModel.consumeResetState()
+                }
+
+                else -> Unit
+            }
+        }
+    }
+
+    // 定向邀请结果反馈（成功=邀请已发出；失败=后端文案）
+    LaunchedEffect(Unit) {
+        viewModel.inviteState.collect { state ->
+            when (state) {
+                is RequestState.Success -> {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.dining_order_invite_done),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    viewModel.consumeInviteState()
+                }
+
+                is RequestState.Error -> {
+                    Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
+                    viewModel.consumeInviteState()
                 }
 
                 else -> Unit
@@ -179,6 +209,9 @@ private fun ShareContent(
 ) {
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
+    val collaborators by viewModel.collaborators.collectAsState()
+    val invites by viewModel.invites.collectAsState()
+    val inviteState by viewModel.inviteState.collectAsState()
     // 重置凭证二次确认（不可逆动作弹窗；重置进行中不重复弹出）
     var showResetConfirm by rememberSaveable { mutableStateOf(false) }
     if (showResetConfirm && viewModel.resetState.value !is RequestState.Loading) {
@@ -236,6 +269,8 @@ private fun ShareContent(
                 style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.textSecondary,
             )
+            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+            OnlineMemberStack(members = detail?.members.orEmpty())
         }
         Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
@@ -286,6 +321,14 @@ private fun ShareContent(
             }
         }
 
+        // 邀请面板：协作过的用户（可勾选邀请）+ 已邀请列表
+        InvitePanel(
+            collaborators = collaborators,
+            invites = invites,
+            inviteState = inviteState,
+            onInvite = { viewModel.invite(listOf(it)) },
+        )
+
         // 底部避让手势条/三键导航（不硬编码高度）+ 末卡呼吸空间
         Spacer(
             modifier = Modifier.height(
@@ -317,5 +360,183 @@ private fun StatusDotSmall(status: DiningOrderStatus) {
             style = MaterialTheme.typography.labelSmall,
             color = AppColors.colorScheme.textSecondary,
         )
+    }
+}
+
+/** 圆形头像（手机号尾字符 + 在线点）；离线灰点，在线绿点 */
+@Composable
+private fun MemberAvatar(
+    label: String,
+    online: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(AppColors.colorScheme.primarySoft)
+            .border(1.5.dp, AppColors.colorScheme.surface, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label.takeLast(1).ifBlank { "友" },
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.colorScheme.onPrimarySoft,
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(9.dp)
+                .clip(CircleShape)
+                .background(
+                    if (online) AppColors.colorScheme.primary
+                    else AppColors.colorScheme.textTertiary
+                )
+                .border(1.5.dp, AppColors.colorScheme.surface, CircleShape),
+        )
+    }
+}
+
+/**
+ * 在线成员堆叠：最多展示 5 个头像（后绘制者覆盖前一个，形成堆叠），右侧「在线 N 人」。
+ * 在线状态来自详情 members（后端 Redis presence 心跳，端上每 8s 刷新）。
+ */
+@Composable
+private fun OnlineMemberStack(members: List<DiningOrderDetailVo.OrderMember>) {
+    if (members.isEmpty()) return
+    val onlineCount = members.count { it.isOnline }
+    val shown = members.take(5)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Box(modifier = Modifier.width((32 + 24 * (shown.size - 1)).dp)) {
+            shown.forEachIndexed { index, member ->
+                key(member.safeUserId) {
+                    MemberAvatar(
+                        label = member.safePhoneMasked,
+                        online = member.isOnline,
+                        modifier = Modifier.offset(x = (index * 24).dp),
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+        Text(
+            text = stringResource(R.string.dining_order_invite_online_format, onlineCount),
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.colorScheme.textSecondary,
+        )
+    }
+}
+
+/**
+ * 邀请面板：协作过的用户（可逐个邀请）+ 本单已邀请列表（状态：已邀请 / 已加入）。
+ * 邀请动作经 [onInvite] 上抛（ViewModel 写邀请记录 + 发站内信）；邀请中按钮 loading 防连点。
+ */
+@Composable
+private fun InvitePanel(
+    collaborators: List<DiningCollaboratorVo>,
+    invites: List<DiningInviteVo>,
+    inviteState: RequestState,
+    onInvite: (Long) -> Unit,
+) {
+    val invitedIds = remember(invites) { invites.map { it.safeInviteeId }.toSet() }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.dining_order_invite_collaborators_section),
+            style = AppTextStyles.SectionTitle,
+            color = AppColors.colorScheme.textPrimary,
+        )
+        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+        if (collaborators.isEmpty()) {
+            Text(
+                text = stringResource(R.string.dining_order_invite_empty),
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.colorScheme.textTertiary,
+                modifier = Modifier.padding(vertical = AppDimens.spaceXs),
+            )
+        } else {
+            collaborators.forEach { collaborator ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = AppDimens.spaceXs),
+                ) {
+                    MemberAvatar(label = collaborator.safePhoneMasked, online = false)
+                    Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = collaborator.safePhoneMasked,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.colorScheme.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (collaborator.safeLastCollaboratedAt.isNotBlank()) {
+                            Text(
+                                text = collaborator.safeLastCollaboratedAt.substringBefore("T"),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AppColors.colorScheme.textTertiary,
+                            )
+                        }
+                    }
+                    if (collaborator.safeUserId in invitedIds) {
+                        Text(
+                            text = stringResource(R.string.dining_order_invite_status_invited),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AppColors.colorScheme.textSecondary,
+                        )
+                    } else {
+                        AppButton(
+                            small = true,
+                            text = stringResource(R.string.dining_order_invite_action),
+                            onClick = { onInvite(collaborator.safeUserId) },
+                            variant = AppButtonVariant.SECONDARY,
+                            loading = inviteState is RequestState.Loading,
+                            enabled = inviteState !is RequestState.Loading,
+                        )
+                    }
+                }
+            }
+        }
+
+        if (invites.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+            Text(
+                text = stringResource(R.string.dining_order_invite_invited_section),
+                style = AppTextStyles.SectionTitle,
+                color = AppColors.colorScheme.textPrimary,
+            )
+            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+            invites.forEach { invite ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = AppDimens.spaceXs),
+                ) {
+                    MemberAvatar(label = invite.safeInviteePhoneMasked, online = false)
+                    Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                    Text(
+                        text = invite.safeInviteePhoneMasked,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.colorScheme.textPrimary,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = stringResource(
+                            if (invite.isJoined) R.string.dining_order_invite_status_joined
+                            else R.string.dining_order_invite_status_invited
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.colorScheme.textSecondary,
+                    )
+                }
+            }
+        }
     }
 }

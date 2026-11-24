@@ -94,9 +94,15 @@ data class DiningOrderDetailVo(
         val isCreator: Boolean? = null,
         /** 脱敏手机号（如 139****9000），端上作选菜人标识 */
         val phoneMasked: String? = null,
+        /** 头像 URL（可空，端上展示在线成员/协作者） */
+        val avatar: String? = null,
+        /** 是否在线（Redis 心跳 presence；轻量响应 members 为 null） */
+        val online: Boolean? = null,
     ) {
         val safeUserId: Long get() = userId ?: 0L
         val safeIsCreator: Boolean get() = isCreator == true
         val safePhoneMasked: String get() = phoneMasked.orEmpty()
+        val safeAvatar: String get() = avatar.orEmpty()
+        val isOnline: Boolean get() = online == true
     }
 }

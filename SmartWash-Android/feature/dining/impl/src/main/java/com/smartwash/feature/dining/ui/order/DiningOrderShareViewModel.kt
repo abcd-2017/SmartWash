@@ -7,20 +7,26 @@ import com.smartwash.common.network.exception.NetworkException
 import javax.inject.Named
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.feature.dining.api.model.DiningCollaboratorVo
+import com.smartwash.feature.dining.api.model.DiningInviteVo
 import com.smartwash.feature.dining.logic.DiningJoinUrlBuilder
 import com.smartwash.feature.dining.logic.DiningOrderShareDetail
 import com.smartwash.feature.dining.logic.toOrderShareDetail
 import com.smartwash.feature.dining.repository.DiningRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
  * 订单分享视图 ViewModel（07 号票发起链路终点）：订单基本信息（标题/状态/菜品数/参与人数，
- * 经详情接口全量拉取）+ 加入二维码内容构造（DiningJoinUrlBuilder，BASE_URL origin + join_token）。
+ * 经详情接口全量拉取）+ 加入二维码内容构造（DiningJoinUrlBuilder，BASE_URL origin + join_token）
+ * + 在线成员（Redis presence 心跳）+ 定向邀请（协作者/已邀请）。
  *
  * 路由参数（SavedStateHandle，类型安全路由属性名同源）：orderId 必填；title 为入口顺带下发
  * 的首帧文案；joinToken 为可选入口值（创建响应 / 点单页详情）。入口未携带时经详情接口自取：
@@ -28,6 +34,9 @@ import javax.inject.Inject
  *
  * BASE_URL 经 @Named("baseUrl") 注入（Hilt 全图共享，对齐 SseClient/TokenRefresherImpl 先例，
  * 模块无需依赖 app 壳），二维码 host 与 App 实际访问后端地址同源，无硬编码地址。
+ *
+ * 在线状态：进入页面后每 8s 上报心跳并全量刷新详情（成员少、单页成本可接受），
+ * 离线 20s 自动转离线；页面销毁（viewModelScope 取消）即停心跳。
  */
 @HiltViewModel
 class DiningOrderShareViewModel @Inject constructor(
@@ -58,6 +67,21 @@ class DiningOrderShareViewModel @Inject constructor(
     /** 重置后下发的最新凭证（非空即优先于入口/详情携带值，二维码随其重建） */
     private val _resetToken = MutableStateFlow<String?>(null)
 
+    /** 协作过的用户（邀请页「邀请协作过的用户」列表；失败/缺失按空列表） */
+    private val _collaborators = MutableStateFlow<List<DiningCollaboratorVo>>(emptyList())
+    val collaborators = _collaborators.asStateFlow()
+
+    /** 本单已邀请列表（邀请页「已邀请」区域） */
+    private val _invites = MutableStateFlow<List<DiningInviteVo>>(emptyList())
+    val invites = _invites.asStateFlow()
+
+    /** 定向邀请动作态（Loading 禁连点；成功/失败经页面提示） */
+    private val _inviteState = MutableStateFlow<RequestState>(RequestState.Idle)
+    val inviteState = _inviteState.asStateFlow()
+
+    /** 在线心跳任务（load 成功启动；viewModelScope 取消即停） */
+    private var presenceJob: Job? = null
+
     /**
      * 生效加入凭证：重置下发 > 入口携带 > 详情全量响应回传（仅发起者下发）。
      * 读 `_detail`/`_resetToken` 使详情到达或重置成功触发页面重组（页面已收集 detail，重组时重算）。
@@ -86,8 +110,80 @@ class DiningOrderShareViewModel @Inject constructor(
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "DiningOrderShareViewModel.load: ${e.message}", e)
                 _detailState.value = RequestState.Error(e.resId, e.message)
+                return@launch
+            }
+            // 详情就绪后启动在线心跳 + 拉取邀请数据（失败不封底）
+            startPresence()
+            loadCollaborators()
+            loadInvites()
+        }
+    }
+
+    /**
+     * 启动在线心跳：每 8s 上报 presence 并全量刷新详情（更新成员在线状态）。
+     * 已在运行则忽略；viewModelScope 取消即停（页面销毁）。
+     */
+    private fun startPresence() {
+        if (presenceJob?.isActive == true) return
+        presenceJob = viewModelScope.launch {
+            while (isActive) {
+                diningRepository.presence(orderId)
+                refreshDetailQuietly()
+                delay(PRESENCE_INTERVAL_MS)
             }
         }
+    }
+
+    /** 静默刷新详情（在线状态更新；失败不覆盖已有内容、不提示） */
+    private suspend fun refreshDetailQuietly() {
+        try {
+            _detail.value = diningRepository.getOrderDetail(orderId).toOrderShareDetail()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.warn(TAG, "refreshDetail 失败（静默）：orderId=$orderId, ${e.message}")
+        }
+    }
+
+    /** 加载协作过的用户（失败按空列表，不封底） */
+    private fun loadCollaborators() {
+        viewModelScope.launch {
+            _collaborators.value = diningRepository.collaborators()
+        }
+    }
+
+    /** 加载本单已邀请列表（失败按空列表） */
+    private fun loadInvites() {
+        viewModelScope.launch {
+            _invites.value = diningRepository.invites(orderId)
+        }
+    }
+
+    /**
+     * 定向邀请（发起者/成员，二次确认后触发）：写邀请记录 + 发站内信，成功后刷新已邀请列表。
+     * 失败经 inviteState 提示（用户主动动作，需明确反馈）。
+     */
+    fun invite(inviteeIds: List<Long>) {
+        if (_inviteState.value is RequestState.Loading) return
+        if (orderId <= 0L || inviteeIds.isEmpty()) return
+        _inviteState.value = RequestState.Loading
+        viewModelScope.launch {
+            try {
+                diningRepository.invite(orderId, inviteeIds)
+                _inviteState.value = RequestState.Success
+                loadInvites()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: NetworkException) {
+                AppLogger.error(TAG, "invite: ${e.message}", e)
+                _inviteState.value = RequestState.Error(e.resId, e.message)
+            }
+        }
+    }
+
+    /** 消费邀请完成态（页面提示后复位，允许再次邀请） */
+    fun consumeInviteState() {
+        _inviteState.value = RequestState.Idle
     }
 
     /**
@@ -124,5 +220,8 @@ class DiningOrderShareViewModel @Inject constructor(
         const val ARG_ORDER_ID = "orderId"
         const val ARG_TITLE = "title"
         const val ARG_JOIN_TOKEN = "joinToken"
+
+        /** 在线心跳间隔（毫秒）：后端 TTL 20s，8s 上报留足冗余 */
+        const val PRESENCE_INTERVAL_MS = 8_000L
     }
 }

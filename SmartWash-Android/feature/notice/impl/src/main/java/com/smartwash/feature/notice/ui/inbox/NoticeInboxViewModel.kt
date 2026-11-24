@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import javax.inject.Named
 
 /** 收件箱分页大小（后端 BaseSearchFrom 默认 10、上限 100；公告量级小取 20 平衡首屏与请求数） */
 private const val PAGE_SIZE = 20
@@ -31,6 +32,7 @@ private const val PAGE_SIZE = 20
 @HiltViewModel
 class NoticeInboxViewModel @Inject constructor(
     private val noticeRepository: NoticeRepository,
+    @Named("deepLinkScheme") val deepLinkScheme: String,
 ) : ViewModel() {
 
     private val _listState = MutableStateFlow<RequestState>(RequestState.Idle)
@@ -162,6 +164,18 @@ class NoticeInboxViewModel @Inject constructor(
     /** 页面消费完全部已读反馈后复位（Toast 触发在页面 LaunchedEffect，副作用不落渲染分支） */
     fun resetReadAllState() {
         _readAllState.value = RequestState.Idle
+    }
+
+    /**
+     * 深链归一：后端统一发 `smartwash://…`（full 主端 scheme），lite 端需改写为本端 scheme
+     * （todayeat）才能被 DeepLinkHandler 识别；本家族 scheme 之外的链接原样返回。
+     */
+    fun normalizeDeepLink(link: String): String {
+        val idx = link.indexOf("://")
+        if (idx <= 0) return link
+        val scheme = link.substring(0, idx).lowercase()
+        if (scheme != "smartwash" && scheme != "todayeat") return link
+        return deepLinkScheme + link.substring(idx)
     }
 
     private companion object {
