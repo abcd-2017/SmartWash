@@ -2144,4 +2144,23 @@ CREATE TABLE `dining_recipe_favorite` (
   UNIQUE KEY `uk_user_recipe` (`user_id`,`recipe_id`),
   KEY `idx_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-菜谱收藏';
+
+-- ----------------------------
+-- Table structure for dining_order_invite（吃啥-点单定向邀请）
+-- 发起者从「协作过的用户」中勾选定向邀请：uk(order_id,inviter_id,invitee_id)
+-- 保证同一单同一邀请人对同一被邀请人只发一次；被邀请人加入后回写 JOINED + joined_at。
+-- ----------------------------
+DROP TABLE IF EXISTS `dining_order_invite`;
+CREATE TABLE `dining_order_invite` (
+  `id`          BIGINT   NOT NULL AUTO_INCREMENT COMMENT '邀请记录 ID',
+  `order_id`    BIGINT   NOT NULL COMMENT '点单订单 ID(dining_order.id)',
+  `inviter_id`  BIGINT   NOT NULL COMMENT '邀请人用户 ID(users.user_id)',
+  `invitee_id`  BIGINT   NOT NULL COMMENT '被邀请人用户 ID(users.user_id)',
+  `status`      VARCHAR(16) NOT NULL DEFAULT 'INVITED' COMMENT '状态：INVITED已邀请/JOINED已加入',
+  `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '邀请时间',
+  `joined_at`   DATETIME DEFAULT NULL COMMENT '加入时间（status=JOINED 时写入）',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_order_inviter_invitee` (`order_id`,`inviter_id`,`invitee_id`),
+  KEY `idx_invitee` (`invitee_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-点单定向邀请';
 SET FOREIGN_KEY_CHECKS = 1;
