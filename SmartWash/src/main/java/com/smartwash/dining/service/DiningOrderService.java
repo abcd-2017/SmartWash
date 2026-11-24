@@ -5,8 +5,11 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.dining.entity.DiningOrder;
 import com.smartwash.dining.from.AddDiningOrderDishFrom;
 import com.smartwash.dining.from.CreateDiningOrderFrom;
+import com.smartwash.dining.from.InviteDiningOrderFrom;
 import com.smartwash.dining.from.JoinDiningOrderFrom;
 import com.smartwash.dining.from.SubmitDiningOrderFrom;
+import com.smartwash.dining.vo.DiningCollaboratorVo;
+import com.smartwash.dining.vo.DiningInviteVo;
 import com.smartwash.dining.vo.DiningOrderActiveVo;
 import com.smartwash.dining.vo.DiningOrderBriefVo;
 import com.smartwash.dining.vo.DiningOrderCreatedVo;
@@ -14,6 +17,8 @@ import com.smartwash.dining.vo.DiningOrderDetailVo;
 import com.smartwash.dining.vo.DiningOrderFinishVo;
 import com.smartwash.dining.vo.DiningOrderListVo;
 import com.smartwash.from.BaseSearchFrom;
+
+import java.util.List;
 
 /**
  * 点单订单服务：创建草稿 / 我的订单列表 / 详情（version 轮询协议）/
@@ -96,4 +101,27 @@ public interface DiningOrderService extends IService<DiningOrder> {
 
     /** 重置 join_token（仅发起者、仅 DRAFT）：旧二维码全部作废，返回新 token */
     String resetJoinToken(Long orderId, Long userId);
+
+    /**
+     * 在线心跳（点单页前台每 8s 上报）：仅订单成员；写 Redis presence，TTL 20s。
+     * 不落库、不进 version——在线状态只做展示，不参与乐观并发协议。
+     */
+    void presence(Long orderId, Long userId);
+
+    /**
+     * 协作过的用户（跨订单聚合 dining_order_member 去重，排除自己）：
+     * 邀请页「邀请协作过的用户」数据源，按最近协作时间倒序。
+     */
+    List<DiningCollaboratorVo> collaborators(Long userId);
+
+    /**
+     * 本单已邀请列表（仅订单成员）：邀请页「已邀请」区域，含被邀请人与状态。
+     */
+    List<DiningInviteVo> listInvites(Long orderId, Long userId);
+
+    /**
+     * 定向邀请（仅订单成员、仅 DRAFT）：写 dining_order_invite（uk 幂等）并给被邀请人
+     * 发 DINING_INVITE 站内信（deep_link=加入深链）。过滤自己与已是成员者。
+     */
+    void invite(Long orderId, InviteDiningOrderFrom from, Long userId);
 }

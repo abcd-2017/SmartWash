@@ -90,5 +90,14 @@ public class DiningOrderDetailVo {
 
         /** 脱敏手机号（如 139****9000），端上作选菜人标识 */
         private String phoneMasked;
+
+        /** 头像 URL（可空，端上展示协作者/在线成员） */
+        private String avatar;
+
+        /**
+         * 是否在线（Redis 心跳 presence，TTL 20s；端上据此展示在线成员）。
+         * 仅全量响应填充；轻量（unchanged=true）响应 members 为 null。
+         */
+        private Boolean online;
     }
 }

@@ -10,13 +10,16 @@ import com.smartwash.dining.constant.DiningOrderStatus;
 import com.smartwash.dining.core.ShoppingListAssembler;
 import com.smartwash.dining.core.ShoppingListAssembler.RecipeIngredient;
 import com.smartwash.dining.entity.DiningOrder;
+import com.smartwash.dining.entity.DiningOrderInvite;
 import com.smartwash.dining.entity.DiningOrderItem;
 import com.smartwash.dining.entity.DiningOrderMember;
 import com.smartwash.dining.entity.DiningOrderMenu;
 import com.smartwash.dining.from.AddDiningOrderDishFrom;
 import com.smartwash.dining.from.CreateDiningOrderFrom;
+import com.smartwash.dining.from.InviteDiningOrderFrom;
 import com.smartwash.dining.from.JoinDiningOrderFrom;
 import com.smartwash.dining.from.SubmitDiningOrderFrom;
+import com.smartwash.dining.mapper.DiningOrderInviteMapper;
 import com.smartwash.dining.mapper.DiningOrderItemMapper;
 import com.smartwash.dining.mapper.DiningOrderMapper;
 import com.smartwash.dining.mapper.DiningOrderMemberMapper;
@@ -24,6 +27,8 @@ import com.smartwash.dining.mapper.DiningOrderMenuMapper;
 import com.smartwash.dining.service.DiningOrderService;
 import com.smartwash.dining.service.DiningRecipeGate;
 import com.smartwash.dining.stream.DiningOrderStreamer;
+import com.smartwash.dining.vo.DiningCollaboratorVo;
+import com.smartwash.dining.vo.DiningInviteVo;
 import com.smartwash.dining.vo.DiningOrderActiveVo;
 import com.smartwash.dining.vo.DiningOrderBriefVo;
 import com.smartwash.dining.vo.DiningOrderCreatedVo;
@@ -40,6 +45,7 @@ import com.smartwash.utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -49,11 +55,14 @@ import org.springframework.util.CollectionUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -89,6 +98,12 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
     /** SSE 变更推送：写操作事务提交后广播订单变更信号（本机 + Redis 多实例） */
     private final DiningOrderStreamer streamer;
 
+    /** 定向邀请记录：邀请页「已邀请」列表与邀请动作的唯一出口 */
+    private final DiningOrderInviteMapper inviteMapper;
+
+    /** 在线状态心跳：key=dining:presence:{orderId}:{userId}，TTL 20s（仅 Redis，不落库） */
+    private final StringRedisTemplate redisTemplate;
+
     /** version 冲突业务码（HTTP 语义冲突） */
     private static final int VERSION_CONFLICT_CODE = 409;
 
@@ -100,6 +115,16 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
 
     /** 列表食材摘要最多展示的食材名个数，超出以「…」收尾 */
     private static final int INGREDIENT_SUMMARY_LIMIT = 6;
+
+    /** 在线状态 Redis key 前缀（presence 心跳，TTL 见 {@link #PRESENCE_TTL_SECONDS}） */
+    private static final String PRESENCE_PREFIX = "dining:presence:";
+
+    /** 在线心跳有效期（秒）：端上每 8s 上报一次，20s 未上报即视为离线 */
+    private static final long PRESENCE_TTL_SECONDS = 20L;
+
+    /** 定向邀请状态：已邀请 / 已加入 */
+    private static final String INVITE_STATUS_INVITED = "INVITED";
+    private static final String INVITE_STATUS_JOINED = "JOINED";
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -475,17 +500,138 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
                         .setNote(item.getNote()))
                 .toList());
 
-        // 参与者（发起者标记 + 脱敏手机号作选菜人标识）
+        // 参与者（发起者标记 + 脱敏手机号/头像 + 在线状态）
         List<DiningOrderMember> members = memberMapper.selectList(new LambdaQueryWrapper<DiningOrderMember>()
                 .eq(DiningOrderMember::getOrderId, orderId).orderByAsc(DiningOrderMember::getId));
-        Map<Long, String> maskedPhones = loadMaskedPhones(
+        Map<Long, Users> profiles = loadUserProfiles(
                 members.stream().map(DiningOrderMember::getUserId).toList());
-        vo.setMembers(members.stream().map(member -> new DiningOrderDetailVo.OrderMember()
-                .setUserId(member.getUserId())
-                .setIsCreator(member.getUserId() != null && member.getUserId().equals(order.getCreatorUserId()))
-                .setPhoneMasked(maskedPhones.get(member.getUserId())))
-                .toList());
+        vo.setMembers(members.stream().map(member -> {
+            Users user = profiles.get(member.getUserId());
+            return new DiningOrderDetailVo.OrderMember()
+                    .setUserId(member.getUserId())
+                    .setIsCreator(member.getUserId() != null && member.getUserId().equals(order.getCreatorUserId()))
+                    .setPhoneMasked(user == null ? null : maskPhone(user.getPhoneNumber()))
+                    .setAvatar(user == null ? null : user.getAvatar())
+                    .setOnline(isOnline(orderId, member.getUserId()));
+        }).toList());
         return vo;
+    }
+
+    @Override
+    public void presence(Long orderId, Long userId) {
+        requireMember(orderId, userId, "仅订单成员可上报在线状态");
+        redisTemplate.opsForValue().set(presenceKey(orderId, userId), "1",
+                PRESENCE_TTL_SECONDS, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public List<DiningCollaboratorVo> collaborators(Long userId) {
+        // 我参与过的所有订单
+        List<DiningOrderMember> mine = memberMapper.selectList(
+                new LambdaQueryWrapper<DiningOrderMember>().eq(DiningOrderMember::getUserId, userId));
+        if (mine.isEmpty()) {
+            return List.of();
+        }
+        List<Long> orderIds = mine.stream().map(DiningOrderMember::getOrderId).distinct().toList();
+        // 这些单的其他成员（排除自己），按人聚合最近协作时间
+        List<DiningOrderMember> others = memberMapper.selectList(
+                new LambdaQueryWrapper<DiningOrderMember>()
+                        .in(DiningOrderMember::getOrderId, orderIds)
+                        .ne(DiningOrderMember::getUserId, userId));
+        if (others.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, LocalDateTime> latest = new LinkedHashMap<>();
+        others.stream()
+                .filter(m -> m.getUserId() != null)
+                .sorted(Comparator.comparing(DiningOrderMember::getCreatedAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .forEach(m -> latest.merge(m.getUserId(),
+                        m.getCreatedAt() == null ? LocalDateTime.MIN : m.getCreatedAt(),
+                        (a, b) -> a.isAfter(b) ? a : b));
+        List<Long> ids = new ArrayList<>(latest.keySet());
+        Map<Long, Users> profiles = loadUserProfiles(ids);
+        return ids.stream().map(id -> {
+            Users user = profiles.get(id);
+            return new DiningCollaboratorVo()
+                    .setUserId(id)
+                    .setPhoneMasked(user == null ? "" : maskPhone(user.getPhoneNumber()))
+                    .setAvatar(user == null ? null : user.getAvatar())
+                    .setLastCollaboratedAt(latest.get(id));
+        }).toList();
+    }
+
+    @Override
+    public List<DiningInviteVo> listInvites(Long orderId, Long userId) {
+        requireMember(orderId, userId, "仅订单成员可查看邀请记录");
+        List<DiningOrderInvite> invites = inviteMapper.selectList(
+                new LambdaQueryWrapper<DiningOrderInvite>()
+                        .eq(DiningOrderInvite::getOrderId, orderId)
+                        .orderByDesc(DiningOrderInvite::getId));
+        if (invites.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, Users> profiles = loadUserProfiles(
+                invites.stream().map(DiningOrderInvite::getInviteeId).toList());
+        return invites.stream().map(inv -> {
+            Users user = profiles.get(inv.getInviteeId());
+            return new DiningInviteVo()
+                    .setId(inv.getId())
+                    .setInviteeId(inv.getInviteeId())
+                    .setInviteePhoneMasked(user == null ? "" : maskPhone(user.getPhoneNumber()))
+                    .setInviteeAvatar(user == null ? null : user.getAvatar())
+                    .setStatus(inv.getStatus())
+                    .setCreatedAt(inv.getCreatedAt())
+                    .setJoinedAt(inv.getJoinedAt());
+        }).toList();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void invite(Long orderId, InviteDiningOrderFrom from, Long userId) {
+        DiningOrder order = requireDraftOrder(orderId);
+        requireMember(orderId, userId, "仅订单成员可邀请");
+        List<Long> inviteeIds = from.getInviteeIds().stream()
+                .filter(Objects::nonNull).distinct().toList();
+        if (inviteeIds.isEmpty()) {
+            throw new CustomExceptions("请至少选择一位要邀请的用户");
+        }
+        // 过滤自己与已是成员的人
+        Set<Long> memberIds = memberMapper.selectList(new LambdaQueryWrapper<DiningOrderMember>()
+                        .eq(DiningOrderMember::getOrderId, orderId))
+                .stream().map(DiningOrderMember::getUserId).collect(Collectors.toSet());
+        List<Long> targets = inviteeIds.stream()
+                .filter(id -> !id.equals(userId) && !memberIds.contains(id))
+                .toList();
+        if (targets.isEmpty()) {
+            return;
+        }
+        List<Users> users = usersMapper.selectBatchIds(targets);
+        if (users.isEmpty()) {
+            throw new CustomExceptions("要邀请的用户不存在");
+        }
+        // 写邀请行（uk 幂等：已邀请过则跳过，不重复打扰）
+        List<Long> notified = new ArrayList<>();
+        for (Users user : users) {
+            try {
+                inviteMapper.insert(new DiningOrderInvite()
+                        .setOrderId(orderId).setInviterId(userId).setInviteeId(user.getUserId())
+                        .setStatus(INVITE_STATUS_INVITED));
+                notified.add(user.getUserId());
+            } catch (DuplicateKeyException e) {
+                // 同一单同一邀请人已邀请过该用户：幂等跳过
+            }
+        }
+        if (notified.isEmpty()) {
+            return;
+        }
+        String title = order.getTitle() == null ? "" : order.getTitle();
+        noticeService.publishTargeted(NoticeType.DINING_INVITE,
+                "你被邀请加入「" + title + "」",
+                "点击加入，和朋友一起点单",
+                buildOrderDeepLink(order.getId(), order.getJoinToken()),
+                notified);
+        log.info("定向邀请点单, orderId: {}, inviter: {}, 人数: {}", orderId, userId, notified.size());
     }
 
     @Override
@@ -534,6 +680,8 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
             // 并发窗口撞 uk_order_user：仍按防重复语义拒绝
             throw new CustomExceptions("你已在该点单中");
         }
+        // 定向邀请回执：若该用户曾被定向邀请，加入后回写 JOINED（无记录则跳过）
+        markInviteJoined(orderId, userId);
         // 事件发布与业务写同事务：notice 行随成员插入一起提交/回滚，不丢通知；
         // 发布失败向上抛出触发整体回滚（不吞异常，避免「已加入但无通知」的静默不一致）
         noticeService.publishTargeted(
@@ -722,6 +870,39 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
         return usersMapper.selectBatchIds(userIds).stream()
                 .collect(Collectors.toMap(Users::getUserId,
                         user -> maskPhone(user.getPhoneNumber()), (a, b) -> a));
+    }
+
+    /** 在线状态 Redis key：dining:presence:{orderId}:{userId} */
+    private String presenceKey(Long orderId, Long userId) {
+        return PRESENCE_PREFIX + orderId + ":" + userId;
+    }
+
+    /** 是否在线：心跳 key 存在（TTL 内）即在线 */
+    private boolean isOnline(Long orderId, Long userId) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(presenceKey(orderId, userId)));
+    }
+
+    /** 批量加载用户资料（脱敏手机号 + 头像），缺失用户不入表 */
+    private Map<Long, Users> loadUserProfiles(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Users> users = usersMapper.selectBatchIds(userIds);
+        if (users == null || users.isEmpty()) {
+            return Map.of();
+        }
+        return users.stream()
+                .collect(Collectors.toMap(Users::getUserId, u -> u, (a, b) -> a));
+    }
+
+    /** 加入后回写邀请状态（INVITED→JOINED）；无邀请记录则跳过 */
+    private void markInviteJoined(Long orderId, Long userId) {
+        inviteMapper.update(null, new LambdaUpdateWrapper<DiningOrderInvite>()
+                .eq(DiningOrderInvite::getOrderId, orderId)
+                .eq(DiningOrderInvite::getInviteeId, userId)
+                .eq(DiningOrderInvite::getStatus, INVITE_STATUS_INVITED)
+                .set(DiningOrderInvite::getStatus, INVITE_STATUS_JOINED)
+                .set(DiningOrderInvite::getJoinedAt, LocalDateTime.now()));
     }
 
     /** 手机号脱敏：11 位按 3+4+4 掩中间，其余长度保留前 3 后 2；空值返回空串 */

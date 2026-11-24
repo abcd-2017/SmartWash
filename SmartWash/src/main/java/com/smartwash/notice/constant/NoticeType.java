@@ -22,7 +22,10 @@ public enum NoticeType {
     DINING_JOIN("DINING_JOIN", "点单加入通知"),
 
     /** 吃啥：发起者结束点单、购买清单定稿（定向通知参与者） */
-    DINING_FINISH("DINING_FINISH", "点单结束通知");
+    DINING_FINISH("DINING_FINISH", "点单结束通知"),
+
+    /** 吃啥：发起者定向邀请某用户加入点单（定向通知被邀请人） */
+    DINING_INVITE("DINING_INVITE", "点单邀请通知");
 
     private final String type;
     private final String description;
