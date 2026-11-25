@@ -55,7 +55,7 @@ import org.springframework.util.CollectionUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -505,6 +505,9 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
                 .eq(DiningOrderMember::getOrderId, orderId).orderByAsc(DiningOrderMember::getId));
         Map<Long, Users> profiles = loadUserProfiles(
                 members.stream().map(DiningOrderMember::getUserId).toList());
+        // 在线状态一次批量读（multiGet），避免逐成员一次 Redis 往返
+        Set<Long> onlineUserIds = loadOnlineUserIds(orderId,
+                members.stream().map(DiningOrderMember::getUserId).toList());
         vo.setMembers(members.stream().map(member -> {
             Users user = profiles.get(member.getUserId());
             return new DiningOrderDetailVo.OrderMember()
@@ -512,7 +515,7 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
                     .setIsCreator(member.getUserId() != null && member.getUserId().equals(order.getCreatorUserId()))
                     .setPhoneMasked(user == null ? null : maskPhone(user.getPhoneNumber()))
                     .setAvatar(user == null ? null : user.getAvatar())
-                    .setOnline(isOnline(orderId, member.getUserId()));
+                    .setOnline(onlineUserIds.contains(member.getUserId()));
         }).toList());
         return vo;
     }
@@ -526,39 +529,20 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
 
     @Override
     public List<DiningCollaboratorVo> collaborators(Long userId) {
-        // 我参与过的所有订单
-        List<DiningOrderMember> mine = memberMapper.selectList(
-                new LambdaQueryWrapper<DiningOrderMember>().eq(DiningOrderMember::getUserId, userId));
-        if (mine.isEmpty()) {
+        // 单条 SQL 自连接聚合（见 DiningOrderMemberMapper#selectCollaborators）：
+        // 与我共同参与的订单里的其他成员，按最近协作时间倒序；脱敏手机号/头像批量补齐
+        List<DiningCollaboratorVo> collaborators = memberMapper.selectCollaborators(userId);
+        if (collaborators.isEmpty()) {
             return List.of();
         }
-        List<Long> orderIds = mine.stream().map(DiningOrderMember::getOrderId).distinct().toList();
-        // 这些单的其他成员（排除自己），按人聚合最近协作时间
-        List<DiningOrderMember> others = memberMapper.selectList(
-                new LambdaQueryWrapper<DiningOrderMember>()
-                        .in(DiningOrderMember::getOrderId, orderIds)
-                        .ne(DiningOrderMember::getUserId, userId));
-        if (others.isEmpty()) {
-            return List.of();
-        }
-        Map<Long, LocalDateTime> latest = new LinkedHashMap<>();
-        others.stream()
-                .filter(m -> m.getUserId() != null)
-                .sorted(Comparator.comparing(DiningOrderMember::getCreatedAt,
-                        Comparator.nullsLast(Comparator.naturalOrder())))
-                .forEach(m -> latest.merge(m.getUserId(),
-                        m.getCreatedAt() == null ? LocalDateTime.MIN : m.getCreatedAt(),
-                        (a, b) -> a.isAfter(b) ? a : b));
-        List<Long> ids = new ArrayList<>(latest.keySet());
-        Map<Long, Users> profiles = loadUserProfiles(ids);
-        return ids.stream().map(id -> {
-            Users user = profiles.get(id);
-            return new DiningCollaboratorVo()
-                    .setUserId(id)
-                    .setPhoneMasked(user == null ? "" : maskPhone(user.getPhoneNumber()))
-                    .setAvatar(user == null ? null : user.getAvatar())
-                    .setLastCollaboratedAt(latest.get(id));
-        }).toList();
+        Map<Long, Users> profiles = loadUserProfiles(
+                collaborators.stream().map(DiningCollaboratorVo::getUserId).toList());
+        collaborators.forEach(vo -> {
+            Users user = profiles.get(vo.getUserId());
+            vo.setPhoneMasked(user == null ? "" : maskPhone(user.getPhoneNumber()));
+            vo.setAvatar(user == null ? null : user.getAvatar());
+        });
+        return collaborators;
     }
 
     @Override
@@ -609,6 +593,12 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
         List<Users> users = usersMapper.selectBatchIds(targets);
         if (users.isEmpty()) {
             throw new CustomExceptions("要邀请的用户不存在");
+        }
+        // 部分被选用户可能已不存在（协作列表缓存/账号注销）：剔除并记录，不阻断其余邀请
+        if (users.size() < targets.size()) {
+            Set<Long> existed = users.stream().map(Users::getUserId).collect(Collectors.toSet());
+            List<Long> missing = targets.stream().filter(id -> !existed.contains(id)).toList();
+            log.warn("定向邀请剔除不存在的用户, orderId: {}, userIds: {}", orderId, missing);
         }
         // 写邀请行（uk 幂等：已邀请过则跳过，不重复打扰）
         List<Long> notified = new ArrayList<>();
@@ -862,24 +852,31 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
         }
     }
 
-    /** 批量取参与者脱敏手机号（选菜人标识），用户不存在时该条缺失不影响其他成员展示 */
-    private Map<Long, String> loadMaskedPhones(List<Long> userIds) {
-        if (userIds == null || userIds.isEmpty()) {
-            return Map.of();
-        }
-        return usersMapper.selectBatchIds(userIds).stream()
-                .collect(Collectors.toMap(Users::getUserId,
-                        user -> maskPhone(user.getPhoneNumber()), (a, b) -> a));
-    }
-
     /** 在线状态 Redis key：dining:presence:{orderId}:{userId} */
     private String presenceKey(Long orderId, Long userId) {
         return PRESENCE_PREFIX + orderId + ":" + userId;
     }
 
-    /** 是否在线：心跳 key 存在（TTL 内）即在线 */
-    private boolean isOnline(Long orderId, Long userId) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(presenceKey(orderId, userId)));
+    /**
+     * 批量取在线成员 ID：一次 multiGet 读全部 presence key（key 缺失 = 离线），
+     * 替代逐成员 hasKey 的 N 次 Redis 往返。
+     */
+    private Set<Long> loadOnlineUserIds(Long orderId, List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Set.of();
+        }
+        List<String> keys = userIds.stream().map(id -> presenceKey(orderId, id)).toList();
+        List<String> values = redisTemplate.opsForValue().multiGet(keys);
+        if (values == null || values.isEmpty()) {
+            return Set.of();
+        }
+        Set<Long> online = new HashSet<>();
+        for (int i = 0; i < userIds.size() && i < values.size(); i++) {
+            if (values.get(i) != null) {
+                online.add(userIds.get(i));
+            }
+        }
+        return online;
     }
 
     /** 批量加载用户资料（脱敏手机号 + 头像），缺失用户不入表 */
