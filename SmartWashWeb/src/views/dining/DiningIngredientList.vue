@@ -39,8 +39,8 @@
 
     <div class="table-card">
       <!-- 加载失败态：与空态区分，给出重试入口 -->
-      <div v-if="listLoadError" class="load-error">
-        <span>{{ listLoadError }}</span>
+      <div v-if="listError" class="load-error">
+        <span>{{ listError }}</span>
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
@@ -199,7 +199,7 @@ const {
   list: ingredientList,
   total,
   listLoading,
-  listLoadError,
+  listError,
   listQuery,
   pageSizes,
   fetchData,

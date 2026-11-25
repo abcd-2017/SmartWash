@@ -218,7 +218,7 @@ const {
   list: scoreList,
   total: scoreTotal,
   listLoading: scoreListLoading,
-  listLoadError: scoreLoadError,
+  listError: scoreLoadError,
   listQuery: scoreListQuery,
   fetchData: fetchScores,
   handleSearch: handleScoreSearch,
