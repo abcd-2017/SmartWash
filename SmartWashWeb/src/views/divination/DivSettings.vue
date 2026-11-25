@@ -29,13 +29,12 @@
         <el-divider content-position="left">AI 解读</el-divider>
 
         <el-form-item label="AI 解读开关" prop="divUseEnabled">
-          <el-switch
-            v-model="settings.divUseEnabled"
-            :active-value="1"
-            :inactive-value="0"
-            active-text="开放（用户配置自己的模型后可解读）"
-            inactive-text="关闭（客户端隐藏解读入口并拦截）"
-          />
+          <!-- EP 会把 active-text/inactive-text 两句互斥文案同时显示（无隐藏规则），
+               故不写在开关上，改为控件下方一条合并说明 -->
+          <div class="switch-block">
+            <el-switch v-model="settings.divUseEnabled" :active-value="1" :inactive-value="0" />
+            <span class="form-tip">关闭后客户端隐藏解读入口并拦截；用户配置自己的模型后可解读，费用由其自带 API Key 承担</span>
+          </div>
         </el-form-item>
 
         <el-form-item label="每日解读限额" prop="byokDailyLimit">

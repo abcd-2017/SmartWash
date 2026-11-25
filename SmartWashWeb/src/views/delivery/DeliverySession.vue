@@ -93,7 +93,7 @@
         resize="none"
         maxlength="100000"
         placeholder="输入要投递到手机的文本，Ctrl/Cmd+V 直接粘贴"
-        @keydown.enter.exact.prevent="handleSendText"
+        @keydown.enter.exact.prevent="handleComposerEnter"
       />
       <div class="composer-bar">
         <span class="composer-hint">文本与文件均取走即焚</span>
@@ -402,6 +402,12 @@ const draftText = ref('');
 const sendingText = ref(false);
 const uploading = ref(false);
 const fileInputRef = ref(null);
+
+// 回车发送守卫：中文输入法选词确认（isComposing / keyCode 229）时不发送，避免半截文本外发
+function handleComposerEnter(event) {
+  if (event.isComposing || event.keyCode === 229) return;
+  handleSendText();
+}
 
 async function handleSendText() {
   const text = draftText.value.trim();

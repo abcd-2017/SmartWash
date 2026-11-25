@@ -292,6 +292,7 @@ import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 import { isValidationError } from '@/utils/errors';
+import { divModelVendorOptionsCache } from '@/utils/optionCache';
 
 // 树形目录一次拉全量（目录当前仅 81 条，量级远低于该上限；超出时分页器出现兜底）
 const FULL_LOAD_SIZE = 500;
@@ -338,14 +339,23 @@ const {
 // 页面内换用全量加载（useTableList 为多页共用，不改其本身）：一次拉满，前端按厂商分组构树
 listQuery.size = FULL_LOAD_SIZE;
 
-// 厂商下拉选项：取当前加载的数据去重 vendor（清空筛选 = 全部厂商）
-const vendorOptions = computed(() => {
-  const set = new Set();
-  for (const model of modelList.value) {
-    if (model.vendor) set.add(model.vendor);
+// 厂商下拉选项：独立全量缓存（走 optionCache）。若从当前页派生，选中某厂商后
+// 结果集收缩成该厂商，下拉变成「选中即死胡同」
+const vendorOptions = ref([]);
+const loadVendorOptions = async () => {
+  try {
+    const list = await divModelVendorOptionsCache.load();
+    vendorOptions.value = Array.from(new Set(list.map((m) => m.vendor).filter(Boolean)));
+  } catch (error) {
+    logger.warn('厂商选项加载失败:', error);
   }
-  return Array.from(set);
-});
+};
+
+// 模型增删改/导入后厂商集合可能变化：失效缓存并重新拉取
+const refreshVendorOptions = () => {
+  divModelVendorOptionsCache.invalidate();
+  loadVendorOptions();
+};
 
 // 平铺记录按 vendor 分组构树：厂商父节点（id 用 vendor-<vendor>，带 _isVendor 标记）+ 模型子行。
 // 后端按 priority 升序且种子数据同厂商连续编号，组内保持接口返回顺序；厂商组之间按首次出现顺序。
@@ -414,6 +424,7 @@ const rules = reactive({
 
 onMounted(() => {
   fetchData();
+  loadVendorOptions();
 });
 
 const handleCreate = () => {
@@ -475,6 +486,7 @@ const submitImport = async () => {
     importVisible.value = false;
     importJson.value = '';
     fetchData();
+    refreshVendorOptions();
   } catch (error) {
     logger.error('模型目录批量导入失败:', error);
     ElMessage.error(error.message || '导入失败');
@@ -509,6 +521,7 @@ const submitForm = async () => {
     }
     dialogVisible.value = false;
     fetchData();
+    refreshVendorOptions();
   } catch (error) {
     // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
     if (isValidationError(error)) {
@@ -538,6 +551,7 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功');
     // 删除后统一走页码钳制：当前页只剩 1 条且不在第一页时先回退一页再拉取
     fetchDataAfterDelete();
+    refreshVendorOptions();
   } catch (error) {
     logger.error('模型删除失败:', `id=${row.id}`, `name=${row.name}`, error);
     ElMessage.error(error.message || '删除失败');
