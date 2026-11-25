@@ -10,10 +10,10 @@ import androidx.annotation.Keep
  * unchanged=true 轻量响应（仅 id/version/unchanged，其余字段 null）；不一致或未带 →
  * unchanged=false 全量响应（本单菜单 + 选菜记录 + 参与者 + version）。
  * 本票（发起链路）分享视图只做首次全量拉取（knownVersion 不传）；带 version 轮询与
- * 写冲突重放为点单页后续票消费。
+ * 写冲突由创建页草稿状态机差分重放（DiningDraftMenuEditor）。
  *
- * 注意：joinToken 仅发起者的全量响应下发（09 号票修补条）——发起者从列表/详情可再次
- * 生成二维码；参与者与轻量响应不下发，端上沿用首次全量拿到的值。
+ * 注意：joinToken 仅发起者的全量响应下发——发起者从列表/详情可再次生成二维码；
+ * 参与者与轻量响应不下发，端上沿用首次全量拿到的值。
  *
  * Gson 容错约定（api 模块统一）：字段可空 + 默认 null，消费方经 safe 系兜底；
  * 时间字段为后端 ISO 字符串原文（对齐洗衣订单先例）。
@@ -31,8 +31,6 @@ data class DiningOrderDetailVo(
     val creatorUserId: Long? = null,
     /** 本单菜单（发起者编排的选菜范围，按加入菜单顺序；端上按分类组织左侧分类栏） */
     val menu: List<MenuRecipe>? = null,
-    /** 全部选菜记录（共享购物车明细，按勾选顺序） */
-    val items: List<OrderItem>? = null,
     val members: List<OrderMember>? = null,
     /** 结束时间（进行中为 null，ISO 字符串原文） */
     val finishedAt: String? = null,
@@ -51,7 +49,6 @@ data class DiningOrderDetailVo(
     val safeStatus: String get() = status.orEmpty()
     val safeCreatorUserId: Long get() = creatorUserId ?: 0L
     val safeMenu: List<MenuRecipe> get() = menu.orEmpty()
-    val safeItems: List<OrderItem> get() = items.orEmpty()
     val safeMembers: List<OrderMember> get() = members.orEmpty()
     val safeJoinToken: String get() = joinToken.orEmpty()
     /** 结束时间展示原文（进行中为空串；ISO 原文，格式化由映射层处理） */
@@ -72,19 +69,6 @@ data class DiningOrderDetailVo(
     ) {
         val safeRecipeId: Long get() = recipeId ?: 0L
         val safeName: String get() = name.orEmpty()
-    }
-
-    /** 选菜记录条目：谁选了哪道菜 + 备注 */
-    @Keep
-    data class OrderItem(
-        val recipeId: Long? = null,
-        val userId: Long? = null,
-        /** 个人备注（如 不要辣），可空 */
-        val note: String? = null,
-    ) {
-        val safeRecipeId: Long get() = recipeId ?: 0L
-        val safeUserId: Long get() = userId ?: 0L
-        val safeNote: String get() = note.orEmpty()
     }
 
     /** 参与者条目 */

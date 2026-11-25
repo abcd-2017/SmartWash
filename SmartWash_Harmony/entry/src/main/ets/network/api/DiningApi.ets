@@ -365,7 +365,7 @@ export async function getActiveDiningOrder(): Promise<BaseResponse<DiningOrderAc
 
 /**
  * 我的订单明细分页（我发起的 + 我参与的，按创建时间倒序，带 isCreator）。
- * 后端 BaseSearchFrom：page 默认 1、size 默认 10 上限 100。
+ * 后端 BaseSearchFrom：page 默认 1、size 默认 10 上限 200。
  */
 export async function pageMyDiningOrders(page: number, size: number)
   : Promise<BaseResponse<DiningPageData<DiningOrderListVo>>> {

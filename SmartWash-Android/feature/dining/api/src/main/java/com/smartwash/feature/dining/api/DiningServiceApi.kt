@@ -40,9 +40,8 @@ import retrofit2.http.Query
  * 域内 impl 直接消费，跨模块消费方（后续订单域）经 [DiningApi] 领域契约访问，
  * 不直连本接口；依赖方向 api → common:network 合法（铁律 1）。
  *
- * 订单接口消费面（07 号票发起链路）：创建 / 我的订单（分页）/ 详情（首次全量拉取）；
- * 选菜增改删（09 号票点单页本地勾选最小接入，version 冲突重放为 10 号票）；
- * brief / join / 重置凭证为扫码加入链路后续票消费。
+ * 订单接口消费面：创建 / 我的订单（分页）/ 我的进行中 / 详情（knownVersion 轮询）/
+ * 草稿加菜 / 移除 / 提交 / 放弃 / 退出 / brief / join / 重置凭证 / 在线心跳 / 协作用户 / 邀请。
  */
 interface DiningServiceApi {
 
