@@ -6,7 +6,8 @@
       <Navbar />
 
       <!-- 子页面：路由切换淡入滑动（进出场方向性一致，mode=out-in 先离后进避免重叠） -->
-      <div ref="mainRef" class="app-main">
+      <!-- role=main：全站缺失主内容 landmark，读屏/键盘用户无法一键跳到主区 -->
+      <div ref="mainRef" class="app-main" role="main" id="main-content">
         <router-view v-slot="{ Component }">
           <transition name="fade-slide" mode="out-in">
             <component :is="Component" :key="route.fullPath" />
