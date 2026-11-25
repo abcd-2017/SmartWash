@@ -551,17 +551,18 @@ fun SettingRow(
  * 空状态 — 规范 §3.6：滚筒圆母题（[DrumMark]）静止态 + 一句引导文案 + 可选行动按钮。
  *
  * 规范 §3.2 禁止「用一个灰色 Material 图标了事」，故本组件**只渲染滚筒圆母题**，
- * 不再提供回退到裸 Material 图标的分支。[icon] 保留为占位参数：既有 12 处调用点已传
- * Material core 图标（不引 icons-extended），删掉参数会波及 common/ui 之外的 9 个模块文件。
+ * 不再提供回退到裸 Material 图标的分支。[icon] 保留为**可选**占位参数（默认 null，不渲染）：
+ * 既有调用点多已传 Material core 图标（不引 icons-extended），设为默认值后新增调用点
+ * 可省略该参数，避免为一个不渲染的形参强制传值。
  *
- * @param icon 不渲染，仅为兼容既有调用点的占位参数
+ * @param icon 不渲染，仅为兼容既有调用点的可选占位参数（默认 null）
  */
 @Composable
 fun EmptyState(
-    icon: ImageVector,
     message: String,
     modifier: Modifier = Modifier,
     action: @Composable (() -> Unit)? = null,
+    icon: ImageVector? = null,
 ) {
     // 空态是"状态到达"的时刻，给一次入场；reduced motion 时位移归零只留淡入（规范 7.8）
     val reduceMotion = LocalReduceMotion.current

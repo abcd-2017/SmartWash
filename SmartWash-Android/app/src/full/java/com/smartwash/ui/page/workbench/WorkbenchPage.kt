@@ -33,11 +33,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -62,8 +61,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.foundation.Image
-import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -74,15 +71,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.smartwash.R
 import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppTextField
+import com.smartwash.common.ui.components.DrumMark
 import com.smartwash.common.ui.components.EmptyState
-import com.smartwash.common.ui.components.LocalCoverArt
 import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.components.softCardShadow
@@ -322,25 +319,42 @@ fun WorkbenchPage(
 
             LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
             if (showSkeleton) {
-                // 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实网格一致；行距同真实网格 cardSpacing）
+                // 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实首屏构图一致）：
+                // 观象台玄墨卡矩形 + 分区标题条 + 两列 tile；块高取真实区间中位，减少加载完成瞬间跳变
                 item(key = "wb_tools_skeleton") {
                     Column(
-                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = AppDimens.pagePadding)
                     ) {
-                        repeat(2) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
-                            ) {
-                                repeat(GRID_COLUMNS) {
-                                    SkeletonBlock(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(148.dp),
-                                        shape = RoundedCornerShape(AppDimens.radiusLg)
-                                    )
-                                }
+                        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+                        // 观象台玄墨卡：真实高 104dp（cardPadding 20×2 + 罗盘 64）
+                        SkeletonBlock(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(104.dp),
+                            shape = RoundedCornerShape(AppDimens.radiusLg)
+                        )
+                        Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                        // 分区标题条：真实 SectionTitle 行高 24dp，宽度取中位 120dp
+                        SkeletonBlock(
+                            modifier = Modifier
+                                .width(120.dp)
+                                .height(16.dp)
+                        )
+                        Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+                        // 两列 tile：真实高区间 120（无图无描述）–196dp（有图两行描述），取中位 158dp
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
+                        ) {
+                            repeat(GRID_COLUMNS) {
+                                SkeletonBlock(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(158.dp),
+                                    shape = RoundedCornerShape(AppDimens.radiusLg)
+                                )
                             }
                         }
                     }
@@ -349,7 +363,6 @@ fun WorkbenchPage(
                     // 真实错误态（2026-11-01 缺陷 6：原失败静默回落本地假列表）——说明 + 重试
                     item(key = "wb_tools_error") {
                         EmptyState(
-                            icon = Icons.Rounded.Apps,
                             message = (entriesState as RequestState.Error).getMessage(context),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -368,7 +381,6 @@ fun WorkbenchPage(
                     // 真实空态（后端未配置 / 搜索无结果）
                     item(key = "wb_tools_empty") {
                         EmptyState(
-                            icon = Icons.Rounded.Apps,
                             message = if (isSearching) {
                                 stringResource(R.string.workbench_search_empty)
                             } else {
@@ -377,19 +389,28 @@ fun WorkbenchPage(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = AppDimens.sectionSpacing),
-                            // 搜索无结果给「清除搜索」行动入口（规范 §3.6 空态 = 母题 + 文案 + 行动按钮；
-                            // ui-check P2：原空态无按钮，用户需自行找搜索框尾缀叉号）
-                            action = if (isSearching) {
-                                {
-                                    AppButton(
-                                        small = true,
-                                        text = stringResource(R.string.workbench_search_clear),
-                                        onClick = { workbenchViewModel.onSearchChange("") },
-                                        variant = AppButtonVariant.SECONDARY,
-                                    )
-                                }
-                            } else {
-                                null
+                            // 空态行动入口（规范 §3.6 空态 = 母题 + 文案 + 行动按钮）：
+                            // 搜索无结果 →「清除搜索」；空配置（非搜索）→「重试」复用 loadEntries
+                            // （ui-check P2：原空配置态无按钮，用户无从确认是未配置还是加载失败）
+                            action = {
+                                AppButton(
+                                    small = true,
+                                    text = stringResource(
+                                        if (isSearching) {
+                                            R.string.workbench_search_clear
+                                        } else {
+                                            R.string.workbench_retry
+                                        }
+                                    ),
+                                    onClick = {
+                                        if (isSearching) {
+                                            workbenchViewModel.onSearchChange("")
+                                        } else {
+                                            workbenchViewModel.loadEntries()
+                                        }
+                                    },
+                                    variant = AppButtonVariant.SECONDARY,
+                                )
                             },
                         )
                     }
@@ -584,7 +605,8 @@ private fun WorkbenchSearchField(
         onValueChange = onQueryChange,
         modifier = modifier,
         placeholder = stringResource(R.string.workbench_search_hint),
-        leadingIcon = Icons.Default.Search,
+        // 前缀/尾缀同一变体组（Rounded）：与全页 Rounded 功能图标及站内其余搜索框一致
+        leadingIcon = Icons.Rounded.Search,
         trailingIcon = if (query.isNotEmpty()) {
             {
                 // 清除按钮：图标化 + 44dp 方形热区（§3.7 尾缀一律图标化）
@@ -1040,7 +1062,10 @@ private fun StaggerIn(
     }
 }
 
-/** 配图（Coil）：placeholder = surfaceVariant 色块，交叉淡变 180ms（reduced motion 关闭淡变） */
+/**
+ * 配图（Coil）：加载中与失败均给同形兜底（surfaceVariant 块），交叉淡变 180ms
+ * （reduced motion 关闭淡变）。失败态居中滚筒圆母题（规范 §3.6/§5），弱网下重点入口不留灰块。
+ */
 @Composable
 private fun WorkbenchImage(
     url: String,
@@ -1055,43 +1080,49 @@ private fun WorkbenchImage(
             .apply { if (reduceMotion) crossfade(false) else crossfade(CROSSFADE_ALT_MS) }
             .build()
     }
-    AsyncImage(
+    SubcomposeAsyncImage(
         model = request,
         // 装饰性配图：语义由标题/描述承载
         contentDescription = null,
         modifier = modifier.background(scheme.surfaceVariant),
-        placeholder = ColorPainter(scheme.surfaceVariant),
-        contentScale = ContentScale.Crop
+        contentScale = ContentScale.Crop,
+        // 加载态：与骨架同形的 surfaceVariant 色块
+        loading = {
+            Box(modifier = Modifier.fillMaxSize().background(scheme.surfaceVariant))
+        },
+        // 失败态：同形容器 + 滚筒圆母题（弱网不再退化为灰块）
+        error = {
+            Box(
+                modifier = Modifier.fillMaxSize().background(scheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                DrumMark(
+                    size = 40.dp,
+                    tint = scheme.primary.copy(alpha = 0.5f)
+                )
+            }
+        },
     )
 }
 
 /**
- * 配图存在性判定（单一事实：服务端 imageUrl 或本地自绘封面任一即视为有配图）。
- * ToolTile 据此决定 IconBox 回退，避免与 [WorkbenchCoverImage] 的渲染分流各判各的
- * （ui-check P2：两处判断单边修改易漂移）。
+ * 配图存在性判定（单一事实：仅服务端 imageUrl；本地自绘封面分支已移除，
+ * `LocalCoverArt.workbenchCover` 恒 null）。ToolTile 据此决定 IconBox 回退，
+ * 避免与 [WorkbenchCoverImage] 的渲染分流各判各的（ui-check P2：两处判断单边修改易漂移）。
  */
-private fun WorkbenchTool.hasCover(): Boolean =
-    imageUrl != null || LocalCoverArt.workbenchCover(entryKey) != null
+private fun WorkbenchTool.hasCover(): Boolean = imageUrl != null
 
 /**
- * 工作台配图统一槽：服务端 imageUrl 优先（Coil），未下发时按 entryKey 用本地自绘封面兜底，
- * 两者皆无则不渲染（调用方据 [WorkbenchTool.hasCover] 回退 IconBox 布局）。
+ * 工作台配图统一槽：服务端 imageUrl 存在时渲染 Coil 配图，否则不渲染
+ * （调用方据 [WorkbenchTool.hasCover] 回退 IconBox 布局）。
  */
 @Composable
 private fun WorkbenchCoverImage(
     tool: WorkbenchTool,
     modifier: Modifier = Modifier,
 ) {
-    val local = LocalCoverArt.workbenchCover(tool.entryKey)
     if (tool.imageUrl != null) {
-        WorkbenchImage(url = tool.imageUrl!!, modifier = modifier)
-    } else if (local != null) {
-        Image(
-            painter = painterResource(local),
-            contentDescription = null,
-            modifier = modifier.background(AppColors.colorScheme.surfaceVariant),
-            contentScale = ContentScale.Crop
-        )
+        WorkbenchImage(url = tool.imageUrl, modifier = modifier)
     }
 }
 
@@ -1147,10 +1178,9 @@ private fun DivinationEntryCard(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.workbench_divination_name),
-                // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp
-                style = AppTextStyles.SectionTitle.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
+                // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp；
+                // SectionTitle 本身即 16/24/600，原 .copy(fontWeight = SemiBold) 冗余已删
+                style = AppTextStyles.SectionTitle,
                 color = DivTextPrimaryDark
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceXs))
