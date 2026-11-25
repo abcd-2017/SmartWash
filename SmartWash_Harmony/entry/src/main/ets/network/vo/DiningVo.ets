@@ -260,6 +260,8 @@ export interface DiningOrderMember {
   isCreator: boolean
   /** 脱敏手机号（如 139****9000），作选菜人标识 */
   phoneMasked: string
+  /** 该成员登记的忌口标签（SEAFOOD/NUT/...），空数组=无忌口；后端已下发，端上透传备用 */
+  allergens: Array<string>
 }
 
 /**
@@ -317,7 +319,8 @@ function diningOrderMemberFromJSON(raw: Object): DiningOrderMember {
   return {
     userId: jsonNum(obj['userId']) ?? 0,
     isCreator: jsonBool(obj['isCreator']) ?? false,
-    phoneMasked: jsonStr(obj['phoneMasked']) ?? ''
+    phoneMasked: jsonStr(obj['phoneMasked']) ?? '',
+    allergens: jsonStrArray(obj['allergens'])
   }
 }
 

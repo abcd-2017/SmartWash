@@ -683,6 +683,7 @@
 - **代码标识**：`dining_order`、`DiningOrder`、`/web/auth/dining/orders`（ROLE_USER）；成员 `dining_order_member` / 本单菜单 `dining_order_menu` / 选菜记录 `dining_order_item`（**已停写**，仅兼容历史数据）。
 - **定义**：一人发起点单（title + 从菜谱库勾选本单菜单，支持 `fromOrderId` 复用历史菜单）、生成二维码分享（内容 `https://{host}/dining/join/{orderId}?t={join_token}`），他人扫码 → brief 确认弹窗 → 加入（创建者即首个成员）；**菜单即已选清单**——全体成员共同编辑本单菜单（加/移除菜，version 乐观并发，无「个人选菜」归属）；发起者提交（提交即结束）后生成购买清单（食材名并集去重 + 按菜视图，`ShoppingListAssembler` 纯函数，快照落 `shopping_list` 列）。
 - **version 轮询协议**：`dining_order.version` 乐观并发——加菜/移除/提交/放弃走条件 UPDATE `WHERE id=? AND version=? SET version=version+1`（重置凭证不递增），不匹配返回业务错误码 409（客户端拉取最新后重放）；详情接口为轮询主接口，客户端带 `knownVersion`，一致返回 `unchanged=true` 轻量响应，不一致/未带返回全量。
+- **成员忌口与清单分享**：详情 `members` 带 `allergens`（批量查 `user_dietary_preference`，同单可见，无记录空表）；Android 分享页聚合去重展示「成员忌口」（不关联个人）。购买清单页可生成竖版分享海报（`DiningShoppingListPoster` 纯 Android Graphics，米白底 + 标题 + 食材行含已买勾选 + 品牌脚，复用 FileProvider 授权目录经系统分享面板分发）。
 - **四端对应物**：
   - 后端：`dining/`（`WebDiningOrderController`，ROLE_USER；`DiningRecipeGate` 为点单对菜谱库的窄访问门面）。
   - Android：`:feature:dining:{api,impl}`——`DiningServiceApi` 订单接口 + `DiningOrderStatus` 枚举映射；订单列表页（域首页，深链 host `dining` 落点 + 工作台入口）/ 创建订单页（常规 / 草稿编辑 / 复用历史三模式，草稿协同与 version 冲突差分重放落在 `DiningOrderCreateViewModel` + `DiningDraftMenuEditor`）/ 分享视图（二维码 + 在线成员 + 定向邀请）/ 购买清单结果页。二维码内容 `{BASE_URL origin}/dining/join/{orderId}?t={join_token}`，token 由创建响应与**发起者**详情响应下发。鸿蒙：订单列表/创建（含差分重放）/分享/加入/购买清单全链路；**无主动同步通道**（无 SSE/轮询，仅 409 与进页刷新），**无在线成员/定向邀请/营养超标提醒**。契约以 `WebDiningOrderController` 为源。Web：无用户端（管理后台不消费点单订单）。
