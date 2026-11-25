@@ -107,6 +107,7 @@
         :data="orderList"
         fit
         highlight-current-row
+        aria-label="订单列表"
         :empty-text="
           hasOrderFilter ? '试试调整筛选条件' : '还没有订单，用户下单后将在此展示'
         "
@@ -127,10 +128,10 @@
             {{ row.laundryPackageVo?.itemName || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="总价" min-width="120" align="right">
+        <el-table-column prop="totalPrice" label="总价" min-width="120" align="right" sortable>
           <template #default="{ row }">{{ formatPayAmount(row.totalPrice) }}</template>
         </el-table-column>
-        <el-table-column label="状态" min-width="120">
+        <el-table-column prop="status" label="状态" min-width="120" sortable>
           <template #default="{ row }">
             <el-tag :type="orderStatusTagType(row.status)">
               {{ formatStatus(row.status) }}
@@ -138,7 +139,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="pickupCode" label="取件码" min-width="150" class-name="col-code" />
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column prop="createdAt" label="创建时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">

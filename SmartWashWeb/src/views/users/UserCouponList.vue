@@ -48,6 +48,7 @@
         :data="couponList"
         fit
         highlight-current-row
+        aria-label="用户优惠券列表"
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="userCouponId" label="记录ID" min-width="100" />
@@ -55,20 +56,20 @@
         <el-table-column prop="couponTitle" label="优惠券名称" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">{{ row.couponVo?.title || '-' }}</template>
         </el-table-column>
-        <el-table-column label="使用状态" min-width="100">
+        <el-table-column label="使用状态" min-width="100" sortable :sort-by="userCouponStatusOrder">
           <template #default="{ row }">
             <el-tag :type="userCouponStatusTagType(row)">
               {{ userCouponStatusText(row) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="领取时间" min-width="160">
+        <el-table-column prop="receivedAt" label="领取时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.receivedAt) }}</template>
         </el-table-column>
-        <el-table-column label="过期时间" min-width="160">
+        <el-table-column prop="expiredAt" label="过期时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.expiredAt) }}</template>
         </el-table-column>
-        <el-table-column label="使用时间" min-width="160">
+        <el-table-column prop="usedAt" label="使用时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.usedAt) }}</template>
         </el-table-column>
         <el-table-column label="订单号" min-width="200">
@@ -141,6 +142,13 @@ const userCouponStatusTagType = (row) => {
   if (row.isUsed) return 'info';
   if (isExpired(row)) return 'info';
   return 'success';
+};
+
+// 状态排序键：未使用(0) < 已使用(1) < 已过期(2)，让本地排序结果与文案语义一致
+const userCouponStatusOrder = (row) => {
+  if (row.isUsed) return 1;
+  if (isExpired(row)) return 2;
+  return 0;
 };
 
 const {

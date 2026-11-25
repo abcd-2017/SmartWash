@@ -49,6 +49,7 @@
         :data="ingredientList"
         fit
         highlight-current-row
+        aria-label="配料列表"
         :empty-text="
           hasIngredientFilter
             ? '试试调整筛选条件'
@@ -81,10 +82,10 @@
             <span v-else class="text-muted">无</span>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="160">
+        <el-table-column prop="createdAt" label="创建时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="更新时间" min-width="160">
+        <el-table-column prop="updatedAt" label="更新时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">

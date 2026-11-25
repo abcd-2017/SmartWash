@@ -49,6 +49,7 @@
             :data="saveList"
             border
             stripe
+            aria-label="玩家存档列表"
             empty-text="暂无数据，试试调整筛选条件"
           >
             <el-table-column prop="userId" label="用户ID" width="100" />
@@ -64,7 +65,7 @@
             <el-table-column label="存档内容" min-width="240" show-overflow-tooltip>
               <template #default="{ row }">{{ row.stateJson }}</template>
             </el-table-column>
-            <el-table-column label="更新时间" width="170">
+            <el-table-column prop="updatedAt" label="更新时间" width="170" sortable>
               <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
             </el-table-column>
           </el-table>
@@ -120,6 +121,7 @@
             :data="scoreList"
             border
             stripe
+            aria-label="玩家成绩列表"
             empty-text="暂无数据，试试调整筛选条件"
           >
             <el-table-column prop="userId" label="用户ID" width="100" />
@@ -131,12 +133,18 @@
               min-width="120"
               show-overflow-tooltip
             />
-            <el-table-column prop="metricValue" label="成绩值" width="110" align="right" />
+            <el-table-column prop="metricValue" label="成绩值" width="110" align="right" sortable />
             <el-table-column label="辅助值" width="100" align="right">
               <template #default="{ row }">{{ row.metricExtra ?? '—' }}</template>
             </el-table-column>
-            <el-table-column prop="playedCount" label="上报次数" width="90" align="center" />
-            <el-table-column label="最近上报" width="170">
+            <el-table-column
+              prop="playedCount"
+              label="上报次数"
+              width="90"
+              align="center"
+              sortable
+            />
+            <el-table-column prop="lastPlayedAt" label="最近上报" width="170" sortable>
               <template #default="{ row }">{{ formatTime(row.lastPlayedAt) }}</template>
             </el-table-column>
           </el-table>

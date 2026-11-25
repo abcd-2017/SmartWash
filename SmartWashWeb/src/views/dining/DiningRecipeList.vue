@@ -67,6 +67,7 @@
         :data="recipeList"
         fit
         highlight-current-row
+        aria-label="菜谱列表"
         :empty-text="hasRecipeFilter ? undefined : '还没有菜谱：可逐个新增，或用 Excel 批量导入'"
       >
         <el-table-column label="封面" width="90">
@@ -88,7 +89,13 @@
           </template>
         </el-table-column>
         <!-- 热量徽标：一份热量口径（契约 §二）= 整份热量 ?: 热量/100g × 250g，两者都缺不渲染 -->
-        <el-table-column label="热量" width="130" align="center">
+        <el-table-column
+          label="热量"
+          width="130"
+          align="center"
+          sortable
+          :sort-by="servingCalories"
+        >
           <template #default="{ row }">
             <el-tag v-if="servingCalories(row) !== null" type="warning" effect="plain">
               ≈ {{ servingCalories(row) }} kcal/份
@@ -131,7 +138,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="上架" width="80" align="center">
+        <el-table-column prop="status" label="上架" width="80" align="center" sortable>
           <template #default="{ row }">
             <el-switch
               :model-value="row.status === 1"
@@ -141,7 +148,7 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="更新时间" min-width="160">
+        <el-table-column prop="updatedAt" label="更新时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">

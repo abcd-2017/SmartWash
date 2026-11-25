@@ -55,6 +55,7 @@
         :data="shortCodeList"
         fit
         highlight-current-row
+        aria-label="短码列表"
         empty-text="暂无短码记录"
       >
         <el-table-column label="短码" min-width="150">
@@ -104,7 +105,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="过期时间" min-width="170">
+        <el-table-column prop="expireAt" label="过期时间" min-width="170" sortable>
           <template #default="{ row }">
             <!-- 纯文本展示：空值=永不过期；已过期保留原时间并与状态并存 -->
             <span v-if="!row.expireAt">永不过期</span>
@@ -113,10 +114,10 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="点击数" min-width="90" align="right">
+        <el-table-column prop="clickCount" label="点击数" min-width="90" align="right" sortable>
           <template #default="{ row }">{{ row.clickCount ?? '-' }}</template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="170">
+        <el-table-column prop="createdAt" label="创建时间" min-width="170" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="130" fixed="right">
@@ -215,7 +216,12 @@
           </el-descriptions>
 
           <h4 class="visit-title">最近访问（{{ detail.recentVisits?.length || 0 }} 条）</h4>
-          <el-table v-if="detail.recentVisits?.length" :data="detail.recentVisits" size="small">
+          <el-table
+            v-if="detail.recentVisits?.length"
+            :data="detail.recentVisits"
+            size="small"
+            aria-label="短码访问记录列表"
+          >
             <el-table-column prop="ipHash" label="IP 摘要" min-width="90" />
             <el-table-column
               prop="userAgent"
@@ -226,7 +232,7 @@
             <el-table-column prop="referer" label="Referer" min-width="130" show-overflow-tooltip>
               <template #default="{ row }">{{ row.referer || '-' }}</template>
             </el-table-column>
-            <el-table-column label="访问时间" min-width="160">
+            <el-table-column prop="createdAt" label="访问时间" min-width="160" sortable>
               <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
             </el-table-column>
           </el-table>

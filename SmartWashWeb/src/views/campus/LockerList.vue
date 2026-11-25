@@ -95,6 +95,7 @@
         :data="lockerList"
         fit
         highlight-current-row
+        aria-label="寄存柜列表"
         :empty-text="
           hasLockerFilter
             ? '试试调整筛选条件'
@@ -108,14 +109,14 @@
           </template>
         </el-table-column>
         <el-table-column prop="lockerNumber" label="柜号" min-width="100" />
-        <el-table-column label="状态" min-width="120">
+        <el-table-column prop="status" label="状态" min-width="120" sortable>
           <template #default="{ row }">
             <el-tag :type="lockerStatusTagType(row.status)">
               {{ formatStatus(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="lastUsedAt" label="最后使用时间" min-width="180">
+        <el-table-column prop="lastUsedAt" label="最后使用时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.lastUsedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">

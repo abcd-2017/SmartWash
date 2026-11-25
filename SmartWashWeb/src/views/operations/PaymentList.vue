@@ -101,6 +101,7 @@
         :data="paymentList"
         fit
         highlight-current-row
+        aria-label="支付流水列表"
         :empty-text="
           hasPaymentFilter ? '试试调整筛选条件' : '还没有支付流水，用户支付后将在此展示'
         "
@@ -114,7 +115,7 @@
             {{ row.user?.phoneNumber || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="金额" min-width="120" align="right">
+        <el-table-column prop="amount" label="金额" min-width="120" align="right" sortable>
           <template #default="{ row }">
             <!-- 空金额整格输出 '-'：￥- 会让人误读为「负金额」 -->
             <span class="pay-amount">{{ formatPayAmount(row.amount) }}</span>
@@ -125,14 +126,20 @@
             {{ payTypeOptions[row.paymentMethod] || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="状态" min-width="120">
+        <el-table-column prop="status" label="状态" min-width="120" sortable>
           <template #default="{ row }">
             <el-tag :type="payStatusTagType(row.status)">
               {{ payStatusOptions[row.status] || '-' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="支付时间" min-width="180" class-name="col-subtle">
+        <el-table-column
+          prop="paidAt"
+          label="支付时间"
+          min-width="180"
+          class-name="col-subtle"
+          sortable
+        >
           <template #default="{ row }">{{ formatTime(row.paidAt) }}</template>
         </el-table-column>
       </el-table>

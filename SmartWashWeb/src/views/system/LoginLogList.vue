@@ -95,6 +95,7 @@
         :data="loginLogList"
         fit
         highlight-current-row
+        aria-label="登录日志列表"
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
@@ -128,14 +129,19 @@
         <el-table-column label="IP" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">{{ row.ip || '-' }}</template>
         </el-table-column>
-        <el-table-column label="结果" min-width="90">
+        <el-table-column prop="result" label="结果" min-width="90" sortable>
           <template #default="{ row }">
             <el-tag :type="loginResultTagType(row.result)">{{
               loginResultText(row.result)
             }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="登录时间" min-width="180">
+        <el-table-column
+          label="登录时间"
+          min-width="180"
+          sortable
+          :sort-by="(row) => row.createdAt ?? row.created_at"
+        >
           <template #default="{ row }">{{ loginTime(row) }}</template>
         </el-table-column>
       </el-table>

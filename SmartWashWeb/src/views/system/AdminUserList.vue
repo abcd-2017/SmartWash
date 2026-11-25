@@ -71,6 +71,7 @@
         :data="adminList"
         fit
         highlight-current-row
+        aria-label="管理员列表"
         empty-text="暂无数据，试试调整筛选条件"
         @selection-change="handleSelectionChange"
       >
@@ -83,7 +84,7 @@
             <div class="admin-role-cell">{{ row.roles?.roleName || '-' }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column prop="createdAt" label="创建时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">

@@ -34,6 +34,7 @@
         :data="roleList"
         fit
         highlight-current-row
+        aria-label="角色列表"
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="roleId" label="ID" min-width="80" />
@@ -49,7 +50,7 @@
           min-width="200"
           show-overflow-tooltip
         />
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column prop="createdAt" label="创建时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">

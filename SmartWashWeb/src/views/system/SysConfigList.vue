@@ -13,7 +13,7 @@
         <span>系统参数加载失败，请检查网络后重试</span>
         <el-button size="small" @click="fetchList">重试</el-button>
       </div>
-      <el-table v-else :data="list" v-loading="loading" border stripe>
+      <el-table v-else :data="list" v-loading="loading" border stripe aria-label="系统参数列表">
         <el-table-column prop="configKey" label="参数键" min-width="200">
           <template #default="{ row }">
             <span class="config-key">{{ row.configKey }}</span>
@@ -21,7 +21,7 @@
         </el-table-column>
         <el-table-column prop="configValue" label="参数值" min-width="120" show-overflow-tooltip />
         <el-table-column prop="remark" label="说明" min-width="260" show-overflow-tooltip />
-        <el-table-column prop="updatedAt" label="最近修改" width="170">
+        <el-table-column prop="updatedAt" label="最近修改" width="170" sortable>
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">

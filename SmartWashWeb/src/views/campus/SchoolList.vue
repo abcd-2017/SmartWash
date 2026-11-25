@@ -91,6 +91,7 @@
         :data="schoolList"
         fit
         highlight-current-row
+        aria-label="学校列表"
         :empty-text="
           hasSchoolFilter ? '试试调整筛选条件' : '还没有学校，点击右上角『新增学校』开始'
         "
@@ -113,10 +114,10 @@
         <el-table-column prop="contactPhone" label="联系电话" min-width="120">
           <template #default="{ row }">{{ row.contactPhone || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="lockerCount" label="储物柜数量" min-width="90">
+        <el-table-column prop="lockerCount" label="储物柜数量" min-width="90" sortable>
           <template #default="{ row }">{{ row.lockerCount }}个</template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" min-width="180">
+        <el-table-column prop="createdAt" label="创建时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">

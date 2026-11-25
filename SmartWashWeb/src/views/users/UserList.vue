@@ -71,6 +71,7 @@
         :data="userList"
         fit
         highlight-current-row
+        aria-label="用户列表"
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="userId" label="ID" min-width="80" />
@@ -93,10 +94,10 @@
         <el-table-column prop="campusCard" label="校园卡号" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.campusCard || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="balance" label="余额" min-width="120" align="right">
+        <el-table-column prop="balance" label="余额" min-width="120" align="right" sortable>
           <template #default="{ row }">￥{{ formatAmount(row.balance, '-') }}</template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="注册时间" min-width="180">
+        <el-table-column prop="createdAt" label="注册时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">

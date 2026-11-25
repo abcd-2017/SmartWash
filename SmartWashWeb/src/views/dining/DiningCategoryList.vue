@@ -33,6 +33,7 @@
         :data="categoryList"
         fit
         highlight-current-row
+        aria-label="菜谱分类列表"
         :empty-text="hasCategoryFilter ? '试试调整筛选条件' : '还没有分类，新增后菜谱即可归类'"
       >
         <el-table-column label="ID" prop="id" width="80" />
@@ -41,7 +42,7 @@
             <span class="category-name">{{ row.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="sort" width="100">
+        <el-table-column prop="sort" width="100" sortable>
           <template #header>
             <el-tooltip content="数值越小越靠前，用户端按此顺序展示" placement="top">
               <span>排序</span>
@@ -51,10 +52,10 @@
             <el-tag type="info" effect="plain">{{ row.sort }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="160">
+        <el-table-column prop="createdAt" label="创建时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="更新时间" min-width="160">
+        <el-table-column prop="updatedAt" label="更新时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">

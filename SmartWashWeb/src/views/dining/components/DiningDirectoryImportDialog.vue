@@ -82,6 +82,7 @@
         size="small"
         max-height="380"
         :row-class-name="rowClassName"
+        aria-label="菜谱目录导入预检列表"
         empty-text="选择父目录后，此处展示预检到的菜谱行"
       >
         <el-table-column label="CSV 文件" min-width="120" show-overflow-tooltip>

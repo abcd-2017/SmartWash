@@ -49,6 +49,7 @@
         :data="noticeList"
         fit
         highlight-current-row
+        aria-label="公告列表"
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="id" label="ID" min-width="80" align="center">
@@ -57,7 +58,7 @@
         <el-table-column label="标题" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">{{ row.title || '-' }}</template>
         </el-table-column>
-        <el-table-column label="类型" min-width="110">
+        <el-table-column prop="type" label="类型" min-width="110" sortable>
           <template #default="{ row }">
             <!-- 类型标签(live 打磨 v2):圆点标记 + 体量微调,圆点继承标签语义色 -->
             <div class="notice-type-cell">
@@ -86,7 +87,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="发送时间" min-width="170">
+        <el-table-column prop="createdAt" label="发送时间" min-width="170" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="送达统计" min-width="180" align="center">

@@ -37,6 +37,7 @@
         :data="auditList"
         fit
         highlight-current-row
+        aria-label="占卜审计列表"
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
@@ -50,14 +51,14 @@
             <span class="mono-text">{{ row.interpretationId ?? '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="审计状态" min-width="120">
+        <el-table-column prop="auditStatus" label="审计状态" min-width="120" sortable>
           <template #default="{ row }">
             <el-tag :type="divAuditStatusTagType(row.auditStatus)">
               {{ divAuditStatusText(row.auditStatus) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="审计时间" min-width="180">
+        <el-table-column prop="createdAt" label="审计时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">

@@ -69,6 +69,7 @@
         default-expand-all
         fit
         highlight-current-row
+        aria-label="模型管理列表"
         empty-text="暂无模型配置，点击「新增模型」开始接入"
       >
         <el-table-column prop="vendor" label="厂商" min-width="200">

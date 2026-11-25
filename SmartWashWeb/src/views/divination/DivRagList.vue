@@ -67,6 +67,7 @@
         :data="documentList"
         fit
         highlight-current-row
+        aria-label="知识库列表"
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
@@ -75,14 +76,14 @@
         <el-table-column label="术数方法" min-width="120">
           <template #default="{ row }">{{ methodText(row.method) }}</template>
         </el-table-column>
-        <el-table-column label="状态" min-width="100">
+        <el-table-column prop="status" label="状态" min-width="100" sortable>
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'warning'">
               {{ row.status === 1 ? '可用' : '导入中' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="上传时间" min-width="180">
+        <el-table-column prop="createdAt" label="上传时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
       </el-table>

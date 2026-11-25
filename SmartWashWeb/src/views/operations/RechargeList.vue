@@ -108,6 +108,7 @@
         :data="rechargeList"
         fit
         highlight-current-row
+        aria-label="充值记录列表"
         :empty-text="
           hasRechargeFilter ? '试试调整筛选条件' : '还没有充值记录，用户充值后将在此展示'
         "
@@ -116,7 +117,7 @@
         <el-table-column label="手机号" min-width="120">
           <template #default="{ row }">{{ row.users?.phoneNumber || '-' }}</template>
         </el-table-column>
-        <el-table-column label="充值金额" min-width="150" align="right">
+        <el-table-column prop="amount" label="充值金额" min-width="150" align="right" sortable>
           <template #default="{ row }">{{ formatPayAmount(row.amount) }}</template>
         </el-table-column>
         <el-table-column label="充值类型" min-width="120">
@@ -126,14 +127,14 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" min-width="100">
+        <el-table-column prop="status" label="状态" min-width="100" sortable>
           <template #default="{ row }">
             <el-tag :type="rechargeStatusTagType(row.status)">
               {{ rechargeStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="充值时间" min-width="180">
+        <el-table-column prop="rechargeTime" label="充值时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.rechargeTime) }}</template>
         </el-table-column>
       </el-table>

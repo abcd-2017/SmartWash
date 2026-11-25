@@ -47,6 +47,7 @@
         :data="result.captchas"
         fit
         highlight-current-row
+        aria-label="验证码查询结果列表"
       >
         <el-table-column prop="purposeDesc" label="用途" min-width="120">
           <template #default="{ row }">

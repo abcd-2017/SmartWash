@@ -69,6 +69,7 @@
         :data="queue"
         size="small"
         max-height="380"
+        aria-label="批量导入预检列表"
         empty-text="选择父目录后，此处展示预检到的游戏目录"
       >
         <el-table-column label="目录" min-width="130" show-overflow-tooltip>
@@ -80,7 +81,7 @@
         <el-table-column label="标题" min-width="120" show-overflow-tooltip>
           <template #default="{ row }">{{ row.title || '-' }}</template>
         </el-table-column>
-        <el-table-column label="大小" width="80">
+        <el-table-column prop="sizeBytes" label="大小" width="80" sortable>
           <template #default="{ row }">{{
             row.sizeBytes ? formatFileSize(row.sizeBytes) : '-'
           }}</template>

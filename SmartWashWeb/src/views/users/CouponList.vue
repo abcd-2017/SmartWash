@@ -69,19 +69,20 @@
         :data="couponList"
         fit
         highlight-current-row
+        aria-label="优惠券列表"
         empty-text="暂无数据，试试调整筛选条件"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="couponId" label="ID" min-width="80" />
         <el-table-column prop="title" label="标题" min-width="150" show-overflow-tooltip />
-        <el-table-column label="折扣金额" min-width="120" align="right">
+        <el-table-column prop="discount" label="折扣金额" min-width="120" align="right" sortable>
           <template #default="{ row }">
             <!-- 金额列(live 打磨 v3):600 字重 + 墨色,数字成为扫读锚点 -->
             <div class="amount-cell">￥{{ formatAmount(row.discount) }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="使用门槛" min-width="120" align="right">
+        <el-table-column prop="threshold" label="使用门槛" min-width="120" align="right" sortable>
           <template #default="{ row }">
             <div class="amount-cell">￥{{ formatAmount(row.threshold) }}</div>
           </template>
@@ -98,7 +99,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="状态" min-width="100">
+        <el-table-column prop="status" label="状态" min-width="100" sortable>
           <template #default="{ row }">
             <el-tag :type="couponStatusTagType(row.status)">
               {{ couponStatusText(row.status) }}
@@ -106,7 +107,7 @@
           </template>
         </el-table-column>
         <!-- 已发放数量：删除前需评估影响面（券在用户手中时删除会使其失效） -->
-        <el-table-column label="已发放" min-width="90" align="right">
+        <el-table-column prop="issuedCount" label="已发放" min-width="90" align="right" sortable>
           <template #default="{ row }">{{ row.issuedCount || 0 }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">

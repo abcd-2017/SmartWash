@@ -83,6 +83,7 @@
         :data="list"
         fit
         highlight-current-row
+        aria-label="订阅列表"
         empty-text="暂无订阅记录"
       >
         <el-table-column label="订阅ID" min-width="90">
@@ -96,7 +97,7 @@
         <el-table-column label="订阅名称" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">{{ row.name || '-' }}</template>
         </el-table-column>
-        <el-table-column label="每期金额" min-width="110" align="right">
+        <el-table-column prop="amount" label="每期金额" min-width="110" align="right" sortable>
           <template #default="{ row }">￥{{ formatAmount(row.amount) }}</template>
         </el-table-column>
         <el-table-column label="计费周期" min-width="90">
@@ -111,7 +112,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" min-width="120">
+        <el-table-column prop="status" label="状态" min-width="120" sortable>
           <template #default="{ row }">
             <div class="status-cell">
               <el-tag :type="subscriptionStatusTagType(row.status)">
@@ -124,10 +125,10 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="下次续费日" min-width="110">
+        <el-table-column prop="nextRenewDate" label="下次续费日" min-width="110" sortable>
           <template #default="{ row }">{{ formatTime(row.nextRenewDate, 'YYYY-MM-DD') }}</template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="170">
+        <el-table-column prop="createdAt" label="创建时间" min-width="170" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
       </el-table>

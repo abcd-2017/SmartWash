@@ -70,7 +70,14 @@
         </el-tag>
       </div>
 
-      <el-table :data="preview.rows" border stripe max-height="380" size="small">
+      <el-table
+        :data="preview.rows"
+        border
+        stripe
+        max-height="380"
+        size="small"
+        aria-label="菜谱导入预览列表"
+      >
         <el-table-column prop="rowNo" label="行号" width="64" align="center" />
         <el-table-column prop="name" label="菜名" min-width="120" show-overflow-tooltip />
         <el-table-column label="分类" min-width="100" show-overflow-tooltip>
@@ -150,7 +157,14 @@
         :title="`导入成功：共 ${result.total} 行，全部写入（已默认上架；未提供有效封面对象键的菜谱可在列表中单独上传封面）`"
       />
 
-      <el-table :data="result.rows" border stripe max-height="380" size="small">
+      <el-table
+        :data="result.rows"
+        border
+        stripe
+        max-height="380"
+        size="small"
+        aria-label="菜谱导入结果列表"
+      >
         <el-table-column prop="rowNo" label="行号" width="64" align="center" />
         <el-table-column prop="name" label="菜名" min-width="140" show-overflow-tooltip />
         <el-table-column label="结果" width="110" align="center">

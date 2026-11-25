@@ -98,6 +98,7 @@
         :data="auditList"
         fit
         highlight-current-row
+        aria-label="审计日志列表"
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
@@ -115,7 +116,7 @@
         <el-table-column label="目标ID" min-width="110" show-overflow-tooltip>
           <template #default="{ row }">{{ row.targetId || '-' }}</template>
         </el-table-column>
-        <el-table-column label="操作时间" min-width="180">
+        <el-table-column prop="createdAt" label="操作时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="IP" min-width="130" show-overflow-tooltip>

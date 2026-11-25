@@ -45,9 +45,10 @@
         :data="entryList"
         fit
         highlight-current-row
+        aria-label="工作台入口列表"
         empty-text="暂无工作台入口，点击右上角『新增入口』创建第一个"
       >
-        <el-table-column prop="sort" label="排序" min-width="70" align="center">
+        <el-table-column prop="sort" label="排序" min-width="70" align="center" sortable>
           <template #default="{ row }">{{ row.sort ?? '-' }}</template>
         </el-table-column>
         <el-table-column label="标题" min-width="180">
@@ -126,7 +127,12 @@
           </template>
         </el-table-column>
         <!-- 更新时间（AdminWorkbenchEntryVo 含 createdAt/updatedAt，兜底 createdAt 防 后端裁剪字段） -->
-        <el-table-column label="更新时间" min-width="170">
+        <el-table-column
+          label="更新时间"
+          min-width="170"
+          sortable
+          :sort-by="(row) => row.updatedAt || row.createdAt"
+        >
           <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="130" fixed="right">

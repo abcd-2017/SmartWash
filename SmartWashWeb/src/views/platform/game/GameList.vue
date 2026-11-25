@@ -87,6 +87,7 @@
         :data="gameList"
         fit
         highlight-current-row
+        aria-label="游戏列表"
         :empty-text="
           hasGameFilter ? '暂无数据，试试调整筛选条件' : '还没有游戏，点击右上角上传或批量导入开始'
         "
@@ -142,10 +143,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="大小" min-width="100">
+        <el-table-column prop="fileSize" label="大小" min-width="100" sortable>
           <template #default="{ row }">{{ formatFileSize(row.fileSize) }}</template>
         </el-table-column>
-        <el-table-column prop="sort" label="排序" min-width="70" align="center">
+        <el-table-column prop="sort" label="排序" min-width="70" align="center" sortable>
           <template #default="{ row }">{{ row.sort ?? '-' }}</template>
         </el-table-column>
         <el-table-column label="下发" min-width="170">
@@ -172,7 +173,12 @@
           </template>
         </el-table-column>
         <!-- 更新时间（兜底 createdAt 防后端裁剪字段，对齐 WorkbenchEntryList 先例） -->
-        <el-table-column label="更新时间" min-width="170">
+        <el-table-column
+          label="更新时间"
+          min-width="170"
+          sortable
+          :sort-by="(row) => row.updatedAt || row.createdAt"
+        >
           <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="130" fixed="right">

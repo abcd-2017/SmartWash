@@ -44,6 +44,7 @@
         :data="laundryList"
         fit
         highlight-current-row
+        aria-label="洗护套餐列表"
         :empty-text="
           hasLaundryFilter ? '试试调整筛选条件' : '还没有套餐，点击右上角『新增套餐』开始'
         "
@@ -57,10 +58,10 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="basePrice" label="基础价格" min-width="140" align="right">
+        <el-table-column prop="basePrice" label="基础价格" min-width="140" align="right" sortable>
           <template #default="{ row }">{{ formatPayAmount(row.basePrice) }}</template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" min-width="180">
+        <el-table-column prop="createdAt" label="创建时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">

@@ -45,6 +45,7 @@
         :data="routeList"
         fit
         highlight-current-row
+        aria-label="深链路由列表"
         empty-text="暂无跳转路由，点击右上角『新增路由』创建第一个"
       >
         <el-table-column label="Host" min-width="200">
@@ -75,7 +76,7 @@
         <el-table-column label="描述" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ row.description || '-' }}</template>
         </el-table-column>
-        <el-table-column label="启停" min-width="90">
+        <el-table-column prop="enabled" label="启停" min-width="90" sortable>
           <template #default="{ row }">
             <!-- 行内切换：成功前乐观更新，失败回滚并提示 -->
             <el-switch

@@ -36,18 +36,19 @@
         :data="blockedList"
         fit
         highlight-current-row
+        aria-label="黑名单列表"
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="userId" label="用户ID" min-width="100" />
         <el-table-column prop="question" label="拦截问题" min-width="280" show-overflow-tooltip />
-        <el-table-column label="术数方法" min-width="120">
+        <el-table-column prop="method" label="术数方法" min-width="120" sortable>
           <template #default="{ row }">{{ methodText(row.method) }}</template>
         </el-table-column>
         <el-table-column label="拦截原因" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ blockedReasonText(row.reason) }}</template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="拦截时间" min-width="180">
+        <el-table-column prop="createdAt" label="拦截时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
       </el-table>

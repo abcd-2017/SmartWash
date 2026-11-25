@@ -71,12 +71,19 @@
         <el-tag v-if="plan.blocked" type="danger" effect="plain">存在错误行，修正后重新解析</el-tag>
       </div>
 
-      <el-table :data="plan.rows" border stripe max-height="360" size="small">
-        <el-table-column prop="levelNo" label="序号" width="64" align="center" />
+      <el-table
+        :data="plan.rows"
+        border
+        stripe
+        max-height="360"
+        size="small"
+        aria-label="关卡导入预览列表"
+      >
+        <el-table-column prop="levelNo" label="序号" width="64" align="center" sortable />
         <el-table-column label="关卡名" min-width="110" show-overflow-tooltip>
           <template #default="{ row }">{{ row.name || '—' }}</template>
         </el-table-column>
-        <el-table-column label="难度" width="64" align="center">
+        <el-table-column prop="difficulty" label="难度" width="64" align="center" sortable>
           <template #default="{ row }">{{ row.difficulty ?? '—' }}</template>
         </el-table-column>
         <el-table-column label="下发" width="70" align="center">

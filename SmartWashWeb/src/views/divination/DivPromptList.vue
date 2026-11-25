@@ -62,6 +62,7 @@
         :data="promptList"
         fit
         highlight-current-row
+        aria-label="提示词列表"
         empty-text="暂无数据，试试调整筛选条件"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
@@ -73,7 +74,7 @@
             <span class="version-chip">{{ row.version }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" min-width="100">
+        <el-table-column prop="status" label="状态" min-width="100" sortable>
           <template #default="{ row }">
             <el-tag :type="divPromptStatusTagType(row.status)">
               {{ divPromptStatusText(row.status) }}
@@ -86,10 +87,10 @@
         <el-table-column label="System Prompt" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ row.systemPrompt || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" min-width="180">
+        <el-table-column prop="createdAt" label="创建时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column prop="updatedAt" label="更新时间" min-width="180">
+        <el-table-column prop="updatedAt" label="更新时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">

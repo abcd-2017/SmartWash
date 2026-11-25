@@ -50,21 +50,22 @@
         :data="levelList"
         border
         stripe
+        aria-label="关卡列表"
         :empty-text="levelGameKey ? '暂无关卡' : '请先选择游戏'"
       >
-        <el-table-column prop="levelNo" label="序号" width="70" align="center" />
+        <el-table-column prop="levelNo" label="序号" width="70" align="center" sortable />
         <el-table-column prop="name" label="关卡名" min-width="140" show-overflow-tooltip />
-        <el-table-column label="难度" width="80" align="center">
+        <el-table-column prop="difficulty" label="难度" width="80" align="center" sortable>
           <template #default="{ row }">{{ row.difficulty ?? '—' }}</template>
         </el-table-column>
-        <el-table-column label="状态" width="90" align="center">
+        <el-table-column prop="enabled" label="状态" width="90" align="center" sortable>
           <template #default="{ row }">
             <el-tag :type="row.enabled === 1 ? 'success' : 'info'" size="small">
               {{ row.enabled === 1 ? '下发中' : '已下架' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="sort" label="排序" width="70" align="center" />
+        <el-table-column prop="sort" label="排序" width="70" align="center" sortable />
         <el-table-column label="关卡数据" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ row.dataJson }}</template>
         </el-table-column>
