@@ -44,6 +44,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="ingredientList"
@@ -55,6 +56,8 @@
             ? '试试调整筛选条件'
             : '还没有配料：批量导入菜谱时按食材名自动注册，也可在此手动维护'
         "
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column label="ID" prop="id" width="80" />
         <el-table-column label="配料名称" min-width="200">
@@ -101,6 +104,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">配料列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -189,6 +195,11 @@ import {
   diningIngredientAllergenTagType,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('dining-ingredient-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);

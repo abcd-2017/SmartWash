@@ -72,12 +72,15 @@
       </div>
 
       <el-table
+        ref="tableRef"
         :data="plan.rows"
         border
         stripe
         max-height="360"
         size="small"
         aria-label="关卡导入预览列表"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="levelNo" label="序号" width="64" align="center" sortable />
         <el-table-column label="关卡名" min-width="110" show-overflow-tooltip>
@@ -110,6 +113,9 @@
         <el-table-column label="关卡数据" min-width="220" show-overflow-tooltip>
           <template #default="{ row }">{{ row.dataJson.slice(0, 80) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">关卡导入预览列表</span>
+        </template>
       </el-table>
 
       <el-checkbox
@@ -150,6 +156,11 @@ import {
   planLevelImport,
   buildImportPayload,
 } from '../levelImportParser';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('level-import-preview', tableRef);
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },

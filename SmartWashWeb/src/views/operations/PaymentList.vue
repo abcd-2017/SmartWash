@@ -96,6 +96,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="paymentList"
@@ -105,6 +106,8 @@
         :empty-text="
           hasPaymentFilter ? '试试调整筛选条件' : '还没有支付流水，用户支付后将在此展示'
         "
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="paymentId" label="支付ID" min-width="90" class-name="col-subtle" />
         <el-table-column label="订单号" min-width="200" show-overflow-tooltip>
@@ -142,6 +145,9 @@
         >
           <template #default="{ row }">{{ formatTime(row.paidAt) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">支付流水列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -168,6 +174,11 @@ import { payStatusTagType } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('payment-list', tableRef);
 
 const payTypeOptions = ref({});
 const payStatusOptions = ref({});

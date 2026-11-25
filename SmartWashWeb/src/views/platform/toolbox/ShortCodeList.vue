@@ -50,6 +50,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="listTableRef"
         v-else
         v-loading="listLoading"
         :data="shortCodeList"
@@ -57,6 +58,8 @@
         highlight-current-row
         aria-label="短码列表"
         empty-text="暂无短码记录"
+        :aria-describedby="listCaptionId"
+        @sort-change="onListSortChange"
       >
         <el-table-column label="短码" min-width="150">
           <template #default="{ row }">
@@ -134,6 +137,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="listCaptionId" class="sr-only">短码列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -217,10 +223,13 @@
 
           <h4 class="visit-title">最近访问（{{ detail.recentVisits?.length || 0 }} 条）</h4>
           <el-table
+            ref="visitTableRef"
             v-if="detail.recentVisits?.length"
             :data="detail.recentVisits"
             size="small"
             aria-label="短码访问记录列表"
+            :aria-describedby="visitCaptionId"
+            @sort-change="onVisitSortChange"
           >
             <el-table-column prop="ipHash" label="IP 摘要" min-width="90" />
             <el-table-column
@@ -235,6 +244,9 @@
             <el-table-column prop="createdAt" label="访问时间" min-width="160" sortable>
               <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
             </el-table-column>
+            <template #append>
+              <span :id="visitCaptionId" class="sr-only">短码访问记录列表</span>
+            </template>
           </el-table>
           <el-empty v-else description="暂无访问记录" :image-size="60" />
         </template>
@@ -262,6 +274,19 @@ import {
   secretStateText,
   secretStateTagType,
 } from '@/constants/dict';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const listTableRef = ref(null);
+const visitTableRef = ref(null);
+
+const { captionId: listCaptionId, onSortChange: onListSortChange } = useTableA11y(
+  'shortcode-list',
+  listTableRef
+);
+const { captionId: visitCaptionId, onSortChange: onVisitSortChange } = useTableA11y(
+  'shortcode-visit',
+  visitTableRef
+);
 
 // 私密文本类型（后端 contentType=7）：管理端不展示目标链接与内容，仅展示私密状态。
 // 内容类型枚举全量维护在 @/constants/dict 的 SHORT_CODE_CONTENT_TYPE_OPTIONS，此处仅锁定私密文本判定值

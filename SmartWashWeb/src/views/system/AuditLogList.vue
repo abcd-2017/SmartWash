@@ -93,6 +93,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="auditList"
@@ -100,6 +101,8 @@
         highlight-current-row
         aria-label="审计日志列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="adminUser" label="操作人" min-width="120" show-overflow-tooltip />
@@ -146,6 +149,9 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">审计日志列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -206,6 +212,11 @@ import {
   auditTargetTypeText,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('audit-log-list', tableRef);
 
 // 动作/目标类型字典已统一收敛到 constants/dict.js（AUDIT_*）：
 // 与后端 @Audited 注解全集对齐，未知动作/类型回显原始编码，不猜文案。

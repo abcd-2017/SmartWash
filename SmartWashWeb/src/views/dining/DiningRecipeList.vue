@@ -62,6 +62,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="recipeList"
@@ -69,6 +70,8 @@
         highlight-current-row
         aria-label="菜谱列表"
         :empty-text="hasRecipeFilter ? undefined : '还没有菜谱：可逐个新增，或用 Excel 批量导入'"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column label="封面" width="90">
           <template #default="{ row }">
@@ -164,6 +167,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">菜谱列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -396,6 +402,11 @@ import {
   diningRecipeSourceTagType,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('dining-recipe-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);

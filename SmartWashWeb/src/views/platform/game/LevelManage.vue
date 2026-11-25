@@ -45,6 +45,7 @@
         <el-button size="small" @click="fetchLevels">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="levelLoading"
         :data="levelList"
@@ -52,6 +53,8 @@
         stripe
         aria-label="关卡列表"
         :empty-text="levelGameKey ? '暂无关卡' : '请先选择游戏'"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="levelNo" label="序号" width="70" align="center" sortable />
         <el-table-column prop="name" label="关卡名" min-width="140" show-overflow-tooltip />
@@ -84,6 +87,9 @@
             >
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">关卡列表</span>
+        </template>
       </el-table>
     </div>
 
@@ -159,6 +165,11 @@ import { getGameLevels, saveGameLevel, deleteGameLevel } from '@/api/gameData';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 import LevelImportDialog from './components/LevelImportDialog.vue';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('level-manage', tableRef);
 
 defineOptions({ name: 'LevelManage' });
 

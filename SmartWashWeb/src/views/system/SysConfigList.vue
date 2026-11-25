@@ -13,7 +13,17 @@
         <span>系统参数加载失败，请检查网络后重试</span>
         <el-button size="small" @click="fetchList">重试</el-button>
       </div>
-      <el-table v-else :data="list" v-loading="loading" border stripe aria-label="系统参数列表">
+      <el-table
+        ref="tableRef"
+        v-else
+        :data="list"
+        v-loading="loading"
+        border
+        stripe
+        aria-label="系统参数列表"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
+      >
         <el-table-column prop="configKey" label="参数键" min-width="200">
           <template #default="{ row }">
             <span class="config-key">{{ row.configKey }}</span>
@@ -29,6 +39,9 @@
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">系统参数列表</span>
+        </template>
       </el-table>
     </el-card>
 
@@ -70,6 +83,11 @@ import { getSysConfigList, updateSysConfig } from '@/api/config';
 import { formatTime } from '@/utils/format';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('sys-config-list', tableRef);
 
 const loading = ref(false);
 const loadError = ref(false); // 列表加载失败态：与空列表区分，供表格区展示重试入口

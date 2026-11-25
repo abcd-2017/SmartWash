@@ -643,3 +643,16 @@ a:focus-visible {
     overflow-x: auto;
   }
 }
+
+/* 视觉隐藏、读屏可读：用于 el-table 的表格标题（EP attrs 落在根 div，原生 table 拿不到 aria-label） */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

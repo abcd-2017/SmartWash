@@ -77,6 +77,7 @@
         max-height="380"
         size="small"
         aria-label="菜谱导入预览列表"
+        :aria-describedby="previewCaptionId"
       >
         <el-table-column prop="rowNo" label="行号" width="64" align="center" />
         <el-table-column prop="name" label="菜名" min-width="120" show-overflow-tooltip />
@@ -125,6 +126,9 @@
             <el-tag v-else size="small" type="success">通过</el-tag>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="previewCaptionId" class="sr-only">菜谱导入预览列表</span>
+        </template>
       </el-table>
 
       <div class="step-actions">
@@ -164,6 +168,7 @@
         max-height="380"
         size="small"
         aria-label="菜谱导入结果列表"
+        :aria-describedby="resultCaptionId"
       >
         <el-table-column prop="rowNo" label="行号" width="64" align="center" />
         <el-table-column prop="name" label="菜名" min-width="140" show-overflow-tooltip />
@@ -181,6 +186,9 @@
         <el-table-column label="失败原因" min-width="220" show-overflow-tooltip>
           <template #default="{ row }">{{ row.error || '-' }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="resultCaptionId" class="sr-only">菜谱导入结果列表</span>
+        </template>
       </el-table>
 
       <div class="step-actions">
@@ -203,6 +211,10 @@ import {
 } from '@/api/dining';
 import { saveBlobAs } from '@/utils/download';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const { captionId: previewCaptionId } = useTableA11y('recipe-import-preview');
+const { captionId: resultCaptionId } = useTableA11y('recipe-import-result');
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },

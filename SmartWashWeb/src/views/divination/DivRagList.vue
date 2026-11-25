@@ -62,6 +62,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="documentList"
@@ -69,6 +70,8 @@
         highlight-current-row
         aria-label="知识库列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="title" label="书名" min-width="180" show-overflow-tooltip />
@@ -86,6 +89,9 @@
         <el-table-column prop="createdAt" label="上传时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">知识库列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -163,6 +169,11 @@ import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import logger from '@/utils/logger';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('div-rag-list', tableRef);
 
 const formRef = ref(null);
 const uploadRef = ref(null);

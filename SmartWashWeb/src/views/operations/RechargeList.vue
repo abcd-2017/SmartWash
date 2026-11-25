@@ -103,6 +103,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="rechargeList"
@@ -112,6 +113,8 @@
         :empty-text="
           hasRechargeFilter ? '试试调整筛选条件' : '还没有充值记录，用户充值后将在此展示'
         "
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="recordId" label="记录ID" min-width="100" />
         <el-table-column label="手机号" min-width="120">
@@ -137,6 +140,9 @@
         <el-table-column prop="rechargeTime" label="充值时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.rechargeTime) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">充值记录列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -172,6 +178,11 @@ import {
 } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('recharge-list', tableRef);
 
 // 充值类型选项（枚举字典统一维护，评审 #16）
 const rechargeTypeOptions = RECHARGE_TYPE_OPTIONS;

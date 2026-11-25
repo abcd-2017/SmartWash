@@ -28,6 +28,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="categoryList"
@@ -35,6 +36,8 @@
         highlight-current-row
         aria-label="菜谱分类列表"
         :empty-text="hasCategoryFilter ? '试试调整筛选条件' : '还没有分类，新增后菜谱即可归类'"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column label="ID" prop="id" width="80" />
         <el-table-column label="分类名称" min-width="200">
@@ -71,6 +74,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">菜谱分类列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -130,6 +136,11 @@ import { useConfirm } from '@/composables/useConfirm';
 import { diningCategoryOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('dining-category-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);

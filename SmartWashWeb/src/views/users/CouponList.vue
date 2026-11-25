@@ -72,6 +72,8 @@
         aria-label="优惠券列表"
         empty-text="暂无数据，试试调整筛选条件"
         @selection-change="handleSelectionChange"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="couponId" label="ID" min-width="80" />
@@ -124,6 +126,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">优惠券列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -258,8 +263,12 @@ import { useTableList } from '@/composables/useTableList';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
 
 const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('coupon-list', tableRef);
+
 const formRef = ref(null);
 
 // 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，

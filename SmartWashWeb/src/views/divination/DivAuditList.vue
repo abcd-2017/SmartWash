@@ -32,6 +32,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="auditList"
@@ -39,6 +40,8 @@
         highlight-current-row
         aria-label="占卜审计列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="recordId" label="卦例ID" min-width="100">
@@ -66,6 +69,9 @@
             <el-button link size="small" @click="handleViewDetail(row)">查看详情</el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">占卜审计列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -165,6 +171,11 @@ import {
   divAuditStatusText,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('div-audit-list', tableRef);
 
 const detailDialogVisible = ref(false);
 const currentAudit = ref(null);

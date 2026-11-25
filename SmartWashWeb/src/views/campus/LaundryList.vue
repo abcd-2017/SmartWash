@@ -39,6 +39,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="laundryList"
@@ -48,6 +49,8 @@
         :empty-text="
           hasLaundryFilter ? '试试调整筛选条件' : '还没有套餐，点击右上角『新增套餐』开始'
         "
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="itemId" label="ID" min-width="80" />
         <el-table-column label="套餐" min-width="320">
@@ -78,6 +81,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">洗护套餐列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -143,6 +149,11 @@ import { useTableList } from '@/composables/useTableList';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('laundry-list', tableRef);
 
 const formRef = ref(null);
 const deletingId = ref(null); // 行内「删除」按钮 loading，防连点

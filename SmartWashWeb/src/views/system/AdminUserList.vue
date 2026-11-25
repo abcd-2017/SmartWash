@@ -74,6 +74,8 @@
         aria-label="管理员列表"
         empty-text="暂无数据，试试调整筛选条件"
         @selection-change="handleSelectionChange"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="adminId" label="ID" min-width="80" />
@@ -101,6 +103,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">管理员列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -183,8 +188,12 @@ import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 import { passwordLengthRule } from '@/utils/validators';
+import { useTableA11y } from '@/composables/useTableA11y';
 
 const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('admin-user-list', tableRef);
+
 const formRef = ref(null);
 const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
 const batchDeleting = ref(false); // 「批量删除」按钮 loading，防连点

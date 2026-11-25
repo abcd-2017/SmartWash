@@ -40,6 +40,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="routeList"
@@ -47,6 +48,8 @@
         highlight-current-row
         aria-label="深链路由列表"
         empty-text="暂无跳转路由，点击右上角『新增路由』创建第一个"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column label="Host" min-width="200">
           <template #default="{ row }">
@@ -103,6 +106,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">深链路由列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -205,6 +211,11 @@ import {
 } from '@/constants/dict';
 import logger from '@/utils/logger';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('deeplink-route-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);

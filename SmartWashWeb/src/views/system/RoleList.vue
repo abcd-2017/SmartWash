@@ -29,6 +29,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="roleList"
@@ -36,6 +37,8 @@
         highlight-current-row
         aria-label="角色列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="roleId" label="ID" min-width="80" />
         <el-table-column label="角色名称" min-width="150">
@@ -76,6 +79,9 @@
             >
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">角色列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -131,6 +137,11 @@ import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('role-list', tableRef);
 
 const formRef = ref(null);
 

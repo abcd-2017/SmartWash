@@ -86,6 +86,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="schoolList"
@@ -95,6 +96,8 @@
         :empty-text="
           hasSchoolFilter ? '试试调整筛选条件' : '还没有学校，点击右上角『新增学校』开始'
         "
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="schoolId" label="ID" min-width="70" />
         <el-table-column prop="schoolName" label="学校名称" min-width="140" show-overflow-tooltip />
@@ -134,6 +137,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">学校列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -256,6 +262,11 @@ import { useConfirm } from '@/composables/useConfirm';
 import RegionCascader from '@/components/RegionCascader.vue';
 import AmapPicker from '@/components/AmapPicker.vue';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('school-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);

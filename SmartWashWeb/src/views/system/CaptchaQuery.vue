@@ -48,6 +48,7 @@
         fit
         highlight-current-row
         aria-label="验证码查询结果列表"
+        :aria-describedby="captionId"
       >
         <el-table-column prop="purposeDesc" label="用途" min-width="120">
           <template #default="{ row }">
@@ -69,6 +70,9 @@
             <span v-else style="color: var(--color-danger)">{{ expiredText() }}</span>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">验证码查询结果列表</span>
+        </template>
       </el-table>
       <el-empty v-else description="该手机号暂无有效验证码" :image-size="80" />
       <!-- 口径说明（Micro 档）：多历史验证码时以最新一次为准 -->
@@ -84,6 +88,9 @@ import { ElMessage } from 'element-plus';
 import { queryCaptcha } from '@/api/captcha';
 import { captchaPurposeTagType } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const { captionId } = useTableA11y('captcha-result');
 
 const PHONE_REGEX = /^(\+86)?1[3-9]\d{9}$/;
 

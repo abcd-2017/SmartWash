@@ -40,6 +40,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="entryList"
@@ -47,6 +48,8 @@
         highlight-current-row
         aria-label="工作台入口列表"
         empty-text="暂无工作台入口，点击右上角『新增入口』创建第一个"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="sort" label="排序" min-width="70" align="center" sortable>
           <template #default="{ row }">{{ row.sort ?? '-' }}</template>
@@ -149,6 +152,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">工作台入口列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -394,6 +400,11 @@ import {
 } from '@/constants/dict';
 import logger from '@/utils/logger';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('workbench-entry-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);

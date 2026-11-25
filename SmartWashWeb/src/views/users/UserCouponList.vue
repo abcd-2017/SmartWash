@@ -43,6 +43,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="couponList"
@@ -50,6 +51,8 @@
         highlight-current-row
         aria-label="用户优惠券列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="userCouponId" label="记录ID" min-width="100" />
         <el-table-column prop="phoneNumber" label="手机号" min-width="140" />
@@ -95,6 +98,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">用户优惠券列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -123,6 +129,11 @@ import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('user-coupon-list', tableRef);
 
 const couponOptions = ref([]);
 const deletingId = ref(null); // 行内「删除」按钮 loading，防连点

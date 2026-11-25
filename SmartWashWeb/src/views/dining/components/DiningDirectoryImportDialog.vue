@@ -84,6 +84,7 @@
         :row-class-name="rowClassName"
         aria-label="菜谱目录导入预检列表"
         empty-text="选择父目录后，此处展示预检到的菜谱行"
+        :aria-describedby="captionId"
       >
         <el-table-column label="CSV 文件" min-width="120" show-overflow-tooltip>
           <template #default="{ row }">{{ row.csvName }}</template>
@@ -129,6 +130,9 @@
             </el-tooltip>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">菜谱目录导入预检列表</span>
+        </template>
       </el-table>
 
       <div class="dir-actions">
@@ -186,6 +190,9 @@ import {
   runPool,
   splitDiningDir,
 } from '../diningDirectory';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const { captionId } = useTableA11y('dining-directory-import');
 
 const UPLOAD_CONCURRENCY = 3;
 

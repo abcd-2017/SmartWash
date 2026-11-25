@@ -57,6 +57,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="promptList"
@@ -64,6 +65,8 @@
         highlight-current-row
         aria-label="提示词列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column label="术数方法" min-width="120">
@@ -116,6 +119,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">提示词列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -202,6 +208,11 @@ import { useConfirm } from '@/composables/useConfirm';
 import { divPromptStatusTagType, divPromptStatusText } from '@/constants/dict';
 import logger from '@/utils/logger';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('div-prompt-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);

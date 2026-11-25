@@ -71,6 +71,7 @@
         highlight-current-row
         aria-label="模型管理列表"
         empty-text="暂无模型配置，点击「新增模型」开始接入"
+        :aria-describedby="captionId"
       >
         <el-table-column prop="vendor" label="厂商" min-width="200">
           <template #default="{ row }">
@@ -184,6 +185,9 @@
             </template>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">模型管理列表</span>
+        </template>
       </el-table>
       <!-- 全量树形模式不分页；仅当目录总量超出一次拉取上限时才出现分页器兜底 -->
       <div v-if="total > listQuery.size" class="pagination-bar">
@@ -294,6 +298,9 @@ import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { divModelVendorOptionsCache } from '@/utils/optionCache';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const { captionId } = useTableA11y('div-model-list');
 
 // 树形目录一次拉全量（目录当前仅 81 条，量级远低于该上限；超出时分页器出现兜底）
 const FULL_LOAD_SIZE = 500;

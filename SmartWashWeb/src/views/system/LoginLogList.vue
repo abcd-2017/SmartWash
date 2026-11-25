@@ -90,6 +90,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="loginLogList"
@@ -97,6 +98,8 @@
         highlight-current-row
         aria-label="登录日志列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column label="用户ID" min-width="100">
@@ -144,6 +147,9 @@
         >
           <template #default="{ row }">{{ loginTime(row) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">登录日志列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -162,7 +168,7 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import dayjs from 'dayjs';
 import { getLoginLogs } from '@/api/loginLog';
 import { formatTime } from '@/utils/format';
@@ -179,6 +185,11 @@ import {
   loginResultText,
   loginNetworkTypeText,
 } from '@/constants/dict';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('login-log-list', tableRef);
 
 // 后端契约字段为下划线口径（app_version/created_at/user_id/network_type/app_channel），
 // 而现有 Java 接口序列化多为驼峰（参考 AuditLogList 的 createdAt）。

@@ -90,6 +90,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="lockerList"
@@ -101,6 +102,8 @@
             ? '试试调整筛选条件'
             : '还没有寄存柜，点击右上角『新增寄存柜』或『批量新增』开始'
         "
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="lockerId" label="ID" min-width="80" />
         <el-table-column label="学校" min-width="180" show-overflow-tooltip>
@@ -141,6 +144,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">寄存柜列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -313,6 +319,11 @@ import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useTimeRange } from '@/composables/useTimeRange';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('locker-list', tableRef);
 
 const statusOptions = ref({});
 const schoolOptions = ref([]);

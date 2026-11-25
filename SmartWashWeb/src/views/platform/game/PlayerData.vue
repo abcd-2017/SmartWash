@@ -44,6 +44,7 @@
             <el-button size="small" @click="fetchSaves">重试</el-button>
           </div>
           <el-table
+            ref="saveTableRef"
             v-else
             v-loading="saveListLoading"
             :data="saveList"
@@ -51,6 +52,8 @@
             stripe
             aria-label="玩家存档列表"
             empty-text="暂无数据，试试调整筛选条件"
+            :aria-describedby="saveCaptionId"
+            @sort-change="onSaveSortChange"
           >
             <el-table-column prop="userId" label="用户ID" width="100" />
             <el-table-column prop="maskedPhone" label="手机号" width="130" />
@@ -68,6 +71,9 @@
             <el-table-column prop="updatedAt" label="更新时间" width="170" sortable>
               <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
             </el-table-column>
+            <template #append>
+              <span :id="saveCaptionId" class="sr-only">玩家存档列表</span>
+            </template>
           </el-table>
           <el-pagination
             v-model:current-page="saveListQuery.page"
@@ -116,6 +122,7 @@
             <el-button size="small" @click="fetchScores">重试</el-button>
           </div>
           <el-table
+            ref="scoreTableRef"
             v-else
             v-loading="scoreListLoading"
             :data="scoreList"
@@ -123,6 +130,8 @@
             stripe
             aria-label="玩家成绩列表"
             empty-text="暂无数据，试试调整筛选条件"
+            :aria-describedby="scoreCaptionId"
+            @sort-change="onScoreSortChange"
           >
             <el-table-column prop="userId" label="用户ID" width="100" />
             <el-table-column prop="maskedPhone" label="手机号" width="130" />
@@ -147,6 +156,9 @@
             <el-table-column prop="lastPlayedAt" label="最近上报" width="170" sortable>
               <template #default="{ row }">{{ formatTime(row.lastPlayedAt) }}</template>
             </el-table-column>
+            <template #append>
+              <span :id="scoreCaptionId" class="sr-only">玩家成绩列表</span>
+            </template>
           </el-table>
           <el-pagination
             v-model:current-page="scoreListQuery.page"
@@ -173,6 +185,19 @@ import { getGameSaves, getGameScores } from '@/api/gameData';
 import { useTableList } from '@/composables/useTableList';
 import { formatTime } from '@/utils/format';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const saveTableRef = ref(null);
+const scoreTableRef = ref(null);
+
+const { captionId: saveCaptionId, onSortChange: onSaveSortChange } = useTableA11y(
+  'player-save',
+  saveTableRef
+);
+const { captionId: scoreCaptionId, onSortChange: onScoreSortChange } = useTableA11y(
+  'player-score',
+  scoreTableRef
+);
 
 defineOptions({ name: 'PlayerData' });
 

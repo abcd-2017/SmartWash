@@ -82,6 +82,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="gameList"
@@ -92,6 +93,8 @@
           hasGameFilter ? '暂无数据，试试调整筛选条件' : '还没有游戏，点击右上角上传或批量导入开始'
         "
         @selection-change="handleSelectionChange"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column type="selection" width="42" />
         <el-table-column label="游戏" min-width="220">
@@ -195,6 +198,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">游戏列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -751,6 +757,11 @@ import {
   gameSourceTypeTagType,
   gameColorHex,
 } from '@/constants/dict';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('game-list', tableRef);
 
 // 行内防连点状态
 const togglingId = ref(null);

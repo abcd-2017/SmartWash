@@ -78,6 +78,7 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="list"
@@ -85,6 +86,8 @@
         highlight-current-row
         aria-label="订阅列表"
         empty-text="暂无订阅记录"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column label="订阅ID" min-width="90">
           <template #default="{ row }">{{ row.subscriptionId ?? row.id ?? '-' }}</template>
@@ -131,6 +134,9 @@
         <el-table-column prop="createdAt" label="创建时间" min-width="170" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">订阅列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -166,6 +172,11 @@ import {
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('subscription-list', tableRef);
 
 const statusOptions = SUBSCRIPTION_STATUS_OPTIONS;
 
