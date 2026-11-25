@@ -41,6 +41,7 @@
           webkitdirectory
           multiple
           hidden
+          aria-label="选择包含菜谱 CSV 与封面图的父目录"
           @change="handleDirChosen"
         />
       </div>

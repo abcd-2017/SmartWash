@@ -25,6 +25,7 @@
       <el-upload
         drag
         accept=".json"
+        aria-label="上传 JSON 关卡文件"
         :auto-upload="false"
         :show-file-list="false"
         :on-change="handleFileChange"

@@ -74,7 +74,9 @@
                 :style="{
                   backgroundColor: workbenchEntryColorHex(row.color) + '1A',
                   color:
-                    'color-mix(in srgb, ' + workbenchEntryColorHex(row.color) + ' 42%, #0f172a)',
+                    'color-mix(in srgb, ' +
+                    workbenchEntryColorHex(row.color) +
+                    ' 42%, var(--text-primary))',
                 }"
               >
                 {{ workbenchEntryIconText(row.icon) }}
@@ -309,6 +311,7 @@
               class="cover-uploader"
               :show-file-list="false"
               accept="image/png,image/jpeg,image/webp"
+              aria-label="上传配图"
               :before-upload="handleCoverBeforeUpload"
               :http-request="handleCoverUpload"
             >

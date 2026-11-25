@@ -6,6 +6,10 @@
     :close-on-click-modal="false"
     @closed="resetState"
   >
+    <!-- 阶段切换播报：sr-only live region + 可聚焦阶段标题（读屏与键盘用户感知 input→preview→result） -->
+    <p class="sr-only" role="status" aria-live="polite">{{ stageAnnouncement }}</p>
+    <h3 ref="stageHeadingRef" class="sr-only" tabindex="-1">{{ stageHeading }}</h3>
+
     <!-- ==================== 输入态：下载模板 + 上传文件 ==================== -->
     <template v-if="stage === 'input'">
       <el-alert type="info" :closable="false" class="rule-tip">
@@ -36,6 +40,7 @@
       <el-upload
         drag
         accept=".xlsx,.csv"
+        aria-label="上传 Excel 或 CSV 文件"
         :auto-upload="false"
         :show-file-list="false"
         :on-change="handleFileChange"
@@ -110,20 +115,24 @@
             {{ nutritionSummaryText(row) || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="校验结果" width="140">
+        <el-table-column label="校验结果" width="110" align="center">
           <template #default="{ row }">
-            <el-tooltip v-if="row.errors.length" :content="row.errors.join('；')" placement="top">
-              <el-tag size="small" type="danger">校验失败</el-tag>
-            </el-tooltip>
+            <el-tag v-if="row.errors.length" size="small" type="danger">校验失败</el-tag>
             <!-- 行级警告（分类自动创建/封面对象键缺失/明细解析失败）不阻断导入，仅提示 -->
-            <el-tooltip
-              v-else-if="row.warnings && row.warnings.length"
-              :content="row.warnings.join('；')"
-              placement="top"
-            >
-              <el-tag size="small" type="warning">有警告</el-tag>
-            </el-tooltip>
+            <el-tag v-else-if="row.warnings && row.warnings.length" size="small" type="warning">
+              有警告
+            </el-tag>
             <el-tag v-else size="small" type="success">通过</el-tag>
+          </template>
+        </el-table-column>
+        <!-- 错误/警告原因可见列：不再只挂在不可聚焦的 tooltip 上，键盘与读屏可直接读到 -->
+        <el-table-column label="原因" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span v-if="row.errors.length" class="cell-error">{{ row.errors.join('；') }}</span>
+            <span v-else-if="row.warnings && row.warnings.length" class="cell-warning">{{
+              row.warnings.join('；')
+            }}</span>
+            <span v-else class="text-muted">—</span>
           </template>
         </el-table-column>
         <template #append>
@@ -201,7 +210,7 @@
 
 <script setup>
 import { friendlyErrorMessage } from '@/utils/errors';
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
 import {
@@ -250,6 +259,16 @@ const resetState = () => {
 
 watch(visible, (v) => {
   if (v) resetState();
+});
+
+// 阶段切换的可访问性：live region 播报 + 焦点移到阶段标题（tabindex=-1 的 sr-only 标题）
+const stageHeadingRef = ref(null);
+const STAGE_HEADINGS = { input: '上传文件', preview: '解析预览', result: '导入结果' };
+const stageHeading = computed(() => STAGE_HEADINGS[stage.value] || '');
+const stageAnnouncement = computed(() => `当前阶段：${stageHeading.value}`);
+watch(stage, async () => {
+  await nextTick();
+  stageHeadingRef.value?.focus();
 });
 
 const handleDownloadTemplate = async () => {
@@ -404,6 +423,12 @@ const handleSubmit = async () => {
 .text-muted {
   color: var(--el-text-color-secondary);
   font-size: 12px;
+}
+.cell-error {
+  color: var(--el-color-danger);
+}
+.cell-warning {
+  color: var(--el-color-warning);
 }
 .step-actions {
   display: flex;

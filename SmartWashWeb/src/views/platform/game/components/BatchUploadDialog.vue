@@ -35,6 +35,7 @@
           webkitdirectory
           multiple
           hidden
+          aria-label="选择包含多个游戏目录的父目录"
           @change="handleDirChosen"
         />
       </div>

@@ -52,7 +52,7 @@
             </el-tooltip>
           </template>
           <template #default="{ row }">
-            <el-tag type="info" effect="plain">{{ row.sort }}</el-tag>
+            <span class="sort-value">{{ row.sort }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" min-width="160" sortable>
@@ -293,6 +293,12 @@ const handleDelete = async (row) => {
 .category-name {
   color: var(--text-primary);
   font-weight: 500;
+}
+
+/* 排序值走纯文本 + 等宽数字（数字等宽规则），不再用状态标签承载纯数字 */
+.sort-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
 }
 
 .form-tip-inline {

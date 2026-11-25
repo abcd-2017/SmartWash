@@ -118,7 +118,7 @@
           <template #default="{ row }">
             <template v-if="row.ingredients && row.ingredients.length">
               <el-tag
-                v-for="ing in row.ingredients.slice(0, 3)"
+                v-for="ing in visibleIngredients(row)"
                 :key="ing"
                 size="small"
                 type="info"
@@ -127,9 +127,20 @@
               >
                 {{ ing }}
               </el-tag>
-              <span v-if="row.ingredients.length > 3" class="text-muted">
-                +{{ row.ingredients.length - 3 }}
-              </span>
+              <button
+                v-if="row.ingredients.length > 3"
+                type="button"
+                class="ingredient-more"
+                :aria-expanded="isIngredientExpanded(row)"
+                :aria-label="
+                  isIngredientExpanded(row)
+                    ? `收起剩余 ${row.ingredients.length - 3} 个食材`
+                    : `展开剩余 ${row.ingredients.length - 3} 个食材`
+                "
+                @click="toggleIngredients(row)"
+              >
+                {{ isIngredientExpanded(row) ? '收起' : `+${row.ingredients.length - 3}` }}
+              </button>
             </template>
             <span v-else class="text-muted">-</span>
           </template>
@@ -414,6 +425,22 @@ const dialogType = ref('create');
 const submitting = ref(false); // 确认按钮 loading，防连点
 const deletingId = ref(null); // 行内删除按钮 loading，防连点
 const statusSwitchingId = ref(null); // 行内上下架开关 loading，防连点
+
+// 食材「+N」展开：纯文本 +N 不可聚焦、读屏读不到完整食材，改为可点击 disclosure
+const expandedIngredientKeys = ref(new Set());
+const ingredientRowKey = (row) => row.id ?? row.name;
+const isIngredientExpanded = (row) => expandedIngredientKeys.value.has(ingredientRowKey(row));
+const toggleIngredients = (row) => {
+  const key = ingredientRowKey(row);
+  const next = new Set(expandedIngredientKeys.value);
+  if (next.has(key)) next.delete(key);
+  else next.add(key);
+  expandedIngredientKeys.value = next;
+};
+const visibleIngredients = (row) => {
+  const list = row.ingredients || [];
+  return isIngredientExpanded(row) ? list : list.slice(0, 3);
+};
 
 // 批量导入弹窗可见性（导入成功后由对话框 emit success → fetchData 刷新列表）
 const importDialogVisible = ref(false);
@@ -753,6 +780,29 @@ const handleDelete = async (row) => {
 
 .ingredient-tag {
   margin-right: 4px;
+}
+
+/* 食材展开/收起：可聚焦 disclosure，触控目标 ≥22px，focus-visible 走靛蓝 outline */
+.ingredient-more {
+  padding: 1px 4px;
+  min-height: 22px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.ingredient-more:hover {
+  background: var(--primary-tint);
+}
+
+.ingredient-more:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* 封面缩略图：固定尺寸保持行高稳定 */
