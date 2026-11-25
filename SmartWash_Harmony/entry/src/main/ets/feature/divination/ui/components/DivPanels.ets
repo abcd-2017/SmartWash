@@ -15,8 +15,10 @@ import { QiMenChart } from '../../core/qimen/QiMenChart'
 import { LiuRenChart, LiuRenCourse } from '../../core/liuren/LiuRenChart'
 import { Trigram } from '../../core/DivinationCommon'
 import { MotionTiming } from '../../../../constant/DesignSystem'
+import { DarkModeStore } from '../../../../constant/DarkModeStore'
 import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import { resolveArgb } from '../../../../utils/ResourceColor'
+import { divIsDark } from '../../../../constant/DivTheme'
 import {
   DivCard,
   DivPalette,
@@ -25,7 +27,6 @@ import {
 } from './DivComponents'
 import { resString } from '../../../../utils/ResourceString'
 
-@Builder
 @Builder
 function emptyContent() {
 }
@@ -63,7 +64,7 @@ const YAO_STAGGER_MS: number = 60
 
 /** 爻线段（draw-on 进度 0..1 控制展开宽度） */
 @Builder
-function YaoSegment(progress: number) {
+function YaoSegment(progress: number, moving: boolean) {
   Column() {
     Column()
       .width(`${Math.round(progress * 100)}%`)
@@ -71,7 +72,10 @@ function YaoSegment(progress: number) {
       .borderRadius(2)
       .linearGradient({
         direction: GradientDirection.Right,
-        colors: [[DivPalette.yaoTop, 0.0], [DivPalette.yaoBottom, 1.0]]
+        // 动爻玄墨侧整段鎏金 goldHi，宣纸侧与静爻同为墨（对齐安卓 PanComponents.YaoBar）
+        colors: moving && divIsDark()
+          ? [[DivPalette.goldHi, 0.0], [DivPalette.goldHi, 1.0]]
+          : [[DivPalette.yaoTop, 0.0], [DivPalette.yaoBottom, 1.0]]
       })
   }
   .width('100%')
@@ -80,12 +84,12 @@ function YaoSegment(progress: number) {
 
 /** 爻线：阳爻六段、阴爻两组四段（3/3/中缝2/3/3 权重，随槽宽自适应居中） */
 @Builder
-function YaoBar(yang: boolean, progress: number) {
+function YaoBar(yang: boolean, progress: number, moving: boolean) {
   if (yang) {
     Row({ space: 2 }) {
       ForEach([0, 1, 2, 3, 4, 5], (item: number) => {
         Column() {
-          YaoSegment(progress)
+          YaoSegment(progress, moving)
         }
         .layoutWeight(1)
       }, (item: number) => item.toString())
@@ -94,21 +98,21 @@ function YaoBar(yang: boolean, progress: number) {
   } else {
     Row() {
       Column() {
-        YaoSegment(progress)
+        YaoSegment(progress, moving)
       }
       .layoutWeight(3)
       Column() {
-        YaoSegment(progress)
+        YaoSegment(progress, moving)
       }
       .layoutWeight(3)
       Column()
         .layoutWeight(2)
       Column() {
-        YaoSegment(progress)
+        YaoSegment(progress, moving)
       }
       .layoutWeight(3)
       Column() {
-        YaoSegment(progress)
+        YaoSegment(progress, moving)
       }
       .layoutWeight(3)
     }
@@ -170,7 +174,7 @@ struct LiuYaoRow {
 
         // 爻象（权重自适应）
         Column() {
-          YaoBar(this.line.yao.isYang, this.revealed)
+          YaoBar(this.line.yao.isYang, this.revealed, this.line.yao.isMoving)
         }
         .layoutWeight(1)
 
@@ -183,7 +187,8 @@ struct LiuYaoRow {
             textSize: 12,
             weight: 400,
             spacing: 0,
-            color: DivPalette.textPrimary,
+            // 动爻玄墨侧整串鎏金 goldHi，宣纸侧与静爻同为墨（对齐安卓 PanComponents 六亲行）
+            color: this.line.yao.isMoving && divIsDark() ? DivPalette.goldHi : DivPalette.textPrimary,
             maxLines: 1,
             lineHeight: 24
           })
@@ -193,7 +198,8 @@ struct LiuYaoRow {
               textSize: 12,
               weight: 400,
               spacing: 0,
-              color: DivPalette.textPrimary
+              // 与六亲行同色：动爻玄墨侧鎏金
+              color: this.line.yao.isMoving && divIsDark() ? DivPalette.goldHi : DivPalette.textPrimary
             })
               .scale({ x: this.markScale, y: this.markScale })
           }
@@ -611,9 +617,17 @@ const LIUREN_SIZE: number = 228
 @ComponentV2
 export struct LiurenPan {
   @Param chart: LiuRenChart | null = null
+  // 画布色令牌在 draw() 内直读 DivPalette：深浅色切换（含 EntryAbility 未重建的实时路径）
+  // 经 @Local 持有的 DarkModeStore @Trace 触发重绘（机制见 constant/DivTheme.ets 头注）
+  @Local darkStore: DarkModeStore = DarkModeStore.getInstance()
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
 
   aboutToAppear(): void {
+    this.draw()
+  }
+
+  @Monitor('darkStore.dark')
+  onDarkChanged(): void {
     this.draw()
   }
 

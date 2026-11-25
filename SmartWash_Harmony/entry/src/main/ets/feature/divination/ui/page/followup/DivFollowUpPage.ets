@@ -26,6 +26,7 @@ import {
   divReduceMotion
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
+import { divIsDark } from '../../../../../constant/DivTheme'
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { DesignDimens, DesignElevation } from '../../../../../constant/DesignSystem'
 import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
@@ -109,9 +110,14 @@ struct ChatBubbleView {
         })
         .borderRadius(16)
         .backgroundColor(DivPalette.surface)
-        // 回复气泡 = 卡面：1px 发丝描边 + level1 轻阴影（宣纸侧）
-        .shadow({
+        // 回复气泡 = 卡面：1px 发丝描边 + level1 轻阴影（仅宣纸侧，对齐安卓 if (isUser || c.isDark) 无投影）
+        .shadow(divIsDark() ? {
           // 回复气泡卡面阴影 blur 12（对齐安卓 softCardShadow，compare-15 #52）
+          radius: 0,
+          color: Color.Transparent,
+          offsetX: 0,
+          offsetY: 0
+        } : {
           radius: DesignElevation.CARD_SHADOW_RADIUS,
           color: $r('app.color.SHADOW_COLOR_CARD'),
           offsetX: 0,

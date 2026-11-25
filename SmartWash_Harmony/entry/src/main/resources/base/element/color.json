@@ -639,6 +639,38 @@
     {
       "name": "DIV_GOLD_GRADIENT_END",
       "value": "#FFC9A961"
+    },
+    {
+      "name": "DIV_SEAL_TEXT",
+      "value": "#FFEFE9DA"
+    },
+    {
+      "name": "DIV_ON_GOLD_38",
+      "value": "#61151412"
+    },
+    {
+      "name": "DIV_GOLD_90_LIGHT",
+      "value": "#E68F7233"
+    },
+    {
+      "name": "DIV_GOLD_90_DARK",
+      "value": "#E6C9A961"
+    },
+    {
+      "name": "DIV_GOLD_50_LIGHT",
+      "value": "#808F7233"
+    },
+    {
+      "name": "DIV_GOLD_50_DARK",
+      "value": "#80C9A961"
+    },
+    {
+      "name": "DIV_COMPASS_TEXT_LIGHT",
+      "value": "#BF1C1C1E"
+    },
+    {
+      "name": "DIV_COMPASS_TEXT_DARK",
+      "value": "#BFC9A961"
     }
   ]
 }

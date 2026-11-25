@@ -454,8 +454,8 @@ struct DivCastPage {
               .width(YAO_LINE_WIDTH)
               .height(YAO_LINE_HEIGHT)
               .borderRadius(1)
-              // 动爻强调：宣纸侧平涂深朱 sealDeep #A63A30（对齐安卓 CoinAndMeridian.kt:251，compare-15 #15）
-              .backgroundColor(data.isMoving ? DivPalette.sealDeep : DivPalette.textPrimary)
+              // 动爻强调：宣纸平涂深朱 sealDeep #A63A30 / 玄墨亮金 goldHi（对齐安卓 CoinAndMeridian.kt:251，compare-15 #15）
+              .backgroundColor(data.isMoving ? DivPalette.movingYaoColor : DivPalette.textPrimary)
           } else {
             // 阴爻：两条 20×6 + 8 中缝（合计 48，关于中列中心对称）
             Row({ space: YAO_YIN_SEGMENT_GAP }) {
@@ -463,12 +463,12 @@ struct DivCastPage {
                 .width(YAO_YIN_SEGMENT_WIDTH)
                 .height(YAO_LINE_HEIGHT)
                 .borderRadius(1)
-                .backgroundColor(data.isMoving ? DivPalette.sealDeep : DivPalette.textPrimary)
+                .backgroundColor(data.isMoving ? DivPalette.movingYaoColor : DivPalette.textPrimary)
               Column()
                 .width(YAO_YIN_SEGMENT_WIDTH)
                 .height(YAO_LINE_HEIGHT)
                 .borderRadius(1)
-                .backgroundColor(data.isMoving ? DivPalette.sealDeep : DivPalette.textPrimary)
+                .backgroundColor(data.isMoving ? DivPalette.movingYaoColor : DivPalette.textPrimary)
             }
           }
         } else {
@@ -494,7 +494,7 @@ struct DivCastPage {
             textSize: 12,
             weight: 400,
             spacing: 0,
-            color: data.isMoving ? DivPalette.sealDeep : DivPalette.textSecondary,
+            color: data.isMoving ? DivPalette.movingYaoColor : DivPalette.textSecondary,
             maxLines: 1
           })
             .layoutWeight(1)
