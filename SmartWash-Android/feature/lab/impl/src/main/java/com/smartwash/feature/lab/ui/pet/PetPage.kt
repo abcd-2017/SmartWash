@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -120,7 +121,9 @@ fun PetPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.background),
+            .background(AppColors.colorScheme.background)
+            // 3 键导航下底部操作卡避让手势条
+            .navigationBarsPadding(),
     ) {
         PageHeader(
             title = stringResource(R.string.lab_pet_title),

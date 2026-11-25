@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -201,6 +202,8 @@ fun SandPage(
         modifier = Modifier
             .fillMaxSize()
             .background(scheme.background)
+            // 3 键导航下底部按钮/调色板避让手势条（对齐 Breath/Bubble 页）
+            .navigationBarsPadding()
     ) {
         PageHeader(
             title = stringResource(R.string.lab_sand_title),
@@ -308,7 +311,7 @@ fun SandPage(
 }
 
 /**
- * 元素调色板：9 元素两行（5 + 4）色块，选中态加粗品牌色描边。
+ * 元素调色板：9 元素按 [PALETTE_COLUMNS] 分块（3 列 → 3 行），选中态加粗品牌色描边。
  * 色块为颜色选择器（非功能图标），48dp 圆形 + 1dp 描边（DESIGN-SPEC §3 触控 ≥48dp），整块 pressable。
  */
 @Composable
@@ -328,8 +331,9 @@ private fun SandPalette(
             .padding(AppDimens.cardPadding),
         verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
     ) {
-        PaletteRow(elements.take(PALETTE_COLUMNS), selected, onSelect)
-        PaletteRow(elements.drop(PALETTE_COLUMNS), selected, onSelect)
+        elements.chunked(PALETTE_COLUMNS).forEach { row ->
+            PaletteRow(row, selected, onSelect)
+        }
     }
 }
 
