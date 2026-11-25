@@ -1,6 +1,17 @@
 <template>
   <div class="navbar">
     <div class="left">
+      <!-- 窄屏专属菜单按钮：切换侧栏抽屉（桌面隐藏，见下方媒体查询） -->
+      <button
+        class="menu-btn"
+        type="button"
+        :aria-label="sidebarOpen ? '关闭导航菜单' : '打开导航菜单'"
+        aria-controls="app-sidebar"
+        :aria-expanded="sidebarOpen"
+        @click="$emit('toggle-sidebar')"
+      >
+        <el-icon><Menu /></el-icon>
+      </button>
       <el-breadcrumb separator="/">
         <el-breadcrumb-item v-if="route.path !== '/'" :to="{ path: '/' }">首页</el-breadcrumb-item>
         <el-breadcrumb-item>{{ currentRouteName }}</el-breadcrumb-item>
@@ -30,11 +41,16 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { SwitchButton } from '@element-plus/icons-vue';
+import { SwitchButton, Menu } from '@element-plus/icons-vue';
 import { getCurrentAdminUser } from '@/api/adminUser';
 import { useAuthStore } from '@/stores/auth';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+
+defineProps({
+  sidebarOpen: { type: Boolean, default: false },
+});
+defineEmits(['toggle-sidebar']);
 
 const route = useRoute();
 const router = useRouter();
@@ -96,6 +112,47 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   flex-shrink: 0;
+}
+
+/* 菜单按钮桌面隐藏，仅窄屏显示 */
+.menu-btn {
+  display: none;
+}
+
+/* 窄屏（≤ --bp-mobile 768px）：顶栏内边距收敛，腾出抽屉开关位 */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 12px;
+  }
+
+  .menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    margin-right: 8px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-body);
+    cursor: pointer;
+    transition:
+      background-color var(--motion-fast) var(--ease-standard),
+      color var(--motion-fast) var(--ease-standard);
+  }
+
+  .menu-btn:hover {
+    background-color: var(--primary-tint);
+    color: var(--color-primary);
+  }
+
+  .menu-btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
 }
 
 /* 面包屑改 flex 布局以便收缩：非末项不缩，末项单行省略 */

@@ -79,12 +79,13 @@
             <div class="stat-icon stat-icon--amber">
               <el-icon><User /></el-icon>
             </div>
-            <!-- 口径说明：activeUsers 为每日每方法明细求和，非去重用户数 -->
+            <!-- 口径说明：activeUsers 为每日每方法明细求和，非去重用户数。
+                 tabindex=0 让 EP tooltip 在键盘聚焦时也能唤起（原 hover-only） -->
             <el-tooltip
               content="按日按方法累计：同一用户跨方法/跨天会重复计入，非去重用户数"
               placement="top"
             >
-              <span class="stat-label stat-label--help">活跃人次</span>
+              <span class="stat-label stat-label--help" tabindex="0">活跃人次</span>
             </el-tooltip>
           </div>
           <div class="stat-value">{{ formatThousands(summary.activeUsers) }}</div>

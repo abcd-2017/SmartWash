@@ -633,3 +633,13 @@ a:focus-visible {
 ::selection {
   background: rgba(99, 102, 241, 0.2);
 }
+
+/* ========== 响应式：窄屏（≤ --bp-mobile 768px） ========== */
+
+/* 表格外层允许横向滚动：窄屏下列数较多时不再挤压/撑破卡片，
+   宽表格在卡内横向滑动，桌面端无溢出时滚动条不出现 */
+@media (max-width: 768px) {
+  .table-card {
+    overflow-x: auto;
+  }
+}
