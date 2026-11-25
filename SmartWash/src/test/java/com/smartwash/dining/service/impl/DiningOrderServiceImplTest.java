@@ -134,6 +134,8 @@ class DiningOrderServiceImplTest {
                 dietaryPreferenceService);
         // 成员忌口聚合：默认空 Map（无忌口），避免详情组装 NPE
         when(dietaryPreferenceService.getAllergensByUserIds(any())).thenReturn(java.util.Map.of());
+        // submit 成员校验：默认视为本单成员（覆盖「非成员拒绝」用例时再 stub 0）
+        when(memberMapper.selectCount(any())).thenReturn(1L);
         // 快照封面直链：mock 按「端点/桶/键」拼（测试只断言字段存在与格式）
         when(minioConfig.urlOf(any())).thenAnswer(inv -> "http://minio.local/smartwash/" + inv.getArgument(0));
         // 在线状态批量读：mock ValueOperations.multiGet 返回空（无在线成员），避免 opsForValue() 为 null
@@ -380,10 +382,11 @@ class DiningOrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("submit：仅发起者可提交；非发起者拒绝")
-    void submit_notCreator_rejected() {
+    @DisplayName("submit：非成员拒绝（结束权=全体成员，但须是本单成员）")
+    void submit_notMember_rejected() {
         when(orderMapper.selectForUpdate(ORDER_ID)).thenReturn(order(ORDER_ID, "DRAFT", "tok", 0, CREATOR));
-        expectBusinessException("仅发起者可提交点单",
+        when(memberMapper.selectCount(any())).thenReturn(0L);
+        expectBusinessException("仅订单成员可提交点单",
                 () -> service.submit(ORDER_ID, submitFrom("标题", 0L), JOINER));
         verify(orderMapper, never()).update(any(), any(Wrapper.class));
     }

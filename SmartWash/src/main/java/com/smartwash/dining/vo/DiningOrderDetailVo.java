@@ -42,6 +42,9 @@ public class DiningOrderDetailVo {
 
     private List<OrderMember> members;
 
+    /** 当前请求用户是否为本单发起者（端上据此切换提交确认文案：发起者 / 代发起者） */
+    private Boolean amICreator;
+
     private LocalDateTime finishedAt;
 
     /** 购买清单快照 JSON 文本（submit 提交时写入，草稿期为 null） */

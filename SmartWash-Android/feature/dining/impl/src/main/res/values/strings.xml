@@ -174,6 +174,11 @@
     <string name="dining_order_error_menu_empty">至少勾选一道菜</string>
     <string name="dining_order_error_menu_too_many">菜品数量过多（上限 100 道）</string>
     <string name="dining_order_create_result_invalid">提交结果异常，请重试</string>
+    <!-- 结束点单二次确认（结束权=全体成员：发起者 / 成员文案区分） -->
+    <string name="dining_order_submit_confirm_title">结束点单</string>
+    <string name="dining_order_submit_confirm_creator">结束后将锁定点单并生成购买清单，确定结束吗？</string>
+    <string name="dining_order_submit_confirm_member">将代发起者结束点单并生成购买清单，确定吗？</string>
+    <string name="dining_order_submit_confirm_yes">结束点单</string>
 
     <!-- 订单分享视图 -->
     <string name="dining_order_share_title">订单分享</string>

@@ -175,9 +175,9 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
         if (order == null) {
             throw new CustomExceptions("点单不存在");
         }
-        if (!Objects.equals(order.getCreatorUserId(), userId)) {
-            throw new CustomExceptions("仅发起者可提交点单");
-        }
+        // 结束权 = 全体成员：任何成员均可提交（「大家一起点、点完就结束」），
+        // 防误触由端上二次确认 + 菜单/标题校验 + version 乐观锁兜底
+        requireMember(orderId, userId, "仅订单成员可提交点单");
         // 幂等：已结束直接返回库内原快照，不重复聚合、不改 finished_at
         if (DiningOrderStatus.FINISHED.getCode().equals(order.getStatus())) {
             return toFinishVo(order);
@@ -253,10 +253,14 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
             throw new CustomExceptions("点单状态已变更，请刷新后重试");
         }
         // 仅本次真正完成 DRAFT→FINISHED 流转才发通知：已结束幂等返回与并发窗口都不重复打扰全体成员
+        // 结束通知内容带提交人（成员代提交时发起者也能知道是谁拍的板；标题保持稳定）
+        Users submitter = usersMapper.selectById(userId);
+        String submitterLabel = submitter == null ? "" : maskPhone(submitter.getPhoneNumber());
         noticeService.publishTargeted(
                 NoticeType.DINING_FINISH,
                 "「" + title + "」已结束点单",
-                "购买清单已生成，点击查看",
+                submitterLabel.isBlank() ? "购买清单已生成，点击查看"
+                        : submitterLabel + " 结束了点单，购买清单已生成，点击查看",
                 buildOrderDeepLink(orderId, order.getJoinToken()),
                 listNoticeReceivers(orderId, order.getCreatorUserId(), null));
         log.info("提交点单, orderId: {}, userId: {}, 标题: {}, 菜品数: {}", orderId, userId, title, recipeIds.size());
@@ -480,7 +484,9 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
                 // 加入凭证仅发起者可见：发起者从列表/详情可再次生成二维码，
                 // 参与者响应不带 token（旧二维码泄露面收敛在创建响应与发起者详情两处）
                 .setJoinToken(order.getCreatorUserId() != null
-                        && order.getCreatorUserId().equals(userId) ? order.getJoinToken() : null);
+                        && order.getCreatorUserId().equals(userId) ? order.getJoinToken() : null)
+                .setAmICreator(order.getCreatorUserId() != null
+                        && order.getCreatorUserId().equals(userId));
 
         // 本单菜单 + 菜谱名称/分类（端上按分类组织左侧分类栏）
         List<DiningOrderMenu> menus = menuMapper.selectList(new LambdaQueryWrapper<DiningOrderMenu>()

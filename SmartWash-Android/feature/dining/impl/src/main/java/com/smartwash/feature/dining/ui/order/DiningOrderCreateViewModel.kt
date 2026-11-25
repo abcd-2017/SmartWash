@@ -225,6 +225,10 @@ class DiningOrderCreateViewModel @Inject constructor(
     private val _formError = MutableStateFlow<DiningOrderFormError?>(null)
     val formError = _formError.asStateFlow()
 
+    /** 当前用户是否本单发起者（详情下发，供提交确认文案区分发起者 / 代发起者） */
+    private val _amICreator = MutableStateFlow(false)
+    val amICreator = _amICreator.asStateFlow()
+
     /** 表单错误 → 文案 res（UI 层映射，纯逻辑枚举不持有文案） */
     fun errorRes(error: DiningOrderFormError): Int = when (error) {
         DiningOrderFormError.TITLE_REQUIRED -> R.string.dining_order_error_title_required
@@ -366,6 +370,7 @@ class DiningOrderCreateViewModel @Inject constructor(
         val menu = detail.safeMenu.map { it.safeRecipeId }.filter { it > 0L }.toSet()
         draftMenu.onInitialSnapshot(detail.safeVersion, menu)
         _title.value = detail.safeTitle
+        _amICreator.value = detail.safeAmICreator
         _selectedRecipeIds.value = menu
         _selectedRecipes.value = _recipes.value.filter { it.safeId in menu }.associateBy { it.safeId }
     }
@@ -782,6 +787,7 @@ class DiningOrderCreateViewModel @Inject constructor(
         return try {
             val detail = diningRepository.getOrderDetail(draftMenu.orderId)
             draftMenu.onServerSnapshot(detail.safeVersion, detail.safeMenu.map { it.safeRecipeId }.toSet())
+            _amICreator.value = detail.safeAmICreator
             syncSelectedRecipesFromMenu()
             true
         } catch (e: CancellationException) {
@@ -813,6 +819,7 @@ class DiningOrderCreateViewModel @Inject constructor(
         pollJob = viewModelScope.launch {
             syncChannel.subscribe(id, draftMenu.serverVersion).collect { detail ->
                 if (detail.safeUnchanged) return@collect
+                _amICreator.value = detail.safeAmICreator
                 draftWriteMutex.withLock {
                     draftMenu.onServerSnapshot(
                         detail.safeVersion,

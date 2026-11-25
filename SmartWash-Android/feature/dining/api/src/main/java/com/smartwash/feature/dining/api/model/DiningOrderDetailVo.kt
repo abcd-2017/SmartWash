@@ -32,6 +32,8 @@ data class DiningOrderDetailVo(
     /** 本单菜单（发起者编排的选菜范围，按加入菜单顺序；端上按分类组织左侧分类栏） */
     val menu: List<MenuRecipe>? = null,
     val members: List<OrderMember>? = null,
+    /** 当前请求用户是否为本单发起者（端上据此切换提交确认文案：发起者 / 代发起者） */
+    val amICreator: Boolean? = null,
     /** 结束时间（进行中为 null，ISO 字符串原文） */
     val finishedAt: String? = null,
     /** 购买清单快照 JSON 文本（结束时写入，进行中为 null；结束结果页为后续票消费） */
@@ -50,6 +52,7 @@ data class DiningOrderDetailVo(
     val safeCreatorUserId: Long get() = creatorUserId ?: 0L
     val safeMenu: List<MenuRecipe> get() = menu.orEmpty()
     val safeMembers: List<OrderMember> get() = members.orEmpty()
+    val safeAmICreator: Boolean get() = amICreator == true
     val safeJoinToken: String get() = joinToken.orEmpty()
     /** 结束时间展示原文（进行中为空串；ISO 原文，格式化由映射层处理） */
     val safeFinishedAt: String get() = finishedAt.orEmpty()

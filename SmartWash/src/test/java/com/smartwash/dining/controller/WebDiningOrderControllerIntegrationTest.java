@@ -324,17 +324,17 @@ class WebDiningOrderControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("submit 守卫：非发起者拒绝 / version 冲突 409 / 重复提交幂等")
+    @DisplayName("submit 守卫：非成员拒绝 / version 冲突 409 / 重复提交幂等")
     void submit_guards() throws Exception {
         long orderId = createDraft(creatorToken, "守卫草稿", "[101]");
 
-        // 非发起者（未加入的 joiner）
+        // 非成员（未加入的 joiner）
         mockMvc.perform(post(BASE + "/{id}/submit", orderId)
                         .header("Authorization", "Bearer " + joinerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"越权\",\"version\":0}"))
                 .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("仅发起者可提交点单"));
+                .andExpect(jsonPath("$.message").value("仅订单成员可提交点单"));
 
         // version 冲突：先加菜把 version 推到 1，再用旧 version=0 提交 → 409
         mockMvc.perform(post(BASE + "/{id}/dishes", orderId)
@@ -844,23 +844,21 @@ class WebDiningOrderControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("提交点单：非发起者拒绝；提交后加菜/移除/放弃均拒绝")
+    @DisplayName("提交点单：成员亦可提交；提交后加菜/移除/放弃均拒绝")
     void submit_guardsAndFinishedWriteRejection() throws Exception {
         long orderId = createDraft(creatorToken, "守卫单", "[101]");
         joinOrder(joinerToken, orderId);
 
-        // 非发起者提交：拒绝
+        // 成员提交：成功（结束权=全体成员）
         mockMvc.perform(post(BASE + "/{id}/submit", orderId)
                         .header("Authorization", "Bearer " + joinerToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"越权\",\"version\":0}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(201))
-                .andExpect(jsonPath("$.message").value("仅发起者可提交点单"));
-        assertEquals("DRAFT", jdbcTemplate.queryForObject(
+                        .content("{\"title\":\"守卫单\",\"version\":0}"))
+                .andExpect(jsonPath("$.code").value(200));
+        assertEquals("FINISHED", jdbcTemplate.queryForObject(
                 "SELECT status FROM dining_order WHERE id = ?", String.class, orderId));
 
-        // 发起者提交
+        // 发起者重复提交：幂等返回（version 不变）
         mockMvc.perform(post(BASE + "/{id}/submit", orderId)
                         .header("Authorization", "Bearer " + creatorToken)
                         .contentType(MediaType.APPLICATION_JSON)

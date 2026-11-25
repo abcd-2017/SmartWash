@@ -8,7 +8,7 @@
 //（菜单由后端整份复制，端上只校验标题）。
 // 提交成功 → replace 购买清单页（等价 Android popUpTo(OrderCreate)+navigate：返回直回列表）。
 
-import { KeyboardAvoidMode } from '@kit.ArkUI'
+import { KeyboardAvoidMode, promptAction } from '@kit.ArkUI'
 import { RouteNames } from '../../../constant/RouteNames'
 import { DesignDimens, DesignFontSize, DesignFontWeight, MotionAlpha, MotionScale, MotionTiming } from '../../../constant/DesignSystem'
 import { ReduceMotion } from '../../../utils/ReduceMotion'
@@ -428,7 +428,7 @@ struct DiningOrderCreatePage {
         text: DiningText.dining_order_create_submit,
         loading: this.submitting,
         click: () => {
-          this.submit()
+          this.confirmSubmit()
         }
       })
       .width(132)
@@ -1115,8 +1115,29 @@ struct DiningOrderCreatePage {
     }
   }
 
+  /** 结束点单二次确认（结束权=全体成员，防成员误触/抢先结束；确认后再走提交流程） */
+  private async confirmSubmit(): Promise<void> {
+    let confirmed = false
+    try {
+      const result = await promptAction.showDialog({
+        title: DiningText.dining_order_submit_confirm_title,
+        message: DiningText.dining_order_submit_confirm_message,
+        buttons: [
+          { text: DiningText.dining_order_submit_confirm_yes, color: $r('app.color.DANGER') },
+          { text: '取消', color: $r('app.color.TEXT_SECONDARY') }
+        ]
+      })
+      confirmed = result.index === 0
+    } catch (err) {
+      confirmed = false
+    }
+    if (confirmed) {
+      await this.submit()
+    }
+  }
+
   /**
-   * 提交订单（契约：发起者一步「提交」→ 订单直接结束并生成购买清单）：
+   * 提交订单（契约：全体成员均可「提交」→ 订单直接结束并生成购买清单）：
    * - 常规/草稿编辑：校验标题必填 + 菜单非空 → 冲刷草稿写 → submit（409 刷新重试）；
    * - 复用模式：校验标题 → create(fromOrderId) 复制菜单 → submit。
    * 成功后 replace 购买清单页（返回直回列表）。
