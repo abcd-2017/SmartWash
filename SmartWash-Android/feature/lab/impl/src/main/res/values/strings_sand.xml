@@ -8,6 +8,10 @@
     <string name="lab_sand_pause">暂停</string>
     <!-- 当前笔刷元素（%1$s = 元素名） -->
     <string name="lab_sand_current_format">当前：%1$s</string>
+    <!-- 画布无障碍：用途 + 当前元素（%1$s = 元素名） -->
+    <string name="lab_sand_canvas_description">落沙画布，当前元素：%1$s，拖动手指涂抹</string>
+    <string name="lab_sand_canvas_state_playing">播放中</string>
+    <string name="lab_sand_canvas_state_paused">已暂停</string>
 
     <!-- 调色板元素名 -->
     <string name="lab_sand_element_empty">橡皮</string>

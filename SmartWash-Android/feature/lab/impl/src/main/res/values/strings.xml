@@ -17,6 +17,9 @@
     <!-- 计数槽位（tnum）：已戳数 / 总数 -->
     <string name="lab_bubble_popped_format">已戳 %1$d / %2$d</string>
     <string name="lab_bubble_reset">再铺一张</string>
+    <!-- 画布无障碍：用途 + 当前进度 -->
+    <string name="lab_bubble_canvas_description">泡泡纸画布，点击戳破泡泡</string>
+    <string name="lab_bubble_canvas_state_format">已戳 %1$d / %2$d</string>
 
     <!-- ==================== 呼吸引导 ==================== -->
     <string name="lab_breath_title">呼吸引导</string>
@@ -40,6 +43,10 @@
     <string name="lab_fish_hint">按住吸引 · 长按驱散 · 双击炸开</string>
     <string name="lab_fish_play">播放</string>
     <string name="lab_fish_pause">暂停</string>
+    <!-- 画布无障碍：三种手势用途 + 播放/暂停状态 -->
+    <string name="lab_fish_canvas_description">鱼群水池，按住吸引鱼群，长按驱散，双击炸开</string>
+    <string name="lab_fish_canvas_state_playing">播放中</string>
+    <string name="lab_fish_canvas_state_paused">已暂停</string>
     <string name="lab_toy_sand">落沙实验室</string>
     <string name="lab_toy_sand_desc">倒水撒沙，看元素互相反应</string>
     <string name="lab_toy_fluid">指尖流体</string>

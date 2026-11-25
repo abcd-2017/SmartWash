@@ -35,6 +35,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -82,6 +87,14 @@ fun FluidPage(
 
     // 正常态恒播放；reduced motion 下由用户主动播放/暂停（静帧为默认）
     val effectivePlaying = if (reduceMotion) playing else true
+
+    // 无障碍：画布用途 + 当前配色预设 + 播放/暂停状态
+    val presetLabel = stringResource(preset.labelRes())
+    val canvasDescription = stringResource(R.string.lab_fluid_canvas_description, presetLabel)
+    val canvasState = stringResource(
+        if (effectivePlaying) R.string.lab_fluid_canvas_state_playing
+        else R.string.lab_fluid_canvas_state_paused
+    )
 
     // 令牌色在组合层映射为渲染层可用的 RGB（渲染层不写死色值）
     val isDark = isSystemInDarkTheme()
@@ -160,7 +173,13 @@ fun FluidPage(
         ) {
             AndroidView(
                 factory = { glView },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .semantics {
+                        contentDescription = canvasDescription
+                        role = Role.Button
+                        stateDescription = canvasState
+                    },
             )
             if (renderState.failed) {
                 Text(
@@ -261,6 +280,13 @@ private fun FirstRunHint(reduceMotion: Boolean, modifier: Modifier = Modifier) {
                 .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceXs),
         )
     }
+}
+
+/** 配色预设 → 文案资源（画布无障碍描述用） */
+private fun FluidPreset.labelRes(): Int = when (this) {
+    FluidPreset.OXYGEN_WATER -> R.string.lab_fluid_preset_oxygen
+    FluidPreset.FOAM_WHITE -> R.string.lab_fluid_preset_foam
+    FluidPreset.WARM_SAND -> R.string.lab_fluid_preset_sand
 }
 
 /** 令牌色 → RGB 数组（渲染层只认 0..1 通道） */

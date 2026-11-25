@@ -34,6 +34,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -240,9 +245,17 @@ private fun BubbleSheet(
     val currentPoppedKeys by rememberUpdatedState(poppedKeys)
     // 令牌在组合层读取（Canvas 绘制块非 @Composable 上下文）
     val scheme = AppColors.colorScheme
+    // 无障碍：画布用途 + 当前戳破进度（TalkBack 播报状态）
+    val canvasDescription = stringResource(R.string.lab_bubble_canvas_description)
+    val canvasState = stringResource(
+        R.string.lab_bubble_canvas_state_format,
+        poppedKeys.size,
+        bubbles.size,
+    )
 
     Canvas(
-        modifier = modifier.pointerInput(cols, rows) {
+        modifier = modifier
+            .pointerInput(cols, rows) {
             detectTapGestures { offset ->
                 if (cols <= 0 || rows <= 0 || size.width <= 0 || size.height <= 0) {
                     return@detectTapGestures
@@ -264,6 +277,11 @@ private fun BubbleSheet(
                 onTapBubble(bubble)
             }
         }
+            .semantics {
+                contentDescription = canvasDescription
+                role = Role.Button
+                stateDescription = canvasState
+            }
     ) {
         if (cols <= 0 || rows <= 0) return@Canvas
         val cellW = size.width / cols.toFloat()

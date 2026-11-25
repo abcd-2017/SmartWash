@@ -13,4 +13,9 @@
     <string name="lab_star_map_night_vision_off">开启夜视模式</string>
     <!-- 选中天体星等（tnum 数字槽位） -->
     <string name="lab_star_map_magnitude_format">星等 %1$.1f</string>
+
+    <!-- 画布无障碍：用途 + 夜视状态 -->
+    <string name="lab_star_map_canvas_description">星空画布，转动手机环顾，点按星星查看名称与星等</string>
+    <string name="lab_star_map_canvas_night_vision_on">夜视模式已开启</string>
+    <string name="lab_star_map_canvas_night_vision_off">夜视模式已关闭</string>
 </resources>

@@ -44,8 +44,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -186,6 +189,14 @@ fun SandPage(
     val currentGrid by rememberUpdatedState(gridCols to gridRows)
     val currentCanvasSize by rememberUpdatedState(canvasSize)
 
+    // 无障碍：画布用途 + 当前笔刷元素 + 播放/暂停状态
+    val selectedLabel = stringResource(selected.labelRes())
+    val canvasDescription = stringResource(R.string.lab_sand_canvas_description, selectedLabel)
+    val canvasState = stringResource(
+        if (playing) R.string.lab_sand_canvas_state_playing
+        else R.string.lab_sand_canvas_state_paused
+    )
+
     /** 把指针位置换算为网格坐标并涂抹（圆形概率笔刷） */
     fun paintAt(position: Offset) {
         val (cols, rows) = currentGrid
@@ -244,6 +255,11 @@ fun SandPage(
                             onDrag = { change, _ -> paintAt(change.position) },
                         )
                     }
+                    .semantics {
+                        contentDescription = canvasDescription
+                        role = Role.Button
+                        stateDescription = canvasState
+                    }
             ) {
                 frameTick // 读取状态建立每帧重绘订阅
                 val img = imageBitmap ?: return@Canvas
@@ -281,7 +297,7 @@ fun SandPage(
             Text(
                 text = stringResource(
                     R.string.lab_sand_current_format,
-                    stringResource(selected.labelRes()),
+                    selectedLabel,
                 ),
                 style = MaterialTheme.typography.labelMedium,
                 color = scheme.textSecondary,

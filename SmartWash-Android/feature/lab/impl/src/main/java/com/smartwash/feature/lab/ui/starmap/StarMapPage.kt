@@ -145,6 +145,13 @@ fun StarMapPage(
     }
     val currentProjected by rememberUpdatedState(projected)
 
+    // 无障碍：画布用途 + 夜视模式状态
+    val canvasDescription = stringResource(R.string.lab_star_map_canvas_description)
+    val canvasState = stringResource(
+        if (state.nightVision) R.string.lab_star_map_canvas_night_vision_on
+        else R.string.lab_star_map_canvas_night_vision_off
+    )
+
     // 星点闪烁：全局呼吸因子（AnimationUtils vocabulary 的 ping-pong 无限循环）；
     // reduced motion 下直接定格 1f（常亮，且无逐帧重绘）。单星相位由名称散列错峰。
     val twinkle = remember { Animatable(1f) }
@@ -180,6 +187,11 @@ fun StarMapPage(
                             viewModel.clearSelection()
                         }
                     }
+                }
+                .semantics {
+                    contentDescription = canvasDescription
+                    role = Role.Image
+                    stateDescription = canvasState
                 },
         ) {
             // 夜空底：暗色令牌纵向微渐变（上深下略亮）
