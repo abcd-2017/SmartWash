@@ -113,6 +113,9 @@ class DiningOrderServiceImplTest {
     @Mock
     private StringRedisTemplate redisTemplate;
 
+    @Mock
+    private com.smartwash.dining.service.DietaryPreferenceService dietaryPreferenceService;
+
     private DiningOrderServiceImpl service;
 
     @BeforeAll
@@ -127,7 +130,10 @@ class DiningOrderServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new DiningOrderServiceImpl(memberMapper, menuMapper, itemMapper, recipeGate, usersMapper,
-                orderMapper, noticeService, minioConfig, streamer, inviteMapper, redisTemplate);
+                orderMapper, noticeService, minioConfig, streamer, inviteMapper, redisTemplate,
+                dietaryPreferenceService);
+        // 成员忌口聚合：默认空 Map（无忌口），避免详情组装 NPE
+        when(dietaryPreferenceService.getAllergensByUserIds(any())).thenReturn(java.util.Map.of());
         // 快照封面直链：mock 按「端点/桶/键」拼（测试只断言字段存在与格式）
         when(minioConfig.urlOf(any())).thenAnswer(inv -> "http://minio.local/smartwash/" + inv.getArgument(0));
         // 在线状态批量读：mock ValueOperations.multiGet 返回空（无在线成员），避免 opsForValue() 为 null

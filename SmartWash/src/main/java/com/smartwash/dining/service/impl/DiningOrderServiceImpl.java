@@ -25,6 +25,7 @@ import com.smartwash.dining.mapper.DiningOrderMapper;
 import com.smartwash.dining.mapper.DiningOrderMemberMapper;
 import com.smartwash.dining.mapper.DiningOrderMenuMapper;
 import com.smartwash.dining.service.DiningOrderService;
+import com.smartwash.dining.service.DietaryPreferenceService;
 import com.smartwash.dining.service.DiningRecipeGate;
 import com.smartwash.dining.stream.DiningOrderStreamer;
 import com.smartwash.dining.vo.DiningCollaboratorVo;
@@ -103,6 +104,9 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
 
     /** 在线状态心跳：key=dining:presence:{orderId}:{userId}，TTL 20s（仅 Redis，不落库） */
     private final StringRedisTemplate redisTemplate;
+
+    /** 饮食偏好：详情聚合本单成员忌口（同单可见，供点菜决策） */
+    private final DietaryPreferenceService dietaryPreferenceService;
 
     /** version 冲突业务码（HTTP 语义冲突） */
     private static final int VERSION_CONFLICT_CODE = 409;
@@ -500,13 +504,16 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
                         .setNote(item.getNote()))
                 .toList());
 
-        // 参与者（发起者标记 + 脱敏手机号/头像 + 在线状态）
+        // 参与者（发起者标记 + 脱敏手机号/头像 + 在线状态 + 忌口）
         List<DiningOrderMember> members = memberMapper.selectList(new LambdaQueryWrapper<DiningOrderMember>()
                 .eq(DiningOrderMember::getOrderId, orderId).orderByAsc(DiningOrderMember::getId));
         Map<Long, Users> profiles = loadUserProfiles(
                 members.stream().map(DiningOrderMember::getUserId).toList());
         // 在线状态一次批量读（multiGet），避免逐成员一次 Redis 往返
         Set<Long> onlineUserIds = loadOnlineUserIds(orderId,
+                members.stream().map(DiningOrderMember::getUserId).toList());
+        // 成员忌口批量取（同单可见，供发起者点菜时兼顾众口；无记录=空）
+        Map<Long, List<String>> allergenMap = dietaryPreferenceService.getAllergensByUserIds(
                 members.stream().map(DiningOrderMember::getUserId).toList());
         vo.setMembers(members.stream().map(member -> {
             Users user = profiles.get(member.getUserId());
@@ -515,7 +522,8 @@ public class DiningOrderServiceImpl extends ServiceImpl<DiningOrderMapper, Dinin
                     .setIsCreator(member.getUserId() != null && member.getUserId().equals(order.getCreatorUserId()))
                     .setPhoneMasked(user == null ? null : maskPhone(user.getPhoneNumber()))
                     .setAvatar(user == null ? null : user.getAvatar())
-                    .setOnline(onlineUserIds.contains(member.getUserId()));
+                    .setOnline(onlineUserIds.contains(member.getUserId()))
+                    .setAllergens(allergenMap.getOrDefault(member.getUserId(), List.of()));
         }).toList());
         return vo;
     }

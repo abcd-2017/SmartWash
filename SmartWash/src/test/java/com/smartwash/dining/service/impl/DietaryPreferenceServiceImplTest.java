@@ -20,6 +20,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -146,6 +147,29 @@ class DietaryPreferenceServiceImplTest {
         assertNull(updated.getCalorieTarget(), "null=恢复默认，必须写回 NULL");
         assertNull(updated.getSodiumTarget(), "null=恢复默认，必须写回 NULL");
         assertNull(updated.getAllergens(), "空忌口恢复为 NULL（无忌口）");
+    }
+
+    // ==================== 批量取成员忌口（点单详情聚合） ====================
+
+    @Test
+    @DisplayName("批量取成员忌口：按 userId 映射，无记录用户不入表")
+    void getAllergensByUserIds_mapsByUser() {
+        when(dietaryPreferenceMapper.selectList(any())).thenReturn(List.of(
+                new DietaryPreference().setUserId(1L).setAllergens("[\"SEAFOOD\"]"),
+                new DietaryPreference().setUserId(2L).setAllergens("[\"NUT\",\"SPICY\"]")));
+
+        Map<Long, List<String>> result = service.getAllergensByUserIds(List.of(1L, 2L, 3L));
+
+        assertEquals(List.of("SEAFOOD"), result.get(1L));
+        assertEquals(List.of("NUT", "SPICY"), result.get(2L));
+        assertNull(result.get(3L), "无记录用户不入表，端上按空忌口兜底");
+    }
+
+    @Test
+    @DisplayName("批量取成员忌口：空入参直接返回空 Map，不打库")
+    void getAllergensByUserIds_emptyInput() {
+        assertTrue(service.getAllergensByUserIds(List.of()).isEmpty());
+        assertTrue(service.getAllergensByUserIds(null).isEmpty());
     }
 
     @Test

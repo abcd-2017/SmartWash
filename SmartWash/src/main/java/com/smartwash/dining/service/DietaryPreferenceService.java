@@ -5,6 +5,9 @@ import com.smartwash.dining.entity.DietaryPreference;
 import com.smartwash.dining.from.DietaryPreferenceFrom;
 import com.smartwash.dining.vo.DietaryPreferenceVo;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * 用户饮食偏好服务（契约 §2.1，功能 1+2 合并）。
  * 一人一行：无记录 = 未设置（GET 返回 null 字段，端上兜底默认值）。
@@ -16,4 +19,10 @@ public interface DietaryPreferenceService extends IService<DietaryPreference> {
 
     /** 保存（upsert）：记录不存在则新建，存在则整行覆盖；字段 null=恢复默认 */
     void save(Long userId, DietaryPreferenceFrom from);
+
+    /**
+     * 批量取多个用户的忌口标签（无记录 = 空列表）。
+     * 供点单详情聚合本单成员忌口，避免逐成员查询。
+     */
+    Map<Long, List<String>> getAllergensByUserIds(List<Long> userIds);
 }

@@ -82,11 +82,14 @@ data class DiningOrderDetailVo(
         val avatar: String? = null,
         /** 是否在线（Redis 心跳 presence；轻量响应 members 为 null） */
         val online: Boolean? = null,
+        /** 该成员登记的忌口标签（SEAFOOD/NUT/...），无则空列表；同单可见供点菜参考 */
+        val allergens: List<String>? = null,
     ) {
         val safeUserId: Long get() = userId ?: 0L
         val safeIsCreator: Boolean get() = isCreator == true
         val safePhoneMasked: String get() = phoneMasked.orEmpty()
         val safeAvatar: String get() = avatar.orEmpty()
         val isOnline: Boolean get() = online == true
+        val safeAllergens: List<String> get() = allergens.orEmpty()
     }
 }

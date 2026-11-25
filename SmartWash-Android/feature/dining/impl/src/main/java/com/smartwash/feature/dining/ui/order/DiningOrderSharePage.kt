@@ -72,6 +72,7 @@ import com.smartwash.feature.dining.api.model.DiningCollaboratorVo
 import com.smartwash.feature.dining.api.model.DiningInviteVo
 import com.smartwash.feature.dining.api.model.DiningOrderDetailVo
 import com.smartwash.feature.dining.api.model.DiningOrderStatus
+import com.smartwash.feature.dining.logic.DiningAllergenGuard
 import com.smartwash.feature.dining.logic.DiningOrderShareDetail
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -235,6 +236,9 @@ private fun ShareContent(
     val status = detail?.status ?: DiningOrderStatus.DRAFT
     val menuCount = detail?.menuCount ?: 0
     val memberCount = detail?.memberCount ?: 0
+    val members = detail?.members.orEmpty()
+    // 本单成员忌口聚合（去重保序，不关联个人）——点菜兼顾众口
+    val memberAllergens = remember(members) { DiningAllergenGuard.summarizeMemberAllergens(members) }
 
     Column(
         modifier = Modifier
@@ -270,8 +274,19 @@ private fun ShareContent(
                 style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.textSecondary,
             )
+            if (memberAllergens.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+                Text(
+                    text = stringResource(
+                        R.string.dining_order_member_allergens_format,
+                        memberAllergens.joinToString("、") { allergenLabel(it, context) },
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.colorScheme.textSecondary,
+                )
+            }
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-            OnlineMemberStack(members = detail?.members.orEmpty())
+            OnlineMemberStack(members = members)
         }
         Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
@@ -340,6 +355,18 @@ private fun ShareContent(
             ),
         )
     }
+}
+
+/** 忌口码 → 中文标签（与设置页/警示条同源；未知码原样展示） */
+private fun allergenLabel(code: String, context: android.content.Context): String = when (code) {
+    "SEAFOOD" -> context.getString(R.string.dining_allergen_seafood)
+    "NUT" -> context.getString(R.string.dining_allergen_nut)
+    "GLUTEN" -> context.getString(R.string.dining_allergen_gluten)
+    "DAIRY" -> context.getString(R.string.dining_allergen_dairy)
+    "EGG" -> context.getString(R.string.dining_allergen_egg)
+    "SOY" -> context.getString(R.string.dining_allergen_soy)
+    "SPICY" -> context.getString(R.string.dining_allergen_spicy)
+    else -> code
 }
 
 /** 小状态色点 + 状态字（草稿 secondary 灰 / 已结束 success 绿 / 已取消 error 红；分享页只作信息展示） */
