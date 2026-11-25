@@ -190,8 +190,8 @@ const menuRoutes = computed(() => {
 const MENU_GROUP_CONFIG = [
   { title: '基础数据', icon: 'OfficeBuilding', paths: ['/schools', '/lockers', '/laundry'] },
   { title: '业务管理', icon: 'Files', paths: ['/orders', '/payment', '/recharge'] },
-  // 用户触达（站内信）与营销发券同属用户运营，不再各自成组
-  { title: '用户运营', icon: 'User', paths: ['/users', '/coupon', '/userCoupon', '/notices'] },
+  // 营销发券同属用户运营；站内信为触达类工具，独立成「消息中心」组（见下方）
+  { title: '用户运营', icon: 'User', paths: ['/users', '/coupon', '/userCoupon'] },
   {
     // 短链/工作台/游戏/订阅等平台实验模块统一归口
     title: '平台模块',
@@ -224,8 +224,6 @@ const MENU_GROUP_CONFIG = [
     icon: 'Lock',
     paths: ['/roles', '/adminUsers', '/audit-logs', '/login-logs', '/captcha', '/sysconfig'],
   },
-  { title: '订阅', icon: 'AlarmClock', paths: ['/subscriptions'] },
-  { title: '系统与安全', icon: 'Lock', paths: ['/audit-logs'] },
   // 站内信为触达类工具，独立成组（不并入业务管理，避免与订单/支付混排）
   { title: '消息中心', icon: 'Bell', paths: ['/notices'] },
   // 吃啥为独立业务域，单独成组（后续批量导入挂同组）
