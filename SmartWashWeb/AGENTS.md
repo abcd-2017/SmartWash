@@ -2,7 +2,7 @@
 
 > SmartWash 智能洗衣系统的 Vue 3 管理后台。洗衣主航道：学校、学生、洗护套餐、寄存柜、订单、支付/充值记录、优惠券、角色与管理员账号。平台模块运营台：站内信、订阅、操作审计、游戏库、工作台入口、跳转路由、短链管理；另有观象台管理（Prompt/语料/审计/用量/拦截/模型/设置）与设备投递公开页。
 >
-> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [.claude/agents/](.claude/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
+> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [../.zcode/agents/](../.zcode/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
 
 ---
 
@@ -29,11 +29,12 @@
 src/
 ├── main.js                 # 入口：注册 Element Plus、Pinia、Router、$dayjs
 ├── App.vue
-├── api/                    # API 层：24 个领域模块，统一 request({url,method,params})
-│   ├── adminUser.js  auth.js  captcha.js  coupon.js  dashboard.js  divination.js
-│   │   laundry.js  locker.js  order.js  payment.js  recharge.js  role.js  school.js
-│   │   user.js  userCoupon.js  game.js  toolbox.js  workbench.js  deeplink.js
-│   │   notice.js  subscription.js  audit.js  delivery.js
+├── api/                    # API 层：30 个领域模块，统一 request({url,method,params})
+│   ├── 主航道：order / user / school / laundry / locker / payment / recharge
+│   │   coupon / userCoupon / role / adminUser / auth / dashboard / captcha / loginLog
+│   ├── 平台模块：divination / game / gameData / toolbox / workbench / deeplink
+│   │   notice / subscription / audit / config / delivery / secret
+│   └── 吃啥与标签：dining / assetTag / lockerTag
 ├── utils/
 │   ├── http.js             # http（管理端）+ envelopeHttp（公开信封）：Bearer 注入、响应解包、401 单飞续签
 │   ├── format.js           # formatTime/formatAmount/formatThousands/formatFileSize
@@ -42,7 +43,7 @@ src/
 │   └── optionCache.js      # 下拉全量缓存（school/laundry/role）
 ├── stores/auth.js          # Pinia useAuthStore（token/refreshToken/role）
 ├── router/index.js         # 管理页为 Layout 子路由；/login 与 /d/:code? 免认证
-├── constants/dict.js       # 68 个枚举/字典导出（订单/支付/充值/券/短码/观象台/工作台/游戏/深链/情绪/订阅/站内信）
+├── constants/dict.js       # 136 个枚举/字典导出（订单/支付/充值/券/短码/观象台/工作台/游戏/深链/情绪/订阅/站内信/吃啥/物品标签分组）
 ├── components/             # Layout/（Layout+Sidebar+Navbar）、AmapPicker、RegionCascader、TrendChart
 ├── composables/            # useTableList、useTimeRange、useConfirm、useAnimatedNumber
 ├── views/
@@ -54,9 +55,9 @@ src/
 │   │                       #   toolbox/ 短链、workbench/ 入口+跳转路由、
 │   │                       #   SubscriptionList）
 │   ├── divination/         # 7 个观象台管理页
-│   ├── system/             # 系统与安全（AdminUserList、RoleList、AuditLogList、CaptchaQuery）
+│   ├── system/             # 系统与安全（AdminUserList、RoleList、AuditLogList、LoginLogList、CaptchaQuery、SysConfigList）
 │   └── delivery/           # 设备投递公开对端页（DeliveryPickup + DeliverySession）
-└── __tests__/              # 3 个生效用例 + 2 个 .bak 禁用用例
+└── __tests__/              # 13 个生效用例（+ 2 个 .bak 禁用用例）
 ```
 
 ---
@@ -72,7 +73,7 @@ src/
 
 ## 四、路由与权限
 
-- 所有管理页面挂 `Layout`（`/`）下；`/login` 与 `/d/:code?`（设备投递公开页）免认证；通配路由 `/:pathMatch(.*)*` 渲染 404 页。共 31 条路由。
+- 所有管理页面挂 `Layout`（`/`）下；`/login` 与 `/d/:code?`（设备投递公开页）免认证；通配路由 `/:pathMatch(.*)*` 渲染 404 页。共 41 条路由。
 - 菜单、面包屑、图标由路由 `meta` 驱动（`title`/`showInMenu`/icon），新增页面必须配齐 meta；侧边栏按 `MENU_GROUP_CONFIG` 六组分组（基础数据/业务管理/用户运营/平台模块/观象台/系统与安全），与 `src/views/` 目录划分一一对应，新增页面必须登记进对应分组（漏登记会兜底进「其他」组）。
 - **权限现状**：守卫从 `useAuthStore` 检查 token/角色，角色由后端登录接口返回（中文展示名），具体接口权限由后端 `/admin/**` 的 ROLE_ADMIN 强校验兜底。权限必须以后端接口鉴权为准，前端只做展示控制。
 - 路由已全部懒加载（`component: () => import(...)`）；新增页面保持此模式。
@@ -97,7 +98,7 @@ src/
 
 - 所有对话、注释、提交信息使用中文；提交格式 `<type>(Web): <描述>`，一个 commit 一个完整功能点。
 - 组件一律 `<script setup>`；UI 一律 Element Plus；禁用 `v-html`。
-- 全局状态放 `src/stores/`（Pinia），不要新增裸 localStorage 读写（现有 7 处待收敛）。
+- 全局状态放 `src/stores/`（Pinia），不要新增裸 localStorage 读写（当前仅 `stores/auth.js` 与 `utils/http.js` 直接读写 token）。
 - 密钥只走 `import.meta.env`（`VITE_AMAP_KEY` 当前为空、`VITE_AMAP_SECURITY_CODE` 为已泄露旧值，地图功能待配置/轮换）；禁止新增硬编码密钥/明文 HTTP 地址。
 
 ---
@@ -111,7 +112,7 @@ npm run build   # 生产构建 → dist/
 npm run preview # 预览生产构建
 ```
 
-- 测试：`npm test`（`vitest run`）可运行，当前生效 3 个用例（http/LockerList/toolbox）；2 个审计用例以 `.bak-feat-audit-log` 后缀禁用。
+- 测试：`npm test`（`vitest run`）可运行，当前生效 13 个用例（http/LockerList/toolbox/secret/Sidebar/useTableList/dining 目录导入解析/配料库/批量上传/关卡导入解析等）；2 个审计用例以 `.bak-feat-audit-log` 后缀禁用。
 - 已配置 ESLint（扁平配置 + `eslint-plugin-vue`）与 Prettier，`npm run lint`/`npm run lint:fix` 可用。
 
 ---
@@ -130,4 +131,4 @@ npm run preview # 预览生产构建
 - 登录态统一由 `useAuthStore`（`stores/auth.js`）管理，双 token + 单飞续签已接入；权限以后端 `/admin/**` ROLE_ADMIN 强校验兜底。
 - 生产 API 地址走构建时 `SMART_WASH_BASE_URL`；本地走 Vite 代理 `/api`。
 - 401 已从 `window.location.reload()` 收敛为单飞续签 + 清态跳登录（原待修项已解决）。
-- 测试：3 个生效用例可跑；审计用例禁用中。
+- 测试：13 个生效用例可跑；审计用例禁用中。

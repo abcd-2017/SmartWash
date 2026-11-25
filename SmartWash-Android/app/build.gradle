@@ -256,12 +256,11 @@ dependencies {
 
     //积分域实现（扩展提案功能 17）：积分仓库 + 签到有礼页
     fullImplementation project(":feature:points:impl")
-    //站内信域对外契约（扩展提案 #4）：NoticeRoute + NoticeApi（我的页未读角标消费）。
-    //full 专属：契约类型由 app/src/full 的 UserInfoViewModel 直接注入，故随 impl 一起
-    //fullImplementation（impl 的 implementation 不传递，app 需自行声明）。
-    fullImplementation project(":feature:notice:api")
+    //站内信域对外契约（扩展提案 #4）：NoticeRoute + NoticeApi（我的页 / lite 设置页未读角标消费）。
+    //两变体共用：lite（吃啥）点单邀请通知需消息中心承接，故保留 implementation。
+    implementation project(":feature:notice:api")
     //站内信域实现（扩展提案 #4）：消息中心收件箱页 + 深链 host "messages" 贡献
-    fullImplementation project(":feature:notice:impl")
+    implementation project(":feature:notice:impl")
 
     //工具箱对外契约（api/impl 拆分）：ToolboxRoute/Constant + 短码/资产标签/投递三套 Api/VO
     fullImplementation project(":feature:toolbox:api")

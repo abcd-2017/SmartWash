@@ -92,6 +92,8 @@ data class DiningOrderShareDetail(
     val memberCount: Int,
     /** 加入凭证（仅发起者详情下发；空串=不可分享，页面降级提示） */
     val joinToken: String,
+    /** 参与成员（含在线状态，端上展示在线堆叠；缺失兜底空列表） */
+    val members: List<DiningOrderDetailVo.OrderMember> = emptyList(),
 )
 
 /** DiningRecipeVo → 菜谱库列表项（safe 兜底 + 份热量口径换算集中在映射层） */
@@ -166,6 +168,7 @@ fun DiningOrderDetailVo.toOrderShareDetail(): DiningOrderShareDetail = DiningOrd
     menuCount = safeMenu.size,
     memberCount = safeMembers.size,
     joinToken = safeJoinToken,
+    members = members.orEmpty(),
 )
 
 /**

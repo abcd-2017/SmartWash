@@ -82,7 +82,7 @@
 :feature:update:impl            热更新全链路 + UpdateInitTask + ApkDownloadWorker + ApkInstaller + UpdateEventBus
 :feature:user:api               UserApi 契约 + User 模型 + UserRoute（登录态/用户信息/登录事件）
 :feature:user:impl              SessionManager + SessionEventBus + UserAccountApi + DivSettingApi + UserRepository + 登录/注册/重置修改密码/用户中心/资料编辑/设置/权限/钱包流水
-config/                          convention 脚本目录（android-library.gradle / compose.gradle / hilt.gradle，传统 apply from 方式）
+config/                          convention 脚本目录（android-library.gradle / compose.gradle / hilt.gradle / serialization.gradle，传统 apply from 方式）
 build-logic                     convention plugin（smartwash.android.library / smartwash.compose / smartwash.hilt）
 ```
 

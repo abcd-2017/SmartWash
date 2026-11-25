@@ -11,10 +11,13 @@
 | 目录 | 说明 | 技术栈 | 端别文档 |
 |------|------|--------|---------|
 | `SmartWash/` | Spring Boot 3.4 后端（MyBatis-Plus + MySQL + Redis + JWT） | Java 17 / Maven | [SmartWash/CLAUDE.md](SmartWash/CLAUDE.md) |
-| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：1 app 壳 + 5 common + 31 个 feature 子模块，16 个业务域中 update 为 api/core/impl 三段、其余 api/impl 拆分，共 37 个 Gradle 模块） | [SmartWash-Android/CLAUDE.md](SmartWash-Android/CLAUDE.md) |
+| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：1 app 壳 + 5 common + 31 个 feature 子模块，15 个业务域中 update 为 api/core/impl 三段、其余 api/impl 拆分，共 37 个 Gradle 模块） | [SmartWash-Android/CLAUDE.md](SmartWash-Android/CLAUDE.md) |
 | `SmartWash_Harmony/` | 鸿蒙 NEXT 用户端 | ArkTS / ArkUI / Stage 模型 | [SmartWash_Harmony/CLAUDE.md](SmartWash_Harmony/CLAUDE.md) |
 | `SmartWashWeb/` | Web 管理后台 | Vue 3 / Vite / Element Plus / Pinia | [SmartWashWeb/CLAUDE.md](SmartWashWeb/CLAUDE.md) |
+| `static/` | 平台资产正本库：H5 游戏库（`games-library/`，168 款）+ 吃啥素材 + 支付/订单/订阅/工作台视觉素材 | 纯静态资源 | [游戏库目录规范](static/games-library/README.md) |
 | `smart_wash.sql` | MySQL 建表 + 种子数据（结构变更以本文件为准） | — | — |
+
+> 根级另有 `deploy/deploy.sh`（部署脚本）、`script/`（维护脚本，如 `clean.sh`）、`PRODUCT.md`（产品定位 / 原则 / 品牌约定）与 `AGENTS.md`（本总纲的 agent 版）。
 
 ## 全局规则
 
@@ -48,7 +51,7 @@
 
 ## 相关 Skills 与子代理编制
 
-**库内 Skills**（`~/.agents/skills/`，共 40 个）：Android 端 `android-kotlin`、`android-jetpack-compose` 按 `.kt` 路径自动生效；鸿蒙按需调用 `arkts-development`、`arkts-syntax-assistant`、`harmonyos-app`；Web 视觉用 `frontend-design`/`design`；跨端通用方法论 `systematic-debugging`、`test-driven-development`、`verification-before-completion` 等。
+**库内 Skills**（`~/.agents/skills/`，共 77 个）：Android 端 `android-kotlin`、`android-jetpack-compose` 按 `.kt` 路径自动生效；鸿蒙按需调用 `arkts-development`、`arkts-syntax-assistant`、`harmonyos-app`；Web 视觉用 `frontend-design`/`design`；跨端通用方法论 `systematic-debugging`、`test-driven-development`、`verification-before-completion` 等。
 
 **各工程子代理**（统一定义在根目录 `.zcode/agents/`，每端 1 个全栈代理，共 4 个）：
 

@@ -4,10 +4,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
 import com.smartwash.dining.from.AddDiningOrderDishFrom;
 import com.smartwash.dining.from.CreateDiningOrderFrom;
+import com.smartwash.dining.from.InviteDiningOrderFrom;
 import com.smartwash.dining.from.JoinDiningOrderFrom;
 import com.smartwash.dining.from.SubmitDiningOrderFrom;
 import com.smartwash.dining.service.DiningOrderService;
 import com.smartwash.dining.stream.DiningOrderStreamer;
+import com.smartwash.dining.vo.DiningCollaboratorVo;
+import com.smartwash.dining.vo.DiningInviteVo;
 import com.smartwash.dining.vo.DiningOrderActiveVo;
 import com.smartwash.dining.vo.DiningOrderBriefVo;
 import com.smartwash.dining.vo.DiningOrderCreatedVo;
@@ -32,6 +35,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.List;
 
 /**
  * 吃啥-订单用户端控制器。
@@ -162,6 +167,36 @@ public class WebDiningOrderController {
     @PostMapping("/{id}/join-token/reset")
     public Result<String> resetJoinToken(@PathVariable("id") Long id) {
         return Result.ok(diningOrderService.resetJoinToken(id, currentUserId()));
+    }
+
+    @Operation(summary = "在线心跳", description = "仅订单成员；写 Redis presence（TTL 20s），不落库、不进 version。"
+            + "点单页/邀请页前台每 8s 上报一次，离线超 20s 自动转离线")
+    @PostMapping("/{id}/presence")
+    public Result<Void> presence(@PathVariable("id") Long id) {
+        diningOrderService.presence(id, currentUserId());
+        return Result.ok(null);
+    }
+
+    @Operation(summary = "协作过的用户", description = "跨订单聚合成员表去重（排除自己），按最近协作时间倒序；"
+            + "邀请页「邀请协作过的用户」数据源")
+    @GetMapping("/collaborators")
+    public Result<List<DiningCollaboratorVo>> collaborators() {
+        return Result.ok(diningOrderService.collaborators(currentUserId()));
+    }
+
+    @Operation(summary = "本单已邀请列表", description = "仅订单成员；返回本单定向邀请记录（含被邀请人与状态）")
+    @GetMapping("/{id}/invites")
+    public Result<List<DiningInviteVo>> invites(@PathVariable("id") Long id) {
+        return Result.ok(diningOrderService.listInvites(id, currentUserId()));
+    }
+
+    @Operation(summary = "定向邀请", description = "仅订单成员、仅 DRAFT；写邀请记录（uk 幂等）并给被邀请人发"
+            + "DINING_INVITE 站内信（deep_link=加入深链）；过滤自己与已是成员者，单次上限 20 人")
+    @PostMapping("/{id}/invites")
+    public Result<Void> invite(@PathVariable("id") Long id,
+                               @RequestBody @Valid InviteDiningOrderFrom from) {
+        diningOrderService.invite(id, from, currentUserId());
+        return Result.ok(null);
     }
 
     private Long currentUserId() {

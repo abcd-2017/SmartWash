@@ -42,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
@@ -106,6 +107,12 @@ class DiningOrderServiceImplTest {
     @Mock
     private DiningOrderStreamer streamer;
 
+    @Mock
+    private com.smartwash.dining.mapper.DiningOrderInviteMapper inviteMapper;
+
+    @Mock
+    private StringRedisTemplate redisTemplate;
+
     private DiningOrderServiceImpl service;
 
     @BeforeAll
@@ -120,9 +127,14 @@ class DiningOrderServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new DiningOrderServiceImpl(memberMapper, menuMapper, itemMapper, recipeGate, usersMapper,
-                orderMapper, noticeService, minioConfig, streamer);
+                orderMapper, noticeService, minioConfig, streamer, inviteMapper, redisTemplate);
         // 快照封面直链：mock 按「端点/桶/键」拼（测试只断言字段存在与格式）
         when(minioConfig.urlOf(any())).thenAnswer(inv -> "http://minio.local/smartwash/" + inv.getArgument(0));
+        // 在线状态批量读：mock ValueOperations.multiGet 返回空（无在线成员），避免 opsForValue() 为 null
+        org.springframework.data.redis.core.ValueOperations<String, String> valueOps =
+                org.mockito.Mockito.mock(org.springframework.data.redis.core.ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.multiGet(any())).thenReturn(java.util.List.of());
         ReflectionTestUtils.setField(service, "baseMapper", orderMapper);
     }
 

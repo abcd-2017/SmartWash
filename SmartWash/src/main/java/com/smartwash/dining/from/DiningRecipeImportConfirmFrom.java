@@ -27,10 +27,10 @@ import java.util.List;
 @Accessors(chain = true)
 public class DiningRecipeImportConfirmFrom {
 
-    /** 待导入行（上限 1000，与预览解析上限一致，防超大请求） */
+    /** 待导入行（上限 2000，与预览解析上限一致，防超大请求） */
     @Valid
     @NotEmpty(message = "导入行列表不能为空")
-    @Size(max = 1000, message = "单次最多导入 1000 行")
+    @Size(max = 2000, message = "单次最多导入 2000 行")
     private List<Row> rows;
 
     /** 单行导入条目：字段与预览行对齐（封面链接不支持批量导入，Web 端导入后单独上传） */

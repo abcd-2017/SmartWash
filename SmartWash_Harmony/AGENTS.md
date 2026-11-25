@@ -2,7 +2,7 @@
 
 > 智慧校园洗衣服务 App（HarmonyOS NEXT）：与 Android 端功能对齐——注册登录、洗衣套餐选购下单、订单状态追踪、优惠券、钱包充值、储物柜取寄件；并承载平台实验模块（观象台、游戏中心、实验舱、消息中心、记忆复习、订阅逃生舱、工具箱/短链/设备投递、工作台）。接口与 Android 端逐接口对齐。
 >
-> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [.claude/agents/](.claude/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
+> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [../.zcode/agents/](../.zcode/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
 
 ---
 
@@ -35,7 +35,8 @@ entry/src/main/ets/
 │   ├── PickUp / PickupDelivery / Recharge / RechargeRecord / WalletTransactions
 │   ├── Coupon / Points / Setting / PermissionManagement / BingCampusCardAlert
 │   ├── WebPage / AiWorkPage / ComingSoon
-├── feature/                        # 8 个业务域（目录即模块，页面禁绕 api.ets 契约）
+├── feature/                        # 9 个业务域（目录即模块，页面禁绕 api.ets 契约；dining 页面在域内 ui/）
+│   ├── dining/                     # 吃啥（菜谱库 + 拼单点单 + 扫码加入）
 │   ├── divination/                 # 观象台（四术排盘 + 卦例 RDB + SSE 解读 + BYOK）
 │   ├── game/                       # 游戏中心
 │   ├── lab/                        # 解压实验舱（10 个纯本地玩具）
@@ -54,10 +55,10 @@ entry/src/main/ets/
 │   ├── HttpUtil.ets                # GET/POST/PUT/DELETE/upload 封装（单例）
 │   ├── BaseResponse.ets            # { data, code?, message? } 信封
 │   ├── PublicPaths.ets             # 公开路径白名单（token 注入判定）
-│   ├── api/                        # 12 个 API 模块（与 Android 逐接口一致）
+│   ├── api/                        # 13 个 API 模块（与 Android 逐接口一致）
 │   ├── entity/                     # 请求体 DTO
 │   └── vo/                         # 响应 VO
-├── constant/                       # 枚举、状态常量、DesignSystem 色值、RouteNames（60 个）
+├── constant/                       # 枚举、状态常量、DesignSystem 色值、RouteNames（71 个）
 └── utils/                          # StorageUtil、PathStackUtil、Logger、TimeUtil、
     │                               # ReminderService/ReminderLogic、RefreshSignal 等
     └── deeplink/                   # 深链解析/注册表/分发（Parser / Registry / Handler）
@@ -67,7 +68,7 @@ entry/src/main/ets/
 
 ## 三、页面与路由
 
-- **系统路由表**：`entry/src/main/resources/base/profile/router_map.json` 注册 60 条命名路由（与 `RouteNames` 一一对应）；`main_pages` 仅保留 Index 入口；页面经 `@Builder` 函数导出给路由系统；NavDestination 页面**禁止标 `@Entry`**。
+- **系统路由表**：`entry/src/main/resources/base/profile/router_map.json` 注册 71 条命名路由（与 `RouteNames` 一一对应）；`main_pages` 仅保留 Index 入口；页面经 `@Builder` 函数导出给路由系统；NavDestination 页面**禁止标 `@Entry`**。
 - **导航**：一律经 `utils/PathStackUtil.ets` 全局 `pathStack`（`pushPathByName` / `replacePathByName` / `pop`），禁止 `@ohos.router`。需要替换当前页（如跳登录）用 `replacePathByName`，并发 401 场景禁止连续 push。
 - **传参**：页面参数用 `getParamByName` 获取——禁止 `[0] as X` 裸强转（参数缺失即崩溃），禁止字符串/number 类型错位（Laundry→Payment 曾 orderId 传成字符串）。
 
@@ -91,7 +92,7 @@ entry/src/main/ets/
 - **声明**：`module.json5` EntryAbility skills 独立对象声明 `scheme: "smartwash"`（`ohos.want.action.viewData` + `entity.system.browsable`），host 省略即通配。
 - **消费时序**：`onCreate` / `onNewWant` 把 `want.uri` 暂存 `AppStorage('pendingDeepLinkUri')`；`pages/Home.ets` 挂载后（aboutToAppear）与热更新时（@StorageLink + @Watch）消费。未登录时暂存不丢，登录后补消费；消费点不做登录前置判断，由 401 统一兜底（对齐 Android）。
 - **新页面接入**：router_map 注册路由 + `RouteNames` 加常量 + `DeepLinkRegistry.lookup` 加映射（带参 host 仿 `order` / `t` 自行解析校验），三处同步。
-- **host 表**（21 个，含内建 `web`）：login/register/setting/recharge/recharge-record/coupon/order(query tab)/pickup/laundry/divination/divination-history/toolbox-short-code/game-center/delivery/lab/review/subscription/ai-work/points/messages/order-detail/{orderId}/t/{code}/web(内建)；`user-info`/`service`（tab 页非独立路由）不注册。
+- **host 表**（21 个静态 + 3 个带参动态）：login/register/setting/recharge/recharge-record/coupon/laundry/pickup/divination/divination-history/toolbox-short-code/toolbox-secret/toolbox-asset-tag/game-center/delivery/lab/review/subscription/ai-work/points/messages；带参动态 host 为 `order`（query tab）、`dining/order/{orderId}`、`t/{code}`。`user-info`/`service`（tab 页非独立路由）不注册。
 - **公开白名单** `PUBLIC_DEEP_LINK_HOSTS = ['web','login','register','lab']`（未登录可放行，其余 host 未登录由壳层拦截）。
 
 ---
@@ -102,7 +103,7 @@ entry/src/main/ets/
 2. **定时器必须清理**：`setInterval`/`setTimeout` 在 `aboutToDisappear` 中 clear（验证码倒计时曾泄漏）。
 3. **严格模式**：`!==`/`===`（禁宽松比较）；VO 用 interface + 转换函数（不靠 class 直接接 JSON）；padding/margin 传 number；金额用 parseFloat 并校验 > 0（禁 parseInt 截断小数）。
 4. **日志脱敏**：release 禁止打印完整响应体（手机号/余额），仅 DEBUG 开 body 日志。
-5. **BASE_URL 禁止新增硬编码**（当前兜底为无 IP 占位(未注入时请求失败,待环境化，与 Android 分环境机制对齐）。
+5. **BASE_URL 禁止新增硬编码**：经 `entry/build-profile.json5` 构建期注入 `BuildProfile.BASE_URL`，未注入即失败（源码零硬编码，明文 HTTP 的 demo 放行已收口）。
 
 ---
 
@@ -155,9 +156,9 @@ code-linter --fix      # Lint
 
 完整评审清单（含行号）见 [../../docs/code-review-2026-08-28.md](../../docs/code-review-2026-08-28.md) 第四章。当前状态：
 
-- baseURL 由构建参数注入,仓库不携带真实服务器地址(未注入时请求失败)——待环境化,与 Android 分环境机制对齐。
+- baseURL 经 `BuildProfile.BASE_URL` 构建期注入，仓库不携带真实服务器地址（未注入即失败，源码零硬编码；明文 HTTP 的 demo 放行已收口）。
 - 401 已统一为「清 token → 清内存登录态 → replace 登录页」+ 1.5s 防抖，并接入双 token 单飞续签（`/auth/refresh`）。
 - `@ComponentV2` 轮询已改用 `@Monitor('isActive')`。
 - Laundry→Payment 传参统一 `number` 类型；支付按钮已加 `paying` 防重、Radio 支持取消选券。
 - 金额校验已改用 `parseFloat` 并校验 >0 与上限。
-- 测试：`entry/src/test/` 下有 10 个用例（四术锚点、HttpUtil、PublicPaths、RequestRules、LocalUnit、List 等）。
+- 测试：`entry/src/test/` 下有 11 个用例（四术锚点、HttpUtil、PublicPaths、RequestRules、LocalUnit、List、DiningLogic 等）。

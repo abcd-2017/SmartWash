@@ -3,6 +3,8 @@ package com.smartwash.feature.dining.api
 import com.smartwash.common.network.annotation.RequireAuthorization
 import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.utils.model.PageData
+import com.smartwash.feature.dining.api.model.DiningCollaboratorVo
+import com.smartwash.feature.dining.api.model.DiningInviteVo
 import com.smartwash.feature.dining.api.model.DiningOrderActiveVo
 import com.smartwash.feature.dining.api.model.AddDiningOrderDishRequest
 import com.smartwash.feature.dining.api.model.AddDiningRecipeRequest
@@ -15,6 +17,7 @@ import com.smartwash.feature.dining.api.model.DiningOrderDetailVo
 import com.smartwash.feature.dining.api.model.DiningOrderFinishVo
 import com.smartwash.feature.dining.api.model.DiningOrderListVo
 import com.smartwash.feature.dining.api.model.DiningRecipeVo
+import com.smartwash.feature.dining.api.model.InviteDiningOrderRequest
 import com.smartwash.feature.dining.api.model.JoinDiningOrderRequest
 import com.smartwash.feature.dining.api.model.SubmitDiningOrderRequest
 import okhttp3.MultipartBody
@@ -202,4 +205,30 @@ interface DiningServiceApi {
     @POST("/web/auth/dining/orders/{id}/join-token/reset")
     @RequireAuthorization
     suspend fun resetJoinToken(@Path("id") id: Long): ApiResult<String>
+
+    /**
+     * 在线心跳（仅订单成员）：写 Redis presence（TTL 20s），不落库、不进 version。
+     * 点单页/邀请页前台每 8s 上报一次。
+     */
+    @POST("/web/auth/dining/orders/{id}/presence")
+    @RequireAuthorization
+    suspend fun presence(@Path("id") id: Long): ApiResult<Void>
+
+    /** 协作过的用户（跨订单聚合去重，排除自己；邀请页「邀请协作过的用户」数据源） */
+    @GET("/web/auth/dining/orders/collaborators")
+    @RequireAuthorization
+    suspend fun collaborators(): ApiResult<List<DiningCollaboratorVo>>
+
+    /** 本单已邀请列表（仅订单成员；邀请页「已邀请」区域） */
+    @GET("/web/auth/dining/orders/{id}/invites")
+    @RequireAuthorization
+    suspend fun invites(@Path("id") id: Long): ApiResult<List<DiningInviteVo>>
+
+    /** 定向邀请（仅订单成员、仅 DRAFT；写邀请记录 + 发 DINING_INVITE 站内信；单次上限 20 人） */
+    @POST("/web/auth/dining/orders/{id}/invites")
+    @RequireAuthorization
+    suspend fun invite(
+        @Path("id") id: Long,
+        @Body request: InviteDiningOrderRequest,
+    ): ApiResult<Void>
 }

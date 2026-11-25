@@ -29,7 +29,9 @@ SmartWash/
 ├── SmartWash-Android/      # Android 用户端（Kotlin / Jetpack Compose / Hilt）
 ├── SmartWash_Harmony/      # 鸿蒙 NEXT 用户端（ArkTS / ArkUI）
 ├── SmartWashWeb/           # Vue 3 Web 管理后台
+├── static/                 # 平台资产正本：H5 游戏库（168 款）+ 吃啥素材 + 视觉素材
 ├── smart_wash.sql          # MySQL 建表 + 种子数据（结构变更以本文件为准）
+├── deploy/  script/        # 部署脚本 / 维护脚本
 ├── .claude/docs/           # agent 工作规则（提交规范、共享规则）
 └── docs/                   # 本地工作文档（gitignore，不入库）
 ```
@@ -144,7 +146,7 @@ npm run dev        # http://localhost:5000，/api 代理至 8080
 
 四端深度评审（2026-08-28）的问题清单与优先级路线图见 **[docs/code-review-2026-08-28.md](docs/code-review-2026-08-28.md)**。
 
-**P0**：后端资金链路（支付 / 充值 / 优惠券）存在并发竞态与幂等缺失；鸿蒙端 `BASE_URL` 仍为硬编码明文 HTTP；高德安全密钥待轮换。
+**P0**：后端资金链路（支付 / 充值 / 优惠券）存在并发竞态与幂等缺失；高德安全密钥待轮换（鸿蒙端 `BASE_URL` 已随构建期注入改造收口，源码零硬编码）。
 
 > 做任何涉及订单、支付、充值、优惠券的改动前，先读评审报告第一章的 P0 项。
 

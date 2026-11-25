@@ -102,7 +102,7 @@ mvn clean package -DskipTests  # 打包
 
 ## 测试
 
-`src/test` 共 68 个测试类 + `application-test.yaml` / `schema.sql`（H2 内存库，`smartwash.rate-limit.enabled=false`）。覆盖登录验证码、JWT、资金幂等、订单 CAS、游戏、工具箱、观象台、吃啥、工作台等；新增核心逻辑请配套单测。
+`src/test` 共 70 个测试类 + `application-test.yaml` / `schema.sql`（H2 内存库，`smartwash.rate-limit.enabled=false`）。覆盖登录验证码、JWT、资金幂等、订单 CAS、游戏、工具箱、观象台、吃啥、工作台等；新增核心逻辑请配套单测。
 
 ## 已知坑（改动前先看）
 

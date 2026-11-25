@@ -14,6 +14,9 @@
     <!-- 类型 tag（与后端 NoticeType 枚举一一对应） -->
     <string name="notice_type_system">系统通知</string>
     <string name="notice_type_announcement">运营公告</string>
+    <string name="notice_type_dining_join">点单加入</string>
+    <string name="notice_type_dining_finish">点单结束</string>
+    <string name="notice_type_dining_invite">点单邀请</string>
     <string name="notice_type_unknown">通知</string>
 
     <!-- 时间展示（今天/昨天带时分，本年 M月d日，更早 yyyy-MM-dd） -->

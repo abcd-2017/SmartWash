@@ -361,6 +361,19 @@ CREATE TABLE IF NOT EXISTS dining_order_member (
     CONSTRAINT uk_dining_order_member UNIQUE (order_id, user_id)
 );
 
+-- 吃啥-点单定向邀请（uk order+inviter+invitee：同一单同一邀请人对同一被邀请人只发一次）
+CREATE TABLE IF NOT EXISTS dining_order_invite (
+    id          bigint NOT NULL AUTO_INCREMENT,
+    order_id    bigint NOT NULL,
+    inviter_id  bigint NOT NULL,
+    invitee_id  bigint NOT NULL,
+    status      varchar(16) NOT NULL DEFAULT 'INVITED',
+    created_at  timestamp DEFAULT CURRENT_TIMESTAMP,
+    joined_at   timestamp NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_order_inviter_invitee UNIQUE (order_id, inviter_id, invitee_id)
+);
+
 -- 吃啥-本单菜单表（uk order+recipe：一道菜在本单只出现一次）
 CREATE TABLE IF NOT EXISTS dining_order_menu (
     id         bigint NOT NULL AUTO_INCREMENT,

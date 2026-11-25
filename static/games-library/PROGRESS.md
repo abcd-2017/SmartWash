@@ -3,6 +3,7 @@
 > 范围：`library/` 实际存在的游戏（g2048 于 2026-10-31 接入本表）。
 > 规则与 token 映射：`GAME-THEME.md`（决策 D1–D5，**D5 已修订：无手动切换层，桥唯一控制**）；
 > 三关检查脚本：`theme-gates.mjs`。验收日期：2026-10-31（含当日二次修订）。全量 ✅。
+> **2026-11-24 精简：279 → 168 款**（删 111 款凑数/重复游戏，判据与清单见文末修订记录）。
 
 | 游戏 | 渲染 | 存档键（未动） | 状态 | 体积 前→后 (B / 增幅) | 三关 | 375px 实开 |
 |---|---|---|---|---|---|---|
@@ -488,3 +489,24 @@
   遗留建议（记录未改）：well-drill 存档键 `sw.welldill.v1` 拼写（红线不改键，建议下版迁移）；
   canvas 常驻 rAF 建议改「主题钩子补 draw + 空闲停帧」；调度类开局即 running 建议统一补
   「开始」态；dice-odds 验证器 gapN 口径；若干死代码；Unicode 字形（★/✓）属品类惯例。
+
+- **2026-11-24（游戏库精简 · 279 → 168 款，删 111 款）**：
+  扩展期三天（11-20~11-22）批量入库 207 款，质量均分 2.63（早期 72 款 3.24），且 207 款中 97 款
+  落入删除候选。全量逐款实读（子代理分簇 + 代码相似度/关卡生成/验证器复核）后确认三类凑数形态：
+  ① **同壳家族**（7 款「限时四选一」共用 `genLevel` 模板；6 款「选词填空」共用 `renderQ/answer`；
+  7 款无尽街机共用 `showPanel2` 壳）；② **40 关参数枚举注水**（关卡 = seed × 尺寸/限时/AI 段位）；
+  ③ **伪素材/名不副实**（找茬/寻物/碎图/旋片用 canvas 几何图形冒充真实题材）。
+  删除判据：零决策、纯换皮、伪素材、同品类重复。分三档执行，共删 **111 款**：
+  - **甲档 38 款**（强烈建议删）：伪素材 3（spot-diff/hidden-item/jigsaw-snap）、零决策 12、
+    纯换算识别 11、同壳换皮 8、空壳 2、其他 2。
+  - **乙档 5 款**（建议删）：dice-odds、seesaw-stack、sequence-next、speed-math、tower-crane。
+  - **丙档 68 款**（同类合并去重）：词类填空壳、无尽反应街机、经典换皮、赌博牌类、经营调度、
+    薄物理解谜、参数化经典等组，每组保留代表（homophone/typo-hunt/blackjack/laundry-day/
+    tower-control/warehouse-rush/pull-pin/rope-cut/logic-owners）。
+  保留 **168 款**，独有品类不缺失。副产物：游戏内嵌验证器存在「同义反复」缺陷（jigsaw-snap 只验
+  seed 双射、hidden-item 只验间距、dam-gates 自证循环），balance-stack 38/40 关参考解非法、
+  laser-maze par 计算 bug、magic-tower 100 层不可达、flow-connect 非唯一解——均随本批删除或
+  留存待定。删除清单/SQL/正本删除脚本存 `docs/游戏下架-2026-11-24/`（工作文档不入库）。
+  删除后复跑：`audit-gates` 168/168 零违规、`theme-gates` 全绿、`audit-ux-gates` 0 违规。
+  运维注意：直接删库不清 MinIO（`game/{key}/` 成孤儿，封面 `game-covers/` 按设计不回收）；
+  后端 `gameList` 缓存 30 分钟，删库后需 `DEL smartwash:gameList::all` 立即生效。

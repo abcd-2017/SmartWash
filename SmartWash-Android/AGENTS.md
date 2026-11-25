@@ -2,7 +2,7 @@
 
 > 智慧校园洗衣服务 App，面向学生用户提供在线预约洗衣、寄存柜投递、订单追踪、优惠券、充值支付等功能。
 >
-> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [.claude/agents/](.claude/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
+> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [../.zcode/agents/](../.zcode/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
 >
 > 各模块独立文档：每个 Gradle 模块根目录下有 `AGENTS.md`（域规则以模块文档为准）。
 
@@ -21,7 +21,6 @@
 | 分页 | Paging 3 |
 | 图片加载 | Coil Compose |
 | 二维码 | ZXing |
-| 权限 | Accompanist Permissions |
 | 导航 | Compose Navigation（单 Activity + NavHost 聚合） |
 | 编译 | compileSdk 35 / minSdk 30 / targetSdk 35 |
 | 注解处理 | KSP（Hilt 与 Room 统一走 KSP） |
@@ -567,7 +566,7 @@ com.smartwash.feature.toolbox/
 ├── ToolboxConstant.kt
 ├── network/
 │   ├── ToolboxApi.kt              # 短链 6 个端点
-│   ├── DeliveryApi.kt             # 设备投递 7 个端点
+│   ├── DeliveryApi.kt             # 设备投递 8 个端点
 │   └── DeliveryBusinessCode.kt
 ├── logic/
 │   ├── ShortCodeRules.kt
@@ -814,7 +813,7 @@ object XxxInitModule {
 >
 > **接口类位置已分散到各域 api/impl 模块**（不再集中在 `app/network/api/`）。
 
-### 用户模块（UserAccountApi）— 13 个端点
+### 用户模块（UserAccountApi）— 12 个端点
 
 > 接口类位置：`:feature:user:impl/network/api/UserAccountApi.kt`
 
@@ -846,7 +845,7 @@ object XxxInitModule {
 | POST | `/web/auth/div/settings/api/test` | 是 | 试呼校验 |
 | GET | `/web/auth/div/models` | 是 | 平台模型目录 |
 
-### 订单模块（OrderServiceApi）— 10 个端点
+### 订单模块（OrderServiceApi）— 12 个端点
 
 > 接口类位置：`:feature:order:impl/network/api/OrderServiceApi.kt`
 
@@ -938,7 +937,7 @@ object XxxInitModule {
 | GET | `/web/auth/points/leaderboard?scope=month` | 是 | 月榜（TOP 50 有界，不分页） |
 | GET | `/web/auth/points/ledger?page=&size=` | 是 | 积分流水分页（时间倒序，size 上限 50） |
 
-### 观象台模块（DivinationApi）— 7 个端点 + 2 个 SSE
+### 观象台模块（DivinationApi）— 8 个端点 + SSE 解读通道
 
 > 接口类位置：`:feature:divination/network/DivinationApi.kt`（SSE 经 `common:network` 的 `SseClient`）
 
@@ -1217,4 +1216,4 @@ data class PageData<T>(
 - **网络层健壮性**：`:common:network` 的 ResponseInterceptor 空 body NPE、`peekBody(Long.MAX_VALUE)` 双重解析、`:common:database` 的 Room 无 migration、缓存写入无事务
 - **分层破洞**：LaundryViewModel/CouponViewModel 直连 Api 绕过 Repository；订单分页手写 Map 与 Paging 3 双轨并存
 - **RechargePage 组合期副作用**：`RechargePage.kt` 的金额选择/支付状态分支中存在写在 `when(state)` 渲染分支里的副作用，待独立任务修复
-- **测试覆盖**：当前 19 个测试文件，分布在 app（ExampleUnitTest、ParamValidUtilsTest、EntityMappersTest×2、SessionEventBusTest、GameThemeBridgePolicyTest）、common:init（InitEngineTest）、common:utils（DeepLinkParserTest）、feature:divination（5 个算法锚点单测）、feature/game（GameConstantTest、GameDeepLinkModuleTest）、feature/payment:impl（RechargeAmountValidatorTest）、feature/toolbox（ToolboxDeepLinkModuleTest）、feature/update（ApkDownloadWorkerNotificationTest、ApkInstallerTest）；优先给 ResponseInterceptor、OrderStatus 映射补 JVM 单测
+- **测试覆盖**：当前 65 个测试文件，重心在 feature 各 impl（dining 19、divination 6、user 5、update 6、order 4、lab 3、subscription 3 等）+ app 4 + common 3；优先给 `:common:network` 的 `ResponseInterceptor`、`OrderStatus` 映射补 JVM 单测

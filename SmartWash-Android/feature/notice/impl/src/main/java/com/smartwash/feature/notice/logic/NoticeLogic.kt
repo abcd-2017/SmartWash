@@ -23,6 +23,15 @@ enum class NoticeType(@StringRes val labelRes: Int) {
     /** 运营公告（活动/规则类） */
     ANNOUNCEMENT(R.string.notice_type_announcement),
 
+    /** 吃啥：有人加入点单（定向通知发起者与成员） */
+    DINING_JOIN(R.string.notice_type_dining_join),
+
+    /** 吃啥：发起者结束点单、购买清单定稿（定向通知参与者） */
+    DINING_FINISH(R.string.notice_type_dining_finish),
+
+    /** 吃啥：被定向邀请加入点单（定向通知被邀请人） */
+    DINING_INVITE(R.string.notice_type_dining_invite),
+
     /** 未收录类型（后端扩展枚举后端上未适配），回退通用文案 */
     UNKNOWN(R.string.notice_type_unknown);
 
@@ -31,6 +40,9 @@ enum class NoticeType(@StringRes val labelRes: Int) {
         fun from(code: String?): NoticeType = when (code) {
             "SYSTEM" -> SYSTEM
             "ANNOUNCEMENT" -> ANNOUNCEMENT
+            "DINING_JOIN" -> DINING_JOIN
+            "DINING_FINISH" -> DINING_FINISH
+            "DINING_INVITE" -> DINING_INVITE
             else -> UNKNOWN
         }
     }

@@ -7,12 +7,17 @@
 ```
 games-library/
 ├── README.md          # 本规范
-├── PROGRESS.md        # 主题化进度
+├── PROGRESS.md        # 主题化进度与修订记录
 ├── GAME-THEME.md      # 主题规则与 token 映射
+├── GAME-COVER.md      # 封面制作规范与管线存档
+├── covers-src/        # 封面 SVG 源文件（设计稿，非游戏正本）
+├── audit-gates.mjs    # 静态门禁脚本（主题 / UX / 关卡）
+├── audit-ux-gates.mjs
+├── theme-gates.mjs
 └── <game-key>/        # 目录名 = gameKey（小写字母开头，小写字母/数字/-/_）
     ├── index.html     # 游戏正本：单文件自包含 H5（CSS/JS 全内联，零外链）
     ├── README.md      # 游戏文档：首行为机器可读元数据行（格式见下）
-    └── <game-key>.png # 游戏封面：800×450（16:9）位图，Web 上传时自动识别（可选，缺失则端上用本地兜底封面）
+    └── <game-key>.png # 游戏封面：800×450（16:9）位图，Web 上传时自动识别（可选，缺失则端上用默认兜底图）
 ```
 
 - 除 `index.html`、`README.md` 与封面图 `<game-key>.png` 外不得有其他可见文件（`.DS_Store` 等隐藏文件忽略）；需要多文件的请自行打 `.zip` 走手动上传，单文件不超过 10MB。

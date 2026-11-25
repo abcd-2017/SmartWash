@@ -3,6 +3,7 @@ package com.smartwash.lite.ui.setting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.utils.AppLogger
+import com.smartwash.feature.notice.api.NoticeApi
 import com.smartwash.feature.user.api.UserApi
 import com.smartwash.feature.user.api.model.UserInfo
 import com.smartwash.feature.user.impl.session.SessionEventBus
@@ -30,13 +31,26 @@ class LiteSettingViewModel @Inject constructor(
     private val userApi: UserApi,
     private val sessionManager: SessionManager,
     private val sessionEventBus: SessionEventBus,
+    private val noticeApi: NoticeApi,
 ) : ViewModel() {
 
     private val _userInfo = MutableStateFlow<UserInfo?>(null)
     val userInfo = _userInfo.asStateFlow()
 
+    /** 消息中心未读数（角标；失败按 0 隐藏） */
+    private val _unreadCount = MutableStateFlow(0L)
+    val unreadCount = _unreadCount.asStateFlow()
+
     init {
         refreshUserInfo()
+        refreshUnreadCount()
+    }
+
+    /** 未读数（点缀数据，失败静默置 0） */
+    fun refreshUnreadCount() {
+        viewModelScope.launch {
+            _unreadCount.value = runCatching { noticeApi.getUnreadCount() }.getOrDefault(0L)
+        }
     }
 
     /** 拉取账户信息（只读展示；失败静默置空，页面显示占位） */

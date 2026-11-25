@@ -190,6 +190,15 @@
     <string name="dining_order_share_detail_failed">订单信息加载失败</string>
     <string name="dining_order_share_menu_count_format">%1$d 道菜</string>
     <string name="dining_order_share_member_count_format">%1$d 人参与</string>
+    <string name="dining_order_invite_online_format">在线 %1$d 人</string>
+    <string name="dining_order_invite_collaborators_section">邀请协作过的用户</string>
+    <string name="dining_order_invite_invited_section">已邀请</string>
+    <string name="dining_order_invite_action">邀请</string>
+    <string name="dining_order_invite_status_invited">已邀请</string>
+    <string name="dining_order_invite_status_joined">已加入</string>
+    <string name="dining_order_invite_done">已发出邀请</string>
+    <string name="dining_order_invite_empty">还没有协作过的用户，先去点一单吧</string>
+    <string name="dining_order_invite_loading">邀请中…</string>
 
     <!-- 点单页 -->
     <string name="dining_order_detail_title">点单页</string>

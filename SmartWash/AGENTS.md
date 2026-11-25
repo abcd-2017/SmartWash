@@ -2,7 +2,7 @@
 
 > 校园智能洗衣平台后端：为 Android / 鸿蒙用户端和 Vue3 管理后台提供 REST API。覆盖用户、订单、储物柜、优惠券、充值支付、管理端权限等模块。
 >
-> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [.claude/agents/](.claude/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
+> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [../.zcode/agents/](../.zcode/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
 
 ---
 
@@ -35,7 +35,7 @@ src/main/java/com/smartwash/
 │   ├── background/               # 管理端 API（/admin/**）：用户、学校、储物柜、套餐、
 │   │                             #   订单、支付、充值、优惠券、角色、管理员、Dashboard、导出
 │   └── web/                      # 用户端 API（/web/**）：WebUsersController、WebOrdersController 等
-├── entity/          # 核心业务实体（12 张表）
+├── entity/          # 核心业务实体（14 个）
 ├── exception/       # CustomExceptions、GameServiceException、UserAuthenticationException
 ├── filter/          # JwtAuthenticationFilter（每请求 JWT 校验 + Redis 黑名单）
 ├── from/            # 请求 DTO：Add*/Update*/Search*From，分页继承 BaseSearchFrom
@@ -68,7 +68,7 @@ src/main/java/com/smartwash/
 | `/web/auth/**` | 是 | ROLE_USER | Android / 鸿蒙 |
 | `/web/**` | 否 | 公开 Web 接口 | Android / 鸿蒙 |
 
-**公开只读路径**：`/web/laundryItems/all`、`/web/schools/allName`、`/web/payments/payType`、`/web/payments/payStatus`、`/web/app/version`、`/web/app/download`、`/web/t/**`、`/web/deeplink/routes`、`/web/config`、`/web/delivery/**`、`/swagger-ui/**`、`/v3/api-docs/**`；其余 `/web/**`（如 `/web/orders/status`、`/web/lockers/status`、`/web/lockers/all`）需任意已认证用户。
+**公开只读路径**：`/web/laundryItems/all`、`/web/schools/allName`、`/web/payments/payType`、`/web/payments/payStatus`、`/web/app/version`、`/web/app/download`、`/web/t/**`（短链跳转）、`/web/s/**`（私密文本阅后即焚公开查看）、`/web/locker-tags/**`（柜码公开解析）、`/web/tag/**`（物品标签公开解析）、`/web/deeplink/routes`、`/web/config`、`/web/delivery/**`、`/swagger-ui/**`、`/v3/api-docs/**`；其余 `/web/**`（如 `/web/orders/status`、`/web/lockers/status`、`/web/lockers/all`）需任意已认证用户。
 
 双登录体系：管理员走 `/auth/adminUsers/login`（用户名），普通用户走 `/auth/user/login`（手机号）。登录返回**双 token**（access 2h + refresh 7d），`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`；refresh 仅用于 `/auth/refresh` 一次性轮换。
 
@@ -146,4 +146,4 @@ mvn clean package -DskipTests  # 打包
 新增注意项：
 
 - **request-log 配置错位**：`application.yaml` 中 `request-log` 缩进在 `toolbox:` 下（实际生效 `toolbox.request-log.*`），而 `RequestLogProperties` 绑定前缀是 `smartwash.request-log`——配置值未生效，需统一。
-- **测试**：`src/test` 共 36 个测试类 + H2 测试 profile（`application-test.yaml`/`schema.sql`）；新增核心逻辑配套单测。
+- **测试**：`src/test` 共 70 个测试类 + H2 测试 profile（`application-test.yaml`/`schema.sql`）；新增核心逻辑配套单测。

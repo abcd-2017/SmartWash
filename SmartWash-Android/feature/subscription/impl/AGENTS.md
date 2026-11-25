@@ -79,4 +79,4 @@ com.smartwash.feature.subscription/（契约在 :feature:subscription:api）
 
 - **无底栏 tab**：只经深链与工作台卡片进入；未登录时深链由壳层拦截。
 - **提醒已读幂等在后端**：重复标记静默成功，端上不做请求去重。
-- **测试**：`feature/subscription/src/test/` 当前无测试文件（共享规则下新增测试不入库）。
+- **测试**：`feature/subscription/src/test/` 存量 3 个测试文件（SubscriptionRulesTest / SubscriptionPagingSourceTest / SubscriptionEnumsTest）；共享规则下新增测试不入库。
