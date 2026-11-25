@@ -251,9 +251,9 @@ private fun HeroCard(
                         Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                         Text(
                             text = presetLabel(activePreset),
-                            style = MaterialTheme.typography.bodyMedium,
-                            // hero 渐变底上的副标题 14sp 可读正文：85% alpha 合成后仅 2.96:1/3.21:1，
-                            // 去 alpha 折扣对齐 hero 白字既有口径（§10 对比度红线）
+                            // 14sp 在品牌渐变上仅 3.50:1（<4.5:1）；升到 title 档 18/24/600
+                            // 按大字 3:1 达标（浅色 3.50 / 深色起始段同口径）
+                            style = AppTextStyles.PageHeader,
                             color = scheme.onPrimary,
                         )
                     }

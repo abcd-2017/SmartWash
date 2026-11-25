@@ -76,8 +76,9 @@ private const val MAX_ROWS = 400
 /** 模拟节拍（ms）：约 30 tick/秒，沙落一整屏约 5 秒 */
 private const val SIM_TICK_MS = 33L
 
-/** 调色板每行元素数（9 元素 → 5 + 4 两行） */
-private const val PALETTE_COLUMNS = 5
+/** 调色板每行元素数（9 元素 → 3 × 3）：48dp 色块 + 12dp 间距 = 168dp，
+ *  在 360dp 窄屏（可用 272dp）不溢出；原 5 列 288dp 会越出卡片右缘 */
+private const val PALETTE_COLUMNS = 3
 
 /**
  * 落沙实验室页：全屏 Canvas 沙盒（ByteArray 网格元胞自动机，内核 [SandSimulator] 纯 Kotlin）
@@ -340,7 +341,8 @@ private fun PaletteRow(
     onSelect: (SandElement) -> Unit,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         items.forEach { element ->
