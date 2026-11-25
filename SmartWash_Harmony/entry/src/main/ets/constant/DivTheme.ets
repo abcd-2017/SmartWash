@@ -1,4 +1,4 @@
-import { resColor } from '../utils/ResourceColor'
+import { DarkModeStore } from './DarkModeStore'
 // 观象台（占卜模块）子主题令牌 — 宣纸 / 玄墨色板
 //
 // 取值来源（逐项对照）：安卓 common/ui/src/main/java/com/smartwash/common/ui/theme/Color.kt:223-266
@@ -8,11 +8,20 @@ import { resColor } from '../utils/ResourceColor'
 // 开一扇通往玄墨世界的窗，浅色模式下同款深色，见 WorkbenchPage.kt:185-186），
 // 与清氧亮色体系语义不同，混入会污染两套令牌，故单独成文件。
 //
-// 主题现状（compare-08 #12 更新，原「决策 D1 固定亮色」注释已过时）：应用已随系统深浅色
-// （EntryAbility 问题 17，清氧域走资源限定符自动切换），但观象台域
-// （DivPalette / DivinationScreen）仍固定消费 *_LIGHT 宣纸令牌，*_DARK 玄墨档在观象台域
-// 零消费——系统深色下域级主题断层。玄墨接入为域级重构待办，见 DivPalette TODO 与
-// docs/review/2026-11-11/compare-08-div-history.md #12。
+// 主题现状（2026-11-26 深色断层整改）：应用随系统深浅色，EntryAbility.syncDarkMode 双写
+// AppStorage('darkMode') 与 DarkModeStore 单例。DivPalette 经 divIsDark() 在
+// *_LIGHT（宣纸）/ *_DARK（玄墨）间选择；build 内读取 @Trace 即建立依赖，
+// 系统深色切换（含 EntryAbility 未重建 Ability 的实时路径）时消费组件重建。
+// 安卓同一 scheme 见 common/ui/theme/AppDesign.kt: DarkDivinationColors / LightDivinationColors。
+
+/**
+ * 当前是否系统深色 —— 观象台域深浅分支的唯一状态源。
+ * 读 DarkModeStore 单例的 @Trace 属性（EntryAbility.syncDarkMode 与 AppStorage('darkMode') 同值）；
+ * 在 @ComponentV2 的 build 内调用即建立属性级依赖，状态变化触发该组件重建。
+ */
+export function divIsDark(): boolean {
+  return DarkModeStore.getInstance().dark
+}
 
 
 
@@ -73,4 +82,17 @@ export class DivColor {
   static get YAO_BOTTOM_LIGHT(): ResourceColor { return $r('app.color.DIV_YAO_BOTTOM_LIGHT') }
   static get YAO_TOP_DARK(): ResourceColor { return $r('app.color.DIV_YAO_TOP_DARK') }
   static get YAO_TOP_LIGHT(): ResourceColor { return $r('app.color.DIV_YAO_TOP_LIGHT') }
+  // 印面文字（跨主题恒定宣纸白，对齐安卓 SealTextInk=0xFFEFE9DA）
+  static get SEAL_TEXT(): ResourceColor { return $r('app.color.DIV_SEAL_TEXT') }
+  // 禁用金钮文字（onGold 38%，对齐安卓 onGold.copy(alpha=0.38f)）
+  static get ON_GOLD_38(): ResourceColor { return $r('app.color.DIV_ON_GOLD_38') }
+  // 选中态实金描边（gold 90%，对齐安卓 c.gold.copy(alpha=0.9f)）
+  static get GOLD_90_LIGHT(): ResourceColor { return $r('app.color.DIV_GOLD_90_LIGHT') }
+  static get GOLD_90_DARK(): ResourceColor { return $r('app.color.DIV_GOLD_90_DARK') }
+  // 罗盘外环（gold 50%，对齐安卓 c.gold.copy(alpha=0.5f)）
+  static get GOLD_50_LIGHT(): ResourceColor { return $r('app.color.DIV_GOLD_50_LIGHT') }
+  static get GOLD_50_DARK(): ResourceColor { return $r('app.color.DIV_GOLD_50_DARK') }
+  // 罗盘十二支环文（金/墨 75%，对齐安卓 c.goldText.copy(alpha=0.75f)）
+  static get COMPASS_TEXT_LIGHT(): ResourceColor { return $r('app.color.DIV_COMPASS_TEXT_LIGHT') }
+  static get COMPASS_TEXT_DARK(): ResourceColor { return $r('app.color.DIV_COMPASS_TEXT_DARK') }
 }
