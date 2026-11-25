@@ -58,6 +58,7 @@ import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.SmartWashAsyncImage
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -321,13 +322,15 @@ private fun ShareContent(
             }
         }
 
-        // 邀请面板：协作过的用户（可勾选邀请）+ 已邀请列表
-        InvitePanel(
-            collaborators = collaborators,
-            invites = invites,
-            inviteState = inviteState,
-            onInvite = { viewModel.invite(listOf(it)) },
-        )
+        // 邀请面板：仅草稿态可邀请（后端 invite 仅 DRAFT）；已结束/已取消不展示，避免无效操作
+        if (status == DiningOrderStatus.DRAFT) {
+            InvitePanel(
+                collaborators = collaborators,
+                invites = invites,
+                inviteState = inviteState,
+                onInvite = { viewModel.invite(listOf(it)) },
+            )
+        }
 
         // 底部避让手势条/三键导航（不硬编码高度）+ 末卡呼吸空间
         Spacer(
@@ -363,11 +366,15 @@ private fun StatusDotSmall(status: DiningOrderStatus) {
     }
 }
 
-/** 圆形头像（手机号尾字符 + 在线点）；离线灰点，在线绿点 */
+/**
+ * 圆形头像（优先后端下发头像直链，缺失回落手机号尾字符）+ 在线点；离线灰点，在线绿点。
+ * 头像 URL 由后端 users.avatar 下发（脱敏资料），经 [SmartWashAsyncImage] 统一加载。
+ */
 @Composable
 private fun MemberAvatar(
     label: String,
     online: Boolean,
+    avatarUrl: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -378,11 +385,19 @@ private fun MemberAvatar(
             .border(1.5.dp, AppColors.colorScheme.surface, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = label.takeLast(1).ifBlank { "友" },
-            style = MaterialTheme.typography.labelSmall,
-            color = AppColors.colorScheme.onPrimarySoft,
-        )
+        val url = avatarUrl?.takeIf { it.isNotBlank() }
+        if (url == null) {
+            Text(
+                text = label.takeLast(1).ifBlank { "友" },
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.colorScheme.onPrimarySoft,
+            )
+        } else {
+            SmartWashAsyncImage(
+                url = url,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -416,6 +431,7 @@ private fun OnlineMemberStack(members: List<DiningOrderDetailVo.OrderMember>) {
                     MemberAvatar(
                         label = member.safePhoneMasked,
                         online = member.isOnline,
+                        avatarUrl = member.safeAvatar,
                         modifier = Modifier.offset(x = (index * 24).dp),
                     )
                 }
@@ -464,7 +480,11 @@ private fun InvitePanel(
                         .fillMaxWidth()
                         .padding(vertical = AppDimens.spaceXs),
                 ) {
-                    MemberAvatar(label = collaborator.safePhoneMasked, online = false)
+                    MemberAvatar(
+                        label = collaborator.safePhoneMasked,
+                        online = false,
+                        avatarUrl = collaborator.safeAvatar,
+                    )
                     Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -517,7 +537,11 @@ private fun InvitePanel(
                         .fillMaxWidth()
                         .padding(vertical = AppDimens.spaceXs),
                 ) {
-                    MemberAvatar(label = invite.safeInviteePhoneMasked, online = false)
+                    MemberAvatar(
+                        label = invite.safeInviteePhoneMasked,
+                        online = false,
+                        avatarUrl = invite.safeInviteeAvatar,
+                    )
                     Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                     Text(
                         text = invite.safeInviteePhoneMasked,
