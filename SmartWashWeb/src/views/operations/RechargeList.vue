@@ -285,7 +285,14 @@ const exporting = ref(false);
 const handleExport = async () => {
   exporting.value = true;
   try {
-    const params = buildRangeParams();
+    // 导出与列表所见一致：日期范围 + 当前业务筛选（记录ID/手机号/金额/充值类型）
+    const params = {
+      ...buildRangeParams(),
+      recordId: listQuery.recordId ?? undefined,
+      phoneNumber: listQuery.phoneNumber ?? undefined,
+      amount: listQuery.amount ?? undefined,
+      rechargeType: listQuery.rechargeType ?? undefined,
+    };
     const blob = await exportRechargeRecords(params);
     // 文件名含秒级时间戳，避免同名文件互相覆盖
     saveBlobAs(blob, `充值记录_${dayjs().format('YYYYMMDDHHmmss')}.xlsx`);

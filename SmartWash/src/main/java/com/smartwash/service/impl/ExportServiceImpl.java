@@ -88,11 +88,7 @@ public class ExportServiceImpl implements ExportService {
     }
 
     @Override
-    public void exportRechargeRecordsExcel(LocalDateTime dateFrom, LocalDateTime dateTo, OutputStream out) throws IOException {
-        SearchRechargeRecordsFrom searchFrom = new SearchRechargeRecordsFrom();
-        searchFrom.setStartTime(dateFrom);
-        searchFrom.setEndTime(dateTo);
-
+    public void exportRechargeRecordsExcel(SearchRechargeRecordsFrom searchFrom, OutputStream out) throws IOException {
         // SXSSF：仅滑动窗口驻留内存，close 时随 workbook 一并清理临时文件
         try (SXSSFWorkbook workbook = new SXSSFWorkbook(SXSSF_WINDOW_SIZE)) {
             Sheet sheet = workbook.createSheet("充值记录");
