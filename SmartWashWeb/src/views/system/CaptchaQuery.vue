@@ -77,6 +77,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onBeforeUnmount, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { queryCaptcha } from '@/api/captcha';
@@ -160,7 +161,7 @@ async function handleQuery() {
     logger.error('验证码查询失败:', error);
     queryState.value = 'error';
     if (!error?.isAxiosError) {
-      ElMessage.error(error.message || '查询失败，请稍后重试');
+      ElMessage.error(friendlyErrorMessage(error, '查询失败，请稍后重试'));
     }
   } finally {
     loading.value = false;

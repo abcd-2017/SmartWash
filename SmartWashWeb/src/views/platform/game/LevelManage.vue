@@ -150,6 +150,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getGameList } from '@/api/game';
@@ -177,7 +178,7 @@ const loadGameOptions = async () => {
     // 下拉加载失败不能静默：不提示则下拉永远为空，用户无从区分「没有游戏」与「加载失败」
     logger.error('游戏下拉加载失败:', error);
     gameOptions.value = [];
-    ElMessage.error(error.message || '游戏列表加载失败');
+    ElMessage.error(friendlyErrorMessage(error, '游戏列表加载失败'));
   }
 };
 
@@ -302,7 +303,7 @@ const submitLevel = async () => {
       `levelNo=${levelForm.levelNo}`,
       error
     );
-    ElMessage.error(error.message || '保存失败');
+    ElMessage.error(friendlyErrorMessage(error, '保存失败'));
   } finally {
     levelSubmitting.value = false;
   }
@@ -326,7 +327,7 @@ const handleDeleteLevel = async (row) => {
   } catch (error) {
     // 同保存：业务拒绝（如后端占用校验）必须可见
     logger.error('删除关卡失败:', `gameKey=${levelGameKey.value}`, `levelNo=${row.levelNo}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingLevelNo.value = null;
   }

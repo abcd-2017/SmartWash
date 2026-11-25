@@ -214,7 +214,7 @@ import {
   noticeReadRateTagType,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -311,7 +311,7 @@ const handleShowStat = async (row) => {
   } catch (error) {
     if (mySeq !== statSeq) return;
     logger.error('公告送达统计加载失败:', `id=${row.id}`, error);
-    ElMessage.error(error.message || '获取送达统计失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取送达统计失败'));
     statVisible.value = false;
   } finally {
     // 被丢弃的旧响应不得关掉最新请求的 loading
@@ -362,7 +362,7 @@ const submitForm = async () => {
         `type=${tempNotice.type}`,
         error
       );
-      ElMessage.error(error.message || '发送失败');
+      ElMessage.error(friendlyErrorMessage(error, '发送失败'));
     }
   } finally {
     submitting.value = false;

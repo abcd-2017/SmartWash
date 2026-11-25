@@ -157,6 +157,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getGameList } from '@/api/game';
@@ -187,7 +188,7 @@ const loadGameOptions = async () => {
     // 下拉加载失败不能静默：不提示则筛选器永远为空，用户无从区分「无数据」与「加载失败」
     logger.error('游戏下拉加载失败:', error);
     gameOptions.value = [];
-    ElMessage.error(error.message || '游戏列表加载失败');
+    ElMessage.error(friendlyErrorMessage(error, '游戏列表加载失败'));
   }
 };
 

@@ -161,7 +161,7 @@ import { getRagDocumentList, uploadRagDocument } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 
 const formRef = ref(null);
 const uploadRef = ref(null);
@@ -287,7 +287,7 @@ const submitUpload = async () => {
       logger.debug('古籍上传表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error('古籍上传失败:', `title=${uploadForm.title}`, error);
-      ElMessage.error(error.message || '上传失败');
+      ElMessage.error(friendlyErrorMessage(error, '上传失败'));
     }
   } finally {
     uploading.value = false;

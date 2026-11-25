@@ -130,6 +130,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { computed, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
@@ -245,7 +246,7 @@ const handleSubmit = async () => {
   } catch (error) {
     // 业务拒绝必须提示：http 拦截器只对 HTTP 层错误弹 toast，「第 N 关」定位文案到此为静默
     logger.error('关卡批量导入失败:', `gameKey=${props.gameKey}`, error);
-    ElMessage.error(error.message || '导入失败');
+    ElMessage.error(friendlyErrorMessage(error, '导入失败'));
   } finally {
     submitting.value = false;
   }

@@ -189,6 +189,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
@@ -293,7 +294,7 @@ const handleVerify = async () => {
   } catch (error) {
     // 业务失败在 http.js 拦截器已留痕，这里归因到页面动作并透出后端 message
     logger.error('审计链完整性校验失败:', error);
-    ElMessage.error(error.message || '链完整性校验失败');
+    ElMessage.error(friendlyErrorMessage(error, '链完整性校验失败'));
   } finally {
     verifyLoading.value = false;
   }

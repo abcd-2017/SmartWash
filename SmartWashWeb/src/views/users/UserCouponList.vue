@@ -112,6 +112,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
@@ -204,7 +205,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除领取记录失败:', `userCouponId=${row.userCouponId}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

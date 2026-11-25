@@ -191,6 +191,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getUserList, addUser, updateUser, deleteUser } from '@/api/user';
@@ -297,7 +298,7 @@ const fetchSchools = async () => {
   } catch (error) {
     // 与 LockerList 同场景对齐：下拉拉取失败弹 toast（此前仅 logger 静默，筛选不可用无从归因）
     logger.error('获取学校列表失败:', error);
-    ElMessage.error(error.message || '获取学校列表失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取学校列表失败'));
   }
 };
 
@@ -365,7 +366,7 @@ const submitForm = async () => {
       `userId=${tempUser.userId ?? '-'}`,
       error
     );
-    ElMessage.error(error.message || '操作失败');
+    ElMessage.error(friendlyErrorMessage(error, '操作失败'));
   } finally {
     submitting.value = false;
   }
@@ -385,7 +386,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除学生失败:', `userId=${row.userId}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

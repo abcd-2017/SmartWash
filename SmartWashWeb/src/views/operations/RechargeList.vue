@@ -152,6 +152,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onMounted, ref, reactive } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Download } from '@element-plus/icons-vue';
@@ -250,7 +251,7 @@ const fetchSummary = async () => {
   } catch (error) {
     if (mySeq !== summarySeq) return;
     logger.error('充值汇总加载失败:', error);
-    ElMessage.error(error.message || '获取充值汇总失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取充值汇总失败'));
   } finally {
     // 被丢弃的旧响应不得关掉最新请求的 loading
     if (mySeq === summarySeq) {
@@ -304,7 +305,7 @@ const handleExport = async () => {
     );
   } catch (error) {
     logger.error('充值记录导出失败:', error);
-    ElMessage.error(error.message || '导出失败，请稍后重试');
+    ElMessage.error(friendlyErrorMessage(error, '导出失败，请稍后重试'));
   } finally {
     exporting.value = false;
   }

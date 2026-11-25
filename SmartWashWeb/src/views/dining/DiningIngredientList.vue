@@ -177,7 +177,7 @@ import {
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import { formatTime } from '@/utils/format';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import {
   DINING_INGREDIENT_CATEGORY_OPTIONS,
   DINING_ALLERGEN_OPTIONS,
@@ -327,7 +327,7 @@ const submitForm = async () => {
         `id=${tempIngredient.id ?? '-'}`,
         error
       );
-      ElMessage.error(error.message || '操作失败');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败'));
     }
   } finally {
     submitting.value = false;
@@ -351,7 +351,7 @@ const handleDelete = async (row) => {
   } catch (error) {
     logger.error('配料删除失败:', `id=${row.id}`, `name=${row.name}`, error);
     // 引用冲突（如「配料「鸡蛋」被 3 个菜谱引用，无法删除」）与普通失败统一透出后端 message
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

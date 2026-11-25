@@ -387,7 +387,7 @@ import {
   workbenchEntryTypeText,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -515,7 +515,7 @@ const handleCoverUpload = async ({ file }) => {
     tempEntry.imageUrl = url;
     ElMessage.success('配图已上传');
   } catch (error) {
-    ElMessage.error(error.message || '配图上传失败');
+    ElMessage.error(friendlyErrorMessage(error, '配图上传失败'));
   } finally {
     coverUploading.value = false;
   }
@@ -592,7 +592,7 @@ const handleToggleEnabled = async (row) => {
       `enabled=${next}`,
       error
     );
-    ElMessage.error(error.message || '状态切换失败');
+    ElMessage.error(friendlyErrorMessage(error, '状态切换失败'));
   } finally {
     togglingId.value = null;
   }
@@ -707,7 +707,7 @@ const submitForm = async () => {
         `id=${tempEntry.id ?? '-'}`,
         error
       );
-      ElMessage.error(error.message || '操作失败');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败'));
     }
   } finally {
     submitting.value = false;
@@ -734,7 +734,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('工作台入口删除失败:', `id=${row.id}`, `entryKey=${row.entryKey}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

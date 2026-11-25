@@ -68,7 +68,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getSysConfigList, updateSysConfig } from '@/api/config';
 import { formatTime } from '@/utils/format';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import logger from '@/utils/logger';
 
 const loading = ref(false);
@@ -101,7 +101,7 @@ const fetchList = async () => {
   } catch (error) {
     logger.error('获取系统参数失败:', error);
     loadError.value = true;
-    ElMessage.error(error.message || '获取系统参数失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取系统参数失败'));
   } finally {
     loading.value = false;
   }
@@ -143,7 +143,7 @@ const submitForm = async () => {
       return;
     }
     logger.error('系统参数更新失败:', error);
-    ElMessage.error(error.message || '修改失败');
+    ElMessage.error(friendlyErrorMessage(error, '修改失败'));
   } finally {
     submitting.value = false;
   }

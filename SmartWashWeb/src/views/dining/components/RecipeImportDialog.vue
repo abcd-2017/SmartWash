@@ -178,6 +178,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { computed, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
@@ -232,7 +233,7 @@ const handleDownloadTemplate = async () => {
     saveBlobAs(blob, '菜谱导入模板.xlsx');
   } catch (error) {
     logger.error('菜谱导入模板下载失败:', error);
-    ElMessage.error(error.message || '模板下载失败');
+    ElMessage.error(friendlyErrorMessage(error, '模板下载失败'));
   } finally {
     templateDownloading.value = false;
   }
@@ -266,7 +267,7 @@ const handleParse = async () => {
   } catch (error) {
     // 整体性错误（缺列/超限/格式损坏）由后端信封 message 给出，拦截器统一提示后这里兜底
     logger.warn('菜谱导入解析失败:', error);
-    ElMessage.error(error.message || '解析失败，请下载最新模板对照填写');
+    ElMessage.error(friendlyErrorMessage(error, '解析失败，请下载最新模板对照填写'));
   } finally {
     parsing.value = false;
   }
@@ -329,7 +330,7 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     logger.error('菜谱批量导入提交失败:', error);
-    ElMessage.error(error.message || '导入失败');
+    ElMessage.error(friendlyErrorMessage(error, '导入失败'));
   } finally {
     submitting.value = false;
   }

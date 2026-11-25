@@ -238,6 +238,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
@@ -314,7 +315,7 @@ const handleDetail = async (row) => {
     // 页面自有 catch（列表拉取失败已由 useTableList/拦截器留痕，这里只兜底详情请求）
     if (mySeq !== detailSeq) return;
     logger.error('短码详情获取失败:', `id=${row.id}`, error);
-    ElMessage.error(error.message || '获取短码详情失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取短码详情失败'));
     detailVisible.value = false;
   } finally {
     // 被丢弃的旧响应不得关掉最新请求的 loading
@@ -365,7 +366,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('短码删除失败:', `id=${row.id}`, `code=${row.code}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

@@ -291,7 +291,7 @@ import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { divModelVendorOptionsCache } from '@/utils/optionCache';
 
 // 树形目录一次拉全量（目录当前仅 81 条，量级远低于该上限；超出时分页器出现兜底）
@@ -489,7 +489,7 @@ const submitImport = async () => {
     refreshVendorOptions();
   } catch (error) {
     logger.error('模型目录批量导入失败:', error);
-    ElMessage.error(error.message || '导入失败');
+    ElMessage.error(friendlyErrorMessage(error, '导入失败'));
   } finally {
     importing.value = false;
   }
@@ -534,7 +534,7 @@ const submitForm = async () => {
         `name=${tempModel.name}`,
         error
       );
-      ElMessage.error(error.message || '操作失败');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败'));
     }
   } finally {
     submitting.value = false;
@@ -554,7 +554,7 @@ const handleDelete = async (row) => {
     refreshVendorOptions();
   } catch (error) {
     logger.error('模型删除失败:', `id=${row.id}`, `name=${row.name}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }
@@ -576,7 +576,7 @@ const handleTest = async (row) => {
   } catch (error) {
     // 传输层错误（网络/超时/HTTP）：与业务失败区分记录，提示沿用统一失败文案
     logger.error('模型连通性测试请求失败:', `id=${row.id}`, `name=${row.name}`, error);
-    ElMessage.error(error.message || '连通性测试失败');
+    ElMessage.error(friendlyErrorMessage(error, '连通性测试失败'));
   } finally {
     testingId.value = null;
   }
@@ -611,7 +611,7 @@ const handleToggle = async (row) => {
     fetchData();
   } catch (error) {
     logger.error(`模型${action}失败:`, `id=${row.id}`, `name=${row.name}`, error);
-    ElMessage.error(error.message || `${action}失败`);
+    ElMessage.error(friendlyErrorMessage(error, `${action}失败`));
   } finally {
     togglingId.value = null;
   }

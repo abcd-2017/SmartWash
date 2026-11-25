@@ -224,6 +224,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getOrderStatus, getOrderList, deleteOrder, updateOrderStatus } from '@/api/order';
@@ -389,7 +390,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除订单失败:', `orderId=${row.orderId}`, `orderNo=${row.orderNo}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }
@@ -439,7 +440,7 @@ const confirmUpdateStatus = async () => {
       `orderNo=${statusForm.orderNo}`,
       error
     );
-    ElMessage.error(error.message || '状态更新失败');
+    ElMessage.error(friendlyErrorMessage(error, '状态更新失败'));
   } finally {
     submitting.value = false;
   }

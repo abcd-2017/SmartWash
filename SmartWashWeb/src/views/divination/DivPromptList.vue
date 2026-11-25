@@ -200,7 +200,7 @@ import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import { divPromptStatusTagType, divPromptStatusText } from '@/constants/dict';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -371,7 +371,7 @@ const submitForm = async () => {
         `version=${tempPrompt.version}`,
         error
       );
-      ElMessage.error(error.message || '操作失败');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败'));
     }
   } finally {
     submitting.value = false;
@@ -403,7 +403,7 @@ const handleActivate = async (row) => {
       `version=${row.version}`,
       error
     );
-    ElMessage.error(error.message || '激活失败');
+    ElMessage.error(friendlyErrorMessage(error, '激活失败'));
   } finally {
     activatingId.value = null;
   }
@@ -436,7 +436,7 @@ const handleDelete = async (row) => {
       `version=${row.version}`,
       error
     );
-    ElMessage.error(error.message || '操作失败');
+    ElMessage.error(friendlyErrorMessage(error, '操作失败'));
   } finally {
     deletingId.value = null;
   }

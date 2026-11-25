@@ -203,7 +203,7 @@ import {
   deeplinkPlatformTagType,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -294,7 +294,7 @@ const handleToggleEnabled = async (row) => {
   } catch (error) {
     row.enabled = prev; // 失败回滚开关状态
     logger.error('跳转路由启停失败:', `id=${row.id}`, `host=${row.host}`, `enabled=${next}`, error);
-    ElMessage.error(error.message || '状态切换失败');
+    ElMessage.error(friendlyErrorMessage(error, '状态切换失败'));
   } finally {
     togglingId.value = null;
   }
@@ -377,7 +377,7 @@ const submitForm = async () => {
         `id=${tempRoute.id ?? '-'}`,
         error
       );
-      ElMessage.error(error.message || '操作失败');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败'));
     }
   } finally {
     submitting.value = false;
@@ -399,7 +399,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('跳转路由删除失败:', `id=${row.id}`, `host=${row.host}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

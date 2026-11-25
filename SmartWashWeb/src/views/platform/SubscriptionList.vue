@@ -148,6 +148,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
@@ -221,7 +222,7 @@ const fetchSummary = async () => {
     summary.expiringIn7Days = Number(data.expiringIn7Days) || 0;
   } catch (error) {
     logger.error('订阅汇总加载失败:', error);
-    ElMessage.error(error.message || '获取订阅汇总失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取订阅汇总失败'));
   } finally {
     summaryLoading.value = false;
   }

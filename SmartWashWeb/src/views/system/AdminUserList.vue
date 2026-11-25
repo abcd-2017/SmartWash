@@ -177,7 +177,7 @@ import { ElMessage } from 'element-plus';
 import { getAdminUserList, addAdminUser, updateAdminUser, deleteAdminUser } from '@/api/adminUser';
 import { roleOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
@@ -301,7 +301,7 @@ const handleBatchDelete = async () => {
     tableRef.value.clearSelection();
   } catch (error) {
     logger.error('批量删除管理员失败:', `count=${count}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     batchDeleting.value = false;
   }
@@ -364,7 +364,7 @@ const submitForm = async () => {
       logger.debug('管理员表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error('保存管理员失败:', error instanceof Error ? error : '未知错误');
-      ElMessage.error(error.message || '操作失败，请检查输入');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败，请检查输入'));
     }
   } finally {
     submitting.value = false;
@@ -386,7 +386,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除管理员失败:', `adminId=${row.adminId}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

@@ -126,7 +126,7 @@ import { getRoleList, addRole, updateRole, deleteRole } from '@/api/role';
 import { getAdminUserList } from '@/api/adminUser';
 import { roleOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
@@ -223,7 +223,7 @@ const submitForm = async () => {
       logger.debug('角色表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error('保存角色失败:', error instanceof Error ? error : '未知错误');
-      ElMessage.error(error.message || '操作失败');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败'));
     }
   } finally {
     submitting.value = false;
@@ -262,7 +262,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除角色失败:', `roleId=${row.roleId}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

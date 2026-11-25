@@ -152,6 +152,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 // echarts/core 按需注册（树摇，收编 TrendChart.vue 方案）：折线/柱/饼 + 网格/悬浮提示/图例 + Canvas，
 // 避免整包 echarts 进入本路由 chunk
@@ -317,7 +318,7 @@ const fetchStats = async () => {
     // 失败置位：统计卡显示错误占位+重试按钮，图表区显示错误态而非「暂无数据」
     queryError.value = true;
     logger.error('用量统计查询失败:', error);
-    ElMessage.error(error.message || '获取用量数据失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取用量数据失败'));
   } finally {
     // 被丢弃的旧响应不得关掉最新请求的 loading
     if (mySeq === usageQuerySeq) {

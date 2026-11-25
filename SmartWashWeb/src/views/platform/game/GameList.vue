@@ -709,6 +709,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, reactive, computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Document, UploadFilled, CircleCheckFilled, Close, Picture } from '@element-plus/icons-vue';
@@ -1313,7 +1314,7 @@ const submitUpload = async () => {
   } catch (error) {
     logger.error('游戏上传失败:', `gameKey=${tempGame.gameKey}`, error);
     // 409 gameKey 冲突 / 413 超限 / 403 鉴权等由后端 message 透出
-    ElMessage.error(error.message || '上传失败');
+    ElMessage.error(friendlyErrorMessage(error, '上传失败'));
   } finally {
     uploading.value = false;
   }
@@ -1373,7 +1374,7 @@ const handleToggleEnabled = async (row) => {
       `gameKey=${row.gameKey}`,
       error
     );
-    ElMessage.error(error.message || '状态切换失败');
+    ElMessage.error(friendlyErrorMessage(error, '状态切换失败'));
   } finally {
     togglingId.value = null;
   }
@@ -1427,7 +1428,7 @@ const handleBatchEnabled = async (enabled) => {
     fetchData();
   } catch (error) {
     logger.error(`游戏批量${actionText}失败:`, error);
-    ElMessage.error(error.message || `批量${actionText}失败`);
+    ElMessage.error(friendlyErrorMessage(error, `批量${actionText}失败`));
   } finally {
     batchToggling.value = false;
   }
@@ -1556,7 +1557,7 @@ const submitEdit = async () => {
     // 表单校验失败（字段错误已展示）与接口报错分开提示
     if (error?.message) {
       logger.error('游戏编辑失败:', `id=${tempGame.id}`, `gameKey=${tempGame.gameKey}`, error);
-      ElMessage.error(error.message);
+      ElMessage.error(friendlyErrorMessage(error));
     }
   } finally {
     submitting.value = false;
@@ -1579,7 +1580,7 @@ const handleDelete = async (row) => {
     fetchData();
   } catch (error) {
     logger.error('游戏删除失败:', `id=${row.id}`, `gameKey=${row.gameKey}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

@@ -74,7 +74,7 @@ import { Refresh } from '@element-plus/icons-vue';
 import { getPlatformSettings, updatePlatformSettings, rotateMasterKey } from '@/api/divination';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 
 const formRef = ref(null);
 const loading = ref(false);
@@ -108,7 +108,7 @@ const fetchSettings = async () => {
     loaded.value = true;
   } catch (error) {
     logger.error('获取平台设置失败:', error);
-    ElMessage.error(error.message || '获取平台设置失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取平台设置失败'));
   } finally {
     loading.value = false;
   }
@@ -134,7 +134,7 @@ const submitForm = async () => {
       logger.debug('平台设置表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error('平台设置保存失败:', error);
-      ElMessage.error(error.message || '保存失败');
+      ElMessage.error(friendlyErrorMessage(error, '保存失败'));
     }
   } finally {
     submitting.value = false;
@@ -155,7 +155,7 @@ const handleRotateKey = async () => {
     ElMessage.success('主密钥轮换已记录（密钥重加密任务尚未实现）');
   } catch (error) {
     logger.error('主密钥轮换失败:', error);
-    ElMessage.error(error.message || '主密钥轮换失败');
+    ElMessage.error(friendlyErrorMessage(error, '主密钥轮换失败'));
   } finally {
     rotating.value = false;
   }
