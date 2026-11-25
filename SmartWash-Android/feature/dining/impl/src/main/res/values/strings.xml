@@ -210,6 +210,11 @@
     <string name="dining_shopping_list_ingredients_progress_format">食材清单 · 已买 %1$d/%2$d</string>
     <string name="dining_shopping_list_copy">复制清单</string>
     <string name="dining_shopping_list_copy_done">清单已复制</string>
+    <string name="dining_shopping_list_share_poster">分享海报</string>
+    <string name="dining_shopping_list_poster_subtitle">%1$d 人吃 · 共 %2$d 项食材</string>
+    <string name="dining_shopping_list_poster_footer">吃啥 · Today Eat</string>
+    <string name="dining_shopping_list_poster_fail">海报生成失败，请重试</string>
+    <string name="dining_shopping_list_share_poster_chooser">分享购买清单</string>
     <string name="dining_shopping_list_per_recipe_section">按菜备菜</string>
     <string name="dining_shopping_list_empty_ingredients">还没有需要购买的食材</string>
     <string name="dining_shopping_list_empty_per_recipe">还没有人选菜</string>

@@ -1,5 +1,8 @@
 package com.smartwash.feature.dining.ui.order
 
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Canvas
@@ -35,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -77,8 +81,13 @@ import com.smartwash.feature.dining.R
 import com.smartwash.feature.dining.api.DiningRoute
 import com.smartwash.feature.dining.logic.DiningNutritionCalculator
 import com.smartwash.feature.dining.logic.DiningRecipeShopping
+import com.smartwash.feature.dining.logic.DiningShoppingListPoster
 import com.smartwash.feature.dining.logic.DiningShoppingListResult
 import com.smartwash.feature.dining.logic.buildShoppingListText
+import androidx.core.content.FileProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** 双视图 Tab 索引（0=按食材买菜，1=按菜备菜） */
 private const val TAB_INGREDIENTS = 0
@@ -133,6 +142,34 @@ fun DiningOrderShoppingListPage(
         }
     }
 
+    // 分享海报：清单按食材行绘制成竖版图片，经系统分享面板分发
+    val scope = rememberCoroutineScope()
+    val untitledFallback = stringResource(R.string.dining_order_title_placeholder)
+    val posterSubtitle = stringResource(
+        R.string.dining_shopping_list_poster_subtitle,
+        result?.memberCount ?: 0,
+        result?.ingredients?.size ?: 0,
+    )
+    val posterFooter = stringResource(R.string.dining_shopping_list_poster_footer)
+    val posterChooser = stringResource(R.string.dining_shopping_list_share_poster_chooser)
+    val posterFail = stringResource(R.string.dining_shopping_list_poster_fail)
+    val sharePoster: () -> Unit = {
+        val current = result
+        if (current != null) {
+            scope.launch {
+                val bitmap = withContext(Dispatchers.Default) {
+                    DiningShoppingListPoster.build(
+                        title = orderTitle.ifBlank { untitledFallback },
+                        subtitle = posterSubtitle,
+                        lines = DiningShoppingListPoster.buildLines(current, checked),
+                        footer = posterFooter,
+                    )
+                }
+                shareBitmap(context, bitmap, posterChooser, posterFail)
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -145,6 +182,11 @@ fun DiningOrderShoppingListPage(
                 AppButton(
                     text = stringResource(R.string.dining_shopping_list_copy),
                     onClick = copyList,
+                    variant = AppButtonVariant.TEXT,
+                )
+                AppButton(
+                    text = stringResource(R.string.dining_shopping_list_share_poster),
+                    onClick = sharePoster,
                     variant = AppButtonVariant.TEXT,
                 )
             },
@@ -683,5 +725,26 @@ private fun RecipeShoppingThumb(coverUrl: String, name: String, modifier: Modifi
                     .padding(8.dp),
             )
         }
+    }
+}
+
+/**
+ * 海报落盘 + 系统分享：复用 :feature:update 的 FileProvider 授权目录（cacheDir/asset_tag_labels），
+ * 与工具箱标签图同先例；失败静默 Toast，不打断清单浏览。
+ */
+private fun shareBitmap(context: Context, bitmap: Bitmap, chooserTitle: String, failMessage: String) {
+    runCatching {
+        val cacheDir = java.io.File(context.cacheDir, "asset_tag_labels").apply { mkdirs() }
+        val file = java.io.File(cacheDir, "shopping_list_${System.currentTimeMillis()}.png")
+        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, chooserTitle))
+    }.onFailure {
+        Toast.makeText(context, failMessage, Toast.LENGTH_SHORT).show()
     }
 }
