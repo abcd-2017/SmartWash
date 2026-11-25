@@ -101,7 +101,9 @@
         :data="paymentList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        :empty-text="
+          hasPaymentFilter ? '试试调整筛选条件' : '还没有支付流水，用户支付后将在此展示'
+        "
       >
         <el-table-column prop="paymentId" label="支付ID" min-width="90" class-name="col-subtle" />
         <el-table-column label="订单号" min-width="200" show-overflow-tooltip>
@@ -151,7 +153,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getPayTypes, getPayStatus, getPaymentList } from '@/api/payment';
 import { formatPayAmount, formatTime } from '@/utils/format';
@@ -194,6 +196,18 @@ const {
   }),
   errorMsg: '获取数据失败',
 });
+
+// 空态区分：有筛选且库内确有命中时提示调整条件；库空（total=0）即使用户带了筛选也一律展示流水来源说明
+const hasPaymentFilter = computed(
+  () =>
+    (Boolean(listQuery.paymentId) ||
+      Boolean((listQuery.orderNo || '').trim()) ||
+      Boolean((listQuery.phoneNumber || '').trim()) ||
+      Boolean(listQuery.paymentMethod) ||
+      Boolean(listQuery.status) ||
+      Boolean(listQuery.startTime || listQuery.endTime)) &&
+    total.value > 0
+);
 
 const timeRange = useTimeRange(listQuery);
 

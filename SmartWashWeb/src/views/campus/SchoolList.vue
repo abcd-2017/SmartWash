@@ -91,7 +91,9 @@
         :data="schoolList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        :empty-text="
+          hasSchoolFilter ? '试试调整筛选条件' : '还没有学校，点击右上角『新增学校』开始'
+        "
       >
         <el-table-column prop="schoolId" label="ID" min-width="70" />
         <el-table-column prop="schoolName" label="学校名称" min-width="140" show-overflow-tooltip />
@@ -242,7 +244,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getSchoolList, addSchool, updateSchool, deleteSchool } from '@/api/school';
 import { schoolOptionsCache } from '@/utils/optionCache';
@@ -292,6 +294,18 @@ const {
   }),
   errorMsg: '获取学校列表失败',
 });
+
+// 空态区分：有筛选且库内确有命中时提示调整条件；库空（total=0）即使用户带了筛选也一律引导新增
+const hasSchoolFilter = computed(
+  () =>
+    (Boolean(listQuery.schoolId) ||
+      Boolean((listQuery.schoolName || '').trim()) ||
+      Boolean((listQuery.schoolCode || '').trim()) ||
+      Boolean((listQuery.province || '').trim()) ||
+      Boolean((listQuery.city || '').trim()) ||
+      Boolean(listQuery.lockerCount)) &&
+    total.value > 0
+);
 
 const tempSchool = reactive({
   schoolId: null,

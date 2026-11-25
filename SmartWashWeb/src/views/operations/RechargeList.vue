@@ -108,7 +108,9 @@
         :data="rechargeList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        :empty-text="
+          hasRechargeFilter ? '试试调整筛选条件' : '还没有充值记录，用户充值后将在此展示'
+        "
       >
         <el-table-column prop="recordId" label="记录ID" min-width="100" />
         <el-table-column label="手机号" min-width="120">
@@ -153,7 +155,7 @@
 
 <script setup>
 import { friendlyErrorMessage } from '@/utils/errors';
-import { onMounted, ref, reactive } from 'vue';
+import { onMounted, ref, reactive, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Download } from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
@@ -210,6 +212,22 @@ const DEFAULT_RANGE = () => [
   dayjs().format('YYYY-MM-DD'),
 ];
 const dateRange = ref(DEFAULT_RANGE());
+
+// 空态区分：有筛选且库内确有命中时提示调整条件；库空（total=0）即使用户带了筛选也一律展示记录来源说明。
+// 日期范围默认近 30 天（常驻筛选），仅当用户改动过才计入「有筛选」，否则空库时会被常驻范围误判成筛选态
+const hasRechargeFilter = computed(() => {
+  const defaultRange = DEFAULT_RANGE();
+  const rangeChanged =
+    dateRange.value?.[0] !== defaultRange[0] || dateRange.value?.[1] !== defaultRange[1];
+  return (
+    (Boolean(listQuery.recordId) ||
+      Boolean((listQuery.phoneNumber || '').trim()) ||
+      Boolean(listQuery.amount) ||
+      Boolean(listQuery.rechargeType) ||
+      rangeChanged) &&
+    total.value > 0
+  );
+});
 
 // 列表接口沿用 startTime/endTime：日期换算成全天时间边界
 const syncRangeToQuery = () => {

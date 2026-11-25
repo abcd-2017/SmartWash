@@ -107,7 +107,9 @@
         :data="orderList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        :empty-text="
+          hasOrderFilter ? '试试调整筛选条件' : '还没有订单，用户下单后将在此展示'
+        "
       >
         <el-table-column prop="orderNo" label="订单号" min-width="200" show-overflow-tooltip />
         <el-table-column label="用户信息" min-width="150">
@@ -319,6 +321,18 @@ const {
   }),
   errorMsg: '获取数据失败',
 });
+
+// 空态区分：有筛选且库内确有命中时提示调整条件；库空（total=0）即使用户带了筛选也一律展示订单来源说明
+const hasOrderFilter = computed(
+  () =>
+    (Boolean((listQuery.phoneNumber || '').trim()) ||
+      Boolean((listQuery.schoolName || '').trim()) ||
+      Boolean((listQuery.orderNo || '').trim()) ||
+      Boolean(listQuery.laundryItemsId) ||
+      Boolean(listQuery.status) ||
+      Boolean(listQuery.startTime || listQuery.endTime)) &&
+    total.value > 0
+);
 
 const timeRange = useTimeRange(listQuery);
 

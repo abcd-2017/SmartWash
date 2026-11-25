@@ -44,7 +44,9 @@
         :data="laundryList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        :empty-text="
+          hasLaundryFilter ? '试试调整筛选条件' : '还没有套餐，点击右上角『新增套餐』开始'
+        "
       >
         <el-table-column prop="itemId" label="ID" min-width="80" />
         <el-table-column label="套餐" min-width="320">
@@ -131,7 +133,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getLaundryList, addLaundry, updateLaundry, deleteLaundry } from '@/api/laundry';
 import { laundryOptionsCache } from '@/utils/optionCache';
@@ -179,6 +181,13 @@ const {
   }),
   errorMsg: '获取数据失败',
 });
+
+// 空态区分：有筛选且库内确有命中时提示调整条件；库空（total=0）即使用户带了筛选也一律引导新增
+const hasLaundryFilter = computed(
+  () =>
+    (Boolean(listQuery.itemId) || Boolean((listQuery.itemName || '').trim())) &&
+    total.value > 0
+);
 
 const tempLaundry = reactive({
   itemId: null,

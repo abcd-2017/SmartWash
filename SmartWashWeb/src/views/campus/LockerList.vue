@@ -95,7 +95,11 @@
         :data="lockerList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        :empty-text="
+          hasLockerFilter
+            ? '试试调整筛选条件'
+            : '还没有寄存柜，点击右上角『新增寄存柜』或『批量新增』开始'
+        "
       >
         <el-table-column prop="lockerId" label="ID" min-width="80" />
         <el-table-column label="学校" min-width="180" show-overflow-tooltip>
@@ -288,7 +292,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
 import QRCode from 'qrcode';
 import {
@@ -359,6 +363,17 @@ const {
   }),
   errorMsg: '获取数据失败',
 });
+
+// 空态区分：有筛选且库内确有命中时提示调整条件；库空（total=0）即使用户带了筛选也一律引导新增
+const hasLockerFilter = computed(
+  () =>
+    (Boolean(listQuery.lockerId) ||
+      Boolean(listQuery.schoolId) ||
+      Boolean(listQuery.lockerNumber) ||
+      Boolean(listQuery.status) ||
+      Boolean(listQuery.startTime || listQuery.endTime)) &&
+    total.value > 0
+);
 
 const timeRange = useTimeRange(listQuery);
 
