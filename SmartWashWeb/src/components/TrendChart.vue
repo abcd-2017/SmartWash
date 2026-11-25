@@ -1,6 +1,12 @@
 <template>
   <div class="trend-chart">
-    <div v-if="hasData" ref="containerRef" class="trend-chart__canvas"></div>
+    <div
+      v-if="hasData"
+      ref="containerRef"
+      class="trend-chart__canvas"
+      role="img"
+      :aria-label="chartSummary"
+    ></div>
     <div v-else class="trend-chart__empty">
       <el-empty :image-size="60" description="暂无数据" />
     </div>
@@ -13,10 +19,10 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 // 避免整包 echarts 进入消费方 chunk（DivUsage.vue 场景特殊用整包，此处不沿用）
 import * as echarts from 'echarts/core';
 import { BarChart, LineChart } from 'echarts/charts';
-import { GridComponent, TooltipComponent } from 'echarts/components';
+import { AriaComponent, GridComponent, TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 
-echarts.use([LineChart, BarChart, GridComponent, TooltipComponent, CanvasRenderer]);
+echarts.use([LineChart, BarChart, AriaComponent, GridComponent, TooltipComponent, CanvasRenderer]);
 
 const props = defineProps({
   // 图表数据：[{ date: 'yyyy-MM-dd', value: number }]，调用方从趋势接口行映射而来
@@ -38,6 +44,17 @@ let chart = null;
 let resizeObserver = null;
 
 const hasData = computed(() => Array.isArray(props.data) && props.data.length > 0);
+
+// 读屏摘要：canvas 图表对读屏不可见，用一句话给出最新值/峰值/点数（WCAG 1.1.1）
+const chartSummary = computed(() => {
+  if (!hasData.value) return '趋势图暂无数据';
+  const values = props.data.map((d) => Number(d.value) || 0);
+  const last = props.data[props.data.length - 1];
+  const max = Math.max(...values);
+  const maxDate = props.data[values.indexOf(max)]?.date;
+  const fmt = (v) => (props.valueFormatter ? props.valueFormatter(v) : String(v));
+  return `趋势图：共 ${props.data.length} 个数据点，最新 ${last?.date} 为 ${fmt(last?.value)}，峰值 ${maxDate} 为 ${fmt(max)}`;
+});
 
 // 减少动态效果：图表动画直接关闭（DESIGN.md 全局降级要求）
 const reducedMotion =
@@ -63,6 +80,8 @@ const buildOption = () => {
   const splitLineColor = readCssVar('--border-subtle', '#f1f5f9');
 
   return {
+    // 读屏替代：ECharts aria 生成结构化描述（含 decal 区分系列）
+    aria: { enabled: true, decal: { show: true } },
     animation: !reducedMotion,
     animationDuration: 320,
     animationDurationUpdate: 220,

@@ -123,22 +123,25 @@
         </el-table-column>
         <el-table-column label="操作前后摘要" min-width="260">
           <template #default="{ row }">
-            <el-tooltip
+            <!-- 用 popover + 原生 button：click 触发可被 Enter/空格激活，
+                 替代 tooltip（只监听 click，键盘无法展开） -->
+            <el-popover
               v-if="row.beforeJson || row.afterJson"
               placement="top"
               effect="light"
               trigger="click"
+              width="360"
             >
-              <template #content>
-                <div class="payload-tip">
-                  <p v-if="row.beforeJson">操作前：{{ row.beforeJson }}</p>
-                  <p v-if="row.afterJson">操作后：{{ row.afterJson }}</p>
-                </div>
+              <template #reference>
+                <button type="button" class="payload-cell" aria-label="查看操作前后数据">
+                  {{ payloadSummary(row) }}
+                </button>
               </template>
-              <span class="payload-cell" tabindex="0" role="button" aria-label="查看操作前后数据">{{
-                payloadSummary(row)
-              }}</span>
-            </el-tooltip>
+              <div class="payload-tip">
+                <p v-if="row.beforeJson">操作前：{{ row.beforeJson }}</p>
+                <p v-if="row.afterJson">操作后：{{ row.afterJson }}</p>
+              </div>
+            </el-popover>
             <span v-else>-</span>
           </template>
         </el-table-column>
@@ -306,11 +309,22 @@ onMounted(() => {
 /* 摘要「前 40 字 → 后 40 字」较长：单行省略 + 原生 title 悬浮看全文（cursor:help 语义保留） */
 .payload-cell {
   display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
   cursor: help;
   color: var(--el-text-color-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.payload-cell:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* tooltip 内 JSON 摘要：等宽字体 + 可换行，超长不撑破气泡 */
