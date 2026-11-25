@@ -126,7 +126,7 @@
           </template>
         </el-table-column>
         <el-table-column label="总价" min-width="120" align="right">
-          <template #default="{ row }">￥{{ formatAmount(row.totalPrice, '-') }}</template>
+          <template #default="{ row }">{{ formatPayAmount(row.totalPrice) }}</template>
         </el-table-column>
         <el-table-column label="状态" min-width="120">
           <template #default="{ row }">
@@ -229,7 +229,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getOrderStatus, getOrderList, deleteOrder, updateOrderStatus } from '@/api/order';
 import { schoolOptionsCache, laundryOptionsCache } from '@/utils/optionCache';
-import { formatTime, formatAmount } from '@/utils/format';
+import { formatTime, formatAmount, formatPayAmount } from '@/utils/format';
 import { orderStatusTagType } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';

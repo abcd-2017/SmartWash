@@ -154,7 +154,7 @@
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getPayTypes, getPayStatus, getPaymentList } from '@/api/payment';
-import { formatAmount, formatTime } from '@/utils/format';
+import { formatPayAmount, formatTime } from '@/utils/format';
 import { payStatusTagType } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
@@ -202,9 +202,6 @@ onMounted(() => {
   Promise.allSettled([fetchPayTypes(), fetchPayStatus()]);
   fetchData();
 });
-
-// 金额单元格：空值整格 '-'，非空才带 ￥ 前缀
-const formatPayAmount = (amount) => (amount == null ? '-' : `￥${formatAmount(amount)}`);
 
 const fetchPayTypes = async () => {
   try {

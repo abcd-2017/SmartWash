@@ -56,7 +56,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="basePrice" label="基础价格" min-width="140" align="right">
-          <template #default="{ row }">￥{{ formatAmount(row.basePrice) }}</template>
+          <template #default="{ row }">{{ formatPayAmount(row.basePrice) }}</template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
@@ -135,7 +135,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getLaundryList, addLaundry, updateLaundry, deleteLaundry } from '@/api/laundry';
 import { laundryOptionsCache } from '@/utils/optionCache';
-import { formatAmount, formatTime } from '@/utils/format';
+import { formatPayAmount, formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useConfirm } from '@/composables/useConfirm';

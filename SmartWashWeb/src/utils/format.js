@@ -48,6 +48,16 @@ export function formatAmount(value, placeholder = '0.00') {
 }
 
 /**
+ * 金额单元格统一口径：空值整格 `-`（不带 ￥，避免 「￥-」 被误读为负金额），
+ * 非空才加 ￥ 前缀。全站资金列表统一走此函数，禁止各页自定义空值表达。
+ * @param {Number|String|null} amount 金额
+ * @returns {String}
+ */
+export function formatPayAmount(amount) {
+  return amount == null ? '-' : `￥${formatAmount(amount)}`;
+}
+
+/**
  * 文件大小人性化展示（字节 → B/KB/MB），用于游戏包体积列
  * 空值（null/undefined）返回占位符 "-"（外链等无体积场景）
  * @param {Number|null} bytes 字节数

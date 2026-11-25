@@ -115,7 +115,7 @@
           <template #default="{ row }">{{ row.users?.phoneNumber || '-' }}</template>
         </el-table-column>
         <el-table-column label="充值金额" min-width="150" align="right">
-          <template #default="{ row }">￥{{ formatAmount(row.amount, '-') }}</template>
+          <template #default="{ row }">{{ formatPayAmount(row.amount) }}</template>
         </el-table-column>
         <el-table-column label="充值类型" min-width="120">
           <template #default="{ row }">
@@ -158,7 +158,7 @@ import { ElMessage } from 'element-plus';
 import { Download } from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
 import { getRechargeList, getRechargeSummary, exportRechargeRecords } from '@/api/recharge';
-import { formatTime, formatThousands, formatAmount } from '@/utils/format';
+import { formatTime, formatThousands, formatAmount, formatPayAmount } from '@/utils/format';
 import { saveBlobAs } from '@/utils/download';
 import {
   RECHARGE_TYPE_OPTIONS,
