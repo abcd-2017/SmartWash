@@ -81,7 +81,7 @@ val Water = Color(0xFF4A9FD4)
 val WaterSoft = Color(0xFFDCEFF7)       // 水色浅底容器
 
 // 图标容器六色浅底（规范 §2.1）
-val IconContainerGreen = Color(0xFFF0FBF4)   // 洗护/主
+val IconContainerGreen = Color(0xFFE8F6EF)   // 洗护/主（规范 §2.1，原与青同值导致六色语义退化）
 val IconContainerBlue = Color(0xFFEEF2FB)    // 物流/寄件
 val IconContainerOrange = Color(0xFFFDF3E7)  // 取件/待办
 val IconContainerPink = Color(0xFFFDEEF0)    // 异常/取消

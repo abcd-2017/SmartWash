@@ -812,8 +812,8 @@ private fun WideCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = tool.title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
+                        // 卡片标题走 v0.5 字阶 CardTitle 16/24/600
+                        style = AppTextStyles.CardTitle,
                         color = scheme.textPrimary
                     )
                     if (tool.description.isNotBlank()) {
@@ -829,7 +829,8 @@ private fun WideCard(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = scheme.textTertiary
+                    // 可点线索不能用 2.25:1 的 textTertiary（§10 红线）
+                    tint = scheme.textSecondary
                 )
             }
         }
@@ -889,8 +890,8 @@ private fun RowGroupCard(
         color = scheme.surface,
         border = BorderStroke(1.dp, scheme.outline)
     ) {
-        // 间距合同 v2 带回：卡内上下补 4dp——行间已有呼吸，卡顶/底不再贴边
-        Column(modifier = Modifier.padding(vertical = AppDimens.spaceXxs)) {
+        // TD35 L1：卡片内边距横 cardPadding / 纵 spaceSm（12），卡顶/底不贴边
+        Column(modifier = Modifier.padding(vertical = AppDimens.spaceSm)) {
             tools.forEachIndexed { index, tool ->
                 if (index > 0) {
                     // 发丝线只出现在同一容器内部（§1.3/§3.4）
@@ -956,8 +957,8 @@ private fun WorkbenchRowLine(
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = scheme.textTertiary
+            modifier = Modifier.size(20.dp),
+            tint = scheme.textSecondary
         )
     }
 }
@@ -1289,9 +1290,8 @@ private fun ToolTile(
                     }
                     Text(
                         text = tool.title,
-                        style = MaterialTheme.typography.bodyMedium,
-                        // 14/500：与列表行主文案/chip/公告标题同级统一（审查 #11）
-                        fontWeight = FontWeight.Medium,
+                        // 卡片标题统一 v0.5 字阶 CardTitle 16/24/600
+                        style = AppTextStyles.CardTitle,
                         color = scheme.textPrimary
                     )
                     if (tool.description.isNotBlank()) {
