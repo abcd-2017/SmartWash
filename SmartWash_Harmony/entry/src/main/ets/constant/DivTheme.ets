@@ -95,4 +95,11 @@ export class DivColor {
   // 罗盘十二支环文（金/墨 75%，对齐安卓 c.goldText.copy(alpha=0.75f)）
   static get COMPASS_TEXT_LIGHT(): ResourceColor { return $r('app.color.DIV_COMPASS_TEXT_LIGHT') }
   static get COMPASS_TEXT_DARK(): ResourceColor { return $r('app.color.DIV_COMPASS_TEXT_DARK') }
+  // 金底墨字（双主题一致）
+  static get ON_GOLD(): ResourceColor { return $r('app.color.DIV_ON_GOLD') }
+  // 平涂深朱印（宣纸动爻强调；玄墨侧用 GOLD_HI_DARK）
+  static get SEAL_DEEP(): ResourceColor { return $r('app.color.DIV_SEAL_DEEP') }
+  // 金按钮渐变（宣纸 300→500；玄墨侧用 GOLD_DARK→GOLD_LIGHT）
+  static get GOLD_GRADIENT_START(): ResourceColor { return $r('app.color.DIV_GOLD_GRADIENT_START') }
+  static get GOLD_GRADIENT_END(): ResourceColor { return $r('app.color.DIV_GOLD_GRADIENT_END') }
 }

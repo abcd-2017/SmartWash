@@ -625,22 +625,6 @@
       "value": "#FF1C1C1E"
     },
     {
-      "name": "DIV_ON_GOLD",
-      "value": "#FF151412"
-    },
-    {
-      "name": "DIV_SEAL_DEEP",
-      "value": "#FFA63A30"
-    },
-    {
-      "name": "DIV_GOLD_GRADIENT_START",
-      "value": "#FFD4B878"
-    },
-    {
-      "name": "DIV_GOLD_GRADIENT_END",
-      "value": "#FFC9A961"
-    },
-    {
       "name": "DIV_SEAL_TEXT",
       "value": "#FFEFE9DA"
     },
@@ -671,6 +655,22 @@
     {
       "name": "DIV_COMPASS_TEXT_DARK",
       "value": "#BFC9A961"
+    },
+    {
+      "name": "DIV_ON_GOLD",
+      "value": "#FF151412"
+    },
+    {
+      "name": "DIV_SEAL_DEEP",
+      "value": "#FFA63A30"
+    },
+    {
+      "name": "DIV_GOLD_GRADIENT_START",
+      "value": "#FF6E5626"
+    },
+    {
+      "name": "DIV_GOLD_GRADIENT_END",
+      "value": "#FF8F7233"
     }
   ]
 }
