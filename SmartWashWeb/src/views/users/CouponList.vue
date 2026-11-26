@@ -216,13 +216,16 @@
 
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="有效天数" prop="validDays">
-              <el-input-number
-                v-model="tempCoupon.validDays"
-                :min="1"
-                controls-position="right"
-                style="width: 100%"
-              />
+            <el-form-item label="有效天数（辅助）" prop="validDays">
+              <div class="field-with-tip">
+                <el-input-number
+                  v-model="tempCoupon.validDays"
+                  :min="1"
+                  controls-position="right"
+                  style="width: 100%"
+                />
+                <span class="form-tip">券实际有效期以上方「起止时间」为准，此字段仅登记参考</span>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -363,7 +366,7 @@ const rules = reactive({
       trigger: 'change',
     },
   ],
-  validDays: [{ required: true, message: '请输入有效天数', trigger: 'blur' }],
+  // 有效天数不再必填：有效期由 startTime/endTime 决定，validDays 仅登记参考
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 });
 
@@ -530,5 +533,19 @@ const handleDelete = async (row) => {
   margin-right: 6px;
   color: var(--text-muted);
   font-size: 12px;
+}
+
+/* 有效天数（辅助）：输入框下方挂说明，明示有效期以起止时间为准 */
+.field-with-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.field-with-tip .form-tip {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
 }
 </style>

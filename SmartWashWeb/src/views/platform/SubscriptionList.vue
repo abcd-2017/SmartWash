@@ -55,7 +55,8 @@
           <div class="summary-card__icon summary-card__icon--muted">
             <el-icon><Clock /></el-icon>
           </div>
-          <span class="summary-card__label">已过期</span>
+          <!-- 与列表「已逾期」标识同口径（active 且下次续费日已过），避免汇总与列表对不上账 -->
+          <span class="summary-card__label">已逾期</span>
         </div>
         <span class="summary-card__value">{{ formatThousands(summary.expiredCount) }}</span>
       </div>
