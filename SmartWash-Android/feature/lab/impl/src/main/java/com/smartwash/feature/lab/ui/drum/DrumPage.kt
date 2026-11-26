@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -236,7 +237,8 @@ private fun BpmSlider(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(44.dp)
+            // 48dp 触控下限（与声景音量滑杆同档；原 44dp 低于 §3.4 ≥48dp 口径）
+            .height(48.dp)
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val f = (offset.x / size.width).coerceIn(0f, 1f)
@@ -306,6 +308,16 @@ private fun PatternSelector(
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    // pressable 前置 + 视觉区外 padding 外扩触控热区：视觉胶囊 36dp 不变，
+                    // 命中区抬到 36+16=52（§3.4 触控目标 ≥48dp；原 36dp 低于下限）
+                    .pressable(
+                        onClick = {
+                            view.performHaptic(HapticEffect.SELECTION)
+                            onSelect(index)
+                        },
+                        debounce = false,
+                    )
+                    .padding(vertical = AppDimens.spaceXs)
                     .height(36.dp)
                     .clip(RoundedCornerShape(AppDimens.radiusFull))
                     .background(if (isSelected) scheme.primary else scheme.surface)
@@ -320,13 +332,8 @@ private fun PatternSelector(
                             Modifier
                         },
                     )
-                    .pressable(
-                        onClick = {
-                            view.performHaptic(HapticEffect.SELECTION)
-                            onSelect(index)
-                        },
-                        debounce = false,
-                    ),
+                    // 选中态语义（对齐 AppPillTabRow/AppFilterChip：TalkBack 播报「已选中」）
+                    .semantics { this.selected = isSelected },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

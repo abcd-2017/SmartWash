@@ -249,7 +249,7 @@ internal fun renewRelativeText(vo: com.smartwash.feature.subscription.api.networ
     }
 }
 
-/** 续费相对描述配色（已逾期 dangerInk / 今日 ongoingInk / 其余次文本；终态弱化至 textSecondary） */
+/** 续费相对描述配色（已逾期 dangerInk / 今日 onWarningContainer / 其余次文本；终态弱化至 textSecondary） */
 @Composable
 internal fun renewRelativeColor(vo: com.smartwash.feature.subscription.api.network.SubscriptionVo): Color {
     val status = SubscriptionStatus.fromRawOrDefault(vo.status)
@@ -257,7 +257,10 @@ internal fun renewRelativeColor(vo: com.smartwash.feature.subscription.api.netwo
     if (status.isTerminal) return AppColors.colorScheme.textSecondary
     return when {
         (vo.daysUntilRenew ?: 1) < 0 -> AppColors.colorScheme.dangerInk
-        (vo.daysUntilRenew ?: 1) == 0 -> AppColors.colorScheme.ongoingInk
+        // 「今日续费」走 12sp 正文：ongoingInk v0.4 已与 ongoing 同值 #D98A26，
+        // on 白卡仅 2.76:1 不达 §10 正文红线；改用成对令牌 onWarningContainer（on 白 7.09:1），
+        // 与 TrialBadge 非紧急档 / 提醒页 RENEW 标签同源裁定
+        (vo.daysUntilRenew ?: 1) == 0 -> AppColors.colorScheme.onWarningContainer
         else -> AppColors.colorScheme.textSecondary
     }
 }

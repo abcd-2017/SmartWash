@@ -63,6 +63,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
@@ -303,7 +304,14 @@ private fun SoundscapeBars(
     barColor: Color,
 ) {
     val phase = rememberBarPhase(animate = playing && !reduceMotion)
-    Canvas(modifier = Modifier.size(width = 56.dp, height = 40.dp)) {
+    // 无障碍：可视化条形非纯装饰，补用途描述（原先 strings 里 lab_soundscape_visualizer_desc
+    // 定义后未接线，TalkBack 读到的是无语义 Canvas）
+    val visualizerDesc = stringResource(R.string.lab_soundscape_visualizer_desc)
+    Canvas(
+        modifier = Modifier
+            .size(width = 56.dp, height = 40.dp)
+            .semantics { contentDescription = visualizerDesc },
+    ) {
         val count = 5
         val barWidth = size.width / (count * 2f - 1f)
         val gap = barWidth
@@ -383,6 +391,8 @@ private fun PresetSection(
                                 )
                             },
                         )
+                        // 选中态语义（对齐 AppFilterChip：TalkBack 播报「已选中」）
+                        .semantics { this.selected = selected }
                         .padding(
                             horizontal = AppDimens.spaceMd,
                             vertical = AppDimens.spaceXs,

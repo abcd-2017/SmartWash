@@ -358,7 +358,10 @@ private fun NightVisionToggle(
     nightVision: Boolean,
     onToggle: () -> Unit,
 ) {
-    val description = stringResource(
+    // contentDescription 用控件名（稳定标签），stateDescription 用开/关态文案；
+    // 二者同值会让 TalkBack 把「关闭夜视模式」连播两遍（原实现），标签与状态必须分离
+    val label = stringResource(R.string.lab_star_map_night_vision)
+    val state = stringResource(
         if (nightVision) R.string.lab_star_map_night_vision_on
         else R.string.lab_star_map_night_vision_off
     )
@@ -373,9 +376,9 @@ private fun NightVisionToggle(
             .background(DarkIconContainerPurple)
             // 开关语义（Role.Switch + 开/关状态播报）：图标形态保留，但让 TalkBack 感知为开关
             .semantics {
-                contentDescription = description
+                contentDescription = label
                 role = Role.Switch
-                stateDescription = description
+                stateDescription = state
             },
         contentAlignment = Alignment.Center,
     ) {

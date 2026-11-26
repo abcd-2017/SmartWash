@@ -85,6 +85,8 @@
     <string name="asset_tag_detail_title">标签详情</string>
     <string name="asset_tag_action_new">新建标签</string>
     <string name="asset_tag_empty_message">还没有物品标签，给常用的物品建一个吧</string>
+    <string name="asset_tag_error_load">物品标签加载失败</string>
+    <string name="asset_tag_action_load_more">加载更多</string>
     <string name="asset_tag_item_name_label">物品名称</string>
     <string name="asset_tag_item_name_hint">如：蓝色折叠伞</string>
     <string name="asset_tag_item_desc_label">物品描述（可选）</string>

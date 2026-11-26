@@ -30,13 +30,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.animatedListItem
 import com.smartwash.common.ui.components.PageHeader
@@ -51,7 +51,6 @@ import com.smartwash.feature.toolbox.api.ToolboxRoute
 import com.smartwash.feature.toolbox.logic.AssetTagRules
 import com.smartwash.feature.toolbox.api.network.AssetTagVo
 import com.smartwash.feature.toolbox.ui.ToolboxTagChip
-import com.smartwash.feature.toolbox.ui.notifyAssetTagChanged
 import com.smartwash.feature.toolbox.ui.navigateToAssetTagDetail
 
 /**
@@ -64,7 +63,6 @@ fun AssetTagListPage(
     navController: NavHostController,
     viewModel: AssetTagListViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
     val state by viewModel.state.collectAsState()
 
     // 创建/更新/删除成功回列表的刷新信号（发起页经 savedStateHandle 置位）
@@ -105,7 +103,7 @@ fun AssetTagListPage(
                 state.firstError && state.items.isEmpty() -> {
                     EmptyState(
                         icon = Icons.Rounded.Link,
-                        message = stringResource(R.string.toolbox_error_load),
+                        message = stringResource(R.string.asset_tag_error_load),
                         modifier = Modifier.fillMaxSize(),
                         action = {
                             AppButton(
@@ -116,7 +114,7 @@ fun AssetTagListPage(
                         },
                     )
                 }
-                state.items.isEmpty() && !state.refreshing -> {
+                state.items.isEmpty() -> {
                     EmptyState(
                         icon = Icons.Rounded.Link,
                         message = stringResource(R.string.asset_tag_empty_message),
@@ -177,7 +175,7 @@ fun AssetTagListPage(
                             if (state.appendError) {
                                 item(key = "append_error") {
                                     Text(
-                                        text = stringResource(R.string.toolbox_error_load),
+                                        text = stringResource(R.string.asset_tag_error_load),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = AppColors.colorScheme.dangerInk,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -186,6 +184,25 @@ fun AssetTagListPage(
                                             .pressable(onClick = { viewModel.loadMore() })
                                             .padding(vertical = AppDimens.spaceMd),
                                     )
+                                }
+                            }
+                            // 手动分页触发入口：VM 的 loadMore() 此前无任何调用点，
+                            // 第 2 页起永远不可达（append footer 只剩重试）。与通知收件箱
+                            // 同形——未触底时给文字按钮，loading/错误态由上方两个 footer 承担。
+                            if (!state.endReached && !state.loadingMore && !state.appendError) {
+                                item(key = "load_more") {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = AppDimens.spaceMd),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        AppButton(
+                                            text = stringResource(R.string.asset_tag_action_load_more),
+                                            onClick = { viewModel.loadMore() },
+                                            variant = AppButtonVariant.TEXT,
+                                        )
+                                    }
                                 }
                             }
                         }
