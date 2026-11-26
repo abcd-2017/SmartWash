@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">用量看板</h1>
     <div class="filter-container">
       <el-form :inline="true">
         <el-form-item label="日期范围">

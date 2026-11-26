@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">登录日志</h1>
     <!-- 说明卡片：与操作审计区分，明确本表是登录/注册留痕 -->
     <el-alert title="登录日志" type="info" :closable="false" show-icon>
       <template #default>

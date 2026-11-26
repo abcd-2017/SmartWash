@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">玩家数据</h1>
     <el-tabs v-model="activeTab" @tab-click="handleTabClick">
       <el-tab-pane label="存档记录" name="saves" lazy>
         <div class="filter-container">

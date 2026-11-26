@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">拦截日志</h1>
     <!-- 筛选区(live 打磨 v1):关键词输入定宽成组、动作右置,消除原 705px 行尾空洞 -->
     <div class="filter-container blocked-filter">
       <el-form

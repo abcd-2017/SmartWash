@@ -2,7 +2,7 @@
   <div class="page-container">
     <el-card class="config-card">
       <div class="card-header">
-        <h2>系统参数设置</h2>
+        <h1>系统参数设置</h1>
         <p class="header-sub">
           业务参数统一在此配置，修改后落库并立即生效（无需重启）。数值型参数必须为正整数。
         </p>
@@ -177,7 +177,7 @@ const submitForm = async () => {
   margin-bottom: 16px;
 }
 
-.card-header h2 {
+.card-header h1 {
   margin: 0 0 4px 0;
   font-size: 18px;
   font-weight: 700;

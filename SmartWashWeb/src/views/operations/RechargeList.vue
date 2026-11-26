@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">充值记录</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="记录ID">

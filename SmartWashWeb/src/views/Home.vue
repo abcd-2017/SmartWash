@@ -1,7 +1,7 @@
 <template>
   <div class="page-container dashboard">
     <div class="page-header">
-      <h2>工作台</h2>
+      <h1>工作台</h1>
       <p>欢迎使用 SmartWash 智能洗衣管理系统</p>
     </div>
 

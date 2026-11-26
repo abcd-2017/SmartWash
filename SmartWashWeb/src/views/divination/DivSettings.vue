@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">平台设置</h1>
     <div class="table-card settings-card">
       <div class="settings-header">
         <p class="settings-sub">

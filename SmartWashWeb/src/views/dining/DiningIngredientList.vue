@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">配料库</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="配料名称">

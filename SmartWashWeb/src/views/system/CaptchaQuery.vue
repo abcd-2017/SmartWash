@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">验证码查询</h1>
     <el-alert title="演示工具" type="info" :closable="false" show-icon>
       <template #default>
         查询指定手机号当前有效的短信验证码。验证码有效期 10 分钟，一次性使用（校验成功后立即销毁）。

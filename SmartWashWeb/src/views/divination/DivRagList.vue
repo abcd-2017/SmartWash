@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">语料管理</h1>
     <!-- 筛选区(live 打磨 v1):主操作右置成组 + 搜索/上传竖分隔,行尾不再空洞 -->
     <div class="filter-container rag-filter">
       <el-form
