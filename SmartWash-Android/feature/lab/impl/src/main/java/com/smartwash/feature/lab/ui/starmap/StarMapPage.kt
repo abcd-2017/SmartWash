@@ -145,6 +145,13 @@ fun StarMapPage(
     }
     val currentProjected by rememberUpdatedState(projected)
 
+    // 无障碍：画布用途 + 夜视模式状态
+    val canvasDescription = stringResource(R.string.lab_star_map_canvas_description)
+    val canvasState = stringResource(
+        if (state.nightVision) R.string.lab_star_map_canvas_night_vision_on
+        else R.string.lab_star_map_canvas_night_vision_off
+    )
+
     // 星点闪烁：全局呼吸因子（AnimationUtils vocabulary 的 ping-pong 无限循环）；
     // reduced motion 下直接定格 1f（常亮，且无逐帧重绘）。单星相位由名称散列错峰。
     val twinkle = remember { Animatable(1f) }
@@ -180,6 +187,11 @@ fun StarMapPage(
                             viewModel.clearSelection()
                         }
                     }
+                }
+                .semantics {
+                    contentDescription = canvasDescription
+                    role = Role.Image
+                    stateDescription = canvasState
                 },
         ) {
             // 夜空底：暗色令牌纵向微渐变（上深下略亮）
@@ -346,7 +358,10 @@ private fun NightVisionToggle(
     nightVision: Boolean,
     onToggle: () -> Unit,
 ) {
-    val description = stringResource(
+    // contentDescription 用控件名（稳定标签），stateDescription 用开/关态文案；
+    // 二者同值会让 TalkBack 把「关闭夜视模式」连播两遍（原实现），标签与状态必须分离
+    val label = stringResource(R.string.lab_star_map_night_vision)
+    val state = stringResource(
         if (nightVision) R.string.lab_star_map_night_vision_on
         else R.string.lab_star_map_night_vision_off
     )
@@ -361,9 +376,9 @@ private fun NightVisionToggle(
             .background(DarkIconContainerPurple)
             // 开关语义（Role.Switch + 开/关状态播报）：图标形态保留，但让 TalkBack 感知为开关
             .semantics {
-                contentDescription = description
+                contentDescription = label
                 role = Role.Switch
-                stateDescription = description
+                stateDescription = state
             },
         contentAlignment = Alignment.Center,
     ) {

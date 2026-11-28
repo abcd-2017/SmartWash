@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">学生管理</h1>
     <div class="filter-container user-filter">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="用户ID">
@@ -66,12 +67,16 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="userList"
         fit
         highlight-current-row
+        aria-label="用户列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="userId" label="ID" min-width="80" />
         <el-table-column label="头像" width="80">
@@ -93,10 +98,10 @@
         <el-table-column prop="campusCard" label="校园卡号" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.campusCard || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="balance" label="余额" min-width="120" align="right">
+        <el-table-column prop="balance" label="余额" min-width="120" align="right" sortable>
           <template #default="{ row }">￥{{ formatAmount(row.balance, '-') }}</template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="注册时间" min-width="180">
+        <el-table-column prop="createdAt" label="注册时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -113,6 +118,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">用户列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -191,6 +199,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getUserList, addUser, updateUser, deleteUser } from '@/api/user';
@@ -200,6 +209,11 @@ import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import { passwordLengthRule } from '@/utils/validators';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('user-list', tableRef);
 
 const formRef = ref(null);
 const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
@@ -297,7 +311,7 @@ const fetchSchools = async () => {
   } catch (error) {
     // 与 LockerList 同场景对齐：下拉拉取失败弹 toast（此前仅 logger 静默，筛选不可用无从归因）
     logger.error('获取学校列表失败:', error);
-    ElMessage.error(error.message || '获取学校列表失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取学校列表失败'));
   }
 };
 
@@ -365,7 +379,7 @@ const submitForm = async () => {
       `userId=${tempUser.userId ?? '-'}`,
       error
     );
-    ElMessage.error(error.message || '操作失败');
+    ElMessage.error(friendlyErrorMessage(error, '操作失败'));
   } finally {
     submitting.value = false;
   }
@@ -385,7 +399,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除学生失败:', `userId=${row.userId}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

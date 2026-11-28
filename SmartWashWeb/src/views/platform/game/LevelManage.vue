@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">关卡管理</h1>
     <div class="filter-container">
       <el-form :inline="true">
         <el-form-item label="游戏">
@@ -45,26 +46,30 @@
         <el-button size="small" @click="fetchLevels">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="levelLoading"
         :data="levelList"
         border
         stripe
+        aria-label="关卡列表"
         :empty-text="levelGameKey ? '暂无关卡' : '请先选择游戏'"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
-        <el-table-column prop="levelNo" label="序号" width="70" align="center" />
+        <el-table-column prop="levelNo" label="序号" width="70" align="center" sortable />
         <el-table-column prop="name" label="关卡名" min-width="140" show-overflow-tooltip />
-        <el-table-column label="难度" width="80" align="center">
+        <el-table-column prop="difficulty" label="难度" width="80" align="center" sortable>
           <template #default="{ row }">{{ row.difficulty ?? '—' }}</template>
         </el-table-column>
-        <el-table-column label="状态" width="90" align="center">
+        <el-table-column prop="enabled" label="状态" width="90" align="center" sortable>
           <template #default="{ row }">
             <el-tag :type="row.enabled === 1 ? 'success' : 'info'" size="small">
               {{ row.enabled === 1 ? '下发中' : '已下架' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="sort" label="排序" width="70" align="center" />
+        <el-table-column prop="sort" label="排序" width="70" align="center" sortable />
         <el-table-column label="关卡数据" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ row.dataJson }}</template>
         </el-table-column>
@@ -83,6 +88,9 @@
             >
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">关卡列表</span>
+        </template>
       </el-table>
     </div>
 
@@ -150,6 +158,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getGameList } from '@/api/game';
@@ -157,6 +166,11 @@ import { getGameLevels, saveGameLevel, deleteGameLevel } from '@/api/gameData';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 import LevelImportDialog from './components/LevelImportDialog.vue';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('level-manage', tableRef);
 
 defineOptions({ name: 'LevelManage' });
 
@@ -177,7 +191,7 @@ const loadGameOptions = async () => {
     // 下拉加载失败不能静默：不提示则下拉永远为空，用户无从区分「没有游戏」与「加载失败」
     logger.error('游戏下拉加载失败:', error);
     gameOptions.value = [];
-    ElMessage.error(error.message || '游戏列表加载失败');
+    ElMessage.error(friendlyErrorMessage(error, '游戏列表加载失败'));
   }
 };
 
@@ -302,7 +316,7 @@ const submitLevel = async () => {
       `levelNo=${levelForm.levelNo}`,
       error
     );
-    ElMessage.error(error.message || '保存失败');
+    ElMessage.error(friendlyErrorMessage(error, '保存失败'));
   } finally {
     levelSubmitting.value = false;
   }
@@ -326,7 +340,7 @@ const handleDeleteLevel = async (row) => {
   } catch (error) {
     // 同保存：业务拒绝（如后端占用校验）必须可见
     logger.error('删除关卡失败:', `gameKey=${levelGameKey.value}`, `levelNo=${row.levelNo}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingLevelNo.value = null;
   }

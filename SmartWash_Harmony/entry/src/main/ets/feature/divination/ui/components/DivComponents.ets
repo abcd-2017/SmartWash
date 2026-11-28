@@ -9,7 +9,8 @@
  */
 
 import vibrator from '@ohos.vibrator'
-import { DivColor } from '../../../../constant/DivTheme'
+import { DivColor, divIsDark } from '../../../../constant/DivTheme'
+import { DarkModeStore } from '../../../../constant/DarkModeStore'
 import { DesignDimens, DesignElevation, MotionAlpha, MotionScale, MotionTiming } from '../../../../constant/DesignSystem'
 import { ReduceMotion } from '../../../../utils/ReduceMotion'
 import { resolveArgb } from '../../../../utils/ResourceColor'
@@ -162,33 +163,55 @@ export class DivText {
 
 /** 观象台子主题色快捷访问（避免每处写 DivColor.XXX，语义与安卓 DivColors.current 对齐）
  *
- * 全部经 resColor 读 base 资源（域级固定宣纸/玄墨双档，不随系统主题切换）：
- * 系统深色下清氧域转暗、观象台域仍固定宣纸，为已知域级主题断层（compare-08 #12）。
+ * 深浅分支：每个访问器经 divIsDark() 在 *_LIGHT（宣纸）/ *_DARK（玄墨）间选择。
+ * divIsDark() 读 DarkModeStore 单例 @Trace，build 内调用本访问器即建立属性级依赖，
+ * 系统深色切换时消费组件重建（机制见 constant/DivTheme.ets 头注）。
+ * 安卓同一 scheme 见 common/ui/theme/AppDesign.kt: DarkDivinationColors / LightDivinationColors。
  */
 export class DivPalette {
-  static get textPrimary(): ResourceColor { return $r('app.color.DIV_TEXT_PRIMARY_LIGHT') }
-  static get textSecondary(): ResourceColor { return $r('app.color.DIV_TEXT_SECONDARY_LIGHT') }
-  static get textTertiary(): ResourceColor { return $r('app.color.DIV_TEXT_TERTIARY_LIGHT') }
-  static get gold(): ResourceColor { return $r('app.color.DIV_GOLD_LIGHT') }
-  static get goldHi(): ResourceColor { return $r('app.color.DIV_GOLD_HI_LIGHT') }
-  static get goldLine(): ResourceColor { return $r('app.color.DIV_GOLD_LINE_LIGHT') }
-  static get goldHair(): ResourceColor { return $r('app.color.DIV_GOLD_HAIR_LIGHT') }
-  static get goldSoft(): ResourceColor { return $r('app.color.DIV_GOLD_SOFT_LIGHT') }
-  static get gold14(): ResourceColor { return $r('app.color.DIV_GOLD_14_LIGHT') }
-  static get surface(): ResourceColor { return $r('app.color.DIV_SURFACE_LIGHT') }
-  static get surface2(): ResourceColor { return $r('app.color.DIV_SURFACE_2_LIGHT') }
-  static get seal(): ResourceColor { return $r('app.color.DIV_SEAL_LIGHT') }
-  static get sealHi(): ResourceColor { return $r('app.color.DIV_SEAL_HI_LIGHT') }
-  static get jade(): ResourceColor { return $r('app.color.DIV_JADE_LIGHT') }
-  static get hair(): ResourceColor { return $r('app.color.DIV_HAIR_LIGHT') }
-  static get line(): ResourceColor { return $r('app.color.DIV_LINE_LIGHT') }
-  static get yaoTop(): ResourceColor { return $r('app.color.DIV_YAO_TOP_LIGHT') }
-  static get yaoBottom(): ResourceColor { return $r('app.color.DIV_YAO_BOTTOM_LIGHT') }
-  static get goldText(): ResourceColor { return $r('app.color.DIV_TEXT_PRIMARY_LIGHT') }
-  static get onGold(): ResourceColor { return $r('app.color.DIV_ON_GOLD') }
-  static get sealDeep(): ResourceColor { return $r('app.color.DIV_SEAL_DEEP') }
-  static get goldGradientStart(): ResourceColor { return $r('app.color.DIV_GOLD_GRADIENT_START') }
-  static get goldGradientEnd(): ResourceColor { return $r('app.color.DIV_GOLD_GRADIENT_END') }
+  static get textPrimary(): ResourceColor { return divIsDark() ? DivColor.TEXT_PRIMARY_DARK : DivColor.TEXT_PRIMARY_LIGHT }
+  static get textSecondary(): ResourceColor { return divIsDark() ? DivColor.TEXT_SECONDARY_DARK : DivColor.TEXT_SECONDARY_LIGHT }
+  static get textTertiary(): ResourceColor { return divIsDark() ? DivColor.TEXT_TERTIARY_DARK : DivColor.TEXT_TERTIARY_LIGHT }
+  static get gold(): ResourceColor { return divIsDark() ? DivColor.GOLD_DARK : DivColor.GOLD_LIGHT }
+  static get goldHi(): ResourceColor { return divIsDark() ? DivColor.GOLD_HI_DARK : DivColor.GOLD_HI_LIGHT }
+  static get goldLine(): ResourceColor { return divIsDark() ? DivColor.GOLD_LINE_DARK : DivColor.GOLD_LINE_LIGHT }
+  static get goldHair(): ResourceColor { return divIsDark() ? DivColor.GOLD_HAIR_DARK : DivColor.GOLD_HAIR_LIGHT }
+  static get goldSoft(): ResourceColor { return divIsDark() ? DivColor.GOLD_SOFT_DARK : DivColor.GOLD_SOFT_LIGHT }
+  static get gold14(): ResourceColor { return divIsDark() ? DivColor.GOLD_14_DARK : DivColor.GOLD_14_LIGHT }
+  static get surface(): ResourceColor { return divIsDark() ? DivColor.SURFACE_DARK : DivColor.SURFACE_LIGHT }
+  static get surface2(): ResourceColor { return divIsDark() ? DivColor.SURFACE_2_DARK : DivColor.SURFACE_2_LIGHT }
+  static get seal(): ResourceColor { return divIsDark() ? DivColor.SEAL_DARK : DivColor.SEAL_LIGHT }
+  static get sealHi(): ResourceColor { return divIsDark() ? DivColor.SEAL_HI_DARK : DivColor.SEAL_HI_LIGHT }
+  static get jade(): ResourceColor { return divIsDark() ? DivColor.JADE_DARK : DivColor.JADE_LIGHT }
+  static get hair(): ResourceColor { return divIsDark() ? DivColor.HAIR_DARK : DivColor.HAIR_LIGHT }
+  static get line(): ResourceColor { return divIsDark() ? DivColor.LINE_DARK : DivColor.LINE_LIGHT }
+  static get yaoTop(): ResourceColor { return divIsDark() ? DivColor.YAO_TOP_DARK : DivColor.YAO_TOP_LIGHT }
+  static get yaoBottom(): ResourceColor { return divIsDark() ? DivColor.YAO_BOTTOM_DARK : DivColor.YAO_BOTTOM_LIGHT }
+  // 文字级金强调：玄墨=金（GOLD_DARK），宣纸=墨（TEXT_PRIMARY_LIGHT），对齐安卓 goldText
+  static get goldText(): ResourceColor { return divIsDark() ? DivColor.GOLD_DARK : DivColor.TEXT_PRIMARY_LIGHT }
+  // 金底墨字 / 平涂深朱印：双主题一致
+  static get onGold(): ResourceColor { return DivColor.ON_GOLD }
+  static get sealDeep(): ResourceColor { return DivColor.SEAL_DEEP }
+  // 动爻强调色：玄墨亮金 goldHi / 宣纸平涂深朱 sealDeep（对齐安卓 CoinAndMeridian movingColor）
+  static get movingYaoColor(): ResourceColor { return divIsDark() ? DivColor.GOLD_HI_DARK : DivColor.SEAL_DEEP }
+  // 金按钮渐变：宣纸 300→500（GOLD_HI_DARK→GOLD_DARK）；玄墨 500→700（GOLD_DARK→GOLD_LIGHT）
+  static get goldGradientStart(): ResourceColor { return divIsDark() ? DivColor.GOLD_DARK : DivColor.GOLD_GRADIENT_START }
+  static get goldGradientEnd(): ResourceColor { return divIsDark() ? DivColor.GOLD_LIGHT : DivColor.GOLD_GRADIENT_END }
+  // 页面底渐变三段（观象台域背景）；中段停靠玄墨 55% / 宣纸 50%（对齐安卓 midStop）
+  static get bgTop(): ResourceColor { return divIsDark() ? DivColor.BG_TOP_DARK : DivColor.BG_TOP_LIGHT }
+  static get bgMid(): ResourceColor { return divIsDark() ? DivColor.BG_MID_DARK : DivColor.BG_MID_LIGHT }
+  static get bgBottom(): ResourceColor { return divIsDark() ? DivColor.BG_BOTTOM_DARK : DivColor.BG_BOTTOM_LIGHT }
+  static get bgMidStop(): number { return divIsDark() ? 0.55 : 0.50 }
+  // 印面文字（跨主题恒定宣纸白）
+  static get sealText(): ResourceColor { return DivColor.SEAL_TEXT }
+  // 禁用金钮文字（onGold 38%）
+  static get onGold38(): ResourceColor { return DivColor.ON_GOLD_38 }
+  // 选中态实金描边（gold 90%）
+  static get gold90(): ResourceColor { return divIsDark() ? DivColor.GOLD_90_DARK : DivColor.GOLD_90_LIGHT }
+  // 罗盘外环（gold 50%）
+  static get gold50(): ResourceColor { return divIsDark() ? DivColor.GOLD_50_DARK : DivColor.GOLD_50_LIGHT }
+  // 罗盘十二支环文（金/墨 75%）
+  static get compassText(): ResourceColor { return divIsDark() ? DivColor.COMPASS_TEXT_DARK : DivColor.COMPASS_TEXT_LIGHT }
 }
 
 // 画板：观象台域页面水平边距 20（compare-08 #10；勿改全局 DesignDimens.PAGE_PADDING=24，清氧域仍用 24）
@@ -323,8 +346,8 @@ export struct DivSeal {
         textSize: this.fontSize,
         weight: 700,
         spacing: 1,
-        // 印面文字两主题恒为宣纸白（画板双板一致）
-        color: 0xFFEFE9DA,
+        // 印面文字两主题恒为宣纸白（画板双板一致，对齐安卓 SealTextInk）
+        color: DivPalette.sealText,
         textAlign: TextAlign.Center
       })
     }
@@ -374,6 +397,12 @@ export struct MethodGlyph {
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
 
   aboutToAppear(): void {
+    this.draw()
+  }
+
+  // 主题切换经父级传入的新 tint 触发重绘（画布色在 draw() 内解析，见 DivPalette 头注）
+  @Monitor('tint')
+  onTintChange(): void {
     this.draw()
   }
 
@@ -708,7 +737,7 @@ export struct DivGoldButton {
         weight: 600,
         spacing: 3,
         // 禁用=墨 38%（对齐安卓 onGold @38%，compare-15 #58）；soft=主题感知文字金（宣纸墨 / 玄墨金）；常态=金底墨字
-        color: !this.isEnabled ? 0x61151412 : (this.soft ? DivPalette.goldText : DivPalette.onGold),
+        color: !this.isEnabled ? DivPalette.onGold38 : (this.soft ? DivPalette.goldText : DivPalette.onGold),
         textAlign: TextAlign.Center
       })
     }
@@ -780,10 +809,15 @@ export struct DivCard {
     // 规范 §2.4 / §3.1 卡片唯一画法 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05)：
     // blur 12 取专用令牌 CARD_SHADOW_RADIUS（compare-08 #18：原误用 LEVEL_1=1 近乎硬边，
     // 对齐安卓 softCardShadow blur 12dp），色与 offsetY 2 不变。
-    // 观象台侧把「白底 + OUTLINE」换成「宣纸 surface + 金发丝」，阴影取值不变。
-    // §2.4「玄墨深色卡不加投影」豁免：观象台当前固定宣纸浅卡（DivPalette 全取 *_LIGHT），本组件无深色卡消费方；
-    // 全仓唯一的玄墨深色卡是 Workbench 的观象台特色卡，不经 DivCard，本身即无投影。
-    .shadow({
+    // 观象台侧把「白底 + OUTLINE」换成「宣纸/玄墨 surface + 金发丝」。
+    // §2.4「玄墨深色卡不加投影」：仅宣纸侧投影，玄墨侧 radius 0 + 透明（对齐安卓
+    // if (c.isDark) Modifier else Modifier.softCardShadow(16.dp)）。
+    .shadow(divIsDark() ? {
+      radius: 0,
+      color: Color.Transparent,
+      offsetX: 0,
+      offsetY: 0
+    } : {
       radius: DesignElevation.CARD_SHADOW_RADIUS,
       color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
@@ -881,9 +915,10 @@ export struct DivCategoryChip {
       .height(48)
       .padding({ left: this.horizontalPadding, right: this.horizontalPadding })
       .borderRadius(999)
-      // 选中底宣纸实底金（对齐安卓 c.gold #8F7233，compare-15 #6）；字色仍取 goldText 墨字
-      .backgroundColor(this.selected ? DivPalette.gold : DivPalette.surface)
-      .border({ width: 1, color: this.selected ? DivPalette.gold : DivPalette.goldLine })
+      // 选中底：宣纸实底金（c.gold #8F7233）/ 玄墨 14% 金底（c.gold14），对齐安卓 if (c.isDark) gold14 else gold
+      .backgroundColor(this.selected ? (divIsDark() ? DivPalette.gold14 : DivPalette.gold) : DivPalette.surface)
+      // 选中描边随底色取实金（gold 90%，深浅分档）；未选为 32% 金线
+      .border({ width: 1, color: this.selected ? DivPalette.gold90 : DivPalette.goldLine })
       // 底色/描边/字色走选中态弹簧（对齐安卓 selectedColor = motionSpec(defaultSpring())，reduced 降 180ms）
       .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
     }
@@ -958,7 +993,7 @@ export struct DivRadioRow {
           .width(20)
           .height(20)
           .borderRadius(10)
-          .border({ width: 1, color: this.selected ? 0xE6C9A961 : DivPalette.goldLine })
+          .border({ width: 1, color: this.selected ? DivPalette.gold90 : DivPalette.goldLine })
           .animation(ReduceMotion.specCurve(MotionTiming.SELECTED))
 
         // 内点常驻（scale 为绘制层属性，居中无布局位移），弹簧缩放进出
@@ -1033,6 +1068,8 @@ export struct DivWaveIcon {
   @Param sizeValue: number = 18
   @Param tint: ResourceColor = DivPalette.gold
   @Local phase: number = 0
+  // 画布色在 drawWave() 内直读 tint/DivPalette：深浅色切换（含未重建路径）经 @Trace 触发重绘
+  @Local darkStore: DarkModeStore = DarkModeStore.getInstance()
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
   private timerId: number = -1
 
@@ -1045,6 +1082,11 @@ export struct DivWaveIcon {
         this.drawWave()
       }, WAVE_TICK_MS)
     }
+    this.drawWave()
+  }
+
+  @Monitor('darkStore.dark')
+  onDarkChanged(): void {
     this.drawWave()
   }
 
@@ -1108,6 +1150,8 @@ export struct CompassDial {
   // 尺寸参数化（首页 104，对齐安卓 CompassDial(modifier = Modifier.size(104.dp))）
   @Param dialSize: number = COMPASS_DEFAULT_SIZE
   @Local rotation: number = 0
+  // 画布色在 drawCompass() 内直读 DivPalette：深浅色切换（含未重建路径）经 @Trace 触发重绘
+  @Local darkStore: DarkModeStore = DarkModeStore.getInstance()
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
   private timerId: number = -1
 
@@ -1119,6 +1163,11 @@ export struct CompassDial {
         this.drawCompass()
       }, COMPASS_TICK_MS)
     }
+    this.drawCompass()
+  }
+
+  @Monitor('darkStore.dark')
+  onDarkChanged(): void {
     this.drawCompass()
   }
 
@@ -1144,11 +1193,10 @@ export struct CompassDial {
     this.ctx.rotate(spin * Math.PI / 180)
     this.ctx.translate(-cx, -cy)
 
-    // 外环：50% 鎏金实线（安卓 c.gold.copy(alpha = 0.5f)，宣纸侧合成 0x808F7233；
-    // compare-10 #9：原硬编码玄墨金 0x80C9A961 在宣纸侧偏亮）
+    // 外环：50% 鎏金实线（安卓 c.gold.copy(alpha = 0.5f)，宣纸 0x808F7233 / 玄墨 0x80C9A961）
     this.ctx.lineCap = 'round'
     this.ctx.lineWidth = 1
-    this.ctx.strokeStyle = 0x808F7233
+    this.ctx.strokeStyle = resolveArgb(DivPalette.gold50)
     this.ctx.beginPath()
     this.ctx.arc(cx, cy, radius, 0, Math.PI * 2, false)
     this.ctx.stroke()
@@ -1166,7 +1214,7 @@ export struct CompassDial {
     // 十二支环文（画板：r=0.92、12sp、金/墨 75%——0.70 玄墨侧 ≈4.35:1 破 §10 正文 4.5 红线，
     // audit-11 #3 / compare-10 #7 提至 0.75 双主题达标）
     this.ctx.font = `${12 * size / 104}px serif`
-    this.ctx.fillStyle = 0xBF1C1C1E
+    this.ctx.fillStyle = resolveArgb(DivPalette.compassText)
     for (let index = 0; index < ZHI_LABELS().length; index++) {
       const angle: number = (index * 30 - 90) * Math.PI / 180
       const posX: number = cx + radius * 0.92 * Math.cos(angle)

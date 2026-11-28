@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">语料管理</h1>
     <!-- 筛选区(live 打磨 v1):主操作右置成组 + 搜索/上传竖分隔,行尾不再空洞 -->
     <div class="filter-container rag-filter">
       <el-form
@@ -62,12 +63,16 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="documentList"
         fit
         highlight-current-row
+        aria-label="知识库列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="title" label="书名" min-width="180" show-overflow-tooltip />
@@ -75,16 +80,19 @@
         <el-table-column label="术数方法" min-width="120">
           <template #default="{ row }">{{ methodText(row.method) }}</template>
         </el-table-column>
-        <el-table-column label="状态" min-width="100">
+        <el-table-column prop="status" label="状态" min-width="100" sortable>
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'warning'">
               {{ row.status === 1 ? '可用' : '导入中' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="上传时间" min-width="180">
+        <el-table-column prop="createdAt" label="上传时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">知识库列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -161,7 +169,12 @@ import { getRagDocumentList, uploadRagDocument } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('div-rag-list', tableRef);
 
 const formRef = ref(null);
 const uploadRef = ref(null);
@@ -287,7 +300,7 @@ const submitUpload = async () => {
       logger.debug('古籍上传表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error('古籍上传失败:', `title=${uploadForm.title}`, error);
-      ElMessage.error(error.message || '上传失败');
+      ElMessage.error(friendlyErrorMessage(error, '上传失败'));
     }
   } finally {
     uploading.value = false;

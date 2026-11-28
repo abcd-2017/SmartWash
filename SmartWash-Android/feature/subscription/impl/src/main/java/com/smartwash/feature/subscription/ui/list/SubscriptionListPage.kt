@@ -6,14 +6,17 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -259,12 +262,17 @@ fun SubscriptionListPage(
                         )
                     }
                     else -> {
+                        // 列表底部避让手势条 / 三键导航（同 ToolboxListPage 口径）：edge-to-edge 下
+                        // 末卡与 append footer 可完整滚出系统栏；无导航条设备回落 spaceMd
+                        val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                         LazyColumn(
                             state = listState,
                             verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
                             contentPadding = PaddingValues(
-                                horizontal = AppDimens.pagePadding,
-                                vertical = AppDimens.spaceXs,
+                                start = AppDimens.pagePadding,
+                                top = AppDimens.spaceXs,
+                                end = AppDimens.pagePadding,
+                                bottom = AppDimens.spaceMd + navBarsBottom,
                             ),
                             modifier = Modifier.fillMaxSize(),
                         ) {

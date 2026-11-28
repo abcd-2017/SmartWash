@@ -42,6 +42,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -59,7 +62,6 @@ import com.smartwash.common.ui.components.SkeletonList
 import com.smartwash.common.ui.navigation.LocalSharedTransitionScope
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.LocalReduceMotion
@@ -269,6 +271,7 @@ fun ToolboxListPage(
                                                 .pressable(onClick = { pagingItems.retry() })
                                                 // 分页失败唯一显式重试入口：vertical 16 × 2 + 行高 16 = 48dp 热区
                                                 //（触控红线 ≥48，原 12×2 = 40 不达标）
+                                                .semantics { role = Role.Button }
                                                 .padding(vertical = AppDimens.spaceMd),
                                             textAlign = TextAlign.Center,
                                         )
@@ -503,7 +506,10 @@ private fun ShortCodeCard(
 @Composable
 private fun CopyPillButton(onClick: () -> Unit) {
     Box(
-        modifier = Modifier.pressable(onClick = onClick),
+        // role=Button： TalkBack 将「复制」读作按钮动作，而非普通文本
+        modifier = Modifier
+            .pressable(onClick = onClick)
+            .semantics { role = Role.Button },
         contentAlignment = Alignment.Center,
     ) {
         Box(

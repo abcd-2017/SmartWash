@@ -44,6 +44,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -153,6 +158,7 @@ fun FishPage(
             FishPool(
                 sim = sim,
                 frameTick = frameTick,
+                playing = playing,
                 onPulse = { x, y ->
                     sim.pulse(x, y)
                     view.performHaptic(HapticEffect.MEDIUM)
@@ -196,6 +202,7 @@ fun FishPage(
 private fun FishPool(
     sim: BoidsSimulator,
     frameTick: Long,
+    playing: Boolean,
     onPulse: (Float, Float) -> Unit,
     onLongPress: (Float, Float) -> Unit,
     onPress: (Float, Float) -> Unit,
@@ -216,6 +223,12 @@ private fun FishPool(
     val fishColors = remember(scheme) {
         listOf(scheme.primary, scheme.water, scheme.primaryDark)
     }
+    // 无障碍：画布用途 + 播放/暂停状态
+    val canvasDescription = stringResource(R.string.lab_fish_canvas_description)
+    val canvasState = stringResource(
+        if (playing) R.string.lab_fish_canvas_state_playing
+        else R.string.lab_fish_canvas_state_paused
+    )
 
     Canvas(
         modifier = modifier
@@ -237,6 +250,11 @@ private fun FishPool(
                         }
                     },
                 )
+            }
+            .semantics {
+                contentDescription = canvasDescription
+                role = Role.Button
+                stateDescription = canvasState
             }
     ) {
         frameTick // 读取状态建立每帧重绘订阅（tick 循环暂停后无重绘=静帧）

@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">站内信管理</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="标题">
@@ -44,12 +45,16 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="noticeList"
         fit
         highlight-current-row
+        aria-label="公告列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="id" label="ID" min-width="80" align="center">
           <template #default="{ row }">{{ row.id ?? '-' }}</template>
@@ -57,7 +62,7 @@
         <el-table-column label="标题" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">{{ row.title || '-' }}</template>
         </el-table-column>
-        <el-table-column label="类型" min-width="110">
+        <el-table-column prop="type" label="类型" min-width="110" sortable>
           <template #default="{ row }">
             <!-- 类型标签(live 打磨 v2):圆点标记 + 体量微调,圆点继承标签语义色 -->
             <div class="notice-type-cell">
@@ -86,7 +91,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="发送时间" min-width="170">
+        <el-table-column prop="createdAt" label="发送时间" min-width="170" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="送达统计" min-width="180" align="center">
@@ -102,6 +107,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">公告列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -214,7 +222,12 @@ import {
   noticeReadRateTagType,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('notice-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -311,7 +324,7 @@ const handleShowStat = async (row) => {
   } catch (error) {
     if (mySeq !== statSeq) return;
     logger.error('公告送达统计加载失败:', `id=${row.id}`, error);
-    ElMessage.error(error.message || '获取送达统计失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取送达统计失败'));
     statVisible.value = false;
   } finally {
     // 被丢弃的旧响应不得关掉最新请求的 loading
@@ -362,7 +375,7 @@ const submitForm = async () => {
         `type=${tempNotice.type}`,
         error
       );
-      ElMessage.error(error.message || '发送失败');
+      ElMessage.error(friendlyErrorMessage(error, '发送失败'));
     }
   } finally {
     submitting.value = false;

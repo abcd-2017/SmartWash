@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">优惠券管理</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="优惠券ID">
@@ -69,19 +70,22 @@
         :data="couponList"
         fit
         highlight-current-row
+        aria-label="优惠券列表"
         empty-text="暂无数据，试试调整筛选条件"
         @selection-change="handleSelectionChange"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="couponId" label="ID" min-width="80" />
         <el-table-column prop="title" label="标题" min-width="150" show-overflow-tooltip />
-        <el-table-column label="折扣金额" min-width="120" align="right">
+        <el-table-column prop="discount" label="折扣金额" min-width="120" align="right" sortable>
           <template #default="{ row }">
             <!-- 金额列(live 打磨 v3):600 字重 + 墨色,数字成为扫读锚点 -->
             <div class="amount-cell">￥{{ formatAmount(row.discount) }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="使用门槛" min-width="120" align="right">
+        <el-table-column prop="threshold" label="使用门槛" min-width="120" align="right" sortable>
           <template #default="{ row }">
             <div class="amount-cell">￥{{ formatAmount(row.threshold) }}</div>
           </template>
@@ -98,7 +102,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="状态" min-width="100">
+        <el-table-column prop="status" label="状态" min-width="100" sortable>
           <template #default="{ row }">
             <el-tag :type="couponStatusTagType(row.status)">
               {{ couponStatusText(row.status) }}
@@ -106,7 +110,7 @@
           </template>
         </el-table-column>
         <!-- 已发放数量：删除前需评估影响面（券在用户手中时删除会使其失效） -->
-        <el-table-column label="已发放" min-width="90" align="right">
+        <el-table-column prop="issuedCount" label="已发放" min-width="90" align="right" sortable>
           <template #default="{ row }">{{ row.issuedCount || 0 }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -123,6 +127,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">优惠券列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -210,13 +217,16 @@
 
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="有效天数" prop="validDays">
-              <el-input-number
-                v-model="tempCoupon.validDays"
-                :min="1"
-                controls-position="right"
-                style="width: 100%"
-              />
+            <el-form-item label="有效天数（辅助）" prop="validDays">
+              <div class="field-with-tip">
+                <el-input-number
+                  v-model="tempCoupon.validDays"
+                  :min="1"
+                  controls-position="right"
+                  style="width: 100%"
+                />
+                <span class="form-tip">券实际有效期以上方「起止时间」为准，此字段仅登记参考</span>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -257,8 +267,12 @@ import { useTableList } from '@/composables/useTableList';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
 
 const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('coupon-list', tableRef);
+
 const formRef = ref(null);
 
 // 弹窗关闭后清理：resetFields 归位 + clearValidate 清除校验红字，
@@ -353,7 +367,7 @@ const rules = reactive({
       trigger: 'change',
     },
   ],
-  validDays: [{ required: true, message: '请输入有效天数', trigger: 'blur' }],
+  // 有效天数不再必填：有效期由 startTime/endTime 决定，validDays 仅登记参考
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 });
 
@@ -520,5 +534,19 @@ const handleDelete = async (row) => {
   margin-right: 6px;
   color: var(--text-muted);
   font-size: 12px;
+}
+
+/* 有效天数（辅助）：输入框下方挂说明，明示有效期以起止时间为准 */
+.field-with-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.field-with-tip .form-tip {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
 }
 </style>

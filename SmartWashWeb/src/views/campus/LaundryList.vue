@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">洗护套餐</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="套餐ID">
@@ -39,12 +40,18 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="laundryList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        aria-label="洗护套餐列表"
+        :empty-text="
+          hasLaundryFilter ? '试试调整筛选条件' : '还没有套餐，点击右上角『新增套餐』开始'
+        "
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="itemId" label="ID" min-width="80" />
         <el-table-column label="套餐" min-width="320">
@@ -55,10 +62,10 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="basePrice" label="基础价格" min-width="140" align="right">
-          <template #default="{ row }">￥{{ formatAmount(row.basePrice) }}</template>
+        <el-table-column prop="basePrice" label="基础价格" min-width="140" align="right" sortable>
+          <template #default="{ row }">{{ formatPayAmount(row.basePrice) }}</template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" min-width="180">
+        <el-table-column prop="createdAt" label="创建时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -75,6 +82,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">洗护套餐列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -131,15 +141,20 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getLaundryList, addLaundry, updateLaundry, deleteLaundry } from '@/api/laundry';
 import { laundryOptionsCache } from '@/utils/optionCache';
-import { formatAmount, formatTime } from '@/utils/format';
+import { formatPayAmount, formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('laundry-list', tableRef);
 
 const formRef = ref(null);
 const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
@@ -179,6 +194,13 @@ const {
   }),
   errorMsg: '获取数据失败',
 });
+
+// 空态区分：有筛选且库内确有命中时提示调整条件；库空（total=0）即使用户带了筛选也一律引导新增
+const hasLaundryFilter = computed(
+  () =>
+    (Boolean(listQuery.itemId) || Boolean((listQuery.itemName || '').trim())) &&
+    total.value > 0
+);
 
 const tempLaundry = reactive({
   itemId: null,

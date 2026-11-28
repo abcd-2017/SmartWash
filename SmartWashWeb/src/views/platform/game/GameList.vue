@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">游戏库</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="关键词">
@@ -82,15 +83,19 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="gameList"
         fit
         highlight-current-row
+        aria-label="游戏列表"
         :empty-text="
           hasGameFilter ? '暂无数据，试试调整筛选条件' : '还没有游戏，点击右上角上传或批量导入开始'
         "
         @selection-change="handleSelectionChange"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column type="selection" width="42" />
         <el-table-column label="游戏" min-width="220">
@@ -142,10 +147,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="大小" min-width="100">
+        <el-table-column prop="fileSize" label="大小" min-width="100" sortable>
           <template #default="{ row }">{{ formatFileSize(row.fileSize) }}</template>
         </el-table-column>
-        <el-table-column prop="sort" label="排序" min-width="70" align="center">
+        <el-table-column prop="sort" label="排序" min-width="70" align="center" sortable>
           <template #default="{ row }">{{ row.sort ?? '-' }}</template>
         </el-table-column>
         <el-table-column label="下发" min-width="170">
@@ -172,7 +177,12 @@
           </template>
         </el-table-column>
         <!-- 更新时间（兜底 createdAt 防后端裁剪字段，对齐 WorkbenchEntryList 先例） -->
-        <el-table-column label="更新时间" min-width="170">
+        <el-table-column
+          label="更新时间"
+          min-width="170"
+          sortable
+          :sort-by="(row) => row.updatedAt || row.createdAt"
+        >
           <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="130" fixed="right">
@@ -189,6 +199,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">游戏列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -709,6 +722,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, reactive, computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Document, UploadFilled, CircleCheckFilled, Close, Picture } from '@element-plus/icons-vue';
@@ -744,6 +758,11 @@ import {
   gameSourceTypeTagType,
   gameColorHex,
 } from '@/constants/dict';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('game-list', tableRef);
 
 // 行内防连点状态
 const togglingId = ref(null);
@@ -1313,7 +1332,7 @@ const submitUpload = async () => {
   } catch (error) {
     logger.error('游戏上传失败:', `gameKey=${tempGame.gameKey}`, error);
     // 409 gameKey 冲突 / 413 超限 / 403 鉴权等由后端 message 透出
-    ElMessage.error(error.message || '上传失败');
+    ElMessage.error(friendlyErrorMessage(error, '上传失败'));
   } finally {
     uploading.value = false;
   }
@@ -1373,7 +1392,7 @@ const handleToggleEnabled = async (row) => {
       `gameKey=${row.gameKey}`,
       error
     );
-    ElMessage.error(error.message || '状态切换失败');
+    ElMessage.error(friendlyErrorMessage(error, '状态切换失败'));
   } finally {
     togglingId.value = null;
   }
@@ -1427,7 +1446,7 @@ const handleBatchEnabled = async (enabled) => {
     fetchData();
   } catch (error) {
     logger.error(`游戏批量${actionText}失败:`, error);
-    ElMessage.error(error.message || `批量${actionText}失败`);
+    ElMessage.error(friendlyErrorMessage(error, `批量${actionText}失败`));
   } finally {
     batchToggling.value = false;
   }
@@ -1556,7 +1575,7 @@ const submitEdit = async () => {
     // 表单校验失败（字段错误已展示）与接口报错分开提示
     if (error?.message) {
       logger.error('游戏编辑失败:', `id=${tempGame.id}`, `gameKey=${tempGame.gameKey}`, error);
-      ElMessage.error(error.message);
+      ElMessage.error(friendlyErrorMessage(error));
     }
   } finally {
     submitting.value = false;
@@ -1579,7 +1598,7 @@ const handleDelete = async (row) => {
     fetchData();
   } catch (error) {
     logger.error('游戏删除失败:', `id=${row.id}`, `gameKey=${row.gameKey}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

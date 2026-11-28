@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">用量看板</h1>
     <div class="filter-container">
       <el-form :inline="true">
         <el-form-item label="日期范围">
@@ -79,12 +80,13 @@
             <div class="stat-icon stat-icon--amber">
               <el-icon><User /></el-icon>
             </div>
-            <!-- 口径说明：activeUsers 为每日每方法明细求和，非去重用户数 -->
+            <!-- 口径说明：activeUsers 为每日每方法明细求和，非去重用户数。
+                 tabindex=0 让 EP tooltip 在键盘聚焦时也能唤起（原 hover-only） -->
             <el-tooltip
               content="按日按方法累计：同一用户跨方法/跨天会重复计入，非去重用户数"
               placement="top"
             >
-              <span class="stat-label stat-label--help">活跃人次</span>
+              <span class="stat-label stat-label--help" tabindex="0">活跃人次</span>
             </el-tooltip>
           </div>
           <div class="stat-value">{{ formatThousands(summary.activeUsers) }}</div>
@@ -152,6 +154,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 // echarts/core 按需注册（树摇，收编 TrendChart.vue 方案）：折线/柱/饼 + 网格/悬浮提示/图例 + Canvas，
 // 避免整包 echarts 进入本路由 chunk
@@ -317,7 +320,7 @@ const fetchStats = async () => {
     // 失败置位：统计卡显示错误占位+重试按钮，图表区显示错误态而非「暂无数据」
     queryError.value = true;
     logger.error('用量统计查询失败:', error);
-    ElMessage.error(error.message || '获取用量数据失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取用量数据失败'));
   } finally {
     // 被丢弃的旧响应不得关掉最新请求的 loading
     if (mySeq === usageQuerySeq) {

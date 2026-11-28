@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">平台设置</h1>
     <div class="table-card settings-card">
       <div class="settings-header">
         <p class="settings-sub">
@@ -29,13 +30,12 @@
         <el-divider content-position="left">AI 解读</el-divider>
 
         <el-form-item label="AI 解读开关" prop="divUseEnabled">
-          <el-switch
-            v-model="settings.divUseEnabled"
-            :active-value="1"
-            :inactive-value="0"
-            active-text="开放（用户配置自己的模型后可解读）"
-            inactive-text="关闭（客户端隐藏解读入口并拦截）"
-          />
+          <!-- EP 会把 active-text/inactive-text 两句互斥文案同时显示（无隐藏规则），
+               故不写在开关上，改为控件下方一条合并说明 -->
+          <div class="switch-block">
+            <el-switch v-model="settings.divUseEnabled" :active-value="1" :inactive-value="0" />
+            <span class="form-tip">关闭后客户端隐藏解读入口并拦截；用户配置自己的模型后可解读，费用由其自带 API Key 承担</span>
+          </div>
         </el-form-item>
 
         <el-form-item label="每日解读限额" prop="byokDailyLimit">
@@ -75,7 +75,7 @@ import { Refresh } from '@element-plus/icons-vue';
 import { getPlatformSettings, updatePlatformSettings, rotateMasterKey } from '@/api/divination';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 
 const formRef = ref(null);
 const loading = ref(false);
@@ -109,7 +109,7 @@ const fetchSettings = async () => {
     loaded.value = true;
   } catch (error) {
     logger.error('获取平台设置失败:', error);
-    ElMessage.error(error.message || '获取平台设置失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取平台设置失败'));
   } finally {
     loading.value = false;
   }
@@ -135,7 +135,7 @@ const submitForm = async () => {
       logger.debug('平台设置表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error('平台设置保存失败:', error);
-      ElMessage.error(error.message || '保存失败');
+      ElMessage.error(friendlyErrorMessage(error, '保存失败'));
     }
   } finally {
     submitting.value = false;
@@ -156,7 +156,7 @@ const handleRotateKey = async () => {
     ElMessage.success('主密钥轮换已记录（密钥重加密任务尚未实现）');
   } catch (error) {
     logger.error('主密钥轮换失败:', error);
-    ElMessage.error(error.message || '主密钥轮换失败');
+    ElMessage.error(friendlyErrorMessage(error, '主密钥轮换失败'));
   } finally {
     rotating.value = false;
   }

@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">用户优惠券领取管理</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="手机号">
@@ -43,32 +44,36 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="couponList"
         fit
         highlight-current-row
+        aria-label="用户优惠券列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="userCouponId" label="记录ID" min-width="100" />
         <el-table-column prop="phoneNumber" label="手机号" min-width="140" />
         <el-table-column prop="couponTitle" label="优惠券名称" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">{{ row.couponVo?.title || '-' }}</template>
         </el-table-column>
-        <el-table-column label="使用状态" min-width="100">
+        <el-table-column label="使用状态" min-width="100" sortable :sort-by="userCouponStatusOrder">
           <template #default="{ row }">
             <el-tag :type="userCouponStatusTagType(row)">
               {{ userCouponStatusText(row) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="领取时间" min-width="160">
+        <el-table-column prop="receivedAt" label="领取时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.receivedAt) }}</template>
         </el-table-column>
-        <el-table-column label="过期时间" min-width="160">
+        <el-table-column prop="expiredAt" label="过期时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.expiredAt) }}</template>
         </el-table-column>
-        <el-table-column label="使用时间" min-width="160">
+        <el-table-column prop="usedAt" label="使用时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.usedAt) }}</template>
         </el-table-column>
         <el-table-column label="订单号" min-width="200">
@@ -94,6 +99,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">用户优惠券列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -112,6 +120,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
@@ -121,6 +130,11 @@ import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('user-coupon-list', tableRef);
 
 const couponOptions = ref([]);
 const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
@@ -140,6 +154,13 @@ const userCouponStatusTagType = (row) => {
   if (row.isUsed) return 'info';
   if (isExpired(row)) return 'info';
   return 'success';
+};
+
+// 状态排序键：未使用(0) < 已使用(1) < 已过期(2)，让本地排序结果与文案语义一致
+const userCouponStatusOrder = (row) => {
+  if (row.isUsed) return 1;
+  if (isExpired(row)) return 2;
+  return 0;
 };
 
 const {
@@ -204,7 +225,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除领取记录失败:', `userCouponId=${row.userCouponId}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

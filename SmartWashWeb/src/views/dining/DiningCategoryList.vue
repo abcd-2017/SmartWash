@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">分类管理</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="分类名称">
@@ -28,12 +29,16 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="categoryList"
         fit
         highlight-current-row
+        aria-label="菜谱分类列表"
         :empty-text="hasCategoryFilter ? '试试调整筛选条件' : '还没有分类，新增后菜谱即可归类'"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column label="ID" prop="id" width="80" />
         <el-table-column label="分类名称" min-width="200">
@@ -41,20 +46,20 @@
             <span class="category-name">{{ row.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="sort" width="100">
+        <el-table-column prop="sort" width="100" sortable>
           <template #header>
             <el-tooltip content="数值越小越靠前，用户端按此顺序展示" placement="top">
               <span>排序</span>
             </el-tooltip>
           </template>
           <template #default="{ row }">
-            <el-tag type="info" effect="plain">{{ row.sort }}</el-tag>
+            <span class="sort-value">{{ row.sort }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="160">
+        <el-table-column prop="createdAt" label="创建时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="更新时间" min-width="160">
+        <el-table-column prop="updatedAt" label="更新时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
@@ -70,6 +75,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">菜谱分类列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -129,6 +137,11 @@ import { useConfirm } from '@/composables/useConfirm';
 import { diningCategoryOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('dining-category-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -281,6 +294,12 @@ const handleDelete = async (row) => {
 .category-name {
   color: var(--text-primary);
   font-weight: 500;
+}
+
+/* 排序值走纯文本 + 等宽数字（数字等宽规则），不再用状态标签承载纯数字 */
+.sort-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
 }
 
 .form-tip-inline {

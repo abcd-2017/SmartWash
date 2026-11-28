@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">短链管理</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="短码">
@@ -50,12 +51,16 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="listTableRef"
         v-else
         v-loading="listLoading"
         :data="shortCodeList"
         fit
         highlight-current-row
+        aria-label="短码列表"
         empty-text="暂无短码记录"
+        :aria-describedby="listCaptionId"
+        @sort-change="onListSortChange"
       >
         <el-table-column label="短码" min-width="150">
           <template #default="{ row }">
@@ -104,7 +109,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="过期时间" min-width="170">
+        <el-table-column prop="expireAt" label="过期时间" min-width="170" sortable>
           <template #default="{ row }">
             <!-- 纯文本展示：空值=永不过期；已过期保留原时间并与状态并存 -->
             <span v-if="!row.expireAt">永不过期</span>
@@ -113,10 +118,10 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="点击数" min-width="90" align="right">
+        <el-table-column prop="clickCount" label="点击数" min-width="90" align="right" sortable>
           <template #default="{ row }">{{ row.clickCount ?? '-' }}</template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="170">
+        <el-table-column prop="createdAt" label="创建时间" min-width="170" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="130" fixed="right">
@@ -133,6 +138,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="listCaptionId" class="sr-only">短码列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -215,7 +223,15 @@
           </el-descriptions>
 
           <h4 class="visit-title">最近访问（{{ detail.recentVisits?.length || 0 }} 条）</h4>
-          <el-table v-if="detail.recentVisits?.length" :data="detail.recentVisits" size="small">
+          <el-table
+            ref="visitTableRef"
+            v-if="detail.recentVisits?.length"
+            :data="detail.recentVisits"
+            size="small"
+            aria-label="短码访问记录列表"
+            :aria-describedby="visitCaptionId"
+            @sort-change="onVisitSortChange"
+          >
             <el-table-column prop="ipHash" label="IP 摘要" min-width="90" />
             <el-table-column
               prop="userAgent"
@@ -226,9 +242,12 @@
             <el-table-column prop="referer" label="Referer" min-width="130" show-overflow-tooltip>
               <template #default="{ row }">{{ row.referer || '-' }}</template>
             </el-table-column>
-            <el-table-column label="访问时间" min-width="160">
+            <el-table-column prop="createdAt" label="访问时间" min-width="160" sortable>
               <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
             </el-table-column>
+            <template #append>
+              <span :id="visitCaptionId" class="sr-only">短码访问记录列表</span>
+            </template>
           </el-table>
           <el-empty v-else description="暂无访问记录" :image-size="60" />
         </template>
@@ -238,6 +257,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
@@ -255,6 +275,19 @@ import {
   secretStateText,
   secretStateTagType,
 } from '@/constants/dict';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const listTableRef = ref(null);
+const visitTableRef = ref(null);
+
+const { captionId: listCaptionId, onSortChange: onListSortChange } = useTableA11y(
+  'shortcode-list',
+  listTableRef
+);
+const { captionId: visitCaptionId, onSortChange: onVisitSortChange } = useTableA11y(
+  'shortcode-visit',
+  visitTableRef
+);
 
 // 私密文本类型（后端 contentType=7）：管理端不展示目标链接与内容，仅展示私密状态。
 // 内容类型枚举全量维护在 @/constants/dict 的 SHORT_CODE_CONTENT_TYPE_OPTIONS，此处仅锁定私密文本判定值
@@ -314,7 +347,7 @@ const handleDetail = async (row) => {
     // 页面自有 catch（列表拉取失败已由 useTableList/拦截器留痕，这里只兜底详情请求）
     if (mySeq !== detailSeq) return;
     logger.error('短码详情获取失败:', `id=${row.id}`, error);
-    ElMessage.error(error.message || '获取短码详情失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取短码详情失败'));
     detailVisible.value = false;
   } finally {
     // 被丢弃的旧响应不得关掉最新请求的 loading
@@ -365,7 +398,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('短码删除失败:', `id=${row.id}`, `code=${row.code}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

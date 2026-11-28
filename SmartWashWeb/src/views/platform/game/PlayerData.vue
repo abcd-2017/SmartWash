@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">玩家数据</h1>
     <el-tabs v-model="activeTab" @tab-click="handleTabClick">
       <el-tab-pane label="存档记录" name="saves" lazy>
         <div class="filter-container">
@@ -44,12 +45,16 @@
             <el-button size="small" @click="fetchSaves">重试</el-button>
           </div>
           <el-table
+            ref="saveTableRef"
             v-else
             v-loading="saveListLoading"
             :data="saveList"
             border
             stripe
+            aria-label="玩家存档列表"
             empty-text="暂无数据，试试调整筛选条件"
+            :aria-describedby="saveCaptionId"
+            @sort-change="onSaveSortChange"
           >
             <el-table-column prop="userId" label="用户ID" width="100" />
             <el-table-column prop="maskedPhone" label="手机号" width="130" />
@@ -64,9 +69,12 @@
             <el-table-column label="存档内容" min-width="240" show-overflow-tooltip>
               <template #default="{ row }">{{ row.stateJson }}</template>
             </el-table-column>
-            <el-table-column label="更新时间" width="170">
+            <el-table-column prop="updatedAt" label="更新时间" width="170" sortable>
               <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
             </el-table-column>
+            <template #append>
+              <span :id="saveCaptionId" class="sr-only">玩家存档列表</span>
+            </template>
           </el-table>
           <el-pagination
             v-model:current-page="saveListQuery.page"
@@ -115,12 +123,16 @@
             <el-button size="small" @click="fetchScores">重试</el-button>
           </div>
           <el-table
+            ref="scoreTableRef"
             v-else
             v-loading="scoreListLoading"
             :data="scoreList"
             border
             stripe
+            aria-label="玩家成绩列表"
             empty-text="暂无数据，试试调整筛选条件"
+            :aria-describedby="scoreCaptionId"
+            @sort-change="onScoreSortChange"
           >
             <el-table-column prop="userId" label="用户ID" width="100" />
             <el-table-column prop="maskedPhone" label="手机号" width="130" />
@@ -131,14 +143,23 @@
               min-width="120"
               show-overflow-tooltip
             />
-            <el-table-column prop="metricValue" label="成绩值" width="110" align="right" />
+            <el-table-column prop="metricValue" label="成绩值" width="110" align="right" sortable />
             <el-table-column label="辅助值" width="100" align="right">
               <template #default="{ row }">{{ row.metricExtra ?? '—' }}</template>
             </el-table-column>
-            <el-table-column prop="playedCount" label="上报次数" width="90" align="center" />
-            <el-table-column label="最近上报" width="170">
+            <el-table-column
+              prop="playedCount"
+              label="上报次数"
+              width="90"
+              align="center"
+              sortable
+            />
+            <el-table-column prop="lastPlayedAt" label="最近上报" width="170" sortable>
               <template #default="{ row }">{{ formatTime(row.lastPlayedAt) }}</template>
             </el-table-column>
+            <template #append>
+              <span :id="scoreCaptionId" class="sr-only">玩家成绩列表</span>
+            </template>
           </el-table>
           <el-pagination
             v-model:current-page="scoreListQuery.page"
@@ -157,6 +178,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getGameList } from '@/api/game';
@@ -164,6 +186,19 @@ import { getGameSaves, getGameScores } from '@/api/gameData';
 import { useTableList } from '@/composables/useTableList';
 import { formatTime } from '@/utils/format';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const saveTableRef = ref(null);
+const scoreTableRef = ref(null);
+
+const { captionId: saveCaptionId, onSortChange: onSaveSortChange } = useTableA11y(
+  'player-save',
+  saveTableRef
+);
+const { captionId: scoreCaptionId, onSortChange: onScoreSortChange } = useTableA11y(
+  'player-score',
+  scoreTableRef
+);
 
 defineOptions({ name: 'PlayerData' });
 
@@ -187,7 +222,7 @@ const loadGameOptions = async () => {
     // 下拉加载失败不能静默：不提示则筛选器永远为空，用户无从区分「无数据」与「加载失败」
     logger.error('游戏下拉加载失败:', error);
     gameOptions.value = [];
-    ElMessage.error(error.message || '游戏列表加载失败');
+    ElMessage.error(friendlyErrorMessage(error, '游戏列表加载失败'));
   }
 };
 
@@ -218,7 +253,7 @@ const {
   list: scoreList,
   total: scoreTotal,
   listLoading: scoreListLoading,
-  listLoadError: scoreLoadError,
+  listError: scoreLoadError,
   listQuery: scoreListQuery,
   fetchData: fetchScores,
   handleSearch: handleScoreSearch,

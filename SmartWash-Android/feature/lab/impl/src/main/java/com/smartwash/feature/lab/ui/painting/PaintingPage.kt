@@ -5,10 +5,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
 import android.provider.MediaStore
-import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +22,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -78,7 +80,7 @@ import kotlinx.coroutines.withContext
 private const val SAVE_WIDTH = 1080
 private const val SAVE_HEIGHT = 1440
 
-/** 保存结果（页面据此在 LaunchedEffect 里弹 Toast，避免点击回调里直接弹） */
+/** 保存结果（页面据此在 LaunchedEffect 里弹 Snackbar，避免点击回调里直接弹） */
 private enum class SaveResult { SUCCESS, FAILURE }
 
 /**
@@ -114,16 +116,18 @@ fun PaintingPage(
     val saveSuccessText = stringResource(R.string.lab_painting_save_success)
     val saveFailedText = stringResource(R.string.lab_painting_save_failed)
 
+    val snackbarHostState = remember { SnackbarHostState() }
     var saveResult by remember { mutableStateOf<SaveResult?>(null) }
+    var saving by remember { mutableStateOf(false) }
     LaunchedEffect(saveResult) {
         when (saveResult) {
             SaveResult.SUCCESS -> {
-                Toast.makeText(context, saveSuccessText, Toast.LENGTH_SHORT).show()
+                snackbarHostState.showSnackbar(saveSuccessText)
                 view.performHaptic(HapticEffect.SUCCESS)
                 saveResult = null
             }
             SaveResult.FAILURE -> {
-                Toast.makeText(context, saveFailedText, Toast.LENGTH_SHORT).show()
+                snackbarHostState.showSnackbar(saveFailedText)
                 view.performHaptic(HapticEffect.ERROR)
                 saveResult = null
             }
@@ -131,14 +135,15 @@ fun PaintingPage(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(scheme.background)
-            .verticalScroll(rememberScrollState())
-            // edge-to-edge 下滚动内容底部避让系统手势区（对齐同模块页脚处理）
-            .navigationBarsPadding(),
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(scheme.background)
+                .verticalScroll(rememberScrollState())
+                // edge-to-edge 下滚动内容底部避让系统手势区（对齐同模块页脚处理）
+                .navigationBarsPadding(),
+        ) {
         PageHeader(
             title = stringResource(R.string.lab_painting_title),
             onBack = { navController.navigateUp() },
@@ -201,16 +206,19 @@ fun PaintingPage(
                     text = stringResource(R.string.lab_painting_save),
                     onClick = {
                         view.performHaptic(HapticEffect.MEDIUM)
+                        saving = true
                         scope.launch {
                             val ok = withContext(Dispatchers.IO) {
                                 val bitmap = renderPaintingToBitmap(scene, palette, SAVE_WIDTH, SAVE_HEIGHT)
                                 saveBitmapToGallery(context, bitmap)
                             }
+                            saving = false
                             saveResult = if (ok) SaveResult.SUCCESS else SaveResult.FAILURE
                         }
                     },
                     modifier = Modifier.weight(1f),
                     variant = AppButtonVariant.SECONDARY,
+                    loading = saving,
                 )
             }
 
@@ -248,6 +256,15 @@ fun PaintingPage(
                 color = scheme.textSecondary,
             )
         }
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = AppDimens.spaceMd),
+        )
     }
 
     if (showSeedDialog) {

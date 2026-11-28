@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">订阅管理</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="状态">
@@ -55,7 +56,8 @@
           <div class="summary-card__icon summary-card__icon--muted">
             <el-icon><Clock /></el-icon>
           </div>
-          <span class="summary-card__label">已过期</span>
+          <!-- 与列表「已逾期」标识同口径（active 且下次续费日已过），避免汇总与列表对不上账 -->
+          <span class="summary-card__label">已逾期</span>
         </div>
         <span class="summary-card__value">{{ formatThousands(summary.expiredCount) }}</span>
       </div>
@@ -78,12 +80,16 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="list"
         fit
         highlight-current-row
+        aria-label="订阅列表"
         empty-text="暂无订阅记录"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column label="订阅ID" min-width="90">
           <template #default="{ row }">{{ row.subscriptionId ?? row.id ?? '-' }}</template>
@@ -96,7 +102,7 @@
         <el-table-column label="订阅名称" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">{{ row.name || '-' }}</template>
         </el-table-column>
-        <el-table-column label="每期金额" min-width="110" align="right">
+        <el-table-column prop="amount" label="每期金额" min-width="110" align="right" sortable>
           <template #default="{ row }">￥{{ formatAmount(row.amount) }}</template>
         </el-table-column>
         <el-table-column label="计费周期" min-width="90">
@@ -111,7 +117,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" min-width="120">
+        <el-table-column prop="status" label="状态" min-width="120" sortable>
           <template #default="{ row }">
             <div class="status-cell">
               <el-tag :type="subscriptionStatusTagType(row.status)">
@@ -124,12 +130,15 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="下次续费日" min-width="110">
+        <el-table-column prop="nextRenewDate" label="下次续费日" min-width="110" sortable>
           <template #default="{ row }">{{ formatTime(row.nextRenewDate, 'YYYY-MM-DD') }}</template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="170">
+        <el-table-column prop="createdAt" label="创建时间" min-width="170" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">订阅列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -148,6 +157,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
@@ -164,6 +174,11 @@ import {
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('subscription-list', tableRef);
 
 const statusOptions = SUBSCRIPTION_STATUS_OPTIONS;
 
@@ -221,7 +236,7 @@ const fetchSummary = async () => {
     summary.expiringIn7Days = Number(data.expiringIn7Days) || 0;
   } catch (error) {
     logger.error('订阅汇总加载失败:', error);
-    ElMessage.error(error.message || '获取订阅汇总失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取订阅汇总失败'));
   } finally {
     summaryLoading.value = false;
   }

@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">配料库</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="配料名称">
@@ -39,21 +40,25 @@
 
     <div class="table-card">
       <!-- 加载失败态：与空态区分，给出重试入口 -->
-      <div v-if="listLoadError" class="load-error">
-        <span>{{ listLoadError }}</span>
+      <div v-if="listError" class="load-error">
+        <span>{{ listError }}</span>
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="ingredientList"
         fit
         highlight-current-row
+        aria-label="配料列表"
         :empty-text="
           hasIngredientFilter
             ? '试试调整筛选条件'
             : '还没有配料：批量导入菜谱时按食材名自动注册，也可在此手动维护'
         "
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column label="ID" prop="id" width="80" />
         <el-table-column label="配料名称" min-width="200">
@@ -81,10 +86,10 @@
             <span v-else class="text-muted">无</span>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="160">
+        <el-table-column prop="createdAt" label="创建时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="更新时间" min-width="160">
+        <el-table-column prop="updatedAt" label="更新时间" min-width="160" sortable>
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
@@ -100,6 +105,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">配料列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -177,7 +185,7 @@ import {
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import { formatTime } from '@/utils/format';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import {
   DINING_INGREDIENT_CATEGORY_OPTIONS,
   DINING_ALLERGEN_OPTIONS,
@@ -188,6 +196,11 @@ import {
   diningIngredientAllergenTagType,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('dining-ingredient-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -199,7 +212,7 @@ const {
   list: ingredientList,
   total,
   listLoading,
-  listLoadError,
+  listError,
   listQuery,
   pageSizes,
   fetchData,
@@ -327,7 +340,7 @@ const submitForm = async () => {
         `id=${tempIngredient.id ?? '-'}`,
         error
       );
-      ElMessage.error(error.message || '操作失败');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败'));
     }
   } finally {
     submitting.value = false;
@@ -351,7 +364,7 @@ const handleDelete = async (row) => {
   } catch (error) {
     logger.error('配料删除失败:', `id=${row.id}`, `name=${row.name}`, error);
     // 引用冲突（如「配料「鸡蛋」被 3 个菜谱引用，无法删除」）与普通失败统一透出后端 message
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

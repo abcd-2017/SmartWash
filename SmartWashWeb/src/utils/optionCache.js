@@ -5,6 +5,7 @@ import { getSchoolList } from '@/api/school';
 import { getLaundryList } from '@/api/laundry';
 import { getRoleList } from '@/api/role';
 import { getDiningCategoryList } from '@/api/dining';
+import { getModelList } from '@/api/divination';
 
 /**
  * 创建一个带失效入口的缓存拉取器
@@ -50,10 +51,15 @@ export const roleOptionsCache = createCachedFetcher(getRoleList, { page: 1, size
 // 菜谱分类选项缓存（吃啥菜谱页分类筛选/表单下拉共用；分类管理页增删改后失效）
 export const diningCategoryOptionsCache = createCachedFetcher(getDiningCategoryList, { page: 1, size: 1000 });
 
+// 观象台模型「厂商」下拉选项缓存：厂商筛选会把结果集收缩成单个厂商，
+// 选项若从当前页派生会形成「选中即死胡同」，故独立全量拉取并缓存
+export const divModelVendorOptionsCache = createCachedFetcher(getModelList, { page: 1, size: 1000 });
+
 /** 一键失效全部选项缓存（如新增学校/套餐/角色后调用） */
 export function invalidateAllOptionCaches() {
   schoolOptionsCache.invalidate();
   laundryOptionsCache.invalidate();
   roleOptionsCache.invalidate();
   diningCategoryOptionsCache.invalidate();
+  divModelVendorOptionsCache.invalidate();
 }

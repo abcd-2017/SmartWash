@@ -30,6 +30,7 @@ import {
   TianXiangHeader
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
+import { divIsDark } from '../../../../../constant/DivTheme'
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { DesignDimens, DesignElevation, MotionAlpha, MotionScale, MotionTiming } from '../../../../../constant/DesignSystem'
 import { ReduceMotion } from '../../../../../utils/ReduceMotion'
@@ -352,8 +353,14 @@ struct DivHomePage {
     .linearGradient(this.isFeatured(tag)
       ? { angle: 135, colors: [[DivPalette.goldLine, 0.0], [DivPalette.goldHair, 1.0]] }
       : { angle: 135, colors: [[Color.Transparent, 0.0], [Color.Transparent, 1.0]] })
-    // 规范 §2.4/§3.1 卡片唯一画法：1px 描边 + blur 12 轻阴影（compare-10 #12 对齐安卓 softCardShadow）
-    .shadow({
+    // 规范 §2.4/§3.1 卡片唯一画法：1px 描边 + blur 12 轻阴影（compare-10 #12 对齐安卓 softCardShadow）；
+    // §2.4「玄墨深色卡不加投影」：玄墨侧 radius 0 + 透明（对齐安卓 if (c.isDark) Modifier else softCardShadow）
+    .shadow(divIsDark() ? {
+      radius: 0,
+      color: Color.Transparent,
+      offsetX: 0,
+      offsetY: 0
+    } : {
       radius: DesignElevation.CARD_SHADOW_RADIUS,
       color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,

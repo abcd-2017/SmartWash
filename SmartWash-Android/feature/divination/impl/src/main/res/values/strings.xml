@@ -59,6 +59,12 @@
     <string name="div_history_note">复盘沿用原盘原时刻 · 不因当前日期重算</string>
     <string name="div_filter_all">全部</string>
 
+    <!-- 卦历列表摘要行 / 空问句兜底（文案资源化，禁止硬编码） -->
+    <string name="div_history_summary_liuyao_bian">%1$s 之 %2$s</string>
+    <string name="div_history_summary_qimen">阴遁%1$d局</string>
+    <string name="div_history_summary_liuren">月将%1$s</string>
+    <string name="div_history_question_fallback">—</string>
+
     <!-- 问事页 -->
     <string name="div_ask_title">心中所问</string>
     <string name="div_ask_hint">默念所问之事，一事一占</string>

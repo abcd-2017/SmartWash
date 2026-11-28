@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">支付记录</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="支付ID">
@@ -96,12 +97,18 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="paymentList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        aria-label="支付流水列表"
+        :empty-text="
+          hasPaymentFilter ? '试试调整筛选条件' : '还没有支付流水，用户支付后将在此展示'
+        "
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="paymentId" label="支付ID" min-width="90" class-name="col-subtle" />
         <el-table-column label="订单号" min-width="200" show-overflow-tooltip>
@@ -112,7 +119,7 @@
             {{ row.user?.phoneNumber || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="金额" min-width="120" align="right">
+        <el-table-column prop="amount" label="金额" min-width="120" align="right" sortable>
           <template #default="{ row }">
             <!-- 空金额整格输出 '-'：￥- 会让人误读为「负金额」 -->
             <span class="pay-amount">{{ formatPayAmount(row.amount) }}</span>
@@ -123,16 +130,25 @@
             {{ payTypeOptions[row.paymentMethod] || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="状态" min-width="120">
+        <el-table-column prop="status" label="状态" min-width="120" sortable>
           <template #default="{ row }">
             <el-tag :type="payStatusTagType(row.status)">
               {{ payStatusOptions[row.status] || '-' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="支付时间" min-width="180" class-name="col-subtle">
+        <el-table-column
+          prop="paidAt"
+          label="支付时间"
+          min-width="180"
+          class-name="col-subtle"
+          sortable
+        >
           <template #default="{ row }">{{ formatTime(row.paidAt) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">支付流水列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -151,14 +167,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getPayTypes, getPayStatus, getPaymentList } from '@/api/payment';
-import { formatAmount, formatTime } from '@/utils/format';
+import { formatPayAmount, formatTime } from '@/utils/format';
 import { payStatusTagType } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('payment-list', tableRef);
 
 const payTypeOptions = ref({});
 const payStatusOptions = ref({});
@@ -195,6 +216,18 @@ const {
   errorMsg: '获取数据失败',
 });
 
+// 空态区分：有筛选且库内确有命中时提示调整条件；库空（total=0）即使用户带了筛选也一律展示流水来源说明
+const hasPaymentFilter = computed(
+  () =>
+    (Boolean(listQuery.paymentId) ||
+      Boolean((listQuery.orderNo || '').trim()) ||
+      Boolean((listQuery.phoneNumber || '').trim()) ||
+      Boolean(listQuery.paymentMethod) ||
+      Boolean(listQuery.status) ||
+      Boolean(listQuery.startTime || listQuery.endTime)) &&
+    total.value > 0
+);
+
 const timeRange = useTimeRange(listQuery);
 
 // 初始化数据：枚举与列表无依赖，并行发起（串行会让首屏多等一个 RTT）
@@ -202,9 +235,6 @@ onMounted(() => {
   Promise.allSettled([fetchPayTypes(), fetchPayStatus()]);
   fetchData();
 });
-
-// 金额单元格：空值整格 '-'，非空才带 ￥ 前缀
-const formatPayAmount = (amount) => (amount == null ? '-' : `￥${formatAmount(amount)}`);
 
 const fetchPayTypes = async () => {
   try {

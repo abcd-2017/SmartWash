@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">管理员角色管理</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="管理员ID">
@@ -71,8 +72,11 @@
         :data="adminList"
         fit
         highlight-current-row
+        aria-label="管理员列表"
         empty-text="暂无数据，试试调整筛选条件"
         @selection-change="handleSelectionChange"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="adminId" label="ID" min-width="80" />
@@ -83,7 +87,7 @@
             <div class="admin-role-cell">{{ row.roles?.roleName || '-' }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column prop="createdAt" label="创建时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -100,6 +104,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">管理员列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -177,13 +184,17 @@ import { ElMessage } from 'element-plus';
 import { getAdminUserList, addAdminUser, updateAdminUser, deleteAdminUser } from '@/api/adminUser';
 import { roleOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 import { passwordLengthRule } from '@/utils/validators';
+import { useTableA11y } from '@/composables/useTableA11y';
 
 const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('admin-user-list', tableRef);
+
 const formRef = ref(null);
 const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
 const batchDeleting = ref(false); // 「批量删除」按钮 loading，防连点
@@ -301,7 +312,7 @@ const handleBatchDelete = async () => {
     tableRef.value.clearSelection();
   } catch (error) {
     logger.error('批量删除管理员失败:', `count=${count}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     batchDeleting.value = false;
   }
@@ -364,7 +375,7 @@ const submitForm = async () => {
       logger.debug('管理员表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error('保存管理员失败:', error instanceof Error ? error : '未知错误');
-      ElMessage.error(error.message || '操作失败，请检查输入');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败，请检查输入'));
     }
   } finally {
     submitting.value = false;
@@ -386,7 +397,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除管理员失败:', `adminId=${row.adminId}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

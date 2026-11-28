@@ -2,7 +2,6 @@ package com.smartwash.ui.page.ai
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,12 +26,9 @@ import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -55,15 +49,13 @@ import androidx.compose.ui.unit.dp
 import com.smartwash.R
 import com.smartwash.common.ui.components.DrumMark
 import com.smartwash.common.ui.components.softCardShadow
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.GroupCard
-import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
-import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.pressable
-import com.smartwash.common.utils.selectedColor
 
 /**
  * AI 工具工作台 — 状态工作流 + 来源引用 + 人工确认
@@ -75,7 +67,6 @@ fun AiWorkPage(
 ) {
     // saveable：离开再进保留输入草稿
     var inputText by rememberSaveable { mutableStateOf("") }
-    var inputFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
     Column(
@@ -213,7 +204,8 @@ fun AiWorkPage(
             }
         }
 
-        // 底部输入框（固定）——设计稿：白底条高 80（顶线 1px + 上下 16 + 输入框 48）
+        // 底部输入框（固定）——设计稿：白底条高 80（顶线 + 上下 16 + 输入框）；
+        // 输入框走 AppTextField 后取 M3 常规自然高 56（见下方说明），条高随之为 89
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -238,41 +230,18 @@ fun AiWorkPage(
                         .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceMd),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 聚焦反馈：外框颜色 primary ↔ outline 过渡（reduced motion 自动降级 180ms）
-                    val inputBorderColor = selectedColor(
-                        if (inputFocused) AppColors.colorScheme.primary else AppColors.colorScheme.outline
-                    )
-                    TextField(
+                    // 规范 §3.7 / §7：输入控件一律走 common:ui AppTextField（STANDARD 皮肤：
+                    // surfaceVariant 底 + outline 描边、聚焦 primary、16sp 正文、占位 textSecondary），
+                    // 业务层禁止直接调用 material3 TextField/OutlinedTextField。
+                    // 注：check-ui.sh 检查 5 只匹配 OutlinedTextField，原实现用的是 filled TextField
+                    // 属漏网回潮；此处收敛为统一组件，聚焦描边由组件内部表达（reduced motion 降级 180ms）。
+                    AppTextField(
                         value = inputText,
                         onValueChange = { inputText = it },
-                        placeholder = {
-                            // 占位符：textSecondary + 与正文同字号 16sp（ui-spec §3.7 表单输入唯一标准，
-                            // 工作台搜索框先例；textTertiary 1.9:1 触 DESIGN-SPEC §10 可读文本红线）
-                            Text(
-                                stringResource(R.string.ai_input_placeholder),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = AppColors.colorScheme.textSecondary
-                            )
-                        },
                         modifier = Modifier
                             .weight(1f)
-                            .focusRequester(focusRequester)
-                            .onFocusChanged { inputFocused = it.isFocused }
-                            .height(48.dp)
-                            .border(
-                                width = 1.dp,
-                                color = inputBorderColor,
-                                // 输入框圆角 14（ui-spec §2.3 radiusButton 档含输入框，inputRadius 令牌，
-                                // 工作台搜索框先例；radiusMd 12 是图标容器/嵌套块档的误用）
-                                shape = RoundedCornerShape(AppDimens.inputRadius)
-                            ),
-                        shape = RoundedCornerShape(AppDimens.inputRadius),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
+                            .focusRequester(focusRequester),
+                        placeholder = stringResource(R.string.ai_input_placeholder),
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.width(AppDimens.spaceXs))

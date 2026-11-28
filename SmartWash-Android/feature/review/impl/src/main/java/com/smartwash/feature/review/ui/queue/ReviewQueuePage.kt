@@ -11,13 +11,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.School
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -133,7 +132,12 @@ fun ReviewQueuePage(
                     refreshSession = true
                     viewModel.load()
                 },
-                modifier = Modifier.fillMaxSize(),
+                // 本页是压栈子页（无底部 tab），edge-to-edge 下列表/骨架/空态/错误内容
+                // 需自行避让手势条与三键导航栏（规范 §9「navigationBars / ime insets」；
+                // 同模块 ReviewStudyPage 底部 CTA 同口径）。原实现底部仅 8dp，末卡会被系统栏遮住。
+                modifier = Modifier
+                    .fillMaxSize()
+                    .navigationBarsPadding(),
             ) {
                 when (val loadState = state.loadState) {
                     // 首刷加载：骨架屏占位（形状对齐 QueueCard，禁止转圈，规范 §3.6）
@@ -141,8 +145,8 @@ fun ReviewQueuePage(
                         QueueSkeleton(modifier = Modifier.fillMaxSize())
                     }
                     is RequestState.Error -> {
+                        // icon 形参不渲染（EmptyState 只画滚筒圆母题），不再传裸 Material 图标占位
                         EmptyState(
-                            icon = Icons.Rounded.School,
                             message = loadState.getMessage(context),
                             modifier = Modifier
                                 .fillMaxSize()
@@ -161,7 +165,6 @@ fun ReviewQueuePage(
                         if (queue == null || queue.cards.isEmpty()) {
                             // 空态：滚筒圆母题 + 引导 + 行动按钮（跳资料页建卡）
                             EmptyState(
-                                icon = Icons.Rounded.School,
                                 message = stringResource(R.string.review_queue_empty_message),
                                 modifier = Modifier
                                     .fillMaxSize()

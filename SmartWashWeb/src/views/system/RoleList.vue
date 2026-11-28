@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">角色管理</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="角色名称">
@@ -29,12 +30,16 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="roleList"
         fit
         highlight-current-row
+        aria-label="角色列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="roleId" label="ID" min-width="80" />
         <el-table-column label="角色名称" min-width="150">
@@ -49,7 +54,7 @@
           min-width="200"
           show-overflow-tooltip
         />
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column prop="createdAt" label="创建时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -75,6 +80,9 @@
             >
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">角色列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -126,10 +134,15 @@ import { getRoleList, addRole, updateRole, deleteRole } from '@/api/role';
 import { getAdminUserList } from '@/api/adminUser';
 import { roleOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('role-list', tableRef);
 
 const formRef = ref(null);
 
@@ -223,7 +236,7 @@ const submitForm = async () => {
       logger.debug('角色表单校验未通过，已拦截提交（错误示于字段红字，不弹全局 toast）');
     } else {
       logger.error('保存角色失败:', error instanceof Error ? error : '未知错误');
-      ElMessage.error(error.message || '操作失败');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败'));
     }
   } finally {
     submitting.value = false;
@@ -262,7 +275,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除角色失败:', `roleId=${row.roleId}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

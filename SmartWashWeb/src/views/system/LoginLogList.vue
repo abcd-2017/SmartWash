@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">登录日志</h1>
     <!-- 说明卡片：与操作审计区分，明确本表是登录/注册留痕 -->
     <el-alert title="登录日志" type="info" :closable="false" show-icon>
       <template #default>
@@ -90,12 +91,16 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="loginLogList"
         fit
         highlight-current-row
+        aria-label="登录日志列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column label="用户ID" min-width="100">
@@ -128,16 +133,24 @@
         <el-table-column label="IP" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">{{ row.ip || '-' }}</template>
         </el-table-column>
-        <el-table-column label="结果" min-width="90">
+        <el-table-column prop="result" label="结果" min-width="90" sortable>
           <template #default="{ row }">
             <el-tag :type="loginResultTagType(row.result)">{{
               loginResultText(row.result)
             }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="登录时间" min-width="180">
+        <el-table-column
+          label="登录时间"
+          min-width="180"
+          sortable
+          :sort-by="(row) => row.createdAt ?? row.created_at"
+        >
           <template #default="{ row }">{{ loginTime(row) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">登录日志列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -156,7 +169,7 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import dayjs from 'dayjs';
 import { getLoginLogs } from '@/api/loginLog';
 import { formatTime } from '@/utils/format';
@@ -173,6 +186,11 @@ import {
   loginResultText,
   loginNetworkTypeText,
 } from '@/constants/dict';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('login-log-list', tableRef);
 
 // 后端契约字段为下划线口径（app_version/created_at/user_id/network_type/app_channel），
 // 而现有 Java 接口序列化多为驼峰（参考 AuditLogList 的 createdAt）。

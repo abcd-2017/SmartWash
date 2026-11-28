@@ -55,8 +55,12 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -125,9 +129,11 @@ fun ScanPage(
         }
     }
 
-    // 首次进入自动发起系统申请；拒绝后进入引导态（可再次申请或去系统设置）
+    // 首次进入自动发起系统申请；拒绝后进入引导态（可再次申请或去系统设置）。
+    // requestedOnce 守卫：Activity 重建（旋转/深色切换）时 LaunchedEffect(Unit) 会重跑，
+    // 若无守卫则用户拒绝一次后每次重建都再弹一层系统框；此后由引导态按钮显式再申请。
     LaunchedEffect(Unit) {
-        if (!hasPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
+        if (!hasPermission && !requestedOnce) permissionLauncher.launch(Manifest.permission.CAMERA)
     }
 
     // 从系统设置返回时刷新授权态（onResume 复查，避免设置页授权后仍停在引导态）
@@ -194,7 +200,10 @@ fun ScanPage(
                 .statusBarsPadding()
                 .padding(top = 12.dp, start = 12.dp)
                 .size(48.dp)
-                .pressable(onClick = { navController.navigateUp() }),
+                .pressable(onClick = { navController.navigateUp() })
+                // TalkBack 语义：Icon 的 contentDescription 只提供「返回」文本，
+                // 补 Role.Button 让焦点落在整块 48dp 热区时播报为按钮
+                .semantics { role = Role.Button },
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -208,6 +217,8 @@ fun ScanPage(
             text = stringResource(R.string.scan_title),
             style = AppTextStyles.PageHeader,
             color = Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
@@ -364,6 +375,10 @@ private fun PermissionContent(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            // edge-to-edge：引导内容不得伸入状态栏 / 导航栏手势区（相机预览可全屏，
+            // 但权限文案与按钮必须内缩，否则按钮落在系统栏下）
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXxl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,

@@ -1,5 +1,6 @@
 <template>
-  <div class="sidebar">
+  <!-- open 仅窄屏生效：抽屉滑入/滑出；桌面恒为常驻侧栏 -->
+  <div class="sidebar" :class="{ 'is-open': open }" id="app-sidebar">
     <div class="sidebar-header">
       <div class="brand-name">SmartWash</div>
       <div class="brand-sub">管理系统</div>
@@ -126,6 +127,11 @@ import {
 const route = useRoute();
 const router = useRouter();
 
+// 窄屏抽屉开关（由 Layout 持有，Navbar 菜单按钮切换）
+defineProps({
+  open: { type: Boolean, default: false },
+});
+
 // 图标清单已收敛进路由 meta.icon（评审 #26），这里只负责「图标名 → 组件」的解析。
 // 新增菜单图标：给路由 meta 加 icon 名（或分组 icon 字段），并在此登记同名图标组件。
 const iconRegistry = {
@@ -190,8 +196,8 @@ const menuRoutes = computed(() => {
 const MENU_GROUP_CONFIG = [
   { title: '基础数据', icon: 'OfficeBuilding', paths: ['/schools', '/lockers', '/laundry'] },
   { title: '业务管理', icon: 'Files', paths: ['/orders', '/payment', '/recharge'] },
-  // 用户触达（站内信）与营销发券同属用户运营，不再各自成组
-  { title: '用户运营', icon: 'User', paths: ['/users', '/coupon', '/userCoupon', '/notices'] },
+  // 营销发券同属用户运营；站内信为触达类工具，独立成「消息中心」组（见下方）
+  { title: '用户运营', icon: 'User', paths: ['/users', '/coupon', '/userCoupon'] },
   {
     // 短链/工作台/游戏/订阅等平台实验模块统一归口
     title: '平台模块',
@@ -224,12 +230,10 @@ const MENU_GROUP_CONFIG = [
     icon: 'Lock',
     paths: ['/roles', '/adminUsers', '/audit-logs', '/login-logs', '/captcha', '/sysconfig'],
   },
-  { title: '订阅', icon: 'AlarmClock', paths: ['/subscriptions'] },
-  { title: '系统与安全', icon: 'Lock', paths: ['/audit-logs'] },
   // 站内信为触达类工具，独立成组（不并入业务管理，避免与订单/支付混排）
   { title: '消息中心', icon: 'Bell', paths: ['/notices'] },
   // 吃啥为独立业务域，单独成组（后续批量导入挂同组）
- {
+  {
     title: '吃啥',
     icon: 'Food',
     paths: ['/dining/categories', '/dining/recipes', '/dining/ingredients'],
@@ -348,6 +352,29 @@ watch(
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+}
+
+/* 窄屏（≤ --bp-mobile 768px）：侧栏改为抽屉，默认移出屏幕，
+   由 Navbar 菜单按钮加 .is-open 滑入；桌面规则不受影响 */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1100;
+    transform: translateX(-100%);
+    transition: transform var(--motion-base) var(--ease-decelerate);
+    box-shadow: var(--shadow-dialog);
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  /* 离场加速：与全站「进场减速、离场加速」的动效词汇一致 */
+  .sidebar:not(.is-open) {
+    transition-timing-function: var(--ease-accelerate);
+  }
 }
 
 .sidebar-header {

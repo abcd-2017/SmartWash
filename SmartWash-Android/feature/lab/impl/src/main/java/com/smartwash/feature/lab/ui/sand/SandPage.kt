@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -43,8 +44,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -76,8 +80,9 @@ private const val MAX_ROWS = 400
 /** 模拟节拍（ms）：约 30 tick/秒，沙落一整屏约 5 秒 */
 private const val SIM_TICK_MS = 33L
 
-/** 调色板每行元素数（9 元素 → 5 + 4 两行） */
-private const val PALETTE_COLUMNS = 5
+/** 调色板每行元素数（9 元素 → 3 × 3）：48dp 色块 + 12dp 间距 = 168dp，
+ *  在 360dp 窄屏（可用 272dp）不溢出；原 5 列 288dp 会越出卡片右缘 */
+private const val PALETTE_COLUMNS = 3
 
 /**
  * 落沙实验室页：全屏 Canvas 沙盒（ByteArray 网格元胞自动机，内核 [SandSimulator] 纯 Kotlin）
@@ -184,6 +189,14 @@ fun SandPage(
     val currentGrid by rememberUpdatedState(gridCols to gridRows)
     val currentCanvasSize by rememberUpdatedState(canvasSize)
 
+    // 无障碍：画布用途 + 当前笔刷元素 + 播放/暂停状态
+    val selectedLabel = stringResource(selected.labelRes())
+    val canvasDescription = stringResource(R.string.lab_sand_canvas_description, selectedLabel)
+    val canvasState = stringResource(
+        if (playing) R.string.lab_sand_canvas_state_playing
+        else R.string.lab_sand_canvas_state_paused
+    )
+
     /** 把指针位置换算为网格坐标并涂抹（圆形概率笔刷） */
     fun paintAt(position: Offset) {
         val (cols, rows) = currentGrid
@@ -200,6 +213,8 @@ fun SandPage(
         modifier = Modifier
             .fillMaxSize()
             .background(scheme.background)
+            // 3 键导航下底部按钮/调色板避让手势条（对齐 Breath/Bubble 页）
+            .navigationBarsPadding()
     ) {
         PageHeader(
             title = stringResource(R.string.lab_sand_title),
@@ -240,6 +255,11 @@ fun SandPage(
                             onDrag = { change, _ -> paintAt(change.position) },
                         )
                     }
+                    .semantics {
+                        contentDescription = canvasDescription
+                        role = Role.Button
+                        stateDescription = canvasState
+                    }
             ) {
                 frameTick // 读取状态建立每帧重绘订阅
                 val img = imageBitmap ?: return@Canvas
@@ -277,7 +297,7 @@ fun SandPage(
             Text(
                 text = stringResource(
                     R.string.lab_sand_current_format,
-                    stringResource(selected.labelRes()),
+                    selectedLabel,
                 ),
                 style = MaterialTheme.typography.labelMedium,
                 color = scheme.textSecondary,
@@ -307,7 +327,7 @@ fun SandPage(
 }
 
 /**
- * 元素调色板：9 元素两行（5 + 4）色块，选中态加粗品牌色描边。
+ * 元素调色板：9 元素按 [PALETTE_COLUMNS] 分块（3 列 → 3 行），选中态加粗品牌色描边。
  * 色块为颜色选择器（非功能图标），48dp 圆形 + 1dp 描边（DESIGN-SPEC §3 触控 ≥48dp），整块 pressable。
  */
 @Composable
@@ -327,8 +347,9 @@ private fun SandPalette(
             .padding(AppDimens.cardPadding),
         verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
     ) {
-        PaletteRow(elements.take(PALETTE_COLUMNS), selected, onSelect)
-        PaletteRow(elements.drop(PALETTE_COLUMNS), selected, onSelect)
+        elements.chunked(PALETTE_COLUMNS).forEach { row ->
+            PaletteRow(row, selected, onSelect)
+        }
     }
 }
 
@@ -340,7 +361,8 @@ private fun PaletteRow(
     onSelect: (SandElement) -> Unit,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         items.forEach { element ->

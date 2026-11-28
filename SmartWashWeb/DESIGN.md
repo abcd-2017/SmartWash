@@ -2,15 +2,15 @@
 name: SmartWash Web 管理后台
 description: 靛蓝工作台 — Indigo/Slate 亮色数据管理后台
 colors:
-  primary: "#6366f1"
-  primary-light: "#818cf8"
-  primary-dark: "#4f46e5"
+  primary: "#4f46e5"
+  primary-light: "#4338ca"
+  primary-dark: "#3730a3"
   primary-tint: "#eef2ff"
-  success: "#10b981"
+  success: "#047857"
   success-tint: "#d1fae5"
-  danger: "#ef4444"
+  danger: "#dc2626"
   danger-tint: "#fee2e2"
-  warning: "#f59e0b"
+  warning: "#b45309"
   warning-tint: "#fef3c7"
   info-blue: "#3b82f6"
   sidebar-bg: "#0f172a"
@@ -19,7 +19,7 @@ colors:
   text-body: "#334155"
   text-regular: "#475569"
   text-secondary: "#64748b"
-  text-muted: "#94a3b8"
+  text-muted: "#6b7280"
   border-hover: "#cbd5e1"
   border: "#e2e8f0"
   border-subtle: "#f1f5f9"
@@ -143,17 +143,17 @@ components:
 色板 = 一个靛蓝强调色 + 四个语义色 + 一条完整的 Slate 中性色阶。语义色只以「淡彩底标签」和「实心按钮」两种形态出现。
 
 ### Primary
-- **靛蓝 Indigo** (#6366f1)：主操作按钮、焦点环、激活菜单项、链接与选中态。浅阶 #818cf8 用于 hover 提亮，深阶 #4f46e5 用于 active 加深，#eef2ff 是它的淡彩底（默认按钮 hover、下拉选中、primary 标签底）。
+- **靛蓝 Indigo** (#4f46e5)：主操作按钮、焦点环、激活菜单项、链接与选中态。hover 加深 #4338ca、active 再加深 #3730a3（交互态一律加深而非提亮，保证白字对比度不下降），#eef2ff 是它的淡彩底（默认按钮 hover、下拉选中、primary 标签底）。
 
 ### Secondary
-- **翡翠绿 Emerald** (#10b981)：成功语义——已支付、已完成、空闲、成功充值。淡彩底 #d1fae5 配深字 #065f46。
-- **警琥珀 Amber** (#f59e0b)：待处理语义——待支付、配送中、故障、处理中。淡彩底 #fef3c7 配深字 #92400e。
-- **警示红 Red** (#ef4444)：失败/危险操作——删除按钮、支付失败、使用中（储物柜）。淡彩底 #fee2e2 配深字 #991b1b。
+- **翡翠绿 Emerald** (#047857)：成功语义——已支付、已完成、空闲、成功充值。淡彩底 #d1fae5 配深字 #065f46；实心按钮白字 5.48:1。
+- **警琥珀 Amber** (#b45309)：待处理语义——待支付、配送中、故障、处理中。淡彩底 #fef3c7 配深字 #92400e；实心按钮白字 5.02:1。
+- **警示红 Red** (#dc2626)：失败/危险操作——删除按钮、支付失败、使用中（储物柜）。淡彩底 #fee2e2 配深字 #991b1b；实心按钮白字 4.83:1。
 - **信息蓝 Blue** (#3b82f6)：统计卡等需要第四色时的辅助，不参与状态语义。
 
 ### Neutral（Slate 色阶）
 - **墨黑** (#0f172a)：主文字与侧栏底色——同一个值两种角色，是这套体系「外壳即墨色」的锚点。
-- **正文灰阶**：输入文字 #1e293b、表单标签/默认按钮字 #334155、次级正文 #475569、说明文字 #64748b、占位符/弱文字 #94a3b8。
+- **正文灰阶**：输入文字 #1e293b、表单标签/默认按钮字 #334155、次级正文 #475569、说明文字 #64748b、占位符/弱文字 #6b7280（原 #94a3b8 白底仅 2.56:1，不达 AA）。
 - **边框灰阶**：hover 加深的边框 #cbd5e1、标准边框 #e2e8f0、卡内分隔线 #f1f5f9。
 - **背景灰阶**：页面底 #f1f5f9、弱底色（表头/输入框底/分页条）#f8fafc、卡片白 #ffffff。
 
@@ -172,7 +172,7 @@ components:
 **Character:** 无衬线系统字，靠字重（400/500/600/700）与灰阶做层级，不靠字号跳跃。中文优先 PingFang/鸿蒙黑体/微软雅黑。
 
 ### Hierarchy
-- **Headline** (700, 20px, 1.4): 页面标题（.page-header h2），每页唯一。
+- **Headline** (700, 20px, 1.4): 页面标题（.page-header h1），每页有且仅有一个页面级 h1；无可见页头设计的页面用 `.sr-only` h1 视觉隐藏，保证读屏/文档大纲完整。
 - **Stat** (700, 24px, 1.2): 统计卡数值，配 tabular numbers。金额带 ￥ 前缀。
 - **Title** (600, 16px, 1.5): 弹窗标题、卡片区块标题。
 - **Body** (400, 14px, 1.6): 全站默认，表格内容、表单值、菜单项（500）。

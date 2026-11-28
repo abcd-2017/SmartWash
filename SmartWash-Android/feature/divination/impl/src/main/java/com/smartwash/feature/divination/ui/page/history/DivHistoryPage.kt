@@ -1,5 +1,6 @@
 package com.smartwash.feature.divination.ui.page.history
 
+import android.content.Context
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -17,7 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +30,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -129,13 +131,17 @@ fun DivHistoryPage(
         // 空态与列表互相替换走 Crossfade，避免 0ms 硬切
         // （常态走 micro 档 enterTween；CROSSFADE_ALT_MS 是 reduced motion 降级专用档，
         // 经 motionSpec 自动落 180ms——口径与 DivAskPage/DivReadingPage 的 Crossfade 一致）
+        // 权重必须落在 Crossfade 本身：其内容容器是 Box（Stack，见 Compose Crossfade 源码），
+        // 分支里写的 weight(1f) 会被 Box 忽略（外层 ColumnScope 仅让表达式可编译），结果是
+        // 列表吃满整屏高、底部脚注被挤出可视区、空态也无法在内容区垂直居中
         Crossfade(
             targetState = listState,
+            modifier = Modifier.weight(1f),
             animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
             label = "historyState",
         ) { state ->
             when (state) {
-                HistoryListState.LOADING -> Column(Modifier.weight(1f)) {
+                HistoryListState.LOADING -> Column(Modifier.fillMaxSize()) {
                     // 骨架行 ×3 与 HistoryCard 同形；直接取静态浅块形态
                     // （规范 §8 骨架微光的 reduced-motion 降级形态，无动效即免降级分支）
                     repeat(3) {
@@ -144,7 +150,7 @@ fun DivHistoryPage(
                     }
                 }
                 HistoryListState.EMPTY -> Box(
-                    Modifier.fillMaxWidth().padding(top = 80.dp),
+                    Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -182,7 +188,7 @@ fun DivHistoryPage(
                 }
                 HistoryListState.READY -> LazyColumn(
                     state = historyListState,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxSize(),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 4.dp),
                 ) {
                     items(current.orEmpty(), key = { it.id }) { record ->
@@ -231,8 +237,15 @@ private fun HistoryCard(
     // @Composable 的 methodLabel 在字符串模板外先取值（Composable 调用须在组合上下文直呼）
     val methodText = methodLabel(DivMethod.fromId(record.method))
     // 摘要行 Gson 解析缓存：与 timeText 同策略 remember，筛选切换/animateItem 位移/滚动
-    // 复用重组时不重复 decode chartJson（2026-11-14 检查 report P2）
-    val summaryText = remember(record.id) { record.summaryLine() }
+    // 复用重组时不重复 decode chartJson（2026-11-14 检查 report P2）；摘要文案经 strings.xml 取
+    val context = LocalContext.current
+    val summaryText = remember(record.id, context) { record.summaryLine(context) }
+    // 空问句兜底文案同样走 strings.xml（禁止硬编码「—」）
+    val questionText = if (record.question.isEmpty()) {
+        stringResource(R.string.div_history_question_fallback)
+    } else {
+        record.question
+    }
     DivCard(modifier = modifier, onClick = onClick) {
         // 画板：卡高 60，印章距左 14；问句 14/20 偏上 12、元信息 12/14 间隔 2；› 距右 8
         Row(
@@ -244,7 +257,7 @@ private fun HistoryCard(
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = record.question.ifEmpty { "—" },
+                    text = questionText,
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
                     color = c.textPrimary,
@@ -268,14 +281,25 @@ private fun HistoryCard(
     }
 }
 
-/** 列表摘要行：卦名/局数/课体 */
-private fun com.smartwash.feature.divination.database.DivRecordEntity.summaryLine(): String =
+/**
+ * 列表摘要行：卦名/局数/课体。
+ * 文案一律走 strings.xml（禁止硬编码）；[context] 供非组合期（remember 计算）取串。
+ */
+private fun com.smartwash.feature.divination.database.DivRecordEntity.summaryLine(context: Context): String =
     com.smartwash.feature.divination.data.DivChartCodec.decode(chartJson)?.let { bundle ->
         when {
-            bundle.liuyao != null -> bundle.liuyao.name + (bundle.liuyao.bianName?.let { " 之 $it" } ?: "")
+            bundle.liuyao != null -> bundle.liuyao.bianName?.let {
+                context.getString(
+                    R.string.div_history_summary_liuyao_bian,
+                    bundle.liuyao.name,
+                    it,
+                )
+            } ?: bundle.liuyao.name
             bundle.meihua != null -> bundle.meihua.benName
-            bundle.qimen != null -> "阴遁${bundle.qimen.juNumber}局"
-            bundle.liuren != null -> "月将${bundle.liuren.yueJiang}"
+            bundle.qimen != null ->
+                context.getString(R.string.div_history_summary_qimen, bundle.qimen.juNumber)
+            bundle.liuren != null ->
+                context.getString(R.string.div_history_summary_liuren, bundle.liuren.yueJiang)
             else -> ""
         }
     } ?: ""
@@ -321,17 +345,18 @@ private fun HistorySkeletonRow() {
             )
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
+                // 浅块高度镜像真实卡两行行高（问句 20 / 元信息 14），骨架卡高与 HistoryCard 同为 60dp
                 Box(
                     Modifier
                         .fillMaxWidth(0.6f)
-                        .height(14.dp)
+                        .height(20.dp)
                         .background(c.hair),
                 )
                 Spacer(Modifier.height(2.dp))
                 Box(
                     Modifier
                         .fillMaxWidth(0.4f)
-                        .height(12.dp)
+                        .height(14.dp)
                         .background(c.hair),
                 )
             }

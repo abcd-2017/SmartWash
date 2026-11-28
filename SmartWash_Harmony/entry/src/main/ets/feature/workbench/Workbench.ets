@@ -266,11 +266,12 @@ export struct Workbench {
       tool.title.toLowerCase().includes(lower) || tool.description.toLowerCase().includes(lower))
   }
 
-  /** 最近使用 = 本地记忆 key 按序映射回当次下发列表（已下线的入口自动消失） */
+  /** 最近使用 = 本地记忆 key 按序映射回「展示列表」（已下线 / 已关闭公告的入口自动消失） */
   private recentTools(): WorkbenchTool[] {
     const result: WorkbenchTool[] = []
+    const visible = this.visibleTools()
     this.recentKeys.forEach((key: string): void => {
-      const hit = this.tools.find((tool: WorkbenchTool): boolean => tool.entryKey === key)
+      const hit = visible.find((tool: WorkbenchTool): boolean => tool.entryKey === key)
       if (hit !== undefined) {
         result.push(hit)
       }
@@ -617,6 +618,8 @@ export struct Workbench {
       .height(48)
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
+      // 读屏用户需要知道这是「关闭公告」，符号本身无意义
+      .accessibilityDescription(WorkbenchText.workbench_notice_dismiss)
       .onClick(() => {
         this.dismissNotice(tool)
       })
@@ -1111,7 +1114,8 @@ export struct Workbench {
         })
     }
     .width('100%')
-    .padding({ top: safeTopVp(), bottom: safeBottomVp() })
+    // 底部安全区由 Home 外层统一承担（pages/Home.ets 已加 safeBottomVp），此处只补顶部
+    .padding({ top: safeTopVp() })
   }
 
   /** 工具区主体：搜索态平铺两列；常态 = 玄墨品牌位 → 最近使用 → 类型化分区 */

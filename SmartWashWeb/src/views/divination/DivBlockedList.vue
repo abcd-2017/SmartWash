@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">拦截日志</h1>
     <!-- 筛选区(live 打磨 v1):关键词输入定宽成组、动作右置,消除原 705px 行尾空洞 -->
     <div class="filter-container blocked-filter">
       <el-form
@@ -31,25 +32,32 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="blockedList"
         fit
         highlight-current-row
+        aria-label="黑名单列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="userId" label="用户ID" min-width="100" />
         <el-table-column prop="question" label="拦截问题" min-width="280" show-overflow-tooltip />
-        <el-table-column label="术数方法" min-width="120">
+        <el-table-column prop="method" label="术数方法" min-width="120" sortable>
           <template #default="{ row }">{{ methodText(row.method) }}</template>
         </el-table-column>
         <el-table-column label="拦截原因" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ blockedReasonText(row.reason) }}</template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="拦截时间" min-width="180">
+        <el-table-column prop="createdAt" label="拦截时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">黑名单列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -68,11 +76,16 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { blockedReasonText, divinationMethodText } from '@/constants/dict';
 import { getBlockedList } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('div-blocked-list', tableRef);
 
 // 未知值兜底 '-'（列表展示语义）
 const methodText = (method) => divinationMethodText(method) || '-';

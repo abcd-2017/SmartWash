@@ -1,20 +1,21 @@
 /* 全局基础样式 — Indigo/Slate 亮色后台（规范: docs/superpowers/specs/2026-05-03-ui-redesign-design.md）
    本项目为纯亮色后台，不跟随系统暗色模式；Element Plus 主题变量覆盖见 main.css */
 :root {
-  --color-primary: #6366f1;
-  --color-primary-light: #818cf8;
-  --color-primary-dark: #4f46e5;
-  --color-success: #10b981;
-  --color-danger: #ef4444;
+  /* 按钮/文字色按 WCAG AA（白字 ≥4.5:1）取值：hover 加深而非提亮，避免对比度随交互下降 */
+  --color-primary: #4f46e5;
+  --color-primary-light: #4338ca;
+  --color-primary-dark: #3730a3;
+  --color-success: #047857;
+  --color-danger: #dc2626;
   --bg-page: #f1f5f9;
   --bg-card: #ffffff;
   --border-color: #e2e8f0;
   --text-primary: #0f172a;
   --text-secondary: #64748b;
-  --text-muted: #94a3b8;
+  --text-muted: #6b7280; /* 原 #94a3b8 白底仅 2.56:1，作占位/弱文字需 ≥4.5:1 */
 
   /* 语义扩展 Token —— 换算自 DESIGN.md（SmartWashWeb/DESIGN.md），组件一律取 var 引用 */
-  --color-warning: #f59e0b;
+  --color-warning: #b45309;
   --color-info: #3b82f6;
   --primary-tint: #eef2ff;     /* 靛蓝淡彩底：默认按钮 hover、primary 标签底 */
   --primary-soft: #a5b4fc;     /* 浅靛：侧栏激活字、primary 色阶 light-5 */
@@ -67,13 +68,13 @@
   --danger-tint-text: #991b1b;
   --warning-tint-text: #92400e;
 
-  /* 语义色辅助阶 —— 按钮 hover 提亮 / active 加深专用（与主 token 同源成对） */
-  --success-light: #34d399;
-  --success-dark: #059669;
-  --danger-light: #f87171;
-  --danger-dark: #dc2626;
-  --warning-light: #fbbf24;
-  --warning-dark: #d97706;
+  /* 语义色辅助阶 —— 按钮 hover 加深 / active 再加深（白字均 ≥4.5:1，杜绝提亮掉对比） */
+  --success-light: #065f46;
+  --success-dark: #047857;
+  --danger-light: #b91c1c;
+  --danger-dark: #991b1b;
+  --warning-light: #92400e;
+  --warning-dark: #78350f;
 
   /* 统计卡图标容器淡底（语义色 10% 透明底 + 实色图标，DESIGN.md · 签名组件） */
   --primary-soft-bg: rgba(99, 102, 241, 0.1);
@@ -84,6 +85,10 @@
 
   /* 主操作字色（实心按钮/主色底上的白字） */
   --color-on-primary: #ffffff;
+
+  /* 响应式断点 —— 布局外壳（Layout 侧栏抽屉化）唯一断点。
+     CSS 媒体查询不能引用 var()，故各处 @media 按本值书写字面量（768px），改动需两端同步 */
+  --bp-mobile: 768px;
 }
 
 *,
@@ -125,5 +130,13 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* 白名单：加载转圈 / 骨架呼吸是「正在加载」的状态反馈载体，
+     一刀切会让 reduced-motion 用户失去反馈而不是得到降级，故恢复慢速循环 */
+  .el-loading-spinner .circular,
+  .el-skeleton__item {
+    animation-duration: 1.5s !important;
+    animation-iteration-count: infinite !important;
   }
 }

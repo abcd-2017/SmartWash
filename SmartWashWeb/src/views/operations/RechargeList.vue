@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">充值记录</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="记录ID">
@@ -103,19 +104,25 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="rechargeList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        aria-label="充值记录列表"
+        :empty-text="
+          hasRechargeFilter ? '试试调整筛选条件' : '还没有充值记录，用户充值后将在此展示'
+        "
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="recordId" label="记录ID" min-width="100" />
         <el-table-column label="手机号" min-width="120">
           <template #default="{ row }">{{ row.users?.phoneNumber || '-' }}</template>
         </el-table-column>
-        <el-table-column label="充值金额" min-width="150" align="right">
-          <template #default="{ row }">￥{{ formatAmount(row.amount, '-') }}</template>
+        <el-table-column prop="amount" label="充值金额" min-width="150" align="right" sortable>
+          <template #default="{ row }">{{ formatPayAmount(row.amount) }}</template>
         </el-table-column>
         <el-table-column label="充值类型" min-width="120">
           <template #default="{ row }">
@@ -124,16 +131,19 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" min-width="100">
+        <el-table-column prop="status" label="状态" min-width="100" sortable>
           <template #default="{ row }">
             <el-tag :type="rechargeStatusTagType(row.status)">
               {{ rechargeStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="充值时间" min-width="180">
+        <el-table-column prop="rechargeTime" label="充值时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.rechargeTime) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">充值记录列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -152,12 +162,13 @@
 </template>
 
 <script setup>
-import { onMounted, ref, reactive } from 'vue';
+import { friendlyErrorMessage } from '@/utils/errors';
+import { onMounted, ref, reactive, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Download } from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
 import { getRechargeList, getRechargeSummary, exportRechargeRecords } from '@/api/recharge';
-import { formatTime, formatThousands, formatAmount } from '@/utils/format';
+import { formatTime, formatThousands, formatAmount, formatPayAmount } from '@/utils/format';
 import { saveBlobAs } from '@/utils/download';
 import {
   RECHARGE_TYPE_OPTIONS,
@@ -168,6 +179,11 @@ import {
 } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('recharge-list', tableRef);
 
 // 充值类型选项（枚举字典统一维护，评审 #16）
 const rechargeTypeOptions = RECHARGE_TYPE_OPTIONS;
@@ -210,6 +226,22 @@ const DEFAULT_RANGE = () => [
 ];
 const dateRange = ref(DEFAULT_RANGE());
 
+// 空态区分：有筛选且库内确有命中时提示调整条件；库空（total=0）即使用户带了筛选也一律展示记录来源说明。
+// 日期范围默认近 30 天（常驻筛选），仅当用户改动过才计入「有筛选」，否则空库时会被常驻范围误判成筛选态
+const hasRechargeFilter = computed(() => {
+  const defaultRange = DEFAULT_RANGE();
+  const rangeChanged =
+    dateRange.value?.[0] !== defaultRange[0] || dateRange.value?.[1] !== defaultRange[1];
+  return (
+    (Boolean(listQuery.recordId) ||
+      Boolean((listQuery.phoneNumber || '').trim()) ||
+      Boolean(listQuery.amount) ||
+      Boolean(listQuery.rechargeType) ||
+      rangeChanged) &&
+    total.value > 0
+  );
+});
+
 // 列表接口沿用 startTime/endTime：日期换算成全天时间边界
 const syncRangeToQuery = () => {
   listQuery.startTime = dateRange.value?.[0] ? `${dateRange.value[0]} 00:00:00` : null;
@@ -250,7 +282,7 @@ const fetchSummary = async () => {
   } catch (error) {
     if (mySeq !== summarySeq) return;
     logger.error('充值汇总加载失败:', error);
-    ElMessage.error(error.message || '获取充值汇总失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取充值汇总失败'));
   } finally {
     // 被丢弃的旧响应不得关掉最新请求的 loading
     if (mySeq === summarySeq) {
@@ -285,7 +317,14 @@ const exporting = ref(false);
 const handleExport = async () => {
   exporting.value = true;
   try {
-    const params = buildRangeParams();
+    // 导出与列表所见一致：日期范围 + 当前业务筛选（记录ID/手机号/金额/充值类型）
+    const params = {
+      ...buildRangeParams(),
+      recordId: listQuery.recordId ?? undefined,
+      phoneNumber: listQuery.phoneNumber ?? undefined,
+      amount: listQuery.amount ?? undefined,
+      rechargeType: listQuery.rechargeType ?? undefined,
+    };
     const blob = await exportRechargeRecords(params);
     // 文件名含秒级时间戳，避免同名文件互相覆盖
     saveBlobAs(blob, `充值记录_${dayjs().format('YYYYMMDDHHmmss')}.xlsx`);
@@ -297,7 +336,7 @@ const handleExport = async () => {
     );
   } catch (error) {
     logger.error('充值记录导出失败:', error);
-    ElMessage.error(error.message || '导出失败，请稍后重试');
+    ElMessage.error(friendlyErrorMessage(error, '导出失败，请稍后重试'));
   } finally {
     exporting.value = false;
   }

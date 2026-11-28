@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">跳转路由</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="Host">
@@ -40,12 +41,16 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="routeList"
         fit
         highlight-current-row
+        aria-label="深链路由列表"
         empty-text="暂无跳转路由，点击右上角『新增路由』创建第一个"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column label="Host" min-width="200">
           <template #default="{ row }">
@@ -75,7 +80,7 @@
         <el-table-column label="描述" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ row.description || '-' }}</template>
         </el-table-column>
-        <el-table-column label="启停" min-width="90">
+        <el-table-column prop="enabled" label="启停" min-width="90" sortable>
           <template #default="{ row }">
             <!-- 行内切换：成功前乐观更新，失败回滚并提示 -->
             <el-switch
@@ -102,6 +107,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">深链路由列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -203,7 +211,12 @@ import {
   deeplinkPlatformTagType,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('deeplink-route-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -294,7 +307,7 @@ const handleToggleEnabled = async (row) => {
   } catch (error) {
     row.enabled = prev; // 失败回滚开关状态
     logger.error('跳转路由启停失败:', `id=${row.id}`, `host=${row.host}`, `enabled=${next}`, error);
-    ElMessage.error(error.message || '状态切换失败');
+    ElMessage.error(friendlyErrorMessage(error, '状态切换失败'));
   } finally {
     togglingId.value = null;
   }
@@ -377,7 +390,7 @@ const submitForm = async () => {
         `id=${tempRoute.id ?? '-'}`,
         error
       );
-      ElMessage.error(error.message || '操作失败');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败'));
     }
   } finally {
     submitting.value = false;
@@ -399,7 +412,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('跳转路由删除失败:', `id=${row.id}`, `host=${row.host}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

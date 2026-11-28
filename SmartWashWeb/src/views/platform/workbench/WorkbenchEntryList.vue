@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">工作台入口</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="标题">
@@ -40,14 +41,18 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="entryList"
         fit
         highlight-current-row
+        aria-label="工作台入口列表"
         empty-text="暂无工作台入口，点击右上角『新增入口』创建第一个"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
-        <el-table-column prop="sort" label="排序" min-width="70" align="center">
+        <el-table-column prop="sort" label="排序" min-width="70" align="center" sortable>
           <template #default="{ row }">{{ row.sort ?? '-' }}</template>
         </el-table-column>
         <el-table-column label="标题" min-width="180">
@@ -70,7 +75,9 @@
                 :style="{
                   backgroundColor: workbenchEntryColorHex(row.color) + '1A',
                   color:
-                    'color-mix(in srgb, ' + workbenchEntryColorHex(row.color) + ' 42%, #0f172a)',
+                    'color-mix(in srgb, ' +
+                    workbenchEntryColorHex(row.color) +
+                    ' 42%, var(--text-primary))',
                 }"
               >
                 {{ workbenchEntryIconText(row.icon) }}
@@ -126,7 +133,12 @@
           </template>
         </el-table-column>
         <!-- 更新时间（AdminWorkbenchEntryVo 含 createdAt/updatedAt，兜底 createdAt 防 后端裁剪字段） -->
-        <el-table-column label="更新时间" min-width="170">
+        <el-table-column
+          label="更新时间"
+          min-width="170"
+          sortable
+          :sort-by="(row) => row.updatedAt || row.createdAt"
+        >
           <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="130" fixed="right">
@@ -143,6 +155,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">工作台入口列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -297,6 +312,7 @@
               class="cover-uploader"
               :show-file-list="false"
               accept="image/png,image/jpeg,image/webp"
+              aria-label="上传配图"
               :before-upload="handleCoverBeforeUpload"
               :http-request="handleCoverUpload"
             >
@@ -387,7 +403,12 @@ import {
   workbenchEntryTypeText,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('workbench-entry-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -515,7 +536,7 @@ const handleCoverUpload = async ({ file }) => {
     tempEntry.imageUrl = url;
     ElMessage.success('配图已上传');
   } catch (error) {
-    ElMessage.error(error.message || '配图上传失败');
+    ElMessage.error(friendlyErrorMessage(error, '配图上传失败'));
   } finally {
     coverUploading.value = false;
   }
@@ -592,7 +613,7 @@ const handleToggleEnabled = async (row) => {
       `enabled=${next}`,
       error
     );
-    ElMessage.error(error.message || '状态切换失败');
+    ElMessage.error(friendlyErrorMessage(error, '状态切换失败'));
   } finally {
     togglingId.value = null;
   }
@@ -707,7 +728,7 @@ const submitForm = async () => {
         `id=${tempEntry.id ?? '-'}`,
         error
       );
-      ElMessage.error(error.message || '操作失败');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败'));
     }
   } finally {
     submitting.value = false;
@@ -734,7 +755,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('工作台入口删除失败:', `id=${row.id}`, `entryKey=${row.entryKey}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }

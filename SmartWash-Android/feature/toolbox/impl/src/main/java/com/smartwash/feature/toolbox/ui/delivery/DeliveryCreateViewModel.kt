@@ -115,9 +115,11 @@ class DeliveryCreateViewModel @Inject constructor(
             _closeState.value = RequestState.Loading
             try {
                 repository.closeSession(code)
-                _closeState.value = RequestState.Success
                 AppLogger.info(TAG, "投递会话手动关闭成功 code=$code")
                 resetToForm()
+                // 成功态必须在 resetToForm 之后落：resetToForm 会把 closeState 清成 Idle，
+                // 同帧先写 Success 会被 StateFlow 合并，发起页 LaunchedEffect 观察不到成功提示
+                _closeState.value = RequestState.Success
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {

@@ -1,7 +1,7 @@
 <template>
   <div class="page-container dashboard">
     <div class="page-header">
-      <h2>工作台</h2>
+      <h1>工作台</h1>
       <p>欢迎使用 SmartWash 智能洗衣管理系统</p>
     </div>
 
@@ -101,6 +101,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
 import { School, UserFilled, Document, Coin, Ticket } from '@element-plus/icons-vue';
@@ -169,7 +170,7 @@ const fetchStats = async () => {
     // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作；与趋势卡失败反馈
     // 统一弹 toast——此前仅 logger 静默，页面保持 0 值展示，用户对空面板无从归因
     logger.error('工作台统计数据加载失败:', error);
-    ElMessage.error(error.message || '获取统计数据失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取统计数据失败'));
   } finally {
     if (alive) statsLoading.value = false;
   }
@@ -200,7 +201,7 @@ const fetchTrend = async () => {
     if (mySeq !== trendFetchSeq || !alive) return;
     trendError.value = true;
     logger.error('趋势数据加载失败:', error);
-    ElMessage.error(error.message || '获取趋势数据失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取趋势数据失败'));
   } finally {
     if (mySeq === trendFetchSeq && alive) {
       trendLoading.value = false;

@@ -12,11 +12,14 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import android.widget.Toast
@@ -52,7 +55,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -351,13 +356,16 @@ private fun GameGrid(
     onGameClick: (GameItem) -> Unit,
 ) {
     val rows = remember(games) { games.chunked(GRID_COLUMNS) }
+    // 底部避让导航条（edge-to-edge）：contentPadding 消费 inset，末行可完整滚出手势条/三键导航；
+    // 无导航条设备回落设计留白 24dp（对齐 ToolboxListPage / WalletTransactionsPage 手法）
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             // 顶部 ≥12dp：首行卡片阴影越出卡边 12dp，LazyColumn 会裁切边界外内容，需留容身空间
             top = AppDimens.spaceSm,
-            bottom = AppDimens.spaceXl,
+            bottom = maxOf(AppDimens.spaceXl, navBarBottom),
         ),
     ) {
         itemsIndexed(
@@ -410,8 +418,8 @@ private fun GameGrid(
  *   + 标题 + 描述两行截断；badge 与有封面分支共用 [GameBadge]，置于文字区末尾。
  * 两种构图同高：GameGrid 的 Row 取 IntrinsicSize.Min，本卡 fillMaxHeight 对齐，同排底边齐平。
  * 整卡 pressable（scale 0.97 / 80-150ms 档，transform-only，reduced motion 降级透明度）；
- * a11y：mergeDescendants 并入 contentDescription = title + description（封面为装饰图不出语义，
- * 卡内文字不单独暴露，避免 TalkBack 重复播报）。
+ * a11y：mergeDescendants 并入 contentDescription = title + description + badge（封面为装饰图不出语义，
+ * 卡内文字不单独暴露，避免 TalkBack 重复播报）；整卡可点，语义带 Role.Button。
  */
 @Composable
 private fun GameCard(
@@ -430,11 +438,16 @@ private fun GameCard(
     }
     Surface(
         modifier = modifier
-            // mergeDescendants：卡内标题/描述并入同一语义节点，避免 TalkBack 重复播报
+            // mergeDescendants：卡内标题/描述/角标并入同一语义节点，避免 TalkBack 重复播报
             .semantics(mergeDescendants = true) {
-                contentDescription =
-                    if (game.description.isBlank()) game.title
-                    else "${game.title}，${game.description}"
+                // 角标（新/热）是服务端文案，一并并入，避免 TalkBack 漏读卡片上的可见信息
+                contentDescription = listOfNotNull(
+                    game.title,
+                    game.description.takeIf { it.isNotBlank() },
+                    game.badge?.takeIf { it.isNotBlank() },
+                ).joinToString("，")
+                // 整卡可点进游戏：显式 Button 角色，TalkBack 播报「按钮」而非泛化「可点」
+                role = Role.Button
             }
             .pressable(onClick = onClick).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),

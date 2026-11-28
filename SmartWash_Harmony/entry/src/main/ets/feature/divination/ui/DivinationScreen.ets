@@ -1,19 +1,18 @@
 /**
  * 观象台页面根容器 —— 对齐安卓 ui/DivinationScreen.kt。
  *
- * 进入模块即进入观象台子主题（当前固定宣纸：背景渐变与 DivPalette 均取 *_LIGHT 令牌；
- * 应用已随系统深浅色而本域玄墨未接入，域级主题断层待办见 DivTheme.ets 头注与 compare-08 #12），
- * 背景为原型口径的三段竖向渐变（0 / 0.46 / 1）；可选滚动，摇卦页传 scrollable=false。
+ * 进入模块即进入观象台子主题：背景渐变三段经 DivPalette.bgTop/bgMid/bgBottom 随系统深浅色
+ * 选择宣纸/玄墨档（DivPalette 读 DarkModeStore @Trace，build 内读取即重建，机制见 DivTheme.ets 头注）；
+ * 原型口径三段竖向渐变，中段停靠 0.50；可选滚动，摇卦页传 scrollable=false。
  *
  * 安全区策略（沉浸式窗口后更新）：EntryAbility 已 setWindowLayoutFullScreen(true)，
  * 渐变背景随根容器铺满全屏（padding 不影响渐变绘制范围），内容按 safeTopVp/safeBottomVp
  * 避让系统栏。immersive=true 的画布页保留 expandSafeArea 兜底（窗口模式被改回时仍全屏）。
  */
 
-import { DivColor } from '../../../constant/DivTheme'
+import { DivPalette } from './components/DivComponents'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 
-@Builder
 @Builder
 function emptyContent() {
 }
@@ -39,12 +38,12 @@ export struct DivinationScreen {
       .align(Alignment.TopStart)
       .scrollBar(BarState.Off)
       // 沉浸式（窗口 layoutFullScreen）：渐变背景铺满全屏，内容按状态栏高度避让；
-      // padding 不影响背景绘制范围，宣纸渐变仍延伸到系统栏后方
+      // padding 不影响背景绘制范围，渐变仍延伸到系统栏后方
       .padding({ top: safeTopVp() })
       .linearGradient({
         direction: GradientDirection.Bottom,
-        // 宣纸档中段停靠 0.50（对齐安卓 DivinationScreen.kt，compare-15 #57；玄墨接入后双档）
-        colors: [[DivColor.BG_TOP_LIGHT, 0.0], [DivColor.BG_MID_LIGHT, 0.50], [DivColor.BG_BOTTOM_LIGHT, 1.0]]
+        // 中段停靠 玄墨 55% / 宣纸 50%（对齐安卓 DivinationScreen.kt midStop，compare-15 #57）；三段随深浅色切换
+        colors: [[DivPalette.bgTop, 0.0], [DivPalette.bgMid, DivPalette.bgMidStop], [DivPalette.bgBottom, 1.0]]
       })
       .expandSafeArea(this.immersive ? [SafeAreaType.SYSTEM] : [],
         this.immersive ? [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM] : [])
@@ -57,7 +56,8 @@ export struct DivinationScreen {
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .linearGradient({
         direction: GradientDirection.Bottom,
-        colors: [[DivColor.BG_TOP_LIGHT, 0.0], [DivColor.BG_MID_LIGHT, 0.50], [DivColor.BG_BOTTOM_LIGHT, 1.0]]
+        // 中段停靠 玄墨 55% / 宣纸 50%（对齐安卓 DivinationScreen.kt midStop，compare-15 #57）；三段随深浅色切换
+        colors: [[DivPalette.bgTop, 0.0], [DivPalette.bgMid, DivPalette.bgMidStop], [DivPalette.bgBottom, 1.0]]
       })
       .expandSafeArea(this.immersive ? [SafeAreaType.SYSTEM] : [],
         this.immersive ? [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM] : [])

@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">操作审计</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="操作人">
@@ -93,12 +94,16 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="auditList"
         fit
         highlight-current-row
+        aria-label="审计日志列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="adminUser" label="操作人" min-width="120" show-overflow-tooltip />
@@ -115,7 +120,7 @@
         <el-table-column label="目标ID" min-width="110" show-overflow-tooltip>
           <template #default="{ row }">{{ row.targetId || '-' }}</template>
         </el-table-column>
-        <el-table-column label="操作时间" min-width="180">
+        <el-table-column prop="createdAt" label="操作时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="IP" min-width="130" show-overflow-tooltip>
@@ -123,25 +128,31 @@
         </el-table-column>
         <el-table-column label="操作前后摘要" min-width="260">
           <template #default="{ row }">
-            <el-tooltip
+            <!-- 用 popover + 原生 button：click 触发可被 Enter/空格激活，
+                 替代 tooltip（只监听 click，键盘无法展开） -->
+            <el-popover
               v-if="row.beforeJson || row.afterJson"
               placement="top"
               effect="light"
               trigger="click"
+              width="360"
             >
-              <template #content>
-                <div class="payload-tip">
-                  <p v-if="row.beforeJson">操作前：{{ row.beforeJson }}</p>
-                  <p v-if="row.afterJson">操作后：{{ row.afterJson }}</p>
-                </div>
+              <template #reference>
+                <button type="button" class="payload-cell" aria-label="查看操作前后数据">
+                  {{ payloadSummary(row) }}
+                </button>
               </template>
-              <span class="payload-cell" tabindex="0" role="button" aria-label="查看操作前后数据">{{
-                payloadSummary(row)
-              }}</span>
-            </el-tooltip>
+              <div class="payload-tip">
+                <p v-if="row.beforeJson">操作前：{{ row.beforeJson }}</p>
+                <p v-if="row.afterJson">操作后：{{ row.afterJson }}</p>
+              </div>
+            </el-popover>
             <span v-else>-</span>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">审计日志列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -186,6 +197,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
@@ -201,6 +213,11 @@ import {
   auditTargetTypeText,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('audit-log-list', tableRef);
 
 // 动作/目标类型字典已统一收敛到 constants/dict.js（AUDIT_*）：
 // 与后端 @Audited 注解全集对齐，未知动作/类型回显原始编码，不猜文案。
@@ -290,7 +307,7 @@ const handleVerify = async () => {
   } catch (error) {
     // 业务失败在 http.js 拦截器已留痕，这里归因到页面动作并透出后端 message
     logger.error('审计链完整性校验失败:', error);
-    ElMessage.error(error.message || '链完整性校验失败');
+    ElMessage.error(friendlyErrorMessage(error, '链完整性校验失败'));
   } finally {
     verifyLoading.value = false;
   }
@@ -306,11 +323,22 @@ onMounted(() => {
 /* 摘要「前 40 字 → 后 40 字」较长：单行省略 + 原生 title 悬浮看全文（cursor:help 语义保留） */
 .payload-cell {
   display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
   cursor: help;
   color: var(--el-text-color-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.payload-cell:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* tooltip 内 JSON 摘要：等宽字体 + 可换行，超长不撑破气泡 */

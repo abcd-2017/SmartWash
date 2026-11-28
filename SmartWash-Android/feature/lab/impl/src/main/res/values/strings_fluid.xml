@@ -13,4 +13,9 @@
     <string name="lab_fluid_play">播放</string>
     <string name="lab_fluid_pause">暂停</string>
     <string name="lab_fluid_unsupported">当前设备不支持流体渲染</string>
+
+    <!-- 画布无障碍：用途 + 当前配色（%1$s = 预设名） + 播放/暂停状态 -->
+    <string name="lab_fluid_canvas_description">流体画布，当前配色：%1$s，手指划过搅出漩涡</string>
+    <string name="lab_fluid_canvas_state_playing">播放中</string>
+    <string name="lab_fluid_canvas_state_paused">已暂停</string>
 </resources>

@@ -25,6 +25,7 @@
       <el-upload
         drag
         accept=".json"
+        aria-label="上传 JSON 关卡文件"
         :auto-upload="false"
         :show-file-list="false"
         :on-change="handleFileChange"
@@ -71,12 +72,22 @@
         <el-tag v-if="plan.blocked" type="danger" effect="plain">存在错误行，修正后重新解析</el-tag>
       </div>
 
-      <el-table :data="plan.rows" border stripe max-height="360" size="small">
-        <el-table-column prop="levelNo" label="序号" width="64" align="center" />
+      <el-table
+        ref="tableRef"
+        :data="plan.rows"
+        border
+        stripe
+        max-height="360"
+        size="small"
+        aria-label="关卡导入预览列表"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
+      >
+        <el-table-column prop="levelNo" label="序号" width="64" align="center" sortable />
         <el-table-column label="关卡名" min-width="110" show-overflow-tooltip>
           <template #default="{ row }">{{ row.name || '—' }}</template>
         </el-table-column>
-        <el-table-column label="难度" width="64" align="center">
+        <el-table-column prop="difficulty" label="难度" width="64" align="center" sortable>
           <template #default="{ row }">{{ row.difficulty ?? '—' }}</template>
         </el-table-column>
         <el-table-column label="下发" width="70" align="center">
@@ -103,6 +114,9 @@
         <el-table-column label="关卡数据" min-width="220" show-overflow-tooltip>
           <template #default="{ row }">{{ row.dataJson.slice(0, 80) }}</template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">关卡导入预览列表</span>
+        </template>
       </el-table>
 
       <el-checkbox
@@ -130,6 +144,7 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { computed, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
@@ -142,6 +157,11 @@ import {
   planLevelImport,
   buildImportPayload,
 } from '../levelImportParser';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('level-import-preview', tableRef);
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -245,7 +265,7 @@ const handleSubmit = async () => {
   } catch (error) {
     // 业务拒绝必须提示：http 拦截器只对 HTTP 层错误弹 toast，「第 N 关」定位文案到此为静默
     logger.error('关卡批量导入失败:', `gameKey=${props.gameKey}`, error);
-    ElMessage.error(error.message || '导入失败');
+    ElMessage.error(friendlyErrorMessage(error, '导入失败'));
   } finally {
     submitting.value = false;
   }

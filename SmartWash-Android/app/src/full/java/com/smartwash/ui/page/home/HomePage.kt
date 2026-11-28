@@ -51,6 +51,10 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.DURATION_MICRO_MS
@@ -214,15 +218,19 @@ private fun BottomNavItem(
     )
     // label 颜色 200ms 平滑过渡（小组件预算），与图标 600ms 渐变衔接；
     // reduced motion 降 180ms 短 tween，颜色可读性保留（规范 §8）
+    // 对比度（§10 正文 ≥4.5:1）：选中用 textGreen #177A4C（≈5.1:1），
+    // 未选中用 textSecondary（≈4.7:1）；品牌色 #2D9B6A on 白仅 3.5:1 不达标
     val labelColor by animateColorAsState(
-        targetValue = if (isSelected) AppColors.colorScheme.primary
-        else AppColors.colorScheme.textTertiary,
+        targetValue = if (isSelected) AppColors.colorScheme.textGreen
+        else AppColors.colorScheme.textSecondary,
         animationSpec = motionSpec(tween(DURATION_MICRO_MS)),
         label = "bottomNavLabelColor",
     )
 
     Column(
         modifier = Modifier
+            // 读屏语义：Tab 角色 + 选中态，TalkBack 可播报「已选中」
+            .semantics { role = Role.Tab; selected = isSelected }
             .pressable(onClick = onClick, debounce = false)
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -297,7 +305,8 @@ private fun AnimatedBottomNavIcon(
     }
 
     val brandColor = AppColors.colorScheme.primary
-    val grayColor = AppColors.colorScheme.textTertiary
+    // 未选中图标与标签同色（textSecondary ≈4.7:1），原 textTertiary #A9AEA9 仅 2.25:1
+    val grayColor = AppColors.colorScheme.textSecondary
 
     Canvas(modifier = modifier) {
         // 路径坐标是 24 网格（§4.5），按画布尺寸换算密度缩放，否则 density>1 时图标缩小且左上偏移

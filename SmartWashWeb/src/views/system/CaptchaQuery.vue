@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">验证码查询</h1>
     <el-alert title="演示工具" type="info" :closable="false" show-icon>
       <template #default>
         查询指定手机号当前有效的短信验证码。验证码有效期 10 分钟，一次性使用（校验成功后立即销毁）。
@@ -47,6 +48,8 @@
         :data="result.captchas"
         fit
         highlight-current-row
+        aria-label="验证码查询结果列表"
+        :aria-describedby="captionId"
       >
         <el-table-column prop="purposeDesc" label="用途" min-width="120">
           <template #default="{ row }">
@@ -68,6 +71,9 @@
             <span v-else style="color: var(--color-danger)">{{ expiredText() }}</span>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">验证码查询结果列表</span>
+        </template>
       </el-table>
       <el-empty v-else description="该手机号暂无有效验证码" :image-size="80" />
       <!-- 口径说明（Micro 档）：多历史验证码时以最新一次为准 -->
@@ -77,11 +83,15 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onBeforeUnmount, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { queryCaptcha } from '@/api/captcha';
 import { captchaPurposeTagType } from '@/constants/dict';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const { captionId } = useTableA11y('captcha-result');
 
 const PHONE_REGEX = /^(\+86)?1[3-9]\d{9}$/;
 
@@ -160,7 +170,7 @@ async function handleQuery() {
     logger.error('验证码查询失败:', error);
     queryState.value = 'error';
     if (!error?.isAxiosError) {
-      ElMessage.error(error.message || '查询失败，请稍后重试');
+      ElMessage.error(friendlyErrorMessage(error, '查询失败，请稍后重试'));
     }
   } finally {
     loading.value = false;

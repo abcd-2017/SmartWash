@@ -2,7 +2,7 @@
   <div class="page-container">
     <el-card class="config-card">
       <div class="card-header">
-        <h2>系统参数设置</h2>
+        <h1>系统参数设置</h1>
         <p class="header-sub">
           业务参数统一在此配置，修改后落库并立即生效（无需重启）。数值型参数必须为正整数。
         </p>
@@ -13,7 +13,17 @@
         <span>系统参数加载失败，请检查网络后重试</span>
         <el-button size="small" @click="fetchList">重试</el-button>
       </div>
-      <el-table v-else :data="list" v-loading="loading" border stripe>
+      <el-table
+        ref="tableRef"
+        v-else
+        :data="list"
+        v-loading="loading"
+        border
+        stripe
+        aria-label="系统参数列表"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
+      >
         <el-table-column prop="configKey" label="参数键" min-width="200">
           <template #default="{ row }">
             <span class="config-key">{{ row.configKey }}</span>
@@ -21,7 +31,7 @@
         </el-table-column>
         <el-table-column prop="configValue" label="参数值" min-width="120" show-overflow-tooltip />
         <el-table-column prop="remark" label="说明" min-width="260" show-overflow-tooltip />
-        <el-table-column prop="updatedAt" label="最近修改" width="170">
+        <el-table-column prop="updatedAt" label="最近修改" width="170" sortable>
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
@@ -29,6 +39,9 @@
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">系统参数列表</span>
+        </template>
       </el-table>
     </el-card>
 
@@ -68,8 +81,13 @@ import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getSysConfigList, updateSysConfig } from '@/api/config';
 import { formatTime } from '@/utils/format';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('sys-config-list', tableRef);
 
 const loading = ref(false);
 const loadError = ref(false); // 列表加载失败态：与空列表区分，供表格区展示重试入口
@@ -101,7 +119,7 @@ const fetchList = async () => {
   } catch (error) {
     logger.error('获取系统参数失败:', error);
     loadError.value = true;
-    ElMessage.error(error.message || '获取系统参数失败');
+    ElMessage.error(friendlyErrorMessage(error, '获取系统参数失败'));
   } finally {
     loading.value = false;
   }
@@ -143,7 +161,7 @@ const submitForm = async () => {
       return;
     }
     logger.error('系统参数更新失败:', error);
-    ElMessage.error(error.message || '修改失败');
+    ElMessage.error(friendlyErrorMessage(error, '修改失败'));
   } finally {
     submitting.value = false;
   }
@@ -159,7 +177,7 @@ const submitForm = async () => {
   margin-bottom: 16px;
 }
 
-.card-header h2 {
+.card-header h1 {
   margin: 0 0 4px 0;
   font-size: 18px;
   font-weight: 700;

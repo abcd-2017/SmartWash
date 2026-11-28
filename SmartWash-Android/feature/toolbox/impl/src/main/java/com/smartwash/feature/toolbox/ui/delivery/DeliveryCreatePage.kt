@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Visibility
@@ -44,6 +45,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -122,10 +124,11 @@ fun DeliveryCreatePage(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
-            .imePadding()
-            // 规范 §4：底部固定 CTA 必须避开手势条——滚动到底时提交按钮不再贴手势条
-            // （audit-07 P1-3，与 OrderDetailPage/PickupPage 底栏同款）
+            // 规范 §4：底部 CTA 必须避开手势条。navBars 先消费、ime 只补剩余
+            // （max(ime, navBars) 语义，键盘弹出时不与导航条高度双重叠加；
+            // 与同模块 ShortCodeCreatePage / AssetTagCreatePage 同口径）
             .navigationBarsPadding()
+            .imePadding()
     ) {
         PageHeader(
             title = stringResource(R.string.toolbox_delivery_title),
@@ -228,6 +231,12 @@ private fun DeliveryCreateForm(
             placeholder = stringResource(R.string.toolbox_delivery_password_hint),
             singleLine = true,
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+            // 口令框关自动纠错/联想（键盘联想会污染口令字符），并走 Password 键盘档
+            // （与 ShortCodeCreatePage 访问口令框同口径，audit-17 #11）
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                autoCorrectEnabled = false,
+            ),
             // P1-4：密码端侧校验错误挂到字段本身（isError 红描边 §3.1），错误文案显示在字段
             // 正下方（§7）。不用 supportingText：它与固定 48dp 行高（§3.7）冲突（文本会画到
             // 输入框外与下方内容重叠），错误行复用下方 helper 槽位；网络类错误仍走表单底行
@@ -276,7 +285,9 @@ private fun DeliveryCreateForm(
                 }
             ),
             style = MaterialTheme.typography.labelSmall,
-            color = if (passwordError) AppColors.colorScheme.error else AppColors.colorScheme.textTertiary,
+            // helper 是用户必读说明：textTertiary on 白卡 ≈2.26:1 破 §10「正文 ≥4.5:1」红线，
+            // 收敛 textSecondary（与同模块 ShortCodeCreatePage helper 同口径，audit-17 #1）
+            color = if (passwordError) AppColors.colorScheme.error else AppColors.colorScheme.textSecondary,
             modifier = Modifier.padding(top = AppDimens.spaceXs),
         )
 

@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">Prompt 管理</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="术数方法">
@@ -57,12 +58,16 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="promptList"
         fit
         highlight-current-row
+        aria-label="提示词列表"
         empty-text="暂无数据，试试调整筛选条件"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column label="术数方法" min-width="120">
@@ -73,7 +78,7 @@
             <span class="version-chip">{{ row.version }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" min-width="100">
+        <el-table-column prop="status" label="状态" min-width="100" sortable>
           <template #default="{ row }">
             <el-tag :type="divPromptStatusTagType(row.status)">
               {{ divPromptStatusText(row.status) }}
@@ -86,10 +91,10 @@
         <el-table-column label="System Prompt" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ row.systemPrompt || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" min-width="180">
+        <el-table-column prop="createdAt" label="创建时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column prop="updatedAt" label="更新时间" min-width="180">
+        <el-table-column prop="updatedAt" label="更新时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -115,6 +120,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">提示词列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -200,7 +208,12 @@ import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import { divPromptStatusTagType, divPromptStatusText } from '@/constants/dict';
 import logger from '@/utils/logger';
-import { isValidationError } from '@/utils/errors';
+import { isValidationError, friendlyErrorMessage } from '@/utils/errors';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('div-prompt-list', tableRef);
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -371,7 +384,7 @@ const submitForm = async () => {
         `version=${tempPrompt.version}`,
         error
       );
-      ElMessage.error(error.message || '操作失败');
+      ElMessage.error(friendlyErrorMessage(error, '操作失败'));
     }
   } finally {
     submitting.value = false;
@@ -403,7 +416,7 @@ const handleActivate = async (row) => {
       `version=${row.version}`,
       error
     );
-    ElMessage.error(error.message || '激活失败');
+    ElMessage.error(friendlyErrorMessage(error, '激活失败'));
   } finally {
     activatingId.value = null;
   }
@@ -436,7 +449,7 @@ const handleDelete = async (row) => {
       `version=${row.version}`,
       error
     );
-    ElMessage.error(error.message || '操作失败');
+    ElMessage.error(friendlyErrorMessage(error, '操作失败'));
   } finally {
     deletingId.value = null;
   }

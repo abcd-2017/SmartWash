@@ -35,6 +35,7 @@
           webkitdirectory
           multiple
           hidden
+          aria-label="选择包含多个游戏目录的父目录"
           @change="handleDirChosen"
         />
       </div>
@@ -66,10 +67,14 @@
       />
 
       <el-table
+        ref="tableRef"
         :data="queue"
         size="small"
         max-height="380"
+        aria-label="批量导入预检列表"
         empty-text="选择父目录后，此处展示预检到的游戏目录"
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column label="目录" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">{{ row.dirName }}</template>
@@ -80,7 +85,7 @@
         <el-table-column label="标题" min-width="120" show-overflow-tooltip>
           <template #default="{ row }">{{ row.title || '-' }}</template>
         </el-table-column>
-        <el-table-column label="大小" width="80">
+        <el-table-column prop="sizeBytes" label="大小" width="80" sortable>
           <template #default="{ row }">{{
             row.sizeBytes ? formatFileSize(row.sizeBytes) : '-'
           }}</template>
@@ -177,6 +182,9 @@
             <span v-else class="levels-none">— 未携带</span>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">批量导入预检列表</span>
+        </template>
       </el-table>
 
       <div class="batch-actions">
@@ -220,6 +228,11 @@ import {
   planLevelImport,
   buildChunkedPayloads,
 } from '../levelImportParser';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('batch-upload-preview', tableRef);
 
 /** 单游戏包上限，与后端 GamePackageValidator.MAX_ORIGINAL_BYTES 对齐 */
 const MAX_PACKAGE_BYTES = 10 * 1024 * 1024;

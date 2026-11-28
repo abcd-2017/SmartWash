@@ -54,13 +54,17 @@ public class RechargeRecordsController {
         return Result.ok(rechargeRecordsService.getRechargeSummary(rangeFrom.getDateFrom(), rangeFrom.getDateTo()));
     }
 
-    @Operation(summary = "导出充值记录 Excel", description = "按日期范围导出充值记录为 xlsx 文件（分批流式写出，全量导出无条数截断），日期可空 = 不限")
+    @Operation(summary = "导出充值记录 Excel", description = "按日期范围 + 列表筛选条件导出充值记录为 xlsx（分批流式写出，全量导出无条数截断），日期可空 = 不限")
     @GetMapping("/admin/recharge/export")
-    public void exportRechargeRecords(RechargeDateRangeFrom rangeFrom, HttpServletResponse response) throws IOException {
+    public void exportRechargeRecords(RechargeDateRangeFrom rangeFrom, SearchRechargeRecordsFrom searchFrom,
+                                      HttpServletResponse response) throws IOException {
         // 响应头语义与订单导出一致：附件下载，固定文件名（xlsx MIME）
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=recharge_records.xlsx");
+        // 导出条件与列表所见一致：日期范围 + 记录ID/手机号/金额/充值类型
+        searchFrom.setStartTime(rangeFrom.getDateFrom());
+        searchFrom.setEndTime(rangeFrom.getDateTo());
         // 分批流式写出，不整表进内存（与订单导出同模式）
-        exportService.exportRechargeRecordsExcel(rangeFrom.getDateFrom(), rangeFrom.getDateTo(), response.getOutputStream());
+        exportService.exportRechargeRecordsExcel(searchFrom, response.getOutputStream());
     }
 }

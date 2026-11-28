@@ -49,12 +49,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -63,6 +63,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingDots
@@ -149,53 +150,37 @@ fun DiningOrderListPage(
         }
     }
 
-    // 待放弃的草稿（二次确认弹窗）
+    // 待放弃的草稿（二次确认弹窗）：走 common:ui 唯一确认弹窗（自带 dialogEnterMotion +
+    // reduced motion 180ms 降级 + dangerInk 确认键），不再用 material3 AlertDialog/TextButton
+    // （§7 禁 M3 自带 state layer 的交互组件；文案亦不得硬编码）
     var pendingCancel by remember { mutableStateOf<DiningOrderListItem?>(null) }
     pendingCancel?.let { order ->
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { pendingCancel = null },
-            title = { Text(stringResource(R.string.dining_order_cancel_confirm_title)) },
-            text = { Text(stringResource(R.string.dining_order_cancel_confirm_text)) },
-            confirmButton = {
-                androidx.compose.material3.TextButton(
-                    onClick = {
-                        pendingCancel = null
-                        viewModel.cancelOrder(order.id)
-                    },
-                ) {
-                    Text(stringResource(R.string.dining_order_cancel_confirm_yes))
-                }
+        AppConfirmDialog(
+            title = stringResource(R.string.dining_order_cancel_confirm_title),
+            message = stringResource(R.string.dining_order_cancel_confirm_text),
+            confirmText = stringResource(R.string.dining_order_cancel_confirm_yes),
+            isDanger = true,
+            onConfirm = {
+                pendingCancel = null
+                viewModel.cancelOrder(order.id)
             },
-            dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { pendingCancel = null }) {
-                    Text("取消")
-                }
-            },
+            onDismiss = { pendingCancel = null },
         )
     }
 
-    // 待退出的点单（参与者二次确认弹窗）
+    // 待退出的点单（参与者二次确认弹窗）：同上，退出为不可逆动作走危险语义
     var pendingLeave by remember { mutableStateOf<DiningOrderListItem?>(null) }
     pendingLeave?.let { order ->
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { pendingLeave = null },
-            title = { Text(stringResource(R.string.dining_order_leave_confirm_title)) },
-            text = { Text(stringResource(R.string.dining_order_leave_confirm_text)) },
-            confirmButton = {
-                androidx.compose.material3.TextButton(
-                    onClick = {
-                        pendingLeave = null
-                        viewModel.leaveOrder(order.id)
-                    },
-                ) {
-                    Text(stringResource(R.string.dining_order_action_leave))
-                }
+        AppConfirmDialog(
+            title = stringResource(R.string.dining_order_leave_confirm_title),
+            message = stringResource(R.string.dining_order_leave_confirm_text),
+            confirmText = stringResource(R.string.dining_order_action_leave),
+            isDanger = true,
+            onConfirm = {
+                pendingLeave = null
+                viewModel.leaveOrder(order.id)
             },
-            dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { pendingLeave = null }) {
-                    Text("取消")
-                }
-            },
+            onDismiss = { pendingLeave = null },
         )
     }
 
@@ -230,7 +215,9 @@ fun DiningOrderListPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.colorScheme.surface)
+            // 页面底走 background 令牌（§2.1 / §9 验收：底 #F5F6F3 与白卡 ≈1.11:1），
+            // 与全应用列表页（OrderPage/LaundryPage 等）同口径；白卡层次由 1dp 描边 + level1 阴影承担
+            .background(AppColors.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
@@ -414,13 +401,15 @@ private fun OrderListContent(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     // 卡片式：左右页边距 24dp 由容器统一提供（对齐洗衣域订单列表）；
+                    // 顶部 16dp = 卡间距（§2.3），兼作「我的收藏」入口卡与列表首项的间隔；
                     // 底部 = FAB 56dp + 20dp 呼吸，与左右页边距同量级（过大时末卡下方空洞）
                     start = AppDimens.pagePadding,
                     end = AppDimens.pagePadding,
-                    top = AppDimens.spaceXs,
+                    top = AppDimens.cardSpacing,
                     bottom = navBarsBottom + FAB_SIZE + AppDimens.spaceLg,
                 ),
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+                // 卡间距 16dp（§2.3，与 OrderPage 同口径；原 12dp 为旧值）
+                verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
             ) {
                 if (createdOrders.isNotEmpty()) {
                     orderSection(
@@ -479,7 +468,8 @@ private fun OrderListContent(
 
 /**
  * 我的收藏入口卡（契约 §三.4）：图标容器（橙=待办/收藏语义）+ 标题 + 箭头，整卡 pressable。
- * 卡片式（与订单卡同画法）：GroupCard + 左右 24dp 页边距，横排 min 56dp。
+ * 卡片式（与订单卡同形状：GroupCard 白底 + 1dp 描边 + 轻阴影 + radiusLg）+ 左右 24dp 页边距，
+ * 横排 min 56dp；行高铺满卡片故内边距仅水平 20dp（对齐 GroupCard「列表行卡」口径）。
  * 位于订单分区之上，作为域内常驻入口。
  */
 @Composable
@@ -504,10 +494,11 @@ private fun FavoritesEntry(onClick: () -> Unit) {
                 .background(AppColors.colorScheme.iconContainerOrange),
             contentAlignment = Alignment.Center,
         ) {
+            // 图标容器小档（§3.2 v0.4 覆写）：32dp 容器 / 12dp 圆角 / 20dp 图标（原 18dp 为旧值）
             Icon(
                 imageVector = Icons.Rounded.Favorite,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(20.dp),
                 tint = AppColors.colorScheme.iconForegroundOrange,
             )
         }
@@ -543,8 +534,9 @@ private fun LazyListScope.orderSection(
             text = stringResource(titleRes),
             style = AppTextStyles.SectionTitle,
             color = AppColors.colorScheme.textSecondary,
-            // 页边距与卡距由列表 contentPadding/spacedBy 提供，标题仅补与上分区的额外间距
-            modifier = Modifier.padding(top = AppDimens.spaceXs),
+            // 页边距由列表 contentPadding、卡间 16dp 由 spacedBy 提供；标题再补 16dp 使
+            // 「标题 ↔ 上一分区末卡」合计 32dp（§2.3 区块间距），标题与其下首卡保持 16dp
+            modifier = Modifier.padding(top = AppDimens.spaceMd),
         )
     }
     items(orders, key = { it.id }) { order ->
@@ -562,11 +554,11 @@ private fun LazyListScope.orderSection(
 
 /**
  * 订单卡（卡片式，对齐洗衣域订单列表画法）：GroupCard 唯一卡片画法（白底 + 1dp outline +
- * 软阴影 + radiusLg，默认 cardPadding 20dp 内边距），左右 24dp 页边距由列表 contentPadding
+ * 软阴影 + radiusLg），内边距按 TD35 L1 取横 20 / 纵 12；左右 24dp 页边距由列表 contentPadding
  * 统一提供。
  *
- * 内容三层（外卖订单卡惯例，标题即主锚点）：标题行（16sp Medium，右侧状态徽标 + 发起角标）→
- * 摘要行（12sp 次要灰，菜数 + 食材）→ 时间行（12sp 更浅灰 tnum +「再来一单」文字操作，
+ * 内容三层（外卖订单卡惯例，标题即主锚点）：标题行（16sp/600，右侧状态徽标 + 发起角标）→
+ * 摘要行（12sp 次要灰 tnum，菜数 + 食材）→ 时间行（12sp 更浅灰 tnum +「再来一单」文字操作，
  * 带 fromOrderId 进创建页整份复用源单菜单）。整卡 pressable。
  */
 @Composable
@@ -583,13 +575,17 @@ private fun OrderCard(
         modifier = modifier
             .fillMaxWidth()
             .pressable(onClick = onClick),
+        // 列表卡内边距（TD35 L1）：横 cardPadding 20 / 纵 spaceSm 12（外松内紧），
+        // 与卡内 Spacer(spaceSm) 同档；GroupCard 默认四周 20 为信息卡口径，不适用于本列表卡
+        contentPadding = PaddingValues(horizontal = AppDimens.cardPadding, vertical = AppDimens.spaceSm),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             val untitled = order.title.isBlank()
             Text(
                 // 空标题（草稿未命名）显示占位锚点（次要色示占位语义），避免只剩状态字无标题
                 text = if (untitled) stringResource(R.string.dining_order_title_placeholder) else order.title,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                // 卡片标题 = bodyLarge 档 16/24/600（§2.2 v0.5，CardTitle 别名），原 500 为旧值
+                style = AppTextStyles.CardTitle,
                 color = if (untitled) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -602,7 +598,9 @@ private fun OrderCard(
                 Text(
                     text = stringResource(R.string.dining_order_creator_badge),
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.primaryDark,
+                    // primarySoft 底上的文字取 onPrimarySoft（§2.1 配对）：原 primaryDark
+                    // #1E8C5C on #E8F6EF 仅 3.44:1，12sp 不足 AA 4.5:1；配对档浅色 10.7:1
+                    color = AppColors.colorScheme.onPrimarySoft,
                     modifier = Modifier
                         .clip(RoundedCornerShape(AppDimens.radiusFull))
                         .background(AppColors.colorScheme.primarySoft)
@@ -623,7 +621,8 @@ private fun OrderCard(
                 } else {
                     stringResource(R.string.dining_order_list_menu_count_format, order.menuCount)
                 },
-                style = MaterialTheme.typography.bodySmall,
+                // 句内含数量（§2.2 硬规则：数量必须开 tabular numbers，与时间行同口径）
+                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -698,13 +697,16 @@ private fun StatusDot(status: DiningOrderStatus, modifier: Modifier = Modifier) 
 
 /**
  * 发起点单 FAB：56dp 圆形 + 品牌渐变（135° primary→primaryDeep，规范 §3.3 主 CTA 语义）+
- * Canvas 白色十字加号（无图标资源依赖）；pressable 承担按压（禁 M3 FAB/ripple）。
+ * Canvas 十字加号（无图标资源依赖，颜色取 onPrimary 令牌与主按钮文字同口径）；
+ * pressable 承担按压（禁 M3 FAB/ripple）。
  */
 @Composable
 private fun CreateOrderFab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 无障碍：纯图形 FAB 无文字，必须给 contentDescription，否则 TalkBack 只播报「按钮」
+    val fabLabel = stringResource(R.string.dining_order_create_title)
     Box(
         modifier = modifier
             .size(FAB_SIZE)
@@ -717,24 +719,28 @@ private fun CreateOrderFab(
                     ),
                 ),
             )
+            .semantics { contentDescription = fabLabel }
             .pressable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        // 十字加号：两条圆帽线段（18dp 臂长，2.5dp 线宽居中）
+        // 十字加号：两条圆帽线段（18dp 臂长，2.5dp 线宽居中）。
+        // 取 onPrimary 而非硬编码白：深色下 CTA 渐变提亮（清氧 #5BC894 / 吃啥 #FB923C），
+        // 白图形对比仅 ≈2.1:1，onPrimary（#17322B / #431407）≈6.7:1（与 AppButton 主按钮同策略）
+        val plusColor = AppColors.colorScheme.onPrimary
         Canvas(modifier = Modifier.size(24.dp)) {
             val stroke = 2.5.dp.toPx()
             val center = Offset(size.width / 2f, size.height / 2f)
             val arm = 9.dp.toPx()
             val cap = StrokeCap.Round
             drawLine(
-                color = Color.White,
+                color = plusColor,
                 start = Offset(center.x - arm, center.y),
                 end = Offset(center.x + arm, center.y),
                 strokeWidth = stroke,
                 cap = cap,
             )
             drawLine(
-                color = Color.White,
+                color = plusColor,
                 start = Offset(center.x, center.y - arm),
                 end = Offset(center.x, center.y + arm),
                 strokeWidth = stroke,

@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <h1 class="sr-only">订单管理</h1>
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="手机号">
@@ -102,12 +103,18 @@
         <el-button size="small" @click="fetchData">重试</el-button>
       </div>
       <el-table
+        ref="tableRef"
         v-else
         v-loading="listLoading"
         :data="orderList"
         fit
         highlight-current-row
-        empty-text="暂无数据，试试调整筛选条件"
+        aria-label="订单列表"
+        :empty-text="
+          hasOrderFilter ? '试试调整筛选条件' : '还没有订单，用户下单后将在此展示'
+        "
+        :aria-describedby="captionId"
+        @sort-change="onSortChange"
       >
         <el-table-column prop="orderNo" label="订单号" min-width="200" show-overflow-tooltip />
         <el-table-column label="用户信息" min-width="150">
@@ -125,10 +132,10 @@
             {{ row.laundryPackageVo?.itemName || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="总价" min-width="120" align="right">
-          <template #default="{ row }">￥{{ formatAmount(row.totalPrice, '-') }}</template>
+        <el-table-column prop="totalPrice" label="总价" min-width="120" align="right" sortable>
+          <template #default="{ row }">{{ formatPayAmount(row.totalPrice) }}</template>
         </el-table-column>
-        <el-table-column label="状态" min-width="120">
+        <el-table-column prop="status" label="状态" min-width="120" sortable>
           <template #default="{ row }">
             <el-tag :type="orderStatusTagType(row.status)">
               {{ formatStatus(row.status) }}
@@ -136,7 +143,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="pickupCode" label="取件码" min-width="150" class-name="col-code" />
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column prop="createdAt" label="创建时间" min-width="180" sortable>
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
@@ -155,6 +162,9 @@
             </el-button>
           </template>
         </el-table-column>
+        <template #append>
+          <span :id="captionId" class="sr-only">订单列表</span>
+        </template>
       </el-table>
       <div class="pagination-bar">
         <el-pagination
@@ -224,16 +234,22 @@
 </template>
 
 <script setup>
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getOrderStatus, getOrderList, deleteOrder, updateOrderStatus } from '@/api/order';
 import { schoolOptionsCache, laundryOptionsCache } from '@/utils/optionCache';
-import { formatTime, formatAmount } from '@/utils/format';
+import { formatTime, formatAmount, formatPayAmount } from '@/utils/format';
 import { orderStatusTagType } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
+import { useTableA11y } from '@/composables/useTableA11y';
+
+const tableRef = ref(null);
+
+const { captionId, onSortChange } = useTableA11y('order-list', tableRef);
 
 const statusOptions = ref({});
 
@@ -319,6 +335,18 @@ const {
   errorMsg: '获取数据失败',
 });
 
+// 空态区分：有筛选且库内确有命中时提示调整条件；库空（total=0）即使用户带了筛选也一律展示订单来源说明
+const hasOrderFilter = computed(
+  () =>
+    (Boolean((listQuery.phoneNumber || '').trim()) ||
+      Boolean((listQuery.schoolName || '').trim()) ||
+      Boolean((listQuery.orderNo || '').trim()) ||
+      Boolean(listQuery.laundryItemsId) ||
+      Boolean(listQuery.status) ||
+      Boolean(listQuery.startTime || listQuery.endTime)) &&
+    total.value > 0
+);
+
 const timeRange = useTimeRange(listQuery);
 
 const statusDialogVisible = ref(false);
@@ -389,7 +417,7 @@ const handleDelete = async (row) => {
     fetchDataAfterDelete();
   } catch (error) {
     logger.error('删除订单失败:', `orderId=${row.orderId}`, `orderNo=${row.orderNo}`, error);
-    ElMessage.error(error.message || '删除失败');
+    ElMessage.error(friendlyErrorMessage(error, '删除失败'));
   } finally {
     deletingId.value = null;
   }
@@ -439,7 +467,7 @@ const confirmUpdateStatus = async () => {
       `orderNo=${statusForm.orderNo}`,
       error
     );
-    ElMessage.error(error.message || '状态更新失败');
+    ElMessage.error(friendlyErrorMessage(error, '状态更新失败'));
   } finally {
     submitting.value = false;
   }
