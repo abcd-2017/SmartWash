@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>割绳取糖</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材（st- 前缀素材 token）*/
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-rc-* 房间/钉/糖，原 st- 收敛为游戏前缀）*/
   :root {
     --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
     --g-primary:#2D9B6A; --g-primary-deep:#17734A;--g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
@@ -15,7 +15,7 @@
     --g-scrim:rgba(245,246,243,.9);
     --g-shadow:0 2px 12px rgba(20,40,30,.05);
     --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
-    --g-st-room1:#F0E9D8; --g-st-room2:#F8F4EA; --g-st-pin:#C07A4A; --g-st-pinln:#6B4A2E; --g-st-rope:#8A6234; --g-st-candy:#C9526B; --g-st-candyln:#8A3448;
+    --g-rc-room1:#F0E9D8; --g-rc-room2:#F8F4EA; --g-rc-pin:#C07A4A; --g-rc-candy:#C9526B;
     color-scheme:light;
   }
   :root[data-theme=dark] {
@@ -25,7 +25,7 @@
     --g-danger:#DB7186; --g-warning:#E2A44E; --g-success:#4ADE6E; --g-water:#6BB4DE;
     --g-scrim:rgba(20,22,20,.9);
     --g-shadow:0 2px 12px rgba(0,0,0,.28);
-    --g-st-room1:#2A2618; --g-st-room2:#191711; --g-st-pin:#A9885A; --g-st-pinln:#D8BC8E; --g-st-rope:#B49C6E; --g-st-candy:#DB7186; --g-st-candyln:#F0B9C4;
+    --g-rc-room1:#2A2618; --g-rc-room2:#191711; --g-rc-pin:#A9885A; --g-rc-candy:#DB7186;
     color-scheme:dark;
   }
   * { box-sizing: border-box; }
@@ -50,7 +50,8 @@
     display: grid; place-items: center; cursor: pointer; font: inherit;
     touch-action: manipulation;
   }
-  .icon-btn:active { opacity: .8; }
+  .icon-btn { transition: transform .14s ease-out, background .16s ease-out; }
+  .icon-btn:active { transform: scale(.96); }
   .scores { display: flex; gap: 8px; flex: 1; }
   .score-box {
     background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
@@ -59,25 +60,31 @@
   .score-box .label { display: block; font-size: 12px; opacity: .85; white-space: nowrap; }
   .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
   .stat .val { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
   .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: 14px;
     background: var(--g-btn-primary); color: var(--g-on-primary);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
     touch-action: manipulation;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
-  .stage { position: relative; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
   canvas {
     display: block; width: 100%; aspect-ratio: 390 / 520; height: auto;
     background: var(--g-surface2);
     border: 1px solid var(--g-border); border-radius: 12px;
+    box-shadow: var(--g-shadow);
     touch-action: none;
   }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
@@ -90,7 +97,10 @@
     gap: 8px; padding: 16px; text-align: center;
   }
   .overlay.show { display: flex; animation: rise .18s ease-out; }
-  @keyframes rise { from { transform: translateY(6px); } to { transform: translateY(0); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  .stat .val.pop { animation: valpop .24s ease-out; }
   .ov-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--g-primary-deep); max-width: 100%; }
   .ov-sub { margin: 0 0 6px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .btn-row { display: flex; gap: 8px; width: 100%; max-width: 340px; }
@@ -102,7 +112,13 @@
     background: var(--g-surface); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
     touch-action: manipulation;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lv-chip:active { transform: scale(.96); }
+  .legend { display: flex; gap: 8px; margin: 10px 2px 0; animation: rise .38s ease-out both; animation-delay: 120ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
   .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
@@ -110,11 +126,23 @@
   .badge.show { display: inline-block; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -169,6 +197,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <p class="msg" id="msg" role="status" aria-live="polite"></p>
   <div class="tools"><button class="btn ghost" id="btnRetryBottom" type="button">重玩本关</button></div>
+  <div class="legend">
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-rc-pin)"></span><span><b>你控制</b> · 划过绳即割</span></span>
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-primary-deep)"></span><span><b>目标</b> · 荡进怪兽嘴</span></span>
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-warning)"></span><span><b>顺路</b> · 沿途吃星</span></span>
+  </div>
   <p class="foot">沿弹道顺路吃星 · 划过绳即割 / 键盘 1-3 按钉点序号割 · 12 秒内进嘴过关</p>
 </div>
 <script>
@@ -412,6 +445,21 @@ globalThis.__XC=RC;
 /* ========== 画布与调色板 ========== */
 var NW=390,NH=520,W=390,H=520,S=1,offX=0,offY=0;
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+/* 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量（恒白/恒黑除外） */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 var PAL={};
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
@@ -419,8 +467,14 @@ function palLoad(){
   PAL={bg:v("--g-bg"),text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),danger:v("--g-danger"),warning:v("--g-warning"),
     water:v("--g-water"),success:v("--g-success"),onPrimary:v("--g-on-primary"),
-    room1:v("--g-st-room1"),room2:v("--g-st-room2"),pin:v("--g-st-pin"),pinln:v("--g-st-pinln"),
-    rope:v("--g-st-rope"),candy:v("--g-st-candy"),candyln:v("--g-st-candyln")};
+    room1:v("--g-rc-room1"),room2:v("--g-rc-room2"),pin:v("--g-rc-pin"),candy:v("--g-rc-candy")};
+  PAL.pinln=colMix(PAL.pin,WHITE,0.30);
+  PAL.rope=colMix(PAL.pin,BLACK,0.16);
+  PAL.ropeHi=colMix(PAL.rope,WHITE,0.30);
+  PAL.candyln=colMix(PAL.candy,BLACK,0.22);
+  PAL.candyHi=colMix(PAL.candy,WHITE,0.32);
+  PAL.ground=colMix(PAL.room1,PAL.pin,0.22);
+  PAL.groundHi=colMix(PAL.ground,WHITE,0.35);
 }
 window.__gOnTheme=function(){palLoad();grads=null;};
 palLoad();
@@ -520,8 +574,9 @@ function syncSaveFromServer(){
       if(isFinite(rl)&&rl>curSave.lv){curSave.lv=Math.min(rl,LEVELS.length-1);changed=true;}
       if(isFinite(rb)&&rb>unlocked){unlocked=clamp(rb,1,LEVELS.length);changed=true;}
       if(Array.isArray(r.stars)){
-        for(var i=0;i<r.stars.length&&i<curSave.stars.length;i++){
-          if((r.stars[i]|0)>curSave.stars[i]){curSave.stars[i]=r.stars[i]|0;changed=true;}
+        var n=Math.max(r.stars.length,curSave.stars.length);
+        for(var i=0;i<n;i++){
+          if((r.stars[i]|0)>(curSave.stars[i]|0)){curSave.stars[i]=r.stars[i]|0;changed=true;}
         }
       }
       if(changed){save();buildLevelChips();startLevel(curSave.lv);}
@@ -659,6 +714,7 @@ function tryCutSwipe(ax,ay,bx,by){
 }
 function cutByKey(k){
   if(state!=="running")return;
+  if(ui.ovSelect.classList.contains("show"))return;   // 选关浮层打开时数字键不割绳
   var rope=G.st.ropes[k];
   if(rope&&rope.active){
     RC.cut(G.st,k);
@@ -682,25 +738,51 @@ function draw(){
   ctx.save();
   ctx.translate(offX,offY);ctx.scale(S,S);
   if(!grads)buildGrads();
+  // 房间墙面（面）+ 顶部柔光
   ctx.fillStyle=grads;ctx.fillRect(0,0,NW,NH);
+  var tg=ctx.createRadialGradient(NW/2,-60,20,NW/2,-60,NH);
+  tg.addColorStop(0,"rgba(255,255,255,0.22)");tg.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=tg;ctx.fillRect(0,0,NW,NH);
+  // 地面（面）+ 顶缘亮线
+  var gy=NH-64;
+  var gg=ctx.createLinearGradient(0,gy,0,NH);
+  gg.addColorStop(0,PAL.groundHi);gg.addColorStop(0.14,PAL.ground);gg.addColorStop(1,colShade(PAL.ground,-0.22));
+  ctx.fillStyle=gg;ctx.fillRect(0,gy,NW,NH-gy);
+  ctx.fillStyle=colMix(PAL.groundHi,WHITE,0.25);ctx.fillRect(0,gy,NW,2);
   if(G){
     var st=G.st;
-    // 怪兽（嘴）
+    // 怪兽（嘴）：身体渐变环 + 嘴腔内凹 + 眼
     var m=G.L.mouth;
-    ctx.fillStyle=PAL.primary;
-    ctx.beginPath();ctx.arc(m[0],m[1],RC.MOUTH_R+8,0,6.3);ctx.fill();
-    ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;ctx.stroke();
-    ctx.fillStyle=PAL.deep;
-    ctx.beginPath();ctx.arc(m[0],m[1],RC.MOUTH_R,0,6.3);ctx.fill();
-    ctx.fillStyle="rgba(255,255,255,.85)";   // 恒白眼白，素材例外
-    ctx.beginPath();ctx.arc(m[0]-10,m[1]-16,4,0,6.3);ctx.arc(m[0]+10,m[1]-16,4,0,6.3);ctx.fill();
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,0.30)";ctx.shadowBlur=14;ctx.shadowOffsetY=6;
+    var mg=ctx.createRadialGradient(m[0]-8,m[1]-10,4,m[0],m[1],RC.MOUTH_R+8);
+    mg.addColorStop(0,colMix(PAL.primary,WHITE,0.28));
+    mg.addColorStop(0.6,PAL.primary);
+    mg.addColorStop(1,colShade(PAL.primary,-0.22));
+    ctx.fillStyle=mg;ctx.beginPath();ctx.arc(m[0],m[1],RC.MOUTH_R+8,0,6.3);ctx.fill();
+    ctx.restore();
+    var hg=ctx.createRadialGradient(m[0],m[1]+5,2,m[0],m[1],RC.MOUTH_R);
+    hg.addColorStop(0,colShade(PAL.deep,-0.35));hg.addColorStop(1,PAL.deep);
+    ctx.fillStyle=hg;ctx.beginPath();ctx.arc(m[0],m[1],RC.MOUTH_R,0,6.3);ctx.fill();
+    ctx.strokeStyle=colMix(PAL.deep,WHITE,0.30);ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(m[0],m[1],RC.MOUTH_R-3,Math.PI*0.25,Math.PI*0.75);ctx.stroke();
+    ctx.fillStyle="rgba(255,255,255,.92)";   // 恒白眼白
+    ctx.beginPath();ctx.arc(m[0]-10,m[1]-16,4.5,0,6.3);ctx.arc(m[0]+10,m[1]-16,4.5,0,6.3);ctx.fill();
     ctx.fillStyle=PAL.text;
-    ctx.beginPath();ctx.arc(m[0]-9,m[1]-16,2,0,6.3);ctx.arc(m[0]+11,m[1]-16,2,0,6.3);ctx.fill();
-    // 星星
+    ctx.beginPath();ctx.arc(m[0]-9,m[1]-15,2.2,0,6.3);ctx.arc(m[0]+11,m[1]-15,2.2,0,6.3);ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.9)";      // 恒白高光
+    ctx.beginPath();ctx.arc(m[0]-10.5,m[1]-17.5,1.1,0,6.3);ctx.arc(m[0]+8.5,m[1]-17.5,1.1,0,6.3);ctx.fill();
+    // 星星：渐变形体 + 落地投影 + 高光
     for(var i=0;i<st.stars.length;i++){
       var s2=st.stars[i];
+      ctx.save();
       ctx.globalAlpha=s2.got?0.25:1;
-      ctx.fillStyle=PAL.warning;
+      ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=6;ctx.shadowOffsetY=2;
+      var sg=ctx.createRadialGradient(s2.x-3,s2.y-3,1,s2.x,s2.y,10);
+      sg.addColorStop(0,colMix(PAL.warning,WHITE,0.55));
+      sg.addColorStop(0.55,PAL.warning);
+      sg.addColorStop(1,colShade(PAL.warning,-0.20));
+      ctx.fillStyle=sg;
       ctx.beginPath();
       for(var a2=0;a2<10;a2++){
         var an=a2*Math.PI/5-Math.PI/2,rr2=a2%2===0?9:4;
@@ -708,34 +790,56 @@ function draw(){
         if(a2===0)ctx.moveTo(px2,py2);else ctx.lineTo(px2,py2);
       }
       ctx.closePath();ctx.fill();
-      ctx.globalAlpha=1;
+      ctx.restore();
+      if(!s2.got){ctx.fillStyle="rgba(255,255,255,.85)";ctx.beginPath();ctx.arc(s2.x-2.5,s2.y-3,1.6,0,6.3);ctx.fill();}
     }
-    // 绳
+    // 绳：投影 + 绳体 + 亮芯；钉点渐变 + 高光 + 序号
     for(var k=0;k<st.ropes.length;k++){
       var rope=st.ropes[k];
       if(!rope.active)continue;
-      ctx.strokeStyle=PAL.rope;ctx.lineWidth=3;ctx.lineCap="round";
-      ctx.beginPath();
-      ctx.moveTo(rope.pin[0],rope.pin[1]);
-      for(var j=0;j<rope.nodes.length;j++)ctx.lineTo(rope.nodes[j].x,rope.nodes[j].y);
-      ctx.lineTo(st.candy.x,st.candy.y);
+      var pts=[{x:rope.pin[0],y:rope.pin[1]}].concat(rope.nodes).concat([{x:st.candy.x,y:st.candy.y}]);
+      var j;
+      ctx.lineCap="round";
+      ctx.strokeStyle="rgba(0,0,0,0.18)";ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y+2.5);
+      for(j=0;j<pts.length;j++)ctx.lineTo(pts[j].x,pts[j].y+2.5);
       ctx.stroke();
-      // 钉点与序号徽标
-      ctx.fillStyle=PAL.pin;
-      ctx.beginPath();ctx.arc(rope.pin[0],rope.pin[1],9,0,6.3);ctx.fill();
-      ctx.strokeStyle=PAL.pinln;ctx.lineWidth=2;ctx.stroke();
-      ctx.fillStyle=PAL.onPrimary;
+      ctx.strokeStyle=PAL.rope;ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+      for(j=0;j<pts.length;j++)ctx.lineTo(pts[j].x,pts[j].y);
+      ctx.stroke();
+      ctx.strokeStyle=PAL.ropeHi;ctx.lineWidth=1.1;
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y-0.8);
+      for(j=0;j<pts.length;j++)ctx.lineTo(pts[j].x,pts[j].y-0.8);
+      ctx.stroke();
+      var pin=rope.pin;
+      ctx.save();
+      ctx.shadowColor="rgba(0,0,0,0.30)";ctx.shadowBlur=6;ctx.shadowOffsetY=2;
+      var pg=ctx.createRadialGradient(pin[0]-3,pin[1]-3,1,pin[0],pin[1],10);
+      pg.addColorStop(0,colMix(PAL.pin,WHITE,0.50));
+      pg.addColorStop(0.6,PAL.pin);
+      pg.addColorStop(1,colShade(PAL.pin,-0.28));
+      ctx.fillStyle=pg;ctx.beginPath();ctx.arc(pin[0],pin[1],9,0,6.3);ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle=PAL.pinln;ctx.lineWidth=2;ctx.beginPath();ctx.arc(pin[0],pin[1],9,0,6.3);ctx.stroke();
+      ctx.fillStyle="rgba(255,255,255,.75)";ctx.beginPath();ctx.ellipse(pin[0]-3,pin[1]-3.5,2.4,1.5,-0.6,0,6.3);ctx.fill();
+      ctx.fillStyle=PAL.text;
       ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
       ctx.textAlign="center";ctx.textBaseline="middle";
-      ctx.fillText(String(k+1),rope.pin[0],rope.pin[1]+0.5);
+      ctx.fillText(String(k+1),pin[0],pin[1]+0.5);
     }
-    // 糖果
-    ctx.fillStyle=PAL.candy;
-    rr(st.candy.x-11,st.candy.y-9,22,18,6);ctx.fill();
-    ctx.strokeStyle=PAL.candyln;ctx.lineWidth=2;ctx.stroke();
-    ctx.strokeStyle=PAL.candyln;ctx.lineWidth=1.4;
+    // 糖果：渐变体 + 描边 + 包装折线 + 高光 + 落地投影
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,0.32)";ctx.shadowBlur=8;ctx.shadowOffsetY=3;
+    var cg=ctx.createLinearGradient(st.candy.x,st.candy.y-9,st.candy.x,st.candy.y+9);
+    cg.addColorStop(0,PAL.candyHi);cg.addColorStop(0.5,PAL.candy);cg.addColorStop(1,colShade(PAL.candy,-0.24));
+    ctx.fillStyle=cg;rr(st.candy.x-11,st.candy.y-9,22,18,6);ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle=PAL.candyln;ctx.lineWidth=2;rr(st.candy.x-11,st.candy.y-9,22,18,6);ctx.stroke();
+    ctx.strokeStyle=colMix(PAL.candy,WHITE,0.35);ctx.lineWidth=1.4;
     ctx.beginPath();ctx.moveTo(st.candy.x-11,st.candy.y);ctx.lineTo(st.candy.x+11,st.candy.y);
     ctx.moveTo(st.candy.x,st.candy.y-9);ctx.lineTo(st.candy.x,st.candy.y+9);ctx.stroke();
+    ctx.fillStyle="rgba(255,255,255,.8)";ctx.beginPath();ctx.ellipse(st.candy.x-4,st.candy.y-5,3.4,2,-0.5,0,6.3);ctx.fill();
     // 割断特效
     for(var f=0;f<G.cutFx.length;f++){
       var fx=G.cutFx[f];
@@ -876,6 +980,17 @@ syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 按钮图标注入（内联 SVG，零外链）；只前插图标，不改写按钮文本节点 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var map=[["btnNext","arrow-right"],["btnReplayWin","rotate"],["btnSelectWin","grid"],
+           ["btnRetry","rotate"],["btnSelectFail","grid"],["btnCloseSelect","x"],
+           ["btnRetryBottom","rotate"]],i;
+  for(i=0;i<map.length;i++){var b=$(map[i][0]);if(b)b.insertAdjacentHTML("afterbegin",window.SW_ICON(map[i][1]));}
+  var top=$("btnSelectTop");if(top)top.innerHTML=window.SW_ICON("grid");
 })();
 </script>
 </body>

@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>点灯谜阵</title>
 <style>
-  /*token:GAME-THEME.md §2（全部 UI 走 token）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（棋盘外框 / 灯室地面 / 灯罩 / 灯光 / 目标星标）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-lo-frame1:#C6D0C6;--g-lo-frame2:#98A79B;--g-lo-frame-hi:#E4EBE3;--g-lo-floor1:#F4F6F3;--g-lo-floor2:#E5EAE4;--g-lo-floor-hi:#FFFFFF;--g-lo-shade:#B98A2E;--g-lo-glow:#F6C945;--g-lo-glow-hi:#FFF0BE;--g-lo-target:#E8A44E;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-lo-frame1:#171A18;--g-lo-frame2:#0E110F;--g-lo-frame-hi:#39423C;--g-lo-floor1:#262A27;--g-lo-floor2:#1B1F1C;--g-lo-floor-hi:#4E5750;--g-lo-shade:#D9A84E;--g-lo-glow:#F2C14E;--g-lo-glow-hi:#FBE0A0;--g-lo-target:#E2A44E;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -22,62 +22,106 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
-  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.5; }
+  .legend { display: inline-flex; align-items: center; gap: 5px; flex: none; font-size: 12px; color: var(--g-muted); }
+  .legend .lamp-chip {
+    width: 18px; height: 18px; border-radius: 6px; display: inline-block; flex: none;
+    background: linear-gradient(160deg, var(--g-lo-floor1), var(--g-lo-floor2));
+    box-shadow: inset 0 1px 0 var(--g-lo-floor-hi), inset 0 -1px 0 rgba(0,0,0,.14), var(--g-shadow);
+  }
+  .legend .lamp-chip.lit { background: linear-gradient(160deg, var(--g-lo-glow-hi), var(--g-lo-glow)); box-shadow: 0 2px 8px rgba(246,201,69,.45), inset 0 1px 0 var(--g-lo-glow-hi); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .stat {
+    background: var(--g-surface2); border-radius: var(--g-radius-inner);
+    padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0;
+    animation: rise .38s ease-out both;
+  }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  /* 棋盘外框 = 厚边「面」+ 顶光 + 投影（替代细线表格感）；格室内凹「面」承载灯罩 */
+  .board {
+    position: relative; width: min(420px, 100%); margin: 0 auto;
+    padding: 8px; border-radius: 16px;
+    background: linear-gradient(180deg, var(--g-lo-frame1), var(--g-lo-frame2));
+    box-shadow: 0 3px 14px rgba(20,40,30,.14), inset 0 1px 0 var(--g-lo-frame-hi), inset 0 -2px 0 rgba(0,0,0,.12);
+    touch-action: manipulation;
+  }
   .grid5 {
     display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
-    width: min(420px, 100%); margin: 0 auto;
+    padding: 2px;
   }
   .lamp {
-    aspect-ratio: 1; border: 0; border-radius: 10px; cursor: pointer;
-    background: var(--g-surface2); box-shadow: inset 0 -2px 0 var(--g-border);
-    transition: background .18s, box-shadow .18s, transform .12s;
+    position: relative; aspect-ratio: 1; border: 0; border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, var(--g-lo-floor1), var(--g-lo-floor2));
+    box-shadow: inset 0 1px 0 var(--g-lo-floor-hi), inset 0 -2px 0 rgba(0,0,0,.14), var(--g-shadow);
+    transition: transform .14s ease-out, background .16s ease-out, box-shadow .16s ease-out, filter .16s ease-out;
+    animation: rise .36s ease-out both;
   }
-  .lamp:active { transform: scale(.94); }
-  .lamp.on { background: var(--g-warning); box-shadow: 0 2px 14px rgba(154,98,16,.5), inset 0 -2px 0 rgba(0,0,0,.18); }
-  .lamp.star { position: relative; }
-  .lamp.star .swi {
-    position: absolute; right: 4px; top: 2px;
-    font-size: 12px; color: var(--g-on-soft); opacity: .85;
+  .lamp:active { transform: scale(.96); }
+  /* 亮灯：灯罩「面」渐变 + 顶光 + 外发光 + 落地投影 */
+  .lamp.on {
+    background: linear-gradient(160deg, var(--g-lo-glow-hi), var(--g-lo-glow) 55%, var(--g-lo-shade));
+    box-shadow: 0 2px 14px rgba(246,201,69,.5), inset 0 1px 0 var(--g-lo-glow-hi), inset 0 -2px 0 rgba(120,80,10,.28);
+  }
+  .lamp .swi { font-size: clamp(16px, 5vw, 22px); line-height: 1; pointer-events: none; }
+  /* 灯罩内灯泡：浅端 --g-text 近黑，对亮金黄灯罩渐变三档 5.46/10.82/14.96:1 达标；
+     深端灯罩同为亮金黄渐变，近白 --g-text 仅 1.05/1.37/1.78:1（状态标识失效），
+     故深端改深色 --g-bg，对同一渐变三档 8.37/10.84/14.09:1，亮/灭核心标识恢复可辨 */
+  .lamp.on .swi { color: var(--g-text); }
+  :root[data-theme=dark] .lamp.on .swi { color: var(--g-bg); }
+  /* 目标态：灯罩右上角标目标星，提示「最优解本关」（角标为装饰标记，不是可点元素） */
+  .lamp.star .mark {
+    position: absolute; right: 5px; top: 5px; width: 9px; height: 9px;
+    background: var(--g-lo-target); border-radius: 50% 50% 50% 4px;
+    transform: rotate(45deg); pointer-events: none;
+    box-shadow: 0 1px 3px rgba(120,80,10,.4), inset 0 1px 0 rgba(255,255,255,.5);
   }
   .msg { min-height: 20px; margin: 12px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; }
   .btn {
     min-height: 44px; padding: 0 10px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary{background:var(--g-btn-primary);color:#fff;font-size:16px;font-weight:600}
-  .btn:active { opacity: .85; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); }
+  .btn:active { transform: scale(.96); }
   .btn[disabled] { opacity: .45; }
   .btn.on { background: var(--g-primary-soft); color: var(--g-on-soft); }
-  #btnDaily { font-size: 12px; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
     display: none; align-items: center; justify-content: center; padding: 20px;
   }
-  .overlay.show { display: flex; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .panel {
-    width: 100%; max-width: 320px; padding: 22px 18px;
+    width: 100%; max-width: 340px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
+    animation: pop .3s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }   /* 过关轻弹 */
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes valPop { 0% { transform: scale(1); } 45% { transform: scale(1.28); } 100% { transform: scale(1); } }
+  .val-pop { display: inline-block; animation: valPop .34s ease-out; }   /* 战绩轻弹 */
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
   .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
   .panel .btn { width: 100%; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -91,6 +135,11 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
  'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
  'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'sun':'<circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4L17 7M7 17l-1.6 1.6"/>',
+ 'calendar':'<path d="M4 5.5h16v15H4zM4 10h16M8.5 3v4M15.5 3v4"/>',
+ 'bulb':'<path d="M9.5 15.5h5M10 18h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'cross':'<path d="M12 4v16M4 12h16"/>',
  'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
  'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
  'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
@@ -115,20 +164,20 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub">点击翻转十字形五格 · 全部熄灭过关</span></header>
+  <header><span class="sub">点灯会连带翻转十字五格 · 把亮灯全熄灭过关</span><span class="legend"><span class="lamp-chip lit" aria-hidden="true"></span>亮灯=要熄灭</span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1</span></div>
     <div class="stat"><span class="label">步数</span><span class="val" id="stMoves">0</span></div>
-    <div class="stat"><span class="label">参考最优</span><span class="val" id="stRef">-</span></div>
+    <div class="stat"><span class="label">剩余亮灯</span><span class="val" id="stLit">0</span></div>
   </div>
-  <div class="grid5" id="grid" aria-label="点灯棋盘"></div>
-  <p class="msg" id="msg" role="status" aria-live="polite">亮着的格子要按熄灭，注意十字会连带翻转</p>
+  <div class="board"><div class="grid5" id="grid" role="group" aria-label="点灯棋盘：5×5，点击翻转十字五格，全部熄灭过关"></div></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点任意灯，十字五格一起翻转；亮灯全灭即过关</p>
   <div class="tools">
     <button class="btn" id="btnPrev">上一关</button>
     <button class="btn" id="btnReset">重开本关</button>
     <button class="btn" id="btnDaily">每日挑战</button>
   </div>
-  <p class="foot">每关由全灭状态倒推生成，保证有解 · 步数 ≤ 参考最优可得 <svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg> 最优标记 · 50 关后进入无尽模式</p>
+  <p class="foot">每关由全灭倒推生成，保证有解 · 用步 ≤ 参考最优，过关后灯上出现 <span class="swi" aria-hidden="true"></span> 最优标记 · 50 关后进入无尽模式</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
@@ -243,7 +292,7 @@ function say(t){$("msg").textContent=t}
 function todayStr(){return new Date(Date.now()+8*3600e3).toISOString().slice(0,10).replace(/-/g,"")}
 function updDailyBtn(){
   var ds=todayStr(),rec=save.daily[ds],fin=!!(rec&&rec.done),b=$("btnDaily");
-  b.innerHTML="每日 "+ds.slice(4,6)+"-"+ds.slice(6)+(fin?SW_ICON('check'):"");
+  b.innerHTML=SW_ICON('calendar')+"每日 "+ds.slice(4,6)+"-"+ds.slice(6)+(fin?SW_ICON('check'):"");
   b.classList.toggle("on",fin||dailyMode);
 }
 function starOn(){return dailyMode?!!(save.daily[dailyDate]&&save.daily[dailyDate].star):!!flags[lv-1]}
@@ -313,34 +362,45 @@ function buildGrid(){
   for(var i=0;i<N*N;i++){
     var b=document.createElement("button");
     b.className="lamp";
+    b.setAttribute("aria-label","灯 "+i+"，灭");
     b.addEventListener("click",function(){
       if(done)return;
       var i=+this.dataset.i;
-      flipSim(i);moves++;paint();updStats();checkWin();
+      flipSim(i);moves++;paint();updStats("moves");checkWin();
     });
     b.dataset.i=i;
     g.appendChild(b);lamp.push(b);
   }
 }
+function litCount(){var n=0,i;for(i=0;i<N*N;i++)if(lit[i])n++;return n}
 function paint(){
   var st=starOn();
   for(var i=0;i<N*N;i++){
     lamp[i].className="lamp"+(lit[i]?" on":"")+(st?" star":"");
-    lamp[i].innerHTML=st?SW_ICON('star'):"";
+    lamp[i].innerHTML=(lit[i]?SW_ICON('bulb'):"")+(st?'<span class="mark" aria-hidden="true"></span>':"");
+    lamp[i].setAttribute("aria-label","灯 "+i+"，"+(lit[i]?"亮":"灭"));
   }
 }
-function updStats(){
+/* 数据数字轻弹：步数/剩余变化时给一下「得分/过关轻弹」反馈（reduced-motion 时跳过） */
+function popVal(id){
+  if(window.__gRM)return;
+  var el=$(id);if(!el)return;
+  el.classList.remove("val-pop");void el.offsetWidth;el.classList.add("val-pop");
+}
+function updStats(pop){
   $("stLv").textContent=lv;
   $("stMoves").textContent=moves;
-  $("stRef").textContent=ref;
+  $("stLit").textContent=litCount();
   $("btnPrev").disabled=dailyMode||lv<=1;
-  $("btnReset").textContent=dailyMode?"重玩本日":"重开本关";
+  $("btnReset").innerHTML=SW_ICON('rotate')+(dailyMode?"重玩本日":"重开本关");
+  if(pop)popVal(pop==="moves"?"stMoves":"stLit");
 }
 function checkWin(){
   var allOff=true;
   for(var i=0;i<N*N;i++)if(lit[i]){allOff=false;break}
   if(!allOff)return;
   done=true;
+  var best=ref;
   if(dailyMode){
     // 每日挑战：只写本地/账号存档，不进排行榜
     var rec=save.daily[dailyDate]||(save.daily[dailyDate]={done:false,moves:0,ref:ref,star:false});
@@ -350,22 +410,30 @@ function checkWin(){
     saveGame();paint();
     $("ovTitle").innerHTML="每日挑战完成 "+SW_ICON('check');
     $("ovDesc").innerHTML="每日 "+dailyDate.slice(4,6)+"-"+dailyDate.slice(6)+
-      "<br>用步 <b>"+moves+"</b> / 参考最优 "+ref+(moves<=ref?"<br>"+SW_ICON('star')+" 最优解！":"");
-    $("ovBtn").textContent="再玩本日";
+      "<br>用步 <b>"+moves+"</b> / 参考最优 "+best+(moves<=ref?"<br>"+SW_ICON('star')+" 最优解！":"");
+    $("ovBtn").innerHTML=SW_ICON('rotate')+"再玩本日";
   }else{
     if(moves<=ref)flags[lv-1]=true;
     saveGame();paint();
     // 成绩上报（最高关卡 desc：越大越好；附 ★ 数）
     if(GB.available)GB.reportScore("lights-out",{metricValue:lv,metricExtra:flags.filter(Boolean).length}).catch(function(){});
     $("ovTitle").textContent="第 "+lv+" 关 过关！";
-    $("ovDesc").innerHTML="用步 <b>"+moves+"</b> / 参考最优 "+ref+
+    $("ovDesc").innerHTML="用步 <b>"+moves+"</b> / 参考最优 "+best+
       (moves<=ref?"<br>"+SW_ICON('star')+" 最优解！":"<br>试试更少的步数拿 "+SW_ICON('star'))+
       (lv>50?"<br>无尽模式 · 随机阵型":"");
-    $("ovBtn").textContent="下一关";
+    $("ovBtn").innerHTML=SW_ICON('arrow-right')+"下一关";
   }
+  var panel=document.querySelector(".panel");
+  if(panel&&!window.__gRM){panel.classList.remove("win");void panel.offsetWidth;panel.classList.add("win");}
   $("overlay").classList.add("show");
   say("漂亮！"+(moves<=ref?"最优过关":"用了 "+moves+" 步"));
   updDailyBtn();
+}
+/* 进关入场：棋盘格错落浮起一次（reduced-motion 时跳过） */
+function staggerIn(){
+  if(window.__gRM)return;
+  for(var i=0;i<lamp.length;i++)lamp[i].style.animationDelay=(i%N)*36+"ms";
+  setTimeout(function(){for(var j=0;j<lamp.length;j++)lamp[j].style.animationDelay=""},420);
 }
 function startLevel(){
   var d=LEVELS.length&&lv<=LEVELS.length?LEVELS[lv-1]:null;
@@ -377,6 +445,7 @@ function startLevel(){
   var endless=!d;
   $("stLv").textContent=endless?lv+" · 无尽":lv;
   say("第 "+lv+" 关 · 参考最优 "+ref+" 步");
+  staggerIn();
 }
 /* 每日挑战：本地 seed 生成，绕过 DB 关卡 */
 function startDaily(){
@@ -389,6 +458,7 @@ function startDaily(){
   $("stLv").textContent="每日 "+ds.slice(4,6)+"-"+ds.slice(6);
   say("每日挑战 · 参考最优 "+ref+" 步");
   updDailyBtn();
+  staggerIn();
 }
 /* ---------- 输入 ---------- */
 $("btnReset").addEventListener("click",function(){dailyMode?startDaily():startLevel()});
@@ -409,7 +479,7 @@ syncSaveFromServer();syncLevelsFromServer();
 /* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
 (function(){
   var els=document.querySelectorAll(".overlay, .sheet");
-  if(!els.length)return;
+  function $(id){return document.getElementById(id)}
   function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
   var lastFocus=null;
   function focusFirst(el){
@@ -436,6 +506,12 @@ syncSaveFromServer();syncLevelsFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+  /* 静态标签按钮文字前注入内联 SVG 图标（SW_ICON：24 viewBox / currentColor / aria-hidden）；
+     btnReset / btnDaily 的标签会随模式改写，图标由 updStats / updDailyBtn 自带 */
+  function icon(id,name){var b=$(id);if(b)b.insertAdjacentHTML("afterbegin",window.SW_ICON(name));}
+  icon("btnPrev","arrow-left");
+  var ft=document.querySelector(".foot .swi");
+  if(ft)ft.outerHTML=window.SW_ICON("star");
 })();
 </script>
 </body>

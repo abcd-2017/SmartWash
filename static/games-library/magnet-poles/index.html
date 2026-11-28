@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>磁极互斥</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-np:#D96476;--g-st-sp:#4E86C9;--g-st-slot:#DDE7DC;--g-st-slot2:#C9DACB;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-np:#E68494;--g-st-sp:#74A8DE;--g-st-slot:#242B25;--g-st-slot2:#31403A;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-mp-* 棋盘地面 / 空槽 / N·S 极面）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-mp-board1:#F2F7F3;--g-mp-board2:#E2EBE4;--g-mp-slot:#D9E5DA;--g-mp-n:#D96476;--g-mp-s:#4E86C9;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-mp-board1:#151A17;--g-mp-board2:#0F1310;--g-mp-slot:#1F2520;--g-mp-n:#E68494;--g-mp-s:#74A8DE;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -26,23 +26,29 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
-  .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .stat .val.pop { animation: valpop .24s ease-out; }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); border: 1px solid var(--g-border); box-shadow: var(--g-shadow); background: var(--g-mp-board1); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; transition: color .16s ease-out; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
-  .btn:active { opacity: .85; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -51,13 +57,15 @@
   }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
   .panel {
     width: 100%; max-width: 340px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
     animation: pop .25s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .btn { width: 100%; margin-bottom: 8px; }
@@ -67,18 +75,20 @@
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
   /* 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 
   .legend { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 2px 8px; }
-  .lg { font-size: 12px; color: var(--g-muted); background: var(--g-surface2); border-radius: 10px; padding: 2px 10px; }
+  .lg { font-size: 12px; color: var(--g-muted); background: var(--g-surface2); border-radius: 10px; padding: 2px 10px; border: 1px solid var(--g-border); }
 
 </style>
 <script>
@@ -107,10 +117,10 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <div class="legend"><span class="lg">点空槽选中，再点相邻槽放磁体</span><span class="lg">点已放磁体：翻转 → 再翻转 → 收回</span></div>
   <p class="msg" id="msg" role="status" aria-live="polite">把所有高亮槽位用磁体两两占满，且没有同极相邻</p>
   <div class="tools">
-    <button class="btn" id="btnUndo" type="button">撤销</button>
-    <button class="btn" id="btnHint" type="button">提示</button>
-    <button class="btn" id="btnReset" type="button">重开</button>
-    <button class="btn" id="btnLv" type="button">选关</button>
+    <button class="btn" id="btnUndo" type="button"><span class="lbl">撤销</span></button>
+    <button class="btn" id="btnHint" type="button"><span class="lbl">提示</span></button>
+    <button class="btn" id="btnReset" type="button"><span class="lbl">重开</span></button>
+    <button class="btn" id="btnLv" type="button"><span class="lbl">选关</span></button>
   </div>
   <p class="foot">键盘：←/→/↑/↓ 移动光标 · Enter 选中/配对 · Space 翻转 · Delete 收回 · H 提示</p>
 </div>
@@ -119,10 +129,26 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
-    <button class="btn primary" id="ovBtn">下一关</button>
+    <button class="btn primary" id="ovBtn"><span class="lbl">下一关</span></button>
   </div>
 </div>
 
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={'play':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+window.setBtnIcon=function(id,name){var b=document.getElementById(id);if(!b)return;var old=b.querySelector("svg");if(old)old.remove();b.insertAdjacentHTML("afterbegin",window.SW_ICON(name));};
+setBtnIcon("btnUndo","undo");setBtnIcon("btnHint","bulb");setBtnIcon("btnReset","rotate");
+setBtnIcon("btnLv","grid");setBtnIcon("ovBtn","play");
+</script>
 <script>
 (function(){
 "use strict";
@@ -256,7 +282,7 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setLbl("ovBtn","取消");setBtnIcon("ovBtn","x");
   $("overlay").classList.add("show");
 }
 function hideOverlay(){$("overlay").classList.remove("show")}
@@ -360,13 +386,29 @@ function verifyLevel(L){
 }
 /* ---------- 调色板 ---------- */
 var PAL={};
+/* 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量（恒白高光 / 恒黑阴影除外） */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
   function v(n){return s.getPropertyValue(n).trim()}
   PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
     text:v("--g-text"),muted:v("--g-muted"),deep:v("--g-primary-deep"),
     danger:v("--g-danger"),success:v("--g-success"),warning:v("--g-warning"),
-    np:v("--g-st-np"),sp:v("--g-st-sp"),slot:v("--g-st-slot"),slot2:v("--g-st-slot2")};
+    board1:v("--g-mp-board1"),board2:v("--g-mp-board2"),slot:v("--g-mp-slot"),
+    np:v("--g-mp-n"),sp:v("--g-mp-s")};
 }
 window.__gOnTheme=function(){palLoad()};
 /* ---------- 状态 ---------- */
@@ -375,6 +417,9 @@ var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var W=0,H=0,dpr=1,w=6,h=6,cs=56;
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+/* 动态按钮文案只改 .lbl 文本节点，避免抹掉已注入的 SVG 图标 */
+function setLbl(id,txt){var b=$(id),s=b?b.querySelector(".lbl"):null;if(s)s.textContent=txt;else if(b)b.textContent=txt}
+function popVal(id){var e=$(id);if(!e)return;e.classList.remove("pop");void e.offsetWidth;e.classList.add("pop")}
 function mpAdj(a,b){return Math.abs(a%w-b%w)+Math.abs(((a/w)|0)-((b/w)|0))===1}
 /* ---------- 关卡 ---------- */
 function loadLevel(n2){
@@ -419,6 +464,7 @@ function updStats(){
   $("stMg").textContent=placements.length+" / "+(L.slots.length/2);
   $("stErr").textContent=conflicts();
   $("btnUndo").disabled=!history.length||done;
+  popVal("stMg");popVal("stErr");
 }
 /* ---------- 交互 ---------- */
 function tapSlot(i){
@@ -508,7 +554,8 @@ function checkWin(){
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:placements.length}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"磁场稳定了！";
   $("ovDesc").innerHTML="第 "+(lv+1)+" 关完成 · "+placements.length+" 个磁体无一互斥"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setLbl("ovBtn",(lv>=LEVELS.length-1)?"回到第 1 关":"下一关");
+  setBtnIcon("ovBtn",(lv>=LEVELS.length-1)?"rotate":"play");
   $("overlay").classList.add("show");
 }
 /* ---------- 绘制 ---------- */
@@ -522,56 +569,82 @@ function resize(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 function centerOf(i){var x=i%w,y=(i/w)|0;return {x:8+x*cs+cs/2,y:8+y*cs+cs/2}}
+/* 圆角矩形路径 */
+function rr(x,y,w,h,r){
+  r=Math.max(0,Math.min(r,w/2,h/2));
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+/* 磁体：贯通两格的圆角条（极色渐变 + 顶光 + 恒白亮芯 + 恒黑落地投影 + 极性字白晕） */
+function drawMagnet(p){
+  var ax=p.a%w,ay=(p.a/w)|0,bx=p.b%w,by=(p.b/w)|0;
+  var horiz=ay===by;
+  var x0=8+Math.min(ax,bx)*cs,x1=8+(Math.max(ax,bx)+1)*cs;
+  var y0=8+Math.min(ay,by)*cs,y1=8+(Math.max(ay,by)+1)*cs;
+  var rx=x0+4,ry=y0+4,rw=(x1-x0)-8,rh=(y1-y0)-8;
+  var cA=p.dir===0?PAL.np:PAL.sp, cB=p.dir===0?PAL.sp:PAL.np;
+  var aFirst=horiz?(ax<bx):(ay<by);
+  var c0=aFirst?cA:cB, c1=aFirst?cB:cA;
+  var g=horiz?ctx.createLinearGradient(rx,0,rx+rw,0):ctx.createLinearGradient(0,ry,0,ry+rh);
+  g.addColorStop(0,colMix(c0,WHITE,0.28));g.addColorStop(0.5,c0);g.addColorStop(0.5,c1);g.addColorStop(1,colMix(c1,BLACK,0.16));
+  ctx.save();ctx.shadowColor="rgba(0,0,0,0.24)";ctx.shadowBlur=6;ctx.shadowOffsetY=3;   // 恒黑阴影
+  ctx.fillStyle=g;rr(rx,ry,rw,rh,Math.min(10,rh/2));ctx.fill();ctx.restore();
+  ctx.strokeStyle=colMix(c0,WHITE,0.55);ctx.lineWidth=1.2;rr(rx+0.6,ry+0.6,rw-1.2,rh-1.2,Math.min(9,(rh-1.2)/2));ctx.stroke();
+  ctx.strokeStyle="rgba(255,255,255,0.5)";ctx.lineWidth=1.5;   // 恒白亮芯
+  ctx.beginPath();
+  if(horiz){ctx.moveTo(rx+rw/2,ry+3);ctx.lineTo(rx+rw/2,ry+rh-3);}
+  else{ctx.moveTo(rx+3,ry+rh/2);ctx.lineTo(rx+rw-3,ry+rh/2);}
+  ctx.stroke();
+  var pa=centerOf(p.a),pb=centerOf(p.b);
+  ctx.font="700 "+Math.min(18,cs*0.3)+"px sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";ctx.lineJoin="round";ctx.lineWidth=3;
+  var la=p.dir===0?"N":"S", lb=p.dir===0?"S":"N";
+  ctx.strokeStyle=WHITE;ctx.strokeText(la,pa.x,pa.y);ctx.strokeText(lb,pb.x,pb.y);
+  ctx.fillStyle=PAL.text;ctx.fillText(la,pa.x,pa.y);ctx.fillText(lb,pb.x,pb.y);
+}
 function draw(){
-  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  /* 棋盘地面：纵向渐变「面」 */
+  var g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,PAL.board1);g.addColorStop(1,PAL.board2);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   if(!L)return;
   var cov=covered(),pol={};
   for(var i=0;i<placements.length;i++){
     pol[placements[i].a]=placements[i].dir;
     pol[placements[i].b]=1-placements[i].dir;
   }
+  /* 格槽：空槽内凹「面」+ 顶影 + 底亮缘；非槽格轻沟槽 */
   for(var s=0;s<w*h;s++){
-    var p=centerOf(s),x=s%w,y=(s/w)|0;
-    var isSlot=!!slotSet[s];
-    ctx.fillStyle=isSlot?PAL.slot2:PAL.bg;
-    ctx.fillRect(8+x*cs+3,8+y*cs+3,cs-6,cs-6);
-    ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
-    ctx.strokeRect(8+x*cs+3.5,8+y*cs+3.5,cs-7,cs-7);
-    if(isSlot&&cov[s]===undefined){
-      ctx.fillStyle=PAL.slot;   // 素材空槽内芯
-      ctx.fillRect(8+x*cs+8,8+y*cs+8,cs-16,cs-16);
+    var x=s%w,y=(s/w)|0;
+    if(slotSet[s]){
+      ctx.fillStyle=PAL.slot;rr(8+x*cs+3,8+y*cs+3,cs-6,cs-6,8);ctx.fill();
+      ctx.strokeStyle=PAL.border;ctx.lineWidth=1;rr(8+x*cs+3.5,8+y*cs+3.5,cs-7,cs-7,7.5);ctx.stroke();
+      ctx.strokeStyle=colMix(PAL.slot,BLACK,0.18);ctx.lineWidth=2;rr(8+x*cs+4.5,8+y*cs+4.5,cs-9,cs-9,6.5);ctx.stroke();
+      ctx.strokeStyle=colMix(PAL.slot,WHITE,0.35);ctx.lineWidth=1;rr(8+x*cs+5.5,8+y*cs+5.5,cs-11,cs-11,5.5);ctx.stroke();
+      if(cov[s]===undefined){
+        ctx.fillStyle=colMix(PAL.slot,WHITE,0.3);
+        ctx.beginPath();ctx.arc(8+x*cs+cs/2,8+y*cs+cs/2,Math.max(2,cs*0.06),0,Math.PI*2);ctx.fill();
+      }
+    }else{
+      ctx.strokeStyle=colMix(PAL.board1,BLACK,0.06);ctx.lineWidth=1;
+      ctx.strokeRect(8+x*cs+3.5,8+y*cs+3.5,cs-7,cs-7);
     }
   }
-  // 磁体：逐格画极性块
-  for(var key in pol){
-    var p2=centerOf(+key),x2=(+key)%w,y2=(+key/w)|0;
-    var isN=pol[key]===0;
-    ctx.fillStyle=isN?PAL.np:PAL.sp;   // 素材 N/S 极
-    ctx.beginPath();
-    ctx.rect(8+x2*cs+5,8+y2*cs+5,cs-10,cs-10);
-    ctx.fill();
-    ctx.fillStyle=PAL.surface;
-    ctx.font="700 "+Math.min(18,cs*0.3)+"px sans-serif";
-    ctx.textAlign="center";ctx.textBaseline="middle";
-    // 素材极色块上的 N/S：恒暗/恒亮描边兜底可读（D2 例外类）
-    ctx.strokeStyle=document.documentElement.dataset.theme==="dark"?"rgba(255,255,255,.6)":"rgba(0,0,0,.55)";
-    ctx.lineWidth=3;ctx.lineJoin="round";
-    ctx.strokeText(isN?"N":"S",p2.x,p2.y);
-    ctx.fillText(isN?"N":"S",p2.x,p2.y);
-  }
-  // 同极相邻红框
-  var list=mpNb(w,h,0);
+  /* 磁体 */
+  for(var pi=0;pi<placements.length;pi++)drawMagnet(placements[pi]);
+  /* 同极相邻：危险软底 + 红环 */
   for(var key2 in pol){
     var nb2=mpNb(w,h,+key2);
     for(var q=0;q<nb2.length;q++){
       if(pol[nb2[q]]!==undefined&&pol[nb2[q]]===pol[key2]&&+nb2[q]>+key2){
-        var bad=centerOf(+key2),bx=(+key2)%w,by=(+key2/w)|0;
-        ctx.strokeStyle=PAL.danger;ctx.lineWidth=3;
-        ctx.strokeRect(8+bx*cs+4,8+by*cs+4,cs-8,cs-8);
+        var bx=(+key2)%w,by=(+key2/w)|0;
+        ctx.save();ctx.globalAlpha=0.18;ctx.fillStyle=PAL.danger;rr(8+bx*cs+4,8+by*cs+4,cs-8,cs-8,7);ctx.fill();ctx.restore();
+        ctx.strokeStyle=PAL.danger;ctx.lineWidth=2.5;rr(8+bx*cs+4,8+by*cs+4,cs-8,cs-8,7);ctx.stroke();
       }
     }
   }
-  // 行/列 N 计数线索
+  /* 行/列 N 计数：凹槽 chip */
   var polNow={};
   for(var k4 in pol)polNow[k4]=pol[k4];
   ctx.font="700 12px sans-serif";
@@ -579,21 +652,24 @@ function draw(){
   for(var y5=0;y5<h;y5++){
     var cN=0;
     for(var x5=0;x5<w;x5++)if(polNow[y5*w+x5]===0)cN++;
-    ctx.fillStyle=cN>L.rowN[y5]?PAL.danger:(cN===L.rowN[y5]?PAL.success:PAL.muted);
-    ctx.fillText(String(L.rowN[y5]),8+w*cs-6,8+y5*cs+cs/2);
+    var col=cN>L.rowN[y5]?PAL.danger:(cN===L.rowN[y5]?PAL.success:PAL.muted);
+    var cxp=8+w*cs-12,cyp=8+y5*cs+cs/2;
+    ctx.fillStyle=PAL.surface2;rr(cxp-9,cyp-9,18,18,6);ctx.fill();
+    ctx.fillStyle=col;ctx.fillText(String(L.rowN[y5]),cxp,cyp);
   }
   for(var x6=0;x6<w;x6++){
     var cN2=0;
     for(var y6=0;y6<h;y6++)if(polNow[y6*w+x6]===0)cN2++;
-    ctx.fillStyle=cN2>L.colN[x6]?PAL.danger:(cN2===L.colN[x6]?PAL.success:PAL.muted);
-    ctx.fillText(String(L.colN[x6]),8+x6*cs+cs/2,8+h*cs-8);
+    var col2=cN2>L.colN[x6]?PAL.danger:(cN2===L.colN[x6]?PAL.success:PAL.muted);
+    var cxp2=8+x6*cs+cs/2,cyp2=8+h*cs-12;
+    ctx.fillStyle=PAL.surface2;rr(cxp2-9,cyp2-9,18,18,6);ctx.fill();
+    ctx.fillStyle=col2;ctx.fillText(String(L.colN[x6]),cxp2,cyp2);
   }
-  // 选中/光标
+  /* 选中/光标：恒白衬底 + 品牌深环 */
   var hi=sel>=0?sel:cur;
   if(hi>=0&&!done){
-    var hp=centerOf(hi);
-    ctx.strokeStyle=PAL.deep;ctx.lineWidth=2.5;
-    ctx.strokeRect(8+(hi%w)*cs+3,8+((hi/w)|0)*cs+3,cs-6,cs-6);
+    ctx.strokeStyle=WHITE;ctx.lineWidth=4;rr(8+(hi%w)*cs+3,8+((hi/w)|0)*cs+3,cs-6,cs-6,8);ctx.stroke();
+    ctx.strokeStyle=PAL.deep;ctx.lineWidth=2.5;rr(8+(hi%w)*cs+3,8+((hi/w)|0)*cs+3,cs-6,cs-6,8);ctx.stroke();
   }
   requestAnimationFrame(draw);
 }

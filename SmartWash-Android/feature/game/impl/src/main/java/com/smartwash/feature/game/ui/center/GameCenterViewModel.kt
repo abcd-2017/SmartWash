@@ -7,6 +7,7 @@ import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.game.GameCategory
 import com.smartwash.feature.game.GameTint
 import com.smartwash.feature.game.R
+import com.smartwash.feature.game.filterGames
 import com.smartwash.feature.game.gameIconFromKey
 import com.smartwash.feature.game.model.GameItem
 import com.smartwash.feature.game.api.network.GameVo
@@ -47,10 +48,19 @@ class GameCenterViewModel @Inject constructor(
     private val _selectedCategory = MutableStateFlow<GameCategory?>(null)
     val selectedCategory: StateFlow<GameCategory?> = _selectedCategory.asStateFlow()
 
-    /** 分类过滤后的列表（本地过滤，无分页） */
+    /** 搜索关键词（空 = 非搜索态；搜索为本地标题包含过滤，大小写不敏感、去首尾空格） */
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    /**
+     * 分类 + 搜索过滤后的列表（本地过滤，无分页，逻辑见 [filterGames]）：
+     * - 搜索态（关键词非空）：跨分类对全量列表按标题包含过滤（对齐工作台/菜谱库「搜索即全库」，
+     *   分类 chips 让位，避免「chip 选中却看似失效」的困惑）；
+     * - 非搜索态：按选中分类过滤（null = 全部）。
+     */
     val filteredGames: StateFlow<List<GameItem>> =
-        combine(_games, _selectedCategory) { games, category ->
-            if (category == null) games else games.filter { it.category == category }
+        combine(_games, _selectedCategory, _searchQuery) { games, category, query ->
+            filterGames(games, category, query)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -89,6 +99,13 @@ class GameCenterViewModel @Inject constructor(
         _selectedCategory.value = category
     }
 
+    /**
+     * 搜索关键词回写（页面搜索框直连）。
+     * 本地内存过滤，输入即出结果，无需防抖（防抖用于服务端请求场景，如菜谱库）。
+     */
+    fun onSearchChange(query: String) {
+        _searchQuery.value = query
+    }
 
     /** 后端游戏 VO → 卡片模型：gameKey 兼作列表稳定 key（空值防御回退 index key） */
     private fun GameVo.toItem(index: Int): GameItem = GameItem(

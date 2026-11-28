@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>螺旋跳塔</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材（st- 前缀素材 token）*/
+  /*token:GAME-THEME.md §2 基线 + §3 素材（hj- 前缀：天空 / 塔心柱 / 塔底平台）*/
   :root {
     --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
     --g-primary:#2D9B6A; --g-primary-deep:#17734A;--g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
@@ -15,7 +15,7 @@
     --g-scrim:rgba(245,246,243,.9);
     --g-shadow:0 2px 12px rgba(20,40,30,.05);
     --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
-    --g-st-sky1:#DCEFEA; --g-st-sky2:#F1F8F5; --g-st-core:#C9B691; --g-st-fin:#17734A;
+    --g-hj-sky1:#DCEFEA; --g-hj-sky2:#F1F8F5; --g-hj-core:#C9B691; --g-hj-platform:#2D9B6A;
     color-scheme:light;
   }
   :root[data-theme=dark] {
@@ -25,7 +25,7 @@
     --g-danger:#DB7186; --g-warning:#E2A44E; --g-success:#4ADE6E; --g-water:#6BB4DE;
     --g-scrim:rgba(20,22,20,.9);
     --g-shadow:0 2px 12px rgba(0,0,0,.28);
-    --g-st-sky1:#16221F; --g-st-sky2:#0F1513; --g-st-core:#4E4636; --g-st-fin:#4ADE6E;
+    --g-hj-sky1:#16221F; --g-hj-sky2:#0F1513; --g-hj-core:#4E4636; --g-hj-platform:#5BC894;
     color-scheme:dark;
   }
   * { box-sizing: border-box; }
@@ -49,29 +49,38 @@
     background: var(--g-surface); color: var(--g-text);
     display: grid; place-items: center; cursor: pointer; font: inherit;
     touch-action: manipulation;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .icon-btn:active { opacity: .8; }
+  .icon-btn:active { transform: scale(.96); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .scores { display: flex; gap: 8px; flex: 1; }
   .score-box {
     background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
     flex: 1; min-width: 0; padding: 5px 8px; text-align: center; line-height: 1.3;
+    animation: rise .34s ease-out both;
   }
+  .score-box:nth-child(2) { animation-delay: 40ms; }
+  .score-box:nth-child(3) { animation-delay: 80ms; }
   .score-box .label { display: block; font-size: 12px; opacity: .85; white-space: nowrap; }
   .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; animation: rise .34s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
   .stat .val { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
   .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: 14px;
     background: var(--g-btn-primary); color: var(--g-on-primary);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
     touch-action: manipulation;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
   .stage { position: relative; }
   canvas {
@@ -91,6 +100,8 @@
   }
   .overlay.show { display: flex; animation: rise .18s ease-out; }
   @keyframes rise { from { transform: translateY(6px); } to { transform: translateY(0); } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  .overlay.show .ov-title { animation: pop .24s ease-out; }
   .ov-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--g-primary-deep); max-width: 100%; }
   .ov-sub { margin: 0 0 6px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .btn-row { display: flex; gap: 8px; width: 100%; max-width: 340px; }
@@ -102,15 +113,19 @@
     background: var(--g-surface); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
     touch-action: manipulation;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lv-chip:active { transform: scale(.96); }
   .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
   .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
   .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background: var(--g-surface2); color: var(--g-warning); font-size: 12px; font-weight: 700; }
   .badge.show { display: inline-block; }
+  .dot { display: inline-block; vertical-align: -0.08em; margin: 0 3px 0 2px; }
+  .legend { margin: 10px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.7; }
 
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；同时压 animation-duration 与 animation-delay；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -126,6 +141,18 @@ window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
+</script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={ 'play':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
 </script>
 </head>
 <body>
@@ -169,7 +196,12 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <p class="msg" id="msg" role="status" aria-live="polite"></p>
   <div class="tools"><button class="btn ghost" id="btnRetryBottom" type="button">重玩本关</button></div>
-  <p class="foot">绿=安全反弹 · 红=危险即败 · 缺口=坠落穿越 · 操作：左右拖动 / 方向键 A D</p>
+  <p class="legend">
+    <svg class="dot" width="10" height="10" viewBox="0 0 10 10" style="fill:var(--g-primary)" aria-hidden="true"><circle cx="5" cy="5" r="4"/></svg>安全段·反弹
+    <svg class="dot" width="10" height="10" viewBox="0 0 10 10" style="fill:var(--g-danger)" aria-hidden="true"><circle cx="5" cy="5" r="4"/></svg>危险段·即败
+    <svg class="dot" width="10" height="10" viewBox="0 0 10 10" style="fill:var(--g-hj-platform)" aria-hidden="true"><circle cx="5" cy="5" r="4"/></svg>塔底平台·目标
+  </p>
+  <p class="foot">左右拖动 / 方向键 A D 旋转塔身 · 让小球从缺口一路坠到塔底平台</p>
 </div>
 <script>
 (function(){
@@ -369,12 +401,27 @@ function palLoad(){
   PAL={bg:v("--g-bg"),text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),danger:v("--g-danger"),warning:v("--g-warning"),
     water:v("--g-water"),success:v("--g-success"),onPrimary:v("--g-on-primary"),
-    sky1:v("--g-st-sky1"),sky2:v("--g-st-sky2"),core:v("--g-st-core"),fin:v("--g-st-fin")};
+    sky1:v("--g-hj-sky1"),sky2:v("--g-hj-sky2"),core:v("--g-hj-core"),platform:v("--g-hj-platform")};
 }
 window.__gOnTheme=function(){palLoad();grads=null;};
 palLoad();
 var grads=null;
 function buildGrads(){grads=ctx.createLinearGradient(0,0,0,NH);grads.addColorStop(0,PAL.sky1);grads.addColorStop(1,PAL.sky2);}
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 
 /* ========== 音效 ========== */
 var AC=null;
@@ -585,12 +632,24 @@ function drawRing(i,segs){
     if(a1<a0)a1+=TAU;   // 环绕段补整圈，避免椭圆弧长路绘制
     var mid=(a0+a1)/2;
     var front=Math.sin(mid)>0;
-    ctx.strokeStyle=sg[2]===0?PAL.danger:PAL.primary;
-    ctx.globalAlpha=front?0.95:0.28;
-    ctx.lineWidth=front?14:9;
-    ctx.beginPath();
-    ctx.ellipse(CX,y,RAD,RY,0,a0,a1);
-    ctx.stroke();
+    var base=sg[2]===0?PAL.danger:PAL.primary;
+    var lw=front?14:9;
+    // 投影弧：环体在塔面上的落影，给出厚度
+    ctx.strokeStyle=colShade(base,-0.42);
+    ctx.globalAlpha=front?0.26:0.12;ctx.lineWidth=lw;
+    ctx.beginPath();ctx.ellipse(CX,y+lw*0.30,RAD,RY,0,a0,a1);ctx.stroke();
+    // 主弧：竖向线性渐变（顶光 → 基色 → 暗面）
+    var g=ctx.createLinearGradient(0,y-RY,0,y+RY);
+    g.addColorStop(0,colShade(base,0.30));g.addColorStop(0.5,base);g.addColorStop(1,colShade(base,-0.24));
+    ctx.strokeStyle=g;
+    ctx.globalAlpha=front?0.95:0.26;ctx.lineWidth=lw;
+    ctx.beginPath();ctx.ellipse(CX,y,RAD,RY,0,a0,a1);ctx.stroke();
+    // 顶面高光：沿弧上缘的细亮线（仅足够长的段，避免短弧反向绕圈）
+    if(a1-a0>0.05){
+      ctx.strokeStyle=colShade(base,0.55);
+      ctx.globalAlpha=front?0.8:0.18;ctx.lineWidth=Math.max(1.2,lw*0.16);
+      ctx.beginPath();ctx.ellipse(CX,y-lw*0.24,RAD,RY,0,a0+0.015,a1-0.015);ctx.stroke();
+    }
   }
   ctx.globalAlpha=1;
 }
@@ -606,24 +665,34 @@ function draw(){
   if(G){
     var target=G.ballY-NH*0.34;
     camY=Math.max(0,target);
-    // 塔心柱
-    ctx.fillStyle=PAL.core;
+    // 塔心柱：横向渐变柱体 + 左缘亮芯
+    var cg=ctx.createLinearGradient(CX-7,0,CX+7,0);
+    cg.addColorStop(0,colShade(PAL.core,0.30));cg.addColorStop(0.5,PAL.core);cg.addColorStop(1,colShade(PAL.core,-0.28));
+    ctx.fillStyle=cg;
     ctx.fillRect(CX-7,ringY(0)-G.gap*0.6-camY,14,finishY()-ringY(0)+G.gap*0.6);
+    ctx.fillStyle=colShade(PAL.core,0.42);   // 左缘亮芯
+    ctx.fillRect(CX-7,ringY(0)-G.gap*0.6-camY,2,finishY()-ringY(0)+G.gap*0.6);
     for(var i=0;i<G.rings.length;i++)drawRing(i,G.rings[i].segs);
-    // 终点平台
+    // 终点平台：渐变台面 + 顶面高光条 + 深描边
     var fy=finishY()-camY;
     if(fy<NH+30){
-      ctx.fillStyle=PAL.fin;
+      var pg=ctx.createLinearGradient(0,fy,0,fy+18);
+      pg.addColorStop(0,colShade(PAL.platform,0.34));pg.addColorStop(0.35,PAL.platform);pg.addColorStop(1,colShade(PAL.platform,-0.30));
+      ctx.fillStyle=pg;
       rr(CX-RAD*0.85,fy,RAD*1.7,18,8);ctx.fill();
       ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle=colShade(PAL.platform,0.5);   // 顶面高光条
+      rr(CX-RAD*0.85+3,fy+2,RAD*1.7-6,3,1.5);ctx.fill();
     }
-    // 球
-    var by=G.ballY-camY;
+    // 球：径向渐变球体 + 深描边 + 恒白高光（投影沿用恒暗）
+    var by=G.ballY-camY,br=13;
     ctx.fillStyle="rgba(0,0,0,.18)";   // 恒暗球影，素材例外
     ctx.beginPath();ctx.ellipse(CX,Math.min(by+16,ringY(Math.min(G.rings.length-1,Math.floor(G.ballY/G.gap)))-camY+RY*0.8),RAD*0.3,RY*0.5,0,0,6.3);ctx.fill();
-    ctx.fillStyle=PAL.water;
-    ctx.beginPath();ctx.arc(CX,by,13,0,6.3);ctx.fill();
-    ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;ctx.stroke();
+    var bg2=ctx.createRadialGradient(CX-4,by-5,2,CX,by,br*1.05);
+    bg2.addColorStop(0,colShade(PAL.water,0.72));bg2.addColorStop(0.45,PAL.water);bg2.addColorStop(1,colShade(PAL.water,-0.34));
+    ctx.fillStyle=bg2;
+    ctx.beginPath();ctx.arc(CX,by,br,0,6.3);ctx.fill();
+    ctx.strokeStyle=colShade(PAL.water,-0.45);ctx.lineWidth=2;ctx.stroke();
     ctx.fillStyle="rgba(255,255,255,.6)";   // 恒白高光，素材例外
     ctx.beginPath();ctx.arc(CX-4,by-4,3.6,0,6.3);ctx.fill();
     syncHud();
@@ -776,6 +845,16 @@ syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 按钮图标注入（内联 SVG，零外链；只前插图标，不动既有文案节点） */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var dp=[["btnNext","arrow-right"],["btnReplayWin","rotate"],["btnSelectWin","grid"],
+           ["btnRetry","rotate"],["btnSelectFail","grid"],["btnCloseSelect","x"],
+           ["btnRetryBottom","rotate"]],j;
+  for(j=0;j<dp.length;j++)$(dp[j][0]).insertAdjacentHTML("afterbegin",window.SW_ICON(dp[j][1]));
 })();
 </script>
 </body>

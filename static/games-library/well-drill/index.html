@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>打井取水</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-earth:#C9A876;--g-st-clay:#9A7B52;--g-st-rock:#78766E;--g-st-sky:#DCE9F2;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-earth:#7A6544;--g-st-clay:#5E4C34;--g-st-rock:#45443E;--g-st-sky:#1E2830;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-wd- 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-primary:#FFFFFF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-wd-sky:#E8F3FA;--g-wd-earth:#D9B98A;--g-wd-clay:#B08E66;--g-wd-rock:#8E8C84;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-wd-sky:#16212B;--g-wd-earth:#6B5A3E;--g-wd-clay:#5E4C34;--g-wd-rock:#45443E;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -26,21 +26,29 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 5px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: linear-gradient(180deg,var(--g-surface),var(--g-surface2)); border-radius: var(--g-radius-inner); padding: 5px 8px; text-align: center; line-height: 1.3; min-width: 0; box-shadow: var(--g-shadow); animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
+  .stat:nth-child(4) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { display: inline-block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
-  .stage { position: relative; }
+  .stat .val.pop { animation: valpop .24s ease-out; }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
   canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
-  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; animation: rise .38s ease-out both; animation-delay: 160ms; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .btn { min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-surface2); color: var(--g-text);
+    background: linear-gradient(180deg,var(--g-surface),var(--g-surface2)); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    box-shadow: var(--g-shadow);
+    transition: transform .14s ease-out, box-shadow .16s ease-out, opacity .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; }
-  .btn:active { opacity: .85; }
+  .btn.primary { background: linear-gradient(180deg,var(--g-primary),var(--g-btn-primary)); color: var(--g-on-primary); }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
@@ -56,20 +64,31 @@
     box-shadow: var(--g-shadow); text-align: center;
     animation: pop .25s ease-out;
   }
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
   .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
+    background: linear-gradient(180deg,var(--g-surface),var(--g-surface2)); color: var(--g-text);
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    box-shadow: var(--g-shadow);
+    transition: transform .14s ease-out, background .16s ease-out, color .16s ease-out;
+  }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
-  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lvbtn.done { background: linear-gradient(180deg,var(--g-primary),var(--g-btn-primary)); color: var(--g-on-primary); }
+  .legend { display: flex; gap: 8px; margin: 0 2px 10px; animation: rise .38s ease-out both; animation-delay: 120ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -99,17 +118,18 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <div class="stage"><canvas id="cv" aria-label="地质剖面：土层、黏土、岩层与含水层，井架在井位" role="img"></canvas></div>
   <p class="msg" id="msg" role="status" aria-live="polite">移动井架选点，向下钻进；钻到含水层整片水囊即引入村庄</p>
+  <div class="legend" id="legend"></div>
   <div class="tools">
-    <button class="btn" id="btnLeft">◀ 移动</button>
-    <button class="btn primary" id="btnDrill">▼ 钻进</button>
-    <button class="btn" id="btnRight">移动 ▶</button>
+    <button class="btn" id="btnLeft">移动</button>
+    <button class="btn primary" id="btnDrill">钻进</button>
+    <button class="btn" id="btnRight">移动</button>
     <button class="btn" id="btnReset">重开</button>
     <button class="btn" id="btnLv">选关</button>
   </div>
   <p class="foot">键盘：←/→ 移动井架 · 空格/↓ 钻进 · R 重开 · 移动 2/格，钻孔费=1+硬度+深度</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">通水！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -152,6 +172,25 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 })();
 </script>
 
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'drill':'<path d="M12 2v9M8 5l4 4 4-4"/><path d="M7 11h10l-2 9H9z"/>',
+ 'drop':'<path d="M12 3c3 4 6 7 6 10a6 6 0 0 1-12 0c0-3 3-6 6-10z"/>',
+ 'target':'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',
+ 'home':'<path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10c1 1 1 2 1 3h6c0-1 0-2 1-3a6 6 0 0 0-4-10z"/>'
+};
+var fill={'play':1,'drop':1,'home':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 (function(){
 "use strict";
@@ -369,7 +408,7 @@ globalThis.__XC=WD;
 /*XC-CORE-END*/
 
 /* ========== 关卡数据（DB 下发优先，本地缓存兜底，包内默认关兜底） ========== */
-var GAME_KEY="well-drill",SAVE_KEY="sw.welldill.v1";
+var GAME_KEY="well-drill",SAVE_KEY="sw.welldrill.v1";
 var LEVELS_KEY=SAVE_KEY+".levels",LEVELS_VER_KEY=SAVE_KEY+".levels.ver";
 function buildDefaultLevels(){
   var list=[];
@@ -457,16 +496,33 @@ function palLoad(){
     text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
     danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
-    water:v("--g-water"),earth:v("--g-st-earth"),clay:v("--g-st-clay"),
-    rock:v("--g-st-rock"),sky:v("--g-st-sky")};
+    water:v("--g-water"),earth:v("--g-wd-earth"),clay:v("--g-wd-clay"),
+    rock:v("--g-wd-rock"),sky:v("--g-wd-sky")};
 }
 window.__gOnTheme=function(){palLoad()};
 palLoad();
+
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 
 /* ========== 画布与状态 ========== */
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var W=0,cs=26,cur=save.lv,L=null;
 var rig=0,depths=[],drained={},money=0,water=0,pk=null,state="edit",done=false;
+var T=0,drillFx=null,pocketFx={};   // 渲染动效时间戳（纯渲染，不改玩法）
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
 function resize(){
@@ -486,18 +542,20 @@ function loadLevel(n){
   pk=WD.pockets(L);
   rig=0;depths=new Array(L.w).fill(0);drained={};
   money=L.budget;water=0;state="edit";done=false;
+  drillFx=null;pocketFx={};
   $("lvTag").textContent="第 "+(cur+1)+" 关 · "+L.name;
   $("lvRule").textContent="经费 "+L.budget+" · 目标水 "+L.target+" · "+L.w+"×"+L.d;
   $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
   say("移动井架选点钻孔：经费=1+硬度+深度/钻，移动 2/格；水囊一钻全收");
   resize();syncHud();draw();
 }
+/* 记分变化轻弹：先定状态类，再更新文本节点并叠加 pop */
+function popVal(el,v){var s=String(v);if(el.textContent!==s){el.textContent=s;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}}
 function syncHud(){
-  $("stMoney").textContent=money;
-  $("stMoney").className="val"+(money<6?" low":"");
-  $("stWater").textContent=water+"/"+L.target;
-  $("stWater").className="val"+(water>=L.target?"":" low");
-  $("stRig").textContent="x"+rig+" d"+depths[rig];
+  var m=$("stMoney"),w=$("stWater"),r=$("stRig");
+  m.className="val"+(money<6?" low":"");
+  w.className="val"+(water>=L.target?"":" low");
+  popVal(m,money);popVal(w,water+"/"+L.target);popVal(r,"x"+rig+" d"+depths[rig]);
 }
 /* ---------- 交互 ---------- */
 function curType(){
@@ -522,11 +580,13 @@ function stroke(){
   if(money<cost){say("经费不够这一钻（要 "+cost+"）");checkFail();return;}
   money-=cost;
   depths[rig]++;
+  drillFx={x:rig,y:depths[rig],t:performance.now()};
   say("钻进 1m（花费 "+cost+" · 剩 "+money+"）");
   if(WD.cell(L,rig,depths[rig]-1)===3){
     var pid=pk.pid[(depths[rig]-1)*L.w+rig];
     if(!drained[pid]){
       drained[pid]=1;
+      pocketFx[pid]=performance.now();
       water+=pk.list[pid];
       say("打穿水囊！引水 +"+pk.list[pid]+"（共 "+water+"/"+L.target+"）");
     }
@@ -535,14 +595,18 @@ function stroke(){
   if(water>=L.target){winLevel();return;}
   checkFail();
 }
+/* 覆盖层按钮：重插图标 + 文本节点，避免整按钮 textContent= 抹掉已注入的 SVG */
+function setOvBtn(t,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+'<span>'+t+'</span>';}
+function setOvRetry(t,icon){$("ovRetry").innerHTML=window.SW_ICON(icon)+'<span>'+t+'</span>';}
 function checkFail(){
   if(done||water>=L.target)return;
   var canStroke=depths[rig]<L.d&&money>=WD.strokeCost(curType(),depths[rig]);
   if(money<WD.MOVE&&!canStroke){
     state="pause";
+    $("panel").classList.remove("win");
     $("ovTitle").textContent="经费见底";
     $("ovDesc").textContent="引水 "+water+"/"+L.target+"，剩余经费撑不起任何动作了。";
-    $("ovBtn").textContent="选关";
+    setOvBtn("选关","grid");
     $("ovRetry").hidden=false;
     ovMode="fail";
     $("overlay").classList.add("show");
@@ -556,9 +620,10 @@ function winLevel(){
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:cur+1,metricExtra:money}).catch(function(){});
   $("ovTitle").textContent=(cur>=LEVELS.length-1)?"全部通关！":"通水！";
   $("ovDesc").innerHTML="引水 "+water+"（目标 "+L.target+"）· 剩余经费 "+money+(cur<LEVELS.length-1?"<br>已解锁第 "+(cur+2)+" 关":"<br>40 关全部完成");
-  $("ovBtn").textContent=(cur>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((cur>=LEVELS.length-1)?"回到第 1 关":"下一关","play");
   $("ovRetry").hidden=true;
   ovMode="win";
+  $("panel").classList.add("win");
   $("overlay").classList.add("show");
 }
 var ovMode="select";
@@ -580,56 +645,154 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  $("panel").classList.remove("win");
+  setOvBtn("取消","x");
   $("ovRetry").hidden=true;
   ovMode="select";
   $("overlay").classList.add("show");
 }
 
 /* ========== 绘制 ========== */
+function rr(x,y,w,h,r){
+  r=Math.max(0,Math.min(r,w/2,h/2));
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+/* 矢量云（恒白） */
+function cloud(cx,cy,s){
+  ctx.save();ctx.globalAlpha=0.65;ctx.fillStyle=WHITE;   // 恒白云
+  ctx.beginPath();
+  ctx.arc(cx,cy,7*s,0,Math.PI*2);
+  ctx.arc(cx+8*s,cy-3*s,6*s,0,Math.PI*2);
+  ctx.arc(cx+16*s,cy,6.5*s,0,Math.PI*2);
+  ctx.fill();ctx.restore();
+}
+/* 村庄屋舍：渐变墙体 + 屋顶 + 窗 */
+function house(x,oy,s){
+  var w=14*s,h=10*s;
+  var g=ctx.createLinearGradient(0,oy-h,0,oy);
+  g.addColorStop(0,colMix(PAL.surface,WHITE,0.32));g.addColorStop(1,colShade(PAL.surface,-0.10));
+  ctx.fillStyle=g;ctx.fillRect(x,oy-h,w,h);
+  ctx.fillStyle=colShade(PAL.danger,-0.12);
+  ctx.beginPath();ctx.moveTo(x-2*s,oy-h);ctx.lineTo(x+w/2,oy-h-6*s);ctx.lineTo(x+w+2*s,oy-h);ctx.closePath();ctx.fill();
+  ctx.fillStyle=PAL.water;ctx.fillRect(x+w*0.26,oy-h*0.62,w*0.2,h*0.3);
+  ctx.fillStyle=colMix(PAL.surface,BLACK,0.12);ctx.fillRect(x+w*0.6,oy-h*0.62,w*0.2,h*0.3);
+}
+/* 水塔：目标水位 = 引水 / 目标 */
+function tank(x,oy){
+  var w=18,bh=12,top=oy-26,frac=L.target?Math.min(1,water/L.target):0;
+  ctx.strokeStyle=colShade(PAL.text,-0.18);ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(x+3,oy);ctx.lineTo(x+5,top+bh);ctx.moveTo(x+w-3,oy);ctx.lineTo(x+w-5,top+bh);ctx.stroke();
+  var g=ctx.createLinearGradient(0,top,0,top+bh);
+  g.addColorStop(0,colMix(PAL.surface,WHITE,0.36));g.addColorStop(1,colShade(PAL.surface,-0.14));
+  ctx.fillStyle=g;rr(x,top,w,bh,4);ctx.fill();
+  ctx.save();rr(x,top,w,bh,4);ctx.clip();
+  ctx.fillStyle=PAL.water;ctx.fillRect(x,top+bh*(1-frac),w,bh*frac);
+  ctx.restore();
+  if(frac>0.01){
+    ctx.strokeStyle=colMix(PAL.water,WHITE,0.5);ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x+1,top+bh*(1-frac));ctx.lineTo(x+w-1,top+bh*(1-frac));ctx.stroke();
+  }
+}
+/* 井架腿：品牌绿渐变 */
+function drawLeg(x1,y1,x2,y2){
+  var g=ctx.createLinearGradient(x1,y1,x2,y2);
+  g.addColorStop(0,colShade(PAL.primary,-0.22));g.addColorStop(1,colMix(PAL.primary,WHITE,0.28));
+  ctx.strokeStyle=g;ctx.lineWidth=4;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.lineCap="butt";
+}
 function draw(){
   var ox=(W-L.w*cs)/2,oy=30;
-  //天空与村庄
-  ctx.fillStyle=PAL.sky;ctx.fillRect(0,0,W,oy);
-  ctx.fillStyle=PAL.surface;
-  ctx.fillRect(6,oy-14,14,12);ctx.fillRect(22,oy-10,10,8);
-  ctx.fillStyle=PAL.muted;
-  ctx.font="12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
-  ctx.textAlign="left";ctx.textBaseline="alphabetic";
-  ctx.fillText("村",8,oy-16);
-  //地层
+  // ---- 天空「地面」：渐变 + 光晕 + 矢量云 ----
+  var sk=ctx.createLinearGradient(0,0,0,oy);
+  sk.addColorStop(0,colMix(PAL.sky,WHITE,0.45));sk.addColorStop(1,PAL.sky);
+  ctx.fillStyle=sk;ctx.fillRect(0,0,W,oy);
+  var sun=ctx.createRadialGradient(W*0.82,8,2,W*0.82,8,46);
+  sun.addColorStop(0,"rgba(255,255,255,.75)");sun.addColorStop(1,"rgba(255,255,255,0)");   // 恒白光晕
+  ctx.fillStyle=sun;ctx.fillRect(W*0.82-46,0,92,54);
+  cloud(W*0.18,10,1);cloud(W*0.55,16,0.7);
+  // ---- 村庄 + 水塔（目标）----
+  house(8,oy,1);house(24,oy,0.8);tank(W-30,oy);
+  // 地表线：边线分层
+  ctx.fillStyle=colShade(PAL.earth,-0.30);ctx.fillRect(0,oy,W,2);
+  ctx.fillStyle=colMix(PAL.earth,WHITE,0.26);ctx.fillRect(0,oy+2,W,1);
+  // ---- 地层基槽（沟槽「边线」）----
+  ctx.fillStyle=colShade(PAL.earth,-0.44);
+  ctx.fillRect(ox-2,oy,L.w*cs+4,L.d*cs);
   for(var y=0;y<L.d;y++)for(var x=0;x<L.w;x++){
     var c=WD.cell(L,x,y);
     var px=ox+x*cs,py=oy+y*cs;
-    if(c===0)ctx.fillStyle=PAL.earth;
-    else if(c===1)ctx.fillStyle=PAL.clay;
-    else if(c===2)ctx.fillStyle=PAL.rock;
-    else ctx.fillStyle=PAL.water;
-    ctx.fillRect(px,py,cs-1,cs-1);
-    if(c===3&&!drained[pk.pid[y*L.w+x]]){
-      ctx.fillStyle="rgba(255,255,255,.35)";   // 恒白水光
-      ctx.fillRect(px+3,py+3,cs-9,3);
-    }
+    var base=(c===0?PAL.earth:c===1?PAL.clay:c===2?PAL.rock:PAL.water);
+    var dry=(c===3&&!!drained[pk.pid[y*L.w+x]]);
+    var g=ctx.createLinearGradient(0,py,0,py+cs);
+    if(dry){g.addColorStop(0,colShade(base,-0.48));g.addColorStop(1,colShade(base,-0.64));}
+    else{g.addColorStop(0,colMix(base,WHITE,0.16));g.addColorStop(0.5,base);g.addColorStop(1,colShade(base,-0.22));}
+    ctx.fillStyle=g;ctx.fillRect(px,py,cs-1,cs-1);
+    ctx.fillStyle=colMix(base,WHITE,0.34);ctx.fillRect(px,py,cs-1,1.5);
     if(c===2){
-      ctx.fillStyle=PAL.faint;
-      ctx.fillRect(px+4,py+cs*0.5,cs-9,2);
+      ctx.strokeStyle=colShade(base,-0.32);ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(px+cs*0.25,py+cs*0.30);ctx.lineTo(px+cs*0.45,py+cs*0.60);
+      ctx.moveTo(px+cs*0.60,py+cs*0.25);ctx.lineTo(px+cs*0.75,py+cs*0.55);
+      ctx.stroke();
+    }
+    if(c===3&&!dry){
+      var pid=pk.pid[y*L.w+x];
+      var wob=Math.sin(T/420+x*0.9+y*0.7)*1.2;
+      ctx.strokeStyle="rgba(255,255,255,.85)";ctx.lineWidth=1.5;   // 恒白水光
+      ctx.beginPath();ctx.moveTo(px+3,py+cs*0.34+wob);ctx.quadraticCurveTo(px+cs*0.5,py+cs*0.26-wob,px+cs-4,py+cs*0.34+wob);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(px+4,py+cs*0.62-wob);ctx.quadraticCurveTo(px+cs*0.5,py+cs*0.54+wob,px+cs-5,py+cs*0.62-wob);ctx.stroke();
+      var pu=0.5+0.5*Math.sin(T/520+pid);
+      ctx.strokeStyle=colMix(PAL.water,WHITE,0.4);ctx.globalAlpha=0.35+0.35*pu;ctx.lineWidth=2;
+      ctx.strokeRect(px+1.5,py+1.5,cs-4,cs-4);ctx.globalAlpha=1;
+    }
+    if(c===3&&dry&&pocketFx[pk.pid[y*L.w+x]]){
+      var dt=T-pocketFx[pk.pid[y*L.w+x]];
+      if(dt<520){
+        ctx.strokeStyle=colMix(PAL.water,WHITE,0.3);ctx.globalAlpha=1-dt/520;ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(px+cs/2,py+cs/2,cs*(0.2+dt/520*0.7),0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+      }
     }
   }
-  //已钻管道
+  // ---- 已钻套管：内凹暗面 + 亮芯 + 钻头 ----
   for(var x2=0;x2<L.w;x2++){
     if(!depths[x2])continue;
-    var dx0=ox+x2*cs+cs/2;
-    ctx.strokeStyle=PAL.text;ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(dx0,oy);ctx.lineTo(dx0,oy+depths[x2]*cs);ctx.stroke();
+    var dx0=ox+x2*cs+cs/2,dw=Math.max(4,cs*0.3),bot=oy+depths[x2]*cs;
+    var cg=ctx.createLinearGradient(dx0-dw/2,0,dx0+dw/2,0);
+    cg.addColorStop(0,colShade(PAL.text,-0.20));cg.addColorStop(0.5,PAL.text);cg.addColorStop(1,colShade(PAL.text,-0.46));
+    ctx.fillStyle=cg;ctx.fillRect(dx0-dw/2,oy,dw,bot-oy);
+    ctx.fillStyle=colMix(PAL.text,WHITE,0.26);ctx.fillRect(dx0-dw/2+1,oy,1,bot-oy);
+    ctx.fillStyle=colShade(PAL.text,-0.52);
+    ctx.beginPath();ctx.moveTo(dx0-dw/2,bot);ctx.lineTo(dx0+dw/2,bot);ctx.lineTo(dx0,bot+Math.min(6,cs*0.25));ctx.closePath();ctx.fill();
   }
-  //井架
+  // 钻进闪光（状态反馈）
+  if(drillFx&&T-drillFx.t<360){
+    var ddt=T-drillFx.t,a=1-ddt/360;
+    ctx.strokeStyle=colMix(PAL.warning,WHITE,0.3);ctx.globalAlpha=a;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(ox+drillFx.x*cs+cs/2,oy+drillFx.y*cs,4+ddt/360*10,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+  }
+  // ---- 井架（我控制什么）----
   var rx=ox+rig*cs+cs/2;
-  ctx.fillStyle=PAL.primary;
-  ctx.beginPath();
-  ctx.moveTo(rx,oy-16);ctx.lineTo(rx-8,oy-2);ctx.lineTo(rx+8,oy-2);
-  ctx.closePath();ctx.fill();
-  ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(rx,oy-2);ctx.lineTo(rx,oy+2);ctx.stroke();
+  // 可落点：当前列表面光标
+  ctx.save();ctx.globalAlpha=0.18+0.08*Math.sin(T/300);
+  ctx.fillStyle=PAL.primary;ctx.fillRect(ox+rig*cs,oy,cs,4);ctx.restore();
+  // 井架落地投影
+  ctx.save();ctx.globalAlpha=0.20;ctx.fillStyle=BLACK;   // 恒黑投影
+  ctx.beginPath();ctx.ellipse(rx,oy+2,15,3,0,0,Math.PI*2);ctx.fill();ctx.restore();
+  // 缆绳
+  ctx.strokeStyle=PAL.deep;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(rx,oy-18);ctx.lineTo(rx,oy+Math.min(depths[rig],L.d)*cs);ctx.stroke();
+  drawLeg(rx-9,oy-2,rx,oy-20);
+  drawLeg(rx+9,oy-2,rx,oy-20);
+  ctx.strokeStyle=colShade(PAL.primary,-0.25);ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(rx-6,oy-9);ctx.lineTo(rx+6,oy-9);ctx.stroke();
+  var wp=ctx.createRadialGradient(rx-1,oy-21,1,rx,oy-19,5);
+  wp.addColorStop(0,colMix(PAL.primary,WHITE,0.6));wp.addColorStop(1,colShade(PAL.primary,-0.3));
+  ctx.fillStyle=wp;ctx.beginPath();ctx.arc(rx,oy-19,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=colShade(PAL.primary,-0.35);ctx.fillRect(rx-12,oy-3,24,3);
+  // 外框
   ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
   ctx.strokeRect(0.5,0.5,W-1,L.d*cs+33);
 }
@@ -639,7 +802,7 @@ var rafPending=false,lastTs=0;
 function frame(ts){
   rafPending=false;
   if(document.hidden)return;
-  lastTs=ts;
+  T=ts;lastTs=ts;
   draw();
   rafPending=true;requestAnimationFrame(frame);
 }
@@ -692,6 +855,18 @@ window.__validateLevels=function(){try{return WD.runTests()}catch(e){return {err
 
 /* ========== 启动（续玩：从存档关卡起步） ========== */
 cur=clamp(save.lv,0,LEVELS.length-1);
+/* 工具钮 / 图例 / 覆盖层按钮图标注入（内联 SVG，零外链） */
+$("btnLeft").insertAdjacentHTML("afterbegin",window.SW_ICON("arrow-left"));
+$("btnDrill").insertAdjacentHTML("afterbegin",window.SW_ICON("drill"));
+$("btnRight").insertAdjacentHTML("afterbegin",window.SW_ICON("arrow-right"));
+$("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+$("btnLv").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
+setOvBtn("下一关","play");
+setOvRetry("重试本关","rotate");
+$("legend").innerHTML=
+  '<span class="lg-chip">'+window.SW_ICON("drill")+'<span><b>井架</b> · 你控制</span></span>'+
+  '<span class="lg-chip">'+window.SW_ICON("drop")+'<span><b>水囊</b> · 目标</span></span>'+
+  '<span class="lg-chip">'+window.SW_ICON("check")+'<span><b>套管</b> · 已钻</span></span>';
 loadLevel(cur);
 requestAnimationFrame(frame);
 syncLevelsFromServer();

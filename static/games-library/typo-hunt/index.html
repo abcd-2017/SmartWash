@@ -6,89 +6,156 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>错字围剿</title>
 <style>
-  /*token:GAME-THEME.md §2（全部 UI 壳走 token）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
-  * { box-sizing: border-box; }
-  [hidden] { display: none !important; }
-  html, body { margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
-    background: var(--g-bg); color: var(--g-text);
-    min-height: 100vh; display: flex; justify-content: center;
-    padding: 16px 8px 30px;
-    -webkit-user-select: none; user-select: none;
-    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation; overscroll-behavior: none;
-  }
-  .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
-  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
-  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .stat .val.bad { color: var(--g-danger); }
-  .board {
-    display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;
-    background: var(--g-surface); border-radius: var(--g-radius-inner);
-    padding: 14px 8px; box-shadow: var(--g-shadow); align-content: center;
-  }
-  .tchar {
-    display: inline-flex; align-items: center; justify-content: center;
-    min-width: 40px; min-height: 44px;
-    font-size: 22px; font-weight: 700; line-height: 1;
-    border: 0; border-radius: 10px; background: transparent; color: var(--g-text);
-    font-family: inherit; cursor: pointer; padding: 0;
-  }
-  .tchar.punc { min-width: 18px; min-height: 44px; cursor: default; color: var(--g-muted); font-weight: 400; }
-  .tchar.found { background: var(--g-primary-soft); color: var(--g-on-soft); cursor: default; }
-  .tchar.shake { animation: shake .3s ease-in-out; box-shadow: inset 0 0 0 2px var(--g-danger); }
-  @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-  .bar { height: 8px; border-radius: 999px; background: var(--g-surface2); margin-top: 10px; overflow: hidden; }
-  .bar i { display: block; height: 100%; width: 100%; border-radius: 999px; background: var(--g-water); }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
-  .tools { display: flex; gap: 8px; }
-  .btn {
-    min-height: 44px; padding: 0 14px; flex: 1;
-    border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
-  }
-  .btn:active { opacity: .85; }
-  .btn:disabled { opacity: .35; }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
-  .overlay {
-    position: fixed; inset: 0; z-index: 10;
-    background: var(--g-scrim);
-    display: none; align-items: center; justify-content: center; padding: 20px;
-  }
-  .overlay.show { display: flex; animation: fadein .2s ease-out; }
-  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-  .panel {
-    width: 100%; max-width: 340px; padding: 22px 18px;
-    background: var(--g-surface); border-radius: var(--g-radius);
-    box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
-  }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
-  .panel h2 { margin: 0 0 6px; font-size: 18px; }
-  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
-  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
-  .lvbtn {
-    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
-  }
-  .lvbtn[disabled] { opacity: .35; }
-  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
-  .panel .btn { width: 100%; margin-bottom: 8px; }
-  .panel .btn:last-child { margin-bottom: 0; }
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（注意：动效层指令，不受 §4 主题层禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
-  /* P2: 键盘焦点可见 */
-  :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+/*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-th-* 纸面 / 答对绿面）*/
+:root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-th-paper1:#F6F8F2;--g-th-paper2:#E7EDDF;--g-th-hit1:#17734A;--g-th-hit2:#12613F;color-scheme:light }
+:root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-th-paper1:#1F231F;--g-th-paper2:#121614;--g-th-hit1:#1E6B4A;--g-th-hit2:#175A3D;color-scheme:dark }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+  background: var(--g-bg); color: var(--g-text);
+  min-height: 100vh; display: flex; justify-content: center;
+  padding: 16px 8px 30px;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; overscroll-behavior: none;
+}
+.wrap { width: 100%; max-width: 480px; }
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+.sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; text-align: right; }
+/* 页头关卡标签 = 品牌 soft 底 + deep 字 + 顶光 + 落地投影（轻立体），前置内联图标 */
+.lvtag { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 10px; white-space: nowrap; border-radius: 10px; background: var(--g-primary-soft); color: var(--g-primary-deep); font-size: 14px; font-weight: 600; line-height: 1.4; box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 2px var(--g-shadow); }
+.lvtag .swi { width: 14px; height: 14px; flex: none; }
+.stats { display: flex; gap: 8px; margin-bottom: 10px; }
+.stat { flex: 1; min-width: 0; padding: 6px 4px; text-align: center; line-height: 1.3; border-radius: var(--g-radius-inner); background: linear-gradient(180deg, var(--g-surface), var(--g-surface2)); box-shadow: inset 0 0 0 1px var(--g-border), var(--g-shadow); animation: rise .38s ease-out backwards; }
+.stat:nth-child(2) { animation-delay: 40ms; }
+.stat:nth-child(3) { animation-delay: 80ms; }
+.stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+.stat .val { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+.stat .val.bad { color: var(--g-danger); }
+.stat .val.bump { animation: bump .2s ease-out; }
+.sec { font-size: 12px; color: var(--g-muted); margin: 12px 2px 6px; line-height: 1.4; }
+/* 短文板：纸面渐变 + 2px 边界环 + 内凹（替代纯白平面），字块为轻立体卡 */
+.board {
+  display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-content: center;
+  padding: 14px 10px; border-radius: var(--g-radius-inner);
+  background: linear-gradient(160deg, var(--g-th-paper1), var(--g-th-paper2));
+  border: 2px solid var(--g-border);
+  box-shadow: inset 0 2px 6px rgba(20,40,30,.06), var(--g-shadow);
+  animation: fadein .3s ease-out both;
+}
+.tchar {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 40px; min-height: 44px; padding: 0 2px;
+  font-size: 22px; font-weight: 700; line-height: 1; font-family: inherit;
+  border: 0; border-radius: 10px; cursor: pointer;
+  --f1: var(--g-surface); --f2: var(--g-th-paper2); --ink: var(--g-text); --ring: var(--g-border);
+  background: linear-gradient(180deg, var(--f1), var(--f2)); color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ring), 0 1px 2px var(--g-shadow);
+  transition: transform .14s ease-out, background .16s ease-out, color .16s ease-out, box-shadow .16s ease-out;
+}
+.tchar:active { transform: scale(.96); }
+.tchar.punc { min-width: 18px; min-height: 44px; cursor: default; color: var(--g-muted); font-weight: 400; background: none; box-shadow: none; transition: none; }
+/* 已纠正：答对绿面 + 反白正字 + 深一档描边（与纸面字块强层级） */
+.tchar.found { --f1: var(--g-th-hit1); --f2: var(--g-th-hit2); --ink: var(--g-on-primary); --ring: var(--g-th-hit2); cursor: default; box-shadow: inset 0 0 0 1px var(--ring), 0 2px 6px var(--g-shadow); }
+.tchar.pop { animation: cellPop .22s ease-out; }
+/* 点错：红环 + 红字 + 抖动（120-200ms ease-out） */
+.tchar.shake { --ink: var(--g-danger); --ring: var(--g-danger); animation: shake .18s ease-out; box-shadow: inset 0 0 0 2px var(--g-danger), 0 1px 2px var(--g-shadow); }
+/* 入场：长文按每 12 字一组错落 45ms（总时长 ≤570ms） */
+.board.enter .tchar { animation: tileIn .3s ease-out backwards; animation-delay: calc(var(--d, 0) * 45ms); }
+/* 图例：三秒读懂「点什么 / 答对 / 答错」 */
+.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 10px 2px 0; animation: rise .38s ease-out backwards; animation-delay: 160ms; }
+.lg { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 10px; background: var(--g-surface2); box-shadow: inset 0 0 0 1px var(--g-border); font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+.lg .sw { width: 16px; height: 16px; border-radius: 5px; flex: none; background: linear-gradient(180deg, var(--g-surface), var(--g-th-paper2)); box-shadow: inset 0 0 0 1px var(--g-border); }
+.lg .sw-hit { background: linear-gradient(180deg, var(--g-th-hit1), var(--g-th-hit2)); box-shadow: inset 0 0 0 1px var(--g-th-hit2); }
+.lg .sw-miss { background: var(--g-surface2); box-shadow: inset 0 0 0 2px var(--g-danger); }
+.msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; transition: color .16s ease-out; }
+.msg.good { color: var(--g-success); }
+.msg.bad { color: var(--g-danger); }
+/* 进度条：内凹槽 + 水色→品牌绿渐变填充 + 顶光 */
+.bar { height: 10px; border-radius: 999px; background: var(--g-surface2); box-shadow: inset 0 1px 2px rgba(20,40,30,.10); margin-top: 12px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--g-water), var(--g-primary)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35); transition: width .12s linear; }
+.tools { display: flex; gap: 8px; margin-top: 12px; }
+.btn {
+  min-height: 44px; padding: 0 12px; flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 0; border-radius: var(--g-radius-btn);
+  background: linear-gradient(180deg, var(--g-surface), var(--g-surface2)); color: var(--g-text);
+  box-shadow: inset 0 0 0 1px var(--g-border), var(--g-shadow);
+  font-family: inherit; font-size: 16px; font-weight: 600; white-space: nowrap; cursor: pointer;
+  transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out, box-shadow .16s ease-out;
+}
+.btn .swi { width: 18px; height: 18px; flex: none; }
+.btn:active { transform: scale(.96); }
+.btn:disabled { opacity: .35; }
+.btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), var(--g-shadow); }
+.foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+.overlay {
+  position: fixed; inset: 0; z-index: 10;
+  background: var(--g-scrim);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.overlay.show { display: flex; animation: fadein .2s ease-out; }
+.panel {
+  width: 100%; max-width: 340px; padding: 22px 18px;
+  background: linear-gradient(180deg, var(--g-surface), var(--g-surface2));
+  border-radius: var(--g-radius);
+  box-shadow: inset 0 0 0 1px var(--g-border), var(--g-shadow);
+  text-align: center;
+  animation: pop .28s ease-out;
+}
+/* 结果徽标：胜 = 答对绿面 + 反白对勾；负 = 凹槽面 + 危险叉 */
+.panel .res { width: 44px; height: 44px; margin: 0 auto 10px; border-radius: 50%; display: flex; align-items: center; justify-content: center; animation: cellPop .24s ease-out; }
+.panel .res .swi { width: 24px; height: 24px; }
+.panel .res.win { background: linear-gradient(180deg, var(--g-th-hit1), var(--g-th-hit2)); color: var(--g-on-primary); box-shadow: inset 0 1px 0 rgba(255,255,255,.28), var(--g-shadow); }
+.panel .res.lose { background: var(--g-surface2); color: var(--g-danger); box-shadow: inset 0 0 0 1px var(--g-border); }
+.panel h2 { margin: 0 0 6px; font-size: 18px; }
+.panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+.panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
+.lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+.lvbtn {
+  min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+  background: linear-gradient(180deg, var(--g-surface), var(--g-surface2)); color: var(--g-text);
+  box-shadow: inset 0 0 0 1px var(--g-border), var(--g-shadow);
+  font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  transition: transform .14s ease-out, background .16s ease-out, box-shadow .16s ease-out;
+}
+.lvbtn:active { transform: scale(.96); }
+.lvbtn[disabled] { opacity: .35; }
+.lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 1px var(--g-primary-deep); }
+.panel .btn { width: 100%; margin-bottom: 8px; }
+.panel .btn:last-child { margin-bottom: 0; }
+/* 深色：内凹槽 / 顶光压暗，字块与纸面靠色相明度差区分（其余靠级联继承） */
+:root[data-theme=dark] .board { box-shadow: inset 0 2px 8px rgba(0,0,0,.42), var(--g-shadow); }
+:root[data-theme=dark] .bar { box-shadow: inset 0 1px 2px rgba(0,0,0,.42); }
+:root[data-theme=dark] .lvtag { box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 1px 2px var(--g-shadow); }
+/* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（注意：动效层指令，不受 §4 主题层禁令约束） */
+@media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
+/* P2: 键盘焦点可见 */
+:focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tileIn { from { opacity: 0; transform: translateY(6px) scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes cellPop { 0% { transform: scale(.86); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'search':'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={ 'play':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -104,28 +171,35 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <header><span class="lvtag"><span class="swi" id="lvTagIco" aria-hidden="true"></span><span id="lvTag">第 1 关 · 围剿·01</span></span><span class="sub" id="lvRule">混入 2 个错字</span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
     <div class="stat"><span class="label">已纠错</span><span class="val" id="stFound">0/2</span></div>
     <div class="stat"><span class="label">失误</span><span class="val" id="stErr">0</span></div>
   </div>
+  <p class="sec">题目 · 限时找出错别字</p>
   <div class="board" id="board" aria-label="短文，限时找出错别字"></div>
-  <div class="bar"><i id="barFill"></i></div>
+  <div class="legend" aria-hidden="true">
+    <span class="lg"><span class="sw"></span>点字块纠错</span>
+    <span class="lg"><span class="sw sw-hit"></span>已纠正</span>
+    <span class="lg"><span class="sw sw-miss"></span>点错了</span>
+  </div>
   <p class="msg" id="msg" role="status" aria-live="polite">30 秒内点出短文里混入的错别字</p>
+  <div class="bar" aria-label="剩余时间"><i id="barFill"></i></div>
   <div class="tools">
-    <button class="btn" id="btnStart">开始</button>
-    <button class="btn" id="btnReset">重开</button>
-    <button class="btn" id="btnLv">选关</button>
+    <button class="btn" id="btnStart"><span class="swi" id="btnStartIco" aria-hidden="true"></span><span class="btxt" id="btnStartTxt">开始</span></button>
+    <button class="btn" id="btnReset"><span class="swi" id="btnResetIco" aria-hidden="true"></span><span class="btxt">重开</span></button>
+    <button class="btn" id="btnLv"><span class="swi" id="btnLvIco" aria-hidden="true"></span><span class="btxt">选关</span></button>
   </div>
   <p class="foot">触屏点字纠错 · 键盘 ←→ 移动游标、Enter 纠错 · 30 秒限时 · 切后台自动暂停 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
+    <div class="res" id="res" aria-hidden="true"></div>
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
-    <button class="btn primary" id="ovBtn">下一关</button>
+    <button class="btn primary" id="ovBtn"></button>
   </div>
 </div>
 <script>
@@ -307,7 +381,10 @@ function syncSaveFromServer(){
 var lv=save.lv,L=null,wr=[],found=[],errors=0,done=false;
 var state="idle",deadline=0,pausedLeft=0,paused=false;
 function $(id){return document.getElementById(id)}
-function say(t){$("msg").textContent=t}
+/* 反馈文案：type = good / bad 时染色（渲染层状态色，不改判定） */
+function say(t,type){var m=$("msg");m.textContent=t;m.className="msg"+(type?" "+type:"")}
+function bumpVal(id,v){var e=$(id),t=String(v);if(e.textContent===t)return;e.textContent=t;e.classList.remove("bump");void e.offsetWidth;e.classList.add("bump")}
+function setOvBtn(text,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+"<span>"+text+"</span>"}
 function isPunc(ch){return /，。！？、；：/.test(ch)}
 function loadLevel(n){
   lv=Math.max(0,Math.min(n,LEVELS.length-1));
@@ -317,13 +394,13 @@ function loadLevel(n){
   wr=r;found=[];errors=0;done=false;state="idle";
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
   $("lvRule").textContent="混入 "+wr.length+" 个错字";
-  $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
   render();updStats();
-  $("btnStart").textContent="开始";
+  $("btnStartTxt").textContent="开始";
   say("30 秒内点出短文里混入的错别字");
+  var b=$("board");b.classList.add("enter");setTimeout(function(){b.classList.remove("enter")},700);
 }
 function render(){
-  var b=$("board");b.innerHTML="";
+  var b=$("board");b.classList.remove("enter");b.innerHTML="";
   for(var i=0;i<L.text.length;i++){
     (function(i){
       var ch=displayAt(i);
@@ -340,6 +417,7 @@ function render(){
         el.setAttribute("aria-label","第"+(i+1)+"字 "+ch);
         el.addEventListener("click",function(){tryPos(i)});
       }
+      el.style.setProperty("--d",Math.floor(i/12));
       b.appendChild(el);
     })(i);
   }
@@ -352,9 +430,10 @@ function displayAt(i){
   return L.text[i];
 }
 function updStats(){
-  $("stFound").textContent=found.length+"/"+wr.length;
-  var e=$("stErr");e.textContent=errors;
-  e.className="val"+(errors>0?" bad":"");
+  bumpVal("stLv",(lv+1)+"/"+LEVELS.length);
+  bumpVal("stFound",found.length+"/"+wr.length);
+  bumpVal("stErr",errors);
+  $("stErr").classList.toggle("bad",errors>0);
 }
 function tryPos(i){
   if(done||state!=="playing"||found.indexOf(i)>=0)return;
@@ -362,46 +441,48 @@ function tryPos(i){
   if(isW){
     found.push(i);found.sort(function(a,b){return a-b});
     updStats();render();
-    say("纠出一个！还有 "+(wr.length-found.length)+" 个");
+    var nb=$("board").children[i];
+    if(nb&&nb.classList){nb.classList.remove("pop");void nb.offsetWidth;nb.classList.add("pop");}
+    say("纠出一个！还有 "+(wr.length-found.length)+" 个","good");
     if(found.length===wr.length)endRound(true);
   }else{
     errors++;updStats();
     var el=$("board").children[i];
     el.classList.add("shake");
-    setTimeout(function(){el.classList.remove("shake")},450);
-    say("这个字没错，读一读上下文再找");
+    setTimeout(function(){el.classList.remove("shake")},200);
+    say("这个字没错，读一读上下文再找","bad");
   }
 }
 function startRound(){
   if(state==="playing")return;
   if(state==="paused"){
     deadline=Date.now()+Math.max(0,pausedLeft);paused=false;state="playing";
-    $("btnStart").textContent="进行中…";
+    $("btnStartTxt").textContent="进行中…";
     say("继续！");
     return;
   }
   deadline=Date.now()+TIME_LIMIT;state="playing";
-  $("btnStart").textContent="进行中…";
+  $("btnStartTxt").textContent="进行中…";
   say("开始！找出 "+wr.length+" 个错字");
 }
 function endRound(ok){
   if(ok){
     done=true;state="idle";
-    $("btnStart").textContent="开始";
+    $("btnStartTxt").textContent="开始";
     if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
     if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:errors}).catch(function(){});
     $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"全找出来了！";
     $("ovDesc").innerHTML="失误 "+errors+" 次"+(errors===0?"（又快又准）":"")+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-    $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
-    $("overlay").classList.add("show");
+    setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"play");
   }else{
     state="over";
-    $("btnStart").textContent="开始";
+    $("btnStartTxt").textContent="开始";
     $("ovTitle").textContent="时间到！";
     $("ovDesc").innerHTML="30 秒内没有找齐 "+wr.length+" 个错字<br>已纠出 "+found.length+" 个，点下方按钮再试一次";
-    $("ovBtn").textContent="重开本关";
-    $("overlay").classList.add("show");
+    setOvBtn("重开本关","rotate");
   }
+  var res=$("res");res.className="res "+(ok?"win":"lose");res.innerHTML=window.SW_ICON(ok?"check":"x");
+  $("overlay").classList.add("show");
 }
 function loop(){
   requestAnimationFrame(loop);
@@ -431,7 +512,8 @@ $("btnLv").addEventListener("click",function(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  var rs=$("res");rs.className="res";rs.innerHTML="";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 });
 $("ovBtn").addEventListener("click",function(){
@@ -464,9 +546,15 @@ document.addEventListener("visibilitychange",function(){
 /* ---------- 启动 ---------- */
 loadLevel(save.lv);
 var badLv=auditAll();
-if(badLv.length)say("警告：内嵌验证器发现异常关卡 "+badLv.join(","));
+if(badLv.length)console.warn("typo-hunt 内嵌验证器发现异常关卡 "+badLv.join(","));
 loop();
 syncLevelsFromServer();syncSaveFromServer();
+/* 图标注入（内联 SVG，零外链；只插入图标节点，不动按钮文案） */
+$("lvTagIco").innerHTML=window.SW_ICON("search");
+$("btnStartIco").innerHTML=window.SW_ICON("play");
+$("btnResetIco").innerHTML=window.SW_ICON("rotate");
+$("btnLvIco").innerHTML=window.SW_ICON("grid");
+setOvBtn("下一关","play");
 })();
 </script>
 <script>

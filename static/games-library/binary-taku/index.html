@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>零一谜</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（按需裁剪）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-bt-floor 可点地面 / --g-bt-zero1..2 「0」面 / --g-bt-one1..2 「1」面 / --g-bt-fixed 提示格凹槽）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-bt-floor:#FFFFFF;--g-bt-zero1:#F4FBF7;--g-bt-zero2:#D6ECE0;--g-bt-one1:#1B7F52;--g-bt-one2:#17734A;--g-bt-fixed:#E9EDE5;--g-bt-hi:rgba(255,255,255,.75);color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-bt-floor:#1D201E;--g-bt-zero1:#1E3A2B;--g-bt-zero2:#162A1F;--g-bt-one1:#17734A;--g-bt-one2:#0B3625;--g-bt-fixed:#1F241F;--g-bt-hi:rgba(255,255,255,.14);color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -25,35 +25,59 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }   /* 入场错落 40ms */
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .board { display: grid; gap: 3px; margin-bottom: 10px; }
+  .stat .val { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.pop { animation: valpop .24s ease-out; }
+  .stat .val.low { color: var(--g-danger); }
+  /* 棋盘外框 = 边线 / 地面：凹槽托盘把格阵托起，替代页面底色直接平铺 */
+  .board { display: grid; gap: 3px; margin-bottom: 10px; padding: 6px; background: var(--g-surface2); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); }
+  /* 入场：格阵按行错落（10 阶封顶 350ms + 250ms 完成，总 ≤600ms）；boot 类在动画结束后移除 */
+  .board.boot .cell { animation: rise .25s ease-out both; }
   .cell {
     border: 0; padding: 0; aspect-ratio: 1/1; min-height: 30px;
-    border-radius: 10px; background: var(--g-surface);
+    border-radius: 10px; background: var(--g-bt-floor); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 700;
     cursor: pointer; font-variant-numeric: tabular-nums;
-    box-shadow: inset 0 0 0 1px var(--g-border);
+    box-shadow: inset 0 0 0 1px var(--g-border), inset 0 1px 0 var(--g-bt-hi), 0 1px 2px rgba(20,40,30,.06);
     display: flex; align-items: center; justify-content: center;
+    transition: transform .14s ease-out, box-shadow .16s ease-out, background .16s ease-out;
   }
-  .cell.o0 { background: var(--g-primary-soft); color: var(--g-on-soft); }
-  .cell.o1 { background: var(--g-btn-primary); color: #fff; }
-  .cell.fixed { cursor: default; }
-  .cell.fixed.o0 { background: var(--g-surface2); color: var(--g-muted); }
-  .cell.fixed.o1 { background: var(--g-surface2); color: var(--g-text); }
-  .cell.sel { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+  .cell:active { transform: scale(.96); }
+  /* 「0」= 品牌软绿面 + 深绿字；「1」= 品牌绿渐变面 + 反白字（立体：顶光 + 底暗 + 落地投影） */
+  .cell.o0 { background: linear-gradient(180deg, var(--g-bt-zero1), var(--g-bt-zero2)); color: var(--g-on-soft); box-shadow: inset 0 0 0 1px var(--g-bt-zero2), inset 0 1px 0 var(--g-bt-hi), 0 1px 2px rgba(20,40,30,.08); }
+  .cell.o1 { background: linear-gradient(180deg, var(--g-bt-one1), var(--g-bt-one2)); color: #fff; box-shadow: inset 0 0 0 1px var(--g-bt-one2), inset 0 1px 0 rgba(255,255,255,.28), 0 1px 3px rgba(20,40,30,.16); }
+  /* 提示格 = 内凹凹槽面（不可改），与可点格分层 */
+  .cell.fixed { cursor: default; background: var(--g-bt-fixed); color: var(--g-text); box-shadow: inset 0 1px 3px rgba(20,40,30,.12), inset 0 -1px 0 var(--g-bt-hi); }
+  .cell.fixed.o0, .cell.fixed.o1 { background: var(--g-bt-fixed); color: var(--g-text); box-shadow: inset 0 1px 3px rgba(20,40,30,.12), inset 0 -1px 0 var(--g-bt-hi); }
   .cell.bad { box-shadow: inset 0 0 0 2px var(--g-danger); }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .cell.sel { box-shadow: inset 0 0 0 2px var(--g-primary-deep), 0 0 0 2px var(--g-primary-soft); }
+  .cell.sel.bad { box-shadow: inset 0 0 0 2px var(--g-danger), 0 0 0 2px var(--g-primary-soft); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 2px 8px; }
+  .lg-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--g-surface2); border-radius: 10px; padding: 4px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-sw { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 6px; font-size: 12px; font-weight: 700; font-style: normal; }
+  .sw-empty { background: var(--g-bt-floor); box-shadow: inset 0 0 0 1px var(--g-border); }
+  .sw-zero { background: linear-gradient(180deg, var(--g-bt-zero1), var(--g-bt-zero2)); color: var(--g-on-soft); }
+  .sw-one { background: linear-gradient(180deg, var(--g-bt-one1), var(--g-bt-one2)); color: #fff; }
+  .sw-fixed { background: var(--g-bt-fixed); color: var(--g-text); box-shadow: inset 0 1px 2px rgba(20,40,30,.12); }
+  .sw-bad { background: linear-gradient(180deg, var(--g-bt-zero1), var(--g-bt-zero2)); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-danger); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; transition: color .16s ease-out; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
   .btn {
     min-height: 44px; padding: 0 10px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -68,9 +92,14 @@
     box-shadow: var(--g-shadow); text-align: center;
     animation: pop .25s ease-out;
   }
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }   /* 过关轻弹 */
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc b { color: var(--g-primary-deep); }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
@@ -78,12 +107,14 @@
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（同时压 animation-duration 与 animation-delay；动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -100,6 +131,19 @@ try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t=
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0 0 12 3z"/>'
+};
+var fill={'play':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -110,6 +154,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <div class="stat"><span class="label">冲突</span><span class="val" id="stBad">0</span></div>
   </div>
   <div class="board" id="board" aria-label="零一谜盘面"></div>
+  <div class="legend">
+    <span class="lg-chip"><i class="lg-sw sw-empty"></i><i class="lg-sw sw-zero">0</i><i class="lg-sw sw-one">1</i><span><b>点空格</b>填 0/1</span></span>
+    <span class="lg-chip"><i class="lg-sw sw-fixed">1</i><span><b>灰底</b>提示格不可改</span></span>
+    <span class="lg-chip"><i class="lg-sw sw-bad">0</i><span><b>红框</b>行列冲突</span></span>
+  </div>
   <p class="msg" id="msg" role="status" aria-live="polite">点空格切换 0/1；每行每列 0/1 各半，不许三连，行列两两不同</p>
   <div class="tools">
     <button class="btn" id="btnUndo">撤销</button>
@@ -120,7 +169,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="foot">键盘：方向键选格 · 空格/Enter 切换 0→1→空 · 0/1 直填 · U 撤销 · H 提示 · R 重开<br>规则：每行每列 0 与 1 数量相等；任何位置不得出现三个相同数字连排；任意两行/两列不完全相同</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">对局结束</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -248,10 +297,10 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 }
-function hideOverlay(){$("overlay").classList.remove("show")}
+function hideOverlay(){$("overlay").classList.remove("show");$("panel").classList.remove("win")}
 
 /* ---------- 求解器（约束传播 + 回溯，统计解数上限 2） ---------- */
 function countSolutions(n,given,cap){
@@ -326,9 +375,12 @@ function countSolutions(n,given,cap){
   return count;
 }
 /* ---------- 状态 ---------- */
-var lv=save.lv,L=null,n=4,user=[],given=[],hist=[],sel=0,over=false,won=false;
+var lv=save.lv,L=null,n=4,user=[],given=[],hist=[],sel=0,over=false,won=false,bootTimer=null;
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+/* 覆盖层按钮：图标 + 文案分节点更新，避免 textContent= 抹掉已注入的 SVG */
+function setOvBtn(t,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+t}
+function popVal(el,v){var s=String(v);if(el.textContent!==s){el.textContent=s;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}}
 function loadLevel(x){
   lv=Math.max(0,Math.min(x,LEVELS.length-1));
   L=LEVELS[lv];
@@ -340,13 +392,11 @@ function loadLevel(x){
     user.push(L.g[r].split("").map(function(ch){return ch==="."?-1:Number(ch);}));
   }
   hist=[];sel=Math.floor(n*n/2);over=false;won=false;
-  var cnt=countSolutions(n,L.g,2);
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
-  $("lvRule").textContent=n+"阶"+(cnt===1?"":" · ⚠解数"+cnt);
+  $("lvRule").textContent=n+"阶";   /* 只呈现玩法信息，解数等开发期自检不进玩家界面 */
   $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
   buildBoard();updStats();
-  if(cnt!==1)say("警告：内嵌求解器判定本关解不唯一（数据异常）");
-  else say("点空格切换 0/1；每行每列 0/1 各半，不许三连，行列两两不同");
+  say("点空格切换 0/1；每行每列 0/1 各半，不许三连，行列两两不同");
 }
 function buildBoard(){
   var box=$("board");
@@ -356,11 +406,15 @@ function buildBoard(){
     (function(i){
       var b=document.createElement("button");
       b.className="cell";
+      b.style.animationDelay=Math.min(Math.floor(i/n)*35,350)+"ms";   /* 按行错落，10 阶封顶 350ms */
       b.setAttribute("aria-label","格"+(Math.floor(i/n)+1)+"-"+(i%n+1));
       b.addEventListener("click",function(){tapCell(i)});
       box.appendChild(b);
     })(i);
   }
+  if(bootTimer){clearTimeout(bootTimer);bootTimer=null}
+  box.classList.remove("boot");void box.offsetWidth;box.classList.add("boot");
+  bootTimer=setTimeout(function(){box.classList.remove("boot");bootTimer=null},700);
   renderAll();
 }
 function conflicts(){
@@ -422,9 +476,10 @@ function renderAll(){
 function updStats(){
   var blank=0,r,c;
   for(r=0;r<n;r++)for(c=0;c<n;c++)if(user[r][c]===-1)blank++;
-  $("stBlank").textContent=blank;
-  $("stBad").textContent=conflicts().count;
-  $("stBad").className="val"+(conflicts().count?" low":"");
+  var bad=conflicts().count;
+  popVal($("stBlank"),blank);
+  popVal($("stBad"),bad);
+  $("stBad").classList.toggle("low",!!bad);
   $("btnUndo").disabled=!hist.length||over;
 }
 function tapCell(i){
@@ -445,7 +500,8 @@ function checkWin(){
     if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:hist.length}).catch(function(){});
     $("ovTitle").textContent=(lv>=LEVELS.length-1?"全部通关！":"过关！");
     $("ovDesc").innerHTML="行/列均衡、无三连、两两不同！共填 "+hist.length+" 步。"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"");
-    $("ovBtn").textContent=(lv>=LEVELS.length-1?"回到第 1 关":"下一关");
+    setOvBtn(lv>=LEVELS.length-1?"回到第 1 关":"下一关",lv>=LEVELS.length-1?"rotate":"play");
+    $("panel").classList.add("win");
     $("overlay").classList.add("show");
     updStats();
   }
@@ -608,8 +664,7 @@ function selfTest(){
     }
     chk(allOk,"40关:唯一解且sol一致");
   })();
-  window.__gSelfTest={ok:ok,total:total,fails:fails};
-  if(fails.length)say("警告：内嵌自检未全过（"+ok+"/"+total+"）");
+  window.__gSelfTest={ok:ok,total:total,fails:fails};   /* 开发期自检结果只挂 window，不进玩家界面 */
 }
 /* ---------- 启动（续玩：从存档关卡起步） ---------- */
 loadLevel(save.lv);selfTest();
@@ -647,6 +702,16 @@ syncLevelsFromServer();syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 工具钮图标注入（内联 SVG，零外链；覆盖层按钮走 setOvBtn 重插图标） */
+(function(){
+  function $(id){return document.getElementById(id)}
+  $("btnUndo").insertAdjacentHTML("afterbegin",window.SW_ICON("undo"));
+  $("btnHint").insertAdjacentHTML("afterbegin",window.SW_ICON("bulb"));
+  $("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+  $("btnLv").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
 })();
 </script>
 </body>

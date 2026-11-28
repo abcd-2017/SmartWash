@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -89,6 +90,12 @@ fun AppTextField(
     minLines: Int = 1,
     maxLines: Int = if (singleLine) 1 else 5,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    /**
+     * 键盘动作回调（默认无操作，行为与既有调用点一致）。
+     * 搜索类输入用它接管 IME 动作（如 ImeAction.Search 按下收起键盘）；
+     * 规范 §7 禁止业务层直用 material3 TextField，故此能力经本封装层透传。
+     */
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
     interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource? = null,
@@ -120,6 +127,7 @@ fun AppTextField(
             minLines = minLines,
             maxLines = maxLines,
             keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             visualTransformation = visualTransformation,
             textStyle = textStyle,
             interactionSource = resolvedInteractionSource,
@@ -145,6 +153,7 @@ fun AppTextField(
         minLines = minLines,
         maxLines = maxLines,
         keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
         visualTransformation = visualTransformation,
         isError = isError,
         placeholder = placeholder?.let {
@@ -233,6 +242,7 @@ private fun GlassTextField(
     minLines: Int,
     maxLines: Int,
     keyboardOptions: KeyboardOptions,
+    keyboardActions: KeyboardActions,
     visualTransformation: VisualTransformation,
     textStyle: TextStyle,
     interactionSource: MutableInteractionSource,
@@ -274,6 +284,7 @@ private fun GlassTextField(
                 textStyle = textStyle.copy(color = Color.White),
                 cursorBrush = SolidColor(if (isError) ErrorLight else Color.White),
                 keyboardOptions = keyboardOptions,
+                keyboardActions = keyboardActions,
                 visualTransformation = visualTransformation,
                 singleLine = singleLine,
                 minLines = minLines,

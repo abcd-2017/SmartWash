@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>成语十字</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（木盘 / 字块 / 墨色 / 沟槽 / 拼对绿）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-icr-board1:#F7ECD2;--g-icr-board2:#E8D3AC;--g-icr-tile1:#FFFDF7;--g-icr-tile2:#F1E5C9;--g-icr-ink:#3A2A18;--g-icr-groove:#C6AF85;--g-icr-done1:#2D9B6A;--g-icr-done2:#17734A;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-icr-board1:#241C11;--g-icr-board2:#181209;--g-icr-tile1:#2C2417;--g-icr-tile2:#211A10;--g-icr-ink:#F0E4C8;--g-icr-groove:#4A3D28;--g-icr-done1:#3E9B6E;--g-icr-done2:#2E7A56;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -23,85 +23,100 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
+  /* 页头关卡标签：品牌 soft 底 + deep 字 + 内联图标（活字盘标识） */
+  .lvtag { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 10px; border-radius: 10px; background: var(--g-primary-soft); color: var(--g-on-soft); font-size: 14px; font-weight: 600; line-height: 1.4; box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 0 0 1px rgba(23,115,74,.16); }
+  .lvtag .swi { width: 14px; height: 14px; flex: none; }
+  /* 记分卡：面渐变 + 顶光 + 描边 + 落地投影，入场错落 */
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; min-width: 0; background: linear-gradient(180deg,var(--g-surface),var(--g-surface2)); border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 1px 3px rgba(20,40,30,.07); animation: rise .3s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.bad { color: var(--g-danger); }
+  /* 进度：本盘面完成度，内凹轨道 + 渐变填充 + 亮芯 */
+  .progress { height: 10px; margin: 0 2px 10px; border-radius: 999px; background: var(--g-surface2); box-shadow: inset 0 1px 3px rgba(20,40,30,.16); overflow: hidden; }
+  .progress > i { display: block; height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(180deg,var(--g-primary),var(--g-primary-deep)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 0 6px rgba(45,155,106,.5); transition: width .18s ease-out; }
   .board { display: grid; gap: 10px; }
-  .crossbox {
-    background: var(--g-surface); border-radius: var(--g-radius-inner);
-    padding: 12px; box-shadow: var(--g-shadow);
-  }
-  .crossname { text-align: center; font-size: 12px; color: var(--g-muted); margin-bottom: 8px; }
+  /* 木盘：面渐变 + 2px 沟槽外框 + 顶光 + 落地投影 */
+  .crossbox { position: relative; background: linear-gradient(180deg,var(--g-icr-board1),var(--g-icr-board2)); border-radius: var(--g-radius); padding: 12px; box-shadow: var(--g-shadow), inset 0 1px 0 rgba(255,255,255,.55), inset 0 0 0 2px var(--g-icr-groove); }
+  .crossname { text-align: center; font-size: 12px; font-weight: 600; color: var(--g-muted); margin-bottom: 8px; }
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-width: 280px; margin: 0 auto; }
-  .cell {
-    aspect-ratio: 1; min-height: 44px; border: 0; border-radius: 10px;
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .cell.off { background: transparent; cursor: default; pointer-events: none; }
-  .cell.done { background: var(--g-primary-soft); color: var(--g-on-soft); cursor: default; pointer-events: none; }
-  .cell.shake { animation: shake .3s ease-in-out; box-shadow: inset 0 0 0 2px var(--g-danger); }
-  .cell.sel { box-shadow: inset 0 0 0 2px var(--g-primary); }
-  .crossbox.donebox { box-shadow: var(--g-shadow), inset 0 0 0 2px var(--g-success); }
+  /* 字块：渐变面 + 顶光 + 沟槽描边 + 落地投影（轻立体） */
+  .cell { position: relative; aspect-ratio: 1; min-height: 44px; border: 0; border-radius: 12px; background: linear-gradient(180deg,var(--g-icr-tile1),var(--g-icr-tile2)); color: var(--g-icr-ink); font-family: inherit; font-size: 28px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,.75), inset 0 0 0 1px var(--g-icr-groove), 0 2px 5px rgba(60,45,20,.18); transition: transform .14s ease-out, box-shadow .16s ease-out, background .16s ease-out; }
+  .cell:active { transform: scale(.96); }
+  .cell.off { background: transparent; box-shadow: none; cursor: default; pointer-events: none; }
+  .cell.done { background: linear-gradient(180deg,var(--g-icr-done1),var(--g-icr-done2)); color: var(--g-on-primary); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 1px rgba(0,0,0,.08), 0 2px 6px rgba(23,115,74,.30); cursor: default; pointer-events: none; }
+  .cell.sel { box-shadow: inset 0 0 0 2px var(--g-primary-deep), 0 0 0 3px var(--g-primary-soft), 0 2px 6px rgba(60,45,20,.20); }
+  .cell.shake { animation: shake .3s ease-in-out; box-shadow: inset 0 0 0 2px var(--g-danger), 0 2px 6px rgba(168,56,80,.35); }
+  .cell.pop { animation: cellPop .18s ease-out; }
   .pool { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0 0; }
-  .pcell {
-    min-width: 44px; min-height: 44px; border: 0; border-radius: 10px;
-    background: var(--g-surface); color: var(--g-text);
-    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
-    box-shadow: 0 1px 0 var(--g-border);
-  }
-  .pcell.used { opacity: .2; pointer-events: none; }
-  .pcell.sel { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-primary); }
-  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  /* 字池块：同字块材质，可点；选中抬起 + 品牌绿环 */
+  .pcell { min-width: 44px; min-height: 44px; border: 0; border-radius: 10px; background: linear-gradient(180deg,var(--g-icr-tile1),var(--g-icr-tile2)); color: var(--g-icr-ink); font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,.75), inset 0 0 0 1px var(--g-icr-groove), 0 1px 3px rgba(60,45,20,.16); transition: transform .14s ease-out, box-shadow .16s ease-out, background .16s ease-out, opacity .16s ease-out; }
+  .pcell:active { transform: scale(.96); }
+  .pcell.used { opacity: .18; pointer-events: none; }
+  .pcell.sel { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-primary-deep), 0 0 0 3px var(--g-primary-soft), 0 3px 8px rgba(23,115,74,.28); transform: translateY(-2px); }
+  /* 图例：三秒读懂「我控制什么 / 目标是什么 / 该点哪」 */
+  .legend { display: flex; justify-content: center; gap: 12px; margin: 10px 0 0; font-size: 12px; color: var(--g-muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 3px; box-shadow: inset 0 1px 0 rgba(255,255,255,.6); }
+  .legend .dot.a { background: linear-gradient(180deg,var(--g-icr-tile1),var(--g-icr-tile2)); border: 1px solid var(--g-icr-groove); }
+  .legend .dot.b { background: linear-gradient(180deg,var(--g-icr-done1),var(--g-icr-done2)); }
+  .legend .dot.c { background: var(--g-primary-soft); border: 1px solid var(--g-primary-deep); }
+  /* 反馈：答对绿 / 答错红，默认 muted */
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; transition: color .16s ease-out; }
+  .msg.ok { color: var(--g-success); font-weight: 600; }
+  .msg.bad { color: var(--g-danger); font-weight: 600; }
   .tools { display: flex; gap: 8px; }
-  .btn {
-    min-height: 44px; padding: 0 14px; flex: 1;
-    border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
-  }
-  .btn:active { opacity: .85; }
+  .btn { min-height: 44px; padding: 0 14px; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: var(--g-radius-btn); background: linear-gradient(180deg,var(--g-surface),var(--g-surface2)); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,.75), inset 0 0 0 1px var(--g-border), 0 1px 3px rgba(20,40,30,.08); transition: transform .14s ease-out, box-shadow .16s ease-out, filter .16s ease-out; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 2px 8px rgba(23,115,74,.32); }
+  .swi { display: inline-block; vertical-align: -.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
-  .overlay {
-    position: fixed; inset: 0; z-index: 10;
-    background: var(--g-scrim);
-    display: none; align-items: center; justify-content: center; padding: 20px;
-  }
+  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-  .panel {
-    width: 100%; max-width: 340px; padding: 22px 18px;
-    background: var(--g-surface); border-radius: var(--g-radius);
-    box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
-  }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes cellPop { 0% { transform: scale(.86); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  /* 字块入场错位 30ms/格（封顶 240ms），字池 30ms/行（封顶 280ms），均 ≤600ms 播完 */
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  /* 入场错落：仅装载关卡时播一次，字块按格、字池按行错位，总量 ≤600ms */
+  .board.enter .cell:not(.off), .board.enter .pcell:not(.used) { animation: rise .3s ease-out both; }
+  .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: linear-gradient(180deg,var(--g-surface),var(--g-surface2)); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow), inset 0 1px 0 rgba(255,255,255,.8); text-align: center; animation: pop .3s ease-out; }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
-  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
-  .lvbtn {
-    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
-  }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: linear-gradient(180deg,var(--g-surface),var(--g-surface2)); color: var(--g-text); font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,.75), inset 0 0 0 1px var(--g-border), 0 1px 3px rgba(20,40,30,.08); transition: transform .14s ease-out, background .16s ease-out; }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
-  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-primary-deep), 0 1px 3px rgba(23,115,74,.20); }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={ 'play':1,'check':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -118,12 +133,13 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <header><span class="lvtag"><span class="swi" id="lvTagIco" aria-hidden="true"></span><span id="lvTagText">第 1 关</span></span><span class="sub" id="lvRule"></span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
     <div class="stat"><span class="label">盘面</span><span class="val" id="stGrid">0/2</span></div>
     <div class="stat"><span class="label">失误</span><span class="val" id="stErr">0</span></div>
   </div>
+  <div class="progress" aria-hidden="true"><i id="progFill"></i></div>
   <div class="board" id="board"></div>
   <p class="msg" id="msg" role="status" aria-live="polite">先点字池选字，再点空格放入，拼出纵横两个成语</p>
   <div class="tools">
@@ -334,13 +350,14 @@ var lv=save.lv,L=null,gi=0,errors=0,done=false,gen=0;
 /* 每盘运行时状态：cells = {row,col,roles:[{slot,idx}],ch,done}；poolUsed=[] */
 var st=null;
 function $(id){return document.getElementById(id)}
-function say(t){$("msg").textContent=t}
+function say(t,kind){$("msg").textContent=t;$("msg").className="msg"+(kind?" "+kind:"")}
+function setOvBtn(text,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+text}
 function loadLevel(n){
   lv=Math.max(0,Math.min(n,LEVELS.length-1));
   L=LEVELS[lv];
   if(!validLevelData(L)){say("关卡数据异常");return;}
   gi=0;errors=0;done=false;gen++;
-  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvTagText").textContent="第 "+(lv+1)+" 关 · "+L.name;
   $("lvRule").textContent="两盘全拼对过关";
   $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
   loadGrid();updStats();
@@ -348,7 +365,7 @@ function loadLevel(n){
 }
 function loadGrid(){
   var g=L.gs[gi];
-  st={g:g,cells:[],poolUsed:g.pool.map(function(){return false}),sel:-1,placed:{}};
+  st={g:g,cells:[],poolUsed:g.pool.map(function(){return false}),sel:-1,placed:{},_btns:[],_poolBtns:[]};
   /* 生成 4×4 格位 */
   for(var r=0;r<4;r++)for(var c=0;c<4;c++){
     var roles=[];
@@ -357,6 +374,8 @@ function loadGrid(){
     if(roles.length)st.cells.push({row:r,col:c,roles:roles,ch:"",done:false});
   }
   renderGrid();renderPool();
+  var bd=$("board");bd.classList.add("enter");
+  setTimeout(function(){bd.classList.remove("enter")},700);
   say("横「"+"？".repeat(4)+"」纵「"+"？".repeat(4)+"」—— 从字池选字放入");
 }
 function correctFor(cell){
@@ -369,9 +388,15 @@ function correctFor(cell){
   }
   return need;
 }
+function updProg(){
+  var t=st.cells.length||1,d=0;
+  for(var i=0;i<st.cells.length;i++)if(st.cells[i].done)d++;
+  $("progFill").style.width=(d/t*100)+"%";
+}
 function renderGrid(){
   var box=$("board");
   box.innerHTML="";
+  st._btns=[];
   var wrap=document.createElement("div");
   wrap.className="crossbox"+(st.finished?" donebox":"");
   wrap.innerHTML='<div class="crossname">'+(st.finished?"已拼成："+st.g.h+" × "+st.g.v:"第 "+(gi+1)+" / "+L.gs.length+" 盘 · 点字池再点空格")+'</div>';
@@ -387,30 +412,41 @@ function renderGrid(){
       b.className="cell"+(cell.done?" done":"")+(st.sel>=0&&!cell.done?" sel":"");
       b.textContent=cell.ch||"";
       b.setAttribute("aria-label",cell.done?"已填 "+cell.ch:"空格");
+      st._btns[byPos[key]]=b;
       (function(ci){
         b.addEventListener("click",function(){place(ci)});
       })(byPos[key]);
     }
     grid.appendChild(b);
   }
+  /* 字块入场：按格序错位 28ms（仅 .enter 态生效） */
+  for(var bi=0;bi<st._btns.length;bi++){if(st._btns[bi])st._btns[bi].style.animationDelay=Math.min(bi*30,240)+"ms"}
   wrap.appendChild(grid);
   box.appendChild(wrap);
+  updProg();
 }
 function renderPool(){
   var g=st.g;
   var poolEl=document.createElement("div");
   poolEl.className="pool";
+  st._poolBtns=[];
   for(var i=0;i<g.pool.length;i++){
     (function(i){
       var b=document.createElement("button");
       b.className="pcell"+(st.poolUsed[i]?" used":"")+(st.sel===i?" sel":"");
       b.textContent=g.pool[i];
       b.setAttribute("aria-label","字池 "+g.pool[i]);
+      b.style.animationDelay=Math.min(i*30,280)+"ms";
+      st._poolBtns[i]=b;
       b.addEventListener("click",function(){pick(i)});
       poolEl.appendChild(b);
     })(i);
   }
   $("board").appendChild(poolEl);
+  var lg=document.createElement("div");
+  lg.className="legend";
+  lg.innerHTML='<span><i class="dot a"></i>待填空格</span><span><i class="dot b"></i>拼对锁定</span><span><i class="dot c"></i>字池选中</span>';
+  $("board").appendChild(lg);
 }
 function updStats(){
   $("stGrid").textContent=Math.min(gi+1,L.gs.length)+"/"+L.gs.length;
@@ -432,28 +468,19 @@ function place(ci){
     st.poolUsed[st.sel]=true;st.sel=-1;
     st.placed[ci]=true;
     renderGrid();renderPool();
+    var btn=st._btns[ci];
+    if(btn)btn.classList.add("pop");
     var remain=st.cells.filter(function(c){return !c.done}).length;
-    say("放对了！还差 "+remain+" 格");
+    say("放对了！还差 "+remain+" 格","ok");
     if(remain===0){
-      say("这一盘拼成了："+g.h+" × "+g.v);
-      var g=gen;setTimeout(function(){if(g!==gen)return;nextGrid()},900);
+      say("这一盘拼成了："+g.h+" × "+g.v,"ok");
+      var g2=gen;setTimeout(function(){if(g2!==gen)return;nextGrid()},900);
     }
   }else{
     errors++;updStats();
-    var gridBtns=$("board").querySelectorAll(".grid .cell");
-    /* 找到对应按钮抖动 */
-    var idx=0;
-    for(var k=0;k<gridBtns.length;k++){
-      var btn=gridBtns[k];
-      if(btn.classList.contains("off"))continue;
-      if(idx===ci){
-        btn.classList.add("shake");
-        setTimeout(function(){btn.classList.remove("shake")},400);
-        break;
-      }
-      idx++;
-    }
-    say("这个字放不进这格，想想横竖两句成语");
+    var btn=st._btns[ci];
+    if(btn){btn.classList.add("shake");setTimeout(function(){btn.classList.remove("shake")},400)}
+    say("这个字放不进这格，想想横竖两句成语","bad");
   }
 }
 function nextGrid(){
@@ -467,7 +494,7 @@ function winLevel(){
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:errors}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"十字拼成！";
   $("ovDesc").innerHTML="失误 "+errors+" 次"+(errors===0?"（一气呵成）":"")+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"play");
   $("overlay").classList.add("show");
 }
 function openLevelSelect(){
@@ -488,7 +515,7 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 }
 $("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重开")});
@@ -503,7 +530,11 @@ window.addEventListener("keydown",function(e){
   else if(e.key==="r"||e.key==="R"){loadLevel(lv);say("本关已重开")}
 });
 /* ---------- 启动 ---------- */
+$("lvTagIco").innerHTML=window.SW_ICON("grid");
+$("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+$("btnLv").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
 loadLevel(save.lv);
+setOvBtn("下一关","play");
 var badLv=auditAll();
 if(badLv.length)say("警告：内嵌验证器发现异常关卡 "+badLv.join(","));
 syncLevelsFromServer();syncSaveFromServer();

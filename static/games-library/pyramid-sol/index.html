@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>金字塔纸牌</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（按需取用，值与基线一致）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（牌面 / 牌背两套渐变）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-pys-face1:#FFFFFF;--g-pys-face2:#EDF4EF;--g-pys-back1:#1E8C5C;--g-pys-back2:#0B4A30;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-pys-face1:#262B27;--g-pys-face2:#1A1E1B;--g-pys-back1:#3F6B55;--g-pys-back2:#22382D;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -29,40 +29,105 @@
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.plain { color: var(--g-text); }
+  /* 语义色：已卸=向目标推进（成功绿）；最佳数字走 --g-primary-deep 中性档，金/暖色留给过关面板与牌堆（非玩法位） */
+  #stOff { color: var(--g-success); }
   .btn {
-    min-height: 44px; padding: 0 12px; flex: 1; border: 0; border-radius: var(--g-radius-btn);
+    min-height: 44px; padding: 0 12px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .12s ease-out, opacity .16s ease-out;
   }
   .btn.primary { background: var(--g-btn-primary); color: #fff; }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
-  .board { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px 6px 12px; }
+  /* 面板：顶部品牌绿软底 → 卡面，铺出层次 */
+  .board { background: linear-gradient(180deg, var(--g-primary-soft), var(--g-surface) 58%); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px 6px 12px; }
   .pyr { padding: 2px 4px 0; }
   .prow { display: flex; justify-content: center; gap: 4px; position: relative; }
   .prow + .prow { margin-top: -34px; }
   .card {
     position: relative; width: 13.2%; aspect-ratio: 5 / 7; z-index: 1;
-    border-radius: 10px; background: var(--g-surface); border: 1px solid var(--g-border);
+    border-radius: 10px;
+    background: linear-gradient(165deg, var(--g-pys-face1), var(--g-pys-face2));
+    border: 1px solid var(--g-border);
     box-shadow: var(--g-shadow); color: var(--g-text); cursor: pointer;
     font-family: inherit; padding: 0; text-align: left;
+    transition: transform .16s ease-out, box-shadow .16s ease-out, opacity .16s ease-out;
+  }
+  /* 轻立体：左上高光（恒亮小元素，深浅通用），勿重度拟物 */
+  .card::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(85% 55% at 26% 10%, rgba(255,255,255,.34), rgba(255,255,255,0) 62%);
   }
   .prow + .prow .card { z-index: 2; }
   .card.red { color: var(--g-danger); }
-  .card.covered { background: var(--g-surface2); color: var(--g-muted); border-style: dashed; }
-  .card[data-sel="1"] { outline: 2px solid var(--g-primary); outline-offset: 1px; z-index: 3; }
+  /* K 为特殊牌（单张自卸）：点数金色强调，增加色彩层次 */
+  .card.k:not(.covered) .rk { color: var(--g-warning); }
+  /* 被压牌：品牌绿软底 + 深绿字（保留牌面信息，材质上与明牌区分） */
+  .card.covered {
+    background: linear-gradient(165deg, var(--g-primary-soft), var(--g-pys-face2));
+    border-style: dashed; border-color: var(--g-primary);
+    color: var(--g-on-soft); box-shadow: none;
+  }
+  .card.covered::before { opacity: .18; }
+  /* 选中：浮起 + 品牌绿环（属性变化走 box-shadow/transform 过渡） */
+  .card[data-sel="1"] {
+    transform: translateY(-3px); z-index: 3;
+    border-color: var(--g-primary);
+    box-shadow: 0 0 0 2px var(--g-primary), 0 10px 18px rgba(20,40,30,.20);
+  }
+  .card:not(.covered):active { transform: scale(.96); }
+  /* 已卸：先做抬起淡出，再落定为不可见的占位（保持金字塔布局不塌） */
+  .card.off { opacity: 0; pointer-events: none; }
+  .card.just-off { animation: lift .18s ease-out both; }
+  @keyframes lift { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-12px) scale(1.07); } }
+  /* 入场错落：逐张发牌，32ms 间隔（--i 由 JS 写入） */
+  .pyr.entering .card { animation: deal .34s cubic-bezier(.2,.7,.3,1) both; animation-delay: calc(var(--i, 0) * 32ms); }
+  @keyframes deal { from { opacity: 0; transform: translateY(-12px) scale(.92); } to { opacity: 1; transform: none; } }
   .card .rk { position: absolute; top: 2px; left: 4px; font-size: 12px; font-weight: 700; line-height: 1.2; }
   .card .st { position: absolute; top: 16px; left: 4px; font-size: 12px; line-height: 1; }
   .card .cen { position: absolute; right: 4px; bottom: 2px; font-size: 16px; line-height: 1; opacity: .8; }
+  /* 花色为内联 SVG，按块级摆放，位置与字形无关 */
+  .card .swi { display: block; }
   .stockrow { display: flex; gap: 8px; margin-top: 14px; padding: 0 8px; align-items: stretch; }
   .pilebtn {
     position: relative; width: 18.5%; aspect-ratio: 5 / 7; border-radius: 10px;
     border: 1px dashed var(--g-border); background: var(--g-surface2);
     font-family: inherit; padding: 0; cursor: pointer; color: var(--g-text);
+    transition: transform .16s ease-out, box-shadow .16s ease-out;
   }
-  .pilebtn.solid { background: var(--g-primary-soft); border-style: solid; }
+  .pilebtn:active { transform: scale(.96); }
+  /* 牌堆：牌背材质（品牌绿渐变 + 高光 + 斜纹），与牌面形成材质对比 */
+  #stockBtn {
+    border: 1px solid rgba(255,255,255,.28);
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.24), rgba(255,255,255,0) 58%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.07) 0 5px, rgba(255,255,255,0) 5px 10px),
+      linear-gradient(160deg, var(--g-pys-back1), var(--g-pys-back2));
+    box-shadow: var(--g-shadow);
+  }
+  #stockBtn .cnt { color: #FFFFFF; }
+  #stockBtn .cnt b { color: #FFFFFF; }
+  /* 牌堆水印与「重洗」可操作态用暖金（非玩法装饰位，引入第二色相） */
+  #stockBtn .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--g-warning); opacity: .30; }
+  /* 重洗态：暖金描边作状态提示（牌堆绿底上金字对比度不足，文字保持白） */
+  #stockBtn.reshuffle { border-color: var(--g-warning); }
+  #stockBtn .wm .swi { width: 22px; height: 22px; }
+  /* 弃牌堆：有牌时用牌面材质（与金字塔明牌一致） */
+  .pilebtn.solid {
+    background: linear-gradient(165deg, var(--g-pys-face1), var(--g-pys-face2));
+    border: 1px solid var(--g-border);
+    box-shadow: var(--g-shadow);
+  }
+  .pilebtn.solid::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(85% 55% at 26% 10%, rgba(255,255,255,.34), rgba(255,255,255,0) 62%);
+  }
   .pilebtn .cnt { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: var(--g-muted); line-height: 1.5; }
   .pilebtn .cnt b { font-size: 22px; color: var(--g-primary-deep); }
+  .pilebtn[data-sel="1"] { border-color: var(--g-primary); box-shadow: 0 0 0 2px var(--g-primary), 0 8px 16px rgba(20,40,30,.18); }
   .wastetip { flex: 1; display: flex; flex-direction: column; justify-content: center; font-size: 12px; color: var(--g-muted); line-height: 1.6; min-width: 0; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; font-weight: 500; color: var(--g-muted); text-align: center; }
   .msg.err { color: var(--g-danger); }
@@ -82,9 +147,14 @@
     animation: pop .25s ease-out;
   }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  /* 过关反馈：轻微弹跳（失败/选关不挂 .win，保持克制） */
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.045); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
   .panel .desc b { color: var(--g-primary-deep); }
+  /* 第二色相：过关面板的步数/最佳用金（白底 5.09:1），与绿色壳形成层次；失败面板保持中性 */
+  .panel.win .desc b { color: var(--g-warning); }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
@@ -92,15 +162,49 @@
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .12s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .tools { display: flex; gap: 8px; margin-bottom: 10px; }
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（§6.1 模板） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（§6.1 模板 + 延迟归零，避免入场卡在透明态） */
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important}
+    .card.just-off { animation: none; opacity: 0; }
+  }
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW 图标库：内联 SVG 图标（24 viewBox，fill/stroke=currentColor，随主题与牌色联动）
+   结构照抄本库 window.SW_ICON（lights-out/solitaire 同构）：线性图标 stroke，实心图形 fill。
+   花色为标准 ♠♥♦♣ 形状路径，红色花色的 currentColor 由 .card.red / JS 设为 --g-danger，黑色为 --g-text。 */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
+ 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'reset':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'spade':'<path d="M12 3c3 4 6 6.5 6 10a3.5 3.5 0 0 1-6 2.4V19h-2v-3.6A3.5 3.5 0 0 1 6 13c0-3.5 3-6 6-10z"/>',
+ 'heart':'<path d="M12 21C7 16.5 3 13 3 9.3 3 6.4 5.2 4.5 7.7 4.5c1.7 0 3.3.9 4.3 2.4 1-1.5 2.6-2.4 4.3-2.4 2.5 0 4.7 1.9 4.7 4.8 0 3.7-4 7.2-9 11.7z"/>',
+ 'diamond':'<path d="M12 2l7 10-7 10-7-10z"/>',
+ 'club':'<path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-1 7.9V17h3v2H6v-2h3v-3.1A4 4 0 0 1 8 6a4 4 0 0 1 4-4z"/>'
+};
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1,'spade':1,'heart':1,'diamond':1,'club':1 };
+var solid={ 'spade':1,'heart':1,'diamond':1,'club':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="'+(solid[n]?'none':'currentColor')+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -117,12 +221,12 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule">两点数相加为 13 即可卸牌 · K 单张自卸</span></header>
+  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule">两张相加为 13 即可卸牌 · K 单张自卸 · 卸空 28 张即过关</span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
-    <div class="stat"><span class="label">已卸</span><span class="val plain" id="stOff">0/28</span></div>
+    <div class="stat"><span class="label">已卸</span><span class="val" id="stOff">0/28</span></div>
     <div class="stat"><span class="label">步数</span><span class="val plain" id="stMoves">0</span></div>
-    <div class="stat"><span class="label">关卡校验</span><span class="val plain" id="stVer">-</span></div>
+    <div class="stat"><span class="label">最佳</span><span class="val" id="stBest">-</span></div>
   </div>
   <div class="board">
     <div class="pyr" id="pyr"></div>
@@ -142,7 +246,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="foot">键盘：Tab+回车 选牌与确认 · D 翻牌 · U 撤销 · H 提示 · R 重开 · 40 关递进 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -313,7 +417,6 @@ function lvStateText(){
 }
 function denom(){return LEVELS.length}
 function refreshVerHud(){
-  $("stVer").textContent=lvStateText();
   $("stLv").textContent=(Math.min(lv,LEVELS.length-1)+1)+"/"+denom();
 }
 function kickVerify(){
@@ -329,7 +432,9 @@ function kickVerify(){
 }
 
 /* ---------- 存档（本地 + 账号双写） ---------- */
-function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};return{lv:Math.max(0,parseInt(s.lv,10)||0)}}catch(e){return{lv:0}}}
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY))||{};
+  return{lv:Math.max(0,parseInt(s.lv,10)||0),best:(s.best&&typeof s.best==="object")?s.best:{}};
+ }catch(e){return{lv:0,best:{}}}}
 function persist(){
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}
   if(GB.available)GB.saveState(GAME_KEY,save).catch(function(){});
@@ -349,14 +454,15 @@ function syncSaveFromServer(){
 
 /* ---------- 牌桌状态 ---------- */
 var RANKS=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-var SUITS=["\u2660","\u2665","\u2666","\u2663"];
+var SUITS=["\u2660","\u2665","\u2666","\u2663"]; /* 文本牌名（aria-label/提示语）用；牌面图形走 SW_ICON */
+var SUIT_NAMES=["spade","heart","diamond","club"]; /* 与 SUITS 同序，映射 SW_ICON 花色路径 */
 var RED=[false,true,true,false];
 var lv=0,L=null,py=[],stock=[],mask=0,sp=0,w=0,rd=0;
 var sel=-2;/* -2 无 -1 弃牌堆顶 >=0 金字塔下标 */
-var moves=0,hist=[],won=false,lost=false;
+var moves=0,hist=[],won=false,lost=false,endToken=0;
 function $(id){return document.getElementById(id)}
 function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"")}
-function cardName(c){return SUITS[c&3]+RANKS[c>>2]}
+function cardName(c){return c<0?"":SUITS[c&3]+RANKS[c>>2]}
 function rowCol(p){var r=0;while((r+1)*(r+2)/2<=p)r++;return [r,p-r*(r+1)/2]}
 function exposed(p){
   var rc=rowCol(p);
@@ -373,29 +479,36 @@ function loadLevel(n){
     if(LVSTATE[n]!==1){say("该关校验未通过，请点「选关」换关","err");return false;}
   }
   lv=n;L=LEVELS[lv];
+  endToken++;   /* 取消上一关可能挂起的胜局覆盖层延迟弹出 */
   var deck=deal52(L.seed);
   py=deck.slice(0,28);stock=deck.slice(28);
   mask=0;sp=0;w=0;rd=0;sel=-2;moves=0;hist=[];won=false;lost=false;
   save.lv=Math.max(save.lv,lv);persist();
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
   say("点一张明牌选中，再点与之凑 13 的另一张；K 点一下直接卸");
+  buildBoard();
+  enterPyr();
+  $("panel").classList.remove("win");
   updStats();render();return true;
 }
 function snapshot(){return{mask:mask,sp:sp,w:w,rd:rd}}
 function pushHist(){hist.push(snapshot())}
 function doDraw(){
+  if(won||lost)return;
   pushHist();
   if(sp<24){sp++;w++;sel=-2;moves++;say("翻出 "+cardName(stock[sp-1])+(w>1?"，弃牌堆顶 "+cardName(stock[w-1]):""));}
   else if(rd===0&&w>0){rd=1;sp=0;w=0;sel=-2;moves++;say("牌堆已重洗一次（仅此一次）");}
   updStats();render();checkEnd();
 }
-function removeCards(pyIdx,useWaste){
+function removeCards(pyIdx,useWaste,otherIdx){
   var wt=useWaste?wasteTop():-1;
+  var second=useWaste?wt:(otherIdx>=0?py[otherIdx]:-1);
   pushHist();
   mask|=1<<pyIdx;
   if(useWaste)w--;
+  else if(otherIdx>=0)mask|=1<<otherIdx;   /* 明牌+明牌：两张一起卸，与校验器 pair 语义一致 */
   sel=-2;moves++;
-  say(cardName(py[pyIdx])+" + "+cardName(wt)+" 成对卸下","win");
+  say(cardName(py[pyIdx])+" + "+cardName(second)+" 成对卸下","win");
   updStats();render();checkEnd();
 }
 function removeKing(pyIdx){
@@ -422,7 +535,7 @@ function tapPyr(p){
   }
   if(sel>=0){
     var r2=py[sel]>>2;
-    if(r+r2===11){removeCards(sel,false);return;}
+    if(r+r2===11){removeCards(sel,false,p);return;}
     say(cardName(py[sel])+" 与 "+cardName(py[p])+" 凑不成 13","err");return;
   }
   sel=p;say("已选中 "+cardName(py[p])+"（"+RANKS[r]+"），点凑 13 的另一张");render();
@@ -533,22 +646,35 @@ function noMovesLeft(){
   return true;
 }
 function remainCount(){var n=0,i;for(i=0;i<28;i++)if(!((mask>>i)&1))n++;return n}
+/* 覆盖层主按钮：文字前带内联 SVG 图标（图标随语义切换，aria-hidden 由 SW_ICON 保证） */
+function ovBtnLabel(icon,label){
+  $("ovBtn").innerHTML=SW_ICON(icon)+label;
+}
 function checkEnd(){
   if(mask===(1<<28)-1){
     won=true;
-    if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+    if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);}
+    var isNew=!save.best[lv]||moves<save.best[lv];
+    if(isNew)save.best[lv]=moves;
+    persist();
     if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:moves}).catch(function(){});
     $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
-    $("ovDesc").innerHTML="金字塔全部卸空！步数 <b>"+moves+"</b>"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>"+LEVELS.length+" 关全部完成");
-    $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+    $("ovDesc").innerHTML="金字塔全部卸空！步数 <b>"+moves+"</b> · 本关最佳 <b>"+save.best[lv]+"</b>"+(isNew?" · 新纪录":"")+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>"+LEVELS.length+" 关全部完成");
+    ovBtnLabel((lv>=LEVELS.length-1)?"rotate":"arrow-right",(lv>=LEVELS.length-1)?"回到第 1 关":"下一关");
     $("ovStay").hidden=true;
-    $("overlay").classList.add("show");
+    $("panel").classList.add("win");
+    /* 胜局延迟弹出：让最后一张牌的 lift 不被覆盖层立刻遮住 */
+    var tk=++endToken;
+    $("lvgrid").hidden=true;   // 选关浮层不许带进过关遮罩
+    setTimeout(function(){if(tk===endToken)$("overlay").classList.add("show")},window.__gRM?0:170);
   } else if(noMovesLeft()){
     lost=true;
     $("ovTitle").textContent="无路可走了";
     $("ovDesc").innerHTML="牌堆与重洗都已用尽，金字塔还剩 <b>"+remainCount()+"</b> 张。撤销几步换个卸法，或重开本关。";
-    $("ovBtn").textContent="重开本关";
+    ovBtnLabel("reset","重开本关");
     $("ovStay").hidden=false;
+    $("panel").classList.remove("win");
+    $("lvgrid").hidden=true;   // 选关浮层不许带进失败遮罩
     $("overlay").classList.add("show");
   }
 }
@@ -557,39 +683,67 @@ function updStats(){
   for(i=0;i<28;i++)if((mask>>i)&1)off++;
   $("stOff").textContent=off+"/28";
   $("stMoves").textContent=moves;
+  $("stBest").textContent=save.best[lv]||"-";
   $("btnUndo").disabled=!hist.length||won;
 }
-/* ---------- 渲染 ---------- */
-function cardHtml(c,covered,p){
-  var red=RED[c&3];
-  return '<button class="card'+(red?" red":"")+(covered?" covered":"")+'" data-p="'+p+'"'+(covered?" disabled":"")
-    +' aria-label="'+cardName(c)+(covered?"（被压住）":"")+'">'
-    +'<span class="rk">'+RANKS[c>>2]+'</span><span class="st">'+SUITS[c&3]+'</span><span class="cen">'+SUITS[c&3]+'</span></button>';
+/* ---------- 渲染（建盘一次 + 就地补丁：选中/卸下才能走过渡，不整盘重建） ---------- */
+var cardEls=[],offTimer={};
+function buildBoard(){
+  var pyr=$("pyr"),p=0,r,c,row,b;
+  pyr.innerHTML="";cardEls=[];offTimer={};pyr.classList.remove("entering");
+  for(r=0;r<7;r++){
+    row=document.createElement("div");row.className="prow";
+    for(c=0;c<=r;c++,p++){
+      b=document.createElement("button");
+      b.type="button";
+      b.className="card";
+      b.setAttribute("data-p",String(p));
+      b.style.setProperty("--i",String(p));
+      b.innerHTML='<span class="rk"></span><span class="st"></span><span class="cen"></span>';
+      row.appendChild(b);
+      cardEls.push(b);
+    }
+    pyr.appendChild(row);
+  }
+}
+function paintCard(p){
+  var el=cardEls[p];if(!el)return;
+  var c=py[p],removed=((mask>>p)&1)!==0;
+  var covered=!removed&&!exposed(p);
+  var extra=el.classList.contains("off")?" off":(el.classList.contains("just-off")?" just-off":"");
+  var cls="card"+(RED[c&3]?" red":"")+(covered?" covered":"")+(((c>>2)===12)?" k":"")+extra;
+  if(el.className!==cls)el.className=cls;   /* 同值不重写，避免重启进行中的动画 */
+  el.disabled=covered;
+  el.setAttribute("aria-label",cardName(c)+(removed?"（已卸下）":covered?"（被压住）":""));
+  if(sel===p)el.setAttribute("data-sel","1");else el.removeAttribute("data-sel");
+  el.querySelector(".rk").textContent=RANKS[c>>2];
+  el.querySelector(".st").innerHTML=SW_ICON(SUIT_NAMES[c&3]);
+  el.querySelector(".cen").innerHTML=SW_ICON(SUIT_NAMES[c&3]);
 }
 function render(){
-  var rows=[],r,c,h="",p=0;
-  for(r=0;r<7;r++){
-    h='<div class="prow">';
-    for(c=0;c<=r;c++,p++){
-      h+=cardHtml(py[p],!exposed(p),p);
+  for(var p=0;p<28;p++){
+    var el=cardEls[p];if(!el)continue;
+    if((mask>>p)&1){
+      if(!el.classList.contains("off")&&!el.classList.contains("just-off")){
+        el.classList.add("just-off");
+        if(offTimer[p])clearTimeout(offTimer[p]);
+        offTimer[p]=setTimeout(function(e){return function(){e.classList.remove("just-off");e.classList.add("off")}}(el),window.__gRM?20:180);
+      }
+    }else{
+      if(offTimer[p]){clearTimeout(offTimer[p]);offTimer[p]=null;}
+      el.classList.remove("off");el.classList.remove("just-off");
     }
-    h+='</div>';
-    rows.push(h);
-  }
-  $("pyr").innerHTML=rows.join("");
-  /* 选中标记 */
-  if(sel>=0){
-    var el=$("pyr").querySelector('[data-p="'+sel+'"]');
-    if(el)el.setAttribute("data-sel","1");
+    paintCard(p);
   }
   /* 牌堆 / 弃牌堆 */
-  var left=24-sp;
-  $("stockCnt").innerHTML=left>0?"<b>"+left+"</b>张":"<b>"+(rd===0?"重洗":"空")+"</b>"+(rd===0?"":"");
+  var left=24-sp,canRe=left<=0&&rd===0&&w>0;
+  $("stockBtn").className="pilebtn"+(canRe?" reshuffle":"");
+  $("stockCnt").innerHTML=left>0?"<b>"+left+"</b>张":"<b>"+(canRe?"重洗":"空")+"</b>";
   var wt=wasteTop();
   if(wt>=0){
-    $("wasteBtn").className="pilebtn solid"+(sel===-1?" sel":"");
+    $("wasteBtn").className="pilebtn solid";
     $("wasteBtn").style.color=RED[wt&3]?"var(--g-danger)":"var(--g-text)";
-    $("wasteCnt").innerHTML='<b style="font-size:22px">'+RANKS[wt>>2]+"</b>"+SUITS[wt&3];
+    $("wasteCnt").innerHTML='<b style="font-size:22px">'+RANKS[wt>>2]+"</b>"+SW_ICON(SUIT_NAMES[wt&3]);
   }else{
     $("wasteBtn").className="pilebtn";
     $("wasteBtn").style.color="";
@@ -597,6 +751,16 @@ function render(){
   }
   if(sel===-1)$("wasteBtn").setAttribute("data-sel","1");
   else $("wasteBtn").removeAttribute("data-sel");
+}
+/* 入场错落：仅发牌那一次挂 entering，之后摘除 */
+var enterTimer=null,hasEntered=false;
+function enterPyr(){
+  if(hasEntered)return;   /* 发牌动画只在首次进关播放，后续 loadLevel 不再重播（约 1.24s） */
+  hasEntered=true;
+  var pyr=$("pyr");
+  pyr.classList.add("entering");
+  if(enterTimer)clearTimeout(enterTimer);
+  enterTimer=setTimeout(function(){pyr.classList.remove("entering");enterTimer=null},window.__gRM?80:1400);
 }
 /* ---------- 输入 ---------- */
 $("pyr").addEventListener("click",function(e){
@@ -616,9 +780,10 @@ $("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已�
 $("btnLv").addEventListener("click",function(){
   overlayMode="lv";renderLvGrid();
   $("ovTitle").textContent="选择关卡";
-  $("ovDesc").textContent="绿色为已通关；校验未完成的关卡稍后自动解锁";
-  $("ovBtn").textContent="取消";
+  $("ovDesc").textContent="绿色为已通关；关卡校验 "+lvStateText();   /* 校验进度移到选关浮层，主 HUD 只留玩家指标 */
+  ovBtnLabel("x","取消");
   $("ovStay").hidden=true;
+  $("panel").classList.remove("win");
   $("overlay").classList.add("show");
 });
 var overlayMode="";
@@ -633,27 +798,30 @@ function renderLvGrid(){
       b.textContent=i+1;
       if(LVSTATE[i]!==1)b.disabled=true;
       b.addEventListener("click",function(){
-        $("overlay").classList.remove("show");overlayMode="";
+        hideOverlay();overlayMode="";
         loadLevel(i);say("第 "+(i+1)+" 关");
       });
       g.appendChild(b);
     })(i);
   }
 }
+function hideOverlay(){$("overlay").classList.remove("show");$("lvgrid").hidden=true}
 $("ovBtn").addEventListener("click",function(){
-  $("overlay").classList.remove("show");
+  hideOverlay();
   if(overlayMode==="lv"){overlayMode="";return;}
   if(won){
     if(lv>=LEVELS.length-1)loadLevel(0);
     else loadLevel(lv+1);
   } else if(lost) loadLevel(lv);
 });
-$("ovStay").addEventListener("click",function(){
-  $("overlay").classList.remove("show");
-});
+$("ovStay").addEventListener("click",hideOverlay);
 window.addEventListener("keydown",function(e){
   var k=e.key;
-  if(overlayMode==="lv"){if(k===" "||k==="Enter")$("ovBtn").click();return;}
+  if($("overlay").classList.contains("show")){   /* 模态打开：只处理确认/取消，d/u/h/r 不穿透 */
+    if(k===" "||k==="Enter"){$("ovBtn").click();e.preventDefault();}
+    else if(k==="Escape"){hideOverlay();overlayMode="";}
+    return;
+  }
   if(k==="d"||k==="D"){if(sp<24||(rd===0&&w>0))doDraw();else say("牌堆与重洗都已用尽","err");}
   else if(k==="u"||k==="U")undo();
   else if(k==="h"||k==="H")hint();
@@ -705,6 +873,19 @@ syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 工具按钮图标：内联 SVG（SW_ICON，24 viewBox / currentColor），与 maze-paint 工具栏同构；零外链 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  $("btnUndo").insertAdjacentHTML("afterbegin",SW_ICON("undo"));
+  $("btnHint").insertAdjacentHTML("afterbegin",SW_ICON("hint"));
+  $("btnReset").insertAdjacentHTML("afterbegin",SW_ICON("reset"));
+  $("btnLv").insertAdjacentHTML("afterbegin",SW_ICON("grid"));
+  $("ovStay").innerHTML=SW_ICON("x")+"留在本关";
+  /* 牌堆牌背水印：低调花色，强化「一叠牌」的材质感 */
+  $("stockBtn").insertAdjacentHTML("afterbegin",'<span class="wm" aria-hidden="true">'+SW_ICON("spade")+'</span>');
 })();
 </script>
 

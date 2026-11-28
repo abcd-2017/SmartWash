@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>数波</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-rf-board 底版 / --g-rf-groove 格沟 / --g-rf-cell 格砖 / --g-rf-given 提示格）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-rf-board1:#E9EFE6;--g-rf-board2:#D8E3D4;--g-rf-groove:#C2D1C0;--g-rf-cell1:#FFFFFF;--g-rf-cell2:#F1F6F0;--g-rf-given1:#E2E9DF;--g-rf-given2:#CBD8C6;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-rf-board1:#171B18;--g-rf-board2:#10140F;--g-rf-groove:#0A0D0B;--g-rf-cell1:#242824;--g-rf-cell2:#1B1F1B;--g-rf-given1:#141714;--g-rf-given2:#0C0F0C;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -26,21 +26,30 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
+  .stat .val.pop { animation: valpop .24s ease-out; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
-  .btn:active { opacity: .85; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.16); } 100% { transform: scale(1); } }
+  @keyframes cellpop { 0% { transform: scale(.88); } 60% { transform: scale(1.07); } 100% { transform: scale(1); } }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -55,7 +64,9 @@
     box-shadow: var(--g-shadow); text-align: center;
     animation: pop .25s ease-out;
   }
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .btn { width: 100%; margin-bottom: 8px; }
@@ -75,20 +86,35 @@
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 
-  /* 数波棋盘：区块墙用 3px 边，普通格线用容器底色透出的 1px 缝 */
-  .sboard { display: grid; gap: 1px; padding: 2px; background: var(--g-border); border: 2px solid var(--g-muted); border-radius: var(--g-radius-inner); width: 100%; touch-action: manipulation; }
+  /* 数波棋盘：底版「面」+ 格沟「面」+ 格砖渐变（顶光 + 投影），区块墙 2px 沟槽色 */
+  .sboard { display: grid; gap: 2px; padding: 2px; background: linear-gradient(160deg, var(--g-rf-board1), var(--g-rf-board2)); border: 2px solid var(--g-rf-groove); border-radius: var(--g-radius-inner); width: 100%; touch-action: manipulation; box-shadow: var(--g-shadow); }
   .scell {
-    aspect-ratio: 1; border: 0; padding: 0; min-width: 0;
+    position: relative; aspect-ratio: 1; border: 0; padding: 0; min-width: 0;
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
-    color: var(--g-primary-deep); background: var(--g-surface);
+    color: var(--g-primary-deep); background: linear-gradient(160deg, var(--g-rf-cell1), var(--g-rf-cell2));
+    border-radius: 10px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 2px rgba(0,0,0,.14);
     display: flex; align-items: center; justify-content: center;
+    transition: transform .14s ease-out, box-shadow .16s ease-out;
+    animation: cellin .28s ease-out backwards;
   }
-  .scell.given { color: var(--g-text); cursor: default; }
-  .scell.r0 { background: var(--g-surface); }
-  .scell.r1 { background: var(--g-surface2); }
-  .scell.r2 { background: var(--g-primary-soft); }
-  .scell.bad { color: var(--g-danger); }
-  .scell.cur { outline: 2px solid var(--g-primary-deep); outline-offset: -2px; }
+  @keyframes cellin { from { opacity: 0; transform: translateY(6px) scale(.94); } to { opacity: 1; transform: none; } }
+  .scell:active { transform: scale(.96); }
+  .scell.r0 { background: linear-gradient(160deg, var(--g-surface), var(--g-rf-cell2)); }
+  .scell.r1 { background: linear-gradient(160deg, var(--g-surface2), var(--g-rf-cell2)); }
+  .scell.r2 { background: linear-gradient(160deg, var(--g-primary-soft), var(--g-rf-cell2)); }
+  .scell.given { color: var(--g-text); cursor: default; background: linear-gradient(160deg, var(--g-rf-given1), var(--g-rf-given2)); box-shadow: inset 0 2px 4px rgba(0,0,0,.18); }
+  .scell.bad { color: var(--g-danger); box-shadow: inset 0 0 0 2px var(--g-danger), 0 1px 2px rgba(0,0,0,.14); }
+  .scell.cur { box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 2px var(--g-primary-deep), 0 4px 10px rgba(0,0,0,.22); }
+  .scell.cur.bad { box-shadow: inset 0 0 0 2px var(--g-danger), 0 0 0 2px var(--g-primary-deep), 0 4px 10px rgba(0,0,0,.22); }
+  .scell.pop { animation: cellpop .18s ease-out; }
+  .legend { display: flex; gap: 8px; margin: 10px 2px 0; animation: rise .38s ease-out both; animation-delay: 140ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .swatch { width: 14px; height: 14px; border-radius: 10px; flex: none; box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 1px 2px rgba(0,0,0,.16); }
+  .swatch.given { background: linear-gradient(160deg, var(--g-rf-given1), var(--g-rf-given2)); }
+  .swatch.cur { background: linear-gradient(160deg, var(--g-rf-cell1), var(--g-rf-cell2)); box-shadow: 0 0 0 2px var(--g-primary-deep); }
+  .swatch.bad { background: linear-gradient(160deg, var(--g-rf-cell1), var(--g-rf-cell2)); box-shadow: inset 0 0 0 2px var(--g-danger); }
   .rules { font-size: 12px; color: var(--g-muted); text-align: center; margin: 0 2px 8px; line-height: 1.6; }
 </style>
 <script>
@@ -104,6 +130,20 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 })();
 </script>
 
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z"/>'
+};
+var fill={'play':1,'check':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -114,6 +154,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <div class="stat"><span class="label">冲突</span><span class="val low" id="stBad">0</span></div>
   </div>
   <div class="sboard" id="board" aria-label="数波棋盘：区块内填数，相邻不同数"></div>
+  <div class="legend">
+    <span class="lg-chip"><i class="swatch given" aria-hidden="true"></i><span><b>提示数</b> · 题目给定</span></span>
+    <span class="lg-chip"><i class="swatch cur" aria-hidden="true"></i><span><b>选中</b> · 可填</span></span>
+    <span class="lg-chip"><i class="swatch bad" aria-hidden="true"></i><span><b>冲突</b> · 相邻同数</span></span>
+  </div>
   <p class="rules">同一区块内数字不重复 · 相邻（含斜角）两格数字不同 · 数字范围 1-5</p>
   <p class="msg" id="msg" role="status" aria-live="polite">点格子换数字，填满全部区块即可过关</p>
   <div class="tools">
@@ -125,7 +170,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="foot">键盘：方向键移动 · 数字 1-5 填入 · 退格清除 · Z 撤销 · H 提示 · 40 关递进 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -250,7 +295,7 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 }
 function hideOverlay(){$("overlay").classList.remove("show")}
@@ -384,6 +429,8 @@ var lv=save.lv,L=null,cols=5,rows=5,regIds=[],regSize={},vals=[],givens=[],histo
 var cv=document;   // 占位：本作纯 DOM
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+function bump(el){if(!el)return;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}
+function popCell(i){var el=$("board").children[i];if(!el)return;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}
 function total(){return cols*rows}
 function cellIdx(r,c){return r*cols+c}
 function regCells(rg){
@@ -418,9 +465,11 @@ function renderBoard(){
       d.type="button";
       d.className="scell r"+(rg%3)+(givens.indexOf(i)>=0?" given":"");
       d.setAttribute("aria-label","行"+(r+1)+"列"+(c+1));
-      // 区块墙：与右/下邻居不同区 → 加粗边
-      if(c===cols-1||regIds[i+1]!==rg)d.style.borderRight="3px solid var(--g-muted)";
-      if(r===rows-1||regIds[i+cols]!==rg)d.style.borderBottom="3px solid var(--g-muted)";
+      // 入场错位：按格序 30ms，封顶 300ms（总时长 ≤600ms）
+      d.style.animationDelay=Math.min(i*30,300)+"ms";
+      // 区块墙：与右/下邻居不同区 → 沟槽色 2px「面」
+      if(c===cols-1||regIds[i+1]!==rg)d.style.borderRight="2px solid var(--g-rf-groove)";
+      if(r===rows-1||regIds[i+cols]!==rg)d.style.borderBottom="2px solid var(--g-rf-groove)";
       d.addEventListener("click",function(){cycleCell(i)});
       b.appendChild(d);
     })(i);
@@ -442,6 +491,7 @@ function render(){
     var el=b[i];
     el.textContent=vals[i]||"";
     var cls="scell r"+(regIds[i]%3)+(givens.indexOf(i)>=0?" given":"");
+    if(el.classList.contains("pop"))cls+=" pop";   // 保留填数轻弹态，避免 render 重设 className 重启入场动画
     if(bad[i]){cls+=" bad";badN++;}
     if(cur===i)cls+=" cur";
     el.className=cls;
@@ -459,14 +509,15 @@ function cycleCell(i){
   history.push([i,vals[i]]);
   vals[i]=nv;
   cur=i;
-  render();
+  render();popCell(i);bump($("stFill"));bump($("stBad"));
 }
 function setValue(i,v){
   if(done||givens.indexOf(i)>=0)return;
   if(v>5){say("数字范围是 1-5");return;}
   history.push([i,vals[i]]);
   vals[i]=v;
-  render();
+  cur=i;
+  render();popCell(i);bump($("stFill"));bump($("stBad"));
 }
 function undo(){
   if(!history.length||done)return;
@@ -499,9 +550,11 @@ function winLevel(){
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:history.length}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
   $("ovDesc").innerHTML="全部区块填满且无冲突"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"play");
+  $("panel").classList.add("win");
   $("overlay").classList.add("show");
 }
+function setOvBtn(t,icon){$("panel").classList.remove("win");$("ovBtn").innerHTML=window.SW_ICON(icon)+t}
 /* ---------- 输入 ---------- */
 $("btnUndo").addEventListener("click",undo);
 $("btnHint").addEventListener("click",hint);
@@ -541,6 +594,7 @@ window.addEventListener("keydown",function(e){
   if(ok.length)LEVELS=ok;
 })();
 loadLevel(save.lv);
+setOvBtn("下一关","play");
 syncLevelsFromServer();syncSaveFromServer();
 
 })();
@@ -576,6 +630,14 @@ syncLevelsFromServer();syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 按钮图标注入（内联 SVG，零外链；重设文案统一走 setOvBtn，避免抹掉已注入图标） */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var dp=[["btnUndo","undo"],["btnHint","hint"],["btnReset","rotate"],["btnLv","grid"]],i;
+  for(i=0;i<dp.length;i++)$(dp[i][0]).insertAdjacentHTML("afterbegin",window.SW_ICON(dp[i][1]));
 })();
 </script>
 

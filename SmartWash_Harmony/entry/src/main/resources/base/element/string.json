@@ -5421,6 +5421,18 @@
       "value": "提交订单"
     },
     {
+      "name": "dining_order_submit_confirm_title",
+      "value": "结束点单"
+    },
+    {
+      "name": "dining_order_submit_confirm_message",
+      "value": "结束后将锁定点单并生成购买清单，确定结束吗？"
+    },
+    {
+      "name": "dining_order_submit_confirm_yes",
+      "value": "结束点单"
+    },
+    {
       "name": "dining_order_create_submit_success",
       "value": "订单已提交，购买清单已生成"
     },

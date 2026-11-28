@@ -6,67 +6,54 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>空气曲棍球</title>
 <style>
-  /*token:GAME-THEME.md §2 + §3（球台/面板走 token；球拍/球饼为玩法素材）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-primary:#FFF;--g-btn-primary:#17734A;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
-  * { box-sizing: border-box; }
-  [hidden] { display: none !important; }
-  html, body { margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
-    background: var(--g-bg); color: var(--g-text);
-    min-height: 100vh; display: flex; justify-content: center;
-    padding: 16px 8px 30px;
-    -webkit-user-select: none; user-select: none;
-    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation; overscroll-behavior: none;
-  }
-  .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
-  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
-  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .stat.ai .val { color: var(--g-danger); }
-  .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
-  .tools { display: flex; gap: 8px; }
-  .btn {
-    min-height: 44px; padding: 0 14px; flex: 1;
-    border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
-  }
-  .btn:active { opacity: .85; }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
-  .overlay {
-    position: fixed; inset: 0; z-index: 10;
-    background: var(--g-scrim);
-    display: none; align-items: center; justify-content: center; padding: 20px;
-  }
-  .overlay.show { display: flex; }
-  .panel {
-    width: 100%; max-width: 320px; padding: 22px 18px;
-    background: var(--g-surface); border-radius: var(--g-radius);
-    box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
-  }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
-  .panel h2 { margin: 0 0 6px; font-size: 18px; }
-  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
-  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
-  /* 主 CTA：深底白字 5.85:1（--g-primary 绿底白字仅 3.5:1），字号回落 16px/600，与原生 AppButton 15sp 同量级 */
-  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; }
-  .panel .btn { width: 100%; }
-
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
-
-  /* P2: 键盘焦点可见（S5） */
+  /*token:GAME-THEME.md §2 + §3（球台地面 / 库边 / 场地线 / 球饼）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-on-primary:#FFFFFF;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-ah-ice:#E8F3FB;--g-ah-rail:#1F3A4A;--g-ah-line:#4E8FB0;--g-ah-puck:#FFC53D;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-ah-ice:#1E2B34;--g-ah-rail:#0E1A22;--g-ah-line:#6B8A9C;--g-ah-puck:#FFD469;color-scheme:dark }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",sans-serif;background:var(--g-bg);color:var(--g-text);min-height:100vh;display:flex;justify-content:center;padding:16px 8px 30px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior:none}
+  .wrap{width:100%;max-width:480px}
+  header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;padding:0 2px}
+  .sub{font-size:14px;color:var(--g-muted)}
+  .stats{display:flex;gap:8px;margin-bottom:10px}
+  .stat{flex:1;min-width:0;background:var(--g-surface2);border-radius:var(--g-radius-inner);padding:6px 4px;text-align:center;line-height:1.3;animation:rise .38s ease-out both}
+  .stat:nth-child(2){animation-delay:30ms}.stat:nth-child(3){animation-delay:60ms}.stat:nth-child(4){animation-delay:90ms}.stat:nth-child(5){animation-delay:120ms}
+  .stat .label{display:block;font-size:12px;color:var(--g-muted)}
+  .stat .val{display:block;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--g-primary-deep);transition:color .16s ease-out}
+  .stat .val.bump{animation:bump .3s ease-out}
+  .stat.ai .val{color:var(--g-danger)}
+  canvas{display:block;width:100%;touch-action:none;border-radius:var(--g-radius-inner)}
+  .msg{min-height:20px;margin:10px 2px;font-size:14px;color:var(--g-muted);text-align:center;transition:color .16s ease-out}
+  .tools{display:flex;gap:8px}
+  .btn{min-height:44px;padding:0 14px;flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:var(--g-radius-btn);background:var(--g-surface2);color:var(--g-text);font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;transition:transform .14s ease-out,background .16s ease-out,opacity .16s ease-out}
+  .btn:active{transform:scale(.96)}
+  .swi{display:inline-block;vertical-align:-0.14em;flex:none}
+  .foot{margin:12px 2px 0;font-size:12px;color:var(--g-muted);text-align:center;line-height:1.6}
+  .overlay{position:fixed;inset:0;z-index:10;background:var(--g-scrim);display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex;animation:fadein .2s ease-out}
+  .panel{width:100%;max-width:320px;padding:22px 18px;background:var(--g-surface);border-radius:var(--g-radius);box-shadow:var(--g-shadow);text-align:center;animation:pop .3s ease-out}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes pop{0%{transform:scale(.9);opacity:0}60%{transform:scale(1.03);opacity:1}100%{transform:scale(1);opacity:1}}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  @keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.16)}100%{transform:scale(1)}}
+  .panel h2{margin:0 0 6px;font-size:18px}
+  .panel .desc{margin:0 0 16px;font-size:14px;color:var(--g-muted);line-height:1.6}
+  .panel .desc b{color:var(--g-primary-deep);font-size:22px}
+  .btn.primary{background:var(--g-btn-primary);color:var(--g-on-primary);font-size:16px;font-weight:600}
+  .panel .btn{width:100%}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-delay:.01ms!important;transition-duration:.01ms!important}}
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'pause':'<rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>'
+};
+var fill={ 'pause':1,'play':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -91,14 +78,14 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <div class="stage"><canvas id="cv" aria-label="空气曲棍球球台" role="img"></canvas></div>
   <p class="msg" id="msg" role="status" aria-live="polite">球拍跟手滑动 · 把球打进上方球门</p>
-  <div class="tools"><button class="btn" id="btnPause">暂停</button></div>
-  <p class="foot">球拍不能过中线 · 进球后重新开球 · 键盘方向键也可移动（WASD）</p>
+  <div class="tools"><button class="btn" id="btnPause" type="button"><span class="btxt" id="btnPauseTxt">暂停</span></button></div>
+  <p class="foot">绿拍=你 · 红拍=AI · 黄盘=球 · 目标=上方绿环球门<br>球拍不能过中线 · 进球后重新开球 · 键盘 WASD 也可移动</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
     <h2 id="ovTitle">准备比赛</h2>
-    <p class="desc" id="ovDesc">按住并拖动下方球拍，把圆盘挑进对方球门<br>先进 5 球获胜，失误会送给 AI 反击机会</p>
-    <button class="btn primary" id="ovBtn">开始比赛</button>
+    <p class="desc" id="ovDesc">拖动下方球拍，把圆盘挑进上方球门<br>先进 5 球获胜</p>
+    <button class="btn primary" id="ovBtn" type="button"><span class="btxt" id="ovBtnTxt">开始比赛</span></button>
   </div>
 </div>
 <script>
@@ -131,15 +118,17 @@ var GB=(function(){
     getLevels:function(gameKey){return call("getLevels",[gameKey]);}
   };
 })();
-/* ---------- 调色板：UI 壳走 token，球拍/球饼为玩法素材 ---------- */
+/* ---------- 调色板：UI 壳走 token；球台地面 / 库边 / 场地线 / 球饼为玩法素材 ---------- */
 var PAL={};
+function shade(c,a){var s=String(c).trim(),m;if(s.charAt(0)==="#"){var h=s.slice(1),r,g,b;if(h.length===3){r=parseInt(h.charAt(0)+h.charAt(0),16);g=parseInt(h.charAt(1)+h.charAt(1),16);b=parseInt(h.charAt(2)+h.charAt(2),16)}else{r=parseInt(h.slice(0,2),16);g=parseInt(h.slice(2,4),16);b=parseInt(h.slice(4,6),16)}return"rgba("+r+","+g+","+b+","+a.toFixed(3)+")"}m=s.match(/rgba?\(([^)]+)\)/);if(m){var p=m[1].split(",");return"rgba("+p[0]+","+p[1]+","+p[2]+","+a.toFixed(3)+")"}return s}
+var WHITE="rgb(255,255,255)";   //恒白（高光）
+function colShade(c,t){var s=String(c).trim(),m=s.match(/^#(..)(..)(..)$/),p;if(m)p=[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)];else{var q=s.match(/\(([^)]+)\)/)[1].split(",");p=[+q[0],+q[1],+q[2]]}var d=t<0?0:255,u=Math.abs(t);return"rgb("+Math.round(p[0]+(d-p[0])*u)+","+Math.round(p[1]+(d-p[1])*u)+","+Math.round(p[2]+(d-p[2])*u)+")"}
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
   function v(n){return s.getPropertyValue(n).trim()}
-  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
-    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
-    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
-    danger:v("--g-danger"),warning:v("--g-warning")};
+  PAL={primary:v("--g-primary"),deep:v("--g-primary-deep"),danger:v("--g-danger"),ice:v("--g-ah-ice"),rail:v("--g-ah-rail"),line:v("--g-ah-line"),puck:v("--g-ah-puck")};
+  PAL.iceHi=colShade(PAL.ice,.55);PAL.iceLo=colShade(PAL.ice,-.14);PAL.railHi=colShade(PAL.rail,.3);PAL.railLo=colShade(PAL.rail,-.22);
+  PAL.puckHi=colShade(PAL.puck,.55);PAL.puckLo=colShade(PAL.puck,-.3);PAL.meHi=colShade(PAL.primary,.5);PAL.meLo=colShade(PAL.primary,-.34);PAL.aiHi=colShade(PAL.danger,.45);PAL.aiLo=colShade(PAL.danger,-.32);
 }
 window.__gOnTheme=function(){palLoad()};//App 推送主题时刷新调色板，rAF 循环自动重绘
 /* ---------- 存档（本地 + 账号双写） ---------- */
@@ -187,7 +176,7 @@ function botLine(){return L.H-L.m}
 function inGoal(x){return Math.abs(x-cx())<L.gw/2-L.pr*0.2}
 function resetPositions(){
   puck={x:cx(),y:L.H/2,vx:0,vy:0};
-  me={x:cx(),y:L.H-L.m-L.mr-6,px:cx(),py:L.H-L.m-L.mr-6,vx:0,vy:0};
+  me={x:cx(),y:L.H-L.m-L.mr-6,tx:cx(),ty:L.H-L.m-L.mr-6,px:cx(),py:L.H-L.m-L.mr-6,vx:0,vy:0};
   ai={x:cx(),y:L.m+L.mr+6,px:cx(),py:L.m+L.mr+6,vx:0,vy:0};
 }
 /* ---------- 流程 ---------- */
@@ -225,20 +214,20 @@ function endMatch(win){
   if(GB.available)GB.reportScore("air-hockey",{metricValue:stats.wins,metricExtra:stats.streak}).catch(function(){});
   $("ovTitle").textContent=win?"你赢了！":"惜败";
   $("ovDesc").innerHTML="比分 <b>"+scoreMe+" : "+scoreAi+"</b><br>累计 "+(win?"胜 "+stats.wins+" 场 · ":"负 "+stats.losses+" 场 · ")+"当前连胜 "+stats.streak;
-  $("ovBtn").textContent="再来一局";
+  $("ovBtnTxt").textContent="再来一局";
   showOverlay();
 }
 function showOverlay(){$("overlay").classList.add("show")}
 function hideOverlay(){$("overlay").classList.remove("show")}
 function togglePause(){
   if(state==="play"||state==="serve"){
-    state="pause";$("btnPause").textContent="继续";
+    state="pause";$("btnPauseTxt").textContent="继续";
     $("ovTitle").textContent="已暂停";
     $("ovDesc").innerHTML="球台冻结中<br>回来继续比赛";
-    $("ovBtn").textContent="继续比赛";
+    $("ovBtnTxt").textContent="继续比赛";
     showOverlay();
   }else if(state==="pause"){
-    state=puck.vy===0?"serve":"play";$("btnPause").textContent="暂停";hideOverlay();
+    state=puck.vy===0?"serve":"play";$("btnPauseTxt").textContent="暂停";hideOverlay();
   }
 }
 /* ---------- 物理 ---------- */
@@ -307,52 +296,82 @@ function update(dt){
   collideMallet(me);collideMallet(ai);
 }
 /* ---------- 绘制 ---------- */
-function rr(x,y,w2,h2,r){
-  r=Math.min(r,w2/2,h2/2);
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);ctx.arcTo(x+w2,y,x+w2,y+h2,r);ctx.arcTo(x+w2,y+h2,x,y+h2,r);
-  ctx.arcTo(x,y+h2,x,y,r);ctx.arcTo(x,y,x+w2,y,r);ctx.closePath();
-}
-function text(s,x,y,size,c){
-  ctx.fillStyle=c;ctx.font="700 "+size+"px -apple-system,'PingFang SC',sans-serif";
-  ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x,y);
-}
-function drawMallet(m,color){
-  ctx.fillStyle=color;
-  ctx.beginPath();ctx.arc(m.x,m.y,L.mr,0,7);ctx.fill();
-  ctx.fillStyle=PAL.surface;
-  ctx.beginPath();ctx.arc(m.x,m.y,L.mr*0.55,0,7);ctx.fill();
-  ctx.fillStyle=color;
-  ctx.beginPath();ctx.arc(m.x,m.y,L.mr*0.22,0,7);ctx.fill();
-}
-function draw(){
-  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,L.W,L.H);
-  //球台
-  rr(L.m,L.m,L.W-2*L.m,L.H-2*L.m,14);
-  ctx.fillStyle=PAL.surface;ctx.fill();
-  ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;ctx.stroke();
-  //中线与中圈
-  ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function sysFont(){return'-apple-system,"PingFang SC","Microsoft YaHei",sans-serif'}
+function orb(x,y,r,a,b,c){var g=ctx.createRadialGradient(x-r*.34,y-r*.38,r*.1,x,y,r*1.05);g.addColorStop(0,a);g.addColorStop(.45,b);g.addColorStop(1,c);ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}
+function spec(x,y,a,b){ctx.globalAlpha=.85;ctx.fillStyle=WHITE;ctx.beginPath();ctx.ellipse(x,y,a,b,-.55,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
+function drop(r,k){ctx.shadowColor="rgba(0,0,0,"+k+")";ctx.shadowBlur=r*.5;ctx.shadowOffsetY=r*.22}
+/* 球台：库边「面」+ 冰面「地面」+ 中线 / 中圈 */
+function drawTable(){
+  var g=ctx.createLinearGradient(0,0,0,L.H);g.addColorStop(0,PAL.railHi);g.addColorStop(.5,PAL.rail);g.addColorStop(1,PAL.railLo);
+  ctx.save();ctx.shadowColor="rgba(0,0,0,.22)";ctx.shadowBlur=14;ctx.shadowOffsetY=4;ctx.fillStyle=g;rr(0,0,L.W,L.H,14);ctx.fill();ctx.restore();
+  g=ctx.createLinearGradient(0,L.m,0,L.H-L.m);g.addColorStop(0,PAL.iceHi);g.addColorStop(.5,PAL.ice);g.addColorStop(1,PAL.iceLo);
+  ctx.fillStyle=g;rr(L.m,L.m,L.W-2*L.m,L.H-2*L.m,10);ctx.fill();
+  ctx.lineWidth=2;ctx.strokeStyle=shade(PAL.rail,.55);rr(L.m,L.m,L.W-2*L.m,L.H-2*L.m,10);ctx.stroke();
+  ctx.strokeStyle=PAL.line;ctx.globalAlpha=.85;
   ctx.beginPath();ctx.moveTo(L.m,L.H/2);ctx.lineTo(L.W-L.m,L.H/2);ctx.stroke();
-  ctx.beginPath();ctx.arc(cx(),L.H/2,L.W*0.16,0,7);ctx.stroke();
-  //球门开口
-  ctx.fillStyle=PAL.warning;
-  ctx.fillRect(cx()-L.gw/2,topLine()-2,L.gw,5);
-  ctx.fillRect(cx()-L.gw/2,botLine()-3,L.gw,5);
-  //球饼
-  ctx.fillStyle=PAL.warning;
-  ctx.beginPath();ctx.arc(puck.x,puck.y,L.pr,0,7);ctx.fill();
-  ctx.fillStyle="rgba(255,255,255,.55)";
-  ctx.beginPath();ctx.arc(puck.x-L.pr*0.3,puck.y-L.pr*0.3,L.pr*0.35,0,7);ctx.fill();
-  drawMallet(ai,PAL.danger);
-  drawMallet(me,PAL.primary);
-  //进球闪光
-  if(flash>0){
-    ctx.globalAlpha=Math.min(1,flash);
-    text(flashText,cx(),L.H/2,28,PAL.danger);
-    ctx.globalAlpha=1;
-  }
-  if(state==="serve")text("准备…",cx(),L.H/2,22,PAL.muted);
+  ctx.beginPath();ctx.arc(cx(),L.H/2,L.W*.16,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+}
+/* 球门：库边凹槽（暗面表现进深）+ 冰面侧目标色球门线（上=目标深绿，下=防区红） */
+function drawGoal(y,c,iy){
+  var x=cx()-L.gw/2,h=L.m;
+  ctx.fillStyle=shade(PAL.rail,-.3);rr(x,y+1,L.gw,h-2,4);ctx.fill();
+  ctx.fillStyle=c;ctx.fillRect(x+1,iy,L.gw-2,3);
+}
+/* 轨迹：球饼拖尾（reduced-motion 关闭） */
+function drawTrail(){for(var i=0,n=trail.length;i<n;i++){var t=trail[i],k=(i+1)/n;ctx.globalAlpha=.22*k*k;ctx.fillStyle=PAL.puck;ctx.beginPath();ctx.arc(t.x,t.y,L.pr*(.35+.6*k),0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1}
+/* 球饼 / 球拍：渐变 + 恒白高光 + 投影；球拍击中轻弹 */
+function drawPuck(){var r=L.pr;
+  ctx.save();drop(r,.35);orb(puck.x,puck.y,r,PAL.puckHi,PAL.puck,PAL.puckLo);ctx.restore();
+  spec(puck.x-r*.3,puck.y-r*.38,r*.26,r*.15);
+}
+function drawMallet(m,c,hi,lo,pop){var r=L.mr*(1+.06*pop);
+  ctx.save();drop(r,.32);orb(m.x,m.y,r,hi,c,lo);ctx.restore();
+  ctx.lineWidth=Math.max(1.5,r*.12);ctx.strokeStyle=shade(c,-.4);ctx.beginPath();ctx.arc(m.x,m.y,r-ctx.lineWidth*.5,0,Math.PI*2);ctx.stroke();
+  spec(m.x-r*.32,m.y-r*.4,r*.24,r*.14);
+}
+/* 特效：击中涟漪 + 进球粒子 */
+function drawFx(){var i;
+  for(i=0;i<rings.length;i++){var r=rings[i],k=r.life/r.ttl;ctx.globalAlpha=1-k;ctx.strokeStyle=r.c;ctx.lineWidth=3*(1-k)+1;ctx.beginPath();ctx.arc(r.x,r.y,r.r+k*22,0,Math.PI*2);ctx.stroke()}
+  for(i=0;i<parts.length;i++){var p=parts[i];ctx.globalAlpha=1-p.life/p.ttl;ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}
+  ctx.globalAlpha=1;
+}
+/* 进球 / 得分提示（深绿 / 危险红直压冰面 ≥4.5:1） */
+function drawCenter(){
+  if(flash>0){ctx.save();ctx.globalAlpha=Math.min(1,flash*1.6);ctx.font="700 28px "+sysFont();
+    ctx.fillStyle=flashText==="进球！"?PAL.deep:PAL.danger;ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(flashText,cx(),L.H/2);ctx.restore()}
+}
+function draw(){ctx.save();if(shake>0){var s=shake*12;ctx.translate((Math.random()-.5)*s,(Math.random()-.5)*s)}
+  drawTable();drawGoal(0,PAL.deep,L.m+.5);drawGoal(L.H-L.m,PAL.danger,L.H-L.m-3.5);drawTrail();drawPuck();
+  drawMallet(ai,PAL.danger,PAL.aiHi,PAL.aiLo,pop.ai);drawMallet(me,PAL.primary,PAL.meHi,PAL.meLo,pop.me);
+  drawFx();drawCenter();ctx.restore()}
+/* ---------- 反馈层（只读逻辑状态，不改玩法）---------- */
+var trail=[],parts=[],rings=[],shake=0,cool={me:0,ai:0},pop={me:0,ai:0},pMe=0,pAi=0;
+function puff(x,y,c,n,sp){for(var i=0;i<n;i++){var a=Math.random()*6.28,s=sp*(.4+Math.random()*.8);parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:1.5+Math.random()*2.5,c:c,life:0,ttl:.35+Math.random()*.3})}}
+function bumpStat(el){if(!el||window.__gRM)return;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump")}
+function goalBurst(w){var y=w?L.m+4:L.H-L.m-4,c=w?PAL.deep:PAL.danger;puff(cx(),y,c,18,150);rings.push({x:cx(),y:y,r:10,c:c,life:0,ttl:.4});shake=Math.max(shake,.22);bumpStat($(w?"stMe":"stAi"))}
+function hitScan(m,k){if(state!=="play")return;
+  if(Math.hypot(puck.x-m.x,puck.y-m.y)<L.pr+L.mr+3&&cool[k]<=0){cool[k]=.14;pop[k]=1;
+    rings.push({x:puck.x,y:puck.y,r:L.pr+5,c:k==="me"?PAL.primary:PAL.danger,life:0,ttl:.28});
+    if(Math.hypot(puck.vx,puck.vy)/L.W>.13)shake=Math.max(shake,.1)}
+}
+/* 按钮图标：文字前内联 SVG（SW_ICON），随状态切换 */
+function syncBtns(){
+  var pb=$("btnPause"),w=state==="pause"?"play":"pause";
+  if(pb.dataset.ic!==w){pb.dataset.ic=w;pb.insertAdjacentHTML("afterbegin",SW_ICON(w))}
+  var ob=$("ovBtn"),o="play";
+  if(ob.dataset.ic!==o){ob.dataset.ic=o;ob.insertAdjacentHTML("afterbegin",SW_ICON(o))}
+}
+function fx(dt){
+  if(scoreMe!==pMe||scoreAi!==pAi){if(scoreMe>pMe)goalBurst(true);else if(scoreAi>pAi)goalBurst(false);pMe=scoreMe;pAi=scoreAi}
+  shake=Math.max(0,shake-dt);cool.me=Math.max(0,cool.me-dt);cool.ai=Math.max(0,cool.ai-dt);
+  pop.me=Math.max(0,pop.me-dt*3.2);pop.ai=Math.max(0,pop.ai-dt*3.2);
+  if(state==="play"&&!window.__gRM){trail.push({x:puck.x,y:puck.y});if(trail.length>14)trail.shift()}else if(trail.length)trail.shift();
+  hitScan(me,"me");hitScan(ai,"ai");
+  for(var i=parts.length-1;i>=0;i--){var p=parts[i];p.vy+=380*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life+=dt;if(p.life>=p.ttl)parts.splice(i,1)}
+  for(i=rings.length-1;i>=0;i--){var r=rings[i];r.life+=dt;if(r.life>=r.ttl)rings.splice(i,1)}
+  syncBtns();
 }
 /* ---------- 主循环 ---------- */
 var last=0;
@@ -360,15 +379,14 @@ function loop(ts){
   var dt=Math.min(0.033,(ts-last)/1000||0);last=ts;
   update(dt);
   if(flash>0)flash-=dt;
+  fx(dt);
   draw();
   requestAnimationFrame(loop);
 }
 /* ---------- 输入 ---------- */
 var holding=false;
-function setTarget(e){
-  var rect=cv.getBoundingClientRect();
-  me.tx=e.clientX-rect.left;me.ty=e.clientY-rect.top;
-}
+function toLocal(e){var r=cv.getBoundingClientRect(),sx=r.width?L.W/r.width:1,sy=r.height?L.H/r.height:1;return{x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy}}
+function setTarget(e){var p=toLocal(e);me.tx=p.x;me.ty=p.y}
 cv.addEventListener("pointerdown",function(e){
   holding=true;setTarget(e);
   try{cv.setPointerCapture(e.pointerId)}catch(err){}

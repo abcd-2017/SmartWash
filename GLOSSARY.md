@@ -680,24 +680,25 @@
 
 ### 10.11 点单订单（dining_order / dining_order_member / dining_order_menu / dining_order_item）
 
-- **代码标识**：`dining_order`、`DiningOrder`、`/web/auth/dining/orders`（ROLE_USER）；成员 `dining_order_member` / 本单菜单 `dining_order_menu` / 选菜记录 `dining_order_item`。
-- **定义**：一人发起点单（title + 从菜谱库勾选本单菜单，支持 `fromOrderId` 复用历史菜单）、生成二维码分享（内容 `https://{host}/dining/join/{orderId}?t={join_token}`），他人扫码 → brief 确认弹窗 → 加入（创建者即首个成员）；共享购物车勾选想吃的菜（一人一菜一条，note 备注，取消即删行）；发起者结束后生成购买清单（食材名并集去重 + 按菜视图，`ShoppingListAssembler` 纯函数，快照落 `shopping_list` 列）。
-- **version 轮询协议**：`dining_order.version` 乐观并发——所有选菜变更走条件 UPDATE `WHERE id=? AND version=? SET version=version+1`，不匹配返回业务错误码 409（客户端拉取最新后重放）；详情接口为轮询主接口，客户端带 `knownVersion`，一致返回 `unchanged=true` 轻量响应，不一致/未带返回全量。
+- **代码标识**：`dining_order`、`DiningOrder`、`/web/auth/dining/orders`（ROLE_USER）；成员 `dining_order_member` / 本单菜单 `dining_order_menu` / 选菜记录 `dining_order_item`（**已停写**，仅兼容历史数据）。
+- **定义**：一人发起点单（title + 从菜谱库勾选本单菜单，支持 `fromOrderId` 复用历史菜单）、生成二维码分享（内容 `https://{host}/dining/join/{orderId}?t={join_token}`），他人扫码 → brief 确认弹窗 → 加入（创建者即首个成员）；**菜单即已选清单**——全体成员共同编辑本单菜单（加/移除菜，version 乐观并发，无「个人选菜」归属）；**任一成员提交**（结束权=全体成员，提交即结束）后生成购买清单（食材名并集去重 + 按菜视图，`ShoppingListAssembler` 纯函数，快照落 `shopping_list` 列）。
+- **version 轮询协议**：`dining_order.version` 乐观并发——加菜/移除/提交/放弃走条件 UPDATE `WHERE id=? AND version=? SET version=version+1`（重置凭证不递增），不匹配返回业务错误码 409（客户端拉取最新后重放）；详情接口为轮询主接口，客户端带 `knownVersion`，一致返回 `unchanged=true` 轻量响应，不一致/未带返回全量。
+- **成员忌口与清单分享**：详情 `members` 带 `allergens`（批量查 `user_dietary_preference`，同单可见，无记录空表）；Android 分享页聚合去重展示「成员忌口」（不关联个人）。购买清单页可生成竖版分享海报（`DiningShoppingListPoster` 纯 Android Graphics，米白底 + 标题 + 食材行含已买勾选 + 品牌脚，复用 FileProvider 授权目录经系统分享面板分发）。
 - **四端对应物**：
-  - 后端：`dining/`（`WebDiningOrderController` / `WebDiningOrderItemController`，ROLE_USER；`DiningRecipeGate` 为点单对菜谱库的窄访问门面）。
-  - Android：`:feature:dining:{api,impl}`（07 号票发起链路）——`DiningServiceApi` 订单三接口（create/my/orderDetail）+ `DiningOrderStatus` 枚举映射；订单列表页（域首页，深链 host `dining` 落点 + 工作台入口）/ 创建订单页 / 分享视图 / 点单页 `OrderDetail`（09 号票：美团式左分类栏 + 右菜品列表 + 底部已选栏 + 参与者区 + 发起者「结束点单」占位入口；左右联动派生逻辑在 `DiningMenuNavigator` 纯函数，本地勾选/备注即时生效，写接口 version 冲突重放留 10 号票）。二维码内容 `{BASE_URL origin}/dining/join/{orderId}?t={join_token}`，token 由创建响应与**发起者**详情响应下发。鸿蒙：已实现（订单列表/创建/分享/加入入口/点单页/购买清单全链路；深链 host `dining` 已注册；version 冲突简化为失败全量刷新，差分重放未实现）。契约以 `WebDiningOrderController` / `WebDiningOrderItemController` 为源。Web：无用户端（管理后台不消费点单订单）。
-- **易混淆点**：join_token 重置即旧二维码全部作废（仅发起者，仅 ONGOING）；加入三类失败各有明确业务提示（凭证无效/已结束/重复加入）；FINISHED 后拒绝一切选菜写入且不递增 version；version 只由选菜变更驱动，重置凭证不触碰 version；详情接口仅向发起者回传 join_token（参与者与轻量 `unchanged=true` 响应不下发，端上沿用首次全量值）。
+  - 后端：`dining/`（`WebDiningOrderController`，ROLE_USER；`DiningRecipeGate` 为点单对菜谱库的窄访问门面）。
+  - Android：`:feature:dining:{api,impl}`——`DiningServiceApi` 订单接口 + `DiningOrderStatus` 枚举映射；订单列表页（域首页，深链 host `dining` 落点 + 工作台入口）/ 创建订单页（常规 / 草稿编辑 / 复用历史三模式，草稿协同与 version 冲突差分重放落在 `DiningOrderCreateViewModel` + `DiningDraftMenuEditor`）/ 分享视图（二维码 + 在线成员 + 定向邀请）/ 购买清单结果页。二维码内容 `{BASE_URL origin}/dining/join/{orderId}?t={join_token}`，token 由创建响应与**发起者**详情响应下发。鸿蒙：订单列表/创建（含差分重放）/分享/加入/购买清单全链路；**无主动同步通道**（无 SSE/轮询，仅 409 与进页刷新），**无在线成员/定向邀请/营养超标提醒**。契约以 `WebDiningOrderController` 为源。Web：无用户端（管理后台不消费点单订单）。
+- **易混淆点**：join_token 重置即旧二维码全部作废（仅发起者，仅 DRAFT）；加入三类失败各有明确业务提示（凭证无效/已结束/重复加入）；FINISHED 后拒绝一切写入；version 由加菜/移除/提交/放弃递增（重置凭证不触碰 version）；详情接口仅向发起者回传 join_token（参与者与轻量 `unchanged=true` 响应不下发，端上沿用首次全量值）。
 
 ### 10.12 同步通道与复用入口（DiningOrderSyncChannel / fromOrderId / 再来一单）
 
-- **代码标识**：`DiningOrderSyncChannel`、`PollingDiningOrderSyncChannel`、`DiningSyncLifecycle`、`DiningCartSyncCoordinator`、`CreateDiningOrderFrom.fromOrderId`、`DiningRoute.OrderCreate(fromOrderId)`
-- **定义**：共享购物车同步的传输层抽象——业务只依赖 `DiningOrderSyncChannel`「订阅订单变更」语义，首实现 `PollingDiningOrderSyncChannel` 在点单页可见时约 3s 带 `knownVersion` 轮询详情（unchanged 轻量），后续可换 SSE/WebSocket 而不动业务代码。写操作携带已知 `version`，服务端不匹配返回业务码 409，端上经 `DiningCartSyncCoordinator` 以「服务端真相 + 本地意图」差分光重放（他人变更永不覆盖），失败全量刷新回滚。历史订单「再来一单」= 创建时携带 `fromOrderId` 复用源单本单菜单（当前用户须为源单成员，复用菜谱仍须上架，后端整份复制、逐道保序）。
+- **代码标识**：`DiningOrderSyncChannel`、`SseDiningOrderSyncChannel`、`PollingDiningOrderSyncChannel`、`DiningDraftMenuEditor`、`CreateDiningOrderFrom.fromOrderId`、`DiningRoute.OrderCreate(fromOrderId)`
+- **定义**：共享购物车同步的传输层抽象——业务只依赖 `DiningOrderSyncChannel`「订阅订单变更」语义；主实现 `SseDiningOrderSyncChannel`（后端推变更信号、端上回拉详情），失败降级 `PollingDiningOrderSyncChannel`（约 3s 带 `knownVersion` 轮询）。写操作携带已知 `version`，服务端不匹配返回业务码 409，端上经 `DiningDraftMenuEditor` 以「服务端真相 + 本地意图」差分光重放（他人变更永不覆盖），失败全量刷新回滚。历史订单「再来一单」= 创建时携带 `fromOrderId` 复用源单本单菜单（当前用户须为源单成员，复用菜谱仍须上架，后端整份复制、逐道保序）。
 - **四端对应物**：
   - 后端：`dining/`（`WebDiningOrderController` 的 `knownVersion` 轮询协议 + version 乐观并发；`CreateDiningOrderFrom.fromOrderId` 复用解析在 `DiningOrderServiceImpl`）。
-  - Android：`:feature:dining:impl`（`sync/DiningOrderSyncChannel` + `PollingDiningOrderSyncChannel` + `DiningSyncLifecycle`，点单页消费；订单列表卡「再来一单」→ `DiningRoute.OrderCreate(fromOrderId)` → 创建页复用模式，13 号票）。
-  - 鸿蒙：已实现（3s knownVersion 轮询 + 再来一单 fromOrderId；壳层扫一扫已实现（ScanKit 官方默认扫码页，工作台常驻入口））。契约以后端 `knownVersion` 轮询协议与 `fromOrderId` 创建契约为准。
+  - Android：`:feature:dining:impl`（`sync/DiningOrderSyncChannel` + `SseDiningOrderSyncChannel` + `PollingDiningOrderSyncChannel`，创建页草稿消费；订单列表卡「再来一单」→ `DiningRoute.OrderCreate(fromOrderId)` → 创建页复用模式）。
+  - 鸿蒙：差分重放与再来一单 fromOrderId 已实现；**无主动同步通道**（SSE/轮询），仅 409 与进页刷新；壳层扫一扫已实现（ScanKit 官方默认扫码页，工作台常驻入口）。契约以后端 `knownVersion` 轮询协议与 `fromOrderId` 创建契约为准。
   - Web：无用户端（管理后台不消费点单订单）。
-- **易混淆点**：version 只由选菜变更驱动（重置凭证/结束点单都不递增）；复用创建仍过上架把关，源单含已下架菜时整体拒绝；复用模式端上菜单只读回显（`toggleRecipe` 忽略），提交不传 recipeIds。
+- **易混淆点**：version 由加菜/移除/提交/放弃递增（重置凭证不递增）；复用创建仍过上架把关，源单含已下架菜时整体拒绝；复用模式端上菜单只读回显（`toggleRecipe` 忽略），提交不传 recipeIds。
 
 ### 10.13 配料库与营养（dining_ingredient / dining_recipe_ingredient / 菜谱营养 6 列）
 

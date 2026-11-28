@@ -6,10 +6,11 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>敲钟节奏</title>
 <style>
-  /*token:GAME-THEME.md§2（三口钟素材 token 统一 --g-st- 前缀，§3 D2）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-st-b1:#2D9B6A;--g-st-b2:#D9822B;--g-st-b3:#4A9FD4;--g-st-shrine:#E7E2D4;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-b1:#2D9B6A;--g-st-b2:#B8681F;--g-st-b3:#4A9FD4;--g-st-shrine:#20231C;color-scheme:dark }
+  /*token:GAME-THEME.md§2 基线 + §3 素材 token（钟楼天空/木梁/地面/三口钟，前缀 bs-）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-bs-sky1:#F8EFD8;--g-bs-sky2:#EDD8AC;--g-bs-beam:#A87C46;--g-bs-floor:#E6DCC4;--g-bs-b1:#1F8A5B;--g-bs-b2:#C0731F;--g-bs-b3:#2E86C4;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-bs-sky1:#1A1C17;--g-bs-sky2:#10120E;--g-bs-beam:#4A3520;--g-bs-floor:#22251F;--g-bs-b1:#5BC894;--g-bs-b2:#E8A44E;--g-bs-b3:#7FBFEC;color-scheme:dark }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
@@ -25,24 +26,37 @@
   .wrap { width: 100%; max-width: 480px; }
   header { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
   .boxes { display: flex; gap: 8px; }
-  .box { background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; }
+  /* 入场错落 30-50ms：三块记分依次浮起 */
+  .box { background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .box:nth-child(2) { animation-delay: 40ms; }
+  .box:nth-child(3) { animation-delay: 80ms; }
   .box.alt { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
   .box .label { display: block; font-size: 12px; }
   .box b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .box b.bump { animation: bump .3s ease-out; }
   .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 16px 0 10px; }
-  .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
-  .btn { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer; }
-  .btn.ghost { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
-  .btn:active { opacity: .85; }
+  .hint { margin: 0; font-size: 14px; line-height: 1.5; color: var(--g-muted); }
+  .btn { min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; box-shadow: var(--g-shadow); transition: transform .14s ease-out, box-shadow .16s ease-out, filter .16s ease-out; }
+  .btn.ghost { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); box-shadow: none; }
+  .btn:active { transform: scale(.96); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .stage { position: relative; width: 100%; }
-  canvas { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: var(--g-radius-inner); border: 1px solid var(--g-border); background: var(--g-surface); touch-action: none; }
+  canvas { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: var(--g-radius-inner); border: 1px solid var(--g-border); background: var(--g-bs-sky1); touch-action: none; box-shadow: var(--g-shadow); }
   .overlay { position: absolute; inset: 0; border-radius: var(--g-radius-inner); background: var(--g-scrim); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; text-align: center; }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-  .card { width: 100%; max-width: 320px; max-height: 100%; overflow: auto; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 16px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.16); } 100% { transform: scale(1); } }
+  .card { width: 100%; max-width: 320px; max-height: 100%; overflow: auto; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 16px; animation: pop .3s ease-out; }
   .ov-kicker { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .1em; color: var(--g-muted); }
   .card h2 { margin: 0 0 8px; font-size: 18px; line-height: 1.25; color: var(--g-text); }
   .ov-text { margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: var(--g-muted); }
+  /* 三秒读懂：我控制什么 / 目标是什么 / 该点哪 */
+  .ov-legend { display: flex; gap: 6px; margin: 0 0 12px; }
+  .ov-legend .li { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: 10px; background: var(--g-surface2); color: var(--g-muted); font-size: 12px; line-height: 1.3; }
+  .ov-legend .li b { font-size: 12px; font-weight: 600; color: var(--g-text); }
+  .ov-legend .swi { color: var(--g-primary-deep); }
   .ov-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 12px; }
   .ov-stats .st { background: var(--g-surface2); border-radius: 10px; padding: 7px 4px; }
   .ov-stats b { display: block; font-size: 18px; color: var(--g-primary-deep); font-variant-numeric: tabular-nums; }
@@ -50,10 +64,28 @@
   .ov-btns { display: grid; gap: 8px; }
   .foot { margin: 14px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; }
 
-  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束）
+     同时压平 animation-duration 与 animation-delay，否则错落入场会退化成整体延迟后闪现 */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:.01ms !important; transition-duration:.01ms !important} }
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'tap':'<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>',
+ 'bell':'<path d="M12 4a5.5 5.5 0 0 0-5.5 5.5v3.2L4.5 16v1.2h15V16l-2-3.3V9.5A5.5 5.5 0 0 0 12 4z"/><path d="M10 19.5a2 2 0 0 0 4 0"/>',
+ 'target':'<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.6"/>',
+ 'pause':'<rect x="6.5" y="5" width="3.6" height="14" rx="1.1"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.1"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={'play':1,'pause':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -90,6 +122,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         <p class="ov-kicker" id="ovK"></p>
         <h2 id="ovT"></h2>
         <p class="ov-text" id="ovX"></p>
+        <div class="ov-legend" id="ovL" hidden></div>
         <div class="ov-stats" id="ovS"></div>
         <div class="ov-btns" id="ovB"></div>
       </div>
@@ -128,6 +161,10 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+  /* 工具钮图标：文字前内联 SVG（SW_ICON 范式） */
+  var bp=document.getElementById("btnPause"),br=document.getElementById("btnReset");
+  if(bp)bp.insertAdjacentHTML("afterbegin",window.SW_ICON("pause"));
+  if(br)br.insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
 })();
 </script>
 <script>
@@ -219,32 +256,63 @@ function syncSaveFromServer(){
     }catch(e){}
   }).catch(function(){});
 }
-/* ---------- 调色板:CSS变量 → canvas ---------- */
+/* ---------- 调色板:CSS变量 → canvas（派生色仅同色相明度推拉） ---------- */
 var PAL={};
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（投影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
+function colAlpha(c,a){var p=colParse(c);return "rgba("+p[0]+","+p[1]+","+p[2]+","+a+")"}
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
   function v(n){return s.getPropertyValue(n).trim()}
-  PAL.bg=v("--g-bg");PAL.surface=v("--g-surface");PAL.surface2=v("--g-surface2");PAL.border=v("--g-border");
-  PAL.text=v("--g-text");PAL.muted=v("--g-muted");PAL.faint=v("--g-faint");
-  PAL.primary=v("--g-primary");PAL.deep=v("--g-primary-deep");PAL.soft=v("--g-primary-soft");PAL.onSoft=v("--g-on-soft");
+  PAL.text=v("--g-text");PAL.muted=v("--g-muted");PAL.deep=v("--g-primary-deep");
   PAL.danger=v("--g-danger");PAL.warning=v("--g-warning");PAL.success=v("--g-success");
-  PAL.shrine=v("--g-st-shrine");
-  PAL.bell=["--g-st-b1","--g-st-b2","--g-st-b3"].map(function(n){return s.getPropertyValue(n).trim()});
+  PAL.dark=document.documentElement.dataset.theme==="dark";
+  /* 素材基色：天空 / 木梁 / 地面 / 三口钟 */
+  PAL.sky1=v("--g-bs-sky1");PAL.sky2=v("--g-bs-sky2");
+  PAL.beam=v("--g-bs-beam");PAL.floor=v("--g-bs-floor");
+  PAL.bell=["--g-bs-b1","--g-bs-b2","--g-bs-b3"].map(function(n){return v(n)});
+  /* 派生：光晕 / 木梁与地面明暗面 / 轨道槽 / 远景 */
+  PAL.skyHi=colShade(PAL.sky1,0.30);
+  PAL.beamHi=colShade(PAL.beam,0.26);PAL.beamLo=colShade(PAL.beam,-0.32);
+  PAL.floorHi=colShade(PAL.floor,0.22);PAL.floorLo=colShade(PAL.floor,-0.24);
+  PAL.track=colMix(PAL.sky2,PAL.text,0.14);
+  PAL.roofFar=colMix(PAL.beam,PAL.sky2,PAL.dark?0.30:0.62);
+  PAL.roofNear=colShade(PAL.roofFar,-0.12);
+  PAL.bellHi=PAL.bell.map(function(c){return colShade(c,0.44)});
+  PAL.bellLo=PAL.bell.map(function(c){return colShade(c,-0.30)});
+  PAL.bellInk=PAL.bell.map(function(c){return colShade(c,-0.46)});
 }
 window.__gOnTheme=function(){palLoad();draw();};
 /* ---------- DOM ---------- */
 function $(id){return document.getElementById(id)}
 var cv=$("cv"),ctx=cv.getContext("2d"),ov=$("ov");
 var hudScore=$("hudScore"),hudCombo=$("hudCombo"),hudLv=$("hudLv");
-var ovK=$("ovK"),ovT=$("ovT"),ovX=$("ovX"),ovS=$("ovS"),ovB=$("ovB");
+var ovK=$("ovK"),ovT=$("ovT"),ovX=$("ovX"),ovL=$("ovL"),ovS=$("ovS"),ovB=$("ovB");
 var chartIdx=Math.min(save.lv,LEVELS.length-1);
 var S={phase:"menu",paused:false,notes:[],ni:0,elapsed:0,dur:0,
-  score:0,combo:0,maxCombo:0,hp:3,judges:[],laneFlash:[0,0,0],missT:0,pa:0,perfect:0,good:0,poor:0,miss:0};
+  score:0,combo:0,maxCombo:0,hp:3,judges:[],laneFlash:[0,0,0],missT:0,pa:0,perfect:0,good:0,poor:0,miss:0,
+  /* 渲染层状态：场景入场计时 / 钟摆 / 命中波环与粒子 / 受击红闪 */
+  animT:0,bellSwing:[0,0,0],rings:[],parts:[],redFlash:0};
 function curChart(){return LEVELS[Math.min(chartIdx,LEVELS.length-1)]}
+function bumpEl(el){if(!el||window.__gRM)return;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump")}
+var lastHud={score:-1,combo:-1,lv:""};
 function syncHud(){
-  hudScore.textContent=String(S.score);
-  hudCombo.textContent=String(S.combo);
-  hudLv.textContent=(chartIdx+1)+"/"+LEVELS.length;
+  if(S.score!==lastHud.score){hudScore.textContent=String(S.score);bumpEl(hudScore);lastHud.score=S.score}
+  if(S.combo!==lastHud.combo){hudCombo.textContent=String(S.combo);bumpEl(hudCombo);lastHud.combo=S.combo}
+  var lvTxt=(chartIdx+1)+"/"+LEVELS.length;
+  if(lvTxt!==lastHud.lv){hudLv.textContent=lvTxt;lastHud.lv=lvTxt}
 }
 function loadChart(n){
   chartIdx=Math.max(0,Math.min(n,LEVELS.length-1));
@@ -258,6 +326,8 @@ function loadChart(n){
   S.score=0;S.combo=0;S.maxCombo=0;S.hp=3;
   S.judges.length=0;S.laneFlash=[0,0,0];S.missT=0;
   S.perfect=0;S.good=0;S.poor=0;S.miss=0;
+  /* 渲染层：开谱重放场景入场，清掉上一谱的命中特效 */
+  S.animT=0;S.bellSwing=[0,0,0];S.rings.length=0;S.parts.length=0;S.redFlash=0;
   syncHud();hideOv();
 }
 /* ---------- 钟声（WebAudio，首次手势解锁） ---------- */
@@ -305,11 +375,18 @@ function showOv(o){
   var st=o.stats||[];
   ovS.style.display=st.length?"grid":"none";
   ovS.innerHTML=st.map(function(s){return '<div class="st"><b>'+s[1]+"</b><span>"+s[0]+"</span></div>"}).join("");
+  if(o.legend){
+    ovL.hidden=false;
+    ovL.innerHTML=o.legend.map(function(it){
+      return '<span class="li">'+window.SW_ICON(it[0])+"<span><b>"+it[1]+"</b>"+it[2]+"</span></span>";
+    }).join("");
+  }else ovL.hidden=true;
   ovB.innerHTML="";
   (o.btns||[]).forEach(function(b){
     var el=document.createElement("button");
     el.className="btn"+(b[1]==="ghost"?" ghost":"");
-    el.textContent=b[0];el.addEventListener("click",b[2]);ovB.appendChild(el);
+    el.innerHTML=(b[3]?window.SW_ICON(b[3]):"")+b[0];
+    el.addEventListener("click",b[2]);ovB.appendChild(el);
   });
   ov.classList.add("show");
 }
@@ -324,14 +401,15 @@ function pauseGame(){
       var dt=performance.now()-S.pa;
       S.timeBase+=dt;
       hideOv();
-    }],["重敲本谱","ghost",function(){loadChart(chartIdx)}]]});
+    },"play"],["重敲本谱","ghost",function(){loadChart(chartIdx)},"rotate"]]});
 }
 function showMenu(){
   S.phase="menu";
   showOv({k:"BELL STRIKE",t:"敲钟节奏",
     x:"钟球沿三栏落向钟线，落线瞬间敲对应钟：Perfect ≤60ms +150、Good ≤130ms +80、Poor ≤220ms +30，漏敲 -1 钟（共 3 口）。谱越往后越密，共 42 谱。",
+    legend:[["tap","我控制","点按三栏"],["bell","目标","球落到判定线"],["target","该点哪","球进环时敲"]],
     stats:[["进度",chartIdx+1+"/"+LEVELS.length]],
-    btns:[["开始 · 第 "+(chartIdx+1)+" 谱","primary",function(){ensureAudio();loadChart(chartIdx)}]]});
+    btns:[["开始 · 第 "+(chartIdx+1)+" 谱","primary",function(){ensureAudio();loadChart(chartIdx)},"play"]]});
 }
 /* ---------- 判定 ---------- */
 function judge(t,lane,elapsed,note){
@@ -350,6 +428,7 @@ function judge(t,lane,elapsed,note){
   note.hit=true;note.gr=gr;
   S.judges.push({x:(lane+0.5)*MW/3,y:LINE_Y-46,txt:txt+" +"+pts,col:col,t:.7});
   S.laneFlash[lane]=1;
+  spawnHit(lane,gr);
   bellTone(lane,gr);
   syncHud();
 }
@@ -359,6 +438,7 @@ function doMiss(note){
   S.combo=0;
   S.hp--;
   S.missT=.4;
+  spawnMiss(note.lane);
   thud();
   S.judges.push({x:(note.lane+0.5)*MW/3,y:LINE_Y-46,txt:"漏",col:PAL.danger,t:.7});
   syncHud();
@@ -399,15 +479,15 @@ function win(){
   showOv({k:"CHART CLEAR",t:"第 "+(chartIdx+1)+" 谱完成",
     x:next?"解锁下一谱：节拍更密，耳朵比眼睛快。":"全部谱面完成，敲钟乐师！",
     stats:[["准确率",pRate+"%"],["最高连击",S.maxCombo],["分数",S.score]],
-    btns:hasNext?[["下一谱","primary",function(){ensureAudio();loadChart(chartIdx+1)}],["重敲本谱","ghost",function(){loadChart(chartIdx)}]]
-                :[["再来一轮","primary",function(){ensureAudio();loadChart(0)}]]});
+    btns:hasNext?[["下一谱","primary",function(){ensureAudio();loadChart(chartIdx+1)},"arrow-right"],["重敲本谱","ghost",function(){loadChart(chartIdx)},"rotate"]]
+                :[["再来一轮","primary",function(){ensureAudio();loadChart(0)},"rotate"]]});
 }
 function fail(){
   S.phase="over";
   showOv({k:"BROKEN",t:"钟敲碎了",
     x:"漏敲 3 次中断。先练慢谱：眼睛盯落点，耳朵跟节拍。",
     stats:[["分数",S.score],["最高连击",S.maxCombo]],
-    btns:[["重敲本谱","primary",function(){loadChart(chartIdx)}]]});
+    btns:[["重敲本谱","primary",function(){loadChart(chartIdx)},"rotate"]]});
 }
 /* ---------- 绘制 ---------- */
 var SC=1;
@@ -419,74 +499,287 @@ function resize(){
   SC=r.width/MW;
   ctx.setTransform(dpr*SC,0,0,dpr*SC,0,0);
 }
-function drawBell(x,y,lane,scale,alpha){
-  ctx.globalAlpha=alpha==null?1:alpha;
-  var s=(scale||1);
-  ctx.fillStyle=PAL.bell[lane];
-  ctx.strokeStyle=PAL.shrine;ctx.lineWidth=2;
+/* ---------- 场景几何（天空/墙/地面/目标/轨迹） ---------- */
+var BEAM_Y=26,BELL_Y=34,TRACK_TOP=116,FLOOR_Y=420,ORB_R=14;
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function roofPath(cx,baseY,halfW,rise){
   ctx.beginPath();
-  ctx.moveTo(x-16*s,y+12*s);
-  ctx.quadraticCurveTo(x-13*s,y-20*s,x,y-20*s);
-  ctx.quadraticCurveTo(x+13*s,y-20*s,x+16*s,y+12*s);
-  ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.fillRect(x-20*s,y+12*s,40*s,5*s);
-  ctx.globalAlpha=1;
+  ctx.moveTo(cx-halfW,baseY);
+  ctx.quadraticCurveTo(cx-halfW*0.98,baseY-rise*0.86,cx-halfW*0.52,baseY-rise*0.82);
+  ctx.quadraticCurveTo(cx,baseY-rise*1.06,cx+halfW*0.52,baseY-rise*0.82);
+  ctx.quadraticCurveTo(cx+halfW*0.98,baseY-rise*0.86,cx+halfW,baseY);
+  ctx.closePath();
+}
+/* 入场进度：reduced-motion 直接落位 */
+function enter(t,start,dur){
+  if(window.__gRM)return 1;
+  var p=(t-start)/dur;p=p<0?0:p>1?1:p;
+  return 1-Math.pow(1-p,3);
+}
+function drawBackdrop(){
+  var g=ctx.createLinearGradient(0,0,0,MH);
+  g.addColorStop(0,PAL.sky1);g.addColorStop(0.55,PAL.sky2);g.addColorStop(1,PAL.sky2);
+  ctx.fillStyle=g;ctx.fillRect(0,0,MW,MH);
+  var rg=ctx.createRadialGradient(MW/2,58,10,MW/2,58,250);
+  rg.addColorStop(0,colAlpha(PAL.skyHi,0.85));rg.addColorStop(1,colAlpha(PAL.skyHi,0));
+  ctx.fillStyle=rg;ctx.fillRect(0,0,MW,MH);
+  /* 远景：殿顶剪影（背景层） */
+  ctx.fillStyle=PAL.roofFar;roofPath(MW/2,148,196,56);ctx.fill();
+  ctx.fillStyle=PAL.roofNear;roofPath(MW/2,142,150,44);ctx.fill();
+}
+function drawBeam(){
+  var g=ctx.createLinearGradient(0,0,0,BEAM_Y);
+  g.addColorStop(0,PAL.beamHi);g.addColorStop(0.5,PAL.beam);g.addColorStop(1,PAL.beamLo);
+  ctx.fillStyle=g;ctx.fillRect(0,0,MW,BEAM_Y);
+  ctx.fillStyle=colAlpha(PAL.beamHi,0.8);ctx.fillRect(0,0,MW,2);
+  ctx.fillStyle=colAlpha(PAL.beamLo,0.9);ctx.fillRect(0,BEAM_Y-3,MW,3);
+  ctx.fillStyle=colAlpha(PAL.beamLo,0.5);
+  for(var k=1;k<6;k++)ctx.fillRect(k*80-1,4,2,BEAM_Y-8);
+}
+function drawPillar(x,w,innerLeft){
+  var g=ctx.createLinearGradient(x,0,x+w,0);
+  g.addColorStop(0,PAL.beamLo);g.addColorStop(0.4,PAL.beam);g.addColorStop(1,PAL.beamLo);
+  ctx.fillStyle=g;ctx.fillRect(x,BEAM_Y,w,FLOOR_Y-BEAM_Y);
+  ctx.fillStyle=colAlpha(PAL.beamHi,0.85);
+  ctx.fillRect(innerLeft?x:x+w-2,BEAM_Y,2,FLOOR_Y-BEAM_Y);
+  ctx.fillStyle=colAlpha(PAL.beamLo,0.9);ctx.fillRect(x,BEAM_Y,w,3);
+}
+function drawFloor(){
+  var g=ctx.createLinearGradient(0,FLOOR_Y,0,MH);
+  g.addColorStop(0,PAL.floorHi);g.addColorStop(0.14,PAL.floor);g.addColorStop(1,PAL.floorLo);
+  ctx.fillStyle=g;ctx.fillRect(0,FLOOR_Y,MW,MH-FLOOR_Y);
+  ctx.fillStyle=colAlpha(PAL.floorLo,0.85);ctx.fillRect(0,FLOOR_Y,MW,2);
+  ctx.fillStyle=colAlpha(PAL.floorLo,0.5);
+  ctx.fillRect(0,FLOOR_Y+26,MW,2);ctx.fillRect(0,FLOOR_Y+44,MW,2);
+  for(var k=0;k<6;k++)ctx.fillRect(30+k*78,FLOOR_Y+2,2,24);
+  for(k=0;k<6;k++)ctx.fillRect(70+k*78,FLOOR_Y+28,2,16);
+  /* 落点环在地面上的投影 */
+  ctx.fillStyle=colAlpha(BLACK,0.10);
+  for(k=0;k<LANES;k++){ctx.beginPath();ctx.ellipse((k+0.5)*MW/LANES,FLOOR_Y+12,24,5,0,0,Math.PI*2);ctx.fill()}
+}
+/* 三栏落球凹槽（轨迹）：槽底 + 两侧棱线，敲钟时的 laneFlash 叠在槽内 */
+function drawTracks(){
+  var w=MW/LANES,x,i;
+  for(i=0;i<LANES;i++){
+    x=i*w;
+    var g=ctx.createLinearGradient(0,TRACK_TOP,0,LINE_Y);
+    g.addColorStop(0,colAlpha(PAL.track,0.55));g.addColorStop(1,colAlpha(PAL.track,0.16));
+    ctx.fillStyle=g;ctx.fillRect(x+4,TRACK_TOP,w-8,LINE_Y-TRACK_TOP);
+    if(S.laneFlash[i]>0){
+      ctx.fillStyle=colAlpha(PAL.bell[i],0.20*S.laneFlash[i]);
+      ctx.fillRect(x+4,TRACK_TOP,w-8,LINE_Y-TRACK_TOP);
+    }
+    ctx.fillStyle=colAlpha(colShade(PAL.track,-0.18),0.6);
+    ctx.fillRect(x+4,TRACK_TOP,2,LINE_Y-TRACK_TOP);
+    ctx.fillRect(x+w-6,TRACK_TOP,2,LINE_Y-TRACK_TOP);
+  }
+}
+function drawLine(){
+  ctx.fillStyle=colAlpha(PAL.deep,0.16);ctx.fillRect(0,LINE_Y-9,MW,18);
+  ctx.fillStyle=PAL.deep;ctx.fillRect(0,LINE_Y-2,MW,4);
+  ctx.fillStyle=colAlpha(WHITE,0.55);ctx.fillRect(0,LINE_Y-2,MW,1.5);
+}
+function drawRing(cx,lane,flash,approach){
+  var r=18,a=Math.max(flash,approach*0.85);
+  ctx.fillStyle=colAlpha(PAL.bell[lane],0.12+0.30*a);
+  ctx.beginPath();ctx.arc(cx,LINE_Y,r,0,Math.PI*2);ctx.fill();
+  ctx.lineWidth=3;ctx.strokeStyle=PAL.bell[lane];
+  ctx.beginPath();ctx.arc(cx,LINE_Y,r,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=PAL.text;
+  ctx.font="700 12px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText(["A","S","D"][lane],cx,LINE_Y+0.5);
+}
+/* 悬挂的钟（目标）：渐变钟体 + 口缘 + 钟锤 + 高光 + 投影 */
+function drawBell(x,y,lane,scale,swing,alpha){
+  var s=scale||1;
+  ctx.save();
+  ctx.globalAlpha=alpha==null?1:alpha;
+  ctx.translate(x,y);
+  ctx.rotate(swing||0);
+  ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=9*s;ctx.shadowOffsetY=4*s;
+  var g=ctx.createLinearGradient(-16*s,2*s,18*s,42*s);
+  g.addColorStop(0,PAL.bellHi[lane]);g.addColorStop(0.45,PAL.bell[lane]);g.addColorStop(1,PAL.bellLo[lane]);
+  ctx.fillStyle=g;
+  ctx.beginPath();
+  ctx.moveTo(-7*s,2*s);
+  ctx.quadraticCurveTo(-13*s,2*s,-14*s,10*s);
+  ctx.quadraticCurveTo(-15*s,24*s,-21*s,31*s);
+  ctx.lineTo(-23*s,39*s);ctx.lineTo(23*s,39*s);ctx.lineTo(21*s,31*s);
+  ctx.quadraticCurveTo(15*s,24*s,14*s,10*s);
+  ctx.quadraticCurveTo(13*s,2*s,7*s,2*s);
+  ctx.closePath();ctx.fill();
+  ctx.shadowColor="rgba(0,0,0,0)";ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+  ctx.fillStyle=PAL.bellLo[lane];rr(-25*s,38*s,50*s,7*s,3.5*s);ctx.fill();
+  ctx.fillStyle=colAlpha(PAL.bellHi[lane],0.9);rr(-25*s,38*s,50*s,2.6*s,1.3*s);ctx.fill();
+  ctx.fillStyle=PAL.bellInk[lane];
+  ctx.beginPath();ctx.arc(0,48*s,3.4*s,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=PAL.beamLo;ctx.lineWidth=2.4*s;
+  ctx.beginPath();ctx.arc(0,0,4*s,Math.PI,0);ctx.stroke();
+  ctx.globalAlpha=(alpha==null?1:alpha)*0.55;ctx.fillStyle=WHITE;
+  ctx.beginPath();ctx.ellipse(-8*s,16*s,3.2*s,8*s,0.28,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+/* 下落钟球：径向渐变球体 + 恒白高光 + 落地投影 + 速度尾迹 */
+function drawOrb(x,y,r,lane,alpha){
+  ctx.save();
+  ctx.globalAlpha=alpha==null?1:alpha;
+  ctx.shadowColor="rgba(0,0,0,0.30)";ctx.shadowBlur=r*0.7;ctx.shadowOffsetY=r*0.35;
+  var g=ctx.createRadialGradient(x-r*0.34,y-r*0.38,r*0.12,x,y,r*1.05);
+  g.addColorStop(0,PAL.bellHi[lane]);g.addColorStop(0.45,PAL.bell[lane]);g.addColorStop(1,PAL.bellLo[lane]);
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha=alpha==null?1:alpha;
+  ctx.lineWidth=Math.max(1.2,r*0.14);ctx.strokeStyle=PAL.bellInk[lane];
+  ctx.beginPath();ctx.arc(x,y,r-ctx.lineWidth*0.5,0,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=0.9*(alpha==null?1:alpha);ctx.fillStyle=WHITE;
+  ctx.beginPath();ctx.ellipse(x-r*0.32,y-r*0.38,r*0.26,r*0.15,-0.55,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawTrail(x,y,r,lane){
+  var h=54;
+  var g=ctx.createLinearGradient(0,y-r-h,0,y-r);
+  g.addColorStop(0,colAlpha(PAL.bell[lane],0));g.addColorStop(1,colAlpha(PAL.bell[lane],0.42));
+  ctx.fillStyle=g;
+  ctx.beginPath();
+  ctx.moveTo(x-r*0.55,y-r);ctx.lineTo(x+r*0.55,y-r);
+  ctx.lineTo(x+r*0.26,y-r-h);ctx.lineTo(x-r*0.26,y-r-h);
+  ctx.closePath();ctx.fill();
+}
+/* 余钟（生命）：梁上三口小钟 */
+function drawHp(){
+  for(var i=0;i<3;i++)drawBell(MW-14-i*22,4,i%3,0.3,0,i<S.hp?1:0.4);
+}
+/* ---------- 命中反馈（渲染层） ---------- */
+function spawnHit(lane,gr){
+  if(window.__gRM)return;
+  var cx=(lane+0.5)*MW/LANES;
+  S.rings.push({x:cx,y:LINE_Y,r:10,vr:190,life:0,ttl:0.42,c:PAL.bell[lane],w:3});
+  S.bellSwing[lane]=0.34;
+  var n=gr===2?12:gr===1?8:5,i;
+  for(i=0;i<n;i++){
+    var a=-Math.PI/2+(Math.random()-0.5)*2.2,sp=90+Math.random()*160;
+    S.parts.push({x:cx,y:LINE_Y-6,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+      r:1.6+Math.random()*2.4,life:0,ttl:0.42+Math.random()*0.25,c:PAL.bell[lane]});
+  }
+}
+function spawnMiss(lane){
+  if(window.__gRM)return;
+  var cx=(lane+0.5)*MW/LANES;
+  S.rings.push({x:cx,y:LINE_Y,r:8,vr:150,life:0,ttl:0.5,c:PAL.danger,w:3});
+  S.bellSwing[lane]=-0.22;
+  S.redFlash=0.5;
 }
 function draw(){
-  var L=curChart();
-  ctx.fillStyle=PAL.shrine;ctx.fillRect(0,0,MW,MH);
-  //三栏
-  for(var i=0;i<LANES;i++){
-    if(S.laneFlash[i]>0){
-      ctx.fillStyle=PAL.bell[i];
-      ctx.globalAlpha=.12*S.laneFlash[i];
-      ctx.fillRect(i*MW/3,0,MW/3,MH);
-      ctx.globalAlpha=1;
-    }
-    ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(i*MW/3,0);ctx.lineTo(i*MW/3,MH);ctx.stroke();
-    drawBell((i+0.5)*MW/3,54,i,0.8);
-    ctx.fillStyle=PAL.muted;ctx.font="700 12px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
-    ctx.fillText(["A","S","D"][i],(i+0.5)*MW/3,84);
-  }
-  //钟线
-  ctx.fillStyle=PAL.deep;ctx.fillRect(0,LINE_Y-2,MW,4);
-  ctx.globalAlpha=.25;
-  ctx.fillRect(0,LINE_Y-14,MW,1);
-  ctx.fillRect(0,LINE_Y+14,MW,1);
-  ctx.globalAlpha=1;
-  //钟球
+  var t=S.animT;
+  ctx.fillStyle=PAL.sky1;ctx.fillRect(0,0,MW,MH);
+  drawBackdrop();
+  /* 结构整体入场（地面/墙/梁/轨迹） */
+  var pSt=enter(t,0,.30);
+  ctx.save();ctx.globalAlpha=pSt;ctx.translate(0,(1-pSt)*10);
+  drawFloor();drawPillar(0,14,false);drawPillar(MW-14,14,true);drawBeam();drawTracks();
+  ctx.restore();
+  /* 判定线 + 落点环：环随来球靠近亮起（该点哪） */
+  var approach=[0,0,0],i,nt,dt;
   for(i=0;i<S.notes.length;i++){
-    var nt=S.notes[i];
-    if(nt.hit)continue;
-    var dt=nt.t-S.elapsed;
+    nt=S.notes[i];if(nt.hit)continue;
+    dt=nt.t-S.elapsed;
+    if(dt>TRAVEL)break;
+    if(dt>0&&dt<320){var k=1-dt/320;if(k>approach[nt.lane])approach[nt.lane]=k}
+  }
+  ctx.save();ctx.globalAlpha=pSt;
+  drawLine();
+  for(i=0;i<LANES;i++)drawRing((i+0.5)*MW/LANES,i,S.laneFlash[i],approach[i]);
+  ctx.restore();
+  /* 悬挂的三口钟：入场错落 + 命中摆动 */
+  for(i=0;i<LANES;i++){
+    var cx=(i+0.5)*MW/LANES,p=enter(t,.16+i*.05,.34);
+    ctx.save();
+    ctx.globalAlpha=p;ctx.translate(0,(1-p)*-16);
+    ctx.strokeStyle=PAL.beamLo;ctx.lineWidth=2.4;
+    ctx.beginPath();ctx.moveTo(cx,BEAM_Y);ctx.lineTo(cx,BELL_Y+2);ctx.stroke();
+    drawBell(cx,BELL_Y,i,1,(1-p)*0.6+S.bellSwing[i],p);
+    ctx.restore();
+  }
+  /* 下落的钟球：尾迹 + 立体球体 */
+  for(i=0;i<S.notes.length;i++){
+    nt=S.notes[i];if(nt.hit)continue;
+    dt=nt.t-S.elapsed;
     if(dt>TRAVEL)break;
     var y=LINE_Y-(dt/TRAVEL)*(LINE_Y-130);
     if(y>LINE_Y+16)continue;
-    drawBell((nt.lane+0.5)*MW/3,y,nt.lane,0.72);
+    var ox=(nt.lane+0.5)*MW/LANES;
+    if(y<LINE_Y-12)drawTrail(ox,y,ORB_R,nt.lane);
+    drawOrb(ox,y,ORB_R,nt.lane,1);
   }
-  //判定浮字
-  ctx.textBaseline="alphabetic";ctx.textAlign="center";ctx.font="700 16px system-ui,sans-serif";
+  /* 命中波环 / 粒子 */
+  for(i=0;i<S.rings.length;i++){
+    var rg=S.rings[i],k=rg.life/rg.ttl;
+    ctx.globalAlpha=Math.max(0,1-k);
+    ctx.lineWidth=rg.w*(1-k*0.5);ctx.strokeStyle=rg.c;
+    ctx.beginPath();ctx.arc(rg.x,rg.y,rg.r,0,Math.PI*2);ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  for(i=0;i<S.parts.length;i++){
+    var pt=S.parts[i];
+    ctx.globalAlpha=Math.max(0,1-pt.life/pt.ttl);
+    ctx.fillStyle=pt.c;
+    ctx.beginPath();ctx.arc(pt.x,pt.y,pt.r,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  /* 判定浮字（轻弹） */
+  ctx.textAlign="center";ctx.textBaseline="alphabetic";
   for(i=0;i<S.judges.length;i++){
     var j=S.judges[i];
+    var sc=1+0.4*Math.max(0,Math.min(1,(j.t-0.5)/0.2));
+    ctx.save();ctx.translate(j.x,j.y);ctx.scale(sc,sc);
     ctx.globalAlpha=Math.min(1,j.t*1.6);
-    ctx.fillStyle=j.col;ctx.fillText(j.txt,j.x,j.y);
+    ctx.fillStyle=j.col;ctx.font="700 16px system-ui,sans-serif";
+    ctx.fillText(j.txt,0,0);
+    ctx.restore();
   }
-  ctx.globalAlpha=1;
-  //余钟
-  for(i=0;i<3;i++){
-    ctx.fillStyle=i<S.hp?PAL.primary:PAL.faint;
-    ctx.beginPath();ctx.arc(MW-20-i*24,26,7,0,Math.PI*2);ctx.fill();
+  /* 余钟（生命） */
+  drawHp();
+  /* 受击红闪 */
+  if(S.redFlash>0){
+    var vg=ctx.createRadialGradient(MW/2,MH/2,MH*0.30,MW/2,MH/2,MH*0.72);
+    vg.addColorStop(0,colAlpha(PAL.danger,0));
+    vg.addColorStop(1,colAlpha(PAL.danger,0.35*S.redFlash));
+    ctx.fillStyle=vg;ctx.fillRect(0,0,MW,MH);
   }
   if(S.missT>0){
-    ctx.fillStyle=PAL.danger;ctx.font="700 22px system-ui,sans-serif";
-    ctx.fillText("漏敲！",MW/2,150);
+    var sh=Math.sin(S.missT*40)*3*S.missT;
+    ctx.save();ctx.translate(MW/2+sh,150);
+    ctx.globalAlpha=Math.min(1,S.missT*3);
+    ctx.fillStyle=PAL.danger;ctx.font="700 22px system-ui,sans-serif";ctx.textAlign="center";
+    ctx.fillText("漏敲！",0,0);
+    ctx.restore();ctx.globalAlpha=1;
   }
-  ctx.globalAlpha=1;
 }
 function stepFx(dt){
-  for(var i=0;i<3;i++)if(S.laneFlash[i]>0)S.laneFlash[i]=Math.max(0,S.laneFlash[i]-dt*4);
+  for(var i=0;i<3;i++){
+    if(S.laneFlash[i]>0)S.laneFlash[i]=Math.max(0,S.laneFlash[i]-dt*4);
+    if(S.bellSwing[i]!==0){
+      S.bellSwing[i]*=Math.pow(0.0018,dt);
+      if(Math.abs(S.bellSwing[i])<0.002)S.bellSwing[i]=0;
+    }
+  }
   if(S.missT>0)S.missT-=dt;
+  if(S.redFlash>0)S.redFlash=Math.max(0,S.redFlash-dt*1.8);
+  for(i=S.rings.length-1;i>=0;i--){
+    var rg=S.rings[i];rg.life+=dt;rg.r+=rg.vr*dt;
+    if(rg.life>=rg.ttl)S.rings.splice(i,1);
+  }
+  for(i=S.parts.length-1;i>=0;i--){
+    var pt=S.parts[i];pt.life+=dt;
+    pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.vy+=620*dt;pt.vx*=Math.max(0,1-1.6*dt);
+    if(pt.life>=pt.ttl)S.parts.splice(i,1);
+  }
   for(i=S.judges.length-1;i>=0;i--){
     var j=S.judges[i];j.y-=26*dt;j.t-=dt;
     if(j.t<=0)S.judges.splice(i,1);
@@ -529,6 +822,7 @@ function loop(now){
   if(!lastT)lastT=now;
   var dt=Math.min(.05,(now-lastT)/1000);
   lastT=now;
+  S.animT+=dt;   // 渲染层入场计时（不影响玩法）
   if(S.phase==="run"&&!S.paused){
     S.elapsed+=dt*1000;
     stepFx(dt);

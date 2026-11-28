@@ -6,59 +6,75 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>火柴棒算式</title>
 <style>
-/*token:GAME-THEME.md §2 基线（纯 DOM + 内联 SVG，颜色随 CSS 变量自动切换，无 canvas 素材色）*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light}
-:root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark}
+/*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-mst-* 字砖面 / 算式地面 / 火柴杆，深色为同色相压暗变体）*/
+:root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-mst-tile1:#FFFFFF;--g-mst-tile2:#EDF4EF;--g-mst-ground:#1E6B4A;--g-mst-stick:#9A6210;color-scheme:light}
+:root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-mst-tile1:#262B27;--g-mst-tile2:#1A1E1B;--g-mst-ground:#0D2A20;--g-mst-stick:#E2A44E;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
+.svgdef{position:absolute;width:0;height:0;overflow:hidden}
 html,body{margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",sans-serif;background:var(--g-bg);color:var(--g-text);min-height:100vh;display:flex;justify-content:center;padding:16px 8px 30px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior:none}
 .wrap{width:100%;max-width:480px}
 header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;padding:0 2px;gap:8px}
 .sub{font-size:14px;color:var(--g-muted)}
 .stats{display:flex;gap:8px;margin-bottom:10px}
-.stat{flex:1;background:var(--g-surface2);border-radius:var(--g-radius-inner);padding:6px 4px;text-align:center;line-height:1.3}
+.stat{flex:1;background:var(--g-surface2);border-radius:var(--g-radius-inner);padding:6px 4px;text-align:center;line-height:1.3;animation:rise .38s ease-out both}
+.stat:nth-child(2){animation-delay:40ms}
+.stat:nth-child(3){animation-delay:80ms}
 .stat .label{display:block;font-size:12px;color:var(--g-muted)}
-.stat .val{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--g-primary-deep)}
-.expr{overflow-x:auto;padding:6px 2px;min-height:96px;display:flex;border:1px solid var(--g-border);border-radius:var(--g-radius-inner);background:var(--g-surface);margin-bottom:10px}
+.stat .val{display:inline-block;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--g-primary-deep)}
+.stat .val.pop{animation:valpop .24s ease-out}
+.expr{overflow-x:auto;padding:6px 2px;min-height:96px;display:flex;border:1px solid var(--g-border);border-radius:var(--g-radius-inner);background:var(--g-mst-ground);box-shadow:inset 0 2px 8px rgba(0,0,0,.18);margin-bottom:10px;animation:fadein .3s ease-out both}
 .expr-inner{display:flex;gap:4px;margin:auto;padding:2px}
-.glyph{flex:0 0 auto;width:44px;height:72px;border:1px solid var(--g-border);border-radius:12px;background:var(--g-bg);color:var(--g-warning);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:0}
-.glyph:active{background:var(--g-surface2)}
-.glyph.sel{border-color:var(--g-primary-deep);box-shadow:inset 0 0 0 2px var(--g-primary-deep)}
-.glyph.carried{color:var(--g-primary)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:8px 2px 0}
+.lg-chip{display:inline-flex;align-items:center;gap:6px;background:var(--g-surface2);border-radius:10px;padding:4px 8px;font-size:12px;color:var(--g-muted);line-height:1.3}
+.lg-chip b{color:var(--g-text);font-weight:600}
+.glyph{flex:0 0 auto;width:44px;height:72px;border:1px solid var(--g-border);border-radius:12px;background:linear-gradient(180deg,var(--g-mst-tile1),var(--g-mst-tile2));color:var(--g-mst-stick);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:0;box-shadow:0 1px 2px rgba(20,40,30,.10),inset 0 1px 0 rgba(255,255,255,.55);transition:transform .14s ease-out,box-shadow .16s ease-out,background .16s ease-out}
+.glyph:active{transform:scale(.96)}
+.glyph.sel{border-color:var(--g-primary-deep);box-shadow:0 0 0 2px var(--g-primary-deep),0 4px 10px rgba(20,40,30,.16);transform:translateY(-2px)}
+.glyph.carried{color:var(--g-primary);border-color:var(--g-primary)}
+.glyph.enter{animation:rise .3s ease-out both}
+.glyph svg{filter:drop-shadow(0 2px 2px rgba(0,0,0,.22))}
 .msg{min-height:20px;margin:8px 2px;font-size:14px;color:var(--g-muted);text-align:center}
 .msg.warn{color:var(--g-danger)}
 .tools{display:flex;gap:8px}
-.btn{min-height:44px;padding:0 14px;flex:1;border:0;border-radius:var(--g-radius-btn);background:var(--g-btn-primary);color:#fff;font-family:inherit;font-size: 16px;font-weight: 600;cursor:pointer}
-.btn:active{opacity:.85}
+.btn{min-height:44px;padding:0 14px;flex:1;border:0;border-radius:var(--g-radius-btn);background:var(--g-btn-primary);color:var(--g-on-primary);font-family:inherit;font-size: 16px;font-weight: 600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .14s ease-out,opacity .16s ease-out,background .16s ease-out}
+.btn:active{transform:scale(.96)}
+.swi{display:inline-block;vertical-align:-.14em;flex:none}
 .btn.ghost{background:var(--g-surface2);color:var(--g-text)}
 .btn:disabled{opacity:.3}
 .foot{margin:12px 2px 0;font-size:12px;color:var(--g-muted);text-align:center;line-height:1.6}
 .overlay{position:fixed;inset:0;z-index:10;background:var(--g-scrim);display:flex;align-items:center;justify-content:center;padding:20px}
 .overlay.hide{display:none}
-.panel{width:100%;max-width:340px;padding:22px 18px;background:var(--g-surface);border-radius:var(--g-radius);box-shadow:var(--g-shadow);text-align:center}
+.panel{width:100%;max-width:340px;padding:22px 18px;background:var(--g-surface);border-radius:var(--g-radius);box-shadow:var(--g-shadow);text-align:center;animation:pop .25s ease-out}
 .panel h2{margin:0 0 6px;font-size:18px;color:var(--g-text)}
 .panel .big{font-size:18px;color:var(--g-text);margin:6px 0}
 .panel .desc{margin:0 0 14px;font-size:14px;color:var(--g-muted);line-height:1.6}
 .panel .btn{width:100%;margin-top:8px}
 .panel .row{display:flex;gap:8px}
 .lv-row{width:100%;max-width:320px;max-height:170px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;padding:4px;margin:10px 0}
-.lv-chip{min-width:44px;min-height:44px;border:1px solid var(--g-border);border-radius:10px;background:var(--g-surface);color:var(--g-text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.lv-chip{min-width:44px;min-height:44px;border:1px solid var(--g-border);border-radius:10px;background:var(--g-surface);color:var(--g-text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:transform .14s ease-out,background .16s ease-out}
+.lv-chip:active{transform:scale(.96)}
 .lv-chip.on{background:var(--g-btn-primary);border-color:transparent;color:#fff}
 .lv-chip:disabled{opacity:.35;cursor:default}
 .sheet{position:fixed;inset:0;z-index:11;background:var(--g-scrim);display:flex;align-items:flex-end;justify-content:center}
 .sheet.hide{display:none}
-.sheet-in{width:100%;max-width:480px;background:var(--g-surface);border-radius:16px 16px 0 0;padding:16px 14px 22px;box-shadow:var(--g-shadow);text-align:center}
+.sheet-in{width:100%;max-width:480px;background:var(--g-surface);border-radius:16px 16px 0 0;padding:16px 14px 22px;box-shadow:var(--g-shadow);text-align:center;animation:rise .28s ease-out}
 .sheet-in .title{font-size:18px;font-weight:700;color:var(--g-text);margin-bottom:4px}
 .sheet-in .tip{font-size:14px;color:var(--g-muted);margin-bottom:10px;line-height:1.6}
 .cands{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px}
-.cand{min-width:56px;min-height:56px;border:1px solid var(--g-border);border-radius:12px;background:var(--g-bg);color:var(--g-warning);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:inherit;padding:2px}
-.cand:active{background:var(--g-surface2)}
+.cand{min-width:56px;min-height:56px;border:1px solid var(--g-border);border-radius:12px;background:linear-gradient(180deg,var(--g-mst-tile1),var(--g-mst-tile2));color:var(--g-mst-stick);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:inherit;padding:2px;box-shadow:0 1px 2px rgba(20,40,30,.10),inset 0 1px 0 rgba(255,255,255,.55);transition:transform .14s ease-out,box-shadow .16s ease-out}
+.cand:active{transform:scale(.96)}
 .cand .cap{font-size:12px;color:var(--g-muted)}
 .cand.cancel{background:var(--g-surface2);color:var(--g-muted);min-width:120px}
 
-/* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-@media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes valpop{0%{transform:scale(1)}40%{transform:scale(1.14)}100%{transform:scale(1)}}
+@keyframes pop{0%{transform:scale(.92);opacity:0}60%{transform:scale(1.02);opacity:1}100%{transform:scale(1);opacity:1}}
+
+/* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（同时压 animation-duration 与 animation-delay；动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+@media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
 /* P2: 键盘焦点可见（S5） */
 :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -75,8 +91,31 @@ try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t=
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={'play':1,'check':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 </head>
 <body>
+<!-- 火柴杆立体渐变 defs（顶光 / 底暗叠色，fill=currentColor 随主题与状态） -->
+<svg class="svgdef" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="mst-stick" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.38"/>
+      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.20"/>
+    </linearGradient>
+  </defs>
+</svg>
 <div class="wrap">
   <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvReq">移动 1 根火柴</span></header>
   <div class="stats">
@@ -85,6 +124,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <div class="stat"><span class="label">最佳</span><span class="val" id="stBest">--</span></div>
   </div>
   <div class="expr" id="expr"><div class="expr-inner" id="exprInner"></div></div>
+  <div class="legend">
+    <span class="lg-chip"><b>点字符</b>· 拆 / 放火柴</span>
+    <span class="lg-chip"><b>绿框</b>· 拿起的一根</span>
+    <span class="lg-chip"><b>提交</b>· 等式成立即过关</span>
+  </div>
   <p class="msg" id="msg" role="status" aria-live="polite">点一个字符拆出一根火柴</p>
   <div class="tools">
     <button class="btn ghost" id="btnUndo">撤销</button>
@@ -109,7 +153,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <p class="desc" id="winDesc"></p>
     <div class="row">
       <button class="btn ghost" id="btnReplay">重玩本关</button>
-      <button class="btn" id="btnNext">下一关</button>
+      <button class="btn" id="btnNext"><span class="btxt">下一关</span></button>
     </div>
   </div>
 </div>
@@ -377,13 +421,15 @@ function say(t,warn){
   if(statusTimer)clearTimeout(statusTimer);
   statusTimer=setTimeout(function(){msgEl.textContent='';},2600);
 }
+function popVal(el,v){var s=String(v);if(el.textContent!==s){el.textContent=s;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}}
 function unlocked(i){return i===0||(parseInt(saveData.stars[i-1],10)||0)>0;}
 
 /* ========== SVG 字形（内联自绘，fill=currentColor 随主题） ========== */
 function glyphSVG(g){
   var s="";
-  function R(x,y,w,h){return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="3"/>';}
-  function V(x,y,w,h){return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="3"/>';}
+  /* 每根火柴 = 底色杆 + 立体叠色（顶光 / 底暗），fill=currentColor 随状态 */
+  function R(x,y,w,h){return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="3" fill="currentColor"/><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="3" fill="url(#mst-stick)"/>';}
+  function V(x,y,w,h){return R(x,y,w,h);}
   var seg=MS_SEGS[g]||"";
   if(msDigit(g)){
     if(seg.indexOf("a")>=0)s+=R(8,4,24,6);
@@ -404,13 +450,15 @@ function glyphSVG(g){
 }
 
 /* ========== 渲染 ========== */
-function render(){
+function render(enter){
   var i;
   exprInner.innerHTML="";
   for(i=0;i<glyphs.length;i++){
     (function(i){
       var b=document.createElement('button');
-      b.className='glyph'+(carried&&lastPick&&lastPick.pos===i?' carried':'');
+      var sel=carried&&lastPick&&lastPick.pos===i;
+      b.className='glyph'+(sel?' carried sel':'')+(enter?' enter':'');
+      if(enter)b.style.animationDelay=Math.min(i*30,240)+'ms';   /* 入场错落 30ms，封顶总时长 ≤600ms */
       b.setAttribute('data-pos',String(i));
       b.setAttribute('aria-label','字符 '+glyphs[i]);
       b.innerHTML=glyphSVG(glyphs[i]);
@@ -419,9 +467,9 @@ function render(){
     })(i);
   }
   var used=op==='move'?moved:op==='add'?added:removed;
-  $('stUsed').textContent=used+'/'+N;
+  popVal($('stUsed'),used+'/'+N);
   $('stLv').textContent=(cur+1)+'/'+LEVELS.length;
-  $('stBest').textContent=saveData.best>0?String(saveData.best):'--';
+  popVal($('stBest'),saveData.best>0?String(saveData.best):'--');
   var req=op==='move'?'移动':op==='add'?'添加':'移除';
   $('lvReq').textContent=req+' '+N+' 根火柴';
   if(state==='playing'){
@@ -573,7 +621,7 @@ function startLevel(n){
   $('ovWin').classList.add('hide');
   closePicker();
   $('lvTag').textContent='第 '+(n+1)+' 关 · '+(L.name||('第'+(n+1)+'关'));
-  render();
+  render(true);
   save();
 }
 function finishWin(used){
@@ -587,7 +635,7 @@ function finishWin(used){
   if(GB.available)GB.reportScore('matchstick',{metricValue:cur+1,metricExtra:used}).catch(function(){});
   $('winInfo').textContent='用了 '+used+' 根 · '+stars+' 星';
   $('winDesc').textContent='第 '+(cur+1)+' 关完成 · 累计 '+ts+' 星';
-  $('btnNext').textContent=cur>=LEVELS.length-1?'再玩一遍':'下一关';
+  setNextBtn(cur>=LEVELS.length-1?'再玩一遍':'下一关',cur>=LEVELS.length-1?'rotate':'play');
   state='win';
   $('ovWin').classList.remove('hide');
   renderChips();
@@ -598,13 +646,25 @@ function submit(){
   if(carried){say('还有一根火柴没放好，请先放下或撤销',true);return;}
   if(!msIsCorrect(glyphs)){say('等式还没成立',true);return;}
   var used=op==='move'?moved:op==='add'?added:removed;
-  if(used<1){say('还没有操作',true);return;}
-  if(used>N){say('用掉的火柴超出限制',true);return;}
+  if(used!==N){say('需要用满 '+N+' 根火柴（当前 '+used+' 根）',true);return;}
   if(op==='move'&&msTotal(glyphs)!==initialTotal){say('移动关卡火柴总数不能变',true);return;}
   finishWin(used);
 }
 
 /* ========== 按钮绑定 ========== */
+/* 按钮图标：内联 SVG 置于文字前；btnNext 文案只改 .btxt 文本节点，不抹图标 */
+function setNextBtn(t,icon){
+  var b=$('btnNext');b.querySelector('.btxt').textContent=t;
+  var old=b.querySelector('.swi');if(old)old.remove();
+  b.insertAdjacentHTML('afterbegin',window.SW_ICON(icon));
+}
+$('btnUndo').insertAdjacentHTML('afterbegin',window.SW_ICON('undo'));
+$('btnReset').insertAdjacentHTML('afterbegin',window.SW_ICON('rotate'));
+$('btnSubmit').insertAdjacentHTML('afterbegin',window.SW_ICON('check'));
+$('btnStart').insertAdjacentHTML('afterbegin',window.SW_ICON('play'));
+$('btnReplay').insertAdjacentHTML('afterbegin',window.SW_ICON('rotate'));
+setNextBtn('下一关','play');
+$('btnCancel').insertAdjacentHTML('afterbegin',window.SW_ICON('x'));
 $('btnStart').addEventListener('click',function(){startLevel(Math.min(pending,LEVELS.length-1));});
 $('btnReplay').addEventListener('click',function(){startLevel(cur);});
 $('btnNext').addEventListener('click',function(){startLevel(cur>=LEVELS.length-1?0:cur+1);});

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.VideogameAsset
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.smartwash.feature.game.model.GameItem
 
 /**
  * 游戏分类枚举（后端 game_config.category 白名单：puzzle/arcade/word/board/other）。
@@ -76,4 +77,25 @@ internal fun gameIconFromKey(key: String?): ImageVector = when (key?.lowercase()
     "board" -> Icons.Default.Casino
     "word" -> Icons.Default.TextFields
     else -> Icons.Default.Apps
+}
+
+/**
+ * 游戏列表本地过滤（分类 + 搜索，纯函数，单测锚点）：
+ * - 搜索态（关键词去首尾空格后非空）：**跨分类**按标题包含过滤，大小写不敏感
+ *   （对齐工作台/菜谱库「搜索即全库」，分类 chips 让位，避免「chip 选中却看似失效」）；
+ * - 非搜索态：按选中分类过滤（null = 全部）。
+ *
+ * 搜索为本地内存过滤，输入即出结果，无需防抖（防抖用于服务端请求场景，如菜谱库）。
+ */
+internal fun filterGames(
+    games: List<GameItem>,
+    category: GameCategory?,
+    query: String,
+): List<GameItem> {
+    val keyword = query.trim()
+    if (keyword.isNotEmpty()) {
+        return games.filter { it.title.contains(keyword, ignoreCase = true) }
+    }
+    if (category == null) return games
+    return games.filter { it.category == category }
 }

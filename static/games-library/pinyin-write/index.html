@@ -6,97 +6,156 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>看拼写词</title>
 <style>
-  /*token:GAME-THEME.md §2（全部 UI 壳走 token）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-pw-*：题卡练习纸面 / 字块暖白面）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-pw-paper1:#F8F3E6;--g-pw-paper2:#EDE2C9;--g-pw-tile1:#FFFDF7;--g-pw-tile2:#F2E9D5;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-pw-paper1:#211C13;--g-pw-paper2:#120F09;--g-pw-tile1:#2C2720;--g-pw-tile2:#171309;color-scheme:dark }
+
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
-    background: var(--g-bg); color: var(--g-text);
+    background: radial-gradient(120% 60% at 50% -10%, rgba(45,155,106,.07), rgba(45,155,106,0) 62%), var(--g-bg);
+    color: var(--g-text);
     min-height: 100vh; display: flex; justify-content: center;
     padding: 16px 8px 30px;
     -webkit-user-select: none; user-select: none;
     -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
     touch-action: manipulation; overscroll-behavior: none;
   }
+  :root[data-theme=dark] body { background: radial-gradient(120% 60% at 50% -10%, rgba(91,200,148,.09), rgba(91,200,148,0) 62%), var(--g-bg); }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
-  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; animation: rise .38s ease-out both; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; text-align: right; }
+  /* 关卡标签 = 品牌 soft 底 + deep 字 + 内联图标（轻立体小胶囊） */
+  .lvtag { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 10px; border: 1px solid var(--g-border); border-radius: 10px; background: linear-gradient(180deg, var(--g-primary-soft), var(--g-surface)); color: var(--g-primary-deep); font-size: 14px; font-weight: 600; line-height: 1.4; box-shadow: inset 0 1px 0 rgba(255,255,255,.4), var(--g-shadow); }
+  .lvtag .swi { width: 15px; height: 15px; }
+  /* 统计卡：渐变面 + 顶光 + 落地投影，入场错落 40ms */
+  .stats { display: flex; gap: 8px; margin-bottom: 8px; }
+  .stat { flex: 1; min-width: 0; padding: 7px 6px 6px; text-align: center; line-height: 1.3; border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); background: linear-gradient(180deg, var(--g-surface), var(--g-surface2)); box-shadow: inset 0 1px 0 rgba(255,255,255,.4), var(--g-shadow); animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.bad { color: var(--g-danger); }
+  .stat .val.bump { animation: bump .2s ease-out; }
+  /* 进度条：内凹槽 + 渐变填充 + 顶光，状态变化 200ms ease-out */
+  .pbar { height: 8px; margin: 0 2px 10px; border-radius: 10px; background: var(--g-surface2); box-shadow: inset 0 1px 3px rgba(20,40,30,.18), inset 0 0 0 1px var(--g-border); overflow: hidden; animation: rise .38s ease-out both; animation-delay: 100ms; }
+  .pbar-fill { display: block; height: 100%; width: 0; border-radius: 10px; background: linear-gradient(180deg, var(--g-primary), var(--g-primary-deep)); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 0 0 1px rgba(20,40,30,.06); transition: width .2s ease-out; }
+  /* 题卡：练习纸「面」+ 顶光 + 投影，题目区视觉锚点 */
   .pycard {
-    background: var(--g-surface); border-radius: var(--g-radius-inner);
-    padding: 14px; text-align: center; margin-bottom: 10px; box-shadow: var(--g-shadow);
+    position: relative; margin-bottom: 10px; padding: 14px 14px 12px; text-align: center;
+    border: 1px solid var(--g-border); border-radius: var(--g-radius);
+    background: linear-gradient(165deg, var(--g-pw-paper1), var(--g-pw-paper2));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45), var(--g-shadow);
+    animation: rise .38s ease-out both; animation-delay: 60ms;
   }
-  .pycard .tag { display: block; font-size: 12px; color: var(--g-muted); margin-bottom: 6px; }
-  .pycard .py { font-size: 22px; font-weight: 700; letter-spacing: 3px; color: var(--g-primary-deep); font-family: monospace; }
-  .pycard .hint { display: block; font-size: 14px; color: var(--g-muted); margin-top: 6px; }
+  .pycard .tag { display: inline-block; padding: 3px 10px; margin-bottom: 8px; border-radius: 10px; background: var(--g-surface2); color: var(--g-muted); font-size: 12px; font-weight: 600; line-height: 1.4; box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
+  .pycard .py { font-size: 36px; font-weight: 700; letter-spacing: 4px; line-height: 1.25; color: var(--g-primary-deep); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .pycard .hint { display: block; margin-top: 6px; font-size: 14px; line-height: 1.5; color: var(--g-muted); }
+  /* 槽位：内凹田字格（待填），填入后翻成品牌软底字卡 */
   .slots { display: flex; gap: 8px; justify-content: center; margin-bottom: 10px; }
   .slot {
-    min-width: 52px; min-height: 52px; border: 1px dashed var(--g-border);
-    border-radius: var(--g-radius-btn); background: var(--g-surface2); color: var(--g-muted);
-    font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer;
+    min-width: 52px; min-height: 52px; padding: 0; border: 1px dashed var(--g-border);
+    border-radius: var(--g-radius-btn); background: linear-gradient(180deg, var(--g-pw-paper2), var(--g-pw-paper1));
+    box-shadow: inset 0 2px 6px rgba(20,40,30,.16), inset 0 0 0 1px rgba(255,255,255,.28);
+    color: var(--g-muted); font-family: inherit; font-size: 28px; font-weight: 700; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
+    transition: transform .14s ease-out, background .16s ease-out, box-shadow .16s ease-out, color .16s ease-out, border-color .16s ease-out;
   }
-  .slot.filled { border-style: solid; background: var(--g-primary-soft); color: var(--g-on-soft); }
-  .slots.shake .slot { animation: shake .3s ease-in-out; border-color: var(--g-danger); }
-  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  .slot:active { transform: scale(.96); }
+  .slot.filled { border-style: solid; border-color: var(--g-primary-deep); background: linear-gradient(180deg, var(--g-primary-soft), var(--g-surface)); color: var(--g-on-soft); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 2px 6px rgba(20,40,30,.12); }
+  .slots.fresh .slot { animation: rise .3s ease-out both; animation-delay: calc(var(--i, 0) * 30ms); }
+  .slots.shake .slot { animation: shake .2s ease-out; }
+  .slots.bad .slot { border-color: var(--g-danger); border-style: solid; background: linear-gradient(180deg, rgba(168,56,80,.12), rgba(168,56,80,.04)); }
+  .slots.ok .slot.filled { animation: pop .2s ease-out; }
+  /* 字块：暖白卡「面」+ 顶光 + 落地投影，干扰项与答案同面（不泄露答案） */
   .tiles { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 8px; }
   .tile {
-    min-width: 52px; min-height: 52px; border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-surface); color: var(--g-text);
-    font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer;
-    box-shadow: 0 1px 0 var(--g-border);
+    min-width: 52px; min-height: 52px; padding: 0; border: 1px solid var(--g-border); border-radius: var(--g-radius-btn);
+    background: linear-gradient(180deg, var(--g-pw-tile1), var(--g-pw-tile2));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 2px 6px rgba(20,40,30,.10);
+    color: var(--g-text); font-family: inherit; font-size: 28px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .14s ease-out, box-shadow .16s ease-out, background .16s ease-out, opacity .16s ease-out;
   }
-  .tile:active { transform: scale(.94); }
-  .tile.used { opacity: .2; pointer-events: none; }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
-  .tools { display: flex; gap: 8px; }
+  .tile:active { transform: scale(.96); }
+  .tile.used { opacity: .26; pointer-events: none; box-shadow: inset 0 2px 5px rgba(20,40,30,.14); background: linear-gradient(180deg, var(--g-pw-paper2), var(--g-pw-paper1)); }
+  .tiles.fresh .tile { animation: rise .3s ease-out both; animation-delay: calc(var(--i, 0) * 30ms); }
+  /* 反馈区：中性 / 答对 / 答错三态，120-200ms 换色 */
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; line-height: 1.5; color: var(--g-muted); text-align: center; transition: color .16s ease-out; }
+  .msg.ok { color: var(--g-success); font-weight: 600; }
+  .msg.bad { color: var(--g-danger); font-weight: 600; }
+  /* 工具钮：渐变面 + 顶光 + 投影 + 内联图标 */
+  .tools { display: flex; gap: 8px; animation: rise .38s ease-out both; animation-delay: 120ms; }
   .btn {
-    min-height: 44px; padding: 0 14px; flex: 1;
-    border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    min-height: 46px; padding: 0 12px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    border: 1px solid var(--g-border); border-radius: var(--g-radius-btn);
+    background: linear-gradient(180deg, var(--g-surface), var(--g-surface2));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.4), var(--g-shadow);
+    color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, box-shadow .16s ease-out, background .16s ease-out, opacity .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .btn.primary { border-color: transparent; background: var(--g-btn-primary); color: var(--g-on-primary); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 3px 10px rgba(20,40,30,.20); }
+  .btn .swi { width: 17px; height: 17px; }
+  .foot { margin: 12px 2px 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
     display: none; align-items: center; justify-content: center; padding: 20px;
+    overflow-y: auto;
   }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
-  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
   .panel {
-    width: 100%; max-width: 340px; padding: 22px 18px;
-    background: var(--g-surface); border-radius: var(--g-radius);
-    box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
+    width: 100%; max-width: 340px; padding: 22px 18px; text-align: center;
+    border: 1px solid var(--g-border); border-radius: var(--g-radius);
+    background: linear-gradient(170deg, var(--g-surface), var(--g-surface2));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.4), var(--g-shadow);
+    animation: popin .3s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
-  .panel h2 { margin: 0 0 6px; font-size: 18px; }
-  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: var(--g-muted); }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
   .lvbtn {
-    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    min-height: 44px; border: 1px solid var(--g-border); border-radius: var(--g-radius-inner);
+    background: linear-gradient(180deg, var(--g-surface), var(--g-surface2));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.4), var(--g-shadow);
+    color: var(--g-text); font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
-  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lvbtn.done { border-color: var(--g-primary-deep); background: linear-gradient(180deg, var(--g-primary-soft), var(--g-surface)); color: var(--g-on-soft); }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（注意：动效层指令，不受 §4 主题层禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* 动效：入场错落 / 状态切换 / 按下缩放 / 答对轻弹 / 答错抖动 / 数值 bump */
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); } 55% { transform: scale(1.07); } 100% { transform: scale(1); } }
+  @keyframes popin { 0% { transform: scale(.92); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes shake { 20% { transform: translateX(-6px); } 45% { transform: translateX(5px); } 70% { transform: translateX(-3px); } 100% { transform: none; } }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+  /* S2: 动效敏感用户降级——保留状态切换，同时压平 animation-duration 与 animation-delay */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important;animation-delay:0ms !important;transition-duration:.01ms !important} }
   /* P2: 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={ 'play':1,'check':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -112,12 +171,13 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <header><span class="lvtag" id="lvTag"><span id="lvTagText">第 1 关</span></span><span class="sub" id="lvRule"></span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
     <div class="stat"><span class="label">进度</span><span class="val" id="stW">1/4</span></div>
     <div class="stat"><span class="label">失误</span><span class="val" id="stErr">0</span></div>
   </div>
+  <div class="pbar" aria-hidden="true"><span class="pbar-fill" id="stBar"></span></div>
   <div class="pycard">
     <span class="tag" id="wTag">单词 1 / 4 · 看拼音写词语</span>
     <div class="py" id="wPy">shui3 guo3</div>
@@ -385,13 +445,14 @@ function syncSaveFromServer(){
 /* ---------- 状态 ---------- */
 var lv=save.lv,L=null,wi=0,filled=[],used=[],errors=0,done=false,gen=0;
 function $(id){return document.getElementById(id)}
-function say(t){$("msg").textContent=t}
+/* 反馈文案三态：kind ∈ ok / bad / 空（中性）——只改呈现，不改判定 */
+function say(t,kind){var m=$("msg");m.textContent=t;m.className="msg"+(kind?" "+kind:"")}
 function loadLevel(n){
   lv=Math.max(0,Math.min(n,LEVELS.length-1));
   L=LEVELS[lv];
   if(!validLevelData(L)){say("关卡数据异常");return;}
   wi=0;errors=0;done=false;gen++;
-  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvTagText").textContent="第 "+(lv+1)+" 关 · "+L.name;
   $("lvRule").textContent="四词全拼对过关";
   $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
   loadWord();updStats();
@@ -403,38 +464,49 @@ function loadWord(){
   $("wTag").textContent="单词 "+(wi+1)+" / "+L.ws.length+" · "+w.w.length+" 个字";
   $("wPy").textContent=w.py;
   $("wHint").textContent=w.hint;
-  render();say("按拼音顺序点字块，拼出词语");
+  render(true);say("按拼音顺序点字块，拼出词语");
 }
-function render(){
+/* fresh：仅在换词时给槽位/字块加错落入场（重复 render 不重播） */
+function render(fresh){
   var w=L.ws[wi];
-  var sl=$("slots");sl.innerHTML="";
+  var sl=$("slots"),t=$("tiles");
+  sl.classList.remove("fresh","ok","bad");t.classList.remove("fresh");
+  sl.innerHTML="";
   for(var i=0;i<w.w.length;i++){
     (function(i){
       var s=document.createElement("button");
-      var ch=filled[i];
+      var ti=filled[i],ch=ti!=null?w.tiles[ti]:"";
       s.className="slot"+(ch?" filled":"");
-      s.textContent=ch||"";
+      s.textContent=ch;
+      s.style.setProperty("--i",i);
       s.setAttribute("aria-label","第"+(i+1)+"字 "+(ch||"空"));
       if(ch)s.addEventListener("click",function(){unfill(i)});
       sl.appendChild(s);
     })(i);
   }
-  var t=$("tiles");t.innerHTML="";
+  t.innerHTML="";
   for(var k=0;k<w.tiles.length;k++){
     (function(k){
       var b=document.createElement("button");
       b.className="tile"+(used[k]?" used":"");
       b.textContent=w.tiles[k];
+      b.style.setProperty("--i",k);
       b.setAttribute("aria-label","字块 "+w.tiles[k]);
       b.addEventListener("click",function(){tapTile(k)});
       t.appendChild(b);
     })(k);
+  }
+  if(fresh){
+    void sl.offsetWidth;sl.classList.add("fresh");
+    void t.offsetWidth;t.classList.add("fresh");
   }
 }
 function updStats(){
   $("stW").textContent=(wi+1)+"/"+L.ws.length;
   var e=$("stErr");e.textContent=errors;
   e.className="val"+(errors>0?" bad":"");
+  var bar=$("stBar");
+  if(bar)bar.style.width=Math.round(wi/L.ws.length*100)+"%";
 }
 function tapTile(k){
   if(done)return;
@@ -456,12 +528,15 @@ function judge(){
   var w=L.ws[wi];
   var got=filled.map(function(ti){return w.tiles[ti]}).join("");
   if(got===w.w){
-    say("拼对了："+w.w+"（"+w.hint+"）");
+    say("拼对了："+w.w+"（"+w.hint+"）","ok");
+    $("slots").classList.add("ok");
     var g=gen;setTimeout(function(){if(g!==gen)return;nextWord()},650);
   }else{
     errors++;updStats();
-    $("slots").classList.add("shake");
-    setTimeout(function(){$("slots").classList.remove("shake")},400);
+    say("顺序不对，对照拼音音节重拼","bad");
+    var sl=$("slots");
+    sl.classList.add("shake");sl.classList.add("bad");
+    setTimeout(function(){sl.classList.remove("shake")},400);
     setTimeout(function(){
       filled=[];used=w.tiles.map(function(){return false});
       render();
@@ -475,16 +550,18 @@ function backspace(){
 }
 function nextWord(){
   wi++;updStats();
+  var wv=$("stW");if(wv){wv.classList.remove("bump");void wv.offsetWidth;wv.classList.add("bump")}
   if(wi>=L.ws.length)winLevel();
   else loadWord();
 }
+function setOvBtn(text,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+text}
 function winLevel(){
   done=true;
   if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:errors}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"四词全对！";
   $("ovDesc").innerHTML="失误 "+errors+" 次"+(errors===0?"（拼音小达人）":"")+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"play");
   $("overlay").classList.add("show");
 }
 function openLevelSelect(){
@@ -505,7 +582,7 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 }
 $("btnUndo").addEventListener("click",backspace);
@@ -528,42 +605,50 @@ window.addEventListener("keydown",function(e){
 });
 /* ---------- 启动 ---------- */
 loadLevel(save.lv);
+setOvBtn("下一关","play");
 var badLv=auditAll();
 if(badLv.length)say("警告：内嵌验证器发现异常关卡 "+badLv.join(","));
 syncLevelsFromServer();syncSaveFromServer();
 })();
 </script>
 <script>
-/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+/* 覆盖层焦点管理（dialog 语义配套）+ 按钮图标注入（内联 SVG，零外链；只插图标不动文案） */
 (function(){
   var els=document.querySelectorAll(".overlay, .sheet");
-  if(!els.length)return;
-  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
-  var lastFocus=null;
-  function focusFirst(el){
-    if(el.dataset.foc)return;el.dataset.foc="1";
-    if(!lastFocus)lastFocus=document.activeElement;
-    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  if(els.length){
+    function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+    var lastFocus=null;
+    function focusFirst(el){
+      if(el.dataset.foc)return;el.dataset.foc="1";
+      if(!lastFocus)lastFocus=document.activeElement;
+      var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+    }
+    function restore(el){
+      if(!el.dataset.foc)return;delete el.dataset.foc;
+      if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+    }
+    function trap(el,e){
+      if(e.key!=="Tab")return;
+      var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+      if(!f.length)return;
+      var first=f[0],last=f[f.length-1];
+      if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+      else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+    }
+    function watch(el){
+      try{new MutationObserver(function(){
+        if(shown(el))focusFirst(el);else restore(el);
+      }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+      el.addEventListener("keydown",function(e){trap(el,e)});
+    }
+    for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
   }
-  function restore(el){
-    if(!el.dataset.foc)return;delete el.dataset.foc;
-    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
-  }
-  function trap(el,e){
-    if(e.key!=="Tab")return;
-    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
-    if(!f.length)return;
-    var first=f[0],last=f[f.length-1];
-    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
-    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
-  }
-  function watch(el){
-    try{new MutationObserver(function(){
-      if(shown(el))focusFirst(el);else restore(el);
-    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
-    el.addEventListener("keydown",function(e){trap(el,e)});
-  }
-  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+  function $(id){return document.getElementById(id)}
+  var ic=window.SW_ICON||function(){return""};
+  $("lvTag").insertAdjacentHTML("afterbegin",ic("grid"));
+  $("btnUndo").insertAdjacentHTML("afterbegin",ic("undo"));
+  $("btnReset").insertAdjacentHTML("afterbegin",ic("rotate"));
+  $("btnLv").insertAdjacentHTML("afterbegin",ic("grid"));
 })();
 </script>
 </body>

@@ -1,5 +1,6 @@
 package com.smartwash.feature.dining.logic
 
+import com.smartwash.feature.dining.api.model.DiningOrderDetailVo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -85,5 +86,19 @@ class DiningAllergenGuardTest {
     fun `归一化工具 - 空白剔除与大写`() {
         assertEquals(listOf("NUT", "SOY"), DiningAllergenGuard.normalizeAllergens(listOf(" nut ", "", "soy")))
         assertEquals(null, DiningAllergenGuard.normalizeAllergen("  "))
+    }
+
+    @Test
+    fun `成员忌口聚合 - 跨成员去重保序`() {
+        val members = listOf(
+            DiningOrderDetailVo.OrderMember(allergens = listOf("SEAFOOD", "SPICY")),
+            DiningOrderDetailVo.OrderMember(allergens = listOf("SPICY", "NUT")),
+            DiningOrderDetailVo.OrderMember(allergens = emptyList()),
+            DiningOrderDetailVo.OrderMember(allergens = null),
+        )
+        assertEquals(
+            listOf("SEAFOOD", "SPICY", "NUT"),
+            DiningAllergenGuard.summarizeMemberAllergens(members),
+        )
     }
 }

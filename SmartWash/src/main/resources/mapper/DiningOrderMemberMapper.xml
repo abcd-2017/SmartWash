@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.dining.mapper.DiningOrderMemberMapper">
+
+    <!-- 协作过的用户：我参与过的订单里的其他成员，按最近协作时间倒序。
+         单条 SQL 自连接 + 分组聚合（走 member.idx_user），替代「先全量反查我参与的订单 ID
+         再 IN 查其他成员」的两段式查询，避免历史订单多时 IN 列表膨胀与多次网络往返。
+         只取 user_id + 最近时间，脱敏手机号/头像由服务层批量补齐。 -->
+    <select id="selectCollaborators" resultType="com.smartwash.dining.vo.DiningCollaboratorVo">
+        SELECT m.user_id         AS userId,
+               MAX(m.created_at) AS lastCollaboratedAt
+        FROM dining_order_member m
+        JOIN dining_order_member mine ON mine.order_id = m.order_id AND mine.user_id = #{userId}
+        WHERE m.user_id &lt;&gt; #{userId}
+        GROUP BY m.user_id
+        ORDER BY lastCollaboratedAt DESC
+    </select>
+
+</mapper>

@@ -7,8 +7,8 @@
 <title>七巧板</title>
 <style>
   /*token:GAME-THEME.md §2 基线（UI 壳全走 token）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -123,7 +123,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <div class="panel">
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
-    <button class="btn" id="ovBtn">下一关</button>
+    <button class="btn" id="ovBtn"><span id="ovBtnTxt">下一关</span></button>
   </div>
 </div>
 <script>
@@ -689,7 +689,7 @@ function checkWin(){
   var isLast=cur>=LEVELS.length-1;
   $("ovTitle").innerHTML="过关！"+SW_ICON('star','margin:0 2px').repeat(st)+SW_ICON('star-o','margin:0 2px').repeat(3-st);
   $("ovDesc").innerHTML="用时 <b>"+secs+"</b> 秒<br>最短纪录 <b>"+best[ln]+"</b> 秒";
-  $("ovBtn").textContent=isLast?"再玩一遍":"下一关";
+  $("ovBtnTxt").textContent=isLast?"再玩一遍":"下一关";
   showOverlay();
   if(GB.available)GB.reportScore("tangram",{metricValue:ln,metricExtra:secs}).catch(function(){});
 }

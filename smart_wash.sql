@@ -2057,7 +2057,8 @@ CREATE TABLE `dining_order` (
   `updated_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_join_token` (`join_token`),
-  KEY `idx_creator` (`creator_user_id`)
+  KEY `idx_creator` (`creator_user_id`),
+  KEY `idx_creator_created` (`creator_user_id`, `created_at`, `id`) COMMENT '「我发起的」订单分页（创建时间倒序）'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-点单订单';
 
 -- ----------------------------
@@ -2074,7 +2075,8 @@ CREATE TABLE `dining_order_member` (
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_order_user` (`order_id`,`user_id`),
-  KEY `idx_user` (`user_id`)
+  KEY `idx_user` (`user_id`),
+  KEY `idx_user_created` (`user_id`, `created_at`) COMMENT '「我参与的」订单反查与协作用户聚合'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='吃啥-点单订单成员';
 
 -- ----------------------------

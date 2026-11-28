@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>密码破译</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材（bp1..bp8 已登记前缀，八色棋子）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-on-primary:#FFF;--g-bp1:#D94F4F;--g-bp2:#2E7DD1;--g-bp3:#2E9B6A;--g-bp4:#8A5CC7;--g-bp5:#B26B1B;--g-bp6:#0F9AA8;--g-bp7:#C9526B;--g-bp8:#5A7A2B;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-bp1:#E87272;--g-bp2:#6BA8E8;--g-bp3:#5BC894;--g-bp4:#AC8FEC;--g-bp5:#E2A44E;--g-bp6:#4FC3D9;--g-bp7:#DB7186;--g-bp8:#A8C66C;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（bp1..bp8 八色棋子 + mm- 空槽/键钉）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-on-primary:#FFF;--g-bp1:#D94F4F;--g-bp2:#2E7DD1;--g-bp3:#2E9B6A;--g-bp4:#8A5CC7;--g-bp5:#B26B1B;--g-bp6:#0F9AA8;--g-bp7:#C9526B;--g-bp8:#5A7A2B;--g-mm-slot:#EFF1EE;--g-mm-slot-ring:#B4BBB4;--g-mm-peg-b:#1C1C1E;--g-mm-peg-w:#FFFFFF;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-bp1:#E87272;--g-bp2:#6BA8E8;--g-bp3:#5BC894;--g-bp4:#AC8FEC;--g-bp5:#E2A44E;--g-bp6:#4FC3D9;--g-bp7:#DB7186;--g-bp8:#A8C66C;--g-mm-slot:#262A27;--g-mm-slot-ring:#59605A;--g-mm-peg-b:#0B0E0C;--g-mm-peg-w:#E6E9E6;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -22,56 +22,71 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 0 2px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.5; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .board { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px; display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--g-gap); }
+  .stat .val { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .val.bump { animation: valPop .3s ease-out; }
+  @keyframes valPop { 0% { transform: scale(1); } 40% { transform: scale(1.16); } 100% { transform: scale(1); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .board { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px; display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--g-gap); animation: rise .38s ease-out 120ms both; }
   .row { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 10px; }
-  .row.cur { background: var(--g-primary-soft); }
+  .row.cur { background: var(--g-primary-soft); box-shadow: inset 0 0 0 1px var(--g-primary); }
   .row.old { padding: 2px 6px; }
+  .row.result { background: var(--g-surface2); }
   .no { flex: 0 0 16px; text-align: right; font-size: 12px; color: var(--g-muted); font-variant-numeric: tabular-nums; }
+  .row.result .no { color: var(--g-success); font-weight: 700; }
   .slots { flex: 1; min-width: 0; display: grid; gap: 4px; justify-items: center; }
-  .slot { width: 100%; max-width: 48px; aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--g-text); background: var(--g-surface2); border: 2px dashed transparent; }
-  .row.cur .slot { cursor: pointer; border-color: var(--g-border); }
-  .row.cur .slot.filled { border-color: transparent; }
+  /* 空槽：内凹「洞」+ 虚线圈，提示可点（素材 token） */
+  .slot { width: 100%; max-width: 48px; aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--g-text); background: var(--g-mm-slot); border: 2px dashed var(--g-mm-slot-ring); box-shadow: inset 0 2px 5px rgba(0,0,0,.16), inset 0 -1px 0 rgba(255,255,255,.55); transition: transform .16s ease-out, box-shadow .16s ease-out, background .16s ease-out; }
+  .row.cur .slot { cursor: pointer; }
+  .row.cur .slot:active { transform: scale(.96); }
+  /* 已填棋子：渐变 + 顶部高光 + 底部内阴影 + 投影，轻立体 */
+  .slot.filled { border: 0; background: var(--c); background-image: radial-gradient(circle at 32% 26%, rgba(255,255,255,.85), rgba(255,255,255,0) 48%); box-shadow: inset 0 2px 3px rgba(255,255,255,.5), inset 0 -4px 7px rgba(0,0,0,.22), 0 3px 8px rgba(10,40,28,.22); }
+  [data-theme=dark] .slot.filled { color: var(--g-bg); }
   .row.old .slot { max-width: 28px; }
   .row.result .slot { max-width: 32px; }
-  .cb0 { background: var(--g-bp1); }
-  .cb1 { background: var(--g-bp2); }
-  .cb2 { background: var(--g-bp3); }
-  .cb3 { background: var(--g-bp4); }
-  .cb4 { background: var(--g-bp5); }
-  .cb5 { background: var(--g-bp6); }
-  .cb6 { background: var(--g-bp7); }
-  .cb7 { background: var(--g-bp8); }
-  [data-theme=dark] .slot { color: var(--g-bg); }
+  .cb0 { --c: var(--g-bp1); }
+  .cb1 { --c: var(--g-bp2); }
+  .cb2 { --c: var(--g-bp3); }
+  .cb3 { --c: var(--g-bp4); }
+  .cb4 { --c: var(--g-bp5); }
+  .cb5 { --c: var(--g-bp6); }
+  .cb6 { --c: var(--g-bp7); }
+  .cb7 { --c: var(--g-bp8); }
   .pegs { flex: 0 0 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; justify-items: center; align-content: center; }
-  .peg { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--g-border); background: transparent; }
-  .peg.b { background: var(--g-text); border-color: var(--g-text); }
-  .peg.w { background: var(--g-surface); border-color: var(--g-muted); }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
-  .msg.win { color: var(--g-success); font-weight: 600; }
-  .msg.lose { color: var(--g-danger); font-weight: 600; }
+  /* 空键钉：内凹「洞」（灰底 + 内阴影），与凸起的黑/白键钉明确区分 */
+  .peg { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--g-mm-slot-ring); background: var(--g-mm-slot); box-shadow: inset 0 1px 3px rgba(0,0,0,.26); transition: transform .16s ease-out, box-shadow .16s ease-out, background .16s ease-out; }
+  .peg.b { background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.42), rgba(255,255,255,0) 52%), var(--g-mm-peg-b); border-color: var(--g-mm-peg-b); box-shadow: inset 0 1px 1px rgba(255,255,255,.4), inset 0 -1px 2px rgba(0,0,0,.32), 0 1px 2px rgba(10,40,28,.26); }
+  .peg.w { background: radial-gradient(circle at 35% 30%, #fff, rgba(255,255,255,0) 55%), var(--g-mm-peg-w); border-color: var(--g-muted); box-shadow: inset 0 1px 1px rgba(255,255,255,.75), inset 0 -1px 2px rgba(0,0,0,.14), 0 1px 2px rgba(10,40,28,.22); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; transition: color .16s ease-out; }
+  .msg.win { color: var(--g-success); font-weight: 600; animation: msgPop .3s ease-out; }
+  .msg.lose { color: var(--g-danger); font-weight: 600; animation: msgPop .3s ease-out; }
+  @keyframes msgPop { 0% { transform: scale(.92); opacity: .4; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .sec { font-size: 12px; color: var(--g-muted); margin: 12px 2px 6px; }
-  .palette { display: grid; gap: 10px; margin-bottom: 12px; }
-  .chip { min-height: 44px; min-width: 44px; width: 100%; max-width: 56px; aspect-ratio: 1; justify-self: center; border: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: inherit; font-size: 16px; font-weight: 700; color: var(--g-text); cursor: pointer; box-shadow: var(--g-shadow); }
-  .chip.sel { outline: 3px solid var(--g-primary-deep); outline-offset: 2px; }
+  .palette { display: grid; gap: 10px; margin-bottom: 12px; animation: rise .38s ease-out 160ms both; }
+  /* 色球：与棋子同构的轻立体（渐变 + 高光 + 投影） */
+  .chip { min-height: 44px; min-width: 44px; width: 100%; max-width: 56px; aspect-ratio: 1; justify-self: center; border: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: inherit; font-size: 16px; font-weight: 700; color: var(--g-text); cursor: pointer; background: var(--c); background-image: radial-gradient(circle at 32% 26%, rgba(255,255,255,.85), rgba(255,255,255,0) 48%); box-shadow: inset 0 2px 3px rgba(255,255,255,.5), inset 0 -4px 7px rgba(0,0,0,.22), 0 3px 8px rgba(10,40,28,.22); transition: transform .14s ease-out, box-shadow .16s ease-out; }
+  .chip:active { transform: scale(.96); }
+  .chip.sel { transform: scale(1.06); outline: 3px solid var(--g-primary-deep); outline-offset: 2px; }
   [data-theme=dark] .chip { color: var(--g-bg); }
   .tools { display: flex; gap: 8px; margin-top: 10px; }
   .tools + .tools { margin-top: 8px; }
-  .btn { min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: var(--g-on-primary); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
-  .btn:active { opacity: .85; }
-  .btn:disabled { opacity: .4; }
-  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .btn { min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: var(--g-on-primary); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(10,40,28,.18); transition: transform .12s ease-out, opacity .16s ease-out, background .16s ease-out, box-shadow .16s ease-out; }
+  .btn:active { transform: scale(.96); }
+  .btn:disabled { opacity: .4; box-shadow: none; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); box-shadow: inset 0 0 0 1px var(--g-border); }
   #btnSubmit { flex: 1; }
   #btnNext { flex: 1; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:.01ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -336,10 +351,11 @@ function renderPalette(){
     paletteEl.appendChild(b);
   }
 }
+function setStat(id,v){var el=$(id);if(el.textContent===v)return;el.textContent=v;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump")}
 function renderStats(){
-  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
-  $("stTry").textContent=guesses.length+"/"+maxTries;
-  $("stDone").textContent=String(Object.keys(doneSave).length);
+  setStat("stLv",(cur+1)+"/"+LEVELS.length);
+  setStat("stTry",guesses.length+"/"+maxTries);
+  setStat("stDone",String(Object.keys(doneSave).length));
 }
 function updateButtons(){
   var full=true;
@@ -383,7 +399,7 @@ function submit(){
     save();
     say("破译成功！共用 "+guesses.length+" 轮","win");
     $("btnNext").hidden=false;
-    $("btnNext").textContent=cur<LEVELS.length-1?"下一关":"再玩一轮";
+    $("btnNext").innerHTML=SW_ICON("arrow-right")+(cur<LEVELS.length-1?"下一关":"再玩一轮");
     // 成绩上报（到达关卡，desc：越大越好）
     if(GB.available)GB.reportScore("mastermind",{metricValue:cur+1}).catch(function(){});
   }else if(guesses.length>=maxTries){
@@ -405,6 +421,11 @@ $("btnSubmit").addEventListener("click",submit);
 $("btnNext").addEventListener("click",function(){
   startLevel(cur<LEVELS.length-1?cur+1:0);
 });
+/* 工具按钮图标：文字前内联 SVG（SW_ICON 范式，零外链） */
+$("btnClear").insertAdjacentHTML("afterbegin",SW_ICON("backspace"));
+$("btnRestart").insertAdjacentHTML("afterbegin",SW_ICON("rotate"));
+$("btnSubmit").insertAdjacentHTML("afterbegin",SW_ICON("check"));
+$("btnNext").insertAdjacentHTML("afterbegin",SW_ICON("arrow-right"));
 /* ---------- 启动 ---------- */
 startLevel(Math.min(saveData.lv,LEVELS.length-1));
 syncLevelsFromServer();syncSaveFromServer();

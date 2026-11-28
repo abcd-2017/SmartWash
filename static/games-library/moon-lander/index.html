@@ -7,8 +7,8 @@
 <title>月面轻降</title>
 <style>
   /*token:GAME-THEME.md§2*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-success:#17734A;--g-warning:#9A6210;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-sky1:#D9EEF6;--g-sky2:#F2F6F4;--g-water:#4A9FD4;--g-moon:#D8D3C4;--g-moon2:#C6BFA9;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-sky1:#1B242E;--g-sky2:#141614;--g-water:#6BB4DE;--g-moon:#3B3E36;--g-moon2:#2F322B;color-scheme:dark }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-success:#17734A;--g-warning:#9A6210;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-sky1:#D9EEF6;--g-sky2:#F2F6F4;--g-water:#4A9FD4;--g-moon:#D8D3C4;--g-moon2:#C6BFA9;--g-moon-hi:#EFEAD9;--g-moon-crater:#B7AF99;--g-moon-ship1:#FFFFFF;--g-moon-ship2:#DCE7DF;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-sky1:#1B242E;--g-sky2:#141614;--g-water:#6BB4DE;--g-moon:#3B3E36;--g-moon2:#2F322B;--g-moon-hi:#4A4E45;--g-moon-crater:#242721;--g-moon-ship1:#39423C;--g-moon-ship2:#1B201C;color-scheme:dark }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
@@ -26,10 +26,12 @@
   .wrap { width: 100%; max-width: 480px; position: relative; }
   header { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
   .boxes { display: flex; gap: 8px; }
-  .box { background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; }
-  .box.alt { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
+  .box { background: linear-gradient(180deg,var(--g-primary) 0%,var(--g-btn-primary) 100%); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 8px rgba(20,40,30,.14); animation: rise .38s ease-out both; }
+  .box:nth-child(2) { animation-delay: 40ms; }
+  .box.alt { background: linear-gradient(180deg,var(--g-surface) 0%,var(--g-surface2) 100%); color: var(--g-text); border: 1px solid var(--g-border); box-shadow: var(--g-shadow); }
   .box .label { display: block; font-size: 12px; }
-  .box b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .box b { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .box b.pop { animation: valpop .24s ease-out; }
   .stage { position: relative; width: min(100%, calc((100vh - 320px) * .75)); margin: 0 auto; }
   @supports (height: 100dvh) { .stage { width: min(100%, calc((100dvh - 320px) * .75)); } }
   canvas {
@@ -46,12 +48,17 @@
   }
   .overlay.show { display: flex; animation: fadein .18s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-  .card { width: 100%; max-width: 310px; max-height: 100%; overflow: auto; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 18px 16px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  .card { width: 100%; max-width: 310px; max-height: 100%; overflow: auto; background: linear-gradient(180deg,var(--g-surface) 0%,var(--g-surface2) 100%); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 18px 16px; animation: pop .28s ease-out; }
+  .card.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
   .ov-kicker { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .1em; color: var(--g-muted); }
   .card h2 { margin: 0 0 8px; font-size: 18px; line-height: 1.2; color: var(--g-text); }
   .ov-text { margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: var(--g-muted); }
   .ov-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 12px; }
-  .ov-stats .st { background: var(--g-surface2); border-radius: 12px; padding: 7px 4px; }
+  .ov-stats .st { background: linear-gradient(180deg,var(--g-surface) 0%,var(--g-surface2) 100%); border-radius: 12px; padding: 7px 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
   .ov-stats b { display: block; font-size:18px; color: var(--g-primary-deep); font-variant-numeric: tabular-nums; }
   .ov-stats span { font-size: 12px; color: var(--g-muted); }
   .ov-btns { display: grid; gap: 8px; }
@@ -60,30 +67,40 @@
   .cfg { font-size: 12px; color: var(--g-muted); margin: 0 0 12px; }
   .btn {
     min-height: 48px; padding: 0 16px; border: 0; border-radius: var(--g-radius-btn);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     background: var(--g-btn-primary); color: var(--g-on-primary);
     font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
   .btn.sq { min-width: 48px; padding: 0; font-size: 22px; line-height: 1; }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:focus-visible { outline: 2px solid var(--g-primary); outline-offset: 2px; }
-  .pads { display: flex; gap: 10px; margin: 12px 0 0; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .pads { display: flex; gap: 10px; margin: 12px 0 0; animation: rise .38s ease-out both; animation-delay: 80ms; }
   .pad {
     flex: 1; min-height: 64px; border: 1px solid var(--g-border); border-radius: var(--g-radius-btn);
-    background: var(--g-surface2); color: var(--g-text);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    background: linear-gradient(180deg,var(--g-surface) 0%,var(--g-surface2) 100%); color: var(--g-text);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 2px 6px rgba(20,40,30,.08);
     font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer;
     touch-action: none;
+    transition: transform .14s ease-out, box-shadow .16s ease-out;
   }
-  .pad.main { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); font-size:22px;font-weight:700; }
-  .pad:active { opacity: .82; }
+  .pad.main { background: linear-gradient(180deg,var(--g-primary) 0%,var(--g-btn-primary) 100%); border-color: var(--g-primary); color: var(--g-on-primary); font-size:22px;font-weight:700; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 8px rgba(20,40,30,.16); }
+  .pad:active { transform: scale(.96); }
   .pad:focus-visible { outline: 2px solid var(--g-primary); outline-offset: 2px; }
-  .toolbar { display: flex; gap: 10px; margin: 10px 0 0; }
+  .toolbar { display: flex; gap: 10px; margin: 10px 0 0; animation: rise .38s ease-out both; animation-delay: 120ms; }
   .toolbar .btn { flex: 1; min-height: 48px; }
   .toolbar .btn.ghost { background: var(--g-surface); border: 1px solid var(--g-border); color: var(--g-text); }
-  .foot { margin: 12px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; }
+  .legend { display: flex; gap: 8px; margin: 10px 2px 0; animation: rise .38s ease-out both; animation-delay: 160ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip .swi { color: var(--g-primary-deep); }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .foot { margin: 12px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; animation: rise .38s ease-out both; animation-delay: 200ms; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 </style>
 <script>
 /* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox，与 UI 令牌联动） */
@@ -97,7 +114,11 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
  'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
  'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
- 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'pause':'<path d="M9 5v14M15 5v14"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'target':'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>'
 };
 var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
 return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
@@ -138,13 +159,18 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     </div>
   </div>
   <div class="pads">
-    <button class="pad" id="padL">‹ 左转</button>
+    <button class="pad" id="padL">左转</button>
     <button class="pad main" id="padF">点火</button>
-    <button class="pad" id="padR">右转 ›</button>
+    <button class="pad" id="padR">右转</button>
   </div>
   <div class="toolbar">
     <button class="btn ghost" id="btnPause">暂停</button>
     <button class="btn ghost" id="btnMenu">选站</button>
+  </div>
+  <div class="legend">
+    <span class="lg-chip"><span class="swi" data-ic="arrow-up"></span><span><b>点火</b> · 减速</span></span>
+    <span class="lg-chip"><span class="swi" data-ic="target"></span><span><b>平台</b> · 目标</span></span>
+    <span class="lg-chip"><span class="swi" data-ic="check"></span><span><b>≤46/≤30/≤28°</b> · 安全</span></span>
   </div>
   <p class="foot">按住屏幕或「点火」喷射减速 · 垂直 ≤46 · 水平 ≤30 · 倾角 ≤28° 落在平台内</p>
 </div>
@@ -226,13 +252,30 @@ function palLoad(){
   PAL.onPrimary=v("--g-on-primary");PAL.text=v("--g-text");PAL.muted=v("--g-muted");PAL.faint=v("--g-faint");
   PAL.border=v("--g-border");PAL.danger=v("--g-danger");PAL.success=v("--g-success");PAL.warning=v("--g-warning");
   PAL.sky1=v("--g-sky1");PAL.sky2=v("--g-sky2");PAL.water=v("--g-water");PAL.moon=v("--g-moon");PAL.moon2=v("--g-moon2");
+  PAL.moonHi=v("--g-moon-hi");PAL.crater=v("--g-moon-crater");PAL.ship1=v("--g-moon-ship1");PAL.ship2=v("--g-moon-ship2");
   skyGrad=null;
 }
 window.__gOnTheme=function(){palLoad()};
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 
 /* ---------- DOM ---------- */
 function $(id){return document.getElementById(id)}
-var cv=$("cv"),ctx=cv.getContext("2d"),ov=$("ov");
+function popVal(el){if(!el)return;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop")}
+var cv=$("cv"),ctx=cv.getContext("2d"),ov=$("ov"),ovCard=ov.querySelector(".card");
 var hudLv=$("hudLv"),hudBest=$("hudBest");
 var ovK=$("ovK"),ovT=$("ovT"),ovX=$("ovX"),ovMid=$("ovMid"),ovS=$("ovS"),ovB=$("ovB");
 
@@ -366,18 +409,18 @@ function touchdown(vy,vxs,aa){
   // 成绩上报（最高分 desc：越大越好）
   if(GB.available)GB.reportScore("moon-lander",{metricValue:S.best}).catch(function(){});
   syncHud();
-  showOv({kicker:"TOUCHDOWN",title:"着陆成功 · 第 "+S.level+" 站",
+  showOv({kicker:"TOUCHDOWN",title:"着陆成功 · 第 "+S.level+" 站",win:true,
     text:newUn?"解锁第 "+(S.level+1)+" 站：平台更窄、横风更急，重力也在爬升。":"动作干净利落，试试更高分的软着陆。",
     stats:[["触地垂直",vy.toFixed(1)],["触地水平",vxs.toFixed(1)],["倾角",Math.round(aa*57.3)+"°"],["剩余燃料",S.fuel.toFixed(0)],["得分",sc],["历史最佳",S.best]],
-    btns:[["下一站","primary",function(){startLevel(S.level+1)}],["重飞本站","ghost",function(){startLevel(S.level)}],["选站","ghost",function(){showMenu()}]]});
+    btns:[["下一站","primary",function(){startLevel(S.level+1)},"arrow-right"],["重飞本站","ghost",function(){startLevel(S.level)},"rotate"],["选站","ghost",function(){showMenu()},"grid"]]});
 }
 function crash(reason){
   S.resultOk=false;S.phase="over";
   explode(S.ship.x,Math.min(S.ship.y,MH-30));
   syncHud();
-  showOv({kicker:"CRASH",title:"着陆失败",
+  showOv({kicker:"CRASH",title:"着陆失败",win:false,
     text:reason+"。参考阈值：垂直 ≤46 · 水平 ≤30 · 倾角 ≤28°。",
-    btns:[["重试本站","primary",function(){startLevel(S.level)}],["选站","ghost",function(){showMenu()}]]});
+    btns:[["重试本站","primary",function(){startLevel(S.level)},"rotate"],["选站","ghost",function(){showMenu()},"grid"]]});
 }
 
 /* ---------- 模式流程 ---------- */
@@ -392,15 +435,15 @@ function showMenu(){
   S.paused=false;
   S.selLevel=clamp(S.selLevel,1,S.unlocked);
   var c=levelCfg(S.selLevel);
-  showOv({kicker:"MOON DESCENT",title:"月面轻降",
+  showOv({kicker:"MOON DESCENT",title:"月面轻降",win:false,
     text:"按住屏幕或「点火」喷射减速，‹ › 修正姿态；垂直 ≤46、水平 ≤30、倾角 ≤28° 落在平台内。",
     mid:'step',
     stats:[["最高解锁",S.unlocked+" 站"],["历史最佳",S.best]],
-    btns:[["开始下降 · 第 "+S.selLevel+" 站","primary",function(){startLevel(S.selLevel)}]]});
+    btns:[["开始下降 · 第 "+S.selLevel+" 站","primary",function(){startLevel(S.selLevel)},"play"]]});
   renderStepper(c);
 }
 function renderStepper(c){
-  ovMid.innerHTML='<div class="step"><button class="btn ghost sq" id="stPrev">‹</button><div class="sel" id="stSel">第 '+S.selLevel+' 站</div><button class="btn ghost sq" id="stNext">›</button></div><p class="cfg" id="stCfg">平台宽 '+c.padW+' · 重力 '+c.grav+' · 横风 '+c.windAmp+'</p>';
+  ovMid.innerHTML='<div class="step"><button class="btn ghost sq" id="stPrev" aria-label="上一站">'+window.SW_ICON("arrow-left")+'</button><div class="sel" id="stSel">第 '+S.selLevel+' 站</div><button class="btn ghost sq" id="stNext" aria-label="下一站">'+window.SW_ICON("arrow-right")+'</button></div><p class="cfg" id="stCfg">平台宽 '+c.padW+' · 重力 '+c.grav+' · 横风 '+c.windAmp+'</p>';
   $("stPrev").addEventListener("click",function(){if(S.selLevel>1){S.selLevel--;refreshMenu()}});
   $("stNext").addEventListener("click",function(){if(S.selLevel<S.unlocked){S.selLevel++;refreshMenu()}});
 }
@@ -409,9 +452,9 @@ function refreshMenu(){
   $("stSel").textContent="第 "+S.selLevel+" 站";
   $("stCfg").textContent="平台宽 "+c.padW+" · 重力 "+c.grav+" · 横风 "+c.windAmp;
   ovB.innerHTML="";
-  [["开始下降 · 第 "+S.selLevel+" 站","primary",function(){startLevel(S.selLevel)}]].forEach(function(b){
+  [["开始下降 · 第 "+S.selLevel+" 站","primary",function(){startLevel(S.selLevel)},"play"]].forEach(function(b){
     var el=document.createElement("button");
-    el.className="btn "+b[1];el.textContent=b[0];
+    el.className="btn "+b[1];el.innerHTML=window.SW_ICON(b[3])+b[0];
     el.addEventListener("click",b[2]);ovB.appendChild(el);
   });
 }
@@ -419,6 +462,7 @@ function showOv(o){
   ovK.textContent=o.kicker||"";
   ovT.textContent=o.title||"";
   ovX.textContent=o.text||"";
+  ovCard.classList.toggle("win",!!o.win);   // 过关轻弹（渲染反馈）
   ovMid.innerHTML="";
   var st=o.stats||[];
   ovS.style.display=st.length?"grid":"none";
@@ -427,7 +471,7 @@ function showOv(o){
   (o.btns||[]).forEach(function(b){
     var el=document.createElement("button");
     el.className="btn"+(b[1]?" "+b[1]:"");
-    el.textContent=b[0];
+    el.innerHTML=(b[3]?window.SW_ICON(b[3]):"")+b[0];   // 图标 + 文案，避免 textContent 抹掉图标
     el.addEventListener("click",b[2]);
     ovB.appendChild(el);
   });
@@ -437,8 +481,8 @@ function hideOv(){ov.classList.remove("show")}
 function pauseGame(){
   if(S.phase!=="running"||S.paused)return;
   S.paused=true;
-  showOv({kicker:"PAUSED",title:"已暂停",text:"切出页面会自动暂停，回来点继续即可。",
-    btns:[["继续","primary",function(){S.paused=false;hideOv()}],["选站","ghost",function(){showMenu()}]]});
+  showOv({kicker:"PAUSED",title:"已暂停",text:"切出页面会自动暂停，回来点继续即可。",win:false,
+    btns:[["继续","primary",function(){S.paused=false;hideOv()},"play"],["选站","ghost",function(){showMenu()},"grid"]]});
 }
 
 /* ---------- 输入 ---------- */
@@ -507,30 +551,58 @@ function drawScene(){
     ctx.fillRect(st.x,st.y,st.s>.75?2:1.4,st.s>.75?2:1.4);
   }
   ctx.globalAlpha=1;
-  //远处的地球
-  ctx.fillStyle=PAL.water;
+  //远处的地球（径向渐变 + 恒白高光 + 柔光）
+  var eg=ctx.createRadialGradient(424,57,1,428,62,15);
+  eg.addColorStop(0,colMix(PAL.water,WHITE,0.55));
+  eg.addColorStop(0.55,PAL.water);
+  eg.addColorStop(1,colShade(PAL.water,-0.35));
+  ctx.save();
+  ctx.shadowColor=PAL.water;ctx.shadowBlur=18;
+  ctx.fillStyle=eg;
   ctx.beginPath();ctx.arc(428,62,13,0,Math.PI*2);ctx.fill();
+  ctx.restore();
   ctx.fillStyle="rgba(255,255,255,.55)";
   ctx.beginPath();ctx.arc(424,57,4.5,0,Math.PI*2);ctx.fill();
-  //月面
-  ctx.fillStyle=PAL.moon;
+  //月面（竖向渐变「面」+ 顶部亮缘 + 底部压暗）
+  var mg=ctx.createLinearGradient(0,470,0,MH);
+  mg.addColorStop(0,PAL.moon);mg.addColorStop(1,PAL.moon2);
+  ctx.fillStyle=mg;
   ctx.beginPath();ctx.moveTo(0,MH);
   for(var j=0;j<S.pts.length;j++)ctx.lineTo(S.pts[j].x,S.pts[j].y);
   ctx.lineTo(MW,MH);ctx.closePath();ctx.fill();
-  ctx.fillStyle=PAL.moon2;
+  //地面顶缘亮线（边线）
+  ctx.strokeStyle=PAL.moonHi;ctx.lineWidth=2;ctx.lineJoin="round";
+  ctx.beginPath();ctx.moveTo(S.pts[0].x,S.pts[0].y);
+  for(j=1;j<S.pts.length;j++)ctx.lineTo(S.pts[j].x,S.pts[j].y);
+  ctx.stroke();
+  //陨坑（凹槽：暗底 + 亮缘）
   for(j=0;j<S.craters.length;j++){
     var cr=S.craters[j];
+    ctx.fillStyle=PAL.crater;
     ctx.beginPath();ctx.ellipse(cr.x,cr.y,cr.r,cr.r*.4,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=colMix(PAL.crater,WHITE,0.28);ctx.lineWidth=1;
+    ctx.beginPath();ctx.ellipse(cr.x,cr.y-cr.r*.12,cr.r*.82,cr.r*.3,0,Math.PI,Math.PI*2);ctx.stroke();
   }
-  //着陆平台
-  ctx.fillStyle=PAL.primary;
-  rrect(S.padX-S.padW/2,S.padY,S.padW,10,3);ctx.fill();
-  ctx.strokeStyle=PAL.primaryDeep;ctx.lineWidth=1.5;
-  rrect(S.padX-S.padW/2,S.padY,S.padW,10,3);ctx.stroke();
+  //着陆目标：平台外围虚线目标环（可落点 / 目标）
+  var blink=.4+.6*Math.abs(Math.sin(S.t*4));
+  ctx.globalAlpha=S.phase==="menu"?.55:blink;
+  ctx.strokeStyle=PAL.warning;ctx.lineWidth=1.6;
+  ctx.setLineDash([5,4]);
+  rrect(S.padX-S.padW/2-9,S.padY-9,S.padW+18,20,6);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.globalAlpha=1;
+  //着陆平台（渐变「面」+ 顶缘高光 + 落地投影）
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.30)";ctx.shadowBlur=8;ctx.shadowOffsetY=3;
+  var pg=ctx.createLinearGradient(0,S.padY,0,S.padY+10);
+  pg.addColorStop(0,PAL.primary);pg.addColorStop(1,PAL.primaryDeep);
+  ctx.fillStyle=pg;rrect(S.padX-S.padW/2,S.padY,S.padW,10,3);ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle=colMix(PAL.primary,WHITE,0.42);ctx.lineWidth=1.2;
+  rrect(S.padX-S.padW/2+.6,S.padY+.6,S.padW-1.2,8.8,2.6);ctx.stroke();
   ctx.fillStyle=PAL.onPrimary;
   ctx.font="800 10px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
   ctx.fillText("PAD",S.padX,S.padY+5.5);
-  var blink=.4+.6*Math.abs(Math.sin(S.t*4));
   ctx.globalAlpha=S.phase==="menu"?.8:blink;
   ctx.fillStyle=PAL.warning;
   ctx.beginPath();ctx.arc(S.padX-S.padW/2+7,S.padY-4,3,0,Math.PI*2);ctx.fill();
@@ -557,6 +629,9 @@ function drawParts(){
 function drawShip(){
   if(S.phase==="over"&&!S.resultOk)return;
   var sh=S.ship,thrusting=ctl.fire&&S.fuel>0&&S.phase==="running"&&!S.paused;
+  // 悬浮投影（不随船体旋转）
+  ctx.fillStyle="rgba(0,0,0,0.22)";
+  ctx.beginPath();ctx.ellipse(sh.x,sh.y+20,13,4,0,0,Math.PI*2);ctx.fill();
   ctx.save();
   ctx.translate(sh.x,sh.y);ctx.rotate(sh.a);
   ctx.strokeStyle=PAL.muted;ctx.lineWidth=2.5;ctx.lineCap="round";
@@ -564,19 +639,38 @@ function drawShip(){
   ctx.beginPath();ctx.moveTo(-17,16);ctx.lineTo(-11,16);ctx.moveTo(11,16);ctx.lineTo(17,16);ctx.stroke();
   if(thrusting){
     var len=12+Math.random()*10;
-    ctx.fillStyle=PAL.warning;
+    var fg=ctx.createLinearGradient(0,15,0,15+len);
+    fg.addColorStop(0,PAL.warning);fg.addColorStop(1,colShade(PAL.warning,-0.4));
+    ctx.fillStyle=fg;
     ctx.beginPath();ctx.moveTo(-4.5,15);ctx.lineTo(4.5,15);ctx.lineTo(0,15+len);ctx.closePath();ctx.fill();
     ctx.fillStyle="rgba(255,255,255,.85)";
     ctx.beginPath();ctx.moveTo(-2,15);ctx.lineTo(2,15);ctx.lineTo(0,15+len*.55);ctx.closePath();ctx.fill();
   }
-  ctx.fillStyle=PAL.surface;ctx.strokeStyle=PAL.primaryDeep;ctx.lineWidth=2;
-  rrect(-13,-14,26,26,7);ctx.fill();ctx.stroke();
-  ctx.fillStyle=PAL.primarySoft;
+  // 船体（渐变「面」+ 落地投影）
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.32)";ctx.shadowBlur=10;ctx.shadowOffsetY=5;
+  var bg=ctx.createLinearGradient(0,-14,0,12);
+  bg.addColorStop(0,PAL.ship1);bg.addColorStop(1,PAL.ship2);
+  ctx.fillStyle=bg;rrect(-13,-14,26,26,7);ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle=PAL.primaryDeep;ctx.lineWidth=2;
+  rrect(-13,-14,26,26,7);ctx.stroke();
+  // 顶部高光（恒白）
+  ctx.fillStyle="rgba(255,255,255,.5)";
+  ctx.beginPath();ctx.ellipse(0,-9,8,3.2,0,0,Math.PI*2);ctx.fill();
+  // 座舱（径向渐变）
+  var cg=ctx.createRadialGradient(-1.5,-5.5,1,0,-3,6);
+  cg.addColorStop(0,colMix(PAL.primarySoft,WHITE,0.55));
+  cg.addColorStop(1,PAL.primaryDeep);
+  ctx.fillStyle=cg;
   ctx.beginPath();ctx.arc(0,-3,5,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle=PAL.primaryDeep;ctx.lineWidth=1.2;
   ctx.beginPath();ctx.arc(0,-3,5,0,Math.PI*2);ctx.stroke();
+  // 底部喷口
   ctx.fillStyle=PAL.muted;
   ctx.fillRect(-5,11,10,4);
+  ctx.fillStyle="rgba(255,255,255,.35)";
+  ctx.fillRect(-5,11,10,1.2);
   ctx.restore();
 }
 function drawHud(){
@@ -588,8 +682,12 @@ function drawHud(){
   rrect(60,11,250,10,5);ctx.fill();
   ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
   rrect(60,11,250,10,5);ctx.stroke();
-  ctx.fillStyle=pct>.35?PAL.primary:(pct>.15?PAL.warning:PAL.danger);
-  if(pct>0){rrect(61,12,248*pct,8,4);ctx.fill()}
+  var fc=pct>.35?PAL.primary:(pct>.15?PAL.warning:PAL.danger);
+  if(pct>0){
+    var fgr=ctx.createLinearGradient(0,12,0,20);
+    fgr.addColorStop(0,colShade(fc,0.25));fgr.addColorStop(1,colShade(fc,-0.2));
+    ctx.fillStyle=fgr;rrect(61,12,248*pct,8,4);ctx.fill();
+  }
   ctx.fillStyle=PAL.text;ctx.font="700 12px system-ui,sans-serif";
   ctx.textAlign="left";ctx.textBaseline="middle";
   ctx.fillText("燃料",14,16.5);
@@ -635,9 +733,9 @@ function draw(){
 var lastLv="",lastBest="";
 function syncHud(){
   var lv=String(S.level);
-  if(lv!==lastLv){hudLv.textContent=lv;lastLv=lv}
+  if(lv!==lastLv){hudLv.textContent=lv;lastLv=lv;popVal(hudLv)}
   var bt=String(S.best);
-  if(bt!==lastBest){hudBest.textContent=bt;lastBest=bt}
+  if(bt!==lastBest){hudBest.textContent=bt;lastBest=bt;popVal(hudBest)}
 }
 
 /* ---------- 主循环 ---------- */
@@ -668,6 +766,14 @@ document.addEventListener("visibilitychange",function(){
 window.addEventListener("resize",resize);
 window.addEventListener("orientationchange",resize);
 
+/* 按钮 / 图例图标注入（内联 SVG，零外链；覆盖层按钮走 showOv 的 icon 字段） */
+$("padL").insertAdjacentHTML("afterbegin",window.SW_ICON("arrow-left"));
+$("padR").insertAdjacentHTML("afterbegin",window.SW_ICON("arrow-right"));
+$("padF").insertAdjacentHTML("afterbegin",window.SW_ICON("arrow-up"));
+$("btnPause").insertAdjacentHTML("afterbegin",window.SW_ICON("pause"));
+$("btnMenu").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
+var icEls=document.querySelectorAll("[data-ic]"),ii;
+for(ii=0;ii<icEls.length;ii++)icEls[ii].innerHTML=window.SW_ICON(icEls[ii].getAttribute("data-ic"));
 palLoad();
 S.unlocked=Math.max(1,lsNum(K_LV,1));
 S.best=lsNum(K_BEST,0);

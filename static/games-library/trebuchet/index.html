@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>投石攻城</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-tb-* 本作素材色）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-tb-sky1:#EFE9DC;--g-st-tb-sky2:#F7F3EA;--g-st-tb-gnd:#C9B691;--g-st-tb-gnd2:#A8956F;--g-st-tb-wall:#8A93A0;--g-st-tb-wall2:#5C6470;--g-st-tb-rock:#6E5330;--g-st-tb-arm:#8F6A3A;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-tb-sky1:#1C1B16;--g-st-tb-sky2:#141614;--g-st-tb-gnd:#5E5340;--g-st-tb-gnd2:#453D2E;--g-st-tb-wall:#6E7887;--g-st-tb-wall2:#4A515C;--g-st-tb-rock:#4E3B22;--g-st-tb-arm:#6E5330;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-tb-* 场景 + --g-trb-* 木质/城门/瞄准）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-tb-sky1:#EFE9DC;--g-st-tb-sky2:#F7F3EA;--g-st-tb-gnd:#C9B691;--g-st-tb-gnd2:#A8956F;--g-st-tb-wall:#8A93A0;--g-st-tb-wall2:#5C6470;--g-st-tb-rock:#6E5330;--g-st-tb-arm:#8F6A3A;--g-trb-wood1:#B07A44;--g-trb-wood2:#7E542C;--g-trb-gate:#4A3220;--g-trb-aim:#B26B1B;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-tb-sky1:#1C1B16;--g-st-tb-sky2:#141614;--g-st-tb-gnd:#5E5340;--g-st-tb-gnd2:#453D2E;--g-st-tb-wall:#6E7887;--g-st-tb-wall2:#4A515C;--g-st-tb-rock:#4E3B22;--g-st-tb-arm:#6E5330;--g-trb-wood1:#7A542E;--g-trb-wood2:#4E3418;--g-trb-gate:#241610;--g-trb-aim:#E2A44E;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -26,29 +26,42 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
+  .stat:nth-child(4) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { display: inline-block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
-  .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .stat .val.pop { animation: valpop .24s ease-out; }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); border: 1px solid var(--g-border); box-shadow: var(--g-shadow); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
   .btn {
     min-height: 44px; padding: 0 10px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
     white-space: nowrap;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .ctl {
     width: 100%; min-height: 48px; border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-btn-primary); color: #fff;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .ctl:active { opacity: .75; }
+  .ctl:active { transform: scale(.96); }
   .ctl[disabled] { opacity: .45; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .legend { display: flex; gap: 8px; margin: 10px 2px 0; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -57,13 +70,17 @@
   }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
   .panel {
     width: 100%; max-width: 340px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
     animation: pop .25s ease-out;
   }
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .btn { width: 100%; margin-bottom: 8px; }
@@ -78,11 +95,24 @@
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
+ 'minus':'<path d="M5 12h14"/>','plus':'<path d="M12 5v14M5 12h14"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={'play':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -108,6 +138,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <div class="stage"><canvas id="cv" aria-label="投石攻城场景：投石机、城墙与城门" role="img"></canvas></div>
   <p class="msg" id="msg" role="status" aria-live="polite">调角度与配重，砸开城墙底部的城门；注意风与障碍盾</p>
+  <div class="legend">
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-trb-wood1)"></span><span><b>投石机</b> · 你控制</span></span>
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-trb-aim)"></span><span><b>城门</b> · 目标</span></span>
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-st-tb-gnd2)"></span><span><b>地面</b> · 落点</span></span>
+  </div>
   <div class="tools">
     <button class="btn" id="btnAL">角度−</button>
     <button class="btn" id="btnAR">角度+</button>
@@ -122,7 +157,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="foot">键盘：◀▶ 角度 · ▲▼ 配重 · 空格 发射 · R 重开 · 40 关递进 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">破门！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -346,10 +381,11 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";$("ovBtn").style.background="var(--g-surface2)";$("ovBtn").style.color="var(--g-text)";
+  setOvBtn("取消","x");$("ovBtn").style.background="var(--g-surface2)";$("ovBtn").style.color="var(--g-text)";
+  $("panel").classList.remove("win");
   $("overlay").classList.add("show");
 }
-function hideOverlay(){$("overlay").classList.remove("show")}
+function hideOverlay(){$("overlay").classList.remove("show");$("panel").classList.remove("win")}
 /* ---------- 调色板 ---------- */
 var PAL={};
 function palLoad(){
@@ -362,16 +398,34 @@ function palLoad(){
     sky1:v("--g-st-tb-sky1"),sky2:v("--g-st-tb-sky2"),
     gnd:v("--g-st-tb-gnd"),gnd2:v("--g-st-tb-gnd2"),
     wall:v("--g-st-tb-wall"),wall2:v("--g-st-tb-wall2"),
-    rock:v("--g-st-tb-rock"),arm:v("--g-st-tb-arm")};
+    rock:v("--g-st-tb-rock"),arm:v("--g-st-tb-arm"),
+    wood1:v("--g-trb-wood1"),wood2:v("--g-trb-wood2"),gate:v("--g-trb-gate"),aim:v("--g-trb-aim")};
 }
-window.__gOnTheme=function(){palLoad()};
+window.__gOnTheme=function(){palLoad();draw()};
 palLoad();
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 /* ---------- 状态（续玩：lv 起步即存档关） ---------- */
 var lv=save.lv,L=null,ang=45,wt=66,ammo=3,mode="aim",ball=null,trail=[],shots=0,won=false;
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var W=TB.W,H=TB.H;
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+function setOvBtn(t,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+t}
+function popEl(el){el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop")}
 function loadLevel(n){
   lv=Math.max(0,Math.min(n,LEVELS.length-1));
   L=LEVELS[lv];
@@ -394,7 +448,7 @@ function fire(){
   if(mode!=="aim"||ammo<=0)return;
   ball=TB.launch(L,ang,wt);
   trail=[];mode="fly";shots++;ammo--;
-  updHud();updBtns();
+  updHud();updBtns();popEl($("stAmmo"));
 }
 function endFlight(res){
   if(res==="win"){
@@ -403,8 +457,9 @@ function endFlight(res){
     if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:ammo}).catch(function(){});
     $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"破门！";
     $("ovDesc").innerHTML="第 "+shots+" 发砸开城门，剩 "+ammo+" 发"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-    $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
-    $("ovBtn").style.background="var(--g-btn-primary)";$("ovBtn").style.color="#fff";
+    setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"play");
+    $("ovBtn").style.background="var(--g-btn-primary)";$("ovBtn").style.color="var(--g-on-primary)";
+    $("panel").classList.add("win");
     $("overlay").classList.add("show");
     mode="done";updBtns();
   }else{
@@ -413,8 +468,9 @@ function endFlight(res){
     if(ammo<=0){
       $("ovTitle").textContent="炮弹用完";
       $("ovDesc").textContent="城门还没破。调整角度与配重再来。";
-      $("ovBtn").textContent="重试本关";
-      $("ovBtn").style.background="var(--g-btn-primary)";$("ovBtn").style.color="#fff";
+      setOvBtn("重试本关","rotate");
+      $("ovBtn").style.background="var(--g-btn-primary)";$("ovBtn").style.color="var(--g-on-primary)";
+      $("panel").classList.remove("win");
       $("overlay").classList.add("show");
       mode="done";
     }else{mode="aim";ball=null;}
@@ -441,58 +497,132 @@ function rr(x,y,w2,h2,r){
   ctx.moveTo(x+r,y);ctx.arcTo(x+w2,y,x+w2,y+h2,r);ctx.arcTo(x+w2,y+h2,x,y+h2,r);
   ctx.arcTo(x,y+h2,x,y,r);ctx.arcTo(x,y,x+w2,y,r);ctx.closePath();
 }
+/* 弹丸：径向渐变 + 恒白高光 + 落地投影（立体质感） */
+function drawBall(x,y,r){
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.4)";ctx.shadowBlur=r*0.8;ctx.shadowOffsetY=r*0.4;
+  var g=ctx.createRadialGradient(x-r*0.35,y-r*0.4,r*0.12,x,y,r*1.05);
+  g.addColorStop(0,colMix(PAL.rock,WHITE,0.75));
+  g.addColorStop(0.45,PAL.rock);
+  g.addColorStop(1,colShade(PAL.rock,-0.35));
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=Math.max(1.2,r*0.16);ctx.strokeStyle=colShade(PAL.rock,-0.45);
+  ctx.beginPath();ctx.arc(x,y,r-ctx.lineWidth*0.5,0,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=0.9;ctx.fillStyle=WHITE;   // 恒白高光
+  ctx.beginPath();ctx.ellipse(x-r*0.32,y-r*0.4,r*0.26,r*0.15,-0.55,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+}
+/* 木件：渐变杆（亮面 → 暗面） */
+function woodLine(x1,y1,x2,y2,w){
+  var lg=ctx.createLinearGradient(x1,y1,x2,y2);
+  lg.addColorStop(0,PAL.wood1);lg.addColorStop(1,PAL.wood2);
+  ctx.strokeStyle=lg;ctx.lineWidth=w;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+}
 function draw(ts){
   var g=ctx.createLinearGradient(0,0,0,H);
   g.addColorStop(0,PAL.sky1);g.addColorStop(1,PAL.sky2);
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   if(!L)return;
-  /* 地面 */
-  ctx.fillStyle=PAL.gnd;ctx.fillRect(0,TB.GROUND,W,H-TB.GROUND);
-  ctx.fillStyle=PAL.gnd2;ctx.fillRect(0,TB.GROUND,W,4);
-  /* 城墙 + 城门 */
-  ctx.fillStyle=PAL.wall;
-  rr(L.wx,TB.GROUND-L.wh,14,L.wh,3);ctx.fill();
-  ctx.strokeStyle=PAL.wall2;ctx.lineWidth=2;ctx.stroke();
-  ctx.fillStyle=PAL.wall2;
-  for(var by=TB.GROUND-L.wh+10;by<TB.GROUND-6;by+=16)ctx.fillRect(L.wx+3,by,8,2);
-  ctx.fillStyle=PAL.rock;
-  ctx.fillRect(L.wx-1,TB.GROUND-L.gh,14,L.gh);
-  ctx.strokeStyle=PAL.gnd2;ctx.lineWidth=1.5;
-  ctx.strokeRect(L.wx-1,TB.GROUND-L.gh,14,L.gh);
-  ctx.fillStyle=PAL.gnd2;
-  ctx.beginPath();ctx.arc(L.wx+6,TB.GROUND-L.gh/2,2,0,7);ctx.fill();
-  /* 盾 */
-  for(var i=0;i<L.shields.length;i++){
-    var s=L.shields[i];
-    ctx.fillStyle=PAL.wall;
-    rr(s[0],s[1],s[2],s[3],4);ctx.fill();
-    ctx.strokeStyle=PAL.wall2;ctx.lineWidth=2;ctx.stroke();
+  var wx=L.wx,wh=L.wh,gh=L.gh,i;
+  /* 地面：竖向渐变「面」+ 顶缘亮线（边线） */
+  var gg=ctx.createLinearGradient(0,TB.GROUND,0,H);
+  gg.addColorStop(0,PAL.gnd);gg.addColorStop(1,colShade(PAL.gnd,-0.28));
+  ctx.fillStyle=gg;ctx.fillRect(0,TB.GROUND,W,H-TB.GROUND);
+  ctx.fillStyle=colMix(PAL.gnd,WHITE,0.22);ctx.fillRect(0,TB.GROUND,W,2);
+  ctx.fillStyle=PAL.gnd2;ctx.globalAlpha=0.45;ctx.fillRect(0,TB.GROUND+2,W,1);ctx.globalAlpha=1;
+  /* 城墙：渐变「面」+ 顶缘高光 + 落地投影 + 城砖缝 */
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.30)";ctx.shadowBlur=10;ctx.shadowOffsetY=4;
+  var wg=ctx.createLinearGradient(wx,0,wx+14,0);
+  wg.addColorStop(0,PAL.wall2);wg.addColorStop(0.5,colMix(PAL.wall,WHITE,0.10));wg.addColorStop(1,PAL.wall);
+  ctx.fillStyle=wg;rr(wx,TB.GROUND-wh,14,wh,3);ctx.fill();
+  ctx.restore();
+  ctx.fillStyle=colMix(PAL.wall,WHITE,0.28);ctx.fillRect(wx,TB.GROUND-wh,14,2.5);
+  ctx.strokeStyle=colMix(PAL.wall2,BLACK,0.18);ctx.lineWidth=1.5;
+  for(var by=TB.GROUND-wh+10;by<TB.GROUND-6;by+=16){
+    ctx.beginPath();ctx.moveTo(wx+2,by);ctx.lineTo(wx+12,by);ctx.stroke();
   }
-  /* 投石机（框架 + 配重臂示意） */
-  ctx.strokeStyle=PAL.arm;ctx.lineWidth=4;
-  ctx.beginPath();
-  ctx.moveTo(TB.SLX-16,TB.GROUND);ctx.lineTo(TB.SLX,TB.SY);
-  ctx.moveTo(TB.SLX+16,TB.GROUND);ctx.lineTo(TB.SLX,TB.SY);
-  ctx.stroke();
+  /* 城门（目标）：内凹暗面 + 顶缘亮线 + 呼吸目标环 */
+  ctx.fillStyle=PAL.gate;ctx.fillRect(wx-1,TB.GROUND-gh,14,gh);
+  var gi=ctx.createLinearGradient(0,TB.GROUND-gh,0,TB.GROUND);
+  gi.addColorStop(0,colShade(PAL.gate,0.16));gi.addColorStop(1,colShade(PAL.gate,-0.28));
+  ctx.fillStyle=gi;ctx.fillRect(wx-1,TB.GROUND-gh,14,gh);
+  ctx.fillStyle=colMix(PAL.gate,WHITE,0.25);ctx.fillRect(wx-1,TB.GROUND-gh,14,2);
+  ctx.strokeStyle=PAL.gnd2;ctx.lineWidth=1.5;ctx.strokeRect(wx-0.5,TB.GROUND-gh+0.5,13,gh-1);
+  if(mode==="aim"){
+    var pul=window.__gRM?0.45:0.45+0.25*Math.sin((ts||0)/280);
+    ctx.globalAlpha=pul;ctx.strokeStyle=PAL.aim;ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(wx+6,TB.GROUND-gh/2,Math.max(9,gh*0.4),0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+  /* 障碍盾：渐变「面」+ 投影 + 交叉木筋 */
+  for(i=0;i<L.shields.length;i++){
+    var s=L.shields[i];
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=8;ctx.shadowOffsetY=3;
+    var sg=ctx.createLinearGradient(s[0],s[1],s[0]+s[2],s[1]+s[3]);
+    sg.addColorStop(0,PAL.wall);sg.addColorStop(1,PAL.wall2);
+    ctx.fillStyle=sg;rr(s[0],s[1],s[2],s[3],4);ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle=colMix(PAL.wall,WHITE,0.22);ctx.lineWidth=1.5;
+    rr(s[0]+0.5,s[1]+0.5,s[2]-1,s[3]-1,4);ctx.stroke();
+    ctx.strokeStyle=colMix(PAL.wall2,BLACK,0.22);ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(s[0]+3,s[1]+3);ctx.lineTo(s[0]+s[2]-3,s[1]+s[3]-3);
+    ctx.moveTo(s[0]+s[2]-3,s[1]+3);ctx.lineTo(s[0]+3,s[1]+s[3]-3);
+    ctx.stroke();
+  }
+  /* 投石机：投影 + 木轮 + 渐变木架 + 配重箱 + 抛杆 */
+  var bx=TB.SLX,py2=TB.SY;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.30)";ctx.shadowBlur=10;ctx.shadowOffsetY=4;
+  ctx.fillStyle=colShade(PAL.gnd,-0.22);
+  ctx.beginPath();ctx.ellipse(bx,TB.GROUND+2,26,5,0,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  for(i=0;i<2;i++){
+    var wxp=bx+(i?15:-15),wyp=TB.GROUND-4;
+    var wg2=ctx.createRadialGradient(wxp-2,wyp-2,1,wxp,wyp,6);
+    wg2.addColorStop(0,colMix(PAL.wood1,WHITE,0.3));wg2.addColorStop(1,PAL.wood2);
+    ctx.fillStyle=wg2;ctx.beginPath();ctx.arc(wxp,wyp,5.5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=colShade(PAL.wood2,-0.3);ctx.lineWidth=1.2;ctx.stroke();
+  }
+  woodLine(bx-20,TB.GROUND-8,bx+20,TB.GROUND-8,4);
+  woodLine(bx-15,TB.GROUND-6,bx,py2,5);
+  woodLine(bx+15,TB.GROUND-6,bx,py2,5);
   var ar=ang*Math.PI/180;
-  ctx.strokeStyle=PAL.rock;ctx.lineWidth=5;
-  ctx.beginPath();
-  ctx.moveTo(TB.SLX,TB.SY);
-  ctx.lineTo(TB.SLX+Math.cos(ar)*46,TB.SY-Math.sin(ar)*46);
-  ctx.stroke();
-  ctx.fillStyle=PAL.rock;
-  ctx.beginPath();ctx.arc(TB.SLX-20,TB.SY+6,10,0,7);ctx.fill();
+  var tipX=bx+Math.cos(ar)*46,tipY=py2-Math.sin(ar)*46;
+  var tailX=bx-Math.cos(ar)*16,tailY=py2+Math.sin(ar)*16;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.3)";ctx.shadowBlur=6;ctx.shadowOffsetY=2;
+  var cg=ctx.createLinearGradient(tailX,tailY-7,tailX,tailY+7);
+  cg.addColorStop(0,colMix(PAL.rock,WHITE,0.25));cg.addColorStop(1,colShade(PAL.rock,-0.25));
+  ctx.fillStyle=cg;rr(tailX-7,tailY-7,14,14,3);ctx.fill();
+  ctx.restore();
+  var ag=ctx.createLinearGradient(bx,py2,tipX,tipY);
+  ag.addColorStop(0,PAL.arm);ag.addColorStop(1,colMix(PAL.arm,WHITE,0.2));
+  ctx.strokeStyle=ag;ctx.lineWidth=5;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(tailX,tailY);ctx.lineTo(tipX,tipY);ctx.stroke();
+  ctx.fillStyle=colMix(PAL.wood2,WHITE,0.2);
+  ctx.beginPath();ctx.arc(bx,py2,4,0,Math.PI*2);ctx.fill();
+  if(mode==="aim"){
+    drawBall(tipX,tipY,7);
+    /* 瞄准方向虚线（短，指示射出方向；可落点仍靠自己调） */
+    ctx.save();
+    ctx.strokeStyle=PAL.aim;ctx.lineWidth=2;ctx.setLineDash([5,5]);
+    ctx.beginPath();ctx.moveTo(tipX,tipY);
+    ctx.lineTo(tipX+Math.cos(ar)*64,tipY-Math.sin(ar)*64);ctx.stroke();
+    ctx.restore();
+  }
   /* 弹道拖尾与飞石 */
   if(ball){
-    ctx.fillStyle=PAL.rock;
     for(var ti=0;ti<trail.length;ti+=2){
       ctx.globalAlpha=0.3*(ti/trail.length);
-      ctx.beginPath();ctx.arc(trail[ti][0],trail[ti][1],3,0,7);ctx.fill();
+      drawBall(trail[ti][0],trail[ti][1],3);
     }
     ctx.globalAlpha=1;
-    ctx.fillStyle=PAL.rock;
-    ctx.beginPath();ctx.arc(ball.x,ball.y,8,0,7);ctx.fill();
-    ctx.strokeStyle=PAL.gnd2;ctx.lineWidth=2;ctx.stroke();
+    drawBall(ball.x,ball.y,8);
   }
   /* 风向标 */
   if(L.wind){
@@ -539,6 +669,7 @@ $("ovBtn").addEventListener("click",function(){
     if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
     else{lv++;loadLevel(lv)}
   }else loadLevel(lv);
+  $("panel").classList.remove("win");
   $("ovBtn").style.background="var(--g-surface2)";$("ovBtn").style.color="var(--g-text)";
 });
 window.addEventListener("keydown",function(e){
@@ -553,6 +684,7 @@ window.addEventListener("keydown",function(e){
 window.addEventListener("resize",resize);
 /* ---------- 启动（loadLevel 以存档关续玩） ---------- */
 loadLevel(save.lv);resize();rafId=requestAnimationFrame(frame);
+setOvBtn("下一关","play");
 syncLevelsFromServer();syncSaveFromServer();
 })();
 </script>
@@ -587,6 +719,9 @@ syncLevelsFromServer();syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+  function $(id){return document.getElementById(id)}
+  var tbIcons=[["btnAL","arrow-down"],["btnAR","arrow-up"],["btnWL","minus"],["btnWR","plus"],["btnFire","play"],["btnReset","rotate"],["btnLv","grid"]],ti;
+  for(ti=0;ti<tbIcons.length;ti++)$(tbIcons[ti][0]).insertAdjacentHTML("afterbegin",window.SW_ICON(tbIcons[ti][1]));
 })();
 </script>
 

@@ -169,6 +169,7 @@ fun DiningOrderCreatePage(
     val allergenById by viewModel.allergenById.collectAsState()
     val inviteTarget by viewModel.inviteTarget.collectAsState()
     val draftMessage by viewModel.draftMessage.collectAsState()
+    val amICreator by viewModel.amICreator.collectAsState()
 
     // 首载（栈上重组不重放；失败重试显式触发）
     LaunchedEffect(Unit) { viewModel.load() }
@@ -210,6 +211,9 @@ fun DiningOrderCreatePage(
 
     // 清空已选确认弹窗（破坏性操作二次确认）
     var showClearConfirm by remember { mutableStateOf(false) }
+
+    // 结束点单二次确认（结束权=全体成员，防成员误触/抢先结束）
+    var showSubmitConfirm by remember { mutableStateOf(false) }
 
     val contentState = when {
         recipes.isEmpty() && loadState is RequestState.Loading -> CreateContentState.Skeleton
@@ -546,7 +550,7 @@ fun DiningOrderCreatePage(
             menuErrorRes = { viewModel.errorRes(it) },
             isReuseMode = viewModel.isReuseMode,
             submitLoading = submitState is RequestState.Loading,
-            onSubmit = viewModel::submit,
+            onSubmit = { showSubmitConfirm = true },
             onRequestClear = { showClearConfirm = true },
             onRemoveDish = { recipeId -> viewModel.toggleRecipe(recipeId) },
         )
@@ -563,6 +567,24 @@ fun DiningOrderCreatePage(
                 viewModel.clearSelections()
             },
             onDismiss = { showClearConfirm = false },
+        )
+    }
+
+    // 结束点单二次确认（结束权=全体成员：发起者 / 代发起者文案区分）
+    if (showSubmitConfirm) {
+        AppConfirmDialog(
+            title = stringResource(R.string.dining_order_submit_confirm_title),
+            message = stringResource(
+                if (amICreator) R.string.dining_order_submit_confirm_creator
+                else R.string.dining_order_submit_confirm_member,
+            ),
+            confirmText = stringResource(R.string.dining_order_submit_confirm_yes),
+            isDanger = true,
+            onConfirm = {
+                showSubmitConfirm = false
+                viewModel.submit()
+            },
+            onDismiss = { showSubmitConfirm = false },
         )
     }
 }

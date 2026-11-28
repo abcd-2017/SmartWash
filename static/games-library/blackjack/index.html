@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>二十一点</title>
 <style>
-  /*token:GAME-THEME.md §2（按需取用）+ 牌面素材 token --g-card*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-success:#17734A;--g-warning:#9A6210;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-card:#FFFFFF;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-card:#262A27;color-scheme:dark }
+  /*token:GAME-THEME.md §2 + §3 素材 token --g-bj-*（牌桌毡 / 牌面）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-on-primary:#FFFFFF;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-success:#17734A;--g-warning:#9A6210;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-bj-felt1:#1E6B4A;--g-bj-felt2:#17573C;--g-bj-face1:#FFFFFF;--g-bj-face2:#EDF2EE;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-bj-felt1:#123A2C;--g-bj-felt2:#0E2E22;--g-bj-face1:#262B27;--g-bj-face2:#1A1E1B;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -25,65 +25,100 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 12px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; background: linear-gradient(160deg, var(--g-surface), var(--g-surface2)); border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; box-shadow: var(--g-shadow); animation: rise .34s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.plain { color: var(--g-text); }
-  /* 牌桌 */
-  .zone { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 12px; margin-bottom: 10px; }
+  /* 牌桌：绿毡「面」+ 顶光，两区以暗色带分隔（面，不是细线） */
+  .table { background: radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.14), rgba(255,255,255,0) 55%), linear-gradient(165deg, var(--g-bj-felt1), var(--g-bj-felt2)); border: 1px solid rgba(255,255,255,.16); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 12px; margin-bottom: 10px; animation: rise .34s ease-out both; animation-delay: 120ms; }
+  .tzone { position: relative; }
   .zhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .zhead h3 { margin: 0; font-size: 14px; color: var(--g-muted); }
-  .pill { padding: 3px 10px; border-radius: 999px; background: var(--g-primary-soft); color: var(--g-on-soft); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .zhead h3 { margin: 0; font-size: 14px; color: #FFFFFF; display: inline-flex; align-items: center; gap: 4px; }
+  .pill { padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,.16); color: #FFFFFF; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .spotwrap { display: flex; align-items: center; margin: 10px 0; }
+  .spotwrap::before, .spotwrap::after { content: ""; flex: 1; height: 8px; border-radius: 4px; background: linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.08)); }
+  .spotwrap::before { margin-right: 10px; }
+  .spotwrap::after { margin-left: 10px; }
+  /* 下注点：虚线边圆桌，玩家一眼看到「这局押了多少」 */
+  .spot { width: 64px; height: 64px; border-radius: 50%; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; color: #FFFFFF; background: linear-gradient(160deg, var(--g-bj-felt1), var(--g-bj-felt2)); border: 2px dashed rgba(255,255,255,.65); box-shadow: 0 4px 10px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.25); }
+  .spot-label { font-size: 12px; line-height: 1; opacity: .9; }
+  .spot-val { font-size: 18px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .cards { display: flex; flex-wrap: wrap; min-height: 78px; align-items: center; }
+  /* 牌面轻立体：渐变 + 左上高光 + 顶缘内高光 + 投影 */
   .pc {
     width: 54px; height: 78px; border-radius: 12px;
-    background: var(--g-card); border: 1px solid var(--g-border);
-    box-shadow: 0 2px 4px var(--g-shadow);
+    background: linear-gradient(165deg, var(--g-bj-face1), var(--g-bj-face2));
+    border: 1px solid var(--g-border);
+    box-shadow: 0 2px 5px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.55);
     position: relative; color: var(--g-text);
-    animation: dealin .28s ease-out; flex: 0 0 auto;
+    animation: dealin .24s ease-out both; animation-delay: calc(var(--i, 0) * 36ms);
+    flex: 0 0 auto;
   }
+  .pc::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(85% 55% at 26% 10%, rgba(255,255,255,.5), rgba(255,255,255,0) 62%); }
   .pc + .pc { margin-left: -20px; }
-  @keyframes dealin { from { transform: translateY(-16px) rotate(-4deg); } to { transform: none; opacity: 1; } }
-  .pc .corner { position: absolute; top: 4px; left: 5px; line-height: 1.05; text-align: center; }
+  @keyframes dealin { from { opacity: 0; transform: translateY(-14px) rotate(-5deg) scale(.94); } to { opacity: 1; transform: none; } }
+  .pc .corner { position: absolute; top: 4px; left: 5px; line-height: 1.05; text-align: center; z-index: 1; }
   .pc .corner b { display: block; font-size: 14px; font-weight: 700; }
   .pc .corner svg { width: 10px; height: 10px; }
-  .pc .big { position: absolute; right: 7px; bottom: 6px; }
+  .pc .big { position: absolute; right: 7px; bottom: 6px; z-index: 1; }
   .pc .big svg { width: 24px; height: 24px; }
   .pc.red { color: var(--g-danger); }
-  .pc.hole { background: var(--g-primary-soft); border-color: var(--g-primary); color: var(--g-primary); }
+  /* 暗牌：品牌绿牌背（渐变 + 斜纹 + 高光），与明牌材质对比 */
+  .pc.hole {
+    background: repeating-linear-gradient(45deg, rgba(255,255,255,.10) 0 5px, rgba(255,255,255,0) 5px 10px),
+      linear-gradient(160deg, var(--g-primary), var(--g-primary-deep));
+    border: 1px solid rgba(255,255,255,.30);
+    color: var(--g-on-primary);
+    box-shadow: 0 2px 5px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .pc.hole::before { opacity: .5; }
   .pc.hole svg { position: absolute; inset: 0; margin: auto; width: 55%; height: 55%; }
   .msg { min-height: 22px; margin: 2px 2px 12px; font-size: 14px; font-weight: 600; text-align: center; }
   .msg.win { color: var(--g-success); }
   .msg.lose { color: var(--g-danger); }
   /* 下注与操作 */
-  .phase { display: flex; flex-direction: column; gap: 8px; }
+  .phase { display: flex; flex-direction: column; gap: 8px; animation: rise .34s ease-out both; animation-delay: 160ms; }
   .chips { display: flex; gap: 8px; }
   .chip {
     flex: 1; min-height: 44px;
-    border: 1px dashed var(--g-primary); border-radius: 999px;
-    background: var(--g-primary-soft); color: var(--g-on-soft);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 1px solid var(--g-primary); border-radius: 999px;
+    background: linear-gradient(160deg, var(--g-primary-soft), var(--g-surface2));
+    color: var(--g-on-soft);
     font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(20,40,30,.12);
+    transition: transform .12s ease-out, box-shadow .16s ease-out;
   }
-  .chip:active { opacity: .8; }
-  .chip.clear { border-style: solid; border-color: var(--g-border); background: var(--g-surface2); color: var(--g-muted); flex: 0 0 30%; }
+  .chip .swi { color: var(--g-warning); }
+  .chip:active { transform: scale(.96); }
+  .chip.clear { border-color: var(--g-border); background: var(--g-surface2); color: var(--g-muted); flex: 0 0 30%; box-shadow: none; }
+  .chip.clear .swi { color: var(--g-muted); }
   .row { display: flex; gap: 8px; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-btn-primary); color: #fff;
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 2px 6px rgba(20,40,30,.20);
+    transition: transform .12s ease-out, opacity .16s ease-out, box-shadow .16s ease-out;
   }
-  .btn:active { opacity: .85; }
-  .btn:disabled { opacity: .4; cursor: default; }
+  .btn:active { transform: scale(.96); }
+  .btn:disabled { opacity: .4; cursor: default; box-shadow: none; }
   .btn.warn { background: var(--g-danger); }
-  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); box-shadow: none; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
     display: none; align-items: center; justify-content: center; padding: 20px;
   }
-  .overlay.show { display: flex; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .panel {
     width: 100%; max-width: 320px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
@@ -91,17 +126,39 @@
     animation: pop .25s ease-out;
   }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  /* 胜局轻弹（负局/平局不挂 .win，保持克制） */
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.045); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
   .panel .desc b { color: var(--g-primary-deep); }
+  .panel.win .desc b { color: var(--g-success); }
   .panel .btn { width: 100%; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important}
+    .pc{animation:none}
+  }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW_ICON：内联 SVG 图标库（24 viewBox / currentColor / aria-hidden），照抄本库范式（pyramid-sol / maze-paint 同构） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','plus':'<path d="M12 5v14M5 12h14"/>','check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>','rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'coin':'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/>',
+ 'user':'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20.5c0-3.6 3.4-5.5 7.5-5.5s7.5 1.9 7.5 5.5"/>',
+ 'crown':'<path d="M3 8l4 4 5-7 5 7 4-4v9.5H3z"/>'
+};
+var fill={'play':1,'crown':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="'+(fill[n]?'none':'currentColor')+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -123,13 +180,18 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <div class="stat"><span class="label">当前下注</span><span class="val plain" id="stBet">0</span></div>
     <div class="stat"><span class="label">战绩 胜-负</span><span class="val plain" id="stRecord">0-0</span></div>
   </div>
-  <section class="zone">
-    <div class="zhead"><h3>庄家</h3><span class="pill" id="dv">—</span></div>
-    <div class="cards" id="dCards"></div>
-  </section>
-  <section class="zone">
-    <div class="zhead"><h3>玩家</h3><span class="pill" id="pv">—</span></div>
-    <div class="cards" id="pCards"></div>
+  <section class="table">
+    <div class="tzone">
+      <div class="zhead"><h3><span id="dIc"></span>庄家</h3><span class="pill" id="dv">—</span></div>
+      <div class="cards" id="dCards"></div>
+    </div>
+    <div class="spotwrap">
+      <div class="spot"><span class="spot-label">注额</span><span class="spot-val" id="spotBet">0</span></div>
+    </div>
+    <div class="tzone">
+      <div class="zhead"><h3><span id="pIc"></span>玩家</h3><span class="pill" id="pv">—</span></div>
+      <div class="cards" id="pCards"></div>
+    </div>
   </section>
   <p class="msg" id="msg" role="status" aria-live="polite">先选筹码下注，然后发牌。</p>
   <div class="phase">
@@ -149,7 +211,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="foot">BlackJack 3:2 赔付 · 庄家低于 17 点补牌 · 加倍仅限首两张</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle"></h2>
     <p class="desc" id="ovDesc"></p>
     <button class="btn" id="ovBtn">继续</button>
@@ -231,10 +293,13 @@ var phase="bet",bank=save.bank,bet=0,stake=0,deckArr=[],p=[],d=[],busy=false;
 var dCards=$("dCards"),pCards=$("pCards");
 function $(id){return document.getElementById(id)}
 function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"")}
+/* 覆盖层主按钮：文字前带内联 SVG 图标（渲染层，随语义切换） */
+function setOvBtn(icon,label){$("ovBtn").innerHTML=SW_ICON(icon)+label}
 function syncHud(){
   $("stBank").textContent=bank;
   $("stBet").textContent=stake;
   $("stRecord").textContent=save.w+"-"+save.l;
+  $("spotBet").textContent=stake||bet;//下注点：游戏中显示锁定注额，下注阶段显示待发注额
 }
 /* ---------- 牌 ---------- */
 function newDeck(){
@@ -253,17 +318,17 @@ function handVal(cards){
   return {v:v,soft:aces>0};
 }
 function isNatural(cards){return cards.length===2&&handVal(cards).v===21}
-function cardHtml(c,hole){
-  if(hole)return '<div class="pc hole"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="currentColor" d="M12 7c-2.5 3.4-4.5 5.4-4.5 7.7A4.5 4.5 0 0 0 12 18a4.5 4.5 0 0 0 4.5-3.3C16.5 12.4 14.5 10.4 12 7Z"/></svg></div>';
+function cardHtml(c,hole,i){
+  if(hole)return '<div class="pc hole" style="--i:'+i+'"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="currentColor" d="M12 7c-2.5 3.4-4.5 5.4-4.5 7.7A4.5 4.5 0 0 0 12 18a4.5 4.5 0 0 0 4.5-3.3C16.5 12.4 14.5 10.4 12 7Z"/></svg></div>';
   var st=SUITS[c.s],rn=rankName(c);
-  return '<div class="pc'+(st.red?" red":"")+'">'
+  return '<div class="pc'+(st.red?" red":"")+'" style="--i:'+i+'">'
     +'<span class="corner"><b>'+rn+'</b><svg viewBox="0 0 24 24" aria-hidden="true">'+SUIT[st.k]+'</svg></span>'
     +'<span class="big"><svg viewBox="0 0 24 24" aria-hidden="true">'+SUIT[st.k]+'</svg></span>'
     +'</div>';
 }
 function render(hideHole){
-  dCards.innerHTML=d.map(function(c,i){return cardHtml(c,hideHole&&i===1)}).join("");
-  pCards.innerHTML=p.map(function(c){return cardHtml(c,false)}).join("");
+  dCards.innerHTML=d.map(function(c,i){return cardHtml(c,hideHole&&i===1,i)}).join("");
+  pCards.innerHTML=p.map(function(c,i){return cardHtml(c,false,i)}).join("");
   var pv=handVal(p),dv=handVal(hideHole?d.slice(0,1):d);
   $("pv").textContent=p.length?(pv.soft&&pv.v<=21?"软 "+pv.v:pv.v):"—";
   $("dv").textContent=d.length?((hideHole?dv.v+"/?":dv.v)):"—";
@@ -275,6 +340,7 @@ function toBet(){
   bet=Math.min(save.lastBet,bank);
   render(false);
   $("stBet").textContent=bet;//下注阶段显示待发注额
+  $("spotBet").textContent=bet;
   $("chips").hidden=false;$("rowDeal").hidden=false;$("rowPlay").hidden=true;
   $("btnDeal").disabled=bet<MIN_BET;
   if(bank<MIN_BET){bankrupt();return}
@@ -284,7 +350,8 @@ function bankrupt(){
   phase="bust_out";
   $("ovTitle").textContent="筹码破产";
   $("ovDesc").innerHTML="筹码已不足最低下注 "+MIN_BET+"。<br>已重整 <b>"+save.resets+"</b> 次，这次再给你 <b>"+START_BANK+"</b> 筹码，卷土重来！";
-  $("ovBtn").textContent="重整旗鼓";
+  setOvBtn("rotate","重整旗鼓");
+  $("panel").classList.remove("win");
   $("overlay").classList.add("show");
 }
 /* ---------- 发牌与操作 ---------- */
@@ -376,7 +443,8 @@ function settle(kind,text){
   say(text,kind==="lose"?"lose":"win");
   $("ovTitle").textContent=kind==="win"||kind==="bj"?"本局获胜":kind==="push"?"平局":"本局告负";
   $("ovDesc").innerHTML=text+"<br>筹码 <b>"+bank+"</b>";
-  $("ovBtn").textContent="继续";
+  setOvBtn("arrow-right","继续");
+  $("panel").classList.toggle("win",kind==="win"||kind==="bj");//胜局轻弹，负局/平局保持克制
   $("overlay").classList.add("show");
 }
 /* ---------- 事件 ---------- */
@@ -389,6 +457,7 @@ $("chips").addEventListener("click",function(e){
   }
   $("btnDeal").disabled=bet<MIN_BET;
   $("stBet").textContent=bet;
+  $("spotBet").textContent=bet;
 });
 $("btnDeal").addEventListener("click",deal);
 $("btnHit").addEventListener("click",hit);
@@ -435,6 +504,17 @@ syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 按钮 / 工具图标注入：内联 SVG（SW_ICON，24 viewBox / currentColor / aria-hidden），零外链 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var pairs=[["btnDeal","play"],["btnHit","plus"],["btnStand","check"],["btnDouble","swap-h"],["chipClear","x"],["dIc","crown"],["pIc","user"]],i;
+  for(i=0;i<pairs.length;i++){var el=$(pairs[i][0]);if(el)el.insertAdjacentHTML("afterbegin",window.SW_ICON(pairs[i][1]));}
+  var chips=document.querySelectorAll(".chip[data-v]"),j;
+  for(j=0;j<chips.length;j++)chips[j].insertAdjacentHTML("afterbegin",window.SW_ICON("coin"));
+  /* 覆盖层按钮图标由 setOvBtn 注入，此处不覆盖 */
 })();
 </script>
 </body>

@@ -19,6 +19,7 @@
     --g-gnd:#9CCF9A; --g-gnl:#6FA874; --g-grid:#AFCDBB;
     --g-card:#C07A4A; --g-line:#6B4A2E; --g-open:#2B2118; --g-openln:#E8D9B8;
     --g-ball:#8A5A2B; --g-ballln:#4A3421;
+    --g-pot-body1:#D89A66; --g-pot-body2:#A86438; --g-pot-rim:#E8C9A0; --g-pot-ear:#B87A4E;
     color-scheme:light;
   }
   :root[data-theme=dark] {
@@ -32,6 +33,7 @@
     --g-gnd:#2E4636; --g-gnl:#4A6A52; --g-grid:#2C3A33;
     --g-card:#6E4526; --g-line:#A98B63; --g-open:#120D08; --g-openln:#D8C49A;
     --g-ball:#C79A63; --g-ballln:#E7D3AE;
+    --g-pot-body1:#7A4E2C; --g-pot-body2:#5E3A1E; --g-pot-rim:#8A6A44; --g-pot-ear:#6E4526;
     color-scheme:dark;
   }
   * { box-sizing: border-box; }
@@ -56,9 +58,14 @@
     display: grid; place-items: center; cursor: pointer; font: inherit;
     touch-action: manipulation;
   }
-  .icon-btn:active { opacity: .8; }
+  .icon-btn { transition: transform .14s ease-out, opacity .16s ease-out; }
+  .icon-btn:active { transform: scale(.96); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
+  .stat:nth-child(4) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
   .stat .val { display: block; font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stage { position: relative; }
@@ -72,12 +79,14 @@
   .tools { display: flex; gap: 8px; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: 14px;
     background: var(--g-btn-primary); color: var(--g-on-primary);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
     touch-action: manipulation;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
@@ -99,19 +108,33 @@
     background: var(--g-surface); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
     touch-action: manipulation;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lv-chip:active { transform: scale(.96); }
   .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
   .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
-  .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 999px; background:var(--g-surface2);color:var(--g-warning); font-size: 12px; font-weight: 700; }
+  .badge { display: none; margin: 0 0 4px; padding: 4px 12px; border-radius: 10px; background:var(--g-surface2);color:var(--g-warning); font-size: 12px; font-weight: 700; }
   .badge.show { display: inline-block; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={'play':1,'check':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -275,9 +298,25 @@ function palLoad(){
     danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),water:v("--g-water"),
     sky1:v("--g-sky1"),sky2:v("--g-sky2"),cloud:v("--g-cloud"),field:v("--g-field"),
     gnd:v("--g-gnd"),gnl:v("--g-gnl"),grid:v("--g-grid"),card:v("--g-card"),line:v("--g-line"),
-    open:v("--g-open"),openln:v("--g-openln"),ball:v("--g-ball"),ballln:v("--g-ballln")};
+    open:v("--g-open"),openln:v("--g-openln"),ball:v("--g-ball"),ballln:v("--g-ballln"),
+    body1:v("--g-pot-body1"),body2:v("--g-pot-body2"),rim:v("--g-pot-rim"),ear:v("--g-pot-ear")};
 }
 window.__gOnTheme=function(){palLoad();grads=null;};
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 palLoad();
 var grads=null;
 function buildGrads(){
@@ -622,8 +661,10 @@ function drawHills(){
   ctx.globalAlpha=1;
 }
 function drawGround(){
-  ctx.fillStyle=PAL.gnd;ctx.fillRect(0,PP.GROUND,NW,12);
-  ctx.fillStyle=PAL.field;ctx.globalAlpha=0.55;ctx.fillRect(0,PP.GROUND+12,NW,NH-PP.GROUND-12);ctx.globalAlpha=1;
+  var g=ctx.createLinearGradient(0,PP.GROUND,0,NH);
+  g.addColorStop(0,PAL.gnd);g.addColorStop(1,colShade(PAL.gnd,-0.25));
+  ctx.fillStyle=g;ctx.fillRect(0,PP.GROUND,NW,NH-PP.GROUND);
+  ctx.fillStyle=PAL.gnl;ctx.fillRect(0,PP.GROUND,NW,3);   // 草皮亮缘
   ctx.strokeStyle=PAL.gnl;ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(0,PP.GROUND);ctx.lineTo(NW,PP.GROUND);ctx.stroke();
   ctx.strokeStyle=PAL.grid;ctx.lineWidth=2;ctx.globalAlpha=0.8;
@@ -644,9 +685,13 @@ function drawZones(){
 }
 function drawPot(){
   var rimY=PP.RIM_Y,base=PP.GROUND;
-  ctx.globalAlpha=0.16;ctx.fillStyle=PAL.text;
+  // 落地投影
+  ctx.globalAlpha=0.18;ctx.fillStyle=PAL.text;
   ctx.beginPath();ctx.ellipse(potX,base+5,PP.BODY_R+8,6,0,0,6.3);ctx.fill();
   ctx.globalAlpha=1;
+  // 壶身「面」：竖向渐变（亮面 → 主面 → 暗面）
+  var g=ctx.createLinearGradient(0,rimY,0,base);
+  g.addColorStop(0,PAL.body1);g.addColorStop(0.5,PAL.card);g.addColorStop(1,PAL.body2);
   ctx.beginPath();
   ctx.moveTo(potX-PP.MOUTH_R,rimY);
   ctx.bezierCurveTo(potX-PP.BODY_R-6,rimY+18,potX-PP.BODY_R,rimY+34,potX-PP.BODY_R,base-6);
@@ -655,22 +700,31 @@ function drawPot(){
   ctx.quadraticCurveTo(potX+PP.BODY_R,base,potX+PP.BODY_R,base-6);
   ctx.bezierCurveTo(potX+PP.BODY_R,rimY+34,potX+PP.BODY_R+6,rimY+18,potX+PP.MOUTH_R,rimY);
   ctx.closePath();
-  ctx.fillStyle=PAL.card;ctx.fill();
-  ctx.strokeStyle=PAL.line;ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle=g;ctx.fill();
+  ctx.lineWidth=2;ctx.strokeStyle=PAL.line;ctx.stroke();
+  // 左缘亮芯（高光带）
+  ctx.globalAlpha=0.35;ctx.strokeStyle=colMix(PAL.body1,WHITE,0.5);ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.moveTo(potX-PP.BODY_R+5,rimY+16);
+  ctx.bezierCurveTo(potX-PP.BODY_R+9,rimY+34,potX-PP.BODY_R+9,base-20,potX-PP.BODY_R+15,base-8);
+  ctx.stroke();ctx.globalAlpha=1;
+  // 装饰弦纹（暗面）
   ctx.globalAlpha=0.5;ctx.strokeStyle=PAL.line;ctx.lineWidth=1.5;
   ctx.beginPath();ctx.moveTo(potX-PP.BODY_R+4,rimY+22);ctx.quadraticCurveTo(potX,rimY+31,potX+PP.BODY_R-4,rimY+22);ctx.stroke();
   ctx.beginPath();ctx.moveTo(potX-PP.BODY_R+3,rimY+38);ctx.quadraticCurveTo(potX,rimY+47,potX+PP.BODY_R-3,rimY+38);ctx.stroke();
   ctx.globalAlpha=1;
-  ctx.fillStyle=PAL.open;
-  ctx.beginPath();ctx.ellipse(potX,rimY,PP.MOUTH_R,5,0,0,6.3);ctx.fill();
-  ctx.strokeStyle=PAL.openln;ctx.lineWidth=2;
-  ctx.beginPath();ctx.ellipse(potX,rimY,PP.MOUTH_R,5,0,0,6.3);ctx.stroke();
+  // 壶口沿「面」+ 内口
+  ctx.fillStyle=PAL.rim;ctx.beginPath();ctx.ellipse(potX,rimY,PP.MOUTH_R+3,7,0,0,6.3);ctx.fill();
+  ctx.fillStyle=PAL.open;ctx.beginPath();ctx.ellipse(potX,rimY,PP.MOUTH_R,5,0,0,6.3);ctx.fill();
+  ctx.lineWidth=2;ctx.strokeStyle=PAL.openln;ctx.beginPath();ctx.ellipse(potX,rimY,PP.MOUTH_R,5,0,0,6.3);ctx.stroke();
+  // 壶耳：径向渐变环 + 暗芯
   for(var s=-1;s<=1;s+=2){
     var ex=potX+s*PP.EAR_DX;
-    ctx.fillStyle=PAL.open;
-    ctx.beginPath();ctx.arc(ex,rimY,PP.EAR_R,0,6.3);ctx.fill();
-    ctx.strokeStyle=PAL.line;ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(ex,rimY,PP.EAR_R,0,6.3);ctx.stroke();
+    var eg=ctx.createRadialGradient(ex-2,rimY-2,1,ex,rimY,PP.EAR_R+2);
+    eg.addColorStop(0,colMix(PAL.ear,WHITE,0.35));eg.addColorStop(1,colShade(PAL.ear,-0.2));
+    ctx.fillStyle=eg;ctx.beginPath();ctx.arc(ex,rimY,PP.EAR_R,0,6.3);ctx.fill();
+    ctx.lineWidth=2;ctx.strokeStyle=PAL.line;ctx.stroke();
+    ctx.fillStyle=PAL.open;ctx.beginPath();ctx.arc(ex,rimY,PP.EAR_R*0.45,0,6.3);ctx.fill();
   }
 }
 function drawStand(){
@@ -682,8 +736,12 @@ function drawStand(){
 }
 function drawArrowAt(x,y,rot){
   ctx.save();ctx.translate(x,y);ctx.rotate(rot);
-  ctx.strokeStyle=PAL.ball;ctx.lineWidth=3;ctx.lineCap="round";
+  ctx.shadowColor="rgba(0,0,0,0.30)";ctx.shadowBlur=5;ctx.shadowOffsetY=2;
+  var g=ctx.createLinearGradient(0,-2,0,2);
+  g.addColorStop(0,colMix(PAL.ball,WHITE,0.4));g.addColorStop(1,colShade(PAL.ball,-0.2));
+  ctx.strokeStyle=g;ctx.lineWidth=3;ctx.lineCap="round";
   ctx.beginPath();ctx.moveTo(-13,0);ctx.lineTo(11,0);ctx.stroke();
+  ctx.shadowBlur=0;
   ctx.fillStyle=PAL.ballln;
   ctx.beginPath();ctx.moveTo(11,-3);ctx.lineTo(19,0);ctx.lineTo(11,3);ctx.closePath();ctx.fill();
   ctx.fillStyle=PAL.danger;
@@ -756,8 +814,8 @@ function draw(){
   drawClouds();
   drawHills();
   drawGround();
-  drawZones();
   drawPot();
+  drawZones();   // 目标区压在壶身上，壶口/壶耳目标一眼可辨
   drawStand();
   if(aiming){
     ctx.strokeStyle=PAL.line;ctx.lineWidth=2;
@@ -807,6 +865,13 @@ document.getElementById("btnRetryBottom").addEventListener("click",function(){st
 
 /* ========== 启动 ========== */
 resize();
+document.getElementById("btnNext").insertAdjacentHTML("afterbegin",window.SW_ICON("arrow-right"));
+document.getElementById("btnReplayWin").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+document.getElementById("btnSelectWin").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
+document.getElementById("btnRetry").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+document.getElementById("btnSelectFail").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
+document.getElementById("btnCloseSelect").insertAdjacentHTML("afterbegin",window.SW_ICON("x"));
+document.getElementById("btnRetryBottom").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
 startLevel(cur);
 requestAnimationFrame(frame);
 syncLevelsFromServer();syncSaveFromServer();

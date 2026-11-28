@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>夹豆腐</title>
 <style>
-  /*token:GAME-THEME.md§2（豆腐/筷子素材 token 统一 --g-st- 前缀，§3 D2）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-st-tofu:#F3F2E6;--g-st-tofu2:#D8D6C2;--g-st-chop:#B98A52;--g-st-chop2:#966B3A;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-tofu:#4E534D;--g-st-tofu2:#3A3E3A;--g-st-chop:#8A683C;--g-st-chop2:#6E5230;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（豆腐/筷子 --g-st-*，传送带/盘体 --g-stc-*）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-st-tofu:#F3F2E6;--g-st-tofu2:#D8D6C2;--g-st-chop:#B98A52;--g-st-chop2:#966B3A;--g-stc-rail1:#EDF2EC;--g-stc-rail2:#D8E1D7;--g-stc-plate1:#FFFFFF;--g-stc-plate2:#E4EDE6;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-tofu:#4E534D;--g-st-tofu2:#3A3E3A;--g-st-chop:#8A683C;--g-st-chop2:#6E5230;--g-stc-rail1:#1F2420;--g-stc-rail2:#151917;--g-stc-plate1:#2C322D;--g-stc-plate2:#1B201C;color-scheme:dark }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
@@ -25,21 +25,33 @@
   .wrap { width: 100%; max-width: 480px; }
   header { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
   .boxes { display: flex; gap: 8px; }
-  .box { background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; }
+  .box { background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; transition: transform .16s ease-out, background .16s ease-out; animation: rise .38s ease-out both; }
+  .box:nth-child(2) { animation-delay: 40ms; }
+  .box:nth-child(3) { animation-delay: 80ms; }
   .box.alt { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
   .box .label { display: block; font-size: 12px; }
   .box b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .box.bump { animation: bump .24s ease-out; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; animation: fadein .3s ease-out both; animation-delay: 120ms; }
   .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
-  .btn { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out; }
   .btn.ghost { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
-  .btn:active { opacity: .85; }
-  .stage { position: relative; width: 100%; }
+  .btn:active { transform: scale(.96); }
+  .stage { position: relative; width: 100%; animation: fadein .3s ease-out both; animation-delay: 160ms; }
   canvas { display: block; width: 100%; aspect-ratio: 4 / 5; border-radius: var(--g-radius-inner); border: 1px solid var(--g-border); background: var(--g-surface); touch-action: none; }
   .overlay { position: absolute; inset: 0; border-radius: var(--g-radius-inner); background: var(--g-scrim); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; text-align: center; }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-  .card { width: 100%; max-width: 320px; max-height: 100%; overflow: auto; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 16px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  .card { width: 100%; max-width: 320px; max-height: 100%; overflow: auto; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 16px; animation: pop .3s ease-out; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .legend { display: flex; gap: 8px; margin: 10px 2px 0; animation: rise .38s ease-out both; animation-delay: 200ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+  .actrow { display: flex; gap: 10px; margin: 10px 0 0; animation: rise .38s ease-out both; animation-delay: 200ms; }
   .ov-kicker { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .1em; color: var(--g-muted); }
   .card h2 { margin: 0 0 8px; font-size: 18px; line-height: 1.25; color: var(--g-text); }
   .ov-text { margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: var(--g-muted); }
@@ -48,12 +60,11 @@
   .ov-stats b { display: block; font-size: 18px; color: var(--g-primary-deep); font-variant-numeric: tabular-nums; }
   .ov-stats span { font-size: 12px; color: var(--g-muted); }
   .ov-btns { display: grid; gap: 8px; }
-  .actrow { display: flex; gap: 10px; margin: 10px 0 0; }
   .actrow .btn { flex: 1; }
-  .foot { margin: 14px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; }
+  .foot { margin: 14px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; animation: fadein .3s ease-out both; animation-delay: 240ms; }
 
-  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束；同压 duration 与 delay） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
@@ -67,6 +78,20 @@ window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
+</script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'pause':'<path d="M8 5v14M16 5v14"/>','play':'<path d="M8 5v14l11-7z"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'grab':'<path d="M4 4l6 16M20 4l-6 16M9.5 12h5"/>'
+};
+var fill={'play':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
 </script>
 </head>
 <body>
@@ -98,9 +123,14 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     </div>
   </div>
   <div class="actrow">
-    <button class="btn" id="btnAct">夹取 / 松开</button>
+    <button class="btn" id="btnAct"><span id="btnActTxt">夹 取</span></button>
   </div>
   <p class="foot">拖动移动筷子 · 双指张合或 ZX 键调筷距 · 空格或按钮夹取/松开 · 快速移动会让豆腐抖落（-6 秒）</p>
+  <div class="legend">
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-st-tofu)"></span><span><b>豆腐</b> · 夹起送盘</span></span>
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-stc-plate1);border:1px solid var(--g-border)"></span><span><b>盘</b> · 目标落点</span></span>
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-st-chop)"></span><span><b>筷子</b> · 你控制</span></span>
+  </div>
 </div>
 <script>
 /* 覆盖层焦点管理（dialog 语义配套）：显示时聚焦首个可操作项，Tab 在层内循环，隐藏后归还焦点 */
@@ -231,7 +261,20 @@ function palLoad(){
   PAL.primary=v("--g-primary");PAL.deep=v("--g-primary-deep");PAL.soft=v("--g-primary-soft");PAL.onSoft=v("--g-on-soft");
   PAL.danger=v("--g-danger");PAL.warning=v("--g-warning");PAL.success=v("--g-success");
   PAL.tofu=v("--g-st-tofu");PAL.tofu2=v("--g-st-tofu2");PAL.chop=v("--g-st-chop");PAL.chop2=v("--g-st-chop2");
+  PAL.rail1=v("--g-stc-rail1");PAL.rail2=v("--g-stc-rail2");PAL.plate1=v("--g-stc-plate1");PAL.plate2=v("--g-stc-plate2");
 }
+/* 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量（恒白/恒黑除外） */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){var A=colParse(a),B=colParse(b);return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")"}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 window.__gOnTheme=function(){palLoad();draw();};
 /* ---------- DOM ---------- */
 function $(id){return document.getElementById(id)}
@@ -245,11 +288,14 @@ var S={phase:"menu",paused:false,delivered:0,time:0,timeMax:0,score:0,
   cx:MW/2,cy:330,gap:84,prevCx:MW/2,prevCy:330,
   spawnT:0,plateX:MW/2,plateW:120,parts:[],floats:[],msgT:0};
 function curLv(){return LEVELS[Math.min(lvIdx,LEVELS.length-1)]}
+var lastDelivered=-1;
+function bump(el){el.classList.remove("bump");void el.offsetWidth;el.addEventListener("animationend",function(){el.classList.remove("bump")},{once:true});el.classList.add("bump")}
 function syncHud(){
   hudGot.textContent=S.delivered+"/"+curLv().target;
   hudLv.textContent=(lvIdx+1)+"/"+LEVELS.length;
   hudTime.textContent=String(Math.max(0,Math.ceil(S.time)));
-  btnAct.textContent=S.carried?"松 开":"夹 取";
+  $("btnActTxt").textContent=S.carried?"松 开":"夹 取";   // 只改文本节点，保留前缀 SVG 图标
+  if(lastDelivered!==S.delivered){lastDelivered=S.delivered;if(S.delivered>0)bump(hudGot.parentNode)}
 }
 function loadLevel(n){
   lvIdx=Math.max(0,Math.min(n,LEVELS.length-1));
@@ -270,10 +316,12 @@ function showOv(o){
   ovS.style.display=st.length?"grid":"none";
   ovS.innerHTML=st.map(function(s){return '<div class="st"><b>'+s[1]+"</b><span>"+s[0]+"</span></div>"}).join("");
   ovB.innerHTML="";
+  function ovIcon(t){return /继续|下一关|开始|再来|重试/.test(t)?"play":/重开|重置/.test(t)?"rotate":/取消/.test(t)?"x":"play"}
   (o.btns||[]).forEach(function(b){
     var el=document.createElement("button");
     el.className="btn"+(b[1]==="ghost"?" ghost":"");
-    el.textContent=b[0];el.addEventListener("click",b[2]);ovB.appendChild(el);
+    el.innerHTML=SW_ICON(ovIcon(b[0]))+"<span>"+b[0]+"</span>";
+    el.addEventListener("click",b[2]);ovB.appendChild(el);
   });
   ov.classList.add("show");
 }
@@ -452,53 +500,94 @@ function rrect(x,y,w,h,r){
   ctx.closePath();
 }
 function drawTofu(x,y,w,ph,alpha){
+  var a=alpha==null?1:alpha;
   ctx.save();
-  ctx.globalAlpha=alpha==null?1:alpha;
+  ctx.globalAlpha=a;
   ctx.translate(x,y);
   ctx.rotate(Math.sin(ph)*0.05);
-  ctx.fillStyle=PAL.tofu;ctx.strokeStyle=PAL.tofu2;ctx.lineWidth=1.5;
-  rrect(-w/2,-TOFU_H/2,w,TOFU_H,7);ctx.fill();ctx.stroke();
-  ctx.fillStyle="rgba(255,255,255,.4)";
-  rrect(-w/2+5,-TOFU_H/2+4,w-10,7,3);ctx.fill();
+  ctx.shadowColor="rgba(0,0,0,0.30)";ctx.shadowBlur=10;ctx.shadowOffsetY=5;   // 恒黑阴影
+  var g=ctx.createLinearGradient(0,-TOFU_H/2,0,TOFU_H/2);
+  g.addColorStop(0,colMix(PAL.tofu,WHITE,0.55));g.addColorStop(0.45,PAL.tofu);g.addColorStop(1,PAL.tofu2);
+  ctx.fillStyle=g;rrect(-w/2,-TOFU_H/2,w,TOFU_H,7);ctx.fill();
+  ctx.shadowColor="transparent";ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+  ctx.lineWidth=1.5;ctx.strokeStyle=colShade(PAL.tofu2,-0.35);
+  rrect(-w/2+0.75,-TOFU_H/2+0.75,w-1.5,TOFU_H-1.5,6);ctx.stroke();
+  ctx.fillStyle=WHITE;ctx.globalAlpha=a*0.55;   // 恒白高光
+  rrect(-w/2+5,-TOFU_H/2+3.5,w-10,6,3);ctx.fill();
   ctx.restore();
   ctx.globalAlpha=1;
 }
+function drawRail(){
+  var y=RAIL_Y+30,h=14;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.18)";ctx.shadowBlur=8;ctx.shadowOffsetY=3;   // 恒黑阴影
+  var g=ctx.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,PAL.rail1);g.addColorStop(0.5,PAL.rail2);g.addColorStop(1,colShade(PAL.rail2,-0.22));
+  ctx.fillStyle=g;rrect(0,y,MW,h,7);ctx.fill();
+  ctx.restore();
+  ctx.fillStyle=WHITE;ctx.globalAlpha=.7;   // 恒白顶缘亮线
+  rrect(2,y+1.5,MW-4,2.5,1.2);ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;rrect(0.5,y+0.5,MW-1,h-1,6.5);ctx.stroke();
+  ctx.strokeStyle=colMix(PAL.rail2,BLACK,0.35);ctx.lineWidth=1.6;ctx.lineCap="round";   // 传送方向箭羽（由带面暗端派生，不用 faint 承载信息）
+  for(var rx=14;rx<MW-10;rx+=34){
+    ctx.beginPath();ctx.moveTo(rx,y+7);ctx.lineTo(rx+12,y+7);ctx.lineTo(rx+8,y+3.5);
+    ctx.moveTo(rx+12,y+7);ctx.lineTo(rx+8,y+10.5);ctx.stroke();
+  }
+  ctx.lineCap="butt";
+}
+function drawPlate(){
+  var pw=S.plateW;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.22)";ctx.shadowBlur=10;ctx.shadowOffsetY=4;   // 恒黑阴影
+  var g=ctx.createLinearGradient(0,PLATE_Y-8,0,PLATE_Y+20);
+  g.addColorStop(0,PAL.plate1);g.addColorStop(1,PAL.plate2);
+  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(S.plateX,PLATE_Y+6,pw/2,13,0,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=2;ctx.strokeStyle=PAL.primary;
+  ctx.beginPath();ctx.ellipse(S.plateX,PLATE_Y+6,pw/2,13,0,0,Math.PI*2);ctx.stroke();
+  ctx.lineWidth=1;ctx.strokeStyle=colMix(PAL.plate1,BLACK,0.12);
+  ctx.beginPath();ctx.ellipse(S.plateX,PLATE_Y+3,pw/2-16,8,0,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=WHITE;ctx.globalAlpha=.8;   // 恒白盘沿光
+  ctx.beginPath();ctx.ellipse(S.plateX-pw*0.18,PLATE_Y+1,pw*0.16,3.5,-0.2,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.fillStyle=PAL.muted;ctx.font="700 12px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText("盘",S.plateX,PLATE_Y+38);
+}
+function drawChop(x1,y1,x2,y2,w){
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=6;ctx.shadowOffsetY=3;   // 恒黑阴影
+  ctx.strokeStyle=PAL.chop;ctx.lineWidth=w;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle=colMix(PAL.chop,WHITE,0.35);ctx.lineWidth=Math.max(1.2,w*0.32);ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.lineCap="butt";
+}
 function draw(){
-  ctx.fillStyle=PAL.surface;ctx.fillRect(0,0,MW,MH);
+  var bg=ctx.createLinearGradient(0,0,0,MH);   // 场景地面「面」渐变，避免大片平白
+  bg.addColorStop(0,PAL.surface);bg.addColorStop(1,PAL.surface2);
+  ctx.fillStyle=bg;ctx.fillRect(0,0,MW,MH);
   ctx.fillStyle=PAL.surface2;ctx.fillRect(0,MH-26,MW,26);
   ctx.fillStyle=PAL.border;ctx.fillRect(0,MH-28,MW,2);
   //传送带
-  ctx.fillStyle=PAL.surface2;
-  rrect(0,RAIL_Y+30,MW,14,7);ctx.fill();
-  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
-  rrect(0,RAIL_Y+30,MW,14,7);ctx.stroke();
-  ctx.fillStyle=PAL.faint;
-  for(var rx=14;rx<MW;rx+=34){
-    ctx.beginPath();ctx.moveTo(rx,RAIL_Y+37);ctx.lineTo(rx+14,RAIL_Y+37);ctx.lineTo(rx+9,RAIL_Y+33);
-    ctx.moveTo(rx+14,RAIL_Y+37);ctx.lineTo(rx+9,RAIL_Y+41);
-    ctx.strokeStyle=PAL.faint;ctx.lineWidth=1.6;ctx.stroke();
-  }
+  drawRail();
   ctx.fillStyle=PAL.muted;ctx.font="700 12px system-ui,sans-serif";ctx.textBaseline="middle";ctx.textAlign="left";
   ctx.fillText("豆腐传送带 →",10,RAIL_Y+22);
   //盘子
-  var pw=S.plateW;
-  ctx.fillStyle=PAL.soft;ctx.strokeStyle=PAL.primary;ctx.lineWidth=2;
-  ctx.beginPath();ctx.ellipse(S.plateX,PLATE_Y+6,pw/2,13,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.ellipse(S.plateX,PLATE_Y+2,pw/2-16,8,0,0,Math.PI*2);ctx.stroke();
-  ctx.fillStyle=PAL.muted;ctx.textAlign="center";
-  ctx.fillText("盘",S.plateX,PLATE_Y+38);
+  drawPlate();
   //下落/传送豆腐
   var i;
   for(i=0;i<S.tofus.length;i++)drawTofu(S.tofus[i].x,S.tofus[i].y,S.tofus[i].w,S.tofus[i].ph);
   for(i=0;i<S.falling.length;i++)drawTofu(S.falling[i].x,S.falling[i].y,S.falling[i].w,S.falling[i].ph||0);
   //筷子
   var tl=S.cx-S.gap/2,tr=S.cx+S.gap/2,ty=S.cy;
-  ctx.strokeStyle=PAL.chop;ctx.lineWidth=5;ctx.lineCap="round";
-  ctx.beginPath();ctx.moveTo(tl,ty);ctx.lineTo(tl+22,ty-104);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(tr,ty);ctx.lineTo(tr-22,ty-104);ctx.stroke();
-  ctx.strokeStyle=PAL.chop2;ctx.lineWidth=5;
+  drawChop(tl,ty,tl+22,ty-104,5);
+  drawChop(tr,ty,tr-22,ty-104,5);
+  ctx.strokeStyle=PAL.chop2;ctx.lineWidth=2.4;ctx.lineCap="round";
   ctx.beginPath();ctx.moveTo(tl,ty);ctx.lineTo(tl+3,ty-7);ctx.stroke();
   ctx.beginPath();ctx.moveTo(tr,ty);ctx.lineTo(tr-3,ty-7);ctx.stroke();
+  ctx.lineCap="butt";
   //夹取提示：可夹时筷尖亮起
   var can=false;
   if(!S.carried){
@@ -610,6 +699,9 @@ function loop(now){
   draw();
 }
 /* ---------- 启动 ---------- */
+$("btnPause").insertAdjacentHTML("afterbegin",SW_ICON("pause"));
+$("btnReset").insertAdjacentHTML("afterbegin",SW_ICON("rotate"));
+$("btnAct").insertAdjacentHTML("afterbegin",SW_ICON("grab"));
 palLoad();
 syncHud();
 showMenu();

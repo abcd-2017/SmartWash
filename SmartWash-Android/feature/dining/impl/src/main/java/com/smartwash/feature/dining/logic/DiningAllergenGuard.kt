@@ -1,5 +1,7 @@
 package com.smartwash.feature.dining.logic
 
+import com.smartwash.feature.dining.api.model.DiningOrderDetailVo
+
 /**
  * 吃啥忌口警示内核（纯 Kotlin，无 Android/Compose 依赖，JVM 单测锚点）。
  *
@@ -43,6 +45,13 @@ object DiningAllergenGuard {
                 .map { Hit(dish.recipeId, dish.recipeName, it) }
         }
     }
+
+    /**
+     * 聚合本单成员忌口标签（去重保序），供分享页展示「众口」提示。
+     * 只聚合不关联个人，避免暴露单个成员的健康偏好。
+     */
+    fun summarizeMemberAllergens(members: List<DiningOrderDetailVo.OrderMember>): List<String> =
+        members.flatMap { it.safeAllergens }.distinct()
 
     /** 归一化：去空白 + 大写 + 去重（脏数据不抛出；空串剔除） */
     fun normalizeAllergens(codes: Collection<String>): List<String> =
