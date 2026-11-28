@@ -42,6 +42,9 @@ public class DiningOrderDetailVo {
 
     private List<OrderMember> members;
 
+    /** 当前请求用户是否为本单发起者（端上据此切换提交确认文案：发起者 / 代发起者） */
+    private Boolean amICreator;
+
     private LocalDateTime finishedAt;
 
     /** 购买清单快照 JSON 文本（submit 提交时写入，草稿期为 null） */
@@ -99,5 +102,11 @@ public class DiningOrderDetailVo {
          * 仅全量响应填充；轻量（unchanged=true）响应 members 为 null。
          */
         private Boolean online;
+
+        /**
+         * 该成员登记的忌口标签（SEAFOOD/NUT/GLUTEN/DAIRY/EGG/SOY/SPICY），无则空列表。
+         * 同单可见，供发起者点菜时兼顾众口；仅全量响应填充。
+         */
+        private List<String> allergens;
     }
 }

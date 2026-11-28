@@ -3,16 +3,19 @@
 <mapper namespace="com.smartwash.dining.mapper.DiningOrderMapper">
 
     <!-- 我的订单分页：我发起的（creator_user_id）+ 我参与的（dining_order_member 存在记录）
-         按创建时间倒序、id 倒序兜底（同毫秒创建时保持稳定分页） -->
+         按创建时间倒序、id 倒序兜底（同毫秒创建时保持稳定分页）。
+         拆 UNION 两路：各自命中 idx_creator_created / member.idx_user_created，
+         避免 OR + EXISTS 让优化器退化为单索引 + 逐行 EXISTS；UNION 天然去重
+         （发起者同时是成员，两路会重复，必须去重）。 -->
     <select id="selectMyOrderPage" resultType="com.smartwash.dining.entity.DiningOrder">
         SELECT o.*
         FROM dining_order o
         WHERE o.creator_user_id = #{userId}
-           OR EXISTS (
-                SELECT 1 FROM dining_order_member m
-                WHERE m.order_id = o.id AND m.user_id = #{userId}
-           )
-        ORDER BY o.created_at DESC, o.id DESC
+        UNION
+        SELECT o.*
+        FROM dining_order o
+        JOIN dining_order_member m ON m.order_id = o.id AND m.user_id = #{userId}
+        ORDER BY created_at DESC, id DESC
     </select>
 
 </mapper>

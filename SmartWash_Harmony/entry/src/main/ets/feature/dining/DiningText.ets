@@ -47,6 +47,9 @@ export class DiningText {
   static get dining_order_create_menu_label(): string { return resString('dining_order_create_menu_label') }
   static get dining_order_create_menu_uncategorized(): string { return resString('dining_order_create_menu_uncategorized') }
   static get dining_order_create_submit(): string { return resString('dining_order_create_submit') }
+  static get dining_order_submit_confirm_title(): string { return resString('dining_order_submit_confirm_title') }
+  static get dining_order_submit_confirm_message(): string { return resString('dining_order_submit_confirm_message') }
+  static get dining_order_submit_confirm_yes(): string { return resString('dining_order_submit_confirm_yes') }
   static get dining_order_create_submit_success(): string { return resString('dining_order_create_submit_success') }
   static get dining_order_create_invite(): string { return resString('dining_order_create_invite') }
   static get dining_order_invite_copy_done(): string { return resString('dining_order_invite_copy_done') }

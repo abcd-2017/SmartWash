@@ -114,7 +114,7 @@ public class WebDiningOrderController {
 
     @Operation(summary = "我的订单列表（分页）", description = "我发起的 + 我参与的，按创建时间倒序，带 isCreator 标记；"
             + "列表项含 status（DRAFT 草稿 / FINISHED 已结束），草稿带标签展示；"
-            + "page 默认 1、size 默认 10 上限 100")
+            + "page 默认 1、size 默认 10 上限 200（BaseSearchFrom @Max(200)）")
     @GetMapping("/my")
     public Result<Page<DiningOrderListVo>> my(@Valid BaseSearchFrom from) {
         return Result.ok(diningOrderService.pageMy(from, currentUserId()));

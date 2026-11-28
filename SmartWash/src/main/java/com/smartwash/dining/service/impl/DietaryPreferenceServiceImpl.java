@@ -1,5 +1,6 @@
 package com.smartwash.dining.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.smartwash.dining.entity.DietaryPreference;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 用户饮食偏好服务实现（契约 §2.1）。
@@ -59,6 +62,19 @@ public class DietaryPreferenceServiceImpl
                     .setSodiumTarget(from.getSodiumTarget()));
             log.info("更新用户饮食偏好, userId: {}", userId);
         }
+    }
+
+    @Override
+    public Map<Long, List<String>> getAllergensByUserIds(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        List<DietaryPreference> list = this.list(new LambdaQueryWrapper<DietaryPreference>()
+                .in(DietaryPreference::getUserId, userIds));
+        return list.stream().collect(Collectors.toMap(
+                DietaryPreference::getUserId,
+                preference -> parseAllergens(preference.getAllergens()),
+                (a, b) -> a));
     }
 
     /** 忌口标签 → JSON 文本（null/空按 null 落库，保持「无忌口」语义；去重保序） */

@@ -58,6 +58,7 @@ import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.SmartWashAsyncImage
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -71,6 +72,7 @@ import com.smartwash.feature.dining.api.model.DiningCollaboratorVo
 import com.smartwash.feature.dining.api.model.DiningInviteVo
 import com.smartwash.feature.dining.api.model.DiningOrderDetailVo
 import com.smartwash.feature.dining.api.model.DiningOrderStatus
+import com.smartwash.feature.dining.logic.DiningAllergenGuard
 import com.smartwash.feature.dining.logic.DiningOrderShareDetail
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -234,6 +236,9 @@ private fun ShareContent(
     val status = detail?.status ?: DiningOrderStatus.DRAFT
     val menuCount = detail?.menuCount ?: 0
     val memberCount = detail?.memberCount ?: 0
+    val members = detail?.members.orEmpty()
+    // 本单成员忌口聚合（去重保序，不关联个人）——点菜兼顾众口
+    val memberAllergens = remember(members) { DiningAllergenGuard.summarizeMemberAllergens(members) }
 
     Column(
         modifier = Modifier
@@ -269,8 +274,19 @@ private fun ShareContent(
                 style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.textSecondary,
             )
+            if (memberAllergens.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+                Text(
+                    text = stringResource(
+                        R.string.dining_order_member_allergens_format,
+                        memberAllergens.joinToString("、") { allergenLabel(it, context) },
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.colorScheme.textSecondary,
+                )
+            }
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-            OnlineMemberStack(members = detail?.members.orEmpty())
+            OnlineMemberStack(members = members)
         }
         Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
@@ -321,13 +337,15 @@ private fun ShareContent(
             }
         }
 
-        // 邀请面板：协作过的用户（可勾选邀请）+ 已邀请列表
-        InvitePanel(
-            collaborators = collaborators,
-            invites = invites,
-            inviteState = inviteState,
-            onInvite = { viewModel.invite(listOf(it)) },
-        )
+        // 邀请面板：仅草稿态可邀请（后端 invite 仅 DRAFT）；已结束/已取消不展示，避免无效操作
+        if (status == DiningOrderStatus.DRAFT) {
+            InvitePanel(
+                collaborators = collaborators,
+                invites = invites,
+                inviteState = inviteState,
+                onInvite = { viewModel.invite(listOf(it)) },
+            )
+        }
 
         // 底部避让手势条/三键导航（不硬编码高度）+ 末卡呼吸空间
         Spacer(
@@ -337,6 +355,18 @@ private fun ShareContent(
             ),
         )
     }
+}
+
+/** 忌口码 → 中文标签（与设置页/警示条同源；未知码原样展示） */
+private fun allergenLabel(code: String, context: android.content.Context): String = when (code) {
+    "SEAFOOD" -> context.getString(R.string.dining_allergen_seafood)
+    "NUT" -> context.getString(R.string.dining_allergen_nut)
+    "GLUTEN" -> context.getString(R.string.dining_allergen_gluten)
+    "DAIRY" -> context.getString(R.string.dining_allergen_dairy)
+    "EGG" -> context.getString(R.string.dining_allergen_egg)
+    "SOY" -> context.getString(R.string.dining_allergen_soy)
+    "SPICY" -> context.getString(R.string.dining_allergen_spicy)
+    else -> code
 }
 
 /** 小状态色点 + 状态字（草稿 secondary 灰 / 已结束 success 绿 / 已取消 error 红；分享页只作信息展示） */
@@ -363,11 +393,15 @@ private fun StatusDotSmall(status: DiningOrderStatus) {
     }
 }
 
-/** 圆形头像（手机号尾字符 + 在线点）；离线灰点，在线绿点 */
+/**
+ * 圆形头像（优先后端下发头像直链，缺失回落手机号尾字符）+ 在线点；离线灰点，在线绿点。
+ * 头像 URL 由后端 users.avatar 下发（脱敏资料），经 [SmartWashAsyncImage] 统一加载。
+ */
 @Composable
 private fun MemberAvatar(
     label: String,
     online: Boolean,
+    avatarUrl: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -378,11 +412,19 @@ private fun MemberAvatar(
             .border(1.5.dp, AppColors.colorScheme.surface, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = label.takeLast(1).ifBlank { "友" },
-            style = MaterialTheme.typography.labelSmall,
-            color = AppColors.colorScheme.onPrimarySoft,
-        )
+        val url = avatarUrl?.takeIf { it.isNotBlank() }
+        if (url == null) {
+            Text(
+                text = label.takeLast(1).ifBlank { "友" },
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.colorScheme.onPrimarySoft,
+            )
+        } else {
+            SmartWashAsyncImage(
+                url = url,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -416,6 +458,7 @@ private fun OnlineMemberStack(members: List<DiningOrderDetailVo.OrderMember>) {
                     MemberAvatar(
                         label = member.safePhoneMasked,
                         online = member.isOnline,
+                        avatarUrl = member.safeAvatar,
                         modifier = Modifier.offset(x = (index * 24).dp),
                     )
                 }
@@ -464,7 +507,11 @@ private fun InvitePanel(
                         .fillMaxWidth()
                         .padding(vertical = AppDimens.spaceXs),
                 ) {
-                    MemberAvatar(label = collaborator.safePhoneMasked, online = false)
+                    MemberAvatar(
+                        label = collaborator.safePhoneMasked,
+                        online = false,
+                        avatarUrl = collaborator.safeAvatar,
+                    )
                     Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -517,7 +564,11 @@ private fun InvitePanel(
                         .fillMaxWidth()
                         .padding(vertical = AppDimens.spaceXs),
                 ) {
-                    MemberAvatar(label = invite.safeInviteePhoneMasked, online = false)
+                    MemberAvatar(
+                        label = invite.safeInviteePhoneMasked,
+                        online = false,
+                        avatarUrl = invite.safeInviteeAvatar,
+                    )
                     Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                     Text(
                         text = invite.safeInviteePhoneMasked,
