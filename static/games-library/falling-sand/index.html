@@ -6,11 +6,13 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>元素落沙</title>
 <style>
-  /* token:GAME-THEME.md §2 (D5 终版:仅 :root 浅色 + [data-theme=dark] 深色,桥唯一控制) */
+  /*token:GAME-THEME.md §2 + §3 素材 token(--g-fs-* 元素/地面/边界/闪光)*/
   :root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-warning:#9A6210;--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;
-    --g-fs-empty:#FFFFFF;--g-fs-sand:#D9B44A;--g-fs-wetsand:#B08A42;--g-fs-water:#4A9FD4;--g-fs-stone:#8D958F;--g-fs-fire:#F2703E;--g-fs-smoke:#97A0A6;--g-fs-plant:#3FA45C;--g-fs-oil:#6E5433;--g-fs-steam:#BFD3DC;--g-fs-lava:#E2572B;--g-fs-glass:#C2E4E8;color-scheme:light}
+    --g-fs-empty:#F6F3EB;--g-fs-sand:#E3B54E;--g-fs-wetsand:#B98B3E;--g-fs-water:#3D9FDB;--g-fs-stone:#7C7468;--g-fs-fire:#FF6A2B;--g-fs-smoke:#6E7B8A;--g-fs-plant:#3DBB62;--g-fs-oil:#7A5A34;--g-fs-steam:#C9DDE8;--g-fs-lava:#E84A24;--g-fs-glass:#9FD8DE;
+    --g-fs-floor:#5E6A62;--g-fs-floor-hi:#82918A;--g-fs-wall:#C2CBBF;--g-fs-flash:#FFF3CE;color-scheme:light}
   [data-theme="dark"]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-warning:#E2A44E;--g-shadow:0 2px 12px rgba(0,0,0,.28);
-    --g-fs-empty:#1D201E;--g-fs-sand:#E2BE58;--g-fs-wetsand:#BD9550;--g-fs-water:#6BB4DE;--g-fs-stone:#9BA39D;--g-fs-fire:#FF8A50;--g-fs-smoke:#8A9298;--g-fs-plant:#4ADE6E;--g-fs-oil:#8A6C45;--g-fs-steam:#A7C2CE;--g-fs-lava:#F26838;--g-fs-glass:#9CCBD4;color-scheme:dark}
+    --g-fs-empty:#171A17;--g-fs-sand:#E8C464;--g-fs-wetsand:#C79A52;--g-fs-water:#5CB4E8;--g-fs-stone:#A89E8E;--g-fs-fire:#FF8A50;--g-fs-smoke:#93A0AC;--g-fs-plant:#4ADE6E;--g-fs-oil:#9A7448;--g-fs-steam:#A7C2CE;--g-fs-lava:#F26838;--g-fs-glass:#8CC6CF;
+    --g-fs-floor:#242A26;--g-fs-floor-hi:#3E4842;--g-fs-wall:#0E100E;--g-fs-flash:#F2D9A0;color-scheme:dark}
   [hidden]{display:none!important}
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;height:100%}
@@ -21,37 +23,41 @@
     overscroll-behavior:none;touch-action:manipulation;
   }
   .app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;padding:10px 12px calc(8px + env(safe-area-inset-bottom))}
-  header{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+  header{display:flex;align-items:center;justify-content:flex-end;gap:10px;animation:rise .26s ease-out backwards}
   .hud{display:flex;gap:10px;font-size:12px;color:var(--g-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-  .toolbar{display:flex;align-items:center;gap:8px;margin:16px 0 8px}
+  .toolbar{display:flex;align-items:center;gap:8px;margin:16px 0 8px;animation:rise .26s ease-out .03s backwards}
   .sp{flex:1}
-  .btn{min-height:44px;padding:0 16px;border:0;border-radius:var(--g-radius-btn);background:var(--g-btn-primary);color:var(--g-on-primary);font-family:inherit;font-size: 16px;font-weight: 600;cursor:pointer}
-  .btn:active{opacity:.85}
+  .btn{min-height:44px;padding:0 14px;border:0;border-radius:var(--g-radius-btn);background:var(--g-btn-primary);color:var(--g-on-primary);font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .14s ease-out,opacity .16s ease-out,background-color .16s ease-out}
+  .btn:active{transform:scale(.96)}
   .btn.ghost{background:var(--g-surface);color:var(--g-text);border:1px solid var(--g-border)}
   .seg{display:flex;border:1px solid var(--g-border);border-radius:var(--g-radius-btn);overflow:hidden;background:var(--g-surface)}
-  .seg button{min-width:44px;min-height:44px;padding:0 10px;border:0;background:transparent;color:var(--g-text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer}
+  .seg button{min-width:44px;min-height:44px;padding:0 10px;border:0;background:transparent;color:var(--g-text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:background-color .16s ease-out,color .16s ease-out,transform .14s ease-out}
   .seg button+button{border-left:1px solid var(--g-border)}
   .seg button.on{background:var(--g-primary-soft);color:var(--g-on-soft);box-shadow:inset 0 0 0 1px var(--g-primary)}
-  /* 极矮视口(横屏/小窗):flex-basis 让 stage 随视口收缩(上限 240px),把控制区/元素栏/提示行让出来,
-     避免 body overflow:hidden 下底部被裁;视口充足时 240px 保底不变 */
-  .stage{position:relative;flex:1 1 240px;min-height:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--g-border);border-radius:var(--g-radius);background:var(--g-surface2);overflow:hidden}
-  canvas{display:block;touch-action:none;border-radius:10px}
+  .seg button:active{transform:scale(.96)}
+  /* 极矮视口:stage 随视口收缩,把控制区/元素栏/提示行让出来 */
+  .stage{position:relative;flex:1 1 240px;min-height:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--g-border);border-radius:var(--g-radius);background:var(--g-surface2);overflow:hidden;animation:rise .26s ease-out .06s backwards}
+  canvas{display:block;touch-action:none;border-radius:10px;box-shadow:inset 0 0 0 1px var(--g-fs-wall),inset 0 2px 10px rgba(20,40,30,.12)}
   .badge{position:absolute;top:10px;right:10px;padding:5px 10px;border:1px solid var(--g-border);border-radius:10px;background:var(--g-surface);color:var(--g-warning);font-size:12px;font-weight:700}
   .bar{display:flex;gap:8px;overflow-x:auto;padding:8px 2px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .bar::-webkit-scrollbar{display:none}
-  .chip{flex:0 0 auto;display:flex;align-items:center;gap:7px;min-height:46px;min-width:56px;padding:6px 12px;border:1px solid var(--g-border);border-radius:var(--g-radius-btn);background:var(--g-surface);color:var(--g-text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer}
-  .chip .sw{width:16px;height:16px;border-radius:10px;flex:0 0 auto}
+  .chip{flex:0 0 auto;display:flex;align-items:center;gap:7px;min-height:46px;padding:6px 12px;border:1px solid var(--g-border);border-radius:var(--g-radius-btn);background:var(--g-surface);color:var(--g-text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:background-color .16s ease-out,color .16s ease-out,border-color .16s ease-out,box-shadow .16s ease-out,transform .14s ease-out;animation:rise .26s ease-out backwards}
   .chip.on{border-color:var(--g-primary);background:var(--g-primary-soft);color:var(--g-on-soft);box-shadow:inset 0 0 0 1px var(--g-primary)}
-  .foot{margin:6px 0 0;font-size:12px;color: var(--g-muted);text-align:center;min-height:18px}
-  .foot b{color:var(--g-primary-deep)}
-  #toast{color:var(--g-muted)}
+  .chip:active{transform:scale(.96)}
+  .swi{display:inline-block;vertical-align:-.14em;flex:none}
+  .foot{margin:6px 0 0;font-size:12px;color:var(--g-muted);text-align:center;min-height:34px;display:flex;flex-direction:column;gap:2px;animation:rise .24s ease-out .34s backwards}
+  .foot .goal{display:inline-flex;align-items:center;justify-content:center;gap:5px}
+  .foot b{color:var(--g-primary-deep);font-variant-numeric:tabular-nums}
   #toast.pop{animation:fspop .35s ease-out}
+  #reactCount.bump{animation:valPop .18s ease-out}
   @keyframes fspop{from{transform:scale(1.3)}to{transform:scale(1)}}
+  @keyframes valPop{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: reduced-motion 降级(动效层,不受 §4 主题层 matchMedia 禁令约束) */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
-  /* P2: 键盘焦点可见（S5） */
+  /* P2: 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
@@ -64,6 +70,28 @@ try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t=
 try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
+</script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'pause':'<rect x="6.5" y="5" width="3.6" height="14" rx="1.2"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.2"/>',
+ 'trash':'<path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13M10 11v5M14 11v5"/>',
+ 'target':'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',
+ 'dot-s':'<circle cx="12" cy="12" r="3.2"/>','dot-m':'<circle cx="12" cy="12" r="5.2"/>','dot-l':'<circle cx="12" cy="12" r="7"/>',
+ 'sand':'<path d="M4 18h16M7 18l5-9 5 9"/><circle cx="9" cy="6.5" r=".9"/><circle cx="14.5" cy="4.5" r=".9"/>',
+ 'water':'<path d="M12 3.2s6 6.6 6 10.9a6 6 0 0 1-12 0c0-4.3 6-10.9 6-10.9z"/>',
+ 'stone':'<rect x="5.5" y="6" width="13" height="12" rx="3"/><path d="M9 10h6M9 14h6"/>',
+ 'fire':'<path d="M12 2.8c.9 3.6-3.6 5.2-3.6 9.4a5.6 5.6 0 0 0 11.2 0c0-4.2-4.5-5.8-7.6-9.4z"/>',
+ 'plant':'<path d="M20 4C11 4 4.5 10 4.5 19.5 13.5 18.5 19.5 12.5 20 4z"/><path d="M8 16c2.6-4 5.6-6.6 9-8.6"/>',
+ 'oil':'<rect x="6" y="4" width="12" height="16" rx="1.5"/><path d="M6 9h12M6 15h12"/>',
+ 'lava':'<path d="M12 2.8c.9 3.6-3.6 5.2-3.6 9.4a5.6 5.6 0 0 0 11.2 0c0-4.2-4.5-5.8-7.6-9.4z"/><path d="M9.5 18v2.5M14.5 18v2.5"/>',
+ 'smoke':'<path d="M7 18.5a4 4 0 0 1-.6-7.9A5.2 5.2 0 0 1 17 8.6a3.8 3.8 0 0 1 .4 7.4z"/>',
+ 'erase':'<path d="M5.5 14.5l7.5-7.5 6 6-4.5 4.5H9.5z"/><path d="M4 20h16"/>'
+};
+var fill={'play':1,'pause':1,'dot-s':1,'dot-m':1,'dot-l':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
 </script>
 </head>
 <body>
@@ -79,14 +107,17 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     </div>
     <span class="sp"></span>
     <button class="btn ghost" id="clearBtn" type="button">清屏</button>
-    <button class="btn" id="pauseBtn" type="button">暂停</button>
+    <button class="btn" id="pauseBtn" type="button"><span>暂停</span></button>
   </div>
   <div class="stage" id="stage">
     <canvas id="cv" aria-label="元素落沙实验区" role="img"></canvas>
     <span class="badge" id="badge" hidden>已暂停</span>
   </div>
   <div class="bar" id="elemBar"></div>
-  <p class="foot"><b id="reactCount">0/9</b> 反应已发现 · <span id="toast" role="status" aria-live="polite">拖拽画布倾倒元素，试着发现全部反应</span></p>
+  <p class="foot">
+    <span class="goal"><span class="swi" id="goalIc"></span>目标 · 已发现 <b id="reactCount">0/9</b> 种反应</span>
+    <span id="toast" role="status" aria-live="polite">拖拽画布倾倒元素，试着发现全部反应</span>
+  </p>
 </div>
 <script>
 "use strict";
@@ -95,6 +126,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   const GW = 240, GH = 400, NCELLS = GW * GH;
   const STEP = 1 / 60;
   const PREFS_KEY = "sw_h5_fallsand_prefs";
+  const FLOOR_H = 12;                      // 地面带行数(仅渲染层:空格在此带内画成地面材质)
   // 元素 id:0空 1沙 2水 3石 4火 5烟 6植物 7油 8蒸汽 9岩浆 10玻璃 11湿沙
   const E = { EMPTY:0, SAND:1, WATER:2, STONE:3, FIRE:4, SMOKE:5, PLANT:6, OIL:7, STEAM:8, LAVA:9, GLASS:10, WETSAND:11 };
   const CAT  = [0,1,2,0,3,3,0,2,3,2,0,1];   // 0静态 1粉 2液 3气
@@ -117,6 +149,8 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   const grid  = new Uint8Array(NCELLS);
   const life  = new Uint8Array(NCELLS);   // 气体寿命
   const moved = new Uint8Array(NCELLS);   // 本步已移动标记,防双移
+  const prev  = new Uint8Array(NCELLS);   // 上一帧快照:仅用于渲染层识别「命中/合成」cell
+  const heat  = new Float32Array(NCELLS); // 反应闪光强度 0..1,逐帧衰减
   let frame = 0;
 
   const $ = id => document.getElementById(id);
@@ -131,7 +165,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   const octx = off.getContext("2d");
   const img = octx.createImageData(GW, GH);
 
-  // ===== 主题调色板:颜色全部读 CSS 变量,JS 零颜色字面量 (GAME-THEME.md §3) =====
+  // ===== 主题调色板:颜色全部读 CSS 变量(JS 零颜色字面量) =====
   const PAL = {};
   const colTab = [];
   const FS_DEFS = [
@@ -139,7 +173,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     [E.FIRE,"fire"],[E.SMOKE,"smoke"],[E.PLANT,"plant"],[E.OIL,"oil"],[E.STEAM,"steam"],
     [E.LAVA,"lava"],[E.GLASS,"glass"]
   ];
+  const EXTRA_DEFS = [["floor","floor"],["floorHi","floor-hi"],["wall","wall"],["flash","flash"]];
+  // 恒黑:仅用于派生地面接触阴影(D2 例外),不做具体材质色
+  const BLACK = [0,0,0];
   function hx(v){ return /^#[0-9a-fA-F]{6}$/.test(v) ? [parseInt(v.slice(1,3),16),parseInt(v.slice(3,5),16),parseInt(v.slice(5,7),16)] : null; }
+  function mixRGB(a,b,t){ return [Math.round(a[0]+(b[0]-a[0])*t), Math.round(a[1]+(b[1]-a[1])*t), Math.round(a[2]+(b[2]-a[2])*t)]; }
   function palLoad(){
     const s = getComputedStyle(document.documentElement);
     for(const def of FS_DEFS){
@@ -147,6 +185,13 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
       if(c) colTab[def[0]] = c;
       else if(!colTab[def[0]]) colTab[def[0]] = [128,128,128];
     }
+    for(const def of EXTRA_DEFS){
+      const c = hx(s.getPropertyValue("--g-fs-" + def[1]).trim());
+      if(c) PAL[def[0]] = c;
+    }
+    const mc = hx(s.getPropertyValue("--g-muted").trim());   // 橡皮光标环用中性色
+    if(mc) PAL.muted = mc;
+    if(PAL.floor) PAL.floorLo = mixRGB(PAL.floor, BLACK, .45);
   }
   window.__gOnTheme = function(){ palLoad(); render(); };
   palLoad();
@@ -169,6 +214,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   let running = true, resumeOnVisible = false;
   let discovered = new Set();
   let dpr = 1;
+  let cursorCell = null, cursorHot = false;
 
   // ===== 存档(localStorage,try/catch) =====
   /* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
@@ -240,6 +286,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     if(discovered.has(k)) return;
     discovered.add(k);
     reactCountEl.textContent = discovered.size + "/" + REACT_KEYS.length;
+    reactCountEl.classList.remove("bump"); void reactCountEl.offsetWidth; reactCountEl.classList.add("bump");
     toastEl.textContent = "新反应：" + REACT_NAMES[k];
     toastEl.classList.remove("pop"); void toastEl.offsetWidth; toastEl.classList.add("pop");
     savePrefs();
@@ -373,21 +420,81 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   }
 
   // ===== 渲染:ImageData 直写 + 最近邻放大;顺带统计粒子数 =====
+  // 轻立体:每格按「左上受光 / 右下背光」混 hiTab/loTab,叠加地面接触阴影与反应闪光
   function render(){
     const d = img.data, t = frame & 1023;
+    const floorTop = GH - FLOOR_H;
+    const FC = PAL.flash, FLOOR = PAL.floor, FHI = PAL.floorHi, FLO = PAL.floorLo;
+    const EMPTY = colTab[0];
     let count = 0;
-    for(let i = 0, p = 0; i < NCELLS; i++, p += 4){
-      const v = grid[i];
-      if(v === 0){ d[p] = colTab[0][0]; d[p+1] = colTab[0][1]; d[p+2] = colTab[0][2]; d[p+3] = 255; continue; }
-      count++;
-      const c = colTab[v];
-      let n = ((i * 2654435761 + t * 97) >>> 0) & 63; n -= 32;
-      if(v !== E.FIRE && v !== E.LAVA && v !== E.STEAM && v !== E.SMOKE) n >>= 2;
-      d[p] = c[0] + n; d[p+1] = c[1] + n; d[p+2] = c[2] + n; d[p+3] = 255;
+    for(let y = 0; y < GH; y++){
+      const row = y * GW, inFloor = y >= floorTop, depth = y / GH;
+      for(let x = 0; x < GW; x++){
+        const i = row + x, p = i * 4, v = grid[i];
+        const pv = prev[i];
+        if(pv !== v){                        // 命中/合成:非空格类型变化记一次闪光(纯渲染 diff,不改玩法)
+          if(pv !== 0 && v !== 0) heat[i] = 1;
+          prev[i] = v;
+        }
+        // 颗粒噪点:x/y 分别哈希(避免沿行周期横纹)
+        const h = (x * 73856093) ^ (y * 19349663) ^ t;
+        let n = ((h ^ (h >>> 6)) & 63) - 32;
+        if(v !== E.FIRE && v !== E.LAVA && v !== E.STEAM && v !== E.SMOKE) n >>= 2;
+        let r, g, b;
+        if(v === 0){
+          if(inFloor){                       // 地面带:基色+顶缘亮线+接触阴影
+            const ab = y > 0 ? grid[i - GW] : 0;
+            const f = (y === floorTop ? .55 : 0) - (ab !== 0 ? .5 : 0);
+            const H = f > 0 ? FHI : FLO, k = f > 0 ? f : -f;
+            r = FLOOR[0]; g = FLOOR[1]; b = FLOOR[2];
+            r += (H[0]-r)*k; g += (H[1]-g)*k; b += (H[2]-b)*k;
+            const mm = n >> 2; r += mm; g += mm; b += mm;
+          }else{                             // 空腔:纸面底+噪点
+            const m = n >> 3;
+            r = EMPTY[0] + m; g = EMPTY[1] + m; b = EMPTY[2] + m;
+          }
+          d[p] = r; d[p+1] = g; d[p+2] = b; d[p+3] = 255;
+          continue;
+        }
+        count++;
+        const c = colTab[v], cat = CAT[v];
+        const up = y > 0 ? grid[i - GW] : -1;
+        const left = x > 0 ? grid[i - 1] : -1;
+        const right = x < GW-1 ? grid[i + 1] : -1;
+        // 统一「左上受光 / 右下背光」轻立体
+        let f = (up !== v ? .5 : 0) + (left !== v ? .18 : 0) - (up === v && right === v ? .3 : 0);
+        if(cat === 2) f -= .12 + .16 * depth;                       // 液体深度压暗
+        else if(cat === 3) f += (v === E.FIRE || v === E.LAVA) ? .45 : .1;   // 火热 / 烟气柔光
+        else f -= .06 + .10 * depth;                                // 粉/固体:轻微体积纵暗
+        r = c[0]; g = c[1]; b = c[2];
+        if(f > 0){ const k = f * .6; r += (255-r)*k; g += (255-g)*k; b += (255-b)*k; }       // 受光面 → 恒白
+        else if(f < 0){ const k = -f * .45; r -= r*k; g -= g*k; b -= b*k; }                   // 背光面 → 恒黑
+        r += n; g += n; b += n;
+        const fl = heat[i];
+        if(fl > .01){ r += (FC[0]-r)*fl; g += (FC[1]-g)*fl; b += (FC[2]-b)*fl; heat[i] = fl * .86; }
+        else heat[i] = 0;
+        d[p] = r; d[p+1] = g; d[p+2] = b; d[p+3] = 255;
+      }
     }
     octx.putImageData(img, 0, 0);
     ctx.drawImage(off, 0, 0, cv.width, cv.height);
+    drawCursor();
     return count;
+  }
+  // 落点光标:半径=笔刷尺寸,颜色=当前元素(按下加粗)
+  function drawCursor(){
+    if(!cursorCell) return;
+    const c = curElem ? colTab[curElem] : PAL.muted;
+    const col = "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+    const cw = cv.width / GW, ch = cv.height / GH;
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = Math.max(2, cw * (cursorHot ? 1.8 : 1.2));
+    ctx.shadowColor = col; ctx.shadowBlur = cursorHot ? 12 : 6;
+    ctx.beginPath();
+    ctx.arc((cursorCell.x + .5) * cw, (cursorCell.y + .5) * ch, (brush * 2 + 1) * cw / 2, 0, 6.2832);
+    ctx.stroke();
+    ctx.restore();
   }
 
   // ===== 画布尺寸(适配 stage,保持 3:5) =====
@@ -403,7 +510,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     ctx.imageSmoothingEnabled = false;
   }
 
-  // ===== 触控倾倒(多指 + 插值补点) =====
+  // ===== 触控倾倒(多指 + 插值补点) + 落点光标 =====
   const pointers = new Map();
   function toCell(e){
     const r = cv.getBoundingClientRect();
@@ -437,39 +544,53 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     e.preventDefault();
     if(cv.setPointerCapture) try{ cv.setPointerCapture(e.pointerId); }catch(err){}
     const c = toCell(e);
+    cursorCell = c; cursorHot = true;
     pointers.set(e.pointerId, c);
     stamp(c.x, c.y);
   });
   cv.addEventListener("pointermove", e => {
+    const c = toCell(e);
+    cursorCell = c;
     if(!pointers.has(e.pointerId)) return;
     e.preventDefault();
-    const c = toCell(e), prev = pointers.get(e.pointerId);
-    strokeLine(prev, c);
+    strokeLine(pointers.get(e.pointerId), c);
     pointers.set(e.pointerId, c);
   });
-  const lift = e => { pointers.delete(e.pointerId); };
+  const lift = e => { pointers.delete(e.pointerId); cursorHot = false; };
   cv.addEventListener("pointerup", lift);
   cv.addEventListener("pointercancel", lift);
+  cv.addEventListener("pointerleave", () => { cursorCell = null; cursorHot = false; });
 
   // ===== 元素选择栏 / 笔刷 / 按钮 =====
   function buildChips(){
-    elemBar.innerHTML = PLACE.map(p =>
-      `<button type="button" class="chip${p.id === curElem ? " on" : ""}" data-id="${p.id}">` +
-      `<i class="sw" style="background:${p.id ? "var(--g-fs-" + p.key + ")" : "var(--g-surface2)"}"></i>${p.name}</button>`
-    ).join("");
-    elemBar.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => {
-      curElem = +b.dataset.id;
-      elemBar.querySelectorAll(".chip").forEach(x => x.classList.toggle("on", +x.dataset.id === curElem));
-      savePrefs();
-    }));
+    elemBar.innerHTML = PLACE.map(p => {
+      const on = p.id === curElem ? " on" : "";
+      const col = p.id ? "var(--g-fs-" + p.key + ")" : "var(--g-muted)";
+      return `<button type="button" class="chip${on}" data-id="${p.id}">` +
+        window.SW_ICON(p.key, "color:" + col) + `<span>${p.name}</span></button>`;
+    }).join("");
+    elemBar.querySelectorAll(".chip").forEach((b, idx) => {
+      b.style.animationDelay = (90 + idx * 30) + "ms";   // 入场错落 30ms,全程 ≤600ms
+      b.addEventListener("click", () => {
+        curElem = +b.dataset.id;
+        elemBar.querySelectorAll(".chip").forEach(x => x.classList.toggle("on", +x.dataset.id === curElem));
+        savePrefs();
+      });
+    });
   }
   function syncBrush(){
     brushSeg.querySelectorAll("button").forEach(b => b.classList.toggle("on", +b.dataset.b === brush));
   }
-  brushSeg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
-    brush = +b.dataset.b; syncBrush(); savePrefs();
-  }));
-  function syncPause(){ badge.hidden = running; pauseBtn.textContent = running ? "暂停" : "继续"; }
+  brushSeg.querySelectorAll("button").forEach((b, idx) => {
+    b.insertAdjacentHTML("afterbegin", window.SW_ICON(["dot-s","dot-m","dot-l"][idx] || "dot-m"));
+    b.addEventListener("click", () => { brush = +b.dataset.b; syncBrush(); savePrefs(); });
+  });
+  function syncPause(){
+    badge.hidden = running;
+    pauseBtn.innerHTML = window.SW_ICON(running ? "pause" : "play") + "<span>" + (running ? "暂停" : "继续") + "</span>";
+  }
+  clearBtn.insertAdjacentHTML("afterbegin", window.SW_ICON("trash"));
+  $("goalIc").innerHTML = window.SW_ICON("target");
   clearBtn.addEventListener("click", () => { grid.fill(0); life.fill(0); toastEl.textContent = "已清空画布"; });
   pauseBtn.addEventListener("click", () => { running = !running; resumeOnVisible = false; syncPause(); });
 
@@ -495,8 +616,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     if(running){
       acc += dt;
       let n = 0;
-      // A2 动效降级：系统「减少动效」时模拟步频降为 1/3（沙粒动态显著减缓，
-      // 保留玩法可继续；window.__gRM 由主题运行时注入并随系统设置联动）
+      // A2 动效降级:系统「减少动效」时步频降为 1/3(__gRM 由主题运行时注入)
       const maxStep = window.__gRM ? 1 : 3;
       while(acc >= STEP && n < maxStep){ step(); acc -= STEP; n++; }
       if(acc > STEP) acc = 0;

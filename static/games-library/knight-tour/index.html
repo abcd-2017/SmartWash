@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>骑士巡游</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-sq1:#FFFFFF;--g-st-sq2:#EFF1EE;--g-st-hole:#3A3F3B;--g-st-trail:#CFE7D9;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-sq1:#1D201E;--g-st-sq2:#262A27;--g-st-hole:#0C0E0C;--g-st-trail:#24402F;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-kt-board1/2 棋盘木面两格、--g-kt-piece1/2 棋身渐变）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-kt-board1:#F2DFB6;--g-kt-board2:#C08C4E;--g-kt-piece1:#FBF6E9;--g-kt-piece2:#E4CF9F;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-kt-board1:#574A33;--g-kt-board2:#2A2317;--g-kt-piece1:#ECE7D8;--g-kt-piece2:#B9B29C;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -23,32 +23,38 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; flex: 1; min-width: 0; }
+  .lvtag { display: inline-flex; align-items: center; gap: 6px; max-width: 58%; padding: 4px 10px; border-radius: 10px; background: var(--g-primary-soft); color: var(--g-on-soft); font-size: 14px; font-weight: 600; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lvtag::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--g-primary); flex: none; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .stat .val.low { color: var(--g-danger); }
-  .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
-  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .stat .val { display: inline-block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.pop { animation: valpop .24s ease-out; }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; transition: color .16s ease-out; }
+  .tools { display: flex; gap: 8px; margin-top: 8px; }
   .btn {
-    min-height: 44px; padding: 0 14px; flex: 1;
+    min-height: 44px; padding: 0 10px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
-  .btn.ghost { background: transparent; color: var(--g-primary-deep); box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
-  .btn:active { opacity: .85; }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
     display: none; align-items: center; justify-content: center; padding: 20px;
+    overflow-y: auto;
   }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
@@ -56,11 +62,11 @@
     width: 100%; max-width: 340px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
+    animation: pop .3s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
-  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
@@ -68,44 +74,103 @@
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效降级——保留状态切换，同压 animation-duration 与 animation-delay */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 
+  /* 棋盘：木面棋盘格 / 木框边线 / 缺口 / 轨迹 / 可落点 / 选中 */
   .board {
-    display: grid; gap: 3px; background: var(--g-border); padding: 3px;
-    border-radius: var(--g-radius-inner); touch-action: manipulation;
+    position: relative;
+    display: grid; gap: 2px; padding: 10px;
+    border-radius: var(--g-radius-inner);
+    background: linear-gradient(135deg, var(--g-kt-board1) 0%, var(--g-kt-board2) 100%);
+    box-shadow: var(--g-shadow), inset 0 2px 3px rgba(255,255,255,.30), inset 0 -4px 8px rgba(0,0,0,.22);
+    touch-action: manipulation;
   }
   .cellk {
     position: relative; aspect-ratio: 1; border: 0; border-radius: 4px;
-    background: var(--g-st-sq2); color: var(--g-text);
-    font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; padding: 0;
+    padding: 0; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(150deg, var(--g-kt-board2) 0%, var(--g-kt-board2) 55%, var(--g-kt-board1) 165%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,.28), inset 0 -1px 2px rgba(0,0,0,.12);
+    transition: transform .14s ease-out, box-shadow .16s ease-out, background .16s ease-out;
   }
-  .cellk.lt { background: var(--g-st-sq1); }
-  .cellk.hole { background: var(--g-st-hole); cursor: default; }
-  .cellk.vis { background: var(--g-st-trail); }
-  .cellk.cur { background: var(--g-primary); color: #fff; }
-  .cellk.dst { outline: 2px solid var(--g-primary-deep); outline-offset: -2px; }
-  .cellk.hintc { outline: 2px dashed var(--g-warning); outline-offset: -2px; }
-  .cellk .mv { position: absolute; top: 1px; left: 3px; font-size: 12px; opacity: .8; }
-  .cellk.cur svg { width: 70%; height: 70%; }
+  .cellk.lt { background: linear-gradient(150deg, var(--g-kt-board1) 0%, var(--g-kt-board1) 55%, var(--g-kt-board2) 165%); }
+  .cellk:active { transform: scale(.96); }
+  .cellk.hole { background: var(--g-bg); box-shadow: inset 0 3px 6px rgba(0,0,0,.38), inset 0 -1px 1px rgba(255,255,255,.14); cursor: default; }
+  .cellk.vis { background: linear-gradient(150deg, var(--g-primary-soft) 0%, var(--g-primary-soft) 60%, var(--g-primary) 190%); box-shadow: inset 0 1px 1px rgba(255,255,255,.45), inset 0 -1px 2px rgba(0,0,0,.10); }
+  .cellk.cur {
+    background: linear-gradient(150deg, var(--g-primary) 0%, var(--g-primary-deep) 100%);
+    box-shadow: 0 4px 10px rgba(0,0,0,.28), inset 0 2px 2px rgba(255,255,255,.35), inset 0 -2px 4px rgba(0,0,0,.22);
+    z-index: 2;
+  }
+  .cellk.dst { box-shadow: inset 0 0 0 2px var(--g-primary-deep), inset 0 1px 1px rgba(255,255,255,.30); }
+  .cellk.dst::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 26%; height: 26%; transform: translate(-50%,-50%);
+    border-radius: 50%; background: var(--g-primary-deep);
+    box-shadow: 0 0 0 2px var(--g-primary-soft);
+  }
+  .cellk.hintc { animation: hintpulse 1.1s ease-in-out infinite; }
+  .cellk .mv { position: absolute; top: 2px; left: 3px; font-size: 12px; font-weight: 700; line-height: 1; color: var(--g-on-soft); font-variant-numeric: tabular-nums; }
+  .cellk.cur .pcsvg { width: 74%; height: 74%; animation: piecepop .18s ease-out; }
+  .pcsvg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .pc-sh { fill: rgba(0,0,0,.30); }
+  .pc-body { fill: url(#kt-g-body); stroke: rgba(0,0,0,.30); stroke-width: 1; }
+  .pc-hi { fill: #fff; opacity: .42; }
+  .svgdef { position: absolute; width: 0; height: 0; overflow: hidden; }
+  .kt-s1 { stop-color: var(--g-kt-piece1); }
+  .kt-s2 { stop-color: var(--g-kt-piece2); }
+  .pathlayer { position: absolute; left: 10px; top: 10px; width: calc(100% - 20px); height: calc(100% - 20px); pointer-events: none; overflow: visible; z-index: 1; }
+  .pathlayer polyline { fill: none; stroke: var(--g-primary-deep); stroke-width: .09; stroke-linecap: round; stroke-linejoin: round; opacity: .5; }
+  .board.enter .cellk { animation: cellin .3s ease-out backwards; }
+  .legend { display: flex; gap: 8px; margin: 10px 2px 0; animation: rise .38s ease-out both; animation-delay: 120ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip .pcsvg { width: 20px; height: 20px; flex: none; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-ic { width: 20px; height: 20px; flex: none; }
   .moves { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-top: 10px; }
   .mvbtn {
     min-height: 44px; border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    background: var(--g-surface2); color: var(--g-text); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+    transition: transform .14s ease-out, background .16s ease-out, color .16s ease-out;
   }
+  .mvbtn .mvi { width: 22px; height: 22px; display: block; }
   .mvbtn:disabled { opacity: .3; }
-  .mvbtn:active { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .mvbtn:active { transform: scale(.96); background: var(--g-primary-soft); color: var(--g-on-soft); }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  @keyframes cellin { from { opacity: 0; transform: translateY(6px) scale(.9); } to { opacity: 1; transform: none; } }
+  @keyframes piecepop { 0% { transform: scale(.7); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  @keyframes hintpulse { 0%,100% { box-shadow: inset 0 0 0 2px var(--g-warning); } 50% { box-shadow: inset 0 0 0 4px var(--g-warning); } }
 
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON（24 viewBox / currentColor / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0 0 12 3z"/>'
+};
+var fill={'play':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -121,26 +186,40 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 
 </head>
 <body>
+<!-- 棋子渐变 defs：stop-color 走 CSS 变量 -->
+<svg class="svgdef" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="kt-g-body" x1="0" y1="0" x2="0" y2="1">
+      <stop class="kt-s1" offset="0"/><stop class="kt-s2" offset="1"/>
+    </linearGradient>
+  </defs>
+</svg>
 <div class="wrap">
-  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <header><span class="lvtag" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/47</span></div>
     <div class="stat"><span class="label">已走</span><span class="val" id="stMoves">1</span></div>
     <div class="stat"><span class="label">总格</span><span class="val" id="stTotal">-</span></div>
   </div>
-  <div class="board" id="board" aria-label="骑士巡游棋盘"></div>
+  <div class="stage">
+    <div class="board" id="board" aria-label="骑士巡游棋盘"></div>
+    <div class="legend">
+      <span class="lg-chip" id="lgYou"></span>
+      <span class="lg-chip" id="lgGoal"></span>
+    </div>
+  </div>
   <p class="msg" id="msg" role="status" aria-live="polite">马走「日」字，踏遍全盘每个空格（可走格已描边）</p>
   <div class="moves" id="moves"></div>
-  <div class="tools" style="margin-top:8px">
+  <div class="tools">
     <button class="btn" id="btnUndo">撤销</button>
     <button class="btn" id="btnHint">提示</button>
     <button class="btn" id="btnReset">重开</button>
     <button class="btn" id="btnLv">选关</button>
   </div>
-  <p class="foot">键盘 1-8 对应八个马步方向（按钮同序）· Z 撤销 · H 提示 · R 重开 · 深色格为缺口不可走</p>
+  <p class="foot">键盘 1-8 对应八个马步方向（按钮同序）· Z 撤销 · H 提示 · R 重开 · 缺口格不可走</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -267,7 +346,7 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   var u=$("ovUndo");
   if(u)u.hidden=true;
   $("overlay").classList.add("show");
@@ -352,19 +431,28 @@ function knightVerify(L){
   }
   return false;
 }
-/* ---------- 调色板（DOM 直用 token） ---------- */
-var PAL={};
-function palLoad(){
-  var s=getComputedStyle(document.documentElement);
-  PAL={deep:s.getPropertyValue("--g-primary-deep").trim()};
-}
-window.__gOnTheme=function(){palLoad()};
+/* ---------- 矢量图形（内联 SVG：棋子 / 可落点图例，全部图形化，无字符字形） ---------- */
+var KNIGHT_D="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.04-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.99-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.99 2.5-3c1 0 1 3 1 3z";
+var KNIGHT_SVG='<svg class="pcsvg" viewBox="0 0 45 45" aria-hidden="true">'+
+  '<ellipse class="pc-sh" cx="22.5" cy="40.5" rx="13" ry="2.6"/>'+
+  '<path class="pc-body" d="'+KNIGHT_D+'"/>'+
+  '<ellipse class="pc-hi" cx="16.5" cy="15" rx="5" ry="3.4"/></svg>';
+var DST_SAMPLE='<svg class="lg-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="var(--g-primary-soft)" stroke="var(--g-primary-deep)" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="var(--g-primary-deep)"/></svg>';
+/* DOM/SVG 颜色走 var(--g-*)，主题切换自动生效 */
+window.__gOnTheme=function(){};
 /* ---------- 状态 ---------- */
 var lv=save.lv,L=null,rows=0,cols=0,holeSet=new Set(),freeCnt=0;
 var path=[],done=false,stuck=false;
-var KNIGHT_SVG='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.5 21h12v-2.2c-1.8-.2-2.8-1-2.8-2 2-2 3.3-4.8 3.3-7.3 0-4.3-3.9-7-7.6-7l.9-1.9H9.9L8.7 3.9C6.3 5 4.4 7.9 4.4 11.4c0 2 .8 3.6.8 4.7 0 1.4-.9 2.6-2.7 3.4l1.6 1.5h2.4z"/></svg>';
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+function popVal(el,v){var s=String(v);if(el.textContent!==s){el.textContent=s;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}}
+function setOvBtn(t,icon){$("ovBtn").innerHTML=(icon?window.SW_ICON(icon):"")+t;}
+function enterBoard(){
+  var b=$("board");
+  b.classList.remove("enter");void b.offsetWidth;b.classList.add("enter");
+  clearTimeout(enterBoard._t);
+  enterBoard._t=setTimeout(function(){b.classList.remove("enter")},700);
+}
 function loadLevel(nl){
   lv=Math.max(0,Math.min(nl,LEVELS.length-1));
   L=LEVELS[lv];
@@ -380,7 +468,7 @@ function loadLevel(nl){
   $("stTotal").textContent=freeCnt;
   if(!ok)say("警告：内嵌求解器未能复核本关（数据异常）");
   else say("马走「日」字，踏遍全盘 "+freeCnt+" 个空格");
-  render();updStats();
+  enterBoard();render();updStats();
 }
 function legalMoves(){
   var out=[],r=Math.floor(path[path.length-1]/cols),c=path[path.length-1]%cols;
@@ -394,16 +482,19 @@ function legalMoves(){
   return out;
 }
 function updStats(){
-  $("stMoves").textContent=path.length;
+  popVal($("stMoves"),path.length);
   $("btnUndo").disabled=path.length<=1||done;
 }
 /* ---------- 渲染 ---------- */
 function render(){
   var board=$("board");
   board.style.gridTemplateColumns="repeat("+cols+",1fr)";
+  var enter=board.classList.contains("enter");
   board.innerHTML="";
   var legal=legalMoves(),dst={};
   for(var i=0;i<legal.length;i++)dst[legal[i].cell]=1;
+  var pts=[];
+  for(var p=0;p<path.length;p++)pts.push((path[p]%cols+0.5)+","+(Math.floor(path[p]/cols)+0.5));
   for(var cell=0;cell<rows*cols;cell++){
     var d=document.createElement("button");
     d.type="button";
@@ -417,22 +508,29 @@ function render(){
     if(dst[cell])cls+=" dst";
     d.className=cls;
     d.disabled=holeSet.has(cell);
-    if(idx>=0&&idx<path.length-1)d.innerHTML='<span class="mv">'+(idx+1)+'</span>';
+    if(enter)d.style.animationDelay=Math.min(r*40,240)+"ms";   /* 入场按行错落 40ms，上限 240ms（总 ≤540ms） */
+    if(idx>=0&&idx<path.length-1){var sp=document.createElement("span");sp.className="mv";sp.textContent=idx+1;d.appendChild(sp);}
     if(cell===path[path.length-1])d.innerHTML=KNIGHT_SVG;
     if(idx>=0||holeSet.has(cell)||!dst[cell])d.tabIndex=-1;
-    d.setAttribute("aria-label","格 "+(cell+1));
+    d.setAttribute("aria-label",(holeSet.has(cell)?"缺口 ":(idx>=0?"第 "+(idx+1)+" 步 ":""))+"格 "+(cell+1));
     d.addEventListener("click",function(){
       var cc=cell;
       return function(){tryMove(cc)};
     }());
     board.appendChild(d);
   }
+  if(pts.length>1){
+    board.insertAdjacentHTML("beforeend",
+      '<svg class="pathlayer" viewBox="0 0 '+cols+' '+rows+'" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts.join(" ")+'"></polyline></svg>');
+  }
   var mvs=$("moves");mvs.innerHTML="";
   for(var m2=0;m2<8;m2++){
     (function(m2){
       var b=document.createElement("button");
       b.className="mvbtn";
-      b.textContent=m2+1;
+      var mv=KNIGHT_MOVES[m2];
+      var ang=Math.round(Math.atan2(mv[1],-mv[0])*180/Math.PI);
+      b.innerHTML='<svg class="mvi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V6M6 12l6-6 6 6" transform="rotate('+ang+' 12 12)"/></svg>';
       var legalIdx=-1;
       for(var i2=0;i2<legal.length;i2++)if(legal[i2].m===m2)legalIdx=i2;
       b.disabled=legalIdx<0||done;
@@ -449,6 +547,7 @@ function tryMove(cell){
   if(!ok){say("这不是马步能到的格（或已走过）");return;}
   path.push(cell);
   stuck=false;
+  var b=$("board");b.classList.remove("enter");clearTimeout(enterBoard._t);
   render();updStats();
   if(path.length===freeCnt){
     var last=path[path.length-1],first=path[0];
@@ -466,7 +565,7 @@ function tryMove(cell){
     stuck=true;
     $("ovTitle").textContent="无路可走";
     $("ovDesc").textContent="走了 "+path.length+" / "+freeCnt+" 格。马步被堵死了，撤销几步换个走法。";
-    $("ovBtn").textContent="重开本关";
+    setOvBtn("重开本关","rotate");
     $("ovUndo").hidden=false;
     $("overlay").classList.add("show");
   }
@@ -496,11 +595,12 @@ function winLevel(){
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:path.length}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"巡游完成！";
   $("ovDesc").innerHTML=(L.closed?"闭环":"开放")+"巡游踏遍 "+freeCnt+" 格"+(L.closed?"，末格回到起点旁":"")+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>47 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"play");
   $("ovUndo").hidden=true;
+  var p=$("panel");if(p)p.classList.add("win");
   $("overlay").classList.add("show");
 }
-function hideOverlay(){$("overlay").classList.remove("show")}
+function hideOverlay(){$("overlay").classList.remove("show");var p=$("panel");if(p)p.classList.remove("win")}
 /* ---------- 输入 ---------- */
 $("btnUndo").addEventListener("click",undo);
 $("btnHint").addEventListener("click",hint);
@@ -530,7 +630,9 @@ window.addEventListener("keydown",function(e){
   else if(k===" "||k==="Enter"){if($("overlay").classList.contains("show"))$("ovBtn").click();e.preventDefault();}
 });
 /* ---------- 启动 ---------- */
-palLoad();loadLevel(save.lv);
+$("lgYou").innerHTML=KNIGHT_SVG+'<span><b>你控制</b> · 马走日字</span>';
+$("lgGoal").innerHTML=DST_SAMPLE+'<span><b>目标</b> · 点描边格，踏遍所有空格</span>';
+loadLevel(save.lv);
 syncLevelsFromServer();syncSaveFromServer();
 
 })();
@@ -566,6 +668,18 @@ syncLevelsFromServer();syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 按钮图标注入（内联 SVG；文案与图标分节点，更新文案不抹图标） */
+(function(){
+  function $(id){return document.getElementById(id)}
+  $("btnUndo").insertAdjacentHTML("afterbegin",window.SW_ICON("undo"));
+  $("btnHint").insertAdjacentHTML("afterbegin",window.SW_ICON("bulb"));
+  $("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+  $("btnLv").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
+  $("ovBtn").innerHTML=window.SW_ICON("play")+"下一关";
+  $("ovUndo").insertAdjacentHTML("afterbegin",window.SW_ICON("undo"));
 })();
 </script>
 

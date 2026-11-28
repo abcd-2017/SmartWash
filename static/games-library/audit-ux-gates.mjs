@@ -106,6 +106,28 @@ for (const name of targets) {
   // ⑧ touch-action（body 级 manipulation 已有则跳过）
   if (!/touch-action\s*:\s*manipulation/i.test(css)) infos.push("body 无 touch-action: manipulation");
 
+  // ⑨ token 引用未定义：CSS/JS 里读的 --g-* 必须在 :root 或 [data-theme=dark] 里有定义
+  //    （GAME-THEME §6.1：深色块只写与浅色不同的 token，其余靠级联继承，所以按「浅∪深」判）
+  //    只匹配「完整」token 名（≥2 段），避开 "--g-fs-"+suffix 这类动态拼接的字面量误报
+  {
+    const tok = "(--g-[a-z0-9]+(?:-[a-z0-9]+)*)";
+    const dl = (css.match(/:root\s*\{([^}]*)\}/) || [, ""])[1];
+    const dd = (css.match(/:root\[data-theme=dark\]\s*\{([^}]*)\}/) || [, ""])[1];
+    const defined = new Set();
+    for (const m of (dl + dd).matchAll(/(--g-[a-z0-9-]+)\s*:/g)) defined.add(m[1]);
+    const refs = new Set(), dyn = new Set();
+    // (?!-)：排除 var(--g-fs-"+key) 这种被截断的动态拼接
+    for (const m of html.matchAll(new RegExp("var\\(" + tok + "(?![a-z0-9-])", "g"))) refs.add(m[1]);
+    // 字符串字面量：紧跟 "+" 的是 "--g-st-w"+i 这类动态拼接，不算缺失
+    for (const m of html.matchAll(new RegExp("[\"' ](--g-[a-z0-9]+(?:-[a-z0-9]+)*)[\"']\\s*(\\+\\d*)?", "g"))) {
+      if (m[1].endsWith("-")) dyn.add(m[1]);
+      else refs.add(m[1]);
+      if (m[2]) dyn.add(m[1]);
+    }
+    const undef = [...refs].filter((t) => !defined.has(t) && !dyn.has(t));
+    if (undef.length) issues.push(`引用未定义的 token: ${undef.join(" ")}`);
+  }
+
   const status = issues.length ? "❌" : "✅";
   if (issues.length) fail++; else warn += infos.length;
   report.push(`${status} ${name}${issues.length ? "\n   ✗ " + issues.join("\n   ✗ ") : ""}${infos.length ? "\n   · " + infos.join("\n   · ") : ""}`);

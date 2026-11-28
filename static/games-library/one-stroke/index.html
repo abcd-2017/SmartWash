@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>一笔画</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（UI 壳全走 token，canvas 颜色经 PAL 读变量）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（地面 / 未走轨道 / 已画墨线 / 节点高光 / 起点 / 投影 / 可点提示）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-os-ground1:#FFFFFF;--g-os-ground2:#EAF1EB;--g-os-edge1:#72906F;--g-os-edge2:#5D705C;--g-os-ink1:#3BB47E;--g-os-ink2:#17734A;--g-os-node-hi:#FFFFFF;--g-os-start:#17734A;--g-os-shadow:rgba(20,40,30,.16);--g-os-hint:rgba(23,115,74,.85);color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-os-ground1:#1D201E;--g-os-ground2:#121614;--g-os-edge1:#92A097;--g-os-edge2:#647266;--g-os-ink1:#7FD4A8;--g-os-ink2:#2E8A5E;--g-os-node-hi:#3A423B;--g-os-start:#5BC894;--g-os-shadow:rgba(0,0,0,.45);--g-os-hint:rgba(91,200,148,.60);color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -22,42 +22,75 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
-  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.5; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+  .stat {
+    background: linear-gradient(180deg, var(--g-surface), var(--g-surface2));
+    border: 1px solid var(--g-border); border-radius: var(--g-radius-inner);
+    padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0;
+    animation: rise .38s ease-out both;
+  }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
+  .stat:nth-child(4) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stage { position: relative; }
-  canvas { display: block; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
+  /* 棋盘 = 厚边「面」+ 顶光 + 投影（细线表格感的反面）；地面渐变画在 canvas 内 */
+  canvas {
+    display: block; width: 100%; touch-action: none;
+    border: 2px solid var(--g-border); border-radius: var(--g-radius);
+    background: var(--g-os-ground2);
+    box-shadow: var(--g-shadow), inset 0 1px 0 var(--g-surface);
+  }
+  /* 图例：三秒读懂「起点 / 当前 / 未走 / 已走 / 可点」 */
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 12px; margin: 10px 2px 0; font-size: 12px; color: var(--g-muted); }
+  .legend .li { display: inline-flex; align-items: center; gap: 5px; }
+  .legend svg { flex: none; display: block; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; }
-  .btn { min-height: 44px; padding: 0 10px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
-  .btn:active { opacity: .85; }
-  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
-  .tools .btn { font-size: 16px; white-space: nowrap; }
+  .btn {
+    min-height: 44px; padding: 0 10px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); }
   .btn:disabled { opacity: .35; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
-  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
-  .overlay.show { display: flex; }
-  .panel { width: 100%; max-width: 320px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); } }
-  .panel h2 { margin: 0 0 6px; font-size: 18px; color: var(--g-text); }
+  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow), 0 1px 0 var(--g-surface2); text-align: center; animation: pop .3s ease-out; }
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }   /* 过关轻弹 */
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes bump { 0% { transform: scale(.72); opacity: .4; } 55% { transform: scale(1.18); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  .panel.win .stars { animation: bump .34s ease-out .1s both; }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; color: var(--g-text); display: flex; align-items: center; justify-content: center; gap: 6px; }
   .panel h2.bad { color: var(--g-danger); }
-  .panel .desc { margin: 0 0 12px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc { margin: 0 0 14px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
   .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
   .panel .btn { width: 100%; margin-top: 8px; }
-  .stars { font-size: 28px; letter-spacing: 4px; margin: 2px 0 8px; }
+  .stars { display: flex; justify-content: center; gap: 2px; font-size: 28px; margin: 2px 0 8px; }
+  .stars span { display: inline-flex; }
   .stars .f { color: var(--g-warning); }
   .stars .e { color: var(--g-muted); }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 46vh; overflow-y: auto; margin-bottom: 10px; }
-  .lvgrid button { min-height: 44px; border: 0; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .lvgrid button { min-height: 44px; border: 0; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform .14s ease-out, background .16s ease-out; }
+  .lvgrid button:active { transform: scale(.96); }
   .lvgrid button:disabled { opacity: .35; cursor: default; }
   .lvgrid button.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lvgrid button.cur { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
 
-  /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   /* P2: 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
@@ -67,6 +100,9 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
  'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
  'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
  'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
  'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
  'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
@@ -75,7 +111,7 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
  'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
 };
-var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+var fill={ 'star':1,'play':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
 return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
 };
 </script>
@@ -94,21 +130,28 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub">从起点出发 · 点相邻节点逐段画线 · 不重复画完全部边</span></header>
+  <header><span class="sub">从起点出发 · 沿边逐段画线 · 不重复画完全部边</span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/1</span></div>
     <div class="stat"><span class="label">已画</span><span class="val" id="stDrawn">0/0</span></div>
     <div class="stat"><span class="label" id="lbUndo">撤销</span><span class="val" id="stUndo">0</span></div>
     <div class="stat"><span class="label">最佳</span><span class="val" id="stBest">-</span></div>
   </div>
-  <div class="stage"><canvas id="cv" role="img" aria-label="一笔画图形"></canvas></div>
+  <div class="stage"><canvas id="cv" role="img" aria-label="一笔画棋盘：圆点是节点，连线是边，从绿点起点出发不重复地画完所有边"></canvas></div>
+  <div class="legend" aria-hidden="true">
+    <span class="li"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--g-os-start)" stroke-width="2"><circle cx="12" cy="12" r="6" fill="var(--g-os-start)" stroke="none"/><circle cx="12" cy="12" r="9.5"/></svg>起点</span>
+    <span class="li"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--g-primary-deep)" stroke-width="2"><circle cx="12" cy="12" r="6" fill="var(--g-surface)"/><circle cx="12" cy="12" r="9.5"/></svg>当前</span>
+    <span class="li"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M3 12h18" stroke="var(--g-os-edge2)" stroke-width="7"/><path d="M3 12h18" stroke="var(--g-os-edge1)" stroke-width="4"/></svg>未走</span>
+    <span class="li"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M3 12h18" stroke="var(--g-os-ink2)" stroke-width="7"/><path d="M3 12h18" stroke="var(--g-os-ink1)" stroke-width="4"/></svg>已走</span>
+    <span class="li"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--g-primary-deep)" stroke-width="2" stroke-dasharray="3 3"><circle cx="12" cy="12" r="8"/></svg>可点</span>
+  </div>
   <p class="msg" id="msg" role="status" aria-live="polite">点击起点相邻的节点开始画线</p>
   <div class="tools">
-    <button type="button" class="btn ghost" id="btnUndo">撤销一步</button>
-    <button type="button" class="btn ghost" id="btnReset">重玩本关</button>
-    <button type="button" class="btn ghost" id="btnPick">选关</button>
+    <button type="button" class="btn" id="btnUndo">撤销一步</button>
+    <button type="button" class="btn" id="btnReset">重玩本关</button>
+    <button type="button" class="btn" id="btnPick">选关</button>
   </div>
-  <p class="foot">空心圈为起点 · 亮点为当前所在 · 灰线未走、粗绿线已走 · 重复走线会被拒绝 · 进度自动保存</p>
+  <p class="foot">绿点=起点 · 白底环=当前 · 灰轨=未走 · 绿墨=已走 · 虚线环=可点<br>重复走线会被拒绝 · 限步关不可撤销 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay"><div class="panel" id="panel"></div></div>
 <script>
@@ -319,9 +362,12 @@ var PAL={};
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
   function v(n){return s.getPropertyValue(n).trim()}
-  PAL={surface:v("--g-surface"),faint:v("--g-faint"),primary:v("--g-primary"),
+  PAL={surface:v("--g-surface"),surface2:v("--g-surface2"),faint:v("--g-faint"),primary:v("--g-primary"),
     deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),muted:v("--g-muted"),
-    danger:v("--g-danger"),warning:v("--g-warning")};
+    danger:v("--g-danger"),warning:v("--g-warning"),
+    ground1:v("--g-os-ground1"),ground2:v("--g-os-ground2"),edge1:v("--g-os-edge1"),edge2:v("--g-os-edge2"),
+    ink1:v("--g-os-ink1"),ink2:v("--g-os-ink2"),nodeHi:v("--g-os-node-hi"),start:v("--g-os-start"),
+    shadow:v("--g-os-shadow"),hint:v("--g-os-hint")};
 }
 window.__gOnTheme=function(){palLoad();render();};
 palLoad();
@@ -362,7 +408,7 @@ function fit(){
     var dd=Math.hypot(ddx,ddy);
     if(dd<minDist)minDist=dd;
   }
-  rNode=Math.max(5,Math.min(9,minDist*0.16));
+  rNode=Math.max(6,Math.min(10,minDist*0.18));
   rHit=Math.max(24,minDist*0.45);
   pxs=[];pys=[];
   for(var j=0;j<nodes.length;j++){
@@ -371,50 +417,82 @@ function fit(){
   }
   render();
 }
+function seg(x1,y1,x2,y2,color,w){
+  ctx.strokeStyle=color;ctx.lineWidth=w;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+}
+/* 渲染层：地面（渐变「面」）→ 未走轨道（暗面宽 + 亮芯窄）→ 已走墨线（深底 + 亮芯 + 生长）
+   → 节点（渐变圆盘 + 落地投影 + 描边）→ 可点候选（虚线环）→ 起点标记 → 当前位置（白衬底 + 双环 + 脉冲）。
+   颜色全部取自 PAL（读 CSS 变量），JS 内零颜色字面量。 */
+var edgeAnim={};   // 已画边生长动画时间戳（纯渲染状态，不改 drawn/path 逻辑）
 function render(){
   if(!nodes.length)return;
+  var now=performance.now();
   ctx.setTransform(dpr,0,0,dpr,0,0);
   var W=cv.width/dpr,H=cv.height/dpr;
-  ctx.fillStyle=PAL.surface;ctx.fillRect(0,0,W,H);
+  var g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,PAL.ground1);g.addColorStop(1,PAL.ground2);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   ctx.lineCap="round";ctx.lineJoin="round";
-  ctx.strokeStyle=PAL.muted;ctx.lineWidth=2;
-  for(var e=0;e<edges.length;e++){
+  for(var ak in edgeAnim)if(!drawn.has(+ak))delete edgeAnim[ak];
+  var i,e,a,b;
+  for(e=0;e<edges.length;e++){
     if(drawn.has(e))continue;
-    ctx.beginPath();
-    ctx.moveTo(pxs[edges[e][0]],pys[edges[e][0]]);
-    ctx.lineTo(pxs[edges[e][1]],pys[edges[e][1]]);
-    ctx.stroke();
+    a=edges[e][0];b=edges[e][1];
+    seg(pxs[a],pys[a],pxs[b],pys[b],PAL.edge2,Math.max(7,rNode*1.15));
+    seg(pxs[a],pys[a],pxs[b],pys[b],PAL.edge1,Math.max(4,rNode*0.68));
   }
-  ctx.strokeStyle=PAL.primary;ctx.lineWidth=Math.max(4,rNode*0.75);
-  for(var d=0;d<edges.length;d++){
-    if(!drawn.has(d))continue;
-    ctx.beginPath();
-    ctx.moveTo(pxs[edges[d][0]],pys[edges[d][0]]);
-    ctx.lineTo(pxs[edges[d][1]],pys[edges[d][1]]);
-    ctx.stroke();
+  for(e=0;e<edges.length;e++){
+    if(!drawn.has(e))continue;
+    if(edgeAnim[e]===undefined)edgeAnim[e]=now;
+    a=edges[e][0];b=edges[e][1];
+    var p=window.__gRM?1:Math.max(0,Math.min(1,(now-edgeAnim[e])/180));
+    var ex=pxs[a]+(pxs[b]-pxs[a])*p,ey=pys[a]+(pys[b]-pys[a])*p;
+    seg(pxs[a],pys[a],ex,ey,PAL.ink2,Math.max(8,rNode*1.28));
+    seg(pxs[a],pys[a],ex,ey,PAL.ink1,Math.max(4.5,rNode*0.76));
   }
-  for(var i=0;i<nodes.length;i++){
-    var on=visited.has(i);
-    ctx.beginPath();
-    ctx.arc(pxs[i],pys[i],rNode,0,Math.PI*2);
-    ctx.fillStyle=on?PAL.soft:PAL.surface;ctx.fill();
-    ctx.strokeStyle=on?PAL.deep:PAL.muted;ctx.lineWidth=on?2:1.5;ctx.stroke();
+  // 轨迹上的节点由 path 派生（撤销后仍准确，不再依赖只增不减的 visited）
+  var onPath={},q;
+  for(q=0;q<path.length;q++)onPath[path[q]]=1;
+  for(i=0;i<nodes.length;i++){
+    var x=pxs[i],y=pys[i],on=onPath[i];
+    ctx.save();
+    ctx.shadowColor=PAL.shadow;ctx.shadowBlur=rNode*0.9;ctx.shadowOffsetY=rNode*0.42;
+    var ng=ctx.createRadialGradient(x-rNode*0.35,y-rNode*0.42,rNode*0.14,x,y,rNode*1.06);
+    if(on){ng.addColorStop(0,PAL.nodeHi);ng.addColorStop(0.5,PAL.soft);ng.addColorStop(1,PAL.deep);}
+    else{ng.addColorStop(0,PAL.nodeHi);ng.addColorStop(0.55,PAL.surface);ng.addColorStop(1,PAL.surface2);}
+    ctx.fillStyle=ng;ctx.beginPath();ctx.arc(x,y,rNode,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+    ctx.lineWidth=Math.max(1.5,rNode*0.17);
+    ctx.strokeStyle=on?PAL.deep:PAL.muted;
+    ctx.beginPath();ctx.arc(x,y,rNode-ctx.lineWidth*0.5,0,Math.PI*2);ctx.stroke();
   }
   if(!finished){
-    ctx.beginPath();
-    ctx.arc(pxs[start],pys[start],rNode+4,0,Math.PI*2);
-    ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;ctx.stroke();
+    for(var k=0;k<adj[pos].length;k++){
+      var nb=adj[pos][k];
+      if(drawn.has(nb.eid))continue;
+      ctx.setLineDash([3,3]);ctx.lineWidth=2;ctx.strokeStyle=PAL.hint;
+      ctx.beginPath();ctx.arc(pxs[nb.to],pys[nb.to],rNode+3.5,0,Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+  ctx.fillStyle=PAL.start;
+  ctx.beginPath();ctx.arc(pxs[start],pys[start],Math.max(2.5,rNode*0.30),0,Math.PI*2);ctx.fill();
+  ctx.lineWidth=2;ctx.strokeStyle=PAL.start;
+  ctx.beginPath();ctx.arc(pxs[start],pys[start],rNode+3.5,0,Math.PI*2);ctx.stroke();
+  if(!finished){
+    if(pos!==start){
+      ctx.fillStyle=PAL.surface;
+      ctx.beginPath();ctx.arc(pxs[pos],pys[pos],rNode+2.5,0,Math.PI*2);ctx.fill();
+    }
     var rm=window.__gRM;
-    var t=rm?0:(performance.now()%1200)/1200;
+    var t=rm?0:(now%1200)/1200;
     var pul=rm?0.5:0.5+0.5*Math.sin(t*Math.PI*2);
-    ctx.globalAlpha=0.3*(1-pul);
-    ctx.beginPath();
-    ctx.arc(pxs[pos],pys[pos],rNode+5+pul*4,0,Math.PI*2);
-    ctx.fillStyle=PAL.deep;ctx.fill();
+    ctx.globalAlpha=0.28*(1-pul);ctx.fillStyle=PAL.deep;
+    ctx.beginPath();ctx.arc(pxs[pos],pys[pos],rNode+4+pul*4,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=1;
-    ctx.beginPath();
-    ctx.arc(pxs[pos],pys[pos],rNode+2,0,Math.PI*2);
-    ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;ctx.stroke();
+    ctx.lineWidth=2;ctx.strokeStyle=PAL.deep;
+    ctx.beginPath();ctx.arc(pxs[pos],pys[pos],rNode+2.5,0,Math.PI*2);ctx.stroke();
   }
 }
 var rafId=0;
@@ -431,7 +509,7 @@ function unlockedUpTo(){
 }
 function starText(n){
   var s="";
-  for(var i=0;i<3;i++)s+=SW_ICON(i<n?'star':'star-o');
+  for(var i=0;i<3;i++)s+="<span class=\""+(i<n?"f":"e")+"\">"+SW_ICON(i<n?'star':'star-o')+"</span>";
   return s;
 }
 function updateHud(){
@@ -494,11 +572,12 @@ function complete(){
   save();
   updateHud();render();
   var attText=att===0?"一次画成，完美！":"撤销 "+undoCount+" 次 · 重开 "+resetCount+" 次";
-  panel.innerHTML="<h2>一笔画成！</h2><div class=\"stars\">"+starText(stars)+"</div>"+
-    "<p class=\"desc\">共 "+edges.length+" 段线 · "+attText+"</p>"+
-    "<button type=\"button\" class=\"btn\" id=\"ovNext\">"+(cur<LEVELS.length-1?"下一关":"从头再来")+"</button>"+
-    "<button type=\"button\" class=\"btn ghost\" id=\"ovReplay\">重玩本关</button>";
+  panel.innerHTML="<h2>"+SW_ICON("check")+"一笔画成！</h2><div class=\"stars\">"+starText(stars)+"</div>"+
+    "<p class=\"desc\">共 <b>"+edges.length+"</b> 段线 · "+attText+"</p>"+
+    "<button type=\"button\" class=\"btn primary\" id=\"ovNext\">"+SW_ICON(cur<LEVELS.length-1?"arrow-right":"rotate")+(cur<LEVELS.length-1?"下一关":"从头再来")+"</button>"+
+    "<button type=\"button\" class=\"btn\" id=\"ovReplay\">"+SW_ICON("rotate")+"重玩本关</button>";
   overlay.classList.add("show");
+  if(!window.__gRM){panel.classList.remove("win");void panel.offsetWidth;panel.classList.add("win");}
   $("ovNext").addEventListener("click",function(){
     resetCount=0;undoCount=0;
     startLevel(cur<LEVELS.length-1?cur+1:0);
@@ -508,21 +587,21 @@ function complete(){
 }
 function failStuck(){
   finished=true;
-  panel.innerHTML="<h2 class=\"bad\">挑战失败</h2>"+
-    "<p class=\"desc\">画了 "+drawn.size+"/"+edges.length+" 段后无路可走<br>限步挑战不可撤销，整关重试吧</p>"+
-    "<button type=\"button\" class=\"btn\" id=\"ovRetry\">重新挑战</button>";
+  panel.innerHTML="<h2 class=\"bad\">"+SW_ICON("x")+"挑战失败</h2>"+
+    "<p class=\"desc\">画了 <b>"+drawn.size+"/"+edges.length+"</b> 段后无路可走<br>限步挑战不可撤销，整关重试吧</p>"+
+    "<button type=\"button\" class=\"btn primary\" id=\"ovRetry\">"+SW_ICON("rotate")+"重新挑战</button>";
   overlay.classList.add("show");
   $("ovRetry").addEventListener("click",function(){resetCount=0;undoCount=0;startLevel(cur);});
 }
 /* ---------- 选关 ---------- */
 function renderGrid(){
   var un=unlockedUpTo();
-  var html="<h2>选择关卡</h2><p class=\"desc\">已解锁 "+(un+1)+" / "+LEVELS.length+"</p><div class=\"lvgrid\">";
+  var html="<h2>"+SW_ICON("grid")+"选择关卡</h2><p class=\"desc\">已解锁 "+(un+1)+" / "+LEVELS.length+"</p><div class=\"lvgrid\">";
   for(var i=0;i<LEVELS.length;i++){
     var cls="lvbtn"+((doneSave[i]&&doneSave[i]>0)?" done":"")+(i===cur?" cur":"");
     html+="<button type=\"button\" class=\""+cls+"\" data-i=\""+i+"\""+(i>un?" disabled":"")+">"+(i+1)+"</button>";
   }
-  html+="</div><button type=\"button\" class=\"btn ghost\" id=\"ovClose\">关闭</button>";
+  html+="</div><button type=\"button\" class=\"btn\" id=\"ovClose\">"+SW_ICON("x")+"关闭</button>";
   panel.innerHTML=html;
   var bs=panel.querySelectorAll("button[data-i]");
   for(var j=0;j<bs.length;j++){
@@ -624,6 +703,9 @@ window.__os={
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+  /* 静态工具钮文字前注入内联 SVG 图标（SW_ICON：24 viewBox / currentColor / aria-hidden） */
+  function icon(id,name){var b=document.getElementById(id);if(b)b.insertAdjacentHTML("afterbegin",window.SW_ICON(name));}
+  icon("btnUndo","undo");icon("btnReset","rotate");icon("btnPick","grid");
 })();
 </script>
 </body>

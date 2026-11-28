@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>到站收骰</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（按需取用，值与基线一致）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（骰盘毡面 / 骰体 / 骰点）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-sbu-felt:#1E6B4A;--g-sbu-die:#FBF7EC;--g-sbu-pip:#22303A;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-sbu-felt:#123A2C;--g-sbu-die:#E7E1D0;--g-sbu-pip:#1A2530;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -22,45 +22,96 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; width: 1em; height: 1em; }
   header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.plain { color: var(--g-text); }
+  .val.bump { animation: valPop .3s ease-out; }
+  @keyframes valPop { 0% { transform: scale(1); } 40% { transform: scale(1.16); } 100% { transform: scale(1); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .btn {
-    min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--g-radius-btn);
+    min-height: 44px; padding: 0 12px; flex: 1; border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .btn.primary { background: var(--g-btn-primary); color: #fff; }
   .board { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px 8px 12px; }
-  .pool { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 8px 0; min-height: 50px; }
-  .die {
-    width: 48px; height: 48px; border-radius: 12px;
-    background: var(--g-surface); border: 1px solid var(--g-border); box-shadow: var(--g-shadow);
-    font-family: inherit; font-size: 22px; font-weight: 700; color: var(--g-text);
-    cursor: pointer; padding: 0;
-  }
-  .die.taken { opacity: .35; }
-  .die.junk { color: var(--g-muted); }
-  .actions { display: flex; gap: 8px; margin: 8px 0; }
-  .turntag { text-align: center; font-size: 14px; color: var(--g-muted); margin: 4px 0; }
+  .turntag { text-align: center; font-size: 14px; color: var(--g-muted); margin: 2px 0 8px; }
   .turntag b { color: var(--g-primary-deep); }
-  .cols { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 8px 0 4px; }
+  /* 骰盘：品牌绿毡面 + 顶光 + 内凹阴影，轻立体（§3 素材 token） */
+  .tray {
+    border-radius: var(--g-radius-inner); padding: 12px 8px 10px; margin-bottom: 10px;
+    background: var(--g-sbu-felt);
+    background-image: radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,.16), rgba(255,255,255,0));
+    box-shadow: inset 0 2px 10px rgba(0,0,0,.24), inset 0 0 0 1px var(--g-border);
+  }
+  .pool { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; min-height: 52px; }
+  .pool-hint { font-size: 14px; color: #FFFFFF; opacity: .8; }
+  /* 骰子：象牙骰体 + 渐变高光 + 投影，轻立体；废骰（1 点）警示色 + 禁用徽标 */
+  .die {
+    position: relative; width: 52px; height: 52px; border-radius: 12px; border: 0; padding: 0; cursor: pointer;
+    background: var(--g-sbu-die);
+    background-image: linear-gradient(145deg, rgba(255,255,255,.85), rgba(0,0,0,.14));
+    color: var(--g-sbu-pip);
+    box-shadow: inset 0 2px 3px rgba(255,255,255,.8), inset 0 -3px 6px rgba(0,0,0,.16), 0 4px 10px rgba(10,40,28,.26);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .16s ease-out, box-shadow .16s ease-out, opacity .16s ease-out;
+  }
+  .die:active { transform: scale(.96); }
+  .die.taken { opacity: .35; cursor: default; }
+  .die.junk .die-face { opacity: .5; }
+  .die.in { animation: dieIn .32s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes dieIn { from { opacity: 0; transform: translateY(14px) scale(.7) rotate(-10deg); } to { opacity: 1; transform: none; } }
+  .die-face { width: 30px; height: 30px; display: block; }
+  /* 废骰徽标：danger 底 + bg 图标，深浅两套均 ≥5:1（warning 在深底提亮后对骰体仅 1.76:1，不用） */
+  .dieban {
+    position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 10px;
+    background: var(--g-danger); color: var(--g-bg);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,.25);
+  }
+  .dieban .swi { font-size: 12px; }
+  .actions { display: flex; gap: 8px; margin: 0 0 10px; }
+  .ctl {
+    min-height: 48px; flex: 1; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-btn-primary); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 2px 8px rgba(20,40,30,.18);
+    transition: transform .14s ease-out, opacity .16s ease-out;
+  }
+  .ctl:active { transform: scale(.96); }
+  .ctl:disabled { opacity: .4; }
+  .seatname { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--g-muted); margin: 10px 2px 4px; }
+  .seatname b { font-weight: 600; }
+  .seatname.mine b { color: var(--g-primary-deep); }
+  .seatval { margin-left: auto; min-width: 0; display: inline-flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--g-muted); }
+  .chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 10px; background: var(--g-primary-soft); color: var(--g-on-soft); font-size: 12px; font-weight: 600; }
+  .chip-face { width: 16px; height: 16px; display: block; }
+  .cols { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 0 0 4px; }
   .col {
     border-radius: 10px; border: 1px solid var(--g-border); background: var(--g-surface2);
     text-align: center; padding: 6px 2px; line-height: 1.5;
+    transition: background-color .16s ease-out, border-color .16s ease-out, box-shadow .16s ease-out, color .16s ease-out;
   }
-  .col .v { font-size: 18px; font-weight: 700; color: var(--g-text); }
-  .col .c { font-size: 12px; color: var(--g-muted); font-variant-numeric: tabular-nums; }
-  .col.claimed { background: var(--g-primary-soft); border-color: var(--g-primary); }
+  .col.mine { border-color: var(--g-primary); }
+  .col-face { width: 22px; height: 22px; display: block; margin: 0 auto; }
+  .col .c { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 12px; color: var(--g-muted); font-variant-numeric: tabular-nums; }
+  .col.claimed { background: var(--g-primary-soft); border-color: var(--g-primary); box-shadow: inset 0 0 0 1px var(--g-primary); }
+  .col.claimed .col-face { color: var(--g-on-soft); }
   .col.claimed .c { color: var(--g-on-soft); }
-  .col.mine { box-shadow: inset 0 0 0 2px var(--g-primary); }
-  .seatname { font-size: 12px; color: var(--g-muted); margin: 8px 2px 2px; display: flex; justify-content: space-between; }
+  .col.pop { animation: colPop .3s ease-out; }
+  @keyframes colPop { 0% { transform: scale(1); } 45% { transform: scale(1.1); } 100% { transform: scale(1); } }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; font-weight: 500; color: var(--g-muted); text-align: center; }
   .msg.err { color: var(--g-danger); }
   .msg.win { color: var(--g-success); }
@@ -76,10 +127,11 @@
     width: 100%; max-width: 340px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
+    animation: pop .3s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
-  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .panel h2 .swi { color: var(--g-primary-deep); }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
   .panel .desc b { color: var(--g-primary-deep); }
   .panel .btn { width: 100%; margin-bottom: 8px; }
@@ -89,18 +141,32 @@
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .tools { display: flex; gap: 8px; margin-bottom: 10px; }
-  .ctl { min-height: 48px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
-  .ctl:active { opacity: .8; }
-  .ctl:disabled { opacity: .4; }
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（§6.1 模板） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'dice':'<rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><g fill="currentColor" stroke="none"><circle cx="8.4" cy="8.4" r="1.8"/><circle cx="15.6" cy="8.4" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="8.4" cy="15.6" r="1.8"/><circle cx="15.6" cy="15.6" r="1.8"/></g>',
+ 'flag':'<path d="M6 21V4M6 4h11l-2.5 3.5L17 11H6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'ban':'<circle cx="12" cy="12" r="8.5"/><path d="M5.6 5.6l12.8 12.8"/>'};
+var fill={'star':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -122,18 +188,17 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
     <div class="stat"><span class="label">你的站台</span><span class="val" id="stMe">0/3</span></div>
     <div class="stat"><span class="label">对手站台</span><span class="val plain" id="stAi">0/3</span></div>
-    <div class="stat"><span class="label">模拟校验</span><span class="val plain" id="stVer">-</span></div>
   </div>
   <div class="board">
     <div class="turntag" id="turnTag">轮到你</div>
-    <div class="pool" id="pool"></div>
+    <div class="tray"><div class="pool" id="pool"></div></div>
     <div class="actions">
-      <button class="ctl" id="btnRoll">再　掷</button>
-      <button class="ctl" id="btnStop">收　站</button>
+      <button class="ctl" id="btnRoll">再掷</button>
+      <button class="ctl" id="btnStop">收站</button>
     </div>
-    <div class="seatname"><b>你的站台</b><span id="meTag">本轮已收 -</span></div>
+    <div class="seatname mine"><b>你的站台</b><span class="seatval" id="meTag">本轮已收 -</span></div>
     <div class="cols" id="meCols"></div>
-    <div class="seatname"><b>对手（AI）站台</b><span id="aiTag">期望策略 · 风险阈值随关卡收紧</span></div>
+    <div class="seatname ai"><b>对手（AI）站台</b><span class="seatval" id="aiTag">期望策略 · 风险阈值随关卡收紧</span></div>
     <div class="cols" id="aiCols"></div>
   </div>
   <p class="msg" id="msg" role="status" aria-live="polite">掷骰后点同点骰收进本轮，再决定「再掷」或「收站」；炸站则本轮全丢</p>
@@ -288,7 +353,8 @@ function buildActive(){
   }
   refreshVerHud();
 }
-function refreshVerHud(){$("stVer").textContent=ACTIVE.length+"/"+LEVELS.length;}
+/* 校验计数为开发期自检，仅写入（已移出玩家界面的）统计位；元素缺失时静默跳过 */
+function refreshVerHud(){var e=$("stVer");if(e)e.textContent=ACTIVE.length+"/"+LEVELS.length;}
 function parseDbLevels(res){
   if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
   var list=[],seenName={};
@@ -356,7 +422,8 @@ function syncSaveFromServer(){
 
 /* ---------- 牌桌状态 ---------- */
 var lv=0,L=null,need=[],meCols=[0,0,0,0,0],aiCols=[0,0,0,0,0];
-var pool=[],turnTally={},myTurn=true,phase="roll",paused=false,aiTimer=null,over=false,won=false;
+var pool=[],turnTally={},myTurn=true,phase="roll",paused=false,aiTimer=null,over=false,won=false,pendingLv=0;
+var _justRolled=false,_meSnap=null,_aiSnap=null,_lastMe=-1,_lastAi=-1;
 function $(id){return document.getElementById(id)}
 function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"")}
 function aiThr(){return 0.5-0.07*Math.min(5,Math.max(0,L.ai))}
@@ -372,24 +439,28 @@ function loadLevel(n){
   if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}
   save.lv=Math.max(save.lv,lv);persist();
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name+"（站台 "+need[0]+"~"+need[4]+" 颗 · AI 阈值 "+aiThr().toFixed(2)+"）";
-  $("meTag").textContent="本轮已收 -";
   say("按「再掷」开局，点同点骰收进本轮");
   updStats();render();
 }
-function rollPool(){
+function rollPool(n){
+  n=n||5;/* collect 期只重掷剩余骰（m=剩余颗数），开局/新回合满掷 5 颗 */
   pool=[];
-  for(var i=0;i<5;i++)pool.push(1+Math.floor(Math.random()*6));
+  for(var i=0;i<n;i++)pool.push(1+Math.floor(Math.random()*6));
+  _justRolled=true;/* 渲染层提示：本次 render 让骰子走入场动画 */
   render();
 }
 function myRoll(){
-  if(over||!myTurn||phase!=="roll")return;
-  rollPool();
-  var ok=false,i;
-  for(i=0;i<5;i++)if(takeable(pool[i])){ok=true;break;}
-  if(!ok){bust();return;}
+  if(over||!myTurn)return;
+  var reroll=phase==="collect";
+  if(phase!=="roll"&&!reroll)return;
+  if(reroll&&!pool.length){say("本轮骰已收完，请「收站」","err");return;}
+  /* 先置 collect 再掷：rollPool 内一次 render 即带对的状态与入场动效（避免二次 render 抹掉动画） */
   phase="collect";
-  say("点同点骰收进本轮（1 点是过站废骰）");
-  render();
+  rollPool(reroll?pool.length:5);
+  var ok=false,i;
+  for(i=0;i<pool.length;i++)if(takeable(pool[i])){ok=true;break;}
+  if(!ok){bust();return;}
+  say(reroll?"继续掷：点同点骰收进本轮（重掷无点可收即炸站）":"点同点骰收进本轮（1 点是过站废骰）");
 }
 function myTake(v){
   if(over||!myTurn||phase!=="collect")return;
@@ -483,16 +554,20 @@ function checkEnd(){
     won=mc>=3;
     if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}
     render();
+    var last=lv>=ACTIVE.length-1;
     if(won){
-      if(lv<ACTIVE.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+      /* 胜利才算通关：pendingLv 供浮层按钮分流；save.lv 记录已解锁关（末关通关后回到第 1 关） */
+      pendingLv=last?0:Math.min(lv+1,ACTIVE.length-1);
+      save.lv=last?0:Math.max(save.lv,pendingLv);persist();
       if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1}).catch(function(){});
-      $("ovTitle").textContent=(lv>=ACTIVE.length-1)?"全部通关！":"过关！";
-      $("ovDesc").innerHTML="你先收满 3 个站台！"+(lv<ACTIVE.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-      $("ovBtn").textContent=(lv>=ACTIVE.length-1)?"回到第 1 关":"下一关";
+      $("ovTitle").innerHTML=SW_ICON("star")+" "+(last?"全部通关！":"过关！");
+      $("ovDesc").innerHTML="你先收满 3 个站台！"+(last?"<br>"+ACTIVE.length+" 关全部完成":"<br>已解锁第 "+(pendingLv+1)+" 关");
+      setOvBtn(last?"回到第 1 关":"下一关",last?"rotate":"arrow-right");
     }else{
-      $("ovTitle").textContent="对手先收满 3 站";
+      pendingLv=lv;
+      $("ovTitle").innerHTML=SW_ICON("x")+" 对手先收满 3 站";
       $("ovDesc").innerHTML="点「再战」重新开局。";
-      $("ovBtn").textContent="再战本关";
+      setOvBtn("再战本关","rotate");
     }
     $("overlay").classList.add("show");
     return true;
@@ -500,36 +575,64 @@ function checkEnd(){
   return false;
 }
 function updStats(){
-  $("stMe").textContent=claims(meCols)+"/3";
-  $("stAi").textContent=claims(aiCols)+"/3";
+  var mc=claims(meCols),ac=claims(aiCols);
+  $("stLv").textContent=(lv+1)+"/"+ACTIVE.length;
+  $("stMe").textContent=mc+"/3";
+  $("stAi").textContent=ac+"/3";
+  bump($("stMe"),mc!==_lastMe);bump($("stAi"),ac!==_lastAi);
+  _lastMe=mc;_lastAi=ac;
 }
+/* 得分/站台变化轻弹（得分档唯一动效，reduced-motion 时跳过） */
+function bump(el,on){if(!el||!on||window.__gRM)return;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump");}
 /* ---------- 渲染 ---------- */
+/* 内联 SVG 骰点：24 viewBox 标准 1-6 点位，fill=currentColor 随令牌变色（统一视觉语言 #4） */
+var DIE_PIPS={1:[[12,12]],2:[[6,6],[18,18]],3:[[6,6],[12,12],[18,18]],4:[[6,6],[18,6],[6,18],[18,18]],5:[[6,6],[18,6],[12,12],[6,18],[18,18]],6:[[6,6],[18,6],[6,12],[18,12],[6,18],[18,18]]};
+function pipSvg(v,cls){var p=DIE_PIPS[v]||DIE_PIPS[1],s="",i;for(i=0;i<p.length;i++)s+='<circle cx="'+p[i][0]+'" cy="'+p[i][1]+'" r="2.7"/>';return '<svg class="'+cls+'" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">'+s+'</svg>';}
+function dieLabel(v,canTake){
+  if(v<2)return "骰子 1（过站废骰）";
+  return "骰子 "+v+(canTake?"（点击收进本轮）":"");
+}
+function snapCols(c){var s="",i;for(i=0;i<5;i++)s+=c[i]>=need[i]?"1":"0";return s;}
+function tallyHtml(){
+  var ks=Object.keys(turnTally),h="",i;
+  if(!ks.length)return "本轮已收 -";
+  for(i=0;i<ks.length;i++){var v=ks[i];h+='<span class="chip">'+pipSvg(v,"chip-face")+"<b>×"+turnTally[v]+"</b></span>";}
+  return h;
+}
 function render(){
-  var h="",i;
-  if(myTurn&&phase==="roll"&&!pool.length)h='<span class="turntag">按「再掷」开局</span>';
+  var h="",i,rolled=_justRolled;_justRolled=false;
+  if(myTurn&&phase==="roll"&&!pool.length)h='<span class="pool-hint">按「再掷」开局</span>';
   for(i=0;i<pool.length;i++){
     var v=pool[i];
+    var canTake=myTurn&&phase==="collect"&&takeable(v);
     var cls="die"+(v===1?" junk":"");
-    if(myTurn&&phase==="collect"&&takeable(v)){/* 可点 */}else if(myTurn&&phase==="collect")cls+=" taken";
-    h+='<button class="'+cls+'" data-v="'+v+'" aria-label="骰子 '+v+'">'+v+'</button>';
+    if(myTurn&&phase==="collect"&&!canTake)cls+=" taken";
+    var st="";
+    if(rolled){cls+=" in";st=' style="animation-delay:'+(i*40)+'ms"';}
+    h+='<button class="'+cls+'"'+st+' data-v="'+v+'" aria-label="'+dieLabel(v,canTake)+'">'
+      +pipSvg(v,"die-face")+(v===1?'<span class="dieban">'+SW_ICON("ban")+'</span>':"")+'</button>';
   }
   $("pool").innerHTML=h;
-  $("meTag").textContent="本轮已收 "+(Object.keys(turnTally).length?JSON.stringify(turnTally).replace(/["{}]/g," ").trim():"-");
-  $("meCols").innerHTML=colHtml(meCols,"mine");
-  $("aiCols").innerHTML=colHtml(aiCols,"");
-  $("btnRoll").disabled=!myTurn||over;
+  $("meTag").innerHTML=tallyHtml();
+  var mp=_meSnap,ap=_aiSnap;
+  $("meCols").innerHTML=colHtml(meCols,"mine",mp);
+  $("aiCols").innerHTML=colHtml(aiCols,"",ap);
+  _meSnap=snapCols(meCols);_aiSnap=snapCols(aiCols);
+  $("btnRoll").disabled=!myTurn||over||(phase==="collect"&&!pool.length);
   $("btnStop").disabled=!myTurn||over||phase!=="collect";
-  $("btnRoll").textContent=phase==="roll"?"再　掷":"继续掷（先收骰）";
+  $("btnRoll").innerHTML=SW_ICON("dice")+(phase==="roll"?"再掷":"继续掷");
 }
-function colHtml(c,extra){
+function colHtml(c,extra,prev){
   var h="",i;
   for(i=0;i<5;i++){
-    var v=i+2;
-    var done=c[i]>=need[i];
-    h+='<div class="col'+(done?" claimed":"")+(extra||"")+'"><div class="v">'+v+'</div><div class="c">'+Math.min(c[i],need[i])+"/"+need[i]+(done?" ✓":"")+'</div></div>';
+    var v=i+2,done=c[i]>=need[i];
+    var pop=done&&prev&&prev.charAt(i)==="0";/* 本次渲染新收下的站台：轻弹一下 */
+    h+='<div class="col'+(done?" claimed":"")+(extra||"")+(pop?" pop":"")+'">'
+      +pipSvg(v,"col-face")+'<div class="c">'+Math.min(c[i],need[i])+"/"+need[i]+(done?SW_ICON("check"):"")+'</div></div>';
   }
   return h;
 }
+function setOvBtn(t,icon){$("ovBtn").innerHTML=SW_ICON(icon)+t;}
 /* ---------- 输入 ---------- */
 $("pool").addEventListener("click",function(e){
   var b=e.target.closest("[data-v]");
@@ -540,9 +643,9 @@ $("btnStop").addEventListener("click",myStop);
 $("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
 $("btnLv").addEventListener("click",function(){
   overlayMode="lv";renderLvGrid();
-  $("ovTitle").textContent="选择关卡";
+  $("ovTitle").innerHTML=SW_ICON("grid")+" 选择关卡";
   $("ovDesc").textContent="绿色为已通关";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 });
 var overlayMode="";
@@ -566,7 +669,7 @@ function renderLvGrid(){
 $("ovBtn").addEventListener("click",function(){
   $("overlay").classList.remove("show");
   if(overlayMode==="lv"){overlayMode="";return;}
-  loadLevel(lv);
+  loadLevel(pendingLv);/* 胜→下一关（末关回第 1 关）/ 负→再战本关 */
 });
 /* ---------- 切后台暂停 AI ---------- */
 document.addEventListener("visibilitychange",function(){
@@ -582,6 +685,11 @@ window.addEventListener("keydown",function(e){
   else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
 });
 /* ---------- 启动 ---------- */
+/* 工具钮 / 主 CTA / 浮层按钮：文字前内联 SVG（SW_ICON 范式，1em 与文字基线对齐） */
+$("btnStop").innerHTML=SW_ICON("flag")+"收站";
+$("btnReset").insertAdjacentHTML("afterbegin",SW_ICON("rotate"));
+$("btnLv").insertAdjacentHTML("afterbegin",SW_ICON("grid"));
+setOvBtn("下一关","arrow-right");
 buildActive();
 syncLevelsFromServer();
 syncSaveFromServer();

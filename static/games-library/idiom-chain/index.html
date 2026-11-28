@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>成语接龙</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（UI 壳全部走 token；纯 DOM 无 canvas）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-ic-* 纸面 / 墨色 / 印泥；纯 DOM 无 canvas）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-ic-paper1:#FFFDF8;--g-ic-paper2:#F1E8D5;--g-ic-ink:#3A3122;--g-ic-seal:#C24A58;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-on-primary:#FFFFFF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-ic-paper1:#2B2620;--g-ic-paper2:#1D1A15;--g-ic-ink:#EDE4CE;--g-ic-seal:#C24A58;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -22,41 +22,76 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; text-align: right; }
+  /* 页头关卡标签：品牌 soft 底 + deep 字 + 内联图标 */
+  .lvtag { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 10px; white-space: nowrap; border-radius: 10px; background: var(--g-primary-soft); color: var(--g-primary-deep); font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .lvtag .swi { width: 14px; height: 14px; flex: none; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: linear-gradient(180deg, var(--g-surface), var(--g-surface2)); border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 3px var(--g-shadow); animation: rise .38s ease-out backwards; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
+  .stat:nth-child(4) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .board { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); padding: 10px; margin-bottom: 10px; }
-  .chain { display: flex; flex-wrap: wrap; gap: 6px; max-height: 24vh; overflow-y: auto; }
-  .chip { font-size: 14px; padding: 4px 8px; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
-  .chip.tail { background: var(--g-primary-soft); color: var(--g-on-soft); border-color: transparent; font-weight: 600; }
-  .prompt { text-align: center; font-size: 16px; margin: 10px 2px; color: var(--g-muted); }
-  .prompt b { font-size: 28px; font-weight: 700; color: var(--g-primary-deep); }
+  .stat .val { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.bump { animation: bump .2s ease-out; }
+  /* 棋盘：纸面 + 边界描边 + 落地投影 */
+  .board { background: linear-gradient(160deg, var(--g-ic-paper1), var(--g-ic-paper2)); border: 1px solid var(--g-border); border-radius: var(--g-radius); padding: 10px; margin-bottom: 10px; box-shadow: var(--g-shadow), inset 0 1px 0 var(--g-ic-paper1); }
+  .chain { display: flex; flex-wrap: wrap; gap: 6px; max-height: 24vh; overflow-y: auto; padding: 2px; }
+  .chip { font-size: 14px; padding: 5px 9px; border-radius: 10px; color: var(--g-ic-ink); background: linear-gradient(180deg, var(--g-ic-paper1), var(--g-ic-paper2)); border: 1px solid var(--g-border); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 1px 2px var(--g-shadow); animation: chipIn .26s ease-out backwards; animation-delay: calc(min(var(--i, 0), 8) * 25ms); }
+  .chip.tail { color: var(--g-on-primary); background: linear-gradient(180deg, var(--g-primary), var(--g-primary-deep)); border-color: transparent; font-weight: 600; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 5px var(--g-shadow); }
+  /* 进度条：内凹轨道 + 品牌绿填充 */
+  .progress { height: 10px; margin: 8px 0 2px; border-radius: 10px; background: var(--g-ic-paper2); box-shadow: inset 0 1px 3px rgba(0,0,0,.14); overflow: hidden; }
+  .progress-fill { height: 100%; width: 0; border-radius: 10px; background: linear-gradient(180deg, var(--g-primary), var(--g-primary-deep)); box-shadow: inset 0 1px 0 rgba(255,255,255,.3); transition: width .2s ease-out; }
+  /* 题目区：印泥块 = 下一个成语的首字 */
+  .prompt { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 10px 2px 2px; font-size: 16px; color: var(--g-ic-ink); }
+  .prompt-text { color: var(--g-muted); }
+  .seal { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 34px; padding: 0 8px; border-radius: 10px; background: linear-gradient(180deg, rgba(255,255,255,.24), rgba(0,0,0,.16)), var(--g-ic-seal); color: var(--g-on-primary); font-size: 22px; font-weight: 700; box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 5px var(--g-shadow); }
+  .att { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
+  .att .swi { font-size: 16px; }
+  /* 图例：三秒读懂「目标 / 当前 / 待选」 */
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; margin: 0 2px 10px; font-size: 12px; color: var(--g-muted); line-height: 1.5; animation: rise .38s ease-out backwards; animation-delay: 120ms; }
+  .legend .li { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 10px; }
+  .legend .dot.seal { background: var(--g-ic-seal); }
+  .legend .dot.tail { background: var(--g-primary-deep); }
+  .legend .dot.paper { background: var(--g-ic-paper1); border: 1px solid var(--g-border); }
+  /* 候选成语：纸卡 + 首字印泥块（首字 = 判断依据） */
   .cands { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-btn-primary); color: #fff;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 3px var(--g-shadow);
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out, box-shadow .16s ease-out;
   }
-  .btn:active { opacity: .85; }
-  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .4; }
+  .btn .swi { width: 18px; height: 18px; flex: none; }
+  .btn.ghost { background: linear-gradient(180deg, var(--g-surface), var(--g-surface2)); color: var(--g-text); border: 1px solid var(--g-border); box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 3px var(--g-shadow); }
   .btn.cand {
-    min-height: 52px; flex: none;
-    background: var(--g-surface); color: var(--g-text);
+    min-height: 56px; flex: none; padding: 6px 12px; gap: 8px;
+    background: linear-gradient(180deg, var(--g-ic-paper1), var(--g-ic-paper2)); color: var(--g-ic-ink);
     border: 1px solid var(--g-border); border-radius: var(--g-radius-inner);
-    font-size: 18px; font-weight: 600; letter-spacing: 2px;
-    box-shadow: 0 1px 0 var(--g-border);
+    font-size: 16px; font-weight: 600; letter-spacing: 1px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 2px 5px var(--g-shadow);
+    animation: rise .3s ease-out backwards; animation-delay: calc(var(--i, 0) * 30ms);
   }
-  .btn.cand:active { opacity: .8; }
-  .btn.cand.ok { background: var(--g-success); color: #fff; border-color: transparent; box-shadow: none; }
-  .btn.cand.bad { animation: shake .26s ease-in-out; }
+  .cand-first { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 10px; background: linear-gradient(180deg, rgba(255,255,255,.24), rgba(0,0,0,.14)), var(--g-ic-seal); color: var(--g-on-primary); font-size: 16px; font-weight: 700; box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 1px 2px var(--g-shadow); }
+  .cand-rest { font-size: 16px; font-weight: 600; }
+  .cand-mask { background: linear-gradient(180deg, var(--g-ic-paper1), var(--g-ic-paper2)); color: var(--g-muted); border: 1px solid var(--g-border); box-shadow: inset 0 1px 2px rgba(0,0,0,.10); }
+  .cand-mask .swi { width: 16px; height: 16px; }
+  .btn.cand.ok { background: var(--g-primary-soft); border-color: var(--g-primary-deep); box-shadow: inset 0 0 0 2px var(--g-primary-deep), 0 2px 6px var(--g-shadow); }
+  .btn.cand.ok .cand-first { background: linear-gradient(180deg, var(--g-primary), var(--g-primary-deep)); }
+  .btn.cand.bad { animation: shake .2s ease-in-out; box-shadow: inset 0 0 0 2px var(--g-danger), 0 2px 5px var(--g-shadow); }
+  .btn.cand.bad .cand-first { background: linear-gradient(180deg, rgba(255,255,255,.24), rgba(0,0,0,.14)), var(--g-danger); }
   @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
   .tools { display: flex; gap: 8px; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .msg.ok { color: var(--g-primary-deep); }
+  .msg.err { color: var(--g-danger); }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -66,17 +101,22 @@
   .overlay.show { display: flex; }
   .panel {
     width: 100%; max-width: 320px; padding: 22px 18px;
-    background: var(--g-surface); border-radius: var(--g-radius);
+    background: linear-gradient(160deg, var(--g-ic-paper1), var(--g-ic-paper2));
+    border: 1px solid var(--g-border); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
     animation: pop .25s ease-out;
   }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+  @keyframes chipIn { from { opacity: 0; transform: translateY(6px) scale(.9); } to { opacity: 1; transform: none; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); }
   .panel .btn { width: 100%; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -93,9 +133,15 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
  'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
  'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
- 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'flag':'<path d="M5 21V4M5 4h12l-2.5 4L17 12H5"/>',
+ 'link':'<path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07L11.5 4.5M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/>',
+ 'clock':'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+ 'blank':'<rect x="3" y="9" width="18" height="6" rx="3"/>'
 };
-var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1,'play':1,'blank':1 };
 return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
 };
 </script>
@@ -114,7 +160,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub">首尾同字相接 · 限时接满目标长度</span></header>
+  <header><span class="lvtag"><span class="swi" id="lvTagIco" aria-hidden="true"></span><span id="lvTagText">第 1 关</span></span><span class="sub">首尾同字相接 · 限时接满目标长度</span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/1</span></div>
     <div class="stat"><span class="label">接龙</span><span class="val" id="stProg">1/5</span></div>
@@ -123,8 +169,10 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <div class="board">
     <div class="chain" id="chain"></div>
+    <div class="progress" id="progress" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
     <p class="prompt" id="prompt"></p>
   </div>
+  <p class="legend"><span class="li"><span class="dot seal"></span>印泥块 = 下一个成语的首字</span><span class="li"><span class="dot tail"></span>绿底 = 刚接上的成语</span><span class="li"><span class="dot paper"></span>白卡 = 待选成语</span></p>
   <div class="cands" id="cands"></div>
   <div class="tools">
     <button class="btn ghost" id="btnHint">提示</button>
@@ -321,7 +369,8 @@ var cur=0,chain=[],usedSet=new Set(),targetLen=0,effLen=0,timeLeft=0,hintsLeft=0
 var levelScore=0,totalScore=saveData.total,over=true,paused=false,solution=null,correctWord="",state="idle";
 var timerId=null,lastTs=0,baseSeed=1,overlayMode="start";
 function $(id){return document.getElementById(id)}
-function say(t){$("msg").innerHTML=t}
+var lastPromptKey="";
+function say(t,kind){$("msg").innerHTML=t;$("msg").className="msg"+(kind?" "+kind:"")}
 function tailChar(){return chain.length?chain[chain.length-1].charAt(chain[chain.length-1].length-1):""}
 function fmtTime(t){var v=Math.max(0,Math.ceil(t));var m=Math.floor(v/60),s=v%60;return(m<10?"0":"")+m+":"+(s<10?"0":"")+s}
 function stopTimer(){if(timerId){clearInterval(timerId);timerId=null}}
@@ -353,6 +402,7 @@ function startLevel(n){
   }
   state="play";
   renderBoard();updateStats();
+  $("lvTagText").textContent="第 "+(cur+1)+" 关 · 目标 "+effLen+" 字";
   say("从候选成语中挑出以「"+tailChar()+"」开头的一个");
   if(chain.length>=effLen){win();return}//DB 脏数据兜底：起始即满足目标长度
   startTimer();
@@ -380,6 +430,7 @@ function renderBoard(){
   for(var i=0;i<chain.length;i++){
     var chip=document.createElement("span");
     chip.className="chip"+(i===chain.length-1?" tail":"");
+    chip.style.setProperty("--i",i);
     chip.textContent=chain[i];
     cEl.appendChild(chip);
   }
@@ -392,21 +443,33 @@ function renderBoard(){
     (function(wd){
       var btn=document.createElement("button");
       btn.className="btn cand";
-      btn.textContent=L.mask===1?("＿"+wd.slice(1)):wd;
+      btn.style.setProperty("--i",j);
+      if(L.mask===1){
+        btn.innerHTML='<span class="cand-first cand-mask">'+SW_ICON('blank','font-size:14px')+'</span><span class="cand-rest">'+wd.slice(1)+"</span>";
+      }else{
+        btn.innerHTML='<span class="cand-first">'+wd.charAt(0)+'</span><span class="cand-rest">'+wd.slice(1)+"</span>";
+      }
       btn.setAttribute("data-word",wd);
+      btn.setAttribute("aria-label",wd);
       btn.addEventListener("click",function(){pick(wd,btn)});
       cs.appendChild(btn);
     })(words[j]);
   }
 }
 function paintPrompt(){
-  $("prompt").innerHTML="下一成语须以「<b>"+tailChar()+"</b>」字开头 · 机会 "+SW_ICON('circle-f').repeat(Math.max(0,attempts));
+  var key=tailChar()+"|"+attempts+"|"+chain.length;
+  if(key===lastPromptKey)return;
+  lastPromptKey=key;
+  var dots="";
+  for(var i=0;i<3;i++)dots+=SW_ICON(i<attempts?'circle-f':'circle','font-size:16px;color:'+(i<attempts?'var(--g-ic-seal)':'var(--g-border)'));
+  $("prompt").innerHTML='<span class="prompt-text">下一成语须以</span><span class="seal">'+tailChar()+'</span><span class="prompt-text">开头</span><span class="att">'+dots+'</span>';
 }
 function updateStats(){
   $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
   $("stProg").textContent=chain.length+"/"+effLen;
   $("stTime").textContent=fmtTime(timeLeft);
   $("stHint").textContent=hintsLeft;
+  $("progressFill").style.width=(effLen?Math.min(100,Math.round(chain.length/effLen*100)):0)+"%";
   $("btnHint").disabled=hintsLeft<=0||over;
   paintPrompt();
 }
@@ -415,14 +478,15 @@ function pick(wd,btn){
   if(wd===correctWord){
     chain.push(wd);usedSet.add(wd);levelScore+=100;
     if(chain.length>=effLen){updateStats();win();return}
-    say("接得好！「"+wd+"」 "+SW_ICON('arrow-right','font-size:18px;vertical-align:-3px')+" 再找以「"+tailChar()+"」开头的成语");
+    say("接得好！「"+wd+"」 "+SW_ICON('arrow-right','font-size:18px;vertical-align:-3px')+" 再找以「"+tailChar()+"」开头的成语","ok");
     renderBoard();updateStats();
+    var pv=$("stProg");pv.classList.remove("bump");void pv.offsetWidth;pv.classList.add("bump");
   }else{
     attempts--;wrongCount++;
     btn.classList.add("bad");
     setTimeout(function(){btn.classList.remove("bad")},260);
     if(attempts<=0){lose("机会用完了");return}
-    say("「"+wd+"」不是以「"+tailChar()+"」开头，再想想");
+    say("「"+wd+"」不是以「"+tailChar()+"」开头，再想想","err");
     updateStats();
   }
 }
@@ -437,18 +501,20 @@ function win(){
   if(GB.available)GB.reportScore("idiom-chain",{metricValue:doneCount,metricExtra:totalScore}).catch(function(){});
   $("ovTitle").textContent="过关！";
   $("ovDesc").innerHTML="接龙 "+chain.length+" 个 · 本关得分 "+levelScore+"（含奖励 "+bonus+"）<br>累计总分 "+totalScore;
-  $("ovBtn").textContent=cur+1<LEVELS.length?"下一关":"再玩一次";
+  setOvBtn(cur+1<LEVELS.length?"下一关":"再玩一次",cur+1<LEVELS.length?"arrow-right":"rotate");
   overlayMode="win";showOverlay();
 }
 function lose(reason){
   over=true;state="over";stopTimer();
   $("ovTitle").textContent="本关失败";
   $("ovDesc").innerHTML=reason+"<br>本局得分 "+levelScore+" · 累计 "+totalScore;
-  $("ovBtn").textContent="重试本关";
+  setOvBtn("重试本关","rotate");
   overlayMode="lose";showOverlay();
 }
 function showOverlay(){$("overlay").classList.add("show")}
 function hideOverlay(){$("overlay").classList.remove("show")}
+/* 覆盖层按钮：图标 + 文字（用 innerHTML 重建，避免 textContent 抹掉已注入的 SVG） */
+function setOvBtn(text,icon){$("ovBtn").innerHTML=SW_ICON(icon)+text}
 /* ---------- 输入 ---------- */
 $("btnHint").addEventListener("click",function(){
   if(over||state!=="play"||hintsLeft<=0)return;
@@ -457,7 +523,7 @@ $("btnHint").addEventListener("click",function(){
   for(var i=0;i<btns.length;i++){
     if(btns[i].getAttribute("data-word")===correctWord){btns[i].classList.add("ok");break}
   }
-  say("提示：「"+correctWord+"」 · "+GLOSS[correctWord]);
+  say("提示：「"+correctWord+"」 · "+GLOSS[correctWord],"ok");
   updateStats();
 });
 $("btnReset").addEventListener("click",function(){startLevel(cur)});
@@ -479,7 +545,7 @@ startLevel(startIdx);
 state="idle";stopTimer();
 $("ovTitle").textContent="成语接龙";
 $("ovDesc").innerHTML="规则：下一个成语的首字，必须与上一个成语的尾字相同。<br>在限定时间内接满目标长度即可过关，点「提示」可高亮正确候选。";
-$("ovBtn").textContent="开始游戏";
+setOvBtn("开始游戏","play");
 overlayMode="start";showOverlay();
 syncLevelsFromServer();syncSaveFromServer();
 })();
@@ -515,6 +581,20 @@ syncLevelsFromServer();syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 按钮 / 统计图标注入（内联 SVG，零外链；insertAdjacentHTML 保留既有文字节点） */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var statIc=["flag","link","clock","hint"];
+  var labs=document.querySelectorAll(".stat .label");
+  for(var i=0;i<labs.length&&i<statIc.length;i++){
+    labs[i].insertAdjacentHTML("afterbegin",window.SW_ICON(statIc[i],"font-size:12px;vertical-align:-1px;margin-right:3px;color:var(--g-primary-deep)"));
+  }
+  $("btnHint").insertAdjacentHTML("afterbegin",window.SW_ICON("hint"));
+  $("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+  $("lvTagIco").innerHTML=window.SW_ICON("flag");
 })();
 </script>
 </body>

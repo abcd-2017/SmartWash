@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>孔明棋</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材 token（棋盘/孔位/棋子）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-board:#EAE2D0;--g-board2:#DFD5BE;--g-grid:#C6B998;--g-cell:#B8A87F;--g-line:#8D7B56;--g-card:#8A5A33;--g-card2:#C89B6C;--g-bshade:rgba(20,40,30,.10);color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-board:#2A2620;--g-board2:#241F1A;--g-grid:#3A342B;--g-cell:#171310;--g-line:#5A4F3C;--g-card:#5A3A22;--g-card2:#9A6B42;--g-bshade:rgba(0,0,0,.4);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（棋盘木面 / 孔位凹槽 / 棋子木面）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-peg-board1:#EFE6D2;--g-peg-board2:#D8CBA8;--g-peg-hole:#A99B74;--g-peg-wood:#8A5A33;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-peg-board1:#2A2620;--g-peg-board2:#241F1A;--g-peg-hole:#171310;--g-peg-wood:#A87A4E;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -25,45 +25,75 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }   /* 入场错落 40ms */
+  .stat:nth-child(3) { animation-delay: 80ms; }
+  .stat:nth-child(4) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .boardbox { background: var(--g-board); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px; }
-  .board { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-  .cell { position: relative; aspect-ratio: 1; }
+  .stat .val { display: inline-block; font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  /* 棋盘木面「面」+ 顶光 + 落地投影 */
+  .boardbox { background: linear-gradient(160deg, var(--g-peg-board1), var(--g-peg-board2)); border-radius: var(--g-radius);
+              box-shadow: var(--g-shadow), inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.12); padding: 10px; }
+  .board { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; animation: boardin .22s ease-out; }
+  .cell { position: relative; aspect-ratio: 1; cursor: pointer; transition: transform .14s ease-out; animation: cellin .2s ease-out both; }
   .cell.void { visibility: hidden; }
-  .holebg { position: absolute; inset: 9%; border-radius: 50%; background: var(--g-cell); box-shadow: inset 0 2px 4px var(--g-bshade); }
+  /* 孔位：内凹槽底 + 顶影 + 底缘亮线 */
+  .holebg { position: absolute; inset: 9%; border-radius: 50%;
+            background: linear-gradient(180deg, rgba(0,0,0,.30), rgba(0,0,0,0) 55%), var(--g-peg-hole);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,.30), inset 0 -1px 0 rgba(255,255,255,.22); }
+  /* 棋子：木面径向渐变 + 恒白高光 + 落地投影 */
   .peg { position: absolute; left: 50%; top: 50%; width: 72%; height: 72%; transform: translate(-50%,-50%); border-radius: 50%;
-         background: radial-gradient(circle at 32% 28%, var(--g-card2), var(--g-card) 72%);
-         box-shadow: inset 0 -2px 3px var(--g-bshade), 0 2px 4px var(--g-bshade); }
-  .cell.sel .peg { box-shadow: 0 0 0 3px var(--g-primary), 0 2px 4px var(--g-bshade); }
-  .cell.hint .holebg { box-shadow: inset 0 2px 4px var(--g-bshade), 0 0 0 3px var(--g-primary); }
+         border: 1px solid rgba(0,0,0,.18);
+         background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.75), rgba(255,255,255,0) 42%),
+                     linear-gradient(150deg, var(--g-peg-wood) 0%, var(--g-peg-wood) 55%, rgba(0,0,0,.32) 135%);
+         box-shadow: inset 0 -2px 3px rgba(0,0,0,.28), 0 2px 4px rgba(20,40,30,.28);
+         transition: transform .16s ease-out, box-shadow .16s ease-out; }
+  .peg:not([hidden]) { animation: pegpop .18s ease-out; }
+  .cell:active .peg { transform: translate(-50%,-50%) scale(.96); }
+  .cell.sel .peg { transform: translate(-50%,-50%) scale(1.06); box-shadow: 0 0 0 3px var(--g-primary), 0 2px 6px rgba(0,0,0,.30); }
+  /* 可落点：品牌绿环 + 实心点 */
+  .cell.hint .holebg { box-shadow: inset 0 2px 4px rgba(0,0,0,.30), 0 0 0 3px var(--g-primary); }
   .cell.hint::after { content: ""; position: absolute; left: 50%; top: 50%; width: 26%; height: 26%; transform: translate(-50%,-50%);
                       border-radius: 50%; background: var(--g-primary); }
+  /* 目标（盘心）：警告环 + 实心点，读作「最后一子要落这里」 */
+  .cell.goal .holebg { box-shadow: inset 0 2px 4px rgba(0,0,0,.30), 0 0 0 3px var(--g-warning); }
+  .cell.goal::after { content: ""; position: absolute; left: 50%; top: 50%; width: 22%; height: 22%; transform: translate(-50%,-50%);
+                      border-radius: 50%; background: var(--g-warning); }
+  @keyframes cellin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes boardin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes pegpop { 0% { transform: translate(-50%,-50%) scale(.6); opacity: 0; } 60% { transform: translate(-50%,-50%) scale(1.08); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  .stat .val.pop { animation: valpop .24s ease-out; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; }
   .btn {
     min-height: 44px; padding: 0 10px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-btn-primary); color: var(--g-on-primary);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
+  .btn:disabled { opacity: .35; }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
     display: none; align-items: center; justify-content: center; padding: 20px;
   }
-  .overlay.show { display: flex; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
   .panel {
     width: 100%; max-width: 320px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
     animation: pop .25s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.92); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
@@ -71,19 +101,36 @@
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 46vh; overflow-y: auto; }
   .lvgrid button {
     min-height: 44px; border: 0; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lvgrid button:active { transform: scale(.96); }
   .lvgrid button:disabled { opacity: .35; cursor: default; }
   .lvgrid button.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lvgrid button.cur { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+  .lvgrid button .swi { width: 12px; height: 12px; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>'
+};
+var fill={ 'play':1,'star':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -303,6 +350,7 @@ function anyMove(b){
 var boardEl=document.getElementById("board"),msgEl=document.getElementById("msg");
 function $(id){return document.getElementById(id);}
 function say(t){msgEl.textContent=t;}
+function bump(el){if(!el)return;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop")}
 var cur=0,goal=1,board="",initial="",selected=-1,history=[],moves=0,undos=0,won=false;
 var cellEls=[];
 (function(){
@@ -311,10 +359,11 @@ var cellEls=[];
     var d=document.createElement("div");
     var hole=-1;
     for(var i=0;i<33;i++)if(HX[i]===x&&HY[i]===y){hole=i;break;}
-    if(hole<0){d.className="cell void";d.setAttribute("aria-hidden","true");boardEl.appendChild(d);cellEls.push(null);continue;}
+    if(hole<0){d.className="cell void";d.setAttribute("aria-hidden","true");boardEl.appendChild(d);continue;}
     d.className="cell";d.setAttribute("data-i",String(hole));
+    d.style.animationDelay=(Math.floor(slot/7)*40)+"ms";   /* 入场按行错落 40ms */
     d.innerHTML='<div class="holebg"></div><div class="peg" hidden></div>';
-    boardEl.appendChild(d);cellEls.push(d);
+    boardEl.appendChild(d);cellEls.push(d);   // 只收棋孔：cellEls[棋孔索引] 与 DOM 顺序一一对应（void 占位不入列）
   }
 })();
 /* ---------- 关卡构建 ---------- */
@@ -325,12 +374,13 @@ function startLevel(n){
   board=L.board;initial=L.board;goal=L.goal;
   selected=-1;history=[];moves=0;undos=0;won=false;
   $("btnNext").hidden=true;
+  boardEl.style.animation="none";void boardEl.offsetWidth;boardEl.style.animation="";   // 关卡入场整体浮入
   refresh();
   say("第"+(n+1)+"关 · "+L.name+" · 把棋子减到 "+goal+" 子");
   save();
 }
 function refresh(){
-  for(var i=0;i<33;i++){
+  for(var i=0;i<cellEls.length;i++){   // cellEls 与 33 个棋孔一一对应（void 不入列）
     var el=cellEls[i];
     if(!el)continue;
     var peg=el.querySelector(".peg");
@@ -343,10 +393,16 @@ function refresh(){
     }
     el.classList.toggle("hint",isHint);
   }
-  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
-  $("stLeft").textContent=String(pegCount(board));
+  var centerEl=boardEl.querySelector('[data-i="'+CENTER+'"]');   // 目标：最后一子落盘心
+  if(centerEl)centerEl.classList.toggle("goal",goal===1);
+  var lv=(cur+1)+"/"+LEVELS.length,left=String(pegCount(board)),mv=String(moves);
+  if($("stLv").textContent!==lv)bump($("stLv"));
+  if($("stLeft").textContent!==left)bump($("stLeft"));
+  if($("stMoves").textContent!==mv)bump($("stMoves"));
+  $("stLv").textContent=lv;
+  $("stLeft").textContent=left;
   $("stGoal").textContent=String(goal);
-  $("stMoves").textContent=String(moves);
+  $("stMoves").textContent=mv;
   $("btnUndo").disabled=history.length===0;
 }
 /* ---------- 交互 ---------- */
@@ -430,14 +486,25 @@ function onWin(){
   if(GB.available)GB.reportScore("peg-solitaire",{metricValue:Object.keys(doneSave).length,metricExtra:undos}).catch(function(){});
 }
 /* ---------- 覆盖层 ---------- */
-function showOverlay(html){$("panel").innerHTML=html;$("overlay").classList.add("show");}
+function showOverlay(html){
+  $("panel").innerHTML=html;
+  // 覆盖层按钮：文字前注入内联 SVG 图标（照抄 SW_ICON 范式）
+  var nodes=$("panel").querySelectorAll("[data-act]"),i;
+  for(i=0;i<nodes.length;i++){
+    var b=nodes[i],act=b.getAttribute("data-act");
+    if(act==="next")b.innerHTML=window.SW_ICON("play")+b.innerHTML;
+    else if(act==="retry")b.innerHTML=window.SW_ICON("rotate")+b.innerHTML;
+    else if(act==="close")b.innerHTML=window.SW_ICON("x")+b.innerHTML;
+  }
+  $("overlay").classList.add("show");
+}
 function hideOverlay(){$("overlay").classList.remove("show");}
 function openPicker(){
   var html='<h2>选择关卡</h2><p class="desc">已解锁 '+(unlockedMax()+1)+' / '+LEVELS.length+'</p><div class="lvgrid">';
   for(var i=0;i<LEVELS.length;i++){
     var cls="lvgrid-btn"+(doneSave[i]?" done":"")+(i===cur?" cur":"");
     var dis=i>unlockedMax()?" disabled":"";
-    var label=doneSave[i]?("★"+doneSave[i].s):(i+1);
+    var label=doneSave[i]?(window.SW_ICON("star")+doneSave[i].s):(i+1);   // 星级改内联 SVG，替代字符 ★
     html+='<button class="'+cls+'" data-act="lv" data-lv="'+i+'"'+dis+'>'+label+'</button>';
   }
   html+='</div><button class="btn ghost" data-act="close">关闭</button>';
@@ -465,6 +532,10 @@ $("btnNext").addEventListener("click",function(){startLevel(cur<LEVELS.length-1?
 $("btnPick").addEventListener("click",openPicker);
 /* ---------- 启动 ---------- */
 startLevel(Math.min(Math.max(saveData.lv,0),unlockedMax()));
+$("btnUndo").insertAdjacentHTML("afterbegin",window.SW_ICON("undo"));
+$("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+$("btnNext").insertAdjacentHTML("afterbegin",window.SW_ICON("play"));
+$("btnPick").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
 syncLevelsFromServer();
 syncSaveFromServer();
 })();

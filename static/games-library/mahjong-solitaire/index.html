@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>麻将连连看</title>
 <style>
-/*token:GAME-THEME.md §2 基线 + §3 素材 token（牌桌底）*/
-:root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-board:#FFFFFF;color-scheme:light }
-:root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-board:#1D201E;color-scheme:dark }
+/*token:GAME-THEME.md §2 基线 + §3 素材 token（牌面 / 牌桌毡面两套渐变 + 筒子/风牌水色加深档）*/
+:root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-ms-water:#217C66;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-ms-face1:#FFFFFF;--g-ms-face2:#EDF4EF;--g-ms-felt1:#1E6B4A;--g-ms-felt2:#175A3D;color-scheme:light }
+:root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-ms-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-ms-face1:#262B27;--g-ms-face2:#1A1E1B;--g-ms-felt1:#123A2C;--g-ms-felt2:#0D2A20;color-scheme:dark }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; padding: 0; }
@@ -30,17 +30,28 @@ header { display: flex; align-items: baseline; justify-content: space-between; m
 .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
 #stage { position: relative; display: flex; justify-content: center; margin-bottom: 10px; }
 canvas { display: block; border-radius: 10px; touch-action: none; }
-.msg { min-height: 20px; margin: 0 2px 10px; font-size: 14px; color: var(--g-muted); text-align: center; }
+.msg { min-height: 20px; margin: 0 2px 10px; font-size: 14px; color: var(--g-muted); text-align: center; transition: color .16s ease-out; }
+.msg.err { color: var(--g-danger); }
+.msg.win { color: var(--g-success); }
 .tools { display: flex; gap: 8px; }
 .btn {
   min-height: 44px; padding: 0 10px; flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border: 0; border-radius: var(--g-radius-btn);
   background: var(--g-btn-primary); color: #fff;
   font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
 }
-.btn:active { opacity: .85; }
+.btn:active { transform: scale(.96); }
 .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
 .btn:disabled { opacity: .4; }
+/* 内联 SVG 图标（SW_ICON） */
+.swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+/* 图例：自由 / 被压牌样本 */
+.legend { display: flex; gap: 8px; margin: 10px 2px 0; }
+.lg-chip { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 10px; font-size: 12px; color: var(--g-muted); line-height: 1.35; }
+.lg-chip b { color: var(--g-text); font-weight: 600; }
+.lg-chip .lg-tile { flex: none; width: 26px; height: 30px; }
 .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
 .overlay {
   position: fixed; inset: 0; z-index: 10;
@@ -55,6 +66,9 @@ canvas { display: block; border-radius: 10px; touch-action: none; }
   animation: pop .25s ease-out;
 }
 @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+/* 过关轻弹（负局不挂 .win） */
+.panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
+@keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.045); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 .panel h2 { margin: 0 0 6px; font-size: 18px; }
 .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
 .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
@@ -68,12 +82,26 @@ canvas { display: block; border-radius: 10px; touch-action: none; }
 .lvbtn.on { background: var(--g-btn-primary); border-color: transparent; color: #fff; }
 .lvbtn:disabled { opacity: .35; cursor: default; }
 
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2 动效降级：同压 animation-duration 与 animation-delay（§6.1；动效层指令，不受 §4 主题层禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW_ICON：内联 SVG 图标库（24 viewBox / currentColor / aria-hidden / 零外链），照抄本库范式 */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>'
+};
+var fill={};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -96,6 +124,10 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <div class="stat"><span class="label">用时</span><span class="val" id="stTime">00:00</span></div>
   </div>
   <div id="stage"><canvas id="cv" role="img" aria-label="麻将连连看牌阵"></canvas></div>
+  <div class="legend">
+    <span class="lg-chip"><svg class="lg-tile" viewBox="0 0 24 28" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="25" rx="5" fill="var(--g-ms-face1)" stroke="var(--g-border)"/><path d="M9 6v16M15 6v16" stroke="var(--g-danger)" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg><span><b>自由牌</b> · 无压无挡，可点选</span></span>
+    <span class="lg-chip"><svg class="lg-tile" viewBox="0 0 24 28" aria-hidden="true" style="opacity:.6"><rect x="1.5" y="1.5" width="21" height="25" rx="5" fill="var(--g-surface2)" stroke="var(--g-border)"/><path d="M9 6v16M15 6v16" stroke="var(--g-muted)" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg><span><b>被压牌</b> · 先消开旁边的牌</span></span>
+  </div>
   <p class="msg" id="msg" role="status" aria-live="polite">点选一张自由牌</p>
   <div class="tools">
     <button class="btn ghost" id="btnHint">提示</button>
@@ -156,12 +188,26 @@ function palLoad(){
   var s=getComputedStyle(document.documentElement);
   function v(n){return s.getPropertyValue(n).trim()}
   PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
-    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    text:v("--g-text"),muted:v("--g-muted"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),onSoft:v("--g-on-soft"),
-    danger:v("--g-danger"),success:v("--g-success"),warning:v("--g-warning"),water:v("--g-water"),
-    board:v("--g-board")};
+    danger:v("--g-danger"),success:v("--g-success"),warning:v("--g-warning"),water:v("--g-ms-water"),
+    face1:v("--g-ms-face1"),face2:v("--g-ms-face2"),felt1:v("--g-ms-felt1"),felt2:v("--g-ms-felt2")};
 }
 window.__gOnTheme=function(){palLoad();render();};
+/* ---------- 颜色工具（PAL 混合，JS 零颜色字面量） ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
 /* ---------- 关卡数据（包内默认 + DB 下发 + 本地缓存） ---------- */
 var DEFAULT_LEVELS=[{"name":"入门·001","data":{"w":8,"h":5,"p":15,"g":"300400431041002105102110610101071003204201220520312062010207205330430523053001306302030730434044025316313"}},{"name":"入门·002","data":{"w":10,"h":5,"p":16,"g":"4005004300600520070001008001000900031041032105103110610401071012203203120420502052022303302130430203053010401400"}},{"name":"入门·003","data":{"w":13,"h":5,"p":16,"g":"500600440070003104100210510111061013204201220520012062052303303640740254084034409404340A405240B403140C4024115112"}},{"name":"入门·004","data":{"w":10,"h":5,"p":16,"g":"7008003600900151061004107104420520332062012207205120820402092053304300230530213063000307303440540234064026217211"}},{"name":"入门·005","data":{"w":12,"h":5,"p":17,"g":"40050044105102310610121071055206200420720332082032209204120A202020B2064305301330630523073024405406511611072182115316310"}},{"name":"入门·006","data":{"w":10,"h":5,"p":17,"g":"40050034105100310610421071054205206320620022072011208201020920543053043306302230730144054025116113721821043153163316312"}},{"name":"入门·007","data":{"w":7,"h":6,"p":18,"g":"400500330060053104102320420022052051206203230330613043000305302440540434064023504501250550115065034215211331431444154104225226"}},{"name":"入门·008","data":{"w":9,"h":6,"p":18,"g":"500600141051023106105210710442052013206200530630043073013308302440540234064032407406550650045075035116114531631354164155126126"}},{"name":"入门·009","data":{"w":8,"h":5,"p":18,"g":"100200331041022105101110610301071013204200220520212062020207205230330113043030305305140240404034062113110111411623133101314314"}},{"name":"入门·010","data":{"w":6,"h":7,"p":19,"g":"2003004210310022032041204200020520623033001304303030530224034061404405040540115025020503501260360232142132313313131431124134141414415"}},{"name":"入门·011","data":{"w":6,"h":5,"p":19,"g":"2003003100400100050002103104110410101051052203202120420302052002303306130430403053072403401140440204054003114115321421623133171314312"}},{"name":"入门·012","data":{"w":7,"h":8,"p":19,"g":"1002006210310511041012203202120420423033023404400240540014064052503502150450136046072605603270370421131102213217341441625135133614611"}},{"name":"入门·013","data":{"w":8,"h":5,"p":20,"g":"30040072005007310410121051031106102010710332042042205202120620502072003304300230530113063040307300240340114044020405406511611552162135316316"}},{"name":"入门·014","data":{"w":10,"h":7,"p":20,"g":"40050024105101420520332062062207202120820002092034305303330630423073001308307030930044054063406407240740114084010409405450550246056053606604"}},{"name":"入门·015","data":{"w":9,"h":8,"p":21,"g":"200300610040020005002410510031061075206201430530544054043406403240740014084043504505250550115065033604603260560127037061704704070570054164175426422"}}];
 var LEVELS=DEFAULT_LEVELS;
@@ -336,8 +382,6 @@ function syncSaveFromServer(){
 /* ---------- 状态 ---------- */
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var stage=document.getElementById("stage"),msgEl=document.getElementById("msg");
-var FONT='"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
-var CN=["一","二","三","四","五","六","七","八","九"];
 var FENG=["东","南","西","北"];
 var level={w:8,h:5,maxZ:1};
 var tiles=[],tmap=new Map(),drawOrder=[];
@@ -347,7 +391,7 @@ var startTs=0,elapsed=0,timer=null;
 var dpr=1,tile=24,M=8,sx=3,sy=4,boardW=0,boardH=0,maxZs=1,lastAvail=0;
 var view={scale:1,tx:0,ty:0};
 function $(id){return document.getElementById(id)}
-function say(t){msgEl.textContent=t}
+function say(t,cls){msgEl.textContent=t;msgEl.className="msg"+(cls?" "+cls:"")}
 function clamp(v,a,b){return v<a?a:v>b?b:v}
 /* ---------- 关卡构建 ---------- */
 function buildLevel(def){
@@ -367,18 +411,23 @@ function buildLevel(def){
     var A=tiles[a],B=tiles[b];
     return A.z-B.z||A.r-B.r||A.c-B.c;
   });
+  entOrder=[];
+  for(var oi=0;oi<drawOrder.length;oi++)entOrder[drawOrder[oi]]=oi;
+  gone.length=0;
   remaining=tiles.length;paired=0;sel=-1;hintPair=null;shakeCells=[];shakeUntil=0;
   return true;
 }
 function startLevel(n){
   cur=clamp(n,0,LEVELS.length-1);
   if(!buildLevel(LEVELS[cur])){say("关卡数据异常");return;}
+  if(!hasEntered){hasEntered=true;enterActive=!window.__gRM;enterT0=performance.now();}
   resize();
   startTimer();
   updStats();
   hideOverlay();
   say("第"+(cur+1)+"关 · "+LEVELS[cur].name+" · 点选一张自由牌");
   saveGame();
+  kickAnim(1100);
 }
 /* ---------- 自由牌判定 ---------- */
 function freeIdx(i){
@@ -490,9 +539,9 @@ function resize(){
   }
   var bh=rows*t0+maxZ*sy0;
   dpr=Math.min(window.devicePixelRatio||1,2);
-  tile=t0;M=mMath;sx=sx0;sy=sy0;boardW=bw;boardH=bh;maxZs=maxZ;
-  cv.style.width=bw+"px";cv.style.height=bh+"px";
-  cv.width=Math.round(bw*dpr);cv.height=Math.round(bh*dpr);
+  tile=t0;M=mMath;sx=sx0;sy=sy0;boardW=bw+2*M;boardH=bh+2*M;maxZs=maxZ;
+  cv.style.width=boardW+"px";cv.style.height=boardH+"px";
+  cv.width=Math.round(boardW*dpr);cv.height=Math.round(boardH*dpr);
   view.scale=1;view.tx=0;view.ty=0;
   render();
 }
@@ -503,86 +552,198 @@ function rr(x,y,w,h,r){
   ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
   ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
 }
-function drawChar(ch,cx,cy,size,color){
-  ctx.fillStyle=color;
-  ctx.font="700 "+Math.round(size)+"px "+FONT;
-  ctx.textAlign="center";ctx.textBaseline="middle";
-  ctx.fillText(ch,cx,cy);
+/* 牌面字形：内联矢量笔画（100 盒），替代字符字形；万子=数字+「万」，风/三元为对应笔画 */
+var GLYPH={
+ '1':'M18 50H82',
+ '2':'M22 32H78M18 68H82',
+ '3':'M22 20H78M22 50H78M18 80H82',
+ '4':'M26 20H74V80H26ZM42 36L36 66M58 36L62 66',
+ '5':'M22 20H78M34 20V46M22 46H78M64 46V80M26 80H74',
+ '6':'M40 18H58M20 38H80M38 48L26 82M62 48L74 82',
+ '7':'M18 32H82M62 32V78L44 66',
+ '8':'M38 26L24 80M62 26L76 80',
+ '9':'M34 30L26 74M38 30H68V52C68 72 54 82 30 80',
+ '万':'M20 22H80M44 22C40 42 34 58 26 74M52 34H76V76L69 69',
+ '中':'M32 22H68V78H32ZM50 10V90',
+ '发':'M38 18L52 30L38 42M38 18L26 38M52 30L66 42M28 52H72M40 60L32 82M60 60L68 82',
+ '白':'M30 16H70V84H30ZM40 30H60V70H40Z',
+ '东':'M24 22H76M48 22L36 48H60M52 40V74M36 54L26 82M62 54L72 82',
+ '南':'M24 20H76M50 20V42M32 32H68M34 42L28 64M66 42L72 64M24 64H76M38 70V86M62 70V86',
+ '西':'M20 20H80M38 32H62V68H38ZM44 42L40 60M56 42L60 60',
+ '北':'M32 20V80M32 34H54M32 54L54 44M64 20L56 44M68 28V72C68 82 76 82 80 74'
+};
+var PATHS={};(function(){for(var k in GLYPH){PATHS[k]=new Path2D(GLYPH[k]);}})();
+function strokeGlyph(name,cx,cy,size,color,w){
+  var p=PATHS[name];if(!p)return;
+  ctx.save();
+  ctx.translate(cx-size/2,cy-size/2);
+  ctx.scale(size/100,size/100);
+  ctx.lineWidth=w*100/size;
+  ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.strokeStyle=color;
+  ctx.stroke(p);
+  ctx.restore();
 }
-function drawBamboo(n,cx,cy,size){
+/* 牌桌：绿毡面 + 包边 + 顶部内凹 */
+function drawTable(){
+  ctx.fillStyle=colMix(PAL.felt2,BLACK,0.45);rr(0,0,boardW,boardH,14);ctx.fill();
+  var g=ctx.createLinearGradient(0,0,0,boardH);
+  g.addColorStop(0,colMix(PAL.felt1,WHITE,0.12));
+  g.addColorStop(0.45,PAL.felt1);
+  g.addColorStop(1,colMix(PAL.felt2,BLACK,0.24));
+  ctx.fillStyle=g;rr(3,3,boardW-6,boardH-6,12);ctx.fill();
+  var ih=Math.max(8,Math.round(boardH*0.07));
+  var ig=ctx.createLinearGradient(0,0,0,ih);
+  ig.addColorStop(0,"rgba(0,0,0,0.26)");ig.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=ig;rr(4,4,boardW-8,ih,11);ctx.fill();
+}
+/* 条子：竹节（渐变 + 竹节环 + 高光） */
+function drawBamboo(n,cx,cy,size,free){
   var cols=n<=1?1:(n<=4?2:3),rows=Math.ceil(n/cols);
-  var sw=size*0.16,sh=size*0.44,gx=size*0.14,gy=size*0.16;
+  var sw=size*0.17,sh=size*0.42,gx=size*0.13,gy=size*0.15;
   var w=cols*sw+(cols-1)*gx,h=rows*sh+(rows-1)*gy;
   var x0=cx-w/2,y0=cy-h/2;
+  var base=free?PAL.success:colMix(PAL.success,PAL.felt1,0.3);
   for(var i=0;i<n;i++){
     var cc=i%cols,rw=Math.floor(i/cols);
     var x=x0+cc*(sw+gx),y=y0+rw*(sh+gy);
-    ctx.fillStyle=PAL.success;rr(x,y,sw,sh,sw*0.4);ctx.fill();
-    ctx.globalAlpha=0.35;ctx.fillStyle=PAL.border;
-    ctx.fillRect(x+sw*0.15,y+sh*0.47,sw*0.7,Math.max(1,size*0.03));
-    ctx.globalAlpha=1;
+    var g=ctx.createLinearGradient(0,y,0,y+sh);
+    g.addColorStop(0,colMix(base,WHITE,0.34));
+    g.addColorStop(0.5,base);
+    g.addColorStop(1,colMix(base,BLACK,0.26));
+    ctx.fillStyle=g;rr(x,y,sw,sh,sw*0.4);ctx.fill();
+    ctx.fillStyle=colMix(base,BLACK,0.42);
+    ctx.fillRect(x+sw*0.08,y+sh*0.46,sw*0.84,Math.max(1,size*0.026));
+    ctx.fillStyle="rgba(255,255,255,0.5)";
+    ctx.fillRect(x+sw*0.16,y+sh*0.08,Math.max(1,sw*0.16),sh*0.8);
   }
 }
-function drawDots(n,cx,cy,size){
+/* 筒子：同心圆（渐变 + 内芯 + 高光） */
+function drawDots(n,cx,cy,size,free){
   var cols=n<=1?1:(n<=4?2:3),rows=Math.ceil(n/cols);
-  var rad=n===1?size*0.2:size*0.1,gx=size*0.26,gy=size*0.26;
+  var rad=n===1?size*0.22:size*0.105,gx=size*0.26,gy=size*0.26;
   var w=cols*2*rad+(cols-1)*gx,h=rows*2*rad+(rows-1)*gy;
   var x0=cx-w/2,y0=cy-h/2;
-  ctx.strokeStyle=PAL.water;ctx.lineWidth=Math.max(1.5,size*0.05);
-  ctx.fillStyle=PAL.water;
+  var base=free?PAL.water:colMix(PAL.water,PAL.felt1,0.3);
   for(var i=0;i<n;i++){
     var cc=i%cols,rw=Math.floor(i/cols);
     var x=x0+cc*(2*rad+gx)+rad,y=y0+rw*(2*rad+gy)+rad;
-    ctx.beginPath();ctx.arc(x,y,rad,0,6.2832);ctx.stroke();
-    ctx.beginPath();ctx.arc(x,y,Math.max(1,rad*0.32),0,6.2832);ctx.fill();
+    var g=ctx.createRadialGradient(x-rad*0.34,y-rad*0.38,rad*0.1,x,y,rad);
+    g.addColorStop(0,colMix(base,WHITE,0.55));
+    g.addColorStop(0.55,base);
+    g.addColorStop(1,colMix(base,BLACK,0.2));
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,rad,0,6.2832);ctx.fill();
+    ctx.fillStyle=colMix(base,BLACK,0.4);
+    ctx.beginPath();ctx.arc(x,y,Math.max(1,rad*0.34),0,6.2832);ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,0.85)";
+    ctx.beginPath();ctx.arc(x-rad*0.32,y-rad*0.36,Math.max(0.8,rad*0.17),0,6.2832);ctx.fill();
   }
 }
-function drawSymbol(t,cx,cy,size){
-  if(t<9){drawChar(CN[t],cx,cy-size*0.18,size*0.44,PAL.danger);drawChar("万",cx,cy+size*0.26,size*0.26,PAL.muted);}
-  else if(t<18)drawBamboo(t-8,cx,cy,size);
-  else if(t<27)drawDots(t-17,cx,cy,size);
-  else if(t<31)drawChar(FENG[t-27],cx,cy,size*0.5,PAL.text);
+function drawSymbol(t,cx,cy,size,free){
+  var ink=free?PAL.water:colMix(PAL.water,PAL.felt1,0.3);
+  if(t<9){
+    strokeGlyph(String(t+1),cx,cy-size*0.18,size*0.60,free?PAL.danger:colMix(PAL.danger,PAL.felt1,0.28),size*0.075);
+    strokeGlyph('万',cx,cy+size*0.27,size*0.40,free?PAL.muted:colMix(PAL.muted,PAL.felt1,0.3),size*0.075);
+  }
+  else if(t<18)drawBamboo(t-8,cx,cy,size,free);
+  else if(t<27)drawDots(t-17,cx,cy,size,free);
+  else if(t<31)strokeGlyph(FENG[t-27],cx,cy,size*0.64,ink,size*0.075);
   else{
     var k=t-31;
-    if(k===0)drawChar("中",cx,cy,size*0.5,PAL.danger);
-    else if(k===1)drawChar("发",cx,cy,size*0.5,PAL.success);
-    else{ctx.strokeStyle=PAL.faint;ctx.lineWidth=Math.max(1.5,size*0.05);rr(cx-size*0.26,cy-size*0.26,size*0.52,size*0.52,size*0.1);ctx.stroke();}
+    if(k===0)strokeGlyph('中',cx,cy,size*0.64,free?PAL.danger:colMix(PAL.danger,PAL.felt1,0.28),size*0.075);
+    else if(k===1)strokeGlyph('发',cx,cy,size*0.64,free?PAL.success:colMix(PAL.success,PAL.felt1,0.3),size*0.075);
+    else strokeGlyph('白',cx,cy,size*0.60,free?PAL.muted:colMix(PAL.muted,PAL.felt1,0.3),size*0.07);
   }
 }
+/* 单牌：投影 + 侧立面 + 牌面渐变 + 高光 + 笔画，轻立体 */
+function drawTileAt(i,px,py,now,opt){
+  opt=opt||{};
+  var t=tiles[i];
+  var free=opt.free!=null?opt.free:freeIdx(i);
+  var edge=Math.max(2,Math.round(tile*0.07));
+  var rad=Math.max(3,Math.round(tile*0.14));
+  var lift=opt.lift||0,al=opt.alpha==null?1:opt.alpha,sc=opt.scale||1;
+  ctx.save();
+  ctx.globalAlpha=al;
+  ctx.translate(px+tile/2,py+tile/2+lift);
+  ctx.scale(sc,sc);
+  ctx.translate(-tile/2,-tile/2);
+  ctx.fillStyle="rgba(0,0,0,0.24)";   //恒黑阴影
+  rr(edge+Math.max(1,tile*0.03),edge+Math.max(1,tile*0.05),tile,tile,rad);ctx.fill();
+  var bg=ctx.createLinearGradient(0,edge,0,edge+tile);
+  bg.addColorStop(0,colMix(PAL.primary,WHITE,0.22));
+  bg.addColorStop(0.5,PAL.primary);
+  bg.addColorStop(1,PAL.deep);
+  ctx.fillStyle=bg;rr(edge,edge,tile,tile,rad);ctx.fill();
+  var fg=ctx.createLinearGradient(0,0,0,tile);
+  if(!free){fg.addColorStop(0,colMix(PAL.face2,PAL.felt1,0.42));fg.addColorStop(1,colMix(PAL.face2,PAL.felt1,0.62));}
+  else{fg.addColorStop(0,PAL.face1);fg.addColorStop(1,PAL.face2);}
+  ctx.fillStyle=fg;rr(0,0,tile,tile,rad);ctx.fill();
+  ctx.save();rr(0,0,tile,tile,rad);ctx.clip();
+  var hg=ctx.createRadialGradient(tile*0.28,tile*0.18,1,tile*0.28,tile*0.18,tile*0.95);
+  hg.addColorStop(0,"rgba(255,255,255,"+(free?0.55:0.16)+")");hg.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=hg;ctx.fillRect(0,0,tile,tile);ctx.restore();
+  ctx.lineWidth=sel===i?2:1;
+  ctx.strokeStyle=sel===i?PAL.deep:colMix(PAL.face2,BLACK,0.28);
+  rr(0.5,0.5,tile-1,tile-1,rad);ctx.stroke();
+  if(sel===i){ctx.lineWidth=2;ctx.strokeStyle=PAL.deep;rr(-3,-3,tile+6,tile+6,rad+3);ctx.stroke();}
+  drawSymbol(t.t,tile/2,tile/2,tile,free);
+  ctx.restore();
+}
+function tilePos(t){return [M+maxZs*sx+t.c*tile-t.z*sx, M+maxZs*sy+t.r*tile-t.z*sy];}
 function render(){
   if(!cv.width)return;
+  var now=performance.now();
+  if(enterActive&&now-enterT0>1000)enterActive=false;
   ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,cv.width,cv.height);
   ctx.setTransform(dpr*view.scale,0,0,dpr*view.scale,dpr*view.tx,dpr*view.ty);
-  ctx.fillStyle=PAL.board;
-  rr(M-2,M-2,boardW-2*M+4,boardH-2*M+4,10);ctx.fill();
-  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;ctx.stroke();
-  var now=performance.now();
+  drawTable();
   var shaking=now<shakeUntil;
   for(var di=0;di<drawOrder.length;di++){
     var i=drawOrder[di],t=tiles[i];
     if(!t.alive)continue;
-    var px=M+maxZs*sx+t.c*tile-t.z*sx;
-    var py=M+maxZs*sy+t.r*tile-t.z*sy;
-    if(shaking){
+    var p=tilePos(t),px=p[0],py=p[1];
+    if(shaking&&!window.__gRM){
       var hit=shakeCells[0]===i||shakeCells[1]===i;
       if(hit){var ph=(shakeUntil-now)/200*Math.PI*4;px+=Math.sin(ph)*3;}
     }
-    var edge=Math.max(2,Math.round(tile*0.07));
-    var rad=Math.max(2,tile*0.12);
-    ctx.fillStyle=PAL.border;rr(px+edge,py+edge,tile,tile,rad);ctx.fill();
-    var free=freeIdx(i);
-    ctx.fillStyle=!free?PAL.surface2:(sel===i?PAL.soft:PAL.surface);
-    rr(px,py,tile,tile,rad);ctx.fill();
-    ctx.lineWidth=sel===i?2:1;
-    ctx.strokeStyle=sel===i?PAL.deep:PAL.border;
-    rr(px,py,tile,tile,rad);ctx.stroke();
-    if(hintPair&&(hintPair[0]===i||hintPair[1]===i)){
-      ctx.lineWidth=2;ctx.strokeStyle=PAL.warning;
-      rr(px-3,py-3,tile+6,tile+6,8);ctx.stroke();
+    var opt=null;
+    if(enterActive&&!window.__gRM){
+      var dl=Math.min(entOrder[i]*36,480),ep=(now-enterT0-dl)/260;
+      if(ep<0)opt={alpha:0,scale:0.86,lift:-8};
+      else if(ep<1){var e=1-Math.pow(1-ep,2);opt={alpha:e,scale:0.86+0.14*e,lift:-8*(1-e)};}
     }
-    drawSymbol(t.t,px+tile/2,py+tile/2,tile);
+    if(sel===i&&!window.__gRM){
+      var sp=Math.min(1,(now-selT0)/140),se=1-Math.pow(1-sp,3);
+      opt=opt||{};opt.lift=(opt.lift||0)-Math.round(3*se);
+    }
+    drawTileAt(i,px,py,now,opt);
+    if(hintPair&&(hintPair[0]===i||hintPair[1]===i)){
+      var pulse=window.__gRM?0.9:0.55+0.4*Math.sin(now/170);
+      ctx.save();ctx.globalAlpha=pulse;ctx.lineWidth=2;ctx.strokeStyle=PAL.warning;
+      rr(px-3,py-3,tile+6,tile+6,Math.max(4,tile*0.14+3));ctx.stroke();ctx.restore();
+    }
   }
+  for(var gi=gone.length-1;gi>=0;gi--){
+    var g=gone[gi],gp=(now-g.t0)/180;
+    if(gp>=1){gone.splice(gi,1);continue;}
+    var ge=1-Math.pow(1-gp,2),p2=tilePos(g.t);
+    drawTileAt(g.i,p2[0],p2[1]-10*ge,now,{alpha:1-ge,scale:1+0.06*ge,free:true});
+  }
+}
+/* ---------- 动效调度（空闲即停） ---------- */
+var enterActive=false,enterT0=0,entOrder=[],selT0=0,hasEntered=false;
+var gone=[],animUntil=0,rafId=null;
+function kickAnim(dur){
+  if(window.__gRM){render();return;}
+  animUntil=Math.max(animUntil,performance.now()+dur);
+  if(!rafId)rafId=requestAnimationFrame(frame);
+}
+function frame(now){
+  render();
+  if(now<animUntil)rafId=requestAnimationFrame(frame);
+  else{rafId=null;render();}
 }
 /* ---------- 交互 ---------- */
 function handleTap(clientX,clientY){
@@ -593,14 +754,14 @@ function handleTap(clientX,clientY){
   if(idx<0)return;
   if(!freeIdx(idx)){
     shakeCells=[idx,-1];shakeUntil=performance.now()+200;
-    say("这张牌被压住或两侧被挡，先消除旁边的牌");
-    render();
+    say("这张牌被压住或两侧被挡，先消除旁边的牌","err");
+    render();kickAnim(220);
     setTimeout(function(){shakeUntil=0;shakeCells=[];render();},210);
     return;
   }
-  if(sel<0){sel=idx;hintPair=null;say("已选中，再点一张相同图案的自由牌");render();return;}
-  if(sel===idx){sel=-1;say("已取消选中");render();return;}
-  if(tiles[sel].t!==tiles[idx].t){sel=idx;hintPair=null;say("图案不同，已改选这张");render();return;}
+  if(sel<0){sel=idx;hintPair=null;selT0=performance.now();say("已选中，再点一张相同图案的自由牌");render();kickAnim(160);return;}
+  if(sel===idx){sel=-1;selT0=performance.now();say("已取消选中");render();kickAnim(160);return;}
+  if(tiles[sel].t!==tiles[idx].t){sel=idx;hintPair=null;selT0=performance.now();say("图案不同，已改选这张");render();kickAnim(160);return;}
   var a=sel,b=idx;
   removePair(a,b);
 }
@@ -622,10 +783,11 @@ function removePair(a,b){
   remaining-=2;paired++;
   sel=-1;hintPair=null;
   updStats();
-  if(remaining===0){say("全部消除！");winLevel();return;}
+  if(!window.__gRM){var gp=performance.now();gone.push({i:a,t:tiles[a],t0:gp},{i:b,t:tiles[b],t0:gp});}
+  if(remaining===0){say("全部消除！","win");winLevel();kickAnim(220);return;}
   if(!findHint())shuffleBoard(false);
-  else say("消除成功，还剩 "+remaining+" 张");
-  render();
+  else say("消除成功，还剩 "+remaining+" 张","win");
+  render();kickAnim(220);
 }
 /* ---------- 胜利 ---------- */
 function winLevel(){
@@ -638,7 +800,8 @@ function winLevel(){
   var last=cur>=LEVELS.length-1;
   $("ovTitle").textContent=last?"全部通关！":"过关！";
   $("ovDesc").innerHTML="第 <b>"+(cur+1)+"</b> 关完成 · 用时 "+fmt(elapsed)+"<br>已通关 "+cleared+" / "+LEVELS.length+" 关";
-  $("ovBtn").textContent=last?"再玩一遍":"下一关";
+  setOvBtn(last?"rotate":"arrow-right",last?"再玩一遍":"下一关");
+  $("overlay").querySelector(".panel").classList.add("win");
   $("overlay").classList.add("show");
   render();
 }
@@ -666,12 +829,13 @@ function openLevels(){
 }
 $("lvClose").addEventListener("click",function(){$("lvOverlay").classList.remove("show")});
 /* ---------- 按钮 ---------- */
+function setOvBtn(icon,label){$("ovBtn").innerHTML=SW_ICON(icon)+label;}
 $("btnHint").addEventListener("click",function(){
   var h=findHint();
-  if(!h){say("当前没有可消除的牌，试试洗牌");return;}
+  if(!h){say("当前没有可消除的牌，试试洗牌","err");return;}
   hintPair=h;sel=-1;
-  say("已高亮一对可消除的牌");
-  render();
+  say("已高亮一对可消除的牌","win");
+  render();kickAnim(700);
 });
 $("btnShuffle").addEventListener("click",function(){shuffleBoard(true)});
 $("btnLevels").addEventListener("click",openLevels);
@@ -748,6 +912,16 @@ palLoad();
 cur=clamp(saveData.lv||0,0,LEVELS.length-1);
 startLevel(cur);
 syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 按钮 / 工具图标：内联 SVG（SW_ICON），零外链 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var pairs=[["btnHint","hint"],["btnShuffle","swap-h"],["btnLevels","grid"],["btnRestart","rotate"]],i;
+  for(i=0;i<pairs.length;i++){var el=$(pairs[i][0]);if(el)el.insertAdjacentHTML("afterbegin",window.SW_ICON(pairs[i][1]));}
+  var lc=$("lvClose");if(lc)lc.insertAdjacentHTML("afterbegin",window.SW_ICON("x"));
+  var ob=$("ovBtn");if(ob)ob.innerHTML=window.SW_ICON("arrow-right")+"下一关";
 })();
 </script>
 <script>

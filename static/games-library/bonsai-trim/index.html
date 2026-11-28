@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>盆景剪枝</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-bark:#8A5A3A;--g-st-bark2:#6E4628;--g-st-leaf:#5E8C4A;--g-st-pot:#B98A4E;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-bark:#A87850;--g-st-bark2:#8A5F3C;--g-st-leaf:#7FAE68;--g-st-pot:#8F6A3A;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-bark/bark2 枝干；--g-bn-ground1/2 地面、--g-bn-leaf1/2 叶、--g-bn-pot1/2 盆、--g-bn-target 保留目标环）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-bark:#8A5A3A;--g-st-bark2:#6E4628;--g-bn-ground1:#F7F3EA;--g-bn-ground2:#EAE2D0;--g-bn-leaf1:#6FA858;--g-bn-leaf2:#3F7A34;--g-bn-pot1:#C99A5C;--g-bn-pot2:#8F6A34;--g-bn-target:#9A6210;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-bark:#A87850;--g-st-bark2:#8A5F3C;--g-bn-ground1:#1D1A15;--g-bn-ground2:#14110D;--g-bn-leaf1:#7FAE68;--g-bn-leaf2:#4E7A40;--g-bn-pot1:#8F6A3A;--g-bn-pot2:#5E4526;--g-bn-target:#E2A44E;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -26,22 +26,33 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 5px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 5px 8px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }   /* 入场错落 40ms */
+  .stat:nth-child(3) { animation-delay: 80ms; }
+  .stat:nth-child(4) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
-  .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; transition: color .16s ease-out; }
   .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .tools .btn { animation: rise .3s ease-out both; }
+  .tools .btn:nth-child(1) { animation-delay: 120ms; }
+  .tools .btn:nth-child(2) { animation-delay: 160ms; }
+  .tools .btn:nth-child(3) { animation-delay: 200ms; }
+  .tools .btn:nth-child(4) { animation-delay: 240ms; }
   .btn { min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
   .btn.primary { background: var(--g-btn-primary); color: #fff; }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -56,20 +67,28 @@
     box-shadow: var(--g-shadow); text-align: center;
     animation: pop .25s ease-out;
   }
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }   /* 过关轻弹 */
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc b { color: var(--g-primary-deep); }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
   .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
+  }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（同时压 animation-duration 与 animation-delay；动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -85,6 +104,19 @@ window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
+</script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0 0 12 3z"/>'
+};
+var fill={'play':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
 </script>
 
 </head>
@@ -108,7 +140,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="foot">键盘：方向键 移动光标 · Enter 剪枝 · Z 撤销 · H 提示 · R 重开 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">造型完成！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -440,17 +472,39 @@ function palLoad(){
     text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
     danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
-    bark:v("--g-st-bark"),bark2:v("--g-st-bark2"),leaf:v("--g-st-leaf"),pot:v("--g-st-pot")};
+    bark:v("--g-st-bark"),bark2:v("--g-st-bark2"),
+    ground1:v("--g-bn-ground1"),ground2:v("--g-bn-ground2"),
+    leaf1:v("--g-bn-leaf1"),leaf2:v("--g-bn-leaf2"),
+    pot1:v("--g-bn-pot1"),pot2:v("--g-bn-pot2"),target:v("--g-bn-target")};
 }
-window.__gOnTheme=function(){palLoad()};
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
+window.__gOnTheme=function(){palLoad();if(L)draw()};
 palLoad();
 
 /* ========== 画布与状态 ========== */
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var W=0,cs=28,cur=save.lv,L=null;
 var kids=[],targetSet={},cutMark=[],stack=[],cursor=0,state="edit",done=false;
+var introT=0,depthArr=[];   // 入场：按树深错落（draw 内消费）
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+/* 覆盖层按钮：图标 + 文案分节点更新，避免 textContent= 抹掉已注入的 SVG */
+function setOvBtn(t,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+t}
+function hideOv(){$("overlay").classList.remove("show");$("panel").classList.remove("win")}
 function resize(){
   var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
   W=Math.round(w);
@@ -472,6 +526,9 @@ function loadLevel(n){
   for(var i=0;i<L.target.length;i++)targetSet[L.target[i]]=1;
   cutMark=new Array(L.cells.length).fill(false);
   stack=[];cursor=0;state="edit";done=false;
+  depthArr=new Array(L.cells.length).fill(0);
+  (function dep(i,d){depthArr[i]=d;for(var c=0;c<kids[i].length;c++)dep(kids[i][c],d+1);})(0,0);
+  introT=performance.now();
   $("lvTag").textContent="第 "+(cur+1)+" 关 · "+L.name;
   $("lvRule").textContent="剪 "+L.budget+" 刀内 · 参考 "+L.par+" 刀 · 留 "+L.target.length+" 节";
   $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
@@ -517,15 +574,16 @@ function checkWin(){
     if(GB.available)GB.reportScore(GAME_KEY,{metricValue:cur+1,metricExtra:cuts}).catch(function(){});
     $("ovTitle").textContent=(cur>=LEVELS.length-1)?"全部通关！":"造型完成！";
     $("ovDesc").innerHTML="用 "+cuts+" 刀（参考最少 "+L.par+"）"+(cur<LEVELS.length-1?"<br>已解锁第 "+(cur+2)+" 关":"<br>40 盆全部完成");
-    $("ovBtn").textContent=(cur>=LEVELS.length-1)?"回到第 1 关":"下一关";
+    setOvBtn((cur>=LEVELS.length-1)?"回到第 1 关":"下一关",(cur>=LEVELS.length-1)?"rotate":"play");
     $("ovRetry").hidden=true;
     ovMode="win";
+    $("panel").classList.add("win");
     $("overlay").classList.add("show");
   }else if(stack.length>=L.budget){
     state="pause";
     $("ovTitle").textContent="剪刀用完";
     $("ovDesc").textContent="还差一点没剪到位。看看虚线圈，剪在分枝根部最省刀数。";
-    $("ovBtn").textContent="选关";
+    setOvBtn("选关","grid");
     $("ovRetry").hidden=false;
     ovMode="fail";
     $("overlay").classList.add("show");
@@ -562,7 +620,7 @@ function openLevelSelect(){
       b.disabled=i>=unlocked;
       b.addEventListener("click",function(){
         cur=i;save.lv=Math.max(save.lv,cur);persist();
-        $("overlay").classList.remove("show");
+        hideOv();
         loadLevel(cur);
       });
       g.appendChild(b);
@@ -570,50 +628,85 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("ovRetry").hidden=true;
   ovMode="select";
   $("overlay").classList.add("show");
 }
 
 /* ========== 绘制 ========== */
-function draw(){
-  ctx.fillStyle=PAL.surface2;ctx.fillRect(0,0,W,L.h*cs+14);
+function draw(now){
+  now=now||performance.now();
   var ox=(W-L.w*cs)/2,oy=7;
   function cx(i){return ox+L.cells[i][0]*cs+cs/2}
   function cy(i){return oy+L.cells[i][1]*cs+cs/2}
-  //盆
-  ctx.fillStyle=PAL.pot;
+  function alpha(j){   // 入场：盆 0ms、节点按树深 45ms 错落（最大 60+7×45+180 ≈ 555ms，≤600ms）
+    if(window.__gRM)return 1;
+    return Math.max(0,Math.min(1,(now-introT-60-(depthArr[j]||0)*45)/180));
+  }
+  // 场景地面：渐变「面」（canvas 圆角与落地投影由 CSS 提供）
+  var g=ctx.createLinearGradient(0,0,0,L.h*cs+14);
+  g.addColorStop(0,PAL.ground1);g.addColorStop(1,PAL.ground2);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,L.h*cs+14);
+  // 盆：渐变梯形 + 顶缘亮面 + 落地投影
+  var pa=window.__gRM?1:Math.max(0,Math.min(1,(now-introT)/200));
+  ctx.globalAlpha=pa;
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,0.25)';ctx.shadowBlur=cs*0.12;ctx.shadowOffsetY=cs*0.06;//恒暗阴影 例外
+  var pg=ctx.createLinearGradient(0,oy+L.h*cs-4,0,oy+L.h*cs+8);
+  pg.addColorStop(0,PAL.pot1);pg.addColorStop(1,PAL.pot2);
+  ctx.fillStyle=pg;
   ctx.beginPath();
   ctx.moveTo(ox+3*cs,oy+L.h*cs-4);
   ctx.lineTo(ox+7*cs,oy+L.h*cs-4);
   ctx.lineTo(ox+6.5*cs,oy+L.h*cs+8);
   ctx.lineTo(ox+3.5*cs,oy+L.h*cs+8);
   ctx.closePath();ctx.fill();
-  ctx.strokeStyle=PAL.bark2;ctx.lineWidth=1.5;ctx.stroke();
-  //目标轮廓（虚线圈）
-  ctx.strokeStyle=PAL.faint;ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+  ctx.restore();
+  ctx.strokeStyle=colMix(PAL.pot1,WHITE,0.4);ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(ox+3*cs,oy+L.h*cs-4);ctx.lineTo(ox+7*cs,oy+L.h*cs-4);ctx.stroke();
+  ctx.globalAlpha=1;
+  // 目标轮廓（保留枝）：琥珀虚线环 + 节点描边，替代 faint（faint 不承载有意义信息）
+  ctx.strokeStyle=PAL.target;ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.globalAlpha=0.9;
   for(var t=0;t<L.target.length;t++){
     ctx.beginPath();ctx.arc(cx(L.target[t]),cy(L.target[t]),cs*0.34,0,7);ctx.stroke();
   }
-  ctx.setLineDash([]);
-  //枝干（未剪的父子连线）
+  ctx.setLineDash([]);ctx.globalAlpha=1;
+  // 枝干（未剪的父子连线）：暗面宽线 + 亮芯窄线，圆柱感
+  ctx.lineCap='round';
   for(var i=0;i<L.cells.length;i++){
     if(cutMark[i])continue;
     var p=L.cells[i][2];
     if(p<0||cutMark[p])continue;
-    ctx.strokeStyle=PAL.bark2;ctx.lineWidth=Math.max(2,4-(i%5));
+    var a=alpha(i);if(a<=0)continue;
+    var w=Math.max(2,4-(i%5));
+    ctx.globalAlpha=a;
+    ctx.strokeStyle=PAL.bark2;ctx.lineWidth=w;
     ctx.beginPath();ctx.moveTo(cx(p),cy(p));ctx.lineTo(cx(i),cy(i));ctx.stroke();
+    ctx.strokeStyle=colMix(PAL.bark,WHITE,0.22);ctx.lineWidth=Math.max(1,w*0.5);
+    ctx.beginPath();ctx.moveTo(cx(p),cy(p));ctx.lineTo(cx(i),cy(i));ctx.stroke();
+    ctx.globalAlpha=1;
   }
-  //节点与叶
+  // 节点与叶：径向渐变体 + 恒白高光 + 落地投影
   for(var j=0;j<L.cells.length;j++){
     if(cutMark[j])continue;
+    var a2=alpha(j);if(a2<=0)continue;
     var leaf=kids[j].length===0;
     var isT=!!targetSet[j];
-    ctx.fillStyle=leaf?PAL.leaf:PAL.bark;
-    ctx.beginPath();ctx.arc(cx(j),cy(j),leaf?cs*0.3:cs*0.22,0,7);ctx.fill();
-    ctx.strokeStyle=isT?PAL.deep:PAL.border;ctx.lineWidth=1.5;
-    ctx.stroke();
+    var r=leaf?cs*0.3:cs*0.22;
+    ctx.globalAlpha=a2;
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.28)';ctx.shadowBlur=cs*0.08;ctx.shadowOffsetY=cs*0.04;//恒暗阴影 例外
+    var ng=ctx.createRadialGradient(cx(j)-r*0.34,cy(j)-r*0.38,r*0.14,cx(j),cy(j),r*1.05);
+    if(leaf){ng.addColorStop(0,colMix(PAL.leaf1,WHITE,0.5));ng.addColorStop(0.5,PAL.leaf1);ng.addColorStop(1,PAL.leaf2);}
+    else{ng.addColorStop(0,colMix(PAL.bark,WHITE,0.35));ng.addColorStop(0.5,PAL.bark);ng.addColorStop(1,PAL.bark2);}
+    ctx.fillStyle=ng;ctx.beginPath();ctx.arc(cx(j),cy(j),r,0,7);ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle=isT?PAL.target:PAL.border;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(cx(j),cy(j),r,0,7);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.55)';//恒白高光 例外
+    ctx.beginPath();ctx.arc(cx(j)-r*0.32,cy(j)-r*0.36,r*0.18,0,7);ctx.fill();
+    ctx.globalAlpha=1;
     if(j===0){
       ctx.fillStyle=PAL.surface;
       ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
@@ -621,10 +714,12 @@ function draw(){
       ctx.fillText("干",cx(j),cy(j)+1);
     }
   }
-  //光标
+  // 光标：呼吸环（我控制什么 / 该点哪）
   if(state==="edit"&&!done){
     ctx.strokeStyle=PAL.primary;ctx.lineWidth=2;
+    ctx.globalAlpha=window.__gRM?0.9:0.55+0.35*Math.sin(now/240);
     ctx.beginPath();ctx.arc(cx(cursor),cy(cursor),cs*0.42,0,7);ctx.stroke();
+    ctx.globalAlpha=1;
   }
   ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
   ctx.strokeRect(0.5,0.5,W-1,L.h*cs+13);
@@ -664,13 +759,13 @@ $("btnHint").addEventListener("click",hint);
 $("btnReset").addEventListener("click",function(){
   cutMark=new Array(L.cells.length).fill(false);
   stack=[];state="edit";
-  $("overlay").classList.remove("show");
+  hideOv();
   say("重新长回来了，再剪一次");
   syncHud();draw();
 });
 $("btnLv").addEventListener("click",openLevelSelect);
 $("ovBtn").addEventListener("click",function(){
-  $("overlay").classList.remove("show");
+  hideOv();
   if(ovMode==="win"){
     if(cur>=LEVELS.length-1){cur=0;save.lv=0;persist();loadLevel(0);}
     else{cur++;loadLevel(cur);}
@@ -679,7 +774,7 @@ $("ovBtn").addEventListener("click",function(){
   }
 });
 $("ovRetry").addEventListener("click",function(){
-  $("overlay").classList.remove("show");
+  hideOv();
   cutMark=new Array(L.cells.length).fill(false);
   stack=[];state="edit";
   syncHud();draw();
@@ -695,7 +790,7 @@ window.addEventListener("keydown",function(e){
   else if(e.key==="r"||e.key==="R"){
     cutMark=new Array(L.cells.length).fill(false);
     stack=[];state="edit";
-    $("overlay").classList.remove("show");
+    hideOv();
     syncHud();draw();
   }
 });
@@ -710,6 +805,18 @@ requestAnimationFrame(frame);
 syncLevelsFromServer();
 syncSaveFromServer();
 
+})();
+</script>
+<script>
+/* 工具钮 / 覆盖层按钮图标注入（内联 SVG，零外链；文案更新走 setOvBtn 重插图标） */
+(function(){
+  function $(id){return document.getElementById(id)}
+  $("btnUndo").insertAdjacentHTML("afterbegin",window.SW_ICON("undo"));
+  $("btnHint").insertAdjacentHTML("afterbegin",window.SW_ICON("bulb"));
+  $("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+  $("btnLv").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
+  $("ovBtn").insertAdjacentHTML("afterbegin",window.SW_ICON("play"));
+  $("ovRetry").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
 })();
 </script>
 

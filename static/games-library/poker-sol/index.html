@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>牌型计分</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（按需裁剪）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线（按需裁剪）+ §3 素材 token（牌面 / 空格凹槽 / 目标 / 王牌）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-ps-face1:#FFFFFF;--g-ps-face2:#EDF4EF;--g-ps-cell:#E3EAE2;--g-ps-goal:#1E6B4A;--g-ps-jk1:#A2610E;--g-ps-jk2:#6E3F08;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-ps-face1:#262B27;--g-ps-face2:#1A1E1B;--g-ps-cell:#151816;--g-ps-goal:#123A2C;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -22,44 +22,101 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .stat .val.low { color: var(--g-danger); }
+  .stat .val { display: inline-block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  /* 数据变化轻弹：仅当前真变化时由 JS 挂 .bump */
+  .val.bump { animation: valPop .3s ease-out; }
+  @keyframes valPop { 0% { transform: scale(1); } 40% { transform: scale(1.16); } 100% { transform: scale(1); } }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .dealrow { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  /* 当前待摆牌：牌面渐变 + 左上高光 + 投影，与盘上摆下的牌同材质 */
   .curcard {
-    width: 56px; height: 78px; border-radius: 10px;
-    background: var(--g-surface); border: 2px solid var(--g-border);
+    position: relative; width: 56px; height: 78px; flex: none; border-radius: 10px;
+    background: linear-gradient(165deg, var(--g-ps-face1), var(--g-ps-face2));
+    border: 1px solid var(--g-border);
+    box-shadow: 0 1px 2px rgba(20,40,30,.06), 0 4px 10px rgba(20,40,30,.09);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font-size: 22px; font-weight: 700; line-height: 1.15;
+    font-size: 22px; font-weight: 700; line-height: 1.15; color: var(--g-text);
   }
-  .curcard small { font-size: 12px; color: var(--g-muted); font-weight: 500; }
-  .dealinfo { flex: 1; font-size: 14px; color: var(--g-muted); line-height: 1.5; }
-  .grid5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 8px; }
+  .curcard::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(80% 50% at 24% 8%, rgba(255,255,255,.42), rgba(255,255,255,0) 60%);
+  }
+  .curcard .rk { position: relative; z-index: 1; }
+  .curcard small { position: relative; z-index: 1; font-size: 12px; color: var(--g-muted); font-weight: 500; }
+  .curcard.red { color: var(--g-danger); }
+  .curcard.red small { color: var(--g-danger); opacity: .8; }
+  .curcard.joker { background: linear-gradient(165deg, var(--g-ps-jk1), var(--g-ps-jk2)); border-color: rgba(255,255,255,.28); color: #fff; }
+  .curcard.joker small { color: #fff; }
+  .curcard.done { background: var(--g-surface2); border: 1px solid var(--g-border); box-shadow: none; color: var(--g-ps-goal); }
+  .curcard.done small { color: var(--g-muted); }
+  .dealinfo { flex: 1; min-width: 0; font-size: 14px; color: var(--g-muted); line-height: 1.5; }
+  /* 牌桌：顶部品牌绿软底 → 卡面，铺出层次 */
+  .board { background: linear-gradient(180deg, var(--g-primary-soft), var(--g-surface) 58%); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px 6px 12px; }
+  .grid5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  /* 空格：内凹槽 + 角标（行列坐标），键盘 / 提示定位可读 */
   .pcell {
-    aspect-ratio: 3/4; min-height: 44px; border: 0; padding: 0;
-    border-radius: 10px; background: var(--g-surface);
+    position: relative; aspect-ratio: 3/4; min-height: 44px; border: 1px solid var(--g-border); padding: 0;
+    border-radius: 10px; background: var(--g-ps-cell);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.10);
     font-family: inherit; font-size: 18px; font-weight: 700; line-height: 1.1;
     cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    box-shadow: inset 0 0 0 1px var(--g-border);
+    color: var(--g-text);
+    transition: transform .16s ease-out, box-shadow .16s ease-out, background .16s ease-out;
   }
-  .pcell .st { font-size: 14px; }
+  /* 角标用 --g-muted 的低对比同族（定位提示，语义在 aria-label） */
+  .pcell .pos { position: absolute; top: 3px; left: 5px; font-size: 12px; font-weight: 600; color: var(--g-muted); opacity: .55; line-height: 1; }
+  .pcell .cen { position: absolute; right: 5px; bottom: 3px; font-size: 14px; line-height: 1; opacity: .85; }
+  .pcell .rk { position: relative; z-index: 1; }
+  /* 摆下的牌：牌面渐变 + 高光 + 投影（轻立体），与当前牌同材质 */
+  .pcell.filled {
+    background: linear-gradient(165deg, var(--g-ps-face1), var(--g-ps-face2));
+    border: 1px solid var(--g-border);
+    box-shadow: var(--g-shadow);
+  }
+  .pcell.filled::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(80% 50% at 24% 8%, rgba(255,255,255,.42), rgba(255,255,255,0) 60%);
+  }
   .pcell.red { color: var(--g-danger); }
-  .pcell.cur { box-shadow: inset 0 0 0 2px var(--g-muted); }
-  .pcell.rowend { box-shadow: inset 0 0 0 2px var(--g-warning); }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  /* 王牌：深暖金渐变 + 白字，与常规牌明确区分（牌面文字承载「王牌」语义）
+     浅端 #A2610E 对白字 4.94:1、深端 #6E3F08 对 8.83:1，均过正文 4.5:1 */
+  .pcell.joker { background: linear-gradient(165deg, var(--g-ps-jk1), var(--g-ps-jk2)); border-color: rgba(255,255,255,.28); color: #fff; }
+  .pcell.joker .pos { color: rgba(255,255,255,.75); }
+  .pcell.joker .cen { color: #fff; }
+  /* 当前待摆落点：品牌绿环浮起；末列满手：暖金环提示「这行已成一手」 */
+  .pcell.cur {
+    border-color: var(--g-primary);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.10), 0 0 0 2px var(--g-primary), 0 8px 16px rgba(20,40,30,.18);
+  }
+  .pcell.rowend { box-shadow: inset 0 2px 6px rgba(0,0,0,.10), 0 0 0 2px var(--g-warning); }
+  .pcell.filled.rowend { box-shadow: 0 1px 2px rgba(20,40,30,.06), 0 4px 10px rgba(20,40,30,.09), 0 0 0 2px var(--g-warning); }
+  .pcell.filled.cur { box-shadow: 0 1px 2px rgba(20,40,30,.06), 0 4px 10px rgba(20,40,30,.09), 0 0 0 2px var(--g-primary), 0 8px 16px rgba(20,40,30,.18); }
+  .pcell:active { transform: scale(.96); }
+  /* 刚摆下：轻弹一次（JS 挂 .just，动画结束摘除） */
+  .pcell.just { animation: place .2s ease-out; }
+  @keyframes place { 0% { transform: scale(.82); } 62% { transform: scale(1.07); } 100% { transform: scale(1); } }
+  /* 入场错落：逐格浮起，40ms 间隔（--i 由 JS 写入） */
+  .grid5.entering .pcell { animation: rise .32s ease-out both; animation-delay: calc(var(--i, 0) * 40ms); }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; font-weight: 500; color: var(--g-muted); text-align: center; }
+  .msg.err { color: var(--g-danger); }
+  .msg.win { color: var(--g-success); }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
   .btn {
     min-height: 44px; padding: 0 10px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .12s ease-out, opacity .16s ease-out;
   }
   .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
@@ -76,8 +133,13 @@
     animation: pop .25s ease-out;
   }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  /* 过关反馈：轻弹（未达标 / 选关不挂 .win，保持克制） */
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.045); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
-  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); }
+  .panel.win .desc b { color: var(--g-warning); }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
@@ -85,16 +147,38 @@
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .12s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
-
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
-
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（§6.1 模板：时长与延迟同时归零） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW 图标库：内联 SVG（24 viewBox、currentColor、aria-hidden），照抄本库 window.SW_ICON 范式。
+   线性图标 stroke，实心图形 fill；花色为标准 ♠♥♦♣ 形状路径（红=--g-danger、黑=--g-text，随主题联动）。 */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'reset':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>','check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+ 'card-plus':'<rect x="5" y="3" width="14" height="18" rx="3"/><path d="M12 8.5v7M8.5 12h7"/>',
+ 'spade':'<path d="M12 3c3 4 6 6.5 6 10a3.5 3.5 0 0 1-6 2.4V19h-2v-3.6A3.5 3.5 0 0 1 6 13c0-3.5 3-6 6-10z"/>',
+ 'heart':'<path d="M12 21C7 16.5 3 13 3 9.3 3 6.4 5.2 4.5 7.7 4.5c1.7 0 3.3.9 4.3 2.4 1-1.5 2.6-2.4 4.3-2.4 2.5 0 4.7 1.9 4.7 4.8 0 3.7-4 7.2-9 11.7z"/>',
+ 'diamond':'<path d="M12 2l7 10-7 10-7-10z"/>',
+ 'club':'<path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-1 7.9V17h3v2H6v-2h3v-3.1A4 4 0 0 1 8 6a4 4 0 0 1 4-4z"/>'
+};
+var fill={ 'star':1,'card-plus':1,'spade':1,'heart':1,'diamond':1,'club':1 };
+var solid={ 'spade':1,'heart':1,'diamond':1,'club':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="'+(solid[n]?'none':'currentColor')+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -120,7 +204,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <div class="curcard" id="curcard">?<small>待摆</small></div>
     <div class="dealinfo" id="dealinfo">把 25 张牌逐张放进 5x5 盘：每行每列各成一手牌，按牌型计分</div>
   </div>
-  <div class="grid5" id="grid" aria-label="5x5 摆牌盘"></div>
+  <div class="board"><div class="grid5" id="grid" aria-label="5x5 摆牌盘"></div></div>
   <p class="msg" id="msg" role="status" aria-live="polite">点任意空格放下当前这张牌</p>
   <div class="tools">
     <button class="btn" id="btnUndo">撤销</button>
@@ -131,7 +215,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="foot">键盘：方向键选格 · Enter 放牌 · U 撤销 · H 提示 · R 重开<br>牌型分：皇家同花顺 100 / 同花顺 75 / 四条 50 / 葫芦 25 / 同花 20 / 顺子 15 / 三条 10 / 两对 5 / 一对 2（王牌万能）</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">对局结束</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -254,14 +338,17 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  $("ovBtn").innerHTML=SW_ICON("x")+"取消";
+  $("panel").classList.remove("win");
   $("overlay").classList.add("show");
 }
 function hideOverlay(){$("overlay").classList.remove("show")}
 
 /* ---------- 牌引擎：r 2-14(A)，s 0-3；王 r=0 ---------- */
 var RANK_TXT={11:"J",12:"Q",13:"K",14:"A"};
-var SUIT_TXT=["♠","♥","♣","♦"];
+var SUIT_TXT=["♠","♥","♣","♦"];   /* 文本牌名（aria-label / 提示语）用；牌面图形走 SW_ICON */
+var SUIT_NAMES=["spade","heart","diamond","club"];
+var RED=[false,true,true,false];
 function rankTxt(r){return r===0?"王":(RANK_TXT[r]||String(r));}
 /* 五张实牌评估（USPC 计分） */
 function evalReal(cs){
@@ -323,20 +410,21 @@ function scoreGrid(grid){
   return s;
 }
 function buildDeck(jokers){
-  var d=[],r,s;
+  var d=[],r,s,i,k;
   for(r=2;r<=14;r++)for(s=0;s<4;s++)d.push({r:r,s:s});
   for(i=0;i<jokers;i++)d.push({r:0,s:0});
   for(k=d.length-1;k>0;k--){
     var j=Math.floor(Math.random()*(k+1)),tmp=d[k];d[k]=d[j];d[j]=tmp;
   }
   return d;
-  var i,k;
 }
 /* ---------- 状态 ---------- */
 var lv=save.lv,L=null,grid=new Array(25).fill(null),deck=[],dealt=0,over=false,won=false,finalScore=0,cur=12,hist=[];
 function $(id){return document.getElementById(id)}
-function say(t){$("msg").textContent=t}
-function curCard(){return deck[dealt];}
+function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"")}
+function curCard(){return deck[dealt]}
+/* 数据变化轻弹（渲染层动效辅助，不改玩法逻辑） */
+function bump(id){var e=$(id);if(!e||window.__gRM)return;e.classList.remove("bump");void e.offsetWidth;e.classList.add("bump")}
 function loadLevel(x){
   lv=Math.max(0,Math.min(x,LEVELS.length-1));
   L=LEVELS[lv];
@@ -350,70 +438,86 @@ function loadLevel(x){
   buildGrid();updStats();
   say("点任意空格放下当前这张牌");
 }
+/* ---------- 渲染（建盘一次 + 就地补丁） ---------- */
+var cellEls=[];
 function buildGrid(){
   var box=$("grid");
-  box.innerHTML="";
+  box.innerHTML="";cellEls=[];
   for(var i=0;i<25;i++){
     (function(i){
       var b=document.createElement("button");
+      b.type="button";
       b.className="pcell";
+      b.style.setProperty("--i",String(i));
       b.setAttribute("aria-label","格"+(Math.floor(i/5)+1)+"-"+(i%5+1));
+      b.innerHTML='<span class="pos" aria-hidden="true"></span><span class="rk"></span><span class="cen"></span>';
       b.addEventListener("click",function(){tapCell(i)});
       box.appendChild(b);
+      cellEls.push(b);
     })(i);
   }
   renderGrid();
 }
+/* 空格角标：行列坐标（仅定位装饰，语义在 aria-label） */
+function posTxt(i){return (Math.floor(i/5)+1)+"-"+(i%5+1)}
+/* 行差 1 张满：暖金环提示「再放一张这行就成一手」 */
+function rowOneShort(r){var j,n=0;for(j=0;j<5;j++)if(grid[r*5+j])n++;return n===4}
 function renderGrid(){
-  var cells=$("grid").children;
   for(var i=0;i<25;i++){
-    var b=cells[i],c=grid[i];
-    b.innerHTML="";
-    if(c){
-      var t=document.createElement("span");
-      t.textContent=c.r===0?"王":rankTxt(c.r);
-      b.appendChild(t);
-      var st=document.createElement("span");
-      st.className="st";
-      st.textContent=c.r===0?"J":SUIT_TXT[c.s];
-      b.appendChild(st);
-      b.className="pcell"+(c.r!==0&&(c.s===1||c.s===3)?" red":"")+(i===cur&&!over?" cur":"");
-    } else {
-      b.className="pcell"+(i===cur&&!over?" cur":"");
-      b.textContent="";
-    }
+    var b=cellEls[i],c=grid[i];
+    var cls="pcell"+(c?" filled":"")+(c&&c.r===0?" joker":"")+(c&&c.r!==0&&RED[c.s]?" red":"");
+    if(i===cur&&!over)cls+=" cur";
+    else if(!c&&rowOneShort(Math.floor(i/5)))cls+=" rowend";
+    if(b.className!==cls)b.className=cls;
+    b.setAttribute("aria-label",c?("格"+posTxt(i)+" "+cardName(c)):("空格"+posTxt(i)));
+    b.querySelector(".pos").textContent=c?"":posTxt(i);
+    b.querySelector(".rk").textContent=c?(c.r===0?"王":rankTxt(c.r)):"";
+    b.querySelector(".cen").innerHTML=c?SW_ICON(SUIT_NAMES[c.s]):"";
   }
 }
+function cardName(c){return c.r===0?"王牌":(SUIT_TXT[c.s]+rankTxt(c.r))}
 function updStats(){
   var s=scoreGrid(grid);
-  $("stScore").textContent=s;
+  var el=$("stScore");
+  if(el.textContent!==String(s)){el.textContent=s;bump("stScore")}
   $("stTarget").textContent=L.target;
   var cc=curCard();
-  var el=$("curcard");
+  var box=$("curcard");
   if(cc){
-    el.innerHTML="";
-    var t=document.createElement("span");
-    t.textContent=cc.r===0?"王":rankTxt(cc.r);
-    el.appendChild(t);
-    var sm=document.createElement("small");
-    sm.textContent=cc.r===0?"万能":SUIT_TXT[cc.s];
-    el.appendChild(sm);
-    el.className="curcard"+(cc.r!==0&&(cc.s===1||cc.s===3)?" red":"");
+    var jk=cc.r===0;
+    box.className="curcard"+(jk?" joker":(RED[cc.s]?" red":""));
+    box.innerHTML='<span class="rk">'+(jk?"王":rankTxt(cc.r))+'</span><small>'+(jk?"万能":SUIT_TXT[cc.s])+'</small>';
     $("dealinfo").textContent="还剩 "+(25-dealt)+" 张 · 行列成牌即计分";
   } else {
-    el.textContent="✓";el.className="curcard";
+    box.className="curcard done";
+    box.innerHTML=SW_ICON("check")+"<small>已摆完</small>";
     $("dealinfo").textContent="25 张已摆完，最终得分见结算";
   }
   $("btnUndo").disabled=!hist.length||over;
 }
+/* 刚摆下：轻弹一次（动画结束摘除 .just，状态切换本身不依赖动画） */
+function justPlace(i){
+  var b=cellEls[i];if(!b||window.__gRM)return;
+  b.classList.remove("just");void b.offsetWidth;b.classList.add("just");
+  setTimeout(function(){b.classList.remove("just")},220);
+}
+/* 入场错落：仅进关首次播放，之后不再重播 */
+var hasEntered=false;
+function enterGrid(){
+  if(hasEntered)return;
+  hasEntered=true;
+  var g=$("grid");
+  g.classList.add("entering");
+  setTimeout(function(){g.classList.remove("entering")},window.__gRM?80:1400);
+}
 function tapCell(i){
   if(over)return;
   var cc=curCard();
-  if(!cc){say("牌已发完");return;}
-  if(grid[i]){say("这个格子已经有牌了");return;}
+  if(!cc){say("牌已发完","err");return;}
+  if(grid[i]){say("这个格子已经有牌了","err");return;}
   hist.push({i:i,card:cc});
   grid[i]=cc;dealt++;
-  updStats();renderGrid();
+  updStats();renderGrid();justPlace(i);
   if(dealt>=25){
     finalScore=scoreGrid(grid);
     endGame(finalScore>=L.target);
@@ -446,9 +550,10 @@ function endGame(w){
   over=true;won=w;
   if(w&&lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:w?lv+1:lv,metricExtra:finalScore}).catch(function(){});
+  $("panel").classList.toggle("win",w);
   $("ovTitle").textContent=w?(lv>=LEVELS.length-1?"全部通关！":"过关！"):"未达标";
-  $("ovDesc").innerHTML="最终得分 "+finalScore+" / 目标 "+L.target+(w&&lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"");
-  $("ovBtn").textContent=w?(lv>=LEVELS.length-1?"回到第 1 关":"下一关"):"再试一次";
+  $("ovDesc").innerHTML="最终得分 <b>"+finalScore+"</b> / 目标 "+L.target+(w&&lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"");
+  $("ovBtn").innerHTML=SW_ICON(w?"arrow-right":"reset")+(w?(lv>=LEVELS.length-1?"回到第 1 关":"下一关"):"再试一次");
   $("overlay").classList.add("show");updStats();
 }
 $("btnUndo").addEventListener("click",undo);
@@ -524,11 +629,21 @@ function selfTest(){
     chk(scoreGrid(g)===100,"计盘:单行皇家100");
   })();
   window.__gSelfTest={ok:ok,total:total,fails:fails};
-  if(fails.length)say("警告：内嵌自检未全过（"+ok+"/"+total+"）");
+  if(fails.length)say("警告：内嵌自检未全过（"+ok+"/"+total+"）","err");
 }
 /* ---------- 启动（续玩：从存档关卡起步） ---------- */
-loadLevel(save.lv);selfTest();
+loadLevel(save.lv);selfTest();enterGrid();
 syncLevelsFromServer();syncSaveFromServer();
+})();
+</script>
+<script>
+/* 工具按钮图标：内联 SVG（SW_ICON，24 viewBox / currentColor），零外链 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  $("btnUndo").insertAdjacentHTML("afterbegin",SW_ICON("undo"));
+  $("btnHint").insertAdjacentHTML("afterbegin",SW_ICON("hint"));
+  $("btnReset").insertAdjacentHTML("afterbegin",SW_ICON("reset"));
+  $("btnLv").insertAdjacentHTML("afterbegin",SW_ICON("grid"));
 })();
 </script>
 <script>

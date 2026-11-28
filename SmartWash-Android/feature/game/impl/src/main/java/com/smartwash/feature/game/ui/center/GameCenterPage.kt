@@ -16,16 +16,23 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import android.widget.Toast
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,16 +49,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppTextField
 import com.smartwash.common.ui.components.LocalCoverArt
 import com.smartwash.common.ui.components.SmartWashAsyncImage
 import com.smartwash.common.ui.components.softCardShadow
@@ -83,9 +93,10 @@ private const val GAME_CARD_ASPECT_RATIO = 16f / 9f
 private val GRID_SPACING = AppDimens.cardSpacing
 
 /**
- * 游戏中心页（方案 §六）：PageHeader + 分类筛选 chips（本地过滤）+ 两列网格卡片。
+ * 游戏中心页（方案 §六）：PageHeader + 搜索栏 + 分类筛选 chips（本地过滤）+ 两列网格卡片。
  * 列表数据来自 [GameCenterViewModel]（`GET /web/auth/game/list` 全量 <100 不分页），
  * 三态：骨架 shimmer / EmptyState / 错误重试（规范 §3.6）。
+ * 搜索为本地即时过滤（标题包含，大小写不敏感）；搜索态跨分类全库检索、分类 chips 让位。
  * 卡片点击 → 既有壳层 WebView 路由（后端下发 url 即最终可玩地址，端上零拼装）。
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,7 +108,9 @@ fun GameCenterPage(
     val games by viewModel.filteredGames.collectAsState()
     val listState by viewModel.listState.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
     val context = LocalContext.current
+    val isSearching = searchQuery.isNotBlank()
 
     // 刷新失败且已有内容：保留网格，仅 Toast 轻提示（不整页替换，避免内容丢失感）。
     // 首刷失败（列表为空）仍走下方全屏错误态 + 重试。
@@ -112,13 +125,13 @@ fun GameCenterPage(
         }
     }
 
-    // 网格滚动状态：仅在用户主动切换分类时回顶。LazyColumn 按行 key 换代后仍保留旧偏移，
-    // 顶部会残留上一分类被裁切的残卡（ui-check P1：切筛选必现）。
+    // 网格滚动状态：仅在用户主动切换分类或改搜索词时回顶。LazyColumn 按行 key 换代后仍保留旧偏移，
+    // 顶部会残留上一分类/上一批结果被裁切的残卡（ui-check P1：切筛选必现）。
     // 用 snapshotFlow 跳过首次发射：页面进入/从游戏返回时 effect 会重启，
     // 若无条件 scrollToItem(0) 会覆盖 rememberLazyListState 恢复的滚动位置。
     val gridListState = rememberLazyListState()
     LaunchedEffect(Unit) {
-        snapshotFlow { selectedCategory }
+        snapshotFlow { selectedCategory to searchQuery }
             .collectIndexed { index, _ -> if (index > 0) gridListState.scrollToItem(0) }
     }
 
@@ -143,18 +156,32 @@ fun GameCenterPage(
             modifier = Modifier
                 .fillMaxSize()
                 .background(AppColors.colorScheme.background)
+                // 规范 §4：搜索框键盘弹出时整页上收，输入框与结果保持可见（与菜谱库同口径）
+                .imePadding()
         ) {
             PageHeader(
                 title = stringResource(R.string.game_center_title),
                 onBack = { navController.navigateUp() },
             )
 
-            // 分类筛选 chips（横向滚动不换行；数据无关常驻，骨架/错误态同样可见）
-            GameCategoryChipsRow(
-                selected = selectedCategory,
-                onSelect = viewModel::selectCategory,
-                modifier = Modifier.padding(top = AppDimens.spaceXs, bottom = AppDimens.spaceSm),
+            // 搜索栏（规范 §3.7 输入控件：常驻顶部，本地即时过滤，无防抖）
+            GameSearchField(
+                query = searchQuery,
+                onQueryChange = viewModel::onSearchChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
             )
+
+            // 分类筛选 chips（横向滚动不换行；数据无关常驻，骨架/错误态同样可见）。
+            // 搜索态隐藏：搜索即跨分类全库检索，chips 让位（对齐菜谱库，避免「chip 选中却看似失效」）
+            if (!isSearching) {
+                GameCategoryChipsRow(
+                    selected = selectedCategory,
+                    onSelect = viewModel::selectCategory,
+                    modifier = Modifier.padding(top = AppDimens.spaceXs, bottom = AppDimens.spaceSm),
+                )
+            }
 
             when {
                 // 首刷失败（无已有内容）：说明发生了什么 + 重试（规范 §3.6 错误态）；
@@ -182,19 +209,32 @@ fun GameCenterPage(
                 games.isEmpty() && listState !is RequestState.Success -> {
                     GameGridSkeleton(modifier = Modifier.fillMaxSize())
                 }
-                // 空态：全量空（后端未上传/未上架）与筛选无命中分别给文案
+                // 空态：全量空（后端未上传/未上架）/ 分类无命中 / 搜索无果分别给文案
                 games.isEmpty() -> {
                     EmptyState(
                         // 占位参数不渲染；Filled 变体对齐 GameConstant 游戏卡图标组
                         icon = Icons.Default.Apps,
-                        message = if (selectedCategory == null) {
-                            stringResource(R.string.game_empty_message)
-                        } else {
-                            stringResource(R.string.game_empty_category)
+                        message = when {
+                            isSearching -> stringResource(R.string.game_search_empty)
+                            selectedCategory == null -> stringResource(R.string.game_empty_message)
+                            else -> stringResource(R.string.game_empty_category)
                         },
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = AppDimens.pagePadding),
+                        // 搜索无果给「清除搜索」行动入口（规范 §3.6 空态 = 母题 + 文案 + 行动按钮；
+                        // 对齐工作台搜索空态先例）
+                        action = if (isSearching) {
+                            {
+                                AppButton(
+                                    small = true,
+                                    text = stringResource(R.string.game_search_clear),
+                                    onClick = { viewModel.onSearchChange("") },
+                                )
+                            }
+                        } else {
+                            null
+                        },
                     )
                 }
                 // 游戏网格（两列，行 key 由 gameKey 拼接，服务端 sort 序）
@@ -239,6 +279,53 @@ private fun GameCategoryChipsRow(
         selectedIndex = if (selected == null) 0 else GameCategory.CHIP_ORDER.indexOf(selected) + 1,
         onSelect = { index -> onSelect(if (index == 0) null else GameCategory.CHIP_ORDER[index - 1]) },
         modifier = modifier,
+    )
+}
+
+/**
+ * 游戏搜索栏（规范 §3.7 输入控件唯一标准 [AppTextField]）：surfaceVariant 底 + outline 描边、
+ * 16sp 正文、前缀 16dp 搜索图标、尾缀清空 44dp 热区（图标 16dp）。
+ * 本地即时过滤，输入即出结果，无防抖；IME 动作置 Search，按下或清空均收起键盘。
+ */
+@Composable
+private fun GameSearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = AppColors.colorScheme
+    val keyboardController = LocalSoftwareKeyboardController.current
+    AppTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = modifier,
+        placeholder = stringResource(R.string.game_search_hint),
+        leadingIcon = Icons.Rounded.Search,
+        trailingIcon = if (query.isNotEmpty()) {
+            {
+                // 清除按钮：图标化 + 44dp 方形热区（§3.7 尾缀一律图标化），清空并收起键盘
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .pressable(onClick = {
+                            onQueryChange("")
+                            keyboardController?.hide()
+                        }, debounce = false),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.game_search_clear),
+                        modifier = Modifier.size(16.dp),
+                        tint = scheme.textSecondary,
+                    )
+                }
+            }
+        } else {
+            null
+        },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
     )
 }
 

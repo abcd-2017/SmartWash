@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>货载平衡</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-beam:#8A6A44;--g-st-beam2:#6B5236;--g-st-box1:#D9A55C;--g-st-box2:#B58BD0;--g-st-box3:#6BA8D9;--g-st-box4:#DB8290;--g-st-ful:#4A544C;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-beam:#5E4A30;--g-st-beam2:#463722;--g-st-box1:#7A5C28;--g-st-box2:#5E4576;--g-st-box3:#2F5B80;--g-st-box4:#7C4552;--g-st-ful:#3A423C;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-* 横梁/货箱/底座，--g-cb-* 天地/托盘）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-on-primary:#FFFFFF;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-beam:#8A6A44;--g-st-beam2:#6B5236;--g-st-box1:#D9A55C;--g-st-box2:#B58BD0;--g-st-box3:#6BA8D9;--g-st-box4:#DB8290;--g-st-ful:#4A544C;--g-cb-sky1:#E9F1F0;--g-cb-sky2:#CFE0DC;--g-cb-tray:#C9B691;--g-cb-tray-hi:#E7D9B8;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-beam:#5E4A30;--g-st-beam2:#463722;--g-st-box1:#7A5C28;--g-st-box2:#5E4576;--g-st-box3:#2F5B80;--g-st-box4:#7C4552;--g-st-ful:#3A423C;--g-cb-sky1:#1B2220;--g-cb-sky2:#121715;--g-cb-tray:#5E5340;--g-cb-tray-hi:#6B5F48;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -25,33 +25,41 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
-  .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); border: 1px solid var(--g-border); box-shadow: var(--g-shadow); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
   .btn {
     min-height: 44px; padding: 0 12px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn[disabled] { opacity: .4; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .dpad { display: flex; gap: 8px; }
   .ctl {
     flex: 1; min-height: 52px; border: 0; border-radius: var(--g-radius-btn);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     background: var(--g-btn-primary); color: #fff;
     font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out;
   }
-  .ctl:active { opacity: .75; }
+  .ctl:active { transform: scale(.96); }
   .ctl[disabled] { opacity: .35; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
-  .overlay.show { display: flex; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
   .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
@@ -59,11 +67,14 @@
   .panel .desc b { color: var(--g-primary-deep); font-size: 28px; }
   .panel .btn { width: 100%; }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
-  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; transition: transform .14s ease-out, background .16s ease-out; }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
@@ -78,7 +89,10 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
  'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
  'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
- 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0 0 12 3z"/>'
 };
 var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
 return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
@@ -114,8 +128,8 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <button class="btn" id="btnLv" type="button">选关</button>
   </div>
   <div class="dpad">
-    <button class="ctl" id="cLeft" type="button">◀ 左盘</button>
-    <button class="ctl" id="cRight" type="button">右盘 ▶</button>
+    <button class="ctl" id="cLeft" type="button">左盘</button>
+    <button class="ctl" id="cRight" type="button">右盘</button>
   </div>
   <p class="foot">力矩 = 右侧总重 − 左侧总重；超限即倾覆 · 已内嵌独立 DP 求解器复核可平衡性</p>
 </div>
@@ -124,7 +138,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <h2 id="ovTitle">过关</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
-    <button class="btn" id="ovBtn" type="button">下一关</button>
+    <button class="btn primary" id="ovBtn" type="button">下一关</button>
   </div>
 </div>
 <script>
@@ -232,9 +246,24 @@ function palLoad(){
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
     success:v("--g-success"),warning:v("--g-warning"),danger:v("--g-danger"),
     beam:v("--g-st-beam"),beam2:v("--g-st-beam2"),ful:v("--g-st-ful"),
-    boxes:[v("--g-st-box1"),v("--g-st-box2"),v("--g-st-box3"),v("--g-st-box4")]};
+    boxes:[v("--g-st-box1"),v("--g-st-box2"),v("--g-st-box3"),v("--g-st-box4")],
+    sky1:v("--g-cb-sky1"),sky2:v("--g-cb-sky2"),tray:v("--g-cb-tray"),trayHi:v("--g-cb-tray-hi")};
 }
 window.__gOnTheme=function(){palLoad()};
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
 /* ---------- 状态 ---------- */
 var KEY="sw.cargobalance.v1";
 function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object")return s}catch(e){}return{}}
@@ -250,6 +279,8 @@ var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var W=0,H=0,dpr=1;
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+/* 覆盖层按钮：图标 + 文案一起重插，避免 textContent 抹掉已注入的 SVG */
+function setOvBtn(t,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+t}
 /* ---------- 布局 ---------- */
 function resize(){
   var wCss=cv.parentElement.clientWidth||360;
@@ -276,10 +307,9 @@ function loadLevel(n){
   L=LEVELS[lv];
   if(!validLevelData(L)){say("关卡数据异常");return}
   placed=[];idx=0;torque=0;tilt=0;over=false;
-  var ok=levelSolvable(L);
+  window.__gLevelSolvable=!!levelSolvable(L);   // 开发期校验只挂 window，不进玩家界面
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.boxes.length+" 箱";
-  if(!ok)say("警告：内嵌 DP 求解器判定本关不可平衡（数据异常）");
-  else say("点左盘或右盘放置货箱");
+  say("点左盘或右盘放置货箱");
   updStats();
 }
 function place(side){
@@ -292,7 +322,7 @@ function place(side){
     over=true;shakeT=Date.now();updStats();
     $("ovTitle").textContent="货架倾覆";
     $("ovDesc").innerHTML="力矩 "+torque+" 超过限位 "+L.limit+"<br>调整放置顺序再试";
-    $("ovBtn").textContent="重试本关";
+    setOvBtn("重试本关","rotate");
     $("overlay").classList.add("show");
     say("货架倾覆！力矩超限");return;
   }
@@ -321,7 +351,7 @@ function winLevel(){
   if(GB.available)GB.reportScore("cargo-balance",{metricValue:lv+1,metricExtra:L.boxes.length}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
   $("ovDesc").innerHTML="第 "+(lv+1)+" 关完成<br>最终力矩 "+torque+" / "+L.limit+" · 共 "+L.boxes.length+" 箱";
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关","play");
   $("overlay").classList.add("show");
 }
 function failRetry(){
@@ -339,24 +369,63 @@ function step(ts){
   requestAnimationFrame(step);
 }
 /* ---------- 绘制 ---------- */
+/* 货箱：渐变 + 顶部亮面 + 落地投影 */
+function drawBox(x,y,w,h,base){
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.32)";ctx.shadowBlur=5;ctx.shadowOffsetY=2;
+  var g=ctx.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,colMix(base,WHITE,0.30));g.addColorStop(0.5,base);g.addColorStop(1,colMix(base,BLACK,0.22));
+  ctx.fillStyle=g;ctx.fillRect(x,y,w,h);
+  ctx.restore();
+  ctx.strokeStyle=colMix(base,BLACK,0.4);ctx.lineWidth=1.2;ctx.strokeRect(x+.5,y+.5,w-1,h-1);
+  ctx.fillStyle=colMix(base,WHITE,0.5);ctx.fillRect(x+1.5,y+1.5,w-3,2);
+}
+/* 托盘：绳 + 承接面（亮边 + 面 + 投影）+ 左右标注 */
+function drawPan(cx,topY,label){
+  ctx.strokeStyle=PAL.beam2;ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(cx,topY);ctx.lineTo(cx,topY+16);ctx.stroke();
+  var pw=46,ph=7,py=topY+16;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.30)";ctx.shadowBlur=5;ctx.shadowOffsetY=2;
+  var g=ctx.createLinearGradient(0,py,0,py+ph);
+  g.addColorStop(0,PAL.trayHi);g.addColorStop(1,colMix(PAL.tray,BLACK,0.22));
+  ctx.fillStyle=g;rr(cx-pw/2,py,pw,ph,3);ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle=colMix(PAL.tray,BLACK,0.35);ctx.lineWidth=1;rr(cx-pw/2+.5,py+.5,pw-1,ph-1,2.5);ctx.stroke();
+  ctx.fillStyle=PAL.muted;ctx.font="600 12px -apple-system,'PingFang SC',sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="top";
+  ctx.fillText(label,cx,py+ph+3);
+}
 function draw(){
-  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  // 天地（渐变面）
+  var sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,PAL.sky1);sky.addColorStop(1,PAL.sky2);
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
   var fx=W/2,fy=Math.round(H*0.66);
-  //底座
-  ctx.fillStyle=PAL.ful;
+  // 底座（渐变 + 投影）
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=10;ctx.shadowOffsetY=4;
+  var fg=ctx.createLinearGradient(0,fy,0,fy+60);
+  fg.addColorStop(0,colMix(PAL.ful,WHITE,0.14));fg.addColorStop(1,colMix(PAL.ful,BLACK,0.30));
+  ctx.fillStyle=fg;
   ctx.beginPath();ctx.moveTo(fx-26,fy+52);ctx.lineTo(fx+26,fy+52);ctx.lineTo(fx,fy);ctx.closePath();ctx.fill();
-  ctx.fillRect(fx-40,fy+52,80,8);
-  //横梁（随力矩倾斜）
+  rr(fx-40,fy+52,80,8,3);ctx.fill();
+  ctx.restore();
+  // 横梁（随力矩倾斜）
   ctx.save();
   ctx.translate(fx,fy);ctx.rotate(tilt);
   var beamW=Math.min(W-30,300),beamH=14;
-  ctx.fillStyle=PAL.beam;ctx.fillRect(-beamW/2,-beamH/2,beamW,beamH);
-  ctx.fillStyle=PAL.beam2;ctx.fillRect(-beamW/2,-beamH/2,beamW,4);
-  //左右托盘绳
-  ctx.strokeStyle=PAL.beam2;ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(-beamW/2+12,beamH/2);ctx.lineTo(-beamW/2+12,beamH/2+16);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(beamW/2-12,beamH/2);ctx.lineTo(beamW/2-12,beamH/2+16);ctx.stroke();
-  //已放货箱：左右按顺序码放
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.30)";ctx.shadowBlur=8;ctx.shadowOffsetY=4;
+  var bg2=ctx.createLinearGradient(0,-beamH/2,0,beamH/2);
+  bg2.addColorStop(0,colMix(PAL.beam,WHITE,0.22));bg2.addColorStop(1,colMix(PAL.beam,BLACK,0.24));
+  ctx.fillStyle=bg2;rr(-beamW/2,-beamH/2,beamW,beamH,4);ctx.fill();
+  ctx.restore();
+  ctx.fillStyle=colMix(PAL.beam,WHITE,0.30);ctx.fillRect(-beamW/2,-beamH/2,beamW,3);
+  // 左右托盘（可落点）
+  drawPan(-beamW/2+12,beamH/2,"左盘");
+  drawPan(beamW/2-12,beamH/2,"右盘");
+  // 已放货箱：左右按顺序码放
   var bw=Math.min(26,Math.floor((beamW/2-24)/7)),bh=bw;
   var lCount=0,rCount=0;
   for(var i=0;i<placed.length;i++){
@@ -364,37 +433,45 @@ function draw(){
     var slot=p.side<0?lCount++:rCount++;
     var x0=(p.side<0?-beamW/2+16-slot*bw:beamW/2-16-(slot+1)*bw);
     var y0=-beamH/2-bh;
-    ctx.fillStyle=PAL.boxes[i%4];
-    ctx.fillRect(x0,y0,bw-2,bh);
-    ctx.strokeStyle=PAL.beam2;ctx.lineWidth=1.5;ctx.strokeRect(x0,y0,bw-2,bh);
+    drawBox(x0,y0,bw-2,bh,PAL.boxes[i%4]);
     ctx.fillStyle=PAL.text;
     ctx.font="700 12px -apple-system,'PingFang SC',sans-serif";
     ctx.textAlign="center";ctx.textBaseline="middle";
     ctx.fillText(String(p.w),x0+(bw-2)/2,y0+bh/2);
   }
-  //当前货箱（横梁中点上方）
+  // 当前货箱（横梁中点上方，呼吸选中环）
   if(!over&&idx<L.boxes.length){
     var w=L.boxes[idx];
     var cw=Math.min(40,Math.max(28,bw+8)),ch2=cw;
-    var cx0=-cw/2,cy0=-beamH/2-(L.boxes.length>0?0:0)-ch2-26;
-    ctx.fillStyle=PAL.boxes[idx%4];
-    ctx.fillRect(cx0,cy0,cw,ch2);
-    ctx.strokeStyle=PAL.beam2;ctx.lineWidth=2;ctx.strokeRect(cx0,cy0,cw,ch2);
+    var cx0=-cw/2,cy0=-beamH/2-ch2-26;
+    drawBox(cx0,cy0,cw,ch2,PAL.boxes[idx%4]);
+    var pu=1+0.05*Math.sin(performance.now()/220);
+    ctx.globalAlpha=.9;ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;
+    rr(cx0-3*pu,cy0-3*pu,cw+6*pu,ch2+6*pu,6);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=PAL.text;ctx.font="700 18px -apple-system,'PingFang SC',sans-serif";
     ctx.textAlign="center";ctx.textBaseline="middle";
     ctx.fillText(String(w),cx0+cw/2,cy0+ch2/2);
     ctx.fillStyle=PAL.muted;ctx.font="600 12px -apple-system,'PingFang SC',sans-serif";
+    ctx.textBaseline="alphabetic";
     ctx.fillText("下一箱",0,cy0-10);
   }
   ctx.restore();
-  //力矩表
+  // 力矩表（轨道 / 安全区 / 旋钮 / 限位）
   var gw=Math.min(240,W-40),gx=(W-gw)/2,gy=H-26;
   ctx.fillStyle=PAL.surface2;rr(gx,gy,gw,10,5);ctx.fill();
+  ctx.fillStyle=colMix(PAL.surface2,BLACK,0.10);rr(gx+1,gy+5,gw-2,4,2);ctx.fill();
+  ctx.fillStyle=colMix(PAL.success,WHITE,0.25);rr(gx+gw*0.2,gy+2,gw*0.6,6,3);ctx.fill();
   var k=Math.max(-1,Math.min(1,torque/L.limit));
-  ctx.fillStyle=Math.abs(k)>0.85?PAL.danger:(Math.abs(k)>0.6?PAL.warning:PAL.success);
-  var cw2=20;
-  rr(gx+gw/2+k*(gw/2-cw2/2)-cw2/2,gy-2,cw2,14,7);ctx.fill();
-  //限位刻度
+  var knob=Math.abs(k)>0.85?PAL.danger:(Math.abs(k)>0.6?PAL.warning:PAL.success);
+  var cw2=20,kx=gx+gw/2+k*(gw/2-cw2/2)-cw2/2;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.35)";ctx.shadowBlur=4;ctx.shadowOffsetY=2;
+  var kg=ctx.createLinearGradient(0,gy-2,0,gy+12);
+  kg.addColorStop(0,colMix(knob,WHITE,0.35));kg.addColorStop(1,colMix(knob,BLACK,0.18));
+  ctx.fillStyle=kg;rr(kx,gy-2,cw2,14,7);ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle=colMix(knob,BLACK,0.4);ctx.lineWidth=1;rr(kx+.5,gy-1.5,cw2-1,13,6.5);ctx.stroke();
+  ctx.fillStyle=PAL.muted;ctx.fillRect(gx+gw/2-.5,gy-4,1,18);
   ctx.fillStyle=PAL.danger;
   ctx.fillRect(gx-2,gy-3,2,16);ctx.fillRect(gx+gw,gy-3,2,16);
   ctx.fillStyle=PAL.muted;ctx.font="600 12px -apple-system,'PingFang SC',sans-serif";
@@ -431,7 +508,7 @@ $("btnLv").addEventListener("click",function(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="通关的关卡标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 });
 $("ovBtn").addEventListener("click",function(){
@@ -474,7 +551,7 @@ function syncSaveFromServer(){
     }catch(e){}
   }).catch(function(){});
 }
-palLoad();resize();loadLevel(lv);
+palLoad();resize();loadLevel(lv);setOvBtn("下一关","play");
 requestAnimationFrame(step);
 syncLevelsFromServer();syncSaveFromServer();
 })();
@@ -510,6 +587,14 @@ syncLevelsFromServer();syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 按钮图标注入（内联 SVG，零外链；已注入的按钮跳过，避免覆盖） */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var M=[["btnUndo","undo"],["btnHint","bulb"],["btnReset","rotate"],["btnLv","grid"],["cLeft","arrow-left"],["cRight","arrow-right"]],i;
+  for(i=0;i<M.length;i++){var b=$(M[i][0]);if(b&&!b.querySelector("svg"))b.insertAdjacentHTML("afterbegin",window.SW_ICON(M[i][1]));}
 })();
 </script>
 </body>

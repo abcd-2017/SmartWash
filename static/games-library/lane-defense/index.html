@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>菜园保卫</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材（st- 前缀素材 token）*/
+  /*token:GAME-THEME.md §2 基线 + §3 素材（--g-lnd- 前缀素材 token）*/
   :root {
     --g-bg:#F5F6F3; --g-surface:#FFFFFF; --g-surface2:#EFF1EE;
     --g-primary:#2D9B6A; --g-primary-deep:#17734A;--g-btn-primary:#17734A; --g-primary-soft:#E8F6EF; --g-on-primary:#FFFFFF; --g-on-soft:#0B3625;
@@ -15,7 +15,8 @@
     --g-scrim:rgba(245,246,243,.9);
     --g-shadow:0 2px 12px rgba(20,40,30,.05);
     --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
-    --g-st-lawn1:#CFE3C0; --g-st-lawn2:#C2D9B2; --g-st-soil:#A9885A; --g-st-zbody:#8A9B8E;
+    --g-lnd-lawn1:#CFE3C0; --g-lnd-lawn2:#C2D9B2; --g-lnd-soil:#A9885A; --g-lnd-zbody:#8A9B8E;
+    --g-lnd-plant-hi:#7FD4A8; --g-lnd-zombie-hi:#A9B8AC; --g-lnd-pea:#8FE3B6; --g-lnd-sun:#E8B45C;
     color-scheme:light;
   }
   :root[data-theme=dark] {
@@ -25,7 +26,8 @@
     --g-danger:#DB7186; --g-warning:#E2A44E; --g-success:#4ADE6E; --g-water:#6BB4DE;
     --g-scrim:rgba(20,22,20,.9);
     --g-shadow:0 2px 12px rgba(0,0,0,.28);
-    --g-st-lawn1:#2A3A24; --g-st-lawn2:#22301D; --g-st-soil:#C7A469; --g-st-zbody:#5E6E62;
+    --g-lnd-lawn1:#2A3A24; --g-lnd-lawn2:#22301D; --g-lnd-soil:#C7A469; --g-lnd-zbody:#5E6E62;
+    --g-lnd-plant-hi:#9BE3BC; --g-lnd-zombie-hi:#7E8E82; --g-lnd-pea:#9BE3BC; --g-lnd-sun:#E2A44E;
     color-scheme:dark;
   }
   * { box-sizing: border-box; }
@@ -89,8 +91,28 @@
     display: none; flex-direction: column; align-items: center; justify-content: center;
     gap: 8px; padding: 16px; text-align: center;
   }
-  .overlay.show { display: flex; animation: rise .18s ease-out; }
-  @keyframes rise { from { transform: translateY(6px); } to { transform: translateY(0); } }
+  .overlay.show { display: flex; animation: fadein .18s ease-out, pop .26s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  /* 入场错落：页头/记分/舞台/图例/工具/页脚依次浮入，单段 ≤200ms、总量 ≤600ms */
+  header, .stats, .stage, .legend, .tools, .foot { animation: rise .38s ease-out both; }
+  .stats { animation-delay: 40ms; }
+  .stage { animation-delay: 80ms; }
+  .legend { animation-delay: 120ms; }
+  .tools { animation-delay: 160ms; }
+  .foot { animation-delay: 200ms; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  .stat .val.pop { animation: valpop .24s ease-out; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .btxt { display: inline-block; }
+  .btn, .icon-btn, .lv-chip { transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out, box-shadow .16s ease-out; }
+  .btn:active, .icon-btn:active, .lv-chip:active { transform: scale(.96); }
+  .btn.sel { background: var(--g-primary-soft); color: var(--g-on-soft); border: 1px solid var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+  .lg-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--g-surface2); border-radius: 10px; padding: 4px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-chip .swi { width: 16px; height: 16px; }
   .ov-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--g-primary-deep); max-width: 100%; }
   .ov-sub { margin: 0 0 6px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .btn-row { display: flex; gap: 8px; width: 100%; max-width: 340px; }
@@ -110,7 +132,7 @@
   .badge.show { display: inline-block; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -126,6 +148,26 @@ window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
+</script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'sun':'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/>',
+ 'leaf':'<path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10z"/><path d="M12 21v-8"/>',
+ 'pea':'<circle cx="12" cy="12" r="6"/><path d="M12 6V3"/>',
+ 'nut':'<ellipse cx="12" cy="13" rx="7" ry="8"/><path d="M9 8h6"/>',
+ 'tri':'<path d="M12 4l8 14H4z"/><path d="M12 10v4"/>',
+ 'shovel':'<path d="M13 4l7 7M11 6l7 7-8 8a3.2 3.2 0 0 1-4.5-4.5z"/><path d="M5 15l4 4"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'flag':'<path d="M5 21V4M5 4h12l-2.5 4L17 12H5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>'
+};
+var fill={'play':1,'flag':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
 </script>
 </head>
 <body>
@@ -167,6 +209,12 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
       <div class="lv-wrap"><div class="lv-grid" id="lvGrid"></div></div>
       <div class="btn-row"><button class="btn ghost" id="btnCloseSelect" type="button">关闭</button></div>
     </div>
+  </div>
+  <div class="legend">
+    <span class="lg-chip"><svg class="swi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--g-primary)" aria-hidden="true"><path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10z"/><path d="M12 21v-8"/></svg><span><b>植物</b> · 你控制</span></span>
+    <span class="lg-chip"><svg class="swi" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--g-success)" aria-hidden="true"><path d="M5 21V4M5 4h12l-2.5 4L17 12H5"/></svg><span><b>家园</b> · 目标</span></span>
+    <span class="lg-chip"><svg class="swi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--g-danger)" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg><span><b>僵尸</b> · 危险</span></span>
+    <span class="lg-chip"><svg class="swi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--g-warning)" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg><span><b>阳光</b> · 点击收取</span></span>
   </div>
   <p class="msg" id="msg" role="status" aria-live="polite"></p>
   <div class="tools"><button class="btn ghost" id="card0" type="button">向日葵 50</button><button class="btn ghost" id="card1" type="button">豌豆 100</button><button class="btn ghost" id="card2" type="button">坚果 50</button><button class="btn ghost" id="card3" type="button">三连 200</button><button class="btn ghost" id="card4" type="button">铲子</button><button class="btn ghost" id="btnRetryBottom" type="button">重玩</button></div>
@@ -365,7 +413,7 @@ LD.step=function(run,dt,autoCollectDelay){
         if(pl.shootT<=0){
           pl.shootT=def.shootEvery;
           run.peas.push({x:px+12,y:py,row:pl.row,dmg:def.dmg});
-          if(def.shots===2)run.peas.push({x:px-2,y:py,row:pl.row,dmg:def.dmg});
+          if(def.shots>=2)run.peas.push({x:px-2,y:py,row:pl.row,dmg:def.dmg});
         }
       }
     }
@@ -446,14 +494,36 @@ function palLoad(){
   var s=getComputedStyle(document.documentElement);
   function v(n){return s.getPropertyValue(n).trim()}
   PAL={bg:v("--g-bg"),text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),
-    primary:v("--g-primary"),deep:v("--g-primary-deep"),danger:v("--g-danger"),warning:v("--g-warning"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),danger:v("--g-danger"),warning:v("--g-warning"),
     water:v("--g-water"),success:v("--g-success"),onPrimary:v("--g-on-primary"),surface:v("--g-surface"),surface2:v("--g-surface2"),
-    lawn1:v("--g-st-lawn1"),lawn2:v("--g-st-lawn2"),soil:v("--g-st-soil"),zbody:v("--g-st-zbody")};
+    lawn1:v("--g-lnd-lawn1"),lawn2:v("--g-lnd-lawn2"),soil:v("--g-lnd-soil"),zbody:v("--g-lnd-zbody"),
+    plantHi:v("--g-lnd-plant-hi"),zombieHi:v("--g-lnd-zombie-hi"),pea:v("--g-lnd-pea"),sun:v("--g-lnd-sun")};
 }
-window.__gOnTheme=function(){palLoad();grads=null;};
+window.__gOnTheme=function(){palLoad();grads=null;lawnTop=null;buildGrads();};
 palLoad();
-var grads=null;
-function buildGrads(){grads=ctx.createLinearGradient(0,LD.OY,0,LD.OY+LD.ROWS*LD.CELL_H);grads.addColorStop(0,PAL.lawn1);grads.addColorStop(1,PAL.lawn2);}
+var grads=null,lawnTop=null;
+function buildGrads(){
+  grads=ctx.createLinearGradient(0,LD.OY,0,LD.OY+LD.ROWS*LD.CELL_H);
+  grads.addColorStop(0,PAL.lawn1);grads.addColorStop(1,PAL.lawn2);
+  // 顶光 / 底影：恒白 → 透明 → 恒黑，让地面有「面」的体积感
+  lawnTop=ctx.createLinearGradient(0,LD.OY,0,LD.OY+LD.ROWS*LD.CELL_H);
+  lawnTop.addColorStop(0,"rgba(255,255,255,0.22)");lawnTop.addColorStop(0.5,"rgba(255,255,255,0)");lawnTop.addColorStop(1,"rgba(0,0,0,0.06)");
+}
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 
 /* ========== 音效 ========== */
 var AC=null;
@@ -517,7 +587,7 @@ var curSave=(function(){
   try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object")return{lv:parseInt(s.lv,10)||0,best:parseInt(s.best,10)||1};}catch(e){}
   return{lv:0,best:1};
 })();
-var unlocked=clamp(curSave.best,1,1);
+var unlocked=clamp(curSave.best,1,LEVELS.length);
 function save(){
   var data={lv:cur,best:unlocked};
   try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
@@ -553,11 +623,13 @@ var ui={
   cardBtns:[document.getElementById("card0"),document.getElementById("card1"),document.getElementById("card2"),document.getElementById("card3"),document.getElementById("card4")]
 };
 function say(t){ui.msg.textContent=t}
+function bump(el){var s=String(el.textContent);if(el.__last===s)return;el.__last=s;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}
 function startLevel(n){
   cur=clamp(n,0,Math.max(0,LEVELS.length-1));
   var L=LEVELS[cur];
   G=LD.createRun(L);
   selCard=-1;
+  for(var c=0;c<5;c++)ui.cardBtns[c].classList.remove("sel");
   state="running";
   showOverlay(null);
   buildLevelChips();
@@ -640,9 +712,11 @@ function syncHud(){
   ui.lives.textContent=String(Math.max(0,G.lives));
   for(var c=0;c<4;c++){
     var def=LD.PLANTS[c];
-    ui.cardBtns[c].textContent=def.name+" "+def.cost;
+    if(window.__setBtnLabel)window.__setBtnLabel(ui.cardBtns[c],def.name+" "+def.cost);
+    else ui.cardBtns[c].textContent=def.name+" "+def.cost;
     ui.cardBtns[c].disabled=G.sun<def.cost;
   }
+  bump(ui.sun);
 }
 
 /* ========== 绘制 ========== */
@@ -652,59 +726,76 @@ function rr(x,y,w,h,r){
   ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
   ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
 }
+function LDOccupied(col,row){
+  if(!G)return false;
+  for(var i=0;i<G.plants.length;i++)if(G.plants[i].col===col&&G.plants[i].row===row)return true;
+  return false;
+}
 function drawPlant(pl){
   var x=LD.OX+pl.col*LD.CELL_W+LD.CELL_W/2,y=LD.OY+pl.row*LD.CELL_H+LD.CELL_H/2;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=8;ctx.shadowOffsetY=4;   // 恒黑落地投影
   if(pl.type===0){
-    // 向日葵：花瓣 + 盘
-    ctx.fillStyle=PAL.warning;
+    // 向日葵：花瓣径向渐变「面」+ 花盘 + 恒白高光
     for(var i=0;i<8;i++){
-      var an=i*Math.PI/4;
-      ctx.beginPath();
-      ctx.ellipse(x+Math.cos(an)*10,y+Math.sin(an)*10,5.5,3.5,an,0,6.3);
-      ctx.fill();
+      var an=i*Math.PI/4,px=x+Math.cos(an)*10,py=y+Math.sin(an)*10;
+      var pg=ctx.createRadialGradient(px-1.5,py-1.5,1,px,py,6);
+      pg.addColorStop(0,colMix(PAL.warning,WHITE,0.45));pg.addColorStop(1,PAL.warning);
+      ctx.fillStyle=pg;
+      ctx.beginPath();ctx.ellipse(px,py,5.5,3.5,an,0,6.3);ctx.fill();
     }
-    ctx.fillStyle=PAL.deep;
-    ctx.beginPath();ctx.arc(x,y,8.5,0,6.3);ctx.fill();
+    var cg=ctx.createRadialGradient(x-2,y-2,1,x,y,9);
+    cg.addColorStop(0,PAL.deep);cg.addColorStop(1,colShade(PAL.deep,-0.35));
+    ctx.fillStyle=cg;ctx.beginPath();ctx.arc(x,y,8.5,0,6.3);ctx.fill();
+    ctx.restore();
+    ctx.fillStyle=WHITE;ctx.beginPath();ctx.arc(x-3,y-3,2,0,6.3);ctx.fill();   // 恒白高光
   }else if(pl.type===1||pl.type===3){
-    // 豌豆 / 双发：头 + 茎
-    ctx.strokeStyle=PAL.primary;ctx.lineWidth=4;
+    // 豌豆 / 三连：茎 + 径向渐变头 + 瞳 + 恒白高光
+    ctx.strokeStyle=colShade(PAL.primary,-0.2);ctx.lineWidth=4;ctx.lineCap="round";
     ctx.beginPath();ctx.moveTo(x-4,y+16);ctx.quadraticCurveTo(x-2,y+6,x,y);ctx.stroke();
-    ctx.fillStyle=PAL.primary;
-    ctx.beginPath();ctx.arc(x,y-4,10,0,6.3);ctx.fill();
-    ctx.fillStyle=PAL.deep;
-    ctx.beginPath();ctx.arc(x-6,y-8,3,0,6.3);ctx.fill();
-    if(pl.type===3){
-      ctx.fillStyle=PAL.primary;
-      ctx.beginPath();ctx.arc(x-11,y-2,7,0,6.3);ctx.fill();
+    var heads=pl.type===3?[[x,y-4,10],[x-11,y-2,7]]:[[x,y-4,10]];
+    for(var h=0;h<heads.length;h++){
+      var hx=heads[h][0],hy=heads[h][1],hr=heads[h][2];
+      var hg=ctx.createRadialGradient(hx-3,hy-3,1,hx,hy,hr+1);
+      hg.addColorStop(0,PAL.plantHi);hg.addColorStop(0.6,PAL.primary);hg.addColorStop(1,colShade(PAL.primary,-0.35));
+      ctx.fillStyle=hg;ctx.beginPath();ctx.arc(hx,hy,hr,0,6.3);ctx.fill();
     }
+    ctx.restore();
+    ctx.fillStyle=colShade(PAL.deep,-0.4);ctx.beginPath();ctx.arc(x-6,y-8,3,0,6.3);ctx.fill();
+    ctx.fillStyle=WHITE;ctx.beginPath();ctx.arc(x-3,y-9,2.2,0,6.3);ctx.fill();   // 恒白高光
   }else{
-    // 坚果
-    ctx.fillStyle=PAL.soil;
-    ctx.beginPath();ctx.ellipse(x,y+2,13,16,0,0,6.3);ctx.fill();
-    ctx.strokeStyle=PAL.deep;ctx.lineWidth=1.6;ctx.stroke();
-    ctx.fillStyle="rgba(255,255,255,.55)";   // 恒白高光，素材例外
-    ctx.beginPath();ctx.arc(x-4,y-6,3,0,6.3);ctx.fill();
+    // 坚果：土壤渐变体 + 顶光 + 深描边
+    var ng=ctx.createRadialGradient(x-4,y-4,2,x,y+2,17);
+    ng.addColorStop(0,colMix(PAL.soil,WHITE,0.35));ng.addColorStop(1,colShade(PAL.soil,-0.3));
+    ctx.fillStyle=ng;ctx.beginPath();ctx.ellipse(x,y+2,13,16,0,0,6.3);ctx.fill();
+    ctx.strokeStyle=colShade(PAL.soil,-0.4);ctx.lineWidth=1.6;ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle=WHITE;ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(x-4,y-6,3,0,6.3);ctx.fill();ctx.globalAlpha=1;   // 恒白高光
   }
   if(pl.hp<LD.PLANTS[pl.type].hp){
-    ctx.fillStyle=PAL.faint;
-    ctx.fillRect(x-12,y-24,24,3.5);
-    ctx.fillStyle=PAL.success;
-    ctx.fillRect(x-12,y-24,24*Math.max(0,pl.hp/LD.PLANTS[pl.type].hp),3.5);
+    ctx.fillStyle="rgba(0,0,0,0.18)";ctx.fillRect(x-12,y-24,24,3.5);   // 恒暗轨道
+    ctx.fillStyle=PAL.success;ctx.fillRect(x-12,y-24,24*Math.max(0,pl.hp/LD.PLANTS[pl.type].hp),3.5);
   }
 }
 function drawZombie(z){
-  var c=z.kind===2?PAL.danger:(z.kind===1?PAL.warning:PAL.zbody);
-  ctx.fillStyle=c;
-  rr(z.x-9,z.y-16,18,26,8);ctx.fill();
-  ctx.fillStyle=PAL.text;
-  ctx.beginPath();ctx.arc(z.x-3,z.y-10,2.2,0,6.3);ctx.arc(z.x+5,z.y-10,2.2,0,6.3);ctx.fill();
-  ctx.strokeStyle=PAL.deep;ctx.lineWidth=1.6;
-  rr(z.x-9,z.y-16,18,26,8);ctx.stroke();
+  var body=z.kind===2?PAL.danger:(z.kind===1?PAL.warning:PAL.zbody);
+  var hi=z.kind===2?colMix(PAL.danger,WHITE,0.35):(z.kind===1?colMix(PAL.warning,WHITE,0.35):PAL.zombieHi);
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.3)";ctx.shadowBlur=8;ctx.shadowOffsetY=4;   // 恒黑落地投影
+  var g=ctx.createLinearGradient(0,z.y-16,0,z.y+10);
+  g.addColorStop(0,hi);g.addColorStop(0.55,body);g.addColorStop(1,colShade(body,-0.32));
+  ctx.fillStyle=g;rr(z.x-9,z.y-16,18,26,8);ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=1.6;ctx.strokeStyle=colShade(body,-0.45);rr(z.x-9,z.y-16,18,26,8);ctx.stroke();
+  // 手臂
+  ctx.strokeStyle=colShade(body,-0.25);ctx.lineWidth=3;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(z.x-9,z.y-2);ctx.lineTo(z.x-15,z.y+2);ctx.stroke();
+  // 眼（恒白底 + 墨瞳）
+  ctx.fillStyle=WHITE;ctx.beginPath();ctx.arc(z.x-3,z.y-10,3,0,6.3);ctx.arc(z.x+5,z.y-10,3,0,6.3);ctx.fill();
+  ctx.fillStyle=PAL.text;ctx.beginPath();ctx.arc(z.x-3,z.y-10,1.4,0,6.3);ctx.arc(z.x+5,z.y-10,1.4,0,6.3);ctx.fill();
   if(z.hp<z.maxhp){
-    ctx.fillStyle=PAL.faint;
-    ctx.fillRect(z.x-11,z.y-24,22,3.5);
-    ctx.fillStyle=PAL.danger;
-    ctx.fillRect(z.x-11,z.y-24,22*Math.max(0,z.hp/z.maxhp),3.5);
+    ctx.fillStyle="rgba(0,0,0,0.18)";ctx.fillRect(z.x-11,z.y-24,22,3.5);   // 恒暗轨道
+    ctx.fillStyle=PAL.danger;ctx.fillRect(z.x-11,z.y-24,22*Math.max(0,z.hp/z.maxhp),3.5);
   }
 }
 function draw(){
@@ -712,40 +803,66 @@ function draw(){
   ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
   ctx.save();
   ctx.translate(offX,offY);ctx.scale(S,S);
-  // 菜地
+  // 菜地托盘「面」：圆角底 + 落地投影
   ctx.fillStyle=PAL.surface2;
-  ctx.fillRect(LD.OX-6,LD.OY-6,LD.COLS*LD.CELL_W+12,LD.ROWS*LD.CELL_H+12);
-  for(var r=0;r<LD.ROWS;r++){
-    for(var c=0;c<LD.COLS;c++){
-      ctx.fillStyle=(r+c)%2===0?PAL.lawn1:PAL.lawn2;
-      ctx.fillRect(LD.OX+c*LD.CELL_W,LD.OY+r*LD.CELL_H,LD.CELL_W,LD.CELL_H);
-    }
-  }
+  rr(LD.OX-6,LD.OY-6,LD.COLS*LD.CELL_W+12,LD.ROWS*LD.CELL_H+12,10);ctx.fill();
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.20)";ctx.shadowBlur=14;ctx.shadowOffsetY=6;   // 恒黑落地投影
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=2;
+  rr(LD.OX-6,LD.OY-6,LD.COLS*LD.CELL_W+12,LD.ROWS*LD.CELL_H+12,10);ctx.stroke();
+  ctx.restore();
+  // 地面「面」:渐变 + 棋盘格 + 顶光
+  ctx.fillStyle=grads;ctx.fillRect(LD.OX,LD.OY,LD.COLS*LD.CELL_W,LD.ROWS*LD.CELL_H);
+  ctx.fillStyle=PAL.lawn2;
+  for(var r=0;r<LD.ROWS;r++)for(var c=0;c<LD.COLS;c++)if((r+c)%2===1)ctx.fillRect(LD.OX+c*LD.CELL_W,LD.OY+r*LD.CELL_H,LD.CELL_W,LD.CELL_H);
+  ctx.fillStyle=lawnTop;ctx.fillRect(LD.OX,LD.OY,LD.COLS*LD.CELL_W,LD.ROWS*LD.CELL_H);
+  // 车道沟槽（边线「面」）
   ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
-  ctx.strokeRect(LD.OX+0.5,LD.OY+0.5,LD.COLS*LD.CELL_W-1,LD.ROWS*LD.CELL_H-1);
-  // 宅基线
-  ctx.fillStyle=PAL.deep;
-  ctx.fillRect(LD.OX-10,LD.OY,6,LD.ROWS*LD.CELL_H);
-  // 光标格
+  for(var r2=1;r2<LD.ROWS;r2++){ctx.beginPath();ctx.moveTo(LD.OX,LD.OY+r2*LD.CELL_H);ctx.lineTo(LD.OX+LD.COLS*LD.CELL_W,LD.OY+r2*LD.CELL_H);ctx.stroke();}
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=2;ctx.strokeRect(LD.OX+1,LD.OY+1,LD.COLS*LD.CELL_W-2,LD.ROWS*LD.CELL_H-2);
+  // 家园（目标）：左侧旗 + 旗杆
+  ctx.fillStyle=PAL.deep;ctx.fillRect(LD.OX-10,LD.OY,6,LD.ROWS*LD.CELL_H);
+  ctx.strokeStyle=PAL.success;ctx.lineWidth=2.4;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(LD.OX-7,LD.OY+6);ctx.lineTo(LD.OX-7,LD.OY-16);ctx.stroke();
+  ctx.fillStyle=PAL.success;
+  ctx.beginPath();ctx.moveTo(LD.OX-7,LD.OY-16);ctx.lineTo(LD.OX+6,LD.OY-12);ctx.lineTo(LD.OX-7,LD.OY-8);ctx.closePath();ctx.fill();
+  // 可落点：选中卡后面空槽位轻染软底，光标格描边
+  if(state==="running"&&selCard>=0&&selCard<4){
+    ctx.fillStyle=PAL.soft;ctx.globalAlpha=.55;
+    for(var r3=0;r3<LD.ROWS;r3++)for(var c3=0;c3<LD.COLS;c3++)if(!LDOccupied(c3,r3))ctx.fillRect(LD.OX+c3*LD.CELL_W+3,LD.OY+r3*LD.CELL_H+3,LD.CELL_W-6,LD.CELL_H-6);
+    ctx.globalAlpha=1;
+  }
   if(selCard>=0&&state==="running"){
-    ctx.strokeStyle=selCard===4?PAL.danger:PAL.primary;
-    ctx.lineWidth=2.4;
-    ctx.strokeRect(LD.OX+cursor.col*LD.CELL_W+2,LD.OY+cursor.row*LD.CELL_H+2,LD.CELL_W-4,LD.CELL_H-4);
+    var cx=LD.OX+cursor.col*LD.CELL_W,cy=LD.OY+cursor.row*LD.CELL_H;
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,0.25)";ctx.shadowBlur=6;ctx.shadowOffsetY=2;   // 恒黑投影
+    ctx.strokeStyle=selCard===4?PAL.danger:PAL.primary;ctx.lineWidth=3;
+    rr(cx+2,cy+2,LD.CELL_W-4,LD.CELL_H-4,8);ctx.stroke();
+    ctx.restore();
+    ctx.strokeStyle=WHITE;ctx.lineWidth=1.2;rr(cx+4.5,cy+4.5,LD.CELL_W-9,LD.CELL_H-9,6);ctx.stroke();   // 恒白衬底
   }
   if(G){
     for(var i=0;i<G.plants.length;i++)drawPlant(G.plants[i]);
-    // 豌豆
-    ctx.fillStyle=PAL.success;
+    // 豌豆：径向渐变弹体 + 恒白高光
     for(var p=0;p<G.peas.length;p++){
-      ctx.beginPath();ctx.arc(G.peas[p].x,G.peas[p].y,5,0,6.3);ctx.fill();
+      var px2=G.peas[p].x,py2=G.peas[p].y;
+      ctx.save();ctx.shadowColor="rgba(0,0,0,0.3)";ctx.shadowBlur=5;ctx.shadowOffsetY=2;
+      var pgb=ctx.createRadialGradient(px2-1.5,py2-1.5,0.5,px2,py2,6);
+      pgb.addColorStop(0,PAL.pea);pgb.addColorStop(1,colShade(PAL.primary,-0.3));
+      ctx.fillStyle=pgb;ctx.beginPath();ctx.arc(px2,py2,5,0,6.3);ctx.fill();ctx.restore();
+      ctx.fillStyle=WHITE;ctx.beginPath();ctx.arc(px2-1.5,py2-1.5,1.4,0,6.3);ctx.fill();
     }
     for(var z=0;z<G.zombies.length;z++)drawZombie(G.zombies[z]);
-    // 阳光
+    // 阳光：径向渐变球 + 光芒 + 恒白高光
     for(var s2=0;s2<G.suns.length;s2++){
       var sn=G.suns[s2];
-      ctx.fillStyle=PAL.warning;
-      ctx.beginPath();ctx.arc(sn.x,sn.y,11,0,6.3);ctx.fill();
-      ctx.strokeStyle=PAL.deep;ctx.lineWidth=1.6;ctx.stroke();
+      ctx.save();ctx.shadowColor="rgba(0,0,0,0.25)";ctx.shadowBlur=6;ctx.shadowOffsetY=3;
+      var sg=ctx.createRadialGradient(sn.x-3,sn.y-3,1,sn.x,sn.y,12);
+      sg.addColorStop(0,colMix(PAL.sun,WHITE,0.5));sg.addColorStop(1,PAL.sun);
+      ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sn.x,sn.y,11,0,6.3);ctx.fill();ctx.restore();
+      ctx.strokeStyle=colMix(PAL.sun,WHITE,0.3);ctx.lineWidth=1.6;ctx.lineCap="round";
+      for(var k=0;k<8;k++){var a2=k*Math.PI/4;ctx.beginPath();ctx.moveTo(sn.x+Math.cos(a2)*13,sn.y+Math.sin(a2)*13);ctx.lineTo(sn.x+Math.cos(a2)*17,sn.y+Math.sin(a2)*17);ctx.stroke();}
+      ctx.fillStyle=WHITE;ctx.beginPath();ctx.arc(sn.x-3,sn.y-3,2.2,0,6.3);ctx.fill();
     }
     syncHud();
   }
@@ -790,6 +907,7 @@ cv.addEventListener("pointerdown",function(ev){
 function selectCard(i){
   if(state!=="running")return;
   selCard=selCard===i?-1:i;
+  for(var c=0;c<5;c++)ui.cardBtns[c].classList.toggle("sel",selCard===c);
 }
 for(var cb=0;cb<4;cb++){
   (function(idx){
@@ -862,6 +980,7 @@ window.__validateLevels=function(){
 };
 
 resize();
+buildGrads();
 LEVELS=buildDefaultLevels();
 loadCachedLevels();
 cur=clamp(parseInt(curSave.lv,10)||0,0,Math.max(0,LEVELS.length-1));
@@ -914,6 +1033,22 @@ syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 按钮图标注入（内联 SVG，零外链）；卡片文案更新走 .btxt，避免抹掉已注入图标 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  function setLabel(btn,txt){var s=btn.querySelector(".btxt");if(s)s.textContent=txt;else btn.textContent=txt;}
+  window.__setBtnLabel=setLabel;
+  function inject(id,icon){
+    var b=$(id);if(!b)return;
+    var t=b.textContent;
+    b.innerHTML=window.SW_ICON(icon)+'<span class="btxt"></span>';
+    setLabel(b,t);
+  }
+  var map=[["btnSelectTop","grid"],["card0","sun"],["card1","pea"],["card2","nut"],["card3","tri"],["card4","shovel"],["btnRetryBottom","rotate"],["btnNext","play"],["btnReplayWin","rotate"],["btnSelectWin","grid"],["btnRetry","rotate"],["btnSelectFail","grid"],["btnCloseSelect","x"]];
+  for(var i=0;i<map.length;i++)inject(map[i][0],map[i][1]);
 })();
 </script>
 </body>

@@ -6,9 +6,11 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>六角填色</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-c1:#E0708A;--g-st-c2:#E8B84A;--g-st-c3:#5AA7E8;--g-st-hx:#F3F5F0;--g-st-hxb:#DDE2DB;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-c1:#E88CA2;--g-st-c2:#F0C96A;--g-st-c3:#74BDF2;--g-st-hx:#222622;--g-st-hxb:#3A403A;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token
+    --g-hf-* 为本作素材色：六角地面（板面/顶光）、格面（面/顶光）、格缘（沟槽边界）、三色棋子；
+    深色为同色相压暗变体（板面下沉为凹槽、格面提亮为「可点 tile」）。*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-hf-board:#D9E0D4;--g-hf-board-hi:#EDF2E9;--g-hf-cell:#FFFFFF;--g-hf-cell-hi:#FFFFFF;--g-hf-cell-edge:#A8B6A2;--g-hf-c1:#E0708A;--g-hf-c2:#E8B84A;--g-hf-c3:#5AA7E8;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-hf-board:#0D110D;--g-hf-board-hi:#1A1F1A;--g-hf-cell:#242824;--g-hf-cell-hi:#303530;--g-hf-cell-edge:#414941;--g-hf-c1:#E88CA2;--g-hf-c2:#F0C96A;--g-hf-c3:#74BDF2;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -23,25 +25,33 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
-  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  /* 关卡标签 = 品牌 soft 底 + deep 字，前缀内联六角图标（照 maze-paint .lvtag 范式） */
+  .lvtag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 10px; background: var(--g-primary-soft); color: var(--g-primary-deep); font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .lvtag .swi { width: 14px; height: 14px; flex: none; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .stat { background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
   .stage { position: relative; }
   canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
   .btn {
-    min-height: 44px; padding: 0 14px; flex: 1;
+    min-height: 44px; padding: 0 12px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
-  .btn:active { opacity: .85; }
+  .btn .swi { width: 18px; height: 18px; flex: none; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
@@ -51,42 +61,80 @@
   }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .panel {
     width: 100%; max-width: 340px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
+    animation: pop .3s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
-  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
   .lvbtn {
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    display: flex; align-items: center; justify-content: center; gap: 4px;
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  /* 选关钮前缀六角：CSS clip-path 矢量形（40 钮共用一条规则，避免逐钮注入体积） */
+  .lvbtn::before { content: ""; width: .72em; height: .72em; flex: none; background: currentColor; opacity: .5; clip-path: polygon(50% 0, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%); }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
-  /* 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
-  /* 键盘焦点可见 */
+  /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 
+  /* 三色「目标」按钮：色块即素材，按钮直接承载「已用/目标」计数——选色与目标同屏 */
   .pad3 { display: flex; gap: 8px; margin-bottom: 8px; }
-  .btn.c0 { background: var(--g-st-c1); color: #1C1C1E; }
-  .btn.c1 { background: var(--g-st-c2); color: #1C1C1E; }
-  .btn.c2 { background: var(--g-st-c3); color: #1C1C1E; }
-  .btn.csel { box-shadow: 0 0 0 3px var(--g-primary-deep) inset; }
-  .chiprow { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 0 2px 8px; min-height: 22px; }
-  .chip { font-size: 12px; background: var(--g-surface2); border-radius: 10px; padding: 2px 10px; color: var(--g-muted); }
-  .chip.bad { color: var(--g-danger); }
+  .cbtn {
+    position: relative; flex: 1; min-height: 60px;
+    flex-direction: column; gap: 1px;
+    color: #1C1C1E;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.06), 0 2px 8px rgba(20,40,30,.10);
+  }
+  .cbtn.c0 { background: var(--g-hf-c1); }
+  .cbtn.c1 { background: var(--g-hf-c2); }
+  .cbtn.c2 { background: var(--g-hf-c3); }
+  .cbtn .swi { width: 18px; height: 18px; flex: none; }
+  .cbtn .nm { font-size: 14px; font-weight: 600; line-height: 1.25; }
+  /* 计数是每色剩余量的唯一载体：.78 不透明度下浅底粉/蓝 chip 仅 4.00/4.46:1（低于小字 4.5），
+     提满到 1 后浅底 5.55/6.59、深底 7.05/8.35，两端均达标（chip 文字恒 #1C1C1E，加深底色反而更差） */
+  .cbtn .ct { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: 1; }
+  .cbtn .badge { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; border-radius: 50%; background: var(--g-surface); color: var(--g-success); display: none; align-items: center; justify-content: center; }
+  .cbtn .badge .swi { width: 11px; height: 11px; }
+  .cbtn.full .badge { display: flex; }
+  .cbtn.full { box-shadow: 0 0 0 3px var(--g-bg), 0 0 0 5px var(--g-success), 0 6px 14px rgba(20,40,30,.18); }
+  .cbtn.over { box-shadow: 0 0 0 3px var(--g-bg), 0 0 0 5px var(--g-danger), 0 6px 14px rgba(20,40,30,.18); }
+  .cbtn.sel { box-shadow: 0 0 0 3px var(--g-bg), 0 0 0 5px var(--g-primary-deep), 0 6px 14px rgba(20,40,30,.20); transform: translateY(-1px); }
+  .cbtn:active { transform: scale(.96); }
 
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'hex':'<path d="M12 2.6l8.4 4.85v9.7L12 21.4l-8.4-4.85v-9.7z"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={ 'play':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -103,19 +151,18 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule">相邻异色 · 各色数量固定</span></header>
+  <header><span class="lvtag" id="lvTag"><span id="lvTagText">第 1 关</span></span><span class="sub" id="lvRule">相邻异色 · 各色数量固定</span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
     <div class="stat"><span class="label">已填</span><span class="val" id="stFill">0/0</span></div>
     <div class="stat"><span class="label">冲突</span><span class="val" id="stErr">0</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="六角填色棋盘" role="img"></canvas></div>
-  <div class="chiprow" id="chiprow"></div>
+  <div class="stage"><canvas id="cv" role="img" aria-label="六角填色棋盘：选色后点按六角格，相邻格不能同色，中心带铆点的为预填格"></canvas></div>
   <p class="msg" id="msg" role="status" aria-live="polite">选色后点六角格填色，相邻格不能同色</p>
   <div class="pad3">
-    <button class="btn c0 csel" id="sw0" type="button">色 一</button>
-    <button class="btn c1" id="sw1" type="button">色 二</button>
-    <button class="btn c2" id="sw2" type="button">色 三</button>
+    <button class="btn cbtn c0 sel" id="sw0" type="button">色一</button>
+    <button class="btn cbtn c1" id="sw1" type="button">色二</button>
+    <button class="btn cbtn c2" id="sw2" type="button">色三</button>
   </div>
   <div class="tools">
     <button class="btn" id="btnUndo" type="button">撤销</button>
@@ -123,7 +170,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <button class="btn" id="btnReset" type="button">重开</button>
     <button class="btn" id="btnLv" type="button">选关</button>
   </div>
-  <p class="foot">键盘：←/→/↑/↓ 移动 · 1/2/3 选色 · Enter 填色/清除 · 40 关 · 进度自动保存</p>
+  <p class="foot">点六角格填色，相邻异色；中心铆点为题目预填格<br>键盘：←/→/↑/↓ 移动 · 1/2/3 选色 · Enter 填色/清除 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
@@ -267,7 +314,7 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 }
 function hideOverlay(){$("overlay").classList.remove("show")}
@@ -341,7 +388,7 @@ function verifyLevel(L){
   for(var c=0;c<3;c++)if(used[c]>L.counts[c])return false;
   return hxCount(L.rows,L.cols,L.cells,L.counts,2)===1;
 }
-/* ---------- 调色板 ---------- */
+/* ---------- 调色板（canvas 颜色全部经 PAL 读 CSS 变量） ---------- */
 var PAL={};
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
@@ -349,14 +396,31 @@ function palLoad(){
   PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
     text:v("--g-text"),muted:v("--g-muted"),deep:v("--g-primary-deep"),
     danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
-    c:[v("--g-st-c1"),v("--g-st-c2"),v("--g-st-c3")],
-    hx:v("--g-st-hx"),hxb:v("--g-st-hxb")};
+    board:v("--g-hf-board"),boardHi:v("--g-hf-board-hi"),
+    cell:v("--g-hf-cell"),cellHi:v("--g-hf-cell-hi"),cellEdge:v("--g-hf-cell-edge"),
+    c:[v("--g-hf-c1"),v("--g-hf-c2"),v("--g-hf-c3")]};
 }
 window.__gOnTheme=function(){palLoad()};
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 /* ---------- 状态 ---------- */
 var lv=save.lv,L=null,grid=[],history=[],selCol=0,cur=-1,done=false;
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var W=0,H=0,dpr=1,cellR=30,rows=4,cols=5,nb=[];
+var anims={},winT0=0;   // 纯渲染态：落子轻弹时间戳 / 过关错位轻弹起点
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
 /* ---------- 关卡 ---------- */
@@ -368,7 +432,8 @@ function loadLevel(n){
   nb=[];
   for(var r=0;r<rows;r++)for(var c=0;c<cols;c++)nb.push(hxNeighbors(r,c,rows,cols));
   grid=L.cells.slice();history=[];cur=0;done=false;selCol=0;
-  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  anims={};winT0=0;
+  $("lvTagText").textContent="第 "+(lv+1)+" 关 · "+L.name;
   var ok=verifyLevel(L);   // 加载复核：唯一解
   if(!ok)say("警告：内嵌验证器判定本关解不唯一或预填冲突（数据异常）");
   else say("选色后点六角格填色，相邻格不能同色");
@@ -389,17 +454,20 @@ function countsNow(){var u=[0,0,0];for(var i=0;i<grid.length;i++)if(grid[i]>=0)u
 function updStats(){
   $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
   $("stFill").textContent=filled()+" / "+grid.length;
-  $("stErr").textContent=conflicts();
+  var errs=conflicts();
+  $("stErr").textContent=errs;
+  $("stErr").classList.toggle("low",errs>0);
   $("btnUndo").disabled=!history.length||done;
 }
+/* 目标计数直接落在三色按钮上：已用 / 目标，选色与目标同屏 */
 function renderChips(){
-  var box=$("chiprow");box.innerHTML="";
   var u=countsNow();
   for(var c=0;c<3;c++){
-    var sp=document.createElement("span");
-    sp.className="chip"+(u[c]>L.counts[c]?" bad":"");
-    sp.textContent=["色一","色二","色三"][c]+" "+u[c]+" / "+L.counts[c];
-    box.appendChild(sp);
+    var b=$("sw"+c);
+    b.querySelector(".ct").textContent=u[c]+" / "+L.counts[c];
+    b.classList.toggle("full",u[c]===L.counts[c]);
+    b.classList.toggle("over",u[c]>L.counts[c]);
+    b.classList.toggle("sel",c===selCol);
   }
 }
 /* ---------- 交互 ---------- */
@@ -411,17 +479,17 @@ function place(i){
     grid[i]=selCol;
     say("已填"+["色一","色二","色三"][selCol]);
   }
-  cur=i;
+  cur=i;anims[i]=performance.now();
   updStats();renderChips();checkWin();
 }
 function selectCol(c){
   selCol=c;
-  for(var i=0;i<3;i++)$("sw"+i).classList.toggle("csel",i===c);
+  renderChips();
 }
 function undo(){
   if(!history.length||done)return;
   var h=history.pop();
-  grid[h.i]=h.prev;cur=h.i;
+  grid[h.i]=h.prev;cur=h.i;anims[h.i]=performance.now();
   updStats();renderChips();say("撤销一步");
 }
 function hint(){
@@ -431,7 +499,7 @@ function hint(){
   if(!empt.length){say("已填满，检查冲突与数量");return}
   var t=cur>=0&&grid[cur]<0?cur:empt[Math.floor(Math.random()*empt.length)];
   history.push({i:t,prev:grid[t]});
-  grid[t]=L.sol[t];
+  grid[t]=L.sol[t];anims[t]=performance.now();
   say("提示：此格应为"+["色一","色二","色三"][L.sol[t]]);
   updStats();renderChips();checkWin();
 }
@@ -446,17 +514,27 @@ function checkWin(){
   persist();
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:history.length}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"六角填满！";
-  $("ovDesc").innerHTML="第 "+(lv+1)+" 关完成 · 操作 "+history.length+" 步"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("ovDesc").innerHTML="第 <b>"+(lv+1)+"</b> 关完成 · 操作 <b>"+history.length+"</b> 步"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
+  setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"play");
+  winT0=performance.now();   // 过关：棋盘错位轻弹
   $("overlay").classList.add("show");
 }
+function setOvBtn(text,icon){$("ovBtn").innerHTML=SW_ICON(icon)+text}
 /* ---------- 绘制 ---------- */
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
 function resize(){
   var wCss=cv.parentElement.clientWidth||360;
   dpr=Math.min(window.devicePixelRatio||1,2);
   cellR=Math.min(Math.floor(wCss/(cols*1.732+0.866+0.4)),44);
-  W=Math.round((cols*1.732+0.866)*cellR+16);
-  H=Math.round(rows*1.5*cellR+2*cellR+12);
+  var rad=cellR-Math.max(2.5,cellR*0.11);
+  /* 板面贴合六角阵：横向含奇数行半格偏移，纵向含上下顶点，四边各留 10 沟槽 */
+  W=Math.min(Math.round(((cols-1)*1.732+0.866)*cellR+1.732*rad+20),wCss);
+  H=Math.round((rows-1)*1.5*cellR+2*rad+20);
   cv.style.height=H+"px";
   cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -472,32 +550,132 @@ function hexPath(cx,cy,rad){
 }
 function centerOf(i){
   var r=Math.floor(i/cols),c=i%cols;
-  return {x:c*1.732*cellR+(r%2)*0.866*cellR+cellR*0.866+8,y:r*1.5*cellR+cellR+6};
+  var rad=cellR-Math.max(2.5,cellR*0.11);
+  return {x:c*1.732*cellR+(r%2)*0.866*cellR+0.866*rad+10,y:r*1.5*cellR+rad+10};
 }
-function draw(){
-  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
-  if(!L)return;
-  for(var i=0;i<grid.length;i++){
-    var p=centerOf(i);
-    hexPath(p.x,p.y,cellR-2);
-    ctx.fillStyle=grid[i]>=0?PAL.c[grid[i]]:PAL.hx;
-    ctx.fill();
-    ctx.strokeStyle=PAL.hxb;ctx.lineWidth=1.5;ctx.stroke();
-    if(i===cur&&!done){
-      ctx.strokeStyle=PAL.deep;ctx.lineWidth=2.5;
-      hexPath(p.x,p.y,cellR-4);ctx.stroke();
-    }
-    if(grid[i]>=0&&conflicts()>0){
-      var list=nb[i];
-      for(var j=0;j<list.length;j++){
-        if(grid[list[j]]>=0&&grid[list[j]]===grid[i]&&list[j]>i){
-          ctx.strokeStyle=PAL.danger;ctx.lineWidth=3;
-          hexPath(p.x,p.y,cellR-4);ctx.stroke();
-        }
-      }
+/* 冲突格集合（渲染口径：相邻同色的两格都标红） */
+function conflictSet(){
+  var s={},i,j,list;
+  for(i=0;i<grid.length;i++){
+    if(grid[i]<0)continue;
+    list=nb[i];
+    for(j=0;j<list.length;j++)if(grid[list[j]]===grid[i]){s[i]=1;s[list[j]]=1}
+  }
+  return s;
+}
+/* 落子轻弹 160ms ease-out + 过关错位轻弹；动效降级时恒 1 */
+function cellScale(i,t){
+  var s=1,a=anims[i],p;
+  if(a){
+    p=(t-a)/160;
+    if(p>=1)delete anims[i];
+    else if(!window.__gRM){
+      var e=1-Math.pow(1-p,2);
+      s=1+0.16*(1-e);
     }
   }
+  if(winT0&&!window.__gRM){
+    p=(t-winT0-i*22)/300;
+    if(p>0&&p<1)s*=1+0.05*Math.sin(p*Math.PI);
+  }
+  return s;
+}
+/* 单格「轻立体」：渐变面 + 倒角边（光从左上）+ 恒白高光 + 恒黑投影；ghost = 选中色预览，given = 题目铆点 */
+function drawHex(x,y,rad,o){
+  var r=Math.max(1,rad*(o.scale||1));
+  var base=o.fill||PAL.cellEdge;
+  var v=[],k,a,p1,p2,my,tt;
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.20)";ctx.shadowBlur=rad*0.26;ctx.shadowOffsetY=rad*0.12;
+  var g=ctx.createLinearGradient(0,-r,0,r);
+  if(o.fill){
+    g.addColorStop(0,colMix(o.fill,WHITE,0.32));
+    g.addColorStop(0.45,o.fill);
+    g.addColorStop(1,colShade(o.fill,-0.22));
+  }else{
+    g.addColorStop(0,PAL.cellHi);
+    g.addColorStop(1,PAL.cell);
+  }
+  ctx.fillStyle=g;hexPath(0,0,r);ctx.fill();
+  ctx.restore();
+  if(o.ghost){ctx.save();ctx.globalAlpha=0.34;ctx.fillStyle=o.ghost;hexPath(0,0,r);ctx.fill();ctx.restore()}
+  for(k=0;k<6;k++){a=Math.PI/180*(60*k+30);v.push([r*Math.cos(a),r*Math.sin(a)])}
+  ctx.lineWidth=Math.max(1.2,r*0.075);ctx.lineCap="round";
+  for(k=0;k<6;k++){
+    p1=v[k];p2=v[(k+1)%6];my=(p1[1]+p2[1])/2;
+    tt=my<0?0.36:(my>0?-0.22:0);
+    ctx.strokeStyle=tt>=0?colMix(base,WHITE,tt):colShade(base,tt);
+    ctx.beginPath();ctx.moveTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1]);ctx.stroke();
+  }
+  ctx.lineCap="butt";
+  if(o.fill){
+    ctx.save();ctx.globalAlpha=0.5;ctx.fillStyle=WHITE;
+    ctx.beginPath();ctx.ellipse(-r*0.34,-r*0.40,r*0.22,r*0.12,-0.6,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+  if(o.given){
+    ctx.beginPath();ctx.arc(0,0,Math.max(2,r*0.15),0,Math.PI*2);
+    ctx.fillStyle=colShade(o.fill,-0.48);ctx.fill();
+    ctx.lineWidth=1;ctx.strokeStyle="rgba(255,255,255,0.45)";ctx.stroke();
+  }
+  ctx.restore();
+}
+function draw(){
+  if(!L)return;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  /* 地面：板面「面」+ 顶光 + 凹槽边界（替代原页面底色平铺，棋盘成为一件物体） */
+  ctx.fillStyle=PAL.board;ctx.fillRect(0,0,W,H);
+  var pg=ctx.createLinearGradient(0,0,0,H);
+  pg.addColorStop(0,PAL.boardHi);pg.addColorStop(1,PAL.board);
+  ctx.fillStyle=pg;rr(1,1,W-2,H-2,12);ctx.fill();
+  ctx.lineWidth=1;ctx.strokeStyle=PAL.cellEdge;rr(1.5,1.5,W-3,H-3,11);ctx.stroke();
+
+  var t=performance.now();
+  var rad=cellR-Math.max(2.5,cellR*0.11);
+  var bad=conflictSet(),i,p,isFill,given;
+  for(i=0;i<grid.length;i++){
+    p=centerOf(i);isFill=grid[i]>=0;given=isFill&&L.cells[i]>=0;
+    drawHex(p.x,p.y,rad,{
+      fill:isFill?PAL.c[grid[i]]:null,
+      given:given,
+      ghost:(i===cur&&!isFill&&!done)?PAL.c[selCol]:null,
+      scale:cellScale(i,t)
+    });
+  }
+  /* 冲突：白色衬底 + 危险色环，压在同色两格上 */
+  for(i in bad){
+    p=centerOf(+i);
+    ctx.lineWidth=Math.max(3,rad*0.16);ctx.strokeStyle="rgba(255,255,255,0.92)";
+    hexPath(p.x,p.y,rad+3.5);ctx.stroke();
+    ctx.lineWidth=Math.max(2,rad*0.08);ctx.strokeStyle=PAL.danger;
+    hexPath(p.x,p.y,rad+3.5);ctx.stroke();
+  }
+  /* 光标：我控制哪格 / 该点哪——白衬底 + 品牌深绿环，轻微呼吸 */
+  if(cur>=0&&cur<grid.length&&!done){
+    p=centerOf(cur);
+    var pu=window.__gRM?0:(Math.sin(t/260)+1)*0.6;
+    var cr=rad+3.5+pu;
+    ctx.lineWidth=Math.max(3,rad*0.16);ctx.strokeStyle="rgba(255,255,255,0.92)";
+    hexPath(p.x,p.y,cr);ctx.stroke();
+    ctx.lineWidth=Math.max(2,rad*0.08);ctx.strokeStyle=PAL.deep;
+    hexPath(p.x,p.y,cr);ctx.stroke();
+  }
   requestAnimationFrame(draw);
+}
+/* ---------- 按钮图标注入（内联 SVG，零外链；文字前带图标） ---------- */
+function buildPad(){
+  var names=["色一","色二","色三"],i,b;
+  for(i=0;i<3;i++){
+    b=$("sw"+i);
+    b.innerHTML=SW_ICON("hex")+'<span class="nm">'+names[i]+'</span><span class="ct"></span><span class="badge">'+SW_ICON("check")+'</span>';
+  }
+  $("lvTag").insertAdjacentHTML("afterbegin",SW_ICON("hex"));
+  $("btnUndo").insertAdjacentHTML("afterbegin",SW_ICON("undo"));
+  $("btnHint").insertAdjacentHTML("afterbegin",SW_ICON("hint"));
+  $("btnReset").insertAdjacentHTML("afterbegin",SW_ICON("rotate"));
+  $("btnLv").insertAdjacentHTML("afterbegin",SW_ICON("grid"));
 }
 /* ---------- 输入 ---------- */
 cv.addEventListener("pointerdown",function(e){
@@ -518,7 +696,7 @@ for(var si=0;si<3;si++)(function(si){
 })(si);
 $("btnUndo").addEventListener("click",undo);
 $("btnHint").addEventListener("click",hint);
-$("btnReset").addEventListener("click",function(){grid=L.cells.slice();history=[];cur=-1;updStats();renderChips();say("本关已重置")});
+$("btnReset").addEventListener("click",function(){grid=L.cells.slice();history=[];cur=-1;anims={};updStats();renderChips();say("本关已重置")});
 $("btnLv").addEventListener("click",openLevelSelect);
 $("ovBtn").addEventListener("click",function(){
   hideOverlay();
@@ -532,7 +710,7 @@ window.addEventListener("keydown",function(e){
   else if(e.key==="Enter"||e.key===" "){if(cur>=0)place(cur);e.preventDefault()}
   else if(e.key==="z"||e.key==="Z")undo();
   else if(e.key==="h"||e.key==="H")hint();
-  else if(e.key==="r"||e.key==="R"){grid=L.cells.slice();history=[];updStats();renderChips();say("本关已重置")}
+  else if(e.key==="r"||e.key==="R"){grid=L.cells.slice();history=[];anims={};updStats();renderChips();say("本关已重置")}
   else if(e.key.indexOf("Arrow")===0){
     if(cur<0)cur=0;
     else{
@@ -553,7 +731,7 @@ document.addEventListener("visibilitychange",function(){
   if(document.hidden)running=false;
   else if(!running){running=true;requestAnimationFrame(draw)}
 });
-palLoad();loadLevel(save.lv);
+buildPad();setOvBtn("下一关","play");palLoad();loadLevel(save.lv);
 requestAnimationFrame(draw);
 verifyPending();syncLevelsFromServer();syncSaveFromServer();
 window.addEventListener("resize",resize);

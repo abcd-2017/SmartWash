@@ -15,8 +15,8 @@
     --g-scrim:rgba(245,246,243,.9);
     --g-shadow:0 2px 12px rgba(20,40,30,.05);
     --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
-    /*素材:a=冰面 b=冰道板 c=大本营圈底 d=冰痕线 e=护栏底 f=冰刷光*/
-    --g-st-a:#EAF2F7; --g-st-b:#D5E4EE; --g-st-c:#C3D8E6; --g-st-d:#B9C9D6; --g-st-e:#8A6E4A; --g-st-f:#FFF3D6;
+    /*素材:冰面渐变 / 障碍壶渐变 / 擦冰刷光*/
+    --g-cs-ice1:#EAF2F7; --g-cs-ice2:#CFE0EC; --g-cs-guard1:#9AA6B2; --g-cs-guard2:#6E7C8A; --g-cs-glow:#FFF3D6;
 
     color-scheme:light;
   }
@@ -27,9 +27,7 @@
     --g-danger:#DB7186; --g-warning:#E2A44E; --g-success:#4ADE6E; --g-water:#6BB4DE;
     --g-scrim:rgba(20,22,20,.9);
     --g-shadow:0 2px 12px rgba(0,0,0,.28);
-    --g-st-a:#1E2C36; --g-st-b:#16222A; --g-st-c:#223240; --g-st-d:#2E404E; --g-st-e:#3E3220; --g-st-f:#5A5238;
-/*==EXTRA==*/
-  canvas#cv { aspect-ratio: 390/520; background: var(--g-st-a); }
+    --g-cs-ice1:#1E2C36; --g-cs-ice2:#14202A; --g-cs-guard1:#5E6E7A; --g-cs-guard2:#3E4A54; --g-cs-glow:#5A5238;
 
     color-scheme:dark;
   }
@@ -52,25 +50,39 @@
   .score-box {
     background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
     min-width: 70px; padding: 5px 8px; text-align: center; line-height: 1.3;
+    animation: rise .38s ease-out both;
   }
+  .scores .score-box:nth-child(2) { animation-delay: 40ms; }
+  .scores .score-box:nth-child(3) { animation-delay: 80ms; }
+  .score-box .val { display: inline-block; }
+  .score-box .val.pop { animation: valpop .24s ease-out; }
   .score-box .label { display: block; font-size: 12px; white-space: nowrap; }
   .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .stage { position: relative; }
   canvas {
     display: block; width: 100%; height: auto;
     border: 1px solid var(--g-border); border-radius: 12px;
+    box-shadow: var(--g-shadow);
     touch-action: none;
   }
+  .legend { display: flex; gap: 8px; margin: 10px 2px 0; animation: rise .38s ease-out both; animation-delay: 120ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-chip svg { width: 18px; height: 18px; flex: none; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; flex-wrap: wrap; gap: 8px; }
   .btn {
     min-height: 44px; padding: 0 16px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    white-space: nowrap;
     border: 0; border-radius: 14px;
     background: var(--g-btn-primary); color: var(--g-on-primary);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
     touch-action: manipulation;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
   .btn:disabled { opacity: .4; cursor: default; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
@@ -87,8 +99,11 @@
     box-shadow: var(--g-shadow); padding: 22px 18px; text-align: center;
     animation: pop .25s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; }
-  }
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(.92); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
   .rt { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
   .rs { margin: 0 0 14px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .rs b { color: var(--g-primary-deep); font-size: 22px; font-variant-numeric: tabular-nums; }
@@ -106,13 +121,26 @@
   .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
   .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
-  canvas#cv { aspect-ratio: 390/520; background: var(--g-st-a); }
+  canvas#cv { aspect-ratio: 390/520; background: var(--g-cs-ice1); }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   /* P2: 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={'play':1,'check':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -138,6 +166,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </header>
 <div class="stage"><canvas id="cv" aria-label="冰壶擦冰：锁定角度与力度掷壶，滑行中连点擦冰减少摩擦，停进大本营得分" role="img"></canvas></div>
 <p class="msg" id="msg" role="status" aria-live="polite">点「开始」进冰场</p>
+<div class="legend">
+  <span class="lg-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="var(--g-primary)"/><circle cx="12" cy="12" r="3.6" fill="var(--g-on-primary)"/><ellipse cx="8.6" cy="8.4" rx="2.6" ry="1.6" fill="#fff" opacity=".85"/></svg><span><b>我方壶</b> · 你掷</span></span>
+  <span class="lg-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="var(--g-cs-guard1)"/><circle cx="12" cy="12" r="3.6" fill="var(--g-cs-guard2)"/><ellipse cx="8.6" cy="8.4" rx="2.6" ry="1.6" fill="#fff" opacity=".7"/></svg><span><b>障碍壶</b> · 撞开</span></span>
+  <span class="lg-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--g-water)" stroke-width="3"/><circle cx="12" cy="12" r="4.5" fill="var(--g-danger)"/></svg><span><b>目标</b> · 大本营圆心</span></span>
+</div>
 <div class="tools">
   <button class="btn ghost" id="btnRetry" type="button">重掷</button>
   <button class="btn ghost" id="btnLevels" type="button">选关</button>
@@ -222,8 +255,23 @@ function palLoad(){
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
     onSoft:v("--g-on-soft"),onPrimary:v("--g-on-primary"),
     danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),water:v("--g-water"),
-    stA:v("--g-st-a"),stB:v("--g-st-b"),stC:v("--g-st-c"),stD:v("--g-st-d"),stE:v("--g-st-e"),stF:v("--g-st-f")};
+    ice1:v("--g-cs-ice1"),ice2:v("--g-cs-ice2"),guard1:v("--g-cs-guard1"),guard2:v("--g-cs-guard2"),glow:v("--g-cs-glow")};
 }
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 window.__gOnTheme=function(){palLoad();if(typeof draw==="function")draw();};
 palLoad();
 
@@ -231,7 +279,7 @@ palLoad();
 function $(id){return document.getElementById(id);}
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 var overlayEl=$("overlay"),panelEl=$("panel");
-function showPanel(html){panelEl.innerHTML=html;overlayEl.classList.add("show");}
+function showPanel(html){panelEl.classList.remove("win");panelEl.innerHTML=html;overlayEl.classList.add("show");}
 function hideOverlay(){overlayEl.classList.remove("show");}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});}
 
@@ -416,11 +464,13 @@ var resultScore=0,shakeT=0;
 var stLv=$("stLv"),stPow=$("stPow"),stStam=$("stStam"),msgEl=$("msg");
 var btnRetry=$("btnRetry"),btnLevels=$("btnLevels");
 function say(t){msgEl.textContent=t;}
+function popVal(el){el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}
 function totalStars(){var t=0,k;for(k in save.done)t+=save.done[k];return t;}
 function refresh(){
   stLv.textContent=(cur+1)+"/"+LEVELS.length;
   stPow.textContent=phase==="slide"||phase==="done"?Math.round(powerLock*100)+"%":"-";
-  stStam.textContent=String(stamina);
+  var st=String(stamina);
+  if(stStam.textContent!==st){stStam.textContent=st;popVal(stStam);}
 }
 
 /* ---------- 画布 ---------- */
@@ -539,13 +589,29 @@ function csStopped(w){
 }
 
 /* ---------- 绘制 ---------- */
+/* 壶体：径向渐变（高光芯 → 基色 → 暗面）+ 深一档描边 + 恒白高光 + 落地投影 */
 function drawStone(s,mine){
-  ctx.fillStyle=mine?PAL.primary:PAL.stC;
-  ctx.beginPath();ctx.arc(s.x,s.y,13,0,6.3);ctx.fill();
-  ctx.strokeStyle=mine?PAL.deep:PAL.stD;ctx.lineWidth=2;
-  ctx.beginPath();ctx.arc(s.x,s.y,13,0,6.3);ctx.stroke();
-  ctx.fillStyle=mine?PAL.onPrimary:PAL.stD;
-  ctx.beginPath();ctx.arc(s.x,s.y,5,0,6.3);ctx.fill();
+  var base=mine?PAL.primary:PAL.guard1;
+  var lo=mine?PAL.deep:PAL.guard2;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.38)";ctx.shadowBlur=7;ctx.shadowOffsetY=3;
+  var g=ctx.createRadialGradient(s.x-4,s.y-5,1.5,s.x,s.y,14);
+  g.addColorStop(0,colMix(base,WHITE,0.72));
+  g.addColorStop(0.45,base);
+  g.addColorStop(1,colShade(lo,-0.18));
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(s.x,s.y,13,0,6.3);ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=1.6;ctx.strokeStyle=colShade(lo,-0.30);
+  ctx.beginPath();ctx.arc(s.x,s.y,12.4,0,6.3);ctx.stroke();
+  /* 手柄 */
+  ctx.fillStyle=mine?PAL.onPrimary:colMix(PAL.guard1,WHITE,0.40);
+  ctx.beginPath();ctx.arc(s.x,s.y,4.6,0,6.3);ctx.fill();
+  ctx.lineWidth=1;ctx.strokeStyle=colShade(lo,-0.34);
+  ctx.beginPath();ctx.arc(s.x,s.y,4.6,0,6.3);ctx.stroke();
+  /* 恒白高光 */
+  ctx.fillStyle=WHITE;ctx.globalAlpha=.85;
+  ctx.beginPath();ctx.ellipse(s.x-4.2,s.y-5.4,3.4,2.1,-0.6,0,6.3);ctx.fill();
+  ctx.globalAlpha=1;
 }
 function draw(){
   ctx.clearRect(0,0,W,H);
@@ -557,19 +623,39 @@ function draw(){
     rr(offX+0.5,offY+0.5,NW*S-1,NH*S-1,10);ctx.stroke();
     return;
   }
-  ctx.fillStyle=PAL.stA;ctx.fillRect(0,0,NW,NH);
-  ctx.strokeStyle=PAL.stD;ctx.lineWidth=2;
-  ctx.strokeRect(8,8,NW-16,NH-16);
-  /* 大本营 */
-  ctx.fillStyle=PAL.water;
-  ctx.beginPath();ctx.arc(195,100,62,0,6.3);ctx.fill();
-  ctx.fillStyle=PAL.surface;
-  ctx.beginPath();ctx.arc(195,100,38,0,6.3);ctx.fill();
-  ctx.fillStyle=PAL.danger;
-  ctx.beginPath();ctx.arc(195,100,14,0,6.3);ctx.fill();
-  ctx.strokeStyle=PAL.stD;ctx.lineWidth=1.5;
+  /* 冰面：纵向渐变 + 顶部天光 + 边线凹槽 */
+  var ig=ctx.createLinearGradient(0,0,0,NH);
+  ig.addColorStop(0,PAL.ice1);ig.addColorStop(1,PAL.ice2);
+  ctx.fillStyle=ig;ctx.fillRect(0,0,NW,NH);
+  var sheen=ctx.createRadialGradient(NW*0.5,NH*0.05,8,NW*0.5,NH*0.05,NH*0.55);
+  sheen.addColorStop(0,"rgba(255,255,255,0.26)");sheen.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=sheen;ctx.fillRect(0,0,NW,NH);
+  ctx.strokeStyle=colShade(PAL.ice2,-0.34);ctx.lineWidth=2;
+  rr(8,8,NW-16,NH-16,10);ctx.stroke();
+  ctx.strokeStyle=colMix(PAL.ice1,WHITE,0.55);ctx.lineWidth=1;
+  rr(10.5,10.5,NW-21,NH-21,8);ctx.stroke();
+  /* 大本营：落地阴影 + 外圈水面渐变 + 内圈白面 + 圆心 */
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.22)";ctx.shadowBlur=14;ctx.shadowOffsetY=4;
+  ctx.fillStyle=PAL.water;ctx.beginPath();ctx.arc(195,100,62,0,6.3);ctx.fill();
+  ctx.restore();
+  var hg=ctx.createRadialGradient(195,84,6,195,100,62);
+  hg.addColorStop(0,colMix(PAL.water,WHITE,0.34));
+  hg.addColorStop(1,colShade(PAL.water,-0.14));
+  ctx.fillStyle=hg;ctx.beginPath();ctx.arc(195,100,62,0,6.3);ctx.fill();
+  var sg=ctx.createRadialGradient(195,90,2,195,100,38);
+  sg.addColorStop(0,colMix(PAL.surface,WHITE,0.45));
+  sg.addColorStop(1,colShade(PAL.surface,-0.06));
+  ctx.fillStyle=sg;ctx.beginPath();ctx.arc(195,100,38,0,6.3);ctx.fill();
+  var cg=ctx.createRadialGradient(193,92,1,195,100,14);
+  cg.addColorStop(0,colMix(PAL.danger,WHITE,0.30));
+  cg.addColorStop(1,colShade(PAL.danger,-0.16));
+  ctx.fillStyle=cg;ctx.beginPath();ctx.arc(195,100,14,0,6.3);ctx.fill();
+  /* 圈线：凹槽暗线，区分地面 / 目标环 */
+  ctx.strokeStyle=colShade(PAL.water,-0.30);ctx.lineWidth=1.5;
   ctx.beginPath();ctx.arc(195,100,62,0,6.3);ctx.stroke();
   ctx.beginPath();ctx.arc(195,100,50,0,6.3);ctx.stroke();
+  ctx.strokeStyle=colShade(PAL.surface,-0.22);
   ctx.beginPath();ctx.arc(195,100,38,0,6.3);ctx.stroke();
   ctx.beginPath();ctx.arc(195,100,26,0,6.3);ctx.stroke();
   ctx.beginPath();ctx.arc(195,100,14,0,6.3);ctx.stroke();
@@ -579,35 +665,47 @@ function draw(){
     var gv=world?world.stones[g+1]:null;
     drawStone(gv?gv:gg,false);
   }
-  /* 掷壶轨迹 */
-  if(world){
-    ctx.strokeStyle=PAL.stD;ctx.lineWidth=2;
+  /* 掷壶轨迹：圆点链，读作「已经滑过的路」 */
+  if(world&&path.length>1){
+    ctx.save();
+    ctx.lineCap="round";
+    ctx.strokeStyle=colMix(PAL.deep,WHITE,0.20);ctx.lineWidth=4;
+    ctx.setLineDash([1,9]);
     ctx.beginPath();
     for(var p2=0;p2<path.length;p2++){
       if(p2===0)ctx.moveTo(path[p2].x,path[p2].y);else ctx.lineTo(path[p2].x,path[p2].y);
     }
-    ctx.stroke();
+    ctx.stroke();ctx.setLineDash([]);
+    ctx.restore();
   }
   /* 我方壶 */
   if(world)drawStone(world.stones[0],true);
   else{
-    /* 瞄准阶段：起点 + 摆动指向 */
+    /* 瞄准阶段：起点 + 摆动指向 + 落点预览环 */
     var ang=phase==="aim"?Math.sin(2*Math.PI*oscT/1.6)*10:aimLock;
     var rad=ang*Math.PI/180;
+    var ex=195+Math.sin(rad)*210,ey=470-Math.cos(rad)*210;
     ctx.strokeStyle=PAL.deep;ctx.lineWidth=3;
     ctx.setLineDash([8,7]);
     ctx.beginPath();
     ctx.moveTo(195,470);
-    ctx.lineTo(195+Math.sin(rad)*210,470-Math.cos(rad)*210);
+    ctx.lineTo(ex,ey);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.strokeStyle=colMix(PAL.deep,WHITE,0.28);ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(ex,ey,8,0,6.3);ctx.stroke();
+    ctx.fillStyle=PAL.deep;ctx.globalAlpha=.9;
+    ctx.beginPath();ctx.arc(ex,ey,2.5,0,6.3);ctx.fill();ctx.globalAlpha=1;
     drawStone({x:195,y:470},true);
     if(phase==="power"){
       var pw=(Math.sin(2*Math.PI*oscT/1.3)+1)/2;
-      ctx.fillStyle=PAL.surface2;
-      rr(330,180,26,260,10);ctx.fill();
-      ctx.fillStyle=PAL.deep;
-      rr(330,440-260*pw,26,260*pw,10);ctx.fill();
+      var ph=Math.max(6,260*pw);
+      /* 力度槽：内凹底 + 品牌绿渐变填充 + 顶光 */
+      ctx.fillStyle=colShade(PAL.surface2,-0.10);rr(330,180,26,260,10);ctx.fill();
+      var pg=ctx.createLinearGradient(330,440-ph,356,440);
+      pg.addColorStop(0,colMix(PAL.deep,WHITE,0.22));
+      pg.addColorStop(1,PAL.deep);
+      ctx.fillStyle=pg;rr(332,440-ph+2,22,ph-4,8);ctx.fill();
       ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
       rr(330,180,26,260,10);ctx.stroke();
     }
@@ -615,18 +713,21 @@ function draw(){
   /* 擦冰特效 */
   if(sweepT>0&&world){
     var s0=world.stones[0];
-    ctx.strokeStyle=PAL.stF;ctx.lineWidth=3;
+    ctx.strokeStyle=PAL.glow;ctx.lineWidth=3;ctx.lineCap="round";
     for(var sw=0;sw<3;sw++){
       ctx.beginPath();
       ctx.arc(s0.x+(sw-1)*10,s0.y+18+sw*4,9,0.2,2.8);
       ctx.stroke();
     }
   }
-  /* 旋向提示 */
-  ctx.fillStyle=PAL.muted;
+  /* 旋向 / 目标提示 chip */
   ctx.font="600 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
-  ctx.textAlign="left";ctx.textBaseline="alphabetic";
-  ctx.fillText("旋向 "+(course.curl>0?"右曲":"左曲")+" · 目标 "+course.target+" 分",14,26);
+  var label="旋向 "+(course.curl>0?"右曲":"左曲")+" · 目标 "+course.target+" 分";
+  var tw=ctx.measureText(label).width;
+  ctx.fillStyle=colMix(PAL.ice1,PAL.surface,0.6);
+  rr(8,10,tw+16,20,8);ctx.fill();
+  ctx.fillStyle=PAL.text;ctx.textAlign="left";ctx.textBaseline="middle";
+  ctx.fillText(label,16,20);
   ctx.restore();
   ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
   rr(offX+0.5,offY+0.5,NW*S-1,NH*S-1,10);ctx.stroke();
@@ -637,7 +738,7 @@ function showStart(){
   showPanel(
     '<p class="rt">第 '+(cur+1)+' 关 · '+esc(course.name)+'</p>'+
     '<p class="rs">目标 <b>'+course.target+' 分</b>（圆心10 / 内圈7·5 / 中圈3 / 外圈2）· 擦冰体力 '+course.stamina+' · 旋向 '+(course.curl>0?"右":"左")+(course.guards.length?' · 障碍壶 '+course.guards.length+' 只':'')+'</p>'+
-    '<div class="rbtns"><button class="btn" id="ovMain" type="button">开始</button></div>'+
+    '<div class="rbtns"><button class="btn" id="ovMain" type="button">'+window.SW_ICON("play")+'开始</button></div>'+
     '<p class="rhint">壶走弧线，方向摆针锁定后还有力度摆条；滑行中连点擦冰可以少减速、滑得更远并压直弧线。</p>'
   );
   $("ovMain").addEventListener("click",function(){startPlay();});
@@ -648,10 +749,11 @@ function showWin(d,sc,stars){
     '<p class="rt">得分！</p>'+
     '<p class="rs">距圆心 '+Math.round(d)+'px · 得分 <b>'+sc+'</b> / 目标 '+course.target+' · 星星 '+stars+' / 3</p>'+
     '<div class="rbtns">'+
-      '<button class="btn ghost" id="ovReplay" type="button">重掷</button>'+
-      '<button class="btn" id="ovNext" type="button">'+(last?"已完成全部":"下一关")+'</button>'+
+      '<button class="btn ghost" id="ovReplay" type="button">'+window.SW_ICON("rotate")+'重掷</button>'+
+      '<button class="btn" id="ovNext" type="button">'+window.SW_ICON(last?"check":"arrow-right")+(last?"已完成全部":"下一关")+'</button>'+
     '</div>'
   );
+  panelEl.classList.add("win");
   $("ovNext").addEventListener("click",function(){enterLevel(last?cur:cur+1);});
   $("ovReplay").addEventListener("click",function(){enterLevel(cur);});
 }
@@ -660,7 +762,7 @@ function showFail(d,sc){
     '<p class="rt">差一点</p>'+
     '<p class="rs">距圆心 '+Math.round(d)+'px · 得分 '+sc+' / 目标 '+course.target+'</p>'+
     '<p class="rhint">提示：擦冰越早损失越少但弧线更直；想要大弧线绕开障碍壶就别急着擦。</p>'+
-    '<div class="rbtns"><button class="btn" id="ovRetryF" type="button">重掷本关</button></div>'
+    '<div class="rbtns"><button class="btn" id="ovRetryF" type="button">'+window.SW_ICON("rotate")+'重掷本关</button></div>'
   );
   $("ovRetryF").addEventListener("click",function(){retry();});
 }
@@ -669,8 +771,8 @@ function showPause(){
     '<p class="rt">已暂停</p>'+
     '<p class="rs">阶段：'+(phase==="aim"?"瞄准":phase==="power"?"力度":"滑行")+'</p>'+
     '<div class="rbtns">'+
-      '<button class="btn ghost" id="ovReP" type="button">重掷本关</button>'+
-      '<button class="btn" id="ovReR" type="button">继续</button>'+
+      '<button class="btn ghost" id="ovReP" type="button">'+window.SW_ICON("rotate")+'重掷本关</button>'+
+      '<button class="btn" id="ovReR" type="button">'+window.SW_ICON("play")+'继续</button>'+
     '</div>'
   );
   $("ovReR").addEventListener("click",function(){paused=false;hideOverlay();});
@@ -716,6 +818,9 @@ fit();
 refresh();
 loadLevel(cur);
 showStart();
+/* 工具钮图标注入（内联 SVG，零外链；文案更新走文本节点，不抹掉图标） */
+btnRetry.insertAdjacentHTML("afterbegin",SW_ICON("rotate"));
+btnLevels.insertAdjacentHTML("afterbegin",SW_ICON("grid"));
 syncLevelsFromServer();
 syncSaveFromServer();
 requestAnimationFrame(loop);
@@ -809,7 +914,7 @@ function openLevelSelect(){
     var locked=i>save.lv;
     html+='<button class="lv-chip'+(i===cur?" sel":"")+(done?" done":"")+'" data-i="'+i+'"'+(locked?" disabled":"")+' type="button">'+(i+1)+'</button>';
   }
-  html+='</div></div><div class="rbtns"><button class="btn ghost" id="ovClose" type="button">返回</button></div>';
+  html+='</div></div><div class="rbtns"><button class="btn ghost" id="ovClose" type="button">'+window.SW_ICON("x")+'返回</button></div>';
   showPanel(html);
   var chips=panelEl.querySelectorAll(".lv-chip");
   for(var j=0;j<chips.length;j++){

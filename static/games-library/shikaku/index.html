@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>矩形切割</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-c1:#7FB877;--g-st-c2:#6BA8D9;--g-st-c3:#D9A55C;--g-st-c4:#B58BD0;--g-st-c5:#DB8290;--g-st-c6:#6FC3B0;--g-st-line:#B9C4BD;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-c1:#3E6E4B;--g-st-c2:#2F5B80;--g-st-c3:#7A5C28;--g-st-c4:#5E4576;--g-st-c5:#7C4552;--g-st-c6:#2F6B5F;--g-st-line:#3A423C;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-sk-* 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-sk-num1:#E8F6EF;--g-sk-num2:#17734A;--g-sk-num-ink:#0B3625;--g-sk-c1:#7FB877;--g-sk-c2:#6BA8D9;--g-sk-c3:#D9A55C;--g-sk-c4:#B58BD0;--g-sk-c5:#DB8290;--g-sk-c6:#6FC3B0;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-sk-num1:#1D3229;--g-sk-num2:#0B241A;--g-sk-num-ink:#B9E8CF;--g-sk-c1:#3E6E4B;--g-sk-c2:#2F5B80;--g-sk-c3:#7A5C28;--g-sk-c4:#5E4576;--g-sk-c5:#7C4552;--g-sk-c6:#2F6B5F;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -23,65 +23,97 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; text-align: right; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .stat .val.low { color: var(--g-danger); }
-  .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .stat .val { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.bump { animation: bump .2s ease-out; }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
+  .legend { display: flex; gap: 8px; margin: 10px 2px 0; animation: rise .38s ease-out both; animation-delay: 120ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-chip .lg-tile { flex: none; width: 22px; height: 22px; }
+  .lg-chip .lg-tile svg { display: block; width: 100%; height: 100%; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
-  .btn.ghost { background: transparent; color: var(--g-primary-deep); box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
     display: none; align-items: center; justify-content: center; padding: 20px;
+    overflow-y: auto;
   }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
-  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
   .panel {
     width: 100%; max-width: 340px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
+    animation: pop .3s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
-  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
-  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 320px; overflow-y: auto; }
   .lvbtn {
-    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    min-height: 44px; border: 0; border-radius: 10px;
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .kbdhint { font-size: 12px; color: var(--g-muted); text-align: center; margin: 4px 0 0; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 
-  .boardwrap { display: flex; justify-content: center; }
-  .kbdhint { font-size: 12px; color: var(--g-muted); text-align: center; margin: 4px 0 0; }
-
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'crosshair':'<circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',
+ 'rect':'<rect x="4.5" y="6" width="15" height="12" rx="1.6"/>'
+};
+var fill={ 'play':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -98,13 +130,18 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <header><span class="sub" id="lvTag"><span id="lvTagTx">第 1 关</span></span><span class="sub" id="lvRule"></span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/44</span></div>
     <div class="stat"><span class="label">已切</span><span class="val" id="stDone">0</span></div>
     <div class="stat"><span class="label">总矩形</span><span class="val" id="stTotal">-</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="矩形切割棋盘" role="img"></canvas></div>
+  <div class="stage"><canvas id="cv" aria-label="矩形切割棋盘：从数字格拖出面积等于该数字的矩形" role="img"></canvas></div>
+  <div class="legend" aria-hidden="true">
+    <span class="lg-chip"><span class="lg-tile"><svg viewBox="0 0 22 22"><rect x="1.5" y="1.5" width="19" height="19" rx="5" fill="var(--g-sk-num1)" stroke="var(--g-sk-num2)" stroke-width="1.6"/><text x="11" y="15.6" text-anchor="middle" font-size="14" font-weight="700" fill="var(--g-sk-num-ink)">9</text></svg></span><span><b>数字格</b> · 拖出矩形</span></span>
+    <span class="lg-chip"><span class="lg-tile"><svg viewBox="0 0 22 22"><rect x="1.5" y="1.5" width="19" height="19" rx="5" fill="var(--g-sk-c1)"/><rect x="1.5" y="1.5" width="19" height="19" rx="5" fill="none" stroke="rgba(0,0,0,.22)" stroke-width="1.4"/></svg></span><span><b>已切</b> · 面积=数字</span></span>
+    <span class="lg-chip"><span class="lg-tile"><svg viewBox="0 0 22 22"><rect x="2" y="2" width="18" height="18" rx="5" fill="none" stroke="var(--g-primary-deep)" stroke-width="2.4"/></svg></span><span><b>绿框</b> · 可以切</span></span>
+  </div>
   <p class="msg" id="msg" role="status" aria-live="polite">从数字格拖出一个矩形，面积须等于该数字且恰好含一个数字</p>
   <div class="tools">
     <button class="btn" id="btnUndo">撤销</button>
@@ -115,7 +152,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="foot">触屏拖拽画矩形 · 键盘方向键移动光标 + 空格起止选框 · Z 撤销 · H 提示 · 每块矩形恰好包住一个数字</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -204,9 +241,11 @@ function winLevel(){
   if(lv+1<LEVELS.length&&save.lv<lv+1)save.lv=lv+1;
   persist();updStats();
   if(GB.available)GB.reportScore("shikaku",{metricValue:lv+1,metricExtra:committed.length}).catch(function(){});
-  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
-  $("ovDesc").textContent="第 "+(lv+1)+" 关完成 · 切 "+committed.length+" 块";
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  var last=lv>=LEVELS.length-1;
+  $("ovTitle").textContent=last?"全部通关！":"过关！";
+  $("ovDesc").innerHTML="第 "+(lv+1)+" 关完成 · 切 <b>"+committed.length+"</b> 块";
+  setOvBtn(last?"回到第 1 关":"下一关",last?"rotate":"arrow-right");
+  $("panel").classList.add("win");
   $("overlay").classList.add("show");
 }
 function openLevelSelect(){
@@ -222,7 +261,7 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="通关的关卡标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 }
 function syncLevelsFromServer(){
@@ -325,27 +364,47 @@ function shikaSolutions(L,collect){
 function shikaVerify(L){
   return shikaSolutions(L,true).length===1;
 }
-/* ---------- 调色板 ---------- */
+/* ---------- 调色板（canvas 颜色全部经 PAL 读 CSS 变量） ---------- */
 var PAL={};
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
   function v(n){return s.getPropertyValue(n).trim()}
-  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
-    text:v("--g-text"),muted:v("--g-muted"),danger:v("--g-danger"),warning:v("--g-warning"),
-    deep:v("--g-primary-deep"),line:v("--g-st-line"),
-    c:[v("--g-st-c1"),v("--g-st-c2"),v("--g-st-c3"),v("--g-st-c4"),v("--g-st-c5"),v("--g-st-c6")]};
+  PAL={border:v("--g-border"),danger:v("--g-danger"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    surface:v("--g-surface"),surface2:v("--g-surface2"),
+    num1:v("--g-sk-num1"),num2:v("--g-sk-num2"),numInk:v("--g-sk-num-ink"),
+    shadow:"rgba(0,0,0,0.26)",   // 恒黑阴影（canvas 功能性 rgba 字面，D2 例外）
+    c:[v("--g-sk-c1"),v("--g-sk-c2"),v("--g-sk-c3"),v("--g-sk-c4"),v("--g-sk-c5"),v("--g-sk-c6")]};
 }
-window.__gOnTheme=function(){palLoad()};
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+window.__gOnTheme=function(){palLoad();draw()};
 /* ---------- 状态 ---------- */
 var lv=save.lv,L=null,w=0,h=0;
 var nums=[],numAt={};
 var committed=[],done=false;
 var dragAnchor=null,dragCur=null,dragBad=false,dragBadT=0;
-var curK=0,kbdAnchor=null;
+var curK=0,kbdAnchor=null,kbdMode=false;
+var popIdx=-1,popT=0;   // 切下轻弹：刚切的那块
+var hintRect=null,hintT=0;   // 求解器建议框（渲染层高亮，不改玩法）
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
-var W=0,H=0,cell=0,ox=0,oy=0;
+var W=0,H=0,cell=0,pad=0,ox=0,oy=0;
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+function setOvBtn(text,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+text}
+function popVal(el,v){var s=String(v);if(el.textContent!==s){el.textContent=s;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump")}}
+function hideOverlay(){$("overlay").classList.remove("show");$("panel").classList.remove("win");$("lvgrid").hidden=true}
 function loadLevel(nl){
   lv=Math.max(0,Math.min(nl,LEVELS.length-1));
   L=LEVELS[lv];
@@ -353,8 +412,8 @@ function loadLevel(nl){
   w=L.w;h=L.h;nums=L.nums;numAt={};
   nums.forEach(function(p){numAt[p[0]]=p[1]});
   var ok=shikaVerify(L);   // 加载复核：唯一解
-  committed=[];done=false;dragAnchor=null;dragCur=null;kbdAnchor=null;curK=0;
-  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  committed=[];done=false;dragAnchor=null;dragCur=null;kbdAnchor=null;curK=0;popIdx=-1;hintRect=null;
+  $("lvTagTx").textContent="第 "+(lv+1)+" 关 · "+L.name;
   $("lvRule").textContent=w+"×"+h+" 棋盘 · "+nums.length+" 个矩形";
   $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
   $("stTotal").textContent=nums.length;
@@ -368,15 +427,17 @@ function coveredCount(){
   return s;
 }
 function updStats(){
-  $("stDone").textContent=committed.length;
+  popVal($("stDone"),committed.length);
   $("btnUndo").disabled=!committed.length||done;
 }
 function resize(){
   var wCss=cv.parentElement.clientWidth||360;
   var dpr=Math.min(window.devicePixelRatio||1,2);
   var avail=Math.min(wCss,460);
-  cell=Math.floor(avail/Math.max(w,h));
-  W=cell*w;H=cell*h;
+  pad=Math.max(4,Math.round(avail*0.02));
+  cell=Math.floor((avail-pad*2)/Math.max(w,h));
+  W=cell*w+pad*2;H=cell*h+pad*2;
+  ox=pad;oy=pad;
   cv.style.height=H+"px";
   cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -392,21 +453,26 @@ function rectOf(a,b){
   var r0=Math.min(r1,r2),r9=Math.max(r1,r2),c0=Math.min(c1,c2),c9=Math.max(c1,c2);
   return {r:r0,c:c0,rw:c9-c0+1,rh:r9-r0+1,area:(c9-c0+1)*(r9-r0+1)};
 }
-function commitRect(rect,numIdx){
-  committed.push({r:rect.r,c:rect.c,rw:rect.rw,rh:rect.rh,area:rect.area,numIdx:numIdx,col:committed.length%6});
-  updStats();
-  if(coveredCount()===w*h){winLevel();return;}
-  say("已切 "+committed.length+" 块 · 剩 "+(nums.length-committed.length)+" 块");
-}
-function tryCommit(rect){
-  // 矩形内恰好一个数字且面积相等、格未被占用
+function rectNumIdx(rect){
   var cnt=0,numIdx=-1;
   for(var i=0;i<nums.length;i++){
     var idx=nums[i][0];
     var r=Math.floor(idx/w),c=idx%w;
     if(r>=rect.r&&r<rect.r+rect.rh&&c>=rect.c&&c<rect.c+rect.rw){cnt++;numIdx=i;}
   }
-  if(cnt!==1){say("矩形内必须恰好一个数字");flashBad(rect);return;}
+  return cnt===1?numIdx:-1;
+}
+function commitRect(rect,numIdx){
+  committed.push({r:rect.r,c:rect.c,rw:rect.rw,rh:rect.rh,area:rect.area,numIdx:numIdx,col:committed.length%6});
+  popIdx=committed.length-1;popT=Date.now();
+  updStats();
+  if(coveredCount()===w*h){winLevel();return;}
+  say("已切 "+committed.length+" 块 · 剩 "+(nums.length-committed.length)+" 块");
+}
+function tryCommit(rect){
+  // 矩形内恰好一个数字且面积相等、格未被占用
+  var numIdx=rectNumIdx(rect);
+  if(numIdx<0){say("矩形内必须恰好一个数字");flashBad(rect);return;}
   var numCell=nums[numIdx][0];
   if(numAt[numCell]!==rect.area){say("面积 "+rect.area+" ≠ 数字 "+numAt[numCell]);flashBad(rect);return;}
   var free=true;
@@ -423,63 +489,132 @@ function tryCommit(rect){
 }
 function flashBad(rect){dragBad=rect;dragBadT=Date.now();}
 /* ---------- 绘制 ---------- */
-function draw(){
-  ctx.fillStyle=PAL.surface;ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle=PAL.line;ctx.lineWidth=1;
-  for(var c=0;c<=w;c++){ctx.beginPath();ctx.moveTo(ox+c*cell,oy);ctx.lineTo(ox+c*cell,oy+h*cell);ctx.stroke();}
-  for(var r=0;r<=h;r++){ctx.beginPath();ctx.moveTo(ox,oy+r*cell);ctx.lineTo(ox+w*cell,oy+r*cell);ctx.stroke();}
-  //已切矩形
-  for(var m=0;m<committed.length;m++){
-    var cm=committed[m];
-    ctx.fillStyle=PAL.c[cm.col];
-    ctx.globalAlpha=0.4;
-    ctx.fillRect(ox+cm.c*cell+2,oy+cm.r*cell+2,cm.rw*cell-4,cm.rh*cell-4);
-    ctx.globalAlpha=1;
-    ctx.strokeStyle=PAL.c[cm.col];ctx.lineWidth=3;
-    ctx.strokeRect(ox+cm.c*cell+2,oy+cm.r*cell+2,cm.rw*cell-4,cm.rh*cell-4);
-  }
-  //数字
-  ctx.font="700 16px sans-serif";
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+/* 地面格：可点砖（棋盘格双色 + 1px 描边），替代细线表格 */
+function drawFloor(x,y,gap,rad,tint){
+  var wd=cell-2*gap;
+  ctx.fillStyle=tint;rr(x+gap,y+gap,wd,wd,rad);ctx.fill();
+  ctx.lineWidth=1;ctx.strokeStyle=PAL.border;rr(x+gap+0.5,y+gap+0.5,wd-1,wd-1,rad);ctx.stroke();
+}
+/* 数字格：目标「牌」（品牌绿软底 + 深绿描边 + 顶光 + 落地投影），深底浅字读数字 */
+function drawNum(x,y,gap,rad,clue,doneNum){
+  if(doneNum)gap=Math.max(gap,cell*0.16); // 已切牌缩小露色块
+  var wd=cell-2*gap;
+  ctx.save();
+  ctx.shadowColor=PAL.shadow;ctx.shadowBlur=cell*0.08;ctx.shadowOffsetY=cell*0.035;   // 恒黑阴影
+  var g=ctx.createLinearGradient(0,y+gap,0,y+gap+wd);
+  if(doneNum){g.addColorStop(0,colMix(PAL.soft,PAL.surface2,0.25));g.addColorStop(1,colMix(PAL.soft,BLACK,0.10));}
+  else{g.addColorStop(0,colMix(PAL.num1,WHITE,0.55));g.addColorStop(1,PAL.num1);}
+  ctx.fillStyle=g;rr(x+gap,y+gap,wd,wd,rad);ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=Math.max(1.5,cell*0.045);
+  ctx.strokeStyle=doneNum?colMix(PAL.deep,BLACK,0.22):PAL.deep;
+  rr(x+gap+0.5,y+gap+0.5,wd-1,wd-1,rad);ctx.stroke();
+  var fs=cell>=76?28:(cell>=56?22:18);
+  ctx.font="700 "+fs+"px -apple-system,'PingFang SC',sans-serif";
   ctx.textAlign="center";ctx.textBaseline="middle";
-  ctx.fillStyle=PAL.text;
-  for(var i=0;i<nums.length;i++){
-    var idx=nums[i][0];
-    var r=Math.floor(idx/w),c=idx%w;
-    var done0=false;
-    for(var m2=0;m2<committed.length;m2++)if(committed[m2].numIdx===i){done0=true;break;}
-    ctx.fillStyle=done0?PAL.muted:PAL.text;
-    ctx.fillText(String(nums[i][1]),ox+c*cell+cell/2,oy+r*cell+cell/2);
+  ctx.fillStyle=doneNum?PAL.deep:PAL.numInk;
+  ctx.fillText(String(clue),x+cell/2,y+cell/2+1);
+}
+/* 已切矩形：色块「面」+ 内描边 + 轻投影；刚切下的那块弹一下 */
+function drawRect(cm,idx){
+  var x=ox+cm.c*cell,y=oy+cm.r*cell,wd=cm.rw*cell,ht=cm.rh*cell;
+  var gap=Math.max(1.5,cell*0.05),rad=Math.min(10,cell*0.2);
+  var color=PAL.c[cm.col]||PAL.c[0];
+  var sc=1;
+  if(idx===popIdx&&!window.__gRM){
+    var p=Math.max(0,Math.min(1,(Date.now()-popT)/160));
+    if(p<1)sc=0.94+0.06*(1-Math.pow(1-p,2));
   }
-  //拖拽预览
+  ctx.save();
+  if(sc!==1){
+    var cx=x+wd/2,cy=y+ht/2;
+    ctx.translate(cx,cy);ctx.scale(sc,sc);ctx.translate(-cx,-cy);
+  }
+  ctx.shadowColor=PAL.shadow;ctx.shadowBlur=cell*0.07;ctx.shadowOffsetY=cell*0.03;   // 恒黑阴影
+  ctx.fillStyle=color;rr(x+gap,y+gap,wd-2*gap,ht-2*gap,rad);ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=Math.max(1.5,cell*0.035);
+  ctx.strokeStyle=colMix(color,BLACK,0.20);
+  rr(x+gap+0.5,y+gap+0.5,wd-2*gap-1,ht-2*gap-1,rad);ctx.stroke();
+}
+function draw(){
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle=PAL.surface;ctx.fillRect(0,0,W,H);
+  if(!L)return;
+  var gap=Math.max(1.5,cell*0.055),rad=Math.min(10,cell*0.20),now=Date.now();
+  /* 外框「面」：2px 边界环，让棋盘从背景里浮起来（细线表格感的反面） */
+  ctx.lineWidth=2;ctx.strokeStyle=PAL.border;rr(1,1,W-2,H-2,12);ctx.stroke();
+  /* 覆盖图：已切矩形占掉的格子（地面不再铺，数字牌仍浮在色块上） */
+  var cov=null;
+  if(committed.length){
+    cov=new Uint8Array(w*h);
+    for(var m0=0;m0<committed.length;m0++){
+      var cm0=committed[m0];
+      for(var r0=cm0.r;r0<cm0.r+cm0.rh;r0++)for(var c0=cm0.c;c0<cm0.c+cm0.rw;c0++)cov[r0*w+c0]=1;
+    }
+  }
+  /* 地面（已切区域留白，让色块「面」露出来） */
+  for(var r=0;r<h;r++)for(var c=0;c<w;c++){
+    var i=r*w+c;
+    if(cov&&cov[i])continue;
+    if(numAt[i]!==undefined)continue;
+    drawFloor(ox+c*cell,oy+r*cell,gap,rad,((r+c)%2===0)?PAL.surface:PAL.surface2);
+  }
+  /* 已切矩形色块 */
+  for(var m=0;m<committed.length;m++)drawRect(committed[m],m);
+  /* 数字目标牌：永远浮在最上层，已切走的缩小压暗一档 */
+  for(var i2=0;i2<nums.length;i2++){
+    var idx=nums[i2][0];
+    var nr=Math.floor(idx/w),nc=idx%w;
+    drawNum(ox+nc*cell,oy+nr*cell,gap,rad,numAt[idx],!!(cov&&cov[idx]));
+  }
+  /* 拖拽预览：绿=可切 / 红=不可切，虚线框 + 目标数字高亮 */
   var preview=null;
   if(dragAnchor!==null&&dragCur!==null)preview=rectOf(dragAnchor,dragCur);
   else if(kbdAnchor!==null)preview=rectOf(kbdAnchor,curK);
   if(preview){
-    var okPrev=(function(){
-      var cnt=0,numIdx=-1;
-      for(var i2=0;i2<nums.length;i2++){
-        var idx=nums[i2][0];
-        var r2=Math.floor(idx/w),c2=idx%w;
-        if(r2>=preview.r&&r2<preview.r+preview.rh&&c2>=preview.c&&c2<preview.c+preview.rw){cnt++;numIdx=i2;}
-      }
-      return cnt===1&&numAt[nums[numIdx][0]]===preview.area;
-    })();
-    ctx.strokeStyle=okPrev?PAL.deep:PAL.danger;
-    ctx.lineWidth=3;
-    ctx.setLineDash([6,4]);
-    ctx.strokeRect(ox+preview.c*cell+1,oy+preview.r*cell+1,preview.rw*cell-2,preview.rh*cell-2);
+    var numIdx=rectNumIdx(preview);
+    var okPrev=numIdx>=0&&numAt[nums[numIdx][0]]===preview.area;
+    var px=ox+preview.c*cell,py=oy+preview.r*cell;
+    ctx.save();
+    ctx.strokeStyle=okPrev?PAL.deep:PAL.danger;ctx.lineWidth=Math.max(2.5,cell*0.07);
+    ctx.setLineDash([Math.max(4,cell*0.16),Math.max(3,cell*0.11)]);
+    rr(px+1.5,py+1.5,preview.rw*cell-3,preview.rh*cell-3,Math.min(10,cell*0.18));ctx.stroke();
     ctx.setLineDash([]);
+    if(numIdx>=0){
+      var npx=ox+(nums[numIdx][0]%w)*cell,npy=oy+Math.floor(nums[numIdx][0]/w)*cell;
+      ctx.lineWidth=Math.max(2,cell*0.06);
+      rr(npx+cell*0.08,npy+cell*0.08,cell*0.84,cell*0.84,Math.min(8,cell*0.16));ctx.stroke();
+    }
+    ctx.restore();
   }
-  //错误闪烁
+  /* 求解器建议：品牌绿虚线框（与错误红框区分，绿=照做即可） */
+  if(hintRect&&Date.now()-hintT<4000){
+    var hp=ox+hintRect.c*cell,hy=oy+hintRect.r*cell;
+    ctx.save();
+    ctx.strokeStyle=PAL.deep;ctx.lineWidth=Math.max(2.5,cell*0.07);
+    if(window.__gRM){ctx.setLineDash([Math.max(4,cell*0.16),Math.max(3,cell*0.11)]);}
+    else{var pulse=0.5+0.5*Math.sin(Date.now()/200);ctx.globalAlpha=0.55+0.45*pulse;}
+    rr(hp+1.5,hy+1.5,hintRect.rw*cell-3,hintRect.rh*cell-3,Math.min(10,cell*0.18));ctx.stroke();
+    ctx.restore();
+  }else hintRect=null;
+  /* 错误闪烁 */
   if(dragBad&&Date.now()-dragBadT<500){
-    ctx.strokeStyle=PAL.danger;ctx.lineWidth=3;
-    ctx.strokeRect(ox+dragBad.c*cell+1,oy+dragBad.r*cell+1,dragBad.rw*cell-2,dragBad.rh*cell-2);
+    ctx.strokeStyle=PAL.danger;ctx.lineWidth=Math.max(2.5,cell*0.07);
+    rr(ox+dragBad.c*cell+1.5,oy+dragBad.r*cell+1.5,dragBad.rw*cell-3,dragBad.rh*cell-3,Math.min(10,cell*0.18));ctx.stroke();
   }else dragBad=null;
-  //光标（键盘模式）
-  if(kbdAnchor===null){
+  /* 光标（仅键盘模式，首次按键后显示） */
+  if(kbdMode&&kbdAnchor===null){
     var r3=Math.floor(curK/w),c3=curK%w;
-    ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;
-    ctx.strokeRect(ox+c3*cell+3,oy+r3*cell+3,cell-6,cell-6);
+    ctx.strokeStyle=PAL.deep;ctx.lineWidth=Math.max(2,cell*0.055);
+    rr(ox+c3*cell+gap*0.5,oy+r3*cell+gap*0.5,cell-gap,cell-gap,rad*1.05);ctx.stroke();
   }
 }
 function loop(){draw();requestAnimationFrame(loop)}
@@ -513,7 +648,7 @@ cv.addEventListener("pointerup",endDrag);
 cv.addEventListener("pointercancel",function(){dragAnchor=null;dragCur=null});
 $("btnUndo").addEventListener("click",function(){
   if(!committed.length||done)return;
-  committed.pop();
+  committed.pop();popIdx=-1;
   updStats();say("已撤销一块");
 });
 $("btnHint").addEventListener("click",function(){
@@ -547,7 +682,7 @@ $("btnHint").addEventListener("click",function(){
         if(rr<r0)r0=rr;if(rr>r9)r9=rr;if(cc<c0)c0=cc;if(cc>c9)c9=cc;
       }
     }
-    dragBad={r:r0,c:c0,rw:c9-c0+1,rh:r9-r0+1};dragBadT=Date.now();
+    hintRect={r:r0,c:c0,rw:c9-c0+1,rh:r9-r0+1};hintT=Date.now();
     say("求解器建议：数字 "+nums[i][1]+"（格 "+(idx+1)+"）划出 "+(r9-r0+1)+"×"+(c9-c0+1)+" 矩形");
     return;
   }
@@ -564,6 +699,7 @@ $("ovBtn").addEventListener("click",function(){
 });
 window.addEventListener("keydown",function(e){
   var k=e.key;
+  if(/^(Arrow| |Enter|Escape|[zZhHrR])/.test(k))kbdMode=true;
   if(k==="ArrowUp"){curK=Math.max(0,curK-w);e.preventDefault();}
   else if(k==="ArrowDown"){curK=Math.min(w*h-1,curK+w);e.preventDefault();}
   else if(k==="ArrowLeft"){if(curK%w>0)curK--;e.preventDefault();}
@@ -575,14 +711,20 @@ window.addEventListener("keydown",function(e){
     e.preventDefault();
   }
   else if(k==="Escape"){kbdAnchor=null;}
-  else if(k==="z"||k==="Z"){if(!committed.length||done)return;committed.pop();updStats();say("已撤销一块");}
+  else if(k==="z"||k==="Z"){if(!committed.length||done)return;committed.pop();popIdx=-1;updStats();say("已撤销一块");}
   else if(k==="h"||k==="H")$("btnHint").click();
   else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
 });
-function hideOverlay(){$("overlay").classList.remove("show")}
 window.addEventListener("resize",function(){resize()});
 /* ---------- 启动 ---------- */
-palLoad();loadLevel(save.lv);loop();
+palLoad();loadLevel(save.lv);
+$("btnUndo").insertAdjacentHTML("afterbegin",window.SW_ICON("undo"));
+$("btnHint").insertAdjacentHTML("afterbegin",window.SW_ICON("hint"));
+$("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+$("btnLv").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
+$("lvTag").insertAdjacentHTML("afterbegin",window.SW_ICON("rect"));
+setOvBtn("下一关","arrow-right");
+loop();
 syncLevelsFromServer();syncSaveFromServer();
 
 })();

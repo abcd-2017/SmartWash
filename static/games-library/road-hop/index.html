@@ -18,6 +18,7 @@
     --g-st-road:#C9CCC7; --g-st-roadline:#F5F6F3; --g-st-island:#EFF1EE;
     --g-st-car1:#E0A33E; --g-st-car2:#7FA8D9; --g-st-car3:#D97F8C;
     --g-st-frog:#2D9B6A; --g-st-frogdark:#17734A;
+    --g-rh-road-hi:#E6E9E3; --g-rh-frog-hi:#6FD3A0; --g-rh-goal:#17734A; --g-rh-shadow:rgba(20,40,30,.18);
     color-scheme:light;
   }
   :root[data-theme=dark] {
@@ -30,6 +31,7 @@
     --g-st-road:#2A2E2B; --g-st-roadline:#3A3F3B; --g-st-island:#262A27;
     --g-st-car1:#E8B45A; --g-st-car2:#93BCE6; --g-st-car3:#E693A0;
     --g-st-frog:#5BC894; --g-st-frogdark:#4ADE6E;
+    --g-rh-road-hi:#454B45; --g-rh-frog-hi:#8FE3B6; --g-rh-goal:#4ADE6E; --g-rh-shadow:rgba(0,0,0,.42);
     color-scheme:dark;
   }
   * { box-sizing: border-box; }
@@ -51,14 +53,21 @@
   .score-box {
     background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
     min-width: 74px; padding: 5px 10px; text-align: center; line-height: 1.3;
+    animation: rise .38s ease-out both;
   }
+  .score-box:nth-child(2) { animation-delay: 40ms; }
+  .score-box:nth-child(3) { animation-delay: 80ms; }
+  .score-box .val.pop { animation: valpop .24s ease-out; }
   .score-box .label { display: block; font-size: 12px; opacity: .85; white-space: nowrap; }
   .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
   .stat .val { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .stage { position: relative; }
+  .stat .val.pop { animation: valpop .24s ease-out; }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
   canvas {
     display: block; width: 100%; aspect-ratio: 9 / 11; height: auto;
     background: var(--g-st-island);
@@ -73,17 +82,25 @@
     background: var(--g-btn-primary); color: var(--g-on-primary);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
     touch-action: manipulation;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
   .btn:disabled { opacity: .4; cursor: default; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .btn .swi { margin-right: 4px; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
     display: none; align-items: center; justify-content: center; padding: 20px;
   }
-  .overlay.show { display: flex; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.92); opacity: 0; } 60% { transform: scale(1.02); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  .panel.pop { animation: pop .3s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
   .panel {
     width: 100%; max-width: 340px; max-height: 100%; overflow: auto;
     background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 16px;
@@ -102,13 +119,15 @@
     background: var(--g-surface); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
     touch-action: manipulation;
+    transition: transform .14s ease-out, background .16s ease-out, border-color .16s ease-out;
   }
+  .lv-chip:active { transform: scale(.96); }
   .lv-chip.sel { border-color: var(--g-primary); box-shadow: inset 0 0 0 1.5px var(--g-primary); background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lv-chip.done { background: var(--g-btn-primary); border-color: var(--g-primary); color: var(--g-on-primary); }
   .lv-chip:disabled { opacity: .38; cursor: not-allowed; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -124,6 +143,19 @@ window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
+</script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'pause':'<path d="M8 5v14M16 5v14"/>','play':'<path d="M8 5v14l11-7z"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={'play':1,'pause':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
 </script>
 </head>
 <body>
@@ -310,10 +342,26 @@ function palLoad(){
     danger:v("--g-danger"),border:v("--g-border"),
     road:v("--g-st-road"),roadline:v("--g-st-roadline"),island:v("--g-st-island"),
     car1:v("--g-st-car1"),car2:v("--g-st-car2"),car3:v("--g-st-car3"),
-    frog:v("--g-st-frog"),frogdark:v("--g-st-frogdark")};
+    frog:v("--g-st-frog"),frogdark:v("--g-st-frogdark"),
+    roadHi:v("--g-rh-road-hi"),frogHi:v("--g-rh-frog-hi"),goal:v("--g-rh-goal"),shadow:v("--g-rh-shadow")};
 }
 window.__gOnTheme=function(){palLoad();draw();};
 palLoad();
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 
 /* ---------- 包内默认关（40 条，种子确定性生成） ---------- */
 var DEFAULT_LEVELS=[{"name":"第1关 · 过街小蛙","no":1,"seed":111729},{"name":"第2关 · 过街小蛙","no":2,"seed":216458},{"name":"第3关 · 过街小蛙","no":3,"seed":321187},{"name":"第4关 · 过街小蛙","no":4,"seed":425916},{"name":"第5关 · 过街小蛙","no":5,"seed":530645},{"name":"第6关 · 过街小蛙","no":6,"seed":635374},{"name":"第7关 · 过街小蛙","no":7,"seed":740103},{"name":"第8关 · 过街小蛙","no":8,"seed":844832},{"name":"第9关 · 过街小蛙","no":9,"seed":949561},{"name":"第10关 · 过街小蛙","no":10,"seed":1054290},{"name":"第11关 · 过街小蛙","no":11,"seed":1159019},{"name":"第12关 · 过街小蛙","no":12,"seed":1263748},{"name":"第13关 · 过街小蛙","no":13,"seed":1368477},{"name":"第14关 · 过街小蛙","no":14,"seed":1473206},{"name":"第15关 · 过街小蛙","no":15,"seed":1577935},{"name":"第16关 · 过街小蛙","no":16,"seed":1682664},{"name":"第17关 · 过街小蛙","no":17,"seed":1787393},{"name":"第18关 · 过街小蛙","no":18,"seed":1892122},{"name":"第19关 · 过街小蛙","no":19,"seed":1996851},{"name":"第20关 · 过街小蛙","no":20,"seed":2101580},{"name":"第21关 · 过街小蛙","no":21,"seed":2206309},{"name":"第22关 · 过街小蛙","no":22,"seed":2311038},{"name":"第23关 · 过街小蛙","no":23,"seed":2415767},{"name":"第24关 · 过街小蛙","no":24,"seed":2520496},{"name":"第25关 · 过街小蛙","no":25,"seed":2625225},{"name":"第26关 · 过街小蛙","no":26,"seed":2729954},{"name":"第27关 · 过街小蛙","no":27,"seed":2834683},{"name":"第28关 · 过街小蛙","no":28,"seed":2939412},{"name":"第29关 · 过街小蛙","no":29,"seed":3044141},{"name":"第30关 · 过街小蛙","no":30,"seed":3148870},{"name":"第31关 · 过街小蛙","no":31,"seed":3253599},{"name":"第32关 · 过街小蛙","no":32,"seed":3358328},{"name":"第33关 · 过街小蛙","no":33,"seed":3463057},{"name":"第34关 · 过街小蛙","no":34,"seed":3567786},{"name":"第35关 · 过街小蛙","no":35,"seed":3672515},{"name":"第36关 · 过街小蛙","no":36,"seed":3777244},{"name":"第37关 · 过街小蛙","no":37,"seed":3881973},{"name":"第38关 · 过街小蛙","no":38,"seed":3986702},{"name":"第39关 · 过街小蛙","no":39,"seed":4091431},{"name":"第40关 · 过街小蛙","no":40,"seed":4196160}];
@@ -415,6 +463,8 @@ var playing=false,paused=false,over=false,startTs=0,acc=0,lastFrame=0;
 var W=0,H=0,dpr=1,cellW=0,cellH=0;
 function $(id){return document.getElementById(id);}
 function say(t){msgEl.textContent=t;}
+function popVal(el,v){var s=String(v);if(el.textContent!==s){el.textContent=s;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}}
+function setBtnPause(t,icon){btnPause.innerHTML=window.SW_ICON(icon)+t;}   // 文案更新重插图标，不抹掉 SVG
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});}
 
 function fit(){
@@ -443,19 +493,19 @@ function setupLevel(n){
   frog={x:4,y:0};tInt=0;tFloat=0;queued=null;
   playing=false;paused=false;over=false;acc=0;
   fit();refreshStats();
-  btnPause.disabled=true;btnPause.textContent="暂停";
+  btnPause.disabled=true;setBtnPause("暂停","pause");
 }
 function startPlay(){
   playing=true;paused=false;over=false;
   startTs=performance.now();acc=0;
   hideOverlay();
   say("车辆按需通行 · 看准缺口再跳");
-  btnPause.disabled=false;btnPause.textContent="暂停";
+  btnPause.disabled=false;setBtnPause("暂停","pause");
 }
 function togglePause(){
   if(!playing||over)return;
-  if(paused){paused=false;hideOverlay();btnPause.textContent="暂停";say("已继续");}
-  else{paused=true;btnPause.textContent="继续";showPause();}
+  if(paused){paused=false;hideOverlay();setBtnPause("暂停","pause");say("已继续");}
+  else{paused=true;setBtnPause("继续","play");showPause();}
 }
 function retryLevel(){setupLevel(cur);startPlay();}
 function enterLevel(n){setupLevel(n);showStart();}
@@ -498,29 +548,90 @@ function rr(x,y,w,h,r){
   ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);
   ctx.closePath();
 }
+/* 车辆：渐变体 + 车窗 + 恒白高光 + 恒黑落地投影 */
+function drawCar(x,top,w,h,color){
+  ctx.save();
+  ctx.shadowColor=PAL.shadow;ctx.shadowBlur=h*0.18;ctx.shadowOffsetY=h*0.10;
+  var g=ctx.createLinearGradient(0,top,0,top+h);
+  g.addColorStop(0,colMix(color,WHITE,0.34));
+  g.addColorStop(0.5,color);
+  g.addColorStop(1,colShade(color,-0.26));
+  ctx.fillStyle=g;rr(x,top,w,h,Math.min(6,w*0.12));ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle=colShade(color,-0.40);   // 车体描边
+  ctx.lineWidth=1.2;rr(x+0.6,top+0.6,w-1.2,h-1.2,Math.min(6,w*0.12));ctx.stroke();
+  ctx.fillStyle=WHITE;ctx.globalAlpha=0.9;   // 车窗（恒白）
+  ctx.fillRect(x+w*0.20,top+h*0.26,w*0.60,h*0.15);
+  ctx.fillRect(x+w*0.20,top+h*0.58,w*0.60,h*0.15);
+  ctx.globalAlpha=1;
+  ctx.fillStyle=WHITE;ctx.globalAlpha=0.55;   // 车顶高光
+  ctx.fillRect(x+w*0.08,top+h*0.08,w*0.84,Math.max(1.5,h*0.06));
+  ctx.globalAlpha=1;
+}
+/* 小蛙：径向渐变体 + 眼柄 + 恒白高光 + 恒黑落地投影 */
+function drawFrog(fx,fy,r){
+  ctx.save();
+  ctx.shadowColor=PAL.shadow;ctx.shadowBlur=r*0.5;ctx.shadowOffsetY=r*0.28;
+  var g=ctx.createRadialGradient(fx-r*0.3,fy-r*0.35,r*0.15,fx,fy,r*1.05);
+  g.addColorStop(0,PAL.frogHi);g.addColorStop(0.5,PAL.frog);g.addColorStop(1,PAL.frogdark);
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(fx,fy,r,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.fillStyle=PAL.frogdark;   // 眼柄
+  ctx.beginPath();ctx.arc(fx-r*0.42,fy-r*0.42,r*0.30,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(fx+r*0.42,fy-r*0.42,r*0.30,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=WHITE;   // 眼白（恒白）
+  ctx.beginPath();ctx.arc(fx-r*0.42,fy-r*0.46,r*0.20,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(fx+r*0.42,fy-r*0.46,r*0.20,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=PAL.text;   // 瞳孔
+  ctx.beginPath();ctx.arc(fx-r*0.40,fy-r*0.44,r*0.09,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(fx+r*0.44,fy-r*0.44,r*0.09,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=0.85;ctx.fillStyle=WHITE;   // 顶部高光
+  ctx.beginPath();ctx.ellipse(fx-r*0.28,fy-r*0.42,r*0.24,r*0.13,-0.5,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+}
 function draw(){
   if(!L)return;
   ctx.clearRect(0,0,W,H);
-  ctx.fillStyle=PAL.island;ctx.fillRect(0,0,W,H);
-  var y,i,c;
+  // 安全岛地面：竖向渐变「面」+ 顶光
+  var ig=ctx.createLinearGradient(0,0,0,H);
+  ig.addColorStop(0,colMix(PAL.island,WHITE,0.32));ig.addColorStop(1,colShade(PAL.island,-0.06));
+  ctx.fillStyle=ig;ctx.fillRect(0,0,W,H);
+  var y,i;
   for(y=0;y<RH.ROWS;y++){
     var l=RH.laneAt(lanes,y);
     var top=sy(y);
     if(l){
-      ctx.fillStyle=PAL.road;ctx.fillRect(0,top,W,cellH);
-      ctx.fillStyle=PAL.roadline;
+      var rg=ctx.createLinearGradient(0,top,0,top+cellH);
+      rg.addColorStop(0,PAL.roadHi);rg.addColorStop(0.5,PAL.road);rg.addColorStop(1,colShade(PAL.road,-0.10));
+      ctx.fillStyle=rg;ctx.fillRect(0,top,W,cellH);
+      ctx.strokeStyle=colShade(PAL.road,-0.24);ctx.lineWidth=1.5;   // 车道边线
+      ctx.beginPath();ctx.moveTo(0,top+0.75);ctx.lineTo(W,top+0.75);ctx.moveTo(0,top+cellH-0.75);ctx.lineTo(W,top+cellH-0.75);ctx.stroke();
+      ctx.fillStyle=PAL.roadline;   // 中央虚线
       for(i=0;i<RH.COLS;i++){
         var cx=i*cellW+cellW/2;
         ctx.fillRect(cx-cellW*0.18,top+cellH/2-1,cellW*0.36,2);
       }
-    }else{
-      ctx.fillStyle=PAL.island;ctx.fillRect(0,top,W,cellH);
-      if(y===0||y===RH.ROWS-1){
-        ctx.fillStyle=PAL.soft;
-        for(i=0;i<RH.COLS;i++)ctx.fillRect(i*cellW+cellW*0.1,top+cellH*0.15,cellW*0.8,cellH*0.7);
-      }
+    }else if(y===0||y===RH.ROWS-1){
+      // 起点 / 对岸：品牌绿软面 + 顶光 + 凹槽砖
+      var sg=ctx.createLinearGradient(0,top,0,top+cellH);
+      sg.addColorStop(0,colMix(PAL.soft,WHITE,0.35));sg.addColorStop(1,PAL.soft);
+      ctx.fillStyle=sg;ctx.fillRect(0,top,W,cellH);
+      ctx.strokeStyle=colMix(PAL.primary,WHITE,0.30);ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(0,top+0.75);ctx.lineTo(W,top+0.75);ctx.stroke();
+      ctx.fillStyle=colShade(PAL.soft,-0.10);
+      for(i=0;i<RH.COLS;i++)ctx.fillRect(i*cellW+cellW*0.1,top+cellH*0.15,cellW*0.8,cellH*0.7);
+      ctx.font='700 12px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=PAL.text;
+      if(y===0)ctx.fillText("起点",W/2,top+cellH/2);
+      else ctx.fillText("对岸",W/2,top+cellH*0.78);
     }
   }
+  // 目标旗：对岸中央
+  var gt=sy(RH.ROWS-1);
+  ctx.strokeStyle=PAL.goal;ctx.lineWidth=2.5;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(W/2,gt+cellH*0.72);ctx.lineTo(W/2,gt+cellH*0.16);ctx.stroke();
+  ctx.fillStyle=PAL.goal;
+  ctx.beginPath();ctx.moveTo(W/2,gt+cellH*0.16);ctx.lineTo(W/2+cellW*0.42,gt+cellH*0.32);ctx.lineTo(W/2,gt+cellH*0.48);ctx.closePath();ctx.fill();
   // 车辆（连续位移，格子对齐碰撞）
   var carCols=[PAL.car1,PAL.car2,PAL.car3];
   for(var li=0;li<lanes.length;li++){
@@ -529,39 +640,21 @@ function draw(){
       if(!lane.pat[i])continue;
       var colPos=i+lane.dir*lane.speed*tFloat;
       colPos=((colPos%RH.COLS)+RH.COLS)%RH.COLS;
-      var x=colPos*cellW;
-      ctx.fillStyle=carCols[(li+i)%3];
-      rr(x+cellW*0.06,lt+cellH*0.16,cellW*0.88,cellH*0.68,Math.min(6,cellW*0.12));
-      ctx.fill();
-      ctx.fillStyle=PAL.surface;
-      ctx.fillRect(x+cellW*0.2,lt+cellH*0.28,cellW*0.6,cellH*0.16);
-      ctx.fillRect(x+cellW*0.2,lt+cellH*0.56,cellW*0.6,cellH*0.16);
+      drawCar(colPos*cellW+cellW*0.06,lt+cellH*0.14,cellW*0.88,cellH*0.72,carCols[(li+i)%3]);
     }
   }
-  // 小蛙
-  var fx=frog.x*cellW+cellW/2,fy=sy(frog.y)+cellH/2;
-  ctx.fillStyle=PAL.frogdark;
-  ctx.beginPath();ctx.arc(fx-cellW*0.22,fy-cellH*0.24,cellW*0.13,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(fx+cellW*0.22,fy-cellH*0.24,cellW*0.13,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=PAL.frog;
-  ctx.beginPath();ctx.arc(fx,fy,cellW*0.3,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle="#fff";
-  ctx.beginPath();ctx.arc(fx-cellW*0.13,fy-cellH*0.12,cellW*0.08,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(fx+cellW*0.13,fy-cellH*0.12,cellW*0.08,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=PAL.text;
-  ctx.beginPath();ctx.arc(fx-cellW*0.13,fy-cellH*0.12,cellW*0.035,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(fx+cellW*0.13,fy-cellH*0.12,cellW*0.035,0,Math.PI*2);ctx.fill();
+  drawFrog(frog.x*cellW+cellW/2,sy(frog.y)+cellH/2,cellW*0.30);
 }
 
 /* ---------- 覆盖层 ---------- */
-function showPanel(html){panel.innerHTML=html;overlay.classList.add("show");}
+function showPanel(html){panel.innerHTML=html;panel.classList.remove("pop");void panel.offsetWidth;panel.classList.add("pop");overlay.classList.add("show");}
 function hideOverlay(){overlay.classList.remove("show");}
 function showStart(){
   var lb=parseInt(doneSave[cur],10)||0;
   showPanel(
     '<p class="rt">第 '+(cur+1)+' 关 · '+(L?esc(L.name):"")+'</p>'+
     '<p class="rs">车道 5 条 · 本关最佳 <b>'+lb+'</b></p>'+
-    '<div class="rbtns"><button class="btn" id="ovMain" type="button">开始</button></div>'+
+    '<div class="rbtns"><button class="btn" id="ovMain" type="button">'+window.SW_ICON("play")+'开始</button></div>'+
     '<p class="rhint">小蛙每跳一次，车辆前进一拍。看准车流缺口再跳，安全岛上可等待；被车撞到即失败，跳到最上方对岸过关。</p>'
   );
   $("ovMain").addEventListener("click",function(){startPlay();});
@@ -571,8 +664,8 @@ function showPause(){
     '<p class="rt">已暂停</p>'+
     '<p class="rs">进度已保存，随时继续。</p>'+
     '<div class="rbtns">'+
-      '<button class="btn ghost" id="ovRetryP" type="button">重玩本关</button>'+
-      '<button class="btn" id="ovResume" type="button">继续</button>'+
+      '<button class="btn ghost" id="ovRetryP" type="button">'+window.SW_ICON("rotate")+'重玩本关</button>'+
+      '<button class="btn" id="ovResume" type="button">'+window.SW_ICON("play")+'继续</button>'+
     '</div>'
   );
   $("ovResume").addEventListener("click",function(){togglePause();});
@@ -584,8 +677,8 @@ function showWin(sc){
     '<p class="rs">本关得分 <b>'+sc+'</b> · 总积分 <b>'+best+'</b></p>'+
     '<p class="rs">用时 '+tInt+' 跳 · 到达第 '+(cur+1)+' 关</p>'+
     '<div class="rbtns">'+
-      '<button class="btn ghost" id="ovReplay" type="button">重玩本关</button>'+
-      '<button class="btn" id="ovNext" type="button">下一关</button>'+
+      '<button class="btn ghost" id="ovReplay" type="button">'+window.SW_ICON("rotate")+'重玩本关</button>'+
+      '<button class="btn" id="ovNext" type="button">'+window.SW_ICON("arrow-right")+'下一关</button>'+
     '</div>'
   );
   $("ovNext").addEventListener("click",function(){enterLevel(cur<LEVELS.length-1?cur+1:cur);});
@@ -596,7 +689,7 @@ function showFail(){
     '<p class="rt">挑战失败</p>'+
     '<p class="rs">小蛙被车流撞到了 · 本关最佳 <b>'+(doneSave[cur]||0)+'</b></p>'+
     '<p class="rhint">提示：车辆按固定节奏通行，先在安全岛观察一个完整周期再出发。</p>'+
-    '<div class="rbtns"><button class="btn" id="ovRetryF" type="button">重试本关</button></div>'
+    '<div class="rbtns"><button class="btn" id="ovRetryF" type="button">'+window.SW_ICON("rotate")+'重试本关</button></div>'
   );
   $("ovRetryF").addEventListener("click",function(){retryLevel();});
 }
@@ -607,7 +700,7 @@ function showLevels(){
     var locked=i>saveData.lv;
     html+='<button class="lv-chip'+(i===cur?" sel":"")+(done?" done":"")+'" data-i="'+i+'"'+(locked?" disabled":"")+' type="button">'+(i+1)+'</button>';
   }
-  html+='</div></div><div class="rbtns"><button class="btn ghost" id="ovClose" type="button">返回</button></div>';
+  html+='</div></div><div class="rbtns"><button class="btn ghost" id="ovClose" type="button">'+window.SW_ICON("x")+'返回</button></div>';
   showPanel(html);
   var chips=panel.querySelectorAll(".lv-chip");
   for(var j=0;j<chips.length;j++){
@@ -621,8 +714,8 @@ function showLevels(){
 
 /* ---------- 统计 ---------- */
 function refreshStats(){
-  stLv.textContent=(cur+1)+"/"+LEVELS.length;
-  stBest.textContent=String(best);
+  popVal(stLv,(cur+1)+"/"+LEVELS.length);
+  popVal(stBest,String(best));
 }
 
 /* ---------- 输入 ---------- */
@@ -665,7 +758,7 @@ document.addEventListener("keydown",function(e){
 });
 btnPause.addEventListener("click",togglePause);
 btnRetry.addEventListener("click",function(){if(playing||over)retryLevel();});
-btnLevels.addEventListener("click",function(){if(playing&&!paused){paused=true;btnPause.textContent="继续";}showLevels();});
+btnLevels.addEventListener("click",function(){if(playing&&!paused){paused=true;setBtnPause("继续","play");}showLevels();});
 document.addEventListener("visibilitychange",function(){if(document.hidden&&playing&&!paused)togglePause();});
 window.addEventListener("resize",function(){fit();});
 window.addEventListener("orientationchange",function(){fit();});
@@ -695,6 +788,14 @@ showStart();
 window.__validateLevels=function(){
   try{return RH.validateAll(LEVELS);}catch(e){return {error:String(e)};}
 };
+})();
+</script>
+<script>
+/* 静态按钮图标注入：内联 SVG（零外链）；暂停钮文案由 setBtnPause 重插图标 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var dp=[["btnPause","pause"],["btnLevels","grid"],["btnRetry","rotate"]],j;
+  for(j=0;j<dp.length;j++){var el=$(dp[j][0]);if(el)el.insertAdjacentHTML("afterbegin",window.SW_ICON(dp[j][1]))}
 })();
 </script>
 </body>

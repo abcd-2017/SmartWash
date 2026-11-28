@@ -17,5 +17,5 @@
 - [x] 颜色全部走 `--g-*` / `--g-st-*` token（PAL 读 CSS 变量，__gOnTheme 重绘），JS 零颜色字面量（恒白水光 rgba 例外）
 - [x] 触屏 + 键盘双操作；按钮热区 ≥44px
 - [x] 纯事件驱动（rAF 仅重绘不推进状态），切后台 visibilitychange 停帧/续跑；胜负在动作内同步判定，无延迟回调竞态
-- [x] 存档键 `sw.welldill.v1`（续玩从 `save.lv` 起步）+ `.levels`/`.ver` 缓存；无桥自动降级 localStorage
+- [x] 存档键 `sw.welldrill.v1`（续玩从 `save.lv` 起步）+ `.levels`/`.ver` 缓存；无桥自动降级 localStorage
 - [x] 关卡驱动：40 关内嵌 + 独立 DP 验证器（含锚点用例）；audit-gates 通过（0 违规）；theme-gates 全绿

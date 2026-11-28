@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>方程配平</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-cb-felt1/2 方程毡面、--g-cb-key1/2 数字键面）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-cb-felt1:#1E6B4A;--g-cb-felt2:#17573C;--g-cb-key1:#FFFFFF;--g-cb-key2:#EDF2EE;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-cb-felt1:#123A2C;--g-cb-felt2:#0B2419;--g-cb-key1:#262B27;--g-cb-key2:#1A1E1B;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -26,22 +26,36 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }   /* 入场错落 40ms */
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   #stName { font-size: 12px; line-height: 1.25; word-break: break-all; }
   .stat .val.low { color: var(--g-danger); }
-  .stage { background: var(--g-surface); border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); padding: 14px 10px; }
+  /*方程毡面＝场景「地面」：绿毡渐变 + 顶部天光 + 内凹 + 落地投影；公式走象牙白*/
+  .stage { position: relative; background: linear-gradient(180deg,var(--g-cb-felt1),var(--g-cb-felt2)); border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow), inset 0 1px 0 rgba(255,255,255,.18), inset 0 6px 18px rgba(0,0,0,.18); padding: 14px 10px; color: #fff; animation: rise .38s ease-out both; animation-delay: 120ms; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  /*图例：三秒读懂「点槽选位 / 点键填系数 / 两边原子守恒」*/
+  .legend { display: flex; gap: 8px; margin: 0 2px 10px; animation: rise .38s ease-out both; animation-delay: 160ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; white-space: nowrap; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-dot { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+  .lg-dot.felt { background: linear-gradient(180deg,var(--g-cb-felt1),var(--g-cb-felt2)); }
+  .lg-dot.slot { background: linear-gradient(180deg,var(--g-cb-key1),var(--g-cb-key2)); border: 1px solid var(--g-border); }
+  .lg-dot.key { background: linear-gradient(180deg,var(--g-cb-key1),var(--g-cb-key2)); border: 1px solid var(--g-border); box-shadow: inset 0 1px 0 rgba(255,255,255,.6); }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -54,9 +68,9 @@
     width: 100%; max-width: 340px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
+    animation: pop .3s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .btn { width: 100%; margin-bottom: 8px; }
@@ -71,29 +85,39 @@
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
   /* 方程配平专属 */
-  .eq { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 6px; font-size: 18px; font-weight: 600; line-height: 1.4; }
+  .eq { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 6px; font-size: 18px; font-weight: 600; line-height: 1.4; text-shadow: 0 1px 2px rgba(0,0,0,.22); }
   .eq .f { font-variant-numeric: tabular-nums; }
-  .eq .arrow { color: var(--g-muted); padding: 0 2px; }
+  .eq .arrow { color: rgba(255,255,255,.82); padding: 0 2px; }
+  /*系数槽＝内凹可填位：亮键面 + 内阴影；选中走品牌深环，填错走危险环*/
   .slot {
-    width: 44px; height: 44px; border: 1px dashed var(--g-border); border-radius: 10px;
-    background: var(--g-bg); color: var(--g-primary-deep);
+    width: 44px; height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
+    background: linear-gradient(180deg,var(--g-cb-key1),var(--g-cb-key2)); color: var(--g-on-soft);
+    box-shadow: inset 0 2px 6px rgba(20,40,30,.20), 0 1px 0 rgba(255,255,255,.5);
     font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer; padding: 0;
     font-variant-numeric: tabular-nums;
+    transition: box-shadow .16s ease-out, border-color .16s ease-out, color .16s ease-out, transform .14s ease-out;
+    animation: rise .3s ease-out both;
   }
-  .slot.cur { outline: 2px solid var(--g-primary-deep); outline-offset: 1px; border-style: solid; }
-  .slot.err { border-color: var(--g-danger); color: var(--g-danger); border-style: solid; }
+  .slot.cur { outline: 2px solid var(--g-primary-deep); outline-offset: 1px; border-color: var(--g-primary-deep); box-shadow: inset 0 2px 6px rgba(20,40,30,.20), 0 0 0 3px var(--g-primary-soft); }
+  .slot.err { border-color: var(--g-danger); color: var(--g-danger); box-shadow: inset 0 2px 6px rgba(20,40,30,.20), 0 0 0 3px var(--g-primary-soft); }
   .keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
+  /*数字键＝凸面键：渐变键面 + 顶部亮棱 + 落地投影*/
   .key {
     min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
-    background: var(--g-surface2); color: var(--g-text);
+    background: linear-gradient(180deg,var(--g-cb-key1),var(--g-cb-key2)); color: var(--g-text);
+    box-shadow: 0 2px 6px rgba(20,40,30,.12), inset 0 1px 0 rgba(255,255,255,.6);
     font-family: inherit; font-size: 18px; font-weight: 600; cursor: pointer; padding: 0;
+    transition: transform .14s ease-out, box-shadow .16s ease-out, background .16s ease-out;
+    animation: rise .3s ease-out both;
   }
-  .key:active { opacity: .8; }
-  .ctl { min-height: 48px; width: 100%; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: #fff; font-family: inherit; font-size: 18px; font-weight: 600; cursor: pointer; margin-top: 8px; }
-  .ctl:active { opacity: .75; }
+  .key:active { transform: scale(.96); }
+  /*提交 CTA：品牌主绿 + 内凹顶光 + 落地投影*/
+  .ctl { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; width: 100%; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 3px 10px rgba(20,40,30,.20); font-family: inherit; font-size: 18px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: transform .14s ease-out, opacity .16s ease-out, box-shadow .16s ease-out; }
+  .ctl:active { transform: scale(.96); }
   .ctl[disabled] { opacity: .45; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
@@ -108,6 +132,20 @@ try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t=
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
 </script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>'
+};
+var fill={'play':1,'check':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 
 </head>
 <body>
@@ -121,6 +159,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <div class="stage">
     <div class="eq" id="eq"></div>
     <div class="keypad" id="keypad"></div>
+  </div>
+  <div class="legend">
+    <span class="lg-chip"><span class="lg-dot felt" aria-hidden="true"></span><span><b>方程</b>· 目标</span></span>
+    <span class="lg-chip"><span class="lg-dot slot" aria-hidden="true"></span><span><b>虚线槽</b>· 点选</span></span>
+    <span class="lg-chip"><span class="lg-dot key" aria-hidden="true"></span><span><b>数字键</b>· 填系数</span></span>
   </div>
   <p class="msg" id="msg" role="status" aria-live="polite">点虚线槽再点数字键填系数，使两边各元素原子数相等</p>
   <div class="tools">
@@ -244,7 +287,7 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 }
 function hideOverlay(){$("overlay").classList.remove("show")}
@@ -418,6 +461,8 @@ function safeVerify(seed,idx){
 /* ---------- 状态与渲染 ---------- */
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+/*覆盖层按钮：图标 + 文本同存，更新文案不得抹掉已注入 SVG*/
+function setOvBtn(t,icon){$("ovBtn").innerHTML=(icon?window.SW_ICON(icon):"")+t}
 var lv=save.lv,L=null,vals=[],cur=0,chances=3,done=false,errSet={},hints=3;
 function loadLevel(n){
   lv=Math.max(0,Math.min(n,LEVELS.length-1));
@@ -465,6 +510,7 @@ function renderEq(){
       b.className="slot";
       b.setAttribute("data-i",i);
       b.setAttribute("aria-label","系数槽 "+(i+1));
+      b.style.animationDelay=Math.min(120+i*30,240)+"ms";   /* 入场错落 30ms，总时长 ≤600ms */
       b.addEventListener("click",function(){cur=i;paintEq();});
       g.appendChild(b);
       var f=document.createElement("span");f.className="f";f.textContent=L.formulas[i];
@@ -489,6 +535,7 @@ function renderKeypad(){
       var b=document.createElement("button");
       b.className="key";
       b.textContent=k;
+      b.style.animationDelay=Math.min(150+k*30,270)+"ms";   /* 入场错落 30ms，总时长 ≤600ms */
       b.addEventListener("click",function(){inputDigit(k);});
       g.appendChild(b);
     })(k);
@@ -530,14 +577,14 @@ function winLevel(){
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:3-Math.max(0,chances)}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
   $("ovDesc").innerHTML=L.name+" 配平完成 · 剩余机会 "+chances+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"arrow-right");
   $("overlay").classList.add("show");
 }
 function failLevel(reason){
   done=true;paintEq();updStats();
   $("ovTitle").textContent="配平失败";
   $("ovDesc").textContent=reason+"。重开本关再来，提示键可以确认一槽。";
-  $("ovBtn").textContent="重开本关";
+  setOvBtn("重开本关","rotate");
   $("overlay").classList.add("show");
 }
 /* ---------- 键盘 ---------- */
@@ -610,6 +657,14 @@ syncLevelsFromServer();syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 工具钮 / 提交钮图标注入（内联 SVG，零外链；用 insertAdjacentHTML，不整按钮 textContent=） */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var dp=[["btnHint","bulb"],["btnClear","backspace"],["btnReset","rotate"],["btnLv","grid"],["btnSubmit","check"]],j;
+  for(j=0;j<dp.length;j++)$(dp[j][0]).insertAdjacentHTML("afterbegin",window.SW_ICON(dp[j][1]));
 })();
 </script>
 

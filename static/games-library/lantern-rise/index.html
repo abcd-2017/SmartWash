@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>灯升风变</title>
 <style>
-  /*token:GAME-THEME.md§2（灯纸/岩壁素材 token 统一 --g-st- 前缀，§3 D2）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-st-paper:#DD9A52;--g-st-paper2:#B87438;--g-st-rock:#B9B2A4;--g-st-rock2:#8F887B;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-paper:#8A6234;--g-st-paper2:#6E4C26;--g-st-rock:#4A463E;--g-st-rock2:#37342E;color-scheme:dark }
+  /*token:GAME-THEME.md§2（灯纸/岩壁素材 token 统一 --g-lr- 前缀，§3 D2）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-lr-paper:#DD9A52;--g-lr-paper2:#B87438;--g-lr-rock:#B9B2A4;--g-lr-rock2:#8F887B;--g-lr-sky1:#E8F1F4;--g-lr-sky2:#D3E4EA;--g-lr-flame1:#F6C945;--g-lr-flame2:#E2634A;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-lr-paper:#8A6234;--g-lr-paper2:#6E4C26;--g-lr-rock:#4A463E;--g-lr-rock2:#37342E;--g-lr-sky1:#141A1E;--g-lr-sky2:#0E1418;--g-lr-flame1:#F2C14E;--g-lr-flame2:#E88A72;color-scheme:dark }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
@@ -50,8 +50,28 @@
   .ov-btns { display: grid; gap: 8px; }
   .foot { margin: 14px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; }
 
+  /* 入场错落：页头/工具/舞台/图例/页脚依次浮入，总量 ≤600ms */
+  header, .toolbar, .stage, .legend, .foot { animation: rise .38s ease-out both; }
+  .toolbar { animation-delay: 40ms; }
+  .stage { animation-delay: 80ms; }
+  .legend { animation-delay: 120ms; }
+  .foot { animation-delay: 160ms; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  .box b.pop { animation: valpop .24s ease-out; }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  .overlay.show .card { animation: pop .26s ease-out; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .btxt { display: inline-block; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out; }
+  .btn:active { transform: scale(.96); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+  .lg-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--g-surface2); border-radius: 10px; padding: 4px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-chip .swi { width: 16px; height: 16px; }
+
   /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
@@ -65,6 +85,23 @@ window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
+</script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'pause':'<rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/>',
+ 'flame':'<path d="M12 3c3 4 6 6 6 10a6 6 0 0 1-12 0c0-4 3-6 6-10z"/>',
+ 'rock':'<path d="M4 18l4-8 4 3 3-6 5 11z"/>',
+ 'oil':'<path d="M12 3c4 5 6 7 6 11a6 6 0 0 1-12 0c0-4 2-6 6-11z"/>',
+ 'up':'<path d="M12 19V5M6 11l6-6 6 6"/>',
+ 'flag':'<path d="M5 21V4M5 4h12l-2.5 4L17 12H5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+var fill={'play':1,'flag':1,'pause':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
 </script>
 </head>
 <body>
@@ -94,6 +131,12 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         <div class="ov-btns" id="ovB"></div>
       </div>
     </div>
+  </div>
+  <div class="legend">
+    <span class="lg-chip"><svg class="swi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--g-lr-paper)" aria-hidden="true"><path d="M12 3c3 4 6 6 6 10a6 6 0 0 1-12 0c0-4 3-6 6-10z"/></svg><span><b>孔明灯</b> · 你控制</span></span>
+    <span class="lg-chip"><svg class="swi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--g-primary-deep)" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg><span><b>高度 / 油袋</b> · 目标</span></span>
+    <span class="lg-chip"><svg class="swi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--g-danger)" aria-hidden="true"><path d="M4 18l4-8 4 3 3-6 5 11z"/></svg><span><b>岩壁石台</b> · 危险</span></span>
+    <span class="lg-chip"><svg class="swi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--g-warning)" aria-hidden="true"><path d="M12 3c4 5 6 7 6 11a6 6 0 0 1-12 0c0-4 2-6 6-11z"/></svg><span><b>阵风预警</b> · 提前回正</span></span>
   </div>
   <p class="foot">按住屏幕或空格控火 · 左右推压回正灯身 · 油袋补燃料 · 岩壁与石台会撞伤灯纸 · 三盏灯放完结束</p>
 </div>
@@ -191,9 +234,25 @@ function palLoad(){
   PAL.text=v("--g-text");PAL.muted=v("--g-muted");PAL.faint=v("--g-faint");
   PAL.primary=v("--g-primary");PAL.deep=v("--g-primary-deep");PAL.soft=v("--g-primary-soft");
   PAL.danger=v("--g-danger");PAL.warning=v("--g-warning");PAL.success=v("--g-success");PAL.water=v("--g-water");
-  PAL.paper=v("--g-st-paper");PAL.paper2=v("--g-st-paper2");PAL.rock=v("--g-st-rock");PAL.rock2=v("--g-st-rock2");
+  PAL.paper=v("--g-lr-paper");PAL.paper2=v("--g-lr-paper2");PAL.rock=v("--g-lr-rock");PAL.rock2=v("--g-lr-rock2");
+  PAL.sky1=v("--g-lr-sky1");PAL.sky2=v("--g-lr-sky2");PAL.flame1=v("--g-lr-flame1");PAL.flame2=v("--g-lr-flame2");
 }
-window.__gOnTheme=function(){palLoad();skyGrad=null;draw();};
+window.__gOnTheme=function(){palLoad();skyGrad=null;rockGrad=null;groundGrad=null;draw();};
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 /* ---------- DOM ---------- */
 function $(id){return document.getElementById(id)}
 var cv=$("cv"),ctx=cv.getContext("2d"),ov=$("ov");
@@ -226,12 +285,14 @@ function endRun(){
   showOv({k:"FLAME OUT",t:"灯火熄了",
     x:isRec?"新纪录！阵风越来越野，留意预警箭头提前回正。":"歪了的灯升力会掉，看到预警箭头就提前往反方向压。",
     stats:[["高度",Math.round(S.maxAlt)+"m"],["油袋",S.pouch],["最高分",S.best]],
-    btns:[["再放一盏","primary",startRun]]});
+    btns:[["再放一盏","primary",startRun,"play"]]});
 }
+function bump(el){var s=String(el.textContent);if(el.__last===s)return;el.__last=s;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}
 function syncHud(){
   hudAlt.textContent=Math.round(Math.max(alt(),S.maxAlt))+"m";
   hudScore.textContent=String(S.score);
   hudBest.textContent=String(S.best);
+  bump(hudAlt);bump(hudScore);
 }
 /* ---------- 覆盖层 ---------- */
 function showOv(o){
@@ -243,7 +304,9 @@ function showOv(o){
   (o.btns||[]).forEach(function(b){
     var el=document.createElement("button");
     el.className="btn"+(b[1]==="ghost"?" ghost":"");
-    el.textContent=b[0];el.addEventListener("click",b[2]);ovB.appendChild(el);
+    el.innerHTML=window.SW_ICON(b[3]||"play")+'<span class="btxt"></span>';
+    el.querySelector(".btxt").textContent=b[0];
+    el.addEventListener("click",b[2]);ovB.appendChild(el);
   });
   ov.classList.add("show");
 }
@@ -252,7 +315,7 @@ function pauseGame(){
   if(S.phase!=="run"||S.paused)return;
   S.paused=true;
   showOv({k:"PAUSED",t:"已暂停",x:"风口小憩，回来接着放。",
-    btns:[["继续","primary",function(){S.paused=false;hideOv()}],["重开","ghost",startRun]]});
+    btns:[["继续","primary",function(){S.paused=false;hideOv()},"play"],["重开","ghost",startRun,"rotate"]]});
 }
 /* ---------- 粒子/浮字 ---------- */
 function puff(x,y,n,col,spd){
@@ -362,7 +425,7 @@ function step(dt){
   }
 }
 /* ---------- 绘制 ---------- */
-var SC=1,skyGrad=null;
+var SC=1,skyGrad=null,rockGrad=null,groundGrad=null;
 function resize(){
   var r=cv.getBoundingClientRect();
   var dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
@@ -384,64 +447,99 @@ function draw(){
   ctx.save();ctx.translate(shx,shy);
   if(!skyGrad){
     skyGrad=ctx.createLinearGradient(0,0,0,MH);
-    skyGrad.addColorStop(0,PAL.bg);skyGrad.addColorStop(1,PAL.surface2);
+    skyGrad.addColorStop(0,PAL.sky1);skyGrad.addColorStop(1,PAL.sky2);
+    rockGrad=ctx.createLinearGradient(0,0,0,MH);
+    rockGrad.addColorStop(0,PAL.rock);rockGrad.addColorStop(1,colShade(PAL.rock,-0.25));
+    groundGrad=ctx.createLinearGradient(0,0,0,MH);
+    groundGrad.addColorStop(0,PAL.rock2);groundGrad.addColorStop(1,colShade(PAL.rock2,-0.3));
   }
   ctx.fillStyle=skyGrad;ctx.fillRect(-8,-8,MW+16,MH+16);
+  // 顶部天光晕（恒白柔光）
+  var halo=ctx.createRadialGradient(MW/2,-40,10,MW/2,-40,MW*0.8);
+  halo.addColorStop(0,"rgba(255,255,255,0.20)");halo.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=halo;ctx.fillRect(0,0,MW,MH*0.6);
   var i,lt=S.lt,ly=sy(lt.wy);
-  //峡谷岩壁
-  ctx.fillStyle=PAL.rock;
+  // 峡谷岩壁：渐变「面」+ 顶缘亮线 + 落地投影
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=10;ctx.shadowOffsetY=4;   // 恒黑落地投影
+  ctx.fillStyle=rockGrad;
   ctx.fillRect(0,-8,WALL,MH+16);ctx.fillRect(MW-WALL,-8,WALL,MH+16);
+  ctx.restore();
+  ctx.fillStyle=colMix(PAL.rock,WHITE,0.25);
+  ctx.fillRect(0,-8,WALL,3);ctx.fillRect(MW-WALL,-8,WALL,3);   // 顶缘亮线
   ctx.fillStyle=PAL.rock2;
   for(var ry=-40;ry<MH+40;ry+=64){
     ctx.fillRect(WALL-8,ry+((S.camY*0.4)%64),8,34);
     ctx.fillRect(MW-WALL,ry+64-((S.camY*0.4)%64),8,34);
   }
-  //地面
+  // 地面「面」+ 亮缘
   var gY=sy(0);
   if(gY<MH+40){
-    ctx.fillStyle=PAL.rock2;ctx.fillRect(WALL-8,gY,MW-WALL*2+16,MH-gY+8);
+    ctx.fillStyle=groundGrad;ctx.fillRect(WALL-8,gY,MW-WALL*2+16,MH-gY+8);
+    ctx.fillStyle=colMix(PAL.rock2,WHITE,0.2);ctx.fillRect(WALL-8,gY,MW-WALL*2+16,2);   // 地面亮缘
     ctx.fillStyle=PAL.muted;ctx.font="700 12px system-ui,sans-serif";ctx.textAlign="center";
     ctx.fillText("放飞点",MW/2,gY+16);
   }
-  //石台与油袋
+  // 石台与油袋
   for(i=0;i<S.items.length;i++){
     var it=S.items[i],iy=sy(it.wy);
     if(iy<-60||iy>MH+60)continue;
     if(it.kind==="oil"){
-      ctx.fillStyle=PAL.water;
-      ctx.beginPath();ctx.arc(it.x,iy,10,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle="rgba(255,255,255,.5)";
-      ctx.beginPath();ctx.arc(it.x-3,iy-3,3,0,Math.PI*2);ctx.fill();
+      // 油袋：径向渐变球 + 恒白高光 + 落地投影
+      ctx.save();ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=6;ctx.shadowOffsetY=3;
+      var og=ctx.createRadialGradient(it.x-3,iy-3,1,it.x,iy,11);
+      og.addColorStop(0,colMix(PAL.water,WHITE,0.5));og.addColorStop(1,colShade(PAL.water,-0.25));
+      ctx.fillStyle=og;ctx.beginPath();ctx.arc(it.x,iy,10,0,Math.PI*2);ctx.fill();ctx.restore();
+      ctx.strokeStyle=colShade(PAL.water,-0.4);ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.arc(it.x,iy,10,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle=WHITE;ctx.beginPath();ctx.arc(it.x-3,iy-3,2.6,0,Math.PI*2);ctx.fill();   // 恒白高光
     }else{
       var sx=it.side==="L"?WALL:MW-WALL-it.w;
-      ctx.fillStyle=PAL.rock;
-      rrect(sx,iy-9,it.w,18,7);ctx.fill();
-      ctx.fillStyle=PAL.rock2;
-      rrect(sx,iy-9,Math.min(14,it.w),18,7);ctx.fill();
+      // 石台：渐变「面」+ 顶缘亮线 + 落地投影
+      ctx.save();ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=7;ctx.shadowOffsetY=3;
+      var sg=ctx.createLinearGradient(0,iy-9,0,iy+9);
+      sg.addColorStop(0,colMix(PAL.rock,WHITE,0.2));sg.addColorStop(0.5,PAL.rock);sg.addColorStop(1,colShade(PAL.rock,-0.3));
+      ctx.fillStyle=sg;rrect(sx,iy-9,it.w,18,7);ctx.fill();ctx.restore();
+      ctx.fillStyle=PAL.rock2;rrect(sx,iy-9,Math.min(14,it.w),18,7);ctx.fill();
+      ctx.fillStyle=colMix(PAL.rock,WHITE,0.35);ctx.fillRect(sx,iy-9,it.w,2);   // 顶缘亮线
     }
   }
-  //孔明灯
+  // 孔明灯
   var blink=S.inv>0&&Math.sin(S.t*24)<0;
   if(!blink){
+    // 灯体光晕（恒白暖光）
+    var gl=ctx.createRadialGradient(lt.x,ly,4,lt.x,ly,60);
+    gl.addColorStop(0,"rgba(255,255,255,0.28)");gl.addColorStop(1,"rgba(255,255,255,0)");
+    ctx.fillStyle=gl;ctx.beginPath();ctx.arc(lt.x,ly,60,0,Math.PI*2);ctx.fill();
     ctx.save();ctx.translate(lt.x,ly);ctx.rotate(lt.tilt);
-    ctx.fillStyle=PAL.paper;ctx.strokeStyle=PAL.paper2;ctx.lineWidth=2;
+    ctx.shadowColor="rgba(0,0,0,0.3)";ctx.shadowBlur=10;ctx.shadowOffsetY=5;   // 恒黑落地投影
+    // 灯纸渐变体
+    var pg=ctx.createLinearGradient(0,-22,0,20);
+    pg.addColorStop(0,colMix(PAL.paper,WHITE,0.35));pg.addColorStop(0.55,PAL.paper);pg.addColorStop(1,PAL.paper2);
+    ctx.fillStyle=pg;ctx.strokeStyle=colShade(PAL.paper2,-0.3);ctx.lineWidth=2;
     ctx.beginPath();
     ctx.moveTo(-18,14);
     ctx.quadraticCurveTo(-24,-14,0,-22);
     ctx.quadraticCurveTo(24,-14,18,14);
     ctx.quadraticCurveTo(0,20,-18,14);
     ctx.closePath();ctx.fill();ctx.stroke();
-    ctx.strokeStyle=PAL.paper2;ctx.lineWidth=1.4;
+    ctx.restore();
+    // 纸面骨架线 + 恒白高光 + 提绳 + 火焰
+    ctx.save();ctx.translate(lt.x,ly);ctx.rotate(lt.tilt);
+    ctx.strokeStyle=colShade(PAL.paper2,-0.15);ctx.lineWidth=1.4;
     ctx.beginPath();ctx.moveTo(-14,12);ctx.quadraticCurveTo(-16,-8,0,-16);
     ctx.moveTo(14,12);ctx.quadraticCurveTo(16,-8,0,-16);ctx.stroke();
+    ctx.fillStyle=WHITE;ctx.globalAlpha=.5;
+    ctx.beginPath();ctx.ellipse(-7,-8,5,8,-0.4,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;   // 恒白高光
     ctx.strokeStyle=PAL.muted;ctx.lineWidth=1.6;
     ctx.beginPath();ctx.moveTo(-13,17);ctx.lineTo(-9,26);ctx.moveTo(13,17);ctx.lineTo(9,26);ctx.stroke();
     if(S.burn&&S.oil>0){
       var fl=8+Math.sin(S.t*12)*3;
-      ctx.fillStyle=PAL.warning;
-      ctx.beginPath();ctx.moveTo(-7,26);ctx.quadraticCurveTo(0,26+fl,7,26);ctx.closePath();ctx.fill();
-      ctx.fillStyle="rgba(255,255,255,.6)";
-      ctx.beginPath();ctx.moveTo(-3,26);ctx.quadraticCurveTo(0,26+fl*.6,3,26);ctx.closePath();ctx.fill();
+      var fg=ctx.createLinearGradient(0,26,0,26+fl);
+      fg.addColorStop(0,PAL.flame2);fg.addColorStop(1,PAL.flame1);
+      ctx.fillStyle=fg;ctx.beginPath();ctx.moveTo(-7,26);ctx.quadraticCurveTo(0,26+fl,7,26);ctx.closePath();ctx.fill();
+      ctx.fillStyle=WHITE;ctx.globalAlpha=.85;
+      ctx.beginPath();ctx.moveTo(-3,26);ctx.quadraticCurveTo(0,26+fl*.6,3,26);ctx.closePath();ctx.fill();ctx.globalAlpha=1;   // 恒白焰芯
     }
     ctx.restore();
     //倾角警示
@@ -451,12 +549,15 @@ function draw(){
       ctx.fillText("灯身歪 "+Math.round(tiltDeg)+"° 快回正",lt.x,ly-40);
     }
   }
-  //油量
+  //油量槽：内凹轨道 + 渐变液柱
   ctx.fillStyle=PAL.surface;ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
   rrect(48,90,14,200,7);ctx.fill();ctx.stroke();
   var op=S.oil/OIL_MAX;
-  ctx.fillStyle=op>.3?PAL.water:PAL.danger;
-  rrect(50,90+(200-196*op),10,196*op,5);ctx.fill();
+  if(op>0.01){
+    var og2=ctx.createLinearGradient(0,90+(200-196*op),0,90+200);
+    og2.addColorStop(0,PAL.water);og2.addColorStop(1,colShade(PAL.water,-0.35));
+    ctx.fillStyle=og2;rrect(50,90+(200-196*op),10,196*op,5);ctx.fill();
+  }
   ctx.fillStyle=PAL.muted;ctx.font="700 12px system-ui,sans-serif";ctx.textAlign="center";
   ctx.fillText("油",55,80);
   //阵风预警
@@ -468,11 +569,13 @@ function draw(){
     ctx.fillStyle=PAL.warning;ctx.font="700 14px system-ui,sans-serif";ctx.textAlign="center";
     ctx.fillText(S.gust>0?"→→ 阵风中":"←← 阵风中",MW/2,44);
   }
-  //灯余量
+  //灯余量：小灯笼渐变
   for(i=0;i<S.hp;i++){
     ctx.save();ctx.translate(MW-24-i*24,28);
-    ctx.fillStyle=PAL.paper;
-    ctx.beginPath();ctx.ellipse(0,0,6,8,0,0,Math.PI*2);ctx.fill();
+    var hg=ctx.createLinearGradient(0,-8,0,8);
+    hg.addColorStop(0,colMix(PAL.paper,WHITE,0.4));hg.addColorStop(1,PAL.paper2);
+    ctx.fillStyle=hg;ctx.beginPath();ctx.ellipse(0,0,6,8,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=colShade(PAL.paper2,-0.3);ctx.lineWidth=1;ctx.stroke();
     ctx.restore();
   }
   ctx.restore();
@@ -548,12 +651,25 @@ syncHud();
 showOv({k:"LANTERN RISE",t:"灯升风变",
   x:"按住控火让孔明灯升空；阵风来临前有预警箭头，横向推压可以回正灯身——灯越歪升力越低。油袋补燃料，撞岩壁石台会破灯纸，三盏灯放完结算。",
   stats:[["最高分",S.best]],
-  btns:[["点火放飞","primary",startRun]]});
+  btns:[["点火放飞","primary",startRun,"flame"]]});
 resize();
-window.addEventListener("resize",function(){skyGrad=null;resize();});
-window.addEventListener("orientationchange",function(){skyGrad=null;resize();});
+window.addEventListener("resize",function(){skyGrad=null;rockGrad=null;groundGrad=null;resize();});
+window.addEventListener("orientationchange",function(){skyGrad=null;rockGrad=null;groundGrad=null;resize();});
 requestAnimationFrame(loop);
 syncSaveFromServer();
+})();
+</script>
+<script>
+/* 按钮图标注入（内联 SVG，零外链） */
+(function(){
+  function $(id){return document.getElementById(id)}
+  function inject(id,icon){
+    var b=$(id);if(!b)return;
+    var t=b.textContent;
+    b.innerHTML=window.SW_ICON(icon)+'<span class="btxt"></span>';
+    b.querySelector(".btxt").textContent=t;
+  }
+  inject("btnPause","pause");inject("btnReset","rotate");
 })();
 </script>
 </body>

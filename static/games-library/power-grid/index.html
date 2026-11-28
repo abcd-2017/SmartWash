@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>电力调度</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）；供需语义色复用 primary/warning/danger*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-pg-ground 盘面 / --g-pg-gen 发电机体 / --g-pg-load 负荷体 / --g-pg-sw 开关块）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-pg-ground1:#F4F7F4;--g-pg-ground2:#E7EEE8;--g-pg-gen1:#2D9B6A;--g-pg-gen2:#17734A;--g-pg-load1:#E8B45C;--g-pg-load2:#C98F3E;--g-pg-sw1:#FFFFFF;--g-pg-sw2:#EFF1EE;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-pg-ground1:#1B1F1C;--g-pg-ground2:#121614;--g-pg-gen1:#5BC894;--g-pg-gen2:#2E8A5E;--g-pg-load1:#F2C25C;--g-pg-load2:#C28F3E;--g-pg-sw1:#303530;--g-pg-sw2:#1F241F;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -26,22 +26,36 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 5px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 5px 8px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
+  .stat:nth-child(4) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
-  .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .stat .val.pop { animation: valpop .24s ease-out; }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); border: 1px solid var(--g-border); box-shadow: var(--g-shadow); }
+  .legend { display: flex; gap: 8px; margin: 10px 2px 0; animation: rise .38s ease-out both; animation-delay: 160ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: inset 0 1px 1px rgba(255,255,255,.55); }
+  .dot.gen { background: linear-gradient(145deg, var(--g-pg-gen1), var(--g-pg-gen2)); }
+  .dot.load { background: linear-gradient(145deg, var(--g-pg-load1), var(--g-pg-load2)); }
+  .dot.sw { background: linear-gradient(145deg, var(--g-pg-sw1), var(--g-pg-sw2)); box-shadow: inset 0 0 0 1px var(--g-border); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
   .btn { min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; }
-  .btn:active { opacity: .85; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -50,13 +64,17 @@
   }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .panel {
     width: 100%; max-width: 340px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
     animation: pop .25s ease-out;
   }
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.16); } 100% { transform: scale(1); } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .btn { width: 100%; margin-bottom: 8px; }
@@ -64,7 +82,10 @@
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
   .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
+    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
+  }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
@@ -87,6 +108,20 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 })();
 </script>
 
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z"/>'
+};
+var fill={'play':1,'check':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -98,6 +133,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <div class="stat"><span class="label">参考</span><span class="val" id="stPar">-</span></div>
   </div>
   <div class="stage"><canvas id="cv" aria-label="电网：发电机、负荷与可合断线路" role="img"></canvas></div>
+  <div class="legend">
+    <span class="lg-chip"><i class="dot gen" aria-hidden="true"></i><span><b>发电机</b> · 容量</span></span>
+    <span class="lg-chip"><i class="dot load" aria-hidden="true"></i><span><b>负荷</b> · 目标全绿</span></span>
+    <span class="lg-chip"><i class="dot sw" aria-hidden="true"></i><span><b>开关</b> · 点按合闸</span></span>
+  </div>
   <p class="msg" id="msg" role="status" aria-live="polite">点线路（或按数字键）合闸/断开，让全部负荷得电且不超发电机容量</p>
   <div class="tools">
     <button class="btn" id="btnHint">提示</button>
@@ -107,7 +147,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="foot">键盘：1-9/0 合断对应线路 · H 提示 · R 重置 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">并网成功！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -422,12 +462,35 @@ function palLoad(){
   PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
     text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    onSoft:v("--g-on-soft"),onPrimary:v("--g-on-primary"),
     danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
-    water:v("--g-water")};
-  PAL.badgeText=document.documentElement.dataset.theme==="dark"?PAL.bg:PAL.surface;
+    water:v("--g-water"),ground1:v("--g-pg-ground1"),ground2:v("--g-pg-ground2"),
+    gen1:v("--g-pg-gen1"),gen2:v("--g-pg-gen2"),load1:v("--g-pg-load1"),load2:v("--g-pg-load2"),
+    sw1:v("--g-pg-sw1"),sw2:v("--g-pg-sw2")};
 }
-window.__gOnTheme=function(){palLoad()};
+window.__gOnTheme=function(){palLoad();draw()};
 palLoad();
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
+/* 深底反白 / 浅底深墨：按底色亮度自动选，保证节点数字两种主题均 ≥4.5:1 */
+function inkOn(base){
+  var c=colParse(base),lum=(0.2126*c[0]+0.7152*c[1]+0.0722*c[2])/255;
+  return lum>0.42?colMix(base,BLACK,0.62):WHITE;
+}
+function bump(el){el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}
 
 /* ========== 画布与状态 ========== */
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
@@ -475,10 +538,11 @@ function toggleEdge(e){
   if(state!=="edit"||done)return;
   mask[e]=!mask[e];
   if(mask[e])moves++;
+  swPop[e]=performance.now();
   var f=PG.flow(L,mask),need=PG.totalDemand(L);
   if(f>=need){checkWin();return;}
   say("供电 "+f+"/"+need+" · 还缺 "+(need-f)+"（线路 "+(e+1)+(mask[e]?" 已合":" 已断")+"）");
-  syncHud();draw();
+  syncHud();bump($("stFlow"));bump($("stMoves"));draw();
 }
 function checkWin(){
   done=true;
@@ -488,17 +552,20 @@ function checkWin(){
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:cur+1,metricExtra:moves}).catch(function(){});
   $("ovTitle").textContent=(cur>=LEVELS.length-1)?"全部通关！":"并网成功！";
   $("ovDesc").innerHTML="合闸 "+moves+" 次（参考最少 "+L.par+"）"+(cur<LEVELS.length-1?"<br>已解锁第 "+(cur+2)+" 关":"<br>40 关全部完成");
-  $("ovBtn").textContent=(cur>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((cur>=LEVELS.length-1)?"回到第 1 关":"下一关",(cur>=LEVELS.length-1)?"rotate":"play");
   $("ovRetry").hidden=true;
   ovMode="win";
+  $("panel").classList.add("win");
   $("overlay").classList.add("show");
 }
+function setOvBtn(t,icon){$("panel").classList.remove("win");$("ovBtn").innerHTML=window.SW_ICON(icon)+t}
 function hint(){
   if(state!=="edit"||done)return;
   var target=PG.bestMask(L,mask);
   if(!target){say("没有更近的可行方案了");return;}
   for(var e=0;e<L.edges.length;e++){
     if(target[e]!==mask[e]){
+      hintEdge=e;
       say("提示：线路 "+(e+1)+" 应"+(target[e]?"合闸":"断开"));
       return;
     }
@@ -524,66 +591,108 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("ovRetry").hidden=true;
   ovMode="select";
   $("overlay").classList.add("show");
 }
 
 /* ========== 绘制 ========== */
+var swPop=[];
+function rr(x,y,w,h,r){
+  r=Math.max(0,Math.min(r,w/2,h/2));
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+/* 盘面「面」：渐变 + 顶光 + 边界，替代平面底色 */
+function drawPanel(){
+  var g=ctx.createLinearGradient(0,0,0,230);
+  g.addColorStop(0,PAL.ground1);g.addColorStop(1,PAL.ground2);
+  ctx.fillStyle=g;rr(0.5,0.5,W-1,229,12);ctx.fill();
+  var sh=ctx.createLinearGradient(0,0,0,72);
+  sh.addColorStop(0,"rgba(255,255,255,0.22)");sh.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=sh;rr(1.5,1.5,W-3,70,11);ctx.fill();
+  ctx.lineWidth=1;ctx.strokeStyle=PAL.border;rr(0.5,0.5,W-1,229,12);ctx.stroke();
+}
+/* 节点：径向渐变体 + 恒白高光 + 落地投影 + 深描边 */
+function drawNode(x,y,r,g1,g2,val,ink,label){
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.32)";ctx.shadowBlur=r*0.55;ctx.shadowOffsetY=r*0.28;
+  var g=ctx.createRadialGradient(x-r*0.34,y-r*0.40,r*0.14,x,y,r*1.06);
+  g.addColorStop(0,colMix(g1,WHITE,0.62));g.addColorStop(0.42,g1);g.addColorStop(1,g2);
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=1.5;ctx.strokeStyle=colMix(g2,BLACK,0.22);
+  ctx.beginPath();ctx.arc(x,y,r-0.75,0,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=0.9;ctx.fillStyle=WHITE;
+  ctx.beginPath();ctx.ellipse(x-r*0.32,y-r*0.42,r*0.22,r*0.12,-0.5,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.fillStyle=ink;
+  ctx.font="700 14px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(val,x,y+0.5);
+  ctx.fillStyle=PAL.muted;ctx.font="12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillText(label,x,y+r+13);
+}
+/* 开关块：渐变「面」+ 顶光 + 投影 + 合闸轻弹；合=品牌绿反白字，断=中性面 */
+function drawSwitch(mx,my,on,e){
+  var t=swPop[e]||0,p=window.__gRM?1:Math.max(0,Math.min(1,(performance.now()-t)/160));
+  var sc=p<1?1+0.22*Math.sin(p*Math.PI):1;
+  ctx.save();ctx.translate(mx,my);ctx.scale(sc,sc);
+  ctx.shadowColor="rgba(0,0,0,0.22)";ctx.shadowBlur=4;ctx.shadowOffsetY=2;
+  var g=ctx.createLinearGradient(0,-8,0,8);
+  if(on){g.addColorStop(0,PAL.gen1);g.addColorStop(1,PAL.gen2);}
+  else{g.addColorStop(0,PAL.sw1);g.addColorStop(1,PAL.sw2);}
+  ctx.fillStyle=g;rr(-8,-8,16,16,5);ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=hintEdge===e?2.5:1.2;
+  ctx.strokeStyle=hintEdge===e?PAL.warning:(on?colMix(PAL.gen2,BLACK,0.25):PAL.border);
+  rr(mx-8,my-8,16,16,5);ctx.stroke();
+  ctx.globalAlpha=0.5;ctx.strokeStyle=WHITE;ctx.lineWidth=1;
+  rr(mx-6.5,my-6.5,13,13,4);ctx.stroke();ctx.globalAlpha=1;
+  ctx.fillStyle=on?inkOn(PAL.gen1):PAL.muted;
+  ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(e+1),mx,my+0.5);
+}
 function draw(){
-  ctx.fillStyle=PAL.surface2;ctx.fillRect(0,0,W,230);
-  var pos=nodePos();
-  var nG=L.gens.length;
-  var served=distribute();
-  //线路
-  for(var e=0;e<L.edges.length;e++){
-    var a=pos[L.edges[e][0]],b=pos[nG+L.edges[e][1]];
-    ctx.strokeStyle=mask[e]?PAL.deep:PAL.faint;
-    ctx.lineWidth=mask[e]?2.5:1.5;
-    ctx.setLineDash(mask[e]?[]:[5,4]);
-    ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
-    ctx.setLineDash([]);
-    //中点开关小方块
-    var mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
-    ctx.fillStyle=mask[e]?PAL.primary:PAL.bg;
-    ctx.fillRect(mx-7,my-7,14,14);
-    ctx.strokeStyle=hintEdge===e?PAL.warning:PAL.border;
-    ctx.lineWidth=hintEdge===e?2.5:1;ctx.strokeRect(mx-7,my-7,14,14);
-    ctx.fillStyle=mask[e]?PAL.badgeText:PAL.muted;
-    ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
-    ctx.textAlign="center";ctx.textBaseline="middle";
-    ctx.fillText(String(e+1),mx,my+1);
+  if(!L)return;
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,230);
+  drawPanel();
+  var pos=nodePos(),nG=L.gens.length,served=distribute();
+  var e,a,b,mx,my;
+  //线路：合闸=品牌绿导线（投影 + 亮芯），断开=边界色虚线
+  for(e=0;e<L.edges.length;e++){
+    a=pos[L.edges[e][0]];b=pos[nG+L.edges[e][1]];
+    mx=(a[0]+b[0])/2;my=(a[1]+b[1])/2;
+    if(mask[e]){
+      ctx.save();ctx.lineCap="round";
+      ctx.strokeStyle=PAL.deep;ctx.lineWidth=3;
+      ctx.shadowColor="rgba(0,0,0,0.18)";ctx.shadowBlur=3;ctx.shadowOffsetY=1.5;
+      ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+      ctx.restore();
+      ctx.strokeStyle=colMix(PAL.deep,WHITE,0.28);ctx.lineWidth=1;ctx.lineCap="round";
+      ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+    }else{
+      ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.lineCap="round";
+      ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
-  //节点
-  for(var g=0;g<L.gens.length;g++){
-    var p1=pos[g];
-    ctx.fillStyle=PAL.primary;
-    ctx.beginPath();ctx.arc(p1[0],p1[1],16,0,7);ctx.fill();
-    ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;ctx.stroke();
-    ctx.fillStyle=PAL.badgeText;
-    ctx.font="700 14px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
-    ctx.textAlign="center";ctx.textBaseline="middle";
-    ctx.fillText(String(L.gens[g]),p1[0],p1[1]);
-    ctx.fillStyle=PAL.muted;
-    ctx.font="12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
-    ctx.fillText("G"+(g+1),p1[0],p1[1]+24);
+  for(e=0;e<L.edges.length;e++){
+    a=pos[L.edges[e][0]];b=pos[nG+L.edges[e][1]];
+    drawSwitch((a[0]+b[0])/2,(a[1]+b[1])/2,mask[e],e);
+  }
+  var g;
+  for(g=0;g<L.gens.length;g++){
+    drawNode(pos[g][0],pos[g][1],16,PAL.gen1,PAL.gen2,String(L.gens[g]),inkOn(PAL.gen1),"G"+(g+1));
   }
   for(var l=0;l<L.loads.length;l++){
-    var p2=pos[nG+l];
-    ctx.fillStyle=served[l]>=L.loads[l]?PAL.success:PAL.warning;
-    ctx.beginPath();ctx.arc(p2[0],p2[1],16,0,7);ctx.fill();
-    ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;ctx.stroke();
-    ctx.fillStyle=PAL.badgeText;
-    ctx.font="700 14px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
-    ctx.textAlign="center";ctx.textBaseline="middle";
-    ctx.fillText(String(L.loads[l]),p2[0],p2[1]);
-    ctx.fillStyle=PAL.muted;
-    ctx.font="12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
-    ctx.fillText("L"+(l+1),p2[0],p2[1]+24);
+    var ok=served[l]>=L.loads[l],p=pos[nG+l];
+    if(ok)drawNode(p[0],p[1],16,PAL.gen1,PAL.gen2,String(L.loads[l]),inkOn(PAL.gen1),"L"+(l+1));
+    else drawNode(p[0],p[1],16,PAL.load1,PAL.load2,String(L.loads[l]),inkOn(PAL.load1),"L"+(l+1));
   }
-  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
-  ctx.strokeRect(0.5,0.5,W-1,229);
 }
 var hintEdge=-1;
 /* 最大流分配结果（各负荷实得电） */
@@ -603,7 +712,7 @@ function distribute(){
       for(var v=0;v<N;v++)if(par[v]<0&&cap[u][v]>0){par[v]=u;qq.push(v);}
     }
     if(par[T]<0)break;
-    //回溯找瓶颈路径，并把路径上 load 段计入 got
+    //回溯找瓶颈路径并增广
     var path=[],w=T;
     while(w!==S){path.push(w);w=par[w];}
     var f=1e9;
@@ -611,9 +720,10 @@ function distribute(){
     for(var s3=0;s3<path.length;s3++){
       var to2=path[s3],fr2=par[to2];
       cap[fr2][to2]-=f;cap[to2][fr2]+=f;
-      if(to2>=nG&&to2<T)got[to2-nG]+=f;
     }
   }
+  /* 按最终残量重算各负荷实得：load→T 的反向容量即净得电，避免增广改道时重复累加 */
+  for(var l2=0;l2<nL;l2++)got[l2]=cap[T][nG+l2];
   return got;
 }
 
@@ -700,10 +810,19 @@ PG.bestMask=function(lv,from){
 /* ========== 启动（续玩：从存档关卡起步） ========== */
 cur=clamp(save.lv,0,LEVELS.length-1);
 loadLevel(cur);
+setOvBtn("下一关","play");
 requestAnimationFrame(frame);
 syncLevelsFromServer();
 syncSaveFromServer();
 
+})();
+</script>
+<script>
+/* 按钮图标注入（内联 SVG，零外链；重设文案用 setOvBtn，避免抹掉已注入图标） */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var dp=[["btnHint","hint"],["btnReset","rotate"],["btnLv","grid"],["ovRetry","rotate"]],i;
+  for(i=0;i<dp.length;i++)$(dp[i][0]).insertAdjacentHTML("afterbegin",window.SW_ICON(dp[i][1]));
 })();
 </script>
 

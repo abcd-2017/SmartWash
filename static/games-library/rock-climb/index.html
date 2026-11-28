@@ -16,6 +16,7 @@
     --g-shadow:0 2px 12px rgba(20,40,30,.05);
     --g-radius:16px; --g-radius-btn:14px; --g-radius-inner:12px; --g-gap:16px;
     --g-st-rock1:#EAE6D9; --g-st-rock2:#F6F3EA; --g-st-seam:#D6CFBC;
+    --g-rcl-rock-hi:#FBF9F2; --g-rcl-goal:#17734A; --g-rcl-shadow:rgba(20,40,30,.20); --g-rcl-base:#D8D2C0;
     color-scheme:light;
   }
   :root[data-theme=dark] {
@@ -26,6 +27,7 @@
     --g-scrim:rgba(20,22,20,.9);
     --g-shadow:0 2px 12px rgba(0,0,0,.28);
     --g-st-rock1:#23251F; --g-st-rock2:#161712; --g-st-seam:#3A3D33;
+    --g-rcl-rock-hi:#2E312A; --g-rcl-goal:#4ADE6E; --g-rcl-shadow:rgba(0,0,0,.45); --g-rcl-base:#1B1D18;
     color-scheme:dark;
   }
   * { box-sizing: border-box; }
@@ -50,19 +52,26 @@
     display: grid; place-items: center; cursor: pointer; font: inherit;
     touch-action: manipulation;
   }
-  .icon-btn:active { opacity: .8; }
+  .icon-btn { transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out; }
+  .icon-btn:active { transform: scale(.96); }
   .scores { display: flex; gap: 8px; flex: 1; }
   .score-box {
     background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
     flex: 1; min-width: 0; padding: 5px 8px; text-align: center; line-height: 1.3;
+    animation: rise .38s ease-out both;
   }
+  .score-box:nth-child(2) { animation-delay: 40ms; }
+  .score-box:nth-child(3) { animation-delay: 80ms; }
+  .score-box .val.pop { animation: valpop .24s ease-out; }
   .score-box .label { display: block; font-size: 12px; opacity: .85; white-space: nowrap; }
   .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: 12px; padding: 5px 8px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); white-space: nowrap; }
   .stat .val { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; animation: rise .38s ease-out both; animation-delay: 120ms; }
   .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
@@ -70,10 +79,13 @@
     background: var(--g-btn-primary); color: var(--g-on-primary);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
     touch-action: manipulation;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
-  .stage { position: relative; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .btn .swi { margin-right: 4px; }
+  .stage { position: relative; animation: fadein .3s ease-out both; animation-delay: 160ms; }
   canvas {
     display: block; width: 100%; aspect-ratio: 390 / 560; height: auto;
     background: var(--g-surface2);
@@ -89,8 +101,10 @@
     display: none; flex-direction: column; align-items: center; justify-content: center;
     gap: 8px; padding: 16px; text-align: center;
   }
-  .overlay.show { display: flex; animation: rise .18s ease-out; }
+  .overlay.show { display: flex; animation: rise .2s ease-out; }
   @keyframes rise { from { transform: translateY(6px); } to { transform: translateY(0); } }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
   .ov-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--g-primary-deep); max-width: 100%; }
   .ov-sub { margin: 0 0 6px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .btn-row { display: flex; gap: 8px; width: 100%; max-width: 340px; }
@@ -110,7 +124,7 @@
   .badge.show { display: inline-block; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -126,6 +140,16 @@ window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
+</script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','pause':'<path d="M8 5v14M16 5v14"/>'
+};
+var fill={'play':1,'pause':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
 </script>
 </head>
 <body>
@@ -189,13 +213,29 @@ var PAL={};
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
   function v(n){return s.getPropertyValue(n).trim()}
-  PAL={bg:v("--g-bg"),text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),
+  PAL={bg:v("--g-bg"),surface2:v("--g-surface2"),text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),border:v("--g-border"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),danger:v("--g-danger"),warning:v("--g-warning"),
     water:v("--g-water"),success:v("--g-success"),onPrimary:v("--g-on-primary"),
-    rock1:v("--g-st-rock1"),rock2:v("--g-st-rock2"),line:v("--g-st-seam")};
+    rock1:v("--g-st-rock1"),rock2:v("--g-st-rock2"),line:v("--g-st-seam"),
+    rockHi:v("--g-rcl-rock-hi"),goal:v("--g-rcl-goal"),shadow:v("--g-rcl-shadow"),base:v("--g-rcl-base")};
 }
 window.__gOnTheme=function(){palLoad();grads=null;};
 palLoad();
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 var grads=null;
 function buildGrads(){grads=ctx.createLinearGradient(0,0,0,NH);grads.addColorStop(0,PAL.rock1);grads.addColorStop(1,PAL.rock2);}
 
@@ -247,7 +287,9 @@ var ovBtn=document.getElementById("ovBtn"),mainBtn=document.getElementById("main
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rand(a,b){return a+Math.random()*(b-a)}
 function dist(ax,ay,bx,by){return Math.sqrt((ax-bx)*(ax-bx)+(ay-by)*(ay-by))}
-function showOverlay(t,s,b){ovTitle.textContent=t;ovSub.textContent=s;ovBtn.textContent=b;overlayEl.classList.add("show")}
+function popVal(el,v){var s=String(v);if(el.textContent!==s){el.textContent=s;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}}
+function setMainBtn(t,icon){mainBtn.innerHTML=window.SW_ICON(icon)+t;}   // 文案更新重插图标，不抹掉 SVG
+function showOverlay(t,s,b,icon){ovTitle.textContent=t;ovSub.textContent=s;ovBtn.innerHTML=window.SW_ICON(icon||"play")+b;overlayEl.classList.add("show")}
 function hideOverlay(){overlayEl.classList.remove("show")}
 
 /* 岩点：kind 0 大握点(jug，省力) / 1 小捏点(crimp，耗力) / 2 休息台(rest，回耐力) */
@@ -273,9 +315,9 @@ function resetRound(){
   camY=0;startY=bodyY();minBodyY=startY;score=0;stamina=100;grabCount=0;nextRest=8;selIdx=-1;clock=0;
   var y=NH-210,diff=0;
   while(y>camY-160){y-=rand(44,72);holds.push(makeHold(y,holds[holds.length-1].x,diff));}
-  scoreEl.textContent="0";stEl.textContent="100";
+  popVal(scoreEl,0);popVal(stEl,100);
 }
-function startGame(){resetRound();state="running";hideOverlay();mainBtn.textContent="暂停";}
+function startGame(){resetRound();state="running";hideOverlay();setMainBtn("暂停","pause");}
 
 function endRound(){
   var isRecord=score>best&&score>0;
@@ -286,14 +328,14 @@ function endRound(){
 function die(){
   state="over";
   beep(150,0.32,"sawtooth",0.06);
-  showOverlay("脱力坠落","高度 "+score+" m"+endRound(),"重新开始");
-  mainBtn.textContent="重新开始";
+  showOverlay("脱力坠落","高度 "+score+" m"+endRound(),"重新开始","rotate");
+  setMainBtn("重新开始","rotate");
 }
 function primary(){
   if(state==="running"){
-    state="paused";showOverlay("已暂停","休息一下，随时继续","继续");mainBtn.textContent="继续";
+    state="paused";showOverlay("已暂停","休息一下，随时继续","继续","play");setMainBtn("继续","play");
   }else if(state==="paused"){
-    state="running";hideOverlay();mainBtn.textContent="暂停";
+    state="running";hideOverlay();setMainBtn("暂停","pause");
   }else startGame();
 }
 
@@ -316,7 +358,7 @@ function tryGrab(idx){
   var by=bodyY();
   if(by<minBodyY)minBodyY=by;
   var ns=Math.max(0,Math.floor((startY-minBodyY)*M_PER_PX));
-  if(ns!==score){score=ns;scoreEl.textContent=String(score);}
+  if(ns!==score){score=ns;popVal(scoreEl,ns);}
 }
 function addFloatHold(h,txt,c){addFloat(h.x,h.y-14,txt,c)}
 
@@ -327,7 +369,7 @@ function step(dt){
   var drain=(gripDrain(holds[climb.L].kind)+gripDrain(holds[climb.R].kind))/2;
   stamina=clamp(stamina-drain*dt,0,100);
   var shown=Math.round(stamina);
-  stEl.textContent=String(shown);
+  popVal(stEl,shown);
   if(stamina<=0){die();return;}
   // 相机跟随
   var target=bodyY()-NH*0.42;
@@ -351,24 +393,44 @@ function rr(x,y,w,h,r){
   ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
   ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
 }
-function drawHold(h,idx){
+function drawHold(h,idx,reach){
   var wy=h.y-camY;
   var c=h.kind===2?PAL.success:(h.kind===1?PAL.warning:PAL.primary);
   if(h.kind===2){
-    // 休息台：横板
-    ctx.fillStyle=c;
-    rr(h.x-26,wy-5,52,10,6);ctx.fill();
-    ctx.strokeStyle=PAL.deep;ctx.lineWidth=1.6;ctx.stroke();
+    // 休息台：渐变横板 + 顶光 + 落地投影
+    ctx.save();
+    ctx.shadowColor=PAL.shadow;ctx.shadowBlur=8;ctx.shadowOffsetY=3;
+    var g=ctx.createLinearGradient(0,wy-5,0,wy+5);
+    g.addColorStop(0,colMix(c,WHITE,0.30));g.addColorStop(1,colShade(c,-0.22));
+    ctx.fillStyle=g;rr(h.x-26,wy-5,52,10,6);ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle=PAL.deep;ctx.lineWidth=1.6;rr(h.x-26,wy-5,52,10,6);ctx.stroke();
+    ctx.strokeStyle=colMix(c,WHITE,0.55);ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(h.x-22,wy-3.5);ctx.lineTo(h.x+22,wy-3.5);ctx.stroke();
+    if(idx===selIdx){ctx.strokeStyle=PAL.danger;ctx.lineWidth=2;ctx.beginPath();ctx.arc(h.x,wy,20,0,6.3);ctx.stroke();}
     return;
   }
-  ctx.fillStyle=c;
-  ctx.beginPath();
-  ctx.ellipse(h.x,wy,h.r*1.15,h.r*0.82,h.kind===1?0.5:0.2,0,6.3);
-  ctx.fill();
-  ctx.strokeStyle=PAL.deep;ctx.lineWidth=1.4;ctx.stroke();
+  if(reach&&idx!==selIdx){   // 可达岩点：品牌绿软环 = 「该点哪」
+    ctx.strokeStyle=colMix(PAL.primary,WHITE,0.40);ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(h.x,wy,h.r+7,0,6.3);ctx.stroke();
+  }
+  ctx.save();
+  ctx.shadowColor=PAL.shadow;ctx.shadowBlur=h.r*0.5;ctx.shadowOffsetY=h.r*0.28;
+  var g2=ctx.createRadialGradient(h.x-h.r*0.3,wy-h.r*0.35,h.r*0.15,h.x,wy,h.r*1.15);
+  g2.addColorStop(0,colMix(c,WHITE,0.62));
+  g2.addColorStop(0.5,c);
+  g2.addColorStop(1,colShade(c,-0.32));
+  ctx.fillStyle=g2;
+  ctx.beginPath();ctx.ellipse(h.x,wy,h.r*1.15,h.r*0.82,h.kind===1?0.5:0.2,0,6.3);ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle=colShade(c,-0.45);ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.ellipse(h.x,wy,h.r*1.15,h.r*0.82,h.kind===1?0.5:0.2,0,6.3);ctx.stroke();
+  ctx.globalAlpha=0.85;ctx.fillStyle=WHITE;   // 恒白高光
+  ctx.beginPath();ctx.ellipse(h.x-h.r*0.34,wy-h.r*0.34,h.r*0.26,h.r*0.15,-0.5,0,6.3);ctx.fill();
+  ctx.globalAlpha=1;
   if(idx===selIdx){
-    ctx.strokeStyle=PAL.danger;ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(h.x,wy,h.r+8,0,6.3);ctx.stroke();
+    ctx.strokeStyle=PAL.danger;ctx.lineWidth=2.4;
+    ctx.beginPath();ctx.arc(h.x,wy,h.r+9,0,6.3);ctx.stroke();
   }
 }
 function draw(){
@@ -378,6 +440,14 @@ function draw(){
   ctx.translate(offX,offY);ctx.scale(S,S);
   if(!grads)buildGrads();
   ctx.fillStyle=grads;ctx.fillRect(0,0,NW,NH);
+  // 岩壁顶光（rock-hi → rock1 渐变，替代灰白平铺）
+  var tg=ctx.createLinearGradient(0,0,0,NH*0.4);
+  tg.addColorStop(0,PAL.rockHi);tg.addColorStop(1,PAL.rock1);
+  ctx.fillStyle=tg;ctx.fillRect(0,0,NW,NH*0.4);
+  // 目标方向：顶部品牌绿双箭头（往上爬）
+  ctx.strokeStyle=PAL.goal;ctx.lineWidth=2.4;ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.beginPath();ctx.moveTo(NW/2-9,26);ctx.lineTo(NW/2,16);ctx.lineTo(NW/2+9,26);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(NW/2-9,36);ctx.lineTo(NW/2,26);ctx.lineTo(NW/2+9,36);ctx.stroke();
   // 岩壁裂隙
   ctx.strokeStyle=PAL.line;ctx.lineWidth=1.6;
   for(var s2=0;s2<4;s2++){
@@ -387,27 +457,62 @@ function draw(){
     ctx.quadraticCurveTo(NW*0.4,yy+40,NW*(0.2+s2*0.2),yy+90);
     ctx.stroke();
   }
-  for(var i=0;i<holds.length;i++)drawHold(holds[i],i);
-  // 攀岩者：两臂 + 躯干 + 头
+  // 底部地面（起点岩台）
+  var bg2=ctx.createLinearGradient(0,NH-46,0,NH);
+  bg2.addColorStop(0,PAL.base);bg2.addColorStop(1,colShade(PAL.base,-0.22));
+  ctx.fillStyle=bg2;rr(0,NH-46,NW,46,10);ctx.fill();
+  ctx.strokeStyle=colMix(PAL.base,WHITE,0.45);ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.moveTo(8,NH-45);ctx.lineTo(NW-8,NH-45);ctx.stroke();
+  ctx.fillStyle=PAL.text;ctx.font='700 12px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText("起点",NW/2,NH-24);
+  // 高度刻度（目标 / 进度）
+  ctx.textAlign="left";ctx.textBaseline="alphabetic";
+  for(var hm=5;hm<=40;hm+=5){
+    var wy=startY-hm/M_PER_PX-camY;
+    if(wy<-10||wy>NH+10)continue;
+    ctx.strokeStyle=PAL.muted;ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(6,wy);ctx.lineTo(14,wy);ctx.stroke();
+    ctx.fillStyle=PAL.text;
+    ctx.fillText(hm+"m",18,wy+4);
+  }
+  // 可达岩点软环 + 岩点
+  var lh0=holds[climb.L],rh0=holds[climb.R];
+  for(var i=0;i<holds.length;i++){
+    var h=holds[i];
+    var reach=(i!==climb.L&&i!==climb.R)&&
+      (dist(h.x,h.y,lh0.x,lh0.y)<=REACH||dist(h.x,h.y,rh0.x,rh0.y)<=REACH);
+    drawHold(h,i,reach);
+  }
+  // 攀岩者：两臂 + 躯干 + 头（渐变体 + 恒白高光 + 落地投影）
   var lh=holds[climb.L],rh=holds[climb.R];
   var bx=(lh.x+rh.x)/2,by=(lh.y+rh.y)/2-camY;
-  var low=Math.min(lh.kind,rh.kind);
   var bodyC=stamina<30?PAL.danger:PAL.primary;
+  ctx.save();
+  ctx.shadowColor=PAL.shadow;ctx.shadowBlur=8;ctx.shadowOffsetY=4;
   ctx.strokeStyle=PAL.deep;ctx.lineWidth=4;ctx.lineCap="round";
-  ctx.beginPath();
-  ctx.moveTo(lh.x,lh.y-camY);ctx.lineTo(bx,by);
-  ctx.lineTo(rh.x,rh.y-camY);
-  ctx.stroke();
-  ctx.fillStyle=bodyC;
-  ctx.beginPath();ctx.arc(bx,by,7,0,6.3);ctx.fill();
-  ctx.beginPath();ctx.arc(bx+(rh.x>lh.x?6:-6),by-15,6.5,0,6.3);ctx.fill();
-  // 耐力条
-  ctx.fillStyle=PAL.faint;
-  rr(12,12,120,10,5);ctx.fill();
+  ctx.beginPath();ctx.moveTo(lh.x,lh.y-camY);ctx.lineTo(bx,by);ctx.lineTo(rh.x,rh.y-camY);ctx.stroke();
+  ctx.restore();
+  var bg3=ctx.createRadialGradient(bx-2,by-3,1,bx,by,9);
+  bg3.addColorStop(0,colMix(bodyC,WHITE,0.5));bg3.addColorStop(1,bodyC);
+  ctx.fillStyle=bg3;ctx.beginPath();ctx.arc(bx,by,7,0,6.3);ctx.fill();
+  var hx=bx+(rh.x>lh.x?6:-6);
+  var hg=ctx.createRadialGradient(hx-2,by-17,1,hx,by-15,8);
+  hg.addColorStop(0,colMix(bodyC,WHITE,0.5));hg.addColorStop(1,bodyC);
+  ctx.fillStyle=hg;ctx.beginPath();ctx.arc(hx,by-15,6.5,0,6.3);ctx.fill();
+  ctx.globalAlpha=0.85;ctx.fillStyle=WHITE;
+  ctx.beginPath();ctx.ellipse(bx-2,by-3,2.4,1.4,-0.5,0,6.3);ctx.fill();
+  ctx.globalAlpha=1;
+  // 耐力条：凹槽轨道 + 渐变填充 + 亮芯
+  ctx.fillStyle=PAL.surface2;rr(12,12,120,10,5);ctx.fill();
+  ctx.strokeStyle=colShade(PAL.surface2,-0.25);ctx.lineWidth=1;rr(12.5,12.5,119,9,4.5);ctx.stroke();
   var stc=stamina>55?PAL.success:(stamina>28?PAL.warning:PAL.danger);
-  ctx.fillStyle=stc;
-  rr(12,12,Math.max(6,120*stamina/100),10,5);ctx.fill();
-  ctx.fillStyle=PAL.muted;
+  var sw=Math.max(6,120*stamina/100);
+  var sg=ctx.createLinearGradient(0,12,0,22);
+  sg.addColorStop(0,colMix(stc,WHITE,0.35));sg.addColorStop(1,stc);
+  ctx.fillStyle=sg;rr(12,12,sw,10,5);ctx.fill();
+  ctx.strokeStyle=colShade(stc,-0.3);ctx.lineWidth=1;rr(12.5,12.5,Math.max(5,sw-1),9,4.5);ctx.stroke();
+  ctx.fillStyle=PAL.text;
   ctx.font="700 12px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
   ctx.textAlign="left";ctx.textBaseline="alphabetic";
   ctx.fillText("高度 "+score+" m",142,21);
@@ -462,7 +567,7 @@ window.addEventListener("keydown",function(e){
 });
 
 document.addEventListener("visibilitychange",function(){
-  if(document.hidden&&state==="running"){state="paused";showOverlay("已暂停","回到游戏继续攀登","继续");mainBtn.textContent="继续";}
+  if(document.hidden&&state==="running"){state="paused";showOverlay("已暂停","回到游戏继续攀登","继续","play");setMainBtn("继续","play");}
 });
 
 /* ========== 主循环与启动 ========== */
@@ -493,7 +598,8 @@ ovBtn.addEventListener("click",function(e){primary();e.currentTarget.blur();});
 
 resize();
 resetRound();
-showOverlay("准备开始","左右手交替抓岩点，管理耐力节奏登顶","开始游戏");
+showOverlay("准备开始","左右手交替抓岩点，管理耐力节奏登顶","开始游戏","play");
+setMainBtn("开始游戏","play");
 syncSaveFromServer();
 requestAnimationFrame(frame);
 
@@ -530,6 +636,14 @@ requestAnimationFrame(frame);
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 静态按钮图标注入：内联 SVG（零外链）；主钮文案由 setMainBtn 重插图标 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var dp=[["mainBtn","play"]],j;
+  for(j=0;j<dp.length;j++){var el=$(dp[j][0]);if(el)el.insertAdjacentHTML("afterbegin",window.SW_ICON(dp[j][1]))}
 })();
 </script>
 </body>

@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>画线救小球</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材 token（画线场地底/小球/墨线）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-field:#FFFFFF;--g-ball:#4A9FD4;--g-line:#3D5A73;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-field:#1D201E;--g-ball:#6BB4DE;--g-line:#93B5CE;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（场地渐变/小球/墨线/墙体石板）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-field:#FFFFFF;--g-ds-floor2:#E9F1F8;--g-ball:#3D9BE0;--g-ds-ball-hi:#B7DEF6;--g-line:#2E6DB4;--g-ds-line-hi:#8FBDF0;--g-ds-wall:#5E7186;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-field:#1D201E;--g-ds-floor2:#151B21;--g-ball:#6BB4DE;--g-ds-ball-hi:#8FC8EC;--g-line:#7FB0E4;--g-ds-line-hi:#A9CEF0;--g-ds-wall:#7C8DA3;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -25,35 +25,46 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .stage { position: relative; }
+  .stage { position: relative; animation: rise .38s ease-out both; animation-delay: 40ms; }
   canvas { display: block; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); width: 100%; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
-  .tools { display: flex; gap: 8px; }
-  .btn { min-height: 44px; padding: 0 10px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: var(--g-on-primary); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
-  .btn:active { opacity: .85; }
+  .tools { display: flex; gap: 8px; animation: rise .38s ease-out both; animation-delay: 80ms; }
+  .btn { min-height: 44px; padding: 0 12px; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: var(--g-on-primary); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform .14s ease-out, background .16s ease-out, opacity .16s ease-out, box-shadow .16s ease-out; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
-  .overlay.show { display: flex; }
-  .panel { width: 100%; max-width: 340px; max-height: 92vh; overflow-y: auto; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  .panel { width: 100%; max-width: 340px; max-height: 92vh; overflow-y: auto; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .3s ease-out; }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 12px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .desc b { color: var(--g-primary-deep); }
   .panel .btn { width: 100%; margin-top: 8px; }
   .stars { font-size: 28px; letter-spacing: 4px; margin: 2px 0 8px; }
+  .stars span { display: inline-block; animation: starpop .34s ease-out both; }
+  .stars span:nth-child(2) { animation-delay: 40ms; }
+  .stars span:nth-child(3) { animation-delay: 80ms; }
   .stars .f { color: var(--g-warning); }
   .stars .e { color: var(--g-muted); }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 40vh; overflow-y: auto; margin-bottom: 10px; }
-  .lvgrid button { min-height: 44px; border: 0; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .lvgrid button { min-height: 44px; border: 0; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform .14s ease-out, background .16s ease-out, box-shadow .16s ease-out; }
+  .lvgrid button:active { transform: scale(.96); }
   .lvgrid button:disabled { opacity: .35; cursor: default; }
   .lvgrid button.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .lvgrid button.cur { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes starpop { 0% { transform: scale(0) rotate(-30deg); opacity: 0; } 70% { transform: scale(1.25) rotate(6deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
 
   /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:.01ms !important; transition-duration:.01ms !important} }
   /* P2: 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
@@ -69,9 +80,12 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
  'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
  'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
- 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'pencil':'<path d="M17 3l4 4L8 20l-5 1 1-5L17 3z"/>'
 };
-var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1,'play':1 };
 return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
 };
 </script>
@@ -330,15 +344,28 @@ var PAL={};
 function palLoad(){
   var cs=getComputedStyle(document.documentElement);
   function v(n){return cs.getPropertyValue(n).trim();}
-  PAL={field:v("--g-field"),surface:v("--g-surface"),surface2:v("--g-surface2"),
-    hairline:v("--g-hairline"),border:v("--g-border"),
-    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
-    primary:v("--g-primary"),deep:v("--g-primary-deep"),
-    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
-    ball:v("--g-ball"),line:v("--g-line")};
+  PAL={field:v("--g-field"),floor2:v("--g-ds-floor2"),text:v("--g-text"),
+    primary:v("--g-primary"),danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
+    ball:v("--g-ball"),ballHi:v("--g-ds-ball-hi"),line:v("--g-line"),lineHi:v("--g-ds-line-hi"),
+    wall:v("--g-ds-wall")};
 }
 window.__gOnTheme=function(){palLoad();render();};//App 推送主题时刷新调色板并重绘
 palLoad();
+/* 颜色工具：仅由 PAL 色值混合出明暗（JS 内零颜色字面量，恒白/恒暗常量除外） */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t);}
 /* 颜色透明度工具（动态构造，非字面色） */
 function shade(c,a){
   var s=String(c).trim(),m;
@@ -645,97 +672,180 @@ function rr(x,y,w,h,r){
   ctx.arcTo(x,y,x+w,y,r);
   ctx.closePath();
 }
+/* 地面：冷调渐变 + 球色极淡棋盘格纹（层次丰富不刺眼） */
+function drawFloor(){
+  var g=ctx.createLinearGradient(0,0,0,DS.H);
+  g.addColorStop(0,PAL.field);g.addColorStop(1,PAL.floor2);
+  ctx.fillStyle=g;ctx.fillRect(-2,-2,DS.W+4,DS.H+4);
+  var cell=30;
+  ctx.fillStyle=colMix(PAL.field,PAL.ball,0.055);
+  for(var r=0;r*cell<DS.H;r++)for(var c=0;c*cell<DS.W;c++){
+    if((r+c)%2===0)continue;
+    ctx.fillRect(c*cell,r*cell,cell,cell);
+  }
+}
+/* 边界：四面实体「面」——渐变体块 + 朝内亮沿（不用细线） */
+function drawFrame(){
+  var e=DS.EDGE;
+  var g=ctx.createLinearGradient(0,0,0,DS.H);
+  g.addColorStop(0,colShade(PAL.wall,0.14));
+  g.addColorStop(0.5,PAL.wall);
+  g.addColorStop(1,colShade(PAL.wall,-0.24));
+  ctx.fillStyle=g;
+  ctx.fillRect(0,0,DS.W,e);ctx.fillRect(0,DS.H-e,DS.W,e);
+  ctx.fillRect(0,0,e,DS.H);ctx.fillRect(DS.W-e,0,e,DS.H);
+  ctx.strokeStyle=colMix(PAL.wall,WHITE,0.42);ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(0,e+.75);ctx.lineTo(DS.W,e+.75);
+  ctx.moveTo(0,DS.H-e-.75);ctx.lineTo(DS.W,DS.H-e-.75);
+  ctx.moveTo(e+.75,0);ctx.lineTo(e+.75,DS.H);
+  ctx.moveTo(DS.W-e-.75,0);ctx.lineTo(DS.W-e-.75,DS.H);
+  ctx.stroke();
+  ctx.strokeStyle=colShade(PAL.wall,-0.4);ctx.lineWidth=1.5;
+  ctx.strokeRect(0.75,0.75,DS.W-1.5,DS.H-1.5);
+}
+/* 墙体：立体块（顶部亮面 + 投影 + 内描边） */
+function drawWallBlock(w2){
+  var x=w2[0],y=w2[1],wd=w2[2],ht=w2[3];
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.26)";ctx.shadowBlur=6;ctx.shadowOffsetY=2.5;   //恒黑阴影
+  var g=ctx.createLinearGradient(0,y,0,y+ht);
+  g.addColorStop(0,colMix(PAL.wall,WHITE,0.36));
+  g.addColorStop(0.35,PAL.wall);
+  g.addColorStop(1,colShade(PAL.wall,-0.28));
+  ctx.fillStyle=g;rr(x,y,wd,ht,5);ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle=colMix(PAL.wall,WHITE,0.58);ctx.lineWidth=1.5;
+  rr(x+0.75,y+0.75,wd-1.5,ht-1.5,4);ctx.stroke();
+}
+/* 尖刺：立体底座 + 带明暗刻面的齿排 */
+function drawSpikes(s2){
+  var x=s2[0],y=s2[1],wd=s2[2],ht=s2[3];
+  var baseH=Math.max(6,ht-9);
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.24)";ctx.shadowBlur=5;ctx.shadowOffsetY=2;   //恒黑阴影
+  var g=ctx.createLinearGradient(0,y+9,0,y+9+baseH);
+  g.addColorStop(0,colMix(PAL.danger,WHITE,0.24));
+  g.addColorStop(1,colShade(PAL.danger,-0.26));
+  ctx.fillStyle=g;rr(x,y+9,wd,baseH,3);ctx.fill();
+  ctx.restore();
+  var teeth=Math.max(2,Math.floor(wd/12)),tw=wd/teeth,k;
+  for(k=0;k<teeth;k++){
+    var x0=x+k*tw,ax=x0+tw/2;
+    var gg=ctx.createLinearGradient(x0,y+10,ax,y);
+    gg.addColorStop(0,colShade(PAL.danger,-0.32));
+    gg.addColorStop(1,colMix(PAL.danger,WHITE,0.32));
+    ctx.fillStyle=gg;
+    ctx.beginPath();
+    ctx.moveTo(x0,y+10);ctx.lineTo(ax,y);ctx.lineTo(x0+tw,y+10);
+    ctx.closePath();ctx.fill();
+  }
+  ctx.strokeStyle=colMix(PAL.danger,WHITE,0.5);ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(x,y+9.5);ctx.lineTo(x+wd,y+9.5);ctx.stroke();
+}
+/* 目标杯：立体 U 管（外暗边 / 渐变管身 / 杯口亮沿 / 内槽暗线）+ 目标区柔光 */
+function drawCup(cup){
+  var cx=cup[0],cy=cup[1],cw=cup[2],t=DS.WALL_T;
+  ctx.fillStyle=shade(PAL.success,0.13);
+  rr(cx-5,cy-5,cw+10,DS.CUP_H+8,9);ctx.fill();
+  ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.strokeStyle=colShade(PAL.success,-0.38);ctx.lineWidth=t+3.5;
+  ctx.beginPath();
+  ctx.moveTo(cx-t/2,cy-2);ctx.lineTo(cx-t/2,cy+DS.CUP_H);ctx.lineTo(cx+cw+t/2,cy+DS.CUP_H);ctx.lineTo(cx+cw+t/2,cy-2);
+  ctx.stroke();
+  var g=ctx.createLinearGradient(0,cy,0,cy+DS.CUP_H);
+  g.addColorStop(0,colMix(PAL.success,WHITE,0.30));
+  g.addColorStop(0.42,PAL.success);
+  g.addColorStop(1,colShade(PAL.success,-0.22));
+  ctx.strokeStyle=g;ctx.lineWidth=t;
+  ctx.beginPath();
+  ctx.moveTo(cx-t/2,cy-2);ctx.lineTo(cx-t/2,cy+DS.CUP_H);ctx.lineTo(cx+cw+t/2,cy+DS.CUP_H);ctx.lineTo(cx+cw+t/2,cy-2);
+  ctx.stroke();
+  ctx.strokeStyle=colMix(PAL.success,WHITE,0.6);ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(cx-t,cy-4);ctx.lineTo(cx+6,cy-4);
+  ctx.moveTo(cx+cw-6,cy-4);ctx.lineTo(cx+cw+t,cy-4);
+  ctx.stroke();
+  ctx.strokeStyle=colShade(PAL.success,-0.46);ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx+1,cy+t);ctx.lineTo(cx+1,cy+DS.CUP_H-1);ctx.lineTo(cx+cw-1,cy+DS.CUP_H-1);ctx.lineTo(cx+cw-1,cy+t);
+  ctx.stroke();
+}
+/* 轨迹（玩家墨线）：暗边 + 亮芯的立体墨管 */
+function tracePts(pts){
+  ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);
+  for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);
+}
+function drawInk(){
+  var pts=curPts;
+  if(pts.length<2)return;
+  ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.strokeStyle=colShade(PAL.line,-0.32);ctx.lineWidth=7;
+  tracePts(pts);ctx.stroke();
+  ctx.strokeStyle=PAL.lineHi;ctx.lineWidth=3.2;
+  tracePts(pts);ctx.stroke();
+  ctx.fillStyle=PAL.lineHi;
+  ctx.beginPath();ctx.arc(pts[pts.length-1][0],pts[pts.length-1][1],3.4,0,6.3);ctx.fill();
+}
+/* 小球：径向渐变球体 + 投影 + 高光（draw 态加呼吸环，提示「我控制它」） */
+function drawBall(){
+  var b=st.ball,r=DS.BALL_R;
+  if(state==="draw"&&!window.__gRM){
+    var pu=(Math.sin(performance.now()/380)+1)/2;
+    ctx.strokeStyle=shade(PAL.ball,0.30+0.28*pu);ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(b.x,b.y,r+4+2.5*pu,0,6.3);ctx.stroke();
+  }
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.38)";ctx.shadowBlur=7;ctx.shadowOffsetY=3;   //恒黑阴影
+  var g=ctx.createRadialGradient(b.x-r*0.34,b.y-r*0.40,r*0.14,b.x,b.y,r*1.05);
+  g.addColorStop(0,PAL.ballHi);
+  g.addColorStop(0.45,PAL.ball);
+  g.addColorStop(1,colShade(PAL.ball,-0.36));
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x,b.y,r,0,6.3);ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=1.6;ctx.strokeStyle=colShade(PAL.ball,-0.48);
+  ctx.beginPath();ctx.arc(b.x,b.y,r-0.8,0,6.3);ctx.stroke();
+  ctx.globalAlpha=0.95;ctx.fillStyle=WHITE;//恒白高光
+  ctx.beginPath();ctx.ellipse(b.x-r*0.34,b.y-r*0.42,r*0.28,r*0.16,-0.55,0,6.3);ctx.fill();
+  ctx.globalAlpha=1;
+}
+/* 墨水条：轨道 + 渐变墨量 + 顶部亮线 */
+function drawInkBar(lv){
+  var total=lv.ink,bx0=DS.EDGE+4,bw=DS.W-DS.EDGE*2-8,by0=11;
+  ctx.fillStyle=shade(PAL.text,0.14);
+  rr(bx0,by0,bw,6,3);ctx.fill();
+  ctx.strokeStyle=shade(PAL.text,0.22);ctx.lineWidth=1;
+  rr(bx0+0.5,by0+0.5,bw-1,5,2.5);ctx.stroke();
+  var fr=Math.max(0,Math.min(1,inkLeft/total));
+  if(fr>0.01){
+    var col=fr<0.2?PAL.warning:PAL.primary,w=Math.max(4,bw*fr);
+    var g=ctx.createLinearGradient(0,by0,0,by0+6);
+    g.addColorStop(0,colMix(col,WHITE,0.36));g.addColorStop(1,colShade(col,-0.14));
+    ctx.fillStyle=g;rr(bx0,by0,w,6,3);ctx.fill();
+    ctx.strokeStyle=colMix(col,WHITE,0.62);ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(bx0+3,by0+1.2);ctx.lineTo(bx0+w-3,by0+1.2);ctx.stroke();
+  }
+}
 function render(){
   if(!st)return;
   var dpr=view.dpr,S=view.S;
   ctx.setTransform(dpr*S,0,0,dpr*S,0,0);
-  ctx.fillStyle=PAL.field;
-  ctx.fillRect(-2,-2,DS.W+4,DS.H+4);
-  /* 淡网格装饰 */
-  ctx.strokeStyle=shade(PAL.hairline,0.9);ctx.lineWidth=1;
-  ctx.beginPath();
-  for(var gx=30;gx<DS.W;gx+=30){ctx.moveTo(gx,0);ctx.lineTo(gx,DS.H);}
-  for(var gy=30;gy<DS.H;gy+=30){ctx.moveTo(0,gy);ctx.lineTo(DS.W,gy);}
-  ctx.stroke();
-  var lv=level();
-  /* 墙体（灰、圆角） */
-  for(var i=0;i<lv.walls.length;i++){
-    var w2=lv.walls[i];
-    ctx.fillStyle=PAL.muted;
-    rr(w2[0],w2[1],w2[2],w2[3],3);ctx.fill();
-    ctx.strokeStyle=shade(PAL.muted,0.55);ctx.lineWidth=1;ctx.stroke();
-  }
-  /* 尖刺（红底座 + 三角齿排） */
-  for(var j=0;j<lv.spikes.length;j++){
-    var s2=lv.spikes[j];
-    var baseH=Math.max(6,s2[3]-9);
-    ctx.fillStyle=PAL.danger;
-    ctx.fillRect(s2[0],s2[1]+9,s2[2],baseH);
-    ctx.beginPath();
-    var teeth=Math.max(2,Math.floor(s2[2]/12));
-    var tw=s2[2]/teeth;
-    for(var k2=0;k2<teeth;k2++){
-      ctx.moveTo(s2[0]+k2*tw,s2[1]+10);
-      ctx.lineTo(s2[0]+k2*tw+tw/2,s2[1]);
-      ctx.lineTo(s2[0]+(k2+1)*tw,s2[1]+10);
-    }
-    ctx.closePath();ctx.fill();
-  }
-  /* 目标杯（绿色 U 形 + 判定区淡填充） */
-  var cup=lv.cup;
-  ctx.fillStyle=shade(PAL.success,0.12);
-  ctx.fillRect(cup[0],cup[1],cup[2],DS.CUP_H);
-  ctx.strokeStyle=PAL.success;ctx.lineWidth=DS.WALL_T;ctx.lineCap="round";ctx.lineJoin="round";
-  ctx.beginPath();
-  ctx.moveTo(cup[0]-DS.WALL_T/2,cup[1]-2);
-  ctx.lineTo(cup[0]-DS.WALL_T/2,cup[1]+DS.CUP_H);
-  ctx.lineTo(cup[0]+cup[2]+DS.WALL_T/2,cup[1]+DS.CUP_H);
-  ctx.lineTo(cup[0]+cup[2]+DS.WALL_T/2,cup[1]-2);
-  ctx.stroke();
-  /* 杯口沿提示短线 */
-  ctx.strokeStyle=shade(PAL.success,0.65);ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.moveTo(cup[0]-DS.WALL_T,cup[1]-4);ctx.lineTo(cup[0]+6,cup[1]-4);
-  ctx.moveTo(cup[0]+cup[2]-6,cup[1]-4);ctx.lineTo(cup[0]+cup[2]+DS.WALL_T,cup[1]-4);
-  ctx.stroke();
-  /* 玩家墨线（绘制中实时显示，固化后即场景中的墙） */
-  var pts=curPts;
-  if(pts.length>1){
-    ctx.strokeStyle=PAL.line;ctx.lineWidth=5;ctx.lineCap="round";ctx.lineJoin="round";
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0],pts[0][1]);
-    for(var m2=1;m2<pts.length;m2++)ctx.lineTo(pts[m2][0],pts[m2][1]);
-    ctx.stroke();
-    ctx.fillStyle=PAL.line;
-    ctx.beginPath();ctx.arc(pts[pts.length-1][0],pts[pts.length-1][1],3,0,6.3);ctx.fill();
-  }
-  /* 小球（恒白高光） */
-  var b=st.ball;
-  ctx.fillStyle=PAL.ball;
-  ctx.beginPath();ctx.arc(b.x,b.y,DS.BALL_R,0,6.3);ctx.fill();
-  ctx.strokeStyle=shade(PAL.ball,0.6);ctx.lineWidth=1.5;ctx.stroke();
-  ctx.fillStyle="#FFF";//恒白高光
-  ctx.globalAlpha=0.45;
-  ctx.beginPath();ctx.ellipse(b.x-3.5,b.y-4,4,2.6,-0.5,0,6.3);ctx.fill();
-  ctx.globalAlpha=1;
-  /* 粒子 */
-  for(var p2=0;p2<parts.length;p2++){
-    var pp=parts[p2];
+  var lv=level(),i;
+  drawFloor();
+  drawFrame();
+  for(i=0;i<lv.walls.length;i++)drawWallBlock(lv.walls[i]);
+  for(i=0;i<lv.spikes.length;i++)drawSpikes(lv.spikes[i]);
+  drawCup(lv.cup);
+  drawInk();
+  drawBall();
+  for(i=0;i<parts.length;i++){
+    var pp=parts[i];
     ctx.globalAlpha=Math.max(0,1-pp.life/pp.ttl);
-    ctx.fillStyle=PAL.ball;
+    ctx.fillStyle=colMix(PAL.ball,PAL.ballHi,Math.min(1,pp.life/pp.ttl));
     ctx.beginPath();ctx.arc(pp.x,pp.y,2.5,0,6.3);ctx.fill();
   }
   ctx.globalAlpha=1;
-  /* 墨水条（顶部） */
-  var total=lv.ink;
-  var bx0=DS.EDGE+4,bw=DS.W-DS.EDGE*2-8,by0=8;
-  ctx.fillStyle=shade(PAL.primary,0.18);
-  rr(bx0,by0,bw,6,3);ctx.fill();
-  var fr=Math.max(0,Math.min(1,inkLeft/total));
-  if(fr>0.01){
-    ctx.fillStyle=fr<0.2?PAL.warning:PAL.primary;
-    rr(bx0,by0,Math.max(4,bw*fr),6,3);ctx.fill();
-  }
+  drawInkBar(lv);
 }
 /* ---------- 面板（选关 / 胜负结算） ---------- */
 function hidePanel(){ui.overlay.classList.remove("show");}
@@ -750,7 +860,7 @@ function showMenu(){
   var html='<h2>画线救小球</h2>'+
     '<p class="desc">按住画布<strong>手绘一条折线</strong>给小球铺路，松手即固化成墙<br>小球<strong>静止在杯内</strong>算过关；撞尖刺、掉出屏幕算失败<br>墨水有限：线条总长不能超过墨水条，省着用星级更高</p>'+
     '<div class="lvgrid" id="lvGrid"></div>'+
-    '<button type="button" class="btn" id="btnStart">开始第 '+(cur+1)+" 关</button>"+
+    '<button type="button" class="btn" id="btnStart">'+SW_ICON("play")+'开始第 '+(cur+1)+" 关</button>"+
     '<p class="foot">已通关 <b>'+done+"</b> / "+LEVELS.length+' 关 · 进度自动保存</p>';
   ui.panel.innerHTML=html;
   var grid=document.getElementById("lvGrid");
@@ -773,9 +883,9 @@ function showWin(stars){
   var html='<h2>进杯啦！</h2><div class="stars">'+starHtml(stars)+"</div>"+
     '<p class="desc">第 '+(cur+1)+" 关完成 · 剩余墨水 <b>"+Math.round(Math.max(0,st.inkLeft)/level().ink*100)+"%</b>"+
     (cur<LEVELS.length-1?"":"<br>已全部通关，太棒了！")+"</p>"+
-    '<button type="button" class="btn" id="btnGo">'+(cur<LEVELS.length-1?"下一关":"回到选关")+"</button>"+
-    '<button type="button" class="btn ghost" id="btnAgain">重玩本关</button>'+
-    '<button type="button" class="btn ghost" id="btnMenu">选关</button>';
+    '<button type="button" class="btn" id="btnGo">'+SW_ICON(cur<LEVELS.length-1?"arrow-right":"grid")+(cur<LEVELS.length-1?"下一关":"回到选关")+"</button>"+
+    '<button type="button" class="btn ghost" id="btnAgain">'+SW_ICON("rotate")+'重玩本关</button>'+
+    '<button type="button" class="btn ghost" id="btnMenu">'+SW_ICON("grid")+'选关</button>';
   ui.panel.innerHTML=html;
   document.getElementById("btnGo").addEventListener("click",function(){
     if(cur<LEVELS.length-1)startLevel(cur+1);else showMenu();
@@ -786,14 +896,16 @@ function showWin(stars){
 }
 function showLose(reason){
   var html='<h2>差一点！</h2><p class="desc">'+reason+"</p>"+
-    '<button type="button" class="btn" id="btnGo">再试一次</button>'+
-    '<button type="button" class="btn ghost" id="btnMenu">选关</button>';
+    '<button type="button" class="btn" id="btnGo">'+SW_ICON("rotate")+'再试一次</button>'+
+    '<button type="button" class="btn ghost" id="btnMenu">'+SW_ICON("grid")+'选关</button>';
   ui.panel.innerHTML=html;
   document.getElementById("btnGo").addEventListener("click",function(){startLevel(cur);});
   document.getElementById("btnMenu").addEventListener("click",showMenu);
   ui.overlay.classList.add("show");
 }
-/* ---------- 按钮 ---------- */
+/* ---------- 按钮（文字前内联 SVG 图标，照抄 window.SW_ICON 范式） ---------- */
+$("btnRedraw").insertAdjacentHTML("afterbegin",SW_ICON("pencil"));
+$("btnPick").insertAdjacentHTML("afterbegin",SW_ICON("grid"));
 $("btnRedraw").addEventListener("click",function(){
   if(state==="menu")return;
   startLevel(cur);

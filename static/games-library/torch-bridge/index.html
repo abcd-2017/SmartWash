@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>手电过桥</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-grass:#C9E5C4;--g-st-grass2:#AFD6A8;--g-st-plank:#C98A3B;--g-st-plank2:#8F6A3A;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-grass:#33422F;--g-st-grass2:#2A3627;--g-st-plank:#A9792F;--g-st-plank2:#5E4726;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-tb-* 岸面/木板，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-tb-bank1:#DCF0D6;--g-tb-bank2:#BCDEB2;--g-tb-plank1:#D29A4E;--g-tb-plank2:#9A7238;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-tb-bank1:#233220;--g-tb-bank2:#17231A;--g-tb-plank1:#8A6A34;--g-tb-plank2:#5E4726;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -26,25 +26,30 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; transition: transform .16s ease-out, background .16s ease-out; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
+  .stat:nth-child(4) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
   .stage { position: relative; }
   canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
-  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; animation: rise .38s ease-out both; animation-delay: 160ms; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; }
   .btn.ghost { background: transparent; color: var(--g-primary-deep); box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; animation: fadein .3s ease-out both; animation-delay: 260ms; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
@@ -56,9 +61,12 @@
     width: 100%; max-width: 340px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
+    animation: pop .3s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  .stat .val.bump { animation: bump .24s ease-out; }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .btn { width: 100%; margin-bottom: 8px; }
@@ -73,40 +81,53 @@
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 
-  .scene { display: flex; gap: 0; height: 200px; margin-bottom: 4px; }
-  .bank { flex: 1; min-width: 0; background: var(--g-st-grass); border-radius: var(--g-radius-inner); position: relative; padding: 30px 5px 8px; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
-  .bank.torchside::after { content: ""; position: absolute; top: 6px; right: 8px; width: 10px; height: 10px; border-radius: 10px; background: var(--g-warning); box-shadow: 0 0 8px 3px rgba(217,138,38,.55); }
-  .banktag { position: absolute; top: 7px; left: 10px; font-size: 12px; color: var(--g-st-grass2); font-weight: 600; }
+  .scene { display: flex; gap: 0; height: 200px; margin-bottom: 4px; animation: fadein .3s ease-out both; }
+  .bank { flex: 1; min-width: 0; position: relative; padding: 30px 5px 8px; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; border-radius: var(--g-radius-inner); background: linear-gradient(180deg, var(--g-tb-bank1), var(--g-tb-bank2)); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 -8px 12px rgba(0,0,0,.10), 0 2px 8px rgba(20,40,30,.06); }
+  .bank.torchside { box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 -8px 12px rgba(0,0,0,.10), 0 0 0 2px var(--g-warning), 0 2px 8px rgba(20,40,30,.06); }
+  .bank.torchside::after { content: ""; position: absolute; top: 6px; right: 8px; width: 10px; height: 10px; border-radius: 10px; background: var(--g-warning); box-shadow: 0 0 8px 3px var(--g-warning); }
+  .banktag { position: absolute; top: 7px; left: 10px; font-size: 12px; color: var(--g-tb-bank2); font-weight: 600; }
   :root[data-theme=dark] .banktag { color: var(--g-on-soft); }
   .bridge { width: 118px; position: relative; }
-  .bridge .planks { position: absolute; top: 64px; left: 0; right: 0; height: 64px; background: repeating-linear-gradient(90deg, var(--g-st-plank) 0 14px, var(--g-st-plank2) 14px 18px); border-radius: 10px; }
+  .bridge .planks { position: absolute; top: 64px; left: 0; right: 0; height: 64px; border-radius: 10px; background: linear-gradient(180deg, rgba(255,255,255,.35) 0 2px, transparent 2px, transparent calc(100% - 2px), rgba(0,0,0,.22) calc(100% - 2px)), repeating-linear-gradient(90deg, var(--g-tb-plank1) 0 14px, var(--g-tb-plank2) 14px 18px); box-shadow: 0 3px 8px rgba(20,40,30,.20); }
   .bridge .gap { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(var(--g-bg) 62px, transparent 62px, transparent 128px, var(--g-bg) 128px); }
   .peep {
     width: calc(50% - 3px); min-height: 60px; border: 2px solid var(--g-border); border-radius: var(--g-radius-inner);
-    background: var(--g-surface); color: var(--g-text); font-family: inherit; cursor: pointer;
+    background: linear-gradient(180deg, var(--g-surface), var(--g-surface2)); color: var(--g-text); font-family: inherit; cursor: pointer;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 4px 2px;
+    box-shadow: 0 2px 6px rgba(20,40,30,.08); transition: transform .16s ease-out, background .16s ease-out, border-color .16s ease-out, box-shadow .16s ease-out, opacity .16s ease-out;
   }
+  .peep:active { transform: scale(.96); }
+  .peep.off { opacity: .6; }
+  .peep .av { width: 14px; height: 14px; flex: none; fill: var(--av, var(--g-primary)); }
   .peep .nm { font-size: 12px; color: var(--g-muted); }
   .peep .sp { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .peep.sel { border-color: var(--g-primary-deep); background: var(--g-primary-soft); color: var(--g-on-soft); }
-  .peep.sel .nm { color: var(--g-on-soft); }
+  .peep.sel { border-color: var(--g-primary-deep); background: linear-gradient(180deg, var(--g-primary), var(--g-primary-deep)); color: var(--g-on-primary); box-shadow: 0 0 0 2px var(--g-primary-soft), 0 4px 10px rgba(20,40,30,.18); }
+  .peep.sel .nm { color: var(--g-on-primary); }
+  .peep.sel .av { fill: var(--g-on-primary); }
   .peep.hintpeep { animation: pulse 1s infinite; border-color: var(--g-warning); }
-  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(217,138,38,.5); } 50% { box-shadow: 0 0 0 6px rgba(217,138,38,.25); } }
+  @keyframes pulse { 0%,100% { border-color: var(--g-warning); transform: scale(1); } 50% { border-color: var(--g-warning); transform: scale(1.05); } }
   .peep.walking { animation: walk .5s ease-in-out; }
   @keyframes walk { 0% { transform: translateX(0); opacity: 1; } 50% { transform: translateX(24px); opacity: .6; } 100% { transform: translateX(0); opacity: 1; } }
-  .ctl.wide { width: 100%; }
+  .ctl.wide { width: 100%; animation: rise .38s ease-out both; animation-delay: 200ms; }
   .ctl {
     flex: 1; min-height: 48px; border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-btn-primary); color: #fff;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
     font-family: inherit; font-size: 22px; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: transform .14s ease-out, opacity .16s ease-out;
   }
-  .ctl:active { opacity: .75; }
+  .ctl:active { transform: scale(.96); }
   .ctl[disabled] { opacity: .45; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .legend { display: flex; gap: 8px; margin: 10px 2px 0; animation: rise .38s ease-out both; animation-delay: 200ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
 
 </style>
 <script>
@@ -120,6 +141,20 @@ window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
 window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}})();try{var __rmq=matchMedia("(prefers-reduced-motion: reduce)");(__rmq.addEventListener||__rmq.addListener).call(__rmq,function(e){window.__gRM=e.matches&&true;try{window.__gOnTheme&&__gOnTheme()}catch(x){}})}catch(e){};paint(B||"light");
 })();
+</script>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 1 3.5 10.9c-.7.5-1.5 1.3-1.5 2.1h-4c0-.8-.8-1.6-1.5-2.1A6 6 0 0 1 12 3z"/>'
+};
+var fill={'play':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
 </script>
 
 </head>
@@ -146,14 +181,19 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <button class="ctl wide" id="btnGo">过　桥</button>
   <p class="foot">手电只有一把：每次过桥的人要带着它折返 · 键盘 1-5 选人 · 空格过桥 · Z 撤销 · H 提示</p>
+  <div class="legend">
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-primary)"></span><span><b>点选 1-2 人</b> · 你控制</span></span>
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-warning)"></span><span><b>黄点</b> · 手电所在岸</span></span>
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-tb-bank2)"></span><span><b>对岸</b> · 全员到达即过关</span></span>
+  </div>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
-    <button class="btn primary" id="ovBtn">下一关</button>
-    <button class="btn" id="ovUndo" hidden>撤销这步</button>
+    <button class="btn primary" id="ovBtn"><span id="ovBtnTxt">下一关</span></button>
+    <button class="btn" id="ovUndo" hidden><span id="ovUndoTxt">撤销这步</span></button>
   </div>
 </div>
 
@@ -275,7 +315,7 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  $("ovBtnTxt").textContent="取消";setBtnIcon("ovBtn","x");
   var u=$("ovUndo");
   if(u)u.hidden=true;
   $("overlay").classList.add("show");
@@ -358,7 +398,10 @@ var lv=save.lv,L=null,people=[],limit=0,par=0;
 var leftMask=0,side=0,elapsed=0,sel=[],history=[];
 var done=false,failed=false;
 var NAMES=["甲","乙","丙","丁","戊"];
+var AV=["var(--g-primary)","var(--g-water)","var(--g-warning)","var(--g-danger)","var(--g-primary-deep)"];
 function $(id){return document.getElementById(id)}
+function setBtnIcon(id,n){var el=$(id),svg=el.querySelector("svg");if(svg)svg.outerHTML=SW_ICON(n);else el.insertAdjacentHTML("afterbegin",SW_ICON(n))}
+function bump(el){el.classList.remove("bump");void el.offsetWidth;el.addEventListener("animationend",function(){el.classList.remove("bump")},{once:true});el.classList.add("bump")}
 function say(t){$("msg").textContent=t}
 function loadLevel(n){
   lv=Math.max(0,Math.min(n,LEVELS.length-1));
@@ -374,14 +417,16 @@ function loadLevel(n){
   $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
   $("stLimit").textContent=limit+"s";
   $("stPar").textContent=par+"s";
-  if(!(par>0))say("警告：内嵌求解器判定本关无法过桥（数据异常）");
+  if(!(par>0))say("本关数据异常，无法过桥");
   else say("点选 1-2 人同行（耗时按较慢者计），再点「过桥」");
   render();updStats();
 }
+var lastEl=-1;
 function updStats(){
   $("stTime").textContent=elapsed+"s";
   $("btnUndo").disabled=!history.length||done;
   $("btnGo").disabled=done||sel.length<1||sel.length>2;
+  if(lastEl!==elapsed){lastEl=elapsed;if(elapsed>0)bump($("stTime"))}   // 过桥耗时轻弹
 }
 /* ---------- 渲染 ---------- */
 function render(){
@@ -394,9 +439,10 @@ function render(){
     (function(i){
       var b=document.createElement("button");
       b.type="button";
-      b.className="peep"+(sel.indexOf(i)>=0?" sel":"");
+      var onBank=(leftMask>>i&1)===(side===0?1:0);
+      b.className="peep"+(sel.indexOf(i)>=0?" sel":"")+(onBank?"":" off");
       b.dataset.idx=i;
-      b.innerHTML='<span class="nm">'+NAMES[i]+'</span><span class="sp">'+people[i]+'</span>';
+      b.innerHTML='<svg class="av" viewBox="0 0 24 24" width="14" height="14" style="--av:'+AV[i%AV.length]+'" aria-hidden="true"><path d="M12 12.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2zM4.5 20c0-3.9 3.4-5.8 7.5-5.8s7.5 1.9 7.5 5.8z"/></svg><span class="nm">'+NAMES[i]+'</span><span class="sp">'+people[i]+'</span>';
       b.setAttribute("aria-label",NAMES[i]+" 速度 "+people[i]+" 秒");
       b.addEventListener("click",function(){toggleSel(i)});
       (side===0?bl:br).appendChild(b);
@@ -445,12 +491,12 @@ function undo(){
 function hint(){
   if(done||failed)return;
   var v=torchDijkstra(people,leftMask,side);
-  if(v.par===0){say("内嵌求解器：当前局面已无法按时过桥，建议撤销");return;}
+  if(v.par===0){say("当前局面已无法按时过桥，建议撤销");return;}
   document.querySelectorAll(".peep").forEach(function(e){
     e.classList.toggle("hintpeep",v.firstMove.indexOf(+e.dataset.idx)>=0);
   });
   var names=v.firstMove.map(function(i){return NAMES[i]}).join("、");
-  say("求解器建议派 "+names+" 过河（还剩至少 "+v.par+"s）");
+  say("提示：派 "+names+" 过河（至少还需 "+v.par+"s）");
 }
 /* ---------- 胜负 ---------- */
 function winLevel(){
@@ -459,7 +505,8 @@ function winLevel(){
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:elapsed}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
   $("ovDesc").innerHTML="全部过桥，用时 <b>"+elapsed+"s</b>（限时 "+limit+"s · 参考最优 "+par+"s）"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>46 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  $("ovBtnTxt").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setBtnIcon("ovBtn",lv>=LEVELS.length-1?"rotate":"arrow-right");
   $("ovUndo").hidden=true;
   $("overlay").classList.add("show");
 }
@@ -467,7 +514,7 @@ function failLevel(){
   failed=true;
   $("ovTitle").textContent="超时了！";
   $("ovDesc").textContent="累计 "+elapsed+"s 超过限时 "+limit+"s。注意：让最快的两人先做往返摆渡。";
-  $("ovBtn").textContent="重开本关";
+  $("ovBtnTxt").textContent="重开本关";setBtnIcon("ovBtn","rotate");
   $("ovUndo").hidden=false;
   $("overlay").classList.add("show");
 }
@@ -499,6 +546,8 @@ window.addEventListener("keydown",function(e){
   else if(k==="r"||k==="R"){loadLevel(lv);say("本关已重置")}
 });
 /* ---------- 启动 ---------- */
+setBtnIcon("btnUndo","undo");setBtnIcon("btnHint","bulb");setBtnIcon("btnReset","rotate");
+setBtnIcon("btnLv","grid");setBtnIcon("btnGo","play");setBtnIcon("ovBtn","arrow-right");setBtnIcon("ovUndo","undo");
 palLoad();loadLevel(save.lv);
 syncLevelsFromServer();syncSaveFromServer();
 
